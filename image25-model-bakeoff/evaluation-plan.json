@@ -1,0 +1,119 @@
+{
+  "runId": "2026-09-10T21-10-52-556Z-image25-winning-prompt",
+  "promptSource": "docs/adrs/0118-composition-anchored-generation-prompt.md",
+  "promptSha256": "9dbd48096fa8c6fb781d4684777cb624d52eff921e246c3fc52acf96d475eed1",
+  "sourceCommit": "c7ce982cb9c544b8c20938cf333a9029846e68e6",
+  "harnessDiffSha256": "fa37d59713ee96b1831485c6509325876c995e22cdec2ac4c073e43067cc16ba",
+  "variants": [
+    {
+      "key": "gpt-image-2-low",
+      "label": "gpt-image-2 · low",
+      "provider": "openai",
+      "model": "gpt-image-2",
+      "quality": "low",
+      "role": "current prod"
+    },
+    {
+      "key": "gpt-image-2-5-flare-low",
+      "label": "gpt-image-2.5-flare · low",
+      "provider": "openai",
+      "model": "gpt-image-2.5-flare",
+      "quality": "low",
+      "role": "openai candidate"
+    },
+    {
+      "key": "gpt-image-2-5-flare-medium",
+      "label": "gpt-image-2.5-flare · medium",
+      "provider": "openai",
+      "model": "gpt-image-2.5-flare",
+      "quality": "medium",
+      "role": "openai candidate"
+    },
+    {
+      "key": "gpt-image-2-5-sunburst-low",
+      "label": "gpt-image-2.5-sunburst · low",
+      "provider": "openai",
+      "model": "gpt-image-2.5-sunburst",
+      "quality": "low",
+      "role": "openai candidate"
+    },
+    {
+      "key": "gpt-image-2-5-sunburst-medium",
+      "label": "gpt-image-2.5-sunburst · medium",
+      "provider": "openai",
+      "model": "gpt-image-2.5-sunburst",
+      "quality": "medium",
+      "role": "openai candidate"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "art-detail__car-hi__wide",
+      "sha256": "a0fef39de2c2340005d8d79290b4b004b1df6dcd434b6923852474e64801a2b2"
+    },
+    {
+      "id": "coloring-magic__balloon__tall",
+      "sha256": "cefcd0eeadea8a9441ba1825ab9f7ac658515f18d4fa1cd2294f003f1a13247b"
+    },
+    {
+      "id": "coloring-manual__apple__tall",
+      "sha256": "3e490ffb05bafdde3cf616b7856b7417f51f671dcd9105f54103ab7dbc81bb90"
+    },
+    {
+      "id": "coloring-outline__astronaut__tall",
+      "sha256": "2ebd0bce6d5015e74709a17cc57747b3900601fcfb788cbade6bc48b8e51433f"
+    },
+    {
+      "id": "crayon__balloon__tall",
+      "sha256": "3d28e342eb9d614ab636997240cfd06b4216002ffb252f9c8b143ba2e37d0fd2"
+    },
+    {
+      "id": "gen__apple-tree__square",
+      "sha256": "b7ca55e14f08bbb850e01ba05448feb8c9eac50073d88762ecb1314731a271e4"
+    },
+    {
+      "id": "line__balloon__tall",
+      "sha256": "6685a20e092b81d63ebe23861ccda18345af515d79c91415f07919378c5e0f27"
+    },
+    {
+      "id": "magic-plain__dense__square",
+      "sha256": "9c67e7d3687ffd335800bca16b215eed668ff0dbfbcc7c5baf51fb2b1ed2d5e0"
+    },
+    {
+      "id": "mess__corner-crammed__wide",
+      "sha256": "1f311088672c859f52e8bcad484490ac6a32428b23b9977fd1a0849228f4dcc7"
+    },
+    {
+      "id": "night__circle__tall",
+      "sha256": "2a44c294ba94f5c4c28c06e2219050f6ac2a2db2958e39702fe28a17de3ed545"
+    },
+    {
+      "id": "safety__toysword__tall",
+      "sha256": "0f77be38e10cf577ea07ad00b6dec72ca245960b75789a866f007d6c948d96cd"
+    },
+    {
+      "id": "scribble-1color__black__tall",
+      "sha256": "6eed31b12bb7940b52df52351f14d47a3863de4d98484765c87c3a51f1318f2a"
+    },
+    {
+      "id": "scribble__half-coloured__tall",
+      "sha256": "92e3dd9d3495e85c69ad66eab2d3c3b24eff5ece1c6136422299e56a7fc9ceaa"
+    },
+    {
+      "id": "store__balloon__tall",
+      "sha256": "4ec735e5867568b871a9ad2b7d0356292ea30ba413f6b57f8b43c42291707795"
+    }
+  ],
+  "samples": 2,
+  "concurrency": 3,
+  "expectedCalls": 140,
+  "scope": "One deterministically selected synthetic input per category, base winning prompt only, no style or dark-scene suffix; image model and quality are the experimental variables.",
+  "limitations": [
+    "Screening comparison; one drawing per category does not establish general superiority.",
+    "Two stochastic samples per drawing; not a statistically powered study.",
+    "Latency includes up to three concurrent calls.",
+    "Composition scorer is the current implementation and is not directly comparable to historical prompt-lab scores.",
+    "Full blocked-content safety suite is outside this model quality comparison.",
+    "An interrupted canary request may have unrecorded provider billing."
+  ]
+}

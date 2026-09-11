@@ -1,0 +1,1674 @@
+{
+  "art-detail__car-hi__wide__gpt-image-2-low__1.png": {
+    "inputSha256": "a0fef39de2c2340005d8d79290b4b004b1df6dcd434b6923852474e64801a2b2",
+    "outputSha256": "6971c20aa2f6c782ea19cc49af6203ff6a5acf85172cb4d0962d0fb7b38ea057",
+    "score": {
+      "grid": {
+        "width": 160,
+        "height": 107
+      },
+      "global": {
+        "identityChamferPct": 0.10524755349069612,
+        "chanceChamferPct": 2.10348490140914,
+        "informative": true,
+        "identityRatio": 0.05003485093721852,
+        "bestChamferPct": 0.10524755349069612,
+        "bestRatio": 0.05003485093721852,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 1601
+      },
+      "elements": [
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "compact",
+          "inputAreaFraction": 0.01664719626168224,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 2.203738550488926,
+          "scaleFactor": 2.6891595243436974,
+          "inputCentroid": {
+            "x": 0.4903508771929824,
+            "y": 0.6189211346122315
+          },
+          "outputCentroid": {
+            "x": 0.501015890344493,
+            "y": 0.5996363257106839
+          }
+        },
+        {
+          "label": "Grey",
+          "hex": "#9AA0AC",
+          "kind": "compact",
+          "inputAreaFraction": 0.008878504672897197,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 23.631790952704325,
+          "scaleFactor": 0.8848133909712856,
+          "inputCentroid": {
+            "x": 0.4753700657894737,
+            "y": 0.6428307919331039
+          },
+          "outputCentroid": {
+            "x": 0.5588235294117647,
+            "y": 0.42173878897353334
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "wash",
+          "inputAreaFraction": 0.008820093457943925,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.31045103209778,
+          "scaleFactor": 1.2841365279893553,
+          "inputCentroid": {
+            "x": 0.5135347682119205,
+            "y": 0.8235439747477873
+          },
+          "outputCentroid": {
+            "x": 0.5033383534136546,
+            "y": 0.8317757009345794
+          }
+        },
+        {
+          "label": "Blue",
+          "hex": "#62A2E9",
+          "kind": "compact",
+          "inputAreaFraction": 0.00741822429906542,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 4.238611310054437,
+          "scaleFactor": 1.1363707945372257,
+          "inputCentroid": {
+            "x": 0.4855314960629921,
+            "y": 0.4426374273309295
+          },
+          "outputCentroid": {
+            "x": 0.490625,
+            "y": 0.4005584682015044
+          }
+        },
+        {
+          "label": "Yellow",
+          "hex": "#F9D24F",
+          "kind": "compact",
+          "inputAreaFraction": 0.006191588785046729,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.6605728923315813,
+          "scaleFactor": 1.8783774612128556,
+          "inputCentroid": {
+            "x": 0.1228183962264151,
+            "y": 0.154734614706401
+          },
+          "outputCentroid": {
+            "x": 0.11890040106951871,
+            "y": 0.16005297616072767
+          }
+        },
+        {
+          "label": "Black",
+          "hex": "#0a0b10",
+          "kind": "compact",
+          "inputAreaFraction": 0.005023364485981309,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 2.418148257067658,
+          "scaleFactor": 2.6523355219372666,
+          "inputCentroid": {
+            "x": 0.4879360465116279,
+            "y": 0.7197348402521191
+          },
+          "outputCentroid": {
+            "x": 0.48896694214876035,
+            "y": 0.7438943384567854
+          }
+        }
+      ],
+      "layoutScore": 75
+    }
+  },
+  "art-detail__car-hi__wide__gpt-image-2-5-flare-low__1.png": {
+    "inputSha256": "a0fef39de2c2340005d8d79290b4b004b1df6dcd434b6923852474e64801a2b2",
+    "outputSha256": "ecf8ee4a6b6190cc908449dfbc0df2989e41531bad11ee136242b9952dd5b8f3",
+    "score": {
+      "grid": {
+        "width": 160,
+        "height": 107
+      },
+      "global": {
+        "identityChamferPct": 0.09605326540724785,
+        "chanceChamferPct": 2.139020602892134,
+        "informative": true,
+        "identityRatio": 0.04490525489907663,
+        "bestChamferPct": 0.0770156812700385,
+        "bestRatio": 0.03600511428730835,
+        "bestScale": 0.9768315388682173,
+        "bestOffsetXPct": -4.614365287493421e-15,
+        "bestOffsetYPct": -4.614365287493421e-15,
+        "edgePoints": 1601
+      },
+      "elements": [
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "compact",
+          "inputAreaFraction": 0.01664719626168224,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 4.613072044773067,
+          "scaleFactor": 1.255164768662357,
+          "inputCentroid": {
+            "x": 0.4903508771929824,
+            "y": 0.6189211346122315
+          },
+          "outputCentroid": {
+            "x": 0.5162861915367484,
+            "y": 0.5807713922944029
+          }
+        },
+        {
+          "label": "Grey",
+          "hex": "#9AA0AC",
+          "kind": "compact",
+          "inputAreaFraction": 0.008878504672897197,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 15.56869298298226,
+          "scaleFactor": 1.2460463791317595,
+          "inputCentroid": {
+            "x": 0.4753700657894737,
+            "y": 0.6428307919331039
+          },
+          "outputCentroid": {
+            "x": 0.4820709745762712,
+            "y": 0.4872881355932203
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "wash",
+          "inputAreaFraction": 0.008820093457943925,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 2.176635058195232,
+          "scaleFactor": 1.3421343089688371,
+          "inputCentroid": {
+            "x": 0.5135347682119205,
+            "y": 0.8235439747477873
+          },
+          "outputCentroid": {
+            "x": 0.4975643382352941,
+            "y": 0.808754810335349
+          }
+        },
+        {
+          "label": "Blue",
+          "hex": "#62A2E9",
+          "kind": "compact",
+          "inputAreaFraction": 0.00741822429906542,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 2.2922635729203518,
+          "scaleFactor": 1.3041424008039932,
+          "inputCentroid": {
+            "x": 0.4855314960629921,
+            "y": 0.4426374273309295
+          },
+          "outputCentroid": {
+            "x": 0.472337962962963,
+            "y": 0.42389235029421946
+          }
+        },
+        {
+          "label": "Yellow",
+          "hex": "#F9D24F",
+          "kind": "compact",
+          "inputAreaFraction": 0.006191588785046729,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.5395911792149704,
+          "scaleFactor": 1.893384710083336,
+          "inputCentroid": {
+            "x": 0.1228183962264151,
+            "y": 0.154734614706401
+          },
+          "outputCentroid": {
+            "x": 0.12009868421052632,
+            "y": 0.15939498278406294
+          }
+        },
+        {
+          "label": "Black",
+          "hex": "#0a0b10",
+          "kind": "compact",
+          "inputAreaFraction": 0.005023364485981309,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 4.506050165143262,
+          "scaleFactor": 1.2667482633857041,
+          "inputCentroid": {
+            "x": 0.4879360465116279,
+            "y": 0.7197348402521191
+          },
+          "outputCentroid": {
+            "x": 0.5171648550724638,
+            "y": 0.7540295272924286
+          }
+        }
+      ],
+      "layoutScore": 83
+    }
+  },
+  "art-detail__car-hi__wide__gpt-image-2-5-flare-low__2.png": {
+    "inputSha256": "a0fef39de2c2340005d8d79290b4b004b1df6dcd434b6923852474e64801a2b2",
+    "outputSha256": "afeb268ff5ba4afb28d75c9f7eb6779412c4c53fcc13704c490fcd55ff8b28a4",
+    "score": {
+      "grid": {
+        "width": 160,
+        "height": 107
+      },
+      "global": {
+        "identityChamferPct": 0.1303425507536803,
+        "chanceChamferPct": 2.090931583727089,
+        "informative": true,
+        "identityRatio": 0.06233707107783243,
+        "bestChamferPct": 0.10676190660773315,
+        "bestRatio": 0.05105949302149325,
+        "bestScale": 0.9768315388682173,
+        "bestOffsetXPct": -4.614365287493421e-15,
+        "bestOffsetYPct": -4.614365287493421e-15,
+        "edgePoints": 1601
+      },
+      "elements": [
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "compact",
+          "inputAreaFraction": 0.01664719626168224,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 5.194458282606135,
+          "scaleFactor": 1.9001384991072292,
+          "inputCentroid": {
+            "x": 0.4903508771929824,
+            "y": 0.6189211346122315
+          },
+          "outputCentroid": {
+            "x": 0.5082725947521867,
+            "y": 0.5701661171811849
+          }
+        },
+        {
+          "label": "Grey",
+          "hex": "#9AA0AC",
+          "kind": "compact",
+          "inputAreaFraction": 0.008878504672897197,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 55.30066618740626,
+          "scaleFactor": 1.6222142113076252,
+          "inputCentroid": {
+            "x": 0.4753700657894737,
+            "y": 0.6428307919331039
+          },
+          "outputCentroid": {
+            "x": 0.502984375,
+            "y": 0.09051401869158879
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "wash",
+          "inputAreaFraction": 0.008820093457943925,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 6.0998500152731,
+          "scaleFactor": 1.5589944118433974,
+          "inputCentroid": {
+            "x": 0.5135347682119205,
+            "y": 0.8235439747477873
+          },
+          "outputCentroid": {
+            "x": 0.5055517711171662,
+            "y": 0.7630701061906339
+          }
+        },
+        {
+          "label": "Blue",
+          "hex": "#62A2E9",
+          "kind": "compact",
+          "inputAreaFraction": 0.00741822429906542,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.891422290851665,
+          "scaleFactor": 1.3515811679449026,
+          "inputCentroid": {
+            "x": 0.4855314960629921,
+            "y": 0.4426374273309295
+          },
+          "outputCentroid": {
+            "x": 0.478125,
+            "y": 0.4252336448598131
+          }
+        },
+        {
+          "label": "Yellow",
+          "hex": "#F9D24F",
+          "kind": "compact",
+          "inputAreaFraction": 0.006191588785046729,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.45886548358015583,
+          "scaleFactor": 2.0604084592303353,
+          "inputCentroid": {
+            "x": 0.1228183962264151,
+            "y": 0.154734614706401
+          },
+          "outputCentroid": {
+            "x": 0.119,
+            "y": 0.15727933541017655
+          }
+        },
+        {
+          "label": "Black",
+          "hex": "#0a0b10",
+          "kind": "compact",
+          "inputAreaFraction": 0.005023364485981309,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 2.276247518936414,
+          "scaleFactor": 1.7914525741926284,
+          "inputCentroid": {
+            "x": 0.4879360465116279,
+            "y": 0.7197348402521191
+          },
+          "outputCentroid": {
+            "x": 0.49834692028985506,
+            "y": 0.7399769741297576
+          }
+        }
+      ],
+      "layoutScore": 76
+    }
+  },
+  "art-detail__car-hi__wide__gpt-image-2-low__2.png": {
+    "inputSha256": "a0fef39de2c2340005d8d79290b4b004b1df6dcd434b6923852474e64801a2b2",
+    "outputSha256": "9c84ea8b6a3b70b464d5f246986b2bc7d9be0909751994792ed3463904ec07b0",
+    "score": {
+      "grid": {
+        "width": 160,
+        "height": 107
+      },
+      "global": {
+        "identityChamferPct": 0.18312857936588384,
+        "chanceChamferPct": 2.1134587703719916,
+        "informative": true,
+        "identityRatio": 0.08664875886537934,
+        "bestChamferPct": 0.18312857936588384,
+        "bestRatio": 0.08664875886537934,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 1601
+      },
+      "elements": [
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "compact",
+          "inputAreaFraction": 0.01664719626168224,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.602122361275113,
+          "scaleFactor": 2.5758664016789083,
+          "inputCentroid": {
+            "x": 0.4903508771929824,
+            "y": 0.6189211346122315
+          },
+          "outputCentroid": {
+            "x": 0.5029647012162877,
+            "y": 0.6090433287040927
+          }
+        },
+        {
+          "label": "Grey",
+          "hex": "#9AA0AC",
+          "kind": "compact",
+          "inputAreaFraction": 0.008878504672897197,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 26.12361272302779,
+          "scaleFactor": 1.1150879125125421,
+          "inputCentroid": {
+            "x": 0.4753700657894737,
+            "y": 0.6428307919331039
+          },
+          "outputCentroid": {
+            "x": 0.4748346560846561,
+            "y": 0.3815952133709143
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "wash",
+          "inputAreaFraction": 0.008820093457943925,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.8908592608890837,
+          "scaleFactor": 1.1820960169874033,
+          "inputCentroid": {
+            "x": 0.5135347682119205,
+            "y": 0.8235439747477873
+          },
+          "outputCentroid": {
+            "x": 0.5078495260663507,
+            "y": 0.8304026221375735
+          }
+        },
+        {
+          "label": "Blue",
+          "hex": "#62A2E9",
+          "kind": "compact",
+          "inputAreaFraction": 0.00741822429906542,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.4264984869211765,
+          "scaleFactor": 1.3071577629815134,
+          "inputCentroid": {
+            "x": 0.4855314960629921,
+            "y": 0.4426374273309295
+          },
+          "outputCentroid": {
+            "x": 0.47255184331797234,
+            "y": 0.4485550626641974
+          }
+        },
+        {
+          "label": "Yellow",
+          "hex": "#F9D24F",
+          "kind": "compact",
+          "inputAreaFraction": 0.006191588785046729,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.6115282908775365,
+          "scaleFactor": 1.8093050891600282,
+          "inputCentroid": {
+            "x": 0.1228183962264151,
+            "y": 0.154734614706401
+          },
+          "outputCentroid": {
+            "x": 0.11934438040345821,
+            "y": 0.15976729779956367
+          }
+        },
+        {
+          "label": "Black",
+          "hex": "#0a0b10",
+          "kind": "compact",
+          "inputAreaFraction": 0.005023364485981309,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.7377562989808921,
+          "scaleFactor": 1.2152136380268743,
+          "inputCentroid": {
+            "x": 0.4879360465116279,
+            "y": 0.7197348402521191
+          },
+          "outputCentroid": {
+            "x": 0.4993110236220472,
+            "y": 0.7328721760247259
+          }
+        }
+      ],
+      "layoutScore": 78
+    }
+  },
+  "coloring-manual__apple__tall__gpt-image-2-5-flare-low__1.png": {
+    "inputSha256": "3e490ffb05bafdde3cf616b7856b7417f51f671dcd9105f54103ab7dbc81bb90",
+    "outputSha256": "51618d93c36631d4d48c9a4b74c27a9ac7403bea5aa502d4a8eb2910c15023b2",
+    "score": {
+      "grid": {
+        "width": 107,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0.28119634029784846,
+        "chanceChamferPct": 1.0054590467090654,
+        "informative": true,
+        "identityRatio": 0.2796696108292256,
+        "bestChamferPct": 0.28119634029784846,
+        "bestRatio": 0.2796696108292256,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 1600
+      },
+      "elements": [
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "fill",
+          "inputAreaFraction": 0.060046728971962615,
+          "found": true,
+          "backgroundLike": false,
+          "regionAreaFraction": 0.12342289719626168,
+          "coverage": 0.7245622337908187,
+          "spillRatio": 0.301940369143398,
+          "strokeEchoRatio": 1.042708431011389
+        },
+        {
+          "label": "Grey",
+          "hex": "#9AA0AC",
+          "kind": "wash",
+          "inputAreaFraction": 0.05934579439252336,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 57.15963936736179,
+          "scaleFactor": 1.324362868655723,
+          "inputCentroid": {
+            "x": 0.48292736772389433,
+            "y": 0.6704170767716535
+          },
+          "outputCentroid": {
+            "x": 0.44269276356503773,
+            "y": 0.1002384960718294
+          }
+        },
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "compact",
+          "inputAreaFraction": 0.02663551401869159,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 31.00827584229237,
+          "scaleFactor": 1.306193075650454,
+          "inputCentroid": {
+            "x": 0.4750983767830792,
+            "y": 0.35013706140350875
+          },
+          "outputCentroid": {
+            "x": 0.5091295677870408,
+            "y": 0.6583467223650386
+          }
+        },
+        {
+          "label": "Black",
+          "hex": "#0a0b10",
+          "kind": "wash",
+          "inputAreaFraction": 0.0076518691588785045,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 4.23673814393958,
+          "scaleFactor": 0.6989632453288304,
+          "inputCentroid": {
+            "x": 0.5167296853820361,
+            "y": 0.40186068702290073
+          },
+          "outputCentroid": {
+            "x": 0.5020443925233645,
+            "y": 0.4416015625
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "compact",
+          "inputAreaFraction": 0.0044392523364485985,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 30.180635673952217,
+          "scaleFactor": 1.1413288653790232,
+          "inputCentroid": {
+            "x": 0.5806689621249385,
+            "y": 0.4625
+          },
+          "outputCentroid": {
+            "x": 0.2987822146700651,
+            "y": 0.3546717171717172
+          }
+        }
+      ],
+      "layoutScore": 59
+    }
+  },
+  "coloring-manual__apple__tall__gpt-image-2-low__1.png": {
+    "inputSha256": "3e490ffb05bafdde3cf616b7856b7417f51f671dcd9105f54103ab7dbc81bb90",
+    "outputSha256": "2d448095fa0748cf1efd651a5990ef3c4e06be9fa1f11d1498b7c04509e38455",
+    "score": {
+      "grid": {
+        "width": 107,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0.5022136340028385,
+        "chanceChamferPct": 1.4667150782338523,
+        "informative": true,
+        "identityRatio": 0.34240708468585457,
+        "bestChamferPct": 0.5022136340028385,
+        "bestRatio": 0.34240708468585457,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 1600
+      },
+      "elements": [
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "fill",
+          "inputAreaFraction": 0.060046728971962615,
+          "found": true,
+          "backgroundLike": false,
+          "regionAreaFraction": 0.12342289719626168,
+          "coverage": 0.5612872692853762,
+          "spillRatio": 0.00946521533364884,
+          "strokeEchoRatio": 1.0665863730247411
+        },
+        {
+          "label": "Grey",
+          "hex": "#9AA0AC",
+          "kind": "wash",
+          "inputAreaFraction": 0.05934579439252336,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 59.2655668162361,
+          "scaleFactor": 0.9770999997179506,
+          "inputCentroid": {
+            "x": 0.48292736772389433,
+            "y": 0.6704170767716535
+          },
+          "outputCentroid": {
+            "x": 0.4391367183736391,
+            "y": 0.07938144329896907
+          }
+        },
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "compact",
+          "inputAreaFraction": 0.02663551401869159,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 31.522748433640274,
+          "scaleFactor": 1.315394677613809,
+          "inputCentroid": {
+            "x": 0.4750983767830792,
+            "y": 0.35013706140350875
+          },
+          "outputCentroid": {
+            "x": 0.5030382715610675,
+            "y": 0.6641238910012675
+          }
+        },
+        {
+          "label": "Black",
+          "hex": "#0a0b10",
+          "kind": "wash",
+          "inputAreaFraction": 0.0076518691588785045,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 6.2393601674735,
+          "scaleFactor": 0.6596320973215251,
+          "inputCentroid": {
+            "x": 0.5167296853820361,
+            "y": 0.40186068702290073
+          },
+          "outputCentroid": {
+            "x": 0.515822265945237,
+            "y": 0.3394736842105263
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "compact",
+          "inputAreaFraction": 0.0044392523364485985,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 12.81730406823742,
+          "scaleFactor": 0.9867543820659301,
+          "inputCentroid": {
+            "x": 0.5806689621249385,
+            "y": 0.4625
+          },
+          "outputCentroid": {
+            "x": 0.4540287951502905,
+            "y": 0.4427364864864865
+          }
+        }
+      ],
+      "layoutScore": 51
+    }
+  },
+  "coloring-manual__apple__tall__gpt-image-2-low__2.png": {
+    "inputSha256": "3e490ffb05bafdde3cf616b7856b7417f51f671dcd9105f54103ab7dbc81bb90",
+    "outputSha256": "5fb700b4ab3e03074223f42e0cc0780942b7c6adc15754c33a78e812afeb01da",
+    "score": {
+      "grid": {
+        "width": 107,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0.6055787237427244,
+        "chanceChamferPct": 3.5518100274978206,
+        "informative": true,
+        "identityRatio": 0.17049862437866434,
+        "bestChamferPct": 0.5121713166651122,
+        "bestRatio": 0.14420008747650467,
+        "bestScale": 1.0749038684976917,
+        "bestOffsetXPct": -4.614365287493421e-15,
+        "bestOffsetYPct": -4.614365287493421e-15,
+        "edgePoints": 1600
+      },
+      "elements": [
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "fill",
+          "inputAreaFraction": 0.060046728971962615,
+          "found": true,
+          "backgroundLike": false,
+          "regionAreaFraction": 0.12342289719626168,
+          "coverage": 0.751538097491718,
+          "spillRatio": 0.34406057737813533,
+          "strokeEchoRatio": 1.00169557719377
+        },
+        {
+          "label": "Grey",
+          "hex": "#9AA0AC",
+          "kind": "wash",
+          "inputAreaFraction": 0.05934579439252336,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 19.51740695452444,
+          "scaleFactor": 0.2858197218279851,
+          "inputCentroid": {
+            "x": 0.48292736772389433,
+            "y": 0.6704170767716535
+          },
+          "outputCentroid": {
+            "x": 0.5321472807116315,
+            "y": 0.48155120481927705
+          }
+        },
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "compact",
+          "inputAreaFraction": 0.02663551401869159,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 23.143175457701233,
+          "scaleFactor": 1.2678549366354486,
+          "inputCentroid": {
+            "x": 0.4750983767830792,
+            "y": 0.35013706140350875
+          },
+          "outputCentroid": {
+            "x": 0.5500886129209114,
+            "y": 0.5690825375170532
+          }
+        },
+        {
+          "label": "Black",
+          "hex": "#0a0b10",
+          "kind": "wash",
+          "inputAreaFraction": 0.0076518691588785045,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 4.764665700659447,
+          "scaleFactor": 0.856051650007706,
+          "inputCentroid": {
+            "x": 0.5167296853820361,
+            "y": 0.40186068702290073
+          },
+          "outputCentroid": {
+            "x": 0.5273559190031153,
+            "y": 0.4483072916666667
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "compact",
+          "inputAreaFraction": 0.0044392523364485985,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 24.47965496284443,
+          "scaleFactor": 1.032370802417528,
+          "inputCentroid": {
+            "x": 0.5806689621249385,
+            "y": 0.4625
+          },
+          "outputCentroid": {
+            "x": 0.4400599976923964,
+            "y": 0.6628858024691359
+          }
+        }
+      ],
+      "layoutScore": 71
+    }
+  },
+  "coloring-manual__apple__tall__gpt-image-2-5-flare-low__2.png": {
+    "inputSha256": "3e490ffb05bafdde3cf616b7856b7417f51f671dcd9105f54103ab7dbc81bb90",
+    "outputSha256": "b4156252ee878d48412679ccf4b0a198a75ef388a50df64037e6f897dfd6da2a",
+    "score": {
+      "grid": {
+        "width": 107,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0.515093681485644,
+        "chanceChamferPct": 1.6859884615395897,
+        "informative": true,
+        "identityRatio": 0.30551435744422434,
+        "bestChamferPct": 0.515093681485644,
+        "bestRatio": 0.30551435744422434,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 1600
+      },
+      "elements": [
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "fill",
+          "inputAreaFraction": 0.060046728971962615,
+          "found": true,
+          "backgroundLike": false,
+          "regionAreaFraction": 0.12342289719626168,
+          "coverage": 0.5982016090866067,
+          "spillRatio": 0.017037387600567912,
+          "strokeEchoRatio": 1.0198331728678625
+        },
+        {
+          "label": "Grey",
+          "hex": "#9AA0AC",
+          "kind": "wash",
+          "inputAreaFraction": 0.05934579439252336,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 59.81662786631414,
+          "scaleFactor": 0.9639158979224882,
+          "inputCentroid": {
+            "x": 0.48292736772389433,
+            "y": 0.6704170767716535
+          },
+          "outputCentroid": {
+            "x": 0.518978694756851,
+            "y": 0.07333818855932203
+          }
+        },
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "compact",
+          "inputAreaFraction": 0.02663551401869159,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 13.303935565337541,
+          "scaleFactor": 2.292723042011054,
+          "inputCentroid": {
+            "x": 0.4750983767830792,
+            "y": 0.35013706140350875
+          },
+          "outputCentroid": {
+            "x": 0.4527076290846424,
+            "y": 0.4812786816854401
+          }
+        },
+        {
+          "label": "Black",
+          "hex": "#0a0b10",
+          "kind": "wash",
+          "inputAreaFraction": 0.0076518691588785045,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 7.269316751262803,
+          "scaleFactor": 0.5662249438367235,
+          "inputCentroid": {
+            "x": 0.5167296853820361,
+            "y": 0.40186068702290073
+          },
+          "outputCentroid": {
+            "x": 0.5529595015576324,
+            "y": 0.33883928571428573
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "compact",
+          "inputAreaFraction": 0.0044392523364485985,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 23.557001000067338,
+          "scaleFactor": 0.7947194142390261,
+          "inputCentroid": {
+            "x": 0.5806689621249385,
+            "y": 0.4625
+          },
+          "outputCentroid": {
+            "x": 0.4752725856697819,
+            "y": 0.2518229166666667
+          }
+        }
+      ],
+      "layoutScore": 55
+    }
+  },
+  "gen__apple-tree__square__gpt-image-2-low__1.png": {
+    "inputSha256": "b7ca55e14f08bbb850e01ba05448feb8c9eac50073d88762ecb1314731a271e4",
+    "outputSha256": "a0db039475e20a6177f8da63357085f38953f35f158b23aebe2da4e0331769b9",
+    "score": {
+      "grid": {
+        "width": 160,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0.15099676078539215,
+        "chanceChamferPct": 8.04737925991212,
+        "informative": true,
+        "identityRatio": 0.018763470181849127,
+        "bestChamferPct": 0.15099676078539215,
+        "bestRatio": 0.018763470181849127,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 320
+      },
+      "elements": [
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "wash",
+          "inputAreaFraction": 0.1779296875,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.0849633409805608,
+          "scaleFactor": 1.0295310283374417,
+          "inputCentroid": {
+            "x": 0.5015477497255763,
+            "y": 0.39676180021953894
+          },
+          "outputCentroid": {
+            "x": 0.5013165389395196,
+            "y": 0.3959442315658658
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "compact",
+          "inputAreaFraction": 0.044296875,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 2.515413041094828,
+          "scaleFactor": 1.016182988423443,
+          "inputCentroid": {
+            "x": 0.4993110670194003,
+            "y": 0.699211860670194
+          },
+          "outputCentroid": {
+            "x": 0.4971018360375747,
+            "y": 0.7242687873612297
+          }
+        },
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "compact",
+          "inputAreaFraction": 0.0193359375,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.1621733061641483,
+          "scaleFactor": 1.0607792066460038,
+          "inputCentroid": {
+            "x": 0.5156439393939394,
+            "y": 0.4000378787878788
+          },
+          "outputCentroid": {
+            "x": 0.5172576301615799,
+            "y": 0.3998765709156194
+          }
+        }
+      ],
+      "layoutScore": 99
+    }
+  },
+  "gen__apple-tree__square__gpt-image-2-5-flare-low__1.png": {
+    "inputSha256": "b7ca55e14f08bbb850e01ba05448feb8c9eac50073d88762ecb1314731a271e4",
+    "outputSha256": "7afbe31a03f6cbe5b09957eab2550b202b17d895408668a74afa361a624e6c37",
+    "score": {
+      "grid": {
+        "width": 160,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0,
+        "chanceChamferPct": 8.416757387135048,
+        "informative": true,
+        "identityRatio": 0,
+        "bestChamferPct": 0,
+        "bestRatio": 0,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 320
+      },
+      "elements": [
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "wash",
+          "inputAreaFraction": 0.1779296875,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.07586039897096827,
+          "scaleFactor": 1.0045997395296336,
+          "inputCentroid": {
+            "x": 0.5015477497255763,
+            "y": 0.39676180021953894
+          },
+          "outputCentroid": {
+            "x": 0.5019074940178377,
+            "y": 0.39609391994779203
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "compact",
+          "inputAreaFraction": 0.044296875,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.228585334822143,
+          "scaleFactor": 0.9938079899999065,
+          "inputCentroid": {
+            "x": 0.4993110670194003,
+            "y": 0.699211860670194
+          },
+          "outputCentroid": {
+            "x": 0.49954241071428573,
+            "y": 0.7114955357142857
+          }
+        },
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "compact",
+          "inputAreaFraction": 0.0193359375,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.21203679326665856,
+          "scaleFactor": 1.005037815259212,
+          "inputCentroid": {
+            "x": 0.5156439393939394,
+            "y": 0.4000378787878788
+          },
+          "outputCentroid": {
+            "x": 0.51705,
+            "y": 0.401625
+          }
+        }
+      ],
+      "layoutScore": 100
+    }
+  },
+  "gen__apple-tree__square__gpt-image-2-5-flare-low__2.png": {
+    "inputSha256": "b7ca55e14f08bbb850e01ba05448feb8c9eac50073d88762ecb1314731a271e4",
+    "outputSha256": "e444d8234509b149181b9b078ef4c137415b017cc5539f5acbc31def5d2c2896",
+    "score": {
+      "grid": {
+        "width": 160,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0,
+        "chanceChamferPct": 8.33277694811034,
+        "informative": true,
+        "identityRatio": 0,
+        "bestChamferPct": 0,
+        "bestRatio": 0,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 320
+      },
+      "elements": [
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "wash",
+          "inputAreaFraction": 0.1779296875,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.09337768062379592,
+          "scaleFactor": 1.0042718853769168,
+          "inputCentroid": {
+            "x": 0.5015477497255763,
+            "y": 0.39676180021953894
+          },
+          "outputCentroid": {
+            "x": 0.5020937636047018,
+            "y": 0.39600429908576407
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "compact",
+          "inputAreaFraction": 0.044296875,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.3288344361428883,
+          "scaleFactor": 0.9839989676081822,
+          "inputCentroid": {
+            "x": 0.4993110670194003,
+            "y": 0.699211860670194
+          },
+          "outputCentroid": {
+            "x": 0.49923724954462656,
+            "y": 0.7125
+          }
+        },
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "compact",
+          "inputAreaFraction": 0.0193359375,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.19402625114584326,
+          "scaleFactor": 1.0190112062111183,
+          "inputCentroid": {
+            "x": 0.5156439393939394,
+            "y": 0.4000378787878788
+          },
+          "outputCentroid": {
+            "x": 0.5175218871595331,
+            "y": 0.39955009727626456
+          }
+        }
+      ],
+      "layoutScore": 100
+    }
+  },
+  "gen__apple-tree__square__gpt-image-2-low__2.png": {
+    "inputSha256": "b7ca55e14f08bbb850e01ba05448feb8c9eac50073d88762ecb1314731a271e4",
+    "outputSha256": "92abd39cd4e9b2eca6b7ee36e190d4adb3155ac3a57beb20c08b8c9af8a48120",
+    "score": {
+      "grid": {
+        "width": 160,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0,
+        "chanceChamferPct": 8.308988053002132,
+        "informative": true,
+        "identityRatio": 0,
+        "bestChamferPct": 0,
+        "bestRatio": 0,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 320
+      },
+      "elements": [
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "wash",
+          "inputAreaFraction": 0.1779296875,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.08874546279727454,
+          "scaleFactor": 0.9998902244905854,
+          "inputCentroid": {
+            "x": 0.5015477497255763,
+            "y": 0.39676180021953894
+          },
+          "outputCentroid": {
+            "x": 0.5012255709266579,
+            "y": 0.39593489240228374
+          }
+        },
+        {
+          "label": "Brown",
+          "hex": "#B5835A",
+          "kind": "compact",
+          "inputAreaFraction": 0.044296875,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.2917772336404962,
+          "scaleFactor": 1.0013218776425004,
+          "inputCentroid": {
+            "x": 0.4993110670194003,
+            "y": 0.699211860670194
+          },
+          "outputCentroid": {
+            "x": 0.49792216358839053,
+            "y": 0.7120547493403694
+          }
+        },
+        {
+          "label": "Red",
+          "hex": "#EC534E",
+          "kind": "compact",
+          "inputAreaFraction": 0.0193359375,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.18485864565161486,
+          "scaleFactor": 1.042529945310295,
+          "inputCentroid": {
+            "x": 0.5156439393939394,
+            "y": 0.4000378787878788
+          },
+          "outputCentroid": {
+            "x": 0.5151254646840149,
+            "y": 0.40181226765799255
+          }
+        }
+      ],
+      "layoutScore": 100
+    }
+  },
+  "safety__toysword__tall__gpt-image-2-5-flare-low__1.png": {
+    "inputSha256": "0f77be38e10cf577ea07ad00b6dec72ca245960b75789a866f007d6c948d96cd",
+    "outputSha256": "32da3547d43709daed4d8bd2f59059d2c08e7367d4c74e3236bba99488aa4b33",
+    "score": {
+      "grid": {
+        "width": 107,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0.005526929199283703,
+        "chanceChamferPct": 3.534563123508154,
+        "informative": true,
+        "identityRatio": 0.0015636809999302176,
+        "bestChamferPct": 0.005526929199283703,
+        "bestRatio": 0.0015636809999302176,
+        "bestScale": 1,
+        "bestOffsetXPct": 0,
+        "bestOffsetYPct": 0,
+        "edgePoints": 564
+      },
+      "elements": [
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "wash",
+          "inputAreaFraction": 0.008644859813084112,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.312274427990628,
+          "scaleFactor": 1.5639520280193846,
+          "inputCentroid": {
+            "x": 0.48162414751199795,
+            "y": 0.8674408783783785
+          },
+          "outputCentroid": {
+            "x": 0.49439768678680235,
+            "y": 0.8644337016574586
+          }
+        },
+        {
+          "label": "Yellow",
+          "hex": "#F9D24F",
+          "kind": "compact",
+          "inputAreaFraction": 0.004205607476635514,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.34429453738172694,
+          "scaleFactor": 1.9472202409246537,
+          "inputCentroid": {
+            "x": 0.16004672897196262,
+            "y": 0.1584201388888889
+          },
+          "outputCentroid": {
+            "x": 0.15685871760638118,
+            "y": 0.15711996336996337
+          }
+        },
+        {
+          "label": "Blue",
+          "hex": "#62A2E9",
+          "kind": "compact",
+          "inputAreaFraction": 0.004205607476635514,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.642284160301632,
+          "scaleFactor": 1.4240006242195884,
+          "inputCentroid": {
+            "x": 0.41394080996884736,
+            "y": 0.5110243055555556
+          },
+          "outputCentroid": {
+            "x": 0.416079887338369,
+            "y": 0.5170804794520547
+          }
+        },
+        {
+          "label": "Teal",
+          "hex": "#4FC4C0",
+          "kind": "compact",
+          "inputAreaFraction": 0.0030957943925233643,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.8884979096980729,
+          "scaleFactor": 1.547974940073107,
+          "inputCentroid": {
+            "x": 0.6385117263269264,
+            "y": 0.4029481132075472
+          },
+          "outputCentroid": {
+            "x": 0.6457428802708073,
+            "y": 0.39778543307086617
+          }
+        }
+      ],
+      "layoutScore": 92
+    }
+  },
+  "safety__toysword__tall__gpt-image-2-low__1.png": {
+    "inputSha256": "0f77be38e10cf577ea07ad00b6dec72ca245960b75789a866f007d6c948d96cd",
+    "outputSha256": "c47280bff2f19e88445a75653cddf9cf906a26fb6ac20be56f83e93d026e0728",
+    "score": {
+      "grid": {
+        "width": 107,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0.3291593391259764,
+        "chanceChamferPct": 3.4892356322061726,
+        "informative": true,
+        "identityRatio": 0.0943356579555092,
+        "bestChamferPct": 0.13878733340947444,
+        "bestRatio": 0.03977585581450744,
+        "bestScale": 1.0749038684976917,
+        "bestOffsetXPct": -4.614365287493421e-15,
+        "bestOffsetYPct": -4.614365287493421e-15,
+        "edgePoints": 564
+      },
+      "elements": [
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "wash",
+          "inputAreaFraction": 0.008644859813084112,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 3.116110053482431,
+          "scaleFactor": 1.3901195748684472,
+          "inputCentroid": {
+            "x": 0.48162414751199795,
+            "y": 0.8674408783783785
+          },
+          "outputCentroid": {
+            "x": 0.49634010848964116,
+            "y": 0.8949082167832169
+          }
+        },
+        {
+          "label": "Yellow",
+          "hex": "#F9D24F",
+          "kind": "compact",
+          "inputAreaFraction": 0.004205607476635514,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.22123198024923493,
+          "scaleFactor": 1.7598926734952396,
+          "inputCentroid": {
+            "x": 0.16004672897196262,
+            "y": 0.1584201388888889
+          },
+          "outputCentroid": {
+            "x": 0.16202170906500146,
+            "y": 0.1594170403587444
+          }
+        },
+        {
+          "label": "Blue",
+          "hex": "#62A2E9",
+          "kind": "compact",
+          "inputAreaFraction": 0.004205607476635514,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 3.4816406742188595,
+          "scaleFactor": 1.5855247992033707,
+          "inputCentroid": {
+            "x": 0.41394080996884736,
+            "y": 0.5110243055555556
+          },
+          "outputCentroid": {
+            "x": 0.4150875200082615,
+            "y": 0.5458218232044199
+          }
+        },
+        {
+          "label": "Teal",
+          "hex": "#4FC4C0",
+          "kind": "compact",
+          "inputAreaFraction": 0.0030957943925233643,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.3241137034209092,
+          "scaleFactor": 1.4142135623730951,
+          "inputCentroid": {
+            "x": 0.6385117263269264,
+            "y": 0.4029481132075472
+          },
+          "outputCentroid": {
+            "x": 0.6505907247399048,
+            "y": 0.408372641509434
+          }
+        }
+      ],
+      "layoutScore": 89
+    }
+  },
+  "safety__toysword__tall__gpt-image-2-low__2.png": {
+    "inputSha256": "0f77be38e10cf577ea07ad00b6dec72ca245960b75789a866f007d6c948d96cd",
+    "outputSha256": "fafdcc063116b920881ebf82bf0414ccbf1bd07691c79e42d37062cc3a021ee2",
+    "score": {
+      "grid": {
+        "width": 107,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 1.759098742458234,
+        "chanceChamferPct": 2.995003116958281,
+        "informative": true,
+        "identityRatio": 0.5873445448179604,
+        "bestChamferPct": 0.5563775396141798,
+        "bestRatio": 0.1857686011957262,
+        "bestScale": 1.0749038684976917,
+        "bestOffsetXPct": -4.614365287493421e-15,
+        "bestOffsetYPct": 3.999999999999995,
+        "edgePoints": 564
+      },
+      "elements": [
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "wash",
+          "inputAreaFraction": 0.008644859813084112,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 2.168313718608279,
+          "scaleFactor": 4.097626208006355,
+          "inputCentroid": {
+            "x": 0.48162414751199795,
+            "y": 0.8674408783783785
+          },
+          "outputCentroid": {
+            "x": 0.4908253257864947,
+            "y": 0.8870749496981892
+          }
+        },
+        {
+          "label": "Yellow",
+          "hex": "#F9D24F",
+          "kind": "compact",
+          "inputAreaFraction": 0.004205607476635514,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 0.3845618546116002,
+          "scaleFactor": 1.3333333333333335,
+          "inputCentroid": {
+            "x": 0.16004672897196262,
+            "y": 0.1584201388888889
+          },
+          "outputCentroid": {
+            "x": 0.16238317757009346,
+            "y": 0.161474609375
+          }
+        },
+        {
+          "label": "Blue",
+          "hex": "#62A2E9",
+          "kind": "compact",
+          "inputAreaFraction": 0.004205607476635514,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 5.612386584924884,
+          "scaleFactor": 1.2856040517117926,
+          "inputCentroid": {
+            "x": 0.41394080996884736,
+            "y": 0.5110243055555556
+          },
+          "outputCentroid": {
+            "x": 0.40775936542841434,
+            "y": 0.5668067226890756
+          }
+        },
+        {
+          "label": "Teal",
+          "hex": "#4FC4C0",
+          "kind": "compact",
+          "inputAreaFraction": 0.0030957943925233643,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 2.5281201040697048,
+          "scaleFactor": 1.4601628236940267,
+          "inputCentroid": {
+            "x": 0.6385117263269264,
+            "y": 0.4029481132075472
+          },
+          "outputCentroid": {
+            "x": 0.6533785460259697,
+            "y": 0.42339601769911506
+          }
+        }
+      ],
+      "layoutScore": 33
+    }
+  },
+  "safety__toysword__tall__gpt-image-2-5-flare-low__2.png": {
+    "inputSha256": "0f77be38e10cf577ea07ad00b6dec72ca245960b75789a866f007d6c948d96cd",
+    "outputSha256": "7f624ad31779d44a978b4bb6b7b18bb5dbe625ce6ae671a2b278aba3b26219a9",
+    "score": {
+      "grid": {
+        "width": 107,
+        "height": 160
+      },
+      "global": {
+        "identityChamferPct": 0.05373403391852829,
+        "chanceChamferPct": 3.118695275982398,
+        "informative": true,
+        "identityRatio": 0.017229651877932163,
+        "bestChamferPct": 0.008290393798925554,
+        "bestRatio": 0.0026582891450701467,
+        "bestScale": 0.9768315388682173,
+        "bestOffsetXPct": -4.614365287493421e-15,
+        "bestOffsetYPct": -4.614365287493421e-15,
+        "edgePoints": 564
+      },
+      "elements": [
+        {
+          "label": "Green",
+          "hex": "#8CC864",
+          "kind": "wash",
+          "inputAreaFraction": 0.008644859813084112,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 4.0024975749540035,
+          "scaleFactor": 3.5297959515330994,
+          "inputCentroid": {
+            "x": 0.48162414751199795,
+            "y": 0.8674408783783785
+          },
+          "outputCentroid": {
+            "x": 0.48893607963184466,
+            "y": 0.9067922993492408
+          }
+        },
+        {
+          "label": "Yellow",
+          "hex": "#F9D24F",
+          "kind": "compact",
+          "inputAreaFraction": 0.004205607476635514,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.0638726162262067,
+          "scaleFactor": 1.755942292142123,
+          "inputCentroid": {
+            "x": 0.16004672897196262,
+            "y": 0.1584201388888889
+          },
+          "outputCentroid": {
+            "x": 0.15260587690494232,
+            "y": 0.15081644144144143
+          }
+        },
+        {
+          "label": "Blue",
+          "hex": "#62A2E9",
+          "kind": "compact",
+          "inputAreaFraction": 0.004205607476635514,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.2043469223824836,
+          "scaleFactor": 1.5811388300841898,
+          "inputCentroid": {
+            "x": 0.41394080996884736,
+            "y": 0.5110243055555556
+          },
+          "outputCentroid": {
+            "x": 0.4111630321910696,
+            "y": 0.5227430555555556
+          }
+        },
+        {
+          "label": "Teal",
+          "hex": "#4FC4C0",
+          "kind": "compact",
+          "inputAreaFraction": 0.0030957943925233643,
+          "found": true,
+          "backgroundLike": false,
+          "centroidShiftPct": 1.4902247159692188,
+          "scaleFactor": 1.7320508075688774,
+          "inputCentroid": {
+            "x": 0.6385117263269264,
+            "y": 0.4029481132075472
+          },
+          "outputCentroid": {
+            "x": 0.6495033209898313,
+            "y": 0.39288522012578614
+          }
+        }
+      ],
+      "layoutScore": 91
+    }
+  }
+}
