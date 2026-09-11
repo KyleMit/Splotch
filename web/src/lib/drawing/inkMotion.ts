@@ -97,7 +97,11 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
   // the footprint is ink the command never owned. Knocking it out of the ghost
   // keeps that older ink pinned in place while the ghost shrinks over it; the
   // tiles are transparent wherever no ink remains, so the pass costs the same
-  // bounded blits as the copy.
+  // bounded blits as the copy. destination-out scales the ghost by one minus the
+  // surviving alpha, so it is exact where the surviving ink is opaque or absent
+  // and leaves a residue of at most a quarter of full alpha where the mask's AA
+  // pad covers only an older stroke's antialiased edge, a one-pixel fringe that
+  // the cue's own fade then scales down again.
   function subtractRemainingInk() {
     const target = pendingSubtract;
     pendingSubtract = null;
