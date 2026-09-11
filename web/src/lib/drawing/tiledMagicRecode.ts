@@ -1,5 +1,10 @@
 import type { MagicSheetSnapshot } from './magicBrush';
-import type { MagicRecodeUndo, MagicStrokeOp, StrokeGroupCommand } from './strokeOps';
+import {
+  isMagicInkOp,
+  type MagicRecodeUndo,
+  type MagicStrokeOp,
+  type StrokeGroupCommand,
+} from './strokeOps';
 
 interface TiledMagicRecodeHost<TBase> {
   history: () => StrokeGroupCommand[];
@@ -13,9 +18,7 @@ interface TiledMagicRecodeHost<TBase> {
 }
 
 function magicOps(command: StrokeGroupCommand): MagicStrokeOp[] {
-  return command.ops.filter(
-    (op): op is MagicStrokeOp => (op.kind === 'dot' || op.kind === 'path') && op.magic === true
-  );
+  return command.ops.filter(isMagicInkOp);
 }
 
 export function createTiledMagicRecode<TBase>(host: TiledMagicRecodeHost<TBase>) {

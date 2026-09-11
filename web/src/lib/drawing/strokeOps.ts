@@ -79,6 +79,9 @@ export function isCrayonInkOp(op: StrokeOp): op is (DotOp | PathOp) & { crayon: 
   return (op.kind === 'dot' || op.kind === 'path') && op.crayon === true && !op.erase;
 }
 export type MagicStrokeOp = (PathOp | DotOp) & { magic: true };
+export function isMagicInkOp(op: StrokeOp): op is MagicStrokeOp {
+  return (op.kind === 'dot' || op.kind === 'path') && op.magic === true;
+}
 
 export interface MagicRecodeUndo {
   targetSourceKey: string | null;
