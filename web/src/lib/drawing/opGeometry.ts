@@ -64,16 +64,17 @@ export function opGeometricExtent(op: DotOp | PathOp): {
   return { x0, y0, x1, y1, halfWidth: op.lineWidth / 2 };
 }
 
-// The op's user-space bounding box plus the pad that covers its stroke
-// half-width and AA bleed. Fed straight into unionCrayonBounds to grow a pass
-// buffer's dirty region.
-export function opPaddedUserBounds(op: DotOp | PathOp): {
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-  pad: number;
-} {
+// User-space bounds including stroke half-width and antialiasing bleed.
+export interface OpPaddedUserBounds {
+  readonly x0: number;
+  readonly y0: number;
+  readonly x1: number;
+  readonly y1: number;
+  readonly pad: number;
+}
+
+// Shared by crayon dirty-region growth and tiled intersection/crop calculations.
+export function opPaddedUserBounds(op: DotOp | PathOp): OpPaddedUserBounds {
   const { x0, y0, x1, y1, halfWidth } = opGeometricExtent(op);
   return { x0, y0, x1, y1, pad: halfWidth + AA_PAD_PX };
 }

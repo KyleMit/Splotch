@@ -4,16 +4,12 @@ import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { PERF_MARKS } from './perf';
 import type { MagicSheetSnapshot } from './magicBrush';
+import { opPaddedUserBounds } from './opGeometry';
 import type { PaperView } from './paperView';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
 import { isCrayonInkOp, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { MAX_UNDO_DEPTH, type RecordedPaperState } from './undoHistory';
-import {
-  geometryIntersectsTile,
-  opDeviceBounds,
-  tileCssSpan,
-  tilesIntersect,
-} from './tiledGeometry';
+import * as geo from './tiledGeometry';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
 import { createTiledUndoPatches } from './tiledUndoPatches';
 import { createTiledMagicRecode } from './tiledMagicRecode';
@@ -138,8 +134,8 @@ export function resizeTiledRenderer(
       tile.y = Math.floor((row * height) / LIVE_TILE_ROWS);
       const right = Math.floor(((column + 1) * width) / LIVE_TILE_COLUMNS);
       const bottom = Math.floor(((row + 1) * height) / LIVE_TILE_ROWS);
-      const horizontal = tileCssSpan(column, LIVE_TILE_COLUMNS, totalCssWidth, deviceScale);
-      const vertical = tileCssSpan(row, LIVE_TILE_ROWS, totalCssHeight, deviceScale);
+      const horizontal = geo.tileCssSpan(column, LIVE_TILE_COLUMNS, totalCssWidth, deviceScale);
+      const vertical = geo.tileCssSpan(row, LIVE_TILE_ROWS, totalCssHeight, deviceScale);
       const crayonWasVisible = !tile.crayonBottom.hidden || !tile.crayonTop.hidden;
       tile.width = right - tile.x;
       tile.height = bottom - tile.y;
@@ -290,13 +286,14 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
       if (workCounters) surfaceVisits++;
     }
   } else {
+    const bounds = opPaddedUserBounds(op);
     for (const [index, tile] of liveTiles.entries()) {
-      if (geometryIntersectsTile(op, tile)) {
+      if (geo.geometryIntersectsTile(bounds, tile)) {
         ensureNormalTileBacking(tile);
         if (isCrayonInkOp(op) && !crayonDepositsOnTiles()) ensureCrayonTileBacking(tile);
         prepareTileForMutation(tile, index);
         if (command && !command.wasEmpty) {
-          undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
+          undoPatches.capture(command, tile, index, geo.opDeviceBounds(tile, bounds));
         }
         showTileForOp(tile, op);
         renderOp(tile.ctx, op);
@@ -372,7 +369,7 @@ export function repaintTiledRenderer(
     tile.canvas.hidden = true;
     clearTileBacking(tile);
     for (const base of historyBase) {
-      if (base.painted && tilesIntersect(base, tile)) {
+      if (base.painted && geo.tilesIntersect(base, tile)) {
         tile.ctx.drawImage(base.canvas, base.x, base.y);
         tile.canvas.hidden = false;
       }
