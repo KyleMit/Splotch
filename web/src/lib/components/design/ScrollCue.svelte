@@ -117,6 +117,9 @@
 
   .scroll-cue.overlay {
     position: absolute;
+    /* WebKit omits an uncomposited overlay above a scrolling pane while its
+       dialog transforms, then paints it abruptly when the fly-in ends. */
+    transform: translateZ(0);
     left: 0;
     right: 0;
     bottom: 0;
