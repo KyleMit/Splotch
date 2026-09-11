@@ -397,14 +397,14 @@ Non-`keep` rows first.
 
 ### @dprint/markdown
 
-* **Version:** `^0.22.1` declared · 0.22.1 locked · dev
+* **Version:** `^0.24.0` declared · 0.24.0 locked · dev
 * **Used for:** dprint's Markdown formatting plugin (wasm) — owns `*.md` formatting (ADR-0057).
 * **Source:** npm ·
   [github.com/dprint/dprint-plugin-markdown](https://github.com/dprint/dprint-plugin-markdown) ·
   published by David Sherret (dsherret)
 * **License:** MIT
-* **Health** (checked 2026-07-17): [54 stars](https://github.com/dprint/dprint-plugin-markdown) ·
-  latest 0.22.1 on 2026-05-22 · last push 2026-07-07 · 48 open issues
+* **Health** (checked 2026-09-11): [58 stars](https://github.com/dprint/dprint-plugin-markdown) ·
+  latest 0.24.0 on 2026-09-10 · last push 2026-09-10 · 4 open issues
 * **Maintenance:** active
 * **Concerns:** single-maintainer ecosystem
 * **Alternatives:** Prettier for Markdown (rejected in ADR-0057)
