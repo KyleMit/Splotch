@@ -13,6 +13,7 @@
   } from '$lib/components/design/SegmentedPicker.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import type { Orientation } from '$lib/platform';
+  import '$lib/components/deferredIcons';
 
   let { theme }: { theme: ResolvedTheme } = $props();
   const statusMessages = [

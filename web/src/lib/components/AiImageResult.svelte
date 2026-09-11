@@ -13,6 +13,7 @@
   import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
+  import '$lib/components/deferredIcons';
   import {
     timestamp,
     triggerDownload,

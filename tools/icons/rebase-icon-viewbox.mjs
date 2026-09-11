@@ -431,7 +431,9 @@ export async function rebaseIcon(file) {
 export async function rebaseIconViewboxes(names) {
   const files = names.length
     ? names.map((n) => `${n}.svg`)
-    : (await readdir(ICON_DIR)).filter((f) => f.endsWith('.svg') && !REBASE_EXEMPT.has(f)).sort();
+    : (await readdir(ICON_DIR, { recursive: true }))
+        .filter((f) => f.endsWith('.svg') && !REBASE_EXEMPT.has(f))
+        .sort();
 
   let changed = 0;
   for (const f of files) {

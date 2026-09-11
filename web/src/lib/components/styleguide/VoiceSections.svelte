@@ -3,6 +3,7 @@
   import type { CommonIconName } from '$lib/components/iconTypes';
   import SplotchyIcon from '$lib/components/SplotchyIcon.svelte';
   import BrandMark from '$lib/components/page/BrandMark.svelte';
+  import '$lib/components/deferredIcons';
 
   const dottieGroups = [
     {

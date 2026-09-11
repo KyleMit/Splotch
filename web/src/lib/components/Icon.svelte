@@ -1,4 +1,5 @@
 <script module lang="ts">
+  import { deferredIconMarkup, ensureDeferredIcons } from './iconRegistry.svelte';
   import { iconNameFromPath, type CommonIconName } from './iconTypes';
 
   // Full-color "spot" icons carry their own palette, so callers that tint
@@ -74,7 +75,10 @@
 
   // The exclusions must be spelled out literally here — Vite resolves
   // import.meta.glob statically — but NON_RENDERABLE_ICONS in iconTypes.ts is
-  // the authoritative list; keep the two in step.
+  // the authoritative list; keep the two in step. The glob is deliberately not
+  // recursive: web/src/lib/icons/deferred/ holds the icons only lazily loaded
+  // UI renders, and deferredIcons.ts registers those off the startup path
+  // (ADR-0164).
   const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
     eager: true,
     query: '?raw',
@@ -85,8 +89,8 @@
     Object.entries(modules).map(([path, src]) => [iconNameFromPath(path), src as string])
   ) as Record<CommonIconName, string>;
 
-  /** Every name <Icon> can render, sorted — the /design styleguide iterates it. */
-  export const ICON_NAMES = Object.keys(icons).sort() as CommonIconName[];
+  /** Every name on the startup path, sorted — the /design styleguide pairs it with DEFERRED_ICON_NAMES. */
+  export const STARTUP_ICON_NAMES = Object.keys(icons).sort() as CommonIconName[];
 </script>
 
 <script lang="ts">
@@ -97,7 +101,14 @@
   }
   let { name, class: className, ...rest }: Props = $props();
 
-  const markup = $derived(icons[name]);
+  const markup = $derived(icons[name] ?? deferredIconMarkup(name));
+
+  // A consumer that names a deferred icon imports deferredIcons.ts itself
+  // (deferredIcons.test.ts), so this fires only for a name arriving through
+  // untyped data; the registry fills and the icon re-renders.
+  $effect(() => {
+    if (markup === undefined) void ensureDeferredIcons();
+  });
 </script>
 
 <!-- data-icon exposes the icon identity to the DOM: the SVG goes in via {@html}, so

@@ -7,6 +7,7 @@
     AI_CUSTOMIZATION_LABEL,
   } from './aiSettingsCopy';
   import { settings, setAiCustomization, setAutoSaveAi } from '$lib/state/settings.svelte';
+  import '$lib/components/deferredIcons';
 </script>
 
 <section class="setting-group">

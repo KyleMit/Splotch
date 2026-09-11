@@ -4,6 +4,7 @@
   import Button from './design/Button.svelte';
   import { aiResult, closeAiResult, AI_FAILURE_RETRY_LIMIT } from '$lib/state/aiGeneration.svelte';
   import { retryAiImage } from '$lib/drawing/aiImage';
+  import '$lib/components/deferredIcons';
 
   let { children }: { children: Snippet } = $props();
   const repeatedFailure = $derived(aiResult.consecutiveFailures >= AI_FAILURE_RETRY_LIMIT);

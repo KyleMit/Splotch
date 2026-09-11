@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import Icon from '../Icon.svelte';
   import { runSingleFlightActivation } from '$lib/actions/pressFeedback';
+  import '$lib/components/deferredIcons';
 
   interface Props {
     children?: Snippet;

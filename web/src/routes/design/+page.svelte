@@ -18,6 +18,7 @@
   import { setTheme } from '$lib/state/settings.svelte';
   import { primitiveSections } from '$lib/components/styleguide/primitiveSections';
   import type { PageProps } from './$types';
+  import '$lib/components/deferredIcons';
 
   let { data }: PageProps = $props();
 

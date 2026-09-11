@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 // artwork arrives on foreign grids (Material exports on `0 -960 960 960`),
 // which renders fine and still fails here — run
 // `npm run gen:icon-viewbox && npm run optimize:svg-assets` to rebase it.
-const svgs = import.meta.glob<string>('./*.svg', {
+const svgs = import.meta.glob<string>(['./*.svg', './deferred/*.svg'], {
   eager: true,
   query: '?raw',
   import: 'default',

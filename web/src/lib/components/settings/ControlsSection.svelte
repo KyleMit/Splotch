@@ -16,6 +16,7 @@
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
   import { SECTION_SLIDE } from './sections';
   import { DRAWING_TOOLS, type DrawingToolId } from './drawingTools';
+  import '$lib/components/deferredIcons';
 
   // Ceiling the Button Size slider at what the current screen can actually
   // fit, so the parent can't pick a size the Actions Panel would have to cap

@@ -26,6 +26,7 @@
   import { getPlatform, type Platform } from '$lib/platform';
   import { freeGenerations } from '$lib/state/freeGenerations.svelte';
   import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
+  import '$lib/components/deferredIcons';
 
   // The copy for every kind-dependent outcome of a submission, so each terminal
   // branch of `submitKey` is a single lookup rather than an inline ternary.

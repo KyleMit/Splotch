@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import '$lib/components/deferredIcons';
 
   interface Props {
     disabled?: boolean;

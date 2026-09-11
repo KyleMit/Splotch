@@ -3,6 +3,7 @@
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
+  import '$lib/components/deferredIcons';
   import {
     install,
     promptInstall,

@@ -6,6 +6,10 @@
 > re-runnable optimization contract remains in force, while the executable and misleading
 > `img:audit`/`img:audit:check` commands adopt action-accurate names.
 
+> **Amended by [ADR-0164](0164-deferred-icon-registry-off-the-startup-path.md):** the icon set now
+> spans `web/src/lib/icons/` and `web/src/lib/icons/deferred/`; the audit already walks `web/**`, so
+> every icon is still optimized in place, but only the top level is inlined on the startup path.
+
 ## Context
 
 The Splotch logo and the whole `web/src/lib/icons/*.svg` set are inlined into the DOM via `{@html}`

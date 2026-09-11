@@ -4,6 +4,7 @@
   import ToggleRow from '$lib/components/settings/ToggleRow.svelte';
   import { paletteHex } from '$lib/palette';
   import ChromeMiniMap, { type MiniMapZone } from './ChromeMiniMap.svelte';
+  import '$lib/components/deferredIcons';
 
   let demoToggle = $state(false);
   let demoColorToggle = $state(true);

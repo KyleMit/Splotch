@@ -1,9 +1,9 @@
 <script lang="ts">
   // Import only the SVG so the crash fallback does not depend on the icon registry
   // or app state. Inline markup also avoids an asset request during recovery.
-  // Sharing this raw module with Icon's eager glob adds a small startup preload
-  // chunk; that cost keeps the artwork canonical without pulling Icon into recovery.
-  import dottieStumped from '$lib/icons/dottie-stumped.svg?raw';
+  // The raw module is shared with the deferred icon glob (deferredIcons.ts), so
+  // the artwork stays canonical without pulling Icon or the registry into recovery.
+  import dottieStumped from '$lib/icons/deferred/dottie-stumped.svg?raw';
 
   // The padded SVG needs this frame to retain the crash illustration's visual size.
   const DOTTIE_SIZE_PX = 128;

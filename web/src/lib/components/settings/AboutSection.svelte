@@ -4,6 +4,7 @@
   import { APP_VERSION } from '$lib/appVersion';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import { GITHUB_REPO_URL } from '$lib/githubRepo';
+  import '$lib/components/deferredIcons';
 
   // The admin console is reached by typing /admin on the web, and exists only
   // there. It is deliberately not linked from anywhere in the app: an in-app

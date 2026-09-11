@@ -1,6 +1,7 @@
 <script lang="ts">
   import { scale, toCssVarName, zIndex } from '$lib/design/tokens';
   import { scaleUsage, themeUsage, zIndexUsage } from '$lib/design/tokenUsage';
+  import '$lib/components/deferredIcons';
 
   const cssVar = (key: string) => `var(${toCssVarName(key)})`;
 

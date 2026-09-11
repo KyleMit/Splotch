@@ -1,4 +1,5 @@
 import type { CommonIconName } from './components/iconTypes';
+import '$lib/components/deferredIcons';
 
 type ReleaseSection = 'New' | 'Improved' | 'Fixed';
 

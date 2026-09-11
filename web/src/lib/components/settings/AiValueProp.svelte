@@ -4,6 +4,7 @@
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { freeGenerations } from '$lib/state/freeGenerations.svelte';
   import { aiCredentialKind } from '$lib/state/settings.svelte';
+  import '$lib/components/deferredIcons';
 
   const STEPS = [
     {

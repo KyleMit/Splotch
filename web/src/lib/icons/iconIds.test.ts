@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest';
 // opts out by starting with `icon-`; this guard is what makes the opt-out
 // enforceable rather than a convention, and it runs against the optimized form
 // CI already pins via `check:svg-assets`.
-const svgs = import.meta.glob<string>('./*.svg', {
+const svgs = import.meta.glob<string>(['./*.svg', './deferred/*.svg'], {
   eager: true,
   query: '?raw',
   import: 'default',

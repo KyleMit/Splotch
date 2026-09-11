@@ -161,3 +161,29 @@ multiplexing, no `awaitPromise`, `page`-vs-`frame` targets, suspended background
 `ios-webkit-debug-proxy` was chosen over `pymobiledevice3`.
 
 The analyzer, the mark set, and the three original paths are untouched.
+
+## Amendment (ADR-0164, 2026-09): the release startup budget's headroom rule
+
+`MAX_STARTUP_JS_CSS_BYTES` in `tools/check-bundle-budgets.mjs` was set on 2026-08-19 at 525,000
+bytes against a 470,860-byte reviewed baseline. Ordinary feature work consumed the 54,140 bytes of
+headroom in 23 days, and on 2026-09-11 `main` crossed the budget (525,442 bytes), turning the check
+into a cost every PR touching startup code paid. Issue #1776 records the day-by-day readings.
+
+Two readings of the number that matter when it fails:
+
+* **A `pull_request` run measures the PR merged into the `main` of that moment**, not the PR's own
+  tree — `actions/checkout` builds `refs/pull/N/merge`. Two runs of an unchanged PR sixteen minutes
+  apart differed by 459 bytes because PR #1777 had landed on `main` in between; the build is
+  byte-stable for a fixed tree. A budget failure on a PR can therefore be `main`'s growth, and the
+  first check is a local release build of `main`.
+* **A local build sits a few bytes under CI.** CI's shallow, tagless clone makes `buildVersion.ts`
+  fall back to the `major.minor.0+sha` version string, which is longer than the tag-derived
+  `major.minor.N`. Treat a local reading within a dozen bytes of the budget as failing.
+
+The rule the budget now carries: **when a PR consumes the headroom, look for a lever that moves code
+off the startup path before raising the number.** ADR-0164 was the first lever, moving the 49 icons
+only lazily loaded UI renders into a deferred registry, which brought the startup set to 473,352
+bytes and restored 51,648 bytes (9.8%) of headroom under the unchanged 525,000 limit. The next known
+slice is the ~85 kB of CSS SvelteKit inlines for dynamically imported components; when no lever is
+left, raise the constant and record the new baseline, its date, and the rationale on the constant
+and here, so the number never moves silently.
