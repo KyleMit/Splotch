@@ -172,8 +172,6 @@ export const zIndex = {
   // canvas and below every persistent control.
   zClearPreview: 400,
   zRipple: 500,
-  // Departing ink outranks stationary page art so the clear wash cannot obscure it.
-  zClearInk: 600,
 
   zCornerButton: 900, // SettingsButton
   zPanel: 901, // Bottom dock and its ActionsPanel

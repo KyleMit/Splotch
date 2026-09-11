@@ -552,10 +552,8 @@ test('the stroke flyout clears the Settings Button on a phone', async ({ page })
 
   // Tapping the rightmost size selects it and leaves Settings closed.
   await page.locator('button[aria-label="Size 5"]').click();
-  await expect(page.locator('.stroke-width-menu')).toHaveCount(0);
-  await expect(settingsDialog).toBeHidden();
-  await openStrokeMenu(page);
   await expect(page.locator('button[aria-label="Size 5"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(settingsDialog).toBeHidden();
 });
 
 // Landscape counterpart: the action panel hugs the bottom with little height to

@@ -1,40 +1,17 @@
 <script lang="ts">
-  import { BRUSH_OPTIONS, type BrushType } from '$lib/state/tool.svelte';
+  import { BRUSH_OPTIONS } from '$lib/state/tool.svelte';
   import Icon from './Icon.svelte';
-  let { faceRoll }: { faceRoll: { brush: BrushType } | null } = $props();
 </script>
 
-{#key faceRoll}
-  <span class="brush-button-faces" class:entering={faceRoll !== null}>
-    {#each BRUSH_OPTIONS as opt (opt.brush)}
-      <Icon name={opt.icon} class="action-icon" data-brush-face={opt.brush} />
-    {/each}
-  </span>
-{/key}
+<span class="brush-button-faces">
+  {#each BRUSH_OPTIONS as opt (opt.brush)}
+    <Icon name={opt.icon} class="action-icon" data-brush-face={opt.brush} />
+  {/each}
+</span>
 
 <style>
   .brush-button-faces {
-    display: flex;
-    width: 100%;
-    height: 100%;
-  }
-
-  .brush-button-faces.entering {
-    animation: face-roll var(--duration-slow) var(--ease-pop) backwards;
-    transform-origin: center;
-  }
-
-  @keyframes face-roll {
-    from {
-      opacity: 0;
-      transform: rotate(-120deg) scale(0.4);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .brush-button-faces.entering {
-      animation: none;
-    }
+    display: contents;
   }
 
   .brush-button-faces :global(.action-icon[data-brush-face]) {

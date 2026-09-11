@@ -305,20 +305,21 @@ test('action buttons activate on a pointer press alone, without a synthesized cl
     btn.dispatchEvent(new PointerEvent('pointerdown', opts));
     btn.dispatchEvent(new PointerEvent('pointerup', opts));
   });
-  await expect(page.locator('.actions-panel')).toHaveAttribute('data-brush', 'eraser');
+  await expect(eraser).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('picking a color exits eraser mode', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
 
+  const eraser = page.locator('#eraserButton');
   await pickBrush(page, '#eraserButton');
   await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 
   // Tapping a swatch should switch back to the ink brush (selectInkBrush in
   // handleSwatchUp).
   await swatch(page, TEST_PALETTE.red).click();
-  await expect(page.locator('.actions-panel')).not.toHaveAttribute('data-brush', 'eraser');
+  await expect(eraser).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#drawingCanvas')).not.toHaveClass(/erasing/);
 });
 
@@ -329,11 +330,12 @@ test('selecting the eraser repeatedly keeps it selected', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
 
+  const eraser = page.locator('#eraserButton');
   await pickBrush(page, '#eraserButton');
   await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 
   await pickBrush(page, '#eraserButton');
-  await expect(page.locator('.actions-panel')).toHaveAttribute('data-brush', 'eraser');
+  await expect(eraser).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 });
 

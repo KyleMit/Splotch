@@ -36,17 +36,6 @@ export async function openDrawer(page: Page) {
     () => page.locator('button[aria-label="Expand controls"]').click({ timeout: 3000 }),
     { timeout: 20_000 }
   );
-  await page.locator('.actions-drawer').evaluate((drawer) =>
-    Promise.all(
-      drawer
-        .getAnimations({ subtree: true })
-        .filter(
-          (animation) =>
-            animation instanceof CSSAnimation && animation.animationName === 'btn-cascade'
-        )
-        .map((animation) => animation.finished.catch(() => undefined))
-    )
-  );
 }
 
 async function gotoAppWithInstalledColoringBooks(

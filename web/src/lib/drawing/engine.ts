@@ -124,10 +124,7 @@ import {
   tiledSurfaceTopologyDebug,
   tiledWorkDebug,
   undoTiledCommand,
-  peekTiledUndoCommand,
-  paintVisibleTiledInk,
 } from './tiledRenderer';
-import { createInkMotion } from './inkMotion';
 import type { DrawingWorkDebug } from './drawingWorkDebug';
 
 // --- Canvas, tool, and callback state -------------------------------------
@@ -141,10 +138,7 @@ export type StrokeStartData = Pick<PointerEvent, 'pointerId' | 'clientX' | 'clie
   magic: boolean;
 };
 
-const inkMotion = createInkMotion();
-
 interface InitOptions {
-  onUndo?: () => void;
   onDrawSound?: (data: DrawSoundData) => void;
   onDrawStop?: () => void;
   onUndoStateChange?: (canUndo: boolean) => void;
@@ -760,7 +754,6 @@ function releaseCaptureSafe(id: number): void {
 // trigger the gesture. Children who want to draw at a guarded edge draw away.
 // The band/decision/inset thresholds and the geometry live in ./strokeMath.
 function startDrawing(e: PointerEvent) {
-  inkMotion.cancel();
   idleEmptyScan.cancel();
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
   const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
@@ -1062,15 +1055,9 @@ const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
 // --- Undo, clear, and canvas-empty API --------------------------------------
 
-export function isStrokeActive(): boolean {
-  return activePointers.size > 0 || penStreamAdopter.hasCanvasExit();
-}
-
 export function undo(): Promise<void> {
   if (!canUndo || !canvas || !ctx) return Promise.resolve();
   if (PERF_MARKS) performance.mark('engine.undo:start');
-  const animate = !isStrokeActive();
-  if (animate) inkMotion.undo(canvas, peekTiledUndoCommand(), getViewState(), renderScale);
   const recordedPaper =
     activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()
       ? peekTiledUndoPaper()
@@ -1080,7 +1067,6 @@ export function undo(): Promise<void> {
   setCanvasEmptyState(state.empty, state.recordedPaper);
   setCanUndo(state.canUndo);
   state.restoreAppearance?.();
-  if (animate) callbacks.onUndo?.();
   if (PERF_MARKS) {
     performance.mark('engine.undo:end');
     performance.measure('engine.undo', 'engine.undo:start', 'engine.undo:end');
@@ -1104,12 +1090,8 @@ export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppeara
   return prepared;
 }
 
-export function clearCanvas({ animate = false }: { animate?: boolean } = {}) {
-  inkMotion.cancel();
+export function clearCanvas() {
   if (!canvas || !ctx) return;
-  if (animate && !isStrokeActive() && !canvasEmpty) {
-    inkMotion.clear(canvas, getViewState(), renderScale, viewport, paintVisibleTiledInk);
-  }
   const state = clearTiledRenderer(canvasEmpty);
   crayonPasses.reset();
   setCanvasEmptyState(state.empty);
@@ -1162,7 +1144,6 @@ function attachCallbacks(options: InitOptions) {
 }
 
 function teardownEngine() {
-  inkMotion.cancel();
   if (!engineLive) return;
   engineLive = false;
   for (const remove of listenerRemovers) remove();

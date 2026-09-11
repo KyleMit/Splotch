@@ -130,7 +130,7 @@ test('the magic brush is always available and paints the coloring page colors', 
   await applyFarmPage(page);
 
   await pickBrush(page, '#magicBrushButton');
-  await expect(page.locator('.actions-panel')).toHaveAttribute('data-brush', 'magic');
+  await expect(magic).toHaveAttribute('aria-pressed', 'true');
 
   // Paint across the picture: the reveal should show many of the fill's fill
   // colors, not one flat pen color.
@@ -172,8 +172,9 @@ test('drawing shows a brush impact ring, rainbow-flavored for the magic brush', 
   await expect(ring).toHaveCount(0);
 
   // Magic brush: same ring, rainbow-flavored.
+  const magic = page.locator('#magicBrushButton');
   await pickBrush(page, '#magicBrushButton');
-  await expect(page.locator('.actions-panel')).toHaveAttribute('data-brush', 'magic');
+  await expect(magic).toHaveAttribute('aria-pressed', 'true');
   await page.mouse.move(box.x + 150, box.y + 120);
   await page.mouse.down();
   await expect(ring).toHaveCount(1);
@@ -565,8 +566,9 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
   await gotoApp(page);
   await openDrawer(page);
 
+  const magic = page.locator('#magicBrushButton');
   await pickBrush(page, '#magicBrushButton');
-  await expect(page.locator('.actions-panel')).toHaveAttribute('data-brush', 'magic');
+  await expect(magic).toHaveAttribute('aria-pressed', 'true');
 
   // Drawing across the blank canvas reveals the pre-generated rainbow — a long
   // stroke crosses many hues, so it lays down many distinct colors, not one.
@@ -580,7 +582,7 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
   // Clearing releases the held rainbow but keeps the magic brush selected (#309)
   // — it draws on a fresh page too, so the child picks up right where they were.
   await clearViaGesture(page);
-  await expect(page.locator('.actions-panel')).toHaveAttribute('data-brush', 'magic');
+  await expect(magic).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
 
   // Drawing again still reveals colors (a newly picked gradient).

@@ -81,7 +81,6 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
   zCanvasChrome: 'The floor of the shared root context — chrome that must clear the canvas layers.',
   zClearPreview: 'The full-viewport paper wash previewing a drag-to-clear.',
   zRipple: 'The clear-confirmation ripple, over the preview wash.',
-  zClearInk: 'Departing drawing ink above the clear wash and ripple, below persistent controls.',
   zCornerButton: 'The muted corner buttons (Settings Button).',
   zPanel: 'The bottom dock and its Actions Panel drawer; each caps its own subtree.',
   zFlyout: 'Orders the flyout inside .actions-panel only; its tie with --z-panel is inert.',

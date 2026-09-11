@@ -15,7 +15,6 @@ export const SETTLED_IN_STROKES = 3;
 // real setters.
 export const canvasState = $state({
   canUndo: false,
-  undoCount: 0,
   canvasEmpty: true,
   // Count of stroke groups committed this session. Drives "earned" UI that should
   // wait until the child has actually drawn something (e.g. the install banner).
