@@ -81,11 +81,8 @@ describe('purgeExpiredGenerationJobs', () => {
 
   const pageOf = (...jobIds: string[]) => [
     {
-      blobs: jobIds.flatMap((id) => [
-        { key: `${id}/status.json` },
-        { key: `${id}/input` },
-        { key: `${id}/image` },
-      ]),
+      blobs: [],
+      directories: jobIds,
     },
   ];
 
@@ -108,7 +105,14 @@ describe('purgeExpiredGenerationJobs', () => {
       `${JOB}/image`,
       `${JOB}/status.json`,
     ]);
-    expect(result).toEqual({ purgedJobs: 1, deletedBlobs: 3 });
+    expect(result).toEqual({
+      attemptedJobs: 1,
+      purgedJobs: 1,
+      failedJobs: 0,
+      retainedJobs: 0,
+      deletedBlobs: 3,
+      failedBlobDeletes: 0,
+    });
   });
 
   it('leaves a job that is still within its lifetime alone', async () => {
@@ -119,7 +123,14 @@ describe('purgeExpiredGenerationJobs', () => {
       expiresAt: now + GENERATION_JOB_TTL_MS,
     });
 
-    expect(await purgeExpiredGenerationJobs(now)).toEqual({ purgedJobs: 0, deletedBlobs: 0 });
+    expect(await purgeExpiredGenerationJobs(now)).toEqual({
+      attemptedJobs: 1,
+      purgedJobs: 0,
+      failedJobs: 0,
+      retainedJobs: 1,
+      deletedBlobs: 0,
+      failedBlobDeletes: 0,
+    });
     expect(store.delete).not.toHaveBeenCalled();
   });
 
@@ -127,7 +138,7 @@ describe('purgeExpiredGenerationJobs', () => {
     // markJobPending writes the status before putJobInput writes the drawing, so
     // bytes without a record are never a job mid-start — they are the remains of
     // one whose record has been deleted, and nothing else will come for them.
-    store.list.mockReturnValue([{ blobs: [{ key: `${JOB}/input` }] }]);
+    store.list.mockReturnValue([{ blobs: [], directories: [JOB] }]);
     store.get.mockResolvedValue(null);
 
     expect(await purgeExpiredGenerationJobs(2_000)).toMatchObject({ purgedJobs: 1 });
@@ -144,8 +155,67 @@ describe('purgeExpiredGenerationJobs', () => {
       })
     );
 
-    expect(await purgeExpiredGenerationJobs(2_000)).toEqual({ purgedJobs: 1, deletedBlobs: 3 });
+    expect(await purgeExpiredGenerationJobs(2_000)).toEqual({
+      attemptedJobs: 2,
+      purgedJobs: 1,
+      failedJobs: 0,
+      retainedJobs: 1,
+      deletedBlobs: 3,
+      failedBlobDeletes: 0,
+    });
     expect(store.delete.mock.calls.every(([key]) => key.startsWith(JOB))).toBe(true);
+  });
+
+  it('processes directory pages after isolated job failures without repeating split jobs', async () => {
+    const warnMock = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const readFailure = 'c'.repeat(64);
+    const laterExpired = 'd'.repeat(64);
+    const laterRetained = 'e'.repeat(64);
+    const keyPages = [
+      [`${JOB}/status.json`, `${readFailure}/status.json`],
+      [`${JOB}/input`, `${laterExpired}/status.json`, `${laterRetained}/status.json`],
+    ];
+    store.list.mockImplementation((options) => {
+      expect(options).toEqual({ paginate: true, directories: true });
+      return (async function* () {
+        for (const keys of keyPages) {
+          const directories = keys.map((key) => key.slice(0, key.indexOf('/')));
+          yield { blobs: [], directories };
+        }
+      })();
+    });
+    store.get.mockImplementation((key: string) => {
+      if (key.startsWith(readFailure)) return Promise.reject(new Error('read failed'));
+      return Promise.resolve({
+        context: {},
+        outcome: null,
+        expiresAt: key.startsWith(laterRetained) ? 999_000 : 1_000,
+      });
+    });
+    store.delete.mockImplementation((key: string) => {
+      if (key === `${JOB}/image`) return Promise.reject(new Error('delete failed'));
+      return Promise.resolve();
+    });
+
+    await expect(purgeExpiredGenerationJobs(2_000)).resolves.toEqual({
+      attemptedJobs: 4,
+      purgedJobs: 1,
+      failedJobs: 2,
+      retainedJobs: 1,
+      deletedBlobs: 5,
+      failedBlobDeletes: 1,
+    });
+    expect(store.get.mock.calls.filter(([key]) => key === `${JOB}/status.json`)).toHaveLength(1);
+    expect(store.delete).toHaveBeenCalledWith(`${laterExpired}/status.json`);
+    expect(store.delete.mock.calls.some(([key]) => key.startsWith(laterRetained))).toBe(false);
+    expect(warnMock).toHaveBeenCalledWith(
+      '[purge-generation-jobs] failed to process a job:',
+      'read failed'
+    );
+    expect(warnMock).toHaveBeenCalledWith(
+      '[purge-generation-jobs] failed to delete a job blob:',
+      'delete failed'
+    );
   });
 
   it('marks a job pending with a lifetime the sweep can act on', async () => {

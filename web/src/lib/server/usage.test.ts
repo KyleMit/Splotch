@@ -45,6 +45,14 @@ function makeStore() {
   };
 }
 
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolve!: () => void;
+  const promise = new Promise<void>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+  return { promise, resolve };
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
@@ -339,12 +347,68 @@ describe('purgeExpiredUsageRecords', () => {
     getStoreMock.mockReturnValue(store);
 
     await expect(purgeExpiredUsageRecords()).resolves.toEqual({
+      attemptedRecords: 4,
       deletedExpiredRecords: 1,
       deletedLegacyRecords: 1,
       deletedMalformedRecords: 1,
+      failedRecords: 0,
       retainedRecords: 1,
     });
-    expect(store.delete.mock.calls.map(([key]) => key)).toEqual([expiredKey, malformedKey, TOKEN]);
+    expect(store.delete.mock.calls.map(([key]) => key)).toEqual(
+      expect.arrayContaining([expiredKey, malformedKey, TOKEN])
+    );
+    expect(store.delete).toHaveBeenCalledTimes(3);
     expect(store.get).not.toHaveBeenCalledWith(TOKEN, expect.anything());
+  });
+
+  it('continues across pages after isolated read and delete failures', async () => {
+    const store = makeStore();
+    const keys = Array.from({ length: 7 }, (_, index) => grantKey(`record-${index}`));
+    const readsMayFinish = deferred();
+    let activeReads = 0;
+    let peakReads = 0;
+    store.list.mockReturnValue(
+      (async function* () {
+        yield { blobs: keys.slice(0, 6).map((key) => ({ key })) };
+        yield { blobs: keys.slice(6).map((key) => ({ key })) };
+      })()
+    );
+    store.get.mockImplementation(async (key: string) => {
+      activeReads++;
+      peakReads = Math.max(peakReads, activeReads);
+      await readsMayFinish.promise;
+      activeReads--;
+      if (key === keys[0]) throw new Error('read failed');
+      return JSON.stringify(usageOf(1, { deleteAfter: NOW.toISOString() }));
+    });
+    store.delete.mockImplementation(async (key: string) => {
+      if (key === keys[1]) throw new Error('delete failed');
+    });
+    getStoreMock.mockReset().mockReturnValue(store);
+
+    const purging = purgeExpiredUsageRecords();
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.waitFor(() => expect(activeReads).toBe(4));
+    expect(peakReads).toBe(4);
+    readsMayFinish.resolve();
+
+    await expect(purging).resolves.toEqual({
+      attemptedRecords: 7,
+      deletedExpiredRecords: 5,
+      deletedLegacyRecords: 0,
+      deletedMalformedRecords: 0,
+      failedRecords: 2,
+      retainedRecords: 0,
+    });
+    expect(store.delete).toHaveBeenCalledWith(keys[6]);
+    expect(console.warn).toHaveBeenCalledWith(
+      '[purge-usage-records] failed to process a record:',
+      'read failed'
+    );
+    expect(console.warn).toHaveBeenCalledWith(
+      '[purge-usage-records] failed to process a record:',
+      'delete failed'
+    );
   });
 });

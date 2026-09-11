@@ -1,6 +1,7 @@
 import { getStore } from '@netlify/blobs';
 import { STYLE_SUFFIXES, type StyleName } from '../ai/styles';
 import { USAGE_OUTCOMES, type UsageOutcome } from '../usageRecord';
+import { settleWithRetentionConcurrency } from './retentionSweep';
 
 export const USAGE_STORE_NAME = 'ai-usage';
 export const USAGE_GRANT_KEY_PREFIX = 'grant-v1/';
@@ -42,11 +43,46 @@ export function isExpiredUsage(usage: TokenUsage, nowMs: number): boolean {
   return Date.parse(usage.deleteAfter) <= nowMs;
 }
 
+type UsagePurgeOutcome = 'expired' | 'legacy' | 'malformed' | 'retained';
+
+function parseUsage(raw: string | null): unknown {
+  try {
+    return typeof raw === 'string' ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function purgeUsageRecord(
+  store: ReturnType<typeof getStore>,
+  key: string,
+  nowMs: number
+): Promise<UsagePurgeOutcome> {
+  if (!GRANT_KEY_PATTERN.test(key)) {
+    await store.delete(key);
+    return 'legacy';
+  }
+
+  const raw = await store.get(key, { type: 'text' });
+  const usage = parseUsage(raw);
+  if (!validUsage(usage)) {
+    await store.delete(key);
+    return 'malformed';
+  }
+  if (isExpiredUsage(usage, nowMs)) {
+    await store.delete(key);
+    return 'expired';
+  }
+  return 'retained';
+}
+
 /** Delete expired records and legacy raw-keyed blobs from the dedicated store. */
 export async function purgeExpiredUsageRecords(): Promise<{
+  attemptedRecords: number;
   deletedExpiredRecords: number;
   deletedLegacyRecords: number;
   deletedMalformedRecords: number;
+  failedRecords: number;
   retainedRecords: number;
 }> {
   const store = getStore(USAGE_STORE_NAME);
@@ -54,30 +90,28 @@ export async function purgeExpiredUsageRecords(): Promise<{
   let deletedExpiredRecords = 0;
   let deletedLegacyRecords = 0;
   let deletedMalformedRecords = 0;
+  let failedRecords = 0;
   let retainedRecords = 0;
+  let attemptedRecords = 0;
 
   for await (const page of store.list({ paginate: true })) {
-    for (const { key } of page.blobs) {
-      if (!GRANT_KEY_PATTERN.test(key)) {
-        await store.delete(key);
-        deletedLegacyRecords++;
-        continue;
-      }
-
-      const raw = await store.get(key, { type: 'text' });
-      const usage: unknown = (() => {
-        try {
-          return typeof raw === 'string' ? JSON.parse(raw) : null;
-        } catch {
-          return null;
-        }
-      })();
-      if (!validUsage(usage)) {
-        await store.delete(key);
-        deletedMalformedRecords++;
-      } else if (isExpiredUsage(usage, nowMs)) {
-        await store.delete(key);
+    attemptedRecords += page.blobs.length;
+    const outcomes = await settleWithRetentionConcurrency(page.blobs, ({ key }) =>
+      purgeUsageRecord(store, key, nowMs)
+    );
+    for (const outcome of outcomes) {
+      if (outcome.status === 'rejected') {
+        console.warn(
+          '[purge-usage-records] failed to process a record:',
+          outcome.reason instanceof Error ? outcome.reason.message : outcome.reason
+        );
+        failedRecords++;
+      } else if (outcome.value === 'expired') {
         deletedExpiredRecords++;
+      } else if (outcome.value === 'legacy') {
+        deletedLegacyRecords++;
+      } else if (outcome.value === 'malformed') {
+        deletedMalformedRecords++;
       } else {
         retainedRecords++;
       }
@@ -85,9 +119,11 @@ export async function purgeExpiredUsageRecords(): Promise<{
   }
 
   return {
+    attemptedRecords,
     deletedExpiredRecords,
     deletedLegacyRecords,
     deletedMalformedRecords,
+    failedRecords,
     retainedRecords,
   };
 }
