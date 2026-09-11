@@ -6,7 +6,7 @@ import { isInstrumentedBuild } from './lib/build-instrumentation.mjs';
 const CLIENT_BUNDLE_DIR = join(ROOT, 'web/.svelte-kit/output/client/_app/immutable');
 const ENGINE_SOURCE_PATH = 'web/src/lib/drawing/engine.ts';
 const TILED_RENDERER_SOURCE_PATH = 'web/src/lib/drawing/tiledRenderer.ts';
-const RELEASE_SEAM_SOURCE_FILES = [
+export const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/boot/devHarnessSeam.ts',
   'web/src/lib/drawing/screenshot.ts',
   ENGINE_SOURCE_PATH,
@@ -18,6 +18,8 @@ const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/drawing/tiledRenderer.ts',
   // Carries `engine.crayonShadow`, the deferred whole-tile shadow reads after a crayon stroke.
   'web/src/lib/drawing/crayonPassBuffer.ts',
+  // Carries `engine.undoPatchCapture` / `engine.undoPatchCrop`, the undo patch brackets.
+  'web/src/lib/drawing/tiledUndoPatches.ts',
   'web/src/lib/drawing/undoHistory.ts',
   'web/src/lib/drawing/emptyScan.ts',
   'web/src/lib/storeCapture.ts',

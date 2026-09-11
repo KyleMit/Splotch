@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   checkReleaseSeams,
@@ -8,8 +8,10 @@ import {
   drawingWorkHotPathProblems,
   engineDevGateProblems,
   RELEASE_ONLY_TOKENS,
+  RELEASE_SEAM_SOURCE_FILES,
   releaseSeamProblems,
 } from '../check-release-seams.mjs';
+import { ROOT } from '../lib/proc.mjs';
 
 const fixtures = [];
 
@@ -60,6 +62,8 @@ it('derives every current window seam and engine measure family', () => {
     'engine.scanEmpty',
     'engine.undo',
     'engine.undoInkMotion',
+    'engine.undoPatchCapture',
+    'engine.undoPatchCrop',
     'inputOps',
     'liveRasters',
     'liveSurfaceElements',
@@ -71,6 +75,33 @@ it('derives every current window seam and engine measure family', () => {
     'realizedNormalBackings',
     'totalLiveBackingBytes',
   ]);
+});
+
+it('matches a token whole, so engine.undo does not report engine.undoInkMotion', () => {
+  const dir = fixture();
+  writeFileSync(join(dir, 'undo.js'), JSON.stringify('engine.undoInkMotion'));
+
+  expect(releaseSeamProblems(dir)).toEqual([
+    expect.stringContaining('engine.undoInkMotion remains in'),
+  ]);
+});
+
+function sourceFilesEmittingEngineMeasures(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFilesEmittingEngineMeasures(path);
+    if (!entry.name.endsWith('.ts') || entry.name.includes('.test.')) return [];
+    return /performance\.(?:mark|measure)\('engine\./.test(readFileSync(path, 'utf8'))
+      ? [relative(ROOT, path)]
+      : [];
+  });
+}
+
+it('scans every source file that emits an engine measure', () => {
+  const emitters = sourceFilesEmittingEngineMeasures(join(ROOT, 'web/src'));
+
+  expect(emitters.length).toBeGreaterThan(0);
+  expect(emitters.filter((path) => !RELEASE_SEAM_SOURCE_FILES.includes(path))).toEqual([]);
 });
 
 it('requires every engine dev export to start behind the compile-time gate', () => {
