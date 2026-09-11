@@ -359,6 +359,7 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
 .heat-cell.unscoreable,.mx-cell.unscoreable{color:var(--muted);box-shadow:none;
   background:repeating-linear-gradient(45deg,var(--card-2) 0 2px,color-mix(in srgb,var(--muted) 55%,var(--card-2)) 2px 4px)}
 .mx-cell.unscoreable{background:repeating-linear-gradient(45deg,var(--card-2) 0 4px,color-mix(in srgb,var(--muted) 30%,var(--card-2)) 4px 8px)}
+.mx-cell.unscoreable.failed{box-shadow:inset 0 0 0 2px var(--bad)}
 .heat-cell.missing,.mx-cell.missing{color:var(--faint);background:transparent;box-shadow:none;
   border:1.5px dashed var(--muted)}
 .action-number{font-size:.52rem;text-align:center;color:var(--muted);line-height:var(--heat-cell)}
@@ -429,7 +430,7 @@ tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}
   box-shadow:var(--shadow-lg)}
 
 @media (prefers-reduced-motion:reduce){
-  .note summary:after{transition:none}
+  .note summary:after,.role-fold > summary:before{transition:none}
 }
 @media (max-width:720px){
   .section-head{flex-direction:column;align-items:flex-start;gap:2px}
@@ -509,7 +510,7 @@ tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}
 
   <div class="section-head" id="results"><h2>Results by target</h2><span class="desc">Four modes per target · hover or tap any cell for the numbers behind it</span></div>
   <div class="seg-row"><div class="seg" role="group" aria-label="Drawing metric"><button type="button" class="seg-btn" aria-pressed="true" data-metric="p95" data-head="Paint P95 · ms · gate 20 ms" data-note="Brush cells show blank-paper paint P95 in ms · gate 20 ms">Paint P95</button><button type="button" class="seg-btn" aria-pressed="false" data-metric="p99" data-head="Paint P99 · ms · gate 33 ms" data-note="Brush cells show blank-paper paint P99 in ms · gate 33 ms">P99</button><button type="button" class="seg-btn" aria-pressed="false" data-metric="max" data-head="Paint max · ms · gate 50 ms" data-note="Brush cells show the worst blank-paper paint in ms · gate 50 ms">Max</button><button type="button" class="seg-btn" aria-pressed="false" data-metric="lost" data-head="Lost frame time · % of drawing time" data-note="Brush cells show time lost to delayed frames as a share of drawing time · budget 1% — tooltips carry each cell’s own budget">Lost frame time</button></div><span class="seg-note" id="metric-note">Brush cells show blank-paper paint P95 in ms · gate 20 ms</span></div>
-  <div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span></div>
+  <div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span><span><i class="mx-cell unscoreable failed"></i>uncalibrated on a release-gate row: counts as red</span></div>
   <div class="empty-legend"><b>Empty cells</b><span><i class="heat-cell not-applicable"></i><b>N/A by design</b>the check does not apply to this runtime</span><span><i class="heat-cell unscoreable"></i><b>Unavailable</b>this instrument or capture cannot score the cell; the tooltip says why</span><span><i class="heat-cell missing"></i><b>Missing</b>not captured yet — a gap to close</span></div>
   <div class="mx-legend"><b>Undo</b><span>✓ pass · ✕ fail against the undo gates</span><b>Actions</b><span>passed/measured — green all pass, amber a few failing, red more than one in ten failing</span></div>
   <div class="mx"><div class="mx-head">

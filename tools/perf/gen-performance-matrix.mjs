@@ -1516,7 +1516,25 @@ const DRAWING_METRIC_KEYS = ['p95', 'p99', 'max'];
 
 // Every paint metric rides the cell as data attributes so the metric switcher can
 // swap the displayed number and heat color client-side without re-rendering.
-function drawingOverviewCell(label, brush, entry, gates) {
+const GATE_RED_NOTE = 'counts as red on a release-gate row (ADR-0156)';
+
+// ADR-0156 decision 1: on a release-gate row, a cell left unscoreable only by
+// checks its instrument has no calibrated expectation for counts as red, not as
+// absent. Every other reason a cell is unscoreable — a real fidelity failure, an
+// off-regime beat, preserved evidence — asks for a recapture instead, so it
+// keeps the neutral hatch.
+function countsAsGateRed(role, entry) {
+  const aggregate = entry?.aggregate;
+  if (role !== RELEASE_GATE || aggregate?.scoreable !== false) return false;
+  if (aggregate.unscoreableReason || aggregate.offRefreshRegime) return false;
+  const unscoreableRuns = (entry.runs ?? []).filter((run) => run.scoreable === false);
+  return (
+    unscoreableRuns.length > 0 &&
+    unscoreableRuns.every((run) => onlyUncalibratedChecksFailed(run.fidelity))
+  );
+}
+
+function drawingOverviewCell(target, label, brush, entry, gates) {
   const aggregate = entry.aggregate;
   const brushLabel = BRUSH_LABELS[brush];
   if (!drawingAggregateAvailable(aggregate)) {
@@ -1525,7 +1543,8 @@ function drawingOverviewCell(label, brush, entry, gates) {
   // An unscoreable cell is neither pass nor fail, so it must not carry the
   // product-failure styling; the tooltip says why instead.
   const unscoreable = aggregate.scoreable === false;
-  const failed = !unscoreable && aggregate.blankPassed === false;
+  const gateRed = countsAsGateRed(targetRole(target), entry);
+  const failed = gateRed || (!unscoreable && aggregate.blankPassed === false);
   const metricGates = { p95: gates.paintP95Ms, p99: gates.paintP99Ms, max: gates.paintMaxMs };
   const metricData = DRAWING_METRIC_KEYS.map(
     (key) =>
@@ -1536,7 +1555,7 @@ function drawingOverviewCell(label, brush, entry, gates) {
     ? ` · published verdict failed ${aggregate.publishedFidelityChecks.join(', ')}`
     : '';
   const why = unscoreable
-    ? ` · unscoreable: ${unscoreableReasons(aggregate).join(', ')}${published}`
+    ? ` · unscoreable: ${unscoreableReasons(aggregate).join(', ')}${published}${gateRed ? ` · ${GATE_RED_NOTE}` : ''}`
     : ` · ${aggregate.blankPassed ? 'PASS' : 'FAIL'}`;
   const title = `${label} · ${brushLabel} · paint P95 ${fmt(aggregate.paint.p95)} / P99 ${fmt(aggregate.paint.p99)} / max ${fmt(aggregate.paint.max)} ms · lost frame time ${fmtPercent(aggregate.lostFrameTimeShare)} (budget ${fmtPercent(entry.gateShare)})${captureBasis(aggregate)}${why}`;
   const heat = unscoreable ? 'unscoreable' : heatClass(aggregate.paint.p95 / metricGates.p95);
@@ -1613,7 +1632,7 @@ function overviewMatrix(matrix) {
         }
         const label = cellLabel(target, mode);
         const cells = BRUSHES.map((brush) =>
-          drawingOverviewCell(label, brush, mode.drawing[brush], matrix.gates.drawing)
+          drawingOverviewCell(target, label, brush, mode.drawing[brush], matrix.gates.drawing)
         ).join('');
         return `<div class="mx-row" ${attrs}><div class="mx-label">${esc(displayMode(mode))}</div>${cells}${undoOverviewCell(label, mode, matrix.gates.undo)}${actionsOverviewCell(label, mode)}</div>`;
       })
@@ -1977,7 +1996,11 @@ function renderMarkdown(matrix) {
         // the runner rejects; the failed check is named so the reader can see
         // which one rather than inferring it from a target-level advisory label.
         if (aggregate.scoreable === false) {
-          return `_unscoreable (${unscoreableReasons(aggregate).join(', ')})_: ${value}`;
+          const reasons = unscoreableReasons(aggregate).join(', ');
+          const role = targetRole({ id: target.targetId, deviceKind: target.deviceKind });
+          return countsAsGateRed(role, target.drawing[brush])
+            ? `**unscoreable (${reasons}), ${GATE_RED_NOTE}**: ${value}`
+            : `_unscoreable (${reasons})_: ${value}`;
         }
         return aggregate.blankPassed ? value : `**FAIL ${value}**`;
       }),
@@ -2397,6 +2420,7 @@ const EXTRA_CSS = `
 .heat-cell.unscoreable,.mx-cell.unscoreable{color:var(--muted);box-shadow:none;
   background:repeating-linear-gradient(45deg,var(--card-2) 0 2px,color-mix(in srgb,var(--muted) 55%,var(--card-2)) 2px 4px)}
 .mx-cell.unscoreable{background:repeating-linear-gradient(45deg,var(--card-2) 0 4px,color-mix(in srgb,var(--muted) 30%,var(--card-2)) 4px 8px)}
+.mx-cell.unscoreable.failed{box-shadow:inset 0 0 0 2px var(--bad)}
 .heat-cell.missing,.mx-cell.missing{color:var(--faint);background:transparent;box-shadow:none;
   border:1.5px dashed var(--muted)}
 .action-number{font-size:.52rem;text-align:center;color:var(--muted);line-height:var(--heat-cell)}
@@ -2467,7 +2491,7 @@ tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}
   box-shadow:var(--shadow-lg)}
 
 @media (prefers-reduced-motion:reduce){
-  .note summary:after{transition:none}
+  .note summary:after,.role-fold > summary:before{transition:none}
 }
 @media (max-width:720px){
   .section-head{flex-direction:column;align-items:flex-start;gap:2px}
@@ -2811,7 +2835,7 @@ function emptyLegend() {
 }
 
 function overviewLegend() {
-  return `<div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span></div>
+  return `<div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span><span><i class="mx-cell unscoreable failed"></i>uncalibrated on a release-gate row: counts as red</span></div>
   ${emptyLegend()}
   <div class="mx-legend"><b>Undo</b><span>✓ pass · ✕ fail against the undo gates</span><b>Actions</b><span>passed/measured — green all pass, amber a few failing, red more than one in ten failing</span></div>`;
 }

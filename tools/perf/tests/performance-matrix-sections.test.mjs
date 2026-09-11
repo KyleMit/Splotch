@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
-import { renderReport, targetRole } from '../gen-performance-matrix.mjs';
+import { renderMarkdown, renderReport, targetRole } from '../gen-performance-matrix.mjs';
 
 const MATRIX = join(ROOT, 'scrapbook', 'performance', '2026-07-31-deployment-target-matrix');
 const published = () => JSON.parse(readFileSync(join(MATRIX, 'data.json'), 'utf8'));
@@ -181,5 +181,72 @@ describe('overview empty cells', () => {
       /\.heat-cell\.unscoreable,\.mx-cell\.unscoreable\{[^}]*repeating-linear-gradient/
     );
     expect(html).toMatch(/\.heat-cell\.missing,\.mx-cell\.missing\{[^}]*dashed/);
+  });
+});
+
+// ADR-0156 decision 1: a gate-row cell its uncalibrated instrument cannot score
+// counts as red, so it keeps the unavailable hatch and gains the failure edge.
+// Any other unscoreable reason, or the same cell on a non-gate row, stays neutral.
+describe('uncalibrated cells on a release-gate row', () => {
+  const unscoreablePen = (targetId, fidelity) => {
+    const matrix = published();
+    const entry = matrix.targets.find((target) => target.id === targetId).modes[0].drawing.pen;
+    entry.aggregate = { ...entry.aggregate, scoreable: false, failedFidelityChecks: ['pressure'] };
+    entry.runs = entry.runs.map((run) => ({ ...run, scoreable: false, fidelity }));
+    return matrix;
+  };
+  const uncalibrated = {
+    passed: false,
+    checks: { trustedTouch: true, cadence: true, pressure: false },
+    uncalibrated: ['pressure'],
+  };
+  const penCellClass = (html, label) =>
+    html.match(
+      new RegExp(
+        `<span class="(mx-cell num [^"]+)" tabindex="0"[^>]*title="${label} · [^"]* · Pen · `
+      )
+    )?.[1];
+
+  it('draws it with the hatch and the failure edge, and says why', () => {
+    const matrix = unscoreablePen('ipad-device-native', uncalibrated);
+    const html = renderReport(matrix);
+
+    expect(penCellClass(html, 'iPad physical · native')).toBe('mx-cell num unscoreable failed');
+    expect(html).toContain(
+      'unscoreable: pressure · counts as red on a release-gate row (ADR-0156)'
+    );
+    expect(html).toMatch(
+      /\.mx-cell\.unscoreable\.failed\{box-shadow:inset 0 0 0 2px var\(--bad\)\}/
+    );
+    expect(renderMarkdown(matrix)).toContain(
+      '**unscoreable (pressure), counts as red on a release-gate row (ADR-0156)**'
+    );
+  });
+
+  it('keeps a real fidelity failure on a gate row neutral', () => {
+    const html = renderReport(
+      unscoreablePen('ipad-device-native', {
+        passed: false,
+        checks: { trustedTouch: true, cadence: false, pressure: false },
+        uncalibrated: ['pressure'],
+      })
+    );
+
+    expect(penCellClass(html, 'iPad physical · native')).toBe('mx-cell num unscoreable');
+  });
+
+  it('keeps the same uncalibrated cell neutral on a tripwire row', () => {
+    const html = renderReport(unscoreablePen('mac-chrome', uncalibrated));
+
+    expect(penCellClass(html, 'Mac · Chrome')).toBe('mx-cell num unscoreable');
+    expect(html).not.toContain(
+      'Mac · Chrome · Portrait · Light · Pen · paint P95 9.3 / P99 9.9 / max 10.2 ms · lost frame time 0% (budget 1%) · unscoreable: pressure · counts as red'
+    );
+  });
+
+  it('stops the role-disclosure chevron animating under reduced motion', () => {
+    expect(renderReport(published())).toMatch(
+      /@media \(prefers-reduced-motion:reduce\)\{\s*\.note summary:after,\.role-fold > summary:before\{transition:none\}/
+    );
   });
 });
