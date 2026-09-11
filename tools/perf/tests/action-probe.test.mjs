@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
+import { summarizeActionGroup } from '../lib/action-stats.mjs';
 import { DUAL_FRAME_STAMP_EPOCH } from '../lib/frame-stamps.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
@@ -89,6 +90,7 @@ describe('action probe visual-effect attribution', () => {
 // A vsync grid the test owns on both clocks: each tick hands the pending rAF
 // callbacks the next scheduled stamp, and `performance.now()` inside them
 // answers that stamp plus however late the callback is said to have run.
+// `vsyncs` advances the stamp by more than one period, as a skipped frame does.
 function installVsyncClock({ intervalMs = 16.7 } = {}) {
   let callbacks = [];
   let vsync = 0;
@@ -97,8 +99,8 @@ function installVsyncClock({ intervalMs = 16.7 } = {}) {
   vi.stubGlobal('requestAnimationFrame', (callback) => callbacks.push(callback));
   return {
     nowSpy,
-    tick(lateMs = 0) {
-      vsync += intervalMs;
+    tick(lateMs = 0, { vsyncs = 1 } = {}) {
+      vsync += intervalMs * vsyncs;
       now = vsync + lateMs;
       const pending = callbacks;
       callbacks = [];
@@ -156,6 +158,121 @@ describe('action probe frame stamps (ADR-0163)', () => {
       closeTo([86.8 - 35.4, 87.5 - 35.4, 100.2 - 35.4])
     );
     expect(frames.map((frame) => frame.actualGapMs)).toEqual(closeTo([36.7, 0.7, 12.7]));
+    // The boundary row is retained whichever side of the action it ran on;
+    // this one ran on its stamp, before the click.
+    expect(sample.lastPreActionFrame).toMatchObject({
+      endFromActionMs: expect.closeTo(33.4 - 35.4, 5),
+      ranFromActionMs: expect.closeTo(33.4 - 35.4, 5),
+    });
+  });
+});
+
+// Chrome's rAF-aligned input: the click is dispatched inside the frame task
+// for the vsync at 66.8, after that vsync and before the frame's rAF callback,
+// which runs at 71.8 still stamped 66.8. That frame renders the click, yet its
+// stamp precedes the action. It follows a skipped vsync, so its scheduled gap
+// (33.4) is one no scored frame carries.
+function captureRafAlignedClick() {
+  const clock = installVsyncClock();
+  Function(ACTION_PROBE)();
+  clock.tick();
+  clock.tick();
+
+  const button = document.createElement('button');
+  button.id = 'night-mode';
+  document.body.append(button);
+  window.__actionProbe.begin('toggle', '#night-mode', ['click']);
+  clock.at(70);
+  button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  clock.tick(5, { vsyncs: 2 });
+  clock.tick();
+  clock.tick();
+  clock.tick();
+
+  clock.at(150);
+  return window.__actionProbe.finish();
+}
+
+describe('action probe boundary row (ADR-0163, issue 1713)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const closeTo = (values) => values.map((ms) => expect.closeTo(ms, 5));
+
+  it('retains the frame stamped before the action and run after it, with both clocks', () => {
+    const sample = captureRafAlignedClick();
+    expect(sample.lastPreActionFrame).toEqual({
+      gapMs: expect.closeTo(33.4, 5),
+      startFromActionMs: expect.closeTo(33.4 - 70, 5),
+      endFromActionMs: expect.closeTo(66.8 - 70, 5),
+      visualEffectsActive: false,
+      ranFromActionMs: expect.closeTo(71.8 - 70, 5),
+      actualGapMs: expect.closeTo(71.8 - 33.4, 5),
+    });
+    expect(Object.keys(sample.lastPreActionFrame)).toEqual(Object.keys(sample.postActionFrames[0]));
+    expect(JSON.parse(JSON.stringify(sample)).lastPreActionFrame).toEqual(
+      sample.lastPreActionFrame
+    );
+
+    // The first-frame row between the boundary row and the first post-action
+    // frame is recoverable on both clocks from that entry, as ADR-0163 says.
+    const [next] = sample.postActionFrames;
+    expect(next.startFromActionMs).toBeCloseTo(sample.firstFrameMs, 5);
+    expect(next.ranFromActionMs - next.actualGapMs).toBeCloseTo(83.5 - 70, 5);
+  });
+
+  it('keeps the boundary row out of every per-action field and every scored figure', () => {
+    const sample = captureRafAlignedClick();
+
+    // firstFrameMs reads the next vsync, exactly as it did before the row was kept.
+    expect(sample.firstFrameMs).toBeCloseTo(83.5 - 70, 5);
+    expect(sample.frameGapsMs).toEqual(closeTo([16.7, 16.7, 16.7]));
+    expect(sample.settleFrameGapsMs).toEqual([]);
+    expect(sample.postActionFrameGapsMs).toEqual(closeTo([16.7, 16.7]));
+    expect(sample.postActionFrames.map((frame) => frame.endFromActionMs)).toEqual(
+      closeTo([100.2 - 70, 116.9 - 70])
+    );
+    expect(sample.topFrameGaps.map((frame) => frame.endFromActionMs).sort()).toEqual(
+      closeTo([83.5 - 70, 100.2 - 70, 116.9 - 70])
+    );
+
+    const summary = summarizeActionGroup([sample], 'toggle');
+    expect(summary.frames.max).toBeCloseTo(16.7, 5);
+    expect(summary.frameStamps.frames).toBe(summary.frameSamples.scored);
+
+    const { lastPreActionFrame: boundary, ...withoutBoundary } = sample;
+    const absurdBoundary = {
+      ...boundary,
+      gapMs: 1000,
+      startFromActionMs: 0,
+      endFromActionMs: 1000,
+      ranFromActionMs: 9999,
+      actualGapMs: 1000,
+    };
+    expect(summarizeActionGroup([withoutBoundary], 'toggle')).toEqual(summary);
+    expect(
+      summarizeActionGroup([{ ...sample, lastPreActionFrame: absurdBoundary }], 'toggle')
+    ).toEqual(summary);
+  });
+
+  it('records the boundary row as null, not omitted, when no frame preceded the action', () => {
+    const clock = installVsyncClock();
+    Function(ACTION_PROBE)();
+
+    const button = document.createElement('button');
+    button.id = 'night-mode';
+    document.body.append(button);
+    window.__actionProbe.begin('toggle', '#night-mode', ['click']);
+    clock.at(5);
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    clock.tick();
+    clock.tick();
+    clock.tick();
+
+    clock.at(80);
+    const sample = window.__actionProbe.finish();
+    expect(sample.firstFrameMs).toBeCloseTo(33.4 - 5, 5);
+    expect(sample).toHaveProperty('lastPreActionFrame', null);
+    expect(JSON.parse(JSON.stringify(sample))).toHaveProperty('lastPreActionFrame', null);
   });
 });
 

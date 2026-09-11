@@ -352,6 +352,24 @@
     }
   }
 
+  function frameEntry([at, gap, visualEffectsActive, ranAt, actualGap], actionAt) {
+    return {
+      gapMs: gap,
+      startFromActionMs: at - gap - actionAt,
+      endFromActionMs: at - actionAt,
+      visualEffectsActive,
+      ranFromActionMs: ranAt - actionAt,
+      actualGapMs: actualGap,
+    };
+  }
+
+  function lastFrameStampedBefore(time) {
+    for (let index = frames.length - 1; index >= 0; index--) {
+      if (frames[index][0] < time) return frames[index];
+    }
+    return null;
+  }
+
   function finish(readyAt = performance.now()) {
     if (!active) throw new Error('No action is active');
     const action = active;
@@ -361,6 +379,13 @@
     const finishedAt = performance.now();
     if (action.actionAt === null) performance.mark(`${action.traceName}:start`);
     performance.measure(action.traceName, `${action.traceName}:start`);
+    // The boundary row (ADR-0163): the frame stamped before the action, which
+    // under rAF-aligned input runs after it and renders it, yet its stamp keeps
+    // it out of every per-action field below. Retained with both clocks for a
+    // later onset re-selection and read by no scoring rule. It is null rather
+    // than omitted when no frame preceded the action, so the key's presence is
+    // what marks a capture whose probe records it.
+    const boundaryFrame = lastFrameStampedBefore(actionAt);
     const actionFrames = frames.filter(([at, gap]) => at >= actionAt && at - gap <= finishedAt);
     const responseEndedAt = Number.isFinite(readyAt) ? readyAt : finishedAt;
     const responseFrames = actionFrames.filter(([at, gap]) => at - gap <= responseEndedAt);
@@ -391,14 +416,8 @@
         .map(([, gap]) => gap),
       postActionFrames: actionFrames
         .filter(([at, gap]) => at - gap >= actionAt)
-        .map(([at, gap, visualEffectsActive, ranAt, actualGap]) => ({
-          gapMs: gap,
-          startFromActionMs: at - gap - actionAt,
-          endFromActionMs: at - actionAt,
-          visualEffectsActive,
-          ranFromActionMs: ranAt - actionAt,
-          actualGapMs: actualGap,
-        })),
+        .map((row) => frameEntry(row, actionAt)),
+      lastPreActionFrame: boundaryFrame && frameEntry(boundaryFrame, actionAt),
       topFrameGaps,
       frameStampEpoch: FRAME_STAMP_EPOCH,
       activities: action.activities.map(({ at, ...activity }) => ({
