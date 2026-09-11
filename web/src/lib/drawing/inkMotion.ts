@@ -2,8 +2,6 @@ import { paintStrokeFootprint, strokeGhostReadsTiles, strokeMotionBounds } from 
 import { renderOp, type StrokeGroupCommand } from './strokeOps';
 import { viewMatrix, type EngineViewState } from './paperView';
 
-// `paint` lays the visible live tiles onto a target under its current transform;
-// both ghosts read their pixels from it rather than replaying history.
 function canvasOf(width: number, height: number) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -11,6 +9,8 @@ function canvasOf(width: number, height: number) {
   return canvas;
 }
 
+// `paint` lays the visible live tiles onto a target under its current transform;
+// both ghosts read their pixels from it rather than replaying history.
 export function createInkMotion(paint: (target: CanvasRenderingContext2D) => void) {
   let overlay: HTMLDivElement | null = null;
 
