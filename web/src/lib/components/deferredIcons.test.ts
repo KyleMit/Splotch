@@ -44,13 +44,36 @@ const NON_RENDERING_REFERENCES = new Set(['../design/iconTokens.ts']);
 
 // Both the side-effect form (`import '$lib/components/deferredIcons'`) and a
 // named import count; either evaluates the module before the importer's body.
+// `import type` is erased by TypeScript and registers nothing, so it must not
+// count, and the line-start anchor keeps a commented-out import from counting.
 const REGISTRY_IMPORT_RE =
-  /import (?:[^;]*? from )?['"](?:\$lib\/components|\.{1,2}(?:\/[\w.-]+)*)\/deferredIcons['"]/;
+  /^\s*import (?!type\s)(?:[^;]*? from )?['"](?:\$lib\/components|\.{1,2}(?:\/[\w.-]+)*)\/deferredIcons['"]/m;
 
 const namesIn = (src: string) =>
   DEFERRED_ICON_NAMES.filter((name) => new RegExp(`(['"])${name}\\1`).test(src));
 
 describe('deferred icon registry', () => {
+  // Positive controls for the import matcher: the guard below is only as good
+  // as this regex, so the shapes it must accept and reject are pinned here.
+  it.each([
+    "import '$lib/components/deferredIcons';",
+    "  import '$lib/components/deferredIcons';",
+    "import { DEFERRED_ICON_NAMES } from '$lib/components/deferredIcons';",
+    "import { deferredIcons } from './deferredIcons';",
+    "import { deferredIcons } from '../components/deferredIcons';",
+  ])('counts %s as a registry import', (line) => {
+    expect(REGISTRY_IMPORT_RE.test(line)).toBe(true);
+  });
+
+  it.each([
+    "import type { deferredIcons } from './deferredIcons';",
+    "// import '$lib/components/deferredIcons';",
+    "import '$lib/components/deferredIconsExtra';",
+    "import { deferredIcons } from '$lib/components/deferredIcons.test';",
+  ])('does not count %s as a registry import', (line) => {
+    expect(REGISTRY_IMPORT_RE.test(line)).toBe(false);
+  });
+
   it('registers every deferred SVG under its basename on import', () => {
     expect(DEFERRED_ICON_NAMES).toEqual(Object.keys(deferredSvgs).map(iconNameFromPath).sort());
     for (const [path, svg] of Object.entries(deferredSvgs)) {
