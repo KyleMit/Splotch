@@ -22,9 +22,8 @@ let preparedScreenshot: PreparedScreenshot | null = null;
 type ExportResult = { blob: Blob | null; error?: never } | { blob?: never; error: unknown };
 
 interface PreparedScreenshot {
-  activate(): void;
+  activate(): Promise<ExportResult>;
   cancel(): void;
-  result: Promise<ExportResult>;
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -104,56 +103,24 @@ function createPreparedScreenshot(
   exportPreparation: CanvasExportPreparation | null = null
 ): PreparedScreenshot {
   const preview = createPolaroidPreviewRequest();
-  let activated = false;
-  let cancelled = false;
-  let pendingPreview: ImageBitmap | null = null;
-  const deferredPreview = preview
-    ? {
-        width: preview.width,
-        onReady(bitmap: ImageBitmap) {
-          if (cancelled) {
-            bitmap.close();
-          } else if (activated) {
-            preview.onReady(bitmap);
-          } else {
-            pendingPreview?.close();
-            pendingPreview = bitmap;
-          }
-        },
-      }
-    : null;
-  const exportOptions = deferredPreview ? { preview: deferredPreview } : undefined;
-  const result = (
-    exportPreparation?.complete(exportOptions) ?? exportCanvasBlob(exportOptions)
-  ).then(
-    (blob): ExportResult => ({ blob }),
-    (error): ExportResult => ({ error })
-  );
+  const exportOptions = preview ? { preview } : undefined;
   return {
     activate() {
-      if (cancelled || activated) return;
-      activated = true;
       playScreenshotFeedback();
-      if (pendingPreview) {
-        const bitmap = pendingPreview;
-        pendingPreview = null;
-        preview?.onReady(bitmap);
-      }
+      return (exportPreparation?.complete(exportOptions) ?? exportCanvasBlob(exportOptions)).then(
+        (blob): ExportResult => ({ blob }),
+        (error): ExportResult => ({ error })
+      );
     },
     cancel() {
-      if (activated || cancelled) return;
-      cancelled = true;
-      pendingPreview?.close();
-      pendingPreview = null;
+      exportPreparation?.cancel();
     },
-    result,
   };
 }
 
 export function prepareScreenshot(prepareExport: () => CanvasExportPreparation | null) {
-  if (activeScreenshotSave || performance.now() < nextScreenshotAllowedAt || preparedScreenshot) {
-    return;
-  }
+  if (activeScreenshotSave || performance.now() < nextScreenshotAllowedAt) return;
+  preparedScreenshot?.cancel();
   preparedScreenshot = createPreparedScreenshot(prepareExport());
 }
 
@@ -163,8 +130,7 @@ export function cancelScreenshotPreparation() {
 }
 
 async function savePreparedScreenshot(prepared: PreparedScreenshot) {
-  prepared.activate();
-  const result = await prepared.result;
+  const result = await prepared.activate();
   if ('error' in result) throw result.error;
   if (!result.blob) return false;
   return saveImageBlob(result.blob, undefined, { allowPrompt: true });

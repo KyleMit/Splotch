@@ -338,7 +338,7 @@
   }
 
   async function handleScreenshotClick() {
-    if (canvasState.canvasEmpty) return;
+    if (canvasState.canvasEmpty) return cancelScreenshotPress();
     try {
       const { saveScreenshot } = await loadScreenshotModule();
       await saveScreenshot();

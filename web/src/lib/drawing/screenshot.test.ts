@@ -81,7 +81,7 @@ describe('saveScreenshot', () => {
     });
   });
 
-  it('starts export at press time and defers feedback until activation', async () => {
+  it('defers fallback export and feedback until activation', async () => {
     const exported = Promise.withResolvers<Blob | null>();
     const onReady = vi.fn();
     const preview = { width: 640, onReady };
@@ -92,14 +92,14 @@ describe('saveScreenshot', () => {
     const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
 
     prepareScreenshot(() => null);
-    const deferredPreview = mocks.exportCanvasBlob.mock.calls[0][0]?.preview;
-    deferredPreview?.onReady(bitmap);
 
-    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(mocks.exportCanvasBlob).not.toHaveBeenCalled();
     expect(mocks.playScreenshotFeedback).not.toHaveBeenCalled();
     expect(onReady).not.toHaveBeenCalled();
 
     const save = saveScreenshot();
+    const deferredPreview = mocks.exportCanvasBlob.mock.calls[0][0]?.preview;
+    deferredPreview?.onReady(bitmap);
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
     expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
@@ -108,7 +108,7 @@ describe('saveScreenshot', () => {
     await save;
   });
 
-  it('completes a synchronously captured engine export instead of recapturing at activation', async () => {
+  it('completes a synchronously captured engine export only on activation', async () => {
     const blob = new Blob(['drawing']);
     const complete = vi.fn(async () => blob);
     const cancel = vi.fn();
@@ -116,6 +116,8 @@ describe('saveScreenshot', () => {
     const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
 
     prepareScreenshot(() => ({ complete, cancel }));
+
+    expect(complete).not.toHaveBeenCalled();
     await saveScreenshot();
 
     expect(complete).toHaveBeenCalledOnce();
@@ -151,26 +153,45 @@ describe('saveScreenshot', () => {
     expect(prepareExport).not.toHaveBeenCalled();
   });
 
-  it('discards a cancelled press preview and exports again on activation', async () => {
-    const firstExport = Promise.withResolvers<Blob | null>();
-    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
-    mocks.createPolaroidPreviewRequest.mockReturnValue({ width: 640, onReady: vi.fn() });
-    mocks.exportCanvasBlob
-      .mockReturnValueOnce(firstExport.promise)
-      .mockResolvedValueOnce(new Blob(['drawing']));
+  it('releases once across repeated cancellation requests without completing', async () => {
+    const complete = vi.fn(async () => new Blob(['cancelled']));
+    const cancel = vi.fn();
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
     mocks.saveBlobToFolder.mockResolvedValue(true);
     const { cancelScreenshotPreparation, prepareScreenshot, saveScreenshot } =
       await import('./screenshot');
 
-    prepareScreenshot(() => null);
-    mocks.exportCanvasBlob.mock.calls[0][0]?.preview?.onReady(bitmap);
+    prepareScreenshot(() => ({ complete, cancel }));
     cancelScreenshotPreparation();
+    cancelScreenshotPreparation();
+
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(complete).not.toHaveBeenCalled();
+
     await saveScreenshot();
 
-    expect(bitmap.close).toHaveBeenCalledOnce();
-    expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(complete).not.toHaveBeenCalled();
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
     expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
-    firstExport.resolve(null);
+  });
+
+  it('releases and replaces an orphaned preparation before the next press', async () => {
+    const firstComplete = vi.fn(async () => new Blob(['stale']));
+    const firstCancel = vi.fn();
+    const secondComplete = vi.fn(async () => new Blob(['current']));
+    const secondCancel = vi.fn();
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    prepareScreenshot(() => ({ complete: firstComplete, cancel: firstCancel }));
+    prepareScreenshot(() => ({ complete: secondComplete, cancel: secondCancel }));
+
+    expect(firstCancel).toHaveBeenCalledOnce();
+    expect(firstComplete).not.toHaveBeenCalled();
+    await saveScreenshot();
+
+    expect(secondComplete).toHaveBeenCalledOnce();
+    expect(secondCancel).not.toHaveBeenCalled();
   });
 
   it('coalesces overlapping saves and permits a later save after persistence settles', async () => {
