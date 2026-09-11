@@ -63,6 +63,47 @@ Keep this separate from the
 normal Appium drawing/action path can work while an older engine-probe wrapper cannot discover
 Safari pages. A failed wrapper is not proof that the established device automation path is broken.
 
+### USB automation can work while Safari cannot load the preview
+
+Successful native taps or actual page rotation prove device control, not the iPad's network route to
+the Mac. The iPad's automation banner alone proves neither a responsive session nor a loaded page.
+Report the observed layer: "USB control works; Safari cannot load the preview" when native commands
+succeed and navigation fails.
+
+For a stalled Safari navigation:
+
+1. Check that the preview responds on the Mac at the resolved LAN address and port. This proves the
+   listener works from the host, not that the iPad can reach it.
+2. Inspect the actual device screen before diagnosing a blank tab or broken Web Inspector. If the
+   Appium web-context command is stuck, `GET /screenshot` on this session's resolved WDA endpoint
+   can still return the native screen. Use a bounded request and preserve the screenshot. Close this
+   run's stalled session before starting a native Settings session on the same device.
+3. Inspect **Settings → Wi-Fi** through native automation. Wi-Fi being enabled is not proof of
+   association: a saved network can remain **Connecting**. If it stays there across observations,
+   try one off/on cycle, restore Wi-Fi to on, and verify the network becomes selected before
+   retrying Safari. Re-find the switch after toggling it; Settings can replace its accessibility
+   element, making the previous element stale. If association still fails, report that specific
+   failure and the human action needed; do not keep cycling or forget the saved network.
+4. Close the diagnostic Settings session before creating a fresh Safari session. Retry the explicit
+   preview URL, then prove the loaded page's build entry and service-worker state through the
+   existing freshness checks before treating the result as current-checkout evidence.
+
+Issue [1527](https://github.com/KyleMit/Splotch/issues/1527#issuecomment-5636045347) exercised this
+sequence: native control worked, Safari's screen reported offline, and Settings showed a saved
+network stuck connecting. Reconnecting Wi-Fi was followed by successful current-build Safari
+navigation and twelve trusted-touch Settings openings. The evidence establishes that recovery, not
+the cause of the stalled association. Do not re-diagnose USB pairing or the automation grant from a
+page-load failure after device control has already passed.
+
+### An installed-app fallback answers a narrower question
+
+An installed native app may work offline while Safari cannot load the preview. Record its installed
+version and build; an unknown source commit remains unknown. Native accessibility taps and screen
+recording can check its visible behavior even when its WebView is not inspectable. Missing WebView
+inspection does not establish missing device control, and a passing installed-app check does not
+certify the current checkout, Safari, or an instrumented performance capture. Recover and verify the
+intended target before closing that validation gap.
+
 ## Approvals that are probably already granted
 
 **Check for a running RemoteXPC tunnel before starting one.** It is root-owned, its password prompt

@@ -851,11 +851,14 @@ findings above is negligible engine cost beside long rendering-side records.
   every genuinely-routable one, so a machine on a VPN or with a second active adapter shows several.
   The Wi‑Fi one is the one the iPad can reach — `ipconfig getifaddr en0` names it. Whichever you
   use, take it from the current run: it's a DHCP lease, not a fixed address.
-* **Page won't load over LAN** → confirm both devices are on the same Wi‑Fi (a guest SSID with
-  client isolation blocks this even though both say "same network"), that `npm run perf:serve` is
-  running (it serves on `0.0.0.0:4173` — a plain `npm run preview` binds localhost only and lacks
-  the harness flag), and that you used the Mac's LAN IP (not `localhost`). A firewall prompt on the
-  Mac may need approving.
+* **Page won't load over LAN** → if native automation works, USB control is already established;
+  follow the campaign guide's
+  [Safari network recovery sequence](PROFILING-CAMPAIGNS.md#usb-automation-can-work-while-safari-cannot-load-the-preview),
+  including a native screenshot and checking for Wi-Fi stuck **Connecting**. Confirm both devices
+  are on the same Wi‑Fi (a guest SSID with client isolation blocks this even though both say "same
+  network"), that `npm run perf:serve` is listening on the resolved preview port and a LAN
+  interface, and that you used the Mac's LAN IP (not `localhost`). A firewall prompt on the Mac may
+  need approving.
 * **`window.__engine` is undefined** → paste this to see which case it is:
 
   ```js
