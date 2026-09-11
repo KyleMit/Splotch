@@ -20,19 +20,26 @@
     oncustom: () => void;
   } = $props();
   const dark = $derived(resolvedTheme() === 'dark');
-  let availableSpace = $state<DOMRectReadOnly>();
-  const visibleColors = $derived(landscapeMenuColors(availableSpace?.width ?? 0));
+  let availableWidth = $state(0);
+  const visibleColors = $derived(landscapeMenuColors(availableWidth));
+
+  // Keep fractional widths without adding Svelte's generic size bindings to startup.
+  function measureSpace(node: HTMLElement) {
+    const observer = new ResizeObserver(([entry]) => {
+      availableWidth = entry.contentRect.width;
+    });
+    observer.observe(node);
+    return { destroy: () => observer.disconnect() };
+  }
 </script>
 
 <!-- Measure the available space independently of the trimmed menu so it can grow again. -->
-<div class="color-menu-space" aria-hidden="true" bind:contentRect={availableSpace}></div>
+<div class="color-menu-space" aria-hidden="true" use:measureSpace></div>
 <div
   class="flyout-menu color-menu"
   aria-label="Colors"
   role="group"
-  style:--color-swatch-size={`${COLOR_MENU_SWATCH_PX}px`}
-  style:--color-menu-gap={`${COLOR_MENU_GAP_PX}px`}
-  style:--color-menu-padding={`${COLOR_MENU_PADDING_PX}px`}
+  style={`--swatch:${COLOR_MENU_SWATCH_PX}px;--gap:${COLOR_MENU_GAP_PX}px;--padding:${COLOR_MENU_PADDING_PX}px`}
 >
   {#each visibleColors as { hex, label } (hex)}
     {@const paint = themedSwatchColor(hex, dark)}
@@ -54,19 +61,17 @@
   .color-menu-space {
     position: absolute;
     height: 0;
-    visibility: hidden;
-    pointer-events: none;
     width: calc(
       100vw - var(--safe-area-left) - var(--safe-area-right) - var(--action-btn-size) - 24px
     );
   }
   .color-menu {
-    padding: var(--color-menu-padding);
-    gap: var(--color-menu-gap);
+    padding: var(--padding);
+    gap: var(--gap);
   }
   .color-option {
-    width: var(--color-swatch-size);
-    height: var(--color-swatch-size);
+    width: var(--swatch);
+    height: var(--swatch);
     flex: 0 0 auto;
     border: 0;
     border-radius: var(--radius-pill);
@@ -86,7 +91,7 @@
     place-items: center;
   }
   .more-colors :global(span) {
-    width: var(--color-swatch-size);
-    height: var(--color-swatch-size);
+    width: var(--swatch);
+    height: var(--swatch);
   }
 </style>

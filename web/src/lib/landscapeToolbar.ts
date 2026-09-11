@@ -1,17 +1,14 @@
-import { PALETTE_COLORS, TRIM_ORDER, type PaletteLabel } from './palette';
+import { PALETTE_COLORS, TRIM_ORDER } from './palette';
 
-const OMITTED_COLORS: readonly PaletteLabel[] = ['Grey', 'Lime', 'Indigo', 'Magenta'];
+const OMITTED_COLOR_COUNT = 4;
 export const LANDSCAPE_COLORS = PALETTE_COLORS.filter(
-  ({ label }) => !OMITTED_COLORS.some((omitted) => omitted === label)
+  ({ hex }) => TRIM_ORDER.indexOf(hex) >= OMITTED_COLOR_COUNT
 );
 
 export const COLOR_MENU_SWATCH_PX = 56;
 export const COLOR_MENU_GAP_PX = 6;
 export const COLOR_MENU_PADDING_PX = 6;
 const CUSTOM_COLOR_SLOTS = 1;
-const LANDSCAPE_TRIM_ORDER = TRIM_ORDER.filter((hex) =>
-  LANDSCAPE_COLORS.some((color) => color.hex === hex)
-);
 
 export function landscapeMenuColors(availableWidthPx: number) {
   const slots = Math.floor(
@@ -19,8 +16,8 @@ export function landscapeMenuColors(availableWidthPx: number) {
       (COLOR_MENU_SWATCH_PX + COLOR_MENU_GAP_PX)
   );
   const colorCount = Math.max(0, slots - CUSTOM_COLOR_SLOTS);
-  const trimmedCount = LANDSCAPE_COLORS.length - colorCount;
-  return LANDSCAPE_COLORS.filter(({ hex }) => LANDSCAPE_TRIM_ORDER.indexOf(hex) >= trimmedCount);
+  const trimmedCount = TRIM_ORDER.length - colorCount;
+  return LANDSCAPE_COLORS.filter(({ hex }) => TRIM_ORDER.indexOf(hex) >= trimmedCount);
 }
 
 const DARK_INK_RELATIVE_LUMINANCE_MAX = 0.14;
