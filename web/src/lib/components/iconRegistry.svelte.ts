@@ -18,8 +18,11 @@ export function deferredIconMarkup(name: CommonIconName): string | undefined {
   return deferredIcons[name];
 }
 
-// Logs rather than rejects: the only caller is Icon.svelte's effect, and a
-// failed chunk load resets the memo so the next render retries.
+// Logs rather than rejects: the only caller is Icon.svelte's effect, which
+// tracks the registry and the name, not this promise — so an icon already on
+// screen when the load fails stays blank for the session. The reset is for
+// the next <Icon> that mounts with an unregistered name: it retries the chunk
+// instead of inheriting the rejection.
 export function ensureDeferredIcons(): Promise<void> {
   deferredIconsLoad ??= import('./deferredIcons')
     .then(() => undefined)
