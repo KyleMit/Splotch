@@ -8,13 +8,25 @@ export function contentTypeOf(request: Request): string {
 export type JsonBodyResult = { ok: true; body: unknown } | { ok: false; response: Response };
 
 export async function readJsonBody(request: Request, maxBytes: number): Promise<JsonBodyResult> {
-  const body = await readBodyWithinLimit(request, maxBytes);
+  let body: Awaited<ReturnType<typeof readBodyWithinLimit>>;
+  try {
+    body = await readBodyWithinLimit(request, maxBytes);
+  } catch (cause) {
+    const tooLarge = asRecord(cause)?.status === 413;
+    return {
+      ok: false,
+      response: fail(
+        tooLarge ? 413 : 400,
+        tooLarge ? 'Request body is too large' : 'Expected a JSON body'
+      ),
+    };
+  }
   if (!body.ok) {
     return { ok: false, response: fail(413, 'Request body is too large') };
   }
 
   try {
-    return { ok: true, body: JSON.parse(body.bytes.toString('utf8')) };
+    return { ok: true, body: JSON.parse(new TextDecoder().decode(body.bytes)) };
   } catch {
     return { ok: false, response: fail(400, 'Expected a JSON body') };
   }
@@ -42,7 +54,9 @@ export async function readBodyWithinLimit(
 
       totalBytes += value.byteLength;
       if (totalBytes > maxBytes) {
-        await reader.cancel();
+        // SvelteKit's Node adapter maps cancellation to socket destruction, which prevents the
+        // caller's 413 from reaching the client. Releasing the lock stops pulls without retaining
+        // the unread bytes; the API smoke test guards the chunked-request response.
         return { ok: false };
       }
       chunks.push(Buffer.from(value));

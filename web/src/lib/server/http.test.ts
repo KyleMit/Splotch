@@ -110,6 +110,64 @@ describe('readJsonBody', () => {
     });
   });
 
+  it('accepts a leading UTF-8 byte-order mark like Request.json', async () => {
+    const raw = '\uFEFF{"code":"sunny-meadow"}';
+
+    expect(await readJsonBody(jsonRequest(raw), Buffer.byteLength(raw))).toEqual({
+      ok: true,
+      body: { code: 'sunny-meadow' },
+    });
+  });
+
+  it('maps a failed body stream to the malformed-body response', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"code"'));
+      },
+      pull(controller) {
+        controller.error(new Error('client aborted'));
+      },
+    });
+    const request = new Request('http://localhost/api/test', {
+      method: 'POST',
+      body,
+      duplex: 'half',
+    } as RequestInit);
+
+    const result = await readJsonBody(request, 64);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(400);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'Expected a JSON body',
+    });
+  });
+
+  it('preserves a platform body-limit failure as a 413', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(Object.assign(new Error('platform cap'), { status: 413 }));
+      },
+    });
+    const request = new Request('http://localhost/api/test', {
+      method: 'POST',
+      body,
+      duplex: 'half',
+    } as RequestInit);
+
+    const result = await readJsonBody(request, 64);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(413);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'Request body is too large',
+    });
+  });
+
   it('returns a canonical 413 response for an oversized body', async () => {
     const result = await readJsonBody(jsonRequest('{"code":"sunny-meadow"}'), 8);
 
@@ -192,12 +250,12 @@ describe('readBodyWithinLimit', () => {
   it.each([
     ['absent', undefined],
     ['lower than the actual size', '2'],
-  ])('cancels streamed bytes at the cap when Content-Length is %s', async (_, length) => {
+  ])('stops streamed bytes at the cap when Content-Length is %s', async (_, length) => {
     const stream = chunkedRequest(['1234', '56789', 'unread'], length);
 
     expect(await readBodyWithinLimit(stream.request, 8)).toEqual({ ok: false });
     expect(stream.pulls()).toBe(2);
-    expect(stream.cancellations()).toBe(1);
+    expect(stream.cancellations()).toBe(0);
   });
 
   it('counts multibyte UTF-8 payloads by bytes instead of string length', async () => {

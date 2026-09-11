@@ -144,6 +144,24 @@ describe('POST /api/generate-image', () => {
     expect(mocks.generateImage).not.toHaveBeenCalled();
   });
 
+  it('rejects a malformed legacy multipart envelope before authorization', async () => {
+    const response = await handle(
+      new Request('http://localhost/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'multipart/form-data' },
+        body: 'not a multipart envelope',
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'Expected multipart form data',
+    });
+    expect(mocks.authorize).not.toHaveBeenCalled();
+    expect(mocks.generateImage).not.toHaveBeenCalled();
+  });
+
   it('routes the daily ceiling to setup and records its own failure kind', async () => {
     const response = await post();
 

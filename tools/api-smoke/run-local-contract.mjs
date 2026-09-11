@@ -10,6 +10,7 @@
 // must fail on a contract regression and nothing else.
 
 import { randomUUID } from 'node:crypto';
+import { request as httpRequest } from 'node:http';
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { check, fatal, summarize, json } from '../lib/smoke.mjs';
@@ -28,6 +29,9 @@ const BASE = `http://localhost:${PORT}`;
 const ADMIN_SECRET = randomUUID();
 const SEED_TOKENS = 'alpha,beta';
 const OVERSIZED_IMAGE_BYTES = MAX_IMAGE_BYTES + 1;
+const OVERSIZED_JSON_CHUNK_BYTES = 9 * 1024;
+// Keeps the request open long enough to prove the server can answer before the final chunk arrives.
+const CHUNK_WRITE_DELAY_MS = 25;
 
 const postJson = (base, path, body, headers = {}) =>
   fetch(`${base}${path}`, {
@@ -37,6 +41,47 @@ const postJson = (base, path, body, headers = {}) =>
   });
 
 const authHeader = (session) => ({ Authorization: `Bearer ${session}` });
+
+function postChunkedJson(base, path, chunks, headers = {}) {
+  return new Promise((resolve) => {
+    const request = httpRequest(
+      new URL(path, base),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Transfer-Encoding': 'chunked',
+          ...headers,
+        },
+      },
+      (response) => {
+        let raw = '';
+        response.setEncoding('utf8');
+        response.on('data', (chunk) => (raw += chunk));
+        response.on('end', () => {
+          let body = null;
+          try {
+            body = JSON.parse(raw);
+          } catch {
+            // The assertion below reports the raw response through `error`.
+          }
+          resolve({ status: response.statusCode, body, error: raw });
+        });
+      }
+    );
+    request.on('error', (error) => resolve({ status: 0, body: null, error: error.message }));
+
+    const writeChunk = (index) => {
+      if (index === chunks.length) {
+        request.end();
+        return;
+      }
+      request.write(chunks[index]);
+      setTimeout(() => writeChunk(index + 1), CHUNK_WRITE_DELAY_MS);
+    };
+    writeChunk(0);
+  });
+}
 
 // Returns the admin `auth` header plus the unauthenticated /api/* response, which
 // the CORS suite re-reads instead of spending another request.
@@ -167,6 +212,20 @@ async function checkTokensCrud(admin, auth) {
       oversizedJsonBody?.ok === false &&
       oversizedJsonBody?.error === 'Request body is too large',
     `got ${oversizedJson.status} ${JSON.stringify(oversizedJsonBody)}`
+  );
+
+  const chunkedOversize = await postChunkedJson(
+    BASE,
+    '/api/admin/tokens',
+    ['{"token":"', 'x'.repeat(OVERSIZED_JSON_CHUNK_BYTES), '"}'],
+    auth
+  );
+  check(
+    'tokens POST chunked oversized body → clean 413 without a socket reset',
+    chunkedOversize.status === 413 &&
+      chunkedOversize.body?.ok === false &&
+      chunkedOversize.body?.error === 'Request body is too large',
+    `got ${chunkedOversize.status} ${chunkedOversize.error}`
   );
 }
 

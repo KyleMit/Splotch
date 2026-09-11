@@ -35,9 +35,11 @@ exemption is `csp-report`, whose responses are deliberately bodyless (browsers i
 module's `readJsonBody(request, maxBytes)` is the shared bounded JSON-body parser — every caller
 supplies a named endpoint cap, an oversized body is a uniform `413 "Request body is too large"`, and
 a malformed body is a uniform `400 "Expected a JSON body"`. The shared raw-body reader consumes
-streams only through the first chunk that crosses the cap and then cancels them; `Content-Length`
-remains an early-rejection hint rather than the authority. Use these helpers in any new endpoint
-instead of hand-rolling the parse, the failure body, or the 429.
+streams only through the first chunk that crosses the cap and then releases its reader;
+`Content-Length` remains an early-rejection hint rather than the authority. It deliberately does not
+cancel because SvelteKit's Node adapter maps cancellation to socket destruction before the 413 can
+be written. Use these helpers in any new endpoint instead of hand-rolling the parse, the failure
+body, or the 429.
 
 The small credential and admin-mutation JSON endpoints cap their bodies at 8 KiB. `/api/report`
 allows 64 KiB for its 4,000-character message plus the optional device snapshot.
@@ -90,6 +92,8 @@ This is also why the CSRF `trustedOrigins` allow-list (ADR-0007) is still requir
 multipart POST from native is a cross-origin form submission that the guard would otherwise reject.
 The complete legacy multipart envelope is capped at the 15 MiB image limit plus 64 KiB for fields,
 part headers, and boundaries before it is parsed, so unused fields cannot create an unbounded read.
+A malformed legacy envelope is rejected with `400 "Expected multipart form data"` before
+authorization.
 
 Managed tokens are rate-limited per token (15/min); BYOK requests are rate-limited per IP with a
 deliberately generous limit (30/min), because the branch is otherwise unauthenticated and its
