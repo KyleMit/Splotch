@@ -26,6 +26,11 @@ import { pathToFileURL } from 'node:url';
 import {
   ROOT,
   VARIANTS,
+  RATES,
+  ORCHESTRATOR_MODEL,
+  ORCHESTRATOR_REASONING_EFFORT,
+  ORCHESTRATOR_RATES,
+  selectModelVariants,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
   assertProductionConfig,
@@ -105,9 +110,7 @@ async function reportOnly(dir) {
 }
 
 function selectVariants() {
-  const selected = VARIANTS.filter(
-    (variant) => !VARIANT_FILTER || variant.key.includes(VARIANT_FILTER)
-  );
+  const selected = selectModelVariants(VARIANT_FILTER);
   if (!selected.length) {
     console.error(
       `No variants matched VARIANTS="${VARIANT_FILTER}".\nAvailable keys:\n  ${VARIANTS.map((v) => v.key).join('\n  ')}`
@@ -242,7 +245,20 @@ async function main() {
     writeFileSync(
       join(outDir, 'results.json'),
       JSON.stringify(
-        { runId: effRunId, samples: effSamples, concurrency: CONCURRENCY, variants, results },
+        {
+          runId: effRunId,
+          samples: effSamples,
+          concurrency: CONCURRENCY,
+          requestConfig: {
+            prompt: DEFAULT_PROMPT,
+            systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
+            orchestrator: ORCHESTRATOR_MODEL,
+            reasoningEffort: ORCHESTRATOR_REASONING_EFFORT,
+          },
+          rates: { images: RATES, orchestrator: ORCHESTRATOR_RATES },
+          variants,
+          results,
+        },
         null,
         2
       )

@@ -36,7 +36,7 @@ export const VARIANTS = [
     provider: 'gemini',
     model: 'gemini-2.5-flash-image',
     quality: null,
-    role: 'current prod',
+    role: 'historical baseline',
   },
   {
     key: 'gemini-3-1-flash-image',
@@ -52,7 +52,7 @@ export const VARIANTS = [
     provider: 'openai',
     model: 'gpt-image-2',
     quality: 'low',
-    role: 'openai candidate',
+    role: 'current prod',
   },
   {
     key: 'gpt-image-2-medium',
@@ -70,6 +70,16 @@ export const VARIANTS = [
     quality: 'high',
     role: 'openai candidate',
   },
+  ...['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst'].flatMap((model) =>
+    ['low', 'medium'].map((quality) => ({
+      key: `${model.replaceAll('.', '-')}-${quality}`,
+      label: `${model} · ${quality}`,
+      provider: 'openai',
+      model,
+      quality,
+      role: 'openai candidate',
+    }))
+  ),
   {
     key: 'gpt-image-1-5-medium',
     label: 'gpt-image-1.5 · medium',
@@ -124,12 +134,28 @@ export const RATES = {
     imageOutPerM: 60.0,
   },
   'gpt-image-2': { textInPerM: 5.0, imageInPerM: 8.0, textOutPerM: 5.0, imageOutPerM: 30.0 },
+  'gpt-image-2.5-flare': { textInPerM: 5.0, imageInPerM: 8.0, textOutPerM: 0, imageOutPerM: 30.0 },
+  'gpt-image-2.5-sunburst': {
+    textInPerM: 5.0,
+    imageInPerM: 8.0,
+    textOutPerM: 0,
+    imageOutPerM: 30.0,
+  },
   'gpt-image-1.5': { textInPerM: 5.0, imageInPerM: 8.0, textOutPerM: 5.0, imageOutPerM: 32.0 },
   'gpt-image-1-mini': { textInPerM: 2.0, imageInPerM: 2.5, textOutPerM: 2.0, imageOutPerM: 8.0 },
 };
 
 // The orchestrator's own tokens, billed separately from the image tool.
-const ORCHESTRATOR_RATES = { inPerM: 5.0, cachedInPerM: 0.5, outPerM: 30.0 };
+export const ORCHESTRATOR_RATES = { inPerM: 4.0, cachedInPerM: 0.4, outPerM: 20.0 };
+
+export function selectModelVariants(filter) {
+  if (!filter) return VARIANTS;
+  const keys = filter.split(',').map((key) => key.trim());
+  if (keys.length === 1) return VARIANTS.filter((variant) => variant.key.includes(keys[0]));
+  const unknown = keys.filter((key) => !VARIANTS.some((variant) => variant.key === key));
+  if (unknown.length) throw new Error(`Unknown variant keys: ${unknown.join(', ')}`);
+  return VARIANTS.filter((variant) => keys.includes(variant.key));
+}
 
 // The only colors a child can lay down with the pen, so faithful inputs must use them.
 export const PALETTE = PALETTE_COLORS.map(({ hex, label }) => ({ hex, label }));

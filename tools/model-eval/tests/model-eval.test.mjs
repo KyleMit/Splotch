@@ -4,6 +4,7 @@ import {
   costOf,
   imageDims,
   takePerCategory,
+  selectModelVariants,
   VARIANTS,
 } from '../lib/model-eval.mjs';
 import { sizeForAspect } from '../lib/image-providers.mjs';
@@ -38,6 +39,23 @@ describe('imageDims', () => {
 });
 
 describe('VARIANTS', () => {
+  it('selects exact comma-separated keys without buying other effort tiers', () => {
+    expect(
+      selectModelVariants('gpt-image-2-low,gpt-image-2-5-flare-low').map((variant) => variant.key)
+    ).toEqual(['gpt-image-2-low', 'gpt-image-2-5-flare-low']);
+  });
+
+  it('rejects an unknown key instead of silently running an incomplete comparison', () => {
+    expect(() => selectModelVariants('gpt-image-2-low,unknown')).toThrow('Unknown variant keys');
+  });
+
+  it('preserves a single substring filter', () => {
+    expect(selectModelVariants('gpt-image-2-5-flare').map((variant) => variant.quality)).toEqual([
+      'low',
+      'medium',
+    ]);
+  });
+
   it('gives every variant a unique, filesystem-safe key', () => {
     const keys = VARIANTS.map((variant) => variant.key);
     expect(new Set(keys).size).toBe(keys.length);
@@ -73,6 +91,24 @@ describe('costOf', () => {
   const gemini = VARIANTS.find((v) => v.model === 'gemini-2.5-flash-image');
   const openai = VARIANTS.find((v) => v.key === 'gpt-image-2-medium');
 
+  it.each(['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst'])(
+    'prices %s from image usage and the production orchestrator',
+    (model) => {
+      expect(
+        costOf(
+          { model },
+          {
+            textInTokens: 19,
+            imageInTokens: 1024,
+            imageOutTokens: 1756,
+            orchInTokens: 1200,
+            orchOutTokens: 150,
+          }
+        )
+      ).toBeCloseTo(0.068767, 6);
+    }
+  );
+
   // The expected figures below are written out as literal dollars, computed by
   // hand from the vendors' published rates. Deriving them from RATES instead
   // would make these tests restate the implementation: a wrong rate would flow
@@ -100,13 +136,13 @@ describe('costOf', () => {
     };
     expect(costOf(openai, image)).toBeCloseTo(0.060967, 6);
 
-    // Orchestrator leg: 1200 in @ $5/M + 150 out @ $30/M = $0.006 + $0.0045 = $0.0105.
+    // Orchestrator leg: 1200 in @ $4/M + 150 out @ $20/M = $0.0048 + $0.003 = $0.0078.
     const withOrchestrator = costOf(openai, {
       ...image,
       orchInTokens: 1200,
       orchOutTokens: 150,
     });
-    expect(withOrchestrator).toBeCloseTo(0.071467, 6);
+    expect(withOrchestrator).toBeCloseTo(0.068767, 6);
   });
 
   it('bills cached orchestrator input at the cached rate, not twice', () => {
@@ -117,13 +153,13 @@ describe('costOf', () => {
       imageOutTokens: 0,
       orchOutTokens: 0,
     };
-    // 1000 uncached @ $5/M = $0.005; the same 1000 all cached @ $0.50/M = $0.0005.
+    // 1000 uncached @ $4/M = $0.004; the same 1000 all cached @ $0.40/M = $0.0004.
     expect(costOf(openai, { ...base, orchInTokens: 1000, orchCachedTokens: 0 })).toBeCloseTo(
-      0.005,
+      0.004,
       8
     );
     expect(costOf(openai, { ...base, orchInTokens: 1000, orchCachedTokens: 1000 })).toBeCloseTo(
-      0.0005,
+      0.0004,
       8
     );
   });

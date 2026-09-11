@@ -728,7 +728,7 @@ export function renderReportHtml({
       .join(
         ', '
       )} per million image-output tokens. The OpenAI rows also include the tokens of the text model that reads the drawing and calls the image tool.</li>
-    <li><b>Time</b> is wall-clock per call, ${concurrency > 1 ? `with ${concurrency} calls in flight at once, so each one ran slower than it would alone` : 'one call at a time'}.</li>
+    <li><b>Time</b> is wall-clock per call, ${concurrency > 1 ? `with up to ${concurrency} calls in flight at once; times include concurrent load` : 'one call at a time'}.</li>
     <li><b>Safety</b> is only spot-checked here, with one pretend-play drawing that must be allowed. The blocked-content corpus needs <code>REDTEAM_FIXTURE_KEY</code> and <code>npm run redteam</code>.</li>
     <li>Run <code>${esc(runId)}</code>.</li>
     </ul>

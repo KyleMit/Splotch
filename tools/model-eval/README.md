@@ -3,16 +3,18 @@
 A **manual** quality / cost / latency bake-off across every candidate production image variant for
 `/api/generate-image`. A variant is a **provider × model × effort tier**:
 
-| variant                  | provider | effort   | role             |
-| ------------------------ | -------- | -------- | ---------------- |
-| `gemini-2.5-flash-image` | Gemini   | —        | current prod     |
-| `gemini-3.1-flash-image` | Gemini   | —        | gemini candidate |
-| `gpt-image-2`            | OpenAI   | `low`    | openai candidate |
-| `gpt-image-2`            | OpenAI   | `medium` | openai candidate |
-| `gpt-image-2`            | OpenAI   | `high`   | openai candidate |
-| `gpt-image-1.5`          | OpenAI   | `medium` | openai candidate |
-| `gpt-image-1-mini`       | OpenAI   | `low`    | openai budget    |
-| `gpt-image-1-mini`       | OpenAI   | `medium` | openai budget    |
+| variant                  | provider | effort          | role                |
+| ------------------------ | -------- | --------------- | ------------------- |
+| `gemini-2.5-flash-image` | Gemini   | —               | historical baseline |
+| `gemini-3.1-flash-image` | Gemini   | —               | gemini candidate    |
+| `gpt-image-2`            | OpenAI   | `low`           | current prod        |
+| `gpt-image-2.5-flare`    | OpenAI   | `low`, `medium` | openai candidate    |
+| `gpt-image-2.5-sunburst` | OpenAI   | `low`, `medium` | openai candidate    |
+| `gpt-image-2`            | OpenAI   | `medium`        | openai candidate    |
+| `gpt-image-2`            | OpenAI   | `high`          | openai candidate    |
+| `gpt-image-1.5`          | OpenAI   | `medium`        | openai candidate    |
+| `gpt-image-1-mini`       | OpenAI   | `low`           | openai budget       |
+| `gpt-image-1-mini`       | OpenAI   | `medium`        | openai budget       |
 
 It sends a corpus of **canvas-plausible toddler drawings** to a **real call per variant** using the
 **exact production request config** (the same `DEFAULT_PROMPT` and `SAFETY_SYSTEM_INSTRUCTION` the
@@ -165,7 +167,7 @@ against the Netlify ceiling, format/safety, and a per-category input→output ga
 | var            | default | effect                                                                                                             |
 | -------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
 | `FILTER`       | —       | only inputs whose id contains this substring                                                                       |
-| `VARIANTS`     | —       | only variants whose key contains this substring                                                                    |
+| `VARIANTS`     | —       | one substring, or a comma-separated list of exact variant keys; unknown list entries fail before calls             |
 | `PER_CATEGORY` | —       | cap inputs per category — the balanced way to bound the cost of a full-grid run                                    |
 | `SAMPLES`      | `1`     | samples per (input × variant); >1 surfaces run-to-run variance                                                     |
 | `CONCURRENCY`  | `1`     | parallel calls; keep at 1 for an isolated single-call latency floor, raise it to finish a full grid in minutes     |
@@ -180,10 +182,31 @@ VARIANTS=gpt-image-2 FILTER=coloring npm run model-eval # one model's tiers on t
 SAMPLES=3 FILTER=art-detail__cat npm run model-eval     # variance probe on one drawing
 ```
 
+For the GPT Image 2.5 comparison, hold the winning composition prompt (ADR-0118) and the production
+safety orchestrator fixed, and generate a fresh production baseline alongside the candidates:
+
+The [September 2026 findings](../../docs/scratchpad/image-model-bakeoff-2026-09-10.md) cover the
+140-image screen and the sequential finalist check. The committed gallery lives at the reference
+report path above.
+
+```bash
+VARIANTS=gpt-image-2-low,gpt-image-2-5-flare-low,gpt-image-2-5-flare-medium,gpt-image-2-5-sunburst-low,gpt-image-2-5-sunburst-medium PER_CATEGORY=1 SAMPLES=2 CONCURRENCY=3 npm run model-eval
+```
+
+New runs record the exact prompt, safety instruction, orchestrator settings, and token rates. GPT
+Image 2.5 rates come from the official
+[Flare](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare) and
+[Sunburst](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst) model pages; the
+orchestrator uses [Sol pricing](https://developers.openai.com/api/docs/models/gpt-5.6-sol). Equal
+token rates do not imply equal image cost: compare the usage each response actually reports. Runs
+with concurrent calls measure latency under that load; confirm a finalist sequentially before
+claiming an isolated latency improvement.
+
 **Budget before you run.** A full grid is `inputs × variants` paid calls, and the tiers are not
 close to each other in price — one `gpt-image-2 · high` cell costs ~28× a `gpt-image-1-mini · low`
 cell. `PER_CATEGORY=2` over the eight shipped variants is roughly $9 and about 20 minutes at
-`CONCURRENCY=6`. The runner prints a running `$` total per call and a spend summary at the end.
+`CONCURRENCY=6` in that historical run. Size new comparisons from their selected inputs, variants,
+and samples. The runner prints a cost per call and a spend summary at the end.
 
 ## Reviewing (this is the test)
 
