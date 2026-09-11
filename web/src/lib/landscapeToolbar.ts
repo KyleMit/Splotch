@@ -1,9 +1,27 @@
-import { PALETTE_COLORS, type PaletteLabel } from './palette';
+import { PALETTE_COLORS, TRIM_ORDER, type PaletteLabel } from './palette';
 
 const OMITTED_COLORS: readonly PaletteLabel[] = ['Grey', 'Lime', 'Indigo', 'Magenta'];
 export const LANDSCAPE_COLORS = PALETTE_COLORS.filter(
   ({ label }) => !OMITTED_COLORS.some((omitted) => omitted === label)
 );
+
+export const COLOR_MENU_SWATCH_PX = 56;
+export const COLOR_MENU_GAP_PX = 6;
+export const COLOR_MENU_PADDING_PX = 6;
+const CUSTOM_COLOR_SLOTS = 1;
+const LANDSCAPE_TRIM_ORDER = TRIM_ORDER.filter((hex) =>
+  LANDSCAPE_COLORS.some((color) => color.hex === hex)
+);
+
+export function landscapeMenuColors(availableWidthPx: number) {
+  const slots = Math.floor(
+    (availableWidthPx - 2 * COLOR_MENU_PADDING_PX + COLOR_MENU_GAP_PX) /
+      (COLOR_MENU_SWATCH_PX + COLOR_MENU_GAP_PX)
+  );
+  const colorCount = Math.max(0, slots - CUSTOM_COLOR_SLOTS);
+  const trimmedCount = LANDSCAPE_COLORS.length - colorCount;
+  return LANDSCAPE_COLORS.filter(({ hex }) => LANDSCAPE_TRIM_ORDER.indexOf(hex) >= trimmedCount);
+}
 
 const DARK_INK_RELATIVE_LUMINANCE_MAX = 0.14;
 const SRGB_LINEAR_THRESHOLD = 0.04045;
