@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp, drawCommittedStroke } from './helpers';
-import { openDrawer, opaqueCanvasPixelCount } from './flows-harness';
+import { openDrawer, opaqueCanvasPixelCount, pickBrush } from './flows-harness';
 
 for (const viewport of [
   { width: 1000, height: 650 },
@@ -119,6 +119,52 @@ test('undo retires ink immediately beneath a shrinking overlay and drawing cance
   ]);
   await expect(overlay).toHaveCount(0);
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+});
+
+test('crayon undo ghost carries only the pixels the undone stroke owned', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await drawCommittedStroke(page, [
+    { x: 425, y: 200 },
+    { x: 435, y: 200 },
+  ]);
+  await drawCommittedStroke(page, [
+    { x: 295, y: 210 },
+    { x: 305, y: 210 },
+  ]);
+  await pickBrush(page, '#crayonBrushButton');
+  await drawCommittedStroke(page, [
+    { x: 250, y: 200 },
+    { x: 440, y: 240 },
+  ]);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+  const canvasBox = (await page.locator('#drawingCanvas').boundingBox())!;
+  await page.locator('#undoButton').evaluate((button: HTMLButtonElement) => {
+    button.click();
+    for (const animation of document
+      .querySelector('.ink-motion')
+      ?.getAnimations({ subtree: true }) ?? [])
+      animation.pause();
+  });
+  const overlay = page.locator('.undo-ink-motion');
+  await expect(overlay).toBeVisible();
+  const overlayBox = (await overlay.boundingBox())!;
+  const ghostAlphaAt = (x: number, y: number) =>
+    overlay.evaluate(
+      (canvas: HTMLCanvasElement, point) => {
+        const scale = canvas.width / point.box.width;
+        const cx = Math.round((point.x - point.box.x) * scale);
+        const cy = Math.round((point.y - point.box.y) * scale);
+        const data = canvas.getContext('2d')!.getImageData(cx - 1, cy - 1, 3, 3).data;
+        let alpha = 0;
+        for (let index = 3; index < data.length; index += 4) alpha = Math.max(alpha, data[index]);
+        return alpha;
+      },
+      { x, y, box: overlayBox }
+    );
+  expect(await ghostAlphaAt(canvasBox.x + 390, canvasBox.y + 229)).toBeGreaterThan(0);
+  expect(await ghostAlphaAt(canvasBox.x + 430, canvasBox.y + 200)).toBe(0);
+  expect(await ghostAlphaAt(canvasBox.x + 300, canvasBox.y + 210)).toBe(0);
 });
 
 test('clear snapshots ink while clearing history and still permits undo', async ({ page }) => {

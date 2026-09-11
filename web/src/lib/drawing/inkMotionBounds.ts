@@ -1,5 +1,30 @@
-import { opPaddedUserBounds } from './opGeometry';
-import type { StrokeGroupCommand } from './strokeOps';
+import { AA_PAD_PX, opGeometricExtent, opPaddedUserBounds, paintOpShape } from './opGeometry';
+import { isCrayonInkOp, isMagicInkOp, type StrokeGroupCommand } from './strokeOps';
+
+// Crayon ink is re-rasterized through the pass buffer on every replay, and
+// magic ink paints nothing until its sheet has decoded, so both read their
+// ghost from the live tiles. Plain pen ink replays in a couple of milliseconds
+// and its replay is exact, so it keeps the cheaper path.
+export function strokeGhostReadsTiles(command: StrokeGroupCommand) {
+  return command.ops.some((op) => isCrayonInkOp(op) || isMagicInkOp(op));
+}
+
+// Lay down the command's ink footprint — every dot and path op at its padded
+// width, in one opaque colour — so a `destination-in` pass over the copied live
+// tiles keeps only the pixels the command deposited. The pad is the same AA bleed the
+// renderer's dirty rects carry, so the mask covers each op's antialiased edge.
+export function paintStrokeFootprint(
+  target: CanvasRenderingContext2D,
+  command: StrokeGroupCommand
+) {
+  target.lineCap = 'round';
+  target.lineJoin = 'round';
+  for (const op of command.ops) {
+    if ((op.kind !== 'dot' && op.kind !== 'path') || op.erase) continue;
+    const { halfWidth } = opGeometricExtent(op);
+    paintOpShape(target, op, '#000', halfWidth > 0 ? 1 + AA_PAD_PX / halfWidth : 1);
+  }
+}
 
 export function strokeMotionBounds(command: StrokeGroupCommand, width: number, height: number) {
   if (

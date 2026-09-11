@@ -1,15 +1,19 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   checkReleaseSeams,
+  CLIENT_SOURCE_EXTENSIONS,
   DEV_GATED_ENGINE_EXPORTS,
   drawingWorkHotPathProblems,
   engineDevGateProblems,
+  engineMeasureNames,
   RELEASE_ONLY_TOKENS,
+  RELEASE_SEAM_SOURCE_FILES,
   releaseSeamProblems,
 } from '../check-release-seams.mjs';
+import { ROOT } from '../lib/proc.mjs';
 
 const fixtures = [];
 
@@ -59,6 +63,9 @@ it('derives every current window seam and engine measure family', () => {
     'engine.resize',
     'engine.scanEmpty',
     'engine.undo',
+    'engine.undoInkMotion',
+    'engine.undoPatchCapture',
+    'engine.undoPatchCrop',
     'inputOps',
     'liveRasters',
     'liveSurfaceElements',
@@ -70,6 +77,52 @@ it('derives every current window seam and engine measure family', () => {
     'realizedNormalBackings',
     'totalLiveBackingBytes',
   ]);
+});
+
+it('matches a token whole, so engine.undo does not report engine.undoInkMotion', () => {
+  const dir = fixture();
+  writeFileSync(join(dir, 'undo.js'), JSON.stringify('engine.undoInkMotion'));
+
+  expect(releaseSeamProblems(dir)).toEqual([
+    expect.stringContaining('engine.undoInkMotion remains in'),
+  ]);
+});
+
+function sourceFilesEmittingEngineMeasures(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFilesEmittingEngineMeasures(path);
+    if (!CLIENT_SOURCE_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) return [];
+    if (entry.name.includes('.test.')) return [];
+    return engineMeasureNames(readFileSync(path, 'utf8')).length > 0 ? [path] : [];
+  });
+}
+
+it('lexes a measure whose string Prettier wrapped onto the next line', () => {
+  expect(engineMeasureNames("performance.measure(\n  'engine.wrapped',\n  { start }\n);")).toEqual([
+    'engine.wrapped',
+  ]);
+  expect(engineMeasureNames("// performance.mark('engine.commented:start')")).toEqual([]);
+});
+
+it('finds a wrapped-only emitter in a Svelte source', () => {
+  const dir = fixture();
+  writeFileSync(
+    join(dir, 'Cue.svelte'),
+    '<script lang="ts">\n  performance.measure(\n    \'engine.cue\',\n    { start }\n  );\n</script>\n'
+  );
+  writeFileSync(join(dir, 'quiet.ts'), 'export const quiet = true;');
+
+  expect(sourceFilesEmittingEngineMeasures(dir)).toEqual([join(dir, 'Cue.svelte')]);
+});
+
+it('scans every source file that emits an engine measure', () => {
+  const emitters = sourceFilesEmittingEngineMeasures(join(ROOT, 'web/src')).map((path) =>
+    relative(ROOT, path)
+  );
+
+  expect(emitters.length).toBeGreaterThan(0);
+  expect(emitters.filter((path) => !RELEASE_SEAM_SOURCE_FILES.includes(path))).toEqual([]);
 });
 
 it('requires every engine dev export to start behind the compile-time gate', () => {
