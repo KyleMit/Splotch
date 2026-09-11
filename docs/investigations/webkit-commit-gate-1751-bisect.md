@@ -1,13 +1,24 @@
 # WebKit commit-gate bisect — issue 1751
 
-The confirmed `crayon-scribbles` and `multi-finger` breaches that have failed the post-merge fast
-WebKit commit gate on every merge since 56741af7e5c91a96dabbb806461bbff5f71a09ba are not a product
-regression from PR 1733. They follow the browser build the gate runs on: Dependabot's
-`@playwright/test` 1.62.1 → 1.63.0 bump (e2709af5a3443a2dd5ffba029a00b8c7bf47b593, merged in
-a38003caa591b9efe35740f762e90ef791d85716) moved the macOS runner from Playwright WebKit r2336
-(WebKit 26.5) to r2359 (WebKit 26.6), inside the same not-comparable window that hid PR 1733's first
-measurement. On WebKit 26.5, PR 1733's product passes the unchanged gate; on WebKit 26.6, the
-product from before PR 1733 fails it the same way current main does.
+The post-merge fast WebKit commit gate has failed on every merge since
+56741af7e5c91a96dabbb806461bbff5f71a09ba, and the crossed arms below show that PR 1733 is neither
+necessary nor sufficient for those failures: on WebKit 26.5, PR 1733's product passes the unchanged
+gate, and on WebKit 26.6, the product from before PR 1733 fails it the way current main does. What
+changed between the last green gate and the first red one is the browser build the gate runs on:
+Dependabot's `@playwright/test` 1.62.1 → 1.63.0 bump (e2709af5a3443a2dd5ffba029a00b8c7bf47b593,
+merged in a38003caa591b9efe35740f762e90ef791d85716) moved the macOS runner from Playwright WebKit
+r2336 (WebKit 26.5) to r2359 (WebKit 26.6), inside the same not-comparable window that hid PR 1733's
+first measurement.
+
+The two scenarios carry different weight in that conclusion. The `crayon-scribbles` breach (a 3–4 s
+commit P95 against a 25 ms contract) appears only on 26.6 and follows the browser build outright.
+`multi-finger` is split: the shifted, repeated regime on 26.6 (P95s in the 100–600 ms range across
+whole runs, with Y run 2's raw samples showing the distribution itself moved) follows the browser
+build, but isolated confirmed breaches driven by single outliers over a 0–1 ms distribution predate
+it on 26.5 (fdbb0ff on both runners, the PR 1732 control point on its first runner, and arm X run
+2's 333 ms initial pass before its confirmation acquitted it). A confirmed multi-finger breach on
+its own therefore does not identify the browser build; the crayon breach and the multi-finger regime
+shift do.
 
 PR 1733 did introduce a measured regression, on the undo path rather than the commit path: its undo
 motion cue replayed the undone command's ops through the crayon pass buffer, which raised the
@@ -152,13 +163,16 @@ without the command, `subtractRemainingInk()` paints the tiles onto the ghost ag
 `destination-out`, so older ink inside the footprint (a yellow stroke the undone blue crossed) stays
 pinned on the paper instead of shrinking with the ghost; the revision reviewed on PR 1771 skipped
 that pass and visibly dragged crossing ink along. The ghost is therefore the pixels the command
-owned, the cost is one path stroke plus two bounded sets of tile blits, and the crayon pipeline
-never sees the overlay canvas. `engine.undoInkMotion` brackets both phases, so a tile-read undo
-contributes two entries to that measure. A plain pen command keeps the replay: it is exact, it costs
-a few milliseconds at most per undo on every browser measured here, and a five-finger drag's
-footprint covers most of the paper, where the tile copy is the dearer path. The pixels under the
-ghost, undo/redo, retained depth and the byte budget are untouched: the change reads the tiles and
-writes nothing but the overlay.
+owned, to within a bounded residue: `destination-out` scales the copy by one minus the surviving
+alpha, so it is exact wherever the surviving ink is opaque or absent and leaves at most a quarter of
+full alpha where the mask's AA pad covers only an older stroke's antialiased edge, a one-pixel
+fringe the cue's fade then scales down again. The cost is one path stroke plus two bounded sets of
+tile blits, and the crayon pipeline never sees the overlay canvas. `engine.undoInkMotion` brackets
+both phases, so a tile-read undo contributes two entries to that measure. A plain pen command keeps
+the replay: it is exact, it costs a few milliseconds at most per undo on every browser measured
+here, and a five-finger drag's footprint covers most of the paper, where the tile copy is the dearer
+path. The pixels under the ghost, undo/redo, retained depth and the byte budget are untouched: the
+change reads the tiles and writes nothing but the overlay.
 
 The first revision read the tiles for every command. Its macOS dispatch
 ([run 34597294730](https://github.com/KyleMit/Splotch/actions/runs/34597294730), de8799b875a3)
