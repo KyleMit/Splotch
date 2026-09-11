@@ -235,13 +235,18 @@ describe('uncalibrated cells on a release-gate row', () => {
     expect(penCellClass(html, 'iPad physical · native')).toBe('mx-cell num unscoreable');
   });
 
+  // The gate fixture with only its role changed, so the role guard is the one
+  // thing between this cell and the red edge.
   it('keeps the same uncalibrated cell neutral on a tripwire row', () => {
-    const html = renderReport(unscoreablePen('mac-chrome', uncalibrated));
+    const matrix = unscoreablePen('ipad-device-native', uncalibrated);
+    matrix.targets.find((target) => target.id === 'ipad-device-native').deviceKind = 'desktop';
+    const html = renderReport(matrix);
 
-    expect(penCellClass(html, 'Mac · Chrome')).toBe('mx-cell num unscoreable');
-    expect(html).not.toContain(
-      'Mac · Chrome · Portrait · Light · Pen · paint P95 9.3 / P99 9.9 / max 10.2 ms · lost frame time 0% (budget 1%) · unscoreable: pressure · counts as red'
+    expect(penCellClass(html, 'iPad physical · native')).toBe('mx-cell num unscoreable');
+    expect(html).toMatch(
+      /title="iPad physical · native · [^"]* · Pen · [^"]*unscoreable: pressure"/
     );
+    expect(html).not.toContain('unscoreable: pressure · counts as red');
   });
 
   it('stops the role-disclosure chevron animating under reduced motion', () => {
