@@ -30,7 +30,8 @@ const ADMIN_SECRET = randomUUID();
 const SEED_TOKENS = 'alpha,beta';
 const OVERSIZED_IMAGE_BYTES = MAX_IMAGE_BYTES + 1;
 const OVERSIZED_JSON_CHUNK_BYTES = 9 * 1024;
-// Keeps the request open long enough to prove the server can answer before the final chunk arrives.
+// Spaces the chunks so the cap is crossed while the request is still open, where cancellation
+// would reset the socket before the 413 reaches the client.
 const CHUNK_WRITE_DELAY_MS = 25;
 
 const postJson = (base, path, body, headers = {}) =>
