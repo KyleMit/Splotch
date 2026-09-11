@@ -113,9 +113,14 @@ The artifact's `frameStampEpoch` says which channels a capture carries (1: sched
 capture before the record; 2: both), each `postActionFrames` entry carries `ranFromActionMs` and
 `actualGapMs` beside its scheduled fields, and each action summary carries a non-gating
 `frameStamps` figure — the actual-gap distribution over the scored frames, actual-minus-scheduled
-deltas, callback delay, and `hiddenOverruns`. The scorer never reads the actual channel; the
-committed corpus is held to a byte-identical re-derivation across the change. Why the scheduled
-channel keeps the gate, and what would justify moving it, is ADR-0163's.
+deltas, callback delay, and `hiddenOverruns`. Each sample also carries the two onset rows
+`postActionFrames` starts after, in the same shape as its entries and `null` when absent:
+`lastPreActionFrame`, the frame stamped before the action (under rAF-aligned input, the frame that
+ran after the action and rendered it), and `firstActionFrame`, the frame `firstFrameMs` reads.
+Nothing scores them or feeds them to `frameStamps`, and captures older than ADR-0163's 2026-09
+amendment lack both keys. The scorer never reads the actual channel; the committed corpus is held to
+a byte-identical re-derivation across the change. Why the scheduled channel keeps the gate, and what
+would justify moving it, is ADR-0163's.
 
 ## Ruled-out drivers, and why
 

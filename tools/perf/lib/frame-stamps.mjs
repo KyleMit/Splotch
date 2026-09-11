@@ -17,6 +17,11 @@ import { percentile } from './real-screen-stats.mjs';
 // every sample `finish()` returns; a legacy sample carries no marker and reads
 // as epoch 1. The probe is a plain browser script that cannot import this
 // constant, so tools/perf/tests/action-probe.test.mjs pins its literal here.
+// An epoch names what the scored frame table carries and which rule scores it,
+// so an additive field no rule reads is not one: the probe's onset rows
+// (`lastPreActionFrame`, `firstActionFrame`) mark themselves, their keys
+// present on every sample from a probe that records them and null when the
+// row does not exist.
 export const SCHEDULED_ONLY_FRAME_STAMP_EPOCH = 1;
 export const DUAL_FRAME_STAMP_EPOCH = 2;
 

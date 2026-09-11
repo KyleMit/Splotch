@@ -352,6 +352,24 @@
     }
   }
 
+  function frameEntry([at, gap, visualEffectsActive, ranAt, actualGap], actionAt) {
+    return {
+      gapMs: gap,
+      startFromActionMs: at - gap - actionAt,
+      endFromActionMs: at - actionAt,
+      visualEffectsActive,
+      ranFromActionMs: ranAt - actionAt,
+      actualGapMs: actualGap,
+    };
+  }
+
+  function lastFrameStampedBefore(time) {
+    for (let index = frames.length - 1; index >= 0; index--) {
+      if (frames[index][0] < time) return frames[index];
+    }
+    return null;
+  }
+
   function finish(readyAt = performance.now()) {
     if (!active) throw new Error('No action is active');
     const action = active;
@@ -361,6 +379,14 @@
     const finishedAt = performance.now();
     if (action.actionAt === null) performance.mark(`${action.traceName}:start`);
     performance.measure(action.traceName, `${action.traceName}:start`);
+    // The onset rows (ADR-0163), which postActionFrames starts after: the frame
+    // stamped before the action, which under rAF-aligned input runs after it
+    // and renders it, and the first frame stamped at or after it, which
+    // firstFrameMs reads. Both are retained whole, with both clocks, for a
+    // later onset re-selection, and no scoring rule reads them. Each is null
+    // rather than omitted when absent, so key presence is what marks a capture
+    // whose probe records them.
+    const boundaryFrame = lastFrameStampedBefore(actionAt);
     const actionFrames = frames.filter(([at, gap]) => at >= actionAt && at - gap <= finishedAt);
     const responseEndedAt = Number.isFinite(readyAt) ? readyAt : finishedAt;
     const responseFrames = actionFrames.filter(([at, gap]) => at - gap <= responseEndedAt);
@@ -391,14 +417,9 @@
         .map(([, gap]) => gap),
       postActionFrames: actionFrames
         .filter(([at, gap]) => at - gap >= actionAt)
-        .map(([at, gap, visualEffectsActive, ranAt, actualGap]) => ({
-          gapMs: gap,
-          startFromActionMs: at - gap - actionAt,
-          endFromActionMs: at - actionAt,
-          visualEffectsActive,
-          ranFromActionMs: ranAt - actionAt,
-          actualGapMs: actualGap,
-        })),
+        .map((row) => frameEntry(row, actionAt)),
+      lastPreActionFrame: boundaryFrame ? frameEntry(boundaryFrame, actionAt) : null,
+      firstActionFrame: firstFrame ? frameEntry(firstFrame, actionAt) : null,
       topFrameGaps,
       frameStampEpoch: FRAME_STAMP_EPOCH,
       activities: action.activities.map(({ at, ...activity }) => ({
