@@ -13,15 +13,11 @@ import type { AiImageProvider } from './provider';
 
 // The model that renders the picture, and how much effort it spends doing it.
 //
-// Effort is the cost/latency/quality dial. Measured over the bake-off corpus,
-// the tiers do not overlap on latency at all: `low` ran 23-35 s, `medium`
-// 41-64 s, `high` 97-150 s — medium's fastest generation was slower than low's
-// slowest. `low` is picked because that gap is the whole experience for a
-// two-year-old, and because it costs $0.020 against medium's $0.058 while never
-// inventing a subject the child did not draw. What it gives up is
-// interpretation: it transcribes scribbled fill as flat bands where medium
-// blends it. Re-run `npm run model-eval` before moving either.
-const IMAGE_MODEL = 'gpt-image-2';
+// Effort is the cost/latency/quality dial. The reference bake-off in
+// scrapbook/model-eval/report found comparable output across the GPT Image
+// candidates, with Flare low giving the best latency/cost tradeoff. Re-run
+// `npm run model-eval` before moving either setting.
+const IMAGE_MODEL = 'gpt-image-2.5-flare';
 const IMAGE_QUALITY = 'low';
 
 // The model that reads the drawing, decides whether it is safe to render, and

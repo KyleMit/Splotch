@@ -63,6 +63,15 @@ describe('openAiProvider.generateImage', () => {
     });
   });
 
+  it('renders with the measured Flare low configuration', async () => {
+    create.mockResolvedValue(imageResponse);
+    await openAiProvider.generateImage(request);
+    expect(create.mock.calls[0][0].tools[0]).toMatchObject({
+      model: 'gpt-image-2.5-flare',
+      quality: 'low',
+    });
+  });
+
   it('asks OpenAI not to store the request', async () => {
     // The one retention leg this app controls, and the promise /privacy makes to
     // a parent (ADR-0114). Without this the child's drawing and the picture made
@@ -180,7 +189,7 @@ describe('openAiProvider.generateImage', () => {
 
 describe('openAiProvider.verifyKey', () => {
   it('returns ok when the probe call succeeds', async () => {
-    retrieve.mockResolvedValue({ id: 'gpt-image-2' });
+    retrieve.mockResolvedValue({ id: 'gpt-image-2.5-flare' });
     await expect(openAiProvider.verifyKey('good-key')).resolves.toEqual({ ok: true });
   });
 
@@ -210,7 +219,7 @@ describe('openAiProvider.verifyKey', () => {
   });
 
   it('probes the image model generation uses, without generating', async () => {
-    retrieve.mockResolvedValue({ id: 'gpt-image-2' });
+    retrieve.mockResolvedValue({ id: 'gpt-image-2.5-flare' });
     create.mockResolvedValue(imageResponse);
     await openAiProvider.verifyKey('good-key');
     await openAiProvider.generateImage(request);
