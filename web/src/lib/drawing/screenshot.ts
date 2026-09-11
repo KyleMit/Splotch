@@ -22,9 +22,8 @@ let preparedScreenshot: PreparedScreenshot | null = null;
 type ExportResult = { blob: Blob | null; error?: never } | { blob?: never; error: unknown };
 
 interface PreparedScreenshot {
-  activate(): void;
+  activate(): Promise<ExportResult>;
   cancel(): void;
-  result: Promise<ExportResult>;
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -106,6 +105,7 @@ function createPreparedScreenshot(
   const preview = createPolaroidPreviewRequest();
   let activated = false;
   let cancelled = false;
+  let result: Promise<ExportResult> | null = null;
   let pendingPreview: ImageBitmap | null = null;
   const deferredPreview = preview
     ? {
@@ -123,15 +123,10 @@ function createPreparedScreenshot(
       }
     : null;
   const exportOptions = deferredPreview ? { preview: deferredPreview } : undefined;
-  const result = (
-    exportPreparation?.complete(exportOptions) ?? exportCanvasBlob(exportOptions)
-  ).then(
-    (blob): ExportResult => ({ blob }),
-    (error): ExportResult => ({ error })
-  );
   return {
     activate() {
-      if (cancelled || activated) return;
+      if (result) return result;
+      if (cancelled) return Promise.resolve({ blob: null });
       activated = true;
       playScreenshotFeedback();
       if (pendingPreview) {
@@ -139,14 +134,19 @@ function createPreparedScreenshot(
         pendingPreview = null;
         preview?.onReady(bitmap);
       }
+      result = (exportPreparation?.complete(exportOptions) ?? exportCanvasBlob(exportOptions)).then(
+        (blob): ExportResult => ({ blob }),
+        (error): ExportResult => ({ error })
+      );
+      return result;
     },
     cancel() {
       if (activated || cancelled) return;
       cancelled = true;
+      exportPreparation?.cancel();
       pendingPreview?.close();
       pendingPreview = null;
     },
-    result,
   };
 }
 
@@ -163,8 +163,7 @@ export function cancelScreenshotPreparation() {
 }
 
 async function savePreparedScreenshot(prepared: PreparedScreenshot) {
-  prepared.activate();
-  const result = await prepared.result;
+  const result = await prepared.activate();
   if ('error' in result) throw result.error;
   if (!result.blob) return false;
   return saveImageBlob(result.blob, undefined, { allowPrompt: true });
