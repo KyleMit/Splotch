@@ -41,13 +41,21 @@ describe('scrapbook index', () => {
   it('keeps a registered entry card when its configured page exists', () => {
     const scrapbookDir = fixture();
     const reportDir = join(scrapbookDir, 'model-eval', 'report');
+    const archiveDir = join(scrapbookDir, 'model-eval', '2026-08-14-gemini-vs-gpt-image');
     mkdirSync(reportDir, { recursive: true });
+    mkdirSync(archiveDir, { recursive: true });
     writeFileSync(join(reportDir, 'index.html'), '<!doctype html>');
+    writeFileSync(join(archiveDir, 'index.html'), '<!doctype html>');
 
     const index = buildScrapbookIndex(scrapbookDir);
 
     expect(index).toContain('href="model-eval/report/index.html"');
     expect(index).toContain('aria-label="Image-model bake-off"');
+    expect(index).toContain('>Latest bake-off<');
+    expect(index).toContain('>Aug 14, 2026 · Gemini vs GPT Image<');
+    expect(index.indexOf('>Latest bake-off<')).toBeLessThan(
+      index.indexOf('>Aug 14, 2026 · Gemini vs GPT Image<')
+    );
   });
 
   it('uses a recursive fallback page when a registered entry is missing', () => {

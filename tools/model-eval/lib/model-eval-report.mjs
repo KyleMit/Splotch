@@ -9,9 +9,9 @@
 //
 // The comparison is N-way rather than A/B: a variant is a provider × model ×
 // effort tier, so the scorecard puts variants in ROWS and metrics in columns
-// (the only orientation that survives adding a tier), and the gallery lays each
-// drawing out as a wrapping grid of tiles — the input first, then one tile per
-// variant — with a sticky toolbar that picks which variants stay visible.
+// (the only orientation that survives adding a tier), and each gallery drawing
+// gets a comparison table with variants in columns and trials in rows. A sticky
+// toolbar picks which variants stay visible.
 //
 // `renderReportHtml` is pure string assembly over already-thumbnailed results and
 // precomputed aggregates, so a bundle can be re-rendered from an existing run
@@ -23,6 +23,10 @@ import { GENERATE_DEADLINE_MS } from '../../../web/src/lib/ai/limits.ts';
 import { PRODUCTION_VARIANT, RATES } from './model-eval.mjs';
 import { esc } from '../../lib/html.mjs';
 import { chromeStyle, masthead, siteFooter } from '../../scrapbook/lib/scrapbook-chrome.mjs';
+
+const REPORT_SHELL_MAX_PX = 1760;
+const TRIAL_LABEL_WIDTH_PX = 70;
+const TRIAL_CELL_MIN_WIDTH_PX = 150;
 
 // Per-image cost reads as cents: every variant lands between one and twenty
 // cents, where "$0.0204" hides the comparison and "2.0¢" states it.
@@ -220,10 +224,17 @@ function drawingParts(id) {
   };
 }
 
-// The toolbar groups variants by model, with one chip per effort tier, so eight
-// candidates fit one row on a laptop. The "-flash-image" suffix carries nothing
-// once the color dot identifies the chip.
-const shortModel = (model) => model.replace(/-flash-image$/, '').replace(/^gemini-/, 'gemini ');
+// The report already establishes that these are image models, and the 2.5
+// generation is implicit in the Flare and Sunburst names.
+const shortModel = (model) =>
+  model
+    .replace(/^gpt-image-2\.5-(flare|sunburst)$/, '$1')
+    .replace(/^gpt-image-/, '')
+    .replace(/-flash-image$/, '')
+    .replace(/^gemini-/, 'gemini ');
+const shortQuality = (quality) => (quality === 'medium' ? 'med' : quality);
+const shortVariant = (variant) =>
+  [shortModel(variant.model), shortQuality(variant.quality)].filter(Boolean).join(' · ');
 function variantGroups(variants) {
   const groups = [];
   for (const v of variants) {
@@ -255,6 +266,7 @@ function runDate(runId) {
 }
 
 const EXTRA_CSS = `
+:root{--shell:${REPORT_SHELL_MAX_PX}px;--trial-label:${TRIAL_LABEL_WIDTH_PX}px;--trial-cell-min:${TRIAL_CELL_MIN_WIDTH_PX}px}
 .stat-row .chip b{font-variant-numeric:tabular-nums}
 .lead{color:var(--muted);max-width:68ch;margin:0 0 14px}
 .lead b{color:var(--ink);font-weight:700}
@@ -352,9 +364,10 @@ td.heat{background:color-mix(in srgb,var(--warn) calc(var(--t) * 34%),transparen
 .outcomes .why{color:var(--muted)}
 
 /* ---- Gallery ------------------------------------------------------------ */
-.gbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;margin:0 calc(-1 * clamp(16px,4vw,44px));padding:8px clamp(16px,4vw,44px);background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
+.gbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 calc(-1 * clamp(16px,4vw,44px));padding:8px clamp(16px,4vw,44px);background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
 .gbar select{flex:0 0 auto;width:auto;font:inherit;font-size:.82rem;font-weight:650;color:var(--ink);background:var(--card);border:1px solid var(--hair);border-radius:999px;padding:6px 30px 6px 12px;max-width:44vw;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 55%,calc(100% - 10px) 55%;background-size:5px 5px;background-repeat:no-repeat;cursor:pointer;flex:0 1 auto;text-overflow:ellipsis}
 .gbar select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.trial-mode{flex:0 0 auto}
 .vpick{display:flex;align-items:center;gap:6px;flex:1 1 0;min-width:0;overflow-x:auto;scrollbar-width:none;padding:2px 0;mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
 .vpick::-webkit-scrollbar{display:none}
 .vpick::after{content:"";flex:0 0 28px}
@@ -379,11 +392,19 @@ td.heat{background:color-mix(in srgb,var(--warn) calc(var(--t) * 34%),transparen
 .draw:last-child{margin-bottom:0}
 .draw h4{margin:0 0 8px;font-size:.84rem;font-weight:650;color:var(--muted);display:flex;align-items:baseline;gap:8px}
 .draw h4 b{color:var(--ink);font-weight:750;font-size:.9rem}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--tile,160px),1fr));gap:10px;align-items:start}
+.trial-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.trial-grid{width:100%;min-width:var(--trial-min-width);table-layout:fixed;background:transparent}
+.trial-grid th,.trial-grid td{border:0;padding:0 5px 10px;text-align:left;background:transparent;position:static;white-space:normal}
+.trial-grid thead th{padding-top:0;font-size:.72rem;text-transform:none;letter-spacing:0;color:var(--vc,var(--muted));vertical-align:bottom}
+.trial-grid .reference-head{color:var(--muted);padding-left:0}
+.trial-grid .trial-col{width:var(--trial-label);color:var(--muted);text-align:left}
+.trial-grid .reference-cell,.trial-grid .reference-spacer{padding-left:0}
+.trial-grid tbody th{font-size:.74rem;color:var(--muted);vertical-align:top;padding-top:8px}
+.trial-grid tbody tr:last-child th,.trial-grid tbody tr:last-child td{padding-bottom:0}
+.gallery:not(.all-trials) .trial-col,.gallery:not(.all-trials) tr[data-trial]:not(.first-trial){display:none}
 .tile{margin:0;min-width:0;position:relative}
 .tile .art{width:100%;aspect-ratio:1;object-fit:contain;display:block;border-radius:var(--r-sm);border:1px solid var(--hair);background:#fff}
 .tile.input .art{border:2px solid var(--ink)}
-@media (min-width:600px){.gallery:not(.few) .tile.input{grid-column:span 2;grid-row:span 2}}
 .tile.input figcaption{position:absolute;top:8px;left:8px;font-size:.62rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--ink);color:var(--paper);pointer-events:none}
 .swap{position:relative;display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;border-radius:var(--r-sm);color:inherit;font:inherit}
 .swap .art{transition:box-shadow .12s ease}
@@ -405,10 +426,9 @@ td.heat{background:color-mix(in srgb,var(--warn) calc(var(--t) * 34%),transparen
 @media (max-width:640px){
   .gbar{gap:8px;padding-top:7px;padding-bottom:7px}
   .gbar select{font-size:.78rem;padding:6px 26px 6px 10px}
-  .tiles{--tile:150px;gap:8px}
+  .vpick{flex-basis:100%;order:3}
   .cat-head h3{font-size:1rem}
 }
-@media (max-width:360px){.tiles{--tile:132px}}
 @media (prefers-reduced-motion:reduce){.swap .art,details.more summary::before{transition:none}}
 `;
 
@@ -416,8 +436,6 @@ const SCRIPT = `<script>
 (function () {
   var gallery = document.getElementById('gallery');
   var KEY = 'model-eval-report:hidden-variants';
-  // Below this many visible candidates a double-size input tile leaves a hole beside it.
-  var FEW_SHOWN = 4;
 
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.swap');
@@ -437,15 +455,36 @@ const SCRIPT = `<script>
     return chips.filter(function (c) { return c.getAttribute('aria-pressed') === 'false'; })
       .map(function (c) { return c.dataset.v; });
   }
+  var trialButtons = Array.prototype.slice.call(document.querySelectorAll('[data-trials]'));
+  function showingAllTrials() {
+    return trialButtons.some(function (button) {
+      return button.dataset.trials === 'all' && button.getAttribute('aria-pressed') === 'true';
+    });
+  }
+  function applyLayout() {
+    var allTrials = showingAllTrials();
+    gallery.classList.toggle('all-trials', allTrials);
+    var visibleModels = Math.max(1, chips.length - hidden().length);
+    var trialWidth = allTrials ? ${TRIAL_LABEL_WIDTH_PX} : 0;
+    gallery.style.setProperty('--trial-min-width', trialWidth + (visibleModels + 1) * ${TRIAL_CELL_MIN_WIDTH_PX} + 'px');
+  }
   function apply(save) {
     chips.forEach(function (c) {
       gallery.classList.toggle('off-' + c.dataset.v, c.getAttribute('aria-pressed') === 'false');
     });
     var all = document.querySelector('.vall');
     if (all) all.hidden = hidden().length === 0;
-    gallery.classList.toggle('few', chips.length - hidden().length <= FEW_SHOWN);
+    applyLayout();
     if (save) { try { localStorage.setItem(KEY, JSON.stringify(hidden())); } catch (_) {} }
   }
+  trialButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      trialButtons.forEach(function (candidate) {
+        candidate.setAttribute('aria-pressed', String(candidate === button));
+      });
+      applyLayout();
+    });
+  });
   chips.forEach(function (c) {
     c.addEventListener('click', function () {
       c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') === 'false'));
@@ -507,6 +546,7 @@ export function renderReportHtml({
   const varStyle = (v) => `--vc:var(--v-${v.key})`;
   const byKey = Object.fromEntries(variants.map((v) => [v.key, v]));
   const spend = results.reduce((total, r) => total + (r.cost ?? 0), 0);
+  const reportHasMultipleTrials = new Set(results.map((r) => r.sample)).size > 1;
 
   const costs = variants.map((v) => agg[v.key].avgCost).filter((c) => c != null);
   const cheapest = costs.length ? Math.min(...costs) : null;
@@ -525,7 +565,7 @@ export function renderReportHtml({
       .filter(Boolean)
       .join(' · ');
     return `<li class="score-row${isNow ? ' now' : ''}" style="${varStyle(v)}" data-order="${order}" data-cost="${s.avgCost ?? ''}" data-ms="${s.medianMs ?? ''}">
-      <div class="sc-name"><b><span class="swatch"></span>${esc(v.label)}</b><span class="role">${esc(v.role)}${isNow ? ' <span class="tag">in production now</span>' : ''}</span></div>
+      <div class="sc-name"><b><span class="swatch"></span>${esc(shortVariant(v))}</b><span class="role">${esc(v.role)}${isNow ? ' <span class="tag">in production now</span>' : ''}</span></div>
       <div class="sc-metric sc-cost">
         <div class="sc-val">${cents(s.avgCost)}<small>per image</small></div>
         <div class="bar"><i style="width:${pct(s.avgCost, maxCost)}%"></i></div>
@@ -544,7 +584,7 @@ export function renderReportHtml({
     .map((v) => {
       const s = agg[v.key];
       return `<tr>
-      <td class="vname" style="${varStyle(v)}">${esc(v.label)}<small>${esc(v.role)}</small></td>
+      <td class="vname" style="${varStyle(v)}">${esc(shortVariant(v))}<small>${esc(v.role)}</small></td>
       <td>${s.images} / ${s.n}</td>
       <td>${count(s.imageTokens)}</td>
       <td>${usd(s.avgCost)}</td>
@@ -589,7 +629,8 @@ export function renderReportHtml({
   const nonImage = results.filter((r) => r.kind !== 'image');
 
   function outputTile(s, variant, multi) {
-    const tag = multi ? `${variant.label} #${s.sample}` : variant.label;
+    const label = shortVariant(variant);
+    const tag = multi ? `${label} #${s.sample}` : label;
     if (s.kind !== 'image') {
       const cls = s.kind === 'refusal' ? 'ph refusal' : 'ph';
       return `<div class="tile ${cls}" data-v="${esc(variant.key)}" style="${varStyle(variant)}"><b>${s.kind === 'refusal' ? 'refused' : 'no image'}</b><span class="who">${esc(tag)}</span><span>${esc(firstSentence(s.reason || s.finishReason, 90))}</span></div>`;
@@ -599,17 +640,31 @@ export function renderReportHtml({
 
   function drawing(id) {
     const { name, aspect } = drawingParts(id);
-    const tiles = variants.flatMap((v) => {
-      const ss = results
-        .filter((r) => r.id === id && r.variant === v.key)
-        .sort((a, b) => a.sample - b.sample);
-      return ss.map((s) => outputTile(s, v, ss.length > 1));
-    });
+    const drawingResults = results.filter((r) => r.id === id);
+    const trialNumbers = [...new Set(drawingResults.map((r) => r.sample))].sort((a, b) => a - b);
+    const hasMultipleTrials = trialNumbers.length > 1;
+    const trialRows = trialNumbers
+      .map(
+        (trial) =>
+          `<tr${trial === trialNumbers[0] ? ' class="first-trial"' : ''} data-trial="${trial}">${
+            trial === trialNumbers[0]
+              ? `<td class="reference-cell"><figure class="tile input"><img class="art" loading="lazy" src="${inThumb[id]}" alt="the child's drawing, ${esc(id)}"/><figcaption>Child's drawing</figcaption></figure></td>`
+              : '<td class="reference-spacer" aria-hidden="true"></td>'
+          }<th class="trial-col" scope="row">#${trial}</th>${variants
+            .map((v) => {
+              const result = drawingResults.find((r) => r.variant === v.key && r.sample === trial);
+              return `<td data-v="${esc(v.key)}">${result ? outputTile(result, v, hasMultipleTrials) : ''}</td>`;
+            })
+            .join('')}</tr>`
+      )
+      .join('\n          ');
     return `<article class="draw" id="draw-${esc(id)}">
       <h4><b>${esc(name)}</b>${aspect ? `<span>${esc(aspect)}</span>` : ''}</h4>
-      <div class="tiles">
-        <figure class="tile input"><img class="art" loading="lazy" src="${inThumb[id]}" alt="the child's drawing, ${esc(id)}"/><figcaption>Child's drawing</figcaption></figure>
-        ${tiles.join('\n        ')}
+      <div class="comparison">
+        <div class="trial-wrap"><table class="trial-grid">
+          <thead><tr><th class="reference-head" scope="col">Child's drawing</th><th class="trial-col" scope="col">Trial</th>${variants.map((v) => `<th scope="col" data-v="${esc(v.key)}" style="${varStyle(v)}">${esc(shortVariant(v))}</th>`).join('')}</tr></thead>
+          <tbody>${trialRows}</tbody>
+        </table></div>
       </div>
     </article>`;
   }
@@ -671,7 +726,7 @@ export function renderReportHtml({
 
     <details class="more"><summary>Time by category <span class="desc">mean seconds per drawing type</span></summary>
     <div class="wrap"><table>
-    <tr><th>Category</th><th>Drawings</th>${variants.map((v) => `<th style="${varStyle(v)};color:var(--vc)">${esc(v.label)}</th>`).join('')}</tr>
+    <tr><th>Category</th><th>Drawings</th>${variants.map((v) => `<th style="${varStyle(v)};color:var(--vc)">${esc(shortVariant(v))}</th>`).join('')}</tr>
     ${catRows}
     </table></div></details>
 
@@ -682,21 +737,22 @@ export function renderReportHtml({
             .map((r) => {
               const v = byKey[r.variant];
               const { name } = drawingParts(r.id);
-              return `<li style="${v ? varStyle(v) : ''}"><span class="kind ${esc(r.kind)}">${r.kind === 'refusal' ? 'refused' : 'error'}</span><span class="who">${esc(r.variantLabel)}</span><span>on <a href="#draw-${esc(r.id)}">${esc(name)}</a> (${esc(categoryInfo(r.category).name)})</span><span class="why">${esc(firstSentence(r.reason || r.finishReason, 140))}</span></li>`;
+              return `<li style="${v ? varStyle(v) : ''}"><span class="kind ${esc(r.kind)}">${r.kind === 'refusal' ? 'refused' : 'error'}</span><span class="who">${esc(v ? shortVariant(v) : r.variantLabel)}</span><span>on <a href="#draw-${esc(r.id)}">${esc(name)}</a> (${esc(categoryInfo(r.category).name)})</span><span class="why">${esc(firstSentence(r.reason || r.finishReason, 140))}</span></li>`;
             })
             .join('')}</ul>`
         : '<p class="lead">Every drawing came back as an image from every candidate. No refusals, no errors.</p>'
     }
 
     <div class="section-head"><h2>Gallery</h2><span class="desc">every drawing, every candidate</span></div>
-    <p class="lead">Each drawing is shown first, followed by what every candidate made of it. <b>Tap any
-    result to swap it for the child's drawing</b> and back, so you can see exactly what changed. Use the
-    toolbar to hide candidates you have ruled out.</p>
+    <p class="lead">Each drawing is followed by one candidate per column. The compact view shows the first trial;
+    switch to both for more detail. <b>Tap any result to swap it for the child's drawing</b> and back, so
+    you can see exactly what changed. Use the toolbar to hide candidates you have ruled out.</p>
     <div class="gbar">
       <select id="cat-jump" aria-label="Jump to a category">
         <option value="">Jump to…</option>
         ${cats.map((c) => `<option value="cat-${esc(c)}">${esc(categoryInfo(c).name)}</option>`).join('')}
       </select>
+      ${reportHasMultipleTrials ? '<div class="seg trial-mode" role="group" aria-label="Trials shown"><span class="lbl">Trials</span><button type="button" data-trials="one" aria-pressed="true" title="Show the first trial only">First</button><button type="button" data-trials="all" aria-pressed="false" title="Show both trials">Both</button></div>' : ''}
       <div class="vpick" role="group" aria-label="Candidates shown">
         ${variantGroups(variants)
           .map(
@@ -704,7 +760,7 @@ export function renderReportHtml({
               `<div class="vgroup">${members.length > 1 || members[0].quality ? `<span class="vg-name">${esc(shortModel(model))}</span>` : ''}${members
                 .map(
                   (v) =>
-                    `<button class="vchip" type="button" data-v="${esc(v.key)}" aria-pressed="true" style="${varStyle(v)}" title="${esc(v.label)}"><i></i>${esc(v.quality ?? shortModel(v.model))}</button>`
+                    `<button class="vchip" type="button" data-v="${esc(v.key)}" aria-pressed="true" style="${varStyle(v)}" title="${esc(shortVariant(v))}"><i></i>${esc(shortQuality(v.quality) ?? shortModel(v.model))}</button>`
                 )
                 .join('')}</div>`
           )
@@ -712,7 +768,7 @@ export function renderReportHtml({
         <button class="vall" type="button" hidden>Show all</button>
       </div>
     </div>
-    <div class="gallery" id="gallery">
+    <div class="gallery" id="gallery" style="--trial-min-width:${(variants.length + 1) * TRIAL_CELL_MIN_WIDTH_PX}px">
     ${cats.map(categorySection).join('\n')}
     </div>
 

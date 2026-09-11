@@ -25,7 +25,7 @@ export const ORCHESTRATOR_REASONING_EFFORT = 'medium';
 // naming a VARIANTS key, so a prompt round can never be tuned against a model
 // the app no longer ships; assertProductionConfig fails on drift from the app
 // source, the way the orchestrator and prompt constants above already do.
-const IMAGE_MODEL = 'gpt-image-2';
+const IMAGE_MODEL = 'gpt-image-2.5-flare';
 const IMAGE_QUALITY = 'low';
 
 // Every cell under comparison. `key` is filesystem-safe because it names the
@@ -53,7 +53,7 @@ export const VARIANTS = [
     provider: 'openai',
     model: 'gpt-image-2',
     quality: 'low',
-    role: 'current prod',
+    role: 'previous prod',
   },
   {
     key: 'gpt-image-2-medium',
@@ -78,7 +78,8 @@ export const VARIANTS = [
       provider: 'openai',
       model,
       quality,
-      role: 'openai candidate',
+      role:
+        model === 'gpt-image-2.5-flare' && quality === 'low' ? 'current prod' : 'openai candidate',
     }))
   ),
   {
