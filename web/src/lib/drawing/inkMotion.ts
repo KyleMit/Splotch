@@ -1,8 +1,10 @@
-import { strokeMotionBounds } from './inkMotionBounds';
-import { renderOp, type StrokeGroupCommand } from './strokeOps';
+import { paintStrokeFootprint, strokeMotionBounds } from './inkMotionBounds';
+import type { StrokeGroupCommand } from './strokeOps';
 import { viewMatrix, type EngineViewState } from './paperView';
 
-export function createInkMotion() {
+// `paint` lays the visible live tiles onto a target under its current transform;
+// both ghosts read their pixels from it rather than replaying history.
+export function createInkMotion(paint: (target: CanvasRenderingContext2D) => void) {
   let overlay: HTMLDivElement | null = null;
 
   function cancel() {
@@ -29,6 +31,11 @@ export function createInkMotion() {
     return wrapper;
   }
 
+  // The ghost is the undone ink as it stands on the live tiles, copied through
+  // a mask of the command's footprint. Replaying the command's ops instead
+  // re-rasterizes the whole stroke through the crayon pass buffer, which is
+  // the cost the 1751 bisect measured on the undo path; the tiles already hold
+  // those pixels, and a bounded number of blits reads them.
   function undo(
     canvas: HTMLCanvasElement,
     command: StrokeGroupCommand | undefined,
@@ -49,8 +56,9 @@ export function createInkMotion() {
     const target = image.getContext('2d');
     if (!target) return;
     target.translate(-bounds.left, -bounds.top);
-    for (const op of command.ops) renderOp(target, op);
-    renderOp(target, { kind: 'crayonFlush' });
+    paintStrokeFootprint(target, command);
+    target.globalCompositeOperation = 'source-in';
+    paint(target);
     image.className = 'undo-ink-motion';
     image.style.cssText = `left:${bounds.left / scale}px;top:${bounds.top / scale}px;width:${bounds.width / scale}px;height:${bounds.height / scale}px`;
     present(canvas.parentElement, image, `matrix(${viewMatrix(view).join(',')})`);
@@ -60,8 +68,7 @@ export function createInkMotion() {
     canvas: HTMLCanvasElement,
     view: EngineViewState,
     scale: number,
-    viewport: { width: number; height: number },
-    paint: (target: CanvasRenderingContext2D) => void
+    viewport: { width: number; height: number }
   ) {
     cancel();
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
