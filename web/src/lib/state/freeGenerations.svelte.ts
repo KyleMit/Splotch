@@ -16,6 +16,8 @@ export const freeGenerations = $state({
   available: false,
 });
 
+const freeGenerationGrantRequest = createLatestRequest();
+
 let installationIdPromise: Promise<string> | null = null;
 
 function webInstallationId(): string {
@@ -67,17 +69,16 @@ export function setFreeGenerationsUnavailable(): void {
 export function createFreeGenerationGrantRefresher(): () => void {
   let wasReady = false;
   let wasOnline = false;
-  const latest = createLatestRequest();
   return () => {
     const ready = grantRefreshReady();
     const online = network.online;
     const shouldRearm = (ready && !wasReady) || (online && !wasOnline);
     wasReady = ready;
     wasOnline = online;
-    if (!ready || !online) latest.cancel();
+    if (!ready || !online) freeGenerationGrantRequest.cancel();
     if (shouldRearm && !freeGenerations.available) freeGenerations.loading = true;
     if (shouldRearm && ready && online && freeGenerations.loading) {
-      void refreshFreeGenerationGrant(latest);
+      void refreshFreeGenerationGrant(freeGenerationGrantRequest);
     } else if (persistedStateStatus.hydrated && !ready) {
       setFreeGenerationsUnavailable();
     }

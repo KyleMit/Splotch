@@ -137,6 +137,47 @@ describe('grantRefreshReady', () => {
     expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
   });
 
+  it('does not restart a pending request when refresh state is unchanged', async () => {
+    const refreshGrant = createFreeGenerationGrantRefresher();
+    const pending = deferred<Response>();
+    const fetchMock = vi.fn().mockReturnValue(pending.promise);
+    vi.stubGlobal('fetch', fetchMock);
+
+    persistedStateStatus.hydrated = true;
+    refreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const signal = requestSignal(fetchMock, 0);
+
+    refreshGrant();
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(signal.aborted).toBe(false);
+
+    pending.resolve(grantResponse(6).response);
+    await vi.waitFor(() => expect(freeGenerations.remaining).toBe(6));
+  });
+
+  it('lets a new refresher invalidate a request owned by an old instance', async () => {
+    const oldRefreshGrant = createFreeGenerationGrantRefresher();
+    const pending = deferred<Response>();
+    const fetchMock = vi.fn().mockReturnValue(pending.promise);
+    vi.stubGlobal('fetch', fetchMock);
+
+    persistedStateStatus.hydrated = true;
+    oldRefreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const signal = requestSignal(fetchMock, 0);
+
+    const newRefreshGrant = createFreeGenerationGrantRefresher();
+    settings.aiUserApiKey = 'parent-key';
+    newRefreshGrant();
+    expect(signal.aborted).toBe(true);
+
+    const stale = grantResponse(4);
+    pending.resolve(stale.response);
+    await vi.waitFor(() => expect(stale.json).toHaveBeenCalledOnce());
+    expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
+  });
+
   it('keeps the reconnect result when the older request settles first', async () => {
     const refreshGrant = createFreeGenerationGrantRefresher();
     const older = deferred<Response>();
