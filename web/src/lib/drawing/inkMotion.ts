@@ -58,6 +58,7 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     paint(target);
     target.globalCompositeOperation = 'destination-in';
     target.drawImage(mask, bounds.left, bounds.top);
+    mask.width = 0;
     pendingSubtract = target;
   }
 
