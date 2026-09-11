@@ -1450,9 +1450,38 @@ function rowLabel(row) {
   return `${row.targetLabel} · ${row.modeLabel}`;
 }
 
-function fidelityChip(fidelity) {
-  const gate = fidelity === GATE_FIDELITY;
-  return `<span class="matrix-chip${gate ? ' trusted' : ''}">${gate ? 'Release gate' : 'Advisory'}</span>`;
+// Only a release-gate row needs the calibration distinction: its section
+// already names the role, and the chip says whether the row enforces the drawing
+// gates today or is a gate-in-waiting (ADR-0156 decision 1).
+function calibrationChip(target) {
+  if (targetRole(target) !== RELEASE_GATE) return '';
+  const calibrated = target.fidelity === GATE_FIDELITY;
+  const title = calibrated
+    ? 'Calibrated drawing instrument: this row enforces the drawing gates today.'
+    : 'Gate-in-waiting: its drawing instrument is uncalibrated on some input-fidelity checks (ADR-0139), so a cell it cannot score counts as red (ADR-0156).';
+  return `<span class="matrix-chip ${calibrated ? 'trusted' : 'waiting'}" title="${esc(title)}">${calibrated ? 'Calibrated' : 'Gate-in-waiting'}</span>`;
+}
+
+function roleHead(section, targets, tag) {
+  const modes = targets.reduce((sum, target) => sum + target.modes.length, 0);
+  const count = `${targets.length} target${targets.length === 1 ? '' : 's'} · ${modes} mode${modes === 1 ? '' : 's'}`;
+  return `<${tag} class="role-head"><span class="role-title"><b>${esc(section.title)}</b><span class="role-count">${count}</span></span><span class="role-rule">${esc(section.rule)}</span></${tag}>`;
+}
+
+// The release gate renders open and first; every other role folds into a
+// closed <details> whose summary still states the role's rule, so collapsing a
+// section never hides what its red means. Native disclosure keeps the page
+// readable without the script and opens for print with the notes.
+function roleSections(matrix, renderTarget) {
+  return ROLE_SECTIONS.map((section) => {
+    const targets = targetsInRole(matrix, section.role);
+    if (!targets.length) return '';
+    const rows = targets.map(renderTarget).join('');
+    const attrs = `class="role ${section.role === RELEASE_GATE ? 'role-primary' : 'role-fold'}" data-role="${section.role}"`;
+    return section.role === RELEASE_GATE
+      ? `<div ${attrs}>${roleHead(section, targets, 'div')}${rows}</div>`
+      : `<details ${attrs}>${roleHead(section, targets, 'summary')}${rows}</details>`;
+  }).join('');
 }
 
 // Preserved rows carry results from an earlier campaign (ADR-0138); without a
@@ -1487,7 +1516,25 @@ const DRAWING_METRIC_KEYS = ['p95', 'p99', 'max'];
 
 // Every paint metric rides the cell as data attributes so the metric switcher can
 // swap the displayed number and heat color client-side without re-rendering.
-function drawingOverviewCell(label, brush, entry, gates) {
+const GATE_RED_NOTE = 'counts as red on a release-gate row (ADR-0156)';
+
+// ADR-0156 decision 1: on a release-gate row, a cell left unscoreable only by
+// checks its instrument has no calibrated expectation for counts as red, not as
+// absent. Every other reason a cell is unscoreable — a real fidelity failure, an
+// off-regime beat, preserved evidence — asks for a recapture instead, so it
+// keeps the neutral hatch.
+function countsAsGateRed(role, entry) {
+  const aggregate = entry?.aggregate;
+  if (role !== RELEASE_GATE || aggregate?.scoreable !== false) return false;
+  if (aggregate.unscoreableReason || aggregate.offRefreshRegime) return false;
+  const unscoreableRuns = (entry.runs ?? []).filter((run) => run.scoreable === false);
+  return (
+    unscoreableRuns.length > 0 &&
+    unscoreableRuns.every((run) => onlyUncalibratedChecksFailed(run.fidelity))
+  );
+}
+
+function drawingOverviewCell(target, label, brush, entry, gates) {
   const aggregate = entry.aggregate;
   const brushLabel = BRUSH_LABELS[brush];
   if (!drawingAggregateAvailable(aggregate)) {
@@ -1496,7 +1543,8 @@ function drawingOverviewCell(label, brush, entry, gates) {
   // An unscoreable cell is neither pass nor fail, so it must not carry the
   // product-failure styling; the tooltip says why instead.
   const unscoreable = aggregate.scoreable === false;
-  const failed = !unscoreable && aggregate.blankPassed === false;
+  const gateRed = countsAsGateRed(targetRole(target), entry);
+  const failed = gateRed || (!unscoreable && aggregate.blankPassed === false);
   const metricGates = { p95: gates.paintP95Ms, p99: gates.paintP99Ms, max: gates.paintMaxMs };
   const metricData = DRAWING_METRIC_KEYS.map(
     (key) =>
@@ -1507,7 +1555,7 @@ function drawingOverviewCell(label, brush, entry, gates) {
     ? ` · published verdict failed ${aggregate.publishedFidelityChecks.join(', ')}`
     : '';
   const why = unscoreable
-    ? ` · unscoreable: ${unscoreableReasons(aggregate).join(', ')}${published}`
+    ? ` · unscoreable: ${unscoreableReasons(aggregate).join(', ')}${published}${gateRed ? ` · ${GATE_RED_NOTE}` : ''}`
     : ` · ${aggregate.blankPassed ? 'PASS' : 'FAIL'}`;
   const title = `${label} · ${brushLabel} · paint P95 ${fmt(aggregate.paint.p95)} / P99 ${fmt(aggregate.paint.p99)} / max ${fmt(aggregate.paint.max)} ms · lost frame time ${fmtPercent(aggregate.lostFrameTimeShare)} (budget ${fmtPercent(entry.gateShare)})${captureBasis(aggregate)}${why}`;
   const heat = unscoreable ? 'unscoreable' : heatClass(aggregate.paint.p95 / metricGates.p95);
@@ -1574,25 +1622,23 @@ function overviewMatrix(matrix) {
     <div class="mx-row mx-groups"><div></div><span class="mx-group" id="mx-metric-label">Paint P95 · ms · gate ${matrix.gates.drawing.paintP95Ms} ms</span><span class="mx-group-note">verdict</span><span class="mx-group-note">passed</span></div>
     <div class="mx-row mx-cols"><div class="mx-label">Mode</div>${OVERVIEW_COLUMNS.map((name) => `<span class="mx-col">${name}</span>`).join('')}</div>
   </div>`;
-  const body = matrix.targets
-    .map((target) => {
-      const header = `<div class="mx-row mx-target" data-target-header="${esc(target.id)}"><div class="mx-target-label"><b>${target.number}. ${esc(target.label)}</b>${fidelityChip(target.fidelity)}${earlierCaptureChip(target)}<small>${esc(target.environment)}</small></div></div>`;
-      const rows = target.modes
-        .map((mode) => {
-          const attrs = modeFilterAttrs(target, mode);
-          if (mode.status !== 'captured') {
-            return `<div class="mx-row" ${attrs}><div class="mx-label">${esc(displayMode(mode))}</div><div class="mx-span">unavailable: ${esc(mode.reason)}</div></div>`;
-          }
-          const label = cellLabel(target, mode);
-          const cells = BRUSHES.map((brush) =>
-            drawingOverviewCell(label, brush, mode.drawing[brush], matrix.gates.drawing)
-          ).join('');
-          return `<div class="mx-row" ${attrs}><div class="mx-label">${esc(displayMode(mode))}</div>${cells}${undoOverviewCell(label, mode, matrix.gates.undo)}${actionsOverviewCell(label, mode)}</div>`;
-        })
-        .join('');
-      return header + rows;
-    })
-    .join('');
+  const body = roleSections(matrix, (target) => {
+    const header = `<div class="mx-row mx-target" data-target-header="${esc(target.id)}"><div class="mx-target-label"><b>${target.number}. ${esc(target.label)}</b>${calibrationChip(target)}${earlierCaptureChip(target)}<small>${esc(target.environment)}</small></div></div>`;
+    const rows = target.modes
+      .map((mode) => {
+        const attrs = modeFilterAttrs(target, mode);
+        if (mode.status !== 'captured') {
+          return `<div class="mx-row" ${attrs}><div class="mx-label">${esc(displayMode(mode))}</div><div class="mx-span">unavailable: ${esc(mode.reason)}</div></div>`;
+        }
+        const label = cellLabel(target, mode);
+        const cells = BRUSHES.map((brush) =>
+          drawingOverviewCell(target, label, brush, mode.drawing[brush], matrix.gates.drawing)
+        ).join('');
+        return `<div class="mx-row" ${attrs}><div class="mx-label">${esc(displayMode(mode))}</div>${cells}${undoOverviewCell(label, mode, matrix.gates.undo)}${actionsOverviewCell(label, mode)}</div>`;
+      })
+      .join('');
+    return header + rows;
+  });
   return `<div class="mx">${head}${body}</div>`;
 }
 
@@ -1678,7 +1724,7 @@ function actionModeCells(mode, label, labels, gates, targetId) {
       if (!result) {
         const coordinate = coordinatesByLabel.get(actionLabel);
         const notApplicable = coordinate?.state === 'not-applicable';
-        const state = notApplicable ? 'N/A' : 'missing/unavailable';
+        const state = notApplicable ? 'N/A' : 'missing';
         const tooltip = `${index + 1}. ${actionLabel} · ${label} · ${state}: ${coordinate?.reason ?? 'no normalized coordinate'}`;
         const cellClass = notApplicable ? 'not-applicable' : 'missing';
         return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
@@ -1712,38 +1758,36 @@ function actionHeatmap(matrix) {
         `<span class="action-number" title="${esc(label)}" aria-label="Action ${index + 1}: ${esc(label)}">${index + 1}</span>`
     )
     .join('');
-  const body = matrix.targets
-    .map((target) => {
-      const earlier = targetIsPreserved(target)
-        ? ' <small class="heat-earlier">earlier capture</small>'
-        : '';
-      const header = `<div class="heat-row target" data-target-header="${esc(target.id)}"><div class="heat-label"><b>${target.number}. ${esc(target.label)}${earlier}</b></div></div>`;
-      const rows = target.modes
-        .map((mode) => {
-          const attrs = modeFilterAttrs(target, mode);
-          if (mode.status !== 'captured') {
-            return `<div class="heat-row" ${attrs}><div class="heat-label"><span>${esc(displayMode(mode))}</span></div><div class="heat-note">unavailable: ${esc(mode.reason)}</div></div>`;
-          }
-          const cells = actionModeCells(
-            mode,
-            cellLabel(target, mode),
-            labels,
-            matrix.gates.actions,
-            target.id
-          );
-          const comparableResults = mode.actions ? comparableActionResults(mode.actions) : [];
-          const passingCount = comparableResults.filter((result) => result.passed).length;
-          const score = !mode.actions
-            ? '—'
-            : mode.actions.scoreable !== false
-              ? `${passingCount}/${comparableResults.length}`
-              : 'no control';
-          return `<div class="heat-row" ${attrs}><div class="heat-label"><span>${esc(displayMode(mode))}</span><b>${score}</b></div><div class="heat-cells">${cells}</div></div>`;
-        })
-        .join('');
-      return header + rows;
-    })
-    .join('');
+  const body = roleSections(matrix, (target) => {
+    const earlier = targetIsPreserved(target)
+      ? ' <small class="heat-earlier">earlier capture</small>'
+      : '';
+    const header = `<div class="heat-row target" data-target-header="${esc(target.id)}"><div class="heat-label"><b>${target.number}. ${esc(target.label)}${earlier}</b></div></div>`;
+    const rows = target.modes
+      .map((mode) => {
+        const attrs = modeFilterAttrs(target, mode);
+        if (mode.status !== 'captured') {
+          return `<div class="heat-row" ${attrs}><div class="heat-label"><span>${esc(displayMode(mode))}</span></div><div class="heat-note">unavailable: ${esc(mode.reason)}</div></div>`;
+        }
+        const cells = actionModeCells(
+          mode,
+          cellLabel(target, mode),
+          labels,
+          matrix.gates.actions,
+          target.id
+        );
+        const comparableResults = mode.actions ? comparableActionResults(mode.actions) : [];
+        const passingCount = comparableResults.filter((result) => result.passed).length;
+        const score = !mode.actions
+          ? '—'
+          : mode.actions.scoreable !== false
+            ? `${passingCount}/${comparableResults.length}`
+            : 'no control';
+        return `<div class="heat-row" ${attrs}><div class="heat-label"><span>${esc(displayMode(mode))}</span><b>${score}</b></div><div class="heat-cells">${cells}</div></div>`;
+      })
+      .join('');
+    return header + rows;
+  });
   const legend = labels
     .map((label, index) => `<li><b>${index + 1}</b><span>${esc(label)}</span></li>`)
     .join('');
@@ -1793,7 +1837,7 @@ function rankedActionFailures(matrix) {
 }
 
 function undoTable(matrix) {
-  return modeRows(matrix)
+  return modeRows({ ...matrix, targets: targetsInRoleOrder(matrix) })
     .map((target) => {
       if (target.status !== 'captured') {
         return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">Unavailable: ${esc(target.reason)}</td></tr>`;
@@ -1817,7 +1861,7 @@ function commitCode(sha) {
 }
 
 function provenanceTable(matrix) {
-  return modeRows(matrix)
+  return modeRows({ ...matrix, targets: targetsInRoleOrder(matrix) })
     .map((target) => {
       if (target.status !== 'captured') {
         return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">Unavailable: ${esc(target.reason)}</td></tr>`;
@@ -1935,7 +1979,7 @@ function renderActionAllowancesMarkdown(ledgers) {
 }
 
 function renderMarkdown(matrix) {
-  const rows = modeRows(matrix);
+  const rows = modeRows({ ...matrix, targets: targetsInRoleOrder(matrix) });
   const drawingRows = rows.map((target) => {
     const label = `${target.targetNumber}. ${rowLabel(target)}`;
     if (target.status !== 'captured') {
@@ -1952,7 +1996,11 @@ function renderMarkdown(matrix) {
         // the runner rejects; the failed check is named so the reader can see
         // which one rather than inferring it from a target-level advisory label.
         if (aggregate.scoreable === false) {
-          return `_unscoreable (${unscoreableReasons(aggregate).join(', ')})_: ${value}`;
+          const reasons = unscoreableReasons(aggregate).join(', ');
+          const role = targetRole({ id: target.targetId, deviceKind: target.deviceKind });
+          return countsAsGateRed(role, target.drawing[brush])
+            ? `**unscoreable (${reasons}), ${GATE_RED_NOTE}**: ${value}`
+            : `_unscoreable (${reasons})_: ${value}`;
         }
         return aggregate.blankPassed ? value : `**FAIL ${value}**`;
       }),
@@ -2107,17 +2155,69 @@ Action sources are applied in manifest order within one target mode. A focused c
 only its declared labels in that mode, and only when the mode also carries a full sweep at the
 same product commit (\`unconfirmed-focused-action\` refuses the fold otherwise); all other labels
 retain their earlier measurement and provenance. Drawing raw tables and action samples are re-scored with the current metric definitions
-when this report is generated; stored derived summaries are not trusted. Physical iPad web remains
-the Safari-calibrated release gate. Simulator, desktop, native-shell, and automated Android input
-are advisory comparisons.
+when this report is generated; stored derived summaries are not trusted. ${releaseGateSentence(matrix)}
 `;
 }
 
-// Which target carries the calibrated release gate is a property of the evidence,
-// not of the prose: the manifest marks it, and whether this campaign reached it —
-// and what it found — follows from the normalized modes. Stating either in a fixed
-// sentence lets the report contradict its own tables.
+// Which target carries the calibrated drawing instrument is a property of the
+// evidence, not of the prose: the manifest marks it, and whether this campaign
+// reached it — and what it found — follows from the normalized modes. Stating
+// either in a fixed sentence lets the report contradict its own tables.
 const GATE_FIDELITY = 'physical-safari-gated';
+
+const RELEASE_GATE = 'release-gate';
+const REGRESSION_TRIPWIRE = 'regression-tripwire';
+const ADVISORY = 'advisory';
+
+// ADR-0156 assigns a row its release role by the hardware it ran on, not by its
+// fidelity class: three of the four physical rows are advisory in the fidelity
+// sense (uncalibrated input checks, ADR-0139) and gate a release anyway.
+const ROLE_BY_DEVICE_KIND = {
+  physical: RELEASE_GATE,
+  desktop: REGRESSION_TRIPWIRE,
+  simulator: ADVISORY,
+  emulator: ADVISORY,
+};
+
+export function targetRole(target) {
+  if (!Object.hasOwn(ROLE_BY_DEVICE_KIND, target.deviceKind)) {
+    throw new Error(
+      `Target ${target.id} declares deviceKind ${JSON.stringify(target.deviceKind)}, which ADR-0156 assigns no release role.`
+    );
+  }
+  return ROLE_BY_DEVICE_KIND[target.deviceKind];
+}
+
+// Page order is gate first, then the roles that never block a release. Each
+// `rule` is that role's ADR-0156 decision in one sentence; `clause` is the same
+// role as the report intro names it.
+const ROLE_SECTIONS = [
+  {
+    role: RELEASE_GATE,
+    title: 'Release gate · physical iPad and Android',
+    rule: 'These rows gate a release: a scoreable red cell needs a recorded product outcome, and a cell an uncalibrated instrument cannot score counts as red here, not as absent.',
+  },
+  {
+    role: REGRESSION_TRIPWIRE,
+    title: 'Regression tripwire · Mac',
+    rule: 'A Mac cell that turns red on a change that was green on main is a finding to attribute before shipping; a cell that was already red is not a remainder.',
+    clause: 'Mac rows are a regression tripwire',
+  },
+  {
+    role: ADVISORY,
+    title: 'Advisory · simulators and emulators',
+    rule: 'These rows narrow or reject a hypothesis but never fail or approve a release; their red stays visible so a systemic regression still shows.',
+    clause: 'simulator and emulator rows are advisory',
+  },
+];
+
+function targetsInRole(matrix, role) {
+  return matrix.targets.filter((target) => targetRole(target) === role);
+}
+
+function targetsInRoleOrder(matrix) {
+  return ROLE_SECTIONS.flatMap(({ role }) => targetsInRole(matrix, role));
+}
 
 function gateAggregates(target) {
   return target.modes
@@ -2127,14 +2227,9 @@ function gateAggregates(target) {
     .filter(Boolean);
 }
 
-function releaseGateSentence(matrix) {
-  const gate = matrix.targets.find((target) => target.fidelity === GATE_FIDELITY);
-  if (!gate) return 'No target in this campaign carries the calibrated Safari release gate.';
-
+function calibratedGateStatus(gate) {
   const captured = gate.modes.filter((mode) => mode.status === 'captured').length;
-  if (!captured) {
-    return `${gate.label} is the calibrated release gate and is unavailable in this campaign.`;
-  }
+  if (!captured) return ' and is unavailable in this campaign';
 
   const aggregates = gateAggregates(gate);
   const scoreable = aggregates.filter((aggregate) => aggregate.scoreable !== false);
@@ -2153,7 +2248,40 @@ function releaseGateSentence(matrix) {
     ? `failed input fidelity or were measured off this target's refresh regime`
     : 'failed input fidelity';
   const caveat = unscoreable ? `, ${unscoreable} unscoreable (${why})` : '';
-  return `${gate.label} is the calibrated release gate — ${coverage}, ${verdict}${caveat}.`;
+  return ` — ${coverage}, ${verdict}${caveat}`;
+}
+
+function calibrationSentence(gates) {
+  const calibrated = gates.find((target) => target.fidelity === GATE_FIDELITY);
+  if (!calibrated) {
+    return gates.length === 1
+      ? 'It carries no calibrated drawing instrument yet, so it is a gate-in-waiting.'
+      : `None of them carries a calibrated drawing instrument yet, so ${gates.length === 2 ? 'both' : `all ${gates.length}`} are gates-in-waiting.`;
+  }
+  const waiting = gates.length - 1;
+  const others =
+    waiting === 0
+      ? ''
+      : waiting === 1
+        ? '; the other is a gate-in-waiting until its instrument is calibrated'
+        : `; the other ${waiting} are gates-in-waiting until theirs are calibrated`;
+  return `${waiting ? 'Only ' : ''}${calibrated.label} carries a calibrated drawing instrument${calibratedGateStatus(calibrated)}${others}.`;
+}
+
+function releaseGateSentence(matrix) {
+  const gates = targetsInRole(matrix, RELEASE_GATE);
+  const clauses = ROLE_SECTIONS.filter(
+    ({ role, clause }) => clause && targetsInRole(matrix, role).length
+  ).map(({ clause }) => clause);
+  const others = clauses.length
+    ? ` ${clauses.join(', and ').replace(/^./, (first) => first.toUpperCase())} (ADR-0156).`
+    : '';
+  if (!gates.length) return `No target in this campaign is a release-gate row.${others}`;
+  const roster =
+    gates.length === 1
+      ? `The release gate is one physical row, ${gates[0].label}.`
+      : `The release gate is the ${gates.length} physical rows: ${gates.map((target) => target.label).join(', ')}.`;
+  return `${roster} ${calibrationSentence(gates)}${others}`;
 }
 
 const EXTRA_CSS = `
@@ -2188,6 +2316,8 @@ const EXTRA_CSS = `
   color:color-mix(in srgb,var(--ok) 55%,var(--ink))}
 .matrix-chip.earlier{background:color-mix(in srgb,var(--gold) 14%,var(--card));
   color:color-mix(in srgb,var(--gold) 60%,var(--ink))}
+.matrix-chip.waiting{background:transparent;color:color-mix(in srgb,var(--gold) 60%,var(--ink));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 45%,var(--hair))}
 
 /* ---- drawing metric switcher ------------------------------------------------ */
 /* Without JS the buttons would be dead weight, but the note still explains the
@@ -2200,15 +2330,41 @@ const EXTRA_CSS = `
 .seg-btn[aria-pressed=true]{background:var(--accent-wash);color:var(--accent-ink)}
 .seg-note{font-size:.76rem;color:var(--muted)}
 
+/* ---- release-role sections (ADR-0156) ---------------------------------------- */
+.role-head{display:flex;flex-direction:column;gap:3px;padding:12px 0 4px;margin-top:14px;border-top:1px solid var(--hair-strong)}
+.role-primary > .role-head{border-top:0;margin-top:4px}
+.role-title{display:flex;align-items:baseline;gap:4px 8px;flex-wrap:wrap}
+.role-title b{font-size:.9rem;font-weight:750;letter-spacing:-.01em}
+.role-primary .role-title b{color:color-mix(in srgb,var(--ok) 55%,var(--ink))}
+.role-count{font-size:.7rem;font-weight:650;color:var(--faint)}
+.role-rule{font-size:.76rem;line-height:1.45;color:var(--muted);max-width:78ch}
+.role-fold > summary{position:relative;padding-left:20px;cursor:pointer;list-style:none}
+.role-fold > summary::-webkit-details-marker{display:none}
+.role-fold > summary:before{content:"\\25B8";position:absolute;left:3px;top:12px;color:var(--faint);transition:transform .12s}
+.role-fold[open] > summary:before{transform:rotate(90deg)}
+.role-fold > summary:hover .role-title b{color:var(--accent-ink)}
+.role-fold > summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:7px}
+/* Inside the two-way scroller a section heading pins left like the row labels. */
+.heat-inner .role-head{position:sticky;left:0;z-index:3;background:var(--card);
+  width:max-content;max-width:min(78ch,calc(100vw - 72px))}
+
+/* ---- empty-cell legend --------------------------------------------------------- */
+.empty-legend{display:flex;gap:6px 16px;flex-wrap:wrap;align-items:center;font-size:.72rem;color:var(--muted);margin:0 0 10px}
+.empty-legend > b{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+.empty-legend span{display:inline-flex;gap:6px;align-items:center}
+.empty-legend span b{color:var(--ink);font-weight:700}
+.empty-legend i{width:15px;height:15px;border-radius:4px;flex:0 0 auto}
+
 /* ---- overview matrix -------------------------------------------------------- */
-.mx{width:fit-content;max-width:100%;background:var(--card);border:1px solid var(--hair);
+/* The label column and the cells share the sheet's full width; the header row
+   takes the same template so its column names stay over their cells. */
+.mx{background:var(--card);border:1px solid var(--hair);
   border-radius:var(--r-md);padding:0 16px 14px}
 .mx-row{display:grid;gap:4px;align-items:center;border-radius:7px;
-  grid-template-columns:minmax(230px,1fr) repeat(4,var(--mx-brush,72px)) var(--mx-undo,54px) var(--mx-actions,80px)}
+  grid-template-columns:minmax(230px,1.5fr) repeat(4,minmax(var(--mx-brush,72px),1fr)) minmax(var(--mx-undo,54px),.7fr) minmax(var(--mx-actions,80px),1fr)}
 .mx-row:hover .mx-label{color:var(--ink)}
 .mx-head{position:sticky;top:var(--toolbar-h,48px);z-index:5;background:var(--card);
   border-bottom:1px solid var(--hair);padding:8px 0 7px;font-size:.68rem;font-weight:700;color:var(--muted)}
-.mx-head{width:max-content;min-width:100%}
 .mx-groups{margin-bottom:2px}
 .mx-group{grid-column:2/6;text-align:center;font-weight:650;color:var(--muted);
   border-bottom:1px solid var(--hair-strong);padding-bottom:2px}
@@ -2227,9 +2383,6 @@ const EXTRA_CSS = `
 .mx-cell.warn{background:color-mix(in srgb,var(--warn) 36%,var(--card-2))}
 .mx-cell.hot{background:color-mix(in srgb,var(--bad) 36%,var(--card-2))}
 .mx-cell.failed{box-shadow:inset 0 0 0 2px var(--bad)}
-.mx-cell.missing{background:var(--card-2);color:var(--faint)}
-.mx-cell.unscoreable{color:var(--muted);
-  background:repeating-linear-gradient(45deg,var(--card-2) 0 4px,color-mix(in srgb,var(--hair-strong) 55%,var(--card-2)) 4px 8px)}
 .mx-cell:focus-visible,.heat-cell:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .mx-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 8px}
 .mx-legend b{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
@@ -2258,11 +2411,18 @@ const EXTRA_CSS = `
 .heat-note{font-size:.7rem;color:var(--faint);white-space:nowrap}
 .heat-cells{display:grid;grid-template-columns:repeat(var(--action-columns),var(--heat-cell));gap:3px}
 .heat-cell,.action-number{width:var(--heat-cell);height:var(--heat-cell);border-radius:4px;display:block;position:relative}
-.heat-cell.missing{background:var(--card-2)}
-.heat-cell.not-applicable{background:transparent;box-shadow:inset 0 0 0 1px var(--hair)}
+/* Empty cells: N/A by design is one struck stroke, unavailable a hatch, missing
+   a dashed hole. The shapes carry the meaning, so it survives without colour;
+   the dashed edge is a border because outline is the focus ring. */
+.heat-cell.not-applicable{background:transparent;box-shadow:inset 0 0 0 1px var(--hair-strong)}
 .heat-cell.not-applicable:after{content:"";position:absolute;left:2px;right:2px;top:50%;
-  border-top:1px solid var(--faint);transform:rotate(-45deg)}
-.heat-cell.unscoreable{background:var(--card-2);box-shadow:inset 0 0 0 1px var(--hair-strong)}
+  border-top:1px solid var(--muted);transform:rotate(-45deg)}
+.heat-cell.unscoreable,.mx-cell.unscoreable{color:var(--muted);box-shadow:none;
+  background:repeating-linear-gradient(45deg,var(--card-2) 0 2px,color-mix(in srgb,var(--muted) 55%,var(--card-2)) 2px 4px)}
+.mx-cell.unscoreable{background:repeating-linear-gradient(45deg,var(--card-2) 0 4px,color-mix(in srgb,var(--muted) 30%,var(--card-2)) 4px 8px)}
+.mx-cell.unscoreable.failed{box-shadow:inset 0 0 0 2px var(--bad)}
+.heat-cell.missing,.mx-cell.missing{color:var(--faint);background:transparent;box-shadow:none;
+  border:1.5px dashed var(--muted)}
 .action-number{font-size:.52rem;text-align:center;color:var(--muted);line-height:var(--heat-cell)}
 .heat-cell.cursor{outline:2px solid var(--accent);outline-offset:1px}
 .heat-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
@@ -2331,7 +2491,7 @@ tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}
   box-shadow:var(--shadow-lg)}
 
 @media (prefers-reduced-motion:reduce){
-  .note summary:after{transition:none}
+  .note summary:after,.role-fold > summary:before{transition:none}
 }
 @media (max-width:720px){
   .section-head{flex-direction:column;align-items:flex-start;gap:2px}
@@ -2370,7 +2530,7 @@ tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}
   .heat-cells{gap:2px}
   .heat-row{grid-template-columns:130px max-content}
   .heat-row.header{position:static}
-  .heat-label{position:static;font-size:.6rem}
+  .heat-label,.heat-inner .role-head{position:static;font-size:.6rem}
   .action-key ol{columns:2}
   .note{break-inside:avoid}
 }
@@ -2558,8 +2718,12 @@ const PAGE_SCRIPT = `
     const DELTAS = { ArrowRight: [0, 1], ArrowLeft: [0, -1], ArrowDown: [1, 0], ArrowUp: [-1, 0] };
     pane.addEventListener('keydown', (event) => {
       const delta = DELTAS[event.key];
-      if (!delta) return;
+      // A focused role-section summary inside the pane keeps its own keys.
+      if (!delta || event.target !== pane) return;
+      // Rows folded into a closed role section are off screen, so the cursor
+      // skips them instead of scrolling to a cell nobody can see.
       const grid = [...pane.querySelectorAll('.heat-row:not(.header):not(.filtered)')]
+        .filter((row) => !row.closest('details:not([open])'))
         .map((row) => [...row.querySelectorAll('.heat-cell')])
         .filter((cells) => cells.length);
       if (!grid.length) return;
@@ -2662,8 +2826,17 @@ function metricSwitcher(gates) {
   return `<div class="seg-row"><div class="seg" role="group" aria-label="Drawing metric">${buttons}</div><span class="seg-note" id="metric-note">${esc(options[0].note)}</span></div>`;
 }
 
+// A cell with no product verdict means one of three things, and each asks for
+// different work: nothing to do, fix the instrument, or go capture it. The
+// swatches carry a stroke, a hatch, and a dashed outline so the three stay
+// apart without colour.
+function emptyLegend() {
+  return `<div class="empty-legend"><b>Empty cells</b><span><i class="heat-cell not-applicable"></i><b>N/A by design</b>the check does not apply to this runtime</span><span><i class="heat-cell unscoreable"></i><b>Unavailable</b>this instrument or capture cannot score the cell; the tooltip says why</span><span><i class="heat-cell missing"></i><b>Missing</b>not captured yet — a gap to close</span></div>`;
+}
+
 function overviewLegend() {
-  return `<div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span><span><i class="mx-cell unscoreable"></i>unscoreable</span><span><i class="mx-cell missing"></i>not measured</span></div>
+  return `<div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span><span><i class="mx-cell unscoreable failed"></i>uncalibrated on a release-gate row: counts as red</span></div>
+  ${emptyLegend()}
   <div class="mx-legend"><b>Undo</b><span>✓ pass · ✕ fail against the undo gates</span><b>Actions</b><span>passed/measured — green all pass, amber a few failing, red more than one in ten failing</span></div>`;
 }
 
@@ -2710,11 +2883,11 @@ function scoringNotes(matrix) {
     <p><b>Gates.</b> Drawing passes when blank-paper paint P95 ≤ ${gates.drawing.paintP95Ms} ms, P99 ≤ ${gates.drawing.paintP99Ms} ms, max ≤ ${gates.drawing.paintMaxMs} ms, and lost frame time stays under ${fmtPercent(gates.drawing.lostFrameTimeShare)} of in-contact time. Undo passes at engine P95 ≤ ${gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${gates.undo.nextFrameP95Ms} ms, and next-frame max ≤ ${gates.undo.nextFrameMaxMs} ms. An action passes at first-frame P95 ≤ ${gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤ ${gates.actions.postActionFrameMaxMs} ms. A post-action max over its gate counts only when ${gates.actions.postActionFrameMaxConfirmingSamples} of the three scored repeats show it (ADR-0156); one breaching repeat renders as a warning, not a failure. Ready P95 appears in tooltips but is not gated: its completion semantics differ per action, so a frame-gate pass says nothing about end-to-end response time.</p>
     ${lostFrameExceptionsHtml(gates.drawing.lostFrameTimeShareExceptions ?? {})}
     ${actionAllowancesHtml(gates.actions.postActionAllowances)}
-    <p><b>Release gate vs advisory.</b> The chip beside each target says which rows carry the calibrated release gate. Every other row is an advisory comparison whose host, transport, or browser engine differs from what actually ships.</p>
-    <p><b>Unscoreable cells.</b> A hatched cell is neither a pass nor a failure. Its capture either failed an input-fidelity check — the number describes an input path the capture runner rejects — or was measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame budget. The tooltip names the reason.</p>
+    <p><b>Release roles (ADR-0156).</b> ${ROLE_SECTIONS.map(({ title, rule }) => `<b>${esc(title)}:</b> ${esc(rule)}`).join(' ')} A row’s role follows the hardware it ran on, not its fidelity class; the chip on a release-gate row says whether its drawing instrument is calibrated or the row is a gate-in-waiting.</p>
+    <p><b>Empty cells.</b> A cell without a product verdict renders one of three ways. A single struck stroke is N/A by design: the check does not apply to that runtime. A diagonal hatch is unavailable: the capture exists but cannot be scored, because it failed an input-fidelity check, was measured at a refresh rate this target is not scored against, has a failed idle control, or is preserved evidence with no current verdict. A dashed, empty outline is missing: nothing valid was captured, so it is a gap to close. Every tooltip names the reason.</p>
     <p><b>The idle-frame control.</b> Every action sweep includes a control sample that performs no interaction, proving the target can hold frames at rest. When the control fails its own gate the host was dropping frames on its own, so none of that mode’s action scores can be attributed to the app: the mode is marked “no control” and left out of the failure ranking.</p>
     <p><b>One capture per cell.</b> Most drawing cells have one capture behind them; each tooltip states the count. A result close to a limit needs repeat captures before it is trusted either way (ADR-0136).</p>
-    <p><b>Focused action captures.</b> Sources are applied in their listed order within each mode. A focused capture replaces only its named actions and requires a full sweep from the same product commit; anything else is refused. Raw drawing tables and action samples are re-scored with the current metric definitions whenever this report is regenerated — stored verdicts are not trusted. A struck-through action cell is N/A under the action plan that mode’s product surface declared; a plain pale cell is missing or unavailable, and both tooltips keep the reason.</p>
+    <p><b>Focused action captures.</b> Sources are applied in their listed order within each mode. A focused capture replaces only its named actions and requires a full sweep from the same product commit; anything else is refused. Raw drawing tables and action samples are re-scored with the current metric definitions whenever this report is regenerated — stored verdicts are not trusted. A struck action cell is N/A under the action plan that mode’s product surface declared; a dashed one is missing, and both tooltips keep the reason.</p>
     <p><b>Rotation first frames on iPad Safari</b> are N/A rather than gated: under ADR-0142’s resize anchor the value reads 0–2 ms by construction, so rotation there is scored by the post-action frame gates alone.</p>`;
 }
 
@@ -2773,7 +2946,8 @@ ${modeToolbar(rows.length)}
   <p class="mx-note">Most drawing cells aggregate a single capture, so treat a result close to its limit as provisional; each tooltip states the cell’s capture count.</p>
 
   <div class="section-head" id="actions"><h2>Discrete actions</h2><span class="desc">${actionCount} action columns · coverage varies by mode · color is the worst of first-frame P95, post-action P95, and post-action max against its gate</span></div>
-  <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span><span><i class="heat-cell unconfirmed"></i>pass, max over gate in one repeat</span><span><i class="heat-cell unscoreable"></i>no control</span><span><i class="heat-cell not-applicable"></i>N/A</span><span><i class="heat-cell missing"></i>missing/unavailable</span><span class="heat-hint">The grid scrolls both ways · arrow keys step through cells</span></div>
+  <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span><span><i class="heat-cell unconfirmed"></i>pass, max over gate in one repeat</span><span class="heat-hint">The grid scrolls both ways · arrow keys step through cells</span></div>
+  ${emptyLegend()}
   ${actionHeatmap(matrix)}
   ${rankedCard}
 

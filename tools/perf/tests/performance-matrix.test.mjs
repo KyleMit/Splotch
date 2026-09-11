@@ -411,10 +411,21 @@ describe('deployment matrix report', () => {
     expect(html).toContain(
       'N/A: the coloring-page grid fits without scrolling in this target mode'
     );
-    expect(html).toContain('missing/unavailable: applicable action has no valid measurement');
-    expect(html).toContain('<i class="heat-cell unscoreable"></i>no control');
-    expect(html).toContain('<i class="heat-cell not-applicable"></i>N/A');
-    expect(html).toContain('<i class="heat-cell missing"></i>missing/unavailable');
+    expect(html).toContain('missing: applicable action has no valid measurement');
+    expect(html).toContain('<i class="heat-cell not-applicable"></i><b>N/A by design</b>');
+    expect(html).toContain('<i class="heat-cell unscoreable"></i><b>Unavailable</b>');
+    expect(html).toContain('<i class="heat-cell missing"></i><b>Missing</b>');
+    // Each of the three empty meanings lands on its own cell class, keyed by
+    // the coordinate the tooltip names, so no two render alike.
+    const cellClass = (fragment) =>
+      html.match(new RegExp(`<span class="heat-cell ([^"]+)" title="[^"]*${fragment}`))?.[1];
+    expect(cellClass('scroll coloring pages · Fixture · Portrait · Light · N/A')).toBe(
+      'not-applicable'
+    );
+    expect(cellClass('scroll coloring pages · Fixture · Landscape · Light · first P95')).toBe(
+      'unscoreable'
+    );
+    expect(cellClass('open coloring book · Fixture · Portrait · Light · missing')).toBe('missing');
     expect(html).toContain('<h2>Discrete actions</h2>');
     expect(html).toContain('5 action columns');
     expect(html).toContain('<b>5</b> actions measured');
@@ -1633,7 +1644,7 @@ describe('release gate prose', () => {
     );
 
     expect(renderReport(matrix)).toContain(
-      'Android device · web is the calibrated release gate — 4/4 modes captured, 4 of 16 brush aggregates over gate.'
+      'The release gate is one physical row, Android device · web. Android device · web carries a calibrated drawing instrument — 4/4 modes captured, 4 of 16 brush aggregates over gate.'
     );
   });
 
@@ -1651,15 +1662,41 @@ describe('release gate prose', () => {
     );
 
     expect(renderReport(matrix)).toContain(
-      'Android device · web is the calibrated release gate and is unavailable in this campaign.'
+      'Android device · web carries a calibrated drawing instrument and is unavailable in this campaign.'
     );
   });
 
-  it('says so when no target carries the gate', () => {
+  // ADR-0156 decision 1: a physical row gates a release whatever its fidelity
+  // class, so an uncalibrated one is a gate-in-waiting, not an advisory row.
+  it('keeps an uncalibrated physical row on the gate as a gate-in-waiting', () => {
     const matrix = normalizedMatrix(modeSpecs.map((spec) => normalizedMode(spec)));
 
     expect(renderReport(matrix)).toContain(
-      'No target in this campaign carries the calibrated Safari release gate.'
+      'The release gate is one physical row, Android device · web. It carries no calibrated drawing instrument yet, so it is a gate-in-waiting.'
+    );
+  });
+
+  it('names every present role when several rows gate and none is calibrated', () => {
+    const matrix = normalizedMatrix(modeSpecs.map((spec) => normalizedMode(spec)));
+    const [gate] = matrix.targets;
+    matrix.targets = [
+      gate,
+      { ...gate, id: 'second', number: 2, label: 'Second device' },
+      { ...gate, id: 'mac', number: 3, label: 'Mac', deviceKind: 'desktop' },
+      { ...gate, id: 'sim', number: 4, label: 'Simulator', deviceKind: 'simulator' },
+    ];
+
+    expect(renderReport(matrix)).toContain(
+      'The release gate is the 2 physical rows: Android device · web, Second device. None of them carries a calibrated drawing instrument yet, so both are gates-in-waiting. Mac rows are a regression tripwire, and simulator and emulator rows are advisory (ADR-0156).'
+    );
+  });
+
+  it('says so when no target is a release-gate row', () => {
+    const matrix = normalizedMatrix(modeSpecs.map((spec) => normalizedMode(spec)));
+    matrix.targets[0].deviceKind = 'desktop';
+
+    expect(renderReport(matrix)).toContain(
+      'No target in this campaign is a release-gate row. Mac rows are a regression tripwire (ADR-0156).'
     );
   });
 });

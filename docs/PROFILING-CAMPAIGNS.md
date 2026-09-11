@@ -1543,6 +1543,17 @@ latest full plan to classify every global heatmap coordinate: an absent applicab
 missing, while an action outside that mode's declared plan is N/A. A capture predating this
 declaration stays missing rather than gaining an inferred N/A verdict.
 
+The published page draws those states apart, with a legend, because they ask for different work: an
+**N/A by design** cell (`not-applicable`) is a single struck stroke; an **unavailable** cell — a
+`no-control` coordinate, or a drawing aggregate that cannot be scored — is a diagonal hatch; a
+**missing** cell (`missing`, including a capture that predates the declaration) is a dashed, empty
+outline. Each keeps its reason in the tooltip. Rows are grouped by ADR-0156 role, which
+`targetRole()` in the generator derives from `deviceKind` rather than from the fidelity class: the
+four physical release-gate rows render first and open, and the Mac regression-tripwire rows and the
+simulator and emulator advisory rows fold into closed sections whose summaries state each role's
+rule. A release-gate row's chip says whether its drawing instrument is calibrated or the row is a
+gate-in-waiting.
+
 ## Before believing a result
 
 1. Fidelity verdict passed, and the input cadence is in band.
