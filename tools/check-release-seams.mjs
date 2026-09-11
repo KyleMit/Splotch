@@ -47,18 +47,34 @@ export const DEV_GATED_ENGINE_EXPORTS = [
   'replayHarnessStroke',
 ];
 
+// Source extensions that can ship client code and therefore emit an engine measure.
+export const CLIENT_SOURCE_EXTENSIONS = ['.ts', '.svelte'];
+
+function withoutComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+}
+
+// The one lexer for `performance.mark('engine.…')` / `performance.measure('engine.…')`
+// calls, shared by the token derivation and the drift guard that checks every
+// emitting source file is in RELEASE_SEAM_SOURCE_FILES. It tolerates a line
+// break between the parenthesis and the string, which Prettier inserts when the
+// call wraps.
+export function engineMeasureNames(source) {
+  return [
+    ...withoutComments(source).matchAll(/performance\.(?:mark|measure)\(\s*'(engine\.[A-Za-z]+)/g),
+  ].map((match) => match[1]);
+}
+
 export const RELEASE_ONLY_TOKENS = [
   ...new Set(
     RELEASE_ONLY_DEBUG_PROPERTIES.concat(
       RELEASE_SEAM_SOURCE_FILES.flatMap((relativePath) => {
-        const source = readFileSync(join(ROOT, relativePath), 'utf8')
-          .replace(/\/\*[\s\S]*?\*\//g, '')
-          .replace(/^\s*\/\/.*$/gm, '');
+        const source = readFileSync(join(ROOT, relativePath), 'utf8');
         return [
-          ...[...source.matchAll(/window\.(__[A-Za-z0-9_]+)/g)].map((match) => match[1]),
-          ...[...source.matchAll(/performance\.(?:mark|measure)\('(engine\.[A-Za-z]+)/g)].map(
+          ...[...withoutComments(source).matchAll(/window\.(__[A-Za-z0-9_]+)/g)].map(
             (match) => match[1]
           ),
+          ...engineMeasureNames(source),
         ];
       })
     )
