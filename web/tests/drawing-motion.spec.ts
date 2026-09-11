@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp, drawCommittedStroke } from './helpers';
-import { openDrawer, opaqueCanvasPixelCount } from './flows-harness';
+import { openDrawer, opaqueCanvasPixelCount, pickBrush } from './flows-harness';
 
 for (const viewport of [
   { width: 1000, height: 650 },
@@ -119,6 +119,34 @@ test('undo retires ink immediately beneath a shrinking overlay and drawing cance
   ]);
   await expect(overlay).toHaveCount(0);
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+});
+
+test('crayon undo ghost reads the tiles and is masked to the footprint', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await pickBrush(page, '#crayonBrushButton');
+  await drawCommittedStroke(page, [
+    { x: 250, y: 200 },
+    { x: 440, y: 240 },
+  ]);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+  await page.locator('#undoButton').evaluate((button: HTMLButtonElement) => {
+    button.click();
+    for (const animation of document
+      .querySelector('.ink-motion')
+      ?.getAnimations({ subtree: true }) ?? [])
+      animation.pause();
+  });
+  const overlay = page.locator('.undo-ink-motion');
+  await expect(overlay).toBeVisible();
+  const { inked, transparent } = await overlay.evaluate((canvas: HTMLCanvasElement) => {
+    const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+    let inked = 0;
+    for (let index = 3; index < data.length; index += 4) if (data[index] > 0) inked++;
+    return { inked, transparent: data.length / 4 - inked };
+  });
+  expect(inked).toBeGreaterThan(0);
+  expect(transparent).toBeGreaterThan(0);
 });
 
 test('clear snapshots ink while clearing history and still permits undo', async ({ page }) => {
