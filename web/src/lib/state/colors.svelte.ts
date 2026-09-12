@@ -62,9 +62,11 @@ export function isWhite(hex: string): boolean {
 
 // Below this relative luminance, ink is too close to the dark action-button
 // cards to read on its own and takes the light --dark-ink-keyline ring
-// (ADR-0052). WCAG relative luminance, not perceived brightness: the question
-// is contrast against the card, and every color the two measures disagree
-// about sits at 1.0-1.8x against it — i.e. genuinely unreadable.
+// (ADR-0052). WCAG relative luminance rather than perceived brightness,
+// because the question the keyline asks is contrast against that card — the
+// `floatSurface` token in design/tokens.ts owns the surface, and
+// colors.svelte.test.ts measures the claim against it rather than restating a
+// ratio here that the token could drift away from.
 // Deliberately a different mechanism from isWhite's string compare, not an
 // oversight.
 const DARK_INK_RELATIVE_LUMINANCE_MAX = 0.14;
