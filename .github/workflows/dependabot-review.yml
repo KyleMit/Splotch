@@ -87,7 +87,7 @@ jobs:
         # (`refs/tags/v1.0.183^{}`), not the tag object SHA that `git ls-remote`
         # lists first. `uses:` resolves a branch, tag, or commit; a tag object
         # is none of those and fails with "unable to find version".
-        uses: anthropics/claude-code-action@9c5ddab2e6d17b83ea679153b31f1d5f023cf636 # v1.0.217
+        uses: anthropics/claude-code-action@19dda84776b3518d98b8798e591daee763049ed3 # v1.0.220
         env:
           GH_TOKEN: ${{ github.token }}
         with:
