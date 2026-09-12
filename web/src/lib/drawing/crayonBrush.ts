@@ -406,7 +406,7 @@ function createColorTileBuild(color: string, passIdx: number): ColorTileBuild | 
   const context = canvas.getContext('2d');
   if (!context) return null;
   return {
-    key: `${color}@${passIdx}`,
+    key: colorTileKey(color, passIdx),
     canvas,
     context,
     image: context.createImageData(fields.tile, fields.tile),
@@ -459,8 +459,15 @@ function cacheColorTile(build: ColorTileBuild) {
   return build.canvas;
 }
 
-function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
-  const key = `${color}@${passIdx}`;
+// The colour-tile cache key. Declared once: it was spelled out at four sites,
+// and crayonPatternFor built it twice per lookup — once here and once for its
+// own pattern cache — on a path that runs 2-4 times per crayon op, every op of
+// every crayon frame. The caller passes the key in for that reason.
+function colorTileKey(color: string, passIdx: number): string {
+  return `${color}@${passIdx}`;
+}
+
+function colorTile(key: string, color: string, passIdx: number): HTMLCanvasElement | null {
   const hit = colorTileCache.get(key);
   if (hit) {
     colorTileCache.delete(key);
@@ -508,7 +515,7 @@ function warmNextCrayonPass(job: CrayonWarmJob) {
 function warmCrayonTileForFrame(job: CrayonWarmJob) {
   if (activeWarmJob !== job) return;
   job.frameId = null;
-  const key = `${job.color}@${job.passIdx}`;
+  const key = colorTileKey(job.color, job.passIdx);
   if (colorTileCache.has(key)) {
     warmNextCrayonPass(job);
     return;
@@ -599,9 +606,9 @@ export function crayonPatternFor(
   seed: number,
   passIdx: number
 ): CanvasPattern | null {
-  const t = colorTile(color, passIdx);
+  const key = colorTileKey(color, passIdx);
+  const t = colorTile(key, color, passIdx);
   if (!t) return null;
-  const key = `${color}@${passIdx}`;
   let byKey = patternCache.get(target);
   if (!byKey) {
     byKey = new Map();
