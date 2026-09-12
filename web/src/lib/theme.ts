@@ -22,8 +22,6 @@
 // app.html also resolves the theme before hydration and follows the OS on
 // routes without reactive appearance state.
 
-import { themes } from './design/tokens.ts';
-
 export const RESOLVED_THEMES = ['light', 'dark'] as const;
 
 export type ResolvedTheme = (typeof RESOLVED_THEMES)[number];
@@ -31,18 +29,25 @@ export type ThemePreference = ResolvedTheme | 'system';
 
 export const THEME_DEFAULT: ThemePreference = 'system';
 
-// Light keeps app.html's original white; dark is --app-bg, read from the
-// design-token source of truth (ADR-0071) so it can never drift from the CSS.
-// app.html can't import, so its copies are drift-guarded by app.html.test.ts.
+// Light keeps app.html's original white; dark is --app-bg.
+//
+// Written literally rather than read from design/tokens.ts, which is the
+// bundle-boundary carve-out in CLAUDE.md: `themes` is one object literal
+// holding ~45 tokens per theme, so importing it for a single value hands
+// Rollup an edge that drags all ~90 onto the startup path — including
+// CSS-only ones no JavaScript ever reads. theme.ts is on that path via
+// state/appearance.svelte.ts. theme.tokens.test.ts fails if these drift from
+// the tokens, the same way app.html.test.ts guards app.html's copies.
 export const THEME_COLORS: Record<ResolvedTheme, string> = {
   light: '#ffffff',
-  dark: themes.dark.appBg,
+  dark: '#17171d',
 };
 
 // The drawing paper per resolved theme, for the JS consumers that can't read
-// the CSS token (canvas export fill, Notch Band eraser color). Derived from
-// the same source as the --paper custom property.
-export const PAPER_COLORS = { light: themes.light.paper, dark: themes.dark.paper } as const;
+// the CSS token (canvas export fill, Notch Band eraser color). The same
+// --paper values, written literally for the reason above and guarded by the
+// same spec.
+export const PAPER_COLORS = { light: '#fcfbf8', dark: '#211f29' } as const;
 
 export function isThemePreference(value: unknown): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'system';
