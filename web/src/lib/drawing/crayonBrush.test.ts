@@ -229,6 +229,31 @@ describe('colorTileCache LRU eviction', () => {
     expect(frameCount).toBeGreaterThan(4);
   });
 
+  // The warm path and the lookup path key the same cache. They used to spell the
+  // key out separately (four sites did), so a change to one format would have
+  // silently made every warmed tile a miss — the warm would still run, cost the
+  // frames, and deliver nothing. colorTileKey is what makes that impossible.
+  it('serves a warmed tile to crayonPatternFor instead of rebuilding it', () => {
+    setCrayonOptions({ passes: [{ widthScale: 1, coverage: 0.9 }] });
+    const { frames } = frameQueue();
+    vi.spyOn(performance, 'now').mockImplementation(() => 0);
+    const color = '#5a189a';
+
+    warmCrayonTiles(color);
+    while (frames.size > 0) {
+      const [id, callback] = frames.entries().next().value!;
+      frames.delete(id);
+      callback(0);
+    }
+
+    // Any rebuild here would need a fresh canvas; a cache hit needs none.
+    const createElement = vi.spyOn(document, 'createElement');
+    const tile = tileFor(color);
+
+    expect(tile).toBeDefined();
+    expect(createElement.mock.calls.filter(([tag]) => tag === 'canvas')).toHaveLength(0);
+  });
+
   it('keeps one warm chain when rapid color changes supersede each other', () => {
     const { frames, cancel } = frameQueue();
     const colors = Array.from({ length: 11 }, (_, index) => `#${index.toString(16).repeat(6)}`);
