@@ -26,6 +26,13 @@
 
   const MIN_BLUR_PX = 2;
   const MAX_EXTRA_BLUR_PX = 16;
+  // Quantized like the waiting polaroid's fill percent next door, and for the
+  // same reason: the blur ramps 18px to 2px across a run of about half a minute,
+  // so a raw per-frame value rewrites this image's filter sixty times a second —
+  // over the canvas the child is still drawing on (ADR-0116) — to move it by
+  // under a hundredth of a pixel. A quarter-pixel step is indistinguishable at
+  // an 18px blur and is the knob if that ever stops being true.
+  const BLUR_STEP_PX = 0.25;
 
   // Tracks the stage's rendered size, which AiConfetti needs in real pixels: the
   // fall distance (--stage-h) spans the stage rather than a fixed guess, and the
@@ -61,7 +68,9 @@
   }
 
   // The drawing stays blurry to keep the suspense, sharpening as we progress.
-  const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - aiProgress.value)}px`);
+  const previewBlur = $derived(
+    `${Math.round((MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - aiProgress.value)) / BLUR_STEP_PX) * BLUR_STEP_PX}px`
+  );
 
   // Keep the confetti's mask hole on the round dial, which means matching the
   // dial's own two-part size: a fraction of the stage until it stops at its cap.

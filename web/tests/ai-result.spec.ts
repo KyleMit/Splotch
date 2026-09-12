@@ -150,6 +150,44 @@ test.describe('AI result modal', () => {
     await endpoint.fail();
   });
 
+  // The blur ramps 18px to 2px across a run of about half a minute, so a raw
+  // per-frame value rewrites this image's filter sixty times a second to move it
+  // by under a hundredth of a pixel — over the canvas the child is still drawing
+  // on. Quantizing is the rule the waiting polaroid's fill percent already
+  // follows. Asserted as a ratio against frames painted in the same window, so a
+  // starved worker scales both together.
+  test('the preview blur writes far fewer filters than frames it spans', async ({ page }) => {
+    await openAiResult(page);
+    const preview = page.locator('.stage-img.preview');
+    await expect(preview).toBeVisible();
+
+    const measured = await page.evaluate(async () => {
+      const image = document.querySelector('.stage-img.preview') as HTMLElement;
+      let writes = 0;
+      let frames = 0;
+      const observer = new MutationObserver((records) => {
+        writes += records.length;
+      });
+      observer.observe(image, { attributes: true, attributeFilter: ['style'] });
+      let counting = true;
+      const countFrame = () => {
+        frames += 1;
+        if (counting) requestAnimationFrame(countFrame);
+      };
+      requestAnimationFrame(countFrame);
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      counting = false;
+      observer.disconnect();
+      return { writes, frames };
+    });
+
+    // Over a 2s window the blur moves by roughly a pixel, so a quarter-pixel
+    // step admits a handful of writes where the raw value wrote one per frame.
+    expect(measured.frames).toBeGreaterThan(30);
+    expect(measured.writes).toBeLessThan(measured.frames / 4);
+  });
+
   test('plays the dial and reveals the result image', async ({ page }) => {
     const endpoint = await prepareAiGeneration(page);
     await expect(page.locator('.ai-loading-caption')).toHaveCount(0);
