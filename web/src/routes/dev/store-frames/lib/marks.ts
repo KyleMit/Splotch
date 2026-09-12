@@ -9,7 +9,7 @@ import type { StorePageId } from './pages.ts';
 
 // The dark parent-trust page's crescent moon uses a lavender outside the app
 // palette so it reads as nighttime, not a purple crayon stroke.
-export const CRESCENT_LAVENDER = '#b9a8e8';
+const CRESCENT_LAVENDER = '#b9a8e8';
 
 const stroked = (w: number, h: number, inner: string) =>
   `<svg viewBox="0 0 ${w} ${h}" fill="none" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
@@ -110,7 +110,7 @@ export const MARK_BASE_W: Record<MarkKind, number> = {
   swirl: 44,
 };
 
-export interface DoodleMark {
+interface DoodleMark {
   kind: MarkKind;
   color: string;
   x: number;
@@ -120,7 +120,7 @@ export interface DoodleMark {
   fromBottom: boolean;
 }
 
-export interface DotMark {
+interface DotMark {
   kind: 'dot';
   color: string;
   x: number;

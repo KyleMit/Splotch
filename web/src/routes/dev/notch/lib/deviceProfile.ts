@@ -7,14 +7,14 @@ import type { Orientation } from './orientations';
 // because a second phone with identical numbers tests nothing the first didn't.
 // The point of the harness is coverage of the layout cases, not of the market.
 
-export type Platform = 'ios' | 'android';
+type Platform = 'ios' | 'android';
 
 // Where the page's insets come from, which changes the numbers as much as the
 // hardware does — Safari's own chrome occupies the notch band, so a notched
 // iPhone reports zero insets in a browser tab and its real ones in a PWA.
-export type Surface = 'browser' | 'pwa' | 'native';
+type Surface = 'browser' | 'pwa' | 'native';
 
-export type CutoutKind = 'none' | 'notch' | 'dynamic-island' | 'hole-punch' | 'teardrop';
+type CutoutKind = 'none' | 'notch' | 'dynamic-island' | 'hole-punch' | 'teardrop';
 
 // The physical cutout's shape, in portrait device coordinates. The harness draws
 // this on the chrome overlay so the illustration shows where the camera actually
@@ -33,7 +33,7 @@ export interface Cutout {
 
 export const NO_CUTOUT: Cutout = { kind: 'none', centerX: 0.5, widthPx: 0, heightPx: 0, topPx: 0 };
 
-export type Confidence = 'high' | 'medium' | 'low';
+type Confidence = 'high' | 'medium' | 'low';
 
 export interface DeviceProfile {
   id: string;
@@ -60,13 +60,6 @@ export interface DeviceProfile {
 export const SYMMETRIC_LANDSCAPE_NOTE =
   'iOS insets BOTH sides in landscape with the same value, whichever side the cutout is ' +
   'physically on, so the insets alone cannot tell the two landscape rotations apart.';
-
-export function insetsFor(
-  profile: DeviceProfile,
-  orientation: Orientation
-): SafeAreaInsets | undefined {
-  return profile.insets[orientation];
-}
 
 export function supportedOrientations(profile: DeviceProfile): Orientation[] {
   return Object.keys(profile.insets) as Orientation[];

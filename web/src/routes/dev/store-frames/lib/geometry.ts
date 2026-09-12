@@ -51,14 +51,14 @@ const P_BOTTOM_MARGIN = 63;
 // ~1.6× native scale.
 const P_CAPTURE_CSS_W = 576;
 
-export interface FrameRect {
+interface FrameRect {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-export interface CaptureViewport {
+interface CaptureViewport {
   width: number;
   height: number;
   deviceScaleFactor: number;

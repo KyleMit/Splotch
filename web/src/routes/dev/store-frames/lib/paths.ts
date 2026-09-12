@@ -7,7 +7,7 @@
 import type { StoreTargetName } from './targets.ts';
 import type { StorePageId } from './pages.ts';
 
-export const STORE_FRAME_ASSET_BASE = '/dev/store-frames/assets';
+const STORE_FRAME_ASSET_BASE = '/dev/store-frames/assets';
 
 // Identity probe for the generator's server-reuse check: proves which checkout
 // a running server is serving before its renders overwrite committed finals.

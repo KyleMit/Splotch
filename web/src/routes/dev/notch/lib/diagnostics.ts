@@ -15,7 +15,7 @@ import { ORIENTATION_ANGLES, isLandscape, type Orientation } from './orientation
 // functions NotchBand.svelte drives — so a tile's verdict cannot drift from the
 // app's behaviour without this file failing to compile or its test failing.
 
-export type ScreenEdge = NotchEdge | 'bottom';
+type ScreenEdge = NotchEdge | 'bottom';
 
 export interface Diagnosis {
   /** Edges the Notch Band paints. Empty when it paints nothing. */
@@ -105,17 +105,16 @@ export function diagnose(profile: DeviceProfile, orientation: Orientation): Diag
 // resolving to the wrong side, and a 3-button nav bar outbidding the cutout —
 // are absent because landscapeBandEdges no longer has them. What is left is
 // hardware the app declines to paint, and surfaces that report nothing to paint.
-export type BandGapCause =
-  'cutout-below-threshold' | 'platform-paints-no-band' | 'rotation-angle-unavailable';
-
-export const BAND_GAP_EXPLANATIONS = {
-  'cutout-below-threshold':
-    'A real cutout whose inset sits under NOTCH_INSET_THRESHOLD_PX, so the app declines to paint it rather than risk banding a plain status bar.',
-  'platform-paints-no-band':
-    'The surface reports no inset on the cutout edge at all, so there is nothing for a CSS band to fill.',
-  'rotation-angle-unavailable':
-    'The two sides differ, so only the rotation angle could pick one — and no Screen Orientation API reported a landscape angle.',
-} as const satisfies Record<BandGapCause, string>;
+type BandGapCause =
+  // A real cutout whose inset sits under NOTCH_INSET_THRESHOLD_PX, so the app
+  // declines to paint it rather than risk banding a plain status bar.
+  | 'cutout-below-threshold'
+  // The surface reports no inset on the cutout edge at all, so there is nothing
+  // for a CSS band to fill.
+  | 'platform-paints-no-band'
+  // The two sides differ, so only the rotation angle could pick one — and no
+  // Screen Orientation API reported a landscape angle.
+  | 'rotation-angle-unavailable';
 
 export interface BandVerdict {
   /** The edge a band ought to cover: where the cutout actually is. */
