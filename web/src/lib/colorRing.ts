@@ -14,7 +14,11 @@ function hexToRgb(color: string): { r: number; g: number; b: number } {
 
 // Perceived brightness of a hex color on a 0–1 scale (ITU-R BT.601 weights).
 // Accepts `#rgb`, `#rrggbb`, or the same without the leading `#`.
-export function perceivedBrightness(color: string): number {
+// Internal to this module since the keyline moved to WCAG relative luminance:
+// BT.601 brightness answers "does this look light or dark to the eye", which is
+// the right question for the status-bar icon style and the selection ring, and
+// the wrong one for whether ink contrasts against a surface.
+function perceivedBrightness(color: string): number {
   const { r, g, b } = hexToRgb(color);
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
