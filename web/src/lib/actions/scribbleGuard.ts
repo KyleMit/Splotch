@@ -281,12 +281,15 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
       lastY: e.clientY,
       lastTime: Date.now(),
       dragged: false,
-      // Measured once per press, not per move. This is a scale reference for
-      // pointerWasResumed, and the viewport cannot change mid-press without a
-      // resize — but documentElement.clientWidth/clientHeight force a style and
-      // layout flush, and this runs on a path that shares frames with a live
-      // stroke (a second finger presses a swatch while the first draws).
-      viewportSide: minViewportSide(),
+      // Measured once per pen press, and only for a pen. This is a scale
+      // reference for pointerWasResumed, whose branch is pen-only, and the
+      // viewport cannot change mid-press without a resize — so measuring per
+      // move was waste. Measuring for touch and mouse would be worse than that:
+      // documentElement.clientWidth/clientHeight force a style and layout
+      // flush, and a finger tapping a swatch is the common case on a path that
+      // shares frames with a live stroke (PointerHalos documents the second
+      // finger arriving mid-stroke).
+      viewportSide: e.pointerType === 'pen' ? minViewportSide() : 0,
     };
     stream?.claim(e.pointerId);
     if (typeof current !== 'function') current.onPressStart?.();

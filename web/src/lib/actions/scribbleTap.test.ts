@@ -573,6 +573,27 @@ describe('scribbleTap viewport measurement', () => {
     };
   }
 
+  // viewportSide feeds a pen-only branch, so measuring for a finger would add a
+  // layout flush to the common case — a toddler tapping swatches — which is
+  // worse than the per-move read this hoist removed.
+  it('does not measure the viewport at all for a touch press', () => {
+    const { el } = tapElement();
+    const probe = countClientWidthReads();
+
+    try {
+      el.dispatchEvent(pointerEvent('pointerdown', 2, { pointerType: 'touch' }));
+      for (let i = 1; i <= 6; i++) {
+        window.dispatchEvent(
+          pointerEvent('pointermove', 2, { pointerType: 'touch', clientX: i, clientY: i })
+        );
+      }
+
+      expect(probe.reads()).toBe(0);
+    } finally {
+      probe.restore();
+    }
+  });
+
   it('measures the viewport once per press, not once per pen move', () => {
     const { el } = tapElement();
     const probe = countClientWidthReads();
