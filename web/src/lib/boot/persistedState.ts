@@ -4,7 +4,6 @@ import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
 import { recordSession } from '$lib/state/sessionCounters.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { hydrateDurableStorage } from '$lib/storage';
-import { recordSecureVaultEmpty } from '$lib/secureStorage';
 import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
 import { persistedStateStatus } from './persistedStateStatus.svelte';
 
@@ -43,16 +42,6 @@ async function hydrateCredentials(): Promise<void> {
     if (hydration.status === 'rejected') {
       console.warn('Secure credential hydration failed', hydration.reason);
     }
-  }
-  // Only a clean read of both secrets can say the vault is empty. A rejected one
-  // means "unknown", and recording empty on it would skip the read that would
-  // have found a credential on the next boot.
-  if (
-    hydrations.every((hydration) => hydration.status === 'fulfilled') &&
-    !settings.aiUserApiKey &&
-    !settings.aiAccessToken
-  ) {
-    recordSecureVaultEmpty(true);
   }
   persistedStateStatus.hydrated = true;
 }
