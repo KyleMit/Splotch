@@ -48,6 +48,21 @@ guarded in CI by `npm run gen:tokens:check` (same pattern as `ruler:check`).
 **JS consumers import the source, not a mirror.** `theme.ts` now derives `PAPER_COLORS` and the dark
 theme-color from `themes.*` — the hand-synced copies are gone.
 
+> **Amended 2026-09 (issue #1800): one guarded exception, at the startup-bundle boundary.** `themes`
+> is a single object literal, so importing it for one value puts every token in the importer's
+> chunk. `theme.ts` is reached from `state/appearance.svelte.ts`, which the drawing route imports,
+> so that edge put ~90 token values — including CSS-only ones no JavaScript reads — into a
+> modulepreloaded chunk. Removing it took 4,250 bytes off the startup path.
+>
+> So `theme.ts` writes its three values (`THEME_COLORS.dark`, both `PAPER_COLORS`) literally, and
+> `web/src/lib/theme.tokens.test.ts` fails if they drift from the tokens. This is the
+> bundle-boundary carve-out in `CLAUDE.md`, the same trade as `saveFolder.svelte.ts` /
+> `folderSave.ts`, and `app.html`'s copies of these very hexes.
+>
+> **The rule is otherwise unchanged**, and the exception is not a precedent to copy freely: it needs
+> a module on the startup path, a measured saving, and a drift-guard test naming the constraint. A
+> JS consumer off that path still imports `$lib/design/tokens`.
+
 **Primitives grow in `lib/components/design/`**, styled entirely from tokens; `Button.svelte`
 (variants `brand`/`wash`/`danger`/`ghost`) is the first. Extraction rule: at the third duplicate,
 not before. Canvas-floating controls keep their bespoke paper treatments.
