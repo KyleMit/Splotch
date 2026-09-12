@@ -37,8 +37,8 @@ test('hydration adopts the pre-hydration canvas instead of replacing it', async 
   // `networkidle` cannot stand in for it: it means "no request for 500 ms",
   // which this app reaches early on purpose, since SW registration and the
   // coloring-pack manifest both sit behind idle/stroke gates. `__drawingDebug`
-  // is installed by the route's `$effect`, which cannot run until hydration
-  // has, so its presence is the proof the assertions below need.
+  // is installed from the route's `onMount`, which does not run until the
+  // component has hydrated, so its presence is the proof the assertions below need.
   await expect.poll(() => page.evaluate(() => Boolean(window.__drawingDebug))).toBe(true);
 
   const adopted = await page.evaluate(() => {
