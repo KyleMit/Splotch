@@ -749,6 +749,13 @@ mid-stroke pass-split exerciser) on `macos-latest`. That verdict genuinely needs
 and absolute milliseconds, and it is expensive: it was the wall-clock floor of a pull-request run,
 so it remains off that path.
 
+**That verdict is currently advisory.** `COMMIT_GATE_ENFORCED`
+(`tools/perf/lib/undo-commit-gate.mjs`) is off, because the gate's breaches were bisected to the
+WebKit 26.6 browser build rather than the app, and a gate that fails every merge cannot catch a
+regression. The job still measures, confirms and reports a breach and still uploads its diagnostics
+— it exits 0. The retry and filing described next key on this job failing, so neither runs while it
+is advisory. Issue 1774 carries the pending policy decision; issue 1779 has the evidence.
+
 A failure does not file on its own. `webkit-commit-gate-fast-retry` re-runs the identical gate on a
 fresh `macos-latest` VM, and an issue opens only when **the same scenario failed the same way on
 both runners** — a shared runner can stall long enough to span one whole job, measurement and in-job
