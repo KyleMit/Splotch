@@ -74,6 +74,22 @@ asserts the two copies match, the drift guard this ADR flagged; `web/tests/admin
 the live SSR response carries the set. The `'unsafe-inline'` follow-up (script nonces) remains open
 and separate.
 
+## Update (2026-09): `/api/*` carries the nosniff header
+
+The exclusion above was all-or-nothing, so every API response — including `/api/generate-image`,
+which returns raw image bytes — went out with no `X-Content-Type-Options` while every other route on
+the site had it. A JSON or image body still has nothing for a CSP or a referrer policy to act on, so
+those stay out; `nosniff` does not, because it is what stops a browser re-typing those bytes as HTML
+or script.
+
+`API_RESPONSE_HEADERS` in `securityHeaders.ts` names that subset and picks its value out of
+`SECURITY_HEADERS` rather than restating it, so an API response cannot claim a different value than
+the rest of the site. The OPTIONS preflight short-circuits ahead of the header hook and so carries
+neither set, which is correct — a 204 with no body has nothing to sniff.
+`tools/api-smoke/run-local-contract.mjs` now asserts the subset is present and names the remainder
+by subtraction, so a header added to `SECURITY_HEADERS` and not deliberately admitted to the API
+subset still fails that check.
+
 ## Update (2026-08): the E2E suite runs with no CSP, so `connect-src` needed widening
 
 `connect-src 'self'` blocked the picture report in production: it reads the drawing and the AI
