@@ -15,7 +15,7 @@ import { ORIENTATION_ANGLES, isLandscape, type Orientation } from './orientation
 // functions NotchBand.svelte drives — so a tile's verdict cannot drift from the
 // app's behaviour without this file failing to compile or its test failing.
 
-export type ScreenEdge = NotchEdge | 'bottom';
+type ScreenEdge = NotchEdge | 'bottom';
 
 export interface Diagnosis {
   /** Edges the Notch Band paints. Empty when it paints nothing. */
@@ -105,9 +105,11 @@ export function diagnose(profile: DeviceProfile, orientation: Orientation): Diag
 // resolving to the wrong side, and a 3-button nav bar outbidding the cutout —
 // are absent because landscapeBandEdges no longer has them. What is left is
 // hardware the app declines to paint, and surfaces that report nothing to paint.
-export type BandGapCause =
+type BandGapCause =
   'cutout-below-threshold' | 'platform-paints-no-band' | 'rotation-angle-unavailable';
 
+// Rendered as the band-gap tooltip in ScenarioTile. Keyed by the whole union so
+// a new cause cannot ship without the sentence that explains it.
 export const BAND_GAP_EXPLANATIONS = {
   'cutout-below-threshold':
     'A real cutout whose inset sits under NOTCH_INSET_THRESHOLD_PX, so the app declines to paint it rather than risk banding a plain status bar.',

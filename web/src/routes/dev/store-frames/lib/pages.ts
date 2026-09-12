@@ -5,10 +5,9 @@
 
 import { paletteHex } from '../../../../lib/palette.ts';
 
-export const STORE_PAGE_IDS = ['01-draw', '02-books', '03-magic', '04-ai', '05-parents'] as const;
-export type StorePageId = (typeof STORE_PAGE_IDS)[number];
+export type StorePageId = '01-draw' | '02-books' | '03-magic' | '04-ai' | '05-parents';
 
-export interface StoreChip {
+interface StoreChip {
   label: string;
   color: string;
 }

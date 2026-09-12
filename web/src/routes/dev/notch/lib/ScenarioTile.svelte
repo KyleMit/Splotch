@@ -1,7 +1,13 @@
 <script lang="ts">
   import type { DeviceProfile } from './deviceProfile';
   import DeviceChrome from './DeviceChrome.svelte';
-  import { appliedInsets, bandVerdict, diagnose, unreclaimedInsetPx } from './diagnostics';
+  import {
+    BAND_GAP_EXPLANATIONS,
+    appliedInsets,
+    bandVerdict,
+    diagnose,
+    unreclaimedInsetPx,
+  } from './diagnostics';
   import { isFrameReady } from './frameReady';
   import { ORIENTATION_LABELS, isLandscape, type Orientation } from './orientations';
 
@@ -86,7 +92,13 @@
   // The tile's verdict in one line. Painting the band on an edge the cutout is
   // not on is the failure worth shouting about: it spends claimable screen on a
   // colour bar while leaving the strip it exists to fill unpainted.
-  const verdict = $derived.by(() => {
+  // `hint` is the long-form reason behind a band gap. It renders as its own
+  // line under the pill rather than a title: the pill's short cause is all
+  // that fits inline, and a tooltip would strand the explanation on hover —
+  // unreachable by keyboard, and invisible on the touch devices this harness
+  // exists to model.
+  type Verdict = { level: 'bad' | 'warn' | 'good' | 'none'; text: string; hint?: string };
+  const verdict = $derived.by((): Verdict | null => {
     if (!diagnosis) return null;
     const painted = diagnosis.bandEdges;
     if (diagnosis.missesCutout) {
@@ -105,7 +117,7 @@
     // cutout it is a gap, and bandVerdict is the thing that names why.
     const gap = bandVerdict(profile, orientation)?.cause;
     return gap
-      ? { level: 'warn' as const, text: `no band — ${gap}` }
+      ? { level: 'warn' as const, text: `no band — ${gap}`, hint: BAND_GAP_EXPLANATIONS[gap] }
       : { level: 'none' as const, text: 'no band' };
   });
 </script>
@@ -148,6 +160,9 @@
       <span class="readout" title="top · right · bottom · left">{readout}</span>
       {#if verdict}
         <span class="verdict" data-level={verdict.level}>{verdict.text}</span>
+      {/if}
+      {#if verdict?.hint}
+        <span class="gap-reason">{verdict.hint}</span>
       {/if}
       {#if statusBarHidden}
         <span class="unreclaimed"
@@ -274,7 +289,8 @@
     background: var(--surface-hover);
   }
 
-  .unreclaimed {
+  .unreclaimed,
+  .gap-reason {
     font-size: var(--font-size-xs);
     color: var(--text-soft);
   }

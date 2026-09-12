@@ -450,5 +450,3 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     ],
   },
 ];
-
-export const DEVICE_IDS = DEVICE_PROFILES.map((profile) => profile.id);
