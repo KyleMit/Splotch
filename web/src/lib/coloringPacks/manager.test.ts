@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   install: vi.fn(),
   cancel: vi.fn(),
   remove: vi.fn(),
-  usage: vi.fn(),
 }));
 
 vi.mock('$lib/state/coloringBook.svelte', () => ({ clearOverlay: vi.fn() }));
@@ -25,7 +24,6 @@ vi.mock('./nativeStore', () => ({
     install: mocks.install,
     cancel: mocks.cancel,
     remove: mocks.remove,
-    usage: mocks.usage,
   }),
 }));
 
@@ -85,7 +83,6 @@ beforeEach(() => {
   mocks.install.mockReset();
   mocks.cancel.mockReset().mockResolvedValue(undefined);
   mocks.remove.mockReset();
-  mocks.usage.mockReset().mockResolvedValue(0);
   vi.mocked(setLocalColoringBookRoot).mockClear();
 });
 
@@ -113,7 +110,7 @@ describe('coloring-pack downloader policy boundaries', () => {
 
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
     allowed = false;
-    first.resolve({ id: 'dinosaur' });
+    first.resolve({ id: 'dinosaur', bytes: 1 });
 
     await vi.waitFor(() => expect(coloringPackState.downloadingBookId).toBeNull());
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
@@ -124,16 +121,16 @@ describe('coloring-pack downloader policy boundaries', () => {
     const first = pendingInstall();
     mocks.installed
       .mockResolvedValueOnce([])
-      .mockResolvedValue([{ id: 'dinosaur', rootPath: 'file:///dinosaur' }]);
+      .mockResolvedValue([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
     mocks.install
       .mockReturnValueOnce(first.promise)
-      .mockResolvedValueOnce({ id: 'space', rootPath: 'file:///space' });
+      .mockResolvedValueOnce({ id: 'space', bytes: 1, rootPath: 'file:///space' });
     const downloader = createColoringPackDownloader();
     downloader.start();
 
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
     window.dispatchEvent(new Event(COLORING_PACK_REMOVE_EVENT));
-    first.resolve({ id: 'dinosaur', rootPath: 'file:///dinosaur' });
+    first.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
     await vi.waitFor(() => expect(coloringPackState.downloadingBookId).toBeNull());
 
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
@@ -145,10 +142,10 @@ describe('coloring-pack downloader policy boundaries', () => {
   it('cancels an active download and resumes without removing completed packs', async () => {
     const first = pendingInstall();
     let allowed = true;
-    mocks.installed.mockResolvedValue([{ id: 'space', rootPath: 'file:///space' }]);
+    mocks.installed.mockResolvedValue([{ id: 'space', bytes: 1, rootPath: 'file:///space' }]);
     mocks.install.mockReturnValueOnce(first.promise).mockImplementationOnce(async () => {
       allowed = false;
-      return { id: 'dinosaur', rootPath: 'file:///dinosaur' };
+      return { id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' };
     });
     mocks.cancel.mockImplementationOnce(async () => {
       first.reject(new Error('cancelled'));
@@ -176,7 +173,6 @@ describe('removal during an in-flight run', () => {
   it('drops a scan that resolves after the packs were removed', async () => {
     const scan = pendingScan();
     mocks.installed.mockReturnValueOnce(scan.promise);
-    mocks.usage.mockResolvedValue(1);
     const downloader = createColoringPackDownloader();
     downloader.start();
 
@@ -184,15 +180,12 @@ describe('removal during an in-flight run', () => {
     await removeDownloadedColoringPacks();
     expect(mocks.remove).toHaveBeenCalledOnce();
 
-    scan.resolve([{ id: 'dinosaur', rootPath: 'file:///dinosaur' }]);
+    scan.resolve([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
     await flushMicrotasks();
 
     expect(coloringPackState.installedBookIds).toEqual(['farm']);
     expect(coloringPackState.downloadedBytes).toBe(0);
     expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
-    // The run stops at the abort check between the two store reads, so the
-    // size measurement is never even asked for.
-    expect(mocks.usage).not.toHaveBeenCalled();
     expect(mocks.install).not.toHaveBeenCalled();
     downloader.stop();
   });
@@ -207,7 +200,7 @@ describe('removal during an in-flight run', () => {
     await removeDownloadedColoringPacks();
     vi.mocked(setLocalColoringBookRoot).mockClear();
 
-    first.resolve({ id: 'dinosaur', rootPath: 'file:///dinosaur' });
+    first.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
     await vi.waitFor(() => expect(coloringPackState.downloadingBookId).toBeNull());
     await flushMicrotasks();
 
@@ -218,16 +211,22 @@ describe('removal during an in-flight run', () => {
   });
 });
 
-describe('a store read that fails mid-scan', () => {
-  it('still publishes the installed books when the size measurement rejects', async () => {
-    mocks.installed.mockResolvedValue([{ id: 'dinosaur', rootPath: 'file:///dinosaur' }]);
-    mocks.usage.mockRejectedValue(new Error('usage unavailable'));
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
+describe('scanning what is installed', () => {
+  // Discovering the books and totalling their size were two store reads with
+  // identical arguments, so every boot asked twice — a second Capacitor bridge
+  // round trip on native, and on the web a second completeness pass that can
+  // re-digest every cached file.
+  it('reads the store once and totals the bytes it already answered with', async () => {
+    mocks.installed.mockResolvedValue([
+      { id: 'dinosaur', bytes: 3, rootPath: 'file:///dinosaur' },
+      { id: 'space', bytes: 4, rootPath: 'file:///space' },
+    ]);
     const downloader = createColoringPackDownloader();
     downloader.start();
 
-    await vi.waitFor(() => expect(coloringPackState.installedBookIds).toContain('dinosaur'));
-    expect(setLocalColoringBookRoot).toHaveBeenCalledWith('dinosaur', 'file:///dinosaur');
+    await vi.waitFor(() => expect(coloringPackState.downloadedBytes).toBe(7));
+    expect(mocks.installed).toHaveBeenCalledOnce();
+    expect(coloringPackState.installedBookIds).toContain('dinosaur');
     downloader.stop();
   });
 });

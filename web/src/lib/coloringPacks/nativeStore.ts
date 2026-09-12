@@ -13,8 +13,8 @@ function storageVersion(
   return `${target.appVersion}-${target.resolution}`;
 }
 
-function resolvedPack(pack: NativeColoringPack): InstalledColoringPack {
-  return { id: pack.id, rootPath: nativeColoringPackRootUrl(pack.rootPath) };
+function resolvedPack(pack: NativeColoringPack, bytes: number): InstalledColoringPack {
+  return { id: pack.id, rootPath: nativeColoringPackRootUrl(pack.rootPath), bytes };
 }
 
 export function createNativeColoringPackStore(): ColoringPackStore {
@@ -24,7 +24,8 @@ export function createNativeColoringPackStore(): ColoringPackStore {
         version: storageVersion(manifest),
         bookIds: manifest.books.map((book) => book.id),
       });
-      return installed.map(resolvedPack);
+      const bytesByBookId = new Map(manifest.books.map((book) => [book.id, book.bytes]));
+      return installed.map((pack) => resolvedPack(pack, bytesByBookId.get(pack.id) ?? 0));
     },
 
     async install(manifest, book, allowMetered) {
@@ -35,7 +36,7 @@ export function createNativeColoringPackStore(): ColoringPackStore {
         book,
         allowMetered,
       });
-      return resolvedPack(pack);
+      return resolvedPack(pack, book.bytes);
     },
 
     async cancel() {
@@ -46,17 +47,6 @@ export function createNativeColoringPackStore(): ColoringPackStore {
       for (const resolution of COLORING_PACK_RESOLUTIONS) {
         await ColoringPacks.remove({ version: storageVersion({ ...target, resolution }) });
       }
-    },
-
-    async usage(manifest) {
-      const { installed } = await ColoringPacks.status({
-        version: storageVersion(manifest),
-        bookIds: manifest.books.map((book) => book.id),
-      });
-      const installedIds = new Set(installed.map((pack) => pack.id));
-      return manifest.books
-        .filter((book) => installedIds.has(book.id))
-        .reduce((bytes, book) => bytes + book.bytes, 0);
     },
   };
 }

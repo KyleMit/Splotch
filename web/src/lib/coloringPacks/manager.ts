@@ -62,9 +62,7 @@ function applyLocalRoots(packs: InstalledColoringPack[]) {
 
 // Applied only once the caller has re-checked its abort signal: every write
 // here is state that removal clears, so a scan still in flight when the packs
-// were deleted must be dropped rather than published. Which books exist is
-// published without waiting for the byte total, so a failed usage measurement
-// costs the size readout and not the picker.
+// were deleted must be dropped rather than published.
 function applyInstalledPacks(
   manifest: ResolvedColoringPackManifest,
   packs: InstalledColoringPack[]
@@ -75,6 +73,7 @@ function applyInstalledPacks(
     manifest.books.filter((book) => installed.has(book.id)).map((book) => book.id)
   );
   coloringPackState.totalBookCount = manifest.books.length;
+  coloringPackState.downloadedBytes = packs.reduce((total, pack) => total + pack.bytes, 0);
   return installed;
 }
 
@@ -98,9 +97,6 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     const installedPacks = await store.installed(manifest);
     if (controller.signal.aborted) return;
     const installed = applyInstalledPacks(manifest, installedPacks);
-    const downloadedBytes = await store.usage(manifest);
-    if (controller.signal.aborted) return;
-    coloringPackState.downloadedBytes = downloadedBytes;
     if (!downloadAllowed()) return;
 
     for (const book of manifest.books) {
