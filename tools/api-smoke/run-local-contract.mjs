@@ -128,16 +128,17 @@ async function checkAdminAuth(admin) {
 async function checkCorsContract(base, noAuth) {
   // The native WebViews call /api/* from a foreign origin, so the preflight is
   // answered before any route logic and every /api/* response carries the CORS
-  // set. Neither may carry the SSR security headers: `handleSecurityHeaders`
-  // skips /api, and a preflight short-circuits the handle sequence before it
-  // runs at all.
+  // set. The security headers split: a non-OPTIONS response takes
+  // API_RESPONSE_HEADERS (nosniff — the part that means something on a
+  // non-document body) and none of the rest, while a preflight short-circuits
+  // the handle sequence before `handleSecurityHeaders` runs at all and so takes
+  // neither. The remainder is named by subtraction below, so a header added to
+  // SECURITY_HEADERS without being deliberately admitted to the API subset
+  // fails here immediately.
   const wrongCors = (res) =>
     Object.entries(CORS_HEADERS)
       .filter(([name, value]) => res.headers.get(name) !== value)
       .map(([name]) => `${name}: ${res.headers.get(name)}`);
-  // /api/* carries only API_RESPONSE_HEADERS. Naming the remainder by
-  // subtraction keeps the original property: a header added to SECURITY_HEADERS
-  // and not deliberately admitted to the API subset fails here immediately.
   const documentOnlyHeaders = Object.keys(SECURITY_HEADERS).filter(
     (h) => !(h in API_RESPONSE_HEADERS)
   );
