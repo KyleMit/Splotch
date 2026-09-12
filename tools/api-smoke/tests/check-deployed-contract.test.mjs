@@ -90,6 +90,7 @@ async function startDeploy({
   failPath,
   functionSecurityHeader,
   hsts = netlifyEdgeSecurityHeaders['Strict-Transport-Security'],
+  omitAdminCacheControl = false,
   omitHomeAsset = false,
   omitPrerenderedMeta = false,
   prerenderedDataBlocks = '',
@@ -127,6 +128,7 @@ async function startDeploy({
       send(response, 200, '<html><body>Admin</body></html>', {
         'Content-Type': 'text/html',
         ...routeSecurityHeaders,
+        ...(omitAdminCacheControl ? {} : { 'Cache-Control': 'no-store' }),
         ...(omitSecurityHeader === 'Content-Security-Policy'
           ? {}
           : { 'Content-Security-Policy': adminCsp }),
@@ -367,6 +369,14 @@ describe('hosted deploy contract smoke', () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('GET / → deployed HTML with security headers');
     expect(result.stderr).toContain('X-Frame-Options=null');
+  });
+
+  it('fails when the deployed admin console becomes cacheable', async () => {
+    const result = await runSmoke(await startDeploy({ omitAdminCacheControl: true }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('GET /admin → no-store');
+    expect(result.stderr).toContain('Cache-Control=null');
   });
 
   it('reports the home response size when no immutable asset can be found', async () => {

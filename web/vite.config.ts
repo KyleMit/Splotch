@@ -21,6 +21,7 @@ import {
   COLORING_PACK_ASSET_URL_PATTERN,
   serveInstalledColoringPackAsset,
 } from './src/lib/pwa/coloringPackRoute';
+import { serveAdminWithoutCaching } from './src/lib/pwa/adminRoute.ts';
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
@@ -170,6 +171,14 @@ export default defineConfig({
                 {
                   urlPattern: COLORING_PACK_ASSET_URL_PATTERN,
                   handler: serveInstalledColoringPackAsset,
+                },
+                {
+                  // Must precede the navigation route below: Workbox takes the
+                  // first matching route, and the admin document must never be
+                  // written to Cache Storage.
+                  urlPattern: ({ request, url }) =>
+                    request.mode === 'navigate' && url.pathname.startsWith('/admin'),
+                  handler: serveAdminWithoutCaching,
                 },
                 {
                   urlPattern: ({ request }) => request.mode === 'navigate',
