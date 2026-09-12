@@ -18,6 +18,8 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-09-11 | [vet-audits](#2026-09-11--vet-audits)                           |
+| 2026-09-11 | [code-audit](#2026-09-11--code-audit)                           |
 | 2026-09-10 | [vet-audits](#2026-09-10--vet-audits)                           |
 | 2026-09-10 | [code-audit](#2026-09-10--code-audit)                           |
 | 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits-run-3)         |
@@ -89,6 +91,31 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-09-11 · code-audit
+
+Scoped to the `web/` SvelteKit app and run as eight parallel area auditors (drawing engine; AI
+generation; design system + UI controls; settings + admin; routes + PWA + beta; gestures + platform
+
+* audio; state + storage + API; web build + test harness), all pinned to commit
+  fd51d82647964dbcbf1551ac7320831fa95dd4e1. The auditors returned 80 raw findings, synthesized to 30
+  staged in `docs/AUDIT.md` and ranked security → user-visible correctness → boot/hot-path
+  performance → convention drift. Recurring themes: the repo's own conventions applied unevenly (a
+  boundary string or tuning literal restated rather than imported, with no drift guard), work done
+  on paths that do not need it (boot-path `idb` hydration and token-map imports, per-`pointermove`
+  DOM measurement, duplicated native bridge calls), and validation that proves a value's shape then
+  discards the proof, forcing the `as` casts the conventions ban. Two auditors independently
+  reported the same `prefers-reduced-motion` duplication, which was merged into one finding.
+
+## 2026-09-11 · vet-audits
+
+Drained the 30 staged code-audit findings into GitHub issues #1789–#1818, filed in priority order
+with `type:audit` plus area and priority labels, and deleted `docs/AUDIT.md`. The top-ranked
+security and correctness claims were re-verified against the cited lines before filing — the rate
+limiter's cross-endpoint bucket sweep (`web/src/lib/server/rateLimit.ts:33-38`) and the two
+divergent dark-ink predicates (`needsInkOutline` at 0.14 WCAG luminance vs `isDarkInk` at 0.15
+perceived brightness) both reproduce as described. Nothing was dropped in vetting; the cut from 80
+to 30 happened during synthesis.
 
 ## 2026-09-10 · vet-audits
 
