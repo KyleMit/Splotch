@@ -525,15 +525,18 @@ Run `npm run test:api:smoke` to check the local `/api/*` contract end-to-end. It
 it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow
 (login success/failure, the bearer gate, and a token add/remove round-trip), the CORS contract
 (`OPTIONS /api/*` → 204 carrying the CORS set, a non-`OPTIONS` `/api/*` response carrying it too,
-and neither carrying the SSR `SECURITY_HEADERS`), the `verify-access-code` shape, `report`'s
-validation + honeypot + graceful-unconfigured path (no `GITHUB_ISSUE_TOKEN` in the smoke env, so no
-real issue is created), `csp-report`'s two payload formats + caps, and `generate-image`'s auth gate
-(invalid token → 403, then the shared per-IP 429 once the verify budget is burned; valid token minus
-image → 400 — every case is rejected before the model call), then tears the server down. No model
-key or Netlify Blobs needed; successful generation and `verify-key` (which make live model calls)
-are out of scope. Use it to sanity-check the contract after changing any endpoint — it's the cheap
-counterpart to the Playwright admin E2E in `tests/admin.spec.ts`. CI runs it in the `unit` job of
-`test.yml` on every push/PR, so a contract regression fails the PR instead of shipping.
+that non-`OPTIONS` response also carrying `API_RESPONSE_HEADERS` — the `nosniff` subset of
+`SECURITY_HEADERS` that means something on a non-document body — and neither carrying the rest of
+the SSR set; the preflight returns before the header hook and so carries neither), the
+`verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
+`GITHUB_ISSUE_TOKEN` in the smoke env, so no real issue is created), `csp-report`'s two payload
+formats + caps, and `generate-image`'s auth gate (invalid token → 403, then the shared per-IP 429
+once the verify budget is burned; valid token minus image → 400 — every case is rejected before the
+model call), then tears the server down. No model key or Netlify Blobs needed; successful generation
+and `verify-key` (which make live model calls) are out of scope. Use it to sanity-check the contract
+after changing any endpoint — it's the cheap counterpart to the Playwright admin E2E in
+`tests/admin.spec.ts`. CI runs it in the `unit` job of `test.yml` on every push/PR, so a contract
+regression fails the PR instead of shipping.
 
 `test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs or deployed CDN
 configuration. The normal real-deploy gate is `npm run test:deploy:smoke`:

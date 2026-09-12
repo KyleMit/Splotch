@@ -17,8 +17,10 @@ import { check, fatal, summarize, json } from '../lib/smoke.mjs';
 import { adminClient } from './lib/admin-client.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
-// so the absence assertions below name the same headers the hook stamps — a new
-// security header is covered here the moment it's added to that module.
+// so the assertions below name the same headers the hook stamps: /api/* takes
+// API_RESPONSE_HEADERS and must not carry the rest, which is checked by
+// subtraction — a new security header is covered the moment it's added to that
+// module, whichever side of the split it lands on.
 import {
   API_RESPONSE_HEADERS,
   SECURITY_HEADERS,
@@ -153,8 +155,8 @@ async function checkCorsContract(base, noAuth) {
     preflight.status === 204 &&
       wrongCors(preflight).length === 0 &&
       leakedSecurity(preflight).length === 0 &&
-      // The preflight short-circuits ahead of the header hook; a 204 with no
-      // body has nothing to sniff, so it takes the API subset too.
+      // The preflight short-circuits ahead of the header hook, so it skips the
+      // API subset as well; a 204 with no body has nothing to sniff.
       Object.keys(API_RESPONSE_HEADERS).every((h) => !preflight.headers.has(h)),
     `got ${preflight.status}, wrong ${JSON.stringify(wrongCors(preflight))}, leaked ${JSON.stringify(leakedSecurity(preflight))}`
   );
