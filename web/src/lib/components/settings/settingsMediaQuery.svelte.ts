@@ -28,10 +28,20 @@ export function createSettingsMediaQueries(queries: { wide: string; compact: str
     };
     const apply = () => {
       cancelPending?.();
+      cancelPending = undefined;
       // Read when the change arrives rather than when the effect ran, which is
       // what lets the subscription outlive a change of foreground.
-      if (foreground()) update();
-      else cancelPending = scheduleIdle(update);
+      if (foreground()) {
+        update();
+        return;
+      }
+      // The handle is cleared by the callback itself as well as by whoever
+      // cancels it: a handle left behind after the update already ran reads as
+      // outstanding work, and the foreground effect below would then redo it.
+      cancelPending = scheduleIdle(() => {
+        cancelPending = undefined;
+        update();
+      });
     };
     update();
     wideQuery.addEventListener('change', apply);

@@ -163,6 +163,7 @@ test.describe('AI result modal', () => {
 
     const measured = await page.evaluate(async () => {
       const image = document.querySelector('.stage-img.preview') as HTMLElement;
+      const first = image.style.filter;
       let writes = 0;
       let frames = 0;
       const observer = new MutationObserver((records) => {
@@ -179,8 +180,14 @@ test.describe('AI result modal', () => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       counting = false;
       observer.disconnect();
-      return { writes, frames };
+      return { writes, frames, first, last: image.style.filter };
     });
+
+    // The ceiling alone would be satisfied by a blur that never moves at all, so
+    // a frozen or deleted ramp would make this performance test greener. Prove
+    // the filter still advances before believing the count.
+    expect(measured.last).not.toBe(measured.first);
+    expect(measured.writes).toBeGreaterThan(0);
 
     // Over a 2s window the blur moves by roughly a pixel, so a quarter-pixel
     // step admits a handful of writes where the raw value wrote one per frame.
