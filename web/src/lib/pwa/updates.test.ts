@@ -432,6 +432,62 @@ describe('initPWAUpdates', () => {
     }
   });
 
+  // A resume fires visibilitychange (→ visible) and focus together, and both
+  // handlers ask for a check. Each one revalidates /sw.js over the network, so
+  // one resume cost two requests on a connection the module already cares
+  // enough about to skip registration entirely under Save-Data.
+  it('revalidates once when a resume fires visibilitychange and focus together', async () => {
+    stubLocation('https://splotch.art/');
+    const reg = makeRegistration();
+    stubServiceWorker(reg);
+    stubDeployedVersion(CURRENT_VERSION);
+
+    teardown = pwaUpdates.initPWAUpdates();
+    await flushAsync();
+    expect(reg.update).toHaveBeenCalledOnce();
+
+    setDocumentVisibility('visible');
+    try {
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('focus'));
+      await flushAsync();
+    } finally {
+      restoreDocumentVisibility();
+    }
+
+    // Both resume events land inside MIN_UPDATE_CHECK_GAP_MS of the init check.
+    expect(reg.update).toHaveBeenCalledOnce();
+  });
+
+  // The floor gates the network revalidation only. A check suppressed by it
+  // still decides on a worker the registration already holds — otherwise a
+  // waiting worker found between checks would sit undecided until the hourly
+  // timer came round.
+  it('still activates a waiting worker when the check falls inside the minimum gap', async () => {
+    stubLocation('https://splotch.art/');
+    canvasState.canvasEmpty = true;
+    const worker = makeWorker();
+    const reg = makeRegistration();
+    stubServiceWorker(reg);
+    stubDeployedVersion(CURRENT_VERSION);
+
+    teardown = pwaUpdates.initPWAUpdates();
+    await flushAsync();
+    expect(reg.update).toHaveBeenCalledOnce();
+
+    (reg as { waiting: ServiceWorker | null }).waiting = worker as unknown as ServiceWorker;
+    setDocumentVisibility('visible');
+    try {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await flushAsync();
+    } finally {
+      restoreDocumentVisibility();
+    }
+
+    expect(reg.update).toHaveBeenCalledOnce();
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+  });
+
   it('is idempotent: a second call registers no additional listeners or intervals', () => {
     stubLocation('https://splotch.art/');
     const docListenerSpy = vi.spyOn(document, 'addEventListener');

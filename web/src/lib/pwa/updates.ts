@@ -49,6 +49,14 @@ import { VERSION_JSON_PATH } from '$lib/pwa/versionEndpoint';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
+// Returning to a backgrounded tab or a resumed PWA fires visibilitychange and
+// focus together, so both handlers ask for the same check and the registration
+// is revalidated against the network twice for one resume. The floor collapses
+// that pair into one request. It gates only the network call, not the decision
+// that follows it, so a suppressed check still acts on a worker already found.
+// Keep it well under UPDATE_CHECK_INTERVAL_MS, which paces the periodic check.
+const MIN_UPDATE_CHECK_GAP_MS = 30_000;
+
 // Grace period after posting SKIP_WAITING before we give up waiting for the new
 // worker to take control. If controllerchange never arrives, the lifecycle must
 // not stay pinned in 'activating' — see activateWaitingSW.
@@ -91,6 +99,7 @@ export function createPWAUpdates() {
   // inside the visibilitychange handler.
   let updateRegistration: ServiceWorkerRegistration | null = null;
   let registrationScheduled = false;
+  let lastUpdateCheckAt = 0;
   const observedInstallingWorkers = new WeakSet<ServiceWorker>();
 
   function reloadForUpdate(): void {
@@ -305,7 +314,11 @@ export function createPWAUpdates() {
       if (!registration) return;
       updateRegistration = registration;
 
-      await registration.update();
+      const now = Date.now();
+      if (now - lastUpdateCheckAt >= MIN_UPDATE_CHECK_GAP_MS) {
+        lastUpdateCheckAt = now;
+        await registration.update();
+      }
 
       // An installing worker outranks a waiting one: update() resolves as soon
       // as the new worker starts installing, so with frequent deploys the
