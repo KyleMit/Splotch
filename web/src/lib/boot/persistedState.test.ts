@@ -40,6 +40,7 @@ vi.mock('../secureStorage', () => ({
   clearAccessCode: vi.fn(async () => {
     secureStore.accessCode = null;
   }),
+  recordSecureVaultEmpty: vi.fn(),
 }));
 
 vi.mock('../idb', () => ({

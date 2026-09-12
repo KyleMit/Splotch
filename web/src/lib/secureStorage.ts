@@ -3,6 +3,8 @@ import { browser } from '$app/environment';
 import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';
 import { idbKvStore, lazyIdbDatabase } from './idb';
+import { readString, removeKey, writeString } from './storage';
+import { STORAGE_KEYS } from './storageKeys';
 
 // Secure home for the app's client-held secrets — the parent's AI provider API
 // key (BYOK) and managed access code.
@@ -177,17 +179,38 @@ async function selectBackend(): Promise<SecureBackend> {
   return { save: webSave, load: webLoad, clear: webClear };
 }
 
+// Whether the web vault is known to be empty, so boot can skip opening it at
+// all. Deliberately tri-state: 'true' means a boot read confirmed it empty,
+// 'false' means a secret was written, and *absent* means unknown. Only the
+// explicit 'true' skips the read, so losing localStorage while IndexedDB
+// survives costs one vault read rather than hiding a credential the parent can
+// still use — the failure mode has to be a wasted read, never a lost key.
+export function recordSecureVaultEmpty(empty: boolean) {
+  writeString(STORAGE_KEYS.secureVaultEmpty, empty ? 'true' : 'false');
+}
+
+function secureVaultKnownEmpty() {
+  return readString(STORAGE_KEYS.secureVaultEmpty, null) === 'true';
+}
+
 /** Persist a named secret to the platform's secure store. */
 async function saveSecret(name: string, value: string) {
   if (!browser) return;
   if (!value) return clearSecret(name);
   const backend = await selectBackend();
   await backend.save(name, value);
+  recordSecureVaultEmpty(false);
 }
 
 /** Read a named secret back, or null if none is stored. Never throws. */
 async function loadSecret(name: string) {
   if (!browser) return null;
+  // Opening the web vault imports `idb` and creates the database. For a device
+  // that has never stored a credential — the overwhelming majority, since AI is
+  // off by default — that is a boot-path chunk fetch and an upgrade transaction
+  // spent on a guaranteed miss. Native keeps its secrets in the platform store,
+  // which this flag says nothing about, so the skip is web-only.
+  if (!isNative() && secureVaultKnownEmpty()) return null;
   try {
     const backend = await selectBackend();
     return await backend.load(name);
@@ -200,6 +223,9 @@ async function loadSecret(name: string) {
 /** Remove a named secret. Best-effort; never throws. */
 async function clearSecret(name: string) {
   if (!browser) return;
+  // Back to unknown rather than to empty: the other secret may still be in
+  // there, and only a read of the whole vault can say.
+  removeKey(STORAGE_KEYS.secureVaultEmpty);
   try {
     const backend = await selectBackend();
     await backend.clear(name);

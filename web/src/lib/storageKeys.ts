@@ -32,6 +32,9 @@ export const STORAGE_KEYS = {
   installRepromptSessionCount: 'splotch-install-reprompt-session-count',
   installRepromptsUsed: 'splotch-install-reprompts-used',
   legacyAiUserApiKey: 'splotch-ai-user-api-key',
+  // Whether the web secure vault is known to hold nothing, so boot can skip
+  // opening it. Tri-state by absence — see secureStorage's recordSecureVaultEmpty.
+  secureVaultEmpty: 'splotch-secure-vault-empty',
   saveFolderChosen: 'splotch-save-folder-chosen',
   parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',
   parentalGateImageReportMode: 'splotch-parental-gate-image-report-mode',

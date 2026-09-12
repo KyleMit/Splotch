@@ -33,7 +33,7 @@
   } from '$lib/boot/bootHiddenOverlays';
   import { installWakeLock } from '$lib/boot/wakeLock';
   import { installContextMenuGuard } from '$lib/boot/contextMenuGuard';
-  import { hydratePersistedState } from '$lib/boot/persistedState';
+  import { hydrateSettings } from '$lib/boot/persistedState';
   import { initWebOnlyServices, recordWebInstallRepromptSession } from '$lib/boot/webOnlyServices';
   import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
   import { installUndoShortcut } from '$lib/boot/undoShortcut';
@@ -127,7 +127,7 @@
     // theme-color meta and OS-switch tracking now fall out of the single
     // reactive source in lib/state/appearance.svelte.ts.
     applyTheme(settings.theme);
-    const settingsReady = capturedAccessToken.then(hydratePersistedState);
+    const settingsReady = capturedAccessToken.then(hydrateSettings);
 
     const overlayController = mountBootHiddenOverlays(mountHiddenOverlay);
     hiddenOverlays = overlayController;

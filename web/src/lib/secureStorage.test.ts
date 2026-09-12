@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { webcrypto } from 'node:crypto';
+import { STORAGE_KEYS } from './storageKeys';
 
 if (!globalThis.crypto?.subtle) vi.stubGlobal('crypto', webcrypto);
 
@@ -92,6 +93,7 @@ let secureStorage: SecureStorage;
 beforeEach(async () => {
   ctrl.reset();
   nativeRows.clear();
+  localStorage.clear();
   platform.native = false;
   vi.restoreAllMocks();
   vi.resetModules();
@@ -243,5 +245,39 @@ describe('master key creation', () => {
     vi.resetModules();
     const freshTab = await import('./secureStorage');
     await expect(freshTab.loadApiKey()).resolves.toBe('raced-value');
+  });
+});
+
+describe('skipping the vault when it is known to be empty', () => {
+  it('records the vault as non-empty as soon as a secret is written', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+
+    expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBe('false');
+  });
+
+  it('does not open the vault when localStorage says it holds nothing', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+    // Stand in for a device that has never stored a credential: the rows are
+    // only here to prove the read was skipped rather than merely empty.
+    localStorage.setItem(STORAGE_KEYS.secureVaultEmpty, 'true');
+
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+  });
+
+  // The safety property the whole flag rests on. localStorage can be evicted
+  // while IndexedDB survives, and the flag's absence must mean "look" — never
+  // "there is nothing there", which would hide a key the parent is still using.
+  it('reads the vault when the flag is missing, rather than assuming it is empty', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+    localStorage.removeItem(STORAGE_KEYS.secureVaultEmpty);
+
+    await expect(secureStorage.loadApiKey()).resolves.toBe('secret-key-123');
+  });
+
+  it('returns to "unknown" when a secret is cleared, since the other may remain', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+    await secureStorage.clearApiKey();
+
+    expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
   });
 });
