@@ -54,7 +54,9 @@ const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 // not stay pinned in 'activating' — see activateWaitingSW.
 export const ACTIVATION_RECOVERY_MS = 10_000;
 
-// Allow registration.waiting to settle after the installing worker reaches installed.
+// How long registration.waiting is given to appear after the installing worker
+// reports `installed`. The two are populated by separately queued tasks, so the
+// slot is often still empty at statechange time.
 export const WAITING_SETTLE_MS = 100;
 
 // 'silent': the running page already matches the deployed version, so the
@@ -319,11 +321,17 @@ export function createPWAUpdates() {
           installing.addEventListener(
             'statechange',
             () => {
-              if (installing.state === 'installed' && registration.waiting) {
-                setTimeout(() => {
-                  if (registration.waiting) void decideWaitingActivation(registration.waiting);
-                }, WAITING_SETTLE_MS);
-              }
+              if (installing.state !== 'installed') return;
+              // The settle delay is armed before `waiting` is consulted, not
+              // after. The spec populates registration.waiting on a task queued
+              // separately from the one that fires statechange, so it can still
+              // be null here — and because this listener is `once`, checking it
+              // first would spend the listener without ever arming the delay
+              // that WAITING_SETTLE_MS exists to provide, leaving the worker
+              // undecided until the next hourly check.
+              setTimeout(() => {
+                if (registration.waiting) void decideWaitingActivation(registration.waiting);
+              }, WAITING_SETTLE_MS);
             },
             { once: true }
           );
