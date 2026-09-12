@@ -106,12 +106,20 @@ describe('native admin API wire responses', () => {
     });
   });
 
-  it('returns the mutation snapshot body', async () => {
-    addToken.mockResolvedValue({ ok: true, tokens: ['existing', 'new-token'] });
-    getTokensStatus.mockResolvedValue({ tokens: ['stale'], persistent: true });
+  // The mutation carries both halves back from the write it just did, so this
+  // deliberately leaves getTokensStatus unstubbed: a snapshot assembled from a
+  // second status read would fail here rather than quietly costing a round trip
+  // that races the write it follows.
+  it('returns the mutation snapshot body without a second status read', async () => {
+    addToken.mockResolvedValue({
+      ok: true,
+      tokens: ['existing', 'new-token'],
+      persistent: true,
+    });
 
     const response = await tokenRequest('POST', 'new-token');
 
+    expect(getTokensStatus).not.toHaveBeenCalled();
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       ok: true,

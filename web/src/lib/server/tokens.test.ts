@@ -188,8 +188,14 @@ describe('mutations when getStore fails', () => {
   it('keeps the in-memory token list writable in Vite dev', async () => {
     const { addToken, removeToken } = await freshTokens('seeded');
 
-    expect(await addToken('local')).toEqual({ ok: true, tokens: ['seeded', 'local'] });
-    expect(await removeToken('seeded')).toEqual({ ok: true, tokens: ['local'] });
+    expect(await addToken('local')).toEqual({
+      ok: true,
+      tokens: ['seeded', 'local'],
+      // freshTokens leaves Blobs unconfigured, so this is the Vite-dev
+      // in-memory list: writable, but not durably stored.
+      persistent: false,
+    });
+    expect(await removeToken('seeded')).toEqual({ ok: true, tokens: ['local'], persistent: false });
   });
 
   it('fails closed outside Vite dev', async () => {
@@ -235,7 +241,11 @@ describe('stale-empty seed races', () => {
 
   it('bases mutations on the persisted list after a lost seed race', async () => {
     const { addToken } = await freshTokensWithSeedRace('legacy', ['current'], 1);
-    expect(await addToken('mine')).toEqual({ ok: true, tokens: ['current', 'mine'] });
+    expect(await addToken('mine')).toEqual({
+      ok: true,
+      tokens: ['current', 'mine'],
+      persistent: true,
+    });
     expect(await storeFor('access-tokens').get('list')).toEqual(['current', 'mine']);
   });
 
@@ -309,8 +319,26 @@ describe('addToken', () => {
   it('adds a trimmed token and reflects it in the list', async () => {
     const { addToken, isAllowedToken } = await freshTokens('');
     const result = await addToken('  new-token  ');
-    expect(result).toEqual({ ok: true, tokens: ['new-token'] });
+    expect(result).toEqual({ ok: true, tokens: ['new-token'], persistent: false });
     expect(await isAllowedToken('new-token')).toBe(true);
+  });
+
+  // Discovering whether the list is durably stored and writing to it were two
+  // reads of the same blob, the second racing the write it followed. The write
+  // already knows: it refuses to persist unless the read it used came from
+  // Blobs.
+  it('reads the store once and reports durability from that read', async () => {
+    const { addToken } = await freshTokensWithBlobs(['existing']);
+    const reads = vi.spyOn(storeFor('access-tokens'), 'getWithMetadata');
+
+    const result = await addToken('new-token');
+
+    expect(result).toEqual({
+      ok: true,
+      tokens: ['existing', 'new-token'],
+      persistent: true,
+    });
+    expect(reads).toHaveBeenCalledTimes(1);
   });
 
   it('rejects an empty token', async () => {
@@ -335,12 +363,16 @@ describe('addToken', () => {
 describe('removeToken', () => {
   it('removes a token and returns the remaining list', async () => {
     const { removeToken } = await freshTokens('a,b,c');
-    expect(await removeToken('b')).toEqual({ ok: true, tokens: ['a', 'c'] });
+    expect(await removeToken('b')).toEqual({ ok: true, tokens: ['a', 'c'], persistent: false });
   });
 
   it('is a no-op for an unknown token', async () => {
     const { removeToken } = await freshTokens('a,b');
-    expect(await removeToken('missing')).toEqual({ ok: true, tokens: ['a', 'b'] });
+    expect(await removeToken('missing')).toEqual({
+      ok: true,
+      tokens: ['a', 'b'],
+      persistent: false,
+    });
   });
 });
 
@@ -371,20 +403,28 @@ describe('concurrent mutations against Blobs', () => {
 
   it('persists an add through Blobs and reports persistent: true', async () => {
     const { addToken, getTokensStatus } = await freshTokensWithBlobs(['a']);
-    expect(await addToken('b')).toEqual({ ok: true, tokens: ['a', 'b'] });
+    expect(await addToken('b')).toEqual({ ok: true, tokens: ['a', 'b'], persistent: true });
     expect(await getTokensStatus()).toEqual({ tokens: ['a', 'b'], persistent: true });
   });
 
   it('retries an add against the winning list when a concurrent write lands mid-mutation', async () => {
     const { addToken } = await freshTokensWithBlobs(['a']);
     raceOnce(['a', 'other-admin']);
-    expect(await addToken('mine')).toEqual({ ok: true, tokens: ['a', 'other-admin', 'mine'] });
+    expect(await addToken('mine')).toEqual({
+      ok: true,
+      tokens: ['a', 'other-admin', 'mine'],
+      persistent: true,
+    });
   });
 
   it('retries a remove without resurrecting the concurrent add it raced with', async () => {
     const { removeToken } = await freshTokensWithBlobs(['a', 'b']);
     raceOnce(['a', 'b', 'other-admin']);
-    expect(await removeToken('b')).toEqual({ ok: true, tokens: ['a', 'other-admin'] });
+    expect(await removeToken('b')).toEqual({
+      ok: true,
+      tokens: ['a', 'other-admin'],
+      persistent: true,
+    });
   });
 
   it('surfaces an error instead of clobbering once retries exhaust', async () => {
@@ -449,7 +489,7 @@ describe('usage cleanup on remove', () => {
     const retainedKey = usageGrantKey('a');
     await usage.setJSON(revokedKey, { count: 3 });
     await usage.setJSON(retainedKey, { count: 1 });
-    expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'] });
+    expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'], persistent: true });
     expect(usage.blobs.has(revokedKey)).toBe(false);
     expect(usage.blobs.has(retainedKey)).toBe(true);
     expect(usage.blobs.has('revoked')).toBe(false);
@@ -462,7 +502,7 @@ describe('usage cleanup on remove', () => {
     usage.delete = async () => {
       throw new Error('blobs outage');
     };
-    expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'] });
+    expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'], persistent: true });
     expect((await getTokensStatus()).tokens).toEqual(['a']);
   });
 
@@ -470,7 +510,7 @@ describe('usage cleanup on remove', () => {
     const { removeToken } = await freshTokensWithBlobs(['a']);
     const usage = storeFor('ai-usage');
     await usage.setJSON('missing', { count: 2 });
-    expect(await removeToken('missing')).toEqual({ ok: true, tokens: ['a'] });
+    expect(await removeToken('missing')).toEqual({ ok: true, tokens: ['a'], persistent: true });
     expect(usage.blobs.has('missing')).toBe(true);
   });
 });

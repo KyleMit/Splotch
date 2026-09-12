@@ -92,7 +92,7 @@ describe('the /admin token form actions', () => {
   });
 
   it('reports the mutated token on success', async () => {
-    vi.mocked(removeToken).mockResolvedValue({ ok: true, tokens: [] });
+    vi.mocked(removeToken).mockResolvedValue({ ok: true, tokens: [], persistent: true });
     expect(await tokenDoor('remove', '  spaced  ')).toEqual({
       success: true,
       message: 'Removed “spaced”',
