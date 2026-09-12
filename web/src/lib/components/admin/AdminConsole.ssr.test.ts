@@ -54,3 +54,37 @@ describe.each([
     }
   });
 });
+
+// The tally backend being down and nobody having redeemed a code produce the
+// same empty cells, so the difference has to be said out loud rather than
+// inferred from the rows.
+// Only the column header renders this; the banner's prose says "the Generations
+// and Last used columns", which has no closing angle bracket before the word.
+const COLUMN_HEADER = '>Generations<';
+
+describe('AdminConsole when the generation tally is unavailable', () => {
+  const invites = [
+    { token: 'managed-code', url: 'https://splotch.art/?code=managed-code', usage: null },
+  ];
+
+  function servedConsole(usageAvailable: boolean) {
+    return render(AdminConsole, {
+      props: { ...handlers, authed: true, invites, persistent: true, usageAvailable },
+    }).body;
+  }
+
+  it('warns the operator, and hides the columns that have no data', () => {
+    const body = servedConsole(false);
+
+    expect(body).toContain('Generation tallies are unavailable');
+    // The column header specifically — the banner copy names the columns too.
+    expect(body).not.toContain(COLUMN_HEADER);
+  });
+
+  it('says nothing and keeps the columns when the tally is reachable', () => {
+    const body = servedConsole(true);
+
+    expect(body).not.toContain('Generation tallies are unavailable');
+    expect(body).toContain(COLUMN_HEADER);
+  });
+});

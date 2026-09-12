@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 
 describe('the /admin loader usage state', () => {
-  it('surfaces an unavailable usage snapshot instead of saying the code was never used', async () => {
+  it('flags an unavailable usage snapshot instead of saying the code was never used', async () => {
     vi.mocked(getUsage).mockResolvedValue(null);
 
     const data = await load({
@@ -36,8 +36,12 @@ describe('the /admin loader usage state', () => {
       url: new URL('https://splotch.art/admin'),
     } as unknown as Parameters<typeof load>[0]);
 
+    // The row is empty either way; usageAvailable is what tells them apart, so
+    // the console can say the tally is broken rather than silently dropping the
+    // columns as though this build had no usage tracking.
     expect(data).toMatchObject({
-      invites: [{ token: 'managed-code', usage: undefined }],
+      usageAvailable: false,
+      invites: [{ token: 'managed-code', usage: null }],
     });
   });
 
@@ -50,6 +54,7 @@ describe('the /admin loader usage state', () => {
     } as unknown as Parameters<typeof load>[0]);
 
     expect(data).toMatchObject({
+      usageAvailable: true,
       invites: [{ token: 'managed-code', usage: null }],
     });
   });

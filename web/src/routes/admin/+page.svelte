@@ -42,6 +42,7 @@
   authed={data.authed}
   invites={data.invites}
   persistent={data.persistent}
+  usageAvailable={data.usageAvailable}
   freeGrantStats={data.freeGrantStats}
   {flash}
   loginError={form?.loginError ?? null}

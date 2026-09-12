@@ -12,12 +12,15 @@
   // open.
   let {
     invites,
+    usageAvailable,
     busy,
     copied,
     oncopy,
     onremove,
   }: {
     invites: Invite[];
+    /** `false` = the tally backend is unreachable, so the usage columns are hidden. */
+    usageAvailable: boolean;
     busy: boolean;
     /** The copyKey of the action showing "Copied!", or ''. */
     copied: string;
@@ -35,11 +38,10 @@
     expandedToken = expandedToken === token ? null : token;
   }
 
-  // The native front door has no usage tracking (every invite's `usage` is
-  // undefined there — see the Invite doc in AdminConsole), so the ledger
-  // drops the Generations / Last used columns entirely rather than labelling
-  // permanently blank cells.
-  let showUsage = $derived(invites.some((invite) => invite.usage !== undefined));
+  // Told, not inferred. A ledger where no code has been redeemed yet looks
+  // exactly like one whose tally backend is down, and only the second is worth
+  // hiding columns over — AdminConsole shows the operator a banner for it.
+  let showUsage = $derived(usageAvailable);
 </script>
 
 {#if invites.length === 0}
