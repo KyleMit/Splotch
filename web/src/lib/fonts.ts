@@ -1,4 +1,4 @@
-import { scheduleIdle } from './idle';
+import { scheduleIdle } from './idle.ts';
 
 export const QUICKSAND_FONT_FAMILY = 'Quicksand Variable';
 
