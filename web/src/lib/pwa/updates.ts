@@ -100,6 +100,12 @@ export function createPWAUpdates() {
   let updateRegistration: ServiceWorkerRegistration | null = null;
   let registrationScheduled = false;
   let lastUpdateCheckAt = 0;
+  // A revalidation in flight is shared, never skipped past: registration.waiting
+  // may still hold a worker from an earlier deploy while update() is fetching,
+  // and the installing-outranks-waiting rule below can only see that once the
+  // fetch has settled. A second check joins the first instead of deciding on a
+  // registration mid-update.
+  let updateInFlight: Promise<unknown> | null = null;
   const observedInstallingWorkers = new WeakSet<ServiceWorker>();
 
   function reloadForUpdate(): void {
@@ -314,10 +320,14 @@ export function createPWAUpdates() {
       if (!registration) return;
       updateRegistration = registration;
 
-      const now = Date.now();
-      if (now - lastUpdateCheckAt >= MIN_UPDATE_CHECK_GAP_MS) {
-        lastUpdateCheckAt = now;
-        await registration.update();
+      if (updateInFlight) {
+        await updateInFlight;
+      } else if (Date.now() - lastUpdateCheckAt >= MIN_UPDATE_CHECK_GAP_MS) {
+        lastUpdateCheckAt = Date.now();
+        updateInFlight = registration.update().finally(() => {
+          updateInFlight = null;
+        });
+        await updateInFlight;
       }
 
       // An installing worker outranks a waiting one: update() resolves as soon
