@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { webcrypto } from 'node:crypto';
+import { STORAGE_KEYS } from './storageKeys';
 
 if (!globalThis.crypto?.subtle) vi.stubGlobal('crypto', webcrypto);
 
@@ -92,6 +93,7 @@ let secureStorage: SecureStorage;
 beforeEach(async () => {
   ctrl.reset();
   nativeRows.clear();
+  localStorage.clear();
   platform.native = false;
   vi.restoreAllMocks();
   vi.resetModules();
@@ -243,5 +245,63 @@ describe('master key creation', () => {
     vi.resetModules();
     const freshTab = await import('./secureStorage');
     await expect(freshTab.loadApiKey()).resolves.toBe('raced-value');
+  });
+});
+
+describe('skipping the vault when every row is known absent', () => {
+  it('does not skip until both secrets have been read and found missing', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+
+    // One row accounted for is not an empty vault.
+    ctrl.rows.clear();
+    await expect(secureStorage.loadAccessCode()).resolves.toBeNull();
+    warn.mockRestore();
+
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty) ?? '[]')).toHaveLength(2);
+  });
+
+  it('stops opening the vault once both rows are known absent', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await secureStorage.loadApiKey();
+    await secureStorage.loadAccessCode();
+    warn.mockRestore();
+
+    // Planted afterwards: the read must be skipped, not merely empty.
+    await secureStorage.saveApiKey('secret-key-123');
+    localStorage.setItem(
+      STORAGE_KEYS.secureVaultEmpty,
+      JSON.stringify(['gemini-api-key', 'managed-access-code'])
+    );
+
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+  });
+
+  // The property the whole flag rests on. loadSecret turns an IndexedDB open,
+  // read or decrypt failure into `null`, so anything that decided "empty" from
+  // a returned value would mark the vault empty on a transient failure and hide
+  // a real credential for good.
+  it('records nothing when the read fails rather than returns empty', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+    localStorage.removeItem(STORAGE_KEYS.secureVaultEmpty);
+    ctrl.failNextGet = true;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+    warn.mockRestore();
+
+    expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
+    // And the credential is still reachable on the next attempt.
+    await expect(secureStorage.loadApiKey()).resolves.toBe('secret-key-123');
+  });
+
+  it('forgets what it knew as soon as a secret is written', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await secureStorage.loadApiKey();
+    await secureStorage.loadAccessCode();
+    warn.mockRestore();
+    await secureStorage.saveApiKey('secret-key-123');
+
+    expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
   });
 });

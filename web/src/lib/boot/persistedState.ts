@@ -7,7 +7,7 @@ import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
 import { persistedStateStatus } from './persistedStateStatus.svelte';
 
-export async function hydratePersistedState(): Promise<void> {
+async function hydrateSettingsStores(): Promise<void> {
   // Load the optional saved-photo folder name for display in Settings
   // (web/desktop only; no effect on whether saves happen). Fire-and-forget:
   // nothing downstream needs the folder name before it arrives.
@@ -30,15 +30,45 @@ export async function hydratePersistedState(): Promise<void> {
       settings.forceLandscapeOrientation
     );
   }
+}
 
-  // Durable hydration must finish before the credential migrations so a legacy
-  // plaintext value that survived only in Preferences can move into secure
-  // storage before both plaintext copies are scrubbed.
-  const credentialHydrations = await Promise.allSettled([hydrateApiKey(), hydrateAiAccessToken()]);
-  for (const hydration of credentialHydrations) {
+// Not memoized: each credential's own write coordinator already serializes
+// hydration onto its queue and stamps it with a write version, so a boot run and
+// a later Settings open cannot interleave destructively. A module-level promise
+// here would add state this module does not need and would outlive a test.
+async function hydrateCredentials(): Promise<void> {
+  const hydrations = await Promise.allSettled([hydrateApiKey(), hydrateAiAccessToken()]);
+  for (const hydration of hydrations) {
     if (hydration.status === 'rejected') {
       console.warn('Secure credential hydration failed', hydration.reason);
     }
   }
   persistedStateStatus.hydrated = true;
+}
+
+/**
+ * Settings only. Resolves as soon as the stores a route needs in order to
+ * decide what to do are usable; credential hydration continues in the
+ * background and still flips `persistedStateStatus.hydrated` when it lands.
+ *
+ * This is what the drawing route's boot gate wants:
+ * `installColoringPackDownloads` reads `settings.coloringBookEnabled` and
+ * nothing credential-shaped, so waiting on a secure-storage round trip held it
+ * behind work it does not depend on.
+ */
+export async function hydrateSettings(): Promise<void> {
+  await hydrateSettingsStores();
+  // Durable hydration must finish before the credential migrations, so a legacy
+  // plaintext value that survived only in Preferences can move into secure
+  // storage before both plaintext copies are scrubbed.
+  void hydrateCredentials();
+}
+
+/**
+ * Settings *and* credentials. The Settings modal renders the stored key and
+ * access code, so it must not open before those have loaded.
+ */
+export async function hydratePersistedState(): Promise<void> {
+  await hydrateSettingsStores();
+  await hydrateCredentials();
 }
