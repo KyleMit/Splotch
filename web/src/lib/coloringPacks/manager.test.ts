@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setLocalColoringBookRoot } from './assetResolver';
 import { COLORING_PACK_POLICY_EVENT, COLORING_PACK_REMOVE_EVENT } from './policy';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 
@@ -60,15 +61,20 @@ const manifest = {
   })),
 };
 
-function pendingInstall() {
-  let resolve!: (pack: InstalledColoringPack) => void;
+function pending<T>() {
+  let resolve!: (value: T) => void;
   let reject!: (error: Error) => void;
-  const promise = new Promise<InstalledColoringPack>((done, fail) => {
+  const promise = new Promise<T>((done, fail) => {
     resolve = done;
     reject = fail;
   });
   return { promise, resolve, reject };
 }
+
+const pendingInstall = () => pending<InstalledColoringPack>();
+const pendingScan = () => pending<InstalledColoringPack[]>();
+
+const flushMicrotasks = () => new Promise<void>((done) => setTimeout(done, 0));
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -80,6 +86,7 @@ beforeEach(() => {
   mocks.cancel.mockReset().mockResolvedValue(undefined);
   mocks.remove.mockReset();
   mocks.usage.mockReset().mockResolvedValue(0);
+  vi.mocked(setLocalColoringBookRoot).mockClear();
 });
 
 afterEach(() => {
@@ -161,6 +168,66 @@ describe('coloring-pack downloader policy boundaries', () => {
     allowed = true;
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
+    downloader.stop();
+  });
+});
+
+describe('removal during an in-flight run', () => {
+  it('drops a scan that resolves after the packs were removed', async () => {
+    const scan = pendingScan();
+    mocks.installed.mockReturnValueOnce(scan.promise);
+    mocks.usage.mockResolvedValue(1);
+    const downloader = createColoringPackDownloader();
+    downloader.start();
+
+    await vi.waitFor(() => expect(mocks.installed).toHaveBeenCalledOnce());
+    await removeDownloadedColoringPacks();
+    expect(mocks.remove).toHaveBeenCalledOnce();
+
+    scan.resolve([{ id: 'dinosaur', rootPath: 'file:///dinosaur' }]);
+    await flushMicrotasks();
+
+    expect(coloringPackState.installedBookIds).toEqual(['farm']);
+    expect(coloringPackState.downloadedBytes).toBe(0);
+    expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
+    // The run stops at the abort check between the two store reads, so the
+    // size measurement is never even asked for.
+    expect(mocks.usage).not.toHaveBeenCalled();
+    expect(mocks.install).not.toHaveBeenCalled();
+    downloader.stop();
+  });
+
+  it('drops an install that resolves after the packs were removed', async () => {
+    const first = pendingInstall();
+    mocks.install.mockReturnValueOnce(first.promise);
+    const downloader = createColoringPackDownloader();
+    downloader.start();
+
+    await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
+    await removeDownloadedColoringPacks();
+    vi.mocked(setLocalColoringBookRoot).mockClear();
+
+    first.resolve({ id: 'dinosaur', rootPath: 'file:///dinosaur' });
+    await vi.waitFor(() => expect(coloringPackState.downloadingBookId).toBeNull());
+    await flushMicrotasks();
+
+    expect(coloringPackState.installedBookIds).toEqual(['farm']);
+    expect(coloringPackState.downloadedBytes).toBe(0);
+    expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
+    downloader.stop();
+  });
+});
+
+describe('a store read that fails mid-scan', () => {
+  it('still publishes the installed books when the size measurement rejects', async () => {
+    mocks.installed.mockResolvedValue([{ id: 'dinosaur', rootPath: 'file:///dinosaur' }]);
+    mocks.usage.mockRejectedValue(new Error('usage unavailable'));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const downloader = createColoringPackDownloader();
+    downloader.start();
+
+    await vi.waitFor(() => expect(coloringPackState.installedBookIds).toContain('dinosaur'));
+    expect(setLocalColoringBookRoot).toHaveBeenCalledWith('dinosaur', 'file:///dinosaur');
     downloader.stop();
   });
 });

@@ -60,18 +60,21 @@ function applyLocalRoots(packs: InstalledColoringPack[]) {
   }
 }
 
-async function initializeState(
-  store: ColoringPackStore,
-  manifest: ResolvedColoringPackManifest
-): Promise<Set<string>> {
-  const installedPacks = await store.installed(manifest);
-  applyLocalRoots(installedPacks);
-  const installed = new Set(installedPacks.map((pack) => pack.id));
+// Applied only once the caller has re-checked its abort signal: every write
+// here is state that removal clears, so a scan still in flight when the packs
+// were deleted must be dropped rather than published. Which books exist is
+// published without waiting for the byte total, so a failed usage measurement
+// costs the size readout and not the picker.
+function applyInstalledPacks(
+  manifest: ResolvedColoringPackManifest,
+  packs: InstalledColoringPack[]
+): Set<string> {
+  applyLocalRoots(packs);
+  const installed = new Set(packs.map((pack) => pack.id));
   setInstalledColoringBooks(
     manifest.books.filter((book) => installed.has(book.id)).map((book) => book.id)
   );
   coloringPackState.totalBookCount = manifest.books.length;
-  coloringPackState.downloadedBytes = await store.usage(manifest);
   return installed;
 }
 
@@ -92,8 +95,13 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     const store = await createStore();
     if (controller.signal.aborted || !downloadAllowed()) return;
     activeStore = store;
-    const installed = await initializeState(store, manifest);
-    if (controller.signal.aborted || !downloadAllowed()) return;
+    const installedPacks = await store.installed(manifest);
+    if (controller.signal.aborted) return;
+    const installed = applyInstalledPacks(manifest, installedPacks);
+    const downloadedBytes = await store.usage(manifest);
+    if (controller.signal.aborted) return;
+    coloringPackState.downloadedBytes = downloadedBytes;
+    if (!downloadAllowed()) return;
 
     for (const book of manifest.books) {
       if (stopped || paused || controller.signal.aborted) return;
@@ -106,6 +114,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
         settings.coloringPacksAllowMetered,
         controller.signal
       );
+      if (controller.signal.aborted) return;
       applyLocalRoots([pack]);
       installed.add(book.id);
       markColoringBookInstalled(book.id);
