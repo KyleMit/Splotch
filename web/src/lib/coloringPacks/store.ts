@@ -2,6 +2,10 @@ import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } f
 
 export interface InstalledColoringPack {
   id: string;
+  // Size on disk of the variant the scan was asked about. Carried on the pack
+  // so discovering what is installed and totalling what it costs are one
+  // answer: they were two, and every boot paid for the same work twice.
+  bytes: number;
   rootPath?: string;
 }
 
@@ -19,5 +23,4 @@ export interface ColoringPackStore {
   // imply a network read that removal must not need — reclaiming space is the
   // operation most likely to be asked for while offline.
   remove(target: Pick<ResolvedColoringPackManifest, 'appVersion'>): Promise<void>;
-  usage(manifest: ResolvedColoringPackManifest): Promise<number>;
 }

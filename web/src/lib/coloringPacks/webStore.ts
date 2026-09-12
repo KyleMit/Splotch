@@ -111,7 +111,9 @@ export function createWebColoringPackStore(): ColoringPackStore {
         manifest.books
           .filter((book) => book.id !== manifest.starterBookId)
           .map(async (book) =>
-            (await hasCompleteBook(cache, manifest, book)) ? { id: book.id } : null
+            (await hasCompleteBook(cache, manifest, book))
+              ? { id: book.id, bytes: book.bytes }
+              : null
           )
       );
       return installed.filter((pack): pack is InstalledColoringPack => !!pack);
@@ -131,7 +133,7 @@ export function createWebColoringPackStore(): ColoringPackStore {
         coloringPackMarkerPath(manifest, book.id),
         new Response(coloringPackMarkerValue(book))
       );
-      return { id: book.id };
+      return { id: book.id, bytes: book.bytes };
     },
 
     // Web transfers abort through the AbortSignal install() already receives.
@@ -143,16 +145,6 @@ export function createWebColoringPackStore(): ColoringPackStore {
           caches.delete(coloringPackCacheName({ ...target, resolution }))
         )
       );
-    },
-
-    async usage(manifest) {
-      const cache = await caches.open(coloringPackCacheName(manifest));
-      const installed = await Promise.all(
-        manifest.books.map(async (book) =>
-          (await hasCompleteBook(cache, manifest, book)) ? book.bytes : 0
-        )
-      );
-      return installed.reduce((sum, bytes) => sum + bytes, 0);
     },
   };
 }

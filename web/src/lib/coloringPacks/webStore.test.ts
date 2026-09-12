@@ -93,14 +93,12 @@ describe('web coloring-pack inventory', () => {
     const store = createWebColoringPackStore();
 
     expect(await store.installed(manifest)).toEqual([]);
-    expect(await store.usage(manifest)).toBe(0);
 
     await store.install(manifest, book, false, new AbortController().signal);
 
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch).toHaveBeenCalledWith(book.files[1].downloadPath, expect.any(Object));
-    expect(await store.installed(manifest)).toEqual([{ id: book.id }]);
-    expect(await store.usage(manifest)).toBe(book.bytes);
+    expect(await store.installed(manifest)).toEqual([{ id: book.id, bytes: book.bytes }]);
     expect(cachedResponses.get(coloringPackMarkerPath(manifest, book.id))).toBe(
       coloringPackMarkerValue(book)
     );
@@ -114,7 +112,7 @@ describe('web coloring-pack inventory', () => {
     cachedResponses.set(book.files[1].path, 'b');
     const store = createWebColoringPackStore();
 
-    expect(await store.installed(manifest)).toEqual([{ id: book.id }]);
+    expect(await store.installed(manifest)).toEqual([{ id: book.id, bytes: book.bytes }]);
     expect(cachedResponses.get(markerPath)).toBe(coloringPackMarkerValue(book));
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -126,7 +124,7 @@ describe('web coloring-pack inventory', () => {
     cachedResponses.set(book.files[0].path, 'a');
     const store = createWebColoringPackStore();
 
-    expect(await store.usage(manifest)).toBe(0);
+    expect(await store.installed(manifest)).toEqual([]);
     expect(cachedResponses.has(markerPath)).toBe(false);
   });
 
@@ -148,7 +146,7 @@ describe('web coloring-pack inventory', () => {
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch).toHaveBeenCalledWith(book.files[0].downloadPath, expect.any(Object));
     expect(cachedResponses.get(book.files[0].path)).toBe('a');
-    expect(await store.installed(manifest)).toEqual([{ id: book.id }]);
+    expect(await store.installed(manifest)).toEqual([{ id: book.id, bytes: book.bytes }]);
   });
 
   it('leaves no installed marker when a stale manifest requests a removed asset', async () => {
