@@ -96,7 +96,15 @@ function keyCheckFailure(err: unknown): {
 
 export const openAiProvider: AiImageProvider = {
   async generateImage({ apiKey, image, prompt, deadlineMs }) {
-    const bytes = Buffer.from(image.base64, 'base64');
+    // The single encode the wire genuinely needs. It views the caller's bytes
+    // rather than copying them: at MAX_IMAGE_BYTES the copy alone would be
+    // 15 MB inside a function whose whole deadline ladder (ADR-0063) exists
+    // because it is tight on time and memory.
+    const imageDataUrl = `data:${image.mimeType};base64,${Buffer.from(
+      image.bytes.buffer,
+      image.bytes.byteOffset,
+      image.bytes.byteLength
+    ).toString('base64')}`;
     let response;
     try {
       response = await client(apiKey, deadlineMs, NO_SDK_RETRIES).responses.create(
@@ -121,7 +129,7 @@ export const openAiProvider: AiImageProvider = {
                   // `auto` is the API's own default; naming it is what the SDK's
                   // type requires, not a departure from what the bake-off measured.
                   detail: 'auto',
-                  image_url: `data:${image.mimeType};base64,${image.base64}`,
+                  image_url: imageDataUrl,
                 },
                 { type: 'input_text', text: prompt },
               ],
@@ -138,7 +146,7 @@ export const openAiProvider: AiImageProvider = {
               // Match the shape the child drew on: the tool renders onto a canvas
               // we choose, and a tall drawing on a square one loses the child's
               // own composition.
-              size: imageSizeFor(readImageSize(bytes)),
+              size: imageSizeFor(readImageSize(image.bytes)),
             },
           ],
         },

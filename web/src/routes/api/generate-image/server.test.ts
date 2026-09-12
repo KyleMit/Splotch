@@ -114,7 +114,7 @@ describe('POST /api/generate-image', () => {
     });
     expect(mocks.generateImage).toHaveBeenCalledWith({
       apiKey: 'project-key',
-      image: { base64: Buffer.from('drawing').toString('base64'), mimeType: 'image/png' },
+      image: { bytes: Buffer.from('drawing'), mimeType: 'image/png' },
       prompt: expect.any(String),
       deadlineMs: 1_000,
     });
@@ -317,7 +317,12 @@ describe('POST /api/generate-image', () => {
     });
   });
 
-  it('encodes the validated input once for synchronous fallback', async () => {
+  // The provider seam takes bytes, so the synchronous fallback hands the
+  // validated input straight through. The drawing is up to MAX_IMAGE_BYTES and
+  // this path runs inside the function whose deadline ladder (ADR-0063) exists
+  // because it is tight on time and memory, so a round trip through base64 and
+  // back is worth pinning at zero rather than at "once".
+  it('hands the validated input to the provider without re-encoding it', async () => {
     const generatedData = Buffer.from('generated').toString('base64');
     mocks.authorize.mockResolvedValue({
       authorized: true,
@@ -338,14 +343,14 @@ describe('POST /api/generate-image', () => {
 
       expect(response.status).toBe(200);
       expect(bufferToString.mock.calls.filter(([encoding]) => encoding === 'base64')).toHaveLength(
-        1
+        0
       );
     } finally {
       bufferToString.mockRestore();
     }
     expect(mocks.generateImage).toHaveBeenCalledWith({
       apiKey: 'project-key',
-      image: { base64: 'AQ==', mimeType: 'image/png' },
+      image: { bytes: Buffer.from('AQ==', 'base64'), mimeType: 'image/png' },
       prompt: expect.any(String),
       deadlineMs: 1_000,
     });

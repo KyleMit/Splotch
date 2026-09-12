@@ -12,7 +12,7 @@ interface AiImageRequest {
    * pixels — the canvas shape, say — it reads out of those bytes, so an
    * already-shipped native client never has to learn a new request field.
    */
-  image: { base64: string; mimeType: string };
+  image: { bytes: Uint8Array; mimeType: string };
   prompt: string;
   /**
    * How long this call may take. It is the caller's to decide, not the

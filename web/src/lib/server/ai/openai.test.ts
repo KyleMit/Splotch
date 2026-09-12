@@ -25,7 +25,7 @@ const PNG_1X1 =
 
 const request = {
   apiKey: 'test-key',
-  image: { base64: PNG_1X1, mimeType: 'image/png' },
+  image: { bytes: Buffer.from(PNG_1X1, 'base64'), mimeType: 'image/png' },
   prompt: 'a prompt',
   deadlineMs: GENERATE_DEADLINE_MS,
 };
@@ -162,7 +162,7 @@ describe('openAiProvider.generateImage', () => {
       'UklGRlQAAABXRUJQVlA4IEgAAAAwBACdASpgAEAAPp1Oo02lpCMiIWgAsBOJaQB2AAAWZEiRIkSJEiRIj6AA/u4KZ//FtI6FMh//+0s/+pZ/9Sz/NMSFwwgAAAA=';
     await openAiProvider.generateImage({
       ...request,
-      image: { base64: wideWebp, mimeType: 'image/webp' },
+      image: { bytes: Buffer.from(wideWebp, 'base64'), mimeType: 'image/webp' },
     });
     expect(create.mock.calls[0][0].tools[0].size).toBe('1536x1024');
   });

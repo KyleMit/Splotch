@@ -75,12 +75,12 @@ When a background worker is reachable, the response is then **`202`** with
 invocation body is capped in the low hundreds of KB, and the worker takes it in one read-and-delete.
 It is at rest for that handoff and no longer; the finished picture is at rest until the poll that
 hands it over deletes it. The request path stores those raw bytes without first base64-encoding
-them; base64 conversion occurs only in the background worker or after handoff fails and the request
-falls back to synchronous generation. A job expires after 20 minutes, and an hourly sweep deletes
-whatever was never collected. The server still answers in-line wherever there is no worker (a plain
-`vite dev`, or an unconfigured signing secret), and a client that never sends the header always gets
-the synchronous shape. Since every OpenAI effort tier exceeds the synchronous deadline at p90, that
-path now usually ends in the controlled `502`.
+them, and the drawing stays bytes through the provider seam; the single base64 encode happens inside
+the adapter, which needs it for the vendor's data URL. A job expires after 20 minutes, and an hourly
+sweep deletes whatever was never collected. The server still answers in-line wherever there is no
+worker (a plain `vite dev`, or an unconfigured signing secret), and a client that never sends the
+header always gets the synchronous shape. Since every OpenAI effort tier exceeds the synchronous
+deadline at p90, that path now usually ends in the controlled `502`.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
