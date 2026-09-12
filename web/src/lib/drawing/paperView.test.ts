@@ -7,9 +7,11 @@ import {
   IDENTITY_PAPER_VIEW,
   paperToView,
   rotationDelta,
+  paperCssLength,
   paperPresentationFor,
   viewMatrix,
   viewToPaper,
+  viewTransformCss,
   type PaperView,
   type ViewRotation,
 } from './paperView';
@@ -235,5 +237,35 @@ describe('viewMatrix / viewToPaper', () => {
     expect(paperToView(IDENTITY_PAPER_VIEW, 42, 7)).toEqual({ x: 42, y: 7 });
     expect(viewToPaper(IDENTITY_PAPER_VIEW, 42, 7)).toEqual({ x: 42, y: 7 });
     expect(viewMatrix(IDENTITY_PAPER_VIEW)).toEqual([1, 0, 0, 1, 0, 0]);
+  });
+});
+
+// The coloring art, the paper sheet and the ink tiles are separate elements over
+// one drawing, so they must present identical geometry or they slide apart under
+// a rotation lock. Deriving it once is what makes that true by construction.
+describe('viewTransformCss / paperCssLength', () => {
+  it('spells the identity view as a CSS matrix', () => {
+    expect(viewTransformCss(IDENTITY_PAPER_VIEW)).toBe('matrix(1, 0, 0, 1, 0, 0)');
+  });
+
+  // Parsed back rather than compared against the same template the source uses:
+  // restating the format would pass for the wrong reason if both sides moved.
+  it.each(ROTATIONS)('carries the %s° view through in matrix order', (rotate) => {
+    const view: PaperView = { scale: 2, rotate, tx: 30, ty: -4 };
+
+    const parsed = viewTransformCss(view)
+      .replace(/^matrix\(|\)$/g, '')
+      .split(', ')
+      .map(Number);
+
+    expect(parsed).toEqual(viewMatrix(view));
+  });
+
+  it('sizes against the paper once the engine reports one', () => {
+    expect(paperCssLength(320)).toBe('320px');
+  });
+
+  it('fills the container before the engine reports a paper size', () => {
+    expect(paperCssLength(0)).toBe('100%');
   });
 });

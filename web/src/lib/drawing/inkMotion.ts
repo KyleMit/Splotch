@@ -1,6 +1,6 @@
 import { paintStrokeFootprint, strokeGhostReadsTiles, strokeMotionBounds } from './inkMotionBounds';
 import { renderOp, type StrokeGroupCommand } from './strokeOps';
-import { viewMatrix, type EngineViewState } from './paperView';
+import { viewMatrix, viewTransformCss, type EngineViewState } from './paperView';
 import { prefersReducedMotion } from '$lib/platform/reducedMotion';
 
 function canvasOf(width: number, height: number) {
@@ -91,7 +91,7 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     else for (const op of command.ops) renderOp(target, op);
     image.className = 'undo-ink-motion';
     image.style.cssText = `left:${bounds.left / scale}px;top:${bounds.top / scale}px;width:${bounds.width / scale}px;height:${bounds.height / scale}px`;
-    present(canvas.parentElement, image, `matrix(${viewMatrix(view).join(',')})`);
+    present(canvas.parentElement, image, viewTransformCss(view));
   }
 
   // Once the undo has restored the tiles, every pixel still on the paper inside
