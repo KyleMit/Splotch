@@ -30,7 +30,16 @@ test('hydration adopts the pre-hydration canvas instead of replacing it', async 
   });
 
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
+
+  // A positive hydration signal, not `networkidle`. The tag read below starts
+  // out `true`, so a read that lands before hydration passes for the wrong
+  // reason — this spec would stay green if hydration stopped happening at all.
+  // `networkidle` cannot stand in for it: it means "no request for 500 ms",
+  // which this app reaches early on purpose, since SW registration and the
+  // coloring-pack manifest both sit behind idle/stroke gates. `__drawingDebug`
+  // is installed from the route's `onMount`, which does not run until the
+  // component has hydrated, so its presence is the proof the assertions below need.
+  await expect.poll(() => page.evaluate(() => Boolean(window.__drawingDebug))).toBe(true);
 
   const adopted = await page.evaluate(() => {
     const canvas = document.getElementById('drawingCanvas') as
@@ -53,6 +62,8 @@ test('hydration adopts the pre-hydration canvas instead of replacing it', async 
     )
     .toEqual([1, 1]);
 
+  // Meaningful only because hydration is proven above: an un-hydrated page
+  // also produces an empty list here.
   const hydrationWarnings = consoleMessages.filter((m) => /hydration/i.test(m));
   expect(hydrationWarnings, 'console must carry no hydration mismatch output').toEqual([]);
 });
