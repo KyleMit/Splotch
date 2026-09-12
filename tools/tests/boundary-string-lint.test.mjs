@@ -60,6 +60,20 @@ describe('the localStorage seam ban covers every spelling', () => {
     ).toHaveLength(1);
   });
 
+  // One property earlier than computed method access, and it names the global through a Literal
+  // rather than an Identifier — the first replacement selector was blind to it.
+  it('rejects computed access to the global itself', async () => {
+    expect(
+      await storageViolations('web/src/lib/probe.ts', "window['localStorage'].getItem('k');")
+    ).toHaveLength(1);
+  });
+
+  it('rejects computed access through globalThis', async () => {
+    expect(
+      await storageViolations('web/src/lib/probe.ts', "globalThis['localStorage'].getItem('k');")
+    ).toHaveLength(1);
+  });
+
   it('rejects it in a rune module, where the Svelte block replaced the entry', async () => {
     expect(
       await storageViolations('web/src/lib/probe.svelte.ts', "localStorage.getItem('k');")
@@ -109,6 +123,15 @@ describe('the media-query literal ban closes the typo class', () => {
     ).toHaveLength(1);
   });
 
+  it('rejects a computed matchMedia callee', async () => {
+    expect(
+      await queryViolations(
+        'web/src/lib/probe.ts',
+        "window['matchMedia']('(orientation: portrait)');"
+      )
+    ).toHaveLength(1);
+  });
+
   it('rejects a template literal', async () => {
     expect(
       await queryViolations('web/src/lib/probe.ts', 'matchMedia(`(orientation: portrait)`);')
@@ -124,18 +147,36 @@ describe('the media-query literal ban closes the typo class', () => {
     ).toHaveLength(1);
   });
 
-  it('allows an imported constant', async () => {
-    expect(
-      await queryViolations('web/src/lib/probe.ts', 'matchMedia(REDUCED_MOTION_QUERY);')
-    ).toHaveLength(0);
+  it('allows a genuinely imported constant', async () => {
+    const source = [
+      "import { REDUCED_MOTION_QUERY } from '$lib/platform/reducedMotion';",
+      'matchMedia(REDUCED_MOTION_QUERY);',
+    ].join('\n');
+
+    expect(await queryViolations('web/src/lib/probe.ts', source)).toHaveLength(0);
   });
 
-  it('allows the documented pre-existing call sites', async () => {
+  // The pre-existing call sites carry per-line disables rather than a whole-file exemption, so a
+  // NEW literal in the same file is still rejected. A file-scoped allowlist made the rule's own
+  // promise — that a new call site must import a constant — false.
+  it.each([
+    'web/src/lib/platform/index.ts',
+    'web/src/lib/state/appearance.svelte.ts',
+    'web/src/lib/state/layout.svelte.ts',
+  ])('rejects a new literal in %s, which once held a file-wide exemption', async (fixture) => {
     expect(
-      await queryViolations(
-        'web/src/lib/platform/index.ts',
-        "window.matchMedia?.('(display-mode: standalone)');"
-      )
-    ).toHaveLength(0);
+      await queryViolations(fixture, "window.matchMedia('(prefers-reduced-motion: reduce)');")
+    ).toHaveLength(1);
+  });
+
+  // Recorded so the rule's reach is written down rather than assumed. A selector cannot resolve a
+  // binding, so a locally declared query still passes; closing that needs scope analysis and is
+  // drafted as a follow-up. Stating the limit beats implying coverage the rule does not have.
+  it('does not reach a locally declared query, which is a known limit', async () => {
+    const source = ["const QUERY = '(prefers-reduced-motoin: reduce)';", 'matchMedia(QUERY);'].join(
+      '\n'
+    );
+
+    expect(await queryViolations('web/src/lib/probe.ts', source)).toHaveLength(0);
   });
 });

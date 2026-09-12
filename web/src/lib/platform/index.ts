@@ -25,8 +25,11 @@ export function isNative(): boolean {
 export function isStandalone(): boolean {
   if (!browser) return false;
   return !!(
+    // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
     window.matchMedia?.('(display-mode: standalone)').matches ||
+    // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
     window.matchMedia?.('(display-mode: fullscreen)').matches ||
+    // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
     window.matchMedia?.('(display-mode: minimal-ui)').matches ||
     (window.navigator as { standalone?: boolean }).standalone === true
   );

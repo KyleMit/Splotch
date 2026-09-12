@@ -52,21 +52,36 @@ const INDEX_SIGNATURE_PROP_BAG = {
 // An AST restriction rather than a text scan because the evasions are cheap and each one reads
 // as ordinary code: localStorage['getItem'], a destructured getItem, window.localStorage. One
 // Identifier selector covers every spelling, including the property half of window.localStorage.
-const STORAGE_SEAM_ONLY = {
-  selector: 'Identifier[name="localStorage"]',
-  message:
-    'Reach localStorage through src/lib/storage.ts (readString/writeString), with the key declared in STORAGE_KEYS.',
-};
+const STORAGE_SEAM_MESSAGE =
+  'Reach localStorage through src/lib/storage.ts (readString/writeString), with the key declared in STORAGE_KEYS.';
+const STORAGE_SEAM_ONLY = [
+  // Covers every spelling that names the global directly, including the property half of
+  // window.localStorage and a destructured getItem.
+  'Identifier[name="localStorage"]',
+  // window['localStorage'] and globalThis['localStorage'] contain no Identifier by that name at
+  // all — the string is a Literal in a computed member. Ordinary code, and invisible to the
+  // selector above.
+  'MemberExpression[computed=true][property.value="localStorage"]',
+].map((selector) => ({ selector, message: STORAGE_SEAM_MESSAGE }));
 
-// A media query passed to matchMedia as a literal is a boundary string with no spell-checker
-// behind it: a typo evaluates to false forever, so the accommodation silently never applies.
-// Banning the literal rather than matching the correct spelling is what closes the typo class —
-// there is no spelling left to get wrong once the argument must be an imported constant.
+// A media query written at a matchMedia call is a boundary string with no spell-checker behind
+// it: a typo evaluates to false forever, so the accommodation silently never applies, and
+// matching the correct spelling cannot catch a misspelling.
+//
+// What this enforces is exactly one thing: no inline literal at a matchMedia call. It does NOT
+// establish that the argument came from an imported constant — a local `const QUERY = '…'`, or
+// an aliased callee, still passes, because a selector cannot resolve a binding. Closing that
+// needs a rule with scope analysis and is drafted as a follow-up; the claim here is deliberately
+// limited to what the selector actually checks.
 const MEDIA_QUERY_LITERAL = ['Literal', 'TemplateLiteral'].flatMap((argumentType) =>
-  ['callee.name="matchMedia"', 'callee.property.name="matchMedia"'].map((callee) => ({
+  [
+    'callee.name="matchMedia"',
+    'callee.property.name="matchMedia"',
+    'callee.computed=true][callee.property.value="matchMedia"',
+  ].map((callee) => ({
     selector: `CallExpression[${callee}][arguments.0.type="${argumentType}"]`,
     message:
-      'Import the query constant (lib/platform/reducedMotion.ts, lib/breakpoints.ts) instead of spelling a media query at the call site.',
+      'Import the query constant (lib/platform/reducedMotion.ts, lib/breakpoints.ts) instead of spelling a media query at the matchMedia call.',
   }))
 );
 
@@ -291,7 +306,7 @@ export default tseslint.config(
         // Vitest blocks below replace this entry for their file shapes, so each is followed by a
         // web/src-scoped block that recomposes NAMED_EXPORTS_ONLY into its selector set.
         NAMED_EXPORTS_ONLY,
-        STORAGE_SEAM_ONLY,
+        ...STORAGE_SEAM_ONLY,
         ...MEDIA_QUERY_LITERAL,
       ],
     },
@@ -334,7 +349,7 @@ export default tseslint.config(
         'error',
         INDEX_SIGNATURE_PROP_BAG,
         NAMED_EXPORTS_ONLY,
-        STORAGE_SEAM_ONLY,
+        ...STORAGE_SEAM_ONLY,
         ...MEDIA_QUERY_LITERAL,
       ],
     },
@@ -463,34 +478,6 @@ export default tseslint.config(
         })),
         NAMED_EXPORTS_ONLY,
         ...MEDIA_QUERY_LITERAL,
-      ],
-    },
-  },
-  {
-    // Media queries predating the constant-per-query convention: colour scheme, orientation, and
-    // the three display modes. Each is single-site and outside the reduced-motion work that
-    // introduced the ban, so they keep their literals rather than pulling unrelated files into
-    // that change; a new call site must import a constant. Narrowing this list is the follow-up.
-    //
-    // The listed files span plain .ts and .svelte.ts, whose base selector sets differ, so this
-    // recomposes the union of both minus the media-query ban. The extras are inert rather than
-    // wrong: rateLimit() is server-only and cannot appear here, and an index-signature prop bag
-    // needs a Props interface.
-    files: [
-      'web/src/lib/platform/index.ts',
-      'web/src/lib/state/appearance.svelte.ts',
-      'web/src/lib/state/layout.svelte.ts',
-    ],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
-          selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
-          message: RATE_LIMIT_MESSAGE,
-        })),
-        INDEX_SIGNATURE_PROP_BAG,
-        NAMED_EXPORTS_ONLY,
-        STORAGE_SEAM_ONLY,
       ],
     },
   },
