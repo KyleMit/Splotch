@@ -211,7 +211,12 @@ export const MUTATION_FAILURE_STATUS = {
   unavailable: 503,
 } as const satisfies Record<MutationFailure['reason'], number>;
 
-export type MutationResult = { ok: true; tokens: string[] } | MutationFailure;
+// `persistent` rides along because mutateList already knows it: it refuses to
+// write unless the read came from Blobs or the Vite-dev memory stand-in, so the
+// durability of the list it returns is settled by the same read. A caller that
+// re-derived it would be asking the store a question it has just been answered,
+// and racing its own write to do so.
+export type MutationResult = { ok: true; tokens: string[]; persistent: boolean } | MutationFailure;
 
 function unconfirmedFailure(cause: UnconfirmedCause): MutationFailure {
   return cause === 'unreachable'
@@ -241,12 +246,13 @@ async function mutateList(
     if (read.source === 'degraded')
       return { ok: false, error: TOKEN_UNAVAILABLE_ERROR, reason: 'unavailable' };
     const { store, list, etag } = read;
+    const persistent = read.source === 'blobs';
     const result = transform(list);
     if ('error' in result) return { ok: false, error: result.error, reason: result.reason };
-    if ('noop' in result) return { ok: true, tokens: [...list] };
+    if ('noop' in result) return { ok: true, tokens: [...list], persistent };
     if (await persist(store, result.next, etag)) {
       if (afterPersist) await afterPersist(result.next);
-      return { ok: true, tokens: result.next };
+      return { ok: true, tokens: result.next, persistent };
     }
   }
   return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };

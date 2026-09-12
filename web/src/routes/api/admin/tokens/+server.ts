@@ -52,19 +52,29 @@ function requireSession(request: Request) {
 // the list is durably backed by Netlify Blobs (true) or the in-memory env-seeded
 // fallback (false) — the same signal the web /admin banner uses (ADR-0025), and
 // what the deploy smoke test (tools/api-smoke/check-deployed-contract.mjs) asserts to prove the
-// deployed function actually has the Blobs context. After a mutation we keep the
-// caller's `tokens` (authoritative, read-after-write safe under eventual
-// consistency); `persistent` comes from the fresh status read.
-async function snapshot(origin: string, tokens?: string[]) {
-  const { tokens: current, persistent } = await getTokensStatus();
-  const list = tokens ?? current;
+// deployed function actually has the Blobs context.
+//
+// A mutation carries both halves back from the write it just did, rather than
+// asking the store again: its `tokens` are authoritative (read-after-write safe
+// under eventual consistency) and its `persistent` comes from the same read that
+// authorised the write. A second read would not only cost a round trip on the
+// mutation path, it would race the write it follows — under the eventual
+// consistency this module documents at length it can land on a replica that has
+// not caught up.
+async function snapshot(origin: string, tokens: string[], persistent: boolean) {
   const payload = {
     ok: true,
-    tokens: list,
-    invites: buildInvites(list, origin),
+    tokens,
+    invites: buildInvites(tokens, origin),
     persistent,
   } satisfies TokenSnapshot;
   return json(payload);
+}
+
+// The read-only front door has nothing to carry, so it asks.
+async function readSnapshot(origin: string) {
+  const { tokens, persistent } = await getTokensStatus();
+  return snapshot(origin, tokens, persistent);
 }
 
 // The status per failure reason is MUTATION_FAILURE_STATUS in
@@ -78,7 +88,7 @@ function mutationError(result: MutationFailure) {
 /** List access tokens and their prebuilt invite URLs. */
 export const GET: RequestHandler = apiHandler(async ({ request, url }) => {
   requireSession(request);
-  return snapshot(url.origin);
+  return readSnapshot(url.origin);
 });
 
 /** Add an access token. Body: { token }. */
@@ -89,7 +99,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, url }) => {
   if (!parsed.ok) return parsed.response;
   const result = await addToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
-  return snapshot(url.origin, result.tokens);
+  return snapshot(url.origin, result.tokens, result.persistent);
 });
 
 /** Remove an access token. Body: { token }. */
@@ -100,5 +110,5 @@ export const DELETE: RequestHandler = apiHandler(async ({ request, url }) => {
   if (!parsed.ok) return parsed.response;
   const result = await removeToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
-  return snapshot(url.origin, result.tokens);
+  return snapshot(url.origin, result.tokens, result.persistent);
 });
