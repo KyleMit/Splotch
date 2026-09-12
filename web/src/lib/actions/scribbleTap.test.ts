@@ -545,3 +545,52 @@ describe('scribbleTap', () => {
     expect(activate).not.toHaveBeenCalled();
   });
 });
+
+// .claude/rules/svelte.md: code reached per pointermove must not measure DOM.
+// This path shares frames with a live stroke by design — a second finger
+// presses a swatch while the first is drawing (see PointerHalos) — so a style
+// and layout flush per move competes with the stroke it runs alongside.
+describe('scribbleTap viewport measurement', () => {
+  function countClientWidthReads() {
+    let reads = 0;
+    const root = document.documentElement;
+    const original = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(root), 'clientWidth');
+    Object.defineProperty(root, 'clientWidth', {
+      configurable: true,
+      get() {
+        reads++;
+        return 800;
+      },
+    });
+    Object.defineProperty(root, 'clientHeight', { configurable: true, get: () => 600 });
+    return {
+      reads: () => reads,
+      restore() {
+        Reflect.deleteProperty(root, 'clientWidth');
+        Reflect.deleteProperty(root, 'clientHeight');
+        if (original) Object.defineProperty(Object.getPrototypeOf(root), 'clientWidth', original);
+      },
+    };
+  }
+
+  it('measures the viewport once per press, not once per pen move', () => {
+    const { el } = tapElement();
+    const probe = countClientWidthReads();
+
+    try {
+      el.dispatchEvent(pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1 }));
+      const afterDown = probe.reads();
+
+      for (let i = 1; i <= 12; i++) {
+        window.dispatchEvent(
+          pointerEvent('pointermove', 1, { pointerType: 'pen', buttons: 1, clientX: i, clientY: i })
+        );
+      }
+
+      expect(afterDown).toBe(1);
+      expect(probe.reads()).toBe(afterDown);
+    } finally {
+      probe.restore();
+    }
+  });
+});
