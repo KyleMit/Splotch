@@ -49,6 +49,24 @@ export function actionButtonSizeClass(shorterViewportSidePx: number): ActionButt
   return shorterViewportSidePx >= TABLET_MIN_SIDE_PX ? 'tablet' : 'phone';
 }
 
+// The admin invite ledger's own steps. It is a data table rather than a page,
+// so it takes its own boundaries: usage stacks beneath the code before the row
+// actions collapse, which is one step earlier than the rest of the app's phone
+// width. Three components skin the same row across these steps — the ledger,
+// its action cells and the console's add button — so a value that moves in one
+// splits the row's first line from its reveal line. CSS cannot import them;
+// ledgerBreakpoints.test.ts holds the copies to these values.
+export const ADMIN_LEDGER_COMPACT_MAX_WIDTH_PX = 560;
+export const ADMIN_LEDGER_STACK_MAX_WIDTH_PX = 800;
+
+// The ledger's landscape arm is deliberately its own device class, narrower
+// than PHONE_LANDSCAPE_QUERY's 600px: adopting the app-wide boundary would give
+// the compact ledger to 481-to-599px-tall landscape phones, which is a visual
+// change to eyeball rather than assume. Naming and guarding the existing values
+// is the half that ships without deciding that.
+export const ADMIN_LEDGER_LANDSCAPE_MAX_WIDTH_PX = 956;
+export const ADMIN_LEDGER_LANDSCAPE_MAX_HEIGHT_PX = 480;
+
 // Phone-landscape pages prioritize their reading content below this height.
 // pageHeight.test.ts guards the CSS copies of this boundary.
 export const SHORT_PAGE_HEIGHT_PX = 500;
