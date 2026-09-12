@@ -80,8 +80,9 @@ export const load: PageServerLoad = async ({ cookies, url, setHeaders }) => {
   // forward — an actively-used admin never has to log in again.
   setSession(cookies);
   const { tokens, persistent } = await getTokensStatus();
-  // Pair each invite with its generation tally. The component distinguishes
-  // "never used" (null) from "usage unavailable" (undefined).
+  // Pair each invite with its generation tally. `null` is "never used"; whether
+  // the tally is reachable at all rides separately on usageAvailable, because a
+  // code nobody redeemed and a tally backend that is down look identical here.
   const [usage, freeGrantStats] = await Promise.all([
     getUsage(tokens),
     getFreeGenerationGrantAdminStats(),
