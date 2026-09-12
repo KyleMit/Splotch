@@ -91,9 +91,10 @@ export function renderTiledReadback(
     if (tile.painted) target.drawImage(tile.canvas, tile.x, tile.y);
   }
   for (const command of history) renderCommand(target, command, paper);
-  if (activeCommand) {
-    for (const op of activeCommand.ops) renderOp(target, op);
-  }
+  // Through renderCommand like every other command: an in-flight stroke must
+  // land inside the paper exactly as it will the instant it commits, or the
+  // same ink changes shape in the export depending only on its timing.
+  if (activeCommand) renderCommand(target, activeCommand, paper);
 }
 
 export function paintTiledInk(target: CanvasRenderingContext2D, tiles: LiveTile[]) {
