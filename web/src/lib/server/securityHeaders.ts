@@ -72,6 +72,22 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   'Content-Security-Policy': CONTENT_SECURITY_POLICY,
 };
 
+/**
+ * The subset of the platform headers that still means something on a response
+ * that is not a document.
+ *
+ * /api/* is served by the same function as /admin, but a JSON or image body has
+ * nothing for a CSP or a referrer policy to act on. `nosniff` is the exception:
+ * it is what stops a browser re-typing those bytes as HTML or script, which is
+ * the one document-shaped risk an API response actually carries.
+ *
+ * Picked out of SECURITY_HEADERS rather than restated, so the value cannot
+ * drift from the site's; securityHeaders.test.ts asserts that derivation.
+ */
+export const API_RESPONSE_HEADERS: Readonly<Record<string, string>> = {
+  'X-Content-Type-Options': SECURITY_HEADERS['X-Content-Type-Options'],
+};
+
 /** The security headers for one response, with any per-route override applied. */
 export function securityHeadersFor(pathname: string): Readonly<Record<string, string>> {
   if (!SAME_ORIGIN_REFERRER_ROUTES.has(pathname)) return SECURITY_HEADERS;
