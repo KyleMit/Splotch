@@ -22,10 +22,10 @@
   export interface Invite {
     token: string;
     url: string;
-    // `undefined` = usage tracking is unavailable or absent from this front
-    // door; `null` = tracked but never used; an object = the tally. The
-    // component renders the usage columns only when this is not `undefined`.
-    usage?: Usage | null;
+    // `null` = tracked but never used; an object = the tally. Whether tracking
+    // works at all is a separate `usageAvailable` flag, because a broken tally
+    // backend and a code nobody has redeemed produce the same empty cell.
+    usage: Usage | null;
   }
   export interface Flash {
     kind: 'success' | 'error';
@@ -48,6 +48,7 @@
     authed,
     invites,
     persistent,
+    usageAvailable = true,
     freeGrantStats = null,
     flash = null,
     loginError = null,
@@ -61,6 +62,9 @@
     // `false` = Netlify Blobs is unavailable, so this list is the per-instance
     // in-memory copy seeded from env vars and edits won't survive a restart.
     persistent: boolean;
+    // `false` = the generation tally is unreachable (its store threw, or the
+    // signing secret is unset), so the usage columns carry no data to show.
+    usageAvailable?: boolean;
     freeGrantStats?: FreeGenerationGrantAdminStats | null;
     flash?: Flash | null;
     loginError?: string | null;
@@ -193,6 +197,13 @@
           </StatusMessage>
         {/if}
 
+        {#if !usageAvailable}
+          <StatusMessage status="warning">
+            <strong>Generation tallies are unavailable.</strong> The Generations and Last used columns
+            are hidden until the usage store is reachable again. The codes themselves are unaffected.
+          </StatusMessage>
+        {/if}
+
         {#if shownFlash}
           <StatusMessage status={shownFlash.kind}>{shownFlash.text}</StatusMessage>
         {/if}
@@ -215,6 +226,7 @@
 
         <InviteLedger
           {invites}
+          {usageAvailable}
           {busy}
           {copied}
           oncopy={copy}
