@@ -107,8 +107,7 @@ gain.
 
 Measured end state (iPadOS 26.5, 120 Hz, warmup + 3 scored): idle 17 ms P95 / 26 max PASS, close
 18/26 PASS, open 21 P95 / 25 max — two irreducible ~21-25 ms frames remain (the `showModal` flip
-itself, paint-independent by the opacity A/B, and the heaviest section's reveal), so `open
-Settings`
+itself, paint-independent by the opacity A/B, and the heaviest section's reveal), so `open Settings`
 carries a **documented 26 ms P95 allowance** in `tools/perf/lib/action-stats.mjs`
 (`IOS_ACTION_FRAME_P95_ALLOWANCES_MS`, scoped to the calibrated physical-iOS capture and recorded
 into each capture as `gateAllowances` — ADR-0090's amendment) — an accepted exception, not a

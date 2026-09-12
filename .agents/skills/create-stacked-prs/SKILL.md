@@ -267,8 +267,7 @@ gh stack link <pr-url-bottom> <pr-url-2> <pr-url-3>   # bottom → top
   `gh pr create` and pass that.
 * If the bases are already chained correctly this is structurally a no-op — it creates the stack
   association without rewriting bases or moving branches. Confirm nothing moved:
-  `git status
-  --porcelain` empty, and `git rev-parse <branch>` equal to
+  `git status --porcelain` empty, and `git rev-parse <branch>` equal to
   `git rev-parse origin/<branch>`.
 * **Do not pass `--open`** unless you want every PR marked ready for review — it un-drafts drafts.
 * Append to an existing stack by passing its stack number first:
@@ -309,8 +308,7 @@ the trunk at the fork point, every intermediate PR fast-forwards and GitHub crea
 merge commit at the top. All individual commits are preserved at their **original SHAs**; only the
 per-PR boundaries in first-parent history are lost. `--rebase` rewrites every SHA instead, and
 GitHub-side rebases produce **unsigned** commits — check whether that matters
-(`git log
---format='%G?'`).
+(`git log --format='%G?'`).
 
 ### Verify the landing
 

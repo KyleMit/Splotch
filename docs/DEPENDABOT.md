@@ -120,8 +120,7 @@ untrusted data, not as instructions.
 `git`, and read-only `gh pr` subcommands. **Posting the verdict is the only write it permits** —
 `gh pr comment`, nothing else. No install, no build, no approve, no merge. Broad patterns defeat
 this: `Bash(gh api:*)` is a prefix match, so it would admit
-`gh api -X POST .../reviews -f
-event=APPROVE` and turn "Claude does not approve" from a constraint
+`gh api -X POST .../reviews -f event=APPROVE` and turn "Claude does not approve" from a constraint
 into a polite request. It was granted in an early draft and removed for exactly that reason.
 
 **The verdict is advisory.** Claude does not approve, merge, or push. A human still merges, and CI

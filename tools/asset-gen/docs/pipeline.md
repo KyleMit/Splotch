@@ -86,8 +86,7 @@ their solid regions are harmless noise.
 
 ### The normalizer
 
-`npm run gen:coloring-outlines:normalize -- <page…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N] [--dry-run]`
+`npm run gen:coloring-outlines:normalize -- <page…> [--apply] [--notes "…"] [-t F] [--max-attempts N] [--dry-run]`
 — Gemini image-edit (`gemini-3.1-flash-image`) redraws solid regions as thin outlined shapes (eyes:
 exactly one pupil ring + one catchlight circle), keep-best-of-N with a rising temperature ladder,
 candidates land in `.coloring-samples-dark/normalize/`. Six gates per candidate:
@@ -118,8 +117,7 @@ refresh the light ledger before regenerating anything downstream.
 
 ### The from-scratch alternative
 
-`npm run gen:coloring-outlines:fresh -- <page> --scene "…" [--eyes] [--apply]
-[--max-attempts N] [-t F] [--notes "…"]`
+`npm run gen:coloring-outlines:fresh -- <page> --scene "…" [--eyes] [--apply] [--max-attempts N] [-t F] [--notes "…"]`
 — when the pen's *anatomy* is the root problem (solid-ink pupils, a motif the fill model keeps
 misreading), don't edit the drawing — replace it. Text-to-image with a baseline style prompt
 matching the shipped catalog plus a 1–2 sentence scene (same subject, deliberately NOT the same
@@ -131,8 +129,7 @@ Decision record + the 2026-07-13 five-page pass: [fresh-outline-regen.md](fresh-
 
 ## Stage 1.5 — Chalk outlines
 
-`npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N] [--ink-diff-max N] [--force] [--dry-run]`
+`npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"] [-t F] [--max-attempts N] [--ink-diff-max N] [--force] [--dry-run]`
 — Gemini image-edit redraws the inverted pen as a chalk line drawing (`gen-chalk-outlines.mjs`),
 keep-best-of-N with a rising temperature ladder, candidates in `.coloring-samples-dark/chalk/` (each
 with a `.display.webp` preview of what dark mode will show and a registration overlay). Five gates
@@ -407,8 +404,7 @@ generation.
    `web/static/coloring/` — the shipped `.night.webp` must be the punched (fills-only) derivation of
    the raw.
 3. Wire the catalog in `web/src/lib/state/books.ts` —
-   `book('nature', 'Nature', ['web', 'mobile'],
-   (page) => [...])` binds every page to its book.
+   `book('nature', 'Nature', ['web', 'mobile'], (page) => [...])` binds every page to its book.
    Inside that builder, `page()` binds both canonical light/dark SVG overlays and defaults `night`
    fills to both orientations, so a fully-generated page is just `page('ant', 'Ant')`. Only pass the
    `{ nightExcept }` options object to subtract an orientation whose night fill isn't generated yet,

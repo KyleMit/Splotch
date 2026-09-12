@@ -323,8 +323,7 @@ the metadata pipeline that's already in place.
 
 When release cadence justifies automating, set it up roughly as:
 
-1. **Install** fastlane (a `Gemfile` + `bundle add fastlane`, or `brew install
-   fastlane`).
+1. **Install** fastlane (a `Gemfile` + `bundle add fastlane`, or `brew install fastlane`).
 2. **`fastlane/Appfile`** — iOS bundle ID `art.splotch.app`, the Android package name, and the path
    to the Google Play service-account JSON.
 3. **`fastlane/Fastfile`** with two lanes:

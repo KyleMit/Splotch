@@ -180,8 +180,7 @@ required floor gate unless a successful run is captured.
       permission — the code never reads the library on iOS).
 * [x] `ITSAppUsesNonExemptEncryption = false` in `Info.plist` (HTTPS only), so TestFlight uploads
       skip the export-compliance question.
-* [x] Icons + splash generated from `assets/` (`npx @capacitor/assets generate
-  --ios`); the
+* [x] Icons + splash generated from `assets/` (`npx @capacitor/assets generate --ios`); the
       1024×1024 `AppIcon` doubles as the App Store icon.
 * [ ] Complete the [manual iOS 16.4 floor gate](#manual-ios-164-floor-gate), including its entry in
       the tag's GitHub Release notes, and confirm both iOS rows in the shared

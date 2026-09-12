@@ -62,8 +62,7 @@ iPad's automation grant had expired at session start (WebDriverAgent timed out "
 mode"); the iPad is not part of this row.
 
 Drawing pass:
-`perf:campaign --target=android-device-native --items=pen-undo,crayon,magic,eraser
---max-attempts=2`
+`perf:campaign --target=android-device-native --items=pen-undo,crayon,magic,eraser --max-attempts=2`
 (19 cells: 16 drawing plus the start/middle/end crayon references). Action pass: `--items=actions`
 (4 cells) after the bundled reinstall.
 
@@ -215,8 +214,7 @@ runner's own served-build guard passed against that worktree's `web/build`.
 Two full canonical `ipad-device-native` sweeps (portrait-dark, landscape-dark), native app at
 `capacitor://localhost`, sectioned shell, 4 repeats, base gates. `disable drawing sounds`
 (portrait-dark) read post-action P95 **17 ms**, max 30 in one repeat, unconfirmed;
-`disable auto-save
-on delete` (landscape-dark) read **17 ms**, max 21. The row capture read 25 ms
+`disable auto-save on delete` (landscape-dark) read **17 ms**, max 21. The row capture read 25 ms
 P95 in both. Both sweeps passed every action (49 and 50 groups); the one unconfirmed max in either
 was a landscape-dark empty-after-clear rotation repeat. Three of four prior sibling reds on this row
 have now failed to reproduce. Preserved as

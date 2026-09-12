@@ -36,8 +36,7 @@ runs on `macos-latest` (arm64).
   job 92807215422, 2m28s
 
 The harness prints a `▶ <scenario label>` banner when a scenario starts and a
-`snapshots=… commit
-p95 …` line when it ends, so the gap between them is that scenario's wall clock;
+`snapshots=… commit p95 …` line when it ends, so the gap between them is that scenario's wall clock;
 the gap *after* a result line is `collectMeasures` marshalling that scenario's user-timing entries
 across the Playwright bridge (WebKit has no CDP, so the report's trace is synthesized from them).
 

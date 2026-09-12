@@ -12,8 +12,7 @@ Every `webkit-undo-fast-diagnostics` / `-retry-diagnostics` artifact linked from
 plus the two passing runs, downloaded and read. Every timed-out scenario reports the same shape:
 four samples, 10.0–13.9 s, and a final reading whose counters equal the completed reading a passing
 runner took
-(`undoEntries=20 livePatchEntries=20 patchBytes=29341600 baseTiles=20 baseRasterBytes=22380544
-historyCommands=20|21 pendingCommands=0`).
+(`undoEntries=20 livePatchEntries=20 patchBytes=29341600 baseTiles=20 baseRasterBytes=22380544 historyCommands=20|21 pendingCommands=0`).
 
 | Run                                                                        | Job   | `crayon-scribbles`                                                                        | Draw phase (wall clock less settle) |
 | -------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------- | ----------------------------------: |

@@ -79,8 +79,7 @@ Pages — is used.
 Implementation:
 
 * **`scripts/publish-artifact.mjs`** (npm `artifacts:publish`) promotes a keeper:
-  `-- <source>
-  <type>/<name>` copies a file or dir from a gitignored scratch dir into
+  `-- <source> <type>/<name>` copies a file or dir from a gitignored scratch dir into
   `artifacts/<type>/<name>`, regenerates the index, and prints the Pages URL. It guards the
   destination against `../` escapes so a publish can't write outside `artifacts/`. Pure `node:fs`,
   no shell (ADR-0017).

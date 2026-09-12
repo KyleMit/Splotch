@@ -1,2 +1,5 @@
 # One-wave dprint reformat of all markdown (ADR-0057)
 781f10944caa1352a4d1bb6142ff56eb65bc56d5
+
+# dprint-plugin-markdown 0.24 reformat with wrapCodeSpans off (issue 1634)
+0d22cb8dff1b01b857c57bcf1cdc3b356b188633

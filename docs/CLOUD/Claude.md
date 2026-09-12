@@ -238,8 +238,7 @@ assuming a local pass covers Safari.
 > from `package.json` for exactly this reason: Playwright pins a specific Chromium *revision* (e.g.
 > `@playwright/test@1.61.x` → Chromium 1228), and a hard-coded install version (or a stale env
 > snapshot) leaves that revision absent — every E2E run and `run-splotch` screenshot then dies with
-> `Executable doesn't
-> exist … chromium-<rev>`. As a backstop, `playwright.config.ts` and
+> `Executable doesn't exist … chromium-<rev>`. As a backstop, `playwright.config.ts` and
 > `.claude/skills/run-splotch/driver.mjs` self-heal: if the pinned binary is missing they fall back
 > to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`), overridable with
 > `PLAYWRIGHT_CHROMIUM`. **Never** run `npx playwright install` in a session — it's forbidden here

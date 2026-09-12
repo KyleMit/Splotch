@@ -469,8 +469,7 @@ this is only about SHAs.)
    producing the brief, and the trailer carries *its* title — so an iteration announcing a
    two-module dedup can commit as `Audit: [<one module>] …`. It reads exactly like the commit
    consumed the wrong entry. Do not go diagnosing it from the titles:
-   `git show <sha> -- docs/AUDIT.md
-   | grep '^-### '` prints the entry actually deleted, and the
+   `git show <sha> -- docs/AUDIT.md | grep '^-### '` prints the entry actually deleted, and the
    `removed` count above is the real invariant. What the mismatch *can* legitimately signal is a
    **narrowed scope** — a finding naming two modules, fixed in one, entry consumed — so read the
    fix's own summary for whether the narrowing was deliberate (the implementer says so, e.g. "left
@@ -728,10 +727,11 @@ itself. No `claude` call in the sample exceeded ~13 min.
 `touch .audit-work/STOP`. The driver checks it at the top of each iteration, so it **finishes the
 entire in-flight workflow** — verify → implement → review → gates → commit, and the exit flush
 pushes — then exits without starting the next finding. Wait for the process to exit, then confirm
-the end state is resumable: no `run-burndown.mjs` / `claude -p` process left, `git rev-parse HEAD`
-== `origin/<branch>` (nothing unpushed), the comment store drained onto the PR, and the durable
-checkpoint (memory / handoff) reflecting the new counts. **Leave the STOP file in place** — it holds
-the pause; a stray relaunch would exit immediately. Stand down any run-log monitor while paused.
+the end state is resumable: no `run-burndown.mjs` / `claude -p` process left,
+`git rev-parse HEAD` == `origin/<branch>` (nothing unpushed), the comment store drained onto the PR,
+and the durable checkpoint (memory / handoff) reflecting the new counts. **Leave the STOP file in
+place** — it holds the pause; a stray relaunch would exit immediately. Stand down any run-log
+monitor while paused.
 
 ### "resume" / "continue" — start the next finding
 
@@ -936,8 +936,7 @@ relaunching, commit or stash any real work in progress** — `RESUME=1` treats a
 residue and resets it.
 
 A container that died also lost every comment record you had not posted.
-`backfill-comments.mjs
-capture` rebuilds them from the pushed commits, but only for what is still
+`backfill-comments.mjs capture` rebuilds them from the pushed commits, but only for what is still
 reconstructable from `run.log` and the role envelopes — both of which died too. In practice: what
 you did not post before the container went, you write from the commit diffs or not at all.
 
@@ -947,8 +946,8 @@ Notes from real runs — set these before a large run rather than discovering th
 
 * **Verify is the slowest role and the main halt risk.** It reads a lot of code to confirm a finding
   at HEAD (~150s median on this repo) and occasionally needs more than $1. The old
-  `BUDGET_VERIFY=1.00` clipped complex findings (`error_max_budget_usd` → deferral), and a cluster of
-  those nearly tripped the three-consecutive-deferral halt. Default is now `3.00`; don't drop it
+  `BUDGET_VERIFY=1.00` clipped complex findings (`error_max_budget_usd` → deferral), and a cluster
+  of those nearly tripped the three-consecutive-deferral halt. Default is now `3.00`; don't drop it
   below ~$2.50 for a big run. `BUDGET_REVIEW` was raised from `2.00` to `3.00` for the same reason:
   a cap mid-verdict costs the *whole finding*, since the fix rolls back unreviewed. A budget knob
   set too tight doesn't save money — it converts finished work into a deferral and pays for it again
@@ -995,8 +994,7 @@ Notes from real runs — set these before a large run rather than discovering th
   alias can lag a fresh release (it still resolved to `claude-opus-4-8` right after Opus 5 shipped),
   so pinning the id is what actually puts impl/review on Opus 5; `sonnet` already resolves to Sonnet
   5, so verify stays on the alias. When a newer opus lands, re-probe
-  (`claude -p --model
-  <id> --output-format json 'ok'` → check `modelUsage`) and bump the pin.
+  (`claude -p --model <id> --output-format json 'ok'` → check `modelUsage`) and bump the pin.
 * **Impl-model tiering is on by default, scoped to P4/P5.** Much of a `/code-audit` backlog is
   trivially mechanical (P4/P5 dead-code, rename, dedup), so the driver routes those findings to
   `MODEL_IMPL_MINOR` (default `sonnet`) and keeps P1–P3 on `MODEL_IMPL`. The Opus review still gates
@@ -1169,8 +1167,7 @@ Notes from real runs — set these before a large run rather than discovering th
   invisible from the store's point of view. `capture` rebuilds from the pushed commits instead, so
   agreement between the two is real evidence. A `skipped N` **below** the fix count means capture
   just re-armed the difference: post those before finishing. On 2026-07-29,
-  `skipped 39 already
-  posted` against 39 fixed closed the run out in one command.
+  `skipped 39 already posted` against 39 fixed closed the run out in one command.
 * Confirm CI is green on the final push before marking the PR ready. It is the only full-suite gate
   in this configuration, so "the run finished" and "the branch is sound" are genuinely different
   claims here.

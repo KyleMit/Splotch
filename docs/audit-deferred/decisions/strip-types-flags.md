@@ -39,8 +39,7 @@ Empirical checks run in this triage session (Node v22.22.2):
 
 * `node scripts/gen-tokens.mjs --check` (imports `web/src/lib/design/tokens.ts`) — exits 0
   flag-free, no warning on stderr.
-* `GEMINI_API_KEY=test node tools/asset-gen/bin/gen-coloring-chalk.mjs nature/ant-tall --dry-run
-  --invented-max invalid`
+* `GEMINI_API_KEY=test node tools/asset-gen/bin/gen-coloring-chalk.mjs nature/ant-tall --dry-run --invented-max invalid`
   — flag-free, produces byte-exact the canonical diagnostic that
   `tools/asset-gen/tests/cli.test.mjs` asserts, exit 1 as expected.
 * The rolled-back draft patch
@@ -156,8 +155,7 @@ patch, then add the genuinely missing sites. The complete checklist at HEAD (fro
 
 **Verification for the implementing session:**
 
-* `git grep -l 'experimental-strip-types' -- ':!docs/audit-deferred' ':!docs/AUDIT*'
-  ':!tools/asset-gen/ideas-exploration' ':!docs/adrs'`
+* `git grep -l 'experimental-strip-types' -- ':!docs/audit-deferred' ':!docs/AUDIT*' ':!tools/asset-gen/ideas-exploration' ':!docs/adrs'`
   → empty (ADRs keep the term only in historical-note context).
 * `npm run ruler:check` → no drift. `npm run gen:tokens:check`, `npm run check:assets`, `npm test`
   (includes the asset-pipeline `cli.test.mjs`) → green.

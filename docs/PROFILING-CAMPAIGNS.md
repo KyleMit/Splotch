@@ -132,8 +132,7 @@ or tool handle created and recorded by the current session."*
 
 **`perf:campaign` for a physical-iPad target has no `wdaLocalPort` flag, so a foreign `iproxy` on
 8100 fails every cell before it captures anything.** A different session's
-`iproxy -u <udid>
-8100:8100` (or a borrowed Appium's forward) owns host 8100, and the campaign's
+`iproxy -u <udid> 8100:8100` (or a borrowed Appium's forward) owns host 8100, and the campaign's
 built-in capabilities default WDA there — so each cell dies with Appium's
 `The port #8100 is occupied by an other process` and writes no artifact, three attempts each, the
 whole queue P1. The preflight resolves and reports a free WDA port (8110), but the campaign's flags
@@ -1482,8 +1481,7 @@ product then differs, and the artifact records the served entry module either wa
 raster-tier and backdrop-blur A/Bs ran their `origin/main` arms this way. Two more shell-level traps
 from the same night: the default shell is zsh, which does **not** word-split an unquoted `$ARGS`
 variable — the runner received one giant argument and asked for `--device-id` — spell the flags out
-or use `${=ARGS}`; and killing the `serve-profile-build` wrapper can leave its `vite
-preview` child
+or use `${=ARGS}`; and killing the `serve-profile-build` wrapper can leave its `vite preview` child
 holding the port with a manifest whose chunks a later rebuild has replaced (`manifest OK` fails on
 the entry fetch) — `lsof -nP -iTCP:<port> -sTCP:LISTEN` names the child, and its cwd
 (`lsof -p <pid>`) says whether it is yours to stop.

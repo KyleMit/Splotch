@@ -195,8 +195,7 @@ stack:
 2. Implement each finding — smallest correct change matching the surrounding style, one commit per
    finding (or per logical group), the same fix discipline as `address-pr-review`.
 3. Verify composed: `npm run check` plus the tests covering everything touched
-   (`npm run
-   format:check` for Markdown-only fixes).
+   (`npm run format:check` for Markdown-only fixes).
 4. Push and open a PR whose **base is the original PR's head branch** — not `main` — so the fixes
    flow into the original PR for its author to review. Map each commit to its finding in the PR body
    (escaping `#`-numbers that aren't real references), include screenshots per `pr-screenshots` if

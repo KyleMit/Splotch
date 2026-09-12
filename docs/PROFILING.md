@@ -209,10 +209,10 @@ Read in this order:
    A phase whose long tasks are commit-dominated is paying for pixel area (full-canvas damage, e.g.
    `repaintAll`), not JS.
 5. **Long tasks attributed** — each top >50 ms task tagged with its phase and its largest nested
-   trace events, so the jank names itself: `Commit` = compositor raster; `EventDispatch (pointerup)`
-   = the stroke-end pipeline (check `engine.commit`); `MajorGC` = allocation pressure. In
-   `perf:web:undo` draw phases, huge `Receive mojo message` rows are the harness's synchronous
-   stroke dispatch — an artifact, not app cost.
+   trace events, so the jank names itself: `Commit` = compositor raster;
+   `EventDispatch (pointerup)` = the stroke-end pipeline (check `engine.commit`); `MajorGC` =
+   allocation pressure. In `perf:web:undo` draw phases, huge `Receive mojo message` rows are the
+   harness's synchronous stroke dispatch — an artifact, not app cost.
 6. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies (the commit's patch
    capture, undo restores, the resize blit); `stroke`/`quadraticCurveTo` = live drawing;
    `getImageData` = the empty-scan. Playwright/driver plumbing that isn't in `HARNESS_SYMBOLS` yet

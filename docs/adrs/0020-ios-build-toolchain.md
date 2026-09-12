@@ -54,9 +54,8 @@ Apple's recommended default for a single-developer project.
   committed `project.pbxproj` (committing it churns for other contributors and bakes a personal ID
   into git). It lives in an untracked `ios/local.xcconfig` (gitignored), pulled into Debug builds
   via `#include? "local.xcconfig"` in `ios/debug.xcconfig` and into the Release archive via
-  `-xcconfig
-  ../local.xcconfig` on `ios:archive`. There is no iOS analog of `keystore.properties`
-  to back up — Apple holds the distribution certificate.
+  `-xcconfig ../local.xcconfig` on `ios:archive`. There is no iOS analog of `keystore.properties` to
+  back up — Apple holds the distribution certificate.
 * Version numbers are not managed in Xcode: `scripts/release.mjs` sets
   `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` via `capacitor-set-version`, keeping them locked to
   Android's `versionName`/`versionCode`.

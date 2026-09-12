@@ -63,8 +63,7 @@ device and is scaled down (uniformly) when the old orientation's paper doesn't f
   replay, keyframe blits, the magic-brush pattern) flows through it untouched, because they all
   paint in paper coordinates already. Pointer input is inverse-mapped (`screenToPaper`); the
   edge-swipe guard stays in screen space (OS gesture bands are physical edges), so
-  `PointerState.
-  startX/startY/pendingPoints` are screen-space by contract.
+  `PointerState. startX/startY/pendingPoints` are screen-space by contract.
 * **Uniform view scale, never per-op rescale**: relative stroke weights inside the drawing stay
   exact; while letterboxed the whole page just reads smaller, and new strokes record in paper space
   so rotating back restores the original layout pixel-for-pixel.
