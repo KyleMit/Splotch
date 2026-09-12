@@ -229,13 +229,11 @@ describe('colorTileCache LRU eviction', () => {
     expect(frameCount).toBeGreaterThan(4);
   });
 
-  // A drift guard for colorTileKey, not a regression test for the refactor that
-  // introduced it: the store and lookup paths already agreed before that change
-  // (they each spelled the same format out), so this passes against the old code
-  // too. What it pins is that they go on agreeing. If the stored key and the
-  // looked-up key ever diverge, the warm still runs, still spends its frames,
-  // and produces a tile nothing can find — silent, and it costs exactly what the
-  // warm exists to save.
+  // Warming and lookup must key the colour-tile cache identically. If the stored
+  // key and the looked-up key disagree, the warm still runs and still spends its
+  // animation frames, but produces a tile no lookup can reach — silent, and it
+  // costs exactly what warming exists to save. colorTileKey is the single
+  // declaration that holds them together.
   it('keeps the warm and lookup paths on one cache key', () => {
     setCrayonOptions({ passes: [{ widthScale: 1, coverage: 0.9 }] });
     const { frames } = frameQueue();
