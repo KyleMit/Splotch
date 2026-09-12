@@ -28,8 +28,12 @@ pierce Svelte's style scoping, so every component references them directly via `
    structurally identical). If a new color should differ in dark mode, it belongs there, not in a
    component.
 4. **JS never mirrors a token by hand.** The few JS consumers of token values (canvas export fill,
-   Notch Band, theme-color meta) import from `$lib/design/tokens` — see `lib/theme.ts`
-   (`PAPER_COLORS`). Don't paste a hex into TypeScript.
+   Notch Band, theme-color meta) import from `$lib/design/tokens`. Don't paste a hex into
+   TypeScript. The one exception is `lib/theme.ts`, which sits on the startup path: `themes` is a
+   single object literal, so importing it for one value drags every token into a modulepreloaded
+   chunk. It writes its three values literally, and `lib/theme.tokens.test.ts` fails on drift
+   (ADR-0071's 2026-09 amendment). Copy that only with the same three things — a startup-path
+   module, a measured saving, and a drift guard.
 
 5. **Text and glyphs change token, never opacity**, when de-emphasized. Whole disabled controls
    retain their component treatment.
