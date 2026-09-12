@@ -1,5 +1,9 @@
+import { REDUCED_MOTION_QUERY } from '$lib/platform/reducedMotion';
+
 export function drawerCascade(node: HTMLElement, opening: boolean) {
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  // Its own list rather than the shared probe: this is the one caller that
+  // reacts to the preference flipping mid-session.
+  const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY);
   function cancelReducedMotion() {
     if (reducedMotion.matches) node.classList.remove('opening');
   }

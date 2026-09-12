@@ -13,6 +13,7 @@
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { hasSectionActivity, markSectionSeen } from '$lib/state/sectionsSeen.svelte';
   import '$lib/components/deferredIcons';
+  import { prefersReducedMotion } from '$lib/platform/reducedMotion';
 
   interface Props {
     /** Where the pane parks on each open — the deep-linked section, else the first. */
@@ -229,7 +230,7 @@
   // parent having scrolled the pane themselves.
   function jumpBehavior(): ScrollBehavior {
     if (!fullyMounted) return 'auto';
-    return matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    return prefersReducedMotion() ? 'auto' : 'smooth';
   }
 
   function spiedSectionAt(pane: HTMLElement): SectionId {

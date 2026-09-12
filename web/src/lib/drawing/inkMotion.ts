@@ -1,6 +1,7 @@
 import { paintStrokeFootprint, strokeGhostReadsTiles, strokeMotionBounds } from './inkMotionBounds';
 import { renderOp, type StrokeGroupCommand } from './strokeOps';
 import { viewMatrix, type EngineViewState } from './paperView';
+import { prefersReducedMotion } from '$lib/platform/reducedMotion';
 
 function canvasOf(width: number, height: number) {
   const canvas = document.createElement('canvas');
@@ -75,7 +76,7 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     scale: number
   ) {
     cancel();
-    if (!command || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!command || prefersReducedMotion()) return;
     const bounds = strokeMotionBounds(
       command,
       Math.round(view.paperCssWidth * scale),
@@ -117,7 +118,7 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     viewport: { width: number; height: number }
   ) {
     cancel();
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (prefersReducedMotion()) return;
     const rect = canvas.parentElement?.getBoundingClientRect();
     if (!rect) return;
     const image = canvasOf(viewport.width, viewport.height);
