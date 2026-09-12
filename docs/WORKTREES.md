@@ -43,6 +43,22 @@ shows stderr to the user — and a schema-valid JSON body makes Claude Code igno
 rather than report a hook error. So the session always starts, and the bootstrap exits 0, the
 documented exit code for structured output. Its stderr reaches the debug log only.
 
+### The install goes stale, and the bootstrap will not notice
+
+The hook runs once per session and its matchers exclude `resume`, `clear`, and `compact`, so nothing
+reinstalls after the worktree merges `main`. A dependency bump then advances `package.json` and the
+configs that came with it while the installed tree stays where it was, and the first thing to break
+is dprint: `dprint.json` names its plugins by path relative to cwd, so it reads this checkout's
+`node_modules` or nothing, while the tools Node resolves walk upward and silently borrow the main
+checkout's. The symptom pointed away from the cause — dprint reported the config option its older
+plugin could not parse, and CI stayed green because CI installs fresh.
+
+`tools/check-dprint-plugins.mjs` closes that gap. It runs as the `preformat:md` /
+`preformat:md:check` prehook and at the top of `ruler:apply`, compares each plugin's installed
+version against the range in `package.json`, and fails naming the gap and
+`pnpm install --frozen-lockfile`. After merging `main` into a long-lived worktree, run that install
+rather than waiting for the guard.
+
 ### Why the Claude hook reads its directory from stdin
 
 Claude Code keeps `${CLAUDE_PROJECT_DIR}` pointing at the **main checkout** after it enters a

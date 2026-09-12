@@ -1,10 +1,20 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
   DIRECT_PROVIDER_PATHS,
   FORBIDDEN_DIRECT_PROVIDER_SOURCES,
+  RESTORE_STAGING_SUFFIX,
   RULER_STEP_PATHS,
   withPreservedDirectProviderPaths,
 } from '../apply-ruler.mjs';
@@ -24,11 +34,13 @@ function makeRoot() {
   return root;
 }
 
+function pathContents(root, path) {
+  const file = path.endsWith('.md') ? join(root, path) : join(root, path, 'SKILL.md');
+  return readFileSync(file, 'utf8');
+}
+
 function providerContents(root) {
-  return DIRECT_PROVIDER_PATHS.map((path) => {
-    const file = path.endsWith('.md') ? join(root, path) : join(root, path, 'SKILL.md');
-    return readFileSync(file, 'utf8');
-  });
+  return DIRECT_PROVIDER_PATHS.map((path) => pathContents(root, path));
 }
 
 afterEach(() => {
@@ -71,6 +83,81 @@ describe('withPreservedDirectProviderPaths', () => {
     ).toThrow('generation failed');
 
     expect(providerContents(root)).toEqual(before);
+  });
+
+  // The restore loop had no per-entry handling, so the first unwritable provider
+  // tree abandoned every later entry — leaving them as `ruler apply` had left
+  // them, deleted — and the next run blamed its own missing-source precondition.
+  // A regular file where the tree belongs stands in for the sandboxed reviewer's
+  // write denial: it fails the same mkdir, and unlike a chmod it is not a no-op
+  // for a session running as root.
+  it('restores every restorable package and names the ones it could not', () => {
+    const root = makeRoot();
+    const before = providerContents(root);
+    const blockedRoot = join('.agents', 'skills');
+    const blocked = DIRECT_PROVIDER_PATHS.filter((path) => path.startsWith(`${blockedRoot}/`));
+    const restorable = DIRECT_PROVIDER_PATHS.filter((path) => !blocked.includes(path));
+
+    let thrown;
+    try {
+      withPreservedDirectProviderPaths(root, () => {
+        rmSync(join(root, '.claude'), { recursive: true, force: true });
+        rmSync(join(root, blockedRoot), { recursive: true, force: true });
+        writeFileSync(join(root, blockedRoot), 'not a directory\n');
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown?.message).toBeDefined();
+    for (const path of blocked) expect(thrown.message).toContain(path);
+    for (const path of restorable) {
+      expect(pathContents(root, path), `${path} was abandoned`).toBe(
+        before[DIRECT_PROVIDER_PATHS.indexOf(path)]
+      );
+    }
+    expect(thrown.message).toContain('git restore --');
+  });
+
+  // The restore copies to a staging path beside the package before removing it,
+  // so a denied write fails with the committed package still whole. That staging
+  // path sits inside a skills tree, where a leftover would be loaded as a skill.
+  it('leaves no restore staging path behind when a restore fails', () => {
+    const root = makeRoot();
+    const blockedRoot = join('.agents', 'skills');
+
+    expect(() =>
+      withPreservedDirectProviderPaths(root, () => {
+        rmSync(join(root, '.claude'), { recursive: true, force: true });
+        rmSync(join(root, blockedRoot), { recursive: true, force: true });
+        writeFileSync(join(root, blockedRoot), 'not a directory\n');
+      })
+    ).toThrow();
+
+    const staging = readdirSync(join(root, '.claude'), { recursive: true }).filter((entry) =>
+      String(entry).includes(RESTORE_STAGING_SUFFIX)
+    );
+    expect(staging).toEqual([]);
+  });
+
+  // `ruler apply` can fail before it reaches a provider tree, and then the
+  // packages in it need no write at all — the run must report only the failure
+  // it hit, not manufacture restore failures against packages already correct.
+  it('skips a package generation never replaced', () => {
+    const root = makeRoot();
+    const before = providerContents(root);
+    const untouched = join(root, '.agents', 'skills');
+    const guarded = statSync(untouched).mtimeMs;
+
+    expect(() =>
+      withPreservedDirectProviderPaths(root, () => {
+        rmSync(join(root, '.claude'), { recursive: true, force: true });
+        throw new Error('ruler EPERM on .agents');
+      })
+    ).toThrow('ruler EPERM on .agents');
+
+    expect(providerContents(root)).toEqual(before);
+    expect(statSync(untouched).mtimeMs).toBe(guarded);
   });
 
   it('rejects a competing Ruler source for the direct provider skill', () => {
