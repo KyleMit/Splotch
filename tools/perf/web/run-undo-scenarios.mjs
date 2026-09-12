@@ -45,6 +45,7 @@ import {
 import { appendFullRun, evaluateFastSet, readFastSetHistory } from '../lib/undo-fast-set.mjs';
 import { toMiB } from '../lib/performance-units.mjs';
 import {
+  COMMIT_GATE_ENFORCED,
   COMMIT_GATE_MS,
   COMMIT_GATE_PERCENTILE,
   confirmedBreach,
@@ -1082,6 +1083,10 @@ function reportCommitGate(
   const base = {
     engine: engineName,
     gated,
+    // Whether a breach below could fail this run at all. Recorded on every run,
+    // green ones included, so an artifact is never ambiguous about what its
+    // verdict was allowed to be.
+    enforced: COMMIT_GATE_ENFORCED,
     budgetMs,
     percentile: COMMIT_GATE_PERCENTILE,
     breaches,
@@ -1155,12 +1160,21 @@ function reportCommitGate(
     return base;
   }
 
-  process.exitCode = 1;
+  // The breach is reported either way, and at the same volume. Only the exit code
+  // is conditional: see COMMIT_GATE_ENFORCED for why this gate cannot currently
+  // tell a product regression from the browser build it measures through.
+  if (COMMIT_GATE_ENFORCED) process.exitCode = 1;
   console.error(
-    `\n✗ Commit gate FAILED on ${engineName}: ${breaches.length} scenario(s) had commit p95 ` +
-      `above ${budgetMs} ms of synchronous stroke-end work.\n` +
+    `\n✗ Commit gate ${COMMIT_GATE_ENFORCED ? 'FAILED' : 'BREACHED (ADVISORY)'} on ` +
+      `${engineName}: ${breaches.length} scenario(s) had commit p95 above ${budgetMs} ms ` +
+      `of synchronous stroke-end work.\n` +
       `  Repeated commits this hot suggest unbounded or full-surface stroke-end work. ` +
-      `Inspect the engine.commit trace and tiled patch work.\n`
+      `Inspect the engine.commit trace and tiled patch work.\n` +
+      (COMMIT_GATE_ENFORCED
+        ? ''
+        : `  NOT failing this run: the gate is advisory while its breaches follow the ` +
+          `browser build rather than the app (issue 1774). The measurement stands and ` +
+          `is in the artifact; flip COMMIT_GATE_ENFORCED to restore enforcement.\n`)
   );
   for (const scenario of breaches) {
     console.error(formatCommitBreach(scenario, timings.get(scenario.key)));

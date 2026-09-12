@@ -300,7 +300,11 @@ describe('undo scenario profiling', () => {
       gateP95Ms: 60,
       breached: true,
     });
-    expect(process.exitCode).toBe(1);
+    // The undiscounted score is the subject here, so the breach is asserted on the
+    // verdict rather than on the exit code: whether a breach also FAILS the run is
+    // COMMIT_GATE_ENFORCED's business, and the two tests that own it assert both
+    // sides. A 60 ms crop nested inside a 60 ms commit must still reach the gate.
+    expect(report.gate.breaches).toEqual(['multi-finger']);
     const markdown = readFileSync(join(fixtureDir, 'undo-scenarios.md'), 'utf8');
     expect(markdown).toContain('| Confirmation | Draw |');
     expect(markdown).toContain('| Confirmation | Undo |');
@@ -650,6 +654,18 @@ describe('engine selection', () => {
 });
 
 describe('the commit gate', () => {
+  // The enforcing path is the one COMMIT_GATE_ENFORCED is meant to return to, so it
+  // keeps its coverage by mocking the contract rather than by waiting for the flip.
+  // Only the flag is replaced; every other export stays real, because the scoring
+  // this test asserts on is exactly what a stub would have to reimplement.
+  async function importWithEnforcement(enforced) {
+    vi.doMock('../lib/undo-commit-gate.mjs', async (importOriginal) => ({
+      ...(await importOriginal()),
+      COMMIT_GATE_ENFORCED: enforced,
+    }));
+    return import('../web/run-undo-scenarios.mjs');
+  }
+
   it('fails the WebKit run when commit latency repeatedly exceeds the budget', async () => {
     process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const page = fakePage({
@@ -660,12 +676,13 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
+    const { runUndoScenarios } = await importWithEnforcement(true);
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({
       engine: 'webkit',
       gated: true,
+      enforced: true,
       budgetMs: 25,
       percentile: 0.95,
     });
@@ -685,6 +702,40 @@ describe('the commit gate', () => {
       key: 'multi-finger',
       breached: true,
     });
+  });
+
+  // The shipped posture. A breach that would fail an enforcing run has to survive
+  // an advisory one intact — same breaches, same disposition, same artifact — or
+  // "advisory" would quietly mean "unmeasured", which is the thing an advisory gate
+  // must not become.
+  it('reports a confirmed breach without failing the run while the gate is advisory', async () => {
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
+    const page = fakePage({
+      commitDurationsMs: [...Array(REALISTIC_COMMIT_SAMPLE_COUNT - 2).fill(8), 55, 56],
+    });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await importWithEnforcement(false);
+    const gate = await runUndoScenarios();
+
+    expect(process.exitCode).toBe(originalExitCode);
+    expect(gate).toMatchObject({ engine: 'webkit', gated: true, enforced: false });
+    expect(gate.breaches.map((s) => s.key)).toEqual(['multi-finger']);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('Commit gate BREACHED (ADVISORY) on webkit')
+    );
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('NOT failing this run'));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('max 56.0 ms'));
+
+    // The retry and filing jobs read the artifact, not the exit code, so an advisory
+    // run still has to leave a readable fingerprint behind.
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.gate).toMatchObject({ enforced: false });
+    expect(report.gate.breaches).toEqual(['multi-finger']);
+    expect(report.gate.breachDispositions).toEqual({ 'multi-finger': 'confirmed' });
   });
 
   it('retains but does not fail one isolated shared-runner outlier', async () => {
