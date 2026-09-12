@@ -46,6 +46,30 @@ const INDEX_SIGNATURE_PROP_BAG = {
 };
 // Mixing the it()/test() vocabularies makes greps and reporter output lie about which tier a
 // test is in — Vitest files use it()/describe(), test() is the Playwright vocabulary.
+// localStorage is a boundary the storage seam owns: keys are declared once in STORAGE_KEYS and
+// reached through readString/writeString, which carry the degrade behaviour and the native
+// durable mirror with them. A module touching the global directly is invisible to all three.
+// An AST restriction rather than a text scan because the evasions are cheap and each one reads
+// as ordinary code: localStorage['getItem'], a destructured getItem, window.localStorage. One
+// Identifier selector covers every spelling, including the property half of window.localStorage.
+const STORAGE_SEAM_ONLY = {
+  selector: 'Identifier[name="localStorage"]',
+  message:
+    'Reach localStorage through src/lib/storage.ts (readString/writeString), with the key declared in STORAGE_KEYS.',
+};
+
+// A media query passed to matchMedia as a literal is a boundary string with no spell-checker
+// behind it: a typo evaluates to false forever, so the accommodation silently never applies.
+// Banning the literal rather than matching the correct spelling is what closes the typo class —
+// there is no spelling left to get wrong once the argument must be an imported constant.
+const MEDIA_QUERY_LITERAL = ['Literal', 'TemplateLiteral'].flatMap((argumentType) =>
+  ['callee.name="matchMedia"', 'callee.property.name="matchMedia"'].map((callee) => ({
+    selector: `CallExpression[${callee}][arguments.0.type="${argumentType}"]`,
+    message:
+      'Import the query constant (lib/platform/reducedMotion.ts, lib/breakpoints.ts) instead of spelling a media query at the call site.',
+  }))
+);
+
 const VITEST_VOCABULARY_SELECTORS = [
   'CallExpression[callee.name="test"]',
   'CallExpression[callee.object.name="test"]',
@@ -267,6 +291,8 @@ export default tseslint.config(
         // Vitest blocks below replace this entry for their file shapes, so each is followed by a
         // web/src-scoped block that recomposes NAMED_EXPORTS_ONLY into its selector set.
         NAMED_EXPORTS_ONLY,
+        STORAGE_SEAM_ONLY,
+        ...MEDIA_QUERY_LITERAL,
       ],
     },
   },
@@ -304,7 +330,13 @@ export default tseslint.config(
     // server-only and can't appear in these files.)
     files: ['web/src/**/*.svelte', 'web/src/**/*.svelte.ts', 'web/src/**/*.svelte.js'],
     rules: {
-      'no-restricted-syntax': ['error', INDEX_SIGNATURE_PROP_BAG, NAMED_EXPORTS_ONLY],
+      'no-restricted-syntax': [
+        'error',
+        INDEX_SIGNATURE_PROP_BAG,
+        NAMED_EXPORTS_ONLY,
+        STORAGE_SEAM_ONLY,
+        ...MEDIA_QUERY_LITERAL,
+      ],
     },
   },
   {
@@ -416,6 +448,50 @@ export default tseslint.config(
     files: ['web/src/**/*.test.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...VITEST_VOCABULARY_SELECTORS, NAMED_EXPORTS_ONLY],
+    },
+  },
+  {
+    // The seam itself is the one module allowed to touch localStorage — recompose everything the
+    // web/src block gives it, minus the ban it exists to satisfy.
+    files: ['web/src/lib/storage.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
+          selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
+          message: RATE_LIMIT_MESSAGE,
+        })),
+        NAMED_EXPORTS_ONLY,
+        ...MEDIA_QUERY_LITERAL,
+      ],
+    },
+  },
+  {
+    // Media queries predating the constant-per-query convention: colour scheme, orientation, and
+    // the three display modes. Each is single-site and outside the reduced-motion work that
+    // introduced the ban, so they keep their literals rather than pulling unrelated files into
+    // that change; a new call site must import a constant. Narrowing this list is the follow-up.
+    //
+    // The listed files span plain .ts and .svelte.ts, whose base selector sets differ, so this
+    // recomposes the union of both minus the media-query ban. The extras are inert rather than
+    // wrong: rateLimit() is server-only and cannot appear here, and an index-signature prop bag
+    // needs a Props interface.
+    files: [
+      'web/src/lib/platform/index.ts',
+      'web/src/lib/state/appearance.svelte.ts',
+      'web/src/lib/state/layout.svelte.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
+          selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
+          message: RATE_LIMIT_MESSAGE,
+        })),
+        INDEX_SIGNATURE_PROP_BAG,
+        NAMED_EXPORTS_ONLY,
+        STORAGE_SEAM_ONLY,
+      ],
     },
   },
   {
