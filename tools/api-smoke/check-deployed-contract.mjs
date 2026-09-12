@@ -24,6 +24,7 @@ const BASE = (options.url ?? process.env.DEPLOY_SMOKE_URL ?? '').replace(/\/$/, 
 const ADMIN_SECRET = process.env.ADMIN_ACCESS_TOKEN ?? '';
 const CAPACITOR_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 const VERSION_CACHE_CONTROL = ['no-cache', 'no-store', 'must-revalidate'];
+const ADMIN_CACHE_CONTROL = ['no-store'];
 const IMMUTABLE_CACHE_CONTROL = ['public', 'max-age=31536000', 'immutable'];
 const HSTS_HEADER = 'Strict-Transport-Security';
 const CSP_HEADER = 'Content-Security-Policy';
@@ -189,6 +190,16 @@ async function checkStaticRoutes(hostname) {
         missingSecurity.length === 0,
       `got ${response.status}; missing/wrong ${missingSecurity.join(', ')}`
     );
+    // The admin console renders every live access code, so its document must
+    // never be stored. Asserted on the unauthenticated response because the
+    // loader sets the header before its auth branch.
+    if (path === '/admin') {
+      check(
+        'GET /admin → no-store, so the console is never written to a cache',
+        hasCacheDirectives(response, ADMIN_CACHE_CONTROL),
+        `Cache-Control=${JSON.stringify(response.headers.get('cache-control'))}`
+      );
+    }
     if (path === '/') rootHtml = body;
   }
 
