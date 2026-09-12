@@ -62,40 +62,65 @@ function sameContent(source, target) {
   );
 }
 
-// Restore staging lands beside the package rather than replacing it in place:
-// a denied write (a sandboxed reviewer, a read-only provider tree) then fails
-// while the committed package is still intact, instead of after `rmSync` has
-// emptied it. The swap that follows is a rename within one directory.
-export const RESTORE_STAGING_SUFFIX = '.ruler-restore';
+// Restore copies to a staging path before removing the target, so a denied
+// write (a sandboxed reviewer, a read-only provider tree) fails while the
+// committed package is still intact instead of after `rmSync` has emptied it.
+//
+// Staging sits at the repo root rather than beside the package. A rename needs
+// the same filesystem, not the same directory, and a stage inside
+// `.claude/skills/` is a directory a runner would load as a skill and
+// `ruler:check` would report as untracked drift if a hard kill left one behind.
+// One mkdtemp root per run also means a run can never meet a previous run's
+// stage, so the restore has no pre-existing staging path to reason about.
+const RESTORE_STAGING_PREFIX = '.ruler-restore-';
 
-function restoreDirectProviderPath(source, target) {
+// Created on the first path that actually needs a stage: a run whose packages
+// are all still correct must not fail on a staging mkdtemp — in a checkout too
+// locked down to write at all, that error would replace the generation failure
+// the operator needs to see.
+function createStagingRoot(root) {
+  let staging;
+  return {
+    pathFor: (path) => join((staging ??= mkdtempSync(join(root, RESTORE_STAGING_PREFIX))), path),
+    cleanup: () => {
+      if (staging) rmSync(staging, { recursive: true, force: true });
+    },
+  };
+}
+
+// The two irreversible filesystem steps of the swap, injected so a test can fail
+// the copy with a target still on disk and the rename with it already removed.
+// Neither fault has a deterministic cross-platform trigger otherwise: a chmod is
+// a no-op for a session running as root, and the copy's destination is a private
+// staging root a test cannot poison. No production caller overrides them.
+const RESTORE_EFFECTS = Object.freeze({ copy: cpSync, rename: renameSync });
+
+function restoreDirectProviderPath(root, snapshot, path, staging, effects) {
+  const source = join(snapshot, path);
+  const target = join(root, path);
+
   // A path `ruler apply` never got to replace needs no write at all. Skipping it
   // is what lets a run that was denied one provider tree finish reporting only
   // the denial, rather than 4 more failures against packages already correct.
   if (sameContent(source, target)) return;
 
-  const staged = `${target}${RESTORE_STAGING_SUFFIX}`;
+  const staged = staging.pathFor(path);
+  mkdirSync(dirname(staged), { recursive: true });
+  effects.copy(source, staged, { recursive: true });
   mkdirSync(dirname(target), { recursive: true });
-  rmSync(staged, { recursive: true, force: true });
-  cpSync(source, staged, { recursive: true });
-  try {
-    rmSync(target, { recursive: true, force: true });
-    renameSync(staged, target);
-  } catch (error) {
-    rmSync(staged, { recursive: true, force: true });
-    throw error;
-  }
+  rmSync(target, { recursive: true, force: true });
+  effects.rename(staged, target);
 }
 
 // Every registered path gets its own attempt. The loop used to abandon each
 // path after the first throw, so one denied tree left the rest as `ruler apply`
 // had left them — deleted — and the next run blamed its own missing-source
 // precondition rather than the run that did the deleting.
-function restoreDirectProviderPaths(root, snapshot) {
+function restoreDirectProviderPaths(root, snapshot, staging, effects) {
   const failures = [];
   for (const path of DIRECT_PROVIDER_PATHS) {
     try {
-      restoreDirectProviderPath(join(snapshot, path), join(root, path));
+      restoreDirectProviderPath(root, snapshot, path, staging, effects);
     } catch (error) {
       failures.push({ path, error });
     }
@@ -118,7 +143,7 @@ function unrestoredPathsError(failures, applyError) {
   return new AggregateError(applyError ? [applyError, ...causes] : causes, lines.join('\n'));
 }
 
-export function withPreservedDirectProviderPaths(root, apply) {
+export function withPreservedDirectProviderPaths(root, apply, effects = RESTORE_EFFECTS) {
   for (const path of FORBIDDEN_DIRECT_PROVIDER_SOURCES) {
     if (existsSync(join(root, path))) {
       throw new Error(`direct provider skill must not have a Ruler source: ${path}`);
@@ -136,6 +161,7 @@ export function withPreservedDirectProviderPaths(root, apply) {
   }
 
   const snapshot = mkdtempSync(join(tmpdir(), 'splotch-direct-provider-skills-'));
+  const staging = createStagingRoot(root);
   try {
     for (const path of DIRECT_PROVIDER_PATHS) {
       const target = join(snapshot, path);
@@ -150,11 +176,12 @@ export function withPreservedDirectProviderPaths(root, apply) {
       applyError = error;
     }
 
-    const failures = restoreDirectProviderPaths(root, snapshot);
+    const failures = restoreDirectProviderPaths(root, snapshot, staging, effects);
     if (failures.length > 0) throw unrestoredPathsError(failures, applyError);
     if (applyError) throw applyError;
   } finally {
     rmSync(snapshot, { recursive: true, force: true });
+    staging.cleanup();
   }
 }
 
