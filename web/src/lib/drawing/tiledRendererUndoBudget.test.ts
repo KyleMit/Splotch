@@ -7,10 +7,10 @@ import {
   adoptTiledRenderer,
   applyTiledView,
   beginTiledCommand,
+  clearTiledRenderer,
   commitTiledCommand,
   recordTiledOp,
   renderTiledOp,
-  repaintTiledRenderer,
   resizeTiledRenderer,
   tiledHistoryDebug,
   undoTiledCommand,
@@ -26,16 +26,14 @@ installTiledRendererTestHarness();
 
 // The renderer's history is module state that detachTiledRenderer does not
 // unwind, so this case lives in its own file — the same reason
-// tiledRendererBlankUndo and tiledRendererBounds are split out — and is the
-// only test in it, so the undo depth it drives to zero is genuinely zero.
+// tiledRendererBlankUndo and tiledRendererBounds are split out. Being the only
+// test in it is what makes the undo depth it drives to zero genuinely zero.
 const TEST_PAPER_PX = 400;
-function dot(x: number): StrokeOp {
-  return { kind: 'dot', x, y: 50, radius: 5, color: '#123456', erase: false };
-}
+const TILE_PATCH_BYTES = 32_000;
 
 describe('undo patch budget with an empty undo window', () => {
-  it('drops every retained patch once the undo depth reaches zero', () => {
-    const { canvas } = rendererElements();
+  it('drops clear patches captured after the undo window reaches zero', () => {
+    const { host, canvas } = rendererElements();
     adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: TEST_PAPER_PX, height: TEST_PAPER_PX }),
       hasActivePointers: () => true,
@@ -43,40 +41,71 @@ describe('undo patch budget with an empty undo window', () => {
     resizeTiledRenderer(TEST_PAPER_PX, TEST_PAPER_PX, 1);
     applyTiledView(IDENTITY_PAPER_VIEW);
 
-    // More commands than the undo depth, so undoing the whole window empties
-    // undoableCommands while history still holds the older commands. That is
-    // the only way the two diverge: undoTiledCommand pops history and
-    // decrements the count together, but the count is clamped to
-    // MAX_UNDO_DEPTH while history keeps growing.
-    const strokes = MAX_UNDO_DEPTH + 3;
-    for (let i = 0; i < strokes; i++) {
-      beginTiledCommand(i === 0);
-      renderTiledOp(dot(20 + i * 30));
-      recordTiledOp(dot(20 + i * 30));
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    // Drains a snapshot of the queue: a callback these schedule belongs to the
+    // next frame, and progressive clear capture queues them one at a time.
+    const flushFrame = (time: number) => {
+      for (const callback of frames.splice(0)) callback(time);
+    };
+
+    const topLeft: StrokeOp = {
+      kind: 'dot',
+      x: 20,
+      y: 20,
+      radius: 5,
+      color: '#123456',
+      erase: false,
+    };
+    const bottomRight: StrokeOp = { ...topLeft, x: TEST_PAPER_PX - 20, y: TEST_PAPER_PX - 20 };
+    const commitDot = (op: StrokeOp, wasEmpty: boolean) => {
+      beginTiledCommand(wasEmpty);
+      renderTiledOp(op);
+      recordTiledOp(op);
       commitTiledCommand();
+    };
+
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+    for (const tile of tiles.slice(0, 4)) tile.hidden = false;
+
+    commitDot(topLeft, false);
+    const patchBytesBeforeClear = tiledHistoryDebug().patchBytes;
+    clearTiledRenderer(false);
+
+    // Capture tile 0 now, leaving tiles 1-3 queued behind it.
+    flushFrame(0);
+    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(TILE_PATCH_BYTES);
+
+    // These mutate a far corner, so captureBeforeMutation never reaches the
+    // pending clear indices. Past MAX_UNDO_DEPTH the clear ages out of the
+    // window, because the count clamps while history keeps growing.
+    for (let index = 0; index < MAX_UNDO_DEPTH + 2; index++) {
+      commitDot(bottomRight, index === 0);
     }
-    // Patches are cropped to the dirty region, so assert only that retention
-    // happened — the exact byte count is not what this test is about.
-    expect(tiledHistoryDebug().patchBytes).toBeGreaterThan(0);
 
-    for (let i = 0; i < MAX_UNDO_DEPTH; i++) undoTiledCommand(1);
-    expect(tiledHistoryDebug().historyLength).toBeGreaterThan(0);
-    expect(tiledHistoryDebug().snapshots).toBe(0);
+    // Pops only the newest strokes. The clear is never popped, so
+    // takePendingIndices never consumes its pending captures either.
+    for (let index = 0; index < MAX_UNDO_DEPTH; index++) undoTiledCommand(1);
 
-    // A finger still down is what carries a repaint into the budget pass with
-    // an empty window: repaintTiledRenderer rebuilds when undoableCommands > 0
-    // *or* a command is active, and only the second holds here.
-    beginTiledCommand(false);
-    renderTiledOp(dot(200));
-    recordTiledOp(dot(200));
-    repaintTiledRenderer();
+    expect(tiledHistoryDebug()).toMatchObject({
+      historyLength: 4,
+      snapshots: 0,
+      patchBytes: 0,
+    });
 
-    // The invariant that makes the zero-window case safe: nothing outside the
-    // undo window is still holding a patch by the time the window empties. This
-    // does not distinguish the index arithmetic from the negative offsets it
-    // replaced — it pins the precondition that makes them equivalent, so if
-    // out-of-window retention ever starts happening, the difference stops
-    // being academic and this fails first.
+    // The remaining three tiles are captured only now, onto a command that is
+    // already outside the undo window.
+    flushFrame(16);
+    expect(tiledHistoryDebug().patchBytes).toBe(TILE_PATCH_BYTES);
+    flushFrame(32);
+    expect(tiledHistoryDebug().patchBytes).toBe(TILE_PATCH_BYTES * 2);
+    flushFrame(48);
+
+    // Nothing outside the undo window may keep a patch. The negative-offset
+    // form left all three here, because slice(0, -0) is the empty array.
     expect(tiledHistoryDebug().patchBytes).toBe(0);
   });
 });
