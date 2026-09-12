@@ -29,6 +29,8 @@ this app's shape.
 | In-app reporting of AI-generated content                                      | Defensive — 1.2 targets shared UGC    | Required — AI-Generated Content policy    | ADR-0104; issue 848                                                               |
 | No IAP, no purchase steering; BYOK worded as configuration                    | Required — 3.1.1 (non-US storefronts) | Required — Payments policy                | Issue 849; commit c2ee6446 (see Provenance)                                       |
 | No hidden or privileged surfaces (admin console web-only, unlinked)           | Required — 2.3.1                      | Required — Deceptive Behavior             | ADR-0101                                                                          |
+| Business model answered for the 2.1(b) probe (no IAP, BYOK, free codes)       | Required — 2.1(b)                     | N/A                                       | Submission c730ff1d; `ios.md` review notes                                        |
+| China mainland storefront deselected (deep-synthesis permitting)              | Required — 5 Legal (China)            | N/A                                       | Submission c730ff1d                                                               |
 | No other-platform references inside the iOS binary                            | Required — 2.3.10                     | N/A                                       | ADR-0112; `web/nativeExcludedRoutes.ts` + bundle guard                            |
 | iOS privacy manifest (`PrivacyInfo.xcprivacy`)                                | Required — ITMS-91053 upload gate     | N/A                                       | `ios/App/App/PrivacyInfo.xcprivacy`                                               |
 | Data-disclosure agreement across manifest, labels, forms, and `/privacy`      | Required — nutrition label            | Required — Data safety form               | Consistency chain (below); issue 846                                              |
@@ -91,6 +93,30 @@ free allowance means the reviewer's first taps work with no setup at all.
 **Decisions.** Ten server-authoritative free generations per installation (ADR-0105); a working,
 non-expiring access code goes in App Review notes at submission (issue 851's checklist), along with
 the note that prompts are server-built from a closed style enum.
+
+### 2.1(b) Business Model Information
+
+> "If you offer in-app purchases in your app, make sure they are complete, up-to-date, visible to
+> the reviewer and functional. If any configured in-app purchase items cannot be found or reviewed
+> in your app, explain the reason in your review notes."
+
+**Impact.** Apple also cites 2.1(b) as an *information request* when an app appears to reach paid
+digital content without in-app purchase, and asked for Splotch's business model in full on
+submission c730ff1d-1a03-40cf-831d-2804513a1830 (reviewed 2026-09-12, version 1.6.0 build 8).
+Splotch configures no in-app purchase items at all, so nothing under the literal guideline applies;
+what draws the question is the BYOK panel, which states that a key is billed to the parent's own
+OpenAI account and that OpenAI requires billing set up on that account
+(`web/src/lib/components/settings/AiKeyManager.svelte`).
+
+**Decisions.** Answer from the shape 3.1.1 already established rather than change the app. Splotch
+sells nothing through any channel and takes no revenue or affiliate share; the drawing app is free
+and works offline; the AI feature includes ten project-funded creations per installation (ADR-0105);
+and the two ways to continue past that allowance — an access code given away and never sold, or the
+parent's own pre-existing OpenAI credential — unlock no otherwise-hidden feature, since the AI
+button is present and usable from first launch. The four answers are pre-written in
+[`ios.md`](ios.md)'s submission checklist so every future submission states them in review notes up
+front instead of waiting to be asked. If a follow-up escalates from an information request to a
+3.1.1 citation, the fallback is the one already chosen above.
 
 ### 2.3.1 Accurate Metadata — hidden features
 
@@ -160,6 +186,29 @@ gate solve (iOS), or drop the external link from the Android build (Play).
 Splotch is a complete offline drawing app with AI as an additive feature, and the free allowance
 (ADR-0105) means even the AI path works out of the box. Issue 599 (a saved key never unhid the magic
 button) was fixed to keep that story true.
+
+### 5 Legal — deep synthesis (China mainland)
+
+> "Apps must comply with all legal requirements in any location where you make them available (if
+> you're not sure, check with a lawyer). We know this stuff is complicated, but it is your
+> responsibility to understand and make sure your app conforms with all local laws, not just the
+> guidelines below."
+
+**Impact.** China's Administrative Provisions on Deep Synthesis of Internet-based Information
+Services require a MIIT permit for a generative service offered over the internet, and Apple
+enforces it at review: an app on the China mainland storefront may neither call an unpermitted
+provider nor name one in its metadata. The iOS listing describes the AI feature and names OpenAI
+(`store-assets/STORE-LISTING-IOS.md`), which is the reference review cited on submission
+c730ff1d-1a03-40cf-831d-2804513a1830.
+
+**Decisions.** Deselect the China mainland storefront in App Store Connect availability rather than
+comply. Complying would mean stripping every OpenAI mention from the description and screenshots and
+suppressing the feature by region — a runtime region branch the codebase has no other reason to
+carry — and China distribution separately requires an ICP filing Splotch does not have. An
+English-language toddler drawing app with no China presence gets less from that storefront than the
+branch costs. The consequence worth remembering: metadata may keep naming OpenAI, but adding any
+storefront, and any request to ship in China mainland, re-opens this decision rather than inheriting
+it.
 
 ### 5.1.1 Data Collection and Storage
 
@@ -382,6 +431,7 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 | Beta pages consolidated; Play URLs kept out of the iOS build                                                  | ADR-0112; PR 1034 (ed186a02dbdb69b0804ffc6f8882c89791abfa1d)                                                                                                        |
 | Mobile tooling consolidated (bundle guard's current home)                                                     | 661ee3153bd8aff6753cb3923199dad9cd4f2328 → `tools/mobile/check-static-bundle.mjs`                                                                                   |
 | BYOK how-to reworded as configuration                                                                         | Issue 849; c2ee6446e3a294cd4a55cfc148f37f1f01c8dc04                                                                                                                 |
+| 2.1(b) business-model answer written down; China mainland storefront deselected                               | Submission c730ff1d-1a03-40cf-831d-2804513a1830, reviewed 2026-09-12                                                                                                |
 
 **Enforced by tests:** `web/src/lib/state/parentalGate.svelte.test.ts`,
 `web/tests/flows-parental-gate.spec.ts`, `web/tests/flows-parent-center-warning.spec.ts`,

@@ -241,12 +241,38 @@ required floor gate unless a successful run is captured.
       eligible.
 * [ ] **TestFlight**: internal testing needs no review; invite yourself, smoke the production build
       on hardware.
-* [x] **Pricing and Availability**: Free tier, all regions, Public distribution. Leave **Apple
-      Silicon Mac** and **Apple Vision Pro** availability unchecked — visionOS is not allowed for
-      Made for Kids apps, and the Mac build has never been tested. Leave **Game Center** off.
+* [x] **Pricing and Availability**: Free tier, Public distribution, every region **except China
+      mainland** — deselected because the listing names OpenAI, whose service holds no Chinese
+      deep-synthesis permit (see [compliance.md](compliance.md) "5 Legal"). Re-selecting it means
+      re-opening that decision, not just ticking the box. Leave **Apple Silicon Mac** and **Apple
+      Vision Pro** availability unchecked — visionOS is not allowed for Made for Kids apps, and the
+      Mac build has never been tested. Leave **Game Center** off.
 * [ ] Submit for **App Review**. Kids Category review is stricter and slower — in *App Review
       notes*, explain the default gated free AI allowance and the later access-code /
-      bring-your-own-key paths up front.
+      bring-your-own-key paths up front, and include the business-model paragraph below.
+
+#### Business model, for App Review notes
+
+Review asks for this under guideline 2.1(b) whenever the BYOK panel makes it look like the app
+reaches paid content outside in-app purchase (it did on submission
+c730ff1d-1a03-40cf-831d-2804513a1830). Stating it unprompted is cheaper than answering it later;
+`compliance.md` holds the reasoning behind each claim.
+
+> Splotch has no in-app purchases, no subscriptions, no paid tiers and no ads, and we receive no
+> money from any user through any channel — no website checkout, no other storefront, no affiliate
+> or revenue share. Every drawing tool works free and offline with no account.
+>
+> The AI picture feature is included free: each installation receives ten AI creations funded by us.
+> After that allowance a parent may continue in one of two ways, neither of which is a purchase from
+> us — an access code, which we give away and have never sold (a non-expiring one is above), or
+> their own OpenAI API key. A key is created in the parent's own OpenAI developer account and any
+> usage is billed by OpenAI directly to that account; we are not a party to it. The app shows no
+> prices, no purchase button and no call to action to spend money, and its only outbound link on
+> that screen goes to OpenAI's API key management page, behind a parental gate.
+>
+> Neither an access code nor a key unlocks otherwise-hidden content or features. The AI button is
+> visible and usable for every user from first launch; they supply continued image-generation
+> capacity after the free allowance is spent.
 
 ### Kids Category (kids compliance)
 
