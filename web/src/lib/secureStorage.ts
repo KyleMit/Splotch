@@ -3,6 +3,8 @@ import { browser } from '$app/environment';
 import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';
 import { idbKvStore, lazyIdbDatabase } from './idb';
+import { readString, removeKey, writeString } from './storage';
+import { STORAGE_KEYS } from './storageKeys';
 
 // Secure home for the app's client-held secrets — the parent's AI provider API
 // key (BYOK) and managed access code.
@@ -138,7 +140,10 @@ async function webSave(name: string, value: string) {
 
 async function webLoad(name: string) {
   const record = await payloadStore.get(name);
-  if (record === undefined) return null;
+  if (record === undefined) {
+    noteSecretAbsent(name);
+    return null;
+  }
   if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
   const key = await getMasterKey();
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
@@ -177,17 +182,61 @@ async function selectBackend(): Promise<SecureBackend> {
   return { save: webSave, load: webLoad, clear: webClear };
 }
 
+// Which web-vault rows a successful read has found absent, so boot can skip
+// opening the database once every row is accounted for.
+//
+// Recorded *only* from inside webLoad, past the point where a throw would have
+// left. That placement is the safety property: loadSecret turns an IndexedDB
+// open, read or decrypt failure into `null`, so anything deciding "empty" from
+// a returned value cannot tell a missing row from an unreadable one, and would
+// permanently hide a credential that was briefly unreadable. A read that fails
+// records nothing and leaves the vault unknown.
+//
+// Unknown always means "open it": the flag can only ever save a read, never
+// stand in for one.
+const SECRET_NAMES = [API_KEY, MANAGED_ACCESS_CODE];
+
+function absentSecretNames(): string[] {
+  const raw = readString(STORAGE_KEYS.secureVaultEmpty, null);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((name) => typeof name === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function noteSecretAbsent(name: string) {
+  const absent = new Set(absentSecretNames());
+  if (absent.has(name)) return;
+  absent.add(name);
+  writeString(STORAGE_KEYS.secureVaultEmpty, JSON.stringify([...absent]));
+}
+
+function secureVaultKnownEmpty() {
+  const absent = new Set(absentSecretNames());
+  return SECRET_NAMES.every((name) => absent.has(name));
+}
+
 /** Persist a named secret to the platform's secure store. */
 async function saveSecret(name: string, value: string) {
   if (!browser) return;
   if (!value) return clearSecret(name);
   const backend = await selectBackend();
   await backend.save(name, value);
+  removeKey(STORAGE_KEYS.secureVaultEmpty);
 }
 
 /** Read a named secret back, or null if none is stored. Never throws. */
 async function loadSecret(name: string) {
   if (!browser) return null;
+  // Opening the web vault imports `idb` and creates the database. For a device
+  // that has never stored a credential — the overwhelming majority, since AI is
+  // off by default — that is a boot-path chunk fetch and an upgrade transaction
+  // spent on a guaranteed miss. Native keeps its secrets in the platform store,
+  // which this flag says nothing about, so the skip is web-only.
+  if (!isNative() && secureVaultKnownEmpty()) return null;
   try {
     const backend = await selectBackend();
     return await backend.load(name);
@@ -200,6 +249,9 @@ async function loadSecret(name: string) {
 /** Remove a named secret. Best-effort; never throws. */
 async function clearSecret(name: string) {
   if (!browser) return;
+  // Back to unknown rather than to empty: the other secret may still be in
+  // there, and only a read can say.
+  removeKey(STORAGE_KEYS.secureVaultEmpty);
   try {
     const backend = await selectBackend();
     await backend.clear(name);

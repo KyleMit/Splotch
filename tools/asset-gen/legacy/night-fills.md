@@ -197,8 +197,7 @@ blobs in dark mode; opening them into an outlined iris then over-corrected to a 
 that stuck was the canonical form — solid pupil + one enlarged glare, no iris — with the whole
 light+dark+thumb suite regenerated and verified in Combined light and dark.) 3. **Iterate**:
 regenerate any that look off (higher `-t`, or a prompt tweak). Kids' faces and the night background
-are the usual issues. For a page the `⚠ dark
-   outlines` gate flags, the reliable fix is **more
+are the usual issues. For a page the `⚠ dark outlines` gate flags, the reliable fix is **more
 attempts against a stricter gate** so the retry loop keeps hunting for a genuinely-white take
 instead of settling at the boundary:
 
@@ -218,8 +217,7 @@ a pale subject (whose own light fill tempts the model to re-ink thin outlines da
 body) gets a bold white band that survives as white, and the gate has a wider white target to
 sample. `--dilate-lines 2` fixed Creatures' unicorn-wide (a cream unicorn stuck at lineW 138 through
 every temperature) in one pass → lineW 218. Pair it with a low `-t` and the strict gate:
-`... unicorn-wide -t 0.3 --dilate-lines 2 --max-attempts 6
-   --line-white-min 175`. The fill's
+`... unicorn-wide -t 0.3 --dilate-lines 2 --max-attempts 6 --line-white-min 175`. The fill's
 outlines come back a touch bolder than an undilated page's — harmless, since they only ever sit
 (white) under the app's chalk line art. Reach for it only for the stubborn pale outliers; the
 default 0 keeps the input pixel-faithful. 4. **On the user's approval**, ship:

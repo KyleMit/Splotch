@@ -224,14 +224,21 @@ export function applyTiledView(paperView: PaperView) {
 }
 
 function enforceUndoPatchBudget() {
-  for (const command of history.slice(0, -undoableCommands)) {
+  // Index arithmetic rather than negative slice offsets. At undoableCommands
+  // === 0 both negative forms invert: -0 === 0, so slice(0, -0) is the empty
+  // array (dropping nothing, exactly when every patch is outside the undo
+  // window) and slice(-0) is the whole history (so the budget totals patches it
+  // does not own). Neither throws — the budget just silently stops being
+  // enforced. `undoableStart` is the same value repaintTiledRenderer computes.
+  const undoableStart = history.length - undoableCommands;
+  for (const command of history.slice(0, undoableStart)) {
     undoPatches.delete(command);
   }
   const budget =
     liveTiles.reduce((total, tile) => total + tile.width * tile.height * 4, 0) *
     TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE;
   let bytes = history
-    .slice(-undoableCommands)
+    .slice(undoableStart)
     .reduce((total, command) => total + undoPatches.bytes(command), 0);
   while (undoableCommands > MIN_TILED_UNDO_COMMANDS && bytes > budget) {
     const command = history[history.length - undoableCommands];

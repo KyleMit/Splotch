@@ -106,8 +106,7 @@ same suite reported **8,135 / 9,685 / 13,843 ms** — host dependence far larger
 constants rested on.
 
 A divisor derived from one number can divide a real commit breach down to a pass, and
-`Math.max(1,
-…)` means it can only ever move a score in that direction. So the host control is
+`Math.max(1, …)` means it can only ever move a score in that direction. So the host control is
 **measured and reported and not applied**: every run records how slow its host was on the scenario
 the reference describes, which is how the multi-run `macos-latest` distribution gets collected from
 ordinary runs rather than from a special one. Every scenario timing in the artifact carries its

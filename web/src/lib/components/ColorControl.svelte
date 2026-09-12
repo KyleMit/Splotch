@@ -5,12 +5,12 @@
   import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
   import ColorMenu from './ColorMenu.svelte';
   import { colorFoldGesture } from '$lib/actions/colorFoldGesture';
-  import { needsInkOutline } from '$lib/landscapeToolbar';
   import {
     colors,
     isWhite,
     selectPaletteColor,
     selectCustomSwatch,
+    isDarkInk,
   } from '$lib/state/colors.svelte';
   import { selectInkBrush } from '$lib/state/tool.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
@@ -67,7 +67,7 @@
   <button
     id="colorButton"
     class="action-button color-button"
-    class:ink-outlined={needsInkOutline(colors.activeColor)}
+    class:ink-outlined={isDarkInk(colors.activeColor)}
     class:white-stroke={isWhite(colors.activeColor)}
     style:color={colors.activeColor}
     aria-label="Colors"

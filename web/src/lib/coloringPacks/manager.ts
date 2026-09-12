@@ -179,9 +179,13 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
 
 export async function removeDownloadedColoringPacks() {
   window.dispatchEvent(new Event(COLORING_PACK_REMOVE_EVENT));
-  const manifest = await loadManifest();
   const store = await createStore();
-  await store.remove(manifest);
+  // Deliberately not loadManifest(): deleting a local cache namespace is keyed
+  // only by the app version, which is a compile-time constant here, and
+  // parseColoringPackManifest rejects any manifest whose appVersion differs —
+  // so the fetched value could never be anything else. Fetching it anyway made
+  // "Remove downloaded pictures" fail offline.
+  await store.remove({ appVersion: __APP_VERSION__ });
   clearLocalColoringBookRoots();
   clearOverlay();
   resetDownloadedColoringBooks();

@@ -68,8 +68,7 @@ one more identical poll (`SETTLE_STABLE_SAMPLES = 2`). Every host now reads the 
 state.
 
 **Expiry is recorded, never thrown.** `settleHistory` returns
-`{ debug, settled, samples,
-elapsedMs, trace }`; an expired wait returns the last reading with
+`{ debug, settled, samples, elapsedMs, trace }`; an expired wait returns the last reading with
 `settled: false`, the scenario warns and continues into its undo phase, the scenario result carries
 the object as `settle`, and `undo-scenarios.md` reads "Completed; history unsettled after N ms (k
 samples)" in the status column. A scenario is `skipped` — and fingerprints as `<key>:incomplete` —

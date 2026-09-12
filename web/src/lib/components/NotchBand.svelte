@@ -2,7 +2,12 @@
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { isNative, getPlatform } from '$lib/platform';
-  import { applyStatusBar, computeNotchBandState } from '$lib/platform/notchBand';
+  import {
+    createStatusBarApplier,
+    computeNotchBandState,
+    listenForStatusBarReentry,
+    type StatusBarStyle,
+  } from '$lib/platform/notchBand';
   import { layout } from '$lib/state/layout.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { PAPER_COLORS, setThemeColorMeta, updateThemeColorMeta } from '$lib/theme';
@@ -55,14 +60,31 @@
   // plugin proxy, and repeat calls share one module.
   // Android native: hide the status bar in landscape to reclaim the long top
   // edge as canvas; show it again in portrait. null elsewhere = leave it alone.
+  // One memo per mount: `band` is recomputed on every active-colour change, so
+  // without it each palette tap pushes an identical value across the bridge.
+  const statusBar = createStatusBarApplier();
+
+  function pushStatusBar(style: StatusBarStyle | null, hidden: boolean | null) {
+    if (!__IS_CAPACITOR__ || !isNative()) return;
+    import('@capacitor/status-bar')
+      .then(({ StatusBar, Style }) => statusBar.apply(style, hidden, StatusBar, Style))
+      .catch(() => {});
+  }
+
   $effect(() => {
-    const style = band.statusBarStyle;
-    const hidden = band.statusBarHidden;
-    if (__IS_CAPACITOR__ && isNative()) {
-      import('@capacitor/status-bar')
-        .then(({ StatusBar, Style }) => applyStatusBar(style, hidden, StatusBar, Style))
-        .catch(() => {});
-    }
+    pushStatusBar(band.statusBarStyle, band.statusBarHidden);
+  });
+
+  // The memo means the app stops re-asserting, and re-entry is where the
+  // platform may have reset the bar underneath it — Android does not
+  // necessarily preserve a hidden status bar across one. Drop the memo and push
+  // again, since `band` has not changed and the effect will not re-run.
+  $effect(() => {
+    if (!__IS_CAPACITOR__) return;
+    return listenForStatusBarReentry(() => {
+      statusBar.forget();
+      pushStatusBar(band.statusBarStyle, band.statusBarHidden);
+    });
   });
 </script>
 

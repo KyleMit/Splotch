@@ -1,4 +1,4 @@
-import { perceivedBrightness } from '../colorRing';
+import { colorLuminance } from '$lib/design/colorContrast';
 import { BLACK_INK, PALETTE_COLORS, TRIM_ORDER } from '../palette';
 
 export { BLACK_INK, PALETTE_COLORS, TRIM_ORDER };
@@ -60,12 +60,18 @@ export function isWhite(hex: string): boolean {
   return v === WHITE_INK || v === '#fff' || v === 'white';
 }
 
-// Tuned perceptual cutoff: below this, ink needs the light keyline against dark
-// action-button cards (mirrors the --dark-ink-keyline trigger, per ADR-0052).
+// Below this relative luminance, ink is too close to the dark action-button
+// cards to read on its own and takes the light --dark-ink-keyline ring
+// (ADR-0052). WCAG relative luminance rather than perceived brightness,
+// because the question the keyline asks is contrast against that card — the
+// `floatSurface` token in design/tokens.ts owns the surface, and
+// colors.svelte.test.ts measures the claim against it rather than restating a
+// ratio here that the token could drift away from.
 // Deliberately a different mechanism from isWhite's string compare, not an
 // oversight.
-const DARK_INK_LUMINANCE_MAX = 0.15;
+const DARK_INK_RELATIVE_LUMINANCE_MAX = 0.14;
 
 export function isDarkInk(hex: string): boolean {
-  return perceivedBrightness(hex) < DARK_INK_LUMINANCE_MAX;
+  const luminance = colorLuminance(hex);
+  return luminance !== null && luminance < DARK_INK_RELATIVE_LUMINANCE_MAX;
 }

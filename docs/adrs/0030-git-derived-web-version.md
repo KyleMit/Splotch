@@ -57,8 +57,7 @@ docs/tooling-only commit, so repository `HEAD` is not always the deployed commit
 
 **This relies on git history + tags at build time.** Netlify's deploy is **not** a shallow clone —
 it is a *blobless* clone (`git clone --filter=blob:none`), which carries the full commit graph and
-defers only file blobs, so `git
-rev-parse`/`git rev-list` work. But the blobless clone does **not**
+defers only file blobs, so `git rev-parse`/`git rev-list` work. But the blobless clone does **not**
 fetch tags (verified: an early deploy rendered `1.2.0+c5707ce`, the SHA fallback, because
 `git describe` found no tag). The root `netlify.toml` build command therefore runs
 `git fetch --tags --force || true` before `npm run build` so the release tag is present and

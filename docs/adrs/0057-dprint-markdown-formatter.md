@@ -37,8 +37,12 @@ and encoded in both tools' configs:
 
 * `dprint.json` (repo root): markdown options above; `includes` is `**/*.md` only, with `excludes`
   mirroring the gitignored trees so dprint's scope is exactly the tracked Markdown files. The
-  `typescript`/`json` wasm plugins are loaded solely to format fenced `` ```js/ts/json `` blocks
+  `typescript`/`json` wasm plugins are loaded solely to format fenced ` ```js/ts/json ` blocks
   inside docs (`quoteStyle: preferSingle` to match Prettier's style for real source).
+* `markdown.wrapCodeSpans: false` keeps every code span on one source line. Spans here hold
+  commands, paths, and flags that tests, agents, and people grep for and copy out of the raw
+  Markdown; plugin 0.23 began breaking them at spaces like prose, so the repo held at 0.22 until
+  0.24 added this option (issue 1634). A span longer than the line width sits on a line of its own.
 * Plugins are referenced as local `node_modules/@dprint/*/plugin.wasm` paths, version-pinned through
   `package.json` like every other dev tool — no plugin-URL fetch at runtime, works offline in CI.
 * `.prettierignore` keeps `*.md`, now marked as dprint-owned rather than "for now."

@@ -72,6 +72,20 @@ function effectiveLuminance(color: string, ground: string): number | null {
 }
 
 /**
+ * The relative luminance of an opaque color, 0 (black) to 1 (white). Null when
+ * the color is a form `parseColor` does not read.
+ *
+ * Exported for the dark-ink keyline trigger (`isDarkInk`), which asks how a
+ * picked ink reads against the dark action-button cards. Alpha is ignored —
+ * every color a child can pick is opaque; a translucent one belongs in
+ * `colorContrast`, which composites it over its ground first.
+ */
+export function colorLuminance(color: string): number | null {
+  const parsed = parseColor(color);
+  return parsed ? relativeLuminance(parsed) : null;
+}
+
+/**
  * The contrast between two colors as rendered on `ground` (which is also the
  * ground a translucent one composites over). Returns 0 when either is
  * unparseable, so a caller comparing against a floor fails rather than passes.

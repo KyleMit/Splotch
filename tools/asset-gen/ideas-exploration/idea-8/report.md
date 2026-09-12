@@ -13,9 +13,9 @@ palette reference must be the **punched** light fill, not the raw).
 `code/score-hue-coherence.mjs` (ran from `tools/asset-gen/`, imports `lib/paths.mjs` +
 `lib/morphology.mjs`):
 
-1. Segment fillable regions from the PEN outline at 512 px working width: ink = luma < 128, regions
-   = 4-connected components of non-ink; the border-connected component is the open background and is
-   **excluded** (day-sky → night-sky is an intended flip).
+1. Segment fillable regions from the PEN outline at 512 px working width: ink = luma < 128,
+   regions = 4-connected components of non-ink; the border-connected component is the open
+   background and is **excluded** (day-sky → night-sky is an intended flip).
 2. Sample only pixels ≥ 2 px clear of ink (dilated ink mask) to dodge anti-aliased line
    contamination and the night raw's white-line glow.
 3. Per region, per image (light raw vs night raw from `fill-src/`): chroma-weighted circular mean

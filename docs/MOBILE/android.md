@@ -158,8 +158,7 @@ storage, or the offline AI flow — not needed for canvas/perf work.
   Harmless on a throwaway test device; warn the user if it's their real phone.
 
 To preview the dev server on a phone that isn't on your local network, use an outbound tunnel.
-Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel
---url http://localhost:5173`, or
+Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel --url http://localhost:5173`, or
 `ngrok http 5173`). From a Claude Code cloud session the egress is a TLS-terminating, HTTP-only MITM
 gateway and those tools fail — the working path is a self-hosted chisel reverse tunnel. See
 **[docs/CLOUD/Claude.md](../CLOUD/Claude.md)** and

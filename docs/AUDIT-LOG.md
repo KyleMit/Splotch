@@ -414,8 +414,7 @@ pin. No eslint `max-lines` cap was raised and no ratchet baseline widened across
 one ratchet edit lowered a raw-hex baseline to 0 after a dead declaration was removed. Entry
 accounting reconciles exactly: 473 − 37 == 436 == `pop.mjs --count`, with commit-derived deferral
 and drop counts matching the run logs independently, and `capture` reporting
-`skipped 31 already
-posted` against 31 fixes. Four `## Source:` sections were emptied and removed in
+`skipped 31 already posted` against 31 fixes. Four `## Source:` sections were emptied and removed in
 the closeout.
 
 ## 2026-08-05 · burn-down-audits (run 1)

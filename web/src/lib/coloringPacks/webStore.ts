@@ -137,10 +137,10 @@ export function createWebColoringPackStore(): ColoringPackStore {
     // Web transfers abort through the AbortSignal install() already receives.
     async cancel() {},
 
-    async remove(manifest) {
+    async remove(target) {
       await Promise.all(
         COLORING_PACK_RESOLUTIONS.map((resolution) =>
-          caches.delete(coloringPackCacheName({ ...manifest, resolution }))
+          caches.delete(coloringPackCacheName({ ...target, resolution }))
         )
       );
     },

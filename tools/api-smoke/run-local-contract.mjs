@@ -17,9 +17,14 @@ import { check, fatal, summarize, json } from '../lib/smoke.mjs';
 import { adminClient } from './lib/admin-client.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
-// so the absence assertions below name the same headers the hook stamps — a new
-// security header is covered here the moment it's added to that module.
-import { SECURITY_HEADERS } from '../../web/src/lib/server/securityHeaders.ts';
+// so the assertions below name the same headers the hook stamps: /api/* takes
+// API_RESPONSE_HEADERS and must not carry the rest, which is checked by
+// subtraction — a new security header is covered the moment it's added to that
+// module, whichever side of the split it lands on.
+import {
+  API_RESPONSE_HEADERS,
+  SECURITY_HEADERS,
+} from '../../web/src/lib/server/securityHeaders.ts';
 import { MAX_IMAGE_BYTES } from '../../web/src/lib/server/generateImagePolicy.ts';
 import { tinyPngBuffer } from '../../web/tests/fixtures.ts';
 import { REPORT_HONEYPOT_FIELD } from '../../web/src/lib/report.ts';
@@ -123,14 +128,25 @@ async function checkAdminAuth(admin) {
 async function checkCorsContract(base, noAuth) {
   // The native WebViews call /api/* from a foreign origin, so the preflight is
   // answered before any route logic and every /api/* response carries the CORS
-  // set. Neither may carry the SSR security headers: `handleSecurityHeaders`
-  // skips /api, and a preflight short-circuits the handle sequence before it
-  // runs at all.
+  // set. The security headers split: a non-OPTIONS response takes
+  // API_RESPONSE_HEADERS (nosniff — the part that means something on a
+  // non-document body) and none of the rest, while a preflight short-circuits
+  // the handle sequence before `handleSecurityHeaders` runs at all and so takes
+  // neither. The remainder is named by subtraction below, so a header added to
+  // SECURITY_HEADERS without being deliberately admitted to the API subset
+  // fails here immediately.
   const wrongCors = (res) =>
     Object.entries(CORS_HEADERS)
       .filter(([name, value]) => res.headers.get(name) !== value)
       .map(([name]) => `${name}: ${res.headers.get(name)}`);
-  const leakedSecurity = (res) => Object.keys(SECURITY_HEADERS).filter((h) => res.headers.has(h));
+  const documentOnlyHeaders = Object.keys(SECURITY_HEADERS).filter(
+    (h) => !(h in API_RESPONSE_HEADERS)
+  );
+  const leakedSecurity = (res) => documentOnlyHeaders.filter((h) => res.headers.has(h));
+  const missingApiSecurity = (res) =>
+    Object.entries(API_RESPONSE_HEADERS)
+      .filter(([name, value]) => res.headers.get(name) !== value)
+      .map(([name]) => `${name}: ${res.headers.get(name)}`);
 
   // OPTIONS returns before `resolve()`, so this spends no rate-limit budget —
   // which is what lets it sit ahead of the burst checks further down.
@@ -139,7 +155,10 @@ async function checkCorsContract(base, noAuth) {
     'OPTIONS /api/* → 204 with the CORS set and no security headers',
     preflight.status === 204 &&
       wrongCors(preflight).length === 0 &&
-      leakedSecurity(preflight).length === 0,
+      leakedSecurity(preflight).length === 0 &&
+      // The preflight short-circuits ahead of the header hook, so it skips the
+      // API subset as well; a 204 with no body has nothing to sniff.
+      Object.keys(API_RESPONSE_HEADERS).every((h) => !preflight.headers.has(h)),
     `got ${preflight.status}, wrong ${JSON.stringify(wrongCors(preflight))}, leaked ${JSON.stringify(leakedSecurity(preflight))}`
   );
 
@@ -147,9 +166,11 @@ async function checkCorsContract(base, noAuth) {
   // stamped after `resolve()`, so every /api/* response carries them whatever
   // its status.
   check(
-    'non-OPTIONS /api/* → CORS set stamped, no security headers',
-    wrongCors(noAuth).length === 0 && leakedSecurity(noAuth).length === 0,
-    `wrong ${JSON.stringify(wrongCors(noAuth))}, leaked ${JSON.stringify(leakedSecurity(noAuth))}`
+    'non-OPTIONS /api/* → CORS set stamped, nosniff present, document-only headers absent',
+    wrongCors(noAuth).length === 0 &&
+      leakedSecurity(noAuth).length === 0 &&
+      missingApiSecurity(noAuth).length === 0,
+    `wrong ${JSON.stringify(wrongCors(noAuth))}, leaked ${JSON.stringify(leakedSecurity(noAuth))}, missing ${JSON.stringify(missingApiSecurity(noAuth))}`
   );
 }
 

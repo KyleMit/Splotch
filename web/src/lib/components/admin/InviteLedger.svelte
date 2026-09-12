@@ -12,12 +12,15 @@
   // open.
   let {
     invites,
+    usageAvailable,
     busy,
     copied,
     oncopy,
     onremove,
   }: {
     invites: Invite[];
+    /** `false` = the tally backend is unreachable, so the usage columns are hidden. */
+    usageAvailable: boolean;
     busy: boolean;
     /** The copyKey of the action showing "Copied!", or ''. */
     copied: string;
@@ -35,11 +38,13 @@
     expandedToken = expandedToken === token ? null : token;
   }
 
-  // The native front door has no usage tracking (every invite's `usage` is
-  // undefined there — see the Invite doc in AdminConsole), so the ledger
-  // drops the Generations / Last used columns entirely rather than labelling
-  // permanently blank cells.
-  let showUsage = $derived(invites.some((invite) => invite.usage !== undefined));
+  // Told, not inferred. A ledger where no code has been redeemed yet looks
+  // exactly like one whose tally backend is down, and only the second is worth
+  // hiding over — AdminConsole shows the operator a banner for it. This gates
+  // the phone-width summary as well as the wide columns: during an outage every
+  // row's `usage` is null, which the summary would otherwise render as the
+  // flatly wrong "Never used".
+  let showUsage = $derived(usageAvailable);
 </script>
 
 {#if invites.length === 0}
@@ -70,7 +75,7 @@
         <div role="row" class="invite" class:open={expandedToken === invite.token}>
           <div role="cell" class="invite-info">
             <span class="token">{invite.token}</span>
-            {#if invite.usage !== undefined}
+            {#if showUsage}
               {#if invite.usage}
                 <span class="usage-line" title={usageDetail(invite.usage)}>
                   <strong>{invite.usage.count}</strong>
@@ -90,12 +95,9 @@
                 {invite.usage.count}
               </span>
               <span role="cell" class="cell-last">{timeAgo(invite.usage.lastUsed)}</span>
-            {:else if invite.usage === null}
+            {:else}
               <span role="cell" class="cell-gens cell-none">—</span>
               <span role="cell" class="cell-last cell-none">Never used</span>
-            {:else}
-              <span role="cell" class="cell-gens"></span>
-              <span role="cell" class="cell-last"></span>
             {/if}
           {/if}
 

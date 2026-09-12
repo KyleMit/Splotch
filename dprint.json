@@ -5,7 +5,10 @@
     "textWrap": "always",
     "emphasisKind": "asterisks",
     "strongKind": "asterisks",
-    "unorderedListKind": "asterisks"
+    "unorderedListKind": "asterisks",
+    // Code spans hold commands, paths, and flags that are grepped for and copied out of the raw
+    // source; a span broken across lines no longer matches what it names (issue 1634).
+    "wrapCodeSpans": false
   },
   "typescript": {
     "quoteStyle": "preferSingle"

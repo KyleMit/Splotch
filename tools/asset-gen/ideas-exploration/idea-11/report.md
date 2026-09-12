@@ -102,8 +102,7 @@ untouched).
 
 ## 4. Live demo — retries can hunt again (1 Gemini call)
 
-`node tools/asset-gen/gen-coloring-chalk.mjs shapes/circle-tall --force
---max-attempts 3` with the
+`node tools/asset-gen/gen-coloring-chalk.mjs shapes/circle-tall --force --max-attempts 3` with the
 fix active: the **first attempt passed every gate** (keep 99.1%, localKeep 90.8%, white 0.2%,
 invented 0, no warnings). One Gemini call used. During the 2026-07 migration this page structurally
 could not pass (its best-ranked candidate was hand-shipped at localKeep 49.7% after burning

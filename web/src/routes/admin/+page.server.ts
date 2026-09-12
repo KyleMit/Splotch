@@ -72,6 +72,7 @@ export const load: PageServerLoad = async ({ cookies, url, setHeaders }) => {
       authed: false,
       persistent: ASSUME_PERSISTENT,
       invites: [] satisfies Invite[],
+      usageAvailable: true,
       freeGrantStats: null,
     };
   }
@@ -87,9 +88,12 @@ export const load: PageServerLoad = async ({ cookies, url, setHeaders }) => {
   ]);
   const invites = buildInvites(tokens, url.origin).map((invite) => ({
     ...invite,
-    usage: usage === null ? undefined : (usage[invite.token] ?? null),
+    usage: usage?.[invite.token] ?? null,
   }));
-  return { authed: true, persistent, invites, freeGrantStats };
+  // Carried rather than inferred from the invites: "no tally for any code" and
+  // "the tally backend is down" produce identical rows, and only the second is
+  // worth telling the operator about.
+  return { authed: true, persistent, invites, usageAvailable: usage !== null, freeGrantStats };
 };
 
 // The `add`/`remove` actions differ only in which core mutation they call and

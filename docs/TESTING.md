@@ -275,8 +275,7 @@ npm run test:e2e -- flows-undo-persistence.spec.ts -g "the undo button enables o
 
 For ad-hoc validation of a single change, filter through the npm script — **not** raw
 `npx playwright test` from the repo root. The config + `baseURL` live in `web/`, so raw `npx` from
-the root navigates to an empty `baseURL` (`Cannot navigate to
-invalid URL`) and also loses the
+the root navigates to an empty `baseURL` (`Cannot navigate to invalid URL`) and also loses the
 Chromium fallback (cryptic `chrome-headless-shell` error in cloud). `node tools/run-web-tool.mjs`
 sets the `web/` cwd and Chromium path for you, and forwards everything after `--` to Playwright.
 

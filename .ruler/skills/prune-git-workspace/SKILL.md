@@ -84,8 +84,7 @@ cannot be excluded blind.
 
 ### Judgment pass (agent)
 
-Everything left is a `keep` row with its reason: `PR #N closed unmerged`, `N unique commits, no
-PR`,
+Everything left is a `keep` row with its reason: `PR #N closed unmerged`, `N unique commits, no PR`,
 or `PR #N merged but the branch carries changes its merge commit does not`. Group them by reason,
 then for each branch:
 

@@ -54,3 +54,49 @@ describe.each([
     }
   });
 });
+
+// The tally backend being down and nobody having redeemed a code produce the
+// same empty cells, so the difference has to be said out loud rather than
+// inferred from the rows.
+// Only the column header renders this; the banner's prose says "the Generations
+// and Last used columns", which has no closing angle bracket before the word.
+const COLUMN_HEADER = '>Generations<';
+
+describe('AdminConsole when the generation tally is unavailable', () => {
+  const invites = [
+    { token: 'managed-code', url: 'https://splotch.art/?code=managed-code', usage: null },
+  ];
+
+  function servedConsole(usageAvailable: boolean) {
+    return render(AdminConsole, {
+      props: { ...handlers, authed: true, invites, persistent: true, usageAvailable },
+    }).body;
+  }
+
+  it('warns the operator, and hides the columns that have no data', () => {
+    const body = servedConsole(false);
+
+    expect(body).toContain('Generation tallies are unavailable');
+    // The column header specifically — the banner copy names the columns too.
+    expect(body).not.toContain(COLUMN_HEADER);
+  });
+
+  // The phone layout renders a per-row summary instead of the columns. It is a
+  // separate branch, and during an outage every row's usage is null — so left
+  // ungated it labels every code "Never used", which is flatly wrong and
+  // contradicts the banner directly above it.
+  it('does not claim a code was never used while the tally is down', () => {
+    expect(servedConsole(false)).not.toContain('Never used');
+  });
+
+  it('still says so on a code that genuinely has no generations', () => {
+    expect(servedConsole(true)).toContain('Never used');
+  });
+
+  it('says nothing and keeps the columns when the tally is reachable', () => {
+    const body = servedConsole(true);
+
+    expect(body).not.toContain('Generation tallies are unavailable');
+    expect(body).toContain(COLUMN_HEADER);
+  });
+});

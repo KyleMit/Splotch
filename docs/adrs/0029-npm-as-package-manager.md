@@ -39,8 +39,7 @@ an identical post-step for all three):
 | Top-level `node_modules` layout                 | flat  | **symlinked** | flat   |
 
 * **pnpm** — fastest cold/warm of the npm-compatible options and disk-efficient, but its default
-  symlinked `node_modules` is a known Capacitor footgun: `cap
-  sync` reads plugins out of a flat
+  symlinked `node_modules` is a known Capacitor footgun: `cap sync` reads plugins out of a flat
   tree, so pnpm needs `node-linker=hoisted`, which gives back much of the speed/disk advantage.
   Wrong tradeoff for a Capacitor app.
 * **bun** — dramatically fastest (≈9× cold, ≈33× warm) and produces a flat `node_modules`

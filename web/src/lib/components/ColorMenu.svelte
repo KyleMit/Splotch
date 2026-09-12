@@ -6,9 +6,8 @@
     COLOR_MENU_GAP_PX,
     COLOR_MENU_PADDING_PX,
     landscapeMenuColors,
-    needsInkOutline,
   } from '$lib/landscapeToolbar';
-  import { colors, themedSwatchColor } from '$lib/state/colors.svelte';
+  import { colors, isDarkInk, themedSwatchColor } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { toolState } from '$lib/state/tool.svelte';
 
@@ -45,7 +44,7 @@
     {@const paint = themedSwatchColor(hex, dark)}
     <button
       class="color-option"
-      class:outlined={needsInkOutline(paint)}
+      class:outlined={isDarkInk(paint)}
       style:background={paint}
       aria-label={paint === hex ? label : 'White'}
       aria-pressed={toolState.brush !== 'eraser' && colors.activeSwatch === hex}

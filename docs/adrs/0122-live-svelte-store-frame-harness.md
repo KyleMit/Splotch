@@ -90,8 +90,7 @@ the hero art, opening dialogs, seeding settings), which no live page can replay.
 The frame design system moves into the app as the **`/dev/store-frames` harness**
 (`web/src/routes/dev/store-frames/`), gated like every other dev route by `routes/dev/+layout.ts`
 (404 in production). The runtime gate alone is not enough for the native bundle —
-`prerender =
-false` drops a route's HTML but its client chunks still ship — so the `dev` route tree
+`prerender = false` drops a route's HTML but its client chunks still ship — so the `dev` route tree
 joins `web/nativeExcludedRoutes.ts`: the Capacitor build blanks every `routes/dev/**` client module,
 and `tools/mobile/check-static-bundle.mjs` scans the export for a sentinel derived from the store
 pages' own copy. The generator keeps the capture stage and shrinks its render stage to

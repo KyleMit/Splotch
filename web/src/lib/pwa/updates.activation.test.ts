@@ -160,6 +160,45 @@ describe('checkForUpdates — silent activation when the page is already current
     }
   });
 
+  it('still decides the worker when the waiting slot fills after statechange', async () => {
+    vi.useFakeTimers();
+    try {
+      const installingWorker = makeWorker();
+      // No waiting worker yet: the spec populates registration.waiting on a task
+      // queued separately from the one that fires statechange, so the slot is
+      // legitimately empty when the listener runs.
+      const reg = makeRegistration({
+        installing: installingWorker as unknown as ServiceWorker,
+      });
+      stubServiceWorker(reg);
+      // Same version deployed as the page is running: the silent-activation
+      // path this suite covers.
+      stubDeployedVersion(CURRENT_VERSION);
+
+      await pwaUpdates.checkForUpdates();
+
+      // The one-shot statechange listener fires with waiting still null.
+      registeredListener(
+        installingWorker.addEventListener,
+        'statechange'
+      )(new Event('statechange'));
+
+      // Only afterwards does the browser move the worker into the waiting slot.
+      Object.defineProperty(reg, 'waiting', {
+        value: installingWorker,
+        configurable: true,
+      });
+      await vi.advanceTimersByTimeAsync(WAITING_SETTLE_MS);
+
+      // The settle delay is what this worker's decision depends on: the
+      // listener is spent, so nothing else will revisit it before the next
+      // hourly check.
+      expect(installingWorker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('resolves cleanly when there is no active registration', async () => {
     stubServiceWorker(undefined);
 

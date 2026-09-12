@@ -103,10 +103,8 @@ Round one, no filesystem overrides (12.5 s, two turns, $0.04 of plan usage):
 | `git commit --allow-empty -q`               | **succeeded** — see below                                      |
 
 Round two, following that commit: `git update-ref` in the canonical checkout succeeded,
-`touch
-/Users/kylemit/Code/Splotch/.git/rival-probe-file` succeeded, and
-`git push /Users/kylemit/Code/Splotch
-HEAD:refs/heads/rival-sandbox-push` created a branch there
+`touch /Users/kylemit/Code/Splotch/.git/rival-probe-file` succeeded, and
+`git push /Users/kylemit/Code/Splotch HEAD:refs/heads/rival-sandbox-push` created a branch there
 (all removed afterwards). Claude's sandbox resolves a linked worktree's gitdir and grants write
 access to the **whole** canonical `.git`, which Codex's sandbox refuses. A Claude rival confined
 only by the defaults can write refs and objects into the shared repository.
@@ -122,8 +120,7 @@ the launcher would have to compute both from the repo root. Also observed: the s
 one probe outright as a credential-reading trap before the sandbox was consulted, which is a model
 judgement the design cannot rely on but should not be surprised by. The Claude-side launcher does
 **not** get the flag in this pilot; it is refused with
-`the claude rival has no workspace-write
-launch path`.
+`the claude rival has no workspace-write launch path`.
 
 ## Probe 4 — the hosted first-party reviewers
 

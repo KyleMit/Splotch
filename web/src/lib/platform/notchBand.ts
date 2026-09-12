@@ -158,24 +158,82 @@ export function statusBarHiddenFor(input: NotchBandInput): boolean | null {
   return input.orientation === 'landscape';
 }
 
-// Plugin-call glue for the native status-bar effect in NotchBand.svelte: the
-// `StatusBarStyle` → `Style` enum translation and the hide/show dispatch, both
-// injected (`bar`, `statusBarStyleEnum`) so this stays a pure function the
-// component's dynamic-import call site drives.
-export function applyStatusBar(
-  style: StatusBarStyle | null,
-  hidden: boolean | null,
-  bar: Pick<StatusBarPlugin, 'setStyle' | 'hide' | 'show'>,
-  statusBarStyleEnum: { Dark: Style; Light: Style }
-): void {
-  if (style) {
-    bar
-      .setStyle({ style: style === 'DARK' ? statusBarStyleEnum.Dark : statusBarStyleEnum.Light })
-      .catch(() => {});
-  }
-  if (hidden !== null) {
-    (hidden ? bar.hide() : bar.show()).catch(() => {});
-  }
+export interface StatusBarApplier {
+  /** Dispatches only what differs from the last applied pair. */
+  apply(
+    style: StatusBarStyle | null,
+    hidden: boolean | null,
+    bar: Pick<StatusBarPlugin, 'setStyle' | 'hide' | 'show'>,
+    statusBarStyleEnum: { Dark: Style; Light: Style }
+  ): void;
+  /** Drops the memo, so the next apply re-asserts both values. */
+  forget(): void;
+}
+
+/**
+ * Plugin-call glue for the native status-bar effect in NotchBand.svelte: the
+ * `StatusBarStyle` → `Style` enum translation and the hide/show dispatch, both
+ * injected (`bar`, `statusBarStyleEnum`) so this stays drivable from the
+ * component's dynamic-import call site.
+ *
+ * It remembers the last pair it dispatched because the state feeding it is
+ * recomputed on every active-colour change, while the values themselves almost
+ * never move: `statusBarStyleForBand` collapses the whole palette to
+ * 'LIGHT' | 'DARK', and `statusBarHiddenFor` answers from the platform and
+ * orientation alone. Without the memo, every palette tap — the app's most
+ * common interaction, and the one that must not compete with the stroke path —
+ * pushes an identical value across the Capacitor bridge.
+ *
+ * A factory rather than module state so each mount, and each test, gets its own
+ * memo. `forget()` exists because the memo stops the app re-asserting: the
+ * caller must drop it whenever the platform may have reset the bar underneath
+ * (an app resume, where Android does not necessarily preserve a hidden bar).
+ */
+/**
+ * Subscribes `onReentry` to every way this app comes back to the foreground,
+ * returning the teardown.
+ *
+ * Both events are needed, and Android is why: Capacitor's Android WebView stays
+ * `visibilityState === 'visible'` while its Activity is backgrounded, and
+ * reports re-entry through Cordova's document-level `resume` instead — so a
+ * visibility-only listener never fires on the one platform whose status bar is
+ * actually hidden. engineListeners.ts subscribes to both for the same reason.
+ */
+export function listenForStatusBarReentry(onReentry: () => void): () => void {
+  const onVisibility = () => {
+    if (document.visibilityState === 'visible') onReentry();
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+  document.addEventListener('resume', onReentry);
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibility);
+    document.removeEventListener('resume', onReentry);
+  };
+}
+
+export function createStatusBarApplier(): StatusBarApplier {
+  let lastStyle: StatusBarStyle | null | undefined;
+  let lastHidden: boolean | null | undefined;
+  return {
+    apply(style, hidden, bar, statusBarStyleEnum) {
+      if (style && style !== lastStyle) {
+        lastStyle = style;
+        bar
+          .setStyle({
+            style: style === 'DARK' ? statusBarStyleEnum.Dark : statusBarStyleEnum.Light,
+          })
+          .catch(() => {});
+      }
+      if (hidden !== null && hidden !== lastHidden) {
+        lastHidden = hidden;
+        (hidden ? bar.hide() : bar.show()).catch(() => {});
+      }
+    },
+    forget() {
+      lastStyle = undefined;
+      lastHidden = undefined;
+    },
+  };
 }
 
 export function computeNotchBandState(input: NotchBandInput): NotchBandState {

@@ -170,8 +170,7 @@ conversation.
 ## Options
 
 `--cwd <dir>` (defaults to the current directory; must be inside a git worktree),
-`--model
-sonnet|opus` (defaults to `opus`), and `--effort low|medium|high` (defaults to `high`).
+`--model sonnet|opus` (defaults to `opus`), and `--effort low|medium|high` (defaults to `high`).
 
 ## Handling the findings
 

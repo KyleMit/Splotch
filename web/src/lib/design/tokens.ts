@@ -295,7 +295,10 @@ export interface ThemeTokens {
    * The drawing paper. The handmade-paper texture webp is a LOW-ALPHA grain
    * layer, so one texture serves both themes — only the color beneath it
    * changes. JS consumers (canvas export fill, Notch Band eraser color) read
-   * this via PAPER_COLORS in lib/theme.ts, which derives from these objects.
+   * this via PAPER_COLORS in lib/theme.ts, which writes the value literally
+   * rather than importing this map — it is on the startup path, and the import
+   * edge would ship every token with it. theme.tokens.test.ts guards the copy
+   * against this source (ADR-0071's 2026-09 amendment).
    */
   paper: string;
   /** the flat tone behind the rotation-locked sheet */

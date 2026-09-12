@@ -13,6 +13,7 @@ import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 import { devHarnessEnabled } from '$lib/devHarness';
 import {
   allowSameOriginFraming,
+  API_RESPONSE_HEADERS,
   FRAMEABLE_ROUTE,
   securityHeadersFor,
 } from '$lib/server/securityHeaders';
@@ -76,8 +77,18 @@ const handleSecurityHeaders: Handle = async ({ event, resolve }) => {
   // prerender the static pages, but those are served from the CDN with the
   // netlify.toml headers — the function only serves SSR routes like `/admin`,
   // and those are the responses that need this set.
-  if (!building && !event.url.pathname.startsWith('/api/')) {
-    applyHeaders(response, securityHeadersFor(event.url.pathname));
+  // /api/* takes only the subset that means anything on a non-document
+  // response (API_RESPONSE_HEADERS); a JSON or image body has nothing for a CSP
+  // or a referrer policy to act on. The OPTIONS preflight returns before
+  // `resolve()` and so reaches neither set, which is correct — a 204 with no
+  // body has nothing to sniff.
+  if (!building) {
+    applyHeaders(
+      response,
+      event.url.pathname.startsWith('/api/')
+        ? API_RESPONSE_HEADERS
+        : securityHeadersFor(event.url.pathname)
+    );
   }
 
   if (devHarnessEnabled() && event.url.pathname === FRAMEABLE_ROUTE) {

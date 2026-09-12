@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SECURITY_HEADERS, securityHeadersFor } from './securityHeaders';
+import { API_RESPONSE_HEADERS, SECURITY_HEADERS, securityHeadersFor } from './securityHeaders';
 
 // The security headers live in two places that must agree: this module (stamped
 // onto SSR responses by hooks.server.ts) and the root netlify.toml
@@ -97,4 +97,18 @@ describe('securityHeadersFor', () => {
       expect(securityHeadersFor(pathname)).toEqual(SECURITY_HEADERS);
     }
   );
+});
+
+describe('API_RESPONSE_HEADERS', () => {
+  it('carries nosniff, the one header that means anything on a non-document response', () => {
+    expect(Object.keys(API_RESPONSE_HEADERS)).toEqual(['X-Content-Type-Options']);
+  });
+
+  // Derived, never restated: an API response must not claim a different value
+  // for a header the rest of the site already defines.
+  it('takes every value from the site-wide set', () => {
+    for (const [name, value] of Object.entries(API_RESPONSE_HEADERS)) {
+      expect(value).toBe(SECURITY_HEADERS[name]);
+    }
+  });
 });

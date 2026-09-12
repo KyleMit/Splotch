@@ -28,7 +28,7 @@ vi.mock('./nativeStore', () => ({
   }),
 }));
 
-import { createColoringPackDownloader } from './manager';
+import { createColoringPackDownloader, removeDownloadedColoringPacks } from './manager';
 import { coloringPackState, resetDownloadedColoringBooks } from '$lib/state/coloringPacks.svelte';
 
 const manifest = {
@@ -162,5 +162,22 @@ describe('coloring-pack downloader policy boundaries', () => {
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
     downloader.stop();
+  });
+});
+
+describe('removeDownloadedColoringPacks', () => {
+  // Reclaiming space is exactly what a device is asked for in a degraded state,
+  // so the network failing must not stop it. Before this was keyed off
+  // __APP_VERSION__ the path fetched the manifest first and surfaced a failure.
+  it('clears the packs while every network request fails', async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(removeDownloadedColoringPacks()).resolves.toBeUndefined();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mocks.remove).toHaveBeenCalledWith({ appVersion: __APP_VERSION__ });
   });
 });
