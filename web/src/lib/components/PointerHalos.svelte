@@ -35,6 +35,10 @@
   // coalesced path below.
   function updateEraserCursor(e: PointerEvent) {
     if (toolState.brush !== 'eraser') return;
+    // Supersede a move still waiting on the frame: it is older than this event,
+    // so letting the flush apply it afterwards would snap the bubble back to
+    // where the finger was before.
+    eraserPendingMove = false;
     // The canvas fills the container, so its cached client rect shares the
     // container's origin — reuse it instead of forcing another reflow per move.
     const rect = getCanvasRect();

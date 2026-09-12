@@ -446,6 +446,43 @@ test('the eraser bubble writes at most one position per painted frame', async ({
   expect(measured.transform).toContain(`translate3d(${measured.lastX}px`);
 });
 
+// Moves are coalesced onto the frame while enter and press write immediately,
+// so the two paths can interleave: a move queued just before a press is older
+// than the press, and applying it afterwards would snap the bubble back to
+// where the finger was before it landed.
+test('a press supersedes an eraser move still waiting on the frame', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await pickBrush(page, '#eraserButton');
+  await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
+
+  const canvas = page.locator('#drawingCanvas');
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + 50, box.y + 50);
+  const bubble = page.locator('.eraser-bubble');
+  await expect(bubble).toHaveCount(1);
+
+  const transform = await page.evaluate(async () => {
+    const canvasEl = document.querySelector('#drawingCanvas') as HTMLCanvasElement;
+    const rect = canvasEl.getBoundingClientRect();
+    const at = (type: string, offset: number) =>
+      canvasEl.dispatchEvent(
+        new PointerEvent(type, {
+          clientX: rect.left + offset,
+          clientY: rect.top + offset,
+          isPrimary: true,
+        })
+      );
+    // One task, so the press lands while the move is still queued.
+    at('pointermove', 100);
+    at('pointerdown', 200);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return (document.querySelector('.eraser-bubble') as HTMLElement).style.transform;
+  });
+
+  expect(transform).toContain('translate3d(200px');
+});
+
 // A flyout closing under a keyboard user's focus has to hand that focus back to
 // the trigger: the focused option is about to be display:none, which drops focus
 // on <body>. Both close paths that can fire from inside the menu get their own
