@@ -40,7 +40,10 @@
 
   // Told, not inferred. A ledger where no code has been redeemed yet looks
   // exactly like one whose tally backend is down, and only the second is worth
-  // hiding columns over — AdminConsole shows the operator a banner for it.
+  // hiding over — AdminConsole shows the operator a banner for it. This gates
+  // the phone-width summary as well as the wide columns: during an outage every
+  // row's `usage` is null, which the summary would otherwise render as the
+  // flatly wrong "Never used".
   let showUsage = $derived(usageAvailable);
 </script>
 
@@ -72,7 +75,7 @@
         <div role="row" class="invite" class:open={expandedToken === invite.token}>
           <div role="cell" class="invite-info">
             <span class="token">{invite.token}</span>
-            {#if invite.usage !== undefined}
+            {#if showUsage}
               {#if invite.usage}
                 <span class="usage-line" title={usageDetail(invite.usage)}>
                   <strong>{invite.usage.count}</strong>
@@ -92,12 +95,9 @@
                 {invite.usage.count}
               </span>
               <span role="cell" class="cell-last">{timeAgo(invite.usage.lastUsed)}</span>
-            {:else if invite.usage === null}
+            {:else}
               <span role="cell" class="cell-gens cell-none">—</span>
               <span role="cell" class="cell-last cell-none">Never used</span>
-            {:else}
-              <span role="cell" class="cell-gens"></span>
-              <span role="cell" class="cell-last"></span>
             {/if}
           {/if}
 

@@ -81,6 +81,18 @@ describe('AdminConsole when the generation tally is unavailable', () => {
     expect(body).not.toContain(COLUMN_HEADER);
   });
 
+  // The phone layout renders a per-row summary instead of the columns. It is a
+  // separate branch, and during an outage every row's usage is null — so left
+  // ungated it labels every code "Never used", which is flatly wrong and
+  // contradicts the banner directly above it.
+  it('does not claim a code was never used while the tally is down', () => {
+    expect(servedConsole(false)).not.toContain('Never used');
+  });
+
+  it('still says so on a code that genuinely has no generations', () => {
+    expect(servedConsole(true)).toContain('Never used');
+  });
+
   it('says nothing and keeps the columns when the tally is reachable', () => {
     const body = servedConsole(true);
 
