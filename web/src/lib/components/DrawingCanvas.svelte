@@ -11,7 +11,7 @@
   } from '$lib/drawing/engine';
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
   import { COLORING_OVERLAY_ID } from '$lib/drawing/overlay';
-  import { viewMatrix } from '$lib/drawing/paperView';
+  import { paperCssLength, viewTransformCss } from '$lib/drawing/paperView';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
@@ -58,14 +58,7 @@
     }
   });
 
-  const paperTransform = $derived(
-    `matrix(${viewMatrix({
-      scale: paperView.scale,
-      rotate: paperView.rotate,
-      tx: paperView.tx,
-      ty: paperView.ty,
-    }).join(', ')})`
-  );
+  const paperTransform = $derived(viewTransformCss(paperView));
 
   const eraserSizePx = $derived(
     getEraserWidthPx(strokeState.eraserSize) * (paperView.active ? paperView.scale : 1)
@@ -79,10 +72,8 @@
 
   // The sheet/wrapper track the engine's paper; before the engine reports a
   // size, fill the container and let responsive-image selection use the viewport.
-  const paperCssWidth = $derived(paperView.paperCssWidth ? `${paperView.paperCssWidth}px` : '100%');
-  const paperCssHeight = $derived(
-    paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
-  );
+  const paperCssWidth = $derived(paperCssLength(paperView.paperCssWidth));
+  const paperCssHeight = $derived(paperCssLength(paperView.paperCssHeight));
   onMount(() => {
     // Adopt, don't init (ADR-0072): earlyBoot.ts already started the engine on
     // this prerendered canvas at module-evaluation time, so drawing works

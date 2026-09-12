@@ -195,6 +195,22 @@ export function viewMatrix(view: PaperView): [number, number, number, number, nu
   }
 }
 
+// The presented geometry, as the three CSS values every surface showing the
+// paper must agree on. The coloring art, the paper sheet and the ink tiles are
+// separate elements over one drawing, so a transform that differs between them
+// slides them apart under a rotation lock (ADR-0050) — which is a reason to
+// derive them once rather than to copy the derivation and hope.
+export function viewTransformCss(view: PaperView): string {
+  return `matrix(${viewMatrix(view).join(', ')})`;
+}
+
+// Before the engine reports a paper size there is nothing to size against, so
+// the element fills its container and responsive-image selection falls back to
+// the viewport.
+export function paperCssLength(px: number): string {
+  return px ? `${px}px` : '100%';
+}
+
 export function paperToView(view: PaperView, x: number, y: number): Point {
   const [a, b, c, d, e, f] = viewMatrix(view);
   return { x: a * x + c * y + e, y: b * x + d * y + f };

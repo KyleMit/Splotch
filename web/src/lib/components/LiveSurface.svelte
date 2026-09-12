@@ -1,6 +1,6 @@
 <script lang="ts">
   import { LIVE_TILE_COUNT } from '$lib/drawing/liveTiles';
-  import { viewMatrix } from '$lib/drawing/paperView';
+  import { paperCssLength, viewTransformCss } from '$lib/drawing/paperView';
   import type { EngineViewState } from '$lib/drawing/engine';
 
   let {
@@ -14,18 +14,9 @@
   } = $props();
 
   const liveTiles = Array.from({ length: LIVE_TILE_COUNT }, (_, index) => index);
-  const paperTransform = $derived(
-    `matrix(${viewMatrix({
-      scale: paperView.scale,
-      rotate: paperView.rotate,
-      tx: paperView.tx,
-      ty: paperView.ty,
-    }).join(', ')})`
-  );
-  const paperCssWidth = $derived(paperView.paperCssWidth ? `${paperView.paperCssWidth}px` : '100%');
-  const paperCssHeight = $derived(
-    paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
-  );
+  const paperTransform = $derived(viewTransformCss(paperView));
+  const paperCssWidth = $derived(paperCssLength(paperView.paperCssWidth));
+  const paperCssHeight = $derived(paperCssLength(paperView.paperCssHeight));
 </script>
 
 <!-- The stack is part of the engine's DOM contract: isolation keeps the
