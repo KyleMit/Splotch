@@ -32,8 +32,11 @@ export const STORAGE_KEYS = {
   installRepromptSessionCount: 'splotch-install-reprompt-session-count',
   installRepromptsUsed: 'splotch-install-reprompts-used',
   legacyAiUserApiKey: 'splotch-ai-user-api-key',
-  // Whether the web secure vault is known to hold nothing, so boot can skip
-  // opening it. Tri-state by absence — see secureStorage's recordSecureVaultEmpty.
+  // The web-vault rows a successful read has found missing, as a JSON name
+  // list, so boot can skip opening the database once every row is accounted
+  // for. Written and read only by secureStorage (noteSecretAbsent /
+  // secureVaultKnownEmpty), which is where a failed read can still be told
+  // apart from an absent row.
   secureVaultEmpty: 'splotch-secure-vault-empty',
   saveFolderChosen: 'splotch-save-folder-chosen',
   parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',
