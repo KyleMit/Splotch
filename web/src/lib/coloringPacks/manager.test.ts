@@ -185,12 +185,14 @@ describe('removal during an in-flight run', () => {
     expect(mocks.remove).toHaveBeenCalledOnce();
 
     scan.resolve([{ id: 'dinosaur', rootPath: 'file:///dinosaur' }]);
-    await vi.waitFor(() => expect(mocks.usage).toHaveBeenCalledOnce());
     await flushMicrotasks();
 
     expect(coloringPackState.installedBookIds).toEqual(['farm']);
     expect(coloringPackState.downloadedBytes).toBe(0);
     expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
+    // The run stops at the abort check between the two store reads, so the
+    // size measurement is never even asked for.
+    expect(mocks.usage).not.toHaveBeenCalled();
     expect(mocks.install).not.toHaveBeenCalled();
     downloader.stop();
   });
@@ -212,6 +214,20 @@ describe('removal during an in-flight run', () => {
     expect(coloringPackState.installedBookIds).toEqual(['farm']);
     expect(coloringPackState.downloadedBytes).toBe(0);
     expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
+    downloader.stop();
+  });
+});
+
+describe('a store read that fails mid-scan', () => {
+  it('still publishes the installed books when the size measurement rejects', async () => {
+    mocks.installed.mockResolvedValue([{ id: 'dinosaur', rootPath: 'file:///dinosaur' }]);
+    mocks.usage.mockRejectedValue(new Error('usage unavailable'));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const downloader = createColoringPackDownloader();
+    downloader.start();
+
+    await vi.waitFor(() => expect(coloringPackState.installedBookIds).toContain('dinosaur'));
+    expect(setLocalColoringBookRoot).toHaveBeenCalledWith('dinosaur', 'file:///dinosaur');
     downloader.stop();
   });
 });

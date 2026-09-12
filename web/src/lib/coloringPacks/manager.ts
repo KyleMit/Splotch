@@ -60,34 +60,21 @@ function applyLocalRoots(packs: InstalledColoringPack[]) {
   }
 }
 
-interface InstalledPackScan {
-  packs: InstalledColoringPack[];
-  downloadedBytes: number;
-}
-
-// Reads only: the writes live in applyInstalledPackScan so a run can drop a
-// scan whose signal was aborted while the store was still answering, instead
-// of repopulating state that removal has just cleared.
-async function scanInstalledPacks(
-  store: ColoringPackStore,
-  manifest: ResolvedColoringPackManifest
-): Promise<InstalledPackScan> {
-  const packs = await store.installed(manifest);
-  const downloadedBytes = await store.usage(manifest);
-  return { packs, downloadedBytes };
-}
-
-function applyInstalledPackScan(
+// Applied only once the caller has re-checked its abort signal: every write
+// here is state that removal clears, so a scan still in flight when the packs
+// were deleted must be dropped rather than published. Which books exist is
+// published without waiting for the byte total, so a failed usage measurement
+// costs the size readout and not the picker.
+function applyInstalledPacks(
   manifest: ResolvedColoringPackManifest,
-  scan: InstalledPackScan
+  packs: InstalledColoringPack[]
 ): Set<string> {
-  applyLocalRoots(scan.packs);
-  const installed = new Set(scan.packs.map((pack) => pack.id));
+  applyLocalRoots(packs);
+  const installed = new Set(packs.map((pack) => pack.id));
   setInstalledColoringBooks(
     manifest.books.filter((book) => installed.has(book.id)).map((book) => book.id)
   );
   coloringPackState.totalBookCount = manifest.books.length;
-  coloringPackState.downloadedBytes = scan.downloadedBytes;
   return installed;
 }
 
@@ -108,9 +95,12 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     const store = await createStore();
     if (controller.signal.aborted || !downloadAllowed()) return;
     activeStore = store;
-    const scan = await scanInstalledPacks(store, manifest);
+    const installedPacks = await store.installed(manifest);
     if (controller.signal.aborted) return;
-    const installed = applyInstalledPackScan(manifest, scan);
+    const installed = applyInstalledPacks(manifest, installedPacks);
+    const downloadedBytes = await store.usage(manifest);
+    if (controller.signal.aborted) return;
+    coloringPackState.downloadedBytes = downloadedBytes;
     if (!downloadAllowed()) return;
 
     for (const book of manifest.books) {
