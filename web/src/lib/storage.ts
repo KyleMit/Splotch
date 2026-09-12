@@ -165,6 +165,12 @@ export function removeKey(key: StorageKey) {
   void runWithDurablePreferences((Preferences) => Preferences.remove({ key }));
 }
 
+// The `allowed` list has already narrowed the value by the time it is returned, so the signature
+// carries that through rather than making every caller re-assert it: a closed set of stored
+// values is exactly where an `as` cast would otherwise sit, one step after the validation that
+// made it true. Mirrors readString's overload pair above.
+export function readInt(key: StorageKey, fallback: number): number;
+export function readInt<T extends number>(key: StorageKey, fallback: T, allowed: readonly T[]): T;
 export function readInt(
   key: StorageKey,
   fallback: number,

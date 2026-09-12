@@ -52,7 +52,7 @@ const SIZE_TO_PX: Record<StrokeSize, number> = {
 };
 
 function readStrokeLevel(key: StorageKey, fallback: StrokeSize): StrokeSize {
-  return readInt(key, fallback, STROKE_SIZES) as StrokeSize;
+  return readInt(key, fallback, STROKE_SIZES);
 }
 
 // Drawing brushes (pen/crayon/magic) share one remembered level and the eraser
