@@ -5,6 +5,7 @@
   import {
     createStatusBarApplier,
     computeNotchBandState,
+    listenForStatusBarReentry,
     type StatusBarStyle,
   } from '$lib/platform/notchBand';
   import { layout } from '$lib/state/layout.svelte';
@@ -74,19 +75,16 @@
     pushStatusBar(band.statusBarStyle, band.statusBarHidden);
   });
 
-  // The memo means the app stops re-asserting, and a resume is where the
+  // The memo means the app stops re-asserting, and re-entry is where the
   // platform may have reset the bar underneath it — Android does not
   // necessarily preserve a hidden status bar across one. Drop the memo and push
   // again, since `band` has not changed and the effect will not re-run.
   $effect(() => {
     if (!__IS_CAPACITOR__) return;
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return;
+    return listenForStatusBarReentry(() => {
       statusBar.forget();
       pushStatusBar(band.statusBarStyle, band.statusBarHidden);
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    });
   });
 </script>
 

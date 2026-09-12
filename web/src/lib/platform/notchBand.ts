@@ -189,6 +189,28 @@ export interface StatusBarApplier {
  * caller must drop it whenever the platform may have reset the bar underneath
  * (an app resume, where Android does not necessarily preserve a hidden bar).
  */
+/**
+ * Subscribes `onReentry` to every way this app comes back to the foreground,
+ * returning the teardown.
+ *
+ * Both events are needed, and Android is why: Capacitor's Android WebView stays
+ * `visibilityState === 'visible'` while its Activity is backgrounded, and
+ * reports re-entry through Cordova's document-level `resume` instead — so a
+ * visibility-only listener never fires on the one platform whose status bar is
+ * actually hidden. engineListeners.ts subscribes to both for the same reason.
+ */
+export function listenForStatusBarReentry(onReentry: () => void): () => void {
+  const onVisibility = () => {
+    if (document.visibilityState === 'visible') onReentry();
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+  document.addEventListener('resume', onReentry);
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibility);
+    document.removeEventListener('resume', onReentry);
+  };
+}
+
 export function createStatusBarApplier(): StatusBarApplier {
   let lastStyle: StatusBarStyle | null | undefined;
   let lastHidden: boolean | null | undefined;
