@@ -154,4 +154,33 @@ describe('isDarkInk', () => {
   it("claims the picker's darkest swatch, which carries the dim border for the same reason", () => {
     expect(isDarkInk(PICKER_DIM_BORDER)).toBe(true);
   });
+
+  // Moved here from landscapeToolbar.test.ts with needsInkOutline, which this
+  // predicate replaced; the landscape toolbar now asks the same question of the
+  // same function as the action buttons beside it.
+  it.each([
+    ['#000000', true],
+    ['#fff', false],
+    ['#696969', false],
+    ['#686868', true],
+    ['#7b4f2b', true],
+    ['#AB71E1', false],
+  ] as const)('measures the relative luminance of %s', (hex, dark) => {
+    expect(isDarkInk(hex)).toBe(dark);
+  });
+
+  // The colors the two former predicates disagreed about. Each sits at
+  // 1.0-1.8x contrast against the dark action-button card, so the old
+  // perceived-brightness test was letting genuinely unreadable ink through.
+  it.each(['#C1121F', '#023E8A', '#5A189A', '#3E2723', '#263238', '#455A64', '#795548', '#8E44AD'])(
+    'claims %s, which perceived brightness used to miss',
+    (hex) => {
+      expect(isDarkInk(hex)).toBe(true);
+    }
+  );
+
+  it('reports unparseable ink as not dark rather than throwing', () => {
+    expect(isDarkInk('')).toBe(false);
+    expect(isDarkInk('rebeccapurple')).toBe(false);
+  });
 });
