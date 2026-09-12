@@ -30,8 +30,15 @@
   // pointerup).
   let brushRings = $state<Record<number, { x: number; y: number; magic: boolean }>>({});
 
+  // The immediate path, for the events that must not wait a frame: the bubble
+  // appearing where the finger already is on enter and on press. Moves take the
+  // coalesced path below.
   function updateEraserCursor(e: PointerEvent) {
     if (toolState.brush !== 'eraser') return;
+    // Supersede a move still waiting on the frame: it is older than this event,
+    // so letting the flush apply it afterwards would snap the bubble back to
+    // where the finger was before.
+    eraserPendingMove = false;
     // The canvas fills the container, so its cached client rect shares the
     // container's origin — reuse it instead of forcing another reflow per move.
     const rect = getCanvasRect();
@@ -41,6 +48,7 @@
   }
 
   function hideEraserCursor() {
+    eraserPendingMove = false;
     eraserCursor.visible = false;
   }
 
@@ -69,25 +77,40 @@
     });
   }
 
-  // Ring positions are written at most once per FRAME, not once per input event.
-  // A ring has exactly one visible position per painted frame, and Safari gives
+  // Halo positions are written at most once per FRAME, not once per input event.
+  // A halo has exactly one visible position per painted frame, and Safari gives
   // web content a 60 Hz rAF beat while an iPad digitizer delivers 120 Hz+, so an
   // event-driven write spends three or four reactive writes and DOM transform
   // updates producing one visible position. The latest pending position per
-  // pointer wins, so the ring still lands where the finger is.
+  // halo wins, so it still lands where the finger is. Erasing runs the same
+  // stroke path underneath as drawing, so the bubble is on the same hot path as
+  // the rings and shares their flush.
   //
-  // Two plain coordinate records, deliberately NOT `$state` and deliberately not
-  // a Map: this is scheduling state the template never reads, so a SvelteMap's
+  // Plain coordinates, deliberately NOT `$state` and deliberately not a Map:
+  // this is scheduling state the template never reads, so a SvelteMap's
   // reactivity would be pure cost on the hottest path in the component, and a
   // `{x, y}` literal per event would break the hot-path rule's no-allocation
   // requirement. The flush allocates a key list, but it runs once a frame.
   const pendingRingX: Record<number, number> = {};
   const pendingRingY: Record<number, number> = {};
-  // Deliberately untracked: a scheduling latch the template never reads.
-  let ringMoveFrame: number | null = null;
+  let pendingEraserX = 0;
+  let pendingEraserY = 0;
+  // Deliberately untracked: scheduling state the template never reads.
+  let eraserPendingMove = false;
+  let haloMoveFrame: number | null = null;
 
-  function flushRingMoves() {
-    ringMoveFrame = null;
+  function scheduleHaloFlush() {
+    if (haloMoveFrame === null) haloMoveFrame = requestAnimationFrame(flushHaloMoves);
+  }
+
+  function flushHaloMoves() {
+    haloMoveFrame = null;
+    if (eraserPendingMove) {
+      eraserPendingMove = false;
+      eraserCursor.x = pendingEraserX;
+      eraserCursor.y = pendingEraserY;
+      eraserCursor.visible = true;
+    }
     for (const key of Object.keys(pendingRingX)) {
       const pointerId = Number(key);
       const ring = brushRings[pointerId];
@@ -102,14 +125,18 @@
 
   function handlePointerMove(e: PointerEvent) {
     if (toolState.brush === 'eraser') {
-      updateEraserCursor(e);
+      const rect = getCanvasRect();
+      pendingEraserX = e.clientX - rect.left;
+      pendingEraserY = e.clientY - rect.top;
+      eraserPendingMove = true;
+      scheduleHaloFlush();
       return;
     }
     if (!brushRings[e.pointerId]) return;
     const rect = getCanvasRect();
     pendingRingX[e.pointerId] = e.clientX - rect.left;
     pendingRingY[e.pointerId] = e.clientY - rect.top;
-    if (ringMoveFrame === null) ringMoveFrame = requestAnimationFrame(flushRingMoves);
+    scheduleHaloFlush();
   }
 
   function removeBrushRing(e: PointerEvent) {
@@ -144,7 +171,7 @@
       canvasEl.removeEventListener('pointerup', removeBrushRing);
       canvasEl.removeEventListener('pointercancel', removeBrushRing);
       canvasEl.removeEventListener('lostpointercapture', removeBrushRing);
-      if (ringMoveFrame !== null) cancelAnimationFrame(ringMoveFrame);
+      if (haloMoveFrame !== null) cancelAnimationFrame(haloMoveFrame);
     };
   });
 

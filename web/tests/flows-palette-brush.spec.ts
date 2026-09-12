@@ -386,6 +386,103 @@ test('the eraser bubble tracks the pointer and hides on leave or brush switch', 
   await expect(bubble).toHaveCount(0);
 });
 
+// The bubble is a pointer-following overlay on the same hot path as the brush
+// rings beside it, which are coalesced onto one write per painted frame. A
+// digitizer delivers moves faster than the frame beat, so an event-driven write
+// spends several reactive writes and DOM transform updates producing one
+// visible position. Assert the ratio rather than a count: writes and frames are
+// measured over the same window, so a starved worker scales both together.
+test('the eraser bubble writes at most one position per painted frame', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await pickBrush(page, '#eraserButton');
+  await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
+
+  const canvas = page.locator('#drawingCanvas');
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + 100, box.y + 100);
+  const bubble = page.locator('.eraser-bubble');
+  await expect(bubble).toHaveCount(1);
+
+  const MOVES = 60;
+  const measured = await page.evaluate(async (moves) => {
+    const el = document.querySelector('.eraser-bubble') as HTMLElement;
+    const canvasEl = document.querySelector('#drawingCanvas') as HTMLCanvasElement;
+    const rect = canvasEl.getBoundingClientRect();
+    let writes = 0;
+    let frames = 0;
+    const observer = new MutationObserver((records) => {
+      writes += records.length;
+    });
+    observer.observe(el, { attributes: true, attributeFilter: ['style'] });
+    let counting = true;
+    const countFrame = () => {
+      frames += 1;
+      if (counting) requestAnimationFrame(countFrame);
+    };
+    requestAnimationFrame(countFrame);
+
+    // One task per move, so every move gets its own chance to reach the DOM:
+    // dispatching them all in one task would let Svelte's own microtask batch
+    // coalesce them and the measurement would prove nothing.
+    for (let i = 0; i < moves; i += 1) {
+      canvasEl.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: rect.left + 100 + i,
+          clientY: rect.top + 100 + i,
+        })
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    counting = false;
+    observer.disconnect();
+    return { writes, frames, transform: el.style.transform, lastX: 100 + moves - 1 };
+  }, MOVES);
+
+  expect(measured.writes).toBeLessThanOrEqual(measured.frames);
+  // Coalescing must not cost the final position: the bubble still lands on the
+  // last move, not on whichever one happened to share a frame boundary.
+  expect(measured.transform).toContain(`translate3d(${measured.lastX}px`);
+});
+
+// Moves are coalesced onto the frame while enter and press write immediately,
+// so the two paths can interleave: a move queued just before a press is older
+// than the press, and applying it afterwards would snap the bubble back to
+// where the finger was before it landed.
+test('a press supersedes an eraser move still waiting on the frame', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await pickBrush(page, '#eraserButton');
+  await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
+
+  const canvas = page.locator('#drawingCanvas');
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + 50, box.y + 50);
+  const bubble = page.locator('.eraser-bubble');
+  await expect(bubble).toHaveCount(1);
+
+  const transform = await page.evaluate(async () => {
+    const canvasEl = document.querySelector('#drawingCanvas') as HTMLCanvasElement;
+    const rect = canvasEl.getBoundingClientRect();
+    const at = (type: string, offset: number) =>
+      canvasEl.dispatchEvent(
+        new PointerEvent(type, {
+          clientX: rect.left + offset,
+          clientY: rect.top + offset,
+          isPrimary: true,
+        })
+      );
+    // One task, so the press lands while the move is still queued.
+    at('pointermove', 100);
+    at('pointerdown', 200);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return (document.querySelector('.eraser-bubble') as HTMLElement).style.transform;
+  });
+
+  expect(transform).toContain('translate3d(200px');
+});
+
 // A flyout closing under a keyboard user's focus has to hand that focus back to
 // the trigger: the focused option is about to be display:none, which drops focus
 // on <body>. Both close paths that can fire from inside the menu get their own
