@@ -6,7 +6,6 @@ import {
   COLOR_MENU_SWATCH_PX,
   LANDSCAPE_COLORS,
   landscapeMenuColors,
-  needsInkOutline,
 } from './landscapeToolbar';
 import { PHONE_LANDSCAPE_QUERY, isPhoneLandscape } from './breakpoints';
 import {
@@ -55,17 +54,6 @@ describe('phone landscape toolbar', () => {
       'Pink',
       'Black',
     ]);
-  });
-
-  it.each([
-    ['#000000', true],
-    ['#fff', false],
-    ['#696969', false],
-    ['#686868', true],
-    ['#7b4f2b', true],
-    ['#AB71E1', false],
-  ] as const)('measures the relative luminance of %s', (hex, outlined) => {
-    expect(needsInkOutline(hex)).toBe(outlined);
   });
 
   it.each([

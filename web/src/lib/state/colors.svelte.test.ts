@@ -15,6 +15,24 @@ import {
   isDarkInk,
 } from './colors.svelte';
 import { PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
+import { colorContrast } from '$lib/design/colorContrast';
+import { themes } from '$lib/design/tokens';
+
+// Ink the old BT.601 predicate reported as light enough to skip the keyline.
+const PERCEIVED_BRIGHTNESS_MISSES = [
+  '#C1121F',
+  '#023E8A',
+  '#5A189A',
+  '#3E2723',
+  '#263238',
+  '#455A64',
+  '#795548',
+  '#8E44AD',
+];
+
+// WCAG's floor for non-text contrast. Every color above sits under it, which is
+// what makes the keyline load-bearing rather than decorative.
+const UNREADABLE_CONTRAST_CEILING = 3;
 
 beforeEach(() => {
   // Reset to the documented default selection (Purple at index 0).
@@ -153,5 +171,45 @@ describe('isDarkInk', () => {
 
   it("claims the picker's darkest swatch, which carries the dim border for the same reason", () => {
     expect(isDarkInk(PICKER_DIM_BORDER)).toBe(true);
+  });
+
+  // Moved here from landscapeToolbar.test.ts with needsInkOutline, which this
+  // predicate replaced; the landscape toolbar now asks the same question of the
+  // same function as the action buttons beside it.
+  it.each([
+    ['#000000', true],
+    ['#fff', false],
+    ['#696969', false],
+    ['#686868', true],
+    ['#7b4f2b', true],
+    ['#AB71E1', false],
+  ] as const)('measures the relative luminance of %s', (hex, dark) => {
+    expect(isDarkInk(hex)).toBe(dark);
+  });
+
+  // The colors the two former predicates disagreed about. The companion test
+  // below measures why against the owning token instead of quoting a ratio.
+  it.each(PERCEIVED_BRIGHTNESS_MISSES)(
+    'claims %s, which perceived brightness used to miss',
+    (hex) => {
+      expect(isDarkInk(hex)).toBe(true);
+    }
+  );
+
+  it('reports unparseable ink as not dark rather than throwing', () => {
+    expect(isDarkInk('')).toBe(false);
+    expect(isDarkInk('rebeccapurple')).toBe(false);
+  });
+
+  // Derives the argument instead of restating it: each color the old predicate
+  // passed is measured against the token that actually owns the card. If
+  // floatSurface ever lightens enough for these to carry themselves, this fails
+  // rather than a comment going quietly stale.
+  it('keeps the keyline on ink that cannot carry itself against the float surface', () => {
+    const card = themes.dark.floatSurface;
+    for (const hex of PERCEIVED_BRIGHTNESS_MISSES) {
+      expect(isDarkInk(hex), hex).toBe(true);
+      expect(colorContrast(hex, card, card), hex).toBeLessThan(UNREADABLE_CONTRAST_CEILING);
+    }
   });
 });
