@@ -23,6 +23,10 @@ vi.mock('openai', () => ({
 const PNG_1X1 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
+// A 4:3 landscape WebP — the format the client uploads when it can encode one.
+const WIDE_WEBP =
+  'UklGRlQAAABXRUJQVlA4IEgAAAAwBACdASpgAEAAPp1Oo02lpCMiIWgAsBOJaQB2AAAWZEiRIkSJEiRIj6AA/u4KZ//FtI6FMh//+0s/+pZ/9Sz/NMSFwwgAAAA=';
+
 const request = {
   apiKey: 'test-key',
   image: { bytes: Buffer.from(PNG_1X1, 'base64'), mimeType: 'image/png' },
@@ -157,14 +161,34 @@ describe('openAiProvider.generateImage', () => {
 
   it('asks for a canvas matching the shape the child drew on', async () => {
     create.mockResolvedValue(imageResponse);
-    // A 4:3 landscape WebP — the format the client uploads when it can encode one.
-    const wideWebp =
-      'UklGRlQAAABXRUJQVlA4IEgAAAAwBACdASpgAEAAPp1Oo02lpCMiIWgAsBOJaQB2AAAWZEiRIkSJEiRIj6AA/u4KZ//FtI6FMh//+0s/+pZ/9Sz/NMSFwwgAAAA=';
     await openAiProvider.generateImage({
       ...request,
-      image: { bytes: Buffer.from(wideWebp, 'base64'), mimeType: 'image/webp' },
+      image: { bytes: Buffer.from(WIDE_WEBP, 'base64'), mimeType: 'image/webp' },
     });
     expect(create.mock.calls[0][0].tools[0].size).toBe('1536x1024');
+  });
+
+  // A Node Buffer is frequently a window onto a larger allocation, so the bytes
+  // handed across the seam can start at a non-zero byteOffset. Both things the
+  // adapter does with them — reading the canvas shape and encoding the vendor's
+  // data URL — have to honour that window. Dropping it sends a different image
+  // and picks a canvas for whatever the surrounding memory happened to hold.
+  it('reads and encodes only the window an offset view describes', async () => {
+    create.mockResolvedValue(imageResponse);
+    const raw = Buffer.from(WIDE_WEBP, 'base64');
+    const padded = Buffer.alloc(raw.length + 16, 0xff);
+    raw.copy(padded, 8);
+    const view = padded.subarray(8, 8 + raw.length);
+    expect(view.byteOffset).toBeGreaterThan(0);
+
+    await openAiProvider.generateImage({
+      ...request,
+      image: { bytes: view, mimeType: 'image/webp' },
+    });
+
+    const call = create.mock.calls[0][0];
+    expect(call.input[0].content[0].image_url).toBe(`data:image/webp;base64,${WIDE_WEBP}`);
+    expect(call.tools[0].size).toBe('1536x1024');
   });
 
   it('bounds the call at the deadline the ladder specifies, not merely at something', async () => {
