@@ -295,11 +295,10 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       }
     }
 
-    const imageBase64 = inputBytes.toString('base64');
     usageAttempted = true;
     const result = await aiProvider.generateImage({
       apiKey: authorization.effectiveKey,
-      image: { base64: imageBase64, mimeType: imageMimeType },
+      image: { bytes: inputBytes, mimeType: imageMimeType },
       prompt: finalPrompt,
       deadlineMs: synchronousDeadlineMs(),
     });

@@ -62,7 +62,7 @@ export default async (request: Request): Promise<Response> => {
 
     const result = await aiProvider.generateImage({
       apiKey: work.apiKey,
-      image: { base64: Buffer.from(input).toString('base64'), mimeType: work.mimeType },
+      image: { bytes: input, mimeType: work.mimeType },
       prompt: work.prompt,
       deadlineMs: work.deadlineMs,
     });
