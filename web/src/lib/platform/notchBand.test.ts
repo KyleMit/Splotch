@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Style } from '@capacitor/status-bar';
 import {
-  applyStatusBar,
+  createStatusBarApplier,
   bandColor,
   hasNotch,
   statusBarStyleForBand,
@@ -83,7 +83,7 @@ describe('statusBarStyleForBand', () => {
   });
 });
 
-describe('applyStatusBar', () => {
+describe('createStatusBarApplier', () => {
   const STYLE_ENUM: { Dark: Style; Light: Style } = {
     Dark: 'DARK' as Style,
     Light: 'LIGHT' as Style,
@@ -99,52 +99,101 @@ describe('applyStatusBar', () => {
 
   it('translates DARK to the dark style enum value', () => {
     const bar = stubBar();
-    applyStatusBar('DARK', null, bar, STYLE_ENUM);
+    createStatusBarApplier().apply('DARK', null, bar, STYLE_ENUM);
     expect(bar.setStyle).toHaveBeenCalledWith({ style: STYLE_ENUM.Dark });
   });
 
   it('translates LIGHT to the light style enum value', () => {
     const bar = stubBar();
-    applyStatusBar('LIGHT', null, bar, STYLE_ENUM);
+    createStatusBarApplier().apply('LIGHT', null, bar, STYLE_ENUM);
     expect(bar.setStyle).toHaveBeenCalledWith({ style: STYLE_ENUM.Light });
   });
 
   it('makes no style call when style is null', () => {
     const bar = stubBar();
-    applyStatusBar(null, null, bar, STYLE_ENUM);
+    createStatusBarApplier().apply(null, null, bar, STYLE_ENUM);
     expect(bar.setStyle).not.toHaveBeenCalled();
   });
 
   it('hides the status bar when hidden is true', () => {
     const bar = stubBar();
-    applyStatusBar(null, true, bar, STYLE_ENUM);
+    createStatusBarApplier().apply(null, true, bar, STYLE_ENUM);
     expect(bar.hide).toHaveBeenCalled();
     expect(bar.show).not.toHaveBeenCalled();
   });
 
+  // The state feeding this is recomputed on every active-colour change while
+  // the values almost never move, so an un-memoized applier pushes an identical
+  // value across the bridge on every palette tap.
+  it('dispatches nothing when the pair has not moved', () => {
+    const bar = stubBar();
+    const statusBar = createStatusBarApplier();
+
+    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+
+    expect(bar.setStyle).toHaveBeenCalledTimes(1);
+    expect(bar.hide).toHaveBeenCalledTimes(1);
+  });
+
+  it('dispatches only the half that moved', () => {
+    const bar = stubBar();
+    const statusBar = createStatusBarApplier();
+
+    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+    statusBar.apply('LIGHT', true, bar, STYLE_ENUM);
+
+    expect(bar.setStyle).toHaveBeenCalledTimes(2);
+    expect(bar.hide).toHaveBeenCalledTimes(1);
+  });
+
+  // The memo stops the app re-asserting, so a caller that suspects the platform
+  // reset the bar underneath it needs a way back to a clean slate.
+  it('re-asserts both values after forget', () => {
+    const bar = stubBar();
+    const statusBar = createStatusBarApplier();
+
+    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+    statusBar.forget();
+    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+
+    expect(bar.setStyle).toHaveBeenCalledTimes(2);
+    expect(bar.hide).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps each applier on its own memo', () => {
+    const bar = stubBar();
+
+    createStatusBarApplier().apply('DARK', true, bar, STYLE_ENUM);
+    createStatusBarApplier().apply('DARK', true, bar, STYLE_ENUM);
+
+    expect(bar.setStyle).toHaveBeenCalledTimes(2);
+  });
+
   it('shows the status bar when hidden is false', () => {
     const bar = stubBar();
-    applyStatusBar(null, false, bar, STYLE_ENUM);
+    createStatusBarApplier().apply(null, false, bar, STYLE_ENUM);
     expect(bar.show).toHaveBeenCalled();
     expect(bar.hide).not.toHaveBeenCalled();
   });
 
   it('makes no visibility call when hidden is null', () => {
     const bar = stubBar();
-    applyStatusBar(null, null, bar, STYLE_ENUM);
+    createStatusBarApplier().apply(null, null, bar, STYLE_ENUM);
     expect(bar.hide).not.toHaveBeenCalled();
     expect(bar.show).not.toHaveBeenCalled();
   });
 
   it('swallows a rejected setStyle call', async () => {
     const bar = { ...stubBar(), setStyle: vi.fn().mockRejectedValue(new Error('nope')) };
-    expect(() => applyStatusBar('DARK', null, bar, STYLE_ENUM)).not.toThrow();
+    expect(() => createStatusBarApplier().apply('DARK', null, bar, STYLE_ENUM)).not.toThrow();
     await vi.waitFor(() => expect(bar.setStyle).toHaveBeenCalled());
   });
 
   it('swallows a rejected hide/show call', async () => {
     const bar = { ...stubBar(), hide: vi.fn().mockRejectedValue(new Error('nope')) };
-    expect(() => applyStatusBar(null, true, bar, STYLE_ENUM)).not.toThrow();
+    expect(() => createStatusBarApplier().apply(null, true, bar, STYLE_ENUM)).not.toThrow();
     await vi.waitFor(() => expect(bar.hide).toHaveBeenCalled());
   });
 });
