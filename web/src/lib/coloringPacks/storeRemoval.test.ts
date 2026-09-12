@@ -39,8 +39,10 @@ describe('coloring-pack removal', () => {
     expect(mocks.nativeRemove).not.toHaveBeenCalled();
   });
 
+  // Passing only the app version, not the whole manifest: that narrowing is
+  // what lets removal run with no network.
   it('removes both web resolution namespaces', async () => {
-    await createWebColoringPackStore().remove(manifest);
+    await createWebColoringPackStore().remove({ appVersion: manifest.appVersion });
 
     expect(mocks.webDelete.mock.calls).toEqual([
       ['coloring-packs-v1-1.2.3-test-compact'],
@@ -49,7 +51,7 @@ describe('coloring-pack removal', () => {
   });
 
   it('removes both native resolution namespaces', async () => {
-    await createNativeColoringPackStore().remove(manifest);
+    await createNativeColoringPackStore().remove({ appVersion: manifest.appVersion });
 
     expect(mocks.nativeRemove.mock.calls).toEqual([
       [{ version: '1.2.3-test-compact' }],
