@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { peekRateLimit, rateLimit } from './rateLimit';
+import { peekRateLimit, rateLimit, SWEEP_BUCKET_THRESHOLD } from './rateLimit';
 
 // The limiter keeps state in a module-level Map keyed by the caller-supplied
 // string, so each test uses a distinct key to stay independent of the others.
@@ -55,6 +55,29 @@ describe('rateLimit', () => {
 
     vi.advanceTimersByTime(rejected.retryAfter * 1000);
     expect(rateLimit(key, { limit: 1, windowMs: 10_000 }).limited).toBe(false);
+  });
+
+  it('sweeps a long-window bucket by its own window, not by the calling window', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const hourly = { limit: 3, windowMs: 60 * 60_000 };
+    const perMinute = { limit: 10, windowMs: 60_000 };
+    const reporter = 'sweep-hourly-victim';
+
+    for (let i = 0; i < hourly.limit; i++) expect(rateLimit(reporter, hourly).limited).toBe(false);
+    expect(rateLimit(reporter, hourly).limited).toBe(true);
+
+    // Two minutes later the hourly budget is still spent, but every hit in it is
+    // older than a per-minute caller's cutoff.
+    vi.advanceTimersByTime(2 * 60_000);
+
+    // Push the shared Map past the threshold so the next call sweeps, then make
+    // that call a per-minute one — the window mismatch is the defect.
+    for (let i = 0; i <= SWEEP_BUCKET_THRESHOLD; i++) {
+      rateLimit(`sweep-filler-${i}`, perMinute);
+    }
+
+    expect(peekRateLimit(reporter, hourly).limited).toBe(true);
   });
 
   it('tracks each key independently', () => {
