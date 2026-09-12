@@ -60,18 +60,34 @@ function applyLocalRoots(packs: InstalledColoringPack[]) {
   }
 }
 
-async function initializeState(
+interface InstalledPackScan {
+  packs: InstalledColoringPack[];
+  downloadedBytes: number;
+}
+
+// Reads only: the writes live in applyInstalledPackScan so a run can drop a
+// scan whose signal was aborted while the store was still answering, instead
+// of repopulating state that removal has just cleared.
+async function scanInstalledPacks(
   store: ColoringPackStore,
   manifest: ResolvedColoringPackManifest
-): Promise<Set<string>> {
-  const installedPacks = await store.installed(manifest);
-  applyLocalRoots(installedPacks);
-  const installed = new Set(installedPacks.map((pack) => pack.id));
+): Promise<InstalledPackScan> {
+  const packs = await store.installed(manifest);
+  const downloadedBytes = await store.usage(manifest);
+  return { packs, downloadedBytes };
+}
+
+function applyInstalledPackScan(
+  manifest: ResolvedColoringPackManifest,
+  scan: InstalledPackScan
+): Set<string> {
+  applyLocalRoots(scan.packs);
+  const installed = new Set(scan.packs.map((pack) => pack.id));
   setInstalledColoringBooks(
     manifest.books.filter((book) => installed.has(book.id)).map((book) => book.id)
   );
   coloringPackState.totalBookCount = manifest.books.length;
-  coloringPackState.downloadedBytes = await store.usage(manifest);
+  coloringPackState.downloadedBytes = scan.downloadedBytes;
   return installed;
 }
 
@@ -92,8 +108,10 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     const store = await createStore();
     if (controller.signal.aborted || !downloadAllowed()) return;
     activeStore = store;
-    const installed = await initializeState(store, manifest);
-    if (controller.signal.aborted || !downloadAllowed()) return;
+    const scan = await scanInstalledPacks(store, manifest);
+    if (controller.signal.aborted) return;
+    const installed = applyInstalledPackScan(manifest, scan);
+    if (!downloadAllowed()) return;
 
     for (const book of manifest.books) {
       if (stopped || paused || controller.signal.aborted) return;
@@ -106,6 +124,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
         settings.coloringPacksAllowMetered,
         controller.signal
       );
+      if (controller.signal.aborted) return;
       applyLocalRoots([pack]);
       installed.add(book.id);
       markColoringBookInstalled(book.id);
