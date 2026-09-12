@@ -94,18 +94,18 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 ## 2026-09-11 · code-audit
 
-Scoped to the `web/` SvelteKit app and run as eight parallel area auditors (drawing engine; AI
-generation; design system + UI controls; settings + admin; routes + PWA + beta; gestures + platform
-
-* audio; state + storage + API; web build + test harness), all pinned to commit
-  fd51d82647964dbcbf1551ac7320831fa95dd4e1. The auditors returned 80 raw findings, synthesized to 30
-  staged in `docs/AUDIT.md` and ranked security → user-visible correctness → boot/hot-path
-  performance → convention drift. Recurring themes: the repo's own conventions applied unevenly (a
-  boundary string or tuning literal restated rather than imported, with no drift guard), work done
-  on paths that do not need it (boot-path `idb` hydration and token-map imports, per-`pointermove`
-  DOM measurement, duplicated native bridge calls), and validation that proves a value's shape then
-  discards the proof, forcing the `as` casts the conventions ban. Two auditors independently
-  reported the same `prefers-reduced-motion` duplication, which was merged into one finding.
+Scoped to the `web/` SvelteKit app and run as eight parallel area auditors covering the drawing
+engine; AI generation; the design system and UI controls; settings and admin; routes, PWA, and beta
+onboarding; gestures, platform, and audio; state, storage, and the API; and the web build and test
+harness. All were pinned to commit fd51d82647964dbcbf1551ac7320831fa95dd4e1. The auditors returned
+80 raw findings, synthesized to 30 staged in `docs/AUDIT.md` and ranked security → user-visible
+correctness → boot/hot-path performance → convention drift. Recurring themes: the repo's own
+conventions applied unevenly (a boundary string or tuning literal restated rather than imported,
+with no drift guard), work done on paths that do not need it (boot-path `idb` hydration and
+token-map imports, per-`pointermove` DOM measurement, duplicated native bridge calls), and
+validation that proves a value's shape then discards the proof, forcing the `as` casts the
+conventions ban. Two auditors independently reported the same `prefers-reduced-motion` duplication,
+which was merged into one finding.
 
 ## 2026-09-11 · vet-audits
 
