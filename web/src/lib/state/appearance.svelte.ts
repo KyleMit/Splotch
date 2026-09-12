@@ -16,6 +16,7 @@ import { syncInkToTheme } from './colors.svelte';
 import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
 
 const systemQuery =
+  // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
   typeof matchMedia !== 'undefined' ? matchMedia('(prefers-color-scheme: dark)') : null;
 
 const appearance = $state({ systemDark: systemQuery?.matches ?? false });

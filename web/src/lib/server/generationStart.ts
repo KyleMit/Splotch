@@ -8,6 +8,7 @@ import {
   markJobPending,
   newJobId,
   putJobInput,
+  WORK_TICKET_HEADER,
 } from './generationJobs';
 import type { GenerationJobContext } from './generationJobs';
 import type { GenerationAuthorization } from './generationAuthorization';
@@ -140,7 +141,7 @@ export async function startBackgroundGeneration(
     // this await is the handoff, not the generation.
     const response = await fetch(`${origin}${WORKER_PATH}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Work-Ticket': ticket },
+      headers: { 'Content-Type': 'application/json', [WORK_TICKET_HEADER]: ticket },
       body: payload,
     });
     if (!response.ok) {

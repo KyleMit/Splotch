@@ -46,6 +46,45 @@ const INDEX_SIGNATURE_PROP_BAG = {
 };
 // Mixing the it()/test() vocabularies makes greps and reporter output lie about which tier a
 // test is in — Vitest files use it()/describe(), test() is the Playwright vocabulary.
+// localStorage is a boundary the storage seam owns: keys are declared once in STORAGE_KEYS and
+// reached through readString/writeString, which carry the degrade behaviour and the native
+// durable mirror with them. A module touching the global directly is invisible to all three.
+// An AST restriction rather than a text scan because the evasions are cheap and each one reads
+// as ordinary code: localStorage['getItem'], a destructured getItem, window.localStorage. One
+// Identifier selector covers every spelling, including the property half of window.localStorage.
+const STORAGE_SEAM_MESSAGE =
+  'Reach localStorage through src/lib/storage.ts (readString/writeString), with the key declared in STORAGE_KEYS.';
+const STORAGE_SEAM_ONLY = [
+  // Covers every spelling that names the global directly, including the property half of
+  // window.localStorage and a destructured getItem.
+  'Identifier[name="localStorage"]',
+  // window['localStorage'] and globalThis['localStorage'] contain no Identifier by that name at
+  // all — the string is a Literal in a computed member. Ordinary code, and invisible to the
+  // selector above.
+  'MemberExpression[computed=true][property.value="localStorage"]',
+].map((selector) => ({ selector, message: STORAGE_SEAM_MESSAGE }));
+
+// A media query written at a matchMedia call is a boundary string with no spell-checker behind
+// it: a typo evaluates to false forever, so the accommodation silently never applies, and
+// matching the correct spelling cannot catch a misspelling.
+//
+// What this enforces is exactly one thing: no inline literal at a matchMedia call. It does NOT
+// establish that the argument came from an imported constant — a local `const QUERY = '…'`, or
+// an aliased callee, still passes, because a selector cannot resolve a binding. Closing that
+// needs a rule with scope analysis and is drafted as a follow-up; the claim here is deliberately
+// limited to what the selector actually checks.
+const MEDIA_QUERY_LITERAL = ['Literal', 'TemplateLiteral'].flatMap((argumentType) =>
+  [
+    'callee.name="matchMedia"',
+    'callee.property.name="matchMedia"',
+    'callee.computed=true][callee.property.value="matchMedia"',
+  ].map((callee) => ({
+    selector: `CallExpression[${callee}][arguments.0.type="${argumentType}"]`,
+    message:
+      'Import the query constant (lib/platform/reducedMotion.ts, lib/breakpoints.ts) instead of spelling a media query at the matchMedia call.',
+  }))
+);
+
 const VITEST_VOCABULARY_SELECTORS = [
   'CallExpression[callee.name="test"]',
   'CallExpression[callee.object.name="test"]',
@@ -267,6 +306,8 @@ export default tseslint.config(
         // Vitest blocks below replace this entry for their file shapes, so each is followed by a
         // web/src-scoped block that recomposes NAMED_EXPORTS_ONLY into its selector set.
         NAMED_EXPORTS_ONLY,
+        ...STORAGE_SEAM_ONLY,
+        ...MEDIA_QUERY_LITERAL,
       ],
     },
   },
@@ -304,7 +345,13 @@ export default tseslint.config(
     // server-only and can't appear in these files.)
     files: ['web/src/**/*.svelte', 'web/src/**/*.svelte.ts', 'web/src/**/*.svelte.js'],
     rules: {
-      'no-restricted-syntax': ['error', INDEX_SIGNATURE_PROP_BAG, NAMED_EXPORTS_ONLY],
+      'no-restricted-syntax': [
+        'error',
+        INDEX_SIGNATURE_PROP_BAG,
+        NAMED_EXPORTS_ONLY,
+        ...STORAGE_SEAM_ONLY,
+        ...MEDIA_QUERY_LITERAL,
+      ],
     },
   },
   {
@@ -416,6 +463,22 @@ export default tseslint.config(
     files: ['web/src/**/*.test.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...VITEST_VOCABULARY_SELECTORS, NAMED_EXPORTS_ONLY],
+    },
+  },
+  {
+    // The seam itself is the one module allowed to touch localStorage — recompose everything the
+    // web/src block gives it, minus the ban it exists to satisfy.
+    files: ['web/src/lib/storage.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
+          selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
+          message: RATE_LIMIT_MESSAGE,
+        })),
+        NAMED_EXPORTS_ONLY,
+        ...MEDIA_QUERY_LITERAL,
+      ],
     },
   },
   {

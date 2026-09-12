@@ -96,6 +96,12 @@ const digestOf = (payload: string) =>
   createHmac(HMAC_ALG, TICKET_LABEL).update(payload).digest('hex');
 
 /** A ticket authorizing exactly this job with exactly this payload, or null if unconfigured. */
+// The header that authorizes a background generation. Both sides of the handoff
+// already import this module, so the name is declared once: spelling it twice
+// fails closed and silently — the worker answers 403, the start logs a refusal,
+// and every generation quietly falls back to the synchronous path.
+export const WORK_TICKET_HEADER = 'X-Work-Ticket';
+
 export function issueWorkTicket(
   jobId: string,
   payload: string,

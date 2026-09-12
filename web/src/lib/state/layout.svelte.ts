@@ -24,6 +24,7 @@ interface LayoutState {
   phoneLandscape: boolean;
 }
 
+// eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
 const portraitQuery = browser ? window.matchMedia('(orientation: portrait)') : null;
 const phoneLandscapeQuery = browser ? window.matchMedia(PHONE_LANDSCAPE_QUERY) : null;
 // The physical-iPad profile for issue 977 improved with a 200 ms rotation-only

@@ -3,10 +3,10 @@ import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '$lib/freeGenerations';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
+import { webInstallationId } from './webInstallationId';
 import { network } from '$lib/state/network.svelte';
 import { settings } from '$lib/state/settings.svelte';
 
-const WEB_INSTALLATION_KEY = 'splotch-free-generation-installation-v1';
 const INSTALLATION_NAMESPACE = 'splotch-free-generation-v1';
 const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
 
@@ -19,18 +19,6 @@ export const freeGenerations = $state({
 const freeGenerationGrantRequest = createLatestRequest();
 
 let installationIdPromise: Promise<string> | null = null;
-
-function webInstallationId(): string {
-  try {
-    const existing = localStorage.getItem(WEB_INSTALLATION_KEY);
-    if (existing) return existing;
-    const created = crypto.randomUUID();
-    localStorage.setItem(WEB_INSTALLATION_KEY, created);
-    return created;
-  } catch {
-    return crypto.randomUUID();
-  }
-}
 
 async function rawInstallationId(): Promise<string> {
   if (__IS_CAPACITOR__) {

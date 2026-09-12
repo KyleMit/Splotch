@@ -3,6 +3,7 @@ import {
   completeJob,
   takeJobInput,
   verifyWorkTicket,
+  WORK_TICKET_HEADER,
 } from '../../web/src/lib/server/generationJobs';
 
 // The long half of image generation (ADR-0115). A background function gets 15
@@ -25,10 +26,6 @@ interface WorkPayload {
   deadlineMs: number;
 }
 
-// This URL is publicly reachable, so the ticket is what makes "only we call it"
-// true rather than assumed — without it anyone could drive paid model calls.
-const TICKET_HEADER = 'X-Work-Ticket';
-
 export default async (request: Request): Promise<Response> => {
   const raw = await request.text();
 
@@ -41,7 +38,7 @@ export default async (request: Request): Promise<Response> => {
 
   if (
     !verifyWorkTicket(
-      request.headers.get(TICKET_HEADER),
+      request.headers.get(WORK_TICKET_HEADER),
       work.jobId,
       raw,
       process.env.REPORT_TOKEN_SECRET

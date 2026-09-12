@@ -8,7 +8,11 @@ const { discardJob, issueWorkTicket, markJobPending, putJobInput } = vi.hoisted(
   putJobInput: vi.fn(),
 }));
 
-vi.mock('./generationJobs', () => ({
+// Spread the real module rather than listing its exports: the ticket header is
+// declared there precisely so neither side of the handoff restates it, and a
+// factory that named it again would reintroduce the drift as a test fixture.
+vi.mock('./generationJobs', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./generationJobs')>()),
   discardJob,
   issueWorkTicket,
   markJobPending,
