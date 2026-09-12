@@ -3,10 +3,11 @@ import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '$lib/freeGenerations';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
+import { readString, writeString } from '$lib/storage';
+import { STORAGE_KEYS } from '$lib/storageKeys';
 import { network } from '$lib/state/network.svelte';
 import { settings } from '$lib/state/settings.svelte';
 
-const WEB_INSTALLATION_KEY = 'splotch-free-generation-installation-v1';
 const INSTALLATION_NAMESPACE = 'splotch-free-generation-v1';
 const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
 
@@ -20,16 +21,21 @@ const freeGenerationGrantRequest = createLatestRequest();
 
 let installationIdPromise: Promise<string> | null = null;
 
+// Held for the session so a browser that refuses storage keeps one identity
+// instead of deriving a fresh one every time the id is built, which would hand
+// that browser a new free-generation grant on each page load.
+let unstoredInstallationId: string | null = null;
+
 function webInstallationId(): string {
-  try {
-    const existing = localStorage.getItem(WEB_INSTALLATION_KEY);
-    if (existing) return existing;
-    const created = crypto.randomUUID();
-    localStorage.setItem(WEB_INSTALLATION_KEY, created);
-    return created;
-  } catch {
-    return crypto.randomUUID();
-  }
+  const stored = readString(STORAGE_KEYS.freeGenerationInstallation, null);
+  if (stored) return stored;
+  if (unstoredInstallationId) return unstoredInstallationId;
+  const created = crypto.randomUUID();
+  // writeString degrades quietly, so a refused write leaves the value in
+  // memory and nothing else changes.
+  writeString(STORAGE_KEYS.freeGenerationInstallation, created);
+  unstoredInstallationId = created;
+  return created;
 }
 
 async function rawInstallationId(): Promise<string> {
