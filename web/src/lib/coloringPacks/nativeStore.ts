@@ -4,10 +4,13 @@ import {
   type NativeColoringPack,
 } from '$lib/plugins/coloringPacks';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
+import type { ResolvedColoringPackManifest } from './manifest';
 import { COLORING_PACK_RESOLUTIONS } from './resolution';
 
-function storageVersion(manifest: Parameters<ColoringPackStore['installed']>[0]): string {
-  return `${manifest.appVersion}-${manifest.resolution}`;
+function storageVersion(
+  target: Pick<ResolvedColoringPackManifest, 'appVersion' | 'resolution'>
+): string {
+  return `${target.appVersion}-${target.resolution}`;
 }
 
 function resolvedPack(pack: NativeColoringPack): InstalledColoringPack {
@@ -39,9 +42,9 @@ export function createNativeColoringPackStore(): ColoringPackStore {
       await ColoringPacks.cancel();
     },
 
-    async remove(manifest) {
+    async remove(target) {
       for (const resolution of COLORING_PACK_RESOLUTIONS) {
-        await ColoringPacks.remove({ version: storageVersion({ ...manifest, resolution }) });
+        await ColoringPacks.remove({ version: storageVersion({ ...target, resolution }) });
       }
     },
 
