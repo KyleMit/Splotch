@@ -53,7 +53,16 @@ function requireAdmin(cookies: Cookies) {
   if (!isAdmin(cookies)) throw error(403, 'Forbidden');
 }
 
-export const load: PageServerLoad = async ({ cookies, url }) => {
+export const load: PageServerLoad = async ({ cookies, url, setHeaders }) => {
+  // The authenticated document embeds every live access code in plain text —
+  // in the rendered ledger and again in the hydration payload — so it must not
+  // be written to a browser or intermediary cache. Set before the auth branch
+  // so neither exit can forget it; the login form is covered too, which costs
+  // nothing and keeps a cached form from being served over a signed-in view.
+  // `no-store` rather than `no-cache`: revalidation would still leave the
+  // credentials on disk, which is the part that matters here.
+  setHeaders({ 'cache-control': 'no-store' });
+
   // Unauthenticated visitors get the login form instead of a 403, so the page
   // is usable without ever putting the secret in a link.
   if (!isAdmin(cookies)) {
