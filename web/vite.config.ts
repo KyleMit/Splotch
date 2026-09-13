@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -8,7 +9,7 @@ import {
   RESPONSIVE_COLORING_URL_PATTERN,
   serveResponsiveColoringWithCanonicalFallback,
 } from './src/lib/pwa/coloringFallback';
-import { VERSION_JSON_FILENAME } from './src/lib/pwa/versionEndpoint';
+import { CACHE_BUST_VERSION_PARAM, VERSION_JSON_FILENAME } from './src/lib/pwa/versionEndpoint';
 import {
   BOOKS,
   RESPONSIVE_COLORING_TIER_DIRECTORIES,
@@ -22,6 +23,12 @@ import {
   serveInstalledColoringPackAsset,
 } from './src/lib/pwa/coloringPackRoute';
 import { serveAdminWithoutCaching } from './src/lib/pwa/adminRoute.ts';
+import {
+  appShellPrecacheUrl,
+  createAppShellFallbackPlugin,
+  isAppShellNavigation,
+  prependAppShellEntry,
+} from './src/lib/pwa/appShellRoute.ts';
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
@@ -46,6 +53,13 @@ const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadata({ isCap
 // On a native device there is no local server, so the AI button must call the
 // hosted endpoint. On the web this stays empty and the relative path is used.
 const NATIVE_API_BASE = nativeApiBaseFor(isCapacitor);
+// Unique per build rather than derived from content: SvelteKit prerenders the
+// shell after the service worker is generated, so its bytes cannot be hashed
+// here, and a URL no earlier worker cached makes each install fetch its own copy.
+const APP_SHELL_PRECACHE_URL = appShellPrecacheUrl(randomUUID());
+// A stalled navigation answers from the service worker after this long instead of
+// leaving a child waiting for a load that may not finish.
+const NAVIGATION_NETWORK_TIMEOUT_SECONDS = 5;
 const coloringPackManifest = buildColoringPackManifest(APP_VERSION, isCapacitor ? 'mobile' : 'web');
 const downloadableColoringGlobIgnores = BOOKS.filter(
   (book) => book.id !== STARTER_COLORING_BOOK_ID
@@ -144,8 +158,12 @@ export default defineConfig({
                   revision: coloringPackManifest.revision,
                 },
               ],
-              // Exclude html — navigation requests use the NetworkFirst runtime
-              // cache below so a manual refresh always fetches fresh markup.
+              // additionalManifestEntries are appended after this transform runs,
+              // so the shell is prepended here to be the first entry installed.
+              manifestTransforms: [prependAppShellEntry(APP_SHELL_PRECACHE_URL)],
+              // Exclude html — navigations stay NetworkFirst below so a manual
+              // refresh always fetches fresh markup; the app shell is precached
+              // above under a URL no navigation requests.
               globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'],
               globIgnores: [
                 // The social card is served but never fetched by the application.
@@ -181,13 +199,24 @@ export default defineConfig({
                   handler: serveAdminWithoutCaching,
                 },
                 {
+                  urlPattern: isAppShellNavigation,
+                  handler: 'NetworkFirst',
+                  options: {
+                    networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
+                    plugins: [
+                      createAppShellFallbackPlugin(
+                        APP_SHELL_PRECACHE_URL,
+                        CACHE_BUST_VERSION_PARAM
+                      ),
+                    ],
+                  },
+                },
+                {
                   urlPattern: ({ request }) => request.mode === 'navigate',
                   handler: 'NetworkFirst',
                   options: {
                     cacheName: 'pages',
-                    // After five seconds stalled navigations with a cached page use it
-                    // instead of leaving a child waiting for a load that may not finish.
-                    networkTimeoutSeconds: 5,
+                    networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
                   },
                 },
               ],

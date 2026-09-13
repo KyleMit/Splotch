@@ -393,7 +393,8 @@ entry 87. Paths under `web/src/` unless noted.*
     during first strokes. `vite.config.ts`, `pwa/updates.ts`, `routes/+page.svelte:51-63`.
     *ADR-0022, issue #462*
 65. **Precache scoped to shell + starter book; NetworkFirst navigations, 5 s timeout** — stalled
-    loads fall back to cache instead of leaving a child waiting. `vite.config.ts` workbox block.
+    loads fall back to cache instead of leaving a child waiting; `/` falls back to the precached
+    shell from the worker's own build. `vite.config.ts` workbox block, `pwa/appShellRoute.ts`.
     *ADR-0022, ADR-0103*
 66. **Canvas-empty / hidden-page update lifecycle** — a new SW activates silently only when versions
     match; reload fires only when hidden AND the canvas is blank; hourly/focus/visibility checks;

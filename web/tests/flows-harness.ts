@@ -69,7 +69,7 @@ async function gotoAppWithInstalledColoringBooks(
   const markers = manifest.books
     .filter((book) => installedIds.has(book.id))
     .map((book) => ({
-      path: coloringPackMarkerPath(manifest, book.id),
+      path: coloringPackMarkerPath(book.id),
       value: coloringPackMarkerValue(book),
     }));
   await page.evaluate(
