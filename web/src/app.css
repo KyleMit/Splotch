@@ -275,6 +275,63 @@ body {
   padding: 0;
 }
 
+/* The confirmation card: a title and its consequence over a pair of choices.
+   Width and padding are the parental gate's, so a confirmation that follows the
+   gate reads as the same boundary. The action row stays with each dialog, whose
+   choices lay out differently. Parent Center's unprotected-check confirmation,
+   the AI report confirmation, and Leave Splotch. */
+.confirm-card {
+  width: min(92vw, 336px);
+}
+
+.confirm-card-content {
+  display: flex;
+  flex-direction: column;
+  padding: 22px var(--space-6) var(--space-5);
+  gap: var(--space-4);
+}
+
+/* Title and copy are one group, so they sit closer than the dialog's own
+   rhythm separates the groups from each other. */
+.confirm-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confirm-card-heading :is(h2, h3) {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+}
+
+.confirm-card-heading p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* Reduced motion: fade instead of flying in, as the parental gate does. */
+@media (prefers-reduced-motion: reduce) {
+  .confirm-card.modal-fly-in[open] {
+    animation: confirmCardFadeIn var(--duration-base) ease;
+  }
+}
+
+@keyframes confirmCardFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Re-ink monochrome icons on themed surfaces: the SVGs bake in a near-black
    fill, and the CSS `fill` property beats that presentation attribute. Zero
    specificity (:where) so any component rule — a spot tint, a filter chain's

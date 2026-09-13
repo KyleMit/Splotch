@@ -53,6 +53,36 @@ function dismissAllowed(o: ModalOptions) {
   return o.allowDismiss?.() !== false;
 }
 
+/** What a dismissal request did: closed the dialog, or was refused while it stays up. */
+export type ModalDismissal = 'dismissed' | 'refused';
+
+interface OpenModal {
+  node: HTMLDialogElement;
+  requestDismiss: () => ModalDismissal;
+}
+
+// The top layer is already the app's modal stack — showModal() order is paint
+// order and the topmost dialog is the only one not inert — but the platform
+// offers no way to read that order back. Each action records its own
+// showModal() here and leaves on close, so this mirrors the top layer exactly.
+// Module-level on purpose: a document has one top layer.
+const openModals: OpenModal[] = [];
+
+/**
+ * Ask the topmost open modal to dismiss itself the way a backdrop tap would:
+ * through its own `onRequestClose`, behind its `allowDismiss` gate. Returns
+ * null when no modal is open. A dialog already retiring after its own close
+ * refuses, so a request racing that retirement cannot reach the dialog beneath.
+ */
+export function dismissTopModal(): ModalDismissal | null {
+  return openModals.at(-1)?.requestDismiss() ?? null;
+}
+
+function forgetOpenModal(node: HTMLDialogElement) {
+  const index = openModals.findIndex((entry) => entry.node === node);
+  if (index !== -1) openModals.splice(index, 1);
+}
+
 export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> {
   if (!node.open) return Promise.resolve();
   return new Promise((resolve) => {
@@ -181,7 +211,15 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     if (!dismissAllowed(o)) e.preventDefault();
   }
 
+  function requestDismiss(): ModalDismissal {
+    const o = getOptions();
+    if (!o.open || !dismissAllowed(o)) return 'refused';
+    o.onRequestClose();
+    return 'dismissed';
+  }
+
   function onClose() {
+    forgetOpenModal(node);
     // A closed dialog has no backdrop to protect; drop the zone so it can't
     // bleed into whatever modal opens next.
     clearLaunchZones();
@@ -210,6 +248,8 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
         guardLaunchZone(o.origin ?? null);
         o.onOpen?.();
         node.showModal();
+        forgetOpenModal(node);
+        openModals.push({ node, requestDismiss });
       }
     } else if (node.open) {
       return closeAfterContentRetirementPaint(node, getOptions);
@@ -218,6 +258,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
 
   return {
     destroy() {
+      forgetOpenModal(node);
       node.removeEventListener('pointerdown', onPointerDown, true);
       node.removeEventListener('click', onClick, true);
       node.removeEventListener('cancel', onCancel);
