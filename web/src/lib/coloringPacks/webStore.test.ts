@@ -428,11 +428,14 @@ describe('a scan whose re-verification write fails', () => {
 // Tabs on two builds share the cache during a deploy. The older tab's scan
 // snapshots the keys after the newer tab wrote a file the older manifest does
 // not list, and before the newer tab's marker lands; deleting that file then
-// would leave a marker the newer manifest trusts over a missing file.
+// would leave a marker the newer manifest trusts over a missing file. Both
+// stores share this module's realm, so the fallback row proves only same-tab
+// serialization: separate tabs without Web Locks have separate chains, which
+// docs/COMPATIBILITY.md records as unprotected.
 describe.each([
-  ['with Web Locks', openNewTab],
-  ['without Web Locks', () => vi.stubGlobal('navigator', {})],
-])('two tabs on different builds %s', (_label, setUpLocks) => {
+  ['two tabs sharing Web Locks', openNewTab],
+  ['two stores in one tab without Web Locks', () => vi.stubGlobal('navigator', {})],
+])('%s on different manifests', (_label, setUpLocks) => {
   const dinosaurWithThird = book('dinosaur', [
     ['first', 'a'],
     ['second', 'b'],
