@@ -273,6 +273,12 @@ Three things that will waste your time here:
       steps (via the custom `DeviceLock` plugin,
       `android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java`, registered in
       `MainActivity`).
+* [ ] Test system Back, by button and by edge gesture (ADR-0165): it closes Settings, the coloring
+      picker, the color picker, the AI cards, and the Grown-Ups Only check (without unlocking
+      anything, and without ending a lockout); on an empty canvas it leaves Splotch; on a drawing it
+      asks **Leave Splotch?**, where Back again or Keep drawing stays and Leave leaves. Returning
+      shows the drawing. Also try Android 7–11, where the platform default would have finished the
+      activity.
 
 ### Signing & bundling
 
@@ -414,8 +420,5 @@ assumption breaks:
 | Ads, analytics, advertising ID                  | No ad/analytics/attribution SDKs — Android deps are appcompat, splashscreen, and Capacitor plugins only.                             |
 
 ## 5. Known follow-ups (Android-specific)
-
-* [ ] Consider `@capacitor/app` to handle the Android hardware back button (currently it will try to
-      navigate/exit by default).
 
 See [native.md](native.md) §5 for cross-platform follow-ups.

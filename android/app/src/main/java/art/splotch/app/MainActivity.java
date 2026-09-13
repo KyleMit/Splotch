@@ -36,6 +36,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(DeviceLockPlugin.class);
         registerPlugin(ColoringPacksPlugin.class);
+        registerPlugin(SystemBackPlugin.class);
         registerPlugin(PhotoLibraryPlugin.class);
         super.onCreate(savedInstanceState);
         updateWebViewBackground();
