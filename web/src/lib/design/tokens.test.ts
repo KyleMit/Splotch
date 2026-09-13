@@ -40,3 +40,23 @@ describe('isColorToken', () => {
     ]);
   });
 });
+
+// stylelint's modern colour-notation rules can't see tokens.css (it is
+// generated and ignored), so the token values carry the same guarantee here.
+describe('colour notation', () => {
+  const values = [
+    ...Object.entries(brand),
+    ...Object.entries(scale),
+    ...Object.entries(themes.light),
+    ...Object.entries(themes.dark),
+  ];
+
+  it.each(values)('%s uses the modern rgb() form', (_key, value) => {
+    expect(value).not.toMatch(/\b(rgba|hsla)\(/);
+    expect(value).not.toMatch(/\b(rgb|hsl)\([^)]*,/);
+  });
+
+  it('space-separates the brand channel triplet so it composes as rgb(var(--brand-rgb) / NN%)', () => {
+    expect(brand.brandRgb).toMatch(/^\d{1,3} \d{1,3} \d{1,3}$/);
+  });
+});

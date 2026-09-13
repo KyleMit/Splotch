@@ -76,15 +76,15 @@
     ],
     waitingPolaroid: [
       paletteBar,
-      'left:18px;top:6px;width:19px;height:21px;background:var(--polaroid-paper);border-radius:1.5px;box-shadow:0 2px 5px rgba(0,0,0,0.28);transform:rotate(-5deg)',
+      'left:18px;top:6px;width:19px;height:21px;background:var(--polaroid-paper);border-radius:1.5px;box-shadow:0 2px 5px rgb(0 0 0 / 28%);transform:rotate(-5deg)',
       'left:20px;top:8px;width:15px;height:12px;background:var(--control-track);border-radius:1px;transform:rotate(-5deg)',
     ],
     polaroid: [
-      'left:33px;top:14px;width:30px;height:32px;background:var(--polaroid-paper);border-radius:1.5px;box-shadow:0 2px 5px rgba(0,0,0,0.3);transform:rotate(-5deg)',
+      'left:33px;top:14px;width:30px;height:32px;background:var(--polaroid-paper);border-radius:1.5px;box-shadow:0 2px 5px rgb(0 0 0 / 30%);transform:rotate(-5deg)',
       'left:37px;top:17px;width:22px;height:19px;background:var(--brand-wash);transform:rotate(-5deg)',
     ],
     shell: [
-      'left:20px;top:6px;right:20px;bottom:0;background:var(--surface);border-radius:4px 4px 0 0;box-shadow:0 1px 4px rgba(0,0,0,0.15)',
+      'left:20px;top:6px;right:20px;bottom:0;background:var(--surface);border-radius:4px 4px 0 0;box-shadow:0 1px 4px rgb(0 0 0 / 15%)',
       'left:26px;top:12px;width:16px;height:3px;border-radius:2px;background:var(--brand)',
       'left:26px;top:20px;width:30px;height:5px;border-radius:2px;background:var(--text-soft)',
       `left:26px;top:30px;right:26px;height:2.5px;${mut}`,
@@ -96,14 +96,14 @@
       `left:36px;top:6px;width:22px;height:6px;${mut}`,
     ],
     settings: [
-      'left:14px;top:8px;right:14px;bottom:8px;background:var(--surface);border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.25)',
+      'left:14px;top:8px;right:14px;bottom:8px;background:var(--surface);border-radius:4px;box-shadow:0 2px 6px rgb(0 0 0 / 25%)',
       'left:18px;top:12px;width:18px;bottom:12px;background:var(--brand-wash);border-radius:2px',
       `left:41px;top:13px;right:19px;height:4px;${mut}`,
       `left:41px;top:22px;right:19px;height:4px;${mut}`,
       `left:41px;top:31px;right:19px;height:4px;${mut}`,
     ],
     error: [
-      'left:26px;top:12px;right:26px;bottom:12px;background:var(--surface);border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.25)',
+      'left:26px;top:12px;right:26px;bottom:12px;background:var(--surface);border-radius:4px;box-shadow:0 2px 6px rgb(0 0 0 / 25%)',
       `left:38px;top:19px;width:20px;height:5px;${mut}`,
       `left:36px;bottom:18px;width:24px;height:7px;border-radius:3px;${hi}`,
     ],

@@ -15,9 +15,10 @@ interface ParsedColor extends Rgb {
   alpha: number;
 }
 
-// Hex (#abc / #aabbcc), rgb()/rgba(), and the transparent keyword — the only
-// forms the design tokens use. Anything else (gradients) is the caller's job
-// to break into stops first.
+// Hex (#abc / #aabbcc), rgb()/rgba() in either the modern
+// (`rgb(0 0 0 / 60%)`) or legacy comma form, and the transparent keyword — the
+// only forms the design tokens use. Anything else (gradients) is the caller's
+// job to break into stops first.
 function parseColor(color: string): ParsedColor | null {
   const value = color.trim();
   if (value === 'transparent') return { r: 0, g: 0, b: 0, alpha: 0 };
@@ -34,9 +35,23 @@ function parseColor(color: string): ParsedColor | null {
   }
   const match = value.match(/^rgba?\(([^)]+)\)$/);
   if (!match) return null;
-  const parts = match[1].split(',').map((s) => Number.parseFloat(s));
-  if (parts.length < 3 || parts.some(Number.isNaN)) return null;
-  return { r: parts[0], g: parts[1], b: parts[2], alpha: parts.length > 3 ? parts[3] : 1 };
+  const parts = match[1].trim().split(/\s*[,/]\s*|\s+/);
+  if (parts.length < 3 || parts.length > 4) return null;
+  const [r, g, b] = parts.slice(0, 3).map(parseChannel);
+  const alpha = parts.length > 3 ? parseAlpha(parts[3]) : 1;
+  if ([r, g, b, alpha].some(Number.isNaN)) return null;
+  return { r, g, b, alpha };
+}
+
+const PLAIN_NUMBER = /^\d+\.?\d*$|^\.\d+$/;
+
+function parseChannel(part: string): number {
+  return PLAIN_NUMBER.test(part) ? Number.parseFloat(part) : Number.NaN;
+}
+
+function parseAlpha(part: string): number {
+  if (part.endsWith('%')) return parseChannel(part.slice(0, -1)) / 100;
+  return parseChannel(part);
 }
 
 function compositeOver(fg: ParsedColor, bg: Rgb): Rgb {

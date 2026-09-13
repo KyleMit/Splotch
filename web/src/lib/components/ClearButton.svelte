@@ -114,7 +114,7 @@
      container's sibling) share no single non-root ancestor to hang it on. */
   .clear-button,
   .clear-accept-zone {
-    --alarm-rgb: 255, 56, 56;
+    --alarm-rgb: 255 56 56;
   }
 
   .clear-button {
@@ -196,7 +196,7 @@
   .clear-button:global(.delete-ready) {
     background: linear-gradient(135deg, rgb(var(--alarm-rgb)), #d63031);
     transform: scale(1.1);
-    box-shadow: 0 6px 40px rgb(var(--alarm-rgb), 0.6);
+    box-shadow: 0 6px 40px rgb(var(--alarm-rgb) / 60%);
   }
 
   :global(.clear-icon) {
@@ -216,11 +216,11 @@
     display: none;
     z-index: var(--z-clear-accept-zone); /* Below .clear-container so the button sits on top */
     border-radius: 50%;
-    border: 4px dashed rgb(var(--alarm-rgb), 0.45);
+    border: 4px dashed rgb(var(--alarm-rgb) / 45%);
     background: radial-gradient(
       circle,
-      rgb(var(--alarm-rgb), 0) 55%,
-      rgb(var(--alarm-rgb), 0.06) 100%
+      rgb(var(--alarm-rgb) / 0%) 55%,
+      rgb(var(--alarm-rgb) / 6%) 100%
     );
     box-sizing: border-box;
     opacity: 0;
@@ -240,12 +240,12 @@
   }
 
   .clear-accept-zone:global(.threshold-reached) {
-    border-color: rgb(var(--alarm-rgb), 0.9);
+    border-color: rgb(var(--alarm-rgb) / 90%);
     border-style: solid;
     background: radial-gradient(
       circle,
-      rgb(var(--alarm-rgb), 0) 50%,
-      rgb(var(--alarm-rgb), 0.22) 100%
+      rgb(var(--alarm-rgb) / 0%) 50%,
+      rgb(var(--alarm-rgb) / 22%) 100%
     );
   }
 

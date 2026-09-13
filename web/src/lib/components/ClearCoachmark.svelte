@@ -95,17 +95,17 @@
     visibility: hidden;
     /* Hint coral (dashed, inviting) for .coachmark-ring's base + early
        keyframe frames. */
-    --hint-rgb: 255, 107, 107;
+    --hint-rgb: 255 107 107;
     /* Settled "ready" rose (solid, alarm-adjacent) — one pair of whole-value
        properties so the coachmarkRing keyframe's 70%,86% frame and the
        reduced-motion fallback below read the exact same border/fill and
        cannot drift apart. */
-    --ready-rgb: 238, 90, 111;
-    --ready-border: rgb(var(--ready-rgb), 0.85);
+    --ready-rgb: 238 90 111;
+    --ready-border: rgb(var(--ready-rgb) / 85%);
     --ready-fill: radial-gradient(
       circle,
-      rgb(var(--ready-rgb), 0) 50%,
-      rgb(var(--ready-rgb), 0.18) 100%
+      rgb(var(--ready-rgb) / 0%) 50%,
+      rgb(var(--ready-rgb) / 18%) 100%
     );
     transition:
       opacity 0.4s ease,
@@ -133,11 +133,11 @@
     position: fixed;
     box-sizing: border-box;
     border-radius: 50%;
-    border: 4px dashed rgb(var(--hint-rgb), 0.4);
+    border: 4px dashed rgb(var(--hint-rgb) / 40%);
     background: radial-gradient(
       circle,
-      rgb(var(--hint-rgb), 0) 60%,
-      rgb(var(--hint-rgb), 0.05) 100%
+      rgb(var(--hint-rgb) / 0%) 60%,
+      rgb(var(--hint-rgb) / 5%) 100%
     );
     opacity: 0;
   }
@@ -237,7 +237,7 @@
     8% {
       opacity: 0;
       transform: scale(0.9);
-      border-color: rgb(var(--hint-rgb), 0.4);
+      border-color: rgb(var(--hint-rgb) / 40%);
       border-style: dashed;
     }
     18% {
@@ -247,12 +247,12 @@
     57% {
       opacity: 1;
       transform: scale(1);
-      border-color: rgb(var(--hint-rgb), 0.4);
+      border-color: rgb(var(--hint-rgb) / 40%);
       border-style: dashed;
       background: radial-gradient(
         circle,
-        rgb(var(--hint-rgb), 0) 60%,
-        rgb(var(--hint-rgb), 0.05) 100%
+        rgb(var(--hint-rgb) / 0%) 60%,
+        rgb(var(--hint-rgb) / 5%) 100%
       );
     }
     70%,

@@ -10,7 +10,7 @@ export const brandUsage: Record<keyof typeof brand, string> = {
   brand:
     'The identity hue: hairlines, focus rings, accent-color, tints, and textless fills. Never under text — it is only 3.4:1 against --on-brand.',
   brandRgb:
-    'Channel triplet for composing brand-tinted rgba()/rgb() values where a var() color cannot be used directly.',
+    'Space-separated channel triplet for composing brand-tinted rgb(var(--brand-rgb) / NN%) values where a var() color cannot be used directly.',
   onBrand: 'The ink on any brand fill — pair it with --brand-solid, never with --brand.',
 };
 

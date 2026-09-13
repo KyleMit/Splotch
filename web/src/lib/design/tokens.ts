@@ -18,7 +18,7 @@ const BRAND_RGB = [
   Number.parseInt(BRAND_HEX.slice(1, 3), 16),
   Number.parseInt(BRAND_HEX.slice(3, 5), 16),
   Number.parseInt(BRAND_HEX.slice(5, 7), 16),
-].join(', ');
+].join(' ');
 
 // Brand accent used for active/hover chrome across parent + AI UI.
 // Custom properties pierce Svelte's style scoping, so components reference
@@ -32,8 +32,9 @@ const BRAND_RGB = [
 // unthemed hover step.
 export const brand = {
   brand: BRAND_HEX,
-  // Plain-RGBA brand-shadow fallbacks source their channels from --brand-rgb;
-  // the following color-mix declaration remains the modern rendering path.
+  // Space-separated channels, so a brand-shadow fallback composes as
+  // rgb(var(--brand-rgb) / NN%); the following color-mix declaration remains
+  // the modern rendering path.
   brandRgb: BRAND_RGB,
   // Text/icon ink on --brand fills. Lives here (unthemed) because --brand
   // itself is constant across themes, so what sits on it is too.
@@ -122,8 +123,8 @@ export const scale = {
   // modal close disc, a segmented toggle's selected thumb — close enough that
   // the control reads as sitting just above its surface. shadowPop is the
   // deep overlay lift for whole modal cards.
-  shadowControl: '0 1px 4px rgba(0, 0, 0, 0.18)',
-  shadowPop: '0 8px 32px rgba(0, 0, 0, 0.3)',
+  shadowControl: '0 1px 4px rgb(0 0 0 / 18%)',
+  shadowPop: '0 8px 32px rgb(0 0 0 / 30%)',
 
   // The Clear Button's at-rest fill, mirrored by the drag-to-clear coachmark
   // ghost so the tutorial always matches the real control.
@@ -143,7 +144,7 @@ export const scale = {
   scrimInk: '#b3b1bf',
   scrimInkDanger: '#e09393',
   scrimInkSoft: '#a6a3b0',
-  scrimPill: 'rgba(23, 23, 29, 0.72)',
+  scrimPill: 'rgb(23 23 29 / 72%)',
 } as const;
 
 // The cross-component stacking order, low to high. Scoped to "chrome" — the
@@ -353,7 +354,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     borderWarmStrong: '#c4bbad',
     controlTrack: '#e9e9e9',
     controlTrackHover: '#ccc',
-    sliderNotch: 'rgba(0, 0, 0, 0.22)',
+    sliderNotch: 'rgb(0 0 0 / 22%)',
     textStrong: '#333',
     text: '#555',
     textSoft: '#666',
@@ -380,7 +381,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     floatSurface: '#ffffff',
     floatSurfaceHover: '#f5f5f5',
     floatBorder: 'transparent',
-    floatShadow: '0 2px 6px rgba(93, 84, 68, 0.14), 0 6px 16px rgba(93, 84, 68, 0.1)',
+    floatShadow: '0 2px 6px rgb(93 84 68 / 14%), 0 6px 16px rgb(93 84 68 / 10%)',
     darkInkKeyline: 'transparent',
   },
   dark: {
@@ -395,7 +396,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     borderWarmStrong: '#4d4d5b',
     controlTrack: '#3a3a45',
     controlTrackHover: '#575765',
-    sliderNotch: 'rgba(255, 255, 255, 0.4)',
+    sliderNotch: 'rgb(255 255 255 / 40%)',
     textStrong: '#eceaf2',
     text: '#c9c7d3',
     textSoft: '#bdbbc8',
@@ -421,8 +422,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     lineartBlend: 'screen',
     floatSurface: '#2e2c38',
     floatSurfaceHover: '#393744',
-    floatBorder: 'rgba(255, 255, 255, 0.1)',
-    floatShadow: '0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5)',
+    floatBorder: 'rgb(255 255 255 / 10%)',
+    floatShadow: '0 0 0 1px rgb(255 255 255 / 6%), 0 3px 10px rgb(0 0 0 / 50%)',
     darkInkKeyline: '#e9e7f0',
   },
 };

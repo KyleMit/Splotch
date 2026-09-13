@@ -52,7 +52,7 @@
   // dark mode it reads as bar background and the colored ring floats around the
   // swatch. Light mode is unchanged (surface is white there).
   function selectionRingShadow(ringColor: string): string {
-    return `0 0 0 0.5px var(--surface), 0 0 0 var(--selection-ring-width) ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+    return `0 0 0 0.5px var(--surface), 0 0 0 var(--selection-ring-width) ${ringColor}, 0 4px 8px rgb(0 0 0 / 20%)`;
   }
 
   function selectSwatch(hex: string, paint: string) {
