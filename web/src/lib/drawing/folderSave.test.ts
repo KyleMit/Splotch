@@ -11,8 +11,8 @@ let openDbCalls = 0;
 let getCalls = 0;
 let failIdb = false;
 let pendingGet: Promise<unknown> | null = null;
-vi.mock('idb', () => ({
-  openDB: async () => {
+vi.mock('$lib/idbDatabase', () => ({
+  openDatabase: async () => {
     openDbCalls++;
     if (failIdb) throw new Error('idb unavailable');
     return {

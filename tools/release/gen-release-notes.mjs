@@ -10,9 +10,9 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { marked } from 'marked';
 import { ROOT, fail, isMain } from '../lib/proc.mjs';
 import { parseFrontmatter, compareSemverDesc, writeFileDeep } from './lib/release-frontmatter.mjs';
+import { renderReleaseMarkdown } from './lib/release-markdown.mjs';
 
 const RELEASES_DIR = join(ROOT, 'releases');
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
@@ -115,7 +115,7 @@ export function releaseAnchor(version) {
 }
 
 function renderAppReleaseMarkdown(body, headingLevel) {
-  const html = escapeSvelteBraces(marked.parse(body).trim());
+  const html = escapeSvelteBraces(renderReleaseMarkdown(body).trim());
   return html.replace(
     new RegExp(`<h${headingLevel}>([^<]+)</h${headingLevel}>`, 'g'),
     (_heading, title) =>

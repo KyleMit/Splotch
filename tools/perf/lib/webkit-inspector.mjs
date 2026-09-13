@@ -18,7 +18,6 @@
 //     global it publishes rather than awaited.
 
 import { spawn } from 'node:child_process';
-import WebSocket from 'ws';
 import { pollUntil } from '../../lib/proc.mjs';
 
 // ios_webkit_debug_proxy's own convention: one port listing the attached
@@ -92,17 +91,29 @@ export async function attachToPage(
   let targetId = null;
 
   await new Promise((resolve, reject) => {
-    socket.once('open', resolve);
-    socket.once('error', reject);
+    const onOpen = () => {
+      socket.removeEventListener('error', onError);
+      resolve();
+    };
+    // The platform WebSocket reports a failed handshake as an ErrorEvent whose
+    // message names no cause ("Received network error or non-101 status code."),
+    // so the fallback covers only a dispatch carrying no message at all.
+    const onError = (event) => {
+      socket.removeEventListener('open', onOpen);
+      reject(new Error(event.message ?? 'The inspector WebSocket failed to open'));
+    };
+    socket.addEventListener('open', onOpen, { once: true });
+    socket.addEventListener('error', onError, { once: true });
   });
   // Past open, a socket error is reported through whichever command is in
-  // flight; an unhandled 'error' event would take the process down instead.
-  socket.on('error', () => {});
+  // flight. No listener is registered for it: an EventTarget drops an
+  // unobserved 'error' event, where the EventEmitter this once used would have
+  // rethrown it and taken the process down.
 
-  socket.on('message', (raw) => {
+  socket.addEventListener('message', (event) => {
     let envelope;
     try {
-      envelope = JSON.parse(raw.toString());
+      envelope = JSON.parse(event.data);
     } catch {
       return;
     }

@@ -1,4 +1,3 @@
-import type { MediaPlugin } from '@capacitor-community/media';
 import { exportCanvasBlob, type CanvasExportPreparation } from './engine';
 import { isNative, getPlatform } from '$lib/platform';
 import {
@@ -13,8 +12,6 @@ import { playScreenshotFeedback, playScreenshotSuppressedFeedback } from './scre
 import { SCREENSHOT_COOLDOWN_MS } from './screenshotTiming';
 import { PERF_MARKS } from './perf';
 import { createPolaroidPreviewRequest } from './polaroidAnimation';
-
-const ALBUM_NAME = 'Splotch';
 
 let activeScreenshotSave: Promise<void> | null = null;
 let nextScreenshotAllowedAt = 0;
@@ -37,30 +34,17 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-async function findAlbumId(Media: MediaPlugin, name: string): Promise<string | undefined> {
-  const { albums } = await Media.getAlbums();
-  return albums.find((a) => a.name === name)?.identifier;
-}
-
-// Native: drop the image blob straight into the device photo library. Android requires
-// an album identifier, so we tuck drawings into a "Splotch" album (creating it
-// once); iOS saves to the camera roll with add-only permission.
+// Native: drop the image blob straight into the device photo library. Android writes a
+// "Splotch" folder in shared Pictures (androidGallery.ts); iOS saves to the camera roll with
+// add-only permission.
 async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
-  const { Media } = await import('@capacitor-community/media');
   const dataUrl = await blobToDataUrl(blob);
 
   if (getPlatform() === 'android') {
-    let albumId = await findAlbumId(Media, ALBUM_NAME);
-    if (!albumId) {
-      await Media.createAlbum({ name: ALBUM_NAME });
-      albumId = await findAlbumId(Media, ALBUM_NAME);
-    }
-    await Media.savePhoto({
-      path: dataUrl,
-      albumIdentifier: albumId,
-      fileName: `${baseName}-${timestamp()}`,
-    });
+    const { saveToAndroidGallery } = await import('./androidGallery');
+    await saveToAndroidGallery(dataUrl, blob.type, baseName);
   } else {
+    const { Media } = await import('@capacitor-community/media');
     await Media.savePhoto({ path: dataUrl });
   }
 }

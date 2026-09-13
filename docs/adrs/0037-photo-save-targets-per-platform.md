@@ -28,18 +28,21 @@ facts forced a decision worth recording:
 
 Keep a single save entry point and branch by target. The full matrix:
 
-| Target                                                                                    | Path                                                                             | Result                                                                      |
-| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **Native — Android**                                                                      | `@capacitor-community/media` `savePhoto` into a `"Splotch"` album (created once) | Drawing appears in the gallery's Splotch album                              |
-| **Native — iOS**                                                                          | `@capacitor-community/media` `savePhoto` (add-only permission)                   | Drawing appears in the camera roll                                          |
-| **Web — desktop Chromium** (Chrome/Edge, tab *or* installed PWA) **with a folder chosen** | `saveBlobToFolder` → File System Access writable into the parent-chosen folder   | PNG, WebP, or JPEG written silently into that folder, **no download shelf** |
-| **Web — desktop Chromium, no folder chosen**                                              | `triggerDownload` (`<a download>`)                                               | Normal browser download                                                     |
-| **Web — Firefox / Safari / all mobile browsers**                                          | `triggerDownload`                                                                | Normal browser download (the folder row is hidden)                          |
+| Target                                                                                    | Path                                                                                                                                | Result                                                                      |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Native — Android**                                                                      | App-local `PhotoLibrary` plugin (`androidGallery.ts`) inserting into shared `Pictures/Splotch` (see the 2026-09-13 amendment below) | Drawing appears in the gallery's Splotch album and survives an uninstall    |
+| **Native — iOS**                                                                          | `@capacitor-community/media` `savePhoto` (add-only permission)                                                                      | Drawing appears in the camera roll                                          |
+| **Web — desktop Chromium** (Chrome/Edge, tab *or* installed PWA) **with a folder chosen** | `saveBlobToFolder` → File System Access writable into the parent-chosen folder                                                      | PNG, WebP, or JPEG written silently into that folder, **no download shelf** |
+| **Web — desktop Chromium, no folder chosen**                                              | `triggerDownload` (`<a download>`)                                                                                                  | Normal browser download                                                     |
+| **Web — Firefox / Safari / all mobile browsers**                                          | `triggerDownload`                                                                                                                   | Normal browser download (the folder row is hidden)                          |
 
 `isNative()` selects the native branch (unchanged). On the web, `saveImageBlob` always tries
-`saveBlobToFolder` first and falls back to `triggerDownload` whenever it returns `false` — which is
+`saveBlobToFolder` first and falls back to `triggerDownload` whenever it returns `null` — which is
 every time there's no chosen folder (including on browsers without the File System Access API), so
-those keep today's exact download behaviour.
+those keep today's exact download behaviour. `saveBlobToFolder` returns the written folder's name
+rather than a boolean, and `saveImageBlob` reports the whole matrix back as a `SaveResult`
+(`lib/saveNaming.ts`), so a caller can word its feedback from where the picture actually landed
+instead of from a setting.
 
 ### An optional folder — fully decoupled from the save actions
 
@@ -106,3 +109,57 @@ anyone with a dialog.
   a real handle by substituting the Origin Private File System in a headless run.
 * **−** Mobile has no silent option here; a Web Share sheet (`navigator.share({ files })`) for
   mobile web is a deliberate future follow-up, not part of this decision.
+
+## Amendment (2026-09-13): the shared helper no longer wraps a third-party package
+
+The mechanism above is unchanged — the handle still lives in `splotch-fs` / `handles`, still reached
+through `lib/idb.ts`, and the localStorage flag still keeps the no-folder path from loading the
+chunk or opening IndexedDB. Only the layer underneath moved: `lib/idb.ts` now calls
+`lib/idbDatabase.ts`, an in-repo promise wrapper over the IndexedDB API, rather than the `idb`
+package.
+
+That retires the "no new dependency — reuses the already-present `idb`" consequence, which read as a
+reason to prefer this design and no longer describes anything: there is no third-party package on
+this path to reuse or to avoid.
+
+## Amendment (2026-09-13): Android saves land in shared Pictures, not app-specific storage
+
+The Android row originally used `@capacitor-community/media`. Outside its `androidGalleryMode`, that
+plugin creates its albums under `Context.getExternalMediaDirs()`, which is
+`Android/media/art.splotch.app/`: app-specific storage. The gallery indexes it, so the album looked
+right, but Android deletes the directory with the app. Reproduced on the API 33 emulator: a saved
+drawing was in Google Photos and in MediaStore before `adb uninstall`, and in neither afterwards.
+For an app whose one "keep this" action is saving a child's drawing, uninstalling, reinstalling, or
+moving phones silently lost every saved picture.
+
+`androidGalleryMode` would move the album but needs `READ_MEDIA_IMAGES`, a sensitive read permission
+that Play reviews and that a drawing app that never reads the library cannot justify. So Android now
+saves through an app-local plugin, `PhotoLibraryPlugin.java`, reached from
+`web/src/lib/drawing/androidGallery.ts`:
+
+* **API 29+** inserts a `MediaStore.Images` row with `RELATIVE_PATH = Pictures/Splotch`, held
+  `IS_PENDING` until the bytes are written and deleted if the write fails. Files the app creates
+  through MediaStore need no permission, and MediaStore renames a same-second duplicate.
+* **API 24–28** has no `RELATIVE_PATH`. The first save requests the manifest's existing
+  `WRITE_EXTERNAL_STORAGE` (`maxSdkVersion="28"`) and writes the public `Pictures/Splotch`
+  directory, then scans the file into MediaStore. If the parent denies the prompt, the save still
+  lands in the gallery, written to the app-specific media directory that needs no permission — the
+  pre-amendment location, which the uninstall removes. Only a never-answered permission prompts:
+  after any denial, later saves go straight to that fallback without asking again, until a grant in
+  system Settings turns shared Pictures back on. Failing the save instead would turn one denied
+  prompt, possibly tapped by the child, into a camera button that never works again; re-asking on
+  every tap would put a system dialog in front of the child each time.
+
+The plugin accepts only PNG, JPEG, and WebP, with a plain file name whose extension matches the
+type; `androidGallery.test.ts` reads the Java source to hold that contract to the TS side.
+
+iOS keeps `@capacitor-community/media`, which saves to the camera roll with add-only permission. The
+package therefore stays installed, and Capacitor links every installed plugin into both platforms,
+so its Android module still compiles into the APK, unreachable from JS. Excluding it would need an
+`android.includePlugins` allowlist in `capacitor.config.json` that every future plugin must be added
+to; for a measured 134 KB (1.7%) of the unsigned release APK, that allowlist is not worth
+maintaining.
+
+Drawings saved before this change stay where they are, in the app-specific album, and are not
+migrated. Only closed-testing builds shipped the old path, and copying them would duplicate every
+picture in Photos until the originals were deleted.

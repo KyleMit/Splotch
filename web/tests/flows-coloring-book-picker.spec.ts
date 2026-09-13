@@ -3,7 +3,6 @@ import { expect, test, type Page } from '@playwright/test';
 import { gotoApp, settleFlyIn } from './helpers';
 import {
   gotoAppWithAllColoringBooksInstalled,
-  gotoAppWithInstalledColoringBook,
   openColoringBookGrid,
   openDrawer,
   openFarmPageGrid,
@@ -163,6 +162,12 @@ test('a repeat tap on a book cover does not pick the page that lands under it', 
   await expect(page.locator('#coloringOverlay')).toBeVisible();
 });
 
+// The picker flies in scaled down around the launcher's center, so a tap dead
+// on that center sends the ghost click to the dialog's own center — the gap
+// between covers, where it activates nothing. Off center, but still on the
+// launcher and inside the launch dead zone, a cover sits under the finger.
+const GHOST_CLICK_OFFSET_PX = 15;
+
 // A touch tap activates the launcher on pointerup (scribbleTap), so the dialog
 // is already open and painted when the tap's trailing synthesized click
 // dispatches — and that click is hit-tested at dispatch time, landing on
@@ -174,17 +179,60 @@ test('a repeat tap on a book cover does not pick the page that lands under it', 
 test.describe('coloring book picker via touch', () => {
   test.use({ hasTouch: true });
 
-  test('a touch tap on the launcher opens the picker at the root book list', async ({ page }) => {
-    await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+  test("a touch tap's trailing click does not drill the picker into the cover under the finger", async ({
+    page,
+  }) => {
+    // The whole catalog, so no book finishes downloading mid-spec and reflows
+    // the grid the ghost click is aimed into.
+    await gotoAppWithAllColoringBooksInstalled(page);
     await openDrawer(page);
 
-    await page.locator('#coloringBookButton').tap();
-
+    // This spec proves the launch guard, not the picker's cold start. An open
+    // that beats the installed-set scan drills into the starter book and stays
+    // there even once the other books arrive (openColoringBookGrid, issue
+    // #936) — a returning child's first tap on a slow start can land there
+    // too. That is a product gap, not a guard failure, so land one open on the
+    // grid first rather than let it decide this spec.
     const dialog = page.locator('#coloring-book-dialog');
+    await openColoringBookGrid(page);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+
+    // Record what the tap's trailing click was hit-tested onto. The document's
+    // capture listener runs before modalDialog's, which swallows that click, so
+    // it sees the target whether or not the guard holds.
+    await page.evaluate(() => {
+      document.addEventListener(
+        'click',
+        (event) => {
+          const tile = (event.target as Element).closest('.coloring-book-tile');
+          (window as Window & { __ghostClickTile?: string | null }).__ghostClickTile =
+            tile?.getAttribute('aria-label') ?? null;
+        },
+        { capture: true, once: true }
+      );
+    });
+
+    const launcher = page.locator('#coloringBookButton');
+    const launcherBox = (await launcher.boundingBox())!;
+    await launcher.tap({
+      position: {
+        x: launcherBox.width / 2 + GHOST_CLICK_OFFSET_PX,
+        y: launcherBox.height / 2,
+      },
+    });
+
     await expect(dialog).toBeVisible();
-    // A book tile paints exactly where the finger was (that's what makes the
-    // ghost click land); the picker must still show the root book list, not a
-    // drilled-in page grid.
+    // Establish the hazard before testing the guard: the ghost click really did
+    // land on a book tile, so the root list below can't pass by the click
+    // landing in a gap between covers.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as Window & { __ghostClickTile?: string | null }).__ghostClickTile
+        )
+      )
+      .toMatch(/ coloring book$/);
     await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
   });
