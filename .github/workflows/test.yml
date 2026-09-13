@@ -80,6 +80,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # CSS lint (stylelint, stylelint.config.js): every <style> block and
+      # hand-authored .css file under web/src. The rule set is grown one
+      # measured rule at a time; ADR-0031 records the adopted set and the
+      # rejected candidates with their violation counts.
+      - name: CSS lint
+        run: npm run lint:css
+
       # Drift guard: fails if any shipped SVG under web/ isn't SVGO-optimized
       # (a new icon landed un-optimized). Fix with `npm run optimize:svg-assets`.
       - name: SVG optimization check
