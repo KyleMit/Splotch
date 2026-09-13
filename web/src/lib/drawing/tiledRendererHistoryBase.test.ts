@@ -99,7 +99,7 @@ function inkTrackingContext(canvas: InkCanvas): CanvasRenderingContext2D {
     quadraticCurveTo() {},
     stroke() {},
     clearRect(x: number, y: number, width: number, height: number) {
-      const rect = deviceRect(state().transform, x, y, width, height);
+      const rect = intersect(state().clip, deviceRect(state().transform, x, y, width, height));
       state().ink = state().ink.filter((point) => !inRect(rect, point));
     },
     drawImage(source: InkCanvas, ...args: number[]) {
@@ -335,5 +335,23 @@ describe('folded history-base ink under a temporarily smaller paper', () => {
     settleFolds();
 
     expect(renderer.tiledHistoryDebug().baseRasterBytes).toBe(800 * 600 * 4);
+  });
+
+  it('stays cleared when a clear folds under a smaller paper and a later stroke folds after it returns', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+    view.adoptPaper({ width: 800, height: 600 });
+    renderer.clearTiledRenderer(false);
+    for (let index = 0; index < MAX_UNDO_DEPTH; index++) draw(dot(780, 100 + index));
+    settleFolds();
+    expect(renderer.tiledHistoryDebug().historyLength).toBe(MAX_UNDO_DEPTH);
+    view.adoptPaper(LANDSCAPE);
+    draw(dot(780, 300));
+    vi.advanceTimersByTime(renderer.TILE_HISTORY_FOLD_IDLE_MS + 10);
+    expect(renderer.tiledHistoryDebug().historyLength).toBe(MAX_UNDO_DEPTH);
+    renderer.repaintTiledRenderer();
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(false);
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(false);
   });
 });

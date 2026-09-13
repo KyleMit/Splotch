@@ -174,19 +174,27 @@ export function resizeTiledRenderer(
   return true;
 }
 
-function ensureHistoryBaseCovers(required: PaperSize) {
-  const current = { width: historyBaseWidth, height: historyBaseHeight };
-  const { width, height } = historyBaseExtent(historyBase, current, required);
-  if (historyBase.length > 0 && historyBaseWidth === width && historyBaseHeight === height) {
-    return;
-  }
-  historyBase = cloneHistoryBaseTiles(historyBase, width, height);
-  historyBaseWidth = width;
-  historyBaseHeight = height;
+function retileHistoryBase(source: readonly HistoryBaseTile[], size: PaperSize) {
+  historyBase = cloneHistoryBaseTiles(source, size.width, size.height);
+  historyBaseWidth = size.width;
+  historyBaseHeight = size.height;
 }
 
+function ensureHistoryBaseCovers(required: PaperSize) {
+  const current = { width: historyBaseWidth, height: historyBaseHeight };
+  const extent = historyBaseExtent(historyBase, current, required);
+  if (current.width !== extent.width || current.height !== extent.height) {
+    retileHistoryBase(historyBase, extent);
+  }
+}
+
+// clearRect honors the fold clip, and the base can outgrow that clip, so a
+// folded clear starts from blank tiles sized to the clip rather than wiping in
+// place and leaving cleared ink outside it for a later fold to revive.
 function paintCommandIntoBase(command: StrokeGroupCommand, paper: PaperSize) {
-  clipTilesToPaper(historyBase, commandFoldExtent(command.recordedPaper, paper));
+  const extent = commandFoldExtent(command.recordedPaper, paper);
+  if (command.ops.some((op) => op.kind === 'clear')) retileHistoryBase([], extent);
+  clipTilesToPaper(historyBase, extent);
   for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
   restoreTileContexts(historyBase);
 }

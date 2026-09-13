@@ -714,10 +714,13 @@ because the export composes from the base.
 
 A base holding painted tiles now keeps the covering extent of every paper it has served and clips at
 read time instead: live tiles and export targets are paper-sized, so the excess never shows. A base
-with nothing painted, after a folded clear, re-tiles to the current paper, which loses nothing. A
-fold clips each command to the covering extent of the paper it was drawn on and the current paper,
-so a resize between a stroke and its idle fold cannot crop it either; a rotation-locked paper leaves
-both equal, so letterbox margins stay excluded.
+with nothing painted re-tiles to the current paper, which loses nothing. A folded clear replaces the
+base with blank tiles sized to its fold clip rather than wiping in place: `clearRect` honors the
+clip, so an in-place clear under a paper smaller than the base would leave the cleared ink outside
+it, marked unpainted, for the next fold onto that tile to revive. A fold clips each command to the
+covering extent of the paper it was drawn on and the current paper, so a resize between a stroke and
+its idle fold cannot crop it either; a rotation-locked paper leaves both equal, so letterbox margins
+stay excluded.
 
 Memory: in the common case, where the paper never changes, nothing differs. After a blank rotation
 with folded ink the base covers both orientations — a square on the long side, one third more base
