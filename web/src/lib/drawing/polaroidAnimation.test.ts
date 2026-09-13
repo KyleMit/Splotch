@@ -111,14 +111,20 @@ describe('createPolaroidPreviewRequest', () => {
   });
 
   it('never mounts a polaroid whose preview arrives after it was discarded', async () => {
+    const drawImage = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage,
+    } as unknown as CanvasRenderingContext2D);
     const preview = { width: 960, height: 720, close: vi.fn() } as unknown as ImageBitmap;
     const { createPolaroidPreviewRequest } = await import('./polaroidAnimation');
 
     const request = createPolaroidPreviewRequest();
-    request?.discard();
-    request?.onReady(preview);
+    if (!request) throw new Error('Expected a polaroid preview request');
+    request.discard();
+    request.onReady(preview);
 
     expect(document.querySelector('.polaroid-overlay')).toBeNull();
+    expect(drawImage).not.toHaveBeenCalled();
     expect(preview.close).toHaveBeenCalledOnce();
   });
 
