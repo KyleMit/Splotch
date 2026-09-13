@@ -14,7 +14,7 @@
   color-scheme: light;
 
   --brand: #ab71e1;
-  --brand-rgb: 171, 113, 225;
+  --brand-rgb: 171 113 225;
   --on-brand: #fff;
 
   --space-1: 4px;
@@ -49,15 +49,15 @@
   --duration-slow: 0.35s;
   --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
-  --shadow-control: 0 1px 4px rgba(0, 0, 0, 0.18);
-  --shadow-pop: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-control: 0 1px 4px rgb(0 0 0 / 18%);
+  --shadow-pop: 0 8px 32px rgb(0 0 0 / 30%);
   --clear-gradient-rest: linear-gradient(135deg, #ff6b6b, #ee5a6f);
   --polaroid-paper: #fdfcf7;
   --polaroid-ink: #7c50bb;
   --scrim-ink: #b3b1bf;
   --scrim-ink-danger: #e09393;
   --scrim-ink-soft: #a6a3b0;
-  --scrim-pill: rgba(23, 23, 29, 0.72);
+  --scrim-pill: rgb(23 23 29 / 72%);
 
   --z-canvas-chrome: 4;
   --z-clear-preview: 400;
@@ -86,7 +86,7 @@
   --border-warm-strong: #c4bbad;
   --control-track: #e9e9e9;
   --control-track-hover: #ccc;
-  --slider-notch: rgba(0, 0, 0, 0.22);
+  --slider-notch: rgb(0 0 0 / 22%);
   --text-strong: #333;
   --text: #555;
   --text-soft: #666;
@@ -113,7 +113,7 @@
   --float-surface: #ffffff;
   --float-surface-hover: #f5f5f5;
   --float-border: transparent;
-  --float-shadow: 0 2px 6px rgba(93, 84, 68, 0.14), 0 6px 16px rgba(93, 84, 68, 0.1);
+  --float-shadow: 0 2px 6px rgb(93 84 68 / 14%), 0 6px 16px rgb(93 84 68 / 10%);
   --dark-ink-keyline: transparent;
 
   --icon-appearance-night: #212d4c;
@@ -149,7 +149,7 @@
   --border-warm-strong: #4d4d5b;
   --control-track: #3a3a45;
   --control-track-hover: #575765;
-  --slider-notch: rgba(255, 255, 255, 0.4);
+  --slider-notch: rgb(255 255 255 / 40%);
   --text-strong: #eceaf2;
   --text: #c9c7d3;
   --text-soft: #bdbbc8;
@@ -175,8 +175,8 @@
   --lineart-blend: screen;
   --float-surface: #2e2c38;
   --float-surface-hover: #393744;
-  --float-border: rgba(255, 255, 255, 0.1);
-  --float-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5);
+  --float-border: rgb(255 255 255 / 10%);
+  --float-shadow: 0 0 0 1px rgb(255 255 255 / 6%), 0 3px 10px rgb(0 0 0 / 50%);
   --dark-ink-keyline: #e9e7f0;
 
   --icon-appearance-night: #93a6d6;
@@ -213,7 +213,7 @@
     --border-warm-strong: #4d4d5b;
     --control-track: #3a3a45;
     --control-track-hover: #575765;
-    --slider-notch: rgba(255, 255, 255, 0.4);
+    --slider-notch: rgb(255 255 255 / 40%);
     --text-strong: #eceaf2;
     --text: #c9c7d3;
     --text-soft: #bdbbc8;
@@ -239,8 +239,8 @@
     --lineart-blend: screen;
     --float-surface: #2e2c38;
     --float-surface-hover: #393744;
-    --float-border: rgba(255, 255, 255, 0.1);
-    --float-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5);
+    --float-border: rgb(255 255 255 / 10%);
+    --float-shadow: 0 0 0 1px rgb(255 255 255 / 6%), 0 3px 10px rgb(0 0 0 / 50%);
     --dark-ink-keyline: #e9e7f0;
 
     --icon-appearance-night: #93a6d6;

@@ -58,7 +58,7 @@
       `--chip-pad:${px(CHIP_SPEC.padY)} ${px(CHIP_SPEC.padX)}`,
       `--chip-font:${px(CHIP_SPEC.font)}`,
       `--chip-dot:${px(CHIP_SPEC.dot)}`,
-      `--chip-shadow:0 ${px(CHIP_SPEC.shadowY)} ${px(CHIP_SPEC.shadowBlur)} rgba(60,40,110,.10)`,
+      `--chip-shadow:0 ${px(CHIP_SPEC.shadowY)} ${px(CHIP_SPEC.shadowBlur)} rgb(60 40 110 / 10%)`,
       `--frame-x:${geo.frame.x}px`,
       `--frame-y:${geo.frame.y}px`,
       `--frame-w:${geo.frame.width}px`,

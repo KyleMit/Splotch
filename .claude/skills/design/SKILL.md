@@ -324,5 +324,7 @@ token, stylelint asks whether the CSS does anything at all: a misspelled media f
 pseudo-class, property or value is *retained* by the parser, reports unmatched, and silently never
 applies. Every rule was at zero before being enabled — measured there, or brought there by one
 isolated reformat — so a fresh violation is always something you just wrote. That includes colour
-notation: write `rgb(0 0 0 / 60%)`, not `rgba(0, 0, 0, 0.6)`. `:global()` is configured as known
-Svelte syntax, not an exception.
+notation: write `rgb(0 0 0 / 60%)`, not `rgba(0, 0, 0, 0.6)`. Channel triplets such as `--brand-rgb`
+are space-separated so a tint composes as `rgb(var(--brand-rgb) / 30%)`, and because the generated
+`tokens.css` is outside stylelint's scope, `tokens.test.ts` holds every token value to the same
+notation. `:global()` is configured as known Svelte syntax, not an exception.

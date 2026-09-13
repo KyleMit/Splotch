@@ -22,12 +22,12 @@ interface ShadowSpec {
 // black one — a purple glow reads as a smudge on the dark gradient.
 export const FRAME_SHADOW_SPEC: Record<StoreOrientation, Record<'light' | 'dark', ShadowSpec>> = {
   landscape: {
-    light: { y: 30, blur: 80, color: 'rgba(60,40,110,.28)' },
-    dark: { y: 33, blur: 88, color: 'rgba(0,0,0,.55)' },
+    light: { y: 30, blur: 80, color: 'rgb(60 40 110 / 28%)' },
+    dark: { y: 33, blur: 88, color: 'rgb(0 0 0 / 55%)' },
   },
   portrait: {
-    light: { y: 33.5, blur: 75.4, color: 'rgba(60,40,110,.30)' },
-    dark: { y: 36.8, blur: 80.4, color: 'rgba(0,0,0,.55)' },
+    light: { y: 33.5, blur: 75.4, color: 'rgb(60 40 110 / 30%)' },
+    dark: { y: 36.8, blur: 80.4, color: 'rgb(0 0 0 / 55%)' },
   },
 };
 
