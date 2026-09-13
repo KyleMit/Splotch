@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { gotoApp, openSettingsModal } from './helpers';
 
-const POLICY_COUNT = 5;
+const POLICY_COUNT = 6;
 
 test('every matrix selection nests inside its track on a portrait tablet', async ({ page }) => {
   await page.setViewportSize({ width: 1032, height: 1376 });
