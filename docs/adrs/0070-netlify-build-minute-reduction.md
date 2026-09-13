@@ -90,3 +90,15 @@ recovery only needs the version to move when the app actually changes.)
 * − The ignore rule's watched-path list must track reality: if the build ever starts reading a new
   top-level path (e.g. a new generator input dir), that path must be added or its changes silently
   won't deploy.
+
+## Amendment (2026-09-13): the prebuild scripts no longer pull a package into `dependencies`
+
+`marked` has left `dependencies`. It was listed above as "the one package the
+`gen:icons`/`gen:releases` prebuild scripts import"; `gen:releases` now renders the release-note
+Markdown subset through `tools/release/lib/release-markdown.mjs` instead, and no prebuild script
+imports a third-party package any more.
+
+That removes the asymmetry the entry existed to explain — every remaining `dependencies` entry is
+either a runtime import or part of the Vite/SvelteKit build itself. The split and its rationale are
+otherwise unchanged, and the question to ask when adding a dependency is still "does the Netlify web
+build import or execute this?"

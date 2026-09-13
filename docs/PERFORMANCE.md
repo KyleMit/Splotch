@@ -242,8 +242,9 @@ entry 87. Paths under `web/src/` unless noted.*
 18. **Lazy Capacitor plugins, tree-shaken from web** — memoized self-resetting dynamic imports
     behind literal `__IS_CAPACITOR__` (Preferences, Media, Device, ScreenOrientation, DeviceLock,
     pencil-eraser — the last also idle-deferred). `lib/nativePlugin.ts:25-38`. *ADR-0013, ADR-0010*
-19. **Lazy `idb` package + memoized connection** — never in the boot bundle; the promise self-resets
-    on rejection. `lib/idb.ts:15-48`.
+19. **Lazy IndexedDB wrapper + memoized connection** — `idbDatabase.ts` is reached only through a
+    dynamic import, so neither it nor an open connection is in the boot bundle; the promise
+    self-resets on rejection. `lib/idb.ts:16-36`, `lib/idbDatabase.ts`.
 20. **`createSingleFlight` / `createLatestRequest`** — overlapping async callers share one run; new
     submits abort superseded fetches. `lib/singleFlight.ts`, `lib/latestRequest.ts`.
 
@@ -448,7 +449,7 @@ entry 87. Paths under `web/src/` unless noted.*
     async flash at `$state` init); native writes mirror to Preferences un-awaited; **concurrent**
     durable hydration. `lib/storage.ts`. *ADR-0005*
 81. **Persistent-storage request kept off the boot path** (would prompt Firefox at startup).
-    `lib/idb.ts:4-13`. *ADR-0128*
+    `lib/idb.ts:5-14`. *ADR-0128*
 
 ### XIV. Cross-cutting
 

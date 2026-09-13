@@ -65,10 +65,10 @@ ADR-0019.
 
 > **Adding a dependency?** The `dependencies`/`devDependencies` split is repurposed (ADR-0070):
 > `dependencies` holds what the **Netlify web build** needs (the app's runtime imports plus
-> vite/SvelteKit/the adapter/`marked`), `devDependencies` holds local/CI-only tooling (Playwright,
-> dprint, sharp, the Capacitor CLIs, …). Netlify installs with `--omit=dev`, so a build-needed
-> package filed under `devDependencies` fails the deploy — CI won't catch it because GitHub Actions
-> installs everything.
+> vite/SvelteKit/the adapter), `devDependencies` holds local/CI-only tooling (Playwright, dprint,
+> sharp, the Capacitor CLIs, …). Netlify installs with `--omit=dev`, so a build-needed package filed
+> under `devDependencies` fails the deploy — CI won't catch it because GitHub Actions installs
+> everything.
 
 ## Environment variables
 

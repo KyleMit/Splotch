@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { webcrypto } from 'node:crypto';
+import type { DBSchema, IdbDatabase } from './idbDatabase';
 import { STORAGE_KEYS } from './storageKeys';
+
+// The stand-in below is keyed and valued like secureStorage's own SecureDb,
+// which the module keeps private.
+interface SecretsDb extends DBSchema {
+  secrets: { key: string; value: unknown };
+}
 
 if (!globalThis.crypto?.subtle) vi.stubGlobal('crypto', webcrypto);
 
@@ -72,7 +79,7 @@ vi.mock('./idb', () => {
     },
   };
   return {
-    lazyIdbDatabase: () => () => Promise.resolve(db as unknown as import('idb').IDBPDatabase),
+    lazyIdbDatabase: () => () => Promise.resolve(db as unknown as IdbDatabase<SecretsDb>),
     idbKvStore: () => ({
       get: (key: string) => db.get('secrets', key),
       put: (key: string, value: unknown) => db.put('secrets', value, key),

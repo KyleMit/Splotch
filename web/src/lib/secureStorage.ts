@@ -1,4 +1,4 @@
-import type { DBSchema } from 'idb';
+import type { DBSchema } from './idbDatabase';
 import { browser } from '$app/environment';
 import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';

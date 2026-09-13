@@ -1,4 +1,4 @@
-import type { DBSchema } from 'idb';
+import type { DBSchema } from '$lib/idbDatabase';
 import { browser } from '$app/environment';
 import { STORAGE_KEYS, readBool, writeBool, removeKey } from '$lib/storage';
 import { idbKvStore, requestPersistentStorage } from '$lib/idb';
