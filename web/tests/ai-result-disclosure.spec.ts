@@ -17,11 +17,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
         tokenStyle.color = inkTokens.scrimInk;
         const expectedText = tokenStyle.color;
         tokenStyle.color = inkTokens.scrimInkDanger;
+        const expectedReport = tokenStyle.color;
+        tokenStyle.backgroundColor = inkTokens.scrimPill;
         const strip = button.closest('.ai-result-disclosure') as HTMLElement;
         const icon = button.querySelector('svg') as SVGElement;
         return {
           expectedText,
-          expectedReport: tokenStyle.color,
+          expectedReport,
+          expectedFill: tokenStyle.backgroundColor,
           fill: getComputedStyle(strip).backgroundColor,
           ground: getComputedStyle(strip).backdropFilter,
           text: getComputedStyle(strip).color,
@@ -29,7 +32,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
           iconFill: getComputedStyle(icon).fill,
         };
       }, scale);
-    expect(chrome.fill).toBe(scale.scrimPill);
+    expect(chrome.fill).toBe(chrome.expectedFill);
     // The fill alone leaves the drawing showing through under 12px text; the
     // brightness floor is what keeps the ink legible over light artwork.
     expect(chrome.ground).toContain('brightness');
