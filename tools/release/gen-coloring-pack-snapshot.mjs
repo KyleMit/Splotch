@@ -16,13 +16,15 @@ import {
 } from './lib/coloring-pack-retention.mjs';
 import { SEMVER } from './lib/release-frontmatter.mjs';
 
-const GENERATOR_INPUTS = ['web/coloringPackManifest.ts', 'web/src/lib', 'web/static/coloring'];
+const GENERATOR_MODULE = 'web/coloringPackManifest.ts';
+const GENERATOR_INPUTS = [GENERATOR_MODULE, 'web/src/lib', 'web/static/coloring'];
 const MANIFEST_FILE = 'manifest.json';
 
 const GENERATE_SCRIPT = `
 import { writeFileSync } from 'node:fs';
-const { buildColoringPackManifest } = await import('./coloringPackManifest.ts');
-const [appVersion, out] = process.argv.slice(-2);
+import { pathToFileURL } from 'node:url';
+const [generator, appVersion, out] = process.argv.slice(-3);
+const { buildColoringPackManifest } = await import(pathToFileURL(generator).href);
 writeFileSync(out, JSON.stringify(buildColoringPackManifest(appVersion, 'mobile').manifest));
 `;
 
@@ -48,6 +50,7 @@ function generateManifest(directory, appVersion) {
       '--input-type=module',
       '-e',
       GENERATE_SCRIPT,
+      join(directory, GENERATOR_MODULE),
       appVersion,
       out,
     ],
