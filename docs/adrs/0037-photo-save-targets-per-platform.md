@@ -37,9 +37,12 @@ Keep a single save entry point and branch by target. The full matrix:
 | **Web — Firefox / Safari / all mobile browsers**                                          | `triggerDownload`                                                                                                                   | Normal browser download (the folder row is hidden)                          |
 
 `isNative()` selects the native branch (unchanged). On the web, `saveImageBlob` always tries
-`saveBlobToFolder` first and falls back to `triggerDownload` whenever it returns `false` — which is
+`saveBlobToFolder` first and falls back to `triggerDownload` whenever it returns `null` — which is
 every time there's no chosen folder (including on browsers without the File System Access API), so
-those keep today's exact download behaviour.
+those keep today's exact download behaviour. `saveBlobToFolder` returns the written folder's name
+rather than a boolean, and `saveImageBlob` reports the whole matrix back as a `SaveResult`
+(`lib/saveNaming.ts`), so a caller can word its feedback from where the picture actually landed
+instead of from a setting.
 
 ### An optional folder — fully decoupled from the save actions
 

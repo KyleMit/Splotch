@@ -34,7 +34,7 @@ describe('saveImageBlob native gallery routing', () => {
 
     const saved = await saveImageBlob(blob, 'splotch-ai');
 
-    expect(saved).toBe(true);
+    expect(saved).toEqual({ status: 'photos' });
     expect(mocks.saveToAndroidGallery).toHaveBeenCalledWith(dataUrl, 'image/png', 'splotch-ai');
     expect(mocks.savePhoto).not.toHaveBeenCalled();
   });
@@ -45,7 +45,7 @@ describe('saveImageBlob native gallery routing', () => {
 
     const saved = await saveImageBlob(blob);
 
-    expect(saved).toBe(true);
+    expect(saved).toEqual({ status: 'photos' });
     expect(mocks.savePhoto).toHaveBeenCalledWith({ path: dataUrl });
     expect(mocks.saveToAndroidGallery).not.toHaveBeenCalled();
   });
@@ -58,7 +58,7 @@ describe('saveImageBlob native gallery routing', () => {
 
     const saved = await saveImageBlob(blob);
 
-    expect(saved).toBe(false);
+    expect(saved).toEqual({ status: 'failed' });
     expect(console.error).toHaveBeenCalledWith('Save to gallery failed:', failure);
   });
 });

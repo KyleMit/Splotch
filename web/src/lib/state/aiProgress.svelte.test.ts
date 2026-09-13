@@ -37,6 +37,7 @@ function createHarness() {
     minimized: false,
     resultUrl: null,
     resultType: null,
+    autoSave: null,
     previewUrl: null,
     style: null,
     reportToken: null,

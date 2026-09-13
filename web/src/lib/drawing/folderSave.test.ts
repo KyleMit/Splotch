@@ -153,7 +153,9 @@ describe('chooseSaveFolder', () => {
 
     expect(await folderSave.chooseSaveFolder()).toBe('Splotch Art');
     expect(await folderSave.getSaveFolderName()).toBe('Splotch Art');
-    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false })).toBe(true);
+    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false })).toBe(
+      'Splotch Art'
+    );
     expect(writable.write).toHaveBeenCalledWith(blob);
     expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
@@ -175,7 +177,7 @@ describe('getSaveFolderName', () => {
   it('never opens IndexedDB when no folder was ever chosen', async () => {
     setPicker(vi.fn());
     expect(await folderSave.getSaveFolderName()).toBeNull();
-    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
+    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBeNull();
     expect(openDbCalls).toBe(0);
   });
 
@@ -184,20 +186,20 @@ describe('getSaveFolderName', () => {
     localStorage.setItem(STORAGE_KEYS.saveFolderChosen, 'true');
     setPicker(vi.fn());
     expect(await folderSave.getSaveFolderName()).toBeNull();
-    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
+    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBeNull();
   });
 });
 
 describe('saveBlobToFolder', () => {
-  it('returns false (caller downloads) when the API is unsupported', async () => {
-    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
+  it('returns null (caller downloads) when the API is unsupported', async () => {
+    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBeNull();
   });
 
   it('never opens the folder picker, even with allowPrompt and no stored folder', async () => {
     const picker = vi.fn();
     setPicker(picker);
 
-    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
+    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBeNull();
     expect(picker).not.toHaveBeenCalled();
   });
 
@@ -206,7 +208,9 @@ describe('saveBlobToFolder', () => {
     seedFolder(handle);
     setPicker(vi.fn());
 
-    expect(await folderSave.saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(true);
+    expect(await folderSave.saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(
+      'My Pictures'
+    );
     expect(handle.getFileHandle).toHaveBeenCalledWith('b.png', { create: true });
     expect(fileHandle.createWritable).toHaveBeenCalledOnce();
     expect(writable.write).toHaveBeenCalledWith(blob);
@@ -218,8 +222,12 @@ describe('saveBlobToFolder', () => {
     seedFolder(handle);
     setPicker(vi.fn());
 
-    expect(await folderSave.saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(true);
-    expect(await folderSave.saveBlobToFolder(blob, 'c.png', { allowPrompt: false })).toBe(true);
+    expect(await folderSave.saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(
+      'My Pictures'
+    );
+    expect(await folderSave.saveBlobToFolder(blob, 'c.png', { allowPrompt: false })).toBe(
+      'My Pictures'
+    );
     expect(getCalls).toBe(1);
     expect(openDbCalls).toBe(1);
   });
@@ -236,7 +244,7 @@ describe('saveBlobToFolder', () => {
     await folderSave.clearSaveFolder();
     delayedGet.resolve(handle);
 
-    expect(await save).toBe(false);
+    expect(await save).toBeNull();
     expect(handle.queryPermission).not.toHaveBeenCalled();
     expect(writable.write).not.toHaveBeenCalled();
     expect(await folderSave.getSaveFolderName()).toBeNull();
@@ -258,7 +266,7 @@ describe('saveBlobToFolder', () => {
     expect(await folderSave.chooseSaveFolder()).toBe('New Folder');
     delayedGet.resolve(oldHandle);
 
-    expect(await save).toBe(true);
+    expect(await save).toBe('New Folder');
     expect(oldHandle.queryPermission).not.toHaveBeenCalled();
     expect(writable.write).toHaveBeenCalledWith(blob);
     expect(await folderSave.getSaveFolderName()).toBe('New Folder');
@@ -271,7 +279,9 @@ describe('saveBlobToFolder', () => {
     seedFolder(handle);
     setPicker(vi.fn());
 
-    expect(await folderSave.saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(true);
+    expect(await folderSave.saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(
+      'My Pictures'
+    );
     expect(handle.getFileHandle).toHaveBeenCalledWith('b (2).png', { create: true });
     expect(writable.write).toHaveBeenCalledWith(blob);
   });
@@ -282,7 +292,9 @@ describe('saveBlobToFolder', () => {
     seedFolder(handle);
     setPicker(vi.fn());
 
-    expect(await folderSave.saveBlobToFolder(blob, 'c.png', { allowPrompt: true })).toBe(true);
+    expect(await folderSave.saveBlobToFolder(blob, 'c.png', { allowPrompt: true })).toBe(
+      'My Pictures'
+    );
     expect(handle.requestPermission).toHaveBeenCalledOnce();
   });
 
@@ -291,7 +303,7 @@ describe('saveBlobToFolder', () => {
     seedFolder(handle);
     setPicker(vi.fn());
 
-    expect(await folderSave.saveBlobToFolder(blob, 'd.png', { allowPrompt: false })).toBe(false);
+    expect(await folderSave.saveBlobToFolder(blob, 'd.png', { allowPrompt: false })).toBeNull();
     expect(handle.requestPermission).not.toHaveBeenCalled();
     expect(fileHandle.createWritable).not.toHaveBeenCalled();
   });
@@ -306,7 +318,7 @@ describe('saveBlobToFolder', () => {
     const cleared = vi.fn();
     folderSave.setSaveFolderClearedListener(cleared);
 
-    expect(await folderSave.saveBlobToFolder(blob, 'e.png', { allowPrompt: false })).toBe(false);
+    expect(await folderSave.saveBlobToFolder(blob, 'e.png', { allowPrompt: false })).toBeNull();
     expect(store.has('saveDir')).toBe(false);
     expect(cleared).toHaveBeenCalledOnce();
     expect(await folderSave.getSaveFolderName()).toBeNull();
