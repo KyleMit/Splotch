@@ -11,6 +11,10 @@
 outside `package.json` (GitHub Actions, runtime-fetched CLIs, system toolchains — see the final
 section)
 
+**Removed since that refresh** (rows and sections dropped; the counts above are the dated snapshot
+and are not restated): `ws` and `marked`, 2026-09-13 — each replaced by a platform capability or a
+small in-repo module.
+
 ## Verdict summary
 
 Non-`keep` rows first.
@@ -54,7 +58,6 @@ Non-`keep` rows first.
 | eslint-plugin-svelte                | dev      | keep                               |
 | globals                             | dev      | keep                               |
 | happy-dom                           | dev      | keep                               |
-| marked                              | dev      | keep                               |
 | prettier                            | dev      | keep                               |
 | prettier-plugin-svelte              | dev      | keep                               |
 | sharp                               | dev      | keep                               |
@@ -668,20 +671,6 @@ Non-`keep` rows first.
   get addressed
 * **Alternatives:** `jsdom` (heavier, more complete) is the standard fallback if happy-dom stalls
 * **Verdict:** keep — the test DOM; healthy, jsdom is a known escape hatch
-
-### marked
-
-* **Version:** `^18.0.5` declared · 18.0.5 locked (latest 18.0.6) · dev
-* **Used for:** Rendering release-notes Markdown to HTML in `tools/release/gen-release-notes.mjs`.
-* **Source:** npm · [github.com/markedjs/marked](https://github.com/markedjs/marked) · published by
-  the MarkedJS org
-* **License:** MIT (GitHub reports NOASSERTION — non-SPDX-standard license file)
-* **Health** (checked 2026-07-17): [37k stars](https://github.com/markedjs/marked) · latest 18.0.6
-  on 2026-07-09 · last push 2026-07-15 · 14 open issues
-* **Maintenance:** active — org-maintained, low issue backlog
-* **Concerns:** none (build-time only, trusted input)
-* **Alternatives:** `markdown-it` if features are ever needed; none needed
-* **Verdict:** keep — build-time Markdown rendering; healthy
 
 ### openai
 

@@ -71,7 +71,7 @@
   `corepack enable pnpm` — re-run that after every `nvm install`, since the shim is written into the
   active Node's `bin/`.
 * **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
-  Netlify web build needs (runtime imports + vite/SvelteKit/adapter/`marked`); `devDependencies` =
+  Netlify web build needs (runtime imports + vite/SvelteKit/adapter); `devDependencies` =
   local/CI-only tooling (Playwright, dprint, sharp, the Capacitor CLIs, …). Netlify installs with
   `--prod`, so a build-needed package filed under `devDependencies` breaks the deploy (CI stays
   green — it installs everything). When adding a dependency, ask "does the Netlify web build import
