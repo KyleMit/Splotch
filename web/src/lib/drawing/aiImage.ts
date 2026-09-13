@@ -7,6 +7,7 @@ import {
   startAiGeneration,
   setAiPreview,
   finishAiGeneration,
+  setAiAutoSave,
   failAiGeneration,
   closeAiResult,
   isAiGenerationActive,
@@ -29,7 +30,7 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { awaitGeneration, generationResultUrl } from './aiGenerationPoll';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
-import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
+import { AI_IMAGE_BASENAME, DRAWING_BASENAME, type SaveResult } from '$lib/saveNaming';
 import type { StyleName } from '$lib/ai/styles';
 
 const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
@@ -123,24 +124,33 @@ async function blobSignature(blob: Blob): Promise<string | null> {
 // changed since the last AI run, so duplicates don't pile up.
 async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
   if (!isAiGenerationActive(runId)) return;
+  setAiAutoSave(runId, { status: 'saving' });
   // The save pipeline loads on demand so this module — statically imported by
   // ActionsPanel — doesn't drag it into the startup bundle (issue #461). A
   // failed chunk load is contained here: the AI image already committed to the
-  // result modal, so it must degrade like any other silent save failure rather
-  // than bubbling into generateAiImage's error UI.
+  // result modal, so it must degrade like any other failed save rather than
+  // bubbling into generateAiImage's error UI.
   let saveImageBlob: (typeof import('./screenshot'))['saveImageBlob'];
   try {
     ({ saveImageBlob } = await import('./screenshot'));
   } catch (err) {
     console.error('Auto-save failed:', err);
+    setAiAutoSave(runId, { status: 'failed' });
     return;
   }
-  await saveImageBlob(aiBlob, AI_IMAGE_BASENAME);
+  // A throw must land as 'failed' here rather than reach generateAiImage's catch, which would
+  // replace the revealed picture with the error card and strand the status at 'saving'.
+  const save = (blob: Blob, baseName: string): Promise<SaveResult> =>
+    saveImageBlob(blob, baseName).catch((err: unknown): SaveResult => {
+      console.error('Auto-save failed:', err);
+      return { status: 'failed' };
+    });
+  setAiAutoSave(runId, await save(aiBlob, AI_IMAGE_BASENAME));
   if (!isAiGenerationActive(runId)) return;
   const sig = await blobSignature(drawingBlob);
   if (!isAiGenerationActive(runId)) return;
   if (!drawingSaver.isDuplicate(sig)) {
-    await saveImageBlob(drawingBlob, DRAWING_BASENAME);
+    await save(drawingBlob, DRAWING_BASENAME);
   }
   // Record the signature of the drawing we just saved even if ownership was lost
   // during that save: the drawing is already in the gallery, so a later owning run

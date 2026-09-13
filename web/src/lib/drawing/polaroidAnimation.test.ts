@@ -93,6 +93,41 @@ describe('createPolaroidPreviewRequest', () => {
     expect(corrected.close).toHaveBeenCalledOnce();
   });
 
+  it('fades a discarded polaroid out and lets its cleanup timer remove it', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    const preview = { width: 960, height: 720, close: vi.fn() } as unknown as ImageBitmap;
+    const { createPolaroidPreviewRequest } = await import('./polaroidAnimation');
+
+    const request = createPolaroidPreviewRequest();
+    request?.onReady(preview);
+    request?.discard();
+
+    expect(document.querySelector('.polaroid-overlay')?.classList).toContain('polaroid-discarded');
+    vi.advanceTimersByTime(POLAROID_CLEANUP_TIMEOUT_MS);
+    expect(document.querySelector('.polaroid-overlay')).toBeNull();
+  });
+
+  it('never mounts a polaroid whose preview arrives after it was discarded', async () => {
+    const drawImage = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage,
+    } as unknown as CanvasRenderingContext2D);
+    const preview = { width: 960, height: 720, close: vi.fn() } as unknown as ImageBitmap;
+    const { createPolaroidPreviewRequest } = await import('./polaroidAnimation');
+
+    const request = createPolaroidPreviewRequest();
+    if (!request) throw new Error('Expected a polaroid preview request');
+    request.discard();
+    request.onReady(preview);
+
+    expect(document.querySelector('.polaroid-overlay')).toBeNull();
+    expect(drawImage).not.toHaveBeenCalled();
+    expect(preview.close).toHaveBeenCalledOnce();
+  });
+
   it('removes the preview when the frame animation does not finish', async () => {
     vi.useFakeTimers();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({

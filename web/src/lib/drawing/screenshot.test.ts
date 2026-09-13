@@ -8,8 +8,11 @@ const mocks = vi.hoisted(() => ({
   playScreenshotSuppressedFeedback: vi.fn(),
   createPolaroidPreviewRequest: vi.fn(),
   triggerDownload: vi.fn(),
+  savePhoto: vi.fn(),
   perfMarks: false,
 }));
+
+vi.mock('@capacitor-community/media', () => ({ Media: { savePhoto: mocks.savePhoto } }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
 vi.mock('$lib/platform', () => ({ getPlatform: vi.fn(), isNative: mocks.isNative }));
@@ -59,19 +62,67 @@ describe('saveScreenshot', () => {
     await save;
 
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['retry']));
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     await saveScreenshot();
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
     expect(mocks.createPolaroidPreviewRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the polaroid and skips the unavailable cue when the save lands', async () => {
+    const preview = { width: 640, onReady: vi.fn(), discard: vi.fn() };
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue(null);
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.triggerDownload).toHaveBeenCalledOnce();
+    expect(preview.discard).not.toHaveBeenCalled();
     expect(mocks.playScreenshotSuppressedFeedback).not.toHaveBeenCalled();
+  });
+
+  it('takes the polaroid back and shakes the camera when the gallery save fails', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
+    const preview = { width: 640, onReady: vi.fn(), discard: vi.fn() };
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.isNative.mockReturnValue(true);
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing'], { type: 'image/png' }));
+    mocks.savePhoto.mockRejectedValueOnce(new Error('User denied access')).mockResolvedValue({});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(preview.discard).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+
+    now.mockReturnValue(1_001);
+    await saveScreenshot();
+
+    expect(mocks.savePhoto).toHaveBeenCalledTimes(2);
+    expect(preview.discard).toHaveBeenCalledOnce();
+  });
+
+  it('takes the polaroid back when the export produces no image', async () => {
+    const preview = { width: 640, onReady: vi.fn(), discard: vi.fn() };
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.exportCanvasBlob.mockResolvedValue(null);
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(preview.discard).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
   });
 
   it('requests the worker preview alongside the settled export snapshot', async () => {
     const preview = { width: 640, onReady: vi.fn() };
     mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { saveScreenshot } = await import('./screenshot');
 
     await saveScreenshot();
@@ -88,7 +139,7 @@ describe('saveScreenshot', () => {
     const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
     mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
     mocks.exportCanvasBlob.mockReturnValue(exported.promise);
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
 
     prepareScreenshot(() => null);
@@ -112,7 +163,7 @@ describe('saveScreenshot', () => {
     const blob = new Blob(['drawing']);
     const complete = vi.fn(async () => blob);
     const cancel = vi.fn();
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
 
     prepareScreenshot(() => ({ complete, cancel }));
@@ -143,7 +194,7 @@ describe('saveScreenshot', () => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
     const prepareExport = vi.fn();
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
 
     await saveScreenshot();
@@ -157,7 +208,7 @@ describe('saveScreenshot', () => {
     const complete = vi.fn(async () => new Blob(['cancelled']));
     const cancel = vi.fn();
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { cancelScreenshotPreparation, prepareScreenshot, saveScreenshot } =
       await import('./screenshot');
 
@@ -180,7 +231,7 @@ describe('saveScreenshot', () => {
     const firstCancel = vi.fn();
     const secondComplete = vi.fn(async () => new Blob(['current']));
     const secondCancel = vi.fn();
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
 
     prepareScreenshot(() => ({ complete: firstComplete, cancel: firstCancel }));
@@ -198,7 +249,7 @@ describe('saveScreenshot', () => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
     const save = Promise.withResolvers<boolean>();
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
-    mocks.saveBlobToFolder.mockReturnValueOnce(save.promise).mockResolvedValueOnce(true);
+    mocks.saveBlobToFolder.mockReturnValueOnce(save.promise).mockResolvedValueOnce('Drawings');
     const { saveScreenshot } = await import('./screenshot');
 
     const first = saveScreenshot();
@@ -226,7 +277,7 @@ describe('saveScreenshot', () => {
   it('suppresses duplicate saves during the post-save cooldown', async () => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { saveScreenshot } = await import('./screenshot');
 
     await saveScreenshot();
@@ -249,13 +300,15 @@ describe('saveScreenshot', () => {
     mocks.exportCanvasBlob
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce(new Blob(['drawing']));
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { saveScreenshot } = await import('./screenshot');
 
     await expect(saveScreenshot()).rejects.toThrow(error);
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
     await saveScreenshot();
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
   });
 });
 
@@ -268,17 +321,19 @@ describe('saveImageBlob', () => {
     const blob = new Blob(['image'], { type: 'image/png' });
     const { saveImageBlob } = await import('./screenshot');
 
-    await saveImageBlob(blob, 'splotch-test');
+    await expect(saveImageBlob(blob, 'splotch-test')).resolves.toEqual({ status: 'photos' });
 
     expect(sink).toHaveBeenCalledWith(blob, 'splotch-test');
     expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
   });
 
   it('uses the blob MIME type for web filenames', async () => {
-    mocks.saveBlobToFolder.mockResolvedValue(true);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
     const { saveImageBlob } = await import('./screenshot');
 
-    await saveImageBlob(new Blob(['image'], { type: 'image/webp' }), 'splotch-ai');
+    await expect(
+      saveImageBlob(new Blob(['image'], { type: 'image/webp' }), 'splotch-ai')
+    ).resolves.toEqual({ status: 'chosenFolder', folderName: 'Drawings' });
 
     expect(mocks.saveBlobToFolder).toHaveBeenCalledWith(
       expect.any(Blob),
@@ -289,17 +344,39 @@ describe('saveImageBlob', () => {
   });
 
   it('falls back to a download and revokes the object URL when no folder takes the blob', async () => {
-    mocks.saveBlobToFolder.mockResolvedValue(false);
+    mocks.saveBlobToFolder.mockResolvedValue(null);
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     const { saveImageBlob } = await import('./screenshot');
 
     const saved = await saveImageBlob(new Blob(['image'], { type: 'image/png' }));
 
-    expect(saved).toBe(true);
+    expect(saved).toEqual({ status: 'downloads' });
     expect(mocks.triggerDownload).toHaveBeenCalledWith(
       'blob:polaroid',
       expect.stringMatching(/^splotch-.+\.png$/)
     );
     expect(revoke).toHaveBeenCalledWith('blob:polaroid');
+  });
+
+  it('reports a failed native gallery save instead of claiming it landed', async () => {
+    mocks.isNative.mockReturnValue(true);
+    mocks.savePhoto.mockRejectedValue(new Error('User denied access'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { saveImageBlob } = await import('./screenshot');
+
+    await expect(saveImageBlob(new Blob(['image'], { type: 'image/png' }))).resolves.toEqual({
+      status: 'failed',
+    });
+    expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
+  });
+
+  it('reports a native gallery save as saved to photos', async () => {
+    mocks.isNative.mockReturnValue(true);
+    mocks.savePhoto.mockResolvedValue({});
+    const { saveImageBlob } = await import('./screenshot');
+
+    await expect(saveImageBlob(new Blob(['image'], { type: 'image/png' }))).resolves.toEqual({
+      status: 'photos',
+    });
   });
 });

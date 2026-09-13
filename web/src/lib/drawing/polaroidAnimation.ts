@@ -16,7 +16,13 @@ interface PolaroidSize {
   rasterWidth: number;
 }
 
+const POLAROID_DISCARDED_CLASS = 'polaroid-discarded';
+
 type PolaroidPreviewRequest = NonNullable<ExportOptions['preview']>;
+
+interface PolaroidPreview extends PolaroidPreviewRequest {
+  discard(): void;
+}
 
 function polaroidSize(): PolaroidSize | null {
   const { paperCssWidth, paperCssHeight } = getViewState();
@@ -77,6 +83,7 @@ function mountPolaroidAnimation(canvas: HTMLCanvasElement, size: PolaroidSize) {
   const cleanupTimer = window.setTimeout(removeOverlay, POLAROID_CLEANUP_TIMEOUT_MS);
   frame.addEventListener('animationend', removeOverlay, { once: true });
   document.body.appendChild(overlay);
+  return overlay;
 }
 
 function paintPolaroidPreview(canvas: HTMLCanvasElement, preview: ImageBitmap) {
@@ -92,14 +99,16 @@ function paintPolaroidPreview(canvas: HTMLCanvasElement, preview: ImageBitmap) {
   return true;
 }
 
-export function createPolaroidPreviewRequest(): PolaroidPreviewRequest | null {
+export function createPolaroidPreviewRequest(): PolaroidPreview | null {
   const size = polaroidSize();
   if (!size) return null;
   let canvas: HTMLCanvasElement | null = null;
+  let overlay: HTMLElement | null = null;
+  let discarded = false;
   return {
     width: size.rasterWidth,
     onReady: (preview) => {
-      if (canvas && !canvas.isConnected) {
+      if (discarded || (canvas && !canvas.isConnected)) {
         preview.close();
         return;
       }
@@ -107,8 +116,12 @@ export function createPolaroidPreviewRequest(): PolaroidPreviewRequest | null {
       if (!paintPolaroidPreview(target, preview)) return;
       if (!canvas) {
         canvas = target;
-        mountPolaroidAnimation(canvas, size);
+        overlay = mountPolaroidAnimation(canvas, size);
       }
+    },
+    discard: () => {
+      discarded = true;
+      overlay?.classList.add(POLAROID_DISCARDED_CLASS);
     },
   };
 }

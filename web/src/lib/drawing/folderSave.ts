@@ -162,32 +162,32 @@ async function forgetStaleFolder(): Promise<void> {
   folderClearedListener?.();
 }
 
-// Write `blob` as `filename` into the chosen folder. Returns true once written;
-// false (no folder set, unsupported, or permission lost) tells the caller to
-// fall back to a download. Never opens the folder picker — folder selection is a
-// separate action in Settings. `allowPrompt` only lets a user-initiated save
-// re-confirm a write permission the browser dropped since the folder was chosen
-// (in-tab origins lose it between sessions); background saves leave it false and
-// degrade silently to a download.
+// Write `blob` as `filename` into the chosen folder. Returns the name of the folder it was written
+// into, taken from the handle that did the write so a folder changed mid-save can't be misreported;
+// null (no folder set, unsupported, or permission lost) tells the caller to fall back to a download.
+// Never opens the folder picker — folder selection is a separate action in Settings. `allowPrompt`
+// only lets a user-initiated save re-confirm a write permission the browser dropped since the folder
+// was chosen (in-tab origins lose it between sessions); background saves leave it false and degrade
+// silently to a download.
 export async function saveBlobToFolder(
   blob: Blob,
   filename: string,
   opts?: { allowPrompt?: boolean }
-): Promise<boolean> {
-  if (!folderSaveSupported()) return false;
+): Promise<string | null> {
+  if (!folderSaveSupported()) return null;
   const allowPrompt = opts?.allowPrompt ?? false;
 
   try {
     const handle = await loadHandle();
-    if (!handle) return false;
+    if (!handle) return null;
 
-    if (!(await ensureWritePermission(handle, allowPrompt))) return false;
+    if (!(await ensureWritePermission(handle, allowPrompt))) return null;
 
     const fileHandle = await createUniqueFile(handle, filename);
     const writable = await fileHandle.createWritable();
     await writable.write(blob);
     await writable.close();
-    return true;
+    return handle.name;
   } catch (err) {
     // The folder was moved/removed since we stored it: drop the stale handle so
     // it reverts to the no-folder (download) state, and tell the settings mirror
@@ -196,6 +196,6 @@ export async function saveBlobToFolder(
     if (err instanceof DOMException && err.name === 'NotFoundError') {
       await forgetStaleFolder();
     }
-    return false;
+    return null;
   }
 }

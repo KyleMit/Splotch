@@ -1,11 +1,12 @@
 <script lang="ts">
   import ToggleRow from './ToggleRow.svelte';
   import {
-    AI_AUTO_SAVE_HELP,
     AI_AUTO_SAVE_LABEL,
     AI_CUSTOMIZATION_HELP,
     AI_CUSTOMIZATION_LABEL,
+    aiAutoSaveHelp,
   } from './aiSettingsCopy';
+  import { folderSaveSupported } from '$lib/drawing/folderSave';
   import { settings, setAiCustomization, setAutoSaveAi } from '$lib/state/settings.svelte';
   import '$lib/components/deferredIcons';
 </script>
@@ -29,7 +30,7 @@
       id="autoSaveAiToggle"
       checked={settings.autoSaveAiEnabled}
       onToggle={setAutoSaveAi}
-      help={AI_AUTO_SAVE_HELP}
+      help={aiAutoSaveHelp(folderSaveSupported())}
     />
   </div>
 </section>

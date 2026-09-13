@@ -5,6 +5,7 @@ import {
   extensionForImageType,
   timestamp,
   triggerDownload,
+  type SaveResult,
 } from '$lib/saveNaming';
 import { saveBlobToFolder } from './folderSave';
 import { playScreenshotFeedback, playScreenshotSuppressedFeedback } from './screenshotFeedback';
@@ -21,6 +22,7 @@ type ExportResult = { blob: Blob | null; error?: never } | { blob?: never; error
 interface PreparedScreenshot {
   activate(): Promise<ExportResult>;
   cancel(): void;
+  discardPreview(): void;
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -53,33 +55,34 @@ async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
 // optional and decoupled from saving — no folder just means a download.
 // `allowPrompt` lets a user-initiated save re-confirm a lapsed folder
 // permission; background saves (AI auto-save, save-on-delete) leave it falsy. No
-// polaroid animation — the caller owns its own feedback.
+// polaroid animation — the caller owns its own feedback, and words it from the outcome.
 export async function saveImageBlob(
   blob: Blob,
   baseName = DRAWING_BASENAME,
   opts?: { allowPrompt?: boolean }
-) {
+): Promise<SaveResult> {
   // __IS_CAPACITOR__ makes the gallery path compile-time dead on web so Rollup
   // drops the media plugin chunk (isNative() alone can't tree-shake across modules).
   if (__IS_CAPACITOR__ && isNative()) {
     if (PERF_MARKS && window.__screenshotSaveSink) {
       await window.__screenshotSaveSink(blob, baseName);
-      return true;
+      return { status: 'photos' };
     }
     try {
       await saveToGallery(blob, baseName);
-      return true;
+      return { status: 'photos' };
     } catch (err) {
       console.error('Save to gallery failed:', err);
-      return false;
+      return { status: 'failed' };
     }
   } else {
     const filename = `${baseName}-${timestamp()}.${extensionForImageType(blob.type)}`;
-    if (await saveBlobToFolder(blob, filename, opts)) return true;
+    const folderName = await saveBlobToFolder(blob, filename, opts);
+    if (folderName !== null) return { status: 'chosenFolder', folderName };
     const url = URL.createObjectURL(blob);
     triggerDownload(url, filename);
     URL.revokeObjectURL(url);
-    return true;
+    return { status: 'downloads' };
   }
 }
 
@@ -99,6 +102,9 @@ function createPreparedScreenshot(
     cancel() {
       exportPreparation?.cancel();
     },
+    discardPreview() {
+      preview?.discard();
+    },
   };
 }
 
@@ -113,11 +119,19 @@ export function cancelScreenshotPreparation() {
   preparedScreenshot = null;
 }
 
-async function savePreparedScreenshot(prepared: PreparedScreenshot) {
+async function savePreparedScreenshot(prepared: PreparedScreenshot): Promise<SaveResult> {
   const result = await prepared.activate();
   if ('error' in result) throw result.error;
-  if (!result.blob) return false;
+  if (!result.blob) return { status: 'failed' };
   return saveImageBlob(result.blob, undefined, { allowPrompt: true });
+}
+
+// The capture cue and polaroid start on the tap so the toddler sees an instant response; a save
+// that turns out not to land takes the polaroid back and shakes the camera instead of letting the
+// flight finish as if the picture were kept.
+function showScreenshotFailed(prepared: PreparedScreenshot) {
+  prepared.discardPreview();
+  playScreenshotSuppressedFeedback();
 }
 
 export function saveScreenshot(): Promise<void> {
@@ -135,9 +149,16 @@ export function saveScreenshot(): Promise<void> {
   const prepared = preparedScreenshot ?? createPreparedScreenshot();
   preparedScreenshot = null;
   activeScreenshotSave = savePreparedScreenshot(prepared)
-    .then((saved) => {
-      if (saved) nextScreenshotAllowedAt = performance.now() + SCREENSHOT_COOLDOWN_MS;
-    })
+    .then(
+      (saved) => {
+        if (saved.status === 'failed') return showScreenshotFailed(prepared);
+        nextScreenshotAllowedAt = performance.now() + SCREENSHOT_COOLDOWN_MS;
+      },
+      (error: unknown) => {
+        showScreenshotFailed(prepared);
+        throw error;
+      }
+    )
     .finally(() => {
       activeScreenshotSave = null;
     });
