@@ -49,14 +49,25 @@ function resetGate() {
   gate.escalationQuietSince = null;
 }
 
+// A tap landing inside a lockout changes nothing, and most of a two-minute
+// window is spent locked out. Stepping the fake clock through each of those
+// taps made this suite too slow under CI's coverage instrumentation, so they
+// only draw their key, which keeps every seed's sequence and result unchanged.
+function lockoutSwallows(tapAtMs: number) {
+  return gate.lockoutUntil !== null && tapAtMs < gate.lockoutUntil;
+}
+
 function mashUnlocks(seed: number, tapIntervalMs: number): boolean {
   const random = seededRandom(seed);
   vi.spyOn(Math, 'random').mockImplementation(random);
   requireParentalGate('parentCenter', () => {});
+  const startMs = Date.now();
   for (let elapsed = 0; elapsed < MASH_WINDOW_MS; elapsed += tapIntervalMs) {
-    pressGateKey(GATE_KEYPAD_KEYS[Math.floor(random() * GATE_KEYPAD_KEYS.length)]);
+    const key = GATE_KEYPAD_KEYS[Math.floor(random() * GATE_KEYPAD_KEYS.length)];
+    if (lockoutSwallows(startMs + elapsed)) continue;
+    vi.advanceTimersByTime(startMs + elapsed - Date.now());
+    pressGateKey(key);
     if (gate.unlocked) return true;
-    vi.advanceTimersByTime(tapIntervalMs);
   }
   return false;
 }
