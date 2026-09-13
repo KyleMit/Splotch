@@ -249,7 +249,7 @@ test.describe('the two-column settings shell', () => {
 //
 // Transcribed rather than imported: this is a TypeScript spec and the inventory
 // is an untyped .mjs, so a direct import costs the file its type checking.
-// tools/tests/scroll-cue-viewports.test.mjs reads both sides and fails when a
+// tools/tests/page-inventory-spec-viewports.test.mjs reads both sides and fails when a
 // device-list refresh leaves these pinned to sizes the inventory stopped
 // capturing. The constants above predate that guard and still stand alone.
 const IPAD_MINI_PORTRAIT = { width: 744, height: 1133 }; // ipad-mini-7

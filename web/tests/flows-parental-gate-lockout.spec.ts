@@ -11,12 +11,19 @@ import {
 // mash-resistance amendment). The rules and their odds are unit-tested beside
 // the state module; this pins what a grown-up meets in the real card: the
 // check key, a countdown that tells the truth after a reopen, a keypad that
-// ignores even a right answer, and a card that stays the same size throughout
-// (issue #1522 is already about this dialog overflowing a landscape phone).
+// ignores even a right answer, and a card that stays the same size throughout.
 
 const AI_PROMPT = 'dialog.ai-prompt-modal';
 const ELAPSED_BEFORE_REOPEN_MS = 25_000;
-const LANDSCAPE_PHONE = { width: 568, height: 320 };
+// The shortest landscape phone the compact card is tuned for, below every
+// page-inventory size.
+const SHORT_LANDSCAPE_PHONE = { width: 568, height: 320 };
+// The landscape phones the page-inventory critique found the card cropped at
+// (issue #1522). Transcribed rather than imported, since the inventory is an
+// untyped .mjs; tools/tests/page-inventory-spec-viewports.test.mjs holds each
+// literal to the inventory id in its trailing comment.
+const SMALL_IPHONE_LANDSCAPE = { width: 812, height: 375 }; // iphone-13-mini-landscape
+const LARGE_IPHONE_LANDSCAPE = { width: 956, height: 440 }; // iphone-16-pro-max-landscape
 
 async function checkEmptyAnswer(page: Page) {
   await page.locator('.gate-keypad').getByRole('button', { name: 'Check answer' }).click();
@@ -82,22 +89,34 @@ test('a reopened card counts down from the time actually left', async ({ page })
   expect(truthful).toContain(await message.textContent());
 });
 
-// On a landscape phone the check key and the feedback it produces must share
-// the screen: a parent who answers wrongly sees why without scrolling.
-test('a landscape phone shows the check key and its feedback together', async ({ page }) => {
-  await page.setViewportSize(LANDSCAPE_PHONE);
-  await seedAiEnabled(page);
-  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
-  const gate = await openParentalGate(page);
+// On a landscape phone the whole card shares the screen: every key, the
+// equation, the feedback a wrong answer produces, and the manage footer. A
+// parent who answers wrongly sees why without scrolling, and no key sits past
+// the viewport edge where a tap cannot reach it.
+for (const [label, viewport] of [
+  ['a short landscape phone', SHORT_LANDSCAPE_PHONE],
+  ['a small iPhone in landscape', SMALL_IPHONE_LANDSCAPE],
+  ['a large iPhone in landscape', LARGE_IPHONE_LANDSCAPE],
+] as const) {
+  test(`${label} holds the whole card on screen`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await seedAiEnabled(page);
+    await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
+    const gate = await openParentalGate(page);
 
-  await checkEmptyAnswer(page);
+    await checkEmptyAnswer(page);
 
-  for (const part of [
-    gate.getByRole('button', { name: 'Check answer' }),
-    gate.locator('.gate-equation'),
-    gate.locator('.gate-error'),
-  ]) {
-    await expect(part).toBeInViewport({ ratio: 1 });
-  }
-  await expect(gate.locator('.gate-error')).not.toHaveText('');
-});
+    const keys = await gate.locator('.gate-keypad button').all();
+    expect(keys).toHaveLength(12);
+    for (const part of [
+      ...keys,
+      gate.locator('.gate-header'),
+      gate.locator('.gate-equation'),
+      gate.locator('.gate-error'),
+      gate.locator('.gate-manage'),
+    ]) {
+      await expect(part).toBeInViewport({ ratio: 1 });
+    }
+    await expect(gate.locator('.gate-error')).not.toHaveText('');
+  });
+}
