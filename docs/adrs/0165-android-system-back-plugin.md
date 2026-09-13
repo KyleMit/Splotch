@@ -43,12 +43,23 @@ opens over Settings; the AI report confirmation opens over the AI result).
 **Native.** `android/app/src/main/java/art/splotch/app/SystemBackPlugin.java`, registered in
 `MainActivity`, adds an always-enabled `OnBackPressedCallback` to the activity's AndroidX
 `OnBackPressedDispatcher` in `load()`. When the page has a `back` listener, the callback only
-notifies it. When it has none, the callback disables itself, re-dispatches, and re-enables, so the
-system default runs. That fallback is load-bearing: before the web layer subscribes, and after a
-page reload (`Bridge.reset()` clears every plugin listener), a callback that always consumed Back
-would swallow it with nothing left to answer. `moveToBackground()` calls `moveTaskToBack(true)`,
-which on every API level leaves the app the way Android 12+ Back does, keeping the activity and its
-drawing.
+notifies it, from the bridge thread where listeners are added, with Capacitor's retain flag set. A
+Back with no listener is then one of two cases:
+
+* **The page has not subscribed yet.** The drawing route loads its handler after mount, while the
+  canvas already takes strokes before hydration (ADR-0072), and `Bridge.reset()` clears every plugin
+  listener when a page starts loading. A Back in that gap is retained and delivered the moment the
+  page subscribes, because the system default would finish the activity, and the drawing, on Android
+  7–11. The plugin learns a page has started from its `removeAllListeners()` override (the one
+  `Bridge.reset()` calls) and that it has subscribed from its `addListener` override.
+  `SUBSCRIBE_GRACE_MS` bounds the wait, so a page that never subscribes (a boot failure) gets the
+  system default rather than a dead Back.
+* **The page subscribed and let go**, as the drawing route does when it unmounts for `/privacy` or
+  `/changelog`. The callback disables itself, re-dispatches, and re-enables, so the system default
+  runs, exactly as before this decision.
+
+`moveToBackground()` calls `moveTaskToBack(true)`, which on every API level leaves the app the way
+Android 12+ Back does, keeping the activity and its drawing.
 
 **Predictive back.** The AndroidX dispatcher registers an `OnBackInvokedCallback` itself on Android
 13+ when the platform dispatches through one, and falls back to `onBackPressed()` otherwise. With
@@ -99,6 +110,9 @@ closes.
 * − Back on a multi-level dialog (the phone Settings hub and its sections) closes the whole dialog,
   as Escape does, rather than stepping back one level.
 * − Predictive back's back-to-home animation never shows while Splotch is in front.
-* − Before the web layer subscribes, and in the moment a page reload clears listeners, Back takes
-  the system default. On Android 7–11 that still finishes the activity.
+* − A Back pressed while the page is still loading acts only once the page subscribes, a fraction of
+  a second later on the API 33 emulator. After `SUBSCRIBE_GRACE_MS` without a subscription, Back
+  takes the system default again.
+* − On `/privacy` and `/changelog`, which have no handler, Back still takes the system default and
+  leaves the app rather than returning to the drawing.
 * − A dialog that bypassed `modalDialog` would be invisible to Back. Every app dialog uses it today.
