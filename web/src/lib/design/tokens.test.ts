@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { brand, isColorToken, scale, themes, toCssVarName } from './tokens';
+import { iconTokenEntries } from './iconTokens';
+import { brand, isColorToken, scale, themes, toCssVarName, zIndex } from './tokens';
 
 // The gen:tokens drift gate only proves the committed CSS matches the
 // generator's output — it would happily bless a wrong var name on both sides.
@@ -79,13 +80,19 @@ describe('legacyColorCalls', () => {
 });
 
 // stylelint's modern colour-notation rules can't see tokens.css (it is
-// generated and ignored), so the token values carry the same guarantee here.
+// generated and ignored), so every value gen-token-css.mjs emits carries the
+// same guarantee here.
 describe('colour notation', () => {
-  const values = [
+  const values: [string, string][] = [
     ...Object.entries(brand),
     ...Object.entries(scale),
     ...Object.entries(themes.light),
     ...Object.entries(themes.dark),
+    ...Object.entries(zIndex).map(([key, value]): [string, string] => [key, String(value)]),
+    ...iconTokenEntries().flatMap(({ cssVar, light, dark }): [string, string][] => [
+      [`${cssVar} light`, light],
+      [`${cssVar} dark`, dark],
+    ]),
   ];
 
   it.each(values)('%s uses the modern rgb() form', (_key, value) => {
