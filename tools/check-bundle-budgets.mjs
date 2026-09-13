@@ -10,7 +10,12 @@ const OUTPUT_DIR = join(ROOT, 'web/.svelte-kit/output');
 const PRERENDERED_INDEX = join(OUTPUT_DIR, 'prerendered/pages/index.html');
 const CLIENT_DIR = join(OUTPUT_DIR, 'client');
 const NATIVE_DIR = join(ROOT, 'web/build');
-const RUNTIME_GENERATED_STARTUP_URLS = new Set(['_app/env.js']);
+// SvelteKit emits this module, and makes every prerendered boot script await it
+// before importing any app code, only when a client chunk reads
+// `$env/dynamic/public`. It has no file in the static output, so production
+// serves it from the SSR function; web/src/lib/server/devHarness.ts keeps the
+// one runtime public-env read server-side for that reason.
+const RUNTIME_ENV_MODULE_URL = '_app/env.js';
 
 // The reviewed 2026-09-11 startup baseline is 473,352 bytes, after ADR-0164 moved the deferred icons off the path; 51,648 bytes of headroom permits ordinary app growth while catching another large eager dependency. Consuming it is the cue to find the next lever before raising the number (ADR-0032's headroom amendment).
 export const MAX_STARTUP_JS_CSS_BYTES = 525_000;
@@ -78,9 +83,13 @@ export function measureWebBundle({ prerenderedIndex, clientDir }) {
   if (!existsSync(prerenderedIndex)) {
     throw new Error(`Prerendered home page does not exist: ${prerenderedIndex}`);
   }
-  const { hrefs, inlineStyleBytes } = startupResourcesFromHtml(
-    readFileSync(prerenderedIndex, 'utf8')
-  );
+  const html = readFileSync(prerenderedIndex, 'utf8');
+  if (html.includes(RUNTIME_ENV_MODULE_URL)) {
+    throw new Error(
+      `${prerenderedIndex} waits on the function-served ${RUNTIME_ENV_MODULE_URL} before app code runs — a client module imports $env/dynamic/public; move that read server-side`
+    );
+  }
+  const { hrefs, inlineStyleBytes } = startupResourcesFromHtml(html);
   if (!hrefs.length) {
     throw new Error(`No modulepreload or active stylesheet links found in ${prerenderedIndex}`);
   }
@@ -89,11 +98,7 @@ export function measureWebBundle({ prerenderedIndex, clientDir }) {
   let startupBytes = inlineStyleBytes;
   for (const href of hrefs) {
     const path = clientPathFromHref(clientDir, href);
-    const clientRelativePath = relative(clientDir, path);
-    if (!existsSync(path)) {
-      if (RUNTIME_GENERATED_STARTUP_URLS.has(clientRelativePath)) continue;
-      throw new Error(`Startup resource does not exist: ${path}`);
-    }
+    if (!existsSync(path)) throw new Error(`Startup resource does not exist: ${path}`);
     if (startupPaths.has(path)) continue;
     startupPaths.add(path);
     startupBytes += statSync(path).size;

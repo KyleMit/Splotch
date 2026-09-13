@@ -1,7 +1,7 @@
 import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { json } from '@sveltejs/kit';
-import { requireDevHarness } from '$lib/devHarness';
+import { requireDevHarness } from '$lib/server/devHarness';
 import type { RequestHandler } from './$types';
 
 // Answers "which checkout is this server serving?" for gen-store-assets'

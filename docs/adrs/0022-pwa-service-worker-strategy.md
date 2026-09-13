@@ -65,18 +65,18 @@ update-lifecycle and manifest-generation features are explicitly disabled. A cus
 
 ### vite-plugin-pwa configuration (`vite.config.ts`)
 
-| Option                      | Value                                                                                               | Reason                                                                                                                      |
-| --------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `registerType`              | `'prompt'`                                                                                          | Disables the auto-update injection; `updates.ts` is the sole driver                                                         |
-| `manifest`                  | `false`                                                                                             | Web manifest is maintained manually in `static/site.webmanifest`                                                            |
-| `workbox.skipWaiting`       | *(omitted)*                                                                                         | New SW enters the waiting state; `updates.ts` activates it only when canvas is blank                                        |
-| `workbox.clientsClaim`      | `true`                                                                                              | New SW claims all clients immediately after activation                                                                      |
-| `workbox.navigateFallback`  | `''`                                                                                                | Suppresses the default `NavigationRoute(createHandlerBoundToURL('index.html'))` which would shadow the NetworkFirst handler |
-| `workbox.globPatterns`      | no `html`                                                                                           | Prerendered HTML does not exist yet when the worker is generated; the app shell is added as a manifest entry instead        |
-| `workbox.globIgnores`       | social card, source line art, responsive tiers, and non-starter coloring books                      | Avoids served-only assets, duplicate resolutions, and post-install book packs                                               |
-| `additionalManifestEntries` | `'_app/env.js'` plus the versioned coloring-pack manifest                                           | Keeps offline hydration and the downloader's integrity/file inventory available                                             |
-| `manifestTransforms`        | prepends the app shell at a build-unique `/?app-shell-build=` URL                                   | Keeps offline boot on the worker's own build; first so a deploy mid-install fails the install                               |
-| `workbox.runtimeCaching`    | responsive and installed-canonical coloring handlers; `NetworkFirst` navigations with a 5 s timeout | `/` falls back to the precached shell; other routes fall back to the `pages` runtime cache                                  |
+| Option                      | Value                                                                                               | Reason                                                                                                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `registerType`              | `'prompt'`                                                                                          | Disables the auto-update injection; `updates.ts` is the sole driver                                                                                               |
+| `manifest`                  | `false`                                                                                             | Web manifest is maintained manually in `static/site.webmanifest`                                                                                                  |
+| `workbox.skipWaiting`       | *(omitted)*                                                                                         | New SW enters the waiting state; `updates.ts` activates it only when canvas is blank                                                                              |
+| `workbox.clientsClaim`      | `true`                                                                                              | New SW claims all clients immediately after activation                                                                                                            |
+| `workbox.navigateFallback`  | `''`                                                                                                | Suppresses the default `NavigationRoute(createHandlerBoundToURL('index.html'))` which would shadow the NetworkFirst handler                                       |
+| `workbox.globPatterns`      | no `html`                                                                                           | Prerendered HTML does not exist yet when the worker is generated; the app shell is added as a manifest entry instead                                              |
+| `workbox.globIgnores`       | social card, source line art, responsive tiers, and non-starter coloring books                      | Avoids served-only assets, duplicate resolutions, and post-install book packs                                                                                     |
+| `additionalManifestEntries` | the versioned coloring-pack manifest                                                                | Keeps the downloader's integrity/file inventory available offline. No client module reads `$env/dynamic/public`, so SvelteKit emits no `/_app/env.js` to precache |
+| `manifestTransforms`        | prepends the app shell at a build-unique `/?app-shell-build=` URL                                   | Keeps offline boot on the worker's own build; first so a deploy mid-install fails the install                                                                     |
+| `workbox.runtimeCaching`    | responsive and installed-canonical coloring handlers; `NetworkFirst` navigations with a 5 s timeout | `/` falls back to the precached shell; other routes fall back to the `pages` runtime cache                                                                        |
 
 ### Responsive coloring and offline fallback
 
@@ -93,9 +93,9 @@ coloring complete without storing duplicate art. A browser may still report the 
 image's `currentSrc` offline; the bytes returned for that request are the canonical asset.
 
 `scripts/check-pwa-precache.mjs` runs after every web build. It rejects responsive entries, a
-responsive derivative without a canonical precache entry, a missing `/_app/env.js`, or a precache
-above the named size budget. The production Playwright suite clears the HTTP cache and verifies the
-offline DPR 1 and DPR 3 picker and canvas paths against decoded response dimensions.
+responsive derivative without a canonical precache entry, a precached URL with no file on disk, or a
+precache above the named size budget. The production Playwright suite clears the HTTP cache and
+verifies the offline DPR 1 and DPR 3 picker and canvas paths against decoded response dimensions.
 
 ### Build-matched offline shell
 

@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { error } from '@sveltejs/kit';
-import { requireDevHarness } from '$lib/devHarness';
+import { requireDevHarness } from '$lib/server/devHarness';
 import { STORE_TARGETS } from '../../lib/targets.ts';
 import { STORE_PAGES, pageHasCapture } from '../../lib/pages.ts';
 import {

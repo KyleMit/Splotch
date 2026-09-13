@@ -152,7 +152,6 @@ export default defineConfig({
             manifest: false,
             workbox: {
               additionalManifestEntries: [
-                { url: '_app/env.js', revision: BUILD_TIME },
                 {
                   url: coloringPackManifest.fileName,
                   revision: coloringPackManifest.revision,
