@@ -263,8 +263,12 @@ Three things that will waste your time here:
 * [ ] Test coloring-pack background work: on Wi-Fi, books appear one at a time; disabling Coloring
       Book cancels WorkManager but keeps completed packs, re-enabling resumes; with default
       settings, metered/Data Saver conditions pause WorkManager; Settings removal returns to Farm.
-* [ ] Test "save to gallery" → confirm a **Splotch** album with the PNG, and that the photo-add
-      permission prompt reads sensibly.
+* [ ] Test "save to gallery" → confirm a **Splotch** album with the PNG, stored under
+      `Pictures/Splotch` (`adb shell content query --uri content://media/external/images/media`),
+      and that it is still in Photos after uninstalling the app. On Android 10+ there is no
+      permission prompt; on Android 7–9 the first save asks for storage access once, and after a
+      denial every save still lands, without asking again, in app-specific storage that the
+      uninstall removes.
 * [ ] Test App Pinning: pin Splotch, reopen Settings → the lock section shows a green ✓ + the unpin
       steps (via the custom `DeviceLock` plugin,
       `android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java`, registered in

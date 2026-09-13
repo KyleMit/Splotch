@@ -1,0 +1,236 @@
+package art.splotch.app;
+
+import android.Manifest;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Base64;
+
+import androidx.annotation.RequiresApi;
+
+import com.getcapacitor.PermissionState;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+/**
+ * Saves a drawing into the shared Pictures/Splotch folder, where it belongs to the photo library
+ * rather than to the app and so survives an uninstall.
+ *
+ * <p>API 29+ inserts through MediaStore, which needs no permission for files the app creates. API
+ * 24–28 has no RELATIVE_PATH, so it writes the public directory directly behind the
+ * maxSdkVersion-28 WRITE_EXTERNAL_STORAGE grant. A parent who denies that prompt still gets the
+ * drawing in the gallery, written to the app-specific media directory that needs no permission;
+ * that copy is removed with the app, which is the trade the denial asked for.
+ */
+@CapacitorPlugin(
+        name = "PhotoLibrary",
+        permissions = {
+            @Permission(
+                    strings = {Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    alias = PhotoLibraryPlugin.LEGACY_STORAGE_ALIAS)
+        })
+public class PhotoLibraryPlugin extends Plugin {
+    static final String LEGACY_STORAGE_ALIAS = "legacyStorage";
+    private static final String ALBUM_NAME = "Splotch";
+    private static final String ERROR_INVALID_ARGUMENT = "argumentError";
+    private static final String ERROR_WRITE_FAILED = "writeFailed";
+
+    @PluginMethod
+    public void saveImage(PluginCall call) {
+        ImageSave image = parseOrReject(call);
+        if (image == null) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            write(call, () -> insertIntoMediaStore(image));
+        } else if (getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.PROMPT) {
+            requestPermissionForAlias(LEGACY_STORAGE_ALIAS, call, "legacyStoragePermissionResult");
+        } else {
+            write(call, () -> writeToDirectory(legacyDirectory(), image));
+        }
+    }
+
+    @PermissionCallback
+    private void legacyStoragePermissionResult(PluginCall call) {
+        ImageSave image = parseOrReject(call);
+        if (image == null) return;
+        // Permission results arrive on the main thread; the decode and write do not belong there.
+        execute(() -> write(call, () -> writeToDirectory(legacyDirectory(), image)));
+    }
+
+    private static ImageSave parseOrReject(PluginCall call) {
+        try {
+            return ImageSave.from(call);
+        } catch (IllegalArgumentException error) {
+            call.reject(error.getMessage(), ERROR_INVALID_ARGUMENT, error);
+            return null;
+        }
+    }
+
+    private interface ImageWrite {
+        void run() throws IOException;
+    }
+
+    private static void write(PluginCall call, ImageWrite imageWrite) {
+        try {
+            imageWrite.run();
+            call.resolve();
+        } catch (IOException | RuntimeException error) {
+            call.reject("Saving the image to the photo library failed", ERROR_WRITE_FAILED, error);
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private void insertIntoMediaStore(ImageSave image) throws IOException {
+        byte[] bytes = image.decode();
+        ContentResolver resolver = getContext().getContentResolver();
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, image.displayName);
+        values.put(MediaStore.MediaColumns.MIME_TYPE, image.mimeType);
+        values.put(
+                MediaStore.MediaColumns.RELATIVE_PATH,
+                Environment.DIRECTORY_PICTURES + File.separator + ALBUM_NAME);
+        values.put(MediaStore.Images.ImageColumns.DATE_TAKEN, System.currentTimeMillis());
+        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+
+        Uri collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+        Uri item = resolver.insert(collection, values);
+        if (item == null) throw new IOException("MediaStore refused the new image row");
+
+        try {
+            try (OutputStream out = resolver.openOutputStream(item)) {
+                if (out == null) throw new IOException("MediaStore returned no output stream");
+                out.write(bytes);
+            }
+            ContentValues published = new ContentValues();
+            published.put(MediaStore.MediaColumns.IS_PENDING, 0);
+            if (resolver.update(item, published, null, null) != 1) {
+                throw new IOException("MediaStore did not publish the image row");
+            }
+        } catch (IOException | RuntimeException error) {
+            deletePendingRow(resolver, item, error);
+            throw error;
+        }
+    }
+
+    // A pending row that is never published stays invisible and MediaStore expires it, so a
+    // failed cleanup only delays that; it must not replace the write error the caller reports.
+    private static void deletePendingRow(ContentResolver resolver, Uri item, Exception cause) {
+        try {
+            resolver.delete(item, null, null);
+        } catch (RuntimeException cleanupError) {
+            cause.addSuppressed(cleanupError);
+        }
+    }
+
+    // Only a never-asked permission prompts. Capacitor records any denial as PROMPT_WITH_RATIONALE
+    // or DENIED, and those save to the fallback silently, so the dialog cannot return on every tap.
+    // A grant made later in system Settings reads as GRANTED again.
+    private File legacyDirectory() {
+        return getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.GRANTED
+                ? sharedPicturesDirectory()
+                : appMediaDirectory();
+    }
+
+    private File sharedPicturesDirectory() {
+        return new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                ALBUM_NAME);
+    }
+
+    @SuppressWarnings("deprecation")
+    private File appMediaDirectory() {
+        File[] mediaDirectories = getContext().getExternalMediaDirs();
+        if (mediaDirectories.length == 0 || mediaDirectories[0] == null) {
+            throw new IllegalStateException("No external media directory is mounted");
+        }
+        return new File(mediaDirectories[0], ALBUM_NAME);
+    }
+
+    private void writeToDirectory(File directory, ImageSave image) throws IOException {
+        byte[] bytes = image.decode();
+        if (!directory.isDirectory() && !directory.mkdirs()) {
+            throw new IOException("Could not create " + directory);
+        }
+        File file = unusedFile(directory, image.displayName);
+        try (OutputStream out = new FileOutputStream(file)) {
+            out.write(bytes);
+        } catch (IOException | RuntimeException error) {
+            file.delete();
+            throw error;
+        }
+        MediaScannerConnection.scanFile(
+                getContext(), new String[] {file.getAbsolutePath()}, new String[] {image.mimeType}, null);
+    }
+
+    // Save names carry second-resolution timestamps, so two saves in one second share a name.
+    // MediaStore renames the second on API 29+; a direct file write would overwrite it instead.
+    private static File unusedFile(File directory, String displayName) {
+        int dot = displayName.lastIndexOf('.');
+        String stem = displayName.substring(0, dot);
+        String extension = displayName.substring(dot);
+        File candidate = new File(directory, displayName);
+        for (int suffix = 1; candidate.exists(); suffix++) {
+            candidate = new File(directory, stem + " (" + suffix + ")" + extension);
+        }
+        return candidate;
+    }
+
+    private static final class ImageSave {
+        final String mimeType;
+        final String displayName;
+        private final String base64Data;
+
+        private ImageSave(String mimeType, String displayName, String base64Data) {
+            this.mimeType = mimeType;
+            this.displayName = displayName;
+            this.base64Data = base64Data;
+        }
+
+        static ImageSave from(PluginCall call) {
+            String mimeType = call.getString("mimeType");
+            String displayName = call.getString("displayName");
+            String base64Data = call.getString("data");
+            String extension = extensionForMimeType(mimeType);
+            if (displayName == null
+                    || !displayName.matches("[A-Za-z0-9_-]+\\." + extension)) {
+                throw new IllegalArgumentException(
+                        "displayName must be a plain file name ending in ." + extension);
+            }
+            if (base64Data == null || base64Data.isEmpty()) {
+                throw new IllegalArgumentException("data is required");
+            }
+            return new ImageSave(mimeType, displayName, base64Data);
+        }
+
+        byte[] decode() {
+            return Base64.decode(base64Data, Base64.DEFAULT);
+        }
+
+        private static String extensionForMimeType(String mimeType) {
+            if (mimeType == null) throw new IllegalArgumentException("mimeType is required");
+            switch (mimeType) {
+                case "image/png":
+                    return "png";
+                case "image/jpeg":
+                    return "jpg";
+                case "image/webp":
+                    return "webp";
+                default:
+                    throw new IllegalArgumentException("Unsupported image type " + mimeType);
+            }
+        }
+    }
+}
