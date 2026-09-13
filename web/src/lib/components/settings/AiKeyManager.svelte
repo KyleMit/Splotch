@@ -62,6 +62,9 @@
     },
   };
 
+  // The keyCode a browser reports for a key an input method editor consumed.
+  const IME_PROCESS_KEY_CODE = 229;
+
   const KEY_STORAGE_NOTE: Record<Platform, string> = {
     ios: "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device.",
     android:
@@ -146,11 +149,14 @@
   // hand the rest of that press — the activation, a held key's repeats — to the
   // card's Close button and dismiss the check at once; and the release of an
   // Enter pressed on that Close button lands back here and must not reopen it.
-  // An Enter that commits an IME composition is not a submission.
+  // An Enter that commits an IME composition is not a submission — and older
+  // WebKit (inside the supported iOS floor) fires compositionend before that
+  // keydown, so there only its legacy keyCode still marks it.
   let enterPressedInField = false;
 
   function noteEnterPress(event: KeyboardEvent) {
-    if (event.key === 'Enter' && !event.isComposing && !event.repeat) enterPressedInField = true;
+    const commitsComposition = event.isComposing || event.keyCode === IME_PROCESS_KEY_CODE;
+    if (event.key === 'Enter' && !commitsComposition && !event.repeat) enterPressedInField = true;
   }
 
   function submitKeyOnEnterRelease(event: KeyboardEvent & { currentTarget: HTMLInputElement }) {

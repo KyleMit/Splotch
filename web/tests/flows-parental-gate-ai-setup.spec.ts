@@ -126,8 +126,14 @@ test('Enter raises the AI setup check once per deliberate press', async ({ page 
   await expect(field).toBeFocused();
   await expect(gate).not.toBeVisible();
 
-  // The Enter that commits an IME composition is not a submission.
+  // The Enter that commits an IME composition is not a submission, in either
+  // event order: flagged as composing, or — older WebKit — arriving after
+  // compositionend with only the IME keyCode to mark it.
   await field.dispatchEvent('keydown', { key: 'Enter', isComposing: true });
+  await field.dispatchEvent('keyup', { key: 'Enter' });
+  await field.dispatchEvent('compositionstart');
+  await field.dispatchEvent('compositionend');
+  await field.dispatchEvent('keydown', { key: 'Enter', keyCode: 229 });
   await field.dispatchEvent('keyup', { key: 'Enter' });
   await expect(gate).not.toBeVisible();
   expect(verifyRequests.count).toBe(0);
