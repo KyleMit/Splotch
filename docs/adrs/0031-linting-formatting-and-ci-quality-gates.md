@@ -125,18 +125,18 @@ choices:
   `:focus-visable` across every component — the single highest-value rule in the set.
 
 * **Rejected CSS rule candidates — measured, do not re-litigate without new evidence.**
-  `stylelint-config-standard` v40 enables 82 rules; 22 of them fire here, for 703 violations (counts
-  as of the 2026-09 evaluation): `rule-empty-line-before` 136 · `media-feature-range-notation` 113 ·
-  `comment-empty-line-before` 81 · `color-function-alias-notation` 71 · `alpha-value-notation` 47 ·
-  `color-function-notation` 47 · `at-rule-empty-line-before` 45 · `no-descending-specificity` 32 ·
-  `declaration-empty-line-before` 25 · `shorthand-property-no-redundant-values` 18 ·
+  `stylelint-config-standard` v40 enables 82 rules; 22 of them fired at the 2026-09 evaluation, and
+  five of those were later adopted by reformat (below). The 17 still rejected account for 519
+  violations (counts as of that evaluation): `rule-empty-line-before` 136 ·
+  `media-feature-range-notation` 113 · `comment-empty-line-before` 81 · `at-rule-empty-line-before`
+  45 · `no-descending-specificity` 32 · `declaration-empty-line-before` 25 ·
   `keyframes-name-pattern` 16 · `custom-property-empty-line-before` 13 · `selector-id-pattern` 13 ·
   `selector-not-notation` 9 · `property-no-vendor-prefix` 8 · `value-keyword-case` 8 ·
   `selector-class-pattern` 7 · `no-duplicate-selectors` 6 ·
   `declaration-block-no-redundant-longhand-properties` 4 · `property-no-deprecated` 2 ·
-  `color-hex-length` 1 · `declaration-property-value-keyword-no-deprecated` 1. Broadening the scope
-  to the whole repo added a 23rd: `declaration-block-single-line-max-declarations` 61, every one of
-  them in `tools/scrapbook/clear-sound-sheet/sheet.css`. Six carry a specific note:
+  `declaration-property-value-keyword-no-deprecated` 1. Broadening the scope to the whole repo added
+  an 18th: `declaration-block-single-line-max-declarations` 61, every one of them in
+  `tools/scrapbook/clear-sound-sheet/sheet.css`. Five carry a specific note:
   * The five `*-empty-line-before` rules (300 violations between them) govern blank-line placement.
     Note that nothing else governs it either: Prettier preserves the blank lines it finds in CSS
     rather than placing them, so these are not a formatter's job being defended — they are unowned.
@@ -163,7 +163,7 @@ choices:
     ADR's method prescribes and what every adopted rule satisfies. Nothing is lost in practice —
     Prettier already puts one declaration per line everywhere it owns.
 
-  **Fifteen of the 23 are fully `stylelint --fix`-able**, so for most of them the count *is* the
+  **Ten of the 18 are fully `stylelint --fix`-able**, so for several of them the count *is* the
   whole reason: the policy above rejects on non-compliance, and complying would have meant a mass
   reformat of production CSS inside a linting change. The genuinely-unwanted set is small —
   `property-no-vendor-prefix` (where `--fix` would delete the prefixes the floor needs, making
