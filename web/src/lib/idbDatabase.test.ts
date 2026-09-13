@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DBSchema } from './idbDatabase';
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import type { DBSchema, StoreKey, StoreNames, StoreValue } from './idbDatabase';
 import { openDatabase } from './idbDatabase';
 
 // happy-dom ships no IndexedDB, so this models the parts of the event-based API
@@ -247,5 +247,37 @@ describe('explicit transactions', () => {
     await expect(database.transaction('records', 'readwrite').done).rejects.toThrow(
       'transaction failed'
     );
+  });
+});
+
+// The schema generics resolve the DECLARED store names, not the index
+// signature's `string`. Nothing at runtime notices if that remapping breaks —
+// every call still compiles, just against widened keys and `unknown` values —
+// so it is asserted at the type level.
+describe('schema types', () => {
+  interface TwoStoreDb extends DBSchema {
+    records: { key: string; value: { message: string } };
+    handles: { key: number; value: FileSystemDirectoryHandle };
+  }
+
+  it('resolves the declared store names rather than the index signature', () => {
+    expectTypeOf<StoreNames<TwoStoreDb>>().toEqualTypeOf<'records' | 'handles'>();
+  });
+
+  it("resolves each store's own key and value type", () => {
+    expectTypeOf<StoreKey<TwoStoreDb, 'handles'>>().toEqualTypeOf<number>();
+    expectTypeOf<StoreValue<TwoStoreDb, 'records'>>().toEqualTypeOf<{ message: string }>();
+  });
+
+  it('types the database operations against the store being addressed', async () => {
+    const database = await openDatabase<TwoStoreDb>('test-db', 'records');
+
+    expectTypeOf(database.get<'records'>)
+      .parameter(1)
+      .toEqualTypeOf<string>();
+    expectTypeOf(database.get('records', 'first')).resolves.toEqualTypeOf<
+      { message: string } | undefined
+    >();
+    expectTypeOf(database.transaction('records', 'readonly').done).toEqualTypeOf<Promise<void>>();
   });
 });
