@@ -1,5 +1,5 @@
 import type { StyleName } from '$lib/ai/styles';
-import type { SaveOutcome } from '$lib/drawing/screenshot';
+import type { SaveOutcome } from '$lib/saveNaming';
 
 export const AI_FAILURE_RETRY_LIMIT = 2;
 

@@ -6,6 +6,7 @@ import {
   extensionForImageType,
   timestamp,
   triggerDownload,
+  type SaveOutcome,
 } from '$lib/saveNaming';
 import { saveBlobToFolder } from './folderSave';
 import { playScreenshotFeedback, playScreenshotSuppressedFeedback } from './screenshotFeedback';
@@ -14,8 +15,6 @@ import { PERF_MARKS } from './perf';
 import { createPolaroidPreviewRequest } from './polaroidAnimation';
 
 const ALBUM_NAME = 'Splotch';
-
-export type SaveOutcome = 'photos' | 'folder' | 'download' | 'failed';
 
 let activeScreenshotSave: Promise<void> | null = null;
 let nextScreenshotAllowedAt = 0;

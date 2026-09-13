@@ -7,8 +7,11 @@ describe('autoSaveFooter', () => {
   });
 
   it('claims nothing while the save is still running', () => {
-    expect(autoSaveFooter(true, null, null)).toBeNull();
     expect(autoSaveFooter(true, 'saving', null)).toBeNull();
+  });
+
+  it('offers the Download button when auto-save was switched on after the picture arrived', () => {
+    expect(autoSaveFooter(true, null, null)).toEqual({ kind: 'download' });
   });
 
   it('falls back to the Download button when the save failed', () => {

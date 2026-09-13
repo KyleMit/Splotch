@@ -30,7 +30,7 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { awaitGeneration, generationResultUrl } from './aiGenerationPoll';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
-import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
+import { AI_IMAGE_BASENAME, DRAWING_BASENAME, type SaveOutcome } from '$lib/saveNaming';
 import type { StyleName } from '$lib/ai/styles';
 
 const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
@@ -138,12 +138,19 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
     setAiAutoSave(runId, 'failed');
     return;
   }
-  setAiAutoSave(runId, await saveImageBlob(aiBlob, AI_IMAGE_BASENAME));
+  // A throw must land as 'failed' here rather than reach generateAiImage's catch, which would
+  // replace the revealed picture with the error card and strand the status at 'saving'.
+  const save = (blob: Blob, baseName: string): Promise<SaveOutcome> =>
+    saveImageBlob(blob, baseName).catch((err: unknown) => {
+      console.error('Auto-save failed:', err);
+      return 'failed';
+    });
+  setAiAutoSave(runId, await save(aiBlob, AI_IMAGE_BASENAME));
   if (!isAiGenerationActive(runId)) return;
   const sig = await blobSignature(drawingBlob);
   if (!isAiGenerationActive(runId)) return;
   if (!drawingSaver.isDuplicate(sig)) {
-    await saveImageBlob(drawingBlob, DRAWING_BASENAME);
+    await save(drawingBlob, DRAWING_BASENAME);
   }
   // Record the signature of the drawing we just saved even if ownership was lost
   // during that save: the drawing is already in the gallery, so a later owning run

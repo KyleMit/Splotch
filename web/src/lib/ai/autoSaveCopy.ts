@@ -16,13 +16,14 @@ function savedCaption(outcome: SavedOutcome, folderName: string | null) {
 }
 
 // A failed auto-save hands the parent the manual Download button rather than an error: the picture
-// is still on screen, so recovery is one tap and nothing alarming reaches the child.
+// is still on screen, so recovery is one tap and nothing alarming reaches the child. No status means
+// no save ran for this picture (auto-save was switched on after it arrived), so Download stays too.
 export function autoSaveFooter(
   autoSaveEnabled: boolean,
   status: AiAutoSaveStatus | null,
   folderName: string | null
 ): AutoSaveFooter {
-  if (!autoSaveEnabled || status === 'failed') return { kind: 'download' };
-  if (status === null || status === 'saving') return null;
+  if (!autoSaveEnabled || status === null || status === 'failed') return { kind: 'download' };
+  if (status === 'saving') return null;
   return { kind: 'saved', caption: savedCaption(status, folderName) };
 }
