@@ -528,7 +528,11 @@ describe('the 60 Hz negative controls (ADR-0145, revised)', () => {
 // Excludes exactly the two deliberate negative-control corpora; a population
 // floor makes silent shrinkage fail loudly, and the 0.96 assertion fails in
 // the direction that requires re-deriving the floor rather than widening it.
-describe('the healthy density population (ADR-0145)', () => {
+// Walks every capture in the corpus rather than one named campaign, so it
+// outgrew the default 5 s per-test budget and times out under a loaded suite
+// while the claims themselves hold — the same trade refresh-regime.test.mjs
+// makes over the same tree.
+describe('the healthy density population (ADR-0145)', { timeout: 60_000 }, () => {
   const NEGATIVE_CONTROL_CORPORA = new Set([
     '2026-08-25-underdriven-control',
     '2026-08-26-appium-60hz-controls',
