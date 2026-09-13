@@ -179,15 +179,20 @@ const GHOST_CLICK_OFFSET_PX = 15;
 test.describe('coloring book picker via touch', () => {
   test.use({ hasTouch: true });
 
-  test('a touch tap on the launcher opens the picker at the root book list', async ({ page }) => {
+  test("a touch tap's trailing click does not drill the picker into the cover under the finger", async ({
+    page,
+  }) => {
     // The whole catalog, so no book finishes downloading mid-spec and reflows
     // the grid the ghost click is aimed into.
     await gotoAppWithAllColoringBooksInstalled(page);
     await openDrawer(page);
 
-    // An open that beats the installed-set scan drills into the starter book
-    // and stays there (openColoringBookGrid), which would fail this spec
-    // without the guard ever being involved. Land one open on the grid first.
+    // This spec proves the launch guard, not the picker's cold start. An open
+    // that beats the installed-set scan drills into the starter book and stays
+    // there even once the other books arrive (openColoringBookGrid, issue
+    // #936) — a returning child's first tap on a slow start can land there
+    // too. That is a product gap, not a guard failure, so land one open on the
+    // grid first rather than let it decide this spec.
     const dialog = page.locator('#coloring-book-dialog');
     await openColoringBookGrid(page);
     await page.keyboard.press('Escape');
