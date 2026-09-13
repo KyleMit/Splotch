@@ -20,6 +20,7 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 const MANIFEST_REQUEST = /\/coloring\/manifest-.+\.json$/;
 const WEB_COLORING_BOOK_COUNT = booksForPlatform('web').length;
+const PHONE_PORTRAIT_VIEWPORT = { width: 390, height: 844 };
 
 // Proves a negative for longer than scheduleIdle's fallback window, so a
 // download that was going to start at idle has had its chance to.
@@ -352,6 +353,8 @@ test('a book that finishes downloading while the picker is open joins at the nex
 // the chip. The open picker holds its books, so nothing moves.
 test('books landing during a held press move neither the header nor the chip', async ({ page }) => {
   test.setTimeout(90_000);
+  // Two cover columns, so the first book to land starts a new row.
+  await page.setViewportSize(PHONE_PORTRAIT_VIEWPORT);
   const releaseCreaturesDownload = await holdRequests(
     page,
     /\/coloring\/(?:max-\d+px\/)?creatures\//
@@ -403,10 +406,24 @@ test('books landing during a held press move neither the header nor the chip', a
 // A returning child can open the picker before the installed-book scan lands
 // (issue #936's cold start). That open shows the book list, not the starter
 // book's pages, with a slot reserved for every catalog book, and the scan's
-// covers fill the slots without moving the header or the starter book's cover.
-test('an open that beats the installed-book scan fills the book list in place', async ({
-  page,
-}) => {
+// covers fill the slots without moving the header, the starter book's cover, or
+// the grid, whichever column count the viewport lays out.
+const COLD_START_VIEWPORTS = [
+  { name: 'phone portrait', ...PHONE_PORTRAIT_VIEWPORT },
+  { name: 'phone landscape', width: 844, height: 390 },
+  { name: 'tablet portrait', width: 820, height: 1180 },
+  { name: 'tablet landscape', width: 1180, height: 820 },
+];
+for (const viewport of COLD_START_VIEWPORTS) {
+  test(`an open that beats the installed-book scan fills the book list in place (${viewport.name})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await coldStartFillsBookListInPlace(page);
+  });
+}
+
+async function coldStartFillsBookListInPlace(page: Page) {
   await gotoAppWithAllColoringBooksInstalled(page);
   const releaseManifest = await holdRequests(page, MANIFEST_REQUEST);
 
@@ -426,9 +443,11 @@ test('an open that beats the installed-book scan fills the book list in place', 
     await settleFlyIn(dialog);
     const header = dialog.locator('.coloring-book-header');
     const farm = dialog.getByRole('button', { name: 'Farm coloring book' });
-    const [headerBeforeScan, farmBeforeScan] = await Promise.all([
+    const grid = dialog.locator('.coloring-books-grid');
+    const [headerBeforeScan, farmBeforeScan, gridBeforeScan] = await Promise.all([
       header.boundingBox(),
       farm.boundingBox(),
+      grid.boundingBox(),
     ]);
 
     releaseManifest();
@@ -437,10 +456,11 @@ test('an open that beats the installed-book scan fills the book list in place', 
     await afterTwoFrames(page);
     expect(await header.boundingBox()).toEqual(headerBeforeScan);
     expect(await farm.boundingBox()).toEqual(farmBeforeScan);
+    expect(await grid.boundingBox()).toEqual(gridBeforeScan);
   } finally {
     releaseManifest();
   }
-});
+}
 
 test('a visit nobody engages with downloads no coloring packs', async ({ page }) => {
   const coloringRequests = recordColoringRequests(page);
