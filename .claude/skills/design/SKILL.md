@@ -176,6 +176,9 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
 |                                                                     | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt,                                                 |
 |                                                                     | AiImageResult, ColoringBook, SettingsModal                                                                                 |
 | `.modal-close-btn` / `.dialog-header-control` / `.modal-close-icon` | Shared control sizing and glyphs. `DialogHeader` gives back a flat fill and keeps `.modal-close-btn` on raised close only. |
+| `.confirm-card` / `.confirm-card-content` / `.confirm-card-heading` | The two-choice confirmation card — width, padding, and the title-and-consequence group;                                    |
+|                                                                     | the action row stays per dialog. Parent Center's unprotected-check confirmation, the AI                                    |
+|                                                                     | report confirmation, Leave Splotch                                                                                         |
 | `.step-number`                                                      | Numbered steps in beta, Install settings, and Safari install instructions.                                                 |
 |                                                                     | Layouts own size and position; themed strengths own contrast.                                                              |
 | `.corner-button` / `.corner-button-icon`                            | Muted canvas-corner chrome: a 48px transparent button whose opacity and                                                    |
