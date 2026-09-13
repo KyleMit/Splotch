@@ -80,9 +80,22 @@ npm run fetch:image-reports
 
 It discovers the unique Netlify site serving `splotch.art`, then downloads every complete bundle
 into a timestamped `.eval-tmp/ai-image-reports/<run-id>/` snapshot. Each bundle must have one input
-image, one output image, `prompt.txt`, and versioned `metadata.json`. An incomplete bundle is
-recorded as a per-report failure without blocking downloads of complete reports. The snapshot
-manifest preserves source keys, ETags, metadata, and failures.
+image, `prompt.txt`, and `metadata.json`; a `picture` report also has one output image, and a
+`false-positive-refusal` report has none. An incomplete bundle, or metadata whose version, kind, or
+content types the tool does not read, is recorded as a per-report failure without blocking downloads
+of the other reports. The snapshot manifest preserves source keys, ETags, metadata, and failures.
+
+The reader validates exactly one metadata version, `READABLE_METADATA_VERSION`. It is a local
+literal on purpose: the store round-trip test writes both report kinds through the real
+`saveImageReport` and fetches them back, so bumping the store's version fails that test until the
+reader learns the new shape.
+
+Every run starts by deleting local copies older than the `IMAGE_REPORT_RETENTION_DAYS` window that
+`/privacy` promises, judged by the report id's timestamp exactly as the production purge judges it:
+expired report folders in earlier snapshots (and a snapshot left with nothing else in it), plus
+expired `report__*` drawings in `tools/model-eval/inputs/`. A report still in the store past that
+window is listed under the manifest's `expired` and never downloaded, which also shows when the
+production purge has fallen behind.
 
 The default run is snapshot-only. To deliberately copy PNG drawings into the gitignored
 `tools/model-eval/inputs/` corpus, opt in and then run the comparison:
@@ -103,8 +116,9 @@ production site. It makes no model calls and never writes to or deletes from pro
 access, ambiguous site resolution, unexpected keys, incomplete bundles, empty downloads,
 metadata/content-type drift, and model-eval input conflicts fail nonzero. Per-report failures are
 retained in the new snapshot manifest so a retry starts from fresh evidence without disguising the
-failed run. Local snapshots and opt-in report inputs contain child-created content, remain
-gitignored, and should be removed when the review is complete.
+failed run. Local snapshots and opt-in report inputs contain child-created content and remain
+gitignored. The retention prune is a backstop, not a substitute for removing them once the review is
+complete.
 
 Keep its store name imported from `web/src/lib/server/imageReportStoreName.ts`, update the npm entry
 and `scripts-info` description together, and verify changes with:
