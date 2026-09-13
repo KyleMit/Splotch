@@ -100,7 +100,8 @@ namespace, never the proxy.
 ### Custom native plugins
 
 When no published plugin exposes a native capability, add a small **local** plugin in the app target
-itself (see `DeviceLock`, ADR-0027, and `ColoringPacks`, ADR-0103):
+itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-only `PhotoLibrary`,
+ADR-0037):
 
 * iOS — the key gotcha: **Capacitor 8 does not auto-discover plugin classes.**
   `CapacitorBridge.registerPlugins()` only loads its built-ins plus the `packageClassList` that
@@ -184,7 +185,9 @@ the platform checklists.
   signed refusal reason, and a picture report retains the generated output. Optional feedback device
   details are private. Coloring-pack requests contain only public static asset paths and normal host
   request details, not a drawing or child identity.
-* Photos are saved **locally** to the device gallery (a "Splotch" album).
+* Photos are saved **locally** to the device photo library: the camera roll on iOS, and a shared
+  `Pictures/Splotch` folder on Android that belongs to the photo library, so saved drawings survive
+  uninstalling the app.
 
 ## 2. Shared web-asset / sync commands
 
