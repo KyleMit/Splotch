@@ -513,8 +513,7 @@
     "svgo": "^4.1.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0",
-    "vitest": "^4.1.11",
-    "ws": "^8.21.3"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.0",

@@ -77,7 +77,7 @@ const AUDITED_SWALLOWS = {
   'lib/toddler-session.mjs': ['benign-catch@a52ea638ab63'],
   'lib/webkit-inspector.mjs': [
     'bare-catch@3224363f053e',
-    'bare-catch@3bf750ac94bd',
+    'bare-catch@34eb7221449f',
     'bare-catch@709470fa5c48',
     'benign-catch@3e436334ff84',
     'benign-catch@4828694def01',
