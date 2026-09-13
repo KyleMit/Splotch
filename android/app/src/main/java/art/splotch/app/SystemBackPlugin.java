@@ -36,6 +36,7 @@ public class SystemBackPlugin extends Plugin {
     // (a boot failure) gets the system default rather than a dead Back.
     private static final long SUBSCRIBE_GRACE_MS = 10_000;
 
+    private OnBackPressedCallback systemBack;
     private volatile long pageStartedAtMs;
     private volatile boolean pageSubscribed;
 
@@ -43,20 +44,30 @@ public class SystemBackPlugin extends Plugin {
     public void load() {
         startWaitingForPage();
         AppCompatActivity activity = getActivity();
-        activity.getOnBackPressedDispatcher().addCallback(activity, new OnBackPressedCallback(true) {
+        systemBack = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (hasListeners(BACK_EVENT) || awaitingPageSubscription()) {
-                    // On the bridge thread, where listeners are added, so a Back racing
-                    // the subscription is either delivered or retained for it, never lost.
-                    bridge.execute(() -> notifyListeners(BACK_EVENT, new JSObject(), true));
-                    return;
-                }
-                setEnabled(false);
-                activity.getOnBackPressedDispatcher().onBackPressed();
-                setEnabled(true);
+                bridge.execute(SystemBackPlugin.this::routeBack);
             }
-        });
+        };
+        activity.getOnBackPressedDispatcher().addCallback(activity, systemBack);
+    }
+
+    // On the bridge thread, where plugin methods add and remove listeners, so the
+    // listener check cannot interleave with a subscription: a Back racing one is
+    // either delivered or retained for it.
+    private void routeBack() {
+        if (hasListeners(BACK_EVENT) || awaitingPageSubscription()) {
+            notifyListeners(BACK_EVENT, new JSObject(), true);
+            return;
+        }
+        getActivity().runOnUiThread(this::runSystemDefault);
+    }
+
+    private void runSystemDefault() {
+        systemBack.setEnabled(false);
+        getActivity().getOnBackPressedDispatcher().onBackPressed();
+        systemBack.setEnabled(true);
     }
 
     private boolean awaitingPageSubscription() {
@@ -71,8 +82,8 @@ public class SystemBackPlugin extends Plugin {
     @Override
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void addListener(PluginCall call) {
-        if (BACK_EVENT.equals(call.getString("eventName"))) pageSubscribed = true;
         super.addListener(call);
+        if (BACK_EVENT.equals(call.getString("eventName"))) pageSubscribed = true;
     }
 
     /** Bridge.reset() calls this when a page starts loading. */
