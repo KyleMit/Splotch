@@ -75,6 +75,20 @@ export default {
     'keyframe-declaration-no-important': true,
     'no-duplicate-at-import-rules': true,
     'no-empty-source': true,
+
+    // Deprecated and vendor-prefixed syntax, in the four categories the
+    // codebase already scores zero on. `property-no-vendor-prefix` is
+    // deliberately NOT here: at the Safari 16.4 floor
+    // (docs/COMPATIBILITY.md) `-webkit-backdrop-filter` and
+    // `-webkit-user-select` are the only spellings that work, so those 8
+    // prefixes are the floor being honoured rather than debt. ADR-0031
+    // records the count.
+    'at-rule-no-deprecated': true,
+    'at-rule-no-vendor-prefix': true,
+    'media-feature-name-no-vendor-prefix': true,
+    'media-type-no-deprecated': true,
+    'selector-no-vendor-prefix': true,
+    'value-no-vendor-prefix': [true, { ignoreValues: ['box', 'inline-box'] }],
   },
   overrides: [
     {
