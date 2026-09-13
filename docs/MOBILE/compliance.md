@@ -297,8 +297,10 @@ submission. Android store builds arm all five gate policies to `always` by defau
 mechanism has to be one a child cannot realistically complete, it is built to resist random tapping
 (an explicit check key, wrong answers for tapping past the answer, escalating lockouts). A seeded
 tapping simulation holds the chance of tapping through in two minutes under 1.5%; the chance keeps
-rising for a child who never stops, and ADR-0094's 2026-09-12 amendment records the longer-horizon
-figures.
+rising for a child who never stops. A child who has learned to fill the answer circles and tap the
+check key still guesses through in about 9% of two-minute runs, limited only by the lockout. That is
+residual risk against the "cannot realistically complete" standard, not a claim the gate meets it;
+ADR-0094's 2026-09-12 amendment records both models and the longer-horizon figures.
 
 ### Families policy — data practices and identifiers
 

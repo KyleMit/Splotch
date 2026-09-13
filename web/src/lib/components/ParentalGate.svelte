@@ -15,6 +15,7 @@
     pressGateBackspace,
     submitGateAnswer,
     redirectGateToParentCenter,
+    GATE_CHECK_KEY,
     GATE_SHAKE_MS,
   } from '$lib/state/parentalGate.svelte';
 
@@ -45,9 +46,15 @@
   // Enter checks the answer from anywhere on the card except the close and
   // footer buttons, whose own activation it must not hijack. On a keypad key it
   // replaces that key's click, which would otherwise type one digit too many.
+  //
+  // The dialog opens with focus on its close button, so an answer typed from
+  // there hands focus to the check key: the Enter that follows checks it rather
+  // than clicking close and discarding it.
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key >= '0' && event.key <= '9') pressGateDigit(Number(event.key));
-    else if (event.key === 'Backspace') pressGateBackspace();
+    if (event.key >= '0' && event.key <= '9') {
+      pressGateDigit(Number(event.key));
+      if (!isAnswerTarget(event.target)) focusCheckKey();
+    } else if (event.key === 'Backspace') pressGateBackspace();
     else if (event.key === 'Enter' && isAnswerTarget(event.target)) {
       event.preventDefault();
       submitGateAnswer();
@@ -56,6 +63,10 @@
 
   function isAnswerTarget(target: EventTarget | null) {
     return !(target instanceof HTMLButtonElement) || !!keypadEl?.contains(target);
+  }
+
+  function focusCheckKey() {
+    keypadEl?.querySelector<HTMLButtonElement>(`[data-key="${GATE_CHECK_KEY}"]`)?.focus();
   }
 </script>
 

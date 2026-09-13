@@ -26,6 +26,7 @@
   {#each GATE_KEYPAD_KEYS as key (key)}
     <button
       class="gate-key"
+      data-key={key}
       aria-label={typeof key === 'number' ? undefined : KEY_LABELS[key]}
       aria-disabled={gate.lockoutUntil !== null}
       onclick={() => pressGateKey(key)}

@@ -144,7 +144,8 @@ export const GATE_ANNOUNCE_DELAY_MS = 150;
 // The countdown re-renders on each whole second remaining while the card is open.
 const GATE_LOCKOUT_TICK_MS = 1000;
 
-export const GATE_KEYPAD_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 'delete', 'submit'] as const;
+export const GATE_CHECK_KEY = 'submit';
+export const GATE_KEYPAD_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 'delete', GATE_CHECK_KEY] as const;
 type GateKeypadKey = (typeof GATE_KEYPAD_KEYS)[number];
 
 export interface ParentalGateState {
@@ -436,7 +437,7 @@ export function submitGateAnswer() {
 
 export function pressGateKey(key: GateKeypadKey) {
   if (key === 'delete') pressGateBackspace();
-  else if (key === 'submit') submitGateAnswer();
+  else if (key === GATE_CHECK_KEY) submitGateAnswer();
   else pressGateDigit(key);
 }
 

@@ -227,6 +227,16 @@ over an hour of unbroken tapping (about 1.6%, 3% and 6%). Two minutes is the win
 because it is how long a child plausibly keeps at it; the longer figures are why the cap and the
 decay period should not be loosened without re-running them.
 
+Both figures are for random tapping. A child who has learned the card's shape — tap digits until the
+dabs are full, then tap the check key — sends a well-formed guess every time, and none of the keypad
+rules above touch that: only the lockout budget does. The same simulation measured that child at
+three taps a second unlocking in 187 of 2000 two-minute runs (about 9%), which is the one-in-ten the
+rejected lockout-alone design gave random tapping. This is a residual risk, not a bound the gate
+meets. Closing it means shrinking the budget to about one guess per two minutes, which costs a
+grown-up who slips a long wait, or enlarging the answer space, which costs every grown-up more
+arithmetic; neither was taken here. `parentalGate.mash.test.ts` pins the measured figure so a change
+cannot quietly make it worse.
+
 A grown-up pays one extra tap on a clean answer, and more for a slip: a digit typed past the last
 dab or a check before it is complete rolls a new problem and counts toward the lockout, as does a
 touchscreen double-registration on the last digit.

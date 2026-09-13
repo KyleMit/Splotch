@@ -34,6 +34,23 @@ async function lockOut(page: Page) {
   for (let i = 0; i < GATE_WRONG_ANSWERS_BEFORE_LOCKOUT; i++) await checkEmptyAnswer(page);
 }
 
+// The dialog opens with focus on its first control, the close button. An answer
+// typed from there must still be checked by Enter rather than closed away: the
+// check key replaced auto-submit, so Enter is how a keyboard answers.
+test('an answer typed on a freshly opened card is checked by Enter, not closed', async ({
+  page,
+}) => {
+  await seedAiEnabled(page);
+  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
+  await openParentalGate(page);
+
+  const label = await page.locator('.gate-equation').getAttribute('aria-label');
+  const [x, y] = label!.match(/\d+/g)!.map(Number);
+  for (const key of [...String(x * y), 'Enter']) await page.keyboard.press(key);
+
+  await expect(page.locator(AI_PROMPT)).toBeVisible({ timeout: 5000 });
+});
+
 test('repeated wrong answers pause the keypad until the lockout ends', async ({ page }) => {
   await page.clock.install();
   await seedAiEnabled(page);
