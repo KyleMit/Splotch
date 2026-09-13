@@ -25,8 +25,17 @@ export function precacheUrlsFromSource(source) {
   );
 }
 
+// The navigation route's fallback plugin compiles the shell URL into its callbacks
+// as a string literal; this reads back the URLs those callbacks look up.
+export function appShellFallbackUrlsFromSource(source) {
+  return [...source.matchAll(/caches\.match\(("\/\?app-shell-build=(?:\\.|[^"\\])*")\)/g)].map(
+    (match) => JSON.parse(match[1])
+  );
+}
+
 export function pwaPrecacheProblems({
   precacheUrls,
+  appShellFallbackUrls,
   precacheBytes,
   responsiveAssetUrls,
   coloringManifest,
@@ -41,6 +50,20 @@ export function pwaPrecacheProblems({
     problems.push(
       `Expected one build-matched app shell in the PWA precache, found ${appShellUrls.length}`
     );
+  } else {
+    if (precacheUrls[0] !== appShellUrls[0]) {
+      problems.push(
+        'The app shell must be the first precache entry so a deploy mid-install fails the install'
+      );
+    }
+    if (
+      !appShellFallbackUrls.length ||
+      appShellFallbackUrls.some((url) => url !== appShellUrls[0])
+    ) {
+      problems.push(
+        `The navigation fallback does not look up the precached app shell ${appShellUrls[0]}`
+      );
+    }
   }
   const responsivePrecacheUrls = precacheUrls.filter((url) => /^coloring\/max-\d+px\//.test(url));
   if (responsivePrecacheUrls.length) {
@@ -106,7 +129,8 @@ export async function checkPwaPrecache({
   log = console.log,
 } = {}) {
   if (!existsSync(swPath)) throw new Error(`Service worker does not exist: ${swPath}`);
-  const precacheUrls = precacheUrlsFromSource(readFileSync(swPath, 'utf8'));
+  const serviceWorkerSource = readFileSync(swPath, 'utf8');
+  const precacheUrls = precacheUrlsFromSource(serviceWorkerSource);
   if (!precacheUrls.length) throw new Error(`No Workbox precache manifest found in ${swPath}`);
 
   const responsiveTierDirectories = readdirSync(staticColoringDir, { withFileTypes: true })
@@ -131,6 +155,7 @@ export async function checkPwaPrecache({
     : undefined;
   const problems = pwaPrecacheProblems({
     precacheUrls,
+    appShellFallbackUrls: appShellFallbackUrlsFromSource(serviceWorkerSource),
     precacheBytes,
     responsiveAssetUrls,
     coloringManifest,

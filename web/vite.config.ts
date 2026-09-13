@@ -9,7 +9,7 @@ import {
   RESPONSIVE_COLORING_URL_PATTERN,
   serveResponsiveColoringWithCanonicalFallback,
 } from './src/lib/pwa/coloringFallback';
-import { VERSION_JSON_FILENAME } from './src/lib/pwa/versionEndpoint';
+import { CACHE_BUST_VERSION_PARAM, VERSION_JSON_FILENAME } from './src/lib/pwa/versionEndpoint';
 import {
   BOOKS,
   RESPONSIVE_COLORING_TIER_DIRECTORIES,
@@ -27,6 +27,7 @@ import {
   appShellPrecacheUrl,
   createAppShellFallbackPlugin,
   isAppShellNavigation,
+  prependAppShellEntry,
 } from './src/lib/pwa/appShellRoute.ts';
 
 // The native apps bundle a static export and never use a service worker (the
@@ -151,13 +152,15 @@ export default defineConfig({
             manifest: false,
             workbox: {
               additionalManifestEntries: [
-                { url: APP_SHELL_PRECACHE_URL, revision: null },
                 { url: '_app/env.js', revision: BUILD_TIME },
                 {
                   url: coloringPackManifest.fileName,
                   revision: coloringPackManifest.revision,
                 },
               ],
+              // additionalManifestEntries are appended after this transform runs,
+              // so the shell is prepended here to be the first entry installed.
+              manifestTransforms: [prependAppShellEntry(APP_SHELL_PRECACHE_URL)],
               // Exclude html — navigations stay NetworkFirst below so a manual
               // refresh always fetches fresh markup; the app shell is precached
               // above under a URL no navigation requests.
@@ -200,7 +203,12 @@ export default defineConfig({
                   handler: 'NetworkFirst',
                   options: {
                     networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
-                    plugins: [createAppShellFallbackPlugin(APP_SHELL_PRECACHE_URL)],
+                    plugins: [
+                      createAppShellFallbackPlugin(
+                        APP_SHELL_PRECACHE_URL,
+                        CACHE_BUST_VERSION_PARAM
+                      ),
+                    ],
                   },
                 },
                 {

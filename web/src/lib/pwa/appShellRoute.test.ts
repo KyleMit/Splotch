@@ -3,11 +3,14 @@ import {
   appShellPrecacheUrl,
   createAppShellFallbackPlugin,
   isAppShellNavigation,
+  prependAppShellEntry,
 } from './appShellRoute';
+import { CACHE_BUST_VERSION_PARAM } from './versionEndpoint';
 
 afterEach(() => vi.unstubAllGlobals());
 
 const origin = 'https://splotch.art';
+const shellUrl = appShellPrecacheUrl('active-build');
 
 // Workbox writes the matcher with `toString()` and each plugin as an object
 // literal whose function values are `toString()` copies, so these rebuild the
@@ -16,14 +19,26 @@ function serializedMatcher(): typeof isAppShellNavigation {
   return Function(`return (${isAppShellNavigation.toString()})`)();
 }
 
-function serializedPlugin(shellUrl: string): ReturnType<typeof createAppShellFallbackPlugin> {
-  const plugin = createAppShellFallbackPlugin(shellUrl);
+function serializedPlugin(): ReturnType<typeof createAppShellFallbackPlugin> {
+  const plugin = createAppShellFallbackPlugin(shellUrl, CACHE_BUST_VERSION_PARAM);
   return Function(
     `return {
       cacheWillUpdate: ${plugin.cacheWillUpdate.toString()},
       cachedResponseWillBeUsed: ${plugin.cachedResponseWillBeUsed.toString()},
+      handlerDidError: ${plugin.handlerDidError.toString()},
     }`
   )();
+}
+
+function stubPrecachedShell() {
+  const shell = new Response('active build shell');
+  const match = vi.fn(async (url: string) => (url === shellUrl ? shell : undefined));
+  vi.stubGlobal('caches', { match });
+  return { shell, match };
+}
+
+function navigationTo(path: string) {
+  return { request: new Request(new URL(path, origin)) };
 }
 
 describe('app shell service-worker route', () => {
@@ -44,20 +59,39 @@ describe('app shell service-worker route', () => {
     expect(appShellPrecacheUrl('build a')).not.toBe(appShellPrecacheUrl('build b'));
   });
 
-  it('answers a fallback with its own build shell instead of any cached page', async () => {
-    const shellUrl = appShellPrecacheUrl('active-build');
-    const shell = new Response('active build shell');
-    const match = vi.fn(async (url: string) => (url === shellUrl ? shell : undefined));
-    vi.stubGlobal('caches', { match });
-    const plugin = serializedPlugin(shellUrl);
+  it('installs the shell before every other precache entry', () => {
+    const chunk = { url: '_app/immutable/entry/start.abc.js', revision: 'abc', size: 10 };
 
-    await expect(plugin.cachedResponseWillBeUsed()).resolves.toBe(shell);
+    expect(prependAppShellEntry(shellUrl)([chunk]).manifest).toEqual([
+      { url: shellUrl, revision: null, size: 0 },
+      chunk,
+    ]);
+  });
+
+  it('answers a stalled launch with its own build shell instead of any cached page', async () => {
+    const { shell, match } = stubPrecachedShell();
+
+    await expect(serializedPlugin().cachedResponseWillBeUsed(navigationTo('/'))).resolves.toBe(
+      shell
+    );
     expect(match).toHaveBeenCalledWith(shellUrl);
   });
 
+  it('lets a stale-page recovery navigation wait out a slow network', async () => {
+    const { match } = stubPrecachedShell();
+    const recovery = navigationTo(`/?${CACHE_BUST_VERSION_PARAM}=1.2.3`);
+
+    await expect(serializedPlugin().cachedResponseWillBeUsed(recovery)).resolves.toBeNull();
+    expect(match).not.toHaveBeenCalled();
+  });
+
+  it('answers a failed network with the shell, recovery navigations included', async () => {
+    const { shell } = stubPrecachedShell();
+
+    await expect(serializedPlugin().handlerDidError()).resolves.toBe(shell);
+  });
+
   it('never writes the network page to a runtime cache', async () => {
-    await expect(serializedPlugin(appShellPrecacheUrl('build')).cacheWillUpdate()).resolves.toBe(
-      null
-    );
+    await expect(serializedPlugin().cacheWillUpdate()).resolves.toBe(null);
   });
 });

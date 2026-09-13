@@ -45,7 +45,7 @@
 
 import { canvasState } from '$lib/state/canvas.svelte';
 import { scheduleIdle } from '$lib/idle';
-import { VERSION_JSON_PATH } from '$lib/pwa/versionEndpoint';
+import { CACHE_BUST_VERSION_PARAM, VERSION_JSON_PATH } from '$lib/pwa/versionEndpoint';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -152,9 +152,9 @@ export function createPWAUpdates() {
     initialized = true;
 
     const url = new URL(window.location.href);
-    const attemptedVersion = url.searchParams.get('v');
+    const attemptedVersion = url.searchParams.get(CACHE_BUST_VERSION_PARAM);
     if (attemptedVersion !== null) {
-      url.searchParams.delete('v');
+      url.searchParams.delete(CACHE_BUST_VERSION_PARAM);
       history.replaceState(null, '', url.toString());
     }
 
@@ -214,7 +214,7 @@ export function createPWAUpdates() {
     if (version !== __APP_VERSION__ && version !== attemptedVersion) {
       if (!canvasState.canvasEmpty) return;
       const next = new URL(window.location.href);
-      next.searchParams.set('v', version);
+      next.searchParams.set(CACHE_BUST_VERSION_PARAM, version);
       window.location.replace(next.toString());
     }
   }

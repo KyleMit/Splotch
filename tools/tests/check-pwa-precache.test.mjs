@@ -2,13 +2,18 @@ import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
   APP_SHELL_PRECACHE_URL_PATTERN,
+  appShellFallbackUrlsFromSource,
   MAX_PWA_PRECACHE_BYTES,
   precacheUrlsFromSource,
   pwaPrecacheProblems,
 } from '../check-pwa-precache.mjs';
-import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
+import {
+  appShellPrecacheUrl,
+  createAppShellFallbackPlugin,
+} from '../../web/src/lib/pwa/appShellRoute.ts';
 
 const appShellUrl = appShellPrecacheUrl('build-id');
+const appShellFallbackUrls = [appShellUrl];
 
 const coloringManifest = {
   starterBookId: 'farm',
@@ -36,7 +41,8 @@ it('reads Workbox manifest URLs without confusing the runtime route', () => {
 it('accepts responsive assets only when their canonical fallback is precached within budget', () => {
   expect(
     pwaPrecacheProblems({
-      precacheUrls: ['_app/env.js', appShellUrl, 'coloring/farm/cat.overlay.webp', 'app.js'],
+      precacheUrls: [appShellUrl, '_app/env.js', 'coloring/farm/cat.overlay.webp', 'app.js'],
+      appShellFallbackUrls,
       precacheBytes: MAX_PWA_PRECACHE_BYTES,
       responsiveAssetUrls: [
         'coloring/max-1152px/farm/cat.overlay.webp',
@@ -50,7 +56,8 @@ it('accepts responsive assets only when their canonical fallback is precached wi
 it('rejects responsive precache entries, missing fallbacks, and an oversized bundle', () => {
   expect(
     pwaPrecacheProblems({
-      precacheUrls: ['_app/env.js', appShellUrl, 'coloring/max-1152px/farm/cat.overlay.webp'],
+      precacheUrls: [appShellUrl, '_app/env.js', 'coloring/max-1152px/farm/cat.overlay.webp'],
+      appShellFallbackUrls,
       precacheBytes: MAX_PWA_PRECACHE_BYTES + 1,
       responsiveAssetUrls: ['coloring/max-1152px/farm/cat.overlay.webp'],
       coloringManifest,
@@ -65,7 +72,8 @@ it('rejects responsive precache entries, missing fallbacks, and an oversized bun
 it('rejects the served-only social card', () => {
   expect(
     pwaPrecacheProblems({
-      precacheUrls: ['_app/env.js', appShellUrl, 'large-image.png'],
+      precacheUrls: [appShellUrl, '_app/env.js', 'large-image.png'],
+      appShellFallbackUrls,
       precacheBytes: 1,
       responsiveAssetUrls: [],
       coloringManifest,
@@ -79,6 +87,7 @@ it('requires the runtime-generated environment module for offline hydration', ()
   expect(
     pwaPrecacheProblems({
       precacheUrls: [appShellUrl, 'app.js'],
+      appShellFallbackUrls,
       precacheBytes: 1,
       responsiveAssetUrls: [],
       coloringManifest,
@@ -89,7 +98,8 @@ it('requires the runtime-generated environment module for offline hydration', ()
 it('requires every starter asset and rejects downloadable books in the precache', () => {
   expect(
     pwaPrecacheProblems({
-      precacheUrls: ['_app/env.js', appShellUrl, 'coloring/dinosaur/cover.thumb.webp'],
+      precacheUrls: [appShellUrl, '_app/env.js', 'coloring/dinosaur/cover.thumb.webp'],
+      appShellFallbackUrls,
       precacheBytes: 1,
       responsiveAssetUrls: [],
       coloringManifest: {
@@ -119,7 +129,8 @@ it('recognizes the app shell URL the service worker config precaches', () => {
 it('requires exactly one build-matched app shell for offline navigations', () => {
   const problems = (precacheUrls) =>
     pwaPrecacheProblems({
-      precacheUrls: ['_app/env.js', ...precacheUrls],
+      precacheUrls: [...precacheUrls, '_app/env.js'],
+      appShellFallbackUrls,
       precacheBytes: 1,
       responsiveAssetUrls: [],
       coloringManifest,
@@ -131,4 +142,35 @@ it('requires exactly one build-matched app shell for offline navigations', () =>
   expect(problems([appShellUrl, appShellPrecacheUrl('other-build')])).toEqual([
     'Expected one build-matched app shell in the PWA precache, found 2',
   ]);
+});
+
+it('reads the shell URL back from the fallback callbacks Workbox serializes', () => {
+  const plugin = createAppShellFallbackPlugin(appShellUrl, 'v');
+  const source = `plugins:[{cachedResponseWillBeUsed:${plugin.cachedResponseWillBeUsed},handlerDidError:${plugin.handlerDidError}}]`;
+
+  expect(appShellFallbackUrlsFromSource(source)).toEqual([appShellUrl, appShellUrl]);
+});
+
+it('requires the shell to install first and the fallback to look up that same shell', () => {
+  const problems = ({ precacheUrls, appShellFallbackUrls }) =>
+    pwaPrecacheProblems({
+      precacheUrls,
+      appShellFallbackUrls,
+      precacheBytes: 1,
+      responsiveAssetUrls: [],
+      coloringManifest,
+    });
+
+  expect(problems({ precacheUrls: ['_app/env.js', appShellUrl], appShellFallbackUrls })).toEqual([
+    'The app shell must be the first precache entry so a deploy mid-install fails the install',
+  ]);
+  expect(
+    problems({
+      precacheUrls: [appShellUrl, '_app/env.js'],
+      appShellFallbackUrls: [appShellPrecacheUrl('other-build')],
+    })
+  ).toEqual([`The navigation fallback does not look up the precached app shell ${appShellUrl}`]);
+  expect(
+    problems({ precacheUrls: [appShellUrl, '_app/env.js'], appShellFallbackUrls: [] })
+  ).toEqual([`The navigation fallback does not look up the precached app shell ${appShellUrl}`]);
 });

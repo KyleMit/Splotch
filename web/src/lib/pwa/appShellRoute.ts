@@ -26,21 +26,56 @@ export function appShellPrecacheUrl(buildId: string): string {
   return `/?${new URLSearchParams({ 'app-shell-build': buildId })}`;
 }
 
-export function createAppShellFallbackPlugin(shellUrl: string) {
+interface PrecacheEntry {
+  url: string;
+  revision: string | null;
+  size: number;
+}
+
+// Workbox installs precache entries one at a time in manifest order, and
+// revisioned entries bypass the HTTP cache. With the shell fetched first, every
+// chunk fetched after it must come from the same deploy: a deploy landing
+// mid-install stops serving the old chunks, their fetch fails, and the install
+// is abandoned instead of pairing the new shell with old chunks. The shell's own
+// bytes are counted by tools/check-pwa-precache.mjs, not by this entry's size.
+export function prependAppShellEntry(shellUrl: string) {
+  return (manifest: PrecacheEntry[]) => ({
+    manifest: [{ url: shellUrl, revision: null, size: 0 }, ...manifest],
+  });
+}
+
+export function createAppShellFallbackPlugin(shellUrl: string, cacheBustParam: string) {
   return {
     // The fallback never reads a runtime copy of this route, so none is written.
     cacheWillUpdate: async function () {
       return null;
     },
-    cachedResponseWillBeUsed: shellMatcherFor(shellUrl),
+    cachedResponseWillBeUsed: shellMatcherForTimeout(shellUrl, cacheBustParam),
+    handlerDidError: shellMatcherForFailure(shellUrl),
   };
 }
 
 // Workbox rejects plugin properties that are not callbacks, so the build's shell
 // URL cannot ride along as data; it reaches the worker as a literal compiled into
-// the callback's own source.
-function shellMatcherFor(shellUrl: string): () => Promise<Response | null> {
+// each callback's own source.
+function shellMatcherForFailure(shellUrl: string): () => Promise<Response | undefined> {
   return new Function(
-    `return async function () { return (await caches.match(${JSON.stringify(shellUrl)})) ?? null; };`
+    `return async function () { return caches.match(${JSON.stringify(shellUrl)}); };`
+  )();
+}
+
+// A stale page's recovery navigation exists to reach the deployed build, and
+// answering its timeout with this worker's shell would boot the stale build
+// again with the one recovery attempt spent. It waits for the network instead,
+// and falls back to the shell only when the network fails.
+function shellMatcherForTimeout(
+  shellUrl: string,
+  cacheBustParam: string
+): (options: { request: Request }) => Promise<Response | null> {
+  return new Function(
+    `return async function ({ request }) {
+      if (new URL(request.url).searchParams.has(${JSON.stringify(cacheBustParam)})) return null;
+      return (await caches.match(${JSON.stringify(shellUrl)})) ?? null;
+    };`
   )();
 }
