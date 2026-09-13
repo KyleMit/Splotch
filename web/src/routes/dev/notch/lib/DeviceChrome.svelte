@@ -102,7 +102,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    --chrome-glyph: #ffffff;
+    --chrome-glyph: #fff;
   }
 
   /* Masks the tile's square corners down to the device's radius by painting the
@@ -139,7 +139,7 @@
 
   .status-bar {
     position: absolute;
-    inset: 0 0 auto 0;
+    inset: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;

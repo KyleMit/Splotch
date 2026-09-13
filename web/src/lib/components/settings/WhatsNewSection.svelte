@@ -71,7 +71,7 @@
   }
 
   .whats-new-heading {
-    margin: 0 0 10px 0;
+    margin: 0 0 10px;
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -86,7 +86,7 @@
   /* Content is build-time-rendered Markdown, so style its tags globally. */
   .whats-new-body :global(h2),
   .whats-new-body :global(h3) {
-    margin: 12px 0 6px 0;
+    margin: 12px 0 6px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--text-strong);
@@ -114,7 +114,7 @@
   }
 
   .all-releases {
-    margin: 4px 0 0 0;
+    margin: 4px 0 0;
     font-size: var(--font-size-sm);
   }
 

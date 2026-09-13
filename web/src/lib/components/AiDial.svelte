@@ -82,9 +82,9 @@
       from 0deg,
       var(--c1),
       var(--c2) var(--angle),
-      rgba(255, 255, 255, 0.1) var(--angle)
+      rgb(255 255 255 / 10%) var(--angle)
     );
-    box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.18);
+    box-shadow: inset 0 0 24px rgb(0 0 0 / 18%);
   }
 
   .dial-sheen {
@@ -93,8 +93,8 @@
     border-radius: 50%;
     background: radial-gradient(
       circle at 38% 32%,
-      rgba(255, 255, 255, 0.55) 0%,
-      rgba(255, 255, 255, 0.12) 32%,
+      rgb(255 255 255 / 55%) 0%,
+      rgb(255 255 255 / 12%) 32%,
       transparent 60%
     );
     pointer-events: none;
@@ -109,7 +109,7 @@
     transform: translate(-50%, -50%);
     border-radius: 50%;
     background: white;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
   }
 
   .dial.waiting {

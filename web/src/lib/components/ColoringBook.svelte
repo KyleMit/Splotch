@@ -405,7 +405,7 @@
       border-color: var(--brand);
       background: var(--brand-wash);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.25);
+      box-shadow: 0 4px 12px rgb(var(--brand-rgb), 0.25);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
     }
   }
@@ -532,9 +532,9 @@
     right: 0;
     bottom: 0;
     padding: var(--space-1) var(--space-2);
-    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md); both follow
+    /* rgb fallback precedes the color-mix (docs/COMPATIBILITY.md); both follow
        the theme so the caption sits on the tile's own paper tone. */
-    background: rgba(255, 255, 255, 0.92);
+    background: rgb(255 255 255 / 92%);
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);

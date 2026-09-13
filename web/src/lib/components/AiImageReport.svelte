@@ -348,7 +348,7 @@
     object-fit: cover;
     border-radius: var(--radius-md);
     background: var(--paper);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
   }
 
   .ai-report-thumbs figcaption {

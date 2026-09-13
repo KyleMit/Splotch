@@ -62,7 +62,7 @@ the duplication is the accepted cost; keep the blocks in sync.
 * **The paper darkens with the theme.** `--paper` (dark: a warm near-black, not pure black) sits
   under the unchanged low-alpha texture (`DrawingCanvas.svelte`); `--paper-margin` is the flat tone
   behind the rotation-locked sheet. The clear gesture's paper washes and page-turn ripple
-  (`ClearButton.svelte`) follow `--paper` via `color-mix` (rgba fallbacks precede each, per
+  (`ClearButton.svelte`) follow `--paper` via `color-mix` (plain-`rgb()` fallbacks precede each, per
   `docs/COMPATIBILITY.md`).
 * **Controls on the paper darken too.** The Actions Panel cards and stroke flyout use
   `--float-surface` (dark: a step *lighter* than `--paper`, since their drop shadows vanish on a

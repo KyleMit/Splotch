@@ -124,7 +124,7 @@
     background: var(--clear-gradient-rest);
     border: none;
     border-radius: 50% 0 0 50%;
-    box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: -4px 4px 20px rgb(0 0 0 / 30%);
     cursor: grab;
     touch-action: none;
     display: flex;
@@ -146,7 +146,7 @@
      .dragging is added imperatively via classList. */
   .clear-button:global(.dragging) {
     border-radius: 50%;
-    box-shadow: -6px 6px 30px rgba(0, 0, 0, 0.4);
+    box-shadow: -6px 6px 30px rgb(0 0 0 / 40%);
   }
 
   .clear-button:global(.dragging) :global(.clear-icon) {
@@ -196,7 +196,7 @@
   .clear-button:global(.delete-ready) {
     background: linear-gradient(135deg, rgb(var(--alarm-rgb)), #d63031);
     transform: scale(1.1);
-    box-shadow: 0 6px 40px rgba(var(--alarm-rgb), 0.6);
+    box-shadow: 0 6px 40px rgb(var(--alarm-rgb), 0.6);
   }
 
   :global(.clear-icon) {
@@ -216,11 +216,11 @@
     display: none;
     z-index: var(--z-clear-accept-zone); /* Below .clear-container so the button sits on top */
     border-radius: 50%;
-    border: 4px dashed rgba(var(--alarm-rgb), 0.45);
+    border: 4px dashed rgb(var(--alarm-rgb), 0.45);
     background: radial-gradient(
       circle,
-      rgba(var(--alarm-rgb), 0) 55%,
-      rgba(var(--alarm-rgb), 0.06) 100%
+      rgb(var(--alarm-rgb), 0) 55%,
+      rgb(var(--alarm-rgb), 0.06) 100%
     );
     box-sizing: border-box;
     opacity: 0;
@@ -240,12 +240,12 @@
   }
 
   .clear-accept-zone:global(.threshold-reached) {
-    border-color: rgba(var(--alarm-rgb), 0.9);
+    border-color: rgb(var(--alarm-rgb), 0.9);
     border-style: solid;
     background: radial-gradient(
       circle,
-      rgba(var(--alarm-rgb), 0) 50%,
-      rgba(var(--alarm-rgb), 0.22) 100%
+      rgb(var(--alarm-rgb), 0) 50%,
+      rgb(var(--alarm-rgb), 0.22) 100%
     );
   }
 
@@ -254,7 +254,7 @@
      and strengthens as --clear-progress climbs 0→1. The theme's paper, not
      white, so it reads as "returning to blank canvas," and same origin as the
      confirmation ripple below so the preview and the commit feel continuous.
-     Each color-mix is preceded by its light-paper rgba fallback for
+     Each color-mix is preceded by its light-paper rgb fallback for
      pre-color-mix engines (docs/COMPATIBILITY.md). */
   .clear-preview {
     position: fixed;
@@ -264,8 +264,8 @@
     opacity: var(--clear-progress, 0);
     background: radial-gradient(
       circle at 100% 0,
-      rgba(252, 251, 248, 0.9),
-      rgba(252, 251, 248, 0) calc(var(--clear-progress, 0) * 130%)
+      rgb(252 251 248 / 90%),
+      rgb(252 251 248 / 0%) calc(var(--clear-progress, 0) * 130%)
     );
     background: radial-gradient(
       circle at 100% 0,
@@ -284,8 +284,8 @@
     opacity: 0.92;
     background: radial-gradient(
       circle at 100% 0,
-      rgba(252, 251, 248, 0.95),
-      rgba(252, 251, 248, 0.82) 140%
+      rgb(252 251 248 / 95%),
+      rgb(252 251 248 / 82%) 140%
     );
     background: radial-gradient(
       circle at 100% 0,

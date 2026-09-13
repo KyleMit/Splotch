@@ -87,7 +87,7 @@
     border-radius: 2px;
     opacity: 0;
     will-change: transform, opacity;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
     animation: leafFall var(--duration) var(--delay) linear infinite;
     /* Fall-path stops as a fraction of --stage-h (the real stage height, set by
        the parent's ResizeObserver) — derived from the original fixed-540px

@@ -69,7 +69,7 @@
   }
 
   .about-links p {
-    margin: 0 0 8px 0;
+    margin: 0 0 8px;
   }
 
   .about-links a {

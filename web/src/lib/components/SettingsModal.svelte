@@ -333,7 +333,7 @@
     border-radius: var(--radius-lg);
     /* A tight, even lift that hugs the rounded card — not the heavy, downward
        shadow that bled into a rectangular band below the control. */
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16);
+    box-shadow: 0 2px 12px rgb(0 0 0 / 16%);
   }
 
   /* The content is a flex column capped at the modal height: the header stays

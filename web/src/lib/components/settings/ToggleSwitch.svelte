@@ -105,7 +105,7 @@
     height: 26px;
     background: white;
     border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
     transition: transform var(--duration-base) ease;
   }
 

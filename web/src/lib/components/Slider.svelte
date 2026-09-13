@@ -212,7 +212,7 @@
     height: 28px;
     border-radius: var(--radius-pill);
     background: var(--control-track);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 12%);
     overflow: hidden;
   }
 

@@ -166,7 +166,7 @@
   /* Replaces the shadow the render used to bake in, where it can follow the
      silhouette and the theme rather than sitting on a plate. */
   .ai-style-thumb-cutout {
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+    filter: drop-shadow(0 2px 3px rgb(0 0 0 / 28%));
   }
 
   .ai-style-label {
@@ -197,7 +197,7 @@
 
   .ai-style-option:focus-visible .ai-style-thumb {
     border-color: var(--brand);
-    box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.35);
+    box-shadow: 0 0 0 3px rgb(var(--brand-rgb), 0.35);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 35%, transparent);
   }
 

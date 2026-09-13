@@ -154,7 +154,7 @@
   .preview {
     overflow: hidden;
     border-radius: var(--radius-sm, 6px);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
   }
 
   .zoom {

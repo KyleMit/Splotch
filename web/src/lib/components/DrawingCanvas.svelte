@@ -315,7 +315,7 @@
   }
 
   .paper-sheet.paper-lifted {
-    box-shadow: 0 2px 14px rgba(93, 84, 68, 0.18);
+    box-shadow: 0 2px 14px rgb(93 84 68 / 18%);
   }
 
   /* The generated overlay carries only transparent black or white ink, so it

@@ -406,7 +406,7 @@
 
   /* BYOK (bring your own key) panel */
   .byok-intro {
-    margin: 0 0 12px 0;
+    margin: 0 0 12px;
     font-size: var(--font-size-sm);
     color: var(--text);
     line-height: 1.5;
@@ -419,7 +419,7 @@
   /* The how-to's own chrome on the Disclosure primitive — reached with
      :global() because the class lands on the primitive's own markup. */
   .byok :global(.byok-howto) {
-    margin: 0 0 14px 0;
+    margin: 0 0 14px;
     background: var(--surface);
   }
 
@@ -462,7 +462,7 @@
     display: flex;
     align-items: flex-start;
     gap: 6px;
-    margin: 10px 0 0 0;
+    margin: 10px 0 0;
     font-size: var(--font-size-xs);
     line-height: 1.45;
     color: var(--success-text);

@@ -7,9 +7,11 @@
 // npm script therefore globs the repo and the exclusions live below.
 //
 // The rule set grows one measured rule at a time, the same way ADR-0031's
-// ESLint set was chosen: a rule is enabled only where the codebase already
-// scores zero, and a rule the codebase violates is recorded in ADR-0031 with
-// its count rather than enabled with exceptions.
+// ESLint set was chosen: a rule is enabled only where the codebase scores
+// zero, and a rule the codebase violates is recorded in ADR-0031 with its count
+// rather than enabled with exceptions. Reaching zero through `--fix` is an
+// isolated `style:` commit listed in .git-blame-ignore-revs, never part of the
+// change that enables the rule.
 //
 // Two things deliberately stay out:
 //   * Stylistic rules. Prettier owns CSS formatting (ADR-0031, ADR-0057), and
@@ -141,6 +143,28 @@ export default {
     'selector-attribute-quotes': 'always',
     'selector-pseudo-element-colon-notation': 'double',
     'selector-type-case': 'lower',
+
+    // The modern colour notation, one migration across three rules: space-
+    // separated channels, `rgb` for `rgba`, and a percentage alpha
+    // (`rgb(0 0 0 / 60%)`). The opacity properties keep their plain number —
+    // stylelint-config-standard's own exception — because `opacity: 0%` reads
+    // worse than `opacity: 0` and says nothing more.
+    'alpha-value-notation': [
+      'percentage',
+      {
+        exceptProperties: [
+          'opacity',
+          'fill-opacity',
+          'flood-opacity',
+          'stop-opacity',
+          'stroke-opacity',
+        ],
+      },
+    ],
+    'color-function-alias-notation': 'without-alpha',
+    'color-function-notation': 'modern',
+    'color-hex-length': 'short',
+    'shorthand-property-no-redundant-values': true,
   },
   overrides: [
     {

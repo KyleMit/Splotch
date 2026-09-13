@@ -3,3 +3,6 @@
 
 # dprint-plugin-markdown 0.24 reformat with wrapCodeSpans off (issue 1634)
 0d22cb8dff1b01b857c57bcf1cdc3b356b188633
+
+# stylelint --fix for the modern colour notation and short values (issue 1861)
+46520be1bcf2d7010c7fdadbf127f1756c31144b

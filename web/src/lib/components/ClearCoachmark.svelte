@@ -101,11 +101,11 @@
        reduced-motion fallback below read the exact same border/fill and
        cannot drift apart. */
     --ready-rgb: 238, 90, 111;
-    --ready-border: rgba(var(--ready-rgb), 0.85);
+    --ready-border: rgb(var(--ready-rgb), 0.85);
     --ready-fill: radial-gradient(
       circle,
-      rgba(var(--ready-rgb), 0) 50%,
-      rgba(var(--ready-rgb), 0.18) 100%
+      rgb(var(--ready-rgb), 0) 50%,
+      rgb(var(--ready-rgb), 0.18) 100%
     );
     transition:
       opacity 0.4s ease,
@@ -133,11 +133,11 @@
     position: fixed;
     box-sizing: border-box;
     border-radius: 50%;
-    border: 4px dashed rgba(var(--hint-rgb), 0.4);
+    border: 4px dashed rgb(var(--hint-rgb), 0.4);
     background: radial-gradient(
       circle,
-      rgba(var(--hint-rgb), 0) 60%,
-      rgba(var(--hint-rgb), 0.05) 100%
+      rgb(var(--hint-rgb), 0) 60%,
+      rgb(var(--hint-rgb), 0.05) 100%
     );
     opacity: 0;
   }
@@ -161,7 +161,7 @@
     height: 100%;
     border-radius: 50%;
     background: var(--clear-gradient-rest);
-    box-shadow: -6px 6px 24px rgba(0, 0, 0, 0.35);
+    box-shadow: -6px 6px 24px rgb(0 0 0 / 35%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -183,7 +183,7 @@
     top: 52%;
     width: 52px;
     height: 52px;
-    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 3px 5px rgb(0 0 0 / 30%));
   }
 
   /* The mime plays over the paper, not a modal shell, so nothing re-inks it
@@ -237,7 +237,7 @@
     8% {
       opacity: 0;
       transform: scale(0.9);
-      border-color: rgba(var(--hint-rgb), 0.4);
+      border-color: rgb(var(--hint-rgb), 0.4);
       border-style: dashed;
     }
     18% {
@@ -247,12 +247,12 @@
     57% {
       opacity: 1;
       transform: scale(1);
-      border-color: rgba(var(--hint-rgb), 0.4);
+      border-color: rgb(var(--hint-rgb), 0.4);
       border-style: dashed;
       background: radial-gradient(
         circle,
-        rgba(var(--hint-rgb), 0) 60%,
-        rgba(var(--hint-rgb), 0.05) 100%
+        rgb(var(--hint-rgb), 0) 60%,
+        rgb(var(--hint-rgb), 0.05) 100%
       );
     }
     70%,

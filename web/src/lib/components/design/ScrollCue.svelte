@@ -90,14 +90,14 @@
     margin-top: calc(-1 * var(--cue-height));
     pointer-events: none;
     transition: opacity var(--duration-base) var(--ease-glide);
-    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md); painting
+    /* rgb fallback precedes the color-mix (docs/COMPATIBILITY.md); painting
        from --surface rather than white gives dark mode a dark fade. The clear
        end is a zero-alpha surface, not the `transparent` keyword, which some
        engines interpolate through gray. */
     background: linear-gradient(
       to bottom,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 1) var(--cue-opaque-from)
+      rgb(255 255 255 / 0%),
+      rgb(255 255 255 / 100%) var(--cue-opaque-from)
     );
     background: linear-gradient(
       to bottom,

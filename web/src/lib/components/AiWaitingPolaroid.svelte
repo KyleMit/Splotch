@@ -79,7 +79,7 @@
     /* The quiet ink for a caption that isn't celebrating anything. Pinned, like
        everything else on this print: --polaroid-paper stays white at night, so
        what is written on it has to stay dark. */
-    --polaroid-muted-ink: rgba(0, 0, 0, 0.55);
+    --polaroid-muted-ink: rgb(0 0 0 / 55%);
 
     position: fixed;
     top: calc(var(--polaroid-headroom) + var(--safe-area-top));
@@ -91,8 +91,8 @@
     border-radius: 4px;
     background: var(--polaroid-paper);
     box-shadow:
-      0 10px 24px rgba(0, 0, 0, 0.28),
-      0 3px 8px rgba(0, 0, 0, 0.18);
+      0 10px 24px rgb(0 0 0 / 28%),
+      0 3px 8px rgb(0 0 0 / 18%);
     font-family: var(--font-family);
     cursor: pointer;
     transform: rotate(var(--polaroid-tilt));
@@ -132,7 +132,7 @@
     overflow: hidden;
     /* The window recessed into the print — ink on paper, so it holds whichever
        white the paper is. */
-    background: rgba(0, 0, 0, 0.05);
+    background: rgb(0 0 0 / 5%);
   }
 
   .polaroid-window img {
@@ -172,7 +172,7 @@
     width: 100%;
     height: 6px;
     border-radius: var(--radius-pill);
-    background: rgba(0, 0, 0, 0.08);
+    background: rgb(0 0 0 / 8%);
     overflow: hidden;
   }
 
