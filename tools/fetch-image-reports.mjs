@@ -5,20 +5,37 @@ import {
   copyFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
+import { IMAGE_REPORT_RETENTION_DAYS } from '../web/src/lib/imageReport.ts';
 import { IMAGE_REPORT_STORE_NAME } from '../web/src/lib/server/imageReportStoreName.ts';
 import { isMain, ROOT, runId, runMain } from './lib/proc.mjs';
 
 const PRODUCTION_DOMAIN = 'splotch.art';
 const NETLIFY_MAX_BUFFER_BYTES = 16 * 1024 * 1024;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const REPORT_RETENTION_MS = IMAGE_REPORT_RETENTION_DAYS * DAY_MS;
+
+// Deliberately a local literal rather than an import of the store's version: the number names the
+// metadata shape describeMetadataProblem validates, so a store bump must fail this tool's store
+// round-trip test until the reader is taught the new shape.
+export const READABLE_METADATA_VERSION = 2;
 
 const REPORT_KEY_PATTERN =
   /^(\d+-[0-9a-f-]+)\/(input\.(?:jpg|png|webp)|metadata\.json|output\.(?:jpg|png|webp)|prompt\.txt)$/;
+const REPORT_DIRECTORY_PATTERN = /^(\d+)-[0-9a-f-]+$/;
+const EVAL_INPUT_REPORT_PATTERN = /^report__(\d+)-[0-9a-f-]+-[a-z0-9-]+__production\.png$/;
+// model-eval names each generated image `<input id>__<variant>__<sample>.<ext>` and each report
+// thumbnail `in__<input id>.jpg` or `out__<input id>__<variant>__<sample>.jpg`.
+const EVAL_RESULT_REPORT_ID_PATTERN = /^report__(\d+)-[0-9a-f-]+-[a-z0-9-]+__production$/;
+const EVAL_OUTPUT_REPORT_PATTERN =
+  /^(?:in__|out__)?report__(\d+)-[0-9a-f-]+-[a-z0-9-]+__production(?:__.+)?\.(?:jpg|png|webp)$/;
 const CONTENT_TYPE_BY_EXTENSION = {
   jpg: 'image/jpeg',
   png: 'image/png',
@@ -75,7 +92,7 @@ export function planReportBundles(listing) {
     const missing = ['metadata.json', 'prompt.txt'].filter((filename) => !files.has(filename));
     const problems = [];
     if (inputs.length !== 1) problems.push('expected one input image');
-    if (outputs.length !== 1) problems.push('expected one output image');
+    if (outputs.length > 1) problems.push('expected at most one output image');
     if (missing.length) problems.push(`missing ${missing.join(', ')}`);
     if (problems.length) {
       failures.push({ reportId, error: problems.join('; ') });
@@ -84,7 +101,7 @@ export function planReportBundles(listing) {
     bundles.push({
       reportId,
       input: files.get(inputs[0]),
-      output: files.get(outputs[0]),
+      output: outputs.length ? files.get(outputs[0]) : null,
       files: [...files.values()].sort((a, b) => a.filename.localeCompare(b.filename)),
     });
   }
@@ -104,27 +121,184 @@ function extensionOf(filename) {
   return filename.slice(filename.lastIndexOf('.') + 1);
 }
 
+const BUNDLE_PROBLEM_BY_KIND = {
+  picture(metadata, bundle) {
+    if (!bundle.output) return 'picture report has no output image';
+    if (
+      metadata.outputContentType !== CONTENT_TYPE_BY_EXTENSION[extensionOf(bundle.output.filename)]
+    ) {
+      return 'output filename and content type disagree';
+    }
+    if (metadata.refusalReason !== null) return 'picture report carries a refusal reason';
+    return null;
+  },
+  'false-positive-refusal'(metadata, bundle) {
+    if (bundle.output) return 'refusal report has an output image';
+    if (metadata.outputContentType !== null) return 'refusal report names an output content type';
+    if (typeof metadata.refusalReason !== 'string') return 'refusal report has no refusal reason';
+    return null;
+  },
+};
+// Keyed locally rather than by the store's AI_REPORT_KINDS: a kind added there must fail this tool's
+// kind drift test until it gets bundle rules, instead of falling into another kind's rules.
+export const READABLE_REPORT_KINDS = Object.keys(BUNDLE_PROBLEM_BY_KIND);
+
+function describeMetadataProblem(metadata, bundle) {
+  if (metadata?.version !== READABLE_METADATA_VERSION) {
+    return `unsupported metadata version ${JSON.stringify(metadata?.version)} (this tool reads version ${READABLE_METADATA_VERSION})`;
+  }
+  if (!Object.hasOwn(BUNDLE_PROBLEM_BY_KIND, metadata.kind)) {
+    return `unsupported report kind ${JSON.stringify(metadata.kind)}`;
+  }
+  if (typeof metadata.reportedAt !== 'string' || typeof metadata.deleteAfter !== 'string') {
+    return 'metadata is missing reportedAt or deleteAfter';
+  }
+  if (metadata.style !== null && typeof metadata.style !== 'string') {
+    return 'metadata style is neither a string nor null';
+  }
+  if (metadata.inputContentType !== CONTENT_TYPE_BY_EXTENSION[extensionOf(bundle.input.filename)]) {
+    return 'input filename and content type disagree';
+  }
+  return BUNDLE_PROBLEM_BY_KIND[metadata.kind](metadata, bundle);
+}
+
 function readMetadata(reportDir, bundle) {
   const metadata = parseJson(
     `${bundle.reportId}/metadata.json`,
     readFileSync(join(reportDir, 'metadata.json'), 'utf8')
   );
-  if (
-    metadata?.version !== 1 ||
-    typeof metadata.reportedAt !== 'string' ||
-    typeof metadata.deleteAfter !== 'string'
-  ) {
-    throw new Error(`${bundle.reportId}/metadata.json has an unsupported shape`);
-  }
-  const expectedInputType = CONTENT_TYPE_BY_EXTENSION[extensionOf(bundle.input.filename)];
-  const expectedOutputType = CONTENT_TYPE_BY_EXTENSION[extensionOf(bundle.output.filename)];
-  if (metadata.inputContentType !== expectedInputType) {
-    throw new Error(`${bundle.reportId}: input filename and content type disagree`);
-  }
-  if (metadata.outputContentType !== expectedOutputType) {
-    throw new Error(`${bundle.reportId}: output filename and content type disagree`);
-  }
+  const problem = describeMetadataProblem(metadata, bundle);
+  if (problem) throw new Error(`${bundle.reportId}/metadata.json: ${problem}`);
   return metadata;
+}
+
+function reportTimestampIsExpired(timestamp, now) {
+  return Number(timestamp) <= now - REPORT_RETENTION_MS;
+}
+
+export function isReportExpired(reportId, now) {
+  const match = REPORT_DIRECTORY_PATTERN.exec(reportId);
+  return Boolean(match) && reportTimestampIsExpired(match[1], now);
+}
+
+function childEntries(directory) {
+  return existsSync(directory) ? readdirSync(directory, { withFileTypes: true }) : [];
+}
+
+const MANIFEST_REPORT_LISTS = ['reports', 'failures', 'expired'];
+
+function pruneManifest(manifestPath, now) {
+  if (!existsSync(manifestPath)) return { retainsReports: false };
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  } catch {
+    return { retainsReports: true };
+  }
+  let retainedEntries = 0;
+  let changed = false;
+  const pruned = { ...manifest };
+  for (const list of MANIFEST_REPORT_LISTS) {
+    if (!Array.isArray(manifest?.[list])) continue;
+    pruned[list] = manifest[list].filter((entry) => !isReportExpired(entry?.reportId, now));
+    retainedEntries += pruned[list].length;
+    changed ||= pruned[list].length !== manifest[list].length;
+  }
+  if (changed) writeFileSync(manifestPath, `${JSON.stringify(pruned, null, 2)}\n`);
+  return { retainsReports: retainedEntries > 0 };
+}
+
+function pruneSnapshot(snapshotDir, now) {
+  let removedReports = 0;
+  for (const entry of childEntries(snapshotDir)) {
+    if (!entry.isDirectory() || !isReportExpired(entry.name, now)) continue;
+    rmSync(join(snapshotDir, entry.name), { recursive: true, force: true });
+    removedReports++;
+  }
+  const { retainsReports } = pruneManifest(join(snapshotDir, 'manifest.json'), now);
+  const remaining = childEntries(snapshotDir).filter(({ name }) => name !== 'manifest.json');
+  const removedSnapshot = !retainsReports && !remaining.length;
+  if (removedSnapshot) rmSync(snapshotDir, { recursive: true, force: true });
+  return { removedReports, removedSnapshot };
+}
+
+export function pruneExpiredLocalReports({ root = ROOT, now = Date.now() } = {}) {
+  const result = {
+    reports: 0,
+    snapshots: 0,
+    evalInputs: 0,
+    evalResultRows: 0,
+    evalRuns: 0,
+    evalOutputs: 0,
+  };
+  const snapshotsDir = join(root, '.eval-tmp', 'ai-image-reports');
+  for (const entry of childEntries(snapshotsDir)) {
+    if (!entry.isDirectory()) continue;
+    const { removedReports, removedSnapshot } = pruneSnapshot(join(snapshotsDir, entry.name), now);
+    result.reports += removedReports;
+    if (removedSnapshot) result.snapshots++;
+  }
+  const evalInputsDir = join(root, 'tools', 'model-eval', 'inputs');
+  for (const entry of childEntries(evalInputsDir)) {
+    const match = entry.isFile() ? EVAL_INPUT_REPORT_PATTERN.exec(entry.name) : null;
+    if (!match || !reportTimestampIsExpired(match[1], now)) continue;
+    rmSync(join(evalInputsDir, entry.name), { force: true });
+    result.evalInputs++;
+  }
+  const evalOutputDir = join(root, 'tools', 'model-eval', 'output');
+  for (const entry of childEntries(evalOutputDir)) {
+    if (!entry.isDirectory()) continue;
+    const { removedRows, removedRun } = pruneEvalRunResults(join(evalOutputDir, entry.name), now);
+    result.evalResultRows += removedRows;
+    if (removedRun) result.evalRuns++;
+  }
+  result.evalOutputs = pruneExpiredEvalOutputs(evalOutputDir, now);
+  return result;
+}
+
+function isEvalResultRowExpired(row, now) {
+  const match = typeof row?.id === 'string' ? EVAL_RESULT_REPORT_ID_PATTERN.exec(row.id) : null;
+  return Boolean(match) && reportTimestampIsExpired(match[1], now);
+}
+
+// A model-eval run's results.json rows carry text derived from the drawing (the provider's revised
+// prompt and refusal reason), and its report/ bundle and summary.json are built from those rows.
+function pruneEvalRunResults(runDir, now) {
+  const resultsPath = join(runDir, 'results.json');
+  let run;
+  try {
+    run = JSON.parse(readFileSync(resultsPath, 'utf8'));
+  } catch {
+    return { removedRows: 0, removedRun: false };
+  }
+  if (!Array.isArray(run?.results)) return { removedRows: 0, removedRun: false };
+  const retained = run.results.filter((row) => !isEvalResultRowExpired(row, now));
+  const removedRows = run.results.length - retained.length;
+  if (!removedRows) return { removedRows, removedRun: false };
+  if (!retained.length) {
+    rmSync(runDir, { recursive: true, force: true });
+    return { removedRows, removedRun: true };
+  }
+  writeFileSync(resultsPath, JSON.stringify({ ...run, results: retained }, null, 2));
+  rmSync(join(runDir, 'report'), { recursive: true, force: true });
+  rmSync(join(runDir, 'summary.json'), { force: true });
+  return { removedRows, removedRun: false };
+}
+
+function pruneExpiredEvalOutputs(directory, now) {
+  let removed = 0;
+  for (const entry of childEntries(directory)) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      removed += pruneExpiredEvalOutputs(path, now);
+      continue;
+    }
+    const match = entry.isFile() ? EVAL_OUTPUT_REPORT_PATTERN.exec(entry.name) : null;
+    if (!match || !reportTimestampIsExpired(match[1], now)) continue;
+    rmSync(path, { force: true });
+    removed++;
+  }
+  return removed;
 }
 
 function styleSlug(style) {
@@ -170,7 +344,9 @@ export function fetchImageReports({
   snapshotId = runId(),
   command = runNetlify,
   importEvalInputs = false,
+  now = Date.now(),
 } = {}) {
+  const pruned = pruneExpiredLocalReports({ root, now });
   const sites = parseJson('netlify sites:list', command(['sites:list', '--json'], { cwd: root }));
   const site = resolveProductionSite(sites);
   const netlifyEnv = { ...process.env, NETLIFY_SITE_ID: site.id };
@@ -182,6 +358,12 @@ export function fetchImageReports({
     })
   );
   const plan = planReportBundles(listing);
+  const expired = [...plan.bundles, ...plan.failures]
+    .map(({ reportId }) => reportId)
+    .filter((reportId) => isReportExpired(reportId, now))
+    .sort();
+  const retainedBundles = plan.bundles.filter(({ reportId }) => !isReportExpired(reportId, now));
+  const failures = plan.failures.filter(({ reportId }) => !isReportExpired(reportId, now));
   const snapshotDir = join(root, '.eval-tmp', 'ai-image-reports', snapshotId);
   if (existsSync(snapshotDir)) throw new Error(`Snapshot already exists: ${snapshotDir}`);
   mkdirSync(snapshotDir, { recursive: true });
@@ -189,9 +371,8 @@ export function fetchImageReports({
   const evalInputsDir = join(root, 'tools', 'model-eval', 'inputs');
   if (importEvalInputs) mkdirSync(evalInputsDir, { recursive: true });
   const reports = [];
-  const failures = [...plan.failures];
 
-  for (const bundle of plan.bundles) {
+  for (const bundle of retainedBundles) {
     const reportDir = join(snapshotDir, bundle.reportId);
     mkdirSync(reportDir);
     try {
@@ -231,6 +412,7 @@ export function fetchImageReports({
     store: IMAGE_REPORT_STORE_NAME,
     reports,
     failures,
+    expired: expired.map((reportId) => ({ reportId })),
   };
   writeFileSync(join(snapshotDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
@@ -247,7 +429,7 @@ export function fetchImageReports({
         conflicts.map(({ reportId, evalInput }) => `${reportId}: ${evalInput}`).join('\n')
     );
   }
-  return { site, snapshotDir, reports };
+  return { site, snapshotDir, reports, expired: manifest.expired, pruned };
 }
 
 function printFetchImageReportsHelp() {
@@ -266,6 +448,15 @@ then select them with:
 
 Model evaluation A/B-tests the reported drawing with its base prompt; it does
 not replay the resolved style prompt retained in the snapshot's prompt.txt.
+
+Every run first deletes local copies of reports older than the
+${IMAGE_REPORT_RETENTION_DAYS}-day retention window: report folders in earlier
+snapshots, report__ drawings in tools/model-eval/inputs/, and what model-eval
+runs in tools/model-eval/output/ made from them: generated images, thumbnails,
+and results.json rows. A run that loses rows also loses its report/ bundle and
+summary.json (rebuild them with REPORT_FROM), and a run left with no rows is
+deleted. Reports the production purge has not yet deleted are listed as
+expired, never downloaded.
 
 Requires an installed, authenticated Netlify CLI. Production is read-only.`);
 }
@@ -291,7 +482,15 @@ export async function runFetchImageReports() {
   const skipped = result.reports.filter(
     ({ evalInputStatus }) => evalInputStatus === 'unsupported'
   ).length;
+  console.log(
+    `[fetch:image-reports] pruned past-retention local copies: ${result.pruned.reports} report folder(s), ${result.pruned.snapshots} snapshot(s), ${result.pruned.evalInputs} model-eval input(s), ${result.pruned.evalResultRows} model-eval result row(s), ${result.pruned.evalRuns} model-eval run(s), ${result.pruned.evalOutputs} model-eval output image(s)`
+  );
   console.log(`[fetch:image-reports] site: ${result.site.name} (${PRODUCTION_DOMAIN})`);
+  if (result.expired.length) {
+    console.log(
+      `[fetch:image-reports] skipped ${result.expired.length} past-retention report(s) the production purge has not deleted yet`
+    );
+  }
   console.log(
     `[fetch:image-reports] fetched ${result.reports.length} report(s) to ${relative(ROOT, result.snapshotDir)}`
   );
