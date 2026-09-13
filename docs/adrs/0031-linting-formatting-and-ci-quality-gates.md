@@ -111,13 +111,15 @@ choices:
 
   Rules take `stylelint-config-standard` v40's own option values, several of which carry an `ignore`
   — `declaration-block-no-duplicate-properties` and `length-zero-no-unit` in particular are at zero
-  *because* of theirs (13 and 12 violations without, measured over the full scope). Those are
-  inherited rule semantics. Exactly **one** option is this project's own:
-  `selector-pseudo-class-no-unknown` runs with `ignorePseudoClasses: ['global']`. Its 316 hits were
-  **all** Svelte's `:global()`, which is scoping syntax rather than an unknown pseudo-class, and
-  teaching the rule the framework's vocabulary is what this config already does for genuine idioms.
-  At zero afterwards, it catches `:focus-visable` across every component — the single highest-value
-  rule in the set.
+  *because* of theirs (13 and 12 violations without, measured over the full scope). They are the
+  only two: the other four inherited ignores — on `at-rule-prelude-no-invalid`,
+  `selector-type-no-unknown`, `string-no-newline` and `value-no-vendor-prefix` — are not
+  load-bearing, each rule scoring zero with the ignore removed. Those are inherited rule semantics.
+  Exactly **one** option is this project's own: `selector-pseudo-class-no-unknown` runs with
+  `ignorePseudoClasses: ['global']`. Its 316 hits were **all** Svelte's `:global()`, which is
+  scoping syntax rather than an unknown pseudo-class, and teaching the rule the framework's
+  vocabulary is what this config already does for genuine idioms. At zero afterwards, it catches
+  `:focus-visable` across every component — the single highest-value rule in the set.
 
 * **Rejected CSS rule candidates — measured, do not re-litigate without new evidence.**
   `stylelint-config-standard` v40 enables 82 rules; 22 of them fire here, for 703 violations (counts
