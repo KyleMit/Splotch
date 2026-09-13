@@ -9,6 +9,14 @@ import {
 import { getPlatform, type Platform } from '$lib/platform';
 import { openParentCenterSettings } from './ui.svelte';
 import type { Origin } from './modal.svelte';
+import {
+  GATE_ESCALATION_QUIET_MS,
+  GATE_LOCKOUT_ENDED_MESSAGE,
+  GATE_LOCKOUT_MAX_MS,
+  GATE_WRONG_ANSWERS_BEFORE_LOCKOUT,
+  gateLockoutDurationMs,
+  gateLockoutMessage,
+} from './parentalGateLockout';
 
 // The Grown-Ups Only gate (App Store Guideline 5.1.4): an adult solves a
 // multiplication problem on a keypad before a gated operation runs. Gates sit
@@ -131,6 +139,17 @@ export const GATE_SUCCESS_HOLD_MS = 1200;
 
 export const GATE_ERROR_MESSAGE = 'Not quite — try this one';
 
+// A live region speaks only for a change it sees: a lockout already in force
+// is announced this long after the card opens, and a message repeated while it
+// is still showing is cleared and set again this long later.
+export const GATE_ANNOUNCE_DELAY_MS = 150;
+// The countdown re-renders on each whole second remaining while the card is open.
+const GATE_LOCKOUT_TICK_MS = 1000;
+
+export const GATE_CHECK_KEY = 'submit';
+export const GATE_KEYPAD_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 'delete', GATE_CHECK_KEY] as const;
+type GateKeypadKey = (typeof GATE_KEYPAD_KEYS)[number];
+
 export interface ParentalGateState {
   open: boolean;
   origin: Origin | null;
@@ -148,6 +167,18 @@ export interface ParentalGateState {
   immediate: boolean;
   /** In-memory only, so an app relaunch always re-asks for per-session features. */
   sessionSolved: Record<ParentalGateFeature, boolean>;
+  /** Wrong answers since the last solve, lockout, or quiet period. Survives closing the card. */
+  wrongStreak: number;
+  /** Lockouts since the last solve or quiet period; sets how long the next one lasts. */
+  lockouts: number;
+  /** Wall-clock end of the lockout in force, or null while the keypad accepts input. */
+  lockoutUntil: number | null;
+  /** When the escalation last saw a wrong answer or a lockout end; quiet runs from here. */
+  escalationQuietSince: number | null;
+  /** The visible countdown while a lockout holds; ticks only while the card is open. */
+  lockoutMessage: string | null;
+  /** Screen-reader text: set at the moments worth saying, never on each countdown tick. */
+  announcement: string;
 }
 
 export const gate: ParentalGateState = $state({
@@ -164,6 +195,12 @@ export const gate: ParentalGateState = $state({
   sessionSolved: Object.fromEntries(
     PARENTAL_GATE_FEATURES.map((feature) => [feature, false])
   ) as Record<ParentalGateFeature, boolean>,
+  wrongStreak: 0,
+  lockouts: 0,
+  lockoutUntil: null,
+  escalationQuietSince: null,
+  lockoutMessage: null,
+  announcement: '',
 });
 
 // Per-attempt continuation and timer handles — deliberately untracked: nothing
@@ -172,11 +209,17 @@ let pendingDestination: (() => void) | null = null;
 let errorTimer: ReturnType<typeof setTimeout> | undefined;
 let shakeTimer: ReturnType<typeof setTimeout> | undefined;
 let successTimer: ReturnType<typeof setTimeout> | undefined;
+let lockoutTickTimer: ReturnType<typeof setTimeout> | undefined;
+let announceTimer: ReturnType<typeof setTimeout> | undefined;
 
+// A lockout itself is a deadline, not a timer, so clearing these on close
+// never ends one: it only stops the countdown nobody can see.
 function clearTimers() {
   clearTimeout(errorTimer);
   clearTimeout(shakeTimer);
   clearTimeout(successTimer);
+  clearTimeout(lockoutTickTimer);
+  clearTimeout(announceTimer);
 }
 
 function randomOperand() {
@@ -212,15 +255,24 @@ export function requireParentalGate(
     return;
   }
   clearTimers();
+  const lockedOut = lockoutHolds();
   pendingDestination = destination;
   newChallenge();
   gate.error = null;
+  gate.announcement = '';
   gate.shaking = false;
   gate.unlocked = false;
   gate.feature = feature;
   gate.immediate = immediate;
   gate.origin = origin;
   gate.open = true;
+  if (lockedOut) {
+    tickLockout();
+    announceTimer = setTimeout(
+      () => (gate.announcement = gate.lockoutMessage ?? ''),
+      GATE_ANNOUNCE_DELAY_MS
+    );
+  }
 }
 
 /**
@@ -247,11 +299,14 @@ export function redirectGateToParentCenter(destination?: (origin: Origin | null)
   gate.feature = 'parentCenter';
   gate.immediate = false;
   gate.input = '';
-  gate.error = null;
   gate.shaking = false;
+  gate.error = null;
+  if (lockoutHolds()) tickLockout();
 }
 
 function succeed() {
+  gate.wrongStreak = 0;
+  gate.lockouts = 0;
   const feature = gate.feature;
   if (feature && parentalGatePolicies[feature] === 'session') gate.sessionSolved[feature] = true;
 
@@ -273,30 +328,119 @@ function succeed() {
   }, GATE_SUCCESS_HOLD_MS);
 }
 
-function fail() {
-  newChallenge();
-  gate.error = GATE_ERROR_MESSAGE;
-  gate.shaking = true;
-  clearTimeout(errorTimer);
-  clearTimeout(shakeTimer);
-  errorTimer = setTimeout(() => (gate.error = null), GATE_ERROR_VISIBLE_MS);
-  shakeTimer = setTimeout(() => (gate.shaking = false), GATE_SHAKE_MS);
+function endLockout() {
+  clearTimeout(lockoutTickTimer);
+  gate.escalationQuietSince = gate.lockoutUntil;
+  gate.lockoutUntil = null;
+  gate.lockoutMessage = null;
+  if (gate.open) announce(GATE_LOCKOUT_ENDED_MESSAGE);
 }
 
-/** Append a digit; auto-submits once the answer's digit count is reached. */
+function announce(message: string) {
+  clearTimeout(announceTimer);
+  if (gate.announcement !== message) {
+    gate.announcement = message;
+    return;
+  }
+  gate.announcement = '';
+  announceTimer = setTimeout(() => (gate.announcement = message), GATE_ANNOUNCE_DELAY_MS);
+}
+
+// Checked against the clock rather than trusted to a timer, which stops while
+// a device sleeps and does not run at all while the card is closed. A clock
+// set backwards would otherwise stretch the pause past the longest one.
+function lockoutHolds() {
+  if (gate.lockoutUntil !== null) {
+    gate.lockoutUntil = Math.min(gate.lockoutUntil, Date.now() + GATE_LOCKOUT_MAX_MS);
+  }
+  if (gate.lockoutUntil !== null && Date.now() >= gate.lockoutUntil) endLockout();
+  return gate.lockoutUntil !== null;
+}
+
+function tickLockout() {
+  if (!lockoutHolds()) return;
+  const remainingMs = gate.lockoutUntil! - Date.now();
+  gate.lockoutMessage = gateLockoutMessage(remainingMs);
+  clearTimeout(lockoutTickTimer);
+  lockoutTickTimer = setTimeout(
+    tickLockout,
+    remainingMs % GATE_LOCKOUT_TICK_MS || GATE_LOCKOUT_TICK_MS
+  );
+}
+
+function lockOut() {
+  gate.lockoutUntil = Date.now() + gateLockoutDurationMs(gate.lockouts);
+  gate.wrongStreak = 0;
+  gate.lockouts += 1;
+  clearTimeout(errorTimer);
+  gate.error = null;
+  tickLockout();
+  announce(gate.lockoutMessage ?? '');
+}
+
+function decayQuietEscalation() {
+  const quietSince = gate.escalationQuietSince;
+  if (quietSince !== null && Date.now() - quietSince >= GATE_ESCALATION_QUIET_MS) {
+    gate.wrongStreak = 0;
+    gate.lockouts = 0;
+  }
+  gate.escalationQuietSince = Date.now();
+}
+
+function fail() {
+  newChallenge();
+  gate.shaking = true;
+  clearTimeout(shakeTimer);
+  shakeTimer = setTimeout(() => (gate.shaking = false), GATE_SHAKE_MS);
+  decayQuietEscalation();
+  gate.wrongStreak += 1;
+  if (gate.wrongStreak >= GATE_WRONG_ANSWERS_BEFORE_LOCKOUT) {
+    lockOut();
+    return;
+  }
+  gate.error = GATE_ERROR_MESSAGE;
+  announce(GATE_ERROR_MESSAGE);
+  clearTimeout(errorTimer);
+  errorTimer = setTimeout(() => {
+    gate.error = null;
+    gate.announcement = '';
+  }, GATE_ERROR_VISIBLE_MS);
+}
+
+// Input taken while the card shakes would land on a problem the eye hasn't
+// caught up with, and nothing a grown-up does needs it.
+function acceptsInput() {
+  return gate.open && !gate.unlocked && !gate.shaking && !lockoutHolds();
+}
+
+/**
+ * Append a digit. A digit past the answer's length counts as a wrong answer:
+ * a grown-up stops when the dabs are full, and tapping on past them is how
+ * random tapping looks.
+ */
 export function pressGateDigit(digit: number) {
-  if (!gate.open || gate.unlocked) return;
+  if (!acceptsInput()) return;
+  if (gate.input.length >= String(gate.x * gate.y).length) fail();
+  else gate.input += String(digit);
+}
+
+export function pressGateBackspace() {
+  if (!acceptsInput()) return;
+  gate.input = gate.input.slice(0, -1);
+}
+
+/** Check the typed answer. Checking before every dab is filled is a wrong answer too. */
+export function submitGateAnswer() {
+  if (!acceptsInput()) return;
   const answer = String(gate.x * gate.y);
-  if (gate.input.length >= answer.length) return;
-  gate.input += String(digit);
-  if (gate.input.length < answer.length) return;
   if (gate.input === answer) succeed();
   else fail();
 }
 
-export function pressGateBackspace() {
-  if (!gate.open || gate.unlocked) return;
-  gate.input = gate.input.slice(0, -1);
+export function pressGateKey(key: GateKeypadKey) {
+  if (key === 'delete') pressGateBackspace();
+  else if (key === GATE_CHECK_KEY) submitGateAnswer();
+  else pressGateDigit(key);
 }
 
 /** Close without recording a solve. Typed digits and the destination are discarded. */
@@ -305,6 +449,8 @@ export function dismissGate() {
   gate.open = false;
   gate.input = '';
   gate.error = null;
+  gate.lockoutMessage = null;
+  gate.announcement = '';
   gate.shaking = false;
   gate.unlocked = false;
   gate.feature = null;

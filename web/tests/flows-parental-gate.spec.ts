@@ -124,12 +124,12 @@ test('the keyboard keeps the card after the footer retargets it', async ({ page 
     )
     .toBe(true);
 
-  // Typed on the keyboard, never on the keypad — and asserted on the
-  // destination rather than on a filled dab, since a one-digit answer (3 × 3)
-  // auto-submits and leaves no dab behind to count.
+  // Typed and submitted on the keyboard, never on the keypad. Focus sits on a
+  // keypad key here, so Enter also proves it checks the answer rather than
+  // clicking that key into one digit too many.
   const label = await page.locator('.gate-equation').getAttribute('aria-label');
   const [x, y] = label!.match(/\d+/g)!.map(Number);
-  for (const digit of String(x * y)) await page.keyboard.press(digit);
+  for (const key of [...String(x * y), 'Enter']) await page.keyboard.press(key);
 
   const settings = page.locator('#settingsModal');
   await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible({ timeout: 5000 });
@@ -250,11 +250,11 @@ test('a wrong answer clears the input, shows the error, and regenerates the prob
   // operands in [3, 9] is all nines.
   const answer = String(x * y);
   const wrong = answer === '9' ? '8' : '9'.repeat(answer.length);
-  for (const digit of wrong) {
-    await page.locator('.gate-keypad').getByRole('button', { name: digit, exact: true }).click();
+  for (const name of [...wrong, 'Check answer']) {
+    await page.locator('.gate-keypad').getByRole('button', { name, exact: true }).click();
   }
 
-  await expect(gate.getByText('Not quite — try this one')).toBeVisible();
+  await expect(gate.locator('.gate-error')).toHaveText('Not quite — try this one');
   // The typed digits were discarded along with the old problem.
   await expect(gate.locator('.gate-dab.filled')).toHaveCount(0);
   await expect(page.locator(AI_PROMPT)).not.toBeVisible();
