@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } from './manifest';
 import {
+  COLORING_PACK_LOCK_NAME,
   coloringPackCacheName,
   coloringPackMarkerPath,
   coloringPackMarkerValue,
 } from './cacheKeys';
+import { promiseWithResolvers } from '$lib/promiseWithResolvers';
 
 vi.mock('$lib/idle', () => ({
   scheduleIdle: (callback: () => void) => {
@@ -40,32 +42,35 @@ function responseFor(entry: CachedEntry | undefined): Response | undefined {
   return entry && new Response(entry.body.slice(), { headers: entry.headers });
 }
 
+type CacheOperation = 'put' | 'delete' | 'keys';
+type Interceptor = (operation: CacheOperation, path?: string) => void | Promise<void>;
+
 // Real Cache Storage keeps one cache per name and the service worker matches
 // across all of them; a single shared mock would hide a deleted namespace.
+// The interceptor runs before each write, and after keys() has taken its
+// snapshot, so a test can fail, hold, or never finish (a closed tab) any step.
 function createFakeCacheStorage() {
   const stores = new Map<string, Map<string, CachedEntry>>();
-  const failures = { put: new Set<string>(), delete: new Set<string>() };
-  const failOnce = (kind: keyof typeof failures, path: string) => {
-    if (!failures[kind].delete(path)) return;
-    throw new Error(`Simulated interruption: ${kind} ${path}`);
-  };
+  const hooks: { intercept: Interceptor } = { intercept: () => {} };
   const cacheFor = (entries: Map<string, CachedEntry>) => ({
     match: async (request: RequestInfo | URL) => responseFor(entries.get(requestPath(request))),
     put: async (request: RequestInfo | URL, response: Response) => {
-      failOnce('put', requestPath(request));
-      entries.set(requestPath(request), {
-        body: new Uint8Array(await response.arrayBuffer()),
-        headers: new Headers(response.headers),
-      });
+      const body = new Uint8Array(await response.arrayBuffer());
+      await hooks.intercept('put', requestPath(request));
+      entries.set(requestPath(request), { body, headers: new Headers(response.headers) });
     },
     delete: async (request: RequestInfo | URL) => {
-      failOnce('delete', requestPath(request));
+      await hooks.intercept('delete', requestPath(request));
       return entries.delete(requestPath(request));
     },
-    keys: async () => [...entries.keys()].map((path) => new Request(`${ORIGIN}${path}`)),
+    keys: async () => {
+      const snapshot = [...entries.keys()];
+      await hooks.intercept('keys');
+      return snapshot.map((path) => new Request(`${ORIGIN}${path}`));
+    },
   });
   return {
-    failures,
+    hooks,
     entries: (name: string) => stores.get(name),
     storage: {
       keys: async () => [...stores.keys()],
@@ -84,6 +89,25 @@ function createFakeCacheStorage() {
     },
   };
 }
+
+// Serializes like the browser's Web Locks within one "tab"; a test that
+// abandons a held lock models a closed tab by installing a fresh manager.
+function createFakeLockManager() {
+  let tail: Promise<unknown> = Promise.resolve();
+  return {
+    request: vi.fn((_name: string, work: () => Promise<unknown>) => {
+      const result = tail.then(work);
+      tail = result.catch(() => {});
+      return result;
+    }),
+  };
+}
+
+function openNewTab() {
+  vi.stubGlobal('navigator', { locks: createFakeLockManager() });
+}
+
+const never = () => new Promise<void>(() => {});
 
 function book(id: string, pages: [name: string, content: Content][]) {
   return {
@@ -154,6 +178,20 @@ function installedIds(packs: { id: string }[]): string[] {
   return packs.map((pack) => pack.id);
 }
 
+// The interrupted tab's promise never settles and its lock is never released,
+// the way a closed tab leaves both.
+function holdForever(operation: CacheOperation, heldPath: string) {
+  const held = vi.fn(never);
+  fake.hooks.intercept = (current, path) =>
+    current === operation && path === heldPath ? held() : undefined;
+  return held;
+}
+
+function closeTabAndOpenAnother() {
+  fake.hooks.intercept = () => {};
+  openNewTab();
+}
+
 async function installAll(manifest: ResolvedColoringPackManifest) {
   const store = createWebColoringPackStore();
   const installed = new Set(installedIds(await store.installed(manifest)));
@@ -169,6 +207,7 @@ beforeEach(() => {
   fake = createFakeCacheStorage();
   vi.mocked(requestPersistentStorage).mockClear();
   vi.stubGlobal('caches', fake.storage);
+  openNewTab();
   serve(released);
   vi.stubGlobal(
     'fetch',
@@ -183,7 +222,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('web coloring-pack inventory', () => {
   it('does not request origin persistence for an automatic background install', async () => {
     const persist = vi.fn().mockResolvedValue(true);
-    vi.stubGlobal('navigator', { storage: { persist } });
+    vi.stubGlobal('navigator', { locks: createFakeLockManager(), storage: { persist } });
 
     await createWebColoringPackStore().install(
       released,
@@ -345,19 +384,20 @@ describe('web coloring packs across a deploy', () => {
   // revert to the earlier manifest would publish a book with a missing file.
   it('removes a changed book marker before touching any of its files', async () => {
     const deployed = deploy([dinosaurChanged, released.books[1]]);
-    fake.failures.delete.add('/coloring/dinosaur/second.webp');
+    const staleFileDelete = holdForever('delete', '/coloring/dinosaur/second.webp');
 
-    await expect(createWebColoringPackStore().installed(deployed)).rejects.toThrow(
-      'Simulated interruption'
-    );
+    void createWebColoringPackStore().installed(deployed);
 
+    await vi.waitFor(() => expect(staleFileDelete).toHaveBeenCalled());
     expect(cachedPaths(currentCache)).not.toContain(coloringPackMarkerPath('dinosaur'));
   });
 
   it('refetches stale bytes an interrupted rescan left behind', async () => {
     const deployed = deploy([dinosaurChanged, released.books[1]]);
-    fake.failures.delete.add('/coloring/dinosaur/second.webp');
-    await expect(createWebColoringPackStore().installed(deployed)).rejects.toThrow();
+    const staleFileDelete = holdForever('delete', '/coloring/dinosaur/second.webp');
+    void createWebColoringPackStore().installed(deployed);
+    await vi.waitFor(() => expect(staleFileDelete).toHaveBeenCalled());
+    closeTabAndOpenAnother();
 
     expect(installedIds(await createWebColoringPackStore().installed(deployed))).toEqual(['space']);
     await installAll(deployed);
@@ -406,14 +446,14 @@ describe('adopting a version-scoped cache from the earlier store layout', () => 
   it('holds each file only once when adoption is interrupted, then resumes', async () => {
     await seedCache(LEGACY_CACHE_NAME, legacyEntries);
     const deployed = deploy(released.books);
-    fake.failures.put.add('/coloring/dinosaur/second.webp');
+    const secondFilePut = holdForever('put', '/coloring/dinosaur/second.webp');
 
-    await expect(createWebColoringPackStore().installed(deployed)).rejects.toThrow(
-      'Simulated interruption'
-    );
+    void createWebColoringPackStore().installed(deployed);
 
+    await vi.waitFor(() => expect(secondFilePut).toHaveBeenCalled());
     expect(cachedPaths(currentCache)).toEqual(['/coloring/dinosaur/first.webp']);
     expect(cachedPaths(LEGACY_CACHE_NAME)).not.toContain('/coloring/dinosaur/first.webp');
+    closeTabAndOpenAnother();
     expect(installedIds(await createWebColoringPackStore().installed(deployed))).toEqual([
       'dinosaur',
       'space',
@@ -421,4 +461,100 @@ describe('adopting a version-scoped cache from the earlier store layout', () => 
     expect(fetch).not.toHaveBeenCalled();
     expect(fake.entries(LEGACY_CACHE_NAME)).toBeUndefined();
   });
+
+  it('keeps reporting other books when a write fails on every boot', async () => {
+    await seedCache(LEGACY_CACHE_NAME, legacyEntries);
+    const deployed = deploy(released.books);
+    failEveryPut('/coloring/dinosaur/second.webp');
+    const store = createWebColoringPackStore();
+
+    expect(installedIds(await store.installed(deployed))).toEqual(['space']);
+    expect(installedIds(await store.installed(deployed))).toEqual(['space']);
+    expect(cachedPaths(currentCache)).not.toContain(coloringPackMarkerPath('dinosaur'));
+    expect(fake.entries(LEGACY_CACHE_NAME)).toBeUndefined();
+  });
+});
+
+function failEveryPut(failingPath: string) {
+  fake.hooks.intercept = (operation, path) => {
+    if (operation === 'put' && path === failingPath) {
+      throw new DOMException('Storage is full', 'QuotaExceededError');
+    }
+  };
+}
+
+describe('a scan whose re-verification write fails', () => {
+  it('still reports the books whose markers match', async () => {
+    await installAll(released);
+    const deployed = deploy([book('dinosaur', [['first', 'a']]), released.books[1]]);
+    failEveryPut(coloringPackMarkerPath('dinosaur'));
+
+    expect(installedIds(await createWebColoringPackStore().installed(deployed))).toEqual(['space']);
+  });
+});
+
+// Tabs on two builds share the cache during a deploy. The older tab's scan
+// snapshots the keys after the newer tab wrote a file the older manifest does
+// not list, and before the newer tab's marker lands; deleting that file then
+// would leave a marker the newer manifest trusts over a missing file.
+describe.each([
+  ['with Web Locks', openNewTab],
+  ['without Web Locks', () => vi.stubGlobal('navigator', {})],
+])('two tabs on different builds %s', (_label, setUpLocks) => {
+  const dinosaurWithThird = book('dinosaur', [
+    ['first', 'a'],
+    ['second', 'b'],
+    ['third', 'c'],
+  ]);
+
+  it('never publish a book with a missing file', async () => {
+    setUpLocks();
+    const newer = deploy([dinosaurWithThird, released.books[1]]);
+    const markerPut = promiseWithResolvers<void>();
+    const olderKeys = promiseWithResolvers<void>();
+    const markerPutStarted = vi.fn();
+    let holdNextKeys = false;
+    fake.hooks.intercept = async (operation, path) => {
+      if (operation === 'put' && path === coloringPackMarkerPath('dinosaur')) {
+        markerPutStarted();
+        await markerPut.promise;
+      }
+      if (operation === 'keys' && holdNextKeys) {
+        holdNextKeys = false;
+        await olderKeys.promise;
+      }
+    };
+    const newerTab = createWebColoringPackStore();
+
+    const committing = newerTab.install(
+      newer,
+      dinosaurWithThird,
+      false,
+      new AbortController().signal
+    );
+    await vi.waitFor(() => expect(markerPutStarted).toHaveBeenCalled());
+    holdNextKeys = true;
+    const olderScan = createWebColoringPackStore().installed(released);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    markerPut.resolve();
+    await committing;
+    olderKeys.resolve();
+    await olderScan;
+
+    const cached = new Set(cachedPaths(currentCache));
+    const publishedWithMissingFiles = (await newerTab.installed(newer))
+      .map((pack) => newer.books.find((entry) => entry.id === pack.id)!)
+      .filter((entry) => entry.files.some((file) => !cached.has(file.path)))
+      .map((entry) => entry.id);
+    expect(publishedWithMissingFiles).toEqual([]);
+  });
+});
+
+it('takes the shared coloring-pack lock for a scan', async () => {
+  await createWebColoringPackStore().installed(released);
+
+  expect(navigator.locks.request).toHaveBeenCalledWith(
+    COLORING_PACK_LOCK_NAME,
+    expect.any(Function)
+  );
 });

@@ -178,23 +178,41 @@ keeps an interruption from publishing an incomplete book:
    be deleted or replaced. A marker that outlived its files could otherwise match again after a
    revert.
 2. Delete every cached file the manifest no longer lists, which drops removed books and files.
-3. Drain every other pack cache (a pre-amendment version-scoped cache, or the other resolution) into
+3. Re-verify books whose marker was stale, and mark the ones that are still complete.
+4. Drain every other pack cache (a pre-amendment version-scoped cache, or the other resolution) into
    the current one, one file at a time. A file moves only if its bytes match the manifest, and it
    leaves the source cache as soon as it is written. A slow or interrupted drain therefore holds at
    most one file twice, and the next scan resumes it. A book gets a marker only after every one of
    its files is verified.
-4. Re-verify books whose marker was stale, and mark the ones that are still complete.
 
-`install()` verifies an already-cached file's digest instead of trusting its presence, because a
-stable namespace can hold bytes an interrupted scan never checked. A deploy that changes no pack
-file leaves every marker matching, so it costs no transfer and no hashing. A changed file is
-re-downloaded alone.
+A deploy that changes no pack file leaves every marker matching, so it costs no transfer and no
+hashing. A changed file is re-downloaded alone.
+
+A failure while draining or re-verifying (a full disk, say) is not fatal. The source copy is
+discarded, since it can be downloaded again and dropping it frees space, and the book stays
+unmarked. A scan that threw would hide every downloaded book, and a persistent failure would do so
+on every boot. The drain yields for idle once per book rather than once per file. Safari's idle
+fallback requeues while a child is drawing, so hundreds of per-file waits could keep books hidden
+for a whole session. A child who never pauses can still delay the drain, and adopted books appear
+only when it finishes.
+
+Tabs on different builds share the one cache during a deploy. An older tab's scan can delete a file
+its manifest does not list just after a newer tab has verified that file for its marker, which would
+leave a trusted marker over a missing file. Every step that reads or writes markers therefore runs
+under the `navigator.locks` lock named by `COLORING_PACK_LOCK_NAME`: the stale-entry sweep with
+re-verification, each book's drain, the final marker read, removal, and `install()`'s commit.
+Downloads and idle waits stay outside it, so a throttled background tab cannot hold it for long. The
+commit re-verifies every file of the book under the lock before writing the marker. If a file is
+missing or wrong, it downloads the gap once more, and pauses the run if the book is still
+incomplete.
 
 Considered and rejected: keeping version namespaces and copying matching files into each new one.
 That hashes and copies the whole catalog on every deploy and doubles storage while it runs. Keying
 the namespace on a hash of the whole catalog was also rejected, because one changed page would still
 wipe every book.
 
-Removal from Parent Settings deletes every pack cache, whatever layout wrote it. Native storage is
-unchanged: its version is the store release version (ADR-0030), so it is cleared only when a new app
-build is installed.
+Removal from Parent Settings deletes every pack cache, whatever layout wrote it. Rolling the deploy
+back to a build from before this amendment strands the resolution-named cache: that build removes
+only version-scoped caches, so storage doubles and the service worker can serve the stranded bytes
+for a changed file until a later build's scan sweeps it. Native storage is unchanged: its version is
+the store release version (ADR-0030), so it is cleared only when a new app build is installed.

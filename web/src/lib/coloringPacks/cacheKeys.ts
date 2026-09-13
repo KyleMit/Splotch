@@ -6,6 +6,8 @@ export const COLORING_PACK_CACHE_FAMILY_PREFIX = 'coloring-packs-';
 
 export const COLORING_PACK_MARKER_PREFIX = '/coloring/.installed/';
 
+export const COLORING_PACK_LOCK_NAME = 'splotch-coloring-packs';
+
 // Deliberately not scoped by app version: the web version moves on every
 // deploy (ADR-0030), and markers are validated against the manifest's file
 // digests instead, so unchanged books survive a deploy.

@@ -7,6 +7,7 @@ import {
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 import {
   COLORING_PACK_CACHE_FAMILY_PREFIX,
+  COLORING_PACK_LOCK_NAME,
   COLORING_PACK_MARKER_PREFIX,
   coloringPackCacheName,
   coloringPackMarkerPath,
@@ -14,6 +15,30 @@ import {
 } from './cacheKeys';
 
 type ColoringPackFile = ResolvedColoringPackBookManifest['files'][number];
+
+// A commit that finds a file missing or replaced (another tab, or bytes an
+// interrupted scan never checked) downloads the gap once more; a second
+// failure means another build is rewriting the same book, so the run pauses.
+const INSTALL_COMMIT_ATTEMPTS = 2;
+
+// Tabs on different builds share one cache during a deploy, and a scan from
+// one can delete what another is about to vouch for, so every step that reads
+// markers or writes one runs under a cross-tab lock. Web Locks are within the
+// browser floor (docs/COMPATIBILITY.md); an insecure origin lacks them, and
+// there the chain still serializes this tab's own stores.
+function createPackCacheLock() {
+  let tail: Promise<unknown> = Promise.resolve();
+  return <T>(work: () => Promise<T>): Promise<T> => {
+    if (typeof navigator !== 'undefined' && 'locks' in navigator && navigator.locks) {
+      return navigator.locks.request(COLORING_PACK_LOCK_NAME, work);
+    }
+    const result = tail.then(work);
+    tail = result.catch(() => {});
+    return result;
+  };
+}
+
+const withPackCacheLock = createPackCacheLock();
 
 function nextIdle(): Promise<void> {
   return new Promise((resolve) => scheduleIdle(resolve));
@@ -81,7 +106,7 @@ async function markIfComplete(
   cache: Cache,
   book: ResolvedColoringPackBookManifest,
   verifiedPaths: ReadonlySet<string> = new Set()
-): Promise<void> {
+): Promise<boolean> {
   let complete = true;
   for (const file of book.files) {
     if (!verifiedPaths.has(file.path) && !(await hasVerifiedCachedFile(cache, file))) {
@@ -91,6 +116,7 @@ async function markIfComplete(
   if (complete) {
     await cache.put(coloringPackMarkerPath(book.id), new Response(coloringPackMarkerValue(book)));
   }
+  return complete;
 }
 
 // A marker is trusted by its value alone, so every marker the manifest does
@@ -125,9 +151,29 @@ async function removeStaleEntries(
   return staleBookIds;
 }
 
+// A scan that throws hides every downloaded book for the session, and a
+// persistent failure (a full disk) would hide them on every boot, so a book
+// that cannot be re-verified is left unmarked for install() to repair.
+async function reverifyStaleBooks(
+  cache: Cache,
+  manifest: ResolvedColoringPackManifest,
+  staleBookIds: ReadonlySet<string>
+) {
+  for (const book of packBooks(manifest)) {
+    if (!staleBookIds.has(book.id)) continue;
+    try {
+      await markIfComplete(cache, book);
+    } catch (error) {
+      console.warn('Coloring pack could not be re-verified', book.id, error);
+    }
+  }
+}
+
 // Moves rather than copies, one file at a time, so a slow or interrupted
 // adoption holds at most one file twice; whatever it has not reached stays in
-// the source cache for the next scan.
+// the source cache for the next scan. A copy that cannot be written (a full
+// disk) is discarded rather than retried on every boot: it can be downloaded
+// again, and dropping it frees the space the failure asked for.
 async function moveVerifiedFile(
   cache: Cache,
   source: Cache,
@@ -135,16 +181,45 @@ async function moveVerifiedFile(
 ): Promise<boolean> {
   const response = await source.match(file.path);
   if (!response) return false;
-  await nextIdle();
-  const verified = await matchesManifest(await response.clone().arrayBuffer(), file);
-  if (verified) await cache.put(file.path, response);
-  await source.delete(file.path);
-  return verified;
+  const moved = await writeIfVerified(cache, file, response);
+  await source.delete(file.path).catch(() => false);
+  return moved;
+}
+
+async function writeIfVerified(
+  cache: Cache,
+  file: ColoringPackFile,
+  response: Response
+): Promise<boolean> {
+  try {
+    if (!(await matchesManifest(await response.clone().arrayBuffer(), file))) return false;
+    await cache.put(file.path, response);
+    return true;
+  } catch (error) {
+    console.warn('Coloring pack file could not be adopted', file.path, error);
+    return false;
+  }
+}
+
+async function adoptBook(cache: Cache, source: Cache, book: ResolvedColoringPackBookManifest) {
+  if (await cache.match(coloringPackMarkerPath(book.id))) return;
+  const moved = new Set<string>();
+  for (const file of book.files) {
+    if (await moveVerifiedFile(cache, source, file)) moved.add(file.path);
+  }
+  if (moved.size === 0) return;
+  try {
+    await markIfComplete(cache, book, moved);
+  } catch (error) {
+    console.warn('Coloring pack could not be marked after adoption', book.id, error);
+  }
 }
 
 // Drains every other pack cache — a version-scoped one from the earlier store
 // layout, or the other resolution — into the current cache, keeping each file
-// whose bytes the manifest still lists.
+// whose bytes the manifest still lists. It yields once per book rather than
+// per file: Safari's idle fallback requeues while a child is drawing, and
+// hundreds of per-file waits could keep books hidden for a whole session.
 async function adoptOtherCaches(cache: Cache, manifest: ResolvedColoringPackManifest) {
   const currentName = coloringPackCacheName(manifest);
   const otherNames = (await caches.keys()).filter(
@@ -153,45 +228,56 @@ async function adoptOtherCaches(cache: Cache, manifest: ResolvedColoringPackMani
   for (const name of otherNames) {
     const source = await caches.open(name);
     for (const book of packBooks(manifest)) {
-      if (await cache.match(coloringPackMarkerPath(book.id))) continue;
-      const moved = new Set<string>();
-      for (const file of book.files) {
-        if (await moveVerifiedFile(cache, source, file)) moved.add(file.path);
-      }
-      if (moved.size > 0) await markIfComplete(cache, book, moved);
+      await nextIdle();
+      await withPackCacheLock(() => adoptBook(cache, source, book));
     }
-    await caches.delete(name);
+    await withPackCacheLock(() => caches.delete(name)).catch(() => false);
   }
+}
+
+async function booksWithCurrentMarkers(
+  cache: Cache,
+  manifest: ResolvedColoringPackManifest
+): Promise<InstalledColoringPack[]> {
+  const installed: InstalledColoringPack[] = [];
+  for (const book of packBooks(manifest)) {
+    const marker = await cache.match(coloringPackMarkerPath(book.id));
+    if ((await marker?.text()) === coloringPackMarkerValue(book)) {
+      installed.push({ id: book.id, bytes: book.bytes });
+    }
+  }
+  return installed;
 }
 
 export function createWebColoringPackStore(): ColoringPackStore {
   return {
     async installed(manifest): Promise<InstalledColoringPack[]> {
       const cache = await caches.open(coloringPackCacheName(manifest));
-      const staleBookIds = await removeStaleEntries(cache, manifest);
+      await withPackCacheLock(async () => {
+        const staleBookIds = await removeStaleEntries(cache, manifest);
+        await reverifyStaleBooks(cache, manifest, staleBookIds);
+      });
       await adoptOtherCaches(cache, manifest);
-      const installed: InstalledColoringPack[] = [];
-      for (const book of packBooks(manifest)) {
-        const markerPath = coloringPackMarkerPath(book.id);
-        if (staleBookIds.has(book.id) && !(await cache.match(markerPath))) {
-          await markIfComplete(cache, book);
-        }
-        if (await cache.match(markerPath)) installed.push({ id: book.id, bytes: book.bytes });
-      }
-      return installed;
+      return withPackCacheLock(() => booksWithCurrentMarkers(cache, manifest));
     },
 
     // Automatic pack installs share the default boot path, so requesting origin
     // persistence here would prompt Firefox on startup (ADR-0128).
     async install(manifest, book, _allowMetered, signal) {
       const cache = await caches.open(coloringPackCacheName(manifest));
-      for (const file of book.files) {
+      for (let attempt = 1; ; attempt++) {
+        for (const file of book.files) {
+          if (signal.aborted) throw signal.reason;
+          if (await cache.match(file.path)) continue;
+          await waitForIdle(signal);
+          await cache.put(file.path, await verifiedResponse(file, signal));
+        }
         if (signal.aborted) throw signal.reason;
-        if (await hasVerifiedCachedFile(cache, file)) continue;
-        await waitForIdle(signal);
-        await cache.put(file.path, await verifiedResponse(file, signal));
+        if (await withPackCacheLock(() => markIfComplete(cache, book))) break;
+        if (attempt >= INSTALL_COMMIT_ATTEMPTS) {
+          throw new Error(`Coloring pack changed while installing: ${book.id}`);
+        }
       }
-      await cache.put(coloringPackMarkerPath(book.id), new Response(coloringPackMarkerValue(book)));
       return { id: book.id, bytes: book.bytes };
     },
 
@@ -201,12 +287,14 @@ export function createWebColoringPackStore(): ColoringPackStore {
     // The web cache is not scoped by app version, so removal clears every pack
     // cache, including one an earlier layout left undrained.
     async remove() {
-      const names = await caches.keys();
-      await Promise.all(
-        names
-          .filter((name) => name.startsWith(COLORING_PACK_CACHE_FAMILY_PREFIX))
-          .map((name) => caches.delete(name))
-      );
+      await withPackCacheLock(async () => {
+        const names = await caches.keys();
+        await Promise.all(
+          names
+            .filter((name) => name.startsWith(COLORING_PACK_CACHE_FAMILY_PREFIX))
+            .map((name) => caches.delete(name))
+        );
+      });
     },
   };
 }
