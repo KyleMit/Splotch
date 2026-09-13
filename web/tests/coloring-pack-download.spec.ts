@@ -92,7 +92,7 @@ async function holdDinosaurDownload(page: Page): Promise<() => void> {
     releaseDownload = resolve;
   });
 
-  await page.route(/\/coloring\/manifest-.+\.json$/, async (route) => {
+  await page.route(MANIFEST_REQUEST, async (route) => {
     const response = await route.fetch();
     const manifest = (await response.json()) as ColoringPackManifest;
     const books = manifest.books
@@ -120,7 +120,7 @@ async function holdDinosaurDownload(page: Page): Promise<() => void> {
 }
 
 test('a fresh install opens the Farm pages directly before packs arrive', async ({ page }) => {
-  await page.route(/\/coloring\/manifest-.+\.json$/, (route) => route.abort());
+  await page.route(MANIFEST_REQUEST, (route) => route.abort());
   await gotoApp(page);
   await openDrawer(page);
   await openColoringDialog(page);
@@ -240,7 +240,7 @@ test('a saved disabled setting blocks pack boot until coloring books are enabled
 }) => {
   let manifestRequests = 0;
   page.on('request', (request) => {
-    if (/\/coloring\/manifest-.+\.json$/.test(request.url())) manifestRequests++;
+    if (MANIFEST_REQUEST.test(request.url())) manifestRequests++;
   });
   await gotoAppWithInstalledColoringBook(page, 'dinosaur');
   await page.evaluate(
@@ -419,11 +419,11 @@ for (const viewport of COLD_START_VIEWPORTS) {
     page,
   }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await coldStartFillsBookListInPlace(page);
+    await expectColdStartFillsBookListInPlace(page);
   });
 }
 
-async function coldStartFillsBookListInPlace(page: Page) {
+async function expectColdStartFillsBookListInPlace(page: Page) {
   await gotoAppWithAllColoringBooksInstalled(page);
   const releaseManifest = await holdRequests(page, MANIFEST_REQUEST);
 

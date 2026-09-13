@@ -23,7 +23,7 @@
   import { guardTapZone } from '$lib/actions/launchGuard';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { createColoringPickerBooks } from '$lib/state/coloringPickerBooks.svelte';
+  import { createColoringPickerBooks } from '$lib/state/coloringPicker.svelte';
   import {
     cancelImageRequest,
     cancelImagePrefetchesExcept,

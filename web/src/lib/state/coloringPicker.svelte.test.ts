@@ -7,7 +7,7 @@ import {
   resetDownloadedColoringBooks,
   setInstalledColoringBooks,
 } from './coloringPacks.svelte';
-import { createColoringPickerBooks } from './coloringPickerBooks.svelte';
+import { createColoringPickerBooks } from './coloringPicker.svelte';
 
 const CATALOG_BOOK_COUNT = booksForPlatform('web').length;
 

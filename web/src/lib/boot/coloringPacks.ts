@@ -14,11 +14,11 @@ export interface ColoringPackDownloads {
 
 // A web device's first coloring-pack downloads wait for the child to engage,
 // mirroring the service worker's registration (issue #462): a bounce visit
-// otherwise pays for every book before anyone draws. A device that
-// already holds pack storage engaged on an earlier visit, so it resumes and
-// takes updates at idle as before, as the service worker re-registers on a
-// repeat visit. Native keeps installing at boot through WorkManager and the
-// background URLSession, which ADR-0103 hands the transfer to.
+// otherwise pays for every book before anyone draws. A device that already
+// holds pack storage engaged on an earlier visit, so it resumes and takes
+// updates at idle, as a repeat visit re-registers the service worker. Native
+// keeps installing at boot through WorkManager and the background URLSession
+// (ADR-0103's engagement amendment says why).
 function waitsForEngagement(): boolean {
   return !(__IS_CAPACITOR__ && isNative());
 }

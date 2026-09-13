@@ -2,7 +2,8 @@
 
 **Status:** Active — implements issue #200; amended 2026-08-08 for screen-sized pack variants and
 2026-08-09 for issue #880's Coloring Book feature gate; amended 2026-09 so web packs survive
-deploys; and amends [ADR-0022](0022-pwa-service-worker-strategy.md),
+deploys, and again 2026-09 so a web device's first downloads wait for engagement and the open picker
+holds its books; and amends [ADR-0022](0022-pwa-service-worker-strategy.md),
 [ADR-0042](0042-static-media-cache-invalidation.md), and
 [ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md). **Date:** 2026-08
 
@@ -224,3 +225,86 @@ back to a build from before this amendment strands the resolution-named cache: t
 only version-scoped caches, so storage doubles and the service worker can serve the stranded bytes
 for a changed file until a later build's scan sweeps it. Native storage is unchanged: its version is
 the store release version (ADR-0030), so it is cleared only when a new app build is installed.
+
+## Amendment (2026-09): Web Downloads Wait for Engagement, and the Open Picker Holds Its Books
+
+### Context
+
+The downloader started at the first idle callback after settings recovered, on every visit. A first
+web visit with nobody touching the screen fetched 525 pack files, 23,100,994 bytes plus the
+185,330-byte manifest, within about 2.5 s of load (Chromium, 412×915 at DPR 2.625, service worker
+blocked). The automatic policy blocks only what `navigator.connection` reports, and Safari, iOS, and
+Firefox report nothing, so a parent opening the site on a phone over cellular paid for the whole
+catalog before the child made a mark. ADR-0022's service worker already waits for the child to
+settle in before it installs its much smaller precache (issue #462).
+
+Books arriving also moved the open picker. The modal is centred, so each new row of covers moved its
+header, and a book joins in catalog order, so it can land in front of covers already shown. The
+first extra book added a Back button beside a single book's title. A held press on the header's
+active-page chip released over the view and never clicked. Separately, a picker opened before the
+installed-book scan finished saw only Farm, opened on Farm's pages, and stayed there after the scan
+published a returning child's books.
+
+### Decision
+
+**The web gate.** At boot the web checks Cache Storage for any cache in the pack family. When there
+is none, nothing can be installed, so it publishes the starter book alone, with the platform
+catalog's size as the total, without the manifest. It then loads nothing until the child engages:
+`SETTLED_IN_STROKES` committed strokes, the same signal the service worker and the Install Banner
+wait for, or the coloring picker opening. Selecting a coloring page goes through the picker, so it
+counts. Engagement schedules the manager at idle, the same way the service worker's registration
+avoids the frame of the stroke that released it. From there, downloads run as before.
+
+A device that already holds a pack cache, even an empty or half-filled one, engaged on an earlier
+visit. It starts at idle as before, so an interrupted install resumes and a deploy's changed files
+arrive without waiting, as the service worker re-registers on a repeat visit. Removing the
+downloaded pictures deletes the caches, so the next visit waits for engagement again.
+
+AI use does not count as engagement. It asks nothing of the coloring catalog and needs the network
+anyway. Opening Parent Settings does not count either. The Coloring section then shows no books
+downloaded, which is accurate.
+
+**Native is unchanged.** Native boots the manager at idle as before, with no engagement check.
+Installing the app from a store is the deliberate act the web lacks. The transfer runs in
+WorkManager and the background `URLSession`, not the WebView, and both are unmetered by default.
+Waiting on engagement there would delay offline books for nothing the platform policy does not
+already protect.
+
+**The open picker holds its books.** `state/coloringPicker.svelte.ts` records, when the picker
+opens, which books it shows and whether it lists books or drills into the only one. Books that
+finish downloading while it is open join at the next open. No cover moves, and no Back button
+appears while a finger may be on the view.
+
+The one answer an open still takes is the installed-book scan it beat. `scanSettled` on the
+coloring-pack state is true once this boot's list changes only by downloads or removal: a scan
+published it, the gate found no pack storage, or the run ended before scanning (offline without a
+service worker, a metered link, an error). An open before that shows the book list, with a place for
+every book in the catalog and the grid laid out for the whole catalog. The scan's covers fill those
+places. Farm is first in the catalog, so its cover never moves. An open that ends with fewer books
+than the catalog keeps the empty places until it closes.
+
+Considered and rejected:
+
+* Anchoring the modal to the top. The header would stay still, but a book landing mid-grid still
+  shifts the covers after it, and the Back button still pushes the title aside.
+* Reserving places for the whole catalog on every open. Every partial install would show gaps.
+* Letting covers join an open grid only at its end. A child who taps empty space as a cover appears
+  there opens a book nobody chose.
+* Waiting for an installed PWA on engines without `navigator.connection`. A parent who only ever
+  uses a Safari tab would never get the books.
+* Deferring the cold-start view until the scan lands. On a first visit the manifest can take seconds
+  to arrive, and the picker would stay empty until then.
+
+### Consequences
+
+* **+** A visit with no strokes and no picker open downloads no pack file and no manifest, and does
+  not load the manager chunk. The same capture measured 0 requests and 0 bytes. Three strokes or
+  opening the picker still install the full 525 files.
+* **+** Nothing in the open picker moves while books arrive, and a returning child's early tap shows
+  the book list instead of Farm's pages.
+* **-** A first visit that goes offline before the child engages has only Farm offline, even if it
+  stayed online for a while.
+* **-** A child who opens the picker immediately on a first visit sees Farm's pages, and the books
+  that download meanwhile appear only at the next open.
+* **-** The storage check and the state it publishes add about 1.5 KB to the startup JavaScript,
+  measured against the bundle budget.

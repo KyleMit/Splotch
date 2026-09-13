@@ -150,7 +150,10 @@ the other seven books are excluded. A separate Cache Storage namespace receives 
 downloads. The canonical runtime route checks all caches before going to the network, so installed
 packs and the Workbox precache share one URL contract without letting ordinary image requests write
 partially downloaded packs. The responsive route can therefore fall back to either Farm's precache
-entry or a downloaded canonical entry.
+entry or a downloaded canonical entry. Those downloads follow this ADR's registration rule: a first
+visit's packs wait for the same settled-in strokes, or for the coloring picker opening, and a device
+that already holds pack storage resumes at once, as a repeat visit re-registers (ADR-0103's
+engagement amendment).
 
 ### Custom update lifecycle (`src/lib/pwa/updates.ts`)
 
