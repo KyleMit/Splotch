@@ -1,6 +1,11 @@
 import { renderOp, type StrokeGroupCommand } from './strokeOps';
 import type { HistoryDebug } from './undoHistory';
-import type { HistoryBaseTile, LiveTile, TiledCanvasSnapshot } from './tiledSurfaces';
+import {
+  commandReadClip,
+  type HistoryBaseTile,
+  type LiveTile,
+  type TiledCanvasSnapshot,
+} from './tiledSurfaces';
 import type { UndoTileSnapshot } from './tiledUndoPatches';
 
 interface HistoryDebugInput {
@@ -72,9 +77,10 @@ function renderCommand(
   paper: { width: number; height: number } | null
 ) {
   if (!paper) return;
+  const clip = commandReadClip(command, paper);
   target.save();
   target.beginPath();
-  target.rect(0, 0, paper.width, paper.height);
+  target.rect(0, 0, clip.width, clip.height);
   target.clip();
   for (const op of command.ops) renderOp(target, op);
   target.restore();

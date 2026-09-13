@@ -717,10 +717,16 @@ read time instead: live tiles and export targets are paper-sized, so the excess 
 with nothing painted re-tiles to the current paper, which loses nothing. A folded clear replaces the
 base with blank tiles sized to its fold clip rather than wiping in place: `clearRect` honors the
 clip, so an in-place clear under a paper smaller than the base would leave the cleared ink outside
-it, marked unpainted, for the next fold onto that tile to revive. A fold clips each command to the
-covering extent of the paper it was drawn on and the current paper, so a resize between a stroke and
-its idle fold cannot crop it either; a rotation-locked paper leaves both equal, so letterbox margins
-stay excluded.
+it, marked unpainted, for the next fold onto that tile to revive. A blank base left by any fold
+returns to the current paper at once, so the memory a larger clear clip needed is released with it.
+
+Every command stays confined to the paper it was drawn on (its `recordedPaper`), wherever it is
+folded or replayed; a replay additionally clips at the current paper. A resize between a stroke and
+its idle fold therefore cannot crop it, and a stroke that pointer capture carried past the edge, or
+into letterbox margins, never appears when the paper grows. The confinement matters most for the
+eraser: one used on a smaller paper was clipped at that edge on screen, so neither its replay nor
+its fold may reach the base ink that paper was hiding. A clear is the exception — it resets the
+whole page, so its replay clips only at the current paper.
 
 Memory: in the common case, where the paper never changes, nothing differs. After a blank rotation
 with folded ink the base covers both orientations — a square on the long side, costing
@@ -730,9 +736,14 @@ baseline (ADR-0121) is a second clone of the base, which can double that excess.
 no longer share the live tile boundaries, which costs extra blits during a full repaint, not while
 drawing.
 
-Every read clips at the current paper. The export crops an edge base tile to the paper before
-drawing it, because a scaled export samples bilinearly and would otherwise blend ink just past the
-paper edge into its last row and column. A magic recode repaints each folded tail command under the
-extent it originally folded with, so a rebuild under a smaller paper cannot crop ink a larger paper
-had already revealed. `tiledRendererHistoryBase.test.ts` and `engine-undo.spec.ts` ("undoing a clear
-after a blank rotation keeps folded ink in the export and repaint") pin the behavior.
+The export crops an edge base tile to the paper before drawing it, because a scaled export samples
+bilinearly and would otherwise blend ink just past the paper edge into its last row and column. A
+magic recode rebuild folds its tail under each command's own paper, the same clip the original fold
+used, so a rebuild under a smaller current paper cannot crop it.
+
+One gap remains. A page erased to blank reads empty, and an empty page re-adopts a grown paper
+without repainting, so retained base ink past the smaller paper stays off screen until the next full
+repaint (or shows at once in an export composed from the base). `tiledRendererHistoryBase.test.ts`
+and `engine-undo.spec.ts` ("undoing a clear after a blank rotation keeps folded ink in the export
+and repaint", "erasing a shrunken page leaves folded ink past its edge for the regrown paper") pin
+the behavior.

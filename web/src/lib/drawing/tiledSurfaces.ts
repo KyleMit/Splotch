@@ -2,7 +2,7 @@ import { resetCrayonStateForClear, setCrayonBufferForTarget } from './crayonPass
 import { setMagicPatternRegion } from './magicBrush';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
 import { viewMatrix, viewToPaper, type PaperView } from './paperView';
-import { clearAllOf, renderOp, type StrokeOp } from './strokeOps';
+import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { opPaddedUserBounds } from './opGeometry';
 import { geometryIntersectsTile, tilesIntersect, type TileBounds } from './tiledGeometry';
 import type { RecordedPaperState } from './undoHistory';
@@ -324,11 +324,23 @@ export function historyBaseExtent(
   return tiles.some((tile) => tile.painted) ? coveringPaper(current, required) : required;
 }
 
-// A command folds within the paper it was drawn on as well as the current one,
-// so a resize landing between a stroke and its idle fold never crops ink the
-// child saw. A rotation-locked paper leaves both equal, keeping margin ink out.
+// A command stays confined to the paper it was drawn on, wherever it is
+// replayed or folded. Ink past that edge was never on the page — pointer capture
+// carries a stroke beyond it, and letterbox margins lie outside it — and an
+// eraser must never reach base ink the paper was hiding when it erased.
 export function commandFoldExtent(recorded: RecordedPaperState | undefined, paper: PaperSize) {
-  return recorded ? coveringPaper(paper, { width: recorded.pxW, height: recorded.pxH }) : paper;
+  return recorded ? { width: recorded.pxW, height: recorded.pxH } : paper;
+}
+
+// A clear resets the whole page, not only the paper it was issued on: clipped
+// to that paper it would leave base ink past it for the replay to show.
+export function commandReadClip(command: StrokeGroupCommand, paper: PaperSize) {
+  if (command.ops.some((op) => op.kind === 'clear')) return paper;
+  const own = commandFoldExtent(command.recordedPaper, paper);
+  return {
+    width: Math.min(own.width, paper.width),
+    height: Math.min(own.height, paper.height),
+  };
 }
 
 export function cloneHistoryBaseTiles(

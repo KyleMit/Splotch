@@ -19,6 +19,7 @@ interface InkState {
 }
 
 type InkCanvas = HTMLCanvasElement & { _ink?: InkState; _ctx?: CanvasRenderingContext2D };
+type Dot = Point & { radius: number };
 
 function freshInkState(): InkState {
   return { ink: [], transform: new DOMMatrix(), clip: null, pendingRect: null, stack: [] };
@@ -61,11 +62,13 @@ function deposit(canvas: InkCanvas, point: Point) {
 }
 
 // A 2D context that tracks where each dot's center lands on every canvas —
-// through transforms, blits, clips, clears, and backing resets — so a test can
-// follow folded ink from the history base back onto the live tiles and export.
+// through transforms, blits, clips, clears, erases, and backing resets — so a
+// test can follow folded ink from the history base back onto the live tiles and
+// export. As on a real canvas, the clip bounds every destination pixel: a fill,
+// a blit, a clearRect, and a destination-out erase alike.
 function inkTrackingContext(canvas: InkCanvas): CanvasRenderingContext2D {
   const state = () => inkState(canvas);
-  let pendingDots: Point[] = [];
+  let pendingDots: Dot[] = [];
   return {
     canvas,
     lineCap: '',
@@ -119,12 +122,21 @@ function inkTrackingContext(canvas: InkCanvas): CanvasRenderingContext2D {
       if (state().ink.length > 0) data[3] = 255;
       return { data };
     },
-    arc(x: number, y: number) {
+    arc(x: number, y: number, radius: number) {
+      const { a, b } = state().transform;
       const { x: px, y: py } = state().transform.transformPoint({ x, y });
-      pendingDots.push({ x: px, y: py });
+      pendingDots.push({ x: px, y: py, radius: radius * Math.hypot(a, b) });
     },
-    fill() {
-      for (const point of pendingDots) deposit(canvas, point);
+    fill(this: CanvasRenderingContext2D) {
+      if (this.globalCompositeOperation !== 'destination-out') {
+        for (const point of pendingDots) deposit(canvas, point);
+        return;
+      }
+      const { clip } = state();
+      const erased = (point: Point) =>
+        (!clip || inRect(clip, point)) &&
+        pendingDots.some((dot) => Math.hypot(point.x - dot.x, point.y - dot.y) <= dot.radius);
+      state().ink = state().ink.filter((point) => !erased(point));
     },
     setTransform(...args: [DOMMatrix] | number[]) {
       const [first] = args;
@@ -253,6 +265,10 @@ function dot(x: number, y: number): StrokeOp {
 
 function magicSheet(sourceUrl: string) {
   return { canvas: document.createElement('canvas'), originX: 0, originY: 0, sourceUrl };
+}
+
+function eraserDot(x: number, y: number, radius: number): StrokeOp {
+  return { kind: 'dot', x, y, radius, color: '#f00', erase: true };
 }
 
 function magicDot(x: number, y: number): StrokeOp {
@@ -388,24 +404,94 @@ describe('folded history-base ink under a temporarily smaller paper', () => {
     expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
   });
 
-  it('keeps folded magic ink a later paper revealed when a recode rebuilds under a smaller paper', () => {
-    const narrow = { width: 800, height: 600 };
-    const overhangX = 820;
-    const view = mountRenderer(narrow);
-    draw(magicDot(overhangX, 100), true);
+  it('keeps folded magic ink past a smaller paper when a recode rebuilds the base under it', () => {
+    const view = mountRenderer(LANDSCAPE);
+    draw(magicDot(FOLDED_INK_X, 100), true);
     for (let index = 0; index < MAX_UNDO_DEPTH; index++) draw(dot(100 + index, 100));
-    view.adoptPaper(LANDSCAPE);
     settleFolds();
-    expect(renderer.tiledHistoryDebug().historyLength).toBe(MAX_UNDO_DEPTH);
-    expect(view.liveInkAt(overhangX)).toBe(true);
 
-    view.adoptPaper(narrow);
+    view.adoptPaper({ width: 800, height: 600 });
     expect(renderer.recodeTiledMagicOps(magicSheet('/coloring/farm/cat-wide.dark'), null)).toBe(
       true
     );
     view.adoptPaper(LANDSCAPE);
 
-    expect(view.liveInkAt(overhangX)).toBe(true);
-    expect(view.exportedInkAt(overhangX)).toBe(true);
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+  });
+
+  it('keeps ink drawn past the paper edge off the page when the paper grows', () => {
+    const narrow = { width: 800, height: 600 };
+    const overhangX = 820;
+    const view = mountRenderer(narrow);
+    draw(dot(overhangX, 100), true);
+    view.adoptPaper(LANDSCAPE);
+    expect(view.liveInkAt(overhangX)).toBe(false);
+    expect(view.exportedInkAt(overhangX)).toBe(false);
+
+    for (let index = 0; index < MAX_UNDO_DEPTH; index++) draw(dot(100 + index, 100));
+    settleFolds();
+    renderer.repaintTiledRenderer();
+
+    expect(view.liveInkAt(overhangX)).toBe(false);
+    expect(view.exportedInkAt(overhangX)).toBe(false);
+  });
+
+  it('leaves base ink a smaller paper hid alone when an eraser on that paper replays or folds', () => {
+    const erasedX = 700;
+    const view = mountRenderer(LANDSCAPE);
+    draw(dot(erasedX, 100), true);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+
+    view.adoptPaper({ width: 800, height: 600 });
+    draw(eraserDot(790, 100, 250));
+    view.adoptPaper(LANDSCAPE);
+
+    expect(view.liveInkAt(erasedX)).toBe(false);
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+
+    for (let index = 0; index < MAX_UNDO_DEPTH; index++) draw(dot(100 + index, 300));
+    settleFolds();
+    renderer.repaintTiledRenderer();
+
+    expect(view.liveInkAt(erasedX)).toBe(false);
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+  });
+
+  it('wipes base ink past a smaller paper from replay and export when a clear on that paper is still undoable', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+    view.adoptPaper({ width: 800, height: 600 });
+    renderer.clearTiledRenderer(false);
+    vi.advanceTimersByTime(500);
+
+    view.adoptPaper(LANDSCAPE, { empty: true });
+
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(false);
+    renderer.repaintTiledRenderer();
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(false);
+  });
+
+  it('returns the base to the current paper when a clear recorded on the other orientation folds', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+    renderer.clearTiledRenderer(false);
+    vi.advanceTimersByTime(500);
+    const portrait = { width: 500, height: 900 };
+    view.adoptPaper(portrait, { empty: true });
+    expect(renderer.tiledHistoryDebug().baseRasterBytes).toBe(
+      LANDSCAPE.width * portrait.height * 4
+    );
+
+    for (let index = 0; index < MAX_UNDO_DEPTH; index++) draw(dot(100, 100 + index), index === 0);
+    settleFolds();
+
+    expect(renderer.tiledHistoryDebug().historyLength).toBe(MAX_UNDO_DEPTH);
+    expect(renderer.tiledHistoryDebug().baseRasterBytes).toBe(portrait.width * portrait.height * 4);
   });
 });

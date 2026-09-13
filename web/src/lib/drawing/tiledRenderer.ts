@@ -19,6 +19,7 @@ import {
   clipTilesToPaper,
   cloneHistoryBaseTiles,
   commandFoldExtent,
+  commandReadClip,
   createLiveTiles,
   applyLiveTileView,
   deferHiddenTileClear,
@@ -67,10 +68,6 @@ let historyBaseHeight = 0;
 let activeCommand: StrokeGroupCommand | null = null;
 const history: StrokeGroupCommand[] = [];
 const undoPatches = createTiledUndoPatches();
-// The clip each command folded under, so a magic recode rebuilding the base
-// repaints the folded tail exactly as it first folded rather than under
-// whatever paper is current, which can crop ink a later paper had revealed.
-const foldExtents = new WeakMap<StrokeGroupCommand, PaperSize>();
 let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
 let backingMigration = { revision: 0, pending: false };
@@ -194,10 +191,10 @@ function ensureHistoryBaseCovers(required: PaperSize) {
 // clearRect honors the fold clip, and the base can outgrow that clip, so a
 // folded clear starts from blank tiles sized to the clip rather than wiping in
 // place and leaving cleared ink outside it for a later fold to revive.
-function paintCommandIntoBase(command: StrokeGroupCommand) {
-  const extent = foldExtents.get(command);
-  if (!extent) return;
+function paintCommandIntoBase(command: StrokeGroupCommand, paper: PaperSize) {
+  const extent = commandFoldExtent(command.recordedPaper, paper);
   if (command.ops.some((op) => op.kind === 'clear')) retileHistoryBase([], extent);
+  else ensureHistoryBaseCovers(extent);
   clipTilesToPaper(historyBase, extent);
   for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
   restoreTileContexts(historyBase);
@@ -211,7 +208,8 @@ const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
   cloneBase: (source) => cloneHistoryBaseTiles(source, historyBaseWidth, historyBaseHeight),
   rebuildBase: (baseline, tail) => {
     historyBase = cloneHistoryBaseTiles(baseline, historyBaseWidth, historyBaseHeight);
-    for (const command of tail) paintCommandIntoBase(command);
+    const paper = host?.paperSize();
+    if (paper) for (const command of tail) paintCommandIntoBase(command, paper);
   },
   commitUndo: (command) => {
     cancelHistoryFold();
@@ -333,7 +331,7 @@ export function recordTiledOp(op: StrokeOp) {
 function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = false) {
   const paper = host?.paperSize();
   if (!paper) return;
-  clipTilesToPaper(liveTiles, paper);
+  clipTilesToPaper(liveTiles, commandReadClip(command, paper));
   for (const op of command.ops) renderTiledOpForCommand(op, captureUndo ? command : null);
   restoreTileContexts(liveTiles);
   if (captureUndo) undoPatches.crop(command);
@@ -349,11 +347,11 @@ function foldOldestCommand() {
   if (!command) return;
   if (PERF_MARKS) performance.mark('engine.fold:start');
   undoPatches.delete(command);
-  const extent = commandFoldExtent(command.recordedPaper, paper);
-  foldExtents.set(command, extent);
-  if (!command.ops.some((op) => op.kind === 'clear')) ensureHistoryBaseCovers(extent);
   magicRecode.beforeFold(command);
-  paintCommandIntoBase(command);
+  paintCommandIntoBase(command, paper);
+  // A blank base — a folded clear, or an erase that left nothing — has nothing
+  // to retain, so it returns to the current paper rather than its fold extent.
+  ensureHistoryBaseCovers(paper);
   magicRecode.afterFold(command);
   if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
 }

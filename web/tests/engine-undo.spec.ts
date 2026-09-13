@@ -224,6 +224,61 @@ test('undoing a clear after a blank rotation keeps folded ink in the export and 
   await expect.poll(() => count(page)).toBe(inkBeforeClear);
 });
 
+// The eraser here reaches past the shrunken paper's edge. It was clipped there
+// when the child used it, so neither its replay under the regrown paper nor its
+// fold may erase the folded ink the smaller paper was hiding.
+test('erasing a shrunken page leaves folded ink past its edge for the regrown paper', async ({
+  page,
+}) => {
+  const hiddenInk = { x: 312, y: 150 };
+  await page.evaluate(async (depth) => {
+    await window.__engine.resizeTo(400, 300);
+    window.__engine.strokeSync([
+      { x: 310, y: 150 },
+      { x: 320, y: 150 },
+    ]);
+    for (let index = 0; index < depth; index++) {
+      window.__engine.strokeSync([
+        { x: 285, y: 80 },
+        { x: 285, y: 180 },
+      ]);
+    }
+  }, MAX_UNDO_DEPTH);
+  await expect
+    .poll(() => page.evaluate(() => window.__engine.getUndoDebug().historyLength), {
+      timeout: 10_000,
+    })
+    .toBe(MAX_UNDO_DEPTH);
+
+  await page.evaluate(async () => {
+    await window.__engine.resizeTo(300, 250);
+    window.__engine.setStrokeWidth(44);
+    window.__engine.setEraserMode(true);
+    window.__engine.strokeSync([
+      { x: 295, y: 60 },
+      { x: 295, y: 200 },
+    ]);
+  });
+  expect((await page.evaluate(() => window.__engine.getViewState())).paperCssWidth).toBe(300);
+  await expect.poll(async () => (await state(page)).canvasEmpty).toBe(true);
+
+  await page.evaluate(async () => {
+    await window.__engine.resizeTo(400, 300);
+    window.__engine.setEraserMode(false);
+    window.__engine.setStrokeWidth(8);
+    window.__engine.strokeSync([
+      { x: 40, y: 40 },
+      { x: 60, y: 40 },
+    ]);
+  });
+  await page.evaluate(() => window.__engine.remount());
+
+  const alphaAt = ({ x, y }: { x: number; y: number }) =>
+    page.evaluate(([px, py]) => window.__engine.pixelAt(px, py)[3], [x, y]);
+  expect(await alphaAt(hiddenInk)).toBeGreaterThan(0);
+  expect(await alphaAt({ x: 285, y: 150 })).toBe(0);
+});
+
 test('undo does not reveal stale pixels after an erase-to-empty command', async ({ page }) => {
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');
