@@ -116,8 +116,8 @@ describe('retentionProblems', () => {
     breaks: Array.from({ length: count }, (_, index) => ({ downloadPath: `/coloring/${index}` })),
   });
 
-  it('fails a release that is not pinned as known-broken', () => {
-    expect(retentionProblems([broken('1.0.0', 2)], {})).toEqual([
+  it('fails a healthy release that stops being served', () => {
+    expect(retentionProblems([broken('1.0.0', 2)], { '1.0.0': 0 })).toEqual([
       '1.0.0: 2 manifest-addressed file(s) no longer served (first: /coloring/0)',
     ]);
   });
@@ -128,9 +128,15 @@ describe('retentionProblems', () => {
     expect(retentionProblems([broken('1.0.0', 2)], { '1.0.0': 3 })).toHaveLength(1);
   });
 
-  it('fails a pin that names no snapshot', () => {
-    expect(retentionProblems([], { '1.0.0': 3 })).toEqual([
-      '1.0.0: pinned as known-broken but has no snapshot',
+  it('fails a released version whose snapshot is gone', () => {
+    expect(retentionProblems([broken('1.0.0', 0)], { '1.0.0': 0, '1.1.0': 0 })).toEqual([
+      '1.1.0: released with coloring packs but has no snapshot',
+    ]);
+  });
+
+  it('fails a snapshot the release inventory does not list', () => {
+    expect(retentionProblems([broken('1.0.0', 0)], {})).toEqual([
+      "1.0.0: snapshot has no RELEASED_PACK_BROKEN_FILES entry — add '1.0.0': 0",
     ]);
   });
 });
@@ -152,7 +158,8 @@ function packReleaseTags() {
 
 const tags = packReleaseTags();
 
-// CI's shallow checkout carries no tags, so this half only runs where they exist.
+// CI's shallow checkout carries no tags, so this half only runs where they exist;
+// there, RELEASED_PACK_BROKEN_FILES is what catches a lost snapshot.
 it.skipIf(tags.length === 0)('snapshots every release tag that ships coloring packs', () => {
   const snapshots = new Map(readSnapshots().map((entry) => [entry.ref, entry.commit]));
   const commits = tags.map((tag) => [tag, git(['rev-parse', `${tag}^{commit}`]).stdout.trim()]);

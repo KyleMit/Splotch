@@ -64,11 +64,12 @@ Follow these steps:
    from an **older** version. Attaching it is how v1.4.0 shipped a 1.2.0 bundle (ADR-0077).
 
    **Once the tag exists, record the release's coloring-pack snapshot**:
-   `npm run gen:coloring-pack-snapshot -- --ref v<version>`, then commit the new
-   `tools/release/coloring-pack-snapshots/<version>.json` (on a branch and PR when the release was
-   published to `main`). It cannot ride in the release commit, because it records the tag's commit.
-   Until it lands, the tools tier fails wherever tags are fetched, and nothing guards the files that
-   release downloads (see `tools/release/README.md`).
+   `npm run gen:coloring-pack-snapshot -- --ref v<version>`, add `'<version>': 0` to
+   `RELEASED_PACK_BROKEN_FILES` in `tools/release/lib/coloring-pack-retention.mjs`, then commit both
+   with the new `tools/release/coloring-pack-snapshots/<version>.json` (on a branch and PR when the
+   release was published to `main`). It cannot ride in the release commit, because it records the
+   tag's commit. Until it lands, the tools tier fails wherever tags are fetched, and nothing guards
+   the files that release downloads (see `tools/release/README.md`).
 
 8. **Point to the next steps** — releasing is the first of three phases:
 

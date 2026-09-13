@@ -83,17 +83,21 @@ npm run check:coloring-pack-retention
 `gen-coloring-pack-snapshot.mjs` extracts the tag's own generator and `web/static/coloring` into a
 temporary directory with `git archive`, runs that generator for the `mobile` platform, and writes
 `coloring-pack-snapshots/<version>.json` (download path → digest per book). Run it once after each
-release is tagged and commit the output. `check-coloring-pack-retention.mjs` hashes the current
-`web/static` against every snapshot; `tests/coloring-pack-retention.test.mjs` runs the same check in
-the CI tools tier and, where tags are present locally, fails on a pack-shipping tag with no
+release is tagged, add `'<version>': 0` to `RELEASED_PACK_BROKEN_FILES` in
+`lib/coloring-pack-retention.mjs`, and commit both. `check-coloring-pack-retention.mjs` hashes the
+current `web/static` against every snapshot; `tests/coloring-pack-retention.test.mjs` runs the same
+check in the CI tools tier and, where tags are present locally, fails on a pack-shipping tag with no
 snapshot.
 
-A release already broken on the live origin is pinned in `KNOWN_BROKEN_RELEASES` to its exact
-unserved-file count, so both a further deletion and a partial restore fail until the pin is updated.
-A pin is an open defect, not an exemption. Retiring or regenerating an addressed asset needs the old
-bytes to stay reachable at the old path; `check:coloring-assets` separately rejects unreferenced
-files under `web/static/coloring`, so that retention cannot be done by leaving stale files beside
-the current catalog.
+`RELEASED_PACK_BROKEN_FILES` is the committed release inventory. The check fails when a listed
+release has no snapshot or a snapshot has no entry, so a lost snapshot fails CI even though CI's
+checkout has no tags. Each entry holds the release's exact unserved-file count: 0 for a healthy
+release. A release already broken on the live origin keeps its nonzero count, so both a further
+deletion and a partial restore fail until the pin is updated. A nonzero pin is an open defect, not
+an exemption. Retiring or regenerating an addressed asset needs the old bytes to stay reachable at
+the old path; `check:coloring-assets` separately rejects unreferenced files under
+`web/static/coloring`, so that retention cannot be done by leaving stale files beside the current
+catalog.
 
 ## Libraries and failure behavior
 
