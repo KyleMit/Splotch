@@ -60,6 +60,7 @@ test('an offline PWA session preserves the drawing through supported client navi
 // launch URLs are covered.
 for (const launch of [
   { name: 'launch', path: '/' },
+  { name: 'index document launch', path: '/index.html' },
   { name: 'stale-page recovery', path: `/?${CACHE_BUST_VERSION_PARAM}=0.0.0-other-build` },
 ]) {
   test(`an offline ${launch.name} boots even when the cached page is from a different build`, async ({

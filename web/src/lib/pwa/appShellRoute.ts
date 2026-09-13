@@ -19,7 +19,8 @@ export function isAppShellNavigation({
   request: Pick<Request, 'mode'>;
   url: URL;
 }): boolean {
-  return request.mode === 'navigate' && url.pathname === '/';
+  // The static host serves the same prerendered document at /index.html.
+  return request.mode === 'navigate' && (url.pathname === '/' || url.pathname === '/index.html');
 }
 
 export function appShellPrecacheUrl(buildId: string): string {

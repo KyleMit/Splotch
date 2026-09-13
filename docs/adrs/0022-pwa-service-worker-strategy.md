@@ -108,14 +108,14 @@ under a stale session's cached page, and the `?v=` cache-bust writes fresh HTML 
 while `/` keeps the old page. Once the HTTP disk cache no longer holds the other build's chunks, the
 offline launch renders the prerendered markup and never runs: strokes draw nothing.
 
-The navigation to `/` therefore has its own route. It stays `NetworkFirst` with the same 5 s
-timeout, but its offline and timeout answer is the prerendered home page precached by the same
-build, and it writes nothing to `pages`. SvelteKit prerenders after the worker is generated, so the
-shell's bytes cannot be hashed into a revision; it is precached at `/?app-shell-build=<uuid>`,
-unique per build, so every install fetches its own copy and no navigation URL (including `?v=`)
-matches the precache route and bypasses the network. The fallback plugin carries that URL as a
-literal compiled into its callback source: Workbox serializes callbacks with `toString()` and
-rejects plugin properties that are not callbacks.
+The navigation to `/` (and to `/index.html`, the same document on the static host) therefore has its
+own route. It stays `NetworkFirst` with the same 5 s timeout, but its offline and timeout answer is
+the prerendered home page precached by the same build, and it writes nothing to `pages`. SvelteKit
+prerenders after the worker is generated, so the shell's bytes cannot be hashed into a revision; it
+is precached at `/?app-shell-build=<uuid>`, unique per build, so every install fetches its own copy
+and no navigation URL (including `?v=`) matches the precache route and bypasses the network. The
+fallback plugin carries that URL as a literal compiled into its callback source: Workbox serializes
+callbacks with `toString()` and rejects plugin properties that are not callbacks.
 
 The shell is the **first** precache entry. Workbox installs entries one at a time in manifest order,
 and revisioned entries are fetched with `cache: 'reload'`, so every hashed chunk is fetched from the

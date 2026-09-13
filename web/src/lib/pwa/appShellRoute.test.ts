@@ -48,6 +48,7 @@ describe('app shell service-worker route', () => {
 
     expect(matches({ request: navigate, url: new URL('/', origin) })).toBe(true);
     expect(matches({ request: navigate, url: new URL('/?v=1.2.3', origin) })).toBe(true);
+    expect(matches({ request: navigate, url: new URL('/index.html', origin) })).toBe(true);
     expect(matches({ request: navigate, url: new URL('/privacy', origin) })).toBe(false);
     expect(matches({ request: { mode: 'cors' }, url: new URL('/', origin) })).toBe(false);
   });
