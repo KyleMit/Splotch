@@ -10,7 +10,7 @@ import {
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
-import { devHarnessEnabled } from '$lib/devHarness';
+import { devHarnessEnabled } from '$lib/server/devHarness';
 import {
   allowSameOriginFraming,
   API_RESPONSE_HEADERS,

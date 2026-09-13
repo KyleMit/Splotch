@@ -63,7 +63,6 @@ it('measures linked startup resources and the largest non-startup JavaScript chu
     '<link href="./_app/immutable/entry/app.js" rel="modulepreload">' +
       '<link rel="stylesheet" href="./_app/immutable/assets/app.css">' +
       '<link rel="stylesheet" href="./_app/immutable/assets/navigation.css" disabled>' +
-      '<link rel="modulepreload" href="./_app/env.js">' +
       '<style>a{b:c}</style>'
   );
 
@@ -173,6 +172,29 @@ it.each([{ PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
     await expect(
       checkBundleBudgets({ prerenderedIndex, clientDir, env, log: vi.fn() })
     ).rejects.toThrow('Startup resource does not exist');
+  }
+);
+
+it.each([{}, { PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
+  'rejects a prerendered page that waits on the runtime env module: %j',
+  async (env) => {
+    const root = temporaryDirectory();
+    const clientDir = join(root, 'client');
+    const prerenderedIndex = join(root, 'index.html');
+    writeSizedFile(join(clientDir, '_app/immutable/entry/app.js'), 1);
+    writeSizedFile(join(clientDir, '_app/immutable/chunks/lazy.js'), 1);
+    // SvelteKit emits this preload beside its boot script's dynamic import of the
+    // same module; the import form is omitted because tool-specifier-resolution
+    // reads a quoted dynamic import here as a broken relative specifier.
+    writeFileSync(
+      prerenderedIndex,
+      '<link href="./_app/immutable/entry/app.js" rel="modulepreload">' +
+        '<link href="./_app/env.js" rel="modulepreload">'
+    );
+
+    await expect(
+      checkBundleBudgets({ prerenderedIndex, clientDir, env, log: vi.fn() })
+    ).rejects.toThrow('a client module imports $env/dynamic/public');
   }
 );
 

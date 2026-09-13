@@ -37,7 +37,7 @@ declare global {
   // WebServer, not as a build error (2026-08-27). Inside a function that only
   // the browser calls it is fine, which is how every use in `lib/drawing/`
   // reads. For a server-reachable gate use `devHarnessEnabled()` in
-  // `lib/devHarness.ts`, which is a runtime check for exactly this reason.
+  // `lib/server/devHarness.ts`, which is a runtime check for exactly this reason.
   const __DEV_HARNESS__: boolean;
 
   // Capacitor injects this global in the native shell and once @capacitor/core
