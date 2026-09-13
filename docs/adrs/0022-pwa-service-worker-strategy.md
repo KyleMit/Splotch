@@ -8,7 +8,8 @@ cache-bust redirect under the same canvas-empty guard as the waiting-worker relo
 starter book is precached and other books use verified runtime pack caches. Amended 2026-08-18 to
 activate a version-matched waiting worker silently (no reload) and to defer the stale-page reload to
 the hidden edge (`visibilitychange` → hidden), so a visible session is never reloaded out from under
-the user.
+the user. Amended 2026-09-13 to precache a build-matched app shell as the offline and
+stalled-network answer for `/`, replacing the runtime page cache for that route.
 
 ## Context
 
@@ -64,17 +65,18 @@ update-lifecycle and manifest-generation features are explicitly disabled. A cus
 
 ### vite-plugin-pwa configuration (`vite.config.ts`)
 
-| Option                      | Value                                                                                               | Reason                                                                                                                         |
-| --------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `registerType`              | `'prompt'`                                                                                          | Disables the auto-update injection; `updates.ts` is the sole driver                                                            |
-| `manifest`                  | `false`                                                                                             | Web manifest is maintained manually in `static/site.webmanifest`                                                               |
-| `workbox.skipWaiting`       | *(omitted)*                                                                                         | New SW enters the waiting state; `updates.ts` activates it only when canvas is blank                                           |
-| `workbox.clientsClaim`      | `true`                                                                                              | New SW claims all clients immediately after activation                                                                         |
-| `workbox.navigateFallback`  | `''`                                                                                                | Suppresses the default `NavigationRoute(createHandlerBoundToURL('index.html'))` which would shadow the NetworkFirst handler    |
-| `workbox.globPatterns`      | no `html`                                                                                           | HTML is not precached; navigation uses the runtime NetworkFirst cache instead                                                  |
-| `workbox.globIgnores`       | social card, source line art, responsive tiers, and non-starter coloring books                      | Avoids served-only assets, duplicate resolutions, and post-install book packs                                                  |
-| `additionalManifestEntries` | `'_app/env.js'` plus the versioned coloring-pack manifest                                           | Keeps offline hydration and the downloader's integrity/file inventory available                                                |
-| `workbox.runtimeCaching`    | responsive and installed-canonical coloring handlers; `NetworkFirst` navigations with a 5 s timeout | Resolves installed book caches without putting downloads in the precache and makes navigation fall back to cached HTML offline |
+| Option                      | Value                                                                                               | Reason                                                                                                                      |
+| --------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `registerType`              | `'prompt'`                                                                                          | Disables the auto-update injection; `updates.ts` is the sole driver                                                         |
+| `manifest`                  | `false`                                                                                             | Web manifest is maintained manually in `static/site.webmanifest`                                                            |
+| `workbox.skipWaiting`       | *(omitted)*                                                                                         | New SW enters the waiting state; `updates.ts` activates it only when canvas is blank                                        |
+| `workbox.clientsClaim`      | `true`                                                                                              | New SW claims all clients immediately after activation                                                                      |
+| `workbox.navigateFallback`  | `''`                                                                                                | Suppresses the default `NavigationRoute(createHandlerBoundToURL('index.html'))` which would shadow the NetworkFirst handler |
+| `workbox.globPatterns`      | no `html`                                                                                           | Prerendered HTML does not exist yet when the worker is generated; the app shell is added as a manifest entry instead        |
+| `workbox.globIgnores`       | social card, source line art, responsive tiers, and non-starter coloring books                      | Avoids served-only assets, duplicate resolutions, and post-install book packs                                               |
+| `additionalManifestEntries` | `'_app/env.js'` plus the versioned coloring-pack manifest                                           | Keeps offline hydration and the downloader's integrity/file inventory available                                             |
+| `manifestTransforms`        | prepends the app shell at a build-unique `/?app-shell-build=` URL                                   | Keeps offline boot on the worker's own build; first so a deploy mid-install fails the install                               |
+| `workbox.runtimeCaching`    | responsive and installed-canonical coloring handlers; `NetworkFirst` navigations with a 5 s timeout | `/` falls back to the precached shell; other routes fall back to the `pages` runtime cache                                  |
 
 ### Responsive coloring and offline fallback
 
@@ -94,6 +96,51 @@ image's `currentSrc` offline; the bytes returned for that request are the canoni
 responsive derivative without a canonical precache entry, a missing `/_app/env.js`, or a precache
 above the named size budget. The production Playwright suite clears the HTTP cache and verifies the
 offline DPR 1 and DPR 3 picker and canvas paths against decoded response dimensions.
+
+### Build-matched offline shell
+
+Hashed `_app/immutable` chunks are guaranteed present only in the precache of the worker whose build
+emitted them. Originally every navigation fell back to the `pages` runtime cache, which holds
+whichever build the network last served, so a deploy could pair a page with the other build's
+precache. Three sequences were reproduced in Chromium with two builds: an old worker caches the new
+HTML and the new worker's install is interrupted, a waiting worker activates on the next launch
+under a stale session's cached page, and the `?v=` cache-bust writes fresh HTML under `/?v=<ver>`
+while `/` keeps the old page. Once the HTTP disk cache no longer holds the other build's chunks, the
+offline launch renders the prerendered markup and never runs: strokes draw nothing.
+
+The navigation to `/` (and to `/index.html`, the same document on the static host) therefore has its
+own route. It stays `NetworkFirst` with the same 5 s timeout, but its offline and timeout answer is
+the prerendered home page precached by the same build, and it writes nothing to `pages`. SvelteKit
+prerenders after the worker is generated, so the shell's bytes cannot be hashed into a revision; it
+is precached at `/?app-shell-build=<uuid>`, unique per build, so every install fetches its own copy
+and no navigation URL (including `?v=`) matches the precache route and bypasses the network. The
+fallback plugin carries that URL as a literal compiled into its callback source: Workbox serializes
+callbacks with `toString()` and rejects plugin properties that are not callbacks.
+
+The shell is the **first** precache entry. Workbox installs entries one at a time in manifest order,
+and revisioned entries are fetched with `cache: 'reload'`, so every hashed chunk is fetched from the
+origin after the shell. A deploy landing mid-install either precedes the shell fetch (new shell, old
+chunks) or follows it (old shell, then chunks the new deploy no longer serves); both make a chunk
+fetch fail, because Netlify's atomic deploys stop serving the previous deploy's files, and a failed
+fetch abandons the install. The next update check installs the new `sw.js` whole. Appended last, as
+`additionalManifestEntries` would place it, the shell was fetched after every chunk, so a deploy at
+any point of a slow install produced a worker with new HTML over old chunks.
+`tools/check-pwa-precache.mjs` requires exactly one shell entry, requires it first, requires the
+timeout callback and the error callback each to look up that same URL, and counts the prerendered
+`index.html` against the precache budget.
+
+The stale-page recovery navigation (`/?v=<deployed>`, below) is exempt from the timeout answer. Its
+purpose is to reach the deployed build, and the page allows one attempt per deployed version, so
+answering its timeout with this worker's shell would boot the stale build again and spend that
+attempt. It waits for the network however long it takes and gets the shell only when the network
+fails.
+
+Other prerendered routes (`/privacy`, `/changelog`) keep the `pages` fallback. Their markup is
+readable without JavaScript, and a navigation back to `/` gets the matched shell. If the shell entry
+itself is missing from Cache Storage (partial eviction, a manually cleared cache) an offline launch
+of `/` shows the browser's offline error rather than an older page; the precache is otherwise
+removed only as a whole. Entries an earlier build wrote to `pages` for `/` and `/?v=<ver>` are no
+longer read and are not cleaned up.
 
 ### Progressive coloring packs
 
@@ -142,15 +189,15 @@ It:
 * Also calls `checkVersionMismatch()`: fetches `/version.json` (not precached; always network) with
   `cache: 'no-store'`, compares its `version` field against `__APP_VERSION__` (a Vite compile-time
   constant). If they differ the running SW is serving stale HTML, so it redirects to
-  `?v=<deployed-version>`, which the SW's NetworkFirst handler sees as an uncached URL and fetches
-  fresh from the origin. The `?v=` param is stripped from the URL on the next init. This is the
-  escape hatch for clients already stuck on a broken SW (e.g. from before this update lifecycle was
-  in place). That redirect is a hard navigation, so it obeys the same blank-canvas condition as the
-  waiting-worker reload — and reads the flag **after** the fetch resolves, not when the check is
-  kicked off, because the response can land seconds into a session in which the child is already
-  drawing (ADR-0072). An inked canvas cancels the redirect for that boot; the check runs once per
-  init, so a stale session recovers on the next blank-canvas launch rather than through a deferred
-  retry.
+  `?v=<deployed-version>`, which bypasses the HTTP cache and reaches the origin through the SW's
+  NetworkFirst handler, which waits for the network rather than answering at its timeout. The `?v=`
+  param is stripped from the URL on the next init. This is the escape hatch for clients already
+  stuck on a broken SW (e.g. from before this update lifecycle was in place). That redirect is a
+  hard navigation, so it obeys the same blank-canvas condition as the waiting-worker reload — and
+  reads the flag **after** the fetch resolves, not when the check is kicked off, because the
+  response can land seconds into a session in which the child is already drawing (ADR-0072). An
+  inked canvas cancels the redirect for that boot; the check runs once per init, so a stale session
+  recovers on the next blank-canvas launch rather than through a deferred retry.
 
 ### Build output
 
