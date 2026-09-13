@@ -136,30 +136,34 @@ export async function openParentalGate(page: Page) {
 }
 
 // Solve the currently displayed challenge: the equation row's accessible label
-// carries the operands, and typing the last digit auto-submits. Each press is
-// verified and retried: the gate flies in over the control that opened it, and
-// a click landing inside that opening tap's launch dead zone (launchGuard,
-// 72px/600ms) is swallowed by design — one unverified click can silently type
-// nothing (bit the external-link flow, whose anchor sits mid-card under the
-// keypad).
+// carries the operands; the digits fill the dabs, and the check key submits.
+// Each press is verified and retried: the gate flies in over the control that
+// opened it, and a click landing inside that opening tap's launch dead zone
+// (launchGuard, 72px/600ms) is swallowed by design — one unverified click can
+// silently type nothing (bit the external-link flow, whose anchor sits mid-card
+// under the keypad).
 export async function solveParentalGate(page: Page) {
   const label = await page.locator('.gate-equation').getAttribute('aria-label');
   const [x, y] = label!.match(/\d+/g)!.map(Number);
   const answer = String(x * y);
   const keypad = page.locator('.gate-keypad');
+  const filled = page.locator('.gate-dab.filled');
+  // A retry presses only if the previous press never landed: a digit past the
+  // last dab is a wrong answer, so a blind second click would cost the problem.
   for (let i = 0; i < answer.length; i++) {
     await expect(async () => {
-      await keypad.getByRole('button', { name: answer[i], exact: true }).click({ timeout: 2000 });
-      if (i < answer.length - 1) {
-        // The digit landed when its dab fills.
-        await expect(page.locator('.gate-dab.filled')).toHaveCount(i + 1, { timeout: 1000 });
-      } else {
-        // The last digit auto-submits: the keypad leaves the DOM for the
-        // success card, or the gate closes outright (immediate link handoffs).
-        await expect(keypad).not.toBeVisible({ timeout: 1500 });
+      if ((await filled.count()) <= i) {
+        await keypad.getByRole('button', { name: answer[i], exact: true }).click({ timeout: 2000 });
       }
+      await expect(filled).toHaveCount(i + 1, { timeout: 1000 });
     }).toPass({ timeout: 15_000 });
   }
+  // Submitting leaves the keypad for the success card, or closes the gate
+  // outright (immediate link handoffs).
+  await expect(async () => {
+    await keypad.getByRole('button', { name: 'Check answer' }).click({ timeout: 2000 });
+    await expect(keypad).not.toBeVisible({ timeout: 1500 });
+  }).toPass({ timeout: 15_000 });
 }
 
 // One protected operation's frequency picker inside Parent Center.

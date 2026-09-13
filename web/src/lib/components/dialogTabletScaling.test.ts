@@ -31,6 +31,16 @@ const DIALOGS = {
     source: read('./ParentalGateManageFooter.svelte'),
     floors: [TABLET_MIN_SIDE_PX],
   },
+  // The gate's keypad and problem, extracted for the same reason; their keys
+  // and splats grow at both of the card's steps.
+  ParentalGateKeypad: {
+    source: read('./ParentalGateKeypad.svelte'),
+    floors: [TABLET_MIN_SIDE_PX, LARGE_TABLET_MIN_SIDE_PX],
+  },
+  ParentalGateProblem: {
+    source: read('./ParentalGateProblem.svelte'),
+    floors: [TABLET_MIN_SIDE_PX, LARGE_TABLET_MIN_SIDE_PX],
+  },
   AiImagePrompt: {
     source: read('./AiImagePrompt.svelte'),
     floors: [TABLET_MIN_SIDE_PX, LARGE_TABLET_MIN_SIDE_PX],

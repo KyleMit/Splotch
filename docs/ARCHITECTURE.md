@@ -341,8 +341,9 @@ media queries + the head-script stamp in `app.html`).
   guided Share-sheet hint on iOS. Dismissible and remembered. See ADR-0039.
 * **Parental Gate** - "Grown-Ups Only" modal (`ParentalGate.svelte`) guarding individual sensitive
   operations at their boundary — never Settings entry itself (ADR-0094). An adult solves a random
-  single-digit multiplication problem on its keypad (wrong answers regenerate the problem). The
-  protected operations are AI image launch, AI result reporting, external-link activation, feedback
+  single-digit multiplication problem on its keypad and taps the check key (wrong answers regenerate
+  the problem; three in a row pause the keypad for an escalating lockout, ADR-0094). The protected
+  operations are AI image launch, AI result reporting, external-link activation, feedback
   submission, and Parent Center entry; Parent Center gives each an independent Every time / Per
   session / Never policy. The gate is an app-store requirement, so the default follows the build:
   the native build arms all five at Every time, the web build ships them all at Never and treats
