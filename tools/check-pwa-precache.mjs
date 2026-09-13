@@ -30,10 +30,13 @@ export function precacheUrlsFromSource(source) {
 // callback an offline one, so each must look up the shell on its own.
 export const APP_SHELL_FALLBACK_CALLBACKS = ['cachedResponseWillBeUsed', 'handlerDidError'];
 
-// Each callback name, then its own body up to the next callback, then the lookup.
+// Each callback name, then its own body up to the next function-valued property in
+// any form, then the lookup. A nested function property inside a callback body ends
+// the scan early, so the check then reports the lookup missing rather than passing.
+const FUNCTION_PROPERTY_START = String.raw`[\w$]+:(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|[\w$]+\s*=>)`;
 const APP_SHELL_FALLBACK_LOOKUP_PATTERN = new RegExp(
   String.raw`(${APP_SHELL_FALLBACK_CALLBACKS.join('|')}):async function\b` +
-    String.raw`(?:(?!:async function\b)[^])*?` +
+    String.raw`(?:(?!${FUNCTION_PROPERTY_START})[^])*?` +
     String.raw`caches\.match\(("\/\?app-shell-build=(?:\\.|[^"\\])*")\)`,
   'g'
 );

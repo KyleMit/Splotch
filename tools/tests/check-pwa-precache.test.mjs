@@ -164,6 +164,21 @@ it('attributes a lookup only to the callback whose body holds it', () => {
   ]);
 });
 
+it.each([
+  'async()=>',
+  'async e=>',
+  '({request:e})=>',
+  'function(){return ',
+  'async function(){return ',
+])('ends a callback body at the next function-valued property written as %s', (valueStart) => {
+  const lookup = `caches.match(${JSON.stringify(appShellUrl)})`;
+  const source = `{cachedResponseWillBeUsed:async function(){return null},unrelated:${valueStart}${lookup},handlerDidError:async function(){return ${lookup}}}`;
+
+  expect(appShellFallbackLookupsFromSource(source)).toEqual([
+    { callback: 'handlerDidError', url: appShellUrl },
+  ]);
+});
+
 it('requires the shell to install first and each fallback callback to look up that same shell', () => {
   const problems = ({ precacheUrls, appShellFallbackLookups }) =>
     pwaPrecacheProblems({
