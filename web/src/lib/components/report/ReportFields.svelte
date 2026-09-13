@@ -238,7 +238,7 @@
   }
 
   .report-privacy-note {
-    margin: -2px 0 0 0;
+    margin: -2px 0 0;
     font-size: var(--font-size-xs);
     line-height: 1.45;
     /* --text-soft, deliberately: this note is fine print, but fine print
@@ -265,7 +265,7 @@
   .report-check input {
     width: 18px;
     height: 18px;
-    margin: 1px 0 0 0;
+    margin: 1px 0 0;
     accent-color: var(--brand);
     flex-shrink: 0;
     cursor: pointer;
@@ -291,7 +291,7 @@
 
   .report-device-list {
     margin: 0;
-    padding: 0 12px 4px 12px;
+    padding: 0 12px 4px;
     list-style: none;
   }
 

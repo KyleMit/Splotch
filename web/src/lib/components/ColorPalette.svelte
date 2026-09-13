@@ -148,7 +148,7 @@
     gap: 12px;
     padding: 12px;
     background: var(--surface);
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 2px 0 10px rgb(0 0 0 / 10%);
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
     position: relative;
@@ -172,7 +172,7 @@
       border-color var(--duration-base) ease,
       box-shadow var(--duration-base) ease,
       transform var(--duration-base) ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgb(0 0 0 / 20%);
     touch-action: manipulation; /* Prevent iOS gesture delays */
   }
 
@@ -266,7 +266,7 @@
       height: auto;
       padding: 10px;
       gap: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
       overflow-x: hidden;
       overflow-y: visible;
       flex-wrap: nowrap;

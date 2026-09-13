@@ -205,10 +205,10 @@
     top: 0;
     left: 0;
     box-sizing: border-box;
-    border: 2px solid rgba(80, 80, 80, 0.7);
+    border: 2px solid rgb(80 80 80 / 70%);
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.35);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+    background-color: rgb(255 255 255 / 35%);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 60%);
     pointer-events: none;
     z-index: 3;
   }
@@ -222,9 +222,9 @@
     top: 0;
     left: 0;
     box-sizing: content-box;
-    border: 2px solid rgba(80, 80, 80, 0.35);
+    border: 2px solid rgb(80 80 80 / 35%);
     border-radius: 50%;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 35%);
     pointer-events: none;
     z-index: 3;
   }

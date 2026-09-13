@@ -165,7 +165,7 @@
     border-radius: var(--radius-md);
     overflow: hidden;
     background: #fcfbf8;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 15%);
     /* Own the touch gesture so the scoped pinch-zoom (use:pinchZoom) drives the
        preview instead of the browser — the drawing surface stays zoom-locked
        (ADR-0076). */

@@ -68,7 +68,7 @@
     width: 300px;
     height: 300px;
     flex: 0 0 auto;
-    filter: drop-shadow(0 14px 30px rgba(120, 80, 180, 0.25));
+    filter: drop-shadow(0 14px 30px rgb(120 80 180 / 25%));
   }
 
   .copy {

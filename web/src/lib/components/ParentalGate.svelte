@@ -246,7 +246,7 @@
     width: 48px;
     height: 54px;
     flex-shrink: 0;
-    border-radius: 52% 48% 55% 45% / 45% 55% 45% 55%;
+    border-radius: 52% 48% 55% 45% / 45% 55%;
     border: 2px dashed var(--border-warm-strong);
     background: transparent;
     font-size: var(--font-size-xl);

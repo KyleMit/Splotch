@@ -323,7 +323,7 @@
     z-index: 9;
     background: var(--surface);
     border-bottom: var(--border-width) solid var(--border);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 5%);
   }
 
   .header-row {

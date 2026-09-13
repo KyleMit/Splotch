@@ -209,7 +209,7 @@
   }
 
   .tools-heading {
-    margin: 0 0 10px 0;
+    margin: 0 0 10px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--text-soft);

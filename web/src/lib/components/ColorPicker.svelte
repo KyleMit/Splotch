@@ -506,10 +506,10 @@
 
   .hexagon.selected {
     z-index: 1;
-    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md): pre-color-mix
+    /* rgb fallback precedes the color-mix (docs/COMPATIBILITY.md): pre-color-mix
        engines keep a neutral dark ring instead of losing the selection indicator
        entirely (the base .hexagon background is transparent). */
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgb(0 0 0 / 20%);
     background-color: color-mix(in srgb, var(--color), black 20%);
   }
 

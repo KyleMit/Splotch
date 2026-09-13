@@ -623,7 +623,7 @@
   }
 
   .settings-pane-title {
-    margin: 0 0 20px 0;
+    margin: 0 0 20px;
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-semibold);
     color: var(--text-strong);

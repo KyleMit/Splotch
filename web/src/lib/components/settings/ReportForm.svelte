@@ -136,7 +136,7 @@
 
 <style>
   .report-heading {
-    margin: 0 0 6px 0;
+    margin: 0 0 6px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.04em;
@@ -145,7 +145,7 @@
   }
 
   .report-intro {
-    margin: 0 0 12px 0;
+    margin: 0 0 12px;
     font-size: var(--font-size-sm);
     color: var(--text-soft);
     line-height: 1.5;
