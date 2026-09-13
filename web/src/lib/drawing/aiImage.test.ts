@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
+import type { SaveResult } from '$lib/saveNaming';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
-  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string) => {}),
+  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveResult> => ({
+    status: 'downloads',
+  })),
   settings: {
     aiUserApiKey: '',
     aiAccessToken: 'test-token',
@@ -153,6 +156,7 @@ describe('generateAiImage request ownership', () => {
     await runB;
     signal.throwIfAborted();
     expect(aiResult.resultUrl).toBe('blob:test-2');
+    expect(aiResult.autoSave).toBeNull();
   });
 
   it('never auto-saves a stale run after close and restart', async ({ signal }) => {
@@ -358,6 +362,51 @@ describe('generateAiImage response handling', () => {
     expect(aiResult.resultType).toBe('image/webp');
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
+
+  it('reports saving until the AI picture save settles, then the folder it landed in', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    const aiSave = Promise.withResolvers<SaveResult>();
+    mocks.saveImageBlob.mockReturnValueOnce(aiSave.promise);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
+
+    const run = generateAiImage();
+    await vi.waitFor(() => expect(mocks.saveImageBlob).toHaveBeenCalledOnce());
+    expect(aiResult.autoSave).toEqual({ status: 'saving' });
+
+    aiSave.resolve({ status: 'chosenFolder', folderName: 'Drawings' });
+    await run;
+
+    expect(aiResult.autoSave).toEqual({ status: 'chosenFolder', folderName: 'Drawings' });
+  });
+
+  it.each([
+    ['returns failed', () => Promise.resolve<SaveResult>({ status: 'failed' })],
+    ['throws', () => Promise.reject(new Error('download blocked'))],
+  ])(
+    'keeps the picture and reports failed when the AI picture save %s',
+    async (_label, failingSave) => {
+      mocks.settings.autoSaveAiEnabled = true;
+      mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+      mocks.saveImageBlob
+        .mockImplementationOnce(failingSave)
+        .mockResolvedValueOnce({ status: 'photos' });
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const { generateAiImage } = await import('./aiImage');
+      const { aiResult } = await import('$lib/state/aiGeneration.svelte');
+
+      await generateAiImage();
+
+      expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
+      expect(aiResult).toMatchObject({ autoSave: { status: 'failed' }, error: null });
+      expect(aiResult.resultUrl).not.toBeNull();
+    }
+  );
 });
 
 // The upload is a WebP transcode of the drawing (issue #345) — smaller payload

@@ -850,6 +850,12 @@ body {
   animation: polaroid-show 1.9s var(--ease-glide) forwards;
 }
 
+/* A save that failed takes the polaroid back mid-flight; the overlay's cleanup timer still removes it. */
+.polaroid-overlay.polaroid-discarded {
+  opacity: 0;
+  transition: opacity var(--duration-base) ease;
+}
+
 .polaroid-image {
   display: block;
   background: #fcfbf8;
