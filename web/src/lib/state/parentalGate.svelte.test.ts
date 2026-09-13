@@ -8,6 +8,8 @@ import {
   requiresParentalGate,
   pressGateDigit,
   pressGateBackspace,
+  pressGateKey,
+  submitGateAnswer,
   dismissGate,
   endsParentCenterProtection,
   isParentCenterUnprotected,
@@ -28,6 +30,7 @@ const originalCapacitor = globalThis.Capacitor;
 
 function typeAnswer(value: string) {
   for (const digit of value) pressGateDigit(Number(digit));
+  submitGateAnswer();
 }
 
 function correctAnswer() {
@@ -48,6 +51,12 @@ describe('parental gate', () => {
     localStorage.clear();
     globalThis.Capacitor = undefined;
     dismissGate();
+    Object.assign(gate, {
+      wrongStreak: 0,
+      lockouts: 0,
+      lockoutUntil: null,
+      escalationQuietSince: null,
+    });
     settingsModal.hide();
     ui.requestedSettingsSection = null;
     for (const feature of PARENTAL_GATE_FEATURES) {
@@ -58,6 +67,7 @@ describe('parental gate', () => {
 
   afterEach(() => {
     globalThis.Capacitor = originalCapacitor;
+    vi.clearAllTimers();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -123,6 +133,43 @@ describe('parental gate', () => {
     expect(gate.shaking).toBe(false);
     vi.advanceTimersByTime(GATE_ERROR_VISIBLE_MS - GATE_SHAKE_MS);
     expect(gate.error).toBeNull();
+  });
+
+  it('waits for the check key instead of submitting a complete answer', () => {
+    const destination = vi.fn();
+    requireParentalGate('aiImage', destination);
+    for (const digit of correctAnswer()) pressGateDigit(Number(digit));
+    expect(gate.unlocked).toBe(false);
+    expect(gate.input).toBe(correctAnswer());
+
+    pressGateKey('submit');
+    expect(gate.unlocked).toBe(true);
+  });
+
+  it('counts a digit past the answer, or a check before it is complete, as wrong', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(MAX_OPERAND_RANDOM);
+    requireParentalGate('aiImage', vi.fn());
+    typeAnswer('');
+    expect(gate.error).toBe(GATE_ERROR_MESSAGE);
+    expect(gate.wrongStreak).toBe(1);
+
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    for (const digit of correctAnswer()) pressGateDigit(Number(digit));
+    pressGateDigit(1);
+    expect(gate.input).toBe('');
+    expect(gate.wrongStreak).toBe(2);
+    expect(gate.unlocked).toBe(false);
+  });
+
+  it('ignores keypad input while the wrong-answer shake plays', () => {
+    requireParentalGate('aiImage', vi.fn());
+    typeAnswer(wrongAnswer());
+    pressGateDigit(1);
+    expect(gate.input).toBe('');
+
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    pressGateDigit(1);
+    expect(gate.input).toBe('1');
   });
 
   it('backspace deletes the last typed digit', () => {
@@ -197,10 +244,6 @@ describe('parental gate', () => {
   });
 
   it('retargets the open challenge at Parent Center, keeping the problem on screen', () => {
-    // Pin the operands to 9×9: with a random problem, 3×3's one-digit answer
-    // turns the partial "4" below into a completed wrong answer, which
-    // regenerates the very problem this test asserts is kept.
-    vi.spyOn(Math, 'random').mockReturnValue(MAX_OPERAND_RANDOM);
     const destination = vi.fn();
     requireParentalGate('externalLinks', destination, { x: 10, y: 20 }, { immediate: true });
     const problem = [gate.x, gate.y];
