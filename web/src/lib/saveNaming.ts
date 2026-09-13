@@ -25,7 +25,8 @@ export function extensionForImageType(imageType: string) {
   }
 }
 
-export type SaveOutcome = 'photos' | 'chosenFolder' | 'downloads' | 'failed';
+export type SaveResult =
+  { status: 'photos' | 'downloads' | 'failed' } | { status: 'chosenFolder'; folderName: string };
 
 export const DRAWING_BASENAME = 'splotch';
 export const AI_IMAGE_BASENAME = 'splotch-ai';

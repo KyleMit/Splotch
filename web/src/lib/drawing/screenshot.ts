@@ -6,7 +6,7 @@ import {
   extensionForImageType,
   timestamp,
   triggerDownload,
-  type SaveOutcome,
+  type SaveResult,
 } from '$lib/saveNaming';
 import { saveBlobToFolder } from './folderSave';
 import { playScreenshotFeedback, playScreenshotSuppressedFeedback } from './screenshotFeedback';
@@ -76,28 +76,29 @@ export async function saveImageBlob(
   blob: Blob,
   baseName = DRAWING_BASENAME,
   opts?: { allowPrompt?: boolean }
-): Promise<SaveOutcome> {
+): Promise<SaveResult> {
   // __IS_CAPACITOR__ makes the gallery path compile-time dead on web so Rollup
   // drops the media plugin chunk (isNative() alone can't tree-shake across modules).
   if (__IS_CAPACITOR__ && isNative()) {
     if (PERF_MARKS && window.__screenshotSaveSink) {
       await window.__screenshotSaveSink(blob, baseName);
-      return 'photos';
+      return { status: 'photos' };
     }
     try {
       await saveToGallery(blob, baseName);
-      return 'photos';
+      return { status: 'photos' };
     } catch (err) {
       console.error('Save to gallery failed:', err);
-      return 'failed';
+      return { status: 'failed' };
     }
   } else {
     const filename = `${baseName}-${timestamp()}.${extensionForImageType(blob.type)}`;
-    if (await saveBlobToFolder(blob, filename, opts)) return 'chosenFolder';
+    const folderName = await saveBlobToFolder(blob, filename, opts);
+    if (folderName !== null) return { status: 'chosenFolder', folderName };
     const url = URL.createObjectURL(blob);
     triggerDownload(url, filename);
     URL.revokeObjectURL(url);
-    return 'downloads';
+    return { status: 'downloads' };
   }
 }
 
@@ -134,10 +135,10 @@ export function cancelScreenshotPreparation() {
   preparedScreenshot = null;
 }
 
-async function savePreparedScreenshot(prepared: PreparedScreenshot): Promise<SaveOutcome> {
+async function savePreparedScreenshot(prepared: PreparedScreenshot): Promise<SaveResult> {
   const result = await prepared.activate();
   if ('error' in result) throw result.error;
-  if (!result.blob) return 'failed';
+  if (!result.blob) return { status: 'failed' };
   return saveImageBlob(result.blob, undefined, { allowPrompt: true });
 }
 
@@ -165,8 +166,8 @@ export function saveScreenshot(): Promise<void> {
   preparedScreenshot = null;
   activeScreenshotSave = savePreparedScreenshot(prepared)
     .then(
-      (outcome) => {
-        if (outcome === 'failed') return showScreenshotFailed(prepared);
+      (saved) => {
+        if (saved.status === 'failed') return showScreenshotFailed(prepared);
         nextScreenshotAllowedAt = performance.now() + SCREENSHOT_COOLDOWN_MS;
       },
       (error: unknown) => {

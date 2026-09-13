@@ -23,7 +23,7 @@ describe('autoSaveFooter', () => {
       kind: 'saved',
       caption: 'Saved to Drawings',
     });
-    expect(autoSaveFooter({ status: 'chosenFolder', folderName: null })).toEqual({
+    expect(autoSaveFooter({ status: 'chosenFolder', folderName: '' })).toEqual({
       kind: 'saved',
       caption: 'Saved to your folder',
     });

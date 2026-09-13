@@ -1,5 +1,5 @@
 import type { StyleName } from '$lib/ai/styles';
-import type { SaveOutcome } from '$lib/saveNaming';
+import type { SaveResult } from '$lib/saveNaming';
 
 export const AI_FAILURE_RETRY_LIMIT = 2;
 
@@ -11,11 +11,7 @@ export interface AiFailureDetails {
 
 export type AiErrorKind = 'generic' | 'safety' | 'retry';
 
-// A finished save records the folder's name as it was when the picture landed, so renaming or
-// changing the folder in Settings afterwards can't relabel where this picture went.
-export type AiAutoSave =
-  | { status: 'saving' | Exclude<SaveOutcome, 'chosenFolder'> }
-  | { status: 'chosenFolder'; folderName: string | null };
+export type AiAutoSave = { status: 'saving' } | SaveResult;
 
 export interface AiResultState {
   drawing: Blob | null;

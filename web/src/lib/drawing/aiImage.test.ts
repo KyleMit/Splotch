@@ -1,16 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
-import type { SaveOutcome } from '$lib/saveNaming';
+import type { SaveResult } from '$lib/saveNaming';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
-  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveOutcome> => 'downloads'),
+  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveResult> => ({
+    status: 'downloads',
+  })),
   settings: {
     aiUserApiKey: '',
     aiAccessToken: 'test-token',
     autoSaveAiEnabled: false,
-    saveFolderName: null as string | null,
   },
 }));
 
@@ -36,7 +37,6 @@ beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   mocks.settings.autoSaveAiEnabled = false;
-  mocks.settings.saveFolderName = null;
   mocks.settings.aiUserApiKey = '';
   mocks.settings.aiAccessToken = 'test-token';
 
@@ -365,9 +365,8 @@ describe('generateAiImage response handling', () => {
 
   it('reports saving until the AI picture save settles, then the folder it landed in', async () => {
     mocks.settings.autoSaveAiEnabled = true;
-    mocks.settings.saveFolderName = 'Drawings';
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
-    const aiSave = Promise.withResolvers<SaveOutcome>();
+    const aiSave = Promise.withResolvers<SaveResult>();
     mocks.saveImageBlob.mockReturnValueOnce(aiSave.promise);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
 
@@ -378,22 +377,23 @@ describe('generateAiImage response handling', () => {
     await vi.waitFor(() => expect(mocks.saveImageBlob).toHaveBeenCalledOnce());
     expect(aiResult.autoSave).toEqual({ status: 'saving' });
 
-    aiSave.resolve('chosenFolder');
+    aiSave.resolve({ status: 'chosenFolder', folderName: 'Drawings' });
     await run;
-    mocks.settings.saveFolderName = 'Holiday';
 
     expect(aiResult.autoSave).toEqual({ status: 'chosenFolder', folderName: 'Drawings' });
   });
 
   it.each([
-    ['returns failed', () => Promise.resolve<SaveOutcome>('failed')],
+    ['returns failed', () => Promise.resolve<SaveResult>({ status: 'failed' })],
     ['throws', () => Promise.reject(new Error('download blocked'))],
   ])(
     'keeps the picture and reports failed when the AI picture save %s',
     async (_label, failingSave) => {
       mocks.settings.autoSaveAiEnabled = true;
       mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
-      mocks.saveImageBlob.mockImplementationOnce(failingSave).mockResolvedValueOnce('photos');
+      mocks.saveImageBlob
+        .mockImplementationOnce(failingSave)
+        .mockResolvedValueOnce({ status: 'photos' });
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
