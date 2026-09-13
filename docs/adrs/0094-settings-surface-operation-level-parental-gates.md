@@ -180,3 +180,39 @@ Alternatives considered:
   operation's policy, and Parent Center's own row is what says whether opening it needs a check.
 * **Link to Settings and let the parent find the section.** Rejected: nobody tapping that footer
   wants the Settings hub; they want the row that produced the challenge in front of them.
+
+## Amendment (2026-09-12): the challenge resists random tapping
+
+A product audit showed the keypad could be passed by tapping at random: the answer auto-submitted
+once enough digits were typed, a wrong answer only rolled a new problem, and nothing limited how
+many guesses a child got. Random taps at about six a second unlocked the running app in 5 of 7
+tries, 10–56 s each. A random two-digit guess is right about one time in a hundred, so the only
+lever that keeps the problem adult-easy is the number of guesses a child gets:
+
+* **An explicit check key.** The answer is submitted by the keypad's check key (or Enter), which
+  fills the keypad grid's empty twelfth cell, so the card is no taller.
+* **Tapping past the answer is a wrong answer.** A digit typed once every dab is filled, or a check
+  with dabs still empty, counts as a wrong answer. A grown-up stops when the dabs are full; random
+  tapping does not, so most random guesses end as a wrong answer before they become a real attempt.
+* **Input is ignored while the card shakes** after a wrong answer.
+* **Lockout.** `GATE_WRONG_ANSWERS_BEFORE_LOCKOUT` wrong answers in a row pause the keypad for
+  `GATE_LOCKOUT_BASE_MS`, doubling with each further lockout up to `GATE_LOCKOUT_MAX_MS`; a solve
+  resets both. The lockout is global rather than per feature and survives closing and reopening the
+  card, since closing it is one more random tap away. It is held in memory, so a relaunch clears it.
+
+`parentalGate.mash.test.ts` pins the result with seeded simulated tapping over two-minute runs. Run
+against the auto-submitting keypad, the same simulation unlocked it in 1957 of 2000 runs at six taps
+a second and 1706 of 2000 at three; the new gate unlocks in 16 and 17 of 2000 (about 0.8%), and the
+test fails above 1.5%. A grown-up pays one extra tap.
+
+Alternatives considered:
+
+* **Lockout alone, keeping auto-submit.** Rejected: each lockout window still hands out every wrong
+  answer as a real guess at roughly one-in-85 odds, and the nine a child gets in two minutes add up
+  to about one run in ten.
+* **Rejecting answers typed implausibly fast.** Rejected: a slow tapper walks under any threshold,
+  and a quick grown-up answering 3 × 3 would be told a right answer is wrong.
+* **Harder problems (larger operands).** Rejected: the gate should cost a parent a glance, not
+  mental arithmetic.
+* **One wrong answer re-locks after the first lockout.** Rejected for now: it roughly halves the
+  remaining odds, but a parent arriving after a child's tapping would get a single try per wait.

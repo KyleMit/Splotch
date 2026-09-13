@@ -129,6 +129,28 @@ export const GATE_SUCCESS_HOLD_MS = 1200;
 
 export const GATE_ERROR_MESSAGE = 'Not quite — try this one';
 
+// Mash resistance. A random two-digit guess is right about one time in a
+// hundred, so the odds of a child tapping through come from how many guesses
+// they get: after this many wrong answers in a row the keypad pauses, and each
+// further pause before a solve lasts twice as long, up to the cap.
+// parentalGate.mash.test.ts measures the result against simulated mashing.
+export const GATE_WRONG_ANSWERS_BEFORE_LOCKOUT = 3;
+export const GATE_LOCKOUT_BASE_MS = 30_000;
+export const GATE_LOCKOUT_MAX_MS = 240_000;
+
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+
+export const GATE_KEYPAD_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 'delete', 'submit'] as const;
+type GateKeypadKey = (typeof GATE_KEYPAD_KEYS)[number];
+
+export function gateLockoutMessage(lockoutMs: number): string {
+  const seconds = Math.round(lockoutMs / MS_PER_SECOND);
+  if (seconds < SECONDS_PER_MINUTE) return `Too many tries — try again in ${seconds} seconds`;
+  const minutes = Math.round(seconds / SECONDS_PER_MINUTE);
+  return `Too many tries — try again in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+}
+
 export interface ParentalGateState {
   open: boolean;
   origin: Origin | null;
@@ -146,6 +168,12 @@ export interface ParentalGateState {
   immediate: boolean;
   /** In-memory only, so an app relaunch always re-asks for per-session features. */
   sessionSolved: Record<ParentalGateFeature, boolean>;
+  /** Wrong answers since the last solve or lockout. Survives closing the card. */
+  wrongStreak: number;
+  /** Lockouts since the last solve; sets how long the next one lasts. */
+  lockouts: number;
+  /** Duration of the lockout in force, or null while the keypad accepts input. */
+  lockoutMs: number | null;
 }
 
 export const gate: ParentalGateState = $state({
@@ -162,6 +190,9 @@ export const gate: ParentalGateState = $state({
   sessionSolved: Object.fromEntries(
     PARENTAL_GATE_FEATURES.map((feature) => [feature, false])
   ) as Record<ParentalGateFeature, boolean>,
+  wrongStreak: 0,
+  lockouts: 0,
+  lockoutMs: null,
 });
 
 // Per-attempt continuation and timer handles — deliberately untracked: nothing
@@ -212,7 +243,7 @@ export function requireParentalGate(
   clearTimers();
   pendingDestination = destination;
   newChallenge();
-  gate.error = null;
+  gate.error = gate.lockoutMs === null ? null : gateLockoutMessage(gate.lockoutMs);
   gate.shaking = false;
   gate.unlocked = false;
   gate.feature = feature;
@@ -245,11 +276,13 @@ export function redirectGateToParentCenter(destination?: (origin: Origin | null)
   gate.feature = 'parentCenter';
   gate.immediate = false;
   gate.input = '';
-  gate.error = null;
   gate.shaking = false;
+  if (gate.lockoutMs === null) gate.error = null;
 }
 
 function succeed() {
+  gate.wrongStreak = 0;
+  gate.lockouts = 0;
   const feature = gate.feature;
   if (feature && parentalGatePolicies[feature] === 'session') gate.sessionSolved[feature] = true;
 
@@ -271,30 +304,70 @@ function succeed() {
   }, GATE_SUCCESS_HOLD_MS);
 }
 
-function fail() {
-  newChallenge();
-  gate.error = GATE_ERROR_MESSAGE;
-  gate.shaking = true;
+function lockOut() {
+  const lockoutMs = Math.min(GATE_LOCKOUT_BASE_MS * 2 ** gate.lockouts, GATE_LOCKOUT_MAX_MS);
+  gate.wrongStreak = 0;
+  gate.lockouts += 1;
+  gate.lockoutMs = lockoutMs;
   clearTimeout(errorTimer);
-  clearTimeout(shakeTimer);
-  errorTimer = setTimeout(() => (gate.error = null), GATE_ERROR_VISIBLE_MS);
-  shakeTimer = setTimeout(() => (gate.shaking = false), GATE_SHAKE_MS);
+  gate.error = gateLockoutMessage(lockoutMs);
+  // Deliberately outside clearTimers(): closing and reopening the card must
+  // not end a lockout.
+  setTimeout(() => {
+    gate.lockoutMs = null;
+    gate.error = null;
+  }, lockoutMs);
 }
 
-/** Append a digit; auto-submits once the answer's digit count is reached. */
+function fail() {
+  newChallenge();
+  gate.shaking = true;
+  clearTimeout(shakeTimer);
+  shakeTimer = setTimeout(() => (gate.shaking = false), GATE_SHAKE_MS);
+  gate.wrongStreak += 1;
+  if (gate.wrongStreak >= GATE_WRONG_ANSWERS_BEFORE_LOCKOUT) {
+    lockOut();
+    return;
+  }
+  gate.error = GATE_ERROR_MESSAGE;
+  clearTimeout(errorTimer);
+  errorTimer = setTimeout(() => (gate.error = null), GATE_ERROR_VISIBLE_MS);
+}
+
+// Input taken while the card shakes would land on a problem the eye hasn't
+// caught up with, and nothing a grown-up does needs it.
+function acceptsInput() {
+  return gate.open && !gate.unlocked && !gate.shaking && gate.lockoutMs === null;
+}
+
+/**
+ * Append a digit. A digit past the answer's length counts as a wrong answer:
+ * a grown-up stops when the dabs are full, and tapping on past them is how
+ * random tapping looks.
+ */
 export function pressGateDigit(digit: number) {
-  if (!gate.open || gate.unlocked) return;
+  if (!acceptsInput()) return;
+  if (gate.input.length >= String(gate.x * gate.y).length) fail();
+  else gate.input += String(digit);
+}
+
+export function pressGateBackspace() {
+  if (!acceptsInput()) return;
+  gate.input = gate.input.slice(0, -1);
+}
+
+/** Check the typed answer. Checking before every dab is filled is a wrong answer too. */
+export function submitGateAnswer() {
+  if (!acceptsInput()) return;
   const answer = String(gate.x * gate.y);
-  if (gate.input.length >= answer.length) return;
-  gate.input += String(digit);
-  if (gate.input.length < answer.length) return;
   if (gate.input === answer) succeed();
   else fail();
 }
 
-export function pressGateBackspace() {
-  if (!gate.open || gate.unlocked) return;
-  gate.input = gate.input.slice(0, -1);
+export function pressGateKey(key: GateKeypadKey) {
+  if (key === 'delete') pressGateBackspace();
+  else if (key === 'submit') submitGateAnswer();
+  else pressGateDigit(key);
 }
 
 /** Close without recording a solve. Typed digits and the destination are discarded. */

@@ -31,6 +31,12 @@ const DIALOGS = {
     source: read('./ParentalGateManageFooter.svelte'),
     floors: [TABLET_MIN_SIDE_PX],
   },
+  // The gate's keypad, extracted for the same reason; its keys grow at both of
+  // the card's steps.
+  ParentalGateKeypad: {
+    source: read('./ParentalGateKeypad.svelte'),
+    floors: [TABLET_MIN_SIDE_PX, LARGE_TABLET_MIN_SIDE_PX],
+  },
   AiImagePrompt: {
     source: read('./AiImagePrompt.svelte'),
     floors: [TABLET_MIN_SIDE_PX, LARGE_TABLET_MIN_SIDE_PX],

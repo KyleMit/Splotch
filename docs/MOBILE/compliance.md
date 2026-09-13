@@ -293,7 +293,10 @@ Responses API path refused a red-team fixture the images endpoint rendered.
 
 **Impact / decisions.** The multiplication-keypad gate (ADR-0094) is the adult-action mechanism in
 front of every personal-information exchange: AI generation, image/refusal reports, and feedback
-submission. Android store builds arm all five gate policies to `always` by default.
+submission. Android store builds arm all five gate policies to `always` by default. Because the
+mechanism has to be one a child cannot realistically complete, it is built to resist random tapping
+(an explicit check key, wrong answers for tapping past the answer, escalating lockouts) and a seeded
+tapping simulation holds its pass rate down (ADR-0094's 2026-09-12 amendment).
 
 ### Families policy — data practices and identifiers
 
@@ -434,7 +437,8 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 | 2.1(b) business-model answer written down; China mainland storefront deselected                               | Submission c730ff1d-1a03-40cf-831d-2804513a1830, reviewed 2026-09-12                                                                                                |
 
 **Enforced by tests:** `web/src/lib/state/parentalGate.svelte.test.ts`,
-`web/tests/flows-parental-gate.spec.ts`, `web/tests/flows-parent-center-warning.spec.ts`,
+`web/src/lib/state/parentalGate.mash.test.ts`, `web/tests/flows-parental-gate.spec.ts`,
+`web/tests/flows-parental-gate-lockout.spec.ts`, `web/tests/flows-parent-center-warning.spec.ts`,
 `web/tests/ai-report.spec.ts`, `web/src/nativeExcludedRoutes.test.ts`,
 `tools/mobile/tests/static-bundle.test.mjs`, `web/tests/admin.spec.ts`,
 `web/tests/feedback.spec.ts`, `web/tests/beta.spec.ts`.

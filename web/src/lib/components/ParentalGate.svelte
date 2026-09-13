@@ -1,6 +1,7 @@
 <script lang="ts">
   import DialogHeader from './design/DialogHeader.svelte';
   import Icon from './Icon.svelte';
+  import ParentalGateKeypad from './ParentalGateKeypad.svelte';
   import ParentalGateManageFooter from './ParentalGateManageFooter.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -13,6 +14,7 @@
     dismissGate,
     pressGateDigit,
     pressGateBackspace,
+    submitGateAnswer,
     redirectGateToParentCenter,
     GATE_SHAKE_MS,
   } from '$lib/state/parentalGate.svelte';
@@ -54,16 +56,25 @@
   // two hand-made daubs rather than stamped circles.
   const OPERAND_RADII = ['58% 42% 55% 45% / 45% 58% 42% 55%', '45% 55% 48% 52% / 55% 45% 58% 42%'];
 
-  const KEYPAD_DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
-
   // One dab per answer digit, filled left-to-right as the adult types.
   const dabs = $derived(
     Array.from({ length: String(gate.x * gate.y).length }, (_, i) => gate.input[i] ?? '')
   );
 
+  // Enter checks the answer from anywhere on the card except the close and
+  // footer buttons, whose own activation it must not hijack. On a keypad key it
+  // replaces that key's click, which would otherwise type one digit too many.
   function handleKeydown(event: KeyboardEvent) {
     if (event.key >= '0' && event.key <= '9') pressGateDigit(Number(event.key));
     else if (event.key === 'Backspace') pressGateBackspace();
+    else if (event.key === 'Enter' && isAnswerTarget(event.target)) {
+      event.preventDefault();
+      submitGateAnswer();
+    }
+  }
+
+  function isAnswerTarget(target: EventTarget | null) {
+    return !(target instanceof HTMLButtonElement) || !!keypadEl?.contains(target);
   }
 </script>
 
@@ -132,14 +143,7 @@
           {/each}
         </div>
         <p class="gate-error" role="status">{gate.error ?? ''}</p>
-        <div class="gate-keypad" bind:this={keypadEl}>
-          {#each KEYPAD_DIGITS as digit (digit)}
-            <button class="gate-key" onclick={() => pressGateDigit(digit)}>{digit}</button>
-          {/each}
-          <button class="gate-key" aria-label="Delete" onclick={pressGateBackspace}>
-            <Icon name="backspace" class="gate-key-icon" />
-          </button>
-        </div>
+        <ParentalGateKeypad bind:element={keypadEl} />
         {#if !managingPolicies}
           <ParentalGateManageFooter onManage={manageGatePolicies} />
         {/if}
@@ -275,45 +279,6 @@
     text-align: center;
   }
 
-  /* ── Keypad ─────────────────────────────────────────────────────────────── */
-  .gate-keypad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-2);
-  }
-
-  .gate-key {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 46px;
-    border: none;
-    border-radius: var(--radius-md);
-    background: var(--surface-2);
-    font-family: inherit;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-strong);
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .gate-key:hover {
-      background: var(--brand-wash);
-    }
-  }
-
-  .gate-key:active {
-    transform: scale(0.92);
-  }
-
-  :global(.gate-key-icon) {
-    width: 22px;
-    height: 22px;
-  }
-
   /* ── Success state ──────────────────────────────────────────────────────── */
   .gate-success {
     display: flex;
@@ -418,16 +383,6 @@
       height: 16px;
     }
 
-    .gate-keypad {
-      gap: 7px;
-      max-width: 240px;
-      margin: 0 auto;
-    }
-
-    .gate-key {
-      height: 44px;
-    }
-
     .gate-success {
       width: 100%;
       min-height: 240px;
@@ -487,20 +442,6 @@
       font-size: var(--font-size-sm);
     }
 
-    .gate-keypad {
-      gap: var(--space-3);
-    }
-
-    .gate-key {
-      height: 56px;
-      font-size: var(--font-size-xl);
-    }
-
-    :global(.gate-key-icon) {
-      width: 26px;
-      height: 26px;
-    }
-
     .gate-success {
       min-height: 340px;
     }
@@ -538,19 +479,6 @@
     .gate-dab {
       width: 54px;
       height: 60px;
-    }
-
-    .gate-keypad {
-      gap: var(--space-4);
-    }
-
-    .gate-key {
-      height: 60px;
-    }
-
-    :global(.gate-key-icon) {
-      width: 28px;
-      height: 28px;
     }
 
     .gate-success {
