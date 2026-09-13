@@ -37,7 +37,7 @@
     "check:skill-refs": "node tools/check-skill-reference-syntax.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "lint:css": "stylelint \"web/src/**/*.{css,svelte}\"",
+    "lint:css": "stylelint \"**/*.{css,svelte}\"",
     "lint:tokens": "node tools/tokens/lint-token-styles.mjs",
     "lint:dead": "knip --no-progress --include files,exports,types,duplicates",
     "format": "prettier --write . && npm run format:md",

@@ -1,5 +1,10 @@
-// Stylelint over the app's hand-authored styles — every `<style>` block under
-// web/src plus the plain .css files beside them (issue 1859, ADR-0031).
+// Stylelint over every hand-authored stylesheet in the repo — each `<style>`
+// block in a Svelte component and each plain .css file (issue 1859, ADR-0031).
+//
+// Selection is ignore-based, not an allowlist, for the reason ADR-0031 amended
+// itself in 2026-07: an allowlist fails silently. A hand-authored stylesheet
+// outside the listed paths is simply never linted, and nothing says so. The
+// npm script therefore globs the repo and the exclusions live below.
 //
 // The rule set grows one measured rule at a time, the same way ADR-0031's
 // ESLint set was chosen: a rule is enabled only where the codebase already
@@ -20,9 +25,22 @@ export default {
   reportNeedlessDisables: true,
   reportInvalidScopeDisables: true,
 
-  // web/src/tokens.css is generated from web/src/lib/design/tokens.ts
-  // (ADR-0071) — `npm run gen:tokens:check` is what guards it.
-  ignoreFiles: ['web/src/tokens.css'],
+  ignoreFiles: [
+    // Generated from web/src/lib/design/tokens.ts (ADR-0071) —
+    // `npm run gen:tokens:check` is what guards it.
+    'web/src/tokens.css',
+    // Build output and SvelteKit's generated tree (root.svelte lives here).
+    '**/.svelte-kit/**',
+    '**/build/**',
+    '**/.netlify/**',
+    // Worktree-isolated agent checkouts hold a second copy of web/src, which
+    // the path-anchored entries above do not match at its nested location —
+    // the same reason .prettierignore excludes this tree.
+    '.claude/worktrees/**',
+    // Committed scrapbook run outputs (ADR-0059) are promoted output, not
+    // hand-authored source, and .prettierignore excludes them for that reason.
+    'scrapbook/**',
+  ],
   rules: {
     // Constructs the CSS parser keeps and the browser then ignores. A
     // misspelled *property* is dropped and looks wrong on first render; a
@@ -126,6 +144,19 @@ export default {
     'selector-type-case': 'lower',
   },
   overrides: [
+    {
+      // tools/scrapbook/ generates contact sheets and proof-sheet hubs, and
+      // `.prettierignore`'s `scrapbook/` pattern matches it at any depth — so
+      // this tree is deliberately outside the formatter's scope and keeps a
+      // dense hand-packed shape (61 multi-declaration lines in sheet.css).
+      // Only the two notation rules that shape contests step aside; every
+      // correctness rule still applies, so a `colr: red` here still fails.
+      files: ['tools/scrapbook/**'],
+      rules: {
+        'declaration-block-single-line-max-declarations': null,
+        'selector-attribute-quotes': null,
+      },
+    },
     {
       // postcss-html extracts the <style> blocks from a component file. It is
       // scoped to .svelte rather than set at the top level on purpose: pointed
