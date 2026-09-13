@@ -23,9 +23,11 @@ const INSTALL_COMMIT_ATTEMPTS = 2;
 
 // Tabs on different builds share one cache during a deploy, and a scan from
 // one can delete what another is about to vouch for, so every step that reads
-// markers or writes one runs under a cross-tab lock. Web Locks are within the
-// browser floor (docs/COMPATIBILITY.md); an insecure origin lacks them, and
-// there the chain still serializes this tab's own stores.
+// markers or writes one runs under a cross-tab lock. Each locked step reopens
+// its caches by name: a handle opened before another tab's removal stays
+// writable but detached from what the service worker can match. Web Locks are
+// within the browser floor (docs/COMPATIBILITY.md); an insecure origin lacks
+// them, and there the chain still serializes this tab's own stores.
 function createPackCacheLock() {
   let tail: Promise<unknown> = Promise.resolve();
   return <T>(work: () => Promise<T>): Promise<T> => {
@@ -222,16 +224,20 @@ async function adoptBook(cache: Cache, source: Cache, book: ResolvedColoringPack
 // whose bytes the manifest still lists. It yields once per book rather than
 // per file: Safari's idle fallback requeues while a child is drawing, and
 // hundreds of per-file waits could keep books hidden for a whole session.
-async function adoptOtherCaches(cache: Cache, manifest: ResolvedColoringPackManifest) {
+async function adoptOtherCaches(manifest: ResolvedColoringPackManifest) {
   const currentName = coloringPackCacheName(manifest);
   const otherNames = (await caches.keys()).filter(
     (name) => name.startsWith(COLORING_PACK_CACHE_FAMILY_PREFIX) && name !== currentName
   );
   for (const name of otherNames) {
-    const source = await caches.open(name);
     for (const book of packBooks(manifest)) {
       await nextIdle();
-      await withPackCacheLock(() => adoptBook(cache, source, book));
+      const drained = await withPackCacheLock(async () => {
+        if (!(await caches.has(name))) return true;
+        await adoptBook(await caches.open(currentName), await caches.open(name), book);
+        return false;
+      });
+      if (drained) break;
     }
     await withPackCacheLock(() => caches.delete(name)).catch(() => false);
   }
@@ -254,28 +260,35 @@ async function booksWithCurrentMarkers(
 export function createWebColoringPackStore(): ColoringPackStore {
   return {
     async installed(manifest): Promise<InstalledColoringPack[]> {
-      const cache = await caches.open(coloringPackCacheName(manifest));
+      const name = coloringPackCacheName(manifest);
       await withPackCacheLock(async () => {
+        const cache = await caches.open(name);
         const staleBookIds = await removeStaleEntries(cache, manifest);
         await reverifyStaleBooks(cache, manifest, staleBookIds);
       });
-      await adoptOtherCaches(cache, manifest);
-      return withPackCacheLock(() => booksWithCurrentMarkers(cache, manifest));
+      await adoptOtherCaches(manifest);
+      return withPackCacheLock(async () =>
+        booksWithCurrentMarkers(await caches.open(name), manifest)
+      );
     },
 
     // Automatic pack installs share the default boot path, so requesting origin
     // persistence here would prompt Firefox on startup (ADR-0128).
     async install(manifest, book, _allowMetered, signal) {
-      const cache = await caches.open(coloringPackCacheName(manifest));
+      const name = coloringPackCacheName(manifest);
       for (let attempt = 1; ; attempt++) {
+        const downloads = await caches.open(name);
         for (const file of book.files) {
           if (signal.aborted) throw signal.reason;
-          if (await cache.match(file.path)) continue;
+          if (await downloads.match(file.path)) continue;
           await waitForIdle(signal);
-          await cache.put(file.path, await verifiedResponse(file, signal));
+          await downloads.put(file.path, await verifiedResponse(file, signal));
         }
-        if (signal.aborted) throw signal.reason;
-        if (await withPackCacheLock(() => markIfComplete(cache, book))) break;
+        const committed = await withPackCacheLock(async () => {
+          if (signal.aborted) throw signal.reason;
+          return markIfComplete(await caches.open(name), book);
+        });
+        if (committed) break;
         if (attempt >= INSTALL_COMMIT_ATTEMPTS) {
           throw new Error(`Coloring pack changed while installing: ${book.id}`);
         }

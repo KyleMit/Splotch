@@ -19,108 +19,20 @@ vi.mock('$lib/idb', () => ({ requestPersistentStorage: vi.fn() }));
 
 import { requestPersistentStorage } from '$lib/idb';
 import { createWebColoringPackStore } from './webStore';
-
-const ORIGIN = 'https://splotch.test';
-const DIGESTS = {
-  a: 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb',
-  b: '3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d',
-  c: '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6',
-} as const;
-type Content = keyof typeof DIGESTS;
-
-interface CachedEntry {
-  body: Uint8Array;
-  headers: Headers;
-}
-
-function requestPath(request: RequestInfo | URL): string {
-  const url = typeof request === 'string' ? request : 'url' in request ? request.url : request.href;
-  return new URL(url, ORIGIN).pathname;
-}
-
-function responseFor(entry: CachedEntry | undefined): Response | undefined {
-  return entry && new Response(entry.body.slice(), { headers: entry.headers });
-}
-
-type CacheOperation = 'put' | 'delete' | 'keys';
-type Interceptor = (operation: CacheOperation, path?: string) => void | Promise<void>;
-
-// Real Cache Storage keeps one cache per name and the service worker matches
-// across all of them; a single shared mock would hide a deleted namespace.
-// The interceptor runs before each write, and after keys() has taken its
-// snapshot, so a test can fail, hold, or never finish (a closed tab) any step.
-function createFakeCacheStorage() {
-  const stores = new Map<string, Map<string, CachedEntry>>();
-  const hooks: { intercept: Interceptor } = { intercept: () => {} };
-  const cacheFor = (entries: Map<string, CachedEntry>) => ({
-    match: async (request: RequestInfo | URL) => responseFor(entries.get(requestPath(request))),
-    put: async (request: RequestInfo | URL, response: Response) => {
-      const body = new Uint8Array(await response.arrayBuffer());
-      await hooks.intercept('put', requestPath(request));
-      entries.set(requestPath(request), { body, headers: new Headers(response.headers) });
-    },
-    delete: async (request: RequestInfo | URL) => {
-      await hooks.intercept('delete', requestPath(request));
-      return entries.delete(requestPath(request));
-    },
-    keys: async () => {
-      const snapshot = [...entries.keys()];
-      await hooks.intercept('keys');
-      return snapshot.map((path) => new Request(`${ORIGIN}${path}`));
-    },
-  });
-  return {
-    hooks,
-    entries: (name: string) => stores.get(name),
-    storage: {
-      keys: async () => [...stores.keys()],
-      open: async (name: string) => {
-        if (!stores.has(name)) stores.set(name, new Map());
-        return cacheFor(stores.get(name)!);
-      },
-      delete: async (name: string) => stores.delete(name),
-      match: async (request: RequestInfo | URL) => {
-        for (const entries of stores.values()) {
-          const response = responseFor(entries.get(requestPath(request)));
-          if (response) return response;
-        }
-        return undefined;
-      },
-    },
-  };
-}
-
-// Serializes like the browser's Web Locks within one "tab"; a test that
-// abandons a held lock models a closed tab by installing a fresh manager.
-function createFakeLockManager() {
-  let tail: Promise<unknown> = Promise.resolve();
-  return {
-    request: vi.fn((_name: string, work: () => Promise<unknown>) => {
-      const result = tail.then(work);
-      tail = result.catch(() => {});
-      return result;
-    }),
-  };
-}
+import {
+  DIGESTS,
+  book,
+  createFakeCacheStorage,
+  createFakeLockManager,
+  type CacheOperation,
+  type Content,
+} from './webStoreTestHarness';
 
 function openNewTab() {
   vi.stubGlobal('navigator', { locks: createFakeLockManager() });
 }
 
 const never = () => new Promise<void>(() => {});
-
-function book(id: string, pages: [name: string, content: Content][]) {
-  return {
-    id,
-    bytes: pages.length,
-    files: pages.map(([name, content]) => ({
-      path: `/coloring/${id}/${name}.webp`,
-      downloadPath: `/coloring/max-240px/${id}/${name}.webp`,
-      bytes: 1,
-      sha256: DIGESTS[content],
-    })),
-  } satisfies ResolvedColoringPackBookManifest;
-}
 
 const released: ResolvedColoringPackManifest = {
   appVersion: '1.2.3-test',
@@ -568,6 +480,38 @@ describe.each([
       .map((entry) => entry.id);
     expect(publishedWithMissingFiles).toEqual([]);
   });
+});
+
+// A Cache handle opened before another tab deletes its namespace stays
+// writable but detached, so a marker written through it vouches for files the
+// service worker can no longer find.
+it('never reports an install that another tab removed mid-download as served', async () => {
+  const secondDownload = promiseWithResolvers<void>();
+  const secondDownloadStarted = vi.fn();
+  const serveFile = vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation(async (path, init) => {
+    if (path === dinosaur.files[1].downloadPath && secondDownloadStarted.mock.calls.length === 0) {
+      secondDownloadStarted();
+      await secondDownload.promise;
+    }
+    return serveFile(path, init);
+  });
+
+  const installing = createWebColoringPackStore().install(
+    released,
+    dinosaur,
+    false,
+    new AbortController().signal
+  );
+  await vi.waitFor(() => expect(secondDownloadStarted).toHaveBeenCalled());
+  await createWebColoringPackStore().remove({ appVersion: released.appVersion });
+  secondDownload.resolve();
+  await installing;
+
+  for (const file of dinosaur.files) expect(await servedByWorker(file.path)).toBeDefined();
+  expect(installedIds(await createWebColoringPackStore().installed(released))).toEqual([
+    'dinosaur',
+  ]);
 });
 
 it('takes the shared coloring-pack lock for a scan', async () => {
