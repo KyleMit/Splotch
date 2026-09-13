@@ -171,14 +171,16 @@ Collects a generation that `POST /api/generate-image` handed to the background w
 caller that started the job, so possession is the authorization, and it is deleted the moment the
 picture is handed over.
 
-| status | meaning                                                                        |
-| ------ | ------------------------------------------------------------------------------ |
-| `202`  | Not finished yet — poll again. Empty body.                                     |
-| `200`  | The picture, with the same headers the synchronous shape returns               |
-| `422`  | Safety refusal, same body and `X-Report-Token` as the synchronous shape        |
-| `502`  | Upstream/empty failure (retryable)                                             |
-| `404`  | No such job, or it expired — a job lives 20 minutes and is deleted on delivery |
-| `400`  | Malformed job id                                                               |
+| status | meaning                                                                                              |
+| ------ | ---------------------------------------------------------------------------------------------------- |
+| `202`  | Not finished yet — poll again. Empty body.                                                           |
+| `200`  | The picture, with the same headers the synchronous shape returns                                     |
+| `422`  | Safety refusal, same body and `X-Report-Token` as the synchronous shape                              |
+| `502`  | Upstream/empty failure (retryable)                                                                   |
+| `404`  | No such job, or it expired — a job lives 20 minutes and is deleted on delivery                       |
+| `400`  | Malformed job id                                                                                     |
+| `429`  | Throttled — the standard `Retry-After` response                                                      |
+| `503`  | `{ ok:false, code:"GENERATION_UNAVAILABLE", error }` — the job store could not be read; keep polling |
 
 Send the same credential headers as the generation itself. They are not re-authorized (the job id
 already is the capability) — they are what the report token is bound to, and omitting them only
