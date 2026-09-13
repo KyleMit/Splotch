@@ -201,13 +201,15 @@ async function writeIfVerified(
   }
 }
 
+// Checks completeness even when nothing moved: a scan interrupted between a
+// book's last move and its marker leaves every file in the current cache and
+// none in the source, and the source is deleted once this drain finishes.
 async function adoptBook(cache: Cache, source: Cache, book: ResolvedColoringPackBookManifest) {
   if (await cache.match(coloringPackMarkerPath(book.id))) return;
   const moved = new Set<string>();
   for (const file of book.files) {
     if (await moveVerifiedFile(cache, source, file)) moved.add(file.path);
   }
-  if (moved.size === 0) return;
   try {
     await markIfComplete(cache, book, moved);
   } catch (error) {

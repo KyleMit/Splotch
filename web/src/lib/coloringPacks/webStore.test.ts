@@ -465,6 +465,23 @@ describe('adopting a version-scoped cache from the earlier store layout', () => 
     expect(fake.entries(LEGACY_CACHE_NAME)).toBeUndefined();
   });
 
+  it('marks a fully moved book whose marker write was interrupted', async () => {
+    await seedCache(LEGACY_CACHE_NAME, legacyEntries);
+    const deployed = deploy(released.books);
+    const markerPut = holdForever('put', coloringPackMarkerPath('dinosaur'));
+
+    void createWebColoringPackStore().installed(deployed);
+
+    await vi.waitFor(() => expect(markerPut).toHaveBeenCalled());
+    expect(cachedPaths(LEGACY_CACHE_NAME)).not.toContain('/coloring/dinosaur/second.webp');
+    closeTabAndOpenAnother();
+    expect(installedIds(await createWebColoringPackStore().installed(deployed))).toEqual([
+      'dinosaur',
+      'space',
+    ]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('keeps reporting other books when a write fails on every boot', async () => {
     await seedCache(LEGACY_CACHE_NAME, legacyEntries);
     const deployed = deploy(released.books);
