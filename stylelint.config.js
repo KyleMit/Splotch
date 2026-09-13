@@ -53,6 +53,28 @@ export default {
     'selector-type-no-unknown': [true, { ignore: ['custom-elements'] }],
     'string-no-newline': [true, { ignore: ['at-rule-preludes', 'declaration-values'] }],
     'syntax-string-no-invalid': true,
+
+    // CSS that parses, applies, and does nothing — a block with no
+    // declarations, a duplicate the cascade discards, a longhand a later
+    // shorthand overwrites. Each one is either a leftover or an edit that
+    // landed in the wrong place, and neither reads as wrong.
+    'block-no-empty': true,
+    'block-no-redundant-nested-style-rules': true,
+    'comment-no-empty': true,
+    'declaration-block-no-duplicate-custom-properties': true,
+    'declaration-block-no-duplicate-properties': [
+      true,
+      { ignore: ['consecutive-duplicates-with-different-syntaxes'] },
+    ],
+    'declaration-block-no-shorthand-property-overrides': true,
+    'font-family-no-duplicate-names': true,
+    'keyframe-block-no-duplicate-selectors': true,
+    // A keyframe declaration is unreachable by !important, so one there is
+    // always a mistake — unlike the app-wide !important ban, which lives in
+    // `npm run lint:tokens` (ADR-0071).
+    'keyframe-declaration-no-important': true,
+    'no-duplicate-at-import-rules': true,
+    'no-empty-source': true,
   },
   overrides: [
     {
