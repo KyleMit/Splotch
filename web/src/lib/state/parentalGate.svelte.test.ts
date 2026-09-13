@@ -10,7 +10,6 @@ import {
   pressGateBackspace,
   pressGateKey,
   submitGateAnswer,
-  gateLockoutMessage,
   dismissGate,
   endsParentCenterProtection,
   isParentCenterUnprotected,
@@ -25,9 +24,6 @@ import {
   GATE_ERROR_VISIBLE_MS,
   GATE_SHAKE_MS,
   GATE_SUCCESS_HOLD_MS,
-  GATE_WRONG_ANSWERS_BEFORE_LOCKOUT,
-  GATE_LOCKOUT_BASE_MS,
-  GATE_LOCKOUT_MAX_MS,
 } from './parentalGate.svelte';
 
 const originalCapacitor = globalThis.Capacitor;
@@ -35,11 +31,6 @@ const originalCapacitor = globalThis.Capacitor;
 function typeAnswer(value: string) {
   for (const digit of value) pressGateDigit(Number(digit));
   submitGateAnswer();
-}
-
-function answerWrongly() {
-  typeAnswer(wrongAnswer());
-  vi.advanceTimersByTime(GATE_SHAKE_MS);
 }
 
 function correctAnswer() {
@@ -60,9 +51,12 @@ describe('parental gate', () => {
     localStorage.clear();
     globalThis.Capacitor = undefined;
     dismissGate();
-    gate.wrongStreak = 0;
-    gate.lockouts = 0;
-    gate.lockoutMs = null;
+    Object.assign(gate, {
+      wrongStreak: 0,
+      lockouts: 0,
+      lockoutUntil: null,
+      escalationQuietSince: null,
+    });
     settingsModal.hide();
     ui.requestedSettingsSection = null;
     for (const feature of PARENTAL_GATE_FEATURES) {
@@ -176,52 +170,6 @@ describe('parental gate', () => {
     vi.advanceTimersByTime(GATE_SHAKE_MS);
     pressGateDigit(1);
     expect(gate.input).toBe('1');
-  });
-
-  it('pauses the keypad after repeated wrong answers, even across a reopen', () => {
-    const destination = vi.fn();
-    requireParentalGate('aiImage', destination);
-    for (let i = 0; i < GATE_WRONG_ANSWERS_BEFORE_LOCKOUT; i++) answerWrongly();
-    expect(gate.lockoutMs).toBe(GATE_LOCKOUT_BASE_MS);
-    expect(gate.error).toBe(gateLockoutMessage(GATE_LOCKOUT_BASE_MS));
-
-    dismissGate();
-    requireParentalGate('aiImage', destination);
-    expect(gate.error).toBe(gateLockoutMessage(GATE_LOCKOUT_BASE_MS));
-    typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(false);
-
-    vi.advanceTimersByTime(GATE_LOCKOUT_BASE_MS);
-    expect(gate.lockoutMs).toBeNull();
-    expect(gate.error).toBeNull();
-    typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(true);
-  });
-
-  it('lengthens each lockout up to the cap, and a solve resets it', () => {
-    requireParentalGate('aiImage', vi.fn());
-    const expected = [GATE_LOCKOUT_BASE_MS];
-    while (expected.at(-1)! < GATE_LOCKOUT_MAX_MS) {
-      expected.push(Math.min(expected.at(-1)! * 2, GATE_LOCKOUT_MAX_MS));
-    }
-    expected.push(GATE_LOCKOUT_MAX_MS);
-    for (const lockoutMs of expected) {
-      for (let i = 0; i < GATE_WRONG_ANSWERS_BEFORE_LOCKOUT; i++) answerWrongly();
-      expect(gate.lockoutMs).toBe(lockoutMs);
-      vi.advanceTimersByTime(lockoutMs);
-    }
-
-    answerWrongly();
-    typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(true);
-    expect(gate.wrongStreak).toBe(0);
-    expect(gate.lockouts).toBe(0);
-  });
-
-  it('names the lockout in seconds or whole minutes', () => {
-    expect(gateLockoutMessage(30_000)).toBe('Too many tries — try again in 30 seconds');
-    expect(gateLockoutMessage(60_000)).toBe('Too many tries — try again in 1 minute');
-    expect(gateLockoutMessage(240_000)).toBe('Too many tries — try again in 4 minutes');
   });
 
   it('backspace deletes the last typed digit', () => {

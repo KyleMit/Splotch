@@ -9,6 +9,13 @@ import {
 import { getPlatform, type Platform } from '$lib/platform';
 import { openParentCenterSettings } from './ui.svelte';
 import type { Origin } from './modal.svelte';
+import {
+  GATE_ESCALATION_QUIET_MS,
+  GATE_LOCKOUT_ENDED_MESSAGE,
+  GATE_WRONG_ANSWERS_BEFORE_LOCKOUT,
+  gateLockoutDurationMs,
+  gateLockoutMessage,
+} from './parentalGateLockout';
 
 // The Grown-Ups Only gate (App Store Guideline 5.1.4): an adult solves a
 // multiplication problem on a keypad before a gated operation runs. Gates sit
@@ -129,27 +136,14 @@ export const GATE_SUCCESS_HOLD_MS = 1200;
 
 export const GATE_ERROR_MESSAGE = 'Not quite — try this one';
 
-// Mash resistance. A random two-digit guess is right about one time in a
-// hundred, so the odds of a child tapping through come from how many guesses
-// they get: after this many wrong answers in a row the keypad pauses, and each
-// further pause before a solve lasts twice as long, up to the cap.
-// parentalGate.mash.test.ts measures the result against simulated mashing.
-export const GATE_WRONG_ANSWERS_BEFORE_LOCKOUT = 3;
-export const GATE_LOCKOUT_BASE_MS = 30_000;
-export const GATE_LOCKOUT_MAX_MS = 240_000;
-
-const MS_PER_SECOND = 1000;
-const SECONDS_PER_MINUTE = 60;
+// How long after the card opens a lockout already in force is announced: a
+// live region only speaks for a change made once the dialog is open.
+export const GATE_REOPEN_ANNOUNCE_DELAY_MS = 150;
+// The countdown re-renders on each whole second remaining while the card is open.
+const GATE_LOCKOUT_TICK_MS = 1000;
 
 export const GATE_KEYPAD_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 'delete', 'submit'] as const;
 type GateKeypadKey = (typeof GATE_KEYPAD_KEYS)[number];
-
-export function gateLockoutMessage(lockoutMs: number): string {
-  const seconds = Math.round(lockoutMs / MS_PER_SECOND);
-  if (seconds < SECONDS_PER_MINUTE) return `Too many tries — try again in ${seconds} seconds`;
-  const minutes = Math.round(seconds / SECONDS_PER_MINUTE);
-  return `Too many tries — try again in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
-}
 
 export interface ParentalGateState {
   open: boolean;
@@ -168,12 +162,18 @@ export interface ParentalGateState {
   immediate: boolean;
   /** In-memory only, so an app relaunch always re-asks for per-session features. */
   sessionSolved: Record<ParentalGateFeature, boolean>;
-  /** Wrong answers since the last solve or lockout. Survives closing the card. */
+  /** Wrong answers since the last solve, lockout, or quiet period. Survives closing the card. */
   wrongStreak: number;
-  /** Lockouts since the last solve; sets how long the next one lasts. */
+  /** Lockouts since the last solve or quiet period; sets how long the next one lasts. */
   lockouts: number;
-  /** Duration of the lockout in force, or null while the keypad accepts input. */
-  lockoutMs: number | null;
+  /** Wall-clock end of the lockout in force, or null while the keypad accepts input. */
+  lockoutUntil: number | null;
+  /** When the escalation last saw a wrong answer or a lockout end; quiet runs from here. */
+  escalationQuietSince: number | null;
+  /** The visible countdown while a lockout holds; ticks only while the card is open. */
+  lockoutMessage: string | null;
+  /** Screen-reader text: set at the moments worth saying, never on each countdown tick. */
+  announcement: string;
 }
 
 export const gate: ParentalGateState = $state({
@@ -192,7 +192,10 @@ export const gate: ParentalGateState = $state({
   ) as Record<ParentalGateFeature, boolean>,
   wrongStreak: 0,
   lockouts: 0,
-  lockoutMs: null,
+  lockoutUntil: null,
+  escalationQuietSince: null,
+  lockoutMessage: null,
+  announcement: '',
 });
 
 // Per-attempt continuation and timer handles — deliberately untracked: nothing
@@ -201,11 +204,17 @@ let pendingDestination: (() => void) | null = null;
 let errorTimer: ReturnType<typeof setTimeout> | undefined;
 let shakeTimer: ReturnType<typeof setTimeout> | undefined;
 let successTimer: ReturnType<typeof setTimeout> | undefined;
+let lockoutTickTimer: ReturnType<typeof setTimeout> | undefined;
+let announceTimer: ReturnType<typeof setTimeout> | undefined;
 
+// A lockout itself is a deadline, not a timer, so clearing these on close
+// never ends one: it only stops the countdown nobody can see.
 function clearTimers() {
   clearTimeout(errorTimer);
   clearTimeout(shakeTimer);
   clearTimeout(successTimer);
+  clearTimeout(lockoutTickTimer);
+  clearTimeout(announceTimer);
 }
 
 function randomOperand() {
@@ -241,15 +250,24 @@ export function requireParentalGate(
     return;
   }
   clearTimers();
+  const lockedOut = lockoutHolds();
   pendingDestination = destination;
   newChallenge();
-  gate.error = gate.lockoutMs === null ? null : gateLockoutMessage(gate.lockoutMs);
+  gate.error = null;
+  gate.announcement = '';
   gate.shaking = false;
   gate.unlocked = false;
   gate.feature = feature;
   gate.immediate = immediate;
   gate.origin = origin;
   gate.open = true;
+  if (lockedOut) {
+    tickLockout();
+    announceTimer = setTimeout(
+      () => (gate.announcement = gate.lockoutMessage ?? ''),
+      GATE_REOPEN_ANNOUNCE_DELAY_MS
+    );
+  }
 }
 
 /**
@@ -277,7 +295,8 @@ export function redirectGateToParentCenter(destination?: (origin: Origin | null)
   gate.immediate = false;
   gate.input = '';
   gate.shaking = false;
-  if (gate.lockoutMs === null) gate.error = null;
+  gate.error = null;
+  if (lockoutHolds()) tickLockout();
 }
 
 function succeed() {
@@ -304,19 +323,49 @@ function succeed() {
   }, GATE_SUCCESS_HOLD_MS);
 }
 
+function endLockout() {
+  clearTimeout(lockoutTickTimer);
+  gate.escalationQuietSince = gate.lockoutUntil;
+  gate.lockoutUntil = null;
+  gate.lockoutMessage = null;
+  if (gate.open) gate.announcement = GATE_LOCKOUT_ENDED_MESSAGE;
+}
+
+// Checked against the clock rather than trusted to a timer, which stops while
+// a device sleeps and does not run at all while the card is closed.
+function lockoutHolds() {
+  if (gate.lockoutUntil !== null && Date.now() >= gate.lockoutUntil) endLockout();
+  return gate.lockoutUntil !== null;
+}
+
+function tickLockout() {
+  if (!lockoutHolds()) return;
+  const remainingMs = gate.lockoutUntil! - Date.now();
+  gate.lockoutMessage = gateLockoutMessage(remainingMs);
+  clearTimeout(lockoutTickTimer);
+  lockoutTickTimer = setTimeout(
+    tickLockout,
+    remainingMs % GATE_LOCKOUT_TICK_MS || GATE_LOCKOUT_TICK_MS
+  );
+}
+
 function lockOut() {
-  const lockoutMs = Math.min(GATE_LOCKOUT_BASE_MS * 2 ** gate.lockouts, GATE_LOCKOUT_MAX_MS);
+  gate.lockoutUntil = Date.now() + gateLockoutDurationMs(gate.lockouts);
   gate.wrongStreak = 0;
   gate.lockouts += 1;
-  gate.lockoutMs = lockoutMs;
   clearTimeout(errorTimer);
-  gate.error = gateLockoutMessage(lockoutMs);
-  // Deliberately outside clearTimers(): closing and reopening the card must
-  // not end a lockout.
-  setTimeout(() => {
-    gate.lockoutMs = null;
-    gate.error = null;
-  }, lockoutMs);
+  gate.error = null;
+  tickLockout();
+  gate.announcement = gate.lockoutMessage ?? '';
+}
+
+function decayQuietEscalation() {
+  const quietSince = gate.escalationQuietSince;
+  if (quietSince !== null && Date.now() - quietSince >= GATE_ESCALATION_QUIET_MS) {
+    gate.wrongStreak = 0;
+    gate.lockouts = 0;
+  }
+  gate.escalationQuietSince = Date.now();
 }
 
 function fail() {
@@ -324,20 +373,25 @@ function fail() {
   gate.shaking = true;
   clearTimeout(shakeTimer);
   shakeTimer = setTimeout(() => (gate.shaking = false), GATE_SHAKE_MS);
+  decayQuietEscalation();
   gate.wrongStreak += 1;
   if (gate.wrongStreak >= GATE_WRONG_ANSWERS_BEFORE_LOCKOUT) {
     lockOut();
     return;
   }
   gate.error = GATE_ERROR_MESSAGE;
+  gate.announcement = GATE_ERROR_MESSAGE;
   clearTimeout(errorTimer);
-  errorTimer = setTimeout(() => (gate.error = null), GATE_ERROR_VISIBLE_MS);
+  errorTimer = setTimeout(() => {
+    gate.error = null;
+    gate.announcement = '';
+  }, GATE_ERROR_VISIBLE_MS);
 }
 
 // Input taken while the card shakes would land on a problem the eye hasn't
 // caught up with, and nothing a grown-up does needs it.
 function acceptsInput() {
-  return gate.open && !gate.unlocked && !gate.shaking && gate.lockoutMs === null;
+  return gate.open && !gate.unlocked && !gate.shaking && !lockoutHolds();
 }
 
 /**
@@ -376,6 +430,8 @@ export function dismissGate() {
   gate.open = false;
   gate.input = '';
   gate.error = null;
+  gate.lockoutMessage = null;
+  gate.announcement = '';
   gate.shaking = false;
   gate.unlocked = false;
   gate.feature = null;

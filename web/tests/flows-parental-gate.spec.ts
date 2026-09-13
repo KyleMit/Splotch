@@ -253,7 +253,7 @@ test('a wrong answer clears the input, shows the error, and regenerates the prob
     await page.locator('.gate-keypad').getByRole('button', { name, exact: true }).click();
   }
 
-  await expect(gate.getByText('Not quite — try this one')).toBeVisible();
+  await expect(gate.locator('.gate-error')).toHaveText('Not quite — try this one');
   // The typed digits were discarded along with the old problem.
   await expect(gate.locator('.gate-dab.filled')).toHaveCount(0);
   await expect(page.locator(AI_PROMPT)).not.toBeVisible();

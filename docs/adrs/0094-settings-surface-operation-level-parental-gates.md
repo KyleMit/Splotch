@@ -190,20 +190,43 @@ tries, 10–56 s each. A random two-digit guess is right about one time in a hun
 lever that keeps the problem adult-easy is the number of guesses a child gets:
 
 * **An explicit check key.** The answer is submitted by the keypad's check key (or Enter), which
-  fills the keypad grid's empty twelfth cell, so the card is no taller.
+  fills the keypad grid's empty twelfth cell, so the portrait card is no taller. On a landscape
+  phone the check key sat below the fold, and scrolling to it hid the feedback it produced, so the
+  compact landscape card puts the keypad beside the problem instead of under it.
 * **Tapping past the answer is a wrong answer.** A digit typed once every dab is filled, or a check
   with dabs still empty, counts as a wrong answer. A grown-up stops when the dabs are full; random
   tapping does not, so most random guesses end as a wrong answer before they become a real attempt.
 * **Input is ignored while the card shakes** after a wrong answer.
 * **Lockout.** `GATE_WRONG_ANSWERS_BEFORE_LOCKOUT` wrong answers in a row pause the keypad for
-  `GATE_LOCKOUT_BASE_MS`, doubling with each further lockout up to `GATE_LOCKOUT_MAX_MS`; a solve
-  resets both. The lockout is global rather than per feature and survives closing and reopening the
-  card, since closing it is one more random tap away. It is held in memory, so a relaunch clears it.
+  `GATE_LOCKOUT_BASE_MS`, doubling with each further lockout up to `GATE_LOCKOUT_MAX_MS`
+  (`state/parentalGateLockout.ts`). The lockout is global rather than per feature and survives
+  closing and reopening the card, since closing it is one more random tap away. It is a wall-clock
+  deadline held in memory: the card counts the time left down each second, a device that sleeps
+  through the pause wakes to find it over, and a relaunch clears it.
+* **Escalation decays.** A solve resets the streak and the tier, and so does
+  `GATE_ESCALATION_QUIET_MS` with no wrong answer and no lockout in force. Without that, a parent
+  arriving hours after a child's tapping inherited the child's longest pause, in front of the very
+  Parent Center that could relax the policy. The period is longer than the cap, so a child tapping
+  without a break never reaches it.
+* **Screen readers hear the moments, not the countdown.** The visible line is hidden from assistive
+  tech because the countdown rewrites it every second; a separate status region announces a wrong
+  answer, a lockout when it starts or when the card reopens into one, and its end.
 
 `parentalGate.mash.test.ts` pins the result with seeded simulated tapping over two-minute runs. Run
 against the auto-submitting keypad, the same simulation unlocked it in 1957 of 2000 runs at six taps
 a second and 1706 of 2000 at three; the new gate unlocks in 16 and 17 of 2000 (about 0.8%), and the
-test fails above 1.5%. A grown-up pays one extra tap.
+test fails above 1.5%.
+
+That figure bounds one two-minute window, not a lifetime. Once the pauses reach their cap, a child
+who never stops still earns a few guesses every four minutes, so the chance keeps climbing: the same
+model at three taps a second measured 16 of 1000 over 10 minutes, 47 of 1500 over 30, and 59 of 1000
+over an hour of unbroken tapping (about 1.6%, 3% and 6%). Two minutes is the window the test holds
+because it is how long a child plausibly keeps at it; the longer figures are why the cap and the
+decay period should not be loosened without re-running them.
+
+A grown-up pays one extra tap on a clean answer, and more for a slip: a digit typed past the last
+dab or a check before it is complete rolls a new problem and counts toward the lockout, as does a
+touchscreen double-registration on the last digit.
 
 Alternatives considered:
 

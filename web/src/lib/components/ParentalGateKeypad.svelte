@@ -27,7 +27,7 @@
     <button
       class="gate-key"
       aria-label={typeof key === 'number' ? undefined : KEY_LABELS[key]}
-      aria-disabled={gate.lockoutMs !== null}
+      aria-disabled={gate.lockoutUntil !== null}
       onclick={() => pressGateKey(key)}
     >
       {#if typeof key === 'number'}
@@ -88,8 +88,7 @@
   @media (orientation: landscape) and (max-height: 599px) {
     .gate-keypad {
       gap: 7px;
-      max-width: 240px;
-      margin: 0 auto;
+      width: 216px;
     }
 
     .gate-key {

@@ -14,6 +14,14 @@ import {
 // Every run is seeded, so the pass counts are deterministic. ADR-0094's
 // mash-resistance amendment records what the same simulation measured against
 // the auto-submitting keypad this replaced.
+//
+// The ceiling bounds one two-minute window, not a lifetime. Once the pauses
+// reach their cap a child who never stops still earns a few guesses every cap
+// period, so the chance keeps climbing with time: the same seeded model at
+// 3 taps/s measured about 1.6% over 10 minutes, 3% over 30, and 6% over an
+// hour of unbroken tapping. The window is the two minutes a child is likely to
+// keep at it; the longer figures are in the ADR so nobody reads this one as
+// the whole risk.
 const MASH_WINDOW_MS = 120_000;
 const TRIALS = 2000;
 const MASH_PASS_RATE_CEILING = 0.015;
@@ -37,7 +45,8 @@ function resetGate() {
   dismissGate();
   gate.wrongStreak = 0;
   gate.lockouts = 0;
-  gate.lockoutMs = null;
+  gate.lockoutUntil = null;
+  gate.escalationQuietSince = null;
 }
 
 function mashUnlocks(seed: number, tapIntervalMs: number): boolean {
