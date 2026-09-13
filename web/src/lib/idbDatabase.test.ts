@@ -52,6 +52,7 @@ const failures = {
   read: null as DOMException | null,
   write: null as DOMException | null,
   transaction: null as 'error' | 'abort' | null,
+  openingTransaction: null as DOMException | null,
 };
 
 let upgradeNeeded: boolean;
@@ -84,6 +85,7 @@ function stubDatabase() {
       existingStores.push(name);
     },
     transaction: (storeName: string, mode: string) => {
+      if (failures.openingTransaction) throw failures.openingTransaction;
       transactionsOpened.push({ store: storeName, mode });
       const transaction = {
         error: failures.transaction ? new DOMException('transaction failed') : null,
@@ -115,6 +117,7 @@ beforeEach(() => {
   failures.read = null;
   failures.write = null;
   failures.transaction = null;
+  failures.openingTransaction = null;
   upgradeNeeded = true;
   vi.stubGlobal('indexedDB', { open: (_name: string, _version: number) => stubOpenRequest() });
 });
@@ -202,6 +205,29 @@ describe('database operations', () => {
       { store: 'records', mode: 'readwrite' },
     ]);
   });
+
+  // Opening the transaction throws rather than reporting through onerror, so a
+  // non-async method would throw out of something the type says returns a
+  // promise — breaking `db.get(...).catch(…)` and Promise.all for any caller
+  // without an enclosing try. `idb`'s own async methods rejected here.
+  it.each(['get', 'put', 'delete'] as const)(
+    'rejects rather than throwing when %s cannot open its transaction',
+    async (method) => {
+      const database = await open();
+      failures.openingTransaction = new DOMException('no such store', 'NotFoundError');
+      const call = () => {
+        if (method === 'get') return database.get('records', 'first');
+        if (method === 'put') return database.put('records', { message: 'x' }, 'first');
+        return database.delete('records', 'first');
+      };
+
+      let returned: Promise<unknown> | undefined;
+      expect(() => {
+        returned = call();
+      }).not.toThrow();
+      await expect(returned).rejects.toThrow('no such store');
+    }
+  );
 
   it('rejects a failed read with the browser reason', async () => {
     const database = await open();

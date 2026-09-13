@@ -38,9 +38,17 @@ androidVersionCode: 3
 `version` is semver and must match the filename. `date` is a real calendar date in exact
 `YYYY-MM-DD` form. `androidVersionCode` is a monotonic integer filled in by the release script.
 
-The body is free Markdown. Headings become section labels in the plain-text store changelogs; list
-items become `•` bullets. Keep the Android changelog under **500 characters** (the script warns if
-the latest release exceeds it).
+The body is Markdown, in a deliberately narrow subset: headings, unordered lists (`*` or `-`), and
+paragraphs, with `**bold**`, `*italic*`, `` `code` `` and `[links](url)` inline. Headings become
+section labels in the plain-text store changelogs; list items become `•` bullets. Keep the Android
+changelog under **500 characters** (the script warns if the latest release exceeds it).
+
+Anything outside that subset is **refused** rather than rendered — a fenced code block, a
+blockquote, an ordered list, a table, a nested list, an image, raw HTML, or a horizontal rule each
+fail `gen:releases` with the construct named. That is deliberate: these notes are generated once per
+cut and then read by every user in the app's What's New pane, so an unsupported construct stops the
+release rather than shipping as garbled prose. The failure surfaces partway through
+`npm run release <version>`, so keep to the subset above rather than discovering it mid-cut.
 
 Use plain `## New`, `## Improved`, and `## Fixed` headings. The app generator decorates these
 sections with first-party SVG icons in Settings and the full changelog; store and GitHub notes keep

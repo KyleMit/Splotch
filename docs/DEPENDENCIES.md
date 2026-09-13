@@ -335,6 +335,8 @@ Non-`keep` rows first.
 * **Alternatives:** none needed
 * **Verdict:** keep — required for the native static target; healthy
 
+## Direct dependencies — development
+
 ### @capacitor/assets
 
 * **Version:** `^3.0.5` declared · 3.0.5 locked · dev

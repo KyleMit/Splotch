@@ -22,6 +22,7 @@ const UNSUPPORTED_BLOCKS = [
   [/^\s*>/, 'a blockquote'],
   [/^\s*\d+[.)]\s/, 'an ordered list'],
   [/^\s*\|/, 'a table'],
+  [/^\s+[*-]\s/, 'a nested list'],
   [/^\s*!\[/, 'an image'],
   [/^\s*<[a-zA-Z/]/, 'raw HTML'],
   [/^\s*(?:[-*_]\s*){3,}$/, 'a horizontal rule'],
@@ -35,7 +36,10 @@ const INLINE_SPANS = /(`[^`]+`|\[[^\]]+\]\([^)\s]+\))/;
 const CODE_SPAN = /^`([^`]+)`$/;
 const LINK = /^\[([^\]]+)\]\(([^)\s]+)\)$/;
 const STRONG = /\*\*([^*]+)\*\*/g;
-const STAR_EMPHASIS = /\*([^*]+)\*/g;
+// An opening `*` may not be followed by whitespace nor a closing one preceded
+// by it — CommonMark's flanking rule — or a pair of lone asterisks in prose
+// ("5 * 3 * 2") turns the text between them into an <em>.
+const STAR_EMPHASIS = /\*(?!\s)([^*]+?)(?<!\s)\*/g;
 // Underscore emphasis needs a non-word boundary on both sides, or every
 // snake_case identifier in a release note turns into an <em>.
 const UNDERSCORE_EMPHASIS = /(?<![\w*])_([^_]+)_(?![\w*])/g;

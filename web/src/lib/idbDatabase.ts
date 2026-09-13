@@ -31,7 +31,9 @@ export type StoreValue<
 // A transaction commits itself as soon as the event loop turns with none of its
 // own requests outstanding, so `store` stays usable only while awaiting the
 // operations below — awaiting anything else first closes it. `done` settles
-// when the browser commits or aborts.
+// when the browser commits or aborts. Unlike the database methods, opening one
+// throws rather than rejecting when the store or connection is unusable: it
+// hands back a handle, not a promise, so there is nothing to reject.
 export interface IdbTransaction<Schema extends DBSchema, Name extends StoreNames<Schema>> {
   store: {
     get(key: StoreKey<Schema, Name>): Promise<StoreValue<Schema, Name> | undefined>;
@@ -97,15 +99,19 @@ function transactionDone(transaction: IDBTransaction, storeName: string): Promis
 }
 
 function wrapDatabase<Schema extends DBSchema>(database: IDBDatabase): IdbDatabase<Schema> {
+  // Each is async because opening the transaction is the one call here that
+  // reports failure by throwing rather than through onerror — a store that does
+  // not exist, or a connection the browser has force-closed. A plain arrow would
+  // throw that synchronously out of a method the type says returns a promise.
   return {
-    get: (storeName, key) =>
+    get: async (storeName, key) =>
       requestResult(objectStore(database, storeName, 'readonly').get(key), `Reading ${storeName}`),
-    put: (storeName, value, key) =>
+    put: async (storeName, value, key) =>
       requestDone(
         objectStore(database, storeName, 'readwrite').put(value, key),
         `Writing ${storeName}`
       ),
-    delete: (storeName, key) =>
+    delete: async (storeName, key) =>
       requestDone(
         objectStore(database, storeName, 'readwrite').delete(key),
         `Deleting from ${storeName}`

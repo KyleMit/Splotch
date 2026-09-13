@@ -95,8 +95,9 @@ export async function attachToPage(
       socket.removeEventListener('error', onError);
       resolve();
     };
-    // The platform WebSocket reports a failed handshake as a bare Event, so the
-    // rejection has to carry a message of its own to say anything useful.
+    // The platform WebSocket reports a failed handshake as an ErrorEvent whose
+    // message names no cause ("Received network error or non-101 status code."),
+    // so the fallback covers only a dispatch carrying no message at all.
     const onError = (event) => {
       socket.removeEventListener('open', onOpen);
       reject(new Error(event.message ?? 'The inspector WebSocket failed to open'));

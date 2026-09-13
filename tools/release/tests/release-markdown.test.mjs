@@ -47,6 +47,21 @@ describe('renderReleaseMarkdown inline', () => {
     );
   });
 
+  // A delimiter with whitespace just inside it is not emphasis in CommonMark,
+  // so marked renders these literally and so must this.
+  it.each(['Multiply 5 * 3 * 2 today.', 'A lone * asterisk.'])(
+    'leaves a spaced asterisk in prose alone: %j',
+    (markdown) => {
+      expect(renderReleaseMarkdown(markdown)).toBe(`<p>${markdown}</p>\n`);
+    }
+  );
+
+  it('still emphasises a multi-word span', () => {
+    expect(renderReleaseMarkdown('An *emphasised phrase* here.')).toBe(
+      '<p>An <em>emphasised phrase</em> here.</p>\n'
+    );
+  });
+
   it('treats emphasis markers inside a code span as content', () => {
     expect(renderReleaseMarkdown('`a *b* c`')).toBe('<p><code>a *b* c</code></p>\n');
   });
@@ -81,6 +96,8 @@ describe('renderReleaseMarkdown refusals', () => {
     ['> quoted', 'a blockquote'],
     ['1. first', 'an ordered list'],
     ['| a | b |', 'a table'],
+    ['* Top\n  * Nested', 'a nested list'],
+    ['* Top\n    - Deep', 'a nested list'],
     ['![alt](x.png)', 'an image'],
     ['<div>raw</div>', 'raw HTML'],
     ['---', 'a horizontal rule'],
