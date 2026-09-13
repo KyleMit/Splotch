@@ -29,6 +29,7 @@ vi.mock('./nativeStore', () => ({
 
 import { createColoringPackDownloader, removeDownloadedColoringPacks } from './manager';
 import { coloringPackState, resetDownloadedColoringBooks } from '$lib/state/coloringPacks.svelte';
+import { coloringScan } from '$lib/state/coloringScan.svelte';
 
 const manifest = {
   formatVersion: 3,
@@ -234,7 +235,7 @@ describe('scanning what is installed', () => {
 describe('settling the scan for the picker', () => {
   it('settles when the run fails before it could publish the installed books', async () => {
     coloringPackState.initialized = false;
-    coloringPackState.scanSettled = false;
+    coloringScan.settled = false;
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -245,7 +246,7 @@ describe('settling the scan for the picker', () => {
     const downloader = createColoringPackDownloader();
     downloader.start();
 
-    await vi.waitFor(() => expect(coloringPackState.scanSettled).toBe(true));
+    await vi.waitFor(() => expect(coloringScan.settled).toBe(true));
     expect(coloringPackState.initialized).toBe(false);
     expect(mocks.installed).not.toHaveBeenCalled();
     warn.mockRestore();

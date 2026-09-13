@@ -8,6 +8,7 @@ import {
   setInstalledColoringBooks,
 } from './coloringPacks.svelte';
 import { createColoringPickerBooks } from './coloringPicker.svelte';
+import { coloringScan, setColoringPackStorage } from './coloringScan.svelte';
 
 const CATALOG_BOOK_COUNT = booksForPlatform('web').length;
 
@@ -26,8 +27,9 @@ const ids = (books: { id: string }[]) => books.map((book) => book.id);
 
 beforeEach(() => {
   resetDownloadedColoringBooks();
-  coloringPackState.scanSettled = false;
+  coloringScan.settled = false;
   coloringPackState.initialized = false;
+  setColoringPackStorage('present');
 });
 
 afterEach(() => {
@@ -69,6 +71,24 @@ describe('an open after the installed-book scan', () => {
   });
 });
 
+describe('an open that beats the storage check', () => {
+  it('treats the device as a first visit and never reserves places', async () => {
+    setColoringPackStorage('unknown');
+    const pickerBooks = await harness();
+
+    pickerBooks.holdForOpen();
+    expect(pickerBooks.listsBooks).toBe(false);
+    expect(ids(pickerBooks.shown)).toEqual(['farm']);
+    expect(pickerBooks.reservedSlotCount).toBe(0);
+
+    setColoringPackStorage('present');
+    setInstalledColoringBooks(['dinosaur']);
+    await tick();
+    expect(pickerBooks.listsBooks).toBe(false);
+    expect(ids(pickerBooks.shown)).toEqual(['farm']);
+  });
+});
+
 describe('an open that beats the installed-book scan', () => {
   it('lists the books with a place for every catalog book and takes the scan once', async () => {
     const pickerBooks = await harness();
@@ -94,7 +114,7 @@ describe('an open that beats the installed-book scan', () => {
     const pickerBooks = await harness();
 
     pickerBooks.holdForOpen();
-    coloringPackState.scanSettled = true;
+    coloringScan.settled = true;
     await tick();
 
     expect(pickerBooks.listsBooks).toBe(true);

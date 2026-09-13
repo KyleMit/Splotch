@@ -4,14 +4,6 @@ import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } f
 // family prefix so a scan can adopt or remove it.
 export const COLORING_PACK_CACHE_FAMILY_PREFIX = 'coloring-packs-';
 
-// Any pack cache, even an empty or half-filled one, means a visit got as far as
-// downloading. An engine without Cache Storage cannot hold web packs at all.
-export async function webColoringPackStorageExists(): Promise<boolean> {
-  if (typeof caches === 'undefined') return false;
-  const names = await caches.keys().catch((): string[] => []);
-  return names.some((name) => name.startsWith(COLORING_PACK_CACHE_FAMILY_PREFIX));
-}
-
 export const COLORING_PACK_MARKER_PREFIX = '/coloring/.installed/';
 
 export const COLORING_PACK_LOCK_NAME = 'splotch-coloring-packs';

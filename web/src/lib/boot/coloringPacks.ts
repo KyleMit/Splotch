@@ -1,15 +1,29 @@
 import { scheduleIdle } from '$lib/idle';
-import { webColoringPackStorageExists } from '$lib/coloringPacks/cacheKeys';
 import { COLORING_PACK_POLICY_EVENT } from '$lib/coloringPacks/policy';
 import { isNative } from '$lib/platform';
-import { setNoDownloadedColoringBooks } from '$lib/state/coloringPacks.svelte';
+import { setColoringPackStorage, settleColoringScan } from '$lib/state/coloringScan.svelte';
 import { settings } from '$lib/state/settings.svelte';
 
 export interface ColoringPackDownloads {
   // The child has engaged: a few strokes, or the coloring picker opened. Safe
-  // to call repeatedly, and before settings have recovered.
+  // to call repeatedly, and before settings have recovered; a later call
+  // retries a manager chunk that failed to load.
   engage(): void;
   stop(): void;
+}
+
+// Bundle boundary: a copy of COLORING_PACK_CACHE_FAMILY_PREFIX in
+// coloringPacks/cacheKeys.ts. Importing it would put cacheKeys on this
+// startup-path module's modulepreload list, which startup-bundle.spec.ts
+// forbids; coloringPacks.cacheFamilyPrefix.test.ts fails if the two drift apart.
+const PACK_CACHE_FAMILY_PREFIX = 'coloring-packs-';
+
+// Any pack cache, even an empty or half-filled one, means a visit got as far as
+// downloading. An engine without Cache Storage cannot hold web packs at all.
+async function webPackStorageExists(): Promise<boolean> {
+  if (typeof caches === 'undefined') return false;
+  const names = await caches.keys().catch((): string[] => []);
+  return names.some((name) => name.startsWith(PACK_CACHE_FAMILY_PREFIX));
 }
 
 // A web device's first coloring-pack downloads wait for the child to engage,
@@ -23,8 +37,24 @@ function waitsForEngagement(): boolean {
   return !(__IS_CAPACITOR__ && isNative());
 }
 
+async function publishNoDownloadedBooks() {
+  const { setNoDownloadedColoringBooks } = await import('$lib/state/coloringPacks.svelte');
+  setNoDownloadedColoringBooks('web');
+}
+
+type ColoringPackManager = Pick<
+  typeof import('$lib/coloringPacks/manager'),
+  'createColoringPackDownloader'
+>;
+
+const loadColoringPackManager = (): Promise<ColoringPackManager> =>
+  import('$lib/coloringPacks/manager');
+
 export function installColoringPackDownloads(
-  settingsReady: Promise<unknown>
+  settingsReady: Promise<unknown>,
+  // Test seam: a manager chunk that fails to load cannot be staged through the
+  // module mock, which evaluates once per file.
+  loadManager = loadColoringPackManager
 ): ColoringPackDownloads {
   let cancelIdle: (() => void) | undefined;
   let checkingStorage = false;
@@ -32,7 +62,18 @@ export function installColoringPackDownloads(
   let stopDownloader: (() => void) | undefined;
   let engaged = false;
   let heldForEngagement = false;
+  let managerLoadFailed = false;
   let stopped = false;
+
+  // The check starts at once rather than after settings recover: it reads only
+  // local storage, and the picker treats a device whose answer has not landed
+  // as a first visit.
+  const waits = waitsForEngagement();
+  const packStorageExists = waits ? webPackStorageExists() : Promise.resolve(true);
+  if (!waits) setColoringPackStorage('present');
+  void packStorageExists.then((exists) => {
+    if (!stopped) setColoringPackStorage(exists ? 'present' : 'absent');
+  });
 
   const alreadyScheduledOrOff = () =>
     stopped ||
@@ -46,7 +87,7 @@ export function installColoringPackDownloads(
     cancelIdle = scheduleIdle(() => {
       cancelIdle = undefined;
       startingDownloader = true;
-      void import('$lib/coloringPacks/manager').then(
+      void loadManager().then(
         ({ createColoringPackDownloader }) => {
           startingDownloader = false;
           if (stopped || !settings.coloringBookEnabled) return;
@@ -55,29 +96,31 @@ export function installColoringPackDownloads(
           stopDownloader = downloader.stop;
         },
         () => {
+          // The scan this was loading will not run, so no open picker should
+          // keep waiting on it. The next engagement or reconnect tries again.
           startingDownloader = false;
+          managerLoadFailed = true;
+          settleColoringScan();
         }
       );
     });
   };
 
-  // Without pack storage there is nothing to scan, so that answer is published
-  // before the manager loads: a picker opened on a first visit shows the
-  // starter book without waiting on the manifest request.
   const scheduleDownloadManager = () => {
     if (alreadyScheduledOrOff()) return;
-    if (!waitsForEngagement()) {
-      startDownloadManagerAtIdle();
-      return;
-    }
+    managerLoadFailed = false;
     checkingStorage = true;
-    void webColoringPackStorageExists().then((hasPackStorage) => {
+    void packStorageExists.then((hasPackStorage) => {
       checkingStorage = false;
       if (stopped || !settings.coloringBookEnabled) return;
-      if (!hasPackStorage) setNoDownloadedColoringBooks('web');
+      if (!hasPackStorage) publishNoDownloadedBooks().catch(() => {});
       heldForEngagement = !hasPackStorage && !engaged;
       if (!heldForEngagement) startDownloadManagerAtIdle();
     });
+  };
+
+  const retryFailedManagerLoad = () => {
+    if (managerLoadFailed) scheduleDownloadManager();
   };
 
   const handlePolicyChange = () => {
@@ -89,6 +132,7 @@ export function installColoringPackDownloads(
     scheduleDownloadManager();
   };
   window.addEventListener(COLORING_PACK_POLICY_EVENT, handlePolicyChange);
+  window.addEventListener('online', retryFailedManagerLoad);
   void settingsReady.then(scheduleDownloadManager, scheduleDownloadManager);
 
   return {
@@ -96,15 +140,18 @@ export function installColoringPackDownloads(
     // the manager it releases loads at idle rather than in that frame, as the
     // service worker's registration does.
     engage() {
-      if (engaged) return;
       engaged = true;
-      if (!heldForEngagement) return;
-      heldForEngagement = false;
-      scheduleDownloadManager();
+      if (heldForEngagement) {
+        heldForEngagement = false;
+        scheduleDownloadManager();
+        return;
+      }
+      retryFailedManagerLoad();
     },
     stop() {
       stopped = true;
       window.removeEventListener(COLORING_PACK_POLICY_EVENT, handlePolicyChange);
+      window.removeEventListener('online', retryFailedManagerLoad);
       cancelIdle?.();
       stopDownloader?.();
     },

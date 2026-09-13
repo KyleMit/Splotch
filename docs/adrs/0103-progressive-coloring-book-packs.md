@@ -247,13 +247,15 @@ published a returning child's books.
 
 ### Decision
 
-**The web gate.** At boot the web checks Cache Storage for any cache in the pack family. When there
-is none, nothing can be installed, so it publishes the starter book alone, with the platform
-catalog's size as the total, without the manifest. It then loads nothing until the child engages:
-`SETTLED_IN_STROKES` committed strokes, the same signal the service worker and the Install Banner
-wait for, or the coloring picker opening. Selecting a coloring page goes through the picker, so it
-counts. Engagement schedules the manager at idle, the same way the service worker's registration
-avoids the frame of the stroke that released it. From there, downloads run as before.
+**The web gate.** As soon as the drawing route mounts, the web checks Cache Storage for any cache in
+the pack family; the check reads only local storage, so it does not wait for settings to recover.
+When there is none, nothing can be installed, so once settings allow coloring books it publishes the
+starter book alone, with the platform catalog's size as the total, without the manifest. It then
+loads nothing until the child engages: `SETTLED_IN_STROKES` committed strokes, the same signal the
+service worker and the Install Banner wait for, or the coloring picker opening. Selecting a coloring
+page goes through the picker, so it counts. Engagement schedules the manager at idle, the same way
+the service worker's registration avoids the frame of the stroke that released it. From there,
+downloads run as before.
 
 A device that already holds a pack cache, even an empty or half-filled one, engaged on an earlier
 visit. It starts at idle as before, so an interrupted install resumes and a deploy's changed files
@@ -275,13 +277,21 @@ opens, which books it shows and whether it lists books or drills into the only o
 finish downloading while it is open join at the next open. No cover moves, and no Back button
 appears while a finger may be on the view.
 
-The one answer an open still takes is the installed-book scan it beat. `scanSettled` on the
-coloring-pack state is true once this boot's list changes only by downloads or removal: a scan
-published it, the gate found no pack storage, or the run ended before scanning (offline without a
-service worker, a metered link, an error). An open before that shows the book list, with a place for
-every book in the catalog and the grid laid out for the whole catalog. The scan's covers fill those
-places. Farm is first in the catalog, so its cover never moves. An open that ends with fewer books
-than the catalog keeps the empty places until it closes.
+The one answer an open still takes is the installed-book scan it beat, and only on a device known to
+hold pack storage. `state/coloringScan.svelte.ts` carries both facts, apart from the pack state so
+the startup-path boot can publish them: `storage` is unknown until the web check lands (absent or
+present) and present from the start on native, and `settled` is true once this boot's list changes
+only by downloads or removal. A scan publishing the list settles it, and so does a run that ends
+before scanning (offline without a service worker, a metered link, an error) or a manager chunk that
+fails to load, which retries on the next engagement or reconnect.
+
+An open on present storage before the scan settles shows the book list, with a place for every book
+in the catalog and the grid laid out for the whole catalog. The scan's covers fill those places.
+Farm is first in the catalog, so its cover never moves. An open that ends with fewer books than the
+catalog keeps the empty places until it closes. An open that beats the storage check itself is
+treated as a first visit and drills into Farm, with the books held for the next open: guessing a
+returning visit would leave a real first visit on a grid of empty places, and the check is local, so
+the window is short.
 
 Considered and rejected:
 
@@ -306,5 +316,9 @@ Considered and rejected:
   stayed online for a while.
 * **-** A child who opens the picker immediately on a first visit sees Farm's pages, and the books
   that download meanwhile appear only at the next open.
-* **-** The storage check and the state it publishes add about 1.5 KB to the startup JavaScript,
-  measured against the bundle budget.
+* **-** The storage check and the scan state it publishes add about 1.1 KB to the startup
+  JavaScript, measured against the bundle budget. The boot copies the pack cache family prefix
+  instead of importing `coloringPacks/cacheKeys.ts`, which would add a modulepreloaded chunk;
+  `coloringPacks.cacheFamilyPrefix.test.ts` guards the copy and `startup-bundle.spec.ts` keeps
+  `cacheKeys.ts` off the startup path. The "no downloaded books" answer that Settings reads loads
+  the pack state lazily.

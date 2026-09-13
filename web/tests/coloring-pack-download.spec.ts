@@ -462,6 +462,39 @@ async function expectColdStartFillsBookListInPlace(page: Page) {
   }
 }
 
+// Before the boot's Cache Storage check lands, a device could be a first visit
+// or a returning one. The picker treats it as a first visit: guessing
+// "returning" would leave a real first visit on a grid of empty places.
+test('an open that beats the pack storage check drills into the starter book', async ({ page }) => {
+  await page.addInitScript(() => {
+    const keys = CacheStorage.prototype.keys;
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    Object.assign(window, { __releaseCacheKeys: () => release() });
+    CacheStorage.prototype.keys = async function (this: CacheStorage) {
+      await held;
+      return keys.call(this);
+    };
+  });
+  await gotoApp(page);
+  await openDrawer(page);
+  await openColoringDialog(page);
+
+  const dialog = page.locator('#coloring-book-dialog');
+  await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
+  await expect(dialog.locator('.coloring-book-slot')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+
+  await page.evaluate(() =>
+    (window as Window & { __releaseCacheKeys?: () => void }).__releaseCacheKeys?.()
+  );
+  await afterTwoFrames(page);
+  await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+});
+
 test('a visit nobody engages with downloads no coloring packs', async ({ page }) => {
   const coloringRequests = recordColoringRequests(page);
   await gotoApp(page);
