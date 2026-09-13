@@ -319,8 +319,8 @@ ratcheted: raw shadows are dominated by the canvas chrome's legitimate one-off a
 baseline would blunt the signal (the elevation tokens govern modal/settings surfaces via rule 2).
 
 `npm run lint:css` is the other CSS gate — stylelint over every `<style>` block and hand-authored
-`.css` file under `web/src` (ADR-0031). Where the token linter asks whether a value should have been
-a token, stylelint asks whether the CSS does anything at all: a misspelled media feature,
+`.css` file in the repo (ADR-0031). Where the token linter asks whether a value should have been a
+token, stylelint asks whether the CSS does anything at all: a misspelled media feature,
 pseudo-class, property or value is *retained* by the parser, reports unmatched, and silently never
 applies. Its 60 rules were each measured at zero before being enabled, so a fresh violation is
 always something you just wrote. `:global()` is configured as known Svelte syntax, not an exception.

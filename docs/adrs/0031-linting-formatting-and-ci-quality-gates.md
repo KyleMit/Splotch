@@ -72,9 +72,12 @@ choices:
   Svelte components but not the CSS inside their `<style>` blocks, so until now the only CSS checks
   in CI were the four hand-rolled by `npm run lint:tokens` (ADR-0071) — which exists because CSS
   checks were wanted and there was no linter to host them. `npm run lint:css` runs **stylelint**
-  over every `<style>` block and hand-authored `.css` file under `web/src`, with **postcss-html** as
-  the custom syntax. Scope excludes the generated `web/src/tokens.css`, which
-  `npm run gen:tokens:check` already guards.
+  over every `<style>` block and hand-authored `.css` file in the repo, with **postcss-html** as the
+  custom syntax. Selection is ignore-based like the rest of this ADR's file selection, and for the
+  same reason: an allowlist glob scoped to `web/src` left the three hand-authored stylesheets under
+  `tools/` unlinted with nothing to say so — the 2026-07 failure mode, reproduced. The exclusions
+  are the generated `web/src/tokens.css` (guarded by `npm run gen:tokens:check`), build output,
+  nested agent worktrees, and the promoted `scrapbook/` run outputs.
 
   Three implementation facts worth not rediscovering. `customSyntax` is scoped to `**/*.svelte`
   rather than set at the top level: pointed at a plain `.css` file, postcss-html parses the
@@ -106,11 +109,20 @@ choices:
   * **Notation and naming conventions already followed everywhere** (18 rules) — case, quoting,
     zero-length units, colour and keyframe notation, kebab-case custom properties.
 
-  One rule carries an option rather than a plain `true`: `selector-pseudo-class-no-unknown` runs
-  with `ignorePseudoClasses: ['global']`. Its 316 hits were **all** Svelte's `:global()`, which is
+  Rules take `stylelint-config-standard` v40's own option values, several of which carry an `ignore`
+  — `declaration-block-no-duplicate-properties` and `length-zero-no-unit` in particular are at zero
+  *because* of theirs (13 and 10 violations without). Those are inherited rule semantics. Exactly
+  **one** option is this project's own: `selector-pseudo-class-no-unknown` runs with
+  `ignorePseudoClasses: ['global']`. Its 316 hits were **all** Svelte's `:global()`, which is
   scoping syntax rather than an unknown pseudo-class, and teaching the rule the framework's
   vocabulary is what this config already does for genuine idioms. At zero afterwards, it catches
   `:focus-visable` across every component — the single highest-value rule in the set.
+
+  The one scoped relaxation is `tools/scrapbook/`, where
+  `declaration-block-single-line-max-declarations` and `selector-attribute-quotes` are off. That
+  tree is outside Prettier's scope (`.prettierignore`'s `scrapbook/` pattern matches it at any
+  depth) and keeps a deliberately dense hand-packed shape, so the two rules that contest shape step
+  aside there while every correctness rule still applies.
 * **Rejected CSS rule candidates — measured, do not re-litigate without new evidence.**
   `stylelint-config-standard` v40 enables 82 rules; 22 of them fire here, for 703 violations (counts
   as of the 2026-09 evaluation): `rule-empty-line-before` 136 · `media-feature-range-notation` 113 ·
@@ -125,12 +137,14 @@ choices:
   note:
   * The five `*-empty-line-before` rules (300 violations between them) govern blank-line placement,
     which ADR-0057's split hands to the formatter. Rejected as a class, not on count.
-  * `property-no-vendor-prefix` is not debt. At the Safari 16.4 floor (`docs/COMPATIBILITY.md`),
-    `-webkit-backdrop-filter` and `-webkit-user-select` are the only spellings that work —
-    unprefixed `backdrop-filter` landed in Safari 18 and `user-select` in Safari 17. A linter
-    telling a contributor to delete them would break the floor the repo publishes. The four sibling
-    vendor-prefix rules (at-rule, media-feature, selector, value) are all at zero and adopted, so
-    the asymmetry is deliberate rather than an oversight.
+  * `property-no-vendor-prefix` is not debt. Against `caniuse-lite` as installed: unprefixed
+    `backdrop-filter` landed in Safari 18.0, above the Safari 16.4 floor (`docs/COMPATIBILITY.md`),
+    and `user-select` **still requires the `-webkit-` prefix in every shipping Safari**, 26.x and
+    Technology Preview included — WebKit's 2026-08 unprefixed parsing is inert behind a test-only
+    flag. So one prefix is required until the floor moves and the other has no removal date at all.
+    A linter telling a contributor to delete them would break the floor the repo publishes. The four
+    sibling vendor-prefix rules (at-rule, media-feature, selector, value) are all at zero and
+    adopted, so the asymmetry is deliberate rather than an oversight.
   * `keyframes-name-pattern` has no convention to ratify in either direction: the kebab-case pattern
     flags 16 camelCase names and a camelCase pattern flags 16 kebab-case ones. The codebase is
     genuinely split, and picking a side is a rename, not a ratification.
@@ -192,8 +206,9 @@ existing `test` job.
 * \+ The near-universal conventions (zero `any`, `node:` imports, named exports under `web/src`,
   rune-aware `prefer-const`, flake-resistant spec shapes, no `!important`) fail CI on their first
   violation instead of relying on a reviewer noticing.
-* \+ CSS inside Svelte `<style>` blocks is linted for the first time; a misspelled media feature,
-  pseudo-class, or property value fails CI instead of silently never applying.
+* \+ Every hand-authored stylesheet in the repo is linted, CSS inside Svelte `<style>` blocks for
+  the first time; a misspelled media feature, pseudo-class, or property value fails CI instead of
+  silently never applying.
 * − The stylelint rule set is a ratchet against today's codebase, so a genuinely new construct can
   fail the gate (a future `-webkit-` value, a `@container` name that isn't kebab-case). The fix is
   to change the rule with a reason, the way the vendor-prefix asymmetry above is recorded — not to
