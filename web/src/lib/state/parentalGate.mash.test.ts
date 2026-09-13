@@ -37,6 +37,9 @@ const TAP_INTERVALS_MS = [160, 333];
 const GUIDED_TAP_INTERVAL_MS = 333;
 const GUIDED_PASS_RATE_CEILING = 0.12;
 const DIGIT_KEY_COUNT = 10;
+// Thousands of seeded runs are synchronous work that CI's coverage
+// instrumentation slows several-fold past Vitest's default per-test timeout.
+const SIMULATION_TEST_TIMEOUT_MS = 60_000;
 
 // mulberry32: a tiny seedable PRNG, so a failing run can be replayed exactly.
 function seededRandom(seed: number) {
@@ -119,12 +122,17 @@ describe('parental gate under random tapping', () => {
     'rarely unlocks within two minutes at one tap per %i ms',
     (interval) => {
       expect(unlockRate(interval, anyKey)).toBeLessThan(MASH_PASS_RATE_CEILING);
-    }
+    },
+    SIMULATION_TEST_TIMEOUT_MS
   );
 
-  it('holds a child who fills the dabs and taps check to the lockout budget', () => {
-    expect(unlockRate(GUIDED_TAP_INTERVAL_MS, fillDabsThenCheck)).toBeLessThan(
-      GUIDED_PASS_RATE_CEILING
-    );
-  });
+  it(
+    'holds a child who fills the dabs and taps check to the lockout budget',
+    () => {
+      expect(unlockRate(GUIDED_TAP_INTERVAL_MS, fillDabsThenCheck)).toBeLessThan(
+        GUIDED_PASS_RATE_CEILING
+      );
+    },
+    SIMULATION_TEST_TIMEOUT_MS
+  );
 });
