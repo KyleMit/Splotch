@@ -120,7 +120,9 @@ Magic-fill consumers unchanged.
 * **-** A fresh offline install exposes only Farm until it has had an online background session.
 * **-** The deployed origin must retain the exact manifest-addressed stable paths for the lifetime
   of the corresponding app version. Verification deliberately rejects mismatched CDN bytes rather
-  than accepting a visually plausible stale file.
+  than accepting a visually plausible stale file. `npm run check:coloring-pack-retention` (also in
+  the CI tools tier) enforces this against a committed per-release snapshot of each addressed path
+  and digest; see `tools/release/README.md`.
 * **-** Three storage backends and two native lifecycle integrations replace the former static-only
   model. Web, Android, and iOS builds plus bundle guards cover their shared contract.
 * **-** DPR-3 phones generally select the full tier. The bandwidth win is deliberately limited to
