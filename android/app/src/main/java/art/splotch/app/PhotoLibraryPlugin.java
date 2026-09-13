@@ -55,10 +55,10 @@ public class PhotoLibraryPlugin extends Plugin {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             write(call, () -> insertIntoMediaStore(image));
-        } else if (getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.GRANTED) {
-            write(call, () -> writeToDirectory(sharedPicturesDirectory(), image));
-        } else {
+        } else if (getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.PROMPT) {
             requestPermissionForAlias(LEGACY_STORAGE_ALIAS, call, "legacyStoragePermissionResult");
+        } else {
+            write(call, () -> writeToDirectory(legacyDirectory(), image));
         }
     }
 
@@ -66,9 +66,8 @@ public class PhotoLibraryPlugin extends Plugin {
     private void legacyStoragePermissionResult(PluginCall call) {
         ImageSave image = parseOrReject(call);
         if (image == null) return;
-        boolean granted = getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.GRANTED;
         // Permission results arrive on the main thread; the decode and write do not belong there.
-        execute(() -> write(call, () -> writeToDirectory(legacyDirectory(granted), image)));
+        execute(() -> write(call, () -> writeToDirectory(legacyDirectory(), image)));
     }
 
     private static ImageSave parseOrReject(PluginCall call) {
@@ -136,8 +135,13 @@ public class PhotoLibraryPlugin extends Plugin {
         }
     }
 
-    private File legacyDirectory(boolean storageGranted) {
-        return storageGranted ? sharedPicturesDirectory() : appMediaDirectory();
+    // Only a never-asked permission prompts. Capacitor records any denial as PROMPT_WITH_RATIONALE
+    // or DENIED, and those save to the fallback silently, so the dialog cannot return on every tap.
+    // A grant made later in system Settings reads as GRANTED again.
+    private File legacyDirectory() {
+        return getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.GRANTED
+                ? sharedPicturesDirectory()
+                : appMediaDirectory();
     }
 
     private File sharedPicturesDirectory() {

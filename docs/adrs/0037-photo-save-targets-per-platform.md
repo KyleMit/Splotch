@@ -141,8 +141,11 @@ saves through an app-local plugin, `PhotoLibraryPlugin.java`, reached from
   `WRITE_EXTERNAL_STORAGE` (`maxSdkVersion="28"`) and writes the public `Pictures/Splotch`
   directory, then scans the file into MediaStore. If the parent denies the prompt, the save still
   lands in the gallery, written to the app-specific media directory that needs no permission — the
-  pre-amendment location, which the uninstall removes. Failing the save instead would turn one
-  denied prompt, possibly tapped by the child, into a camera button that never works again.
+  pre-amendment location, which the uninstall removes. Only a never-answered permission prompts:
+  after any denial, later saves go straight to that fallback without asking again, until a grant in
+  system Settings turns shared Pictures back on. Failing the save instead would turn one denied
+  prompt, possibly tapped by the child, into a camera button that never works again; re-asking on
+  every tap would put a system dialog in front of the child each time.
 
 The plugin accepts only PNG, JPEG, and WebP, with a plain file name whose extension matches the
 type; `androidGallery.test.ts` reads the Java source to hold that contract to the TS side.
