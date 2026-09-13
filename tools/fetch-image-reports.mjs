@@ -31,6 +31,10 @@ const REPORT_KEY_PATTERN =
   /^(\d+-[0-9a-f-]+)\/(input\.(?:jpg|png|webp)|metadata\.json|output\.(?:jpg|png|webp)|prompt\.txt)$/;
 const REPORT_DIRECTORY_PATTERN = /^(\d+)-[0-9a-f-]+$/;
 const EVAL_INPUT_REPORT_PATTERN = /^report__(\d+)-[0-9a-f-]+-[a-z0-9-]+__production\.png$/;
+// model-eval names each generated image `<input id>__<variant>__<sample>.<ext>` and each report
+// thumbnail `in__<input id>.jpg` or `out__<input id>__<variant>__<sample>.jpg`.
+const EVAL_OUTPUT_REPORT_PATTERN =
+  /^(?:in__|out__)?report__(\d+)-[0-9a-f-]+-[a-z0-9-]+__production(?:__.+)?\.(?:jpg|png|webp)$/;
 const CONTENT_TYPE_BY_EXTENSION = {
   jpg: 'image/jpeg',
   png: 'image/png',
@@ -218,7 +222,7 @@ function pruneSnapshot(snapshotDir, now) {
 }
 
 export function pruneExpiredLocalReports({ root = ROOT, now = Date.now() } = {}) {
-  const result = { reports: 0, snapshots: 0, evalInputs: 0 };
+  const result = { reports: 0, snapshots: 0, evalInputs: 0, evalOutputs: 0 };
   const snapshotsDir = join(root, '.eval-tmp', 'ai-image-reports');
   for (const entry of childEntries(snapshotsDir)) {
     if (!entry.isDirectory()) continue;
@@ -233,7 +237,24 @@ export function pruneExpiredLocalReports({ root = ROOT, now = Date.now() } = {})
     rmSync(join(evalInputsDir, entry.name), { force: true });
     result.evalInputs++;
   }
+  result.evalOutputs = pruneExpiredEvalOutputs(join(root, 'tools', 'model-eval', 'output'), now);
   return result;
+}
+
+function pruneExpiredEvalOutputs(directory, now) {
+  let removed = 0;
+  for (const entry of childEntries(directory)) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      removed += pruneExpiredEvalOutputs(path, now);
+      continue;
+    }
+    const match = entry.isFile() ? EVAL_OUTPUT_REPORT_PATTERN.exec(entry.name) : null;
+    if (!match || !reportTimestampIsExpired(match[1], now)) continue;
+    rmSync(path, { force: true });
+    removed++;
+  }
+  return removed;
 }
 
 function styleSlug(style) {
@@ -375,12 +396,7 @@ Usage:
 
 The command discovers the Netlify site serving ${PRODUCTION_DOMAIN}, reads the
 ${IMAGE_REPORT_STORE_NAME} store, and writes a timestamped snapshot beneath
-.eval-tmp/ai-image-reports/. The default is snapshot-only.
-
-Every run first deletes local copies of reports older than the
-${IMAGE_REPORT_RETENTION_DAYS}-day retention window: report folders in earlier
-snapshots and report__ drawings in tools/model-eval/inputs/. Reports the
-production purge has not yet deleted are listed as expired, never downloaded. Pass
+.eval-tmp/ai-image-reports/. The default is snapshot-only. Pass
 --import-eval-inputs to copy PNG drawings into the gitignored model-eval corpus,
 then select them with:
 
@@ -388,6 +404,13 @@ then select them with:
 
 Model evaluation A/B-tests the reported drawing with its base prompt; it does
 not replay the resolved style prompt retained in the snapshot's prompt.txt.
+
+Every run first deletes local copies of reports older than the
+${IMAGE_REPORT_RETENTION_DAYS}-day retention window: report folders in earlier
+snapshots, report__ drawings in tools/model-eval/inputs/, and the images and
+thumbnails model-eval runs made from them in tools/model-eval/output/. Reports
+the production purge has not yet deleted are listed as expired, never
+downloaded.
 
 Requires an installed, authenticated Netlify CLI. Production is read-only.`);
 }
@@ -414,7 +437,7 @@ export async function runFetchImageReports() {
     ({ evalInputStatus }) => evalInputStatus === 'unsupported'
   ).length;
   console.log(
-    `[fetch:image-reports] pruned past-retention local copies: ${result.pruned.reports} report folder(s), ${result.pruned.snapshots} snapshot(s), ${result.pruned.evalInputs} model-eval input(s)`
+    `[fetch:image-reports] pruned past-retention local copies: ${result.pruned.reports} report folder(s), ${result.pruned.snapshots} snapshot(s), ${result.pruned.evalInputs} model-eval input(s), ${result.pruned.evalOutputs} model-eval output image(s)`
   );
   console.log(`[fetch:image-reports] site: ${result.site.name} (${PRODUCTION_DOMAIN})`);
   if (result.expired.length) {

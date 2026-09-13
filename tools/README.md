@@ -88,14 +88,17 @@ of the other reports. The snapshot manifest preserves source keys, ETags, metada
 The reader validates exactly one metadata version, `READABLE_METADATA_VERSION`. It is a local
 literal on purpose: the store round-trip test writes both report kinds through the real
 `saveImageReport` and fetches them back, so bumping the store's version fails that test until the
-reader learns the new shape.
+reader learns the new shape. `READABLE_REPORT_KINDS` works the same way: each kind has its own
+bundle rules, and a drift test fails when the store's `AI_REPORT_KINDS` gains a kind without them.
 
 Every run starts by deleting local copies older than the `IMAGE_REPORT_RETENTION_DAYS` window that
 `/privacy` promises, judged by the report id's timestamp exactly as the production purge judges it:
-expired report folders in earlier snapshots (and a snapshot left with nothing else in it), plus
-expired `report__*` drawings in `tools/model-eval/inputs/`. A report still in the store past that
-window is listed under the manifest's `expired` and never downloaded, which also shows when the
-production purge has fallen behind.
+expired report folders in earlier snapshots (and a snapshot left with nothing else in it), expired
+`report__*` drawings in `tools/model-eval/inputs/`, and the generated images and report thumbnails
+that model-eval runs under `tools/model-eval/output/` made from those drawings. A run's
+`results.json` and `index.html` keep their text rows, which then point at deleted images. A report
+still in the store past that window is listed under the manifest's `expired` and never downloaded,
+which also shows when the production purge has fallen behind.
 
 The default run is snapshot-only. To deliberately copy PNG drawings into the gitignored
 `tools/model-eval/inputs/` corpus, opt in and then run the comparison:

@@ -518,7 +518,7 @@ describe('retention', () => {
       now: NOW,
     });
 
-    expect(result.pruned).toEqual({ reports: 3, snapshots: 1, evalInputs: 1 });
+    expect(result.pruned).toEqual({ reports: 3, snapshots: 1, evalInputs: 1, evalOutputs: 0 });
     expect(readdirSync(snapshots).sort()).toEqual(['expired-with-notes', 'fresh', 'mixed']);
     expect(readdirSync(join(snapshots, 'mixed')).sort()).toEqual([FIRST_REPORT, 'manifest.json']);
     expect(readManifest(root, 'mixed').reports).toEqual([{ reportId: FIRST_REPORT }]);
@@ -527,6 +527,39 @@ describe('retention', () => {
       'notes.md',
     ]);
     expect(readdirSync(evalInputs).sort()).toEqual(['animals__cat.png', currentInput].sort());
+  });
+
+  it('prunes model-eval images and thumbnails made from past-retention report inputs', () => {
+    const root = fixtureRoot();
+    const run = join(root, 'tools', 'model-eval', 'output', '2026-08-19T10-00-00');
+    const assets = join(run, 'report', 'assets');
+    mkdirSync(assets, { recursive: true });
+    const expiredId = modelEvalInputFilename(EXPIRED_REPORT, 'Magical').replace(/\.png$/, '');
+    const currentId = modelEvalInputFilename(FIRST_REPORT, null).replace(/\.png$/, '');
+    const expiredFiles = [
+      join(run, `${expiredId}__gpt-image-2-low__1.png`),
+      join(run, `${expiredId}__gemini-3-1-flash-image__2.jpg`),
+      join(assets, `in__${expiredId}.jpg`),
+      join(assets, `out__${expiredId}__gpt-image-2-low__1.jpg`),
+    ];
+    const keptFiles = [
+      join(run, `${currentId}__gpt-image-2-low__1.png`),
+      join(assets, `in__${currentId}.jpg`),
+      join(run, 'animals__cat__gpt-image-2-low__1.png'),
+      join(assets, 'in__animals__cat.jpg'),
+      join(run, 'results.json'),
+      join(run, 'report', 'index.html'),
+    ];
+    for (const file of [...expiredFiles, ...keptFiles]) writeFileSync(file, 'image');
+
+    expect(pruneExpiredLocalReports({ root, now: NOW })).toEqual({
+      reports: 0,
+      snapshots: 0,
+      evalInputs: 0,
+      evalOutputs: expiredFiles.length,
+    });
+    expect(expiredFiles.filter((file) => existsSync(file))).toEqual([]);
+    expect(keptFiles.filter((file) => !existsSync(file))).toEqual([]);
   });
 
   it('keeps a snapshot whose manifest it cannot parse', () => {
@@ -539,6 +572,7 @@ describe('retention', () => {
       reports: 1,
       snapshots: 0,
       evalInputs: 0,
+      evalOutputs: 0,
     });
     expect(readdirSync(snapshot)).toEqual(['manifest.json']);
   });
