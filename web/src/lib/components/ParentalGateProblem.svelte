@@ -112,7 +112,7 @@
   /* Fixed-height line so the message appearing doesn't shift the keypad. */
   .gate-error {
     height: 18px;
-    margin: 0;
+    margin: var(--space-2) 0 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -151,8 +151,11 @@
       font-size: var(--font-size-xl);
     }
 
+    /* The keypad column sets the card's height here, so the problem column
+       has room to give the message more air without growing the card. */
     .gate-error {
       height: 16px;
+      margin-top: var(--space-3);
     }
   }
 
