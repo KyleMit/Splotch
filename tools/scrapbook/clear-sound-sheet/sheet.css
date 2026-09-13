@@ -14,18 +14,18 @@
 .sound-toggle .sound-icon svg{width:16px; height:16px}
 body.audio-ready .sound-toggle{background:var(--card); border-color:var(--hair-strong); color:var(--ink)}
 body.audio-ready .sound-toggle .sound-icon{color:var(--ok)}
-body.audio-ready .sound-toggle[aria-pressed=true]{color:var(--muted)}
-body.audio-ready .sound-toggle[aria-pressed=true] .sound-icon{color:var(--faint)}
+body.audio-ready .sound-toggle[aria-pressed="true"]{color:var(--muted)}
+body.audio-ready .sound-toggle[aria-pressed="true"] .sound-icon{color:var(--faint)}
 .toolbar .volume input{width:96px}
 .toolbar .gesture select{max-width:12rem}
 
 .field{display:inline-flex; align-items:center; gap:8px; font-size:.8rem; color:var(--muted); font-weight:600}
-.field select,.field input[type=range]{font:inherit; font-size:.82rem}
+.field select,.field input[type="range"]{font:inherit; font-size:.82rem}
 .field select{
   background:var(--card); color:var(--ink); border:1px solid var(--hair-strong);
   border-radius:var(--r-sm); padding:5px 8px; max-width:100%;
 }
-.field input[type=range]{accent-color:var(--accent)}
+.field input[type="range"]{accent-color:var(--accent)}
 
 button.solid,button.ghost{
   display:inline-flex; align-items:center; gap:7px; white-space:nowrap;

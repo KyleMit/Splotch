@@ -92,7 +92,7 @@ choices:
   why, has to be suppressing something real, and has to name an enabled rule — the standard this ADR
   already holds the `{@html}` disables to, and without which a bare disable is the cheapest way to
   defeat any rule in the set.
-* **The adopted CSS rule set — 60 rules, each measured at zero.** Same method as the ESLint
+* **The adopted CSS rule set — 59 rules, each measured at zero.** Same method as the ESLint
   ratification above: a rule is enabled where the codebase already complies, and rejected with its
   count where it does not. The set groups into four kinds:
   * **CSS that is retained but dead** (25 rules) — `media-feature-name-no-unknown`,
@@ -106,23 +106,19 @@ choices:
   * **CSS that applies and does nothing** (11 rules) — empty blocks, duplicate declarations the
     cascade discards, longhands a later shorthand overwrites, `!important` inside a keyframe.
   * **Deprecated and vendor-prefixed syntax** (6 rules), in the four categories at zero.
-  * **Notation and naming conventions already followed everywhere** (18 rules) — case, quoting,
+  * **Notation and naming conventions already followed everywhere** (17 rules) — case, quoting,
     zero-length units, colour and keyframe notation, kebab-case custom properties.
 
   Rules take `stylelint-config-standard` v40's own option values, several of which carry an `ignore`
   — `declaration-block-no-duplicate-properties` and `length-zero-no-unit` in particular are at zero
-  *because* of theirs (13 and 10 violations without). Those are inherited rule semantics. Exactly
-  **one** option is this project's own: `selector-pseudo-class-no-unknown` runs with
-  `ignorePseudoClasses: ['global']`. Its 316 hits were **all** Svelte's `:global()`, which is
-  scoping syntax rather than an unknown pseudo-class, and teaching the rule the framework's
-  vocabulary is what this config already does for genuine idioms. At zero afterwards, it catches
-  `:focus-visable` across every component — the single highest-value rule in the set.
+  *because* of theirs (13 and 12 violations without, measured over the full scope). Those are
+  inherited rule semantics. Exactly **one** option is this project's own:
+  `selector-pseudo-class-no-unknown` runs with `ignorePseudoClasses: ['global']`. Its 316 hits were
+  **all** Svelte's `:global()`, which is scoping syntax rather than an unknown pseudo-class, and
+  teaching the rule the framework's vocabulary is what this config already does for genuine idioms.
+  At zero afterwards, it catches `:focus-visable` across every component — the single highest-value
+  rule in the set.
 
-  The one scoped relaxation is `tools/scrapbook/`, where
-  `declaration-block-single-line-max-declarations` and `selector-attribute-quotes` are off. That
-  tree is outside Prettier's scope (`.prettierignore`'s `scrapbook/` pattern matches it at any
-  depth) and keeps a deliberately dense hand-packed shape, so the two rules that contest shape step
-  aside there while every correctness rule still applies.
 * **Rejected CSS rule candidates — measured, do not re-litigate without new evidence.**
   `stylelint-config-standard` v40 enables 82 rules; 22 of them fire here, for 703 violations (counts
   as of the 2026-09 evaluation): `rule-empty-line-before` 136 · `media-feature-range-notation` 113 ·
@@ -133,8 +129,9 @@ choices:
   `selector-not-notation` 9 · `property-no-vendor-prefix` 8 · `value-keyword-case` 8 ·
   `selector-class-pattern` 7 · `no-duplicate-selectors` 6 ·
   `declaration-block-no-redundant-longhand-properties` 4 · `property-no-deprecated` 2 ·
-  `color-hex-length` 1 · `declaration-property-value-keyword-no-deprecated` 1. Five carry a specific
-  note:
+  `color-hex-length` 1 · `declaration-property-value-keyword-no-deprecated` 1. Broadening the scope
+  to the whole repo added a 23rd: `declaration-block-single-line-max-declarations` 61, every one of
+  them in `tools/scrapbook/clear-sound-sheet/sheet.css`. Six carry a specific note:
   * The five `*-empty-line-before` rules (300 violations between them) govern blank-line placement,
     which ADR-0057's split hands to the formatter. Rejected as a class, not on count.
   * `property-no-vendor-prefix` is not debt. Against `caniuse-lite` as installed: unprefixed
@@ -150,6 +147,12 @@ choices:
     genuinely split, and picking a side is a rename, not a ratification.
   * `no-duplicate-selectors`' 6 hits are all `:root` in `app.css`, which is sectioned by purpose on
     purpose.
+  * `declaration-block-single-line-max-declarations` was briefly adopted, then rejected when the
+    scope widened. Confining it with a `tools/scrapbook/**` override was the wrong instinct: a
+    directory exception is the allowlist failure in a new place, silently exempting every future
+    stylesheet in that tree. The rule is now rejected repo-wide with its count, which is what this
+    ADR's method prescribes and what the surviving 59 all satisfy. Nothing is lost in practice —
+    Prettier already puts one declaration per line everywhere it owns.
   * `color-function-notation` 47, `color-function-alias-notation` 71 and `alpha-value-notation` 47
     are one migration, not three — the modern `rgb(0 0 0 / 60%)` space-separated form. Worth doing
     someday as its own change; not a linting decision.

@@ -81,9 +81,10 @@ jobs:
         run: npm run lint
 
       # CSS lint (stylelint, stylelint.config.js): every <style> block and
-      # hand-authored .css file under web/src. The rule set is grown one
-      # measured rule at a time; ADR-0031 records the adopted set and the
-      # rejected candidates with their violation counts.
+      # hand-authored .css file in the repo, minus the generated and promoted
+      # output named in its ignoreFiles. The rule set is grown one measured
+      # rule at a time; ADR-0031 records the adopted set and the rejected
+      # candidates with their violation counts.
       - name: CSS lint
         run: npm run lint:css
 

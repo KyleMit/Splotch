@@ -128,7 +128,6 @@ export default {
     'container-name-pattern': '^(--)?([a-z][a-z0-9]*)(-[a-z0-9]+)*$',
     'custom-media-pattern': '^([a-z][a-z0-9]*)(-[a-z0-9]+)*$',
     'custom-property-pattern': '^([a-z][a-z0-9]*)(-[a-z0-9]+)*$',
-    'declaration-block-single-line-max-declarations': 1,
     'font-family-name-quotes': 'always-where-recommended',
     'function-name-case': 'lower',
     'function-url-quotes': 'always',
@@ -144,19 +143,6 @@ export default {
     'selector-type-case': 'lower',
   },
   overrides: [
-    {
-      // tools/scrapbook/ generates contact sheets and proof-sheet hubs, and
-      // `.prettierignore`'s `scrapbook/` pattern matches it at any depth — so
-      // this tree is deliberately outside the formatter's scope and keeps a
-      // dense hand-packed shape (61 multi-declaration lines in sheet.css).
-      // Only the two notation rules that shape contests step aside; every
-      // correctness rule still applies, so a `colr: red` here still fails.
-      files: ['tools/scrapbook/**'],
-      rules: {
-        'declaration-block-single-line-max-declarations': null,
-        'selector-attribute-quotes': null,
-      },
-    },
     {
       // postcss-html extracts the <style> blocks from a component file. It is
       // scoped to .svelte rather than set at the top level on purpose: pointed
