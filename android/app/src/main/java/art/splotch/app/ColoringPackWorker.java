@@ -54,6 +54,11 @@ public class ColoringPackWorker extends Worker {
         } catch (StaleJobException error) {
             if (jobFile.exists() && !jobFile.delete()) jobFile.deleteOnExit();
             return Result.failure();
+        } catch (RetiredAssetException error) {
+            // Backoff cannot bring back a file the origin deleted or regenerated in
+            // place. Failing ends the background loop; the next app-driven install
+            // attempts the download once more.
+            return Result.failure();
         } catch (Exception error) {
             return Result.retry();
         }
@@ -99,8 +104,12 @@ public class ColoringPackWorker extends Worker {
         connection.setReadTimeout(30_000);
         connection.setUseCaches(false);
         try {
-            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                throw new IllegalStateException("Coloring download HTTP " + connection.getResponseCode());
+            int status = connection.getResponseCode();
+            if (status == HttpURLConnection.HTTP_NOT_FOUND || status == HttpURLConnection.HTTP_GONE) {
+                throw new RetiredAssetException();
+            }
+            if (status != HttpURLConnection.HTTP_OK) {
+                throw new IllegalStateException("Coloring download HTTP " + status);
             }
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             long bytes = 0;
@@ -116,7 +125,9 @@ public class ColoringPackWorker extends Worker {
                 }
             }
             if (bytes != expectedBytes || !hex(digest.digest()).equals(expectedDigest)) {
-                throw new IllegalStateException("Coloring asset verification failed");
+                long advertisedBytes = connection.getContentLengthLong();
+                if (advertisedBytes < 0 || advertisedBytes == bytes) throw new RetiredAssetException();
+                throw new IllegalStateException("Coloring asset download was truncated");
             }
             if (destination.exists() && !destination.delete()) {
                 throw new IllegalStateException("Could not replace coloring asset");
@@ -169,4 +180,6 @@ public class ColoringPackWorker extends Worker {
     }
 
     private static final class StaleJobException extends Exception {}
+
+    private static final class RetiredAssetException extends Exception {}
 }
