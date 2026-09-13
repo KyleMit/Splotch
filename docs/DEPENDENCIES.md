@@ -12,8 +12,8 @@ outside `package.json` (GitHub Actions, runtime-fetched CLIs, system toolchains 
 section)
 
 **Removed since that refresh** (rows and sections dropped; the counts above are the dated snapshot
-and are not restated): `ws` and `marked`, 2026-09-13 — each replaced by a platform capability or a
-small in-repo module.
+and are not restated): `ws`, `marked` and `idb`, 2026-09-13 — each replaced by a platform capability
+or a small in-repo module.
 
 ## Verdict summary
 
@@ -23,7 +23,6 @@ Non-`keep` rows first.
 | ----------------------------------- | -------- | ---------------------------------- |
 | capacitor-set-version               | dev      | **investigate replacement**        |
 | @capacitor/assets                   | dev      | **monitor** (dormant + vuln chain) |
-| idb                                 | prod     | **monitor** (single maintainer)    |
 | fit-curve                           | dev      | **monitor** (dormant)              |
 | scripts-info                        | dev      | **monitor** (bus factor)           |
 | @aparajita/capacitor-secure-storage | prod     | keep                               |
@@ -335,27 +334,6 @@ Non-`keep` rows first.
   fix is a kit bump, tracked by `dependency-update-audit`
 * **Alternatives:** none needed
 * **Verdict:** keep — required for the native static target; healthy
-
-### idb
-
-* **Version:** `^8.0.3` declared · 8.0.3 locked · prod
-* **Used for:** Promise-wrapped IndexedDB — local drawing/folder persistence and the web
-  secure-storage fallback. Used in `web/src/lib/idb.ts`, `drawing/folderSave.ts`,
-  `lib/secureStorage.ts`.
-* **Source:** npm · [github.com/jakearchibald/idb](https://github.com/jakearchibald/idb) · published
-  by Jake Archibald (jaffathecake)
-* **License:** ISC
-* **Health** (checked 2026-07-17): [7.4k stars](https://github.com/jakearchibald/idb) · latest 8.0.3
-  on 2025-05-07 · last push 2025-05-07 · 57 open issues
-* **Maintenance:** done-not-dead — single maintainer, no release in ~14 months, but a small stable
-  zero-dep IndexedDB wrapper with a mature API; low churn is expected, not a red flag
-* **Concerns:** single-maintainer bus factor; watch for a bug backlog forming or an IndexedDB spec
-  change the wrapper can't keep up with
-* **Alternatives:** raw IndexedDB, or `dexie` (heavier) if it ever goes truly unmaintained
-* **Verdict:** monitor — healthy today, but track release/issue activity given the single maintainer
-  and long quiet stretch
-
-## Direct dependencies — development
 
 ### @capacitor/assets
 

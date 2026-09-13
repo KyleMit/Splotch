@@ -106,3 +106,15 @@ anyone with a dialog.
   a real handle by substituting the Origin Private File System in a headless run.
 * **−** Mobile has no silent option here; a Web Share sheet (`navigator.share({ files })`) for
   mobile web is a deliberate future follow-up, not part of this decision.
+
+## Amendment (2026-09-13): the shared helper no longer wraps a third-party package
+
+The mechanism above is unchanged — the handle still lives in `splotch-fs` / `handles`, still reached
+through `lib/idb.ts`, and the localStorage flag still keeps the no-folder path from loading the
+chunk or opening IndexedDB. Only the layer underneath moved: `lib/idb.ts` now calls
+`lib/idbDatabase.ts`, an in-repo promise wrapper over the IndexedDB API, rather than the `idb`
+package.
+
+That retires the "no new dependency — reuses the already-present `idb`" consequence, which read as a
+reason to prefer this design and no longer describes anything: there is no third-party package on
+this path to reuse or to avoid.

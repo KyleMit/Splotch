@@ -1,9 +1,9 @@
-import type { DBSchema, IDBPDatabase } from 'idb';
+import type { DBSchema, IdbDatabase } from './idbDatabase';
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { idbKvStore, lazyIdbDatabase } from './idb';
 
 const persistence = vi.hoisted(() => ({ browser: true, native: false }));
-const { openDB } = vi.hoisted(() => ({ openDB: vi.fn() }));
+const { openDatabase } = vi.hoisted(() => ({ openDatabase: vi.fn() }));
 
 vi.mock('$app/environment', () => ({
   get browser() {
@@ -11,7 +11,7 @@ vi.mock('$app/environment', () => ({
   },
 }));
 
-vi.mock('idb', () => ({ openDB }));
+vi.mock('./idbDatabase', () => ({ openDatabase }));
 
 vi.mock('$lib/platform', () => ({
   isNative: () => persistence.native,
@@ -25,7 +25,7 @@ interface TestDb extends DBSchema {
 }
 
 beforeEach(() => {
-  openDB.mockReset();
+  openDatabase.mockReset();
   persistence.browser = true;
   persistence.native = false;
   vi.unstubAllGlobals();
@@ -72,16 +72,16 @@ describe('requestPersistentStorage', () => {
 describe('lazyIdbDatabase', () => {
   it('retries after an open failure and memoizes the successful connection', async () => {
     const openingError = new Error('database unavailable');
-    const database = {} as IDBPDatabase<TestDb>;
-    openDB.mockRejectedValueOnce(openingError).mockResolvedValueOnce(database);
+    const database = {} as IdbDatabase<TestDb>;
+    openDatabase.mockRejectedValueOnce(openingError).mockResolvedValueOnce(database);
     const getDb = lazyIdbDatabase<TestDb>('test-db', 'records');
 
-    expectTypeOf(getDb).toEqualTypeOf<() => Promise<IDBPDatabase<TestDb>>>();
+    expectTypeOf(getDb).toEqualTypeOf<() => Promise<IdbDatabase<TestDb>>>();
     await expect(getDb()).rejects.toBe(openingError);
     await expect(getDb()).resolves.toBe(database);
     await expect(getDb()).resolves.toBe(database);
-    expect(openDB).toHaveBeenCalledTimes(2);
-    expect(openDB).toHaveBeenCalledWith('test-db', 1, expect.any(Object));
+    expect(openDatabase).toHaveBeenCalledTimes(2);
+    expect(openDatabase).toHaveBeenCalledWith('test-db', 'records');
   });
 });
 
@@ -90,8 +90,8 @@ describe('idbKvStore', () => {
     const get = vi.fn().mockResolvedValue({ message: 'stored' });
     const put = vi.fn().mockResolvedValue('record');
     const deleteRecord = vi.fn().mockResolvedValue(undefined);
-    const database = { get, put, delete: deleteRecord } as unknown as IDBPDatabase<TestDb>;
-    openDB.mockResolvedValue(database);
+    const database = { get, put, delete: deleteRecord } as unknown as IdbDatabase<TestDb>;
+    openDatabase.mockResolvedValue(database);
     const records = idbKvStore<TestDb>('test-db', 'records');
 
     expectTypeOf(records.get).toEqualTypeOf<
@@ -109,6 +109,6 @@ describe('idbKvStore', () => {
     expect(get).toHaveBeenCalledWith('records', 'first');
     expect(put).toHaveBeenCalledWith('records', { message: 'new' }, 'second');
     expect(deleteRecord).toHaveBeenCalledWith('records', 'third');
-    expect(openDB).toHaveBeenCalledOnce();
+    expect(openDatabase).toHaveBeenCalledOnce();
   });
 });
