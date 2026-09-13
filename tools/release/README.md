@@ -67,6 +67,34 @@ Pass an explicit semver to publish a version other than `package.json`; use `--o
 `--only=ios` for a deliberate single-platform upload. Uploads use GitHub's clobber behavior only
 after every selected artifact passes its embedded-version check.
 
+## Retain released coloring-pack files
+
+A native build bundles `coloring/manifest-<version>.json` and downloads every non-starter book from
+`https://splotch.art` by that manifest's `downloadPath`, rejecting any file whose SHA-256 differs.
+ADR-0103 therefore requires the web deploy to keep serving those exact bytes for as long as the
+release is installed. The manifest is generated at build time and never committed, so each release
+records what it addresses:
+
+```sh
+npm run gen:coloring-pack-snapshot -- --ref v1.7.0
+npm run check:coloring-pack-retention
+```
+
+`gen-coloring-pack-snapshot.mjs` extracts the tag's own generator and `web/static/coloring` into a
+temporary directory with `git archive`, runs that generator for the `mobile` platform, and writes
+`coloring-pack-snapshots/<version>.json` (download path → digest per book). Run it once after each
+release is tagged and commit the output. `check-coloring-pack-retention.mjs` hashes the current
+`web/static` against every snapshot; `tests/coloring-pack-retention.test.mjs` runs the same check in
+the CI tools tier and, where tags are present locally, fails on a pack-shipping tag with no
+snapshot.
+
+A release already broken on the live origin is pinned in `KNOWN_BROKEN_RELEASES` to its exact
+unserved-file count, so both a further deletion and a partial restore fail until the pin is updated.
+A pin is an open defect, not an exemption. Retiring or regenerating an addressed asset needs the old
+bytes to stay reachable at the old path; `check:coloring-assets` separately rejects unreferenced
+files under `web/static/coloring`, so that retention cannot be done by leaving stale files beside
+the current catalog.
+
 ## Libraries and failure behavior
 
 `lib/release-frontmatter.mjs` owns frontmatter, semver ordering, and deep writes;
