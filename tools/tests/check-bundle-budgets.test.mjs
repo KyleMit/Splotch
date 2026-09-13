@@ -183,10 +183,13 @@ it.each([{}, { PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
     const prerenderedIndex = join(root, 'index.html');
     writeSizedFile(join(clientDir, '_app/immutable/entry/app.js'), 1);
     writeSizedFile(join(clientDir, '_app/immutable/chunks/lazy.js'), 1);
+    // SvelteKit emits this preload beside its boot script's dynamic import of the
+    // same module; the import form is omitted because tool-specifier-resolution
+    // reads a quoted dynamic import here as a broken relative specifier.
     writeFileSync(
       prerenderedIndex,
       '<link href="./_app/immutable/entry/app.js" rel="modulepreload">' +
-        '<script>import("./_app/env.js").then(({ env }) => import("./_app/immutable/entry/app.js"))</script>'
+        '<link href="./_app/env.js" rel="modulepreload">'
     );
 
     await expect(
