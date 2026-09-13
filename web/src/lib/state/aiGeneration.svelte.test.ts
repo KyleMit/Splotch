@@ -144,9 +144,9 @@ describe('createAiGenerationMachine', () => {
     const run = machine.startAiGeneration(null);
     machine.finishAiGeneration(run, 'blob:result', 'image/png');
 
-    machine.setAiAutoSave(run, 'failed');
-    machine.setAiAutoSave(staleRun, 'photos');
-    expect(resultState.autoSave).toBe('failed');
+    machine.setAiAutoSave(run, { status: 'failed' });
+    machine.setAiAutoSave(staleRun, { status: 'photos' });
+    expect(resultState.autoSave).toEqual({ status: 'failed' });
 
     machine.startAiGeneration(null);
     expect(resultState.autoSave).toBeNull();

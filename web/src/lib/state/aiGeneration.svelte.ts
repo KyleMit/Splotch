@@ -11,7 +11,11 @@ export interface AiFailureDetails {
 
 export type AiErrorKind = 'generic' | 'safety' | 'retry';
 
-export type AiAutoSaveStatus = 'saving' | SaveOutcome;
+// A finished save records the folder's name as it was when the picture landed, so renaming or
+// changing the folder in Settings afterwards can't relabel where this picture went.
+export type AiAutoSave =
+  | { status: 'saving' | Exclude<SaveOutcome, 'chosenFolder'> }
+  | { status: 'chosenFolder'; folderName: string | null };
 
 export interface AiResultState {
   drawing: Blob | null;
@@ -26,8 +30,8 @@ export interface AiResultState {
   resultUrl: string | null;
   resultType: string | null;
   // Where auto-save put the finished picture, so the result card only claims what happened.
-  // Null when auto-save hasn't started for this run.
-  autoSave: AiAutoSaveStatus | null;
+  // Null when no auto-save ran for this run, whatever the setting says now.
+  autoSave: AiAutoSave | null;
   previewUrl: string | null;
   style: StyleName | null;
   // Proof this AI attempt ran on this server, spent by the report flow. Safety
@@ -147,8 +151,8 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     return true;
   }
 
-  function setAiAutoSave(id: number, status: AiAutoSaveStatus) {
-    if (isAiGenerationActive(id) && resultState.open) resultState.autoSave = status;
+  function setAiAutoSave(id: number, autoSave: AiAutoSave) {
+    if (isAiGenerationActive(id) && resultState.open) resultState.autoSave = autoSave;
   }
 
   function failAiGeneration(

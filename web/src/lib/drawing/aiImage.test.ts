@@ -5,11 +5,12 @@ import type { SaveOutcome } from '$lib/saveNaming';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
-  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveOutcome> => 'download'),
+  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveOutcome> => 'downloads'),
   settings: {
     aiUserApiKey: '',
     aiAccessToken: 'test-token',
     autoSaveAiEnabled: false,
+    saveFolderName: null as string | null,
   },
 }));
 
@@ -35,6 +36,7 @@ beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   mocks.settings.autoSaveAiEnabled = false;
+  mocks.settings.saveFolderName = null;
   mocks.settings.aiUserApiKey = '';
   mocks.settings.aiAccessToken = 'test-token';
 
@@ -361,8 +363,9 @@ describe('generateAiImage response handling', () => {
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
 
-  it('reports saving until the AI picture save settles, then where it landed', async () => {
+  it('reports saving until the AI picture save settles, then the folder it landed in', async () => {
     mocks.settings.autoSaveAiEnabled = true;
+    mocks.settings.saveFolderName = 'Drawings';
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
     const aiSave = Promise.withResolvers<SaveOutcome>();
     mocks.saveImageBlob.mockReturnValueOnce(aiSave.promise);
@@ -373,12 +376,13 @@ describe('generateAiImage response handling', () => {
 
     const run = generateAiImage();
     await vi.waitFor(() => expect(mocks.saveImageBlob).toHaveBeenCalledOnce());
-    expect(aiResult.autoSave).toBe('saving');
+    expect(aiResult.autoSave).toEqual({ status: 'saving' });
 
-    aiSave.resolve('photos');
+    aiSave.resolve('chosenFolder');
     await run;
+    mocks.settings.saveFolderName = 'Holiday';
 
-    expect(aiResult.autoSave).toBe('photos');
+    expect(aiResult.autoSave).toEqual({ status: 'chosenFolder', folderName: 'Drawings' });
   });
 
   it.each([
@@ -399,7 +403,7 @@ describe('generateAiImage response handling', () => {
       await generateAiImage();
 
       expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
-      expect(aiResult).toMatchObject({ autoSave: 'failed', error: null });
+      expect(aiResult).toMatchObject({ autoSave: { status: 'failed' }, error: null });
       expect(aiResult.resultUrl).not.toBeNull();
     }
   );

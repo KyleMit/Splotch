@@ -93,11 +93,11 @@ export async function saveImageBlob(
     }
   } else {
     const filename = `${baseName}-${timestamp()}.${extensionForImageType(blob.type)}`;
-    if (await saveBlobToFolder(blob, filename, opts)) return 'folder';
+    if (await saveBlobToFolder(blob, filename, opts)) return 'chosenFolder';
     const url = URL.createObjectURL(blob);
     triggerDownload(url, filename);
     URL.revokeObjectURL(url);
-    return 'download';
+    return 'downloads';
   }
 }
 

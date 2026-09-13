@@ -34,9 +34,7 @@
   // result would be a way to lose it (ADR-0116).
   const serverError = $derived(!!aiResult.error && aiResult.error.kind !== 'safety');
   const waiting = $derived(loading && aiResult.generating);
-  const footer = $derived(
-    autoSaveFooter(settings.autoSaveAiEnabled, aiResult.autoSave, settings.saveFolderName)
-  );
+  const footer = $derived(autoSaveFooter(aiResult.autoSave));
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
   let reportOrigin = $state<Origin | null>(null);
@@ -200,7 +198,7 @@
         <div class="ai-result-footer">
           {#if footer?.kind === 'saved'}
             <p class="ai-result-saved">✓ {footer.caption}</p>
-          {:else if footer?.kind === 'download'}
+          {:else if footer?.kind === 'downloadButton'}
             <button class="ai-result-download" onclick={handleDownload}>
               <Icon name="download" class="ai-result-download-icon" />
               <span>Download</span>

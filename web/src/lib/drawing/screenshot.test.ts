@@ -333,7 +333,7 @@ describe('saveImageBlob', () => {
 
     await expect(
       saveImageBlob(new Blob(['image'], { type: 'image/webp' }), 'splotch-ai')
-    ).resolves.toBe('folder');
+    ).resolves.toBe('chosenFolder');
 
     expect(mocks.saveBlobToFolder).toHaveBeenCalledWith(
       expect.any(Blob),
@@ -350,7 +350,7 @@ describe('saveImageBlob', () => {
 
     const saved = await saveImageBlob(new Blob(['image'], { type: 'image/png' }));
 
-    expect(saved).toBe('download');
+    expect(saved).toBe('downloads');
     expect(mocks.triggerDownload).toHaveBeenCalledWith(
       'blob:polaroid',
       expect.stringMatching(/^splotch-.+\.png$/)
