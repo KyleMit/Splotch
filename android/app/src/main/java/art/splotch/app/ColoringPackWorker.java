@@ -54,6 +54,10 @@ public class ColoringPackWorker extends Worker {
         } catch (StaleJobException error) {
             if (jobFile.exists() && !jobFile.delete()) jobFile.deleteOnExit();
             return Result.failure();
+        } catch (AssetNotServedException error) {
+            // Backoff cannot bring a retired file back. Failing ends the background
+            // loop; the next app-driven install attempts the download once more.
+            return Result.failure();
         } catch (Exception error) {
             return Result.retry();
         }
@@ -99,8 +103,12 @@ public class ColoringPackWorker extends Worker {
         connection.setReadTimeout(30_000);
         connection.setUseCaches(false);
         try {
-            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                throw new IllegalStateException("Coloring download HTTP " + connection.getResponseCode());
+            int status = connection.getResponseCode();
+            if (status == HttpURLConnection.HTTP_NOT_FOUND || status == HttpURLConnection.HTTP_GONE) {
+                throw new AssetNotServedException();
+            }
+            if (status != HttpURLConnection.HTTP_OK) {
+                throw new IllegalStateException("Coloring download HTTP " + status);
             }
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             long bytes = 0;
@@ -169,4 +177,6 @@ public class ColoringPackWorker extends Worker {
     }
 
     private static final class StaleJobException extends Exception {}
+
+    private static final class AssetNotServedException extends Exception {}
 }
