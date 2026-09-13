@@ -12,6 +12,14 @@
 //   * The checks in `npm run lint:tokens` (ADR-0071). Some are expressible
 //     here, but consolidating them is its own decision.
 export default {
+  // A `stylelint-disable` must say why, must actually be suppressing
+  // something, and must name a rule this config enables — the same standard
+  // ADR-0031 holds the justified `{@html}` disables to. Without these, a
+  // silent bare disable is the cheapest way to defeat any rule below.
+  reportDescriptionlessDisables: true,
+  reportNeedlessDisables: true,
+  reportInvalidScopeDisables: true,
+
   // web/src/tokens.css is generated from web/src/lib/design/tokens.ts
   // (ADR-0071) — `npm run gen:tokens:check` is what guards it.
   ignoreFiles: ['web/src/tokens.css'],

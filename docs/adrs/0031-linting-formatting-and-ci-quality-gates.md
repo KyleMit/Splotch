@@ -84,7 +84,11 @@ choices:
   running `prettier --write` over the whole scope: it rewrites nothing and stylelint stays clean).
   And `stylelint-config-standard` is deliberately **not** a dependency — it was installed once to
   measure, then removed; the rules are enumerated with their values so that a stylelint upgrade
-  cannot enable an unmeasured rule.
+  cannot enable an unmeasured rule. The config also turns on `reportDescriptionlessDisables`,
+  `reportNeedlessDisables` and `reportInvalidScopeDisables`, so a `stylelint-disable` has to say
+  why, has to be suppressing something real, and has to name an enabled rule — the standard this ADR
+  already holds the `{@html}` disables to, and without which a bare disable is the cheapest way to
+  defeat any rule in the set.
 * **The adopted CSS rule set — 60 rules, each measured at zero.** Same method as the ESLint
   ratification above: a rule is enabled where the codebase already complies, and rejected with its
   count where it does not. The set groups into four kinds:
