@@ -41,6 +41,43 @@ describe('isColorToken', () => {
   });
 });
 
+// The colour-function calls in a CSS value that use legacy notation: an rgba()/
+// hsla() alias, or a comma between the function's own top-level arguments.
+// Nested calls are skipped while scanning, so `rgb(var(--x), 0.3)` is caught
+// and a comma inside a var() fallback is not mistaken for the legacy separator.
+function legacyColorCalls(value: string): string[] {
+  const calls: string[] = [];
+  for (const match of value.matchAll(/\b(rgba?|hsla?)\(/g)) {
+    const argsStart = match.index + match[0].length;
+    let depth = 0;
+    let end = argsStart;
+    let topLevelComma = false;
+    for (; end < value.length; end++) {
+      const char = value[end];
+      if (char === '(') depth++;
+      else if (char === ')' && depth-- === 0) break;
+      else if (char === ',' && depth === 0) topLevelComma = true;
+    }
+    if (match[1].endsWith('a') || topLevelComma) calls.push(value.slice(match.index, end + 1));
+  }
+  return calls;
+}
+
+describe('legacyColorCalls', () => {
+  it.each([
+    ['rgba(0, 0, 0, 0.2)', ['rgba(0, 0, 0, 0.2)']],
+    ['rgb(0 0 0 / 20%)', []],
+    ['rgba(0 0 0 / 20%)', ['rgba(0 0 0 / 20%)']],
+    ['0 4px 12px rgb(var(--brand-rgb), 0.3)', ['rgb(var(--brand-rgb), 0.3)']],
+    ['rgb(var(--brand-rgb) / 30%)', []],
+    ['rgb(var(--brand-rgb, var(--fallback, 0 0 0)) / 30%)', []],
+    ['hsl(0, 0%, 0%)', ['hsl(0, 0%, 0%)']],
+    ['0 0 0 1px rgb(255 255 255 / 6%), 0 3px 10px rgba(0, 0, 0, 0.5)', ['rgba(0, 0, 0, 0.5)']],
+  ])('%s', (value, expected) => {
+    expect(legacyColorCalls(value)).toEqual(expected);
+  });
+});
+
 // stylelint's modern colour-notation rules can't see tokens.css (it is
 // generated and ignored), so the token values carry the same guarantee here.
 describe('colour notation', () => {
@@ -52,8 +89,7 @@ describe('colour notation', () => {
   ];
 
   it.each(values)('%s uses the modern rgb() form', (_key, value) => {
-    expect(value).not.toMatch(/\b(rgba|hsla)\(/);
-    expect(value).not.toMatch(/\b(rgb|hsl)\([^)]*,/);
+    expect(legacyColorCalls(value)).toEqual([]);
   });
 
   it('space-separates the brand channel triplet so it composes as rgb(var(--brand-rgb) / NN%)', () => {
