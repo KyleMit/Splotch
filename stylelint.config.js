@@ -89,6 +89,33 @@ export default {
     'media-type-no-deprecated': true,
     'selector-no-vendor-prefix': true,
     'value-no-vendor-prefix': [true, { ignoreValues: ['box', 'inline-box'] }],
+
+    // Conventions the codebase already follows everywhere, ratified so the
+    // next divergence fails CI instead of resting on a reviewer noticing —
+    // the same move ADR-0031 made for the silently-followed ESLint rules.
+    // None of these is contested by Prettier: it normalises whitespace and
+    // line breaks in CSS, not case, quoting, units, or naming. The three
+    // patterns for constructs the app has not adopted yet (@container,
+    // @custom-media, @layer) score zero for want of a subject and settle the
+    // spelling before the first one lands.
+    'comment-whitespace-inside': 'always',
+    'container-name-pattern': '^(--)?([a-z][a-z0-9]*)(-[a-z0-9]+)*$',
+    'custom-media-pattern': '^([a-z][a-z0-9]*)(-[a-z0-9]+)*$',
+    'custom-property-pattern': '^([a-z][a-z0-9]*)(-[a-z0-9]+)*$',
+    'declaration-block-single-line-max-declarations': 1,
+    'font-family-name-quotes': 'always-where-recommended',
+    'function-name-case': 'lower',
+    'function-url-quotes': 'always',
+    'hue-degree-notation': 'angle',
+    'import-notation': 'url',
+    'keyframe-selector-notation': 'percentage-unless-within-keyword-only-block',
+    'layer-name-pattern': '^([a-z][a-z0-9]*)([.-][a-z0-9]+)*$',
+    'length-zero-no-unit': [true, { ignore: ['custom-properties'] }],
+    'lightness-notation': 'percentage',
+    'number-max-precision': 4,
+    'selector-attribute-quotes': 'always',
+    'selector-pseudo-element-colon-notation': 'double',
+    'selector-type-case': 'lower',
   },
   overrides: [
     {
