@@ -301,6 +301,10 @@ export function createHistoryBaseTiles(width: number, height: number): HistoryBa
   return tiles;
 }
 
+export function samePaperSize(first: PaperSize, second: PaperSize) {
+  return first.width === second.width && first.height === second.height;
+}
+
 function coveringPaper(first: PaperSize, second: PaperSize): PaperSize {
   return {
     width: Math.max(first.width, second.width),

@@ -80,6 +80,23 @@ function renderCommand(
   target.restore();
 }
 
+// The base keeps the extent of every paper it has served, so an edge tile can
+// hold ink past the current paper. A clip on the target is not enough: a scaled
+// export samples bilinearly, blending the texels just past the edge into its
+// last row and column. Copying the in-paper part 1:1 first gives the scaled draw
+// a canvas edge to clamp at instead.
+function paperCroppedBaseSource(tile: HistoryBaseTile, paper: { width: number; height: number }) {
+  const width = Math.min(tile.width, paper.width - tile.x);
+  const height = Math.min(tile.height, paper.height - tile.y);
+  if (width <= 0 || height <= 0) return null;
+  if (width === tile.width && height === tile.height) return tile.canvas;
+  const crop = document.createElement('canvas');
+  crop.width = width;
+  crop.height = height;
+  crop.getContext('2d')?.drawImage(tile.canvas, 0, 0);
+  return crop;
+}
+
 export function renderTiledReadback(
   target: CanvasRenderingContext2D,
   base: HistoryBaseTile[],
@@ -88,7 +105,9 @@ export function renderTiledReadback(
   paper: { width: number; height: number } | null
 ) {
   for (const tile of base) {
-    if (tile.painted) target.drawImage(tile.canvas, tile.x, tile.y);
+    if (!tile.painted) continue;
+    const source = paper ? paperCroppedBaseSource(tile, paper) : tile.canvas;
+    if (source) target.drawImage(source, tile.x, tile.y);
   }
   for (const command of history) renderCommand(target, command, paper);
   // Through renderCommand like every other command: an in-flight stroke must

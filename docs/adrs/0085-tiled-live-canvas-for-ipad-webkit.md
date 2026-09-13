@@ -723,8 +723,16 @@ its idle fold cannot crop it either; a rotation-locked paper leaves both equal, 
 stay excluded.
 
 Memory: in the common case, where the paper never changes, nothing differs. After a blank rotation
-with folded ink the base covers both orientations — a square on the long side, one third more base
-pixels on a 4:3 iPad (about 7.5 MiB at 2×) — until a clear folds. The base tiles then no longer
-share the live tile boundaries, which costs extra blits during a full repaint, not while drawing.
-`tiledRendererHistoryBase.test.ts` and `engine-undo.spec.ts` ("undoing a clear after a blank
-rotation keeps folded ink in the export and repaint") pin the behavior.
+with folded ink the base covers both orientations — a square on the long side, costing
+`long × (long − short) × 4` extra bytes (one third more base pixels on a 4:3 paper; 7.1 MiB for a
+12.9-inch iPad's 2732×2048 paper) — until a clear folds. Once magic ink has folded, the recode
+baseline (ADR-0121) is a second clone of the base, which can double that excess. The base tiles then
+no longer share the live tile boundaries, which costs extra blits during a full repaint, not while
+drawing.
+
+Every read clips at the current paper. The export crops an edge base tile to the paper before
+drawing it, because a scaled export samples bilinearly and would otherwise blend ink just past the
+paper edge into its last row and column. A magic recode repaints each folded tail command under the
+extent it originally folded with, so a rebuild under a smaller paper cannot crop ink a larger paper
+had already revealed. `tiledRendererHistoryBase.test.ts` and `engine-undo.spec.ts` ("undoing a clear
+after a blank rotation keeps folded ink in the export and repaint") pin the behavior.

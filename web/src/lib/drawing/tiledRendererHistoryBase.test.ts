@@ -75,7 +75,7 @@ function inkTrackingContext(canvas: InkCanvas): CanvasRenderingContext2D {
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
-    createPattern: () => ({}) as CanvasPattern,
+    createPattern: () => ({ setTransform() {} }) as unknown as CanvasPattern,
     save() {
       state().stack.push({ transform: state().transform, clip: state().clip });
     },
@@ -232,9 +232,12 @@ function mountRenderer(initialPaper: PaperSize) {
     });
   }
 
-  function exportedInkAt(x: number) {
+  // A scaled export samples past the paper edge, so the snapshot must not rely
+  // on the target's bounds to hide base ink beyond the paper; `targetWidth`
+  // wider than the paper exposes whatever it would have blended in.
+  function exportedInkAt(x: number, targetWidth = paper.width) {
     const target = document.createElement('canvas') as InkCanvas;
-    target.width = paper.width;
+    target.width = targetWidth;
     target.height = paper.height;
     renderer.renderTiledSnapshot(target.getContext('2d')!);
     return inkState(target).ink.some((point) => point.x === x);
@@ -246,6 +249,24 @@ function mountRenderer(initialPaper: PaperSize) {
 
 function dot(x: number, y: number): StrokeOp {
   return { kind: 'dot', x, y, radius: 5, color: '#f00', erase: false };
+}
+
+function magicSheet(sourceUrl: string) {
+  return { canvas: document.createElement('canvas'), originX: 0, originY: 0, sourceUrl };
+}
+
+function magicDot(x: number, y: number): StrokeOp {
+  const sheet = magicSheet('/coloring/farm/cat-wide.light');
+  return {
+    kind: 'dot',
+    x,
+    y,
+    radius: 5,
+    color: '#f00',
+    erase: false,
+    magic: true,
+    magicSheet: sheet,
+  };
 }
 
 function draw(op: StrokeOp, wasEmpty = false) {
@@ -353,5 +374,38 @@ describe('folded history-base ink under a temporarily smaller paper', () => {
     renderer.repaintTiledRenderer();
     expect(view.exportedInkAt(FOLDED_INK_X)).toBe(false);
     expect(view.liveInkAt(FOLDED_INK_X)).toBe(false);
+  });
+
+  it('keeps base ink past a shrunken paper out of the export', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+
+    view.adoptPaper({ width: 800, height: 600 });
+
+    expect(view.exportedInkAt(FOLDED_INK_X, LANDSCAPE.width)).toBe(false);
+    view.adoptPaper(LANDSCAPE);
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+  });
+
+  it('keeps folded magic ink a later paper revealed when a recode rebuilds under a smaller paper', () => {
+    const narrow = { width: 800, height: 600 };
+    const overhangX = 820;
+    const view = mountRenderer(narrow);
+    draw(magicDot(overhangX, 100), true);
+    for (let index = 0; index < MAX_UNDO_DEPTH; index++) draw(dot(100 + index, 100));
+    view.adoptPaper(LANDSCAPE);
+    settleFolds();
+    expect(renderer.tiledHistoryDebug().historyLength).toBe(MAX_UNDO_DEPTH);
+    expect(view.liveInkAt(overhangX)).toBe(true);
+
+    view.adoptPaper(narrow);
+    expect(renderer.recodeTiledMagicOps(magicSheet('/coloring/farm/cat-wide.dark'), null)).toBe(
+      true
+    );
+    view.adoptPaper(LANDSCAPE);
+
+    expect(view.liveInkAt(overhangX)).toBe(true);
+    expect(view.exportedInkAt(overhangX)).toBe(true);
   });
 });
