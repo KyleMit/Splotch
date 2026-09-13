@@ -117,7 +117,7 @@ const PLATFORM_RETRY_DELAY_MS = 60_000;
 // Inside the worker's own deadline, so a job that finishes this late is one the
 // platform considers healthy.
 const SLOW_GENERATION_MS = 4 * 60 * 1000;
-// Past the reservation lease, well inside the job's restarted expiry.
+// How far either side of the reservation lease's end a poll lands.
 const LATE_COLLECTION_MARGIN_MS = 60_000;
 
 interface StoredGrant {
@@ -386,16 +386,26 @@ describe('free generation settlement across the background handoff', () => {
     expect(Object.keys(grantOf()?.reservations ?? {})).toHaveLength(1);
   });
 
-  // `GENERATION_JOB_TTL_MS` is documented as bounding two things that must not
-  // disagree: how long an outcome stays collectable and how long its
-  // reservation is held. The reservation lease runs from the start request, but
-  // `completeJob` restarts the job's expiry from the moment the worker
-  // finishes. A picture that took minutes is therefore still collectable after
-  // its lease has lapsed: the poll hands it over, `completeFreeGeneration`
-  // throws on the missing reservation, the route swallows that, and the ledger
-  // books the delivered picture as an abandoned failure — a free picture that
-  // never counts against the allowance.
-  it.fails('charges a picture collected late in its collectable window', async () => {
+  // `GENERATION_JOB_TTL_MS` bounds two things that must not disagree: how long
+  // an outcome stays collectable and how long its reservation is held. Both
+  // run from the start request, so a picture that took minutes is never still
+  // on offer after the lease that would charge it has lapsed.
+  it('charges a slow picture collected before its lease lapses', async () => {
+    provider.generateImage.mockImplementation(async () => {
+      advance(SLOW_GENERATION_MS);
+      return { kind: 'image', data: PICTURE.toString('base64'), mimeType: 'image/png' };
+    });
+    const { jobId, dispatch } = await startHandedOffGeneration();
+    await runWorker(dispatch);
+
+    advance(GENERATION_JOB_TTL_MS - SLOW_GENERATION_MS - LATE_COLLECTION_MARGIN_MS);
+    const response = await collect(jobId);
+
+    expect(response.status).toBe(200);
+    expect(grantOf()).toMatchObject({ successful: 1, reservations: {} });
+  });
+
+  it('stops offering a slow picture once the lease that would charge it has lapsed', async () => {
     provider.generateImage.mockImplementation(async () => {
       advance(SLOW_GENERATION_MS);
       return { kind: 'image', data: PICTURE.toString('base64'), mimeType: 'image/png' };
@@ -406,11 +416,9 @@ describe('free generation settlement across the background handoff', () => {
     advance(GENERATION_JOB_TTL_MS - SLOW_GENERATION_MS + LATE_COLLECTION_MARGIN_MS);
     const response = await collect(jobId);
 
-    expect(response.status).toBe(200);
-    expect(grantOf()).toMatchObject({ successful: 1 });
-    expect(response.headers.get(FREE_GENERATIONS_REMAINING_HEADER)).toBe(
-      String(FREE_GENERATION_LIMIT - 1)
-    );
+    expect(response.status).toBe(404);
+    expect(jobBlobKeys(jobId)).toEqual([]);
+    expect(grantOf()).toMatchObject({ successful: 0 });
   });
 
   it('settles a failed handoff in the start request itself, exactly once', async () => {

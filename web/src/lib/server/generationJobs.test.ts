@@ -12,6 +12,7 @@ const store = vi.hoisted(() => ({
 vi.mock('@netlify/blobs', () => ({ getStore: () => store }));
 
 import {
+  completeJob,
   issueWorkTicket,
   markJobPending,
   purgeExpiredGenerationJobs,
@@ -227,6 +228,35 @@ describe('purgeExpiredGenerationJobs', () => {
       context: { free: null, style: null },
       outcome: null,
       expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+    });
+  });
+
+  it('keeps the lifetime the start gave a job when the worker records its outcome', async () => {
+    const context = { free: { installationId: 'c'.repeat(64), reservationId: 'r1' }, style: null };
+    store.get.mockResolvedValueOnce({
+      context,
+      outcome: null,
+      expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+    });
+
+    await completeJob(JOB, { status: 'refusal', reason: 'IMAGE_SAFETY' }, null, 245_000);
+
+    expect(store.setJSON).toHaveBeenCalledWith(`${JOB}/status.json`, {
+      context,
+      outcome: { status: 'refusal', reason: 'IMAGE_SAFETY' },
+      expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+    });
+  });
+
+  it('gives an outcome whose start record is gone a lifetime of its own', async () => {
+    store.get.mockResolvedValueOnce(null);
+
+    await completeJob(JOB, { status: 'error', reason: 'late' }, null, 245_000);
+
+    expect(store.setJSON).toHaveBeenCalledWith(`${JOB}/status.json`, {
+      context: { free: null, style: null },
+      outcome: { status: 'error', reason: 'late' },
+      expiresAt: 245_000 + GENERATION_JOB_TTL_MS,
     });
   });
 });
