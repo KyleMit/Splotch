@@ -95,10 +95,12 @@ Every run starts by deleting local copies older than the `IMAGE_REPORT_RETENTION
 `/privacy` promises, judged by the report id's timestamp exactly as the production purge judges it:
 expired report folders in earlier snapshots (and a snapshot left with nothing else in it), expired
 `report__*` drawings in `tools/model-eval/inputs/`, and the generated images and report thumbnails
-that model-eval runs under `tools/model-eval/output/` made from those drawings. A run's
-`results.json` and `index.html` keep their text rows, which then point at deleted images. A report
-still in the store past that window is listed under the manifest's `expired` and never downloaded,
-which also shows when the production purge has fallen behind.
+that model-eval runs under `tools/model-eval/output/` made from those drawings. Expired report rows
+also leave each run's `results.json`, since they carry the provider's revised prompt and refusal
+reason. A run that loses rows also loses its `report/` bundle and `summary.json`, which were built
+from them; `REPORT_FROM=<run dir>` rebuilds both from the remaining rows. A run left with no rows is
+deleted. A report still in the store past that window is listed under the manifest's `expired` and
+never downloaded, which also shows when the production purge has fallen behind.
 
 The default run is snapshot-only. To deliberately copy PNG drawings into the gitignored
 `tools/model-eval/inputs/` corpus, opt in and then run the comparison:

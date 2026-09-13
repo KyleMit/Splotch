@@ -33,6 +33,7 @@ const REPORT_DIRECTORY_PATTERN = /^(\d+)-[0-9a-f-]+$/;
 const EVAL_INPUT_REPORT_PATTERN = /^report__(\d+)-[0-9a-f-]+-[a-z0-9-]+__production\.png$/;
 // model-eval names each generated image `<input id>__<variant>__<sample>.<ext>` and each report
 // thumbnail `in__<input id>.jpg` or `out__<input id>__<variant>__<sample>.jpg`.
+const EVAL_RESULT_REPORT_ID_PATTERN = /^report__(\d+)-[0-9a-f-]+-[a-z0-9-]+__production$/;
 const EVAL_OUTPUT_REPORT_PATTERN =
   /^(?:in__|out__)?report__(\d+)-[0-9a-f-]+-[a-z0-9-]+__production(?:__.+)?\.(?:jpg|png|webp)$/;
 const CONTENT_TYPE_BY_EXTENSION = {
@@ -222,7 +223,14 @@ function pruneSnapshot(snapshotDir, now) {
 }
 
 export function pruneExpiredLocalReports({ root = ROOT, now = Date.now() } = {}) {
-  const result = { reports: 0, snapshots: 0, evalInputs: 0, evalOutputs: 0 };
+  const result = {
+    reports: 0,
+    snapshots: 0,
+    evalInputs: 0,
+    evalResultRows: 0,
+    evalRuns: 0,
+    evalOutputs: 0,
+  };
   const snapshotsDir = join(root, '.eval-tmp', 'ai-image-reports');
   for (const entry of childEntries(snapshotsDir)) {
     if (!entry.isDirectory()) continue;
@@ -237,8 +245,44 @@ export function pruneExpiredLocalReports({ root = ROOT, now = Date.now() } = {})
     rmSync(join(evalInputsDir, entry.name), { force: true });
     result.evalInputs++;
   }
-  result.evalOutputs = pruneExpiredEvalOutputs(join(root, 'tools', 'model-eval', 'output'), now);
+  const evalOutputDir = join(root, 'tools', 'model-eval', 'output');
+  for (const entry of childEntries(evalOutputDir)) {
+    if (!entry.isDirectory()) continue;
+    const { removedRows, removedRun } = pruneEvalRunResults(join(evalOutputDir, entry.name), now);
+    result.evalResultRows += removedRows;
+    if (removedRun) result.evalRuns++;
+  }
+  result.evalOutputs = pruneExpiredEvalOutputs(evalOutputDir, now);
   return result;
+}
+
+function isEvalResultRowExpired(row, now) {
+  const match = typeof row?.id === 'string' ? EVAL_RESULT_REPORT_ID_PATTERN.exec(row.id) : null;
+  return Boolean(match) && reportTimestampIsExpired(match[1], now);
+}
+
+// A model-eval run's results.json rows carry text derived from the drawing (the provider's revised
+// prompt and refusal reason), and its report/ bundle and summary.json are built from those rows.
+function pruneEvalRunResults(runDir, now) {
+  const resultsPath = join(runDir, 'results.json');
+  let run;
+  try {
+    run = JSON.parse(readFileSync(resultsPath, 'utf8'));
+  } catch {
+    return { removedRows: 0, removedRun: false };
+  }
+  if (!Array.isArray(run?.results)) return { removedRows: 0, removedRun: false };
+  const retained = run.results.filter((row) => !isEvalResultRowExpired(row, now));
+  const removedRows = run.results.length - retained.length;
+  if (!removedRows) return { removedRows, removedRun: false };
+  if (!retained.length) {
+    rmSync(runDir, { recursive: true, force: true });
+    return { removedRows, removedRun: true };
+  }
+  writeFileSync(resultsPath, JSON.stringify({ ...run, results: retained }, null, 2));
+  rmSync(join(runDir, 'report'), { recursive: true, force: true });
+  rmSync(join(runDir, 'summary.json'), { force: true });
+  return { removedRows, removedRun: false };
 }
 
 function pruneExpiredEvalOutputs(directory, now) {
@@ -407,10 +451,12 @@ not replay the resolved style prompt retained in the snapshot's prompt.txt.
 
 Every run first deletes local copies of reports older than the
 ${IMAGE_REPORT_RETENTION_DAYS}-day retention window: report folders in earlier
-snapshots, report__ drawings in tools/model-eval/inputs/, and the images and
-thumbnails model-eval runs made from them in tools/model-eval/output/. Reports
-the production purge has not yet deleted are listed as expired, never
-downloaded.
+snapshots, report__ drawings in tools/model-eval/inputs/, and what model-eval
+runs in tools/model-eval/output/ made from them: generated images, thumbnails,
+and results.json rows. A run that loses rows also loses its report/ bundle and
+summary.json (rebuild them with REPORT_FROM), and a run left with no rows is
+deleted. Reports the production purge has not yet deleted are listed as
+expired, never downloaded.
 
 Requires an installed, authenticated Netlify CLI. Production is read-only.`);
 }
@@ -437,7 +483,7 @@ export async function runFetchImageReports() {
     ({ evalInputStatus }) => evalInputStatus === 'unsupported'
   ).length;
   console.log(
-    `[fetch:image-reports] pruned past-retention local copies: ${result.pruned.reports} report folder(s), ${result.pruned.snapshots} snapshot(s), ${result.pruned.evalInputs} model-eval input(s), ${result.pruned.evalOutputs} model-eval output image(s)`
+    `[fetch:image-reports] pruned past-retention local copies: ${result.pruned.reports} report folder(s), ${result.pruned.snapshots} snapshot(s), ${result.pruned.evalInputs} model-eval input(s), ${result.pruned.evalResultRows} model-eval result row(s), ${result.pruned.evalRuns} model-eval run(s), ${result.pruned.evalOutputs} model-eval output image(s)`
   );
   console.log(`[fetch:image-reports] site: ${result.site.name} (${PRODUCTION_DOMAIN})`);
   if (result.expired.length) {

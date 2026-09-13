@@ -32,6 +32,14 @@ const NOW = Date.parse('2026-08-20T00:00:00.000Z');
 const FIRST_REPORT = '1786530951977-1c086d5f-f68f-437e-8c5c-88b3243987f8';
 const SECOND_REPORT = '1786584074977-f8d9b64d-57ab-407a-bde3-f578fbabb22f';
 const EXPIRED_REPORT = `${NOW - (IMAGE_REPORT_RETENTION_DAYS + 1) * DAY_MS}-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`;
+const NOTHING_PRUNED = {
+  reports: 0,
+  snapshots: 0,
+  evalInputs: 0,
+  evalResultRows: 0,
+  evalRuns: 0,
+  evalOutputs: 0,
+};
 const temporaryRoots = [];
 
 afterEach(() => {
@@ -518,7 +526,7 @@ describe('retention', () => {
       now: NOW,
     });
 
-    expect(result.pruned).toEqual({ reports: 3, snapshots: 1, evalInputs: 1, evalOutputs: 0 });
+    expect(result.pruned).toEqual({ ...NOTHING_PRUNED, reports: 3, snapshots: 1, evalInputs: 1 });
     expect(readdirSync(snapshots).sort()).toEqual(['expired-with-notes', 'fresh', 'mixed']);
     expect(readdirSync(join(snapshots, 'mixed')).sort()).toEqual([FIRST_REPORT, 'manifest.json']);
     expect(readManifest(root, 'mixed').reports).toEqual([{ reportId: FIRST_REPORT }]);
@@ -553,13 +561,53 @@ describe('retention', () => {
     for (const file of [...expiredFiles, ...keptFiles]) writeFileSync(file, 'image');
 
     expect(pruneExpiredLocalReports({ root, now: NOW })).toEqual({
-      reports: 0,
-      snapshots: 0,
-      evalInputs: 0,
+      ...NOTHING_PRUNED,
       evalOutputs: expiredFiles.length,
     });
     expect(expiredFiles.filter((file) => existsSync(file))).toEqual([]);
     expect(keptFiles.filter((file) => !existsSync(file))).toEqual([]);
+  });
+
+  it('drops past-retention report rows from model-eval results and the files built from them', () => {
+    const root = fixtureRoot();
+    const output = join(root, 'tools', 'model-eval', 'output');
+    const expiredId = modelEvalInputFilename(EXPIRED_REPORT, 'Magical').replace(/\.png$/, '');
+    const currentId = modelEvalInputFilename(FIRST_REPORT, null).replace(/\.png$/, '');
+    const row = (id, extra = {}) => ({ id, kind: 'refusal', reason: 'SAFETY', ...extra });
+    const writeRun = (runId, rows) => {
+      const run = join(output, runId);
+      mkdirSync(join(run, 'report', 'assets'), { recursive: true });
+      writeFileSync(
+        join(run, 'results.json'),
+        JSON.stringify({ runId, samples: 1, results: rows })
+      );
+      writeFileSync(join(run, 'summary.json'), '{}');
+      writeFileSync(join(run, 'report', 'index.html'), `<p>${rows.map(({ id }) => id)}</p>`);
+      return run;
+    };
+    const mixed = writeRun('mixed', [
+      row(expiredId, { revisedPrompt: 'a child drawing of a cat' }),
+      row(currentId),
+      row('animals__cat'),
+    ]);
+    writeRun('report-only', [row(expiredId), row(expiredId, { sample: 2 })]);
+    const untouched = writeRun('current-only', [row(currentId)]);
+    mkdirSync(join(output, 'unreadable'));
+    writeFileSync(join(output, 'unreadable', 'results.json'), '{not json');
+
+    expect(pruneExpiredLocalReports({ root, now: NOW })).toEqual({
+      ...NOTHING_PRUNED,
+      evalResultRows: 3,
+      evalRuns: 1,
+    });
+    expect(readdirSync(output).sort()).toEqual(['current-only', 'mixed', 'unreadable']);
+    expect(JSON.parse(readFileSync(join(mixed, 'results.json'), 'utf8'))).toEqual({
+      runId: 'mixed',
+      samples: 1,
+      results: [row(currentId), row('animals__cat')],
+    });
+    expect(readdirSync(mixed)).toEqual(['results.json']);
+    expect(readdirSync(untouched).sort()).toEqual(['report', 'results.json', 'summary.json']);
   });
 
   it('keeps a snapshot whose manifest it cannot parse', () => {
@@ -568,12 +616,7 @@ describe('retention', () => {
     mkdirSync(join(snapshot, EXPIRED_REPORT), { recursive: true });
     writeFileSync(join(snapshot, 'manifest.json'), '{not json');
 
-    expect(pruneExpiredLocalReports({ root, now: NOW })).toEqual({
-      reports: 1,
-      snapshots: 0,
-      evalInputs: 0,
-      evalOutputs: 0,
-    });
+    expect(pruneExpiredLocalReports({ root, now: NOW })).toEqual({ ...NOTHING_PRUNED, reports: 1 });
     expect(readdirSync(snapshot)).toEqual(['manifest.json']);
   });
 });
