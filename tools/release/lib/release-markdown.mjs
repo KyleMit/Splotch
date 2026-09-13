@@ -22,7 +22,7 @@ const UNSUPPORTED_BLOCKS = [
   [/^\s*>/, 'a blockquote'],
   [/^\s*\d+[.)]\s/, 'an ordered list'],
   [/^\s*\|/, 'a table'],
-  [/^\s+[*-]\s/, 'a nested list'],
+  [/^\s+[*-]\s/, 'an indented list item (nested lists are not supported)'],
   [/^\s*!\[/, 'an image'],
   [/^\s*<[a-zA-Z/]/, 'raw HTML'],
   [/^\s*(?:[-*_]\s*){3,}$/, 'a horizontal rule'],
@@ -49,10 +49,23 @@ function escapeText(text) {
 }
 
 function renderEmphasis(escaped) {
-  return escaped
+  const rendered = escaped
     .replace(STRONG, '<strong>$1</strong>')
     .replace(STAR_EMPHASIS, '<em>$1</em>')
     .replace(UNDERSCORE_EMPHASIS, '<em>$1</em>');
+  // A surviving `**` is a strong span none of the three passes could match —
+  // emphasis nested inside it, most often, which STRONG's `[^*]+` cannot bridge.
+  // Refusing keeps the promise the rest of this module makes; rendering it would
+  // put literal asterisks in the What's New pane. Code spans and link targets are
+  // already lifted out by renderInline, so a deliberate `` `a ** b` `` cannot
+  // reach this.
+  if (rendered.includes('**')) {
+    throw new Error(
+      `Release notes contain emphasis the release Markdown renderer does not ` +
+        `implement, which would leave a literal ** in the output: ${escaped}`
+    );
+  }
+  return rendered;
 }
 
 function renderInline(markdown) {

@@ -56,6 +56,25 @@ describe('renderReleaseMarkdown inline', () => {
     }
   );
 
+  // STRONG's `[^*]+` cannot bridge an inner `*`, so emphasis nested inside
+  // strong leaves the `**` pair unmatched. Refused rather than rendered, or the
+  // What's New pane shows literal asterisks.
+  it.each(['**bold with *nested* word**', '**a `code` b**'])(
+    'refuses emphasis it cannot match, rather than leaking a literal **: %j',
+    (markdown) => {
+      expect(() => renderReleaseMarkdown(markdown)).toThrow('literal **');
+    }
+  );
+
+  it.each([
+    ['**bold**', '<p><strong>bold</strong></p>\n'],
+    ['***both***', '<p><em><strong>both</strong></em></p>\n'],
+    ['**Fixed:** the *fast* path', '<p><strong>Fixed:</strong> the <em>fast</em> path</p>\n'],
+    ['`a ** b`', '<p><code>a ** b</code></p>\n'],
+  ])('leaves the emphasis it does match alone: %j', (markdown, expected) => {
+    expect(renderReleaseMarkdown(markdown)).toBe(expected);
+  });
+
   it('still emphasises a multi-word span', () => {
     expect(renderReleaseMarkdown('An *emphasised phrase* here.')).toBe(
       '<p>An <em>emphasised phrase</em> here.</p>\n'
@@ -96,8 +115,12 @@ describe('renderReleaseMarkdown refusals', () => {
     ['> quoted', 'a blockquote'],
     ['1. first', 'an ordered list'],
     ['| a | b |', 'a table'],
-    ['* Top\n  * Nested', 'a nested list'],
-    ['* Top\n    - Deep', 'a nested list'],
+    ['* Top\n  * Nested', 'an indented list item'],
+    ['* Top\n    - Deep', 'an indented list item'],
+    // CommonMark keeps a 1-3 space indent top-level and reads `- - -` as a
+    // rule, so neither is a nested list — the message names the indent instead.
+    ['   * Only item', 'an indented list item'],
+    ['* Item\n  - - -', 'an indented list item'],
     ['![alt](x.png)', 'an image'],
     ['<div>raw</div>', 'raw HTML'],
     ['---', 'a horizontal rule'],
