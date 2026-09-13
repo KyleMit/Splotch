@@ -20,7 +20,6 @@
   import Icon from './Icon.svelte';
 
   const SWATCH_RELEASE_CLASS = 'releasing';
-  const SWATCH_RELEASE_ANIMATION = 'swatch-press';
 
   let paletteEl: HTMLDivElement;
   let customSwatchEl: HTMLButtonElement | undefined;
@@ -84,15 +83,13 @@
 
   // The press gets its own springy release instead of snapping back from the
   // :active scale. A press landing while the last one is still settling rewinds
-  // that animation rather than stacking a second.
+  // that animation rather than stacking a second. Svelte scopes the keyframe's
+  // name, so the release is found as the swatch's only own CSS animation — its
+  // selection rings animate its pseudo-elements, which getAnimations() without
+  // subtree leaves out.
   function playSwatchRelease(e: PointerEvent & { currentTarget: HTMLButtonElement }) {
     const swatch = e.currentTarget;
-    const release = swatch
-      .getAnimations()
-      .find(
-        (animation) =>
-          animation instanceof CSSAnimation && animation.animationName === SWATCH_RELEASE_ANIMATION
-      );
+    const release = swatch.getAnimations().find((animation) => animation instanceof CSSAnimation);
     if (release) {
       release.currentTime = 0;
       release.play();
@@ -101,8 +98,9 @@
     swatch.classList.add(SWATCH_RELEASE_CLASS);
   }
 
+  // The rings' animationend bubbles from the swatch's pseudo-elements.
   function endSwatchRelease(e: AnimationEvent & { currentTarget: HTMLButtonElement }) {
-    if (e.animationName === SWATCH_RELEASE_ANIMATION)
+    if (e.target === e.currentTarget && e.pseudoElement === '')
       e.currentTarget.classList.remove(SWATCH_RELEASE_CLASS);
   }
 

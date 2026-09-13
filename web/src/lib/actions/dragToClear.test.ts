@@ -210,11 +210,14 @@ describe('dragToClear pointer identity', () => {
     const { node, options, action } = setup();
     cleanup = () => action.destroy();
     const far = 100 + acceptRadius() + 10;
-    vi.spyOn(node, 'getBoundingClientRect').mockReturnValue(new DOMRect(900, 20, 70, 70));
+    const rect = vi
+      .spyOn(node, 'getBoundingClientRect')
+      .mockReturnValue(new DOMRect(900, 20, 70, 70));
 
     node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
     vi.advanceTimersByTime(16);
     node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
+    rect.mockReturnValue(new DOMRect(900 + far - 100, 20, 70, 70));
     node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
 
     expect(options.onClear).toHaveBeenCalledExactlyOnceWith({ x: 935, y: 55 });
@@ -242,6 +245,23 @@ describe('dragToClear pointer identity', () => {
 
     expect(node.classList.contains('dragging')).toBe(true);
     expect(options.clearPreviewEl.classList.contains('releasing')).toBe(false);
+  });
+
+  it('aims the departing page at the dock the button occupies at release', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+    const far = 100 + acceptRadius() + 10;
+    const rect = vi
+      .spyOn(node, 'getBoundingClientRect')
+      .mockReturnValue(new DOMRect(900, 20, 70, 70));
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, 100, far));
+    // An orientation change mid-drag moved the dock; the button keeps its drag translation.
+    rect.mockReturnValue(new DOMRect(580, 90 + far - 100, 60, 60));
+    node.dispatchEvent(pointerEvent('pointerup', 1, 100, far));
+
+    expect(options.onClear).toHaveBeenCalledExactlyOnceWith({ x: 610, y: 120 });
   });
 
   it('releases the preview flood only for a committed drag', () => {

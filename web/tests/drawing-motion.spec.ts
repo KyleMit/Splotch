@@ -285,3 +285,13 @@ test('live strokes suppress new flyout, face, and undo motion', async ({ page })
   await expect(page.locator('#undoButton .action-icon')).toHaveCSS('animation-name', 'none');
   await page.mouse.up();
 });
+
+test('a second swatch press replays the release once the first has settled', async ({ page }) => {
+  await gotoApp(page);
+  const swatch = page.locator('.color-swatch[data-color]').first();
+  await swatch.click();
+  await expect(swatch).toHaveClass(/\breleasing\b/);
+  await expect(swatch).not.toHaveClass(/\breleasing\b/);
+  await swatch.click();
+  await expect(swatch).toHaveClass(/\breleasing\b/);
+});

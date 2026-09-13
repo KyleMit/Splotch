@@ -29,7 +29,7 @@ export interface DragToClearOptions {
   acceptZoneEl: HTMLDivElement;
   clearPreviewEl: HTMLDivElement;
   // Called when the user drags past the threshold and releases — should clear canvas and save.
-  // `home` is the button's docked centre, where the departing page is headed.
+  // `home` is the button's docked centre at release, where the departing page is headed.
   onClear: (home: ClientPoint) => void;
   onTutorialShow: () => void;
   onTutorialDismiss: () => void;
@@ -41,7 +41,10 @@ interface ActiveDrag {
   pointerId: number;
   options: DragToClearOptions;
   acceptRadius: number;
-  home: ClientPoint;
+  // The translation last applied to the container, so the docked centre can be
+  // recovered from the dragged button's rect at release.
+  offsetX: number;
+  offsetY: number;
 }
 
 export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToClearOptions) {
@@ -68,6 +71,11 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   function buttonCenter(): ClientPoint {
     const rect = node.getBoundingClientRect();
     return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+  }
+
+  function dockedCenter(drag: ActiveDrag): ClientPoint {
+    const center = buttonCenter();
+    return { x: center.x - drag.offsetX, y: center.y - drag.offsetY };
   }
 
   function dragDistance(clientX: number, clientY: number): number {
@@ -119,7 +127,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     const home = buttonCenter();
     const acceptRadius = getAcceptRadius();
-    activeDrag = { pointerId: e.pointerId, options: o, acceptRadius, home };
+    activeDrag = { pointerId: e.pointerId, options: o, acceptRadius, offsetX: 0, offsetY: 0 };
     capturePointer(node, e.pointerId);
     startPointerX = clientX;
     startPointerY = clientY;
@@ -162,6 +170,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const dx = clientX - startPointerX;
     const dy = clientY - startPointerY;
     o.containerEl.style.transform = `translate(${dx}px, ${dy}px)`;
+    activeDrag.offsetX = dx;
+    activeDrag.offsetY = dy;
 
     const distance = dragDistance(clientX, clientY);
 
@@ -261,11 +271,15 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const clientX = e.clientX;
     const clientY = e.clientY;
     const committed = dragDistance(clientX, clientY) >= drag.acceptRadius;
+    // Read before finishDrag lets the button go: an orientation change mid-drag
+    // moves the dock under the still-translated button, so the centre captured at
+    // pointerdown can be stale.
+    const home = committed ? dockedCenter(drag) : null;
 
     finishDrag(drag, committed);
 
-    if (committed) {
-      commitClear(o, drag.home);
+    if (home) {
+      commitClear(o, home);
     } else {
       cancelClearSound();
       resetDragVisuals(o);
