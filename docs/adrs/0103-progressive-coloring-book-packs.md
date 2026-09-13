@@ -1,8 +1,8 @@
 # ADR-0103: Ship One Starter Coloring Book and Install the Rest as Verified Background Packs
 
 **Status:** Active — implements issue #200; amended 2026-08-08 for screen-sized pack variants and
-2026-08-09 for issue #880's Coloring Book feature gate; and amends
-[ADR-0022](0022-pwa-service-worker-strategy.md),
+2026-08-09 for issue #880's Coloring Book feature gate; amended 2026-09 so web packs survive
+deploys; and amends [ADR-0022](0022-pwa-service-worker-strategy.md),
 [ADR-0042](0042-static-media-cache-invalidation.md), and
 [ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md). **Date:** 2026-08
 
@@ -159,3 +159,42 @@ platform-specific branch. Platform eligibility remains explicit at the manifest 
 `booksForPlatform(platform)`, which still prevents a target from advertising an unavailable book.
 Compact variants map only the raster assets that retain screen-sized derivatives; canonical SVGs,
 selector rasters, and cover thumbnails keep their logical bytes.
+
+## Amendment (2026-09): Web Packs Survive Deploys
+
+The web store no longer scopes its Cache Storage namespace by app version. The web version moves on
+every push to `main` (ADR-0030), and `installed()` deleted every other namespace before anything was
+re-downloaded, so each deploy removed every returning user's downloaded books. A two-build repro
+went from seven books (525 entries) to only Farm offline after one short online launch, and a fast
+link re-downloaded all 19–28 MiB after every deploy.
+
+The web cache is now named only by resolution (`coloringPackCacheName()` in
+`coloringPacks/cacheKeys.ts`), and a book's marker path is its book id. The marker value, which
+already listed every file's path, byte length, and SHA-256 digest, is the version check: a scan
+trusts a marker only when its value equals the current manifest's. Each scan runs in an order that
+keeps an interruption from publishing an incomplete book:
+
+1. Delete every marker whose value the manifest does not match, before any file it vouched for can
+   be deleted or replaced. A marker that outlived its files could otherwise match again after a
+   revert.
+2. Delete every cached file the manifest no longer lists, which drops removed books and files.
+3. Drain every other pack cache (a pre-amendment version-scoped cache, or the other resolution) into
+   the current one, one file at a time. A file moves only if its bytes match the manifest, and it
+   leaves the source cache as soon as it is written. A slow or interrupted drain therefore holds at
+   most one file twice, and the next scan resumes it. A book gets a marker only after every one of
+   its files is verified.
+4. Re-verify books whose marker was stale, and mark the ones that are still complete.
+
+`install()` verifies an already-cached file's digest instead of trusting its presence, because a
+stable namespace can hold bytes an interrupted scan never checked. A deploy that changes no pack
+file leaves every marker matching, so it costs no transfer and no hashing. A changed file is
+re-downloaded alone.
+
+Considered and rejected: keeping version namespaces and copying matching files into each new one.
+That hashes and copies the whole catalog on every deploy and doubles storage while it runs. Keying
+the namespace on a hash of the whole catalog was also rejected, because one changed page would still
+wipe every book.
+
+Removal from Parent Settings deletes every pack cache, whatever layout wrote it. Native storage is
+unchanged: its version is the store release version (ADR-0030), so it is cleared only when a new app
+build is installed.

@@ -26,7 +26,18 @@ beforeEach(() => {
   mocks.nativeCancel.mockReset().mockResolvedValue(undefined);
   mocks.nativeRemove.mockReset().mockResolvedValue(undefined);
   mocks.webDelete.mockReset().mockResolvedValue(true);
-  vi.stubGlobal('caches', { delete: mocks.webDelete });
+  vi.stubGlobal('caches', {
+    keys: vi
+      .fn()
+      .mockResolvedValue([
+        'coloring-packs-v2-compact',
+        'workbox-precache-v2-https://splotch.art/',
+        'coloring-packs-v2-full',
+        'pages',
+        'coloring-packs-v1-1.2.2-compact',
+      ]),
+    delete: mocks.webDelete,
+  });
 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -39,17 +50,20 @@ describe('coloring-pack removal', () => {
     expect(mocks.nativeRemove).not.toHaveBeenCalled();
   });
 
-  // Passing only the app version, not the whole manifest: that narrowing is
-  // what lets removal run with no network.
-  it('removes both web resolution namespaces', async () => {
+  // The web cache is not scoped by app version, so the version is ignored and
+  // every pack cache goes, including one an earlier store layout left behind.
+  it('removes every web pack cache and nothing else', async () => {
     await createWebColoringPackStore().remove({ appVersion: manifest.appVersion });
 
     expect(mocks.webDelete.mock.calls).toEqual([
-      ['coloring-packs-v1-1.2.3-test-compact'],
-      ['coloring-packs-v1-1.2.3-test-full'],
+      ['coloring-packs-v2-compact'],
+      ['coloring-packs-v2-full'],
+      ['coloring-packs-v1-1.2.2-compact'],
     ]);
   });
 
+  // Passing only the app version, not the whole manifest: that narrowing is
+  // what lets removal run with no network.
   it('removes both native resolution namespaces', async () => {
     await createNativeColoringPackStore().remove({ appVersion: manifest.appVersion });
 
