@@ -52,6 +52,46 @@ test('an offline PWA session preserves the drawing through supported client navi
   expect(await firstOpaquePixel(page)).not.toBeNull();
 });
 
+// A deploy can leave the navigation cache holding HTML whose hashed chunks the active
+// worker never precached. Renaming every chunk reference plants that page without a
+// second build; the stale-hash URLs are unreachable offline just as evicted chunks are.
+test('an offline launch boots even when the cached page is from a different build', async ({
+  page,
+}) => {
+  test.skip(!!process.env.DEV_SERVER, 'the dev server neither emits nor registers sw.js');
+  test.setTimeout(120_000);
+
+  await gotoApp(page);
+  await registerServiceWorkerAndControl(page);
+  await gotoApp(page);
+  expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+
+  const plantedChunkReferences = await page.evaluate(async () => {
+    const html = await (await fetch('/', { cache: 'no-store' })).text();
+    const chunkReference = /(_app\/immutable\/[\w./-]+?)\.js/g;
+    const otherBuildHtml = html.replace(chunkReference, '$1-other-build.js');
+    const pages = await caches.open('pages');
+    await pages.put(
+      '/',
+      new Response(otherBuildHtml, { headers: { 'Content-Type': 'text/html' } })
+    );
+    return html.match(chunkReference)?.length ?? 0;
+  });
+  expect(plantedChunkReferences).toBeGreaterThan(0);
+
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Network.enable');
+  await cdp.send('Network.clearBrowserCache');
+  await page.context().setOffline(true);
+  await gotoApp(page);
+
+  await drawCommittedStroke(page, [
+    { x: 90, y: 120 },
+    { x: 260, y: 190 },
+  ]);
+  expect(await firstOpaquePixel(page)).not.toBeNull();
+});
+
 test('a stalled provider lets the child keep drawing, then recovers after failure', async ({
   page,
 }) => {

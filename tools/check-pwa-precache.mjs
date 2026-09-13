@@ -5,9 +5,16 @@ import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 const CLIENT_DIR = join(ROOT, 'web/.svelte-kit/output/client');
 const SW_PATH = join(CLIENT_DIR, 'sw.js');
+const PRERENDERED_APP_SHELL_PATH = join(
+  ROOT,
+  'web/.svelte-kit/output/prerendered/pages/index.html'
+);
 const STATIC_COLORING_DIR = join(ROOT, 'web/static/coloring');
 const RESPONSIVE_TIER_PATTERN = /^max-\d+px$/;
 const RUNTIME_GENERATED_PRECACHE_URLS = new Set(['_app/env.js']);
+// The prerendered home page, precached under the build-unique URL
+// web/src/lib/pwa/appShellRoute.ts builds; the test drift-guards the two.
+export const APP_SHELL_PRECACHE_URL_PATTERN = /^\/\?app-shell-build=[^&]+$/;
 const SERVED_ONLY_ASSET_URLS = new Set(['large-image.png']);
 // Leaves room for ordinary app growth while rejecting a second bundled coloring book.
 export const MAX_PWA_PRECACHE_BYTES = 12_000_000;
@@ -28,6 +35,12 @@ export function pwaPrecacheProblems({
   const problems = [];
   if (!precacheUrls.includes('_app/env.js')) {
     problems.push('SvelteKit runtime environment module is missing from the PWA precache');
+  }
+  const appShellUrls = precacheUrls.filter((url) => APP_SHELL_PRECACHE_URL_PATTERN.test(url));
+  if (appShellUrls.length !== 1) {
+    problems.push(
+      `Expected one build-matched app shell in the PWA precache, found ${appShellUrls.length}`
+    );
   }
   const responsivePrecacheUrls = precacheUrls.filter((url) => /^coloring\/max-\d+px\//.test(url));
   if (responsivePrecacheUrls.length) {
@@ -88,6 +101,7 @@ export function pwaPrecacheProblems({
 export async function checkPwaPrecache({
   clientDir = CLIENT_DIR,
   swPath = SW_PATH,
+  appShellPath = PRERENDERED_APP_SHELL_PATH,
   staticColoringDir = STATIC_COLORING_DIR,
   log = console.log,
 } = {}) {
@@ -104,7 +118,7 @@ export async function checkPwaPrecache({
     )
   );
   const precacheBytes = precacheUrls.reduce((total, url) => {
-    const path = join(clientDir, url);
+    const path = APP_SHELL_PRECACHE_URL_PATTERN.test(url) ? appShellPath : join(clientDir, url);
     if (!existsSync(path)) {
       if (RUNTIME_GENERATED_PRECACHE_URLS.has(url)) return total;
       throw new Error(`Precached asset does not exist: ${path}`);
