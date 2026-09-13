@@ -201,13 +201,16 @@ Tabs on different builds share the one cache during a deploy. An older tab's sca
 its manifest does not list just after a newer tab has verified that file for its marker, which would
 leave a trusted marker over a missing file. Every step that reads or writes markers therefore runs
 under the `navigator.locks` lock named by `COLORING_PACK_LOCK_NAME`: the stale-entry sweep with
-re-verification, each book's drain, the final marker read, removal, and `install()`'s commit.
-Downloads and idle waits stay outside it, so a throttled background tab cannot hold it for long.
-Each locked step reopens its caches by name, because a `Cache` handle opened before another tab
-removed the namespace stays writable but detached, so a marker written through it would vouch for
-files the service worker can no longer match. The commit re-verifies every file of the book under
-the lock before writing the marker. If a file is missing or wrong, it downloads the gap once more,
-and pauses the run if the book is still incomplete.
+re-verification, each book's drain, the final marker read, removal, each downloaded file's write,
+and `install()`'s commit. Network transfers, hashing of downloads, and idle waits stay outside it,
+so a throttled background tab cannot hold it for long. A marker vouches for exact bytes and another
+build may hold one for the same book, so every write or delete of a book's file withdraws that
+book's marker first; only a commit that re-verifies the whole book restores it. Each locked step
+reopens its caches by name, because a `Cache` handle opened before another tab removed the namespace
+stays writable but detached, so a marker written through it would vouch for files the service worker
+can no longer match. The commit re-verifies every file of the book under the lock before writing the
+marker. If a file is missing or wrong, it downloads the gap once more, and pauses the run if the
+book is still incomplete.
 
 Considered and rejected: keeping version namespaces and copying matching files into each new one.
 That hashes and copies the whole catalog on every deploy and doubles storage while it runs. Keying

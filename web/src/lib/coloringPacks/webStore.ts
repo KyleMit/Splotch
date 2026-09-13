@@ -96,10 +96,22 @@ async function verifiedResponse(file: ColoringPackFile, signal: AbortSignal): Pr
   });
 }
 
-async function hasVerifiedCachedFile(cache: Cache, file: ColoringPackFile): Promise<boolean> {
+// A marker vouches for exact bytes, and tabs on other builds may hold a marker
+// for the same book, so every write or delete of a book's file withdraws that
+// book's marker first. Only a commit that re-verifies the whole book restores it.
+async function withdrawMarker(cache: Cache, bookId: string) {
+  await cache.delete(coloringPackMarkerPath(bookId));
+}
+
+async function hasVerifiedCachedFile(
+  cache: Cache,
+  bookId: string,
+  file: ColoringPackFile
+): Promise<boolean> {
   const response = await cache.match(file.path);
   if (!response) return false;
   if (await matchesManifest(await response.arrayBuffer(), file)) return true;
+  await withdrawMarker(cache, bookId);
   await cache.delete(file.path);
   return false;
 }
@@ -111,7 +123,7 @@ async function markIfComplete(
 ): Promise<boolean> {
   let complete = true;
   for (const file of book.files) {
-    if (!verifiedPaths.has(file.path) && !(await hasVerifiedCachedFile(cache, file))) {
+    if (!verifiedPaths.has(file.path) && !(await hasVerifiedCachedFile(cache, book.id, file))) {
       complete = false;
     }
   }
@@ -282,7 +294,13 @@ export function createWebColoringPackStore(): ColoringPackStore {
           if (signal.aborted) throw signal.reason;
           if (await downloads.match(file.path)) continue;
           await waitForIdle(signal);
-          await downloads.put(file.path, await verifiedResponse(file, signal));
+          const response = await verifiedResponse(file, signal);
+          await withPackCacheLock(async () => {
+            if (signal.aborted) throw signal.reason;
+            const cache = await caches.open(name);
+            await withdrawMarker(cache, book.id);
+            await cache.put(file.path, response);
+          });
         }
         const committed = await withPackCacheLock(async () => {
           if (signal.aborted) throw signal.reason;
