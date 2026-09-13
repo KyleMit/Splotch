@@ -12,6 +12,7 @@ import type { Origin } from './modal.svelte';
 import {
   GATE_ESCALATION_QUIET_MS,
   GATE_LOCKOUT_ENDED_MESSAGE,
+  GATE_LOCKOUT_MAX_MS,
   GATE_WRONG_ANSWERS_BEFORE_LOCKOUT,
   gateLockoutDurationMs,
   gateLockoutMessage,
@@ -136,9 +137,10 @@ export const GATE_SUCCESS_HOLD_MS = 1200;
 
 export const GATE_ERROR_MESSAGE = 'Not quite — try this one';
 
-// How long after the card opens a lockout already in force is announced: a
-// live region only speaks for a change made once the dialog is open.
-export const GATE_REOPEN_ANNOUNCE_DELAY_MS = 150;
+// A live region speaks only for a change it sees: a lockout already in force
+// is announced this long after the card opens, and a message repeated while it
+// is still showing is cleared and set again this long later.
+export const GATE_ANNOUNCE_DELAY_MS = 150;
 // The countdown re-renders on each whole second remaining while the card is open.
 const GATE_LOCKOUT_TICK_MS = 1000;
 
@@ -265,7 +267,7 @@ export function requireParentalGate(
     tickLockout();
     announceTimer = setTimeout(
       () => (gate.announcement = gate.lockoutMessage ?? ''),
-      GATE_REOPEN_ANNOUNCE_DELAY_MS
+      GATE_ANNOUNCE_DELAY_MS
     );
   }
 }
@@ -328,12 +330,26 @@ function endLockout() {
   gate.escalationQuietSince = gate.lockoutUntil;
   gate.lockoutUntil = null;
   gate.lockoutMessage = null;
-  if (gate.open) gate.announcement = GATE_LOCKOUT_ENDED_MESSAGE;
+  if (gate.open) announce(GATE_LOCKOUT_ENDED_MESSAGE);
+}
+
+function announce(message: string) {
+  clearTimeout(announceTimer);
+  if (gate.announcement !== message) {
+    gate.announcement = message;
+    return;
+  }
+  gate.announcement = '';
+  announceTimer = setTimeout(() => (gate.announcement = message), GATE_ANNOUNCE_DELAY_MS);
 }
 
 // Checked against the clock rather than trusted to a timer, which stops while
-// a device sleeps and does not run at all while the card is closed.
+// a device sleeps and does not run at all while the card is closed. A clock
+// set backwards would otherwise stretch the pause past the longest one.
 function lockoutHolds() {
+  if (gate.lockoutUntil !== null) {
+    gate.lockoutUntil = Math.min(gate.lockoutUntil, Date.now() + GATE_LOCKOUT_MAX_MS);
+  }
   if (gate.lockoutUntil !== null && Date.now() >= gate.lockoutUntil) endLockout();
   return gate.lockoutUntil !== null;
 }
@@ -356,7 +372,7 @@ function lockOut() {
   clearTimeout(errorTimer);
   gate.error = null;
   tickLockout();
-  gate.announcement = gate.lockoutMessage ?? '';
+  announce(gate.lockoutMessage ?? '');
 }
 
 function decayQuietEscalation() {
@@ -380,7 +396,7 @@ function fail() {
     return;
   }
   gate.error = GATE_ERROR_MESSAGE;
-  gate.announcement = GATE_ERROR_MESSAGE;
+  announce(GATE_ERROR_MESSAGE);
   clearTimeout(errorTimer);
   errorTimer = setTimeout(() => {
     gate.error = null;

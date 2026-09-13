@@ -7,7 +7,8 @@ import {
   submitGateAnswer,
   dismissGate,
   PARENTAL_GATE_FEATURES,
-  GATE_REOPEN_ANNOUNCE_DELAY_MS,
+  GATE_ANNOUNCE_DELAY_MS,
+  GATE_ERROR_MESSAGE,
   GATE_SHAKE_MS,
 } from './parentalGate.svelte';
 import {
@@ -21,6 +22,7 @@ import {
 
 const ELAPSED_BEFORE_REOPEN_MS = 25_000;
 const ONE_SECOND_MS = 1000;
+const ONE_DAY_MS = 86_400_000;
 
 function typeAnswer(value: string) {
   for (const digit of value) pressGateDigit(Number(digit));
@@ -125,11 +127,30 @@ describe('parental gate lockout', () => {
     dismissGate();
     requireParentalGate('aiImage', vi.fn());
     expect(gate.announcement).toBe('');
-    vi.advanceTimersByTime(GATE_REOPEN_ANNOUNCE_DELAY_MS);
+    vi.advanceTimersByTime(GATE_ANNOUNCE_DELAY_MS);
     expect(gate.announcement).toBe(gate.lockoutMessage);
 
     vi.advanceTimersByTime(GATE_LOCKOUT_BASE_MS);
     expect(gate.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
+  });
+
+  it('says a wrong answer again when the last one is still showing', () => {
+    answerWrongly();
+    expect(gate.announcement).toBe(GATE_ERROR_MESSAGE);
+
+    typeAnswer('');
+    expect(gate.announcement).toBe('');
+    vi.advanceTimersByTime(GATE_ANNOUNCE_DELAY_MS);
+    expect(gate.announcement).toBe(GATE_ERROR_MESSAGE);
+  });
+
+  it('holds a pause to the longest one when the clock is set backwards', () => {
+    lockOut();
+    vi.setSystemTime(Date.now() - ONE_DAY_MS);
+    dismissGate();
+
+    requireParentalGate('aiImage', vi.fn());
+    expect(remainingLockoutMs()).toBe(GATE_LOCKOUT_MAX_MS);
   });
 
   it('lengthens each pause up to the cap, and a solve resets it', () => {

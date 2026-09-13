@@ -202,7 +202,8 @@ lever that keeps the problem adult-easy is the number of guesses a child gets:
   (`state/parentalGateLockout.ts`). The lockout is global rather than per feature and survives
   closing and reopening the card, since closing it is one more random tap away. It is a wall-clock
   deadline held in memory: the card counts the time left down each second, a device that sleeps
-  through the pause wakes to find it over, and a relaunch clears it.
+  through the pause wakes to find it over, a clock set backwards cannot stretch it past
+  `GATE_LOCKOUT_MAX_MS`, and a relaunch clears it.
 * **Escalation decays.** A solve resets the streak and the tier, and so does
   `GATE_ESCALATION_QUIET_MS` with no wrong answer and no lockout in force. Without that, a parent
   arriving hours after a child's tapping inherited the child's longest pause, in front of the very
@@ -210,7 +211,9 @@ lever that keeps the problem adult-easy is the number of guesses a child gets:
   without a break never reaches it.
 * **Screen readers hear the moments, not the countdown.** The visible line is hidden from assistive
   tech because the countdown rewrites it every second; a separate status region announces a wrong
-  answer, a lockout when it starts or when the card reopens into one, and its end.
+  answer, a lockout when it starts or when the card reopens into one, and its end. A live region
+  stays silent when its text does not change, so a message repeated while it is still showing is
+  cleared and set again a moment later.
 
 `parentalGate.mash.test.ts` pins the result with seeded simulated tapping over two-minute runs. Run
 against the auto-submitting keypad, the same simulation unlocked it in 1957 of 2000 runs at six taps
