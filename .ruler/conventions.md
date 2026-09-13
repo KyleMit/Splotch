@@ -33,9 +33,13 @@
   ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `web/src`
   uses named exports only, a mixed import marks its types inline (`import { a, type B }`),
   `prefer-const` runs rune-aware on Svelte files (`svelte/prefer-const`), and "should" is banned
-  from test titles. `!important` fails `npm run lint:tokens`; test placement (`.test.ts` colocated
-  under `web/src`, `.spec.ts` in `web/tests`) is drift-guarded by
-  `tools/tests/test-file-placement.test.mjs`. Prose-only by choice: PascalCase component files,
+  from test titles. CSS gets its own linter: `npm run lint:css` runs stylelint over every `<style>`
+  block and hand-authored `.css` file under `web/src`, and its 60 rules were chosen the same
+  measured way — the ones that catch CSS the parser keeps and the browser silently never applies
+  (`media-feature-name-no-unknown`, `property-no-unknown`, `selector-pseudo-class-no-unknown`) plus
+  the notation conventions already followed everywhere. `!important` fails `npm run lint:tokens`;
+  test placement (`.test.ts` colocated under `web/src`, `.spec.ts` in `web/tests`) is drift-guarded
+  by `tools/tests/test-file-placement.test.mjs`. Prose-only by choice: PascalCase component files,
   camelCase lib modules, and dot-joined multi-aspect test names (`platform.osLabel.test.ts`).
 * **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
   platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare

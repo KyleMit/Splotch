@@ -3,7 +3,7 @@
 **Status:** Active **Date:** 2026-06 (amended 2026-07: ignore-based file selection; markdown handed
 to dprint — ADR-0057; hand-authored configuration brought into Prettier scope; amended 2026-08:
 dependency audit raised from critical to high; amended 2026-09: the silently-followed conventions
-ratified as rules — issue 1529)
+ratified as rules — issue 1529; stylelint adopted for CSS and Svelte `<style>` blocks — issue 1859)
 
 ## Context
 
@@ -68,6 +68,77 @@ choices:
   `@typescript-eslint/consistent-type-definitions` is a genuine coin flip (`interface` 257 vs `type`
   264 at evaluation) — a decision to make someday, not a convention to ratify, and deliberately out
   of scope.
+* **Stylelint owns the CSS the other tools cannot see** (amended 2026-09, issue 1859). ESLint parses
+  Svelte components but not the CSS inside their `<style>` blocks, so until now the only CSS checks
+  in CI were the four hand-rolled by `npm run lint:tokens` (ADR-0071) — which exists because CSS
+  checks were wanted and there was no linter to host them. `npm run lint:css` runs **stylelint**
+  over every `<style>` block and hand-authored `.css` file under `web/src`, with **postcss-html** as
+  the custom syntax. Scope excludes the generated `web/src/tokens.css`, which
+  `npm run gen:tokens:check` already guards.
+
+  Three implementation facts worth not rediscovering. `customSyntax` is scoped to `**/*.svelte`
+  rather than set at the top level: pointed at a plain `.css` file, postcss-html parses the
+  stylesheet as a document, finds no embedded style block, and reports zero problems — coverage that
+  disappears without failing. Stylelint 16 removed its own stylistic rules, so nothing in the
+  standard set contests Prettier's formatting (verified against stylelint 17.15, and confirmed by
+  running `prettier --write` over the whole scope: it rewrites nothing and stylelint stays clean).
+  And `stylelint-config-standard` is deliberately **not** a dependency — it was installed once to
+  measure, then removed; the rules are enumerated with their values so that a stylelint upgrade
+  cannot enable an unmeasured rule.
+* **The adopted CSS rule set — 60 rules, each measured at zero.** Same method as the ESLint
+  ratification above: a rule is enabled where the codebase already complies, and rejected with its
+  count where it does not. The set groups into four kinds:
+  * **CSS that is retained but dead** (25 rules) — `media-feature-name-no-unknown`,
+    `property-no-unknown`, `selector-pseudo-class-no-unknown`,
+    `declaration-property-value-no-unknown` and the rest of the no-unknown / no-invalid family.
+    These share a failure mode issue 1854 established empirically:
+    `@media (prefers-reduced-motoin: reduce)` survives in `cssRules`, reports unmatched, and its
+    declarations simply never apply. A misspelled *property* is dropped and looks wrong on first
+    render; a misspelled media feature, pseudo-class, at-rule prelude or value is indistinguishable
+    from correct code unless you happen to be developing in the state it guards.
+  * **CSS that applies and does nothing** (11 rules) — empty blocks, duplicate declarations the
+    cascade discards, longhands a later shorthand overwrites, `!important` inside a keyframe.
+  * **Deprecated and vendor-prefixed syntax** (6 rules), in the four categories at zero.
+  * **Notation and naming conventions already followed everywhere** (18 rules) — case, quoting,
+    zero-length units, colour and keyframe notation, kebab-case custom properties.
+
+  One rule carries an option rather than a plain `true`: `selector-pseudo-class-no-unknown` runs
+  with `ignorePseudoClasses: ['global']`. Its 316 hits were **all** Svelte's `:global()`, which is
+  scoping syntax rather than an unknown pseudo-class, and teaching the rule the framework's
+  vocabulary is what this config already does for genuine idioms. At zero afterwards, it catches
+  `:focus-visable` across every component — the single highest-value rule in the set.
+* **Rejected CSS rule candidates — measured, do not re-litigate without new evidence.**
+  `stylelint-config-standard` v40 enables 82 rules; 22 of them fire here, for 703 violations (counts
+  as of the 2026-09 evaluation): `rule-empty-line-before` 136 · `media-feature-range-notation` 113 ·
+  `comment-empty-line-before` 81 · `color-function-alias-notation` 71 · `alpha-value-notation` 47 ·
+  `color-function-notation` 47 · `at-rule-empty-line-before` 45 · `no-descending-specificity` 32 ·
+  `declaration-empty-line-before` 25 · `shorthand-property-no-redundant-values` 18 ·
+  `keyframes-name-pattern` 16 · `custom-property-empty-line-before` 13 · `selector-id-pattern` 13 ·
+  `selector-not-notation` 9 · `property-no-vendor-prefix` 8 · `value-keyword-case` 8 ·
+  `selector-class-pattern` 7 · `no-duplicate-selectors` 6 ·
+  `declaration-block-no-redundant-longhand-properties` 4 · `property-no-deprecated` 2 ·
+  `color-hex-length` 1 · `declaration-property-value-keyword-no-deprecated` 1. Five carry a specific
+  note:
+  * The five `*-empty-line-before` rules (300 violations between them) govern blank-line placement,
+    which ADR-0057's split hands to the formatter. Rejected as a class, not on count.
+  * `property-no-vendor-prefix` is not debt. At the Safari 16.4 floor (`docs/COMPATIBILITY.md`),
+    `-webkit-backdrop-filter` and `-webkit-user-select` are the only spellings that work —
+    unprefixed `backdrop-filter` landed in Safari 18 and `user-select` in Safari 17. A linter
+    telling a contributor to delete them would break the floor the repo publishes. The four sibling
+    vendor-prefix rules (at-rule, media-feature, selector, value) are all at zero and adopted, so
+    the asymmetry is deliberate rather than an oversight.
+  * `keyframes-name-pattern` has no convention to ratify in either direction: the kebab-case pattern
+    flags 16 camelCase names and a camelCase pattern flags 16 kebab-case ones. The codebase is
+    genuinely split, and picking a side is a rename, not a ratification.
+  * `no-duplicate-selectors`' 6 hits are all `:root` in `app.css`, which is sectioned by purpose on
+    purpose.
+  * `color-function-notation` 47, `color-function-alias-notation` 71 and `alpha-value-notation` 47
+    are one migration, not three — the modern `rgb(0 0 0 / 60%)` space-separated form. Worth doing
+    someday as its own change; not a linting decision.
+
+  Deliberately out of scope: consolidating the four checks `npm run lint:tokens` hand-rolls into
+  stylelint. Some are expressible there, but the token linter's per-file ratchet baselines are not,
+  and moving them is its own decision.
 * **Prettier matches the existing style** (2-space, single-quote, width 100, `trailingComma: es5`).
   Adopting it meant a one-time reformat of `web/src` and `scripts`; hand-authored JSON, YAML, and
   web manifests are also in scope. Markdown is dprint's (ADR-0057), while generated and frozen
@@ -117,6 +188,15 @@ existing `test` job.
 * \+ The near-universal conventions (zero `any`, `node:` imports, named exports under `web/src`,
   rune-aware `prefer-const`, flake-resistant spec shapes, no `!important`) fail CI on their first
   violation instead of relying on a reviewer noticing.
+* \+ CSS inside Svelte `<style>` blocks is linted for the first time; a misspelled media feature,
+  pseudo-class, or property value fails CI instead of silently never applying.
+* − The stylelint rule set is a ratchet against today's codebase, so a genuinely new construct can
+  fail the gate (a future `-webkit-` value, a `@container` name that isn't kebab-case). The fix is
+  to change the rule with a reason, the way the vendor-prefix asymmetry above is recorded — not to
+  add an inline disable.
+* − Adding stylelint re-keyed pnpm's peer-suffixed lockfile entries tree-wide, because it pulls
+  `supports-color@10` where most of the tree had resolved `@7`. No dependency changed version; the
+  diff is noise inherent to pnpm's peer hashing.
 * \+ High and critical dependency advisories block changes before merge.
 * − Moderate and low advisories remain visible in audit output but do not block CI.
 * − No pre-commit hook means a contributor can commit lint/format violations locally; CI catches
