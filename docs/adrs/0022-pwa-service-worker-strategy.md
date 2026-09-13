@@ -126,8 +126,8 @@ fetch abandons the install. The next update check installs the new `sw.js` whole
 `additionalManifestEntries` would place it, the shell was fetched after every chunk, so a deploy at
 any point of a slow install produced a worker with new HTML over old chunks.
 `tools/check-pwa-precache.mjs` requires exactly one shell entry, requires it first, requires the
-fallback callbacks to look up that same URL, and counts the prerendered `index.html` against the
-precache budget.
+timeout callback and the error callback each to look up that same URL, and counts the prerendered
+`index.html` against the precache budget.
 
 The stale-page recovery navigation (`/?v=<deployed>`, below) is exempt from the timeout answer. Its
 purpose is to reach the deployed build, and the page allows one attempt per deployed version, so

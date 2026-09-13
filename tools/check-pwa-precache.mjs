@@ -26,16 +26,28 @@ export function precacheUrlsFromSource(source) {
 }
 
 // The navigation route's fallback plugin compiles the shell URL into its callbacks
-// as a string literal; this reads back the URLs those callbacks look up.
-export function appShellFallbackUrlsFromSource(source) {
-  return [...source.matchAll(/caches\.match\(("\/\?app-shell-build=(?:\\.|[^"\\])*")\)/g)].map(
-    (match) => JSON.parse(match[1])
-  );
+// as a string literal. The timeout callback answers a stalled launch and the error
+// callback an offline one, so each must look up the shell on its own.
+export const APP_SHELL_FALLBACK_CALLBACKS = ['cachedResponseWillBeUsed', 'handlerDidError'];
+
+// Each callback name, then its own body up to the next callback, then the lookup.
+const APP_SHELL_FALLBACK_LOOKUP_PATTERN = new RegExp(
+  String.raw`(${APP_SHELL_FALLBACK_CALLBACKS.join('|')}):async function\b` +
+    String.raw`(?:(?!:async function\b)[^])*?` +
+    String.raw`caches\.match\(("\/\?app-shell-build=(?:\\.|[^"\\])*")\)`,
+  'g'
+);
+
+export function appShellFallbackLookupsFromSource(source) {
+  return [...source.matchAll(APP_SHELL_FALLBACK_LOOKUP_PATTERN)].map((match) => ({
+    callback: match[1],
+    url: JSON.parse(match[2]),
+  }));
 }
 
 export function pwaPrecacheProblems({
   precacheUrls,
-  appShellFallbackUrls,
+  appShellFallbackLookups,
   precacheBytes,
   responsiveAssetUrls,
   coloringManifest,
@@ -56,13 +68,13 @@ export function pwaPrecacheProblems({
         'The app shell must be the first precache entry so a deploy mid-install fails the install'
       );
     }
-    if (
-      !appShellFallbackUrls.length ||
-      appShellFallbackUrls.some((url) => url !== appShellUrls[0])
-    ) {
-      problems.push(
-        `The navigation fallback does not look up the precached app shell ${appShellUrls[0]}`
-      );
+    for (const callback of APP_SHELL_FALLBACK_CALLBACKS) {
+      const lookups = appShellFallbackLookups.filter((lookup) => lookup.callback === callback);
+      if (lookups.length !== 1 || lookups[0].url !== appShellUrls[0]) {
+        problems.push(
+          `The navigation fallback's ${callback} does not look up the precached app shell ${appShellUrls[0]}`
+        );
+      }
     }
   }
   const responsivePrecacheUrls = precacheUrls.filter((url) => /^coloring\/max-\d+px\//.test(url));
@@ -155,7 +167,7 @@ export async function checkPwaPrecache({
     : undefined;
   const problems = pwaPrecacheProblems({
     precacheUrls,
-    appShellFallbackUrls: appShellFallbackUrlsFromSource(serviceWorkerSource),
+    appShellFallbackLookups: appShellFallbackLookupsFromSource(serviceWorkerSource),
     precacheBytes,
     responsiveAssetUrls,
     coloringManifest,
