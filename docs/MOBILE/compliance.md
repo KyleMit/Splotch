@@ -21,7 +21,7 @@ this app's shape.
 | What Splotch implements                                                       | iOS (App Store)                       | Android (Google Play)                     | Decided in                                                                        |
 | ----------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
 | Parental gate on every external link                                          | Required — 1.3 Kids Category          | Not required (shipped anyway)             | ADR-0094; issue 844                                                               |
-| Parental gate on data-out actions (AI setup and generate, reports, feedback)  | Required — 1.3, 5.1.4                 | Required — Families "adult action"        | ADR-0094, ADR-0104; issue 844                                                     |
+| Parental gate on data-out actions (AI setup and generate, reports, feedback)  | Required — 1.3, 5.1.4                 | Defensive — Families rule is social-only  | ADR-0094, ADR-0104; issue 844                                                     |
 | No third-party ads or analytics SDKs at all                                   | Required — 1.3                        | Required — Families self-certified SDKs   | Never shipped; `/privacy` commits to it                                           |
 | Privacy policy in listing metadata and reachable in-app                       | Required — 5.1.1, 5.1.4(b)            | Required — Families                       | `/privacy` route, bundled into both native builds and link-checked by `build:cap` |
 | COPPA / GDPR-K posture (no accounts, no child name/email/location)            | Required — 5.1.4(a)                   | Required — Families                       | Whole-app design; `/privacy` "Children's privacy"                                 |
@@ -251,12 +251,14 @@ guideline's own clarification says the math gate alone is not COPPA consent.
 on (ADR-0127), which is also when the allowance check first sends the installation's one-way code,
 or submitting a key or access code — and in the store builds both sit behind their own **Turning on
 AI pictures** check by default (ADR-0094's 2026-09-13 amendment, issue 844). Switching the feature
-or an option off never asks. The gate proves an adult acted; per this guideline's clarification it
-is not itself statutory consent, which is why the moment is also documented in `/privacy` in
-parent-readable terms; no accounts, no child name/email/location is ever requested; the
-free-allowance pseudonym is app-purpose, one-way, and never combined with other identifiers
-(ADR-0105); provider retention is disclosed with both halves stated — not used for training by
-default, normally kept for 30 days for abuse monitoring with published exceptions (ADR-0114, commit
+or an option off never asks. An install that switched AI pictures on before that check shipped keeps
+the setting — ADR-0127 preserves stored choices — so its allowance check runs without a fresh solve.
+The gate proves an adult acted; per this guideline's clarification it is not itself statutory
+consent, which is why the moment is also documented in `/privacy` in parent-readable terms; no
+accounts, no child name/email/location is ever requested; the free-allowance pseudonym is
+app-purpose, one-way, and never combined with other identifiers (ADR-0105); provider retention is
+disclosed with both halves stated — not used for training by default, normally kept for 30 days for
+abuse monitoring with published exceptions (ADR-0114, commit
 7a7cb68c608fdea6358f74535fac86e59f9beda2). The privacy policy and store declarations are audited
 against that shipped practice before submission.
 
@@ -300,18 +302,22 @@ Responses API path refused a red-team fixture the images endpoint rendered.
 > children to falsify their age […]. Apps require adult action before enabling features that allow
 > children to exchange personal information."
 
-**Impact / decisions.** The multiplication-keypad gate (ADR-0094) is the adult-action mechanism in
-front of every personal-information exchange: enabling the AI feature and submitting its credential
-— the "before enabling features" moment this policy names, and the first send of the allowance's
-installation pseudonym — then AI generation, image/refusal reports, and feedback submission. Android
-store builds arm all six gate policies to `always` by default. Because the mechanism has to be one a
-child cannot realistically complete, it is built to resist random tapping (an explicit check key,
-wrong answers for tapping past the answer, escalating lockouts). A seeded tapping simulation holds
-the chance of tapping through in two minutes under 1.5%; the chance keeps rising for a child who
-never stops. A child who has learned to fill the answer circles and tap the check key still guesses
-through in about 9% of two-minute runs, limited only by the lockout. That is residual risk against
-the "cannot realistically complete" standard, not a claim the gate meets it; ADR-0094's 2026-09-12
-amendment records both models and the longer-horizon figures.
+**Impact / decisions.** Re-verified 2026-09-13: the current Families policy states this requirement
+under *Social Apps & Features*, for features that let child users exchange personal information.
+Splotch has none — no chat, sharing, or user-to-user distribution — so the rule does not directly
+require its gates, and the combined table marks them defensive on Android. They ship anyway as the
+conservative reading, because the AI feature transmits a child's drawing: the multiplication-keypad
+gate (ADR-0094) stands in front of enabling the AI feature and submitting its credential — which is
+also the first send of the allowance's installation pseudonym — then AI generation, image/refusal
+reports, and feedback submission. Android store builds arm all six gate policies to `always` by
+default. Because the mechanism has to be one a child cannot realistically complete, it is built to
+resist random tapping (an explicit check key, wrong answers for tapping past the answer, escalating
+lockouts). A seeded tapping simulation holds the chance of tapping through in two minutes under
+1.5%; the chance keeps rising for a child who never stops. A child who has learned to fill the
+answer circles and tap the check key still guesses through in about 9% of two-minute runs, limited
+only by the lockout. That is residual risk against the "cannot realistically complete" standard, not
+a claim the gate meets it; ADR-0094's 2026-09-12 amendment records both models and the
+longer-horizon figures.
 
 ### Families policy — data practices and identifiers
 
