@@ -134,8 +134,12 @@ choices:
   `color-hex-length` 1 · `declaration-property-value-keyword-no-deprecated` 1. Broadening the scope
   to the whole repo added a 23rd: `declaration-block-single-line-max-declarations` 61, every one of
   them in `tools/scrapbook/clear-sound-sheet/sheet.css`. Six carry a specific note:
-  * The five `*-empty-line-before` rules (300 violations between them) govern blank-line placement,
-    which ADR-0057's split hands to the formatter. Rejected as a class, not on count.
+  * The five `*-empty-line-before` rules (300 violations between them) govern blank-line placement.
+    Note that nothing else governs it either: Prettier preserves the blank lines it finds in CSS
+    rather than placing them, so these are not a formatter's job being defended — they are unowned.
+    They are rejected because appearance at that grain is left to the author here, and because
+    `stylelint --fix` would rewrite 98 files to adopt them. Not a claim that the convention is
+    wrong.
   * `property-no-vendor-prefix` is not debt. Against `caniuse-lite` as installed: unprefixed
     `backdrop-filter` landed in Safari 18.0, above the Safari 16.4 floor (`docs/COMPATIBILITY.md`),
     and `user-select` **still requires the `-webkit-` prefix in every shipping Safari**, 26.x and
@@ -158,6 +162,20 @@ choices:
   * `color-function-notation` 47, `color-function-alias-notation` 71 and `alpha-value-notation` 47
     are one migration, not three — the modern `rgb(0 0 0 / 60%)` space-separated form. Worth doing
     someday as its own change; not a linting decision.
+
+  **Fifteen of the 23 are fully `stylelint --fix`-able**, so for most of them the count *is* the
+  whole reason: the policy above rejects on non-compliance, and complying would have meant a mass
+  reformat of production CSS inside a linting change. The genuinely-unwanted set is small —
+  `property-no-vendor-prefix` (where `--fix` would delete the prefixes the floor needs, making
+  auto-fixability a hazard rather than a convenience), `keyframes-name-pattern` (no convention
+  exists to ratify), `no-duplicate-selectors`, and `declaration-block-single-line-max-declarations`.
+  A third group is not mechanical at all, because the fix changes behaviour:
+  `no-descending-specificity` (50) reorders the cascade, `property-no-deprecated` (2) rewrites
+  `clip` on visually-hidden a11y utilities, and `selector-not-notation` (9) and
+  `declaration-block-no-redundant-longhand-properties` (4) are auto-fixable but change specificity
+  and reset unset sub-properties respectively. Adopting any of the safe auto-fixable ones later is
+  one isolated `style:` commit, the way the original Prettier reformat was isolated — not a
+  re-litigation of this record.
 
   Deliberately out of scope: consolidating the four checks `npm run lint:tokens` hand-rolls into
   stylelint. Some are expressible there, but the token linter's per-file ratchet baselines are not,
