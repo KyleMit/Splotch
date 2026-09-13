@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { IMAGE_REPORT_RETENTION_DAYS } from '../../web/src/lib/imageReport.ts';
+import { AI_REPORT_KINDS, IMAGE_REPORT_RETENTION_DAYS } from '../../web/src/lib/imageReport.ts';
 import {
   fetchImageReports,
   isReportExpired,
@@ -18,6 +18,7 @@ import {
   planReportBundles,
   pruneExpiredLocalReports,
   READABLE_METADATA_VERSION,
+  READABLE_REPORT_KINDS,
   resolveProductionSite,
 } from '../fetch-image-reports.mjs';
 
@@ -280,6 +281,10 @@ describe('store round trip', () => {
 });
 
 describe('metadata validation', () => {
+  it('has bundle rules for exactly the report kinds the production store writes', () => {
+    expect([...READABLE_REPORT_KINDS].sort()).toEqual([...AI_REPORT_KINDS].sort());
+  });
+
   it.each([
     [
       'the retired version 1',
@@ -303,7 +308,13 @@ describe('metadata validation', () => {
       'an unknown kind',
       reportBlobs(FIRST_REPORT),
       pictureMetadata({ kind: 'complaint' }),
-      'unknown report kind "complaint"',
+      'unsupported report kind "complaint"',
+    ],
+    [
+      'an inherited object key as the kind',
+      reportBlobs(FIRST_REPORT),
+      pictureMetadata({ kind: 'toString' }),
+      'unsupported report kind "toString"',
     ],
     [
       'a picture without an output',

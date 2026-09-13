@@ -13,7 +13,7 @@ import {
 } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
-import { AI_REPORT_KINDS, IMAGE_REPORT_RETENTION_DAYS } from '../web/src/lib/imageReport.ts';
+import { IMAGE_REPORT_RETENTION_DAYS } from '../web/src/lib/imageReport.ts';
 import { IMAGE_REPORT_STORE_NAME } from '../web/src/lib/server/imageReportStoreName.ts';
 import { isMain, ROOT, runId, runMain } from './lib/proc.mjs';
 
@@ -116,12 +116,34 @@ function extensionOf(filename) {
   return filename.slice(filename.lastIndexOf('.') + 1);
 }
 
+const BUNDLE_PROBLEM_BY_KIND = {
+  picture(metadata, bundle) {
+    if (!bundle.output) return 'picture report has no output image';
+    if (
+      metadata.outputContentType !== CONTENT_TYPE_BY_EXTENSION[extensionOf(bundle.output.filename)]
+    ) {
+      return 'output filename and content type disagree';
+    }
+    if (metadata.refusalReason !== null) return 'picture report carries a refusal reason';
+    return null;
+  },
+  'false-positive-refusal'(metadata, bundle) {
+    if (bundle.output) return 'refusal report has an output image';
+    if (metadata.outputContentType !== null) return 'refusal report names an output content type';
+    if (typeof metadata.refusalReason !== 'string') return 'refusal report has no refusal reason';
+    return null;
+  },
+};
+// Keyed locally rather than by the store's AI_REPORT_KINDS: a kind added there must fail this tool's
+// kind drift test until it gets bundle rules, instead of falling into another kind's rules.
+export const READABLE_REPORT_KINDS = Object.keys(BUNDLE_PROBLEM_BY_KIND);
+
 function describeMetadataProblem(metadata, bundle) {
   if (metadata?.version !== READABLE_METADATA_VERSION) {
     return `unsupported metadata version ${JSON.stringify(metadata?.version)} (this tool reads version ${READABLE_METADATA_VERSION})`;
   }
-  if (!AI_REPORT_KINDS.includes(metadata.kind)) {
-    return `unknown report kind ${JSON.stringify(metadata.kind)}`;
+  if (!Object.hasOwn(BUNDLE_PROBLEM_BY_KIND, metadata.kind)) {
+    return `unsupported report kind ${JSON.stringify(metadata.kind)}`;
   }
   if (typeof metadata.reportedAt !== 'string' || typeof metadata.deleteAfter !== 'string') {
     return 'metadata is missing reportedAt or deleteAfter';
@@ -132,20 +154,7 @@ function describeMetadataProblem(metadata, bundle) {
   if (metadata.inputContentType !== CONTENT_TYPE_BY_EXTENSION[extensionOf(bundle.input.filename)]) {
     return 'input filename and content type disagree';
   }
-  if (metadata.kind === 'picture') {
-    if (!bundle.output) return 'picture report has no output image';
-    if (
-      metadata.outputContentType !== CONTENT_TYPE_BY_EXTENSION[extensionOf(bundle.output.filename)]
-    ) {
-      return 'output filename and content type disagree';
-    }
-    if (metadata.refusalReason !== null) return 'picture report carries a refusal reason';
-    return null;
-  }
-  if (bundle.output) return 'refusal report has an output image';
-  if (metadata.outputContentType !== null) return 'refusal report names an output content type';
-  if (typeof metadata.refusalReason !== 'string') return 'refusal report has no refusal reason';
-  return null;
+  return BUNDLE_PROBLEM_BY_KIND[metadata.kind](metadata, bundle);
 }
 
 function readMetadata(reportDir, bundle) {
