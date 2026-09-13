@@ -437,6 +437,29 @@ describe('folded history-base ink under a temporarily smaller paper', () => {
     expect(view.exportedInkAt(overhangX)).toBe(false);
   });
 
+  it('keeps the part of a stroke drawn after the paper grew mid-stroke through replay and fold', () => {
+    const view = mountRenderer({ width: 800, height: 600 });
+    renderer.beginTiledCommand(true);
+    const head = dot(750, 100);
+    renderer.renderTiledOp(head);
+    renderer.recordTiledOp(head);
+    view.adoptPaper(LANDSCAPE, { repaint: false });
+    const tail = dot(FOLDED_INK_X, 100);
+    renderer.renderTiledOp(tail);
+    renderer.recordTiledOp(tail);
+    renderer.commitTiledCommand();
+
+    renderer.repaintTiledRenderer();
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+
+    for (let index = 0; index < MAX_UNDO_DEPTH; index++) draw(dot(100 + index, 300));
+    settleFolds();
+    renderer.repaintTiledRenderer();
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+  });
+
   it('leaves base ink a smaller paper hid alone when an eraser on that paper replays or folds', () => {
     const erasedX = 700;
     const view = mountRenderer(LANDSCAPE);

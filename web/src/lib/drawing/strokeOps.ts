@@ -98,6 +98,9 @@ export interface StrokeGroupCommand {
   ops: StrokeOp[];
   wasEmpty: boolean;
   recordedPaper?: RecordedPaperState;
+  // Covers every paper the group drew on when the paper changed mid-stroke;
+  // absent while it drew only on recordedPaper.
+  drawnPaper?: { width: number; height: number };
   magicRecode?: MagicRecodeUndo;
 }
 

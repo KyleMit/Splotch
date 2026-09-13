@@ -1,11 +1,7 @@
 import { renderOp, type StrokeGroupCommand } from './strokeOps';
 import type { HistoryDebug } from './undoHistory';
-import {
-  commandReadClip,
-  type HistoryBaseTile,
-  type LiveTile,
-  type TiledCanvasSnapshot,
-} from './tiledSurfaces';
+import type { HistoryBaseTile, LiveTile, TiledCanvasSnapshot } from './tiledSurfaces';
+import { commandReadClip } from './tiledPaperExtent';
 import type { UndoTileSnapshot } from './tiledUndoPatches';
 
 interface HistoryDebugInput {

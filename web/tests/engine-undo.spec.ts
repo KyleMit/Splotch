@@ -262,8 +262,23 @@ test('erasing a shrunken page leaves folded ink past its edge for the regrown pa
   expect((await page.evaluate(() => window.__engine.getViewState())).paperCssWidth).toBe(300);
   await expect.poll(async () => (await state(page)).canvasEmpty).toBe(true);
 
+  const alphaAt = ({ x, y }: { x: number; y: number }) =>
+    page.evaluate(([px, py]) => window.__engine.pixelAt(px, py)[3], [x, y]);
+  const exportedRed = () =>
+    page.evaluate(async () =>
+      window.__engine.blobRedPixelCount(await window.__engine.exportCanvasBlob())
+    );
+
+  // The page read blank, yet the regrown paper uncovers retained ink: the
+  // screen, the empty state, and the export must all agree before any repaint.
+  await page.evaluate(() => window.__engine.resizeTo(400, 300));
+  expect(await alphaAt(hiddenInk)).toBeGreaterThan(0);
+  expect((await state(page)).canvasEmpty).toBe(false);
+  const liveRed = await count(page);
+  expect(liveRed).toBeGreaterThan(0);
+  expect(await exportedRed()).toBeGreaterThan(0);
+
   await page.evaluate(async () => {
-    await window.__engine.resizeTo(400, 300);
     window.__engine.setEraserMode(false);
     window.__engine.setStrokeWidth(8);
     window.__engine.strokeSync([
@@ -273,10 +288,33 @@ test('erasing a shrunken page leaves folded ink past its edge for the regrown pa
   });
   await page.evaluate(() => window.__engine.remount());
 
-  const alphaAt = ({ x, y }: { x: number; y: number }) =>
-    page.evaluate(([px, py]) => window.__engine.pixelAt(px, py)[3], [x, y]);
   expect(await alphaAt(hiddenInk)).toBeGreaterThan(0);
   expect(await alphaAt({ x: 285, y: 150 })).toBe(0);
+});
+
+// Pointer capture keeps a stroke alive through a resize, and the child sees it
+// keep drawing onto the grown paper; replay must not clip it back to the paper
+// the stroke started on.
+test('a stroke that continues through a paper resize keeps its tail on replay', async ({
+  page,
+}) => {
+  await page.evaluate(() => window.__engine.resizeTo(300, 250));
+  let box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.mouse.move(box.x + 240, box.y + 125);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 280, box.y + 125, { steps: 4 });
+
+  await page.evaluate(() => window.__engine.resizeTo(400, 300));
+  box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.mouse.move(box.x + 360, box.y + 125, { steps: 8 });
+  await page.mouse.up();
+
+  const tailAlpha = () => page.evaluate(() => window.__engine.pixelAt(340, 125)[3]);
+  expect(await tailAlpha()).toBeGreaterThan(0);
+  await page.evaluate(() => window.__engine.remount());
+  expect(await tailAlpha()).toBeGreaterThan(0);
 });
 
 test('undo does not reveal stale pixels after an erase-to-empty command', async ({ page }) => {

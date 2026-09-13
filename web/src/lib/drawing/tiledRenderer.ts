@@ -18,25 +18,22 @@ import {
   clearTileBacking,
   clipTilesToPaper,
   cloneHistoryBaseTiles,
-  commandFoldExtent,
-  commandReadClip,
   createLiveTiles,
   applyLiveTileView,
   deferHiddenTileClear,
-  historyBaseExtent,
   ensureCrayonTileBacking,
   ensureNormalTileBacking,
   liveTileSurfaces,
   renderHistoryBaseOp,
   restoreBlankLiveTiles,
   restoreTileContexts,
-  samePaperSize,
   type HistoryBaseTile,
   type LiveTile,
   type PaperSize,
   type TiledCanvasSnapshot,
 } from './tiledSurfaces';
 import * as readback from './tiledRendererReadback';
+import * as paperExtent from './tiledPaperExtent';
 
 interface TiledRendererHost {
   paperSize: () => PaperSize | null;
@@ -171,6 +168,7 @@ export function resizeTiledRenderer(
   }
   const paper = host?.paperSize();
   if (historyBase.length > 0 && paper) ensureHistoryBaseCovers(paper);
+  if (paper) paperExtent.widenActiveCommandPaper(activeCommand, paper);
   if (deferHiddenBackings) migrateHiddenBackingsAcrossFrames();
   else backingMigration = { revision: backingMigration.revision + 1, pending: false };
   return true;
@@ -184,16 +182,16 @@ function retileHistoryBase(source: readonly HistoryBaseTile[], size: PaperSize) 
 
 function ensureHistoryBaseCovers(required: PaperSize) {
   const current = { width: historyBaseWidth, height: historyBaseHeight };
-  const extent = historyBaseExtent(historyBase, current, required);
-  if (!samePaperSize(current, extent)) retileHistoryBase(historyBase, extent);
+  const extent = paperExtent.retiledBaseExtent(historyBase, current, required);
+  if (extent) retileHistoryBase(historyBase, extent);
 }
 
 // clearRect honors the fold clip, and the base can outgrow that clip, so a
 // folded clear starts from blank tiles sized to the clip rather than wiping in
 // place and leaving cleared ink outside it for a later fold to revive.
 function paintCommandIntoBase(command: StrokeGroupCommand, paper: PaperSize) {
-  const extent = commandFoldExtent(command.recordedPaper, paper);
-  if (command.ops.some((op) => op.kind === 'clear')) retileHistoryBase([], extent);
+  const extent = paperExtent.commandFoldExtent(command, paper);
+  if (paperExtent.commandClears(command)) retileHistoryBase([], extent);
   else ensureHistoryBaseCovers(extent);
   clipTilesToPaper(historyBase, extent);
   for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
@@ -227,6 +225,8 @@ const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
 });
 
 export const hasRetainedTiledMagicOps = magicRecode.hasRetainedOps;
+export const tiledRetainedInkCanShow = () =>
+  paperExtent.retainedBaseInkCanShow(historyBase, history);
 
 export function applyTiledView(paperView: PaperView) {
   applyLiveTileView(liveTiles, paperView);
@@ -331,7 +331,7 @@ export function recordTiledOp(op: StrokeOp) {
 function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = false) {
   const paper = host?.paperSize();
   if (!paper) return;
-  clipTilesToPaper(liveTiles, commandReadClip(command, paper));
+  clipTilesToPaper(liveTiles, paperExtent.commandReadClip(command, paper));
   for (const op of command.ops) renderTiledOpForCommand(op, captureUndo ? command : null);
   restoreTileContexts(liveTiles);
   if (captureUndo) undoPatches.crop(command);

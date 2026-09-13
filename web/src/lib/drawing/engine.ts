@@ -119,6 +119,7 @@ import {
   resizeTiledRenderer,
   scanTiledRendererIsEmpty,
   scheduleTiledHistoryFold,
+  tiledRetainedInkCanShow,
   syncTiledCrayonMix,
   tiledHistoryDebug,
   tiledSurfaceTopologyDebug,
@@ -406,11 +407,13 @@ function resizeCanvas(
   resizeMagicSheet(magicActive);
   if (
     (tiledRendererResized || repaintRecoveredPixels) &&
-    !canvasEmpty &&
+    (!canvasEmpty || tiledRetainedInkCanShow()) &&
     !repaintDeferredToRestore
   ) {
     if (PERF_MARKS) performance.mark('engine.resize.repaint:start');
     repaintTiledRenderer();
+    // A page erased blank on a smaller paper can uncover retained base ink here.
+    if (canvasEmpty) setCanvasEmptyState(scanTiledRendererIsEmpty(renderScale));
     if (PERF_MARKS) performance.measure('engine.resize.repaint', 'engine.resize.repaint:start');
   }
 
@@ -968,13 +971,9 @@ function draw(e: PointerEvent) {
   }
 }
 
-function scanDrawingIsEmpty() {
-  return scanTiledRendererIsEmpty(renderScale);
-}
-
 const idleEmptyScan = createIdleEmptyScan({
   isDrawing: () => activePointers.size > 0,
-  run: () => setCanvasEmptyState(scanDrawingIsEmpty()),
+  run: () => setCanvasEmptyState(scanTiledRendererIsEmpty(renderScale)),
 });
 
 function stopDrawing(e: PointerEvent) {
