@@ -11,7 +11,6 @@ const PRERENDERED_APP_SHELL_PATH = join(
 );
 const STATIC_COLORING_DIR = join(ROOT, 'web/static/coloring');
 const RESPONSIVE_TIER_PATTERN = /^max-\d+px$/;
-const RUNTIME_GENERATED_PRECACHE_URLS = new Set(['_app/env.js']);
 // The prerendered home page, precached under the build-unique URL
 // web/src/lib/pwa/appShellRoute.ts builds; the test drift-guards the two.
 export const APP_SHELL_PRECACHE_URL_PATTERN = /^\/\?app-shell-build=[^&]+$/;
@@ -57,9 +56,6 @@ export function pwaPrecacheProblems({
   maxPrecacheBytes = MAX_PWA_PRECACHE_BYTES,
 }) {
   const problems = [];
-  if (!precacheUrls.includes('_app/env.js')) {
-    problems.push('SvelteKit runtime environment module is missing from the PWA precache');
-  }
   const appShellUrls = precacheUrls.filter((url) => APP_SHELL_PRECACHE_URL_PATTERN.test(url));
   if (appShellUrls.length !== 1) {
     problems.push(
@@ -158,10 +154,7 @@ export async function checkPwaPrecache({
   );
   const precacheBytes = precacheUrls.reduce((total, url) => {
     const path = APP_SHELL_PRECACHE_URL_PATTERN.test(url) ? appShellPath : join(clientDir, url);
-    if (!existsSync(path)) {
-      if (RUNTIME_GENERATED_PRECACHE_URLS.has(url)) return total;
-      throw new Error(`Precached asset does not exist: ${path}`);
-    }
+    if (!existsSync(path)) throw new Error(`Precached asset does not exist: ${path}`);
     return total + statSync(path).size;
   }, 0);
   const manifestUrl = precacheUrls.find((url) => /^coloring\/manifest-.+\.json$/.test(url));

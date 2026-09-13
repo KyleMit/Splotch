@@ -117,3 +117,25 @@ overwritten.
 * **−** The finished picture is briefly at rest in Netlify Blobs, which the previous flow avoided
   entirely. Bounded by delete-on-collect and a 20-minute ceiling, but it is a real change and
   `/privacy` should not be read as saying otherwise.
+
+## Amendment (2026-09-13): a job's life runs from its start, and the lease outlives it
+
+Tests that drove the real start route, worker, job store, and grant ledger together (PR 1882) found
+that "the lease is now the same constant as the job TTL" still let the two disagree, in two ways.
+
+First, `completeJob` restarted the job's expiry when the worker finished, while the lease ran from
+the start request. A picture that took minutes stayed collectable after its lease lapsed, and the
+poll delivered it while the ledger booked it as abandoned. An outcome now keeps the expiry the start
+wrote. That also shortens retention: an uncollected picture is gone 20 minutes after the request
+that started it, not 20 minutes after the model finished.
+
+Second, even with one clock, equal lifetimes are not enough. The start writes the lease before it
+writes the job, and the poll reads the job before it settles the lease, so a job at its last
+collectable moment reaches a lease that lapsed a few store round trips earlier. The lease is now
+`FREE_RESERVATION_LEASE_MS`, the job TTL plus two `NETLIFY_SYNC_TIMEOUT_MS` ceilings, one for each
+side of that gap, since the start and the poll are each one synchronous invocation. The margin is
+load-bearing: setting the lease back to the TTL fails `settlement.integration.test.ts`'s slow-store
+boundary test.
+
+Consequence: the "run that dies without settling" cost above grows slightly. Its slot stays held,
+and the displayed allowance stays one lower, for 52 seconds after its job has expired.

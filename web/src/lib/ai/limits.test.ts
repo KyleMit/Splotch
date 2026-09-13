@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CLIENT_REQUEST_TIMEOUT_MS,
+  FREE_RESERVATION_LEASE_MS,
   GENERATION_JOB_TTL_MS,
   GENERATION_POLL_TIMEOUT_MS,
   GENERATE_DEADLINE_MS,
@@ -21,10 +22,17 @@ describe('AI deadline ladder (ADR-0063)', () => {
 
   it('keeps a job collectible for longer than the client will wait for it', () => {
     // The async half of the ladder (ADR-0115). A job that expires while the
-    // client is still polling turns a finished picture into a 404, and — because
-    // the free-generation lease is this same constant — reclaims the slot while
-    // the picture is still on its way, so the success is booked as an abandoned
-    // failure and the child's counter never moves.
+    // client is still polling turns a finished picture into a 404.
     expect(GENERATION_POLL_TIMEOUT_MS).toBeLessThan(GENERATION_JOB_TTL_MS);
+  });
+
+  it('holds a free reservation past the last moment its job can be collected', () => {
+    // The start writes the lease before the job and the poll reads the job
+    // before it settles the lease, each inside one synchronous invocation. A
+    // lease that lapses inside that gap delivers a picture the ledger cannot
+    // charge.
+    expect(FREE_RESERVATION_LEASE_MS - GENERATION_JOB_TTL_MS).toBeGreaterThanOrEqual(
+      2 * NETLIFY_SYNC_TIMEOUT_MS
+    );
   });
 });

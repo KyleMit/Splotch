@@ -175,7 +175,10 @@ export async function completeJob(
     // is the same shape as a job that never had a reservation.
     context: existing?.context ?? { free: null, style: null },
     outcome,
-    expiresAt: now + GENERATION_JOB_TTL_MS,
+    // Kept from the start, not restarted: the free reservation's lease runs from
+    // the start too, and an outcome still collectable after that lease lapses
+    // hands over a picture the ledger can no longer charge.
+    expiresAt: existing?.expiresAt ?? now + GENERATION_JOB_TTL_MS,
   };
   await store().setJSON(statusKey(jobId), record);
 }

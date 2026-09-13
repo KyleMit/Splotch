@@ -63,12 +63,12 @@ test('the save pipeline stays out of the prerendered modulepreload list', () => 
   const hrefs = modulepreloadHrefs();
   expect(hrefs.length).toBeGreaterThan(0);
 
-  let scanned = 0;
   for (const href of hrefs) {
-    // ./_app/env.js is served virtually and never holds app code.
     const chunkPath = `${clientDir}/${href.replace(/^\.\//, '')}`;
-    if (!existsSync(chunkPath)) continue;
-    scanned++;
+    expect(
+      existsSync(chunkPath),
+      `modulepreload href ${href} resolved to no chunk on disk — the href format changed and this test would scan nothing`
+    ).toBe(true);
     const chunk = readFileSync(chunkPath, 'utf8');
     for (const [module, marker] of Object.entries(SAVE_MODULE_MARKERS)) {
       expect(
@@ -89,10 +89,6 @@ test('the save pipeline stays out of the prerendered modulepreload list', () => 
       ).toBe(false);
     }
   }
-  expect(
-    scanned,
-    'no modulepreload href resolved to a chunk on disk — the href format changed and this test is scanning nothing'
-  ).toBeGreaterThan(0);
 });
 
 test('the save-module markers still identify code in the client build', () => {
