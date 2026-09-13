@@ -131,15 +131,14 @@
     return latest.isCurrent(id);
   }
 
-  function canSubmitKey() {
-    return Boolean(keyInput.trim()) && keyStatus !== 'busy';
-  }
-
   // Checking a credential sends it to Splotch, and a verified one turns AI
   // pictures on, so both the Save button and Enter wait for the AI setup check.
+  // The value is taken when the check is raised: the solve approves that
+  // credential, not whatever the field holds once the check hands over.
   function submitKey(origin: Origin | null) {
-    if (!canSubmitKey()) return;
-    requireParentalGate('aiSetup', () => void verifyAndSaveKey(), origin);
+    const value = keyInput.trim();
+    if (!value || keyStatus === 'busy') return;
+    requireParentalGate('aiSetup', () => void verifyAndSaveKey(value), origin);
   }
 
   // The check opens and takes focus inside this keydown, so the same press
@@ -151,9 +150,8 @@
     submitKey(buttonCenter(event.currentTarget));
   }
 
-  async function verifyAndSaveKey() {
-    if (!canSubmitKey()) return;
-    const value = keyInput.trim();
+  async function verifyAndSaveKey(value: string) {
+    if (keyStatus === 'busy') return;
     const { id, signal } = latest.begin();
     keyStatus = 'busy';
     keyMessage = '';

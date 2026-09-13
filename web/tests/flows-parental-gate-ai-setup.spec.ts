@@ -18,9 +18,10 @@ async function openAiArtSection(page: Page, field: string) {
 }
 
 async function countRequests(page: Page, pattern: string, body: object) {
-  const counter = { count: 0 };
+  const counter = { count: 0, bodies: [] as string[] };
   await page.route(pattern, async (route) => {
     counter.count += 1;
+    counter.bodies.push(route.request().postData() ?? '');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -75,11 +76,17 @@ test('a key waits for the AI setup check before it is sent, from Enter or Save',
   await field.press('Enter');
   await expect(gate).toBeVisible();
   expect(verifyRequests.count).toBe(0);
+  // The solve approves the credential the check was raised for: a value that
+  // lands in the field underneath it — an autofill, say — is not what is sent.
+  await field.evaluate((input: HTMLInputElement) => {
+    input.value = 'sk-changed-behind-the-check';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   await solveParentalGate(page);
   await expect(page.getByText('Your key works and has been accepted!')).toBeVisible({
     timeout: 5000,
   });
-  expect(verifyRequests.count).toBe(1);
+  expect(verifyRequests.bodies).toEqual([JSON.stringify({ apiKey: 'sk-first-parent-key' })]);
 
   await page.locator('#aiKeyActive').waitFor();
   await page.getByRole('button', { name: 'Forget' }).click();
