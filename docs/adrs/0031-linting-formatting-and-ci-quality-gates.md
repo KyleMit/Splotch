@@ -3,7 +3,8 @@
 **Status:** Active **Date:** 2026-06 (amended 2026-07: ignore-based file selection; markdown handed
 to dprint — ADR-0057; hand-authored configuration brought into Prettier scope; amended 2026-08:
 dependency audit raised from critical to high; amended 2026-09: the silently-followed conventions
-ratified as rules — issue 1529; stylelint adopted for CSS and Svelte `<style>` blocks — issue 1859)
+ratified as rules — issue 1529; stylelint adopted for CSS and Svelte `<style>` blocks — issue 1859;
+five auto-fixable notation rules adopted through one isolated reformat — issue 1861)
 
 ## Context
 
@@ -92,9 +93,10 @@ choices:
   why, has to be suppressing something real, and has to name an enabled rule — the standard this ADR
   already holds the `{@html}` disables to, and without which a bare disable is the cheapest way to
   defeat any rule in the set.
-* **The adopted CSS rule set — 59 rules, each measured at zero.** Same method as the ESLint
-  ratification above: a rule is enabled where the codebase already complies, and rejected with its
-  count where it does not. The set groups into four kinds:
+* **The adopted CSS rule set — 64 rules.** Same method as the ESLint ratification above: a rule is
+  enabled where the codebase already complies, and rejected with its count where it does not. 59
+  were measured at zero; the other 5 reached zero through one isolated `style:` reformat (below).
+  The set groups into four kinds:
   * **CSS that is retained but dead** (25 rules) — `media-feature-name-no-unknown`,
     `property-no-unknown`, `selector-pseudo-class-no-unknown`,
     `declaration-property-value-no-unknown` and the rest of the no-unknown / no-invalid family.
@@ -106,8 +108,9 @@ choices:
   * **CSS that applies and does nothing** (11 rules) — empty blocks, duplicate declarations the
     cascade discards, longhands a later shorthand overwrites, `!important` inside a keyframe.
   * **Deprecated and vendor-prefixed syntax** (6 rules), in the four categories at zero.
-  * **Notation and naming conventions already followed everywhere** (17 rules) — case, quoting,
-    zero-length units, colour and keyframe notation, kebab-case custom properties.
+  * **Notation and naming conventions** (22 rules) — case, quoting, zero-length units, colour and
+    keyframe notation, kebab-case custom properties. 17 were already followed everywhere; the five
+    adopted by reformat are listed below.
 
   Rules take `stylelint-config-standard` v40's own option values, several of which carry an `ignore`
   — `declaration-block-no-duplicate-properties` and `length-zero-no-unit` in particular are at zero
@@ -157,11 +160,8 @@ choices:
     scope widened. Confining it with a `tools/scrapbook/**` override was the wrong instinct: a
     directory exception is the allowlist failure in a new place, silently exempting every future
     stylesheet in that tree. The rule is now rejected repo-wide with its count, which is what this
-    ADR's method prescribes and what the surviving 59 all satisfy. Nothing is lost in practice —
+    ADR's method prescribes and what every adopted rule satisfies. Nothing is lost in practice —
     Prettier already puts one declaration per line everywhere it owns.
-  * `color-function-notation` 47, `color-function-alias-notation` 71 and `alpha-value-notation` 47
-    are one migration, not three — the modern `rgb(0 0 0 / 60%)` space-separated form. Worth doing
-    someday as its own change; not a linting decision.
 
   **Fifteen of the 23 are fully `stylelint --fix`-able**, so for most of them the count *is* the
   whole reason: the policy above rejects on non-compliance, and complying would have meant a mass
@@ -176,6 +176,35 @@ choices:
   and reset unset sub-properties respectively. Adopting any of the safe auto-fixable ones later is
   one isolated `style:` commit, the way the original Prettier reformat was isolated — not a
   re-litigation of this record.
+* **Five rejected candidates adopted by reformat** (amended 2026-09, issue 1861). The rejection
+  above was about not mixing a mass reformat into a linting change, not a judgement that these rules
+  were wrong, so the safe, fully auto-fixable ones whose output reads better were applied as one
+  `style:` commit, recorded in `.git-blame-ignore-revs`, and moved into the adopted set:
+  `alpha-value-notation`, `color-function-alias-notation`, `color-function-notation`,
+  `color-hex-length` and `shorthand-property-no-redundant-values`, all with
+  `stylelint-config-standard` v40's own option values. The first three are one migration, and the
+  form chosen is **the modern space-separated notation with a percentage alpha in colours only**:
+  `rgb(0 0 0 / 60%)`, while `opacity` and the SVG `*-opacity` properties keep a plain number. That
+  exception is the standard config's, and it is what separates the two counts on record — 60 colour
+  alphas under it, 178 without it, the difference being `opacity: 0` and `opacity: 1` rewritten to
+  `0%` and `100%`, which says nothing more and reads worse. The decimal-alpha alternative
+  (`rgb(0 0 0 / 0.6)`, adopting only the two function rules) was the cheaper half and equally
+  legitimate; percentage won for matching the standard config rather than carrying a local option.
+  Every rewritten declaration was checked to compute to the same value in Chromium and WebKit before
+  the reformat landed.
+
+  Two facts about the fixer worth not rediscovering. A colour whose channels come from a
+  comma-separated custom property — `rgba(var(--brand-rgb), 0.3)` — cannot be made modern, because
+  the channel list is only known after substitution; `color-function-notation` leaves it alone, and
+  `color-function-alias-notation` renames it to `rgb(var(--brand-rgb), 0.3)`, the legacy
+  four-argument `rgb()` that CSS Color 4 accepts and every engine above the floor parses. Converting
+  those means changing the `--*-rgb` tokens to space-separated channels, which is a token change,
+  not a notation one. And `stylelint --fix` re-serialises the root it edits, which escaped a literal
+  `<style>` inside `app.css`'s header comment to `\3c style>` — review a `--fix` diff for escapes,
+  not only for the rules it targeted. The rest of the list stays rejected for the reasons given:
+  `value-keyword-case` would lower-case `currentColor`, `media-feature-range-notation` is a
+  preference with no correctness argument, and the blank-line, specificity, longhand and
+  vendor-prefix rules are unchanged.
 
   Deliberately out of scope: consolidating the four checks `npm run lint:tokens` hand-rolls into
   stylelint. Some are expressible there, but the token linter's per-file ratchet baselines are not,

@@ -164,13 +164,14 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   uses named exports only, a mixed import marks its types inline (`import { a, type B }`),
   `prefer-const` runs rune-aware on Svelte files (`svelte/prefer-const`), and "should" is banned
   from test titles. CSS gets its own linter: `npm run lint:css` runs stylelint over every `<style>`
-  block and hand-authored `.css` file in the repo, and its 59 rules were chosen the same measured
-  way — the ones that catch CSS the parser keeps and the browser silently never applies
+  block and hand-authored `.css` file in the repo, and its rules were chosen the same measured way —
+  the ones that catch CSS the parser keeps and the browser silently never applies
   (`media-feature-name-no-unknown`, `property-no-unknown`, `selector-pseudo-class-no-unknown`) plus
-  the notation conventions already followed everywhere. `!important` fails `npm run lint:tokens`;
-  test placement (`.test.ts` colocated under `web/src`, `.spec.ts` in `web/tests`) is drift-guarded
-  by `tools/tests/test-file-placement.test.mjs`. Prose-only by choice: PascalCase component files,
-  camelCase lib modules, and dot-joined multi-aspect test names (`platform.osLabel.test.ts`).
+  the notation conventions, colour included (`rgb(0 0 0 / 60%)`, never `rgba(`). `!important` fails
+  `npm run lint:tokens`; test placement (`.test.ts` colocated under `web/src`, `.spec.ts` in
+  `web/tests`) is drift-guarded by `tools/tests/test-file-placement.test.mjs`. Prose-only by choice:
+  PascalCase component files, camelCase lib modules, and dot-joined multi-aspect test names
+  (`platform.osLabel.test.ts`).
 * **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
   platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare
   `string`/`number` plus a runtime fallback; constant maps are `Record<UnionType, V>` (or
