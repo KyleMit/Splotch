@@ -14,7 +14,7 @@ const { entries, getStoreMock } = vi.hoisted(() => ({
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
 vi.mock('$app/environment', () => ({ dev: false }));
 
-import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
+import { FREE_RESERVATION_LEASE_MS } from '$lib/ai/limits';
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import {
   ADMIN_GRANT_SAMPLE_LIMIT,
@@ -164,7 +164,7 @@ describe('free generation grants', () => {
     // whose slot is gone. The jump has to clear the whole lease, which is sized
     // to outlive a background job rather than a single request (ADR-0115); five
     // minutes used to be enough and no longer is.
-    vi.setSystemTime(new Date('2026-08-09T12:00:00Z').getTime() + GENERATION_JOB_TTL_MS + 60_000);
+    vi.setSystemTime(new Date('2026-08-09T12:00:00Z').getTime() + FREE_RESERVATION_LEASE_MS + 1);
     const reusing = await reserveFreeGeneration(id);
     if (!reusing.reserved) throw new Error('Expected the lapsed slot to be reusable');
     await expect(completeFreeGeneration(id, reusing.reservationId)).resolves.toEqual({

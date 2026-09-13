@@ -43,10 +43,19 @@ export const GENERATION_POLL_TIMEOUT_MS = 240_000;
 // requests rather than a couple of hundred.
 export const GENERATION_POLL_INTERVAL_MS = 3_000;
 
-// How long a background generation stays collectible (ADR-0115). It bounds two
-// things that must not disagree: how long the job store keeps an outcome, and
-// how long a free-generation reservation is held open waiting for that outcome
-// to be settled. A lease shorter than this reclaims the slot while the picture
-// is still legitimately on its way, and the completion that follows finds no
-// reservation and silently books a success as an abandoned failure.
+// How long a background generation stays collectible (ADR-0115), counted from
+// the request that started it. The free-generation reservation that outcome
+// settles is held at least this long (FREE_RESERVATION_LEASE_MS): a lease that
+// lapses first reclaims the slot while the picture is still legitimately on its
+// way, and the completion that follows finds no reservation and silently books a
+// success as an abandoned failure.
 export const GENERATION_JOB_TTL_MS = 20 * 60 * 1000;
+
+// How long a free-generation reservation is held. It must outlive the job it
+// settles, not merely match it: the start request writes the lease before it
+// writes the job, and the poll reads the job before it settles the lease, so a
+// job still collectable at its last moment reaches the ledger up to one
+// invocation later on each side. A lease that lapsed in that gap hands over a
+// picture the ledger can no longer charge. Both requests are synchronous
+// functions under the platform ceiling, so two ceilings bound the gap.
+export const FREE_RESERVATION_LEASE_MS = GENERATION_JOB_TTL_MS + 2 * NETLIFY_SYNC_TIMEOUT_MS;

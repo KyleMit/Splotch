@@ -1,6 +1,6 @@
 import { getStore } from '@netlify/blobs';
 import { dev } from '$app/environment';
-import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
+import { FREE_RESERVATION_LEASE_MS } from '$lib/ai/limits';
 import {
   FREE_GENERATION_LIMIT,
   type FreeGenerationFailureKind,
@@ -19,10 +19,10 @@ const DAILY_PROVIDER_START_KEY_PREFIX = 'daily-provider-starts/';
 // moves the counter the child is watching.
 //
 // The cost of the longer lease is that a run which dies without settling holds
-// its slot until the job would have expired anyway. That is the right way round:
-// a slot briefly held is recoverable, a picture delivered but never counted is
-// not.
-const RESERVATION_LEASE_MS = GENERATION_JOB_TTL_MS;
+// its slot until just after the job would have expired anyway. That is the right
+// way round: a slot briefly held is recoverable, a picture delivered but never
+// counted is not.
+const RESERVATION_LEASE_MS = FREE_RESERVATION_LEASE_MS;
 const CAS_ATTEMPTS = 12;
 const CAS_BACKOFF_MS = 20;
 export const FREE_GENERATION_DAILY_PROVIDER_START_LIMIT = 500;

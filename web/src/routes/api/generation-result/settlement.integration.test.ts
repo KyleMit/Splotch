@@ -20,7 +20,10 @@ const blobs = vi.hoisted(() => {
   const stores = new Map<string, Map<string, StoredBlob>>();
   const faults = new Set<string>();
   let version = 0;
-  return { stores, faults, nextEtag: () => `v${++version}` };
+  // Real store calls take time, and the gap between the ledger's clock and the
+  // job's clock is where a picture slips out uncharged.
+  const latency = { ms: 0 };
+  return { stores, faults, latency, nextEtag: () => `v${++version}` };
 });
 
 const env = vi.hoisted(() => ({}) as Record<string, string | undefined>);
@@ -41,6 +44,7 @@ vi.mock('@netlify/blobs', () => {
       blobs.stores.set(name, entries);
       const guard = async (operation: BlobOperation) => {
         await yieldToOtherRequests();
+        if (blobs.latency.ms) vi.setSystemTime(Date.now() + blobs.latency.ms);
         if (blobs.faults.has(`${name}:${operation}`))
           throw new Error(`${name} ${operation} failed`);
       };
@@ -119,6 +123,8 @@ const PLATFORM_RETRY_DELAY_MS = 60_000;
 const SLOW_GENERATION_MS = 4 * 60 * 1000;
 // How far either side of the reservation lease's end a poll lands.
 const LATE_COLLECTION_MARGIN_MS = 60_000;
+// A plausible round trip to Netlify Blobs, applied to every fake store call.
+const STORE_CALL_LATENCY_MS = 40;
 
 interface StoredGrant {
   successful: number;
@@ -205,6 +211,7 @@ function answerWithPicture() {
 beforeEach(() => {
   blobs.stores.clear();
   blobs.faults.clear();
+  blobs.latency.ms = 0;
   dispatched = [];
   workerAnswer = () => new Response(null, { status: 202 });
   env.OPENAI_API_KEY = 'project-key';
@@ -384,10 +391,9 @@ describe('free generation settlement across the background handoff', () => {
     expect(Object.keys(grantOf()?.reservations ?? {})).toHaveLength(1);
   });
 
-  // `GENERATION_JOB_TTL_MS` bounds two things that must not disagree: how long
-  // an outcome stays collectable and how long its reservation is held. Both
-  // run from the start request, so a picture that took minutes is never still
-  // on offer after the lease that would charge it has lapsed.
+  // An outcome stays collectable for `GENERATION_JOB_TTL_MS` from the start
+  // request, however long the model took, and its reservation is held past
+  // that, so a picture still on offer can always be charged.
   it('charges a slow picture collected before its lease lapses', async () => {
     provider.generateImage.mockImplementation(async () => {
       advance(SLOW_GENERATION_MS);
@@ -403,7 +409,7 @@ describe('free generation settlement across the background handoff', () => {
     expect(grantOf()).toMatchObject({ successful: 1, reservations: {} });
   });
 
-  it('stops offering a slow picture once the lease that would charge it has lapsed', async () => {
+  it('stops offering a slow picture once its lifetime from the start has passed', async () => {
     provider.generateImage.mockImplementation(async () => {
       advance(SLOW_GENERATION_MS);
       return { kind: 'image', data: PICTURE.toString('base64'), mimeType: 'image/png' };
@@ -417,6 +423,21 @@ describe('free generation settlement across the background handoff', () => {
     expect(response.status).toBe(404);
     expect(jobBlobKeys(jobId)).toEqual([]);
     expect(grantOf()).toMatchObject({ successful: 0 });
+  });
+
+  it('charges a picture collected at the last moment its job is on offer, even over a slow store', async () => {
+    blobs.latency.ms = STORE_CALL_LATENCY_MS;
+    const { jobId, dispatch } = await startHandedOffGeneration();
+    await runWorker(dispatch);
+    const job = blobs.stores.get(GENERATION_JOB_STORE_NAME)?.get(`${jobId}/status.json`)?.value as {
+      expiresAt: number;
+    };
+
+    vi.setSystemTime(job.expiresAt);
+    const response = await collect(jobId);
+
+    expect(response.status).toBe(200);
+    expect(grantOf()).toMatchObject({ successful: 1, failures: 0, reservations: {} });
   });
 
   it('settles a failed handoff in the start request itself, exactly once', async () => {
