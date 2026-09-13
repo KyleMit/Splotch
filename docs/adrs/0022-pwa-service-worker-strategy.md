@@ -189,7 +189,7 @@ It:
 * Also calls `checkVersionMismatch()`: fetches `/version.json` (not precached; always network) with
   `cache: 'no-store'`, compares its `version` field against `__APP_VERSION__` (a Vite compile-time
   constant). If they differ the running SW is serving stale HTML, so it redirects to
-  `?v=<deployed-version>`, which bypasses the HTTP cache and reaches the origin through the SW.s
+  `?v=<deployed-version>`, which bypasses the HTTP cache and reaches the origin through the SW's
   NetworkFirst handler, which waits for the network rather than answering at its timeout. The `?v=`
   param is stripped from the URL on the next init. This is the escape hatch for clients already
   stuck on a broken SW (e.g. from before this update lifecycle was in place). That redirect is a
