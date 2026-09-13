@@ -1,55 +1,40 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setAiSettingBehindGate } from './aiSetupGate';
-import {
-  dismissGate,
-  gate,
-  GATE_SUCCESS_HOLD_MS,
-  parentalGatePolicies,
-  pressGateDigit,
-} from './parentalGate.svelte';
+import { requireParentalGate } from './parentalGate.svelte';
 
-function solveOpenGate() {
-  for (const digit of String(gate.x * gate.y)) pressGateDigit(Number(digit));
-  vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
+// Stands in for the challenge itself, whose solve mechanics and policy lookup
+// parentalGate.svelte.test.ts owns: this suite pins only which policy the AI
+// setup controls ask, in which direction, and what a solve goes on to apply.
+vi.mock('./parentalGate.svelte', () => ({ requireParentalGate: vi.fn() }));
+
+function queuedDestination(): () => void {
+  const [, destination] = vi.mocked(requireParentalGate).mock.calls[0];
+  return destination;
 }
 
 describe('setAiSettingBehindGate', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    dismissGate();
-    parentalGatePolicies.aiSetup = 'always';
-    gate.sessionSolved.aiSetup = false;
-  });
-
   afterEach(() => {
-    dismissGate();
+    vi.mocked(requireParentalGate).mockReset();
     document.body.replaceChildren();
-    vi.useRealTimers();
   });
 
-  it('holds switching a setting on until the AI setup check is solved', () => {
+  it('holds switching a setting on behind the AI setup check', () => {
     const apply = vi.fn();
 
     setAiSettingBehindGate(true, apply, 'aiImageToggle');
 
+    expect(requireParentalGate).toHaveBeenCalledOnce();
+    expect(vi.mocked(requireParentalGate).mock.calls[0][0]).toBe('aiSetup');
     expect(apply).not.toHaveBeenCalled();
-    expect(gate.open).toBe(true);
-    expect(gate.feature).toBe('aiSetup');
+  });
 
-    solveOpenGate();
+  it('switches the setting on only once the check hands over', () => {
+    const apply = vi.fn();
+
+    setAiSettingBehindGate(true, apply, 'aiImageToggle');
+    queuedDestination()();
 
     expect(apply).toHaveBeenCalledExactlyOnceWith(true);
-    expect(gate.open).toBe(false);
-  });
-
-  it('never applies the setting when the check is closed unsolved', () => {
-    const apply = vi.fn();
-
-    setAiSettingBehindGate(true, apply, 'aiImageToggle');
-    dismissGate();
-    vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
-
-    expect(apply).not.toHaveBeenCalled();
   });
 
   it('switches a setting off at once, without a check', () => {
@@ -58,17 +43,7 @@ describe('setAiSettingBehindGate', () => {
     setAiSettingBehindGate(false, apply, 'aiImageToggle');
 
     expect(apply).toHaveBeenCalledExactlyOnceWith(false);
-    expect(gate.open).toBe(false);
-  });
-
-  it('follows the policy Parent Center holds for AI setup', () => {
-    parentalGatePolicies.aiSetup = 'never';
-    const apply = vi.fn();
-
-    setAiSettingBehindGate(true, apply, 'aiImageToggle');
-
-    expect(apply).toHaveBeenCalledExactlyOnceWith(true);
-    expect(gate.open).toBe(false);
+    expect(requireParentalGate).not.toHaveBeenCalled();
   });
 
   it('flies the check in from the control that asked for it', () => {
@@ -79,6 +54,12 @@ describe('setAiSettingBehindGate', () => {
 
     setAiSettingBehindGate(true, vi.fn(), 'autoSaveAiToggle');
 
-    expect(gate.origin).toEqual({ x: 30, y: 50 });
+    expect(vi.mocked(requireParentalGate).mock.calls[0][2]).toEqual({ x: 30, y: 50 });
+  });
+
+  it('opens the check without an origin when the control is gone', () => {
+    setAiSettingBehindGate(true, vi.fn(), 'aiCustomizationToggle');
+
+    expect(vi.mocked(requireParentalGate).mock.calls[0][2]).toBeNull();
   });
 });
