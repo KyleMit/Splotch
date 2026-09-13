@@ -61,9 +61,9 @@ the duplication is the accepted cost; keep the blocks in sync.
   Settings tab in the Settings modal (`SettingsToggles.svelte`).
 * **The paper darkens with the theme.** `--paper` (dark: a warm near-black, not pure black) sits
   under the unchanged low-alpha texture (`DrawingCanvas.svelte`); `--paper-margin` is the flat tone
-  behind the rotation-locked sheet. The clear gesture's paper washes and page-turn ripple
-  (`ClearButton.svelte`) follow `--paper` via `color-mix` (plain-`rgb()` fallbacks precede each, per
-  `docs/COMPATIBILITY.md`).
+  behind the rotation-locked sheet. The clear gesture's paper washes (`ClearButton.svelte`) and the
+  departing page (`app.css`'s `.clear-sheet-motion`) follow `--paper` — the washes via `color-mix`
+  (plain-`rgb()` fallbacks precede each, per `docs/COMPATIBILITY.md`).
 * **Controls on the paper darken too.** The Actions Panel cards and stroke flyout use
   `--float-surface` (dark: a step *lighter* than `--paper`, since their drop shadows vanish on a
   dark ground); corner buttons (drawer toggle, Fullscreen Toggle, Settings) swapped their hand-tuned

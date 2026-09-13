@@ -302,7 +302,7 @@
 
   function handleUndoClick() {
     if (canvasState.canUndo) {
-      undo();
+      undo(undoBtnEl);
       return;
     }
     replayActionUnavailableFeedback(undoBtnEl);

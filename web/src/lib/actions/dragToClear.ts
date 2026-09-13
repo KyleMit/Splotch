@@ -6,6 +6,7 @@ import {
   stopDrawSound,
   updateClearSound,
 } from '$lib/audio/drawingSound';
+import { CLEAR_SHEET_DURATION_MS, type ClientPoint } from '$lib/drawing/inkMotion';
 import { impactThreshold } from '$lib/platform/haptics';
 import { capturePointer, releasePointer } from './pointerCapture';
 import { getAcceptRadius } from './dragToClearGeometry';
@@ -17,9 +18,6 @@ const MULTI_CLICK_WINDOW_MS = 1000;
 const MULTI_CLICK_THRESHOLD = 3;
 const ACCEPT_ZONE_HIDE_DELAY_MS = 250;
 const DRAW_SOUND_STOP_DELAY_MS = 300;
-export const PAGE_TURN_DURATION_MS = 600;
-const RETURN_HANDOFF_GAP_MS = 50;
-const EXIT_RETURN_DELAY_MS = PAGE_TURN_DURATION_MS + RETURN_HANDOFF_GAP_MS;
 
 function suppress(e: Event) {
   e.preventDefault();
@@ -30,9 +28,9 @@ export interface DragToClearOptions {
   containerEl: HTMLDivElement;
   acceptZoneEl: HTMLDivElement;
   clearPreviewEl: HTMLDivElement;
-  pageTurnOverlayEl: HTMLDivElement;
   // Called when the user drags past the threshold and releases — should clear canvas and save.
-  onClear: () => void;
+  // `home` is the button's docked centre, where the departing page is headed.
+  onClear: (home: ClientPoint) => void;
   onTutorialShow: () => void;
   onTutorialDismiss: () => void;
   onDragStart?: () => void;
@@ -43,6 +41,7 @@ interface ActiveDrag {
   pointerId: number;
   options: DragToClearOptions;
   acceptRadius: number;
+  home: ClientPoint;
 }
 
 export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToClearOptions) {
@@ -64,6 +63,11 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     }, delay);
     resetTimers.add(id);
     return id;
+  }
+
+  function buttonCenter(): ClientPoint {
+    const rect = node.getBoundingClientRect();
+    return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   }
 
   function dragDistance(clientX: number, clientY: number): number {
@@ -113,27 +117,23 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const clientY = e.clientY;
     holdTimer = scheduleReset(o.onTutorialShow, HOLD_DURATION_MS);
 
+    const home = buttonCenter();
     const acceptRadius = getAcceptRadius();
-    activeDrag = { pointerId: e.pointerId, options: o, acceptRadius };
+    activeDrag = { pointerId: e.pointerId, options: o, acceptRadius, home };
     capturePointer(node, e.pointerId);
     startPointerX = clientX;
     startPointerY = clientY;
     clearReady = false;
     document.documentElement.style.setProperty('--clear-progress', '0');
+    o.clearPreviewEl.classList.remove('releasing');
 
     releaseAllPointers();
     startClearSound();
 
-    const rect = node.getBoundingClientRect();
-    const center = {
-      x: rect.x + rect.width / 2,
-      y: rect.y + rect.height / 2,
-    };
-
     o.containerEl.classList.add('dragging-active');
     node.classList.add('dragging');
 
-    armAcceptZone(o, center, acceptRadius);
+    armAcceptZone(o, home, acceptRadius);
 
     o.onDragStart?.();
 
@@ -191,7 +191,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     suppress(e);
   }
 
-  function finishDrag(drag: ActiveDrag) {
+  function finishDrag(drag: ActiveDrag, committed: boolean) {
     const { options: o, pointerId } = drag;
     if (holdTimer !== null) {
       resetTimers.delete(holdTimer);
@@ -212,7 +212,11 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     }, ACCEPT_ZONE_HIDE_DELAY_MS);
 
     clearReady = false;
+    // A committed flood lets go over its own fade rather than snapping off, so the
+    // departing page is what finishes the clear. Swapped in the same task so the
+    // fade starts from the flood.
     o.clearPreviewEl.classList.remove('committed');
+    if (committed) o.clearPreviewEl.classList.add('releasing');
     document.documentElement.style.setProperty('--clear-progress', '0');
 
     node.classList.remove('delete-ready');
@@ -224,46 +228,28 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     node.classList.remove('dragging');
   }
 
-  // Commit exit choreography: the button's fade/shrink and the page-turn ripple
-  // live in ClearButton.svelte's CSS; the delays below only hand the classes over
-  // at each stage.
+  // Commit exit: the button eases home on ClearButton.svelte's return transition
+  // while the page flies into it and passes beneath it. Until the page is gone
+  // .clearing lets taps through the button, so one landing where the finger was
+  // released reaches the paper instead of re-arming the gesture.
   function playClearExit(o: DragToClearOptions): void {
     node.classList.add('clearing');
-    o.pageTurnOverlayEl.classList.add('animating');
+    resetDragVisuals(o);
 
     scheduleReset(() => {
       stopDrawSound();
     }, DRAW_SOUND_STOP_DELAY_MS);
 
     scheduleReset(() => {
-      o.pageTurnOverlayEl.classList.remove('animating');
-      o.containerEl.style.transform = '';
-      node.classList.remove('dragging');
-      node.classList.add('clearing-done');
-    }, PAGE_TURN_DURATION_MS);
-
-    scheduleReset(() => {
-      o.containerEl.classList.remove('dragging-active');
-      node.classList.remove('clearing', 'clearing-done');
-      node.classList.add('clearing-return');
-    }, EXIT_RETURN_DELAY_MS);
+      node.classList.remove('clearing');
+    }, CLEAR_SHEET_DURATION_MS);
   }
 
-  function commitClear(o: DragToClearOptions): void {
+  function commitClear(o: DragToClearOptions, home: ClientPoint): void {
     commitClearSound();
     o.onTutorialDismiss();
-    o.onClear();
+    o.onClear(home);
     playClearExit(o);
-  }
-
-  // The return leg's easing is the only reason .clearing-return exists, so it
-  // comes off when that transition ends — reading the duration off the animation
-  // itself rather than re-encoding ClearButton.svelte's timing here. The icons
-  // transition their own margin and bubble, hence the target/property filter.
-  function onTransitionEnd(e: TransitionEvent) {
-    if (e.target === node && e.propertyName === 'opacity') {
-      node.classList.remove('clearing-return');
-    }
   }
 
   function onPointerUp(e: PointerEvent) {
@@ -274,12 +260,12 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     const clientX = e.clientX;
     const clientY = e.clientY;
-    const distance = dragDistance(clientX, clientY);
+    const committed = dragDistance(clientX, clientY) >= drag.acceptRadius;
 
-    finishDrag(drag);
+    finishDrag(drag, committed);
 
-    if (distance >= drag.acceptRadius) {
-      commitClear(o);
+    if (committed) {
+      commitClear(o, drag.home);
     } else {
       cancelClearSound();
       resetDragVisuals(o);
@@ -296,7 +282,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     if (e.detail !== 0 || activeDrag !== null || node.classList.contains('clearing')) return;
     releaseAllPointers();
     startClearSound();
-    commitClear(getOptions());
+    commitClear(getOptions(), buttonCenter());
   }
 
   function onPointerCancel(e: PointerEvent) {
@@ -304,13 +290,9 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     const drag = activeDrag;
     const o = drag.options;
-    finishDrag(drag);
+    finishDrag(drag, false);
 
     resetDragVisuals(o);
-    // A drag can start as soon as the button begins its return leg, so cancelling
-    // must put it back on screen rather than leave it mid-fade.
-    node.classList.remove('clearing-return');
-    o.pageTurnOverlayEl.classList.remove('animating');
     cancelClearSound();
     stopDrawSound();
     o.onDragEnd?.();
@@ -323,14 +305,13 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   node.addEventListener('pointerup', onPointerUp);
   node.addEventListener('pointercancel', onPointerCancel);
   node.addEventListener('click', onClick);
-  node.addEventListener('transitionend', onTransitionEnd);
 
   return {
     destroy() {
       if (activeDrag !== null) {
         const drag = activeDrag;
         const o = drag.options;
-        finishDrag(drag);
+        finishDrag(drag, false);
         cancelClearSound();
         resetDragVisuals(o);
         // finishDrag only hides the zone on a delayed timer, and the resetTimers
@@ -342,7 +323,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerCancel);
       node.removeEventListener('click', onClick);
-      node.removeEventListener('transitionend', onTransitionEnd);
       if (acceptZoneFrame !== null) cancelAnimationFrame(acceptZoneFrame);
       for (const id of resetTimers) clearTimeout(id);
       resetTimers.clear();

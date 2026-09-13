@@ -14,7 +14,6 @@
   let buttonEl: HTMLButtonElement;
   let acceptZoneEl: HTMLDivElement;
   let clearPreviewEl: HTMLDivElement;
-  let pageTurnOverlayEl: HTMLDivElement;
   let coachmark: ClearCoachmark;
 
   // Untracked latch — read imperatively by resetButtonPosition to skip a reset mid-gesture.
@@ -54,15 +53,14 @@
       containerEl,
       acceptZoneEl,
       clearPreviewEl,
-      pageTurnOverlayEl,
-      onClear: () => {
+      onClear: (home) => {
         // Fire-and-forget: the save must not delay the clear. Its export
         // snapshot is taken synchronously inside this call, before clearCanvas
         // wipes the paper (see saveOnDelete.ts). The catch covers the save
         // pipeline's on-demand chunk failing to load on a dead connection —
         // the clear itself must never be blocked by that.
         saveDrawingIfEnabled().catch((err) => console.error('Save on delete failed:', err));
-        clearCanvas({ animate: true });
+        clearCanvas({ animateInto: home });
         resetToolAfterClear();
       },
       onTutorialShow: () => coachmark?.show(buttonEl),
@@ -88,8 +86,6 @@
      drag progress, previewing the clear before the user commits to it. -->
 <div class="clear-preview" bind:this={clearPreviewEl} aria-hidden="true"></div>
 
-<div class="page-turn-overlay" bind:this={pageTurnOverlayEl}></div>
-
 <ClearCoachmark bind:this={coachmark} />
 
 <style>
@@ -99,7 +95,7 @@
     right: calc(-10px + var(--safe-area-right));
     z-index: var(--z-clear-button);
     pointer-events: none; /* Allow clicks through container to children */
-    transition: transform var(--duration-slow) var(--ease-pop);
+    transition: transform 480ms var(--ease-pop);
   }
 
   /* While the finger is in control, snap to position with no easing.
@@ -147,6 +143,14 @@
   .clear-button:global(.dragging) {
     border-radius: 50%;
     box-shadow: -6px 6px 30px rgb(0 0 0 / 40%);
+    animation: clear-lift-off 180ms var(--ease-pop);
+  }
+
+  /* A quick squash as the button leaves its docked corner, then back to round. */
+  @keyframes clear-lift-off {
+    50% {
+      transform: scale(1.07, 0.93);
+    }
   }
 
   .clear-button:global(.dragging) :global(.clear-icon) {
@@ -168,29 +172,10 @@
     display: block;
   }
 
-  /* Commit exit, staged by dragToClear: fade + shrink away, hold at the shrunk
-     size with no easing while the ripple sweeps, then ease back to rest.
-     .clearing / .clearing-done / .clearing-return are added imperatively via
-     classList — the return leg keeps its own timing because opacity is absent
-     from the base button's transition list, so it would snap back. */
+  /* .clearing is added imperatively by dragToClear while the departing page is
+     still in flight. */
   .clear-button:global(.clearing) {
-    opacity: 0;
-    transform: scale(0.8);
     pointer-events: none;
-    transition:
-      opacity var(--duration-base) ease,
-      transform var(--duration-base) ease;
-  }
-
-  .clear-button:global(.clearing-done) {
-    transform: scale(0.8);
-    transition: none;
-  }
-
-  .clear-button:global(.clearing-return) {
-    transition:
-      opacity 0.3s ease,
-      transform 0.3s ease;
   }
 
   .clear-button:global(.delete-ready) {
@@ -252,14 +237,15 @@
   /* Radial paper wash previewing the clear mid-drag. A paper-colored
      gradient anchored at the button's home corner (top-right) that both grows
      and strengthens as --clear-progress climbs 0→1. The theme's paper, not
-     white, so it reads as "returning to blank canvas," and same origin as the
-     confirmation ripple below so the preview and the commit feel continuous.
+     white, so it reads as "returning to blank canvas," and anchored on the
+     corner the departing page flies into so the preview and the commit feel
+     continuous.
      Each color-mix is preceded by its light-paper rgb fallback for
      pre-color-mix engines (docs/COMPATIBILITY.md). */
   .clear-preview {
     position: fixed;
     inset: 0;
-    z-index: var(--z-clear-preview); /* above the canvas, below the confirmation ripple */
+    z-index: var(--z-clear-preview); /* above the canvas, below the departing page */
     pointer-events: none;
     opacity: var(--clear-progress, 0);
     background: radial-gradient(
@@ -279,8 +265,11 @@
   }
 
   /* Point of no return: the wash snaps to flood the whole canvas, giving the
-     threshold a distinct climax instead of a featureless ramp. */
-  .clear-preview:global(.committed) {
+     threshold a distinct climax instead of a featureless ramp. On commit
+     (.releasing) the flood keeps its fill while it fades out, since a gradient
+     cannot transition. */
+  .clear-preview:global(.committed),
+  .clear-preview:global(.releasing) {
     opacity: 0.92;
     background: radial-gradient(
       circle at 100% 0,
@@ -297,43 +286,20 @@
       background 0.18s ease;
   }
 
-  /* Clear-confirmation ripple: a single paper-colored circle anchored at the
-     top-right corner. It expands outward — the wave sweeps across the
-     viewport toward the bottom-left — and fades. */
-  .page-turn-overlay {
-    position: fixed;
-    left: 100%;
-    top: 0;
-    width: 1px;
-    height: 1px;
-    border-radius: 50%;
-    background: var(--paper, white);
-    pointer-events: none;
-    z-index: var(--z-ripple);
-    transform: translate(-50%, -50%) scale(0);
+  .clear-preview:global(.releasing) {
     opacity: 0;
-  }
-
-  /* .animating is added imperatively via classList. */
-  .page-turn-overlay:global(.animating) {
-    animation: ripple 0.6s var(--ease-glide) forwards;
-  }
-
-  @keyframes ripple {
-    0% {
-      transform: translate(-50%, -50%) scale(0);
-      opacity: 0.85;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(4000);
-      opacity: 0;
-    }
+    transition: opacity 280ms linear;
   }
 
   @media (prefers-reduced-motion: reduce) {
     /* Keep the wash (it conveys state, not just motion) but make it instant. */
-    .clear-preview {
+    .clear-preview,
+    .clear-preview:global(.releasing) {
       transition: none;
+    }
+
+    .clear-button:global(.dragging) {
+      animation: none;
     }
   }
 

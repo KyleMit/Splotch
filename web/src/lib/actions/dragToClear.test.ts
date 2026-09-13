@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   cancelClearSound,
@@ -9,7 +8,8 @@ import {
 } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/platform/haptics';
 import { releaseAllPointers } from '$lib/drawing/engine';
-import { dragToClear, PAGE_TURN_DURATION_MS, type DragToClearOptions } from './dragToClear';
+import { CLEAR_SHEET_DURATION_MS } from '$lib/drawing/inkMotion';
+import { dragToClear, type DragToClearOptions } from './dragToClear';
 import { ACCEPT_RADIUS_FACTOR } from './dragToClearGeometry';
 
 vi.mock('$lib/drawing/engine', () => ({ releaseAllPointers: vi.fn() }));
@@ -32,12 +32,6 @@ function pointerEvent(type: string, pointerId: number, clientX = 0, clientY = 0)
   return e;
 }
 
-function transitionEndEvent(propertyName: string) {
-  const e = new Event('transitionend', { bubbles: true });
-  Object.defineProperty(e, 'propertyName', { value: propertyName });
-  return e;
-}
-
 const acceptRadius = () => Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
 const clearProgress = () => document.documentElement.style.getPropertyValue('--clear-progress');
 
@@ -46,7 +40,6 @@ function createOptions(): DragToClearOptions {
     containerEl: document.createElement('div'),
     acceptZoneEl: document.createElement('div'),
     clearPreviewEl: document.createElement('div'),
-    pageTurnOverlayEl: document.createElement('div'),
     onClear: vi.fn(),
     onTutorialShow: vi.fn(),
     onTutorialDismiss: vi.fn(),
@@ -212,77 +205,57 @@ describe('dragToClear pointer identity', () => {
     expect(firstOptions.containerEl.classList.contains('dragging-active')).toBe(false);
   });
 
-  it('plays the commit exit animation through its class stages and back to rest', () => {
+  it('sends the button home at commit and lets taps through until the page has gone', () => {
     vi.useFakeTimers();
     const { node, options, action } = setup();
     cleanup = () => action.destroy();
     const far = 100 + acceptRadius() + 10;
+    vi.spyOn(node, 'getBoundingClientRect').mockReturnValue(new DOMRect(900, 20, 70, 70));
 
     node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
     vi.advanceTimersByTime(16);
     node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
     node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
 
-    expect(options.onClear).toHaveBeenCalledTimes(1);
+    expect(options.onClear).toHaveBeenCalledExactlyOnceWith({ x: 935, y: 55 });
+    expect(options.containerEl.style.transform).toBe('');
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
+    expect(node.classList.contains('dragging')).toBe(false);
     expect(node.classList.contains('clearing')).toBe(true);
-    expect(node.classList.contains('dragging')).toBe(true);
-    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(true);
+    expect(options.clearPreviewEl.classList.contains('committed')).toBe(false);
+    expect(options.clearPreviewEl.classList.contains('releasing')).toBe(true);
     expect(stopDrawSound).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(300);
 
     expect(stopDrawSound).toHaveBeenCalledTimes(1);
 
-    vi.advanceTimersByTime(300);
+    vi.advanceTimersByTime(CLEAR_SHEET_DURATION_MS - 301);
 
-    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
-    expect(options.containerEl.style.transform).toBe('');
-    expect(node.classList.contains('dragging')).toBe(false);
-    expect(node.classList.contains('clearing-done')).toBe(true);
-    expect(options.containerEl.classList.contains('dragging-active')).toBe(true);
+    expect(node.classList.contains('clearing')).toBe(true);
 
-    vi.advanceTimersByTime(50);
+    vi.advanceTimersByTime(1);
 
-    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
     expect(node.classList.contains('clearing')).toBe(false);
-    expect(node.classList.contains('clearing-done')).toBe(false);
-    expect(node.classList.contains('clearing-return')).toBe(true);
 
-    // An icon's own margin transition bubbles to the button; only the button's
-    // own opacity marks the return leg as done.
-    const icon = node.appendChild(document.createElement('span'));
-    icon.dispatchEvent(transitionEndEvent('margin-right'));
-    node.dispatchEvent(transitionEndEvent('transform'));
+    node.dispatchEvent(pointerEvent('pointerdown', 2, 935, 55));
 
-    expect(node.classList.contains('clearing-return')).toBe(true);
-
-    node.dispatchEvent(transitionEndEvent('opacity'));
-
-    expect(node.classList.contains('clearing-return')).toBe(false);
+    expect(node.classList.contains('dragging')).toBe(true);
+    expect(options.clearPreviewEl.classList.contains('releasing')).toBe(false);
   });
 
-  it('restores a button caught in its return leg when the next drag is cancelled', () => {
-    vi.useFakeTimers();
+  it('releases the preview flood only for a committed drag', () => {
     const { node, options, action } = setup();
     cleanup = () => action.destroy();
     const far = 100 + acceptRadius() + 10;
 
     node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
     node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
-    node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, 120, 100));
+    node.dispatchEvent(pointerEvent('pointerup', 1, 120, 100));
 
-    expect(node.classList.contains('clearing')).toBe(true);
-
-    vi.advanceTimersByTime(PAGE_TURN_DURATION_MS + 50);
-
-    expect(node.classList.contains('clearing-return')).toBe(true);
-
-    node.dispatchEvent(pointerEvent('pointerdown', 2, 100, 100));
-    node.dispatchEvent(pointerEvent('pointercancel', 2, 100, 100));
-
-    expect(node.classList.contains('clearing-return')).toBe(false);
-    expect(node.classList.contains('dragging')).toBe(false);
-    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
+    expect(options.onClear).not.toHaveBeenCalled();
+    expect(options.clearPreviewEl.classList.contains('releasing')).toBe(false);
   });
 
   it('ignores moves and releases from a different pointer', () => {
@@ -357,13 +330,10 @@ describe('dragToClear pointer identity', () => {
     expect(options.containerEl.style.transform).toBe('');
     expect(node.classList.contains('dragging')).toBe(false);
     expect(node.classList.contains('delete-ready')).toBe(false);
-    expect(node.classList.contains('clearing')).toBe(false);
-    expect(node.classList.contains('clearing-done')).toBe(false);
-    expect(node.classList.contains('clearing-return')).toBe(false);
     expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
     expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
     expect(options.clearPreviewEl.classList.contains('committed')).toBe(false);
-    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
+    expect(options.clearPreviewEl.classList.contains('releasing')).toBe(false);
     expect(clearProgress()).toBe('0');
 
     vi.advanceTimersByTime(250);
@@ -420,8 +390,6 @@ describe('dragToClear keyboard activation', () => {
     );
     expect(options.onTutorialDismiss).toHaveBeenCalledOnce();
     expect(options.onClear).toHaveBeenCalledOnce();
-    expect(node.classList.contains('clearing')).toBe(true);
-    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(true);
   });
 
   it('ignores a real pointer click', () => {
@@ -432,8 +400,6 @@ describe('dragToClear keyboard activation', () => {
 
     expect(options.onTutorialDismiss).not.toHaveBeenCalled();
     expect(options.onClear).not.toHaveBeenCalled();
-    expect(node.classList.contains('clearing')).toBe(false);
-    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
   });
 
   it('ignores a detail-zero click while a pointer owns the gesture', () => {
@@ -447,32 +413,25 @@ describe('dragToClear keyboard activation', () => {
     expect(node.classList.contains('dragging')).toBe(true);
   });
 
-  it('ignores repeat activation until the clear exit choreography finishes', () => {
+  it('ignores repeat activation until the departing page has gone', () => {
     vi.useFakeTimers();
     const { node, options, action } = setup();
     cleanup = () => action.destroy();
 
     node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
-    vi.advanceTimersByTime(400);
+    vi.advanceTimersByTime(CLEAR_SHEET_DURATION_MS - 1);
     node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
 
     expect(options.onClear).toHaveBeenCalledOnce();
     expect(startClearSound).toHaveBeenCalledOnce();
-    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(true);
     expect(node.classList.contains('clearing')).toBe(true);
 
-    vi.advanceTimersByTime(PAGE_TURN_DURATION_MS - 400);
+    vi.advanceTimersByTime(1);
 
-    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
-    expect(node.classList.contains('clearing')).toBe(true);
-    expect(node.classList.contains('clearing-done')).toBe(true);
-
-    vi.advanceTimersByTime(50);
-
-    expect(node.classList.contains('clearing')).toBe(false);
-    expect(node.classList.contains('clearing-done')).toBe(false);
-    expect(node.classList.contains('clearing-return')).toBe(true);
     expect(vi.getTimerCount()).toBe(0);
+    node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
+
+    expect(options.onClear).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -527,26 +486,5 @@ describe('dragToClear hold-to-show-tutorial timer', () => {
     vi.advanceTimersByTime(1000);
 
     expect(options.onTutorialShow).not.toHaveBeenCalled();
-  });
-});
-
-// The page-turn hand-off waits out a ripple animation whose duration is
-// declared in ClearButton.svelte's CSS, where no module can import it — so the
-// agreement is checked by reading that source. The path stays a parameter
-// because Vite rewrites a literal `new URL('./literal', import.meta.url)` into
-// the served asset's http URL, which readFileSync rejects (precedent:
-// app.html.test.ts).
-function sourceFile(path: string): string {
-  return readFileSync(new URL(path, import.meta.url), 'utf8');
-}
-
-describe('dragToClear exit choreography timing', () => {
-  it("waits out ClearButton.svelte's ripple animation", () => {
-    const match = sourceFile('../components/ClearButton.svelte').match(
-      /animation:\s*ripple\s+([\d.]+)s/
-    );
-    expect(match, 'ClearButton.svelte declares a ripple animation duration').not.toBeNull();
-
-    expect(PAGE_TURN_DURATION_MS).toBe(Number(match![1]) * 1000);
   });
 });

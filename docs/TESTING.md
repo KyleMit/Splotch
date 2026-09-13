@@ -421,8 +421,8 @@ specs that can't race in the first place:
   button dispatched 52ms after open, at a 17×21px dialog (the 5% keyframe), 9px from the launch
   origin — inside the dead zone below, so it was swallowed and nothing was sent. The immune tests in
   that spec were the ones that pressed Escape or ran under reduced motion, which is the tell.
-  `dialogFlyFromOrigin` (app.css) starts a modal at `scale(0.05)` **on the button that opened it**,
-  and `modalDialog` arms a launch dead zone at that same point (`launchGuard`: 72px, 600ms) whose
+  `dialogFlyFromOrigin` (app.css) starts a modal scaled down **on the button that opened it**, and
+  `modalDialog` arms a launch dead zone at that same point (`launchGuard`: 72px, 600ms) whose
   capture-phase `pointerdown` handler swallows everything inside it — dialog content included, by
   design (issue \#308's ghost click). So for the opening frames the whole dialog sits in the dead
   zone: Settings' content pane centers **6px** from the launch origin at the first keyframe and only

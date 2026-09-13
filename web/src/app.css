@@ -181,14 +181,32 @@ body {
 }
 
 /* Shared dialog open animation — anchored at a per-dialog --origin-x/y so
-   each modal appears to fly out from the button that opened it. */
+   each modal appears to fly out from the button that opened it. It starts small
+   but still recognisably the card, pulls back toward the button before it
+   launches, and lands through a decaying overshoot. */
 @keyframes dialogFlyFromOrigin {
   0% {
     transform: translate(calc(-50% + var(--origin-x, 0px)), calc(-50% + var(--origin-y, 0px)))
-      scale(0.05);
+      scale(0.22);
     opacity: 0;
   }
-  60% {
+  8% {
+    transform: translate(
+        calc(-50% + var(--origin-x, 0px) * 1.06),
+        calc(-50% + var(--origin-y, 0px) * 1.06)
+      )
+      scale(0.2);
+    opacity: 0.5;
+  }
+  38% {
+    opacity: 1;
+  }
+  74% {
+    transform: translate(-50%, -50%) scale(1.032);
+    opacity: 1;
+  }
+  89% {
+    transform: translate(-50%, -50%) scale(0.994);
     opacity: 1;
   }
   100% {
@@ -238,7 +256,7 @@ body {
 }
 
 .modal-dialog.modal-fly-in[open] {
-  animation: dialogFlyFromOrigin var(--duration-slow) var(--ease-pop);
+  animation: dialogFlyFromOrigin 480ms var(--ease-pop);
   transform-origin: center;
 }
 
@@ -581,11 +599,11 @@ body {
    position:relative .flyout-wrapper (a Svelte component adds no wrapper DOM,
    so this menu is a direct child of it). */
 .flyout-menu {
-  --stagger: 25ms;
+  --stagger: 40ms;
   --flyout-from-x: 0px;
   --flyout-from-y: 6px;
   transform-origin: calc(var(--action-btn-size) / 2) 100%;
-  animation: flyout-shell var(--duration-base) var(--ease-pop) both;
+  animation: flyout-shell 300ms var(--ease-pop) both;
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
@@ -721,55 +739,72 @@ body {
 }
 
 .screenshot-capture-feedback [data-icon='camera'] {
-  animation: screenshot-capture var(--duration-slow) var(--ease-pop);
+  animation: screenshot-capture 460ms var(--ease-pop);
 }
 
-/* Undo's end-of-history wall and rejected screenshot saves share this whole-button cue. Equal
-   durations keep both halves synchronized as one response. */
+/* Undo's end-of-history wall and rejected screenshot saves share this whole-button cue. The glow
+   outlasts the shake so it can bloom outward as it fades after the button has settled. */
 .action-unavailable {
-  --action-unavailable-duration: calc(var(--duration-base) * 2);
+  --action-unavailable-flash-duration: 520ms;
   animation:
-    action-unavailable-shake var(--action-unavailable-duration) ease-in-out,
-    action-unavailable-flash var(--action-unavailable-duration) ease-in-out;
+    action-unavailable-shake 460ms ease-in-out,
+    action-unavailable-flash var(--action-unavailable-flash-duration) ease-in-out;
 }
 
 @keyframes screenshot-capture {
-  50% {
-    transform: scale(1.2) rotate(-8deg);
+  28% {
+    transform: scale(1.14) rotate(-6deg);
+  }
+  58% {
+    transform: scale(0.985) rotate(1.6deg);
+  }
+  80% {
+    transform: scale(1.012) rotate(-0.6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
   }
 }
 
+/* Each swing is smaller than the last: "not now", said once and softly, rather than a scold. */
 @keyframes action-unavailable-shake {
-  20% {
-    transform: translateX(-8px) rotate(-6deg);
+  14% {
+    transform: translateX(-5px) rotate(-3.2deg);
   }
-  40% {
-    transform: translateX(8px) rotate(6deg);
+  32% {
+    transform: translateX(5px) rotate(3.2deg);
   }
-  60% {
-    transform: translateX(-5px) rotate(-3deg);
+  52% {
+    transform: translateX(-3px) rotate(-1.8deg);
   }
-  80% {
-    transform: translateX(5px) rotate(3deg);
+  70% {
+    transform: translateX(2px) rotate(1deg);
+  }
+  86% {
+    transform: translateX(-0.8px) rotate(-0.4deg);
   }
 }
 
 /* The glow ring spreads beyond a fingertip that covers the button, so the cue stays visible. */
 @keyframes action-unavailable-flash {
-  15%,
-  70% {
+  12%,
+  62% {
     opacity: 1;
     border-color: var(--brand);
     background: var(--brand-wash);
-    box-shadow: 0 0 0 10px rgb(var(--brand-rgb) / 50%);
-    box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
+    box-shadow: 0 0 0 10px rgb(var(--brand-rgb) / 42%);
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 42%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgb(var(--brand-rgb) / 0%);
+    box-shadow: 0 0 0 16px color-mix(in srgb, var(--brand) 0%, transparent);
   }
 }
 
 /* The non-positional flash keeps unavailable actions legible without the shake. */
 @media (prefers-reduced-motion: reduce) {
   .action-unavailable {
-    animation: action-unavailable-flash var(--action-unavailable-duration) ease-in-out;
+    animation: action-unavailable-flash var(--action-unavailable-flash-duration) ease-in-out;
   }
 }
 
@@ -829,24 +864,33 @@ body {
 
 @keyframes polaroid-show {
   0% {
-    transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.1) rotate(-18deg);
+    transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.12) rotate(-16deg);
     opacity: 0;
   }
-  6% {
-    transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.15) rotate(-15deg);
-    opacity: 0.6;
+  7% {
+    transform: translate3d(calc(var(--from-x) * 1.04), calc(var(--from-y) * 1.04), 0) scale(0.14)
+      rotate(-18deg);
+    opacity: 0.55;
   }
-  30% {
-    transform: translate3d(0, 0, 0) scale(1.06) rotate(-6deg);
+  28% {
+    transform: translate3d(0, 0, 0) scale(1.05) rotate(-6.5deg);
     opacity: 1;
   }
-  38%,
-  68% {
+  36% {
+    transform: translate3d(0, 0, 0) scale(0.995) rotate(-2.8deg);
+    opacity: 1;
+  }
+  44% {
+    transform: translate3d(0, 0, 0) scale(1.008) rotate(-4.6deg);
+    opacity: 1;
+  }
+  52%,
+  78% {
     transform: translate3d(0, 0, 0) scale(1) rotate(-4deg);
     opacity: 1;
   }
   100% {
-    transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.1) rotate(-18deg);
+    transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.12) rotate(-16deg);
     opacity: 0;
   }
 }
@@ -898,19 +942,42 @@ body {
 }
 
 @keyframes flyout-shell {
-  from {
+  0% {
     opacity: 0;
-    transform: translate(var(--flyout-from-x), var(--flyout-from-y)) scale(0.96);
+    transform: translate(var(--flyout-from-x), var(--flyout-from-y)) scale(0.9);
+  }
+  52% {
+    opacity: 1;
+  }
+  72% {
+    transform: translate(0, 0) scale(1.022);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
   }
 }
+/* Four options and one decision can each carry a little character: enough travel, tilt and stagger
+   that the menu deals itself out like cards. The six-button drawer cascade deliberately does not. */
 @keyframes flyout-option {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(11px) rotate(-5deg);
+  }
+  58% {
+    opacity: 1;
+    transform: translateY(-2px) rotate(1.6deg);
+  }
+  82% {
+    transform: translateY(0.5px) rotate(-0.6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
   }
 }
 .flyout-menu > button {
-  animation: flyout-option var(--duration-base) var(--ease-pop) backwards;
+  animation: flyout-option 320ms var(--ease-pop) backwards;
   animation-delay: calc(40ms + var(--i) * var(--stagger));
 }
 .flyout-menu.motionless,
@@ -931,22 +998,45 @@ body {
   pointer-events: none;
   z-index: 2;
 }
+/* The ghost drifts part of the way toward the undo button as it fades — ink pulled back into
+   the pen. inkMotion.ts measures --ink-tx/--ink-ty. */
 .undo-ink-motion {
   position: absolute;
   transform-origin: center;
-  animation: undo-ink 300ms var(--ease-glide) forwards;
+  animation: undo-ink 420ms var(--ease-glide) forwards;
 }
 @keyframes undo-ink {
-  to {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
     opacity: 0;
-    transform: scale(0.6);
+    transform: translate(var(--ink-tx, 0), var(--ink-ty, 0)) scale(0.72);
   }
 }
+/* A wind-back rather than a spin: a little anticipation, then round, settling in decaying steps.
+   The shorthand runs linear so the per-keyframe curves own the shape. */
 .undo-firing {
-  animation: undo-spin var(--duration-slow) var(--ease-pop);
+  animation: undo-spin 470ms linear;
 }
 @keyframes undo-spin {
-  to {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.3, 0.8, 0.4, 1);
+  }
+  11% {
+    transform: rotate(24deg);
+    animation-timing-function: cubic-bezier(0.45, 0.02, 0.36, 1);
+  }
+  76% {
+    transform: rotate(-334deg);
+    animation-timing-function: cubic-bezier(0.25, 0.7, 0.3, 1);
+  }
+  90% {
+    transform: rotate(-357deg);
+  }
+  100% {
     transform: rotate(-360deg);
   }
 }
@@ -960,27 +1050,33 @@ body {
   }
 }
 
-.clear-ink-layer {
+.clear-sheet-layer {
   position: fixed;
   inset: auto;
   z-index: var(--z-clear-ink);
 }
-.clear-ink-motion {
+/* The departing page carries the paper under its ink, so what leaves is a sheet rather than floating
+   strokes. inkMotion.ts measures the transform origin. The curve is paper drawn off a desk: straight
+   to speed, no wind-up, no slowing at the mouth. No fade — the clear button above it is what hides
+   the last of it. */
+.clear-sheet-motion {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  transform-origin: 100% 0;
-  animation: clear-ink var(--duration-slow) var(--ease-glide) forwards;
+  background: var(--paper) url('/icons/handmade-paper.webp') repeat;
+  animation: clear-sheet 560ms cubic-bezier(0.32, 0.02, 0.42, 1) forwards;
 }
-@keyframes clear-ink {
+@keyframes clear-sheet {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
   to {
-    opacity: 0;
-    transform: translate(60%, -60%) scale(0);
+    transform: scale(0.02) rotate(14deg);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .clear-ink-motion {
+  .clear-sheet-motion {
     display: none;
     animation: none;
   }

@@ -96,7 +96,7 @@
     font-family: var(--font-family);
     cursor: pointer;
     transform: rotate(var(--polaroid-tilt));
-    animation: polaroidIn 340ms var(--ease-pop);
+    animation: polaroidIn 400ms var(--ease-pop);
   }
 
   /* The palette is a top bar here, so the same corner of the canvas is below it
@@ -108,16 +108,17 @@
     }
   }
 
-  /* Arrival: a pop and a wiggle, not a takeover (ADR-0116). Three passes is
-     about five seconds of asking to be noticed, after which it rests — a child
-     mid-stroke gets a picture waiting patiently, not one that nags. */
+  /* Arrival: a pop and a wiggle, not a takeover (ADR-0116). Each cycle holds two
+     passes, the second at half the swing of the first, so the print visibly
+     settles instead of stopping — a child mid-stroke gets a picture waiting
+     patiently, not one that nags by repeating itself. */
   .ai-waiting-polaroid.ready {
-    animation: polaroidWiggle 1.65s 150ms ease-in-out 3;
+    animation: polaroidWiggle 2.6s 150ms ease-in-out 2;
   }
 
-  /* One pass for a run that failed. The change still has to be noticed — the
-     print is already on screen, so nothing else marks the moment — but three
-     passes of delight over "Oh no" is the app celebrating a disappointment. */
+  /* One cycle for a run that failed. The change still has to be noticed — the
+     print is already on screen, so nothing else marks the moment — but repeated
+     delight over "Oh no" is the app celebrating a disappointment. */
   .ai-waiting-polaroid.ready.failed {
     animation-iteration-count: 1;
   }
@@ -200,7 +201,7 @@
     right: -10px;
     width: 28px;
     height: 28px;
-    animation: badgePop 0.5s var(--ease-pop);
+    animation: badgePop 560ms var(--ease-pop);
   }
 
   @keyframes polaroidSpin {
@@ -212,11 +213,14 @@
   @keyframes polaroidIn {
     0% {
       opacity: 0;
-      transform: rotate(8deg) scale(0.5) translateY(-24px);
+      transform: rotate(6deg) scale(0.62) translateY(-18px);
     }
-    70% {
+    62% {
       opacity: 1;
-      transform: rotate(-8deg) scale(1.06) translateY(0);
+      transform: rotate(-7deg) scale(1.04) translateY(0);
+    }
+    84% {
+      transform: rotate(-3.4deg) scale(0.995) translateY(0);
     }
     100% {
       transform: rotate(var(--polaroid-tilt)) scale(1) translateY(0);
@@ -224,27 +228,46 @@
   }
 
   @keyframes polaroidWiggle {
-    0%,
-    100% {
+    0% {
       transform: rotate(var(--polaroid-tilt)) scale(1);
     }
+    9% {
+      transform: rotate(0.5deg) scale(1.045);
+    }
     20% {
-      transform: rotate(3deg) scale(1.09);
+      transform: rotate(-8deg) scale(1.028);
     }
-    45% {
-      transform: rotate(-10deg) scale(1.05);
+    30% {
+      transform: rotate(-3.4deg) scale(1.035);
     }
-    70% {
-      transform: rotate(-2deg) scale(1.07);
+    42%,
+    56% {
+      transform: rotate(var(--polaroid-tilt)) scale(1);
+    }
+    63% {
+      transform: rotate(-2.6deg) scale(1.022);
+    }
+    72% {
+      transform: rotate(-6.6deg) scale(1.014);
+    }
+    80% {
+      transform: rotate(-4.2deg) scale(1.017);
+    }
+    90%,
+    100% {
+      transform: rotate(var(--polaroid-tilt)) scale(1);
     }
   }
 
   @keyframes badgePop {
     0% {
-      transform: scale(0) rotate(-30deg);
+      transform: scale(0) rotate(-22deg);
     }
-    70% {
-      transform: scale(1.3) rotate(6deg);
+    62% {
+      transform: scale(1.18) rotate(5deg);
+    }
+    84% {
+      transform: scale(0.97) rotate(-2deg);
     }
     100% {
       transform: scale(1) rotate(0);

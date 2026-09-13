@@ -56,8 +56,8 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   durationFast: 'Presses, hovers, color flips.',
   durationBase: 'Standard transitions: fills, borders, reveals.',
   durationSlow: 'Whole-surface entrances: dialogs, panels.',
-  easePop: 'Anything that pops in or celebrates: dialog fly-ins, download-done, the swatch ring.',
-  easeGlide: 'Anything that settles or leaves: the polaroid, the clear ripple.',
+  easePop: 'Anything that pops in or celebrates: dialog fly-ins, download-done, the swatch press.',
+  easeGlide: 'Anything that settles or leaves: the polaroid, the swatch ring, the undo ghost.',
 
   shadowControl:
     'The tight lift on a small raised control: the modal close disc, a selected segment thumb.',
@@ -80,8 +80,7 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
 export const zIndexUsage: Record<keyof typeof zIndex, string> = {
   zCanvasChrome: 'The floor of the shared root context — chrome that must clear the canvas layers.',
   zClearPreview: 'The full-viewport paper wash previewing a drag-to-clear.',
-  zRipple: 'The clear-confirmation ripple, over the preview wash.',
-  zClearInk: 'Departing drawing ink above the clear wash and ripple, below persistent controls.',
+  zClearInk: 'The departing page above the clear wash, beneath the Clear Button it flies into.',
   zCornerButton: 'The muted corner buttons (Settings Button).',
   zPanel: 'The bottom dock and its Actions Panel drawer; each caps its own subtree.',
   zFlyout: 'Orders the flyout inside .actions-panel only; its tie with --z-panel is inert.',

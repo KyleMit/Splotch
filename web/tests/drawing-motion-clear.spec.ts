@@ -4,7 +4,7 @@ import { drawCommittedStroke, gotoApp } from './helpers';
 
 test.use({ viewport: { width: 1000, height: 650 }, deviceScaleFactor: 2 });
 
-test('drag-clear ink stays visible above the paper wash and ripple', async ({ page }) => {
+test('drag-clear sheet stays visible above the paper wash', async ({ page }) => {
   await gotoApp(page);
   await drawCommittedStroke(page, [
     { x: 300, y: 300 },
@@ -29,7 +29,7 @@ test('drag-clear ink stays visible above the paper wash and ripple', async ({ pa
     );
   });
   await page.mouse.up();
-  const snapshot = page.locator('.clear-ink-motion');
+  const snapshot = page.locator('.clear-sheet-motion');
   const sample = await snapshot.evaluate((canvas: HTMLCanvasElement) => {
     const x = Math.round(canvas.width * 0.4);
     const y = Math.round((canvas.height * 300) / 650);
