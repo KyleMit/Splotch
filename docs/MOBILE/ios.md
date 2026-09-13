@@ -291,6 +291,8 @@ policy). The Apple Kids Category adds:
       contain only timestamps and closed style/outcome categories under a one-way identifier; each
       has a fixed 30-day window plus daily and revocation cleanup.
 * [x] Privacy Policy URL (same one — `https://splotch.art/privacy`).
+* [x] Switching AI pictures or an AI option on, and submitting a key or access code, use the Turning
+      on AI pictures gate policy; switching off never asks.
 * [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
       generation includes ten free creations per installation while the project-funded service is
       available, then accepts a parent-supplied access code or OpenAI key. The App Store build's
@@ -301,7 +303,7 @@ policy). The Apple Kids Category adds:
       feedback route and its conditional email fallback.
 * [ ] Confirm on a **native build** that every Parent Center policy starts at Every time. The
       defaults split by target (ADR-0094): only the store builds arm them, and the web build ships
-      with all five off. `CAPACITOR=true` is what decides — a gate audited in `npm run dev` is
+      with all six off. `CAPACITOR=true` is what decides — a gate audited in `npm run dev` is
       auditing the wrong build.
 
 ## 5. Known follow-ups

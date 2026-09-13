@@ -17,6 +17,7 @@ import type { Origin } from './modal.svelte';
 // operation; a session solve stays in memory and therefore resets on relaunch.
 
 export const PARENTAL_GATE_FEATURES = [
+  'aiSetup',
   'aiImage',
   'imageReport',
   'externalLinks',
@@ -29,6 +30,7 @@ export const PARENTAL_GATE_MODES = ['always', 'session', 'never'] as const;
 export type ParentalGateMode = (typeof PARENTAL_GATE_MODES)[number];
 
 const POLICY_STORAGE_KEYS = {
+  aiSetup: STORAGE_KEYS.parentalGateAiSetupMode,
   aiImage: STORAGE_KEYS.parentalGateAiImageMode,
   imageReport: STORAGE_KEYS.parentalGateImageReportMode,
   externalLinks: STORAGE_KEYS.parentalGateExternalLinksMode,

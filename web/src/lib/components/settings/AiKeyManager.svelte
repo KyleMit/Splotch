@@ -18,6 +18,9 @@
     type VerifyCredentialResult,
   } from '$lib/aiCredential';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
+  import { setAiSettingBehindGate } from '$lib/state/aiSetupGate';
+  import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
+  import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import {
     createLatestRequest,
     NETWORK_ERROR_MESSAGE,
@@ -128,9 +131,29 @@
     return latest.isCurrent(id);
   }
 
-  async function submitKey() {
+  function canSubmitKey() {
+    return Boolean(keyInput.trim()) && keyStatus !== 'busy';
+  }
+
+  // Checking a credential sends it to Splotch, and a verified one turns AI
+  // pictures on, so both the Save button and Enter wait for the AI setup check.
+  function submitKey(origin: Origin | null) {
+    if (!canSubmitKey()) return;
+    requireParentalGate('aiSetup', () => void verifyAndSaveKey(), origin);
+  }
+
+  // The check opens and takes focus inside this keydown, so the same press
+  // would otherwise go on to activate whatever it focused — its Close button —
+  // and dismiss the check the instant it appeared.
+  function submitKeyOnEnter(event: KeyboardEvent & { currentTarget: HTMLInputElement }) {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    submitKey(buttonCenter(event.currentTarget));
+  }
+
+  async function verifyAndSaveKey() {
+    if (!canSubmitKey()) return;
     const value = keyInput.trim();
-    if (!value || keyStatus === 'busy') return;
     const { id, signal } = latest.begin();
     keyStatus = 'busy';
     keyMessage = '';
@@ -191,7 +214,7 @@
         label={AI_CREATE_LABEL}
         id="aiImageToggle"
         checked={settings.aiImageEnabled}
-        onToggle={setAiImage}
+        onToggle={(next) => setAiSettingBehindGate(next, setAiImage, 'aiImageToggle')}
         help={settings.aiImageEnabled ? AI_CREATE_HELP.on : AI_CREATE_HELP.off}
       />
     </div>
@@ -271,12 +294,12 @@
                 spellcheck="false"
                 placeholder="Paste your OpenAI API key"
                 bind:value={keyInput}
-                onkeydown={(e) => e.key === 'Enter' && submitKey()}
+                onkeydown={submitKeyOnEnter}
               />
               <Button
                 variant="brand"
                 class="access-code-submit"
-                onclick={submitKey}
+                onclick={(e) => submitKey(buttonCenter(e.currentTarget))}
                 disabled={!keyInput.trim() || keyStatus === 'busy'}
               >
                 {keyStatus === 'busy' ? 'Checking…' : 'Save'}

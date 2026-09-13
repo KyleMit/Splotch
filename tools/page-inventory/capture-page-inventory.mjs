@@ -75,6 +75,7 @@ const STORAGE = {
   'splotch-lock-rotation': 'false',
   'splotch-install-dismissed': 'false',
   'splotch-install-completed': 'false',
+  'splotch-parental-gate-ai-setup-mode': 'never',
   'splotch-parental-gate-ai-image-mode': 'never',
   'splotch-parental-gate-image-report-mode': 'never',
   'splotch-parental-gate-external-links-mode': 'never',

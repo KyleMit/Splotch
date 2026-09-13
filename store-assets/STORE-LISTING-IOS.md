@@ -150,7 +150,8 @@ follow the dedicated parental-gate policy, and privately send the evidence named
 report contains the input drawing, resolved prompt, style, provider refusal reason, and timestamp; a
 picture report contains the drawing, prompt, style, output, and timestamp. A human reviews reports
 within 24 hours; evidence is scheduled for deletion after 30 days by a daily purge. There is no
-browsing, chat, public sharing, or user-to-user distribution.
+browsing, chat, public sharing, or user-to-user distribution. Turning the feature or one of its
+options on, and submitting an access code or key, also require a grown-up check by default.
 
 ## Screenshots (this folder)
 

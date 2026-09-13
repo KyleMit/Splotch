@@ -26,6 +26,10 @@
   );
 
   const PROTECTED_FEATURES: Record<ParentalGateFeature, { label: string; help: string }> = {
+    aiSetup: {
+      label: 'Turning on AI pictures',
+      help: 'Before AI pictures or an AI option is switched on, or a key or access code is sent to Splotch to be checked.',
+    },
     aiImage: {
       label: 'Generating an AI image',
       help: 'Before a drawing is sent to OpenAI for image generation.',

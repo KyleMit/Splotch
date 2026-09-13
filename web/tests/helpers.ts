@@ -140,6 +140,7 @@ export async function seedParentalGatePolicies(page: Page, mode: 'never' | 'alwa
       {
         mode,
         modeKeys: [
+          STORAGE_KEYS.parentalGateAiSetupMode,
           STORAGE_KEYS.parentalGateAiImageMode,
           STORAGE_KEYS.parentalGateImageReportMode,
           STORAGE_KEYS.parentalGateExternalLinksMode,

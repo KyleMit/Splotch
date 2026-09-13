@@ -40,6 +40,7 @@ export const STORAGE_KEYS = {
   // apart from an absent row.
   secureVaultEmpty: 'splotch-secure-vault-empty',
   saveFolderChosen: 'splotch-save-folder-chosen',
+  parentalGateAiSetupMode: 'splotch-parental-gate-ai-setup-mode',
   parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',
   parentalGateImageReportMode: 'splotch-parental-gate-image-report-mode',
   parentalGateExternalLinksMode: 'splotch-parental-gate-external-links-mode',

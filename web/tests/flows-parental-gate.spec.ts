@@ -35,6 +35,7 @@ const AI_RESULT_WEBP = readFileSync(
 
 // Every operation Parent Center holds a policy for, by the name it carries there.
 const PROTECTED_FEATURES = [
+  'Turning on AI pictures',
   'Generating an AI image',
   'Reporting an AI result',
   'Viewing external links',
@@ -353,8 +354,8 @@ test('Parent Center card toggles fit a small mobile screen without horizontal sc
   await settings.getByRole('button', { name: 'Parent Center' }).click();
 
   const cards = settings.locator('.policy-card');
-  await expect(cards).toHaveCount(5);
-  await expect(cards.getByRole('radiogroup')).toHaveCount(5);
+  await expect(cards).toHaveCount(PROTECTED_FEATURES.length);
+  await expect(cards.getByRole('radiogroup')).toHaveCount(PROTECTED_FEATURES.length);
   await expect(cards.first().getByRole('radio')).toHaveCount(3);
   // The web build ships Parent Center's own check off, so the standing warning
   // is part of what has to fit here.

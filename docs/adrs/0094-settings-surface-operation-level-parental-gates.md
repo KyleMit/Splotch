@@ -180,3 +180,48 @@ Alternatives considered:
   operation's policy, and Parent Center's own row is what says whether opening it needs a check.
 * **Link to Settings and let the parent find the section.** Rejected: nobody tapping that footer
   wants the Settings hub; they want the row that produced the challenge in front of them.
+
+## Amendment (2026-09-13): turning on AI pictures is its own protected operation
+
+Parent Center gains a sixth policy, **Turning on AI pictures** (`aiSetup`), for the AI setup
+controls in Settings: switching **Create AI Images**, **Customize AI Style**, or **Auto-Save AI
+Images** on, and submitting a key or access code — by Save or by Enter — to be checked. Each runs
+through `requireParentalGate('aiSetup', …)` at that control. Switching any of them off, and
+forgetting a saved credential, never asks: those only narrow what can leave the device, so a child
+can always make Splotch do less. The policy takes the same build-time default as the other five
+(Every time in the store builds, Never on the web).
+
+The setup controls were the last data-out operations with no challenge (issue 844). Turning AI
+pictures on is where a device first sends something off it for the feature — the free-allowance
+check leaves with the installation's one-way code as soon as the switch is on (ADR-0105), before any
+drawing does — and submitting a credential sends it to Splotch to verify, then turns the feature on.
+ADR-0127 already names the switch as the explicit opt-in; this makes it an adult's opt-in.
+
+Alternatives considered:
+
+* **Share the `aiImage` policy.** Rejected: that row answers how often a child's tap on the AI
+  button needs a grown-up, and it is the one families most want to relax to Per session or Never
+  once they have chosen AI pictures. Sharing it would unguard the rare consent moment for exactly
+  those families, and a parent who switched AI off could not keep a child from switching it back on
+  without also re-arming every generation.
+* **Share the `parentCenter` policy.** Rejected: Parent Center guards the policies themselves, and a
+  family that sets it to Never to stop being asked while adjusting checks has not thereby chosen to
+  let a child opt the device into sending data.
+* **Record a decision not to gate these controls** (a toddler cannot type a working credential, and
+  each generation is already gated). Rejected: the switch sends the installation code on a tap, and
+  the auto-save and style options change what a gated generation does without any check.
+* **Gate the key field on focus rather than its submission.** Rejected: typing or autofilling the
+  field sends nothing; the boundary is the send, and gating focus would challenge a parent before
+  they have anything to submit.
+* **Gate turning things off as well.** Rejected: it adds friction to the only direction that is
+  always safe.
+
+Consequences:
+
+* \+ Every control in Settings that can start or widen a data flow to Splotch's servers or OpenAI
+  now owns a challenge at its boundary.
+* \+ Families can relax generation without unguarding setup, and the reverse.
+* − Store builds ask again at each setup step under Every time: switching AI pictures on and then
+  saving a key is two solves. Per session collapses them.
+* − Parent Center lists six rows, and the policy vocabulary is one wider for every surface that
+  describes it (`/privacy`, the store notes, the compliance ledger).

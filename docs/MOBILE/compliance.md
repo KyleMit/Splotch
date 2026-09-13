@@ -21,7 +21,7 @@ this app's shape.
 | What Splotch implements                                                       | iOS (App Store)                       | Android (Google Play)                     | Decided in                                                                        |
 | ----------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
 | Parental gate on every external link                                          | Required — 1.3 Kids Category          | Not required (shipped anyway)             | ADR-0094; issue 844                                                               |
-| Parental gate on data-out actions (AI generate, image report, feedback)       | Required — 1.3, 5.1.4                 | Required — Families "adult action"        | ADR-0094, ADR-0104                                                                |
+| Parental gate on data-out actions (AI setup and generate, reports, feedback)  | Required — 1.3, 5.1.4                 | Required — Families "adult action"        | ADR-0094, ADR-0104; issue 844                                                     |
 | No third-party ads or analytics SDKs at all                                   | Required — 1.3                        | Required — Families self-certified SDKs   | Never shipped; `/privacy` commits to it                                           |
 | Privacy policy in listing metadata and reachable in-app                       | Required — 5.1.1, 5.1.4(b)            | Required — Families                       | `/privacy` route, bundled into both native builds and link-checked by `build:cap` |
 | COPPA / GDPR-K posture (no accounts, no child name/email/location)            | Required — 5.1.4(a)                   | Required — Families                       | Whole-app design; `/privacy` "Children's privacy"                                 |
@@ -61,9 +61,13 @@ build time (`CAPACITOR=true` is the signal); the web build ships them off (commi
 d0fc837e9db15db3379ed1785cce685211f54fdb). Native iOS keeps `never` visible but unavailable for
 external links precisely because of this guideline (`isParentalGateModeAvailable`,
 `web/src/lib/state/parentalGate.svelte.ts`). Links gate through the `parentalGateLink` action
-(native privacy links landed in 4bc0073426317c83d7805fffb8d0e551dda114cd). Issue 844 (open) finishes
-the job: putting the AI, feedback, and about *areas* — not just their links — behind the gate, which
-makes the BYOK panel the "designated area" this guideline names.
+(native privacy links landed in 4bc0073426317c83d7805fffb8d0e551dda114cd). Gating whole Settings
+areas was considered and rejected: ADR-0094 reads the guideline's "designated area" as met by a gate
+at each link's own boundary, so the BYOK panel's one link out, to OpenAI's API keys page, carries
+its own external-links gate, and the panel's data-out controls carry the AI setup gate described
+under 5.1.4 (issue 844). This guideline's third-party clause is met by design rather than by a gate:
+nothing on the device sends a device identifier to a third party — the allowance code goes only to
+Splotch's own server (ADR-0105).
 
 ### 1.2 Safety — User-Generated Content
 
@@ -223,10 +227,11 @@ own, so `build:cap` enforces both: `requiredNativePageProblems` in
 export, and `requiredNativePageLinkProblems` fails it if nothing in the shipped bundle links to
 `/privacy` — the in-app path is Settings → About → Privacy Policy. ADR-0120 records why that is a
 build-time assertion rather than a step in the native smoke. Consent is structured as adult action:
-the App Store build requires its grown-up check before each AI generation by default, including the
-ten-creation free allowance; the feedback device snapshot is opt-in and off-by-default; and image
-reports require an explicit gated confirmation that names the evidence being sent (ADR-0104). The
-gate protects action boundaries and is not itself legal consent.
+the App Store build requires its grown-up check by default before AI pictures or an AI option is
+switched on, before a key or access code is sent to be checked, and before each AI generation,
+including the ten-creation free allowance; the feedback device snapshot is opt-in and
+off-by-default; and image reports require an explicit gated confirmation that names the evidence
+being sent (ADR-0104). The gate protects action boundaries and is not itself legal consent.
 
 ### 5.1.4 Kids
 
@@ -242,12 +247,16 @@ gate protects action boundaries and is not itself legal consent.
 so the AI feature exists inside this rule no matter which provider or credential is used. The
 guideline's own clarification says the math gate alone is not COPPA consent.
 
-**Decisions.** The consent moment is the parent's deliberate setup (entering a credential or using
-the allowance behind the gate they configure), documented in `/privacy` in parent-readable terms; no
-accounts, no child name/email/location is ever requested; the free-allowance pseudonym is
-app-purpose, one-way, and never combined with other identifiers (ADR-0105); provider retention is
-disclosed with both halves stated — not used for training by default, normally kept for 30 days for
-abuse monitoring with published exceptions (ADR-0114, commit
+**Decisions.** The consent moment is the parent's deliberate setup — switching **Create AI Images**
+on (ADR-0127), which is also when the allowance check first sends the installation's one-way code,
+or submitting a key or access code — and in the store builds both sit behind their own **Turning on
+AI pictures** check by default (ADR-0094's 2026-09-13 amendment, issue 844). Switching the feature
+or an option off never asks. The gate proves an adult acted; per this guideline's clarification it
+is not itself statutory consent, which is why the moment is also documented in `/privacy` in
+parent-readable terms; no accounts, no child name/email/location is ever requested; the
+free-allowance pseudonym is app-purpose, one-way, and never combined with other identifiers
+(ADR-0105); provider retention is disclosed with both halves stated — not used for training by
+default, normally kept for 30 days for abuse monitoring with published exceptions (ADR-0114, commit
 7a7cb68c608fdea6358f74535fac86e59f9beda2). The privacy policy and store declarations are audited
 against that shipped practice before submission.
 
@@ -292,8 +301,10 @@ Responses API path refused a red-team fixture the images endpoint rendered.
 > children to exchange personal information."
 
 **Impact / decisions.** The multiplication-keypad gate (ADR-0094) is the adult-action mechanism in
-front of every personal-information exchange: AI generation, image/refusal reports, and feedback
-submission. Android store builds arm all five gate policies to `always` by default.
+front of every personal-information exchange: enabling the AI feature and submitting its credential
+— the "before enabling features" moment this policy names, and the first send of the allowance's
+installation pseudonym — then AI generation, image/refusal reports, and feedback submission. Android
+store builds arm all six gate policies to `always` by default.
 
 ### Families policy — data practices and identifiers
 
@@ -428,13 +439,15 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 | Provider swap Gemini → OpenAI                                                                                 | Issue 845; ADR-0113; b646d596e80212beadd86c78417fdf61745ad6b6                                                                                                       |
 | Under-18 obligations named and disclosed; `store: false`                                                      | ADR-0114; 7a7cb68c608fdea6358f74535fac86e59f9beda2, 88b0899e5d4bbefe86764cec5b5ae0a2f759dec4                                                                        |
 | Native external links gated, `/privacy` included                                                              | PR 1030 (5b5c1ed60038c152ca54731f3c54d11ad6d61240)                                                                                                                  |
+| AI setup controls gated (switching AI on, AI options, key or code submission)                                 | Issue 844; ADR-0094 2026-09-13 amendment                                                                                                                            |
 | Beta pages consolidated; Play URLs kept out of the iOS build                                                  | ADR-0112; PR 1034 (ed186a02dbdb69b0804ffc6f8882c89791abfa1d)                                                                                                        |
 | Mobile tooling consolidated (bundle guard's current home)                                                     | 661ee3153bd8aff6753cb3923199dad9cd4f2328 → `tools/mobile/check-static-bundle.mjs`                                                                                   |
 | BYOK how-to reworded as configuration                                                                         | Issue 849; c2ee6446e3a294cd4a55cfc148f37f1f01c8dc04                                                                                                                 |
 | 2.1(b) business-model answer written down; China mainland storefront deselected                               | Submission c730ff1d-1a03-40cf-831d-2804513a1830, reviewed 2026-09-12                                                                                                |
 
 **Enforced by tests:** `web/src/lib/state/parentalGate.svelte.test.ts`,
-`web/tests/flows-parental-gate.spec.ts`, `web/tests/flows-parent-center-warning.spec.ts`,
+`web/src/lib/state/aiSetupGate.test.ts`, `web/tests/flows-parental-gate.spec.ts`,
+`web/tests/flows-parental-gate-ai-setup.spec.ts`, `web/tests/flows-parent-center-warning.spec.ts`,
 `web/tests/ai-report.spec.ts`, `web/src/nativeExcludedRoutes.test.ts`,
 `tools/mobile/tests/static-bundle.test.mjs`, `web/tests/admin.spec.ts`,
 `web/tests/feedback.spec.ts`, `web/tests/beta.spec.ts`.
@@ -450,8 +463,6 @@ declaration to keep aligned by hand.
 
 ## Open items
 
-* **Issue 844** — gate the AI, feedback, and about *areas* (not just their links); the load-bearing
-  change for Apple 1.3's "designated area" reading.
 * **Issue 708** — reduce how many `target="_blank"` links exist in the native bundle at all.
 * **OpenAI zero-data-retention grant** — an account-owner action outside this repo (ADR-0114).
 * **Submission-time steps** — reviewer access code, review notes on the closed prompt enum, rating

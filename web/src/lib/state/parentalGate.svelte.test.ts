@@ -279,6 +279,7 @@ describe('parental gate', () => {
 
   it('persists an independent mode for every protected feature', () => {
     const storageKeyByFeature = {
+      aiSetup: STORAGE_KEYS.parentalGateAiSetupMode,
       aiImage: STORAGE_KEYS.parentalGateAiImageMode,
       imageReport: STORAGE_KEYS.parentalGateImageReportMode,
       externalLinks: STORAGE_KEYS.parentalGateExternalLinksMode,
@@ -286,6 +287,7 @@ describe('parental gate', () => {
       parentCenter: STORAGE_KEYS.parentalGateParentCenterMode,
     } as const;
     const modeByFeature = {
+      aiSetup: 'always',
       aiImage: 'session',
       imageReport: 'session',
       externalLinks: 'session',

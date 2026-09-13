@@ -24,7 +24,7 @@
   import type { SectionId } from './contents';
   import { createPrivacyParentCenter } from './parentCenter.svelte';
 
-  const LAST_UPDATED = 'August 20, 2026';
+  const LAST_UPDATED = 'September 13, 2026';
   const GENERATION_JOB_TTL_MINUTES = GENERATION_JOB_TTL_MS / 60_000;
 
   const tocItems: SidebarTocItem<SectionId>[] = SECTIONS.map(({ id, label }) => ({
@@ -309,12 +309,14 @@
             and support the protections required by COPPA and the GDPR.
           </p>
           <p>
-            Every action that reaches beyond drawing — making an AI picture, reporting one, opening
-            an external link, sending feedback, and opening Parent Center — sits behind its own
-            grown-up check. A grown-up can set each one to Every time, Per session, or Never in
-            Parent Center. The store apps start with every check set to Every time; the web starts
-            with Never; iOS does not allow external links to be set to Never. These checks guard
-            actions; they are not accounts, and they are not legal proof of consent.
+            Every action that reaches beyond drawing — turning on AI pictures or an AI option,
+            adding an access code or key, making an AI picture, reporting one, opening an external
+            link, sending feedback, and opening Parent Center — sits behind its own grown-up check.
+            Turning AI pictures or an option off never asks. A grown-up can set each one to Every
+            time, Per session, or Never in Parent Center. The store apps start with every check set
+            to Every time; the web starts with Never; iOS does not allow external links to be set to
+            Never. These checks guard actions; they are not accounts, and they are not legal proof
+            of consent.
           </p>
           <p>
             When the app opens online with AI pictures enabled and no credential added, it checks

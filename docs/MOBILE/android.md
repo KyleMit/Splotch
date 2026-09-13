@@ -362,9 +362,11 @@ re-verify if that flow changes:
 * **Adult action** — generation is never automatic; it fires only on a tap. The Play build's AI
   policy defaults to a grown-up check every time. A fresh installation can make ten successful free
   creations while the project allowance is available. After that, a parent can type an access code
-  or BYO OpenAI key in Settings, or receive an admin-minted invite link. Key entry and opening
-  Settings are not themselves gated, but the generation action remains governed by its Parent Center
-  policy. The math gate protects the action boundary; it is not proof of legal consent.
+  or BYO OpenAI key in Settings, or receive an admin-minted invite link. Opening Settings is not
+  itself gated. Switching AI pictures or an AI option on, and submitting a key or code, follow the
+  Turning on AI pictures policy, which the Play build also starts at Every time; the generation
+  action follows its own Parent Center policy. The math gate protects the action boundary; it is not
+  proof of legal consent.
 * **Limited use** — ordinary generation passes the drawing to OpenAI. Splotch holds the input and
   output only for its asynchronous job: collection deletes the job immediately; an uncollected job
   expires after 20 minutes and an hourly cleanup removes it. Only a grown-up's separate, gated

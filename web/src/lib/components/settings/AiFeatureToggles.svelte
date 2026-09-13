@@ -7,6 +7,7 @@
     AI_CUSTOMIZATION_LABEL,
   } from './aiSettingsCopy';
   import { settings, setAiCustomization, setAutoSaveAi } from '$lib/state/settings.svelte';
+  import { setAiSettingBehindGate } from '$lib/state/aiSetupGate';
   import '$lib/components/deferredIcons';
 </script>
 
@@ -17,7 +18,7 @@
       label={AI_CUSTOMIZATION_LABEL}
       id="aiCustomizationToggle"
       checked={settings.aiCustomizationEnabled}
-      onToggle={setAiCustomization}
+      onToggle={(next) => setAiSettingBehindGate(next, setAiCustomization, 'aiCustomizationToggle')}
       help={AI_CUSTOMIZATION_HELP}
     />
   </div>
@@ -28,7 +29,7 @@
       label={AI_AUTO_SAVE_LABEL}
       id="autoSaveAiToggle"
       checked={settings.autoSaveAiEnabled}
-      onToggle={setAutoSaveAi}
+      onToggle={(next) => setAiSettingBehindGate(next, setAutoSaveAi, 'autoSaveAiToggle')}
       help={AI_AUTO_SAVE_HELP}
     />
   </div>
