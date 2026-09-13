@@ -115,18 +115,19 @@ With neither credential, the request uses the installation's free grant and must
 privacy-preserving `X-Installation-Id` pseudonym. Free attempts are rate-limited per IP at 15/min,
 including validation, safety, upstream, exhaustion, and throttled failures. A durable Netlify Blobs
 grant reserves one of ten slots before the provider call and conditionally finalizes it only after a
-usable image exists; failures release the reservation. The short reservation lease recovers slots
-after a function crash, and compare-and-set writes prevent concurrent requests from spending one
-remaining slot twice. That grant store reads with **strong consistency**, unlike the other Blobs
-stores: one request writes the reservation and then reads it back after the model call, so an
-eventually-consistent read of its own write loses the reservation and fails a generation that
-succeeded (ADR-0105's 2026-08-11 amendment). Finalizing still requires a live reservation — a
-missing or already-reclaimed one is refused, so two completions can never claim one slot — but it is
-no longer allowed to destroy a delivered image: a ledger write that fails is logged and the image
-returned without the remaining-count header, leaving the daily ceiling as the spending boundary. A
-separate durable compare-and-set counter reserves every free provider start before the model is
-called and caps project-funded traffic across all installations and function instances at 500 calls
-per UTC day. Provider failures and safety refusals are not refunded from that daily ceiling.
+usable image exists; failures release the reservation, and releasing one again records no further
+failure. The short reservation lease recovers slots after a function crash, and compare-and-set
+writes prevent concurrent requests from spending one remaining slot twice. That grant store reads
+with **strong consistency**, unlike the other Blobs stores: one request writes the reservation and
+then reads it back after the model call, so an eventually-consistent read of its own write loses the
+reservation and fails a generation that succeeded (ADR-0105's 2026-08-11 amendment). Finalizing
+still requires a live reservation — a missing or already-reclaimed one is refused, so two
+completions can never claim one slot — but it is no longer allowed to destroy a delivered image: a
+ledger write that fails is logged and the image returned without the remaining-count header, leaving
+the daily ceiling as the spending boundary. A separate durable compare-and-set counter reserves
+every free provider start before the model is called and caps project-funded traffic across all
+installations and function instances at 500 calls per UTC day. Provider failures and safety refusals
+are not refunded from that daily ceiling.
 
 On success returns the image bytes. A free-grant response also carries
 `X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this AI attempt
@@ -170,14 +171,16 @@ Collects a generation that `POST /api/generate-image` handed to the background w
 caller that started the job, so possession is the authorization, and it is deleted the moment the
 picture is handed over.
 
-| status | meaning                                                                        |
-| ------ | ------------------------------------------------------------------------------ |
-| `202`  | Not finished yet — poll again. Empty body.                                     |
-| `200`  | The picture, with the same headers the synchronous shape returns               |
-| `422`  | Safety refusal, same body and `X-Report-Token` as the synchronous shape        |
-| `502`  | Upstream/empty failure (retryable)                                             |
-| `404`  | No such job, or it expired — a job lives 20 minutes and is deleted on delivery |
-| `400`  | Malformed job id                                                               |
+| status | meaning                                                                                              |
+| ------ | ---------------------------------------------------------------------------------------------------- |
+| `202`  | Not finished yet — poll again. Empty body.                                                           |
+| `200`  | The picture, with the same headers the synchronous shape returns                                     |
+| `422`  | Safety refusal, same body and `X-Report-Token` as the synchronous shape                              |
+| `502`  | Upstream/empty failure (retryable)                                                                   |
+| `404`  | No such job, or it expired — a job lives 20 minutes and is deleted on delivery                       |
+| `400`  | Malformed job id                                                                                     |
+| `429`  | Throttled — the standard `Retry-After` response                                                      |
+| `503`  | `{ ok:false, code:"GENERATION_UNAVAILABLE", error }` — the job store could not be read; keep polling |
 
 Send the same credential headers as the generation itself. They are not re-authorized (the job id
 already is the capability) — they are what the report token is bound to, and omitting them only
