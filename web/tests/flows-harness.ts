@@ -49,6 +49,16 @@ export async function openDrawer(page: Page) {
   );
 }
 
+// The boot that captures the manifest also starts the app's pack downloader,
+// and the web store withdraws a book's marker before it writes any of that
+// book's files (withdrawMarker in webStore.ts). Seeded while that boot is still
+// installing the same book, a marker is deleted moments after it lands, the
+// seeded boot finds the book missing, and the book stays hidden until a real
+// download finishes — racing whatever the spec does first. Seeding from a
+// static same-origin page, outside the app shell, leaves no app running to
+// write.
+const COLORING_PACK_SEEDING_PAGE = '/robots.txt';
+
 async function gotoAppWithInstalledColoringBooks(
   page: Page,
   installedBookIds: (manifest: ColoringPackManifest) => string[]
@@ -72,6 +82,7 @@ async function gotoAppWithInstalledColoringBooks(
       path: coloringPackMarkerPath(book.id),
       value: coloringPackMarkerValue(book),
     }));
+  await page.goto(COLORING_PACK_SEEDING_PAGE);
   await page.evaluate(
     async ({ cacheName, markers }) => {
       const cache = await caches.open(cacheName);
