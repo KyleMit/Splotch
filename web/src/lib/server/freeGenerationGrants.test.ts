@@ -111,6 +111,23 @@ describe('free generation grants', () => {
     expect(stats.recent[0]).toMatchObject({ installation: 'bbbbbbbb', lastFailureKind: 'safety' });
   });
 
+  it('records one failure however many times the same reservation is released', async () => {
+    const id = installation('b');
+    const reservation = await reserveFreeGeneration(id);
+    if (!reservation.reserved) throw new Error('Expected a reservation');
+
+    await Promise.all([
+      failFreeGeneration(id, 'safety', reservation.reservationId),
+      failFreeGeneration(id, 'safety', reservation.reservationId),
+    ]);
+    await failFreeGeneration(id, 'upstream', reservation.reservationId);
+
+    await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 10 });
+    const stats = await getFreeGenerationGrantAdminStats();
+    expect(stats).toMatchObject({ sampledAttempts: 1, sampledFailures: 1 });
+    expect(stats.recent[0]).toMatchObject({ lastFailureKind: 'safety' });
+  });
+
   it('decrements only when a reserved generation is completed', async () => {
     const id = installation('c');
     const reservation = await reserveFreeGeneration(id);

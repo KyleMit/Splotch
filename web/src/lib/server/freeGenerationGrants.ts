@@ -309,6 +309,10 @@ export async function failFreeGeneration(
   reservationId?: string
 ): Promise<void> {
   await updateGrant(installationId, (grant, now) => {
+    // A slot is released once. Two polls collecting the same refusal both
+    // arrive here, and a lease that already lapsed was booked as abandoned when
+    // the grant was read; neither is a second failure.
+    if (reservationId && !grant.reservations[reservationId]) return { grant, result: undefined };
     if (reservationId) delete grant.reservations[reservationId];
     else grant.attempts += 1;
     grant.failures += 1;

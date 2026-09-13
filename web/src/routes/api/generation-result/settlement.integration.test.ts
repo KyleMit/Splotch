@@ -323,11 +323,9 @@ describe('free generation settlement across the background handoff', () => {
     expect(dailyProviderStarts()).toBe(1);
   });
 
-  // Two polls that both read the refusal before either discards it each record
-  // a failure. The slot itself comes back once — deleting a reservation is
-  // idempotent — but `failures` counts the one refused drawing twice, so the
-  // admin console's failure tally over-reports under concurrent polling.
-  it.fails('records one failure when two polls collect the same refusal at once', async () => {
+  // Both polls read the refusal before either discards it, so both release the
+  // slot; the ledger has to treat the second release as the same one.
+  it('records one failure when two polls collect the same refusal at once', async () => {
     provider.generateImage.mockResolvedValue({ kind: 'refusal', reason: 'IMAGE_SAFETY' });
     const { jobId, dispatch } = await startHandedOffGeneration();
     await runWorker(dispatch);
