@@ -141,12 +141,21 @@
     requireParentalGate('aiSetup', () => void verifyAndSaveKey(value), origin);
   }
 
-  // The check opens and takes focus inside this keydown, so the same press
-  // would otherwise go on to activate whatever it focused — its Close button —
-  // and dismiss the check the instant it appeared.
-  function submitKeyOnEnter(event: KeyboardEvent & { currentTarget: HTMLInputElement }) {
-    if (event.key !== 'Enter') return;
-    event.preventDefault();
+  // Enter submits when it is released, and only for a press that began in this
+  // field. The check takes focus as it opens, so submitting on the press would
+  // hand the rest of that press — the activation, a held key's repeats — to the
+  // card's Close button and dismiss the check at once; and the release of an
+  // Enter pressed on that Close button lands back here and must not reopen it.
+  // An Enter that commits an IME composition is not a submission.
+  let enterPressedInField = false;
+
+  function noteEnterPress(event: KeyboardEvent) {
+    if (event.key === 'Enter' && !event.isComposing && !event.repeat) enterPressedInField = true;
+  }
+
+  function submitKeyOnEnterRelease(event: KeyboardEvent & { currentTarget: HTMLInputElement }) {
+    if (event.key !== 'Enter' || !enterPressedInField) return;
+    enterPressedInField = false;
     submitKey(buttonCenter(event.currentTarget));
   }
 
@@ -292,7 +301,9 @@
                 spellcheck="false"
                 placeholder="Paste your OpenAI API key"
                 bind:value={keyInput}
-                onkeydown={submitKeyOnEnter}
+                onkeydown={noteEnterPress}
+                onkeyup={submitKeyOnEnterRelease}
+                onblur={() => (enterPressedInField = false)}
               />
               <Button
                 variant="brand"

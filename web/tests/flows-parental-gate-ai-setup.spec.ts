@@ -69,9 +69,8 @@ test('a key waits for the AI setup check before it is sent, from Enter or Save',
   const field = page.locator('#aiKeyInput');
   const save = page.getByRole('button', { name: 'Save' });
 
-  // The check takes focus inside the Enter keydown that raised it, so the
-  // solve below is also what proves that press never went on to activate the
-  // card's Close button.
+  // The check takes focus as it opens, so the solve below is also what proves
+  // the Enter that raised it never went on to activate the card's Close button.
   await field.fill('sk-first-parent-key');
   await field.press('Enter');
   await expect(gate).toBeVisible();
@@ -96,6 +95,42 @@ test('a key waits for the AI setup check before it is sent, from Enter or Save',
   await expect(gate).not.toBeVisible();
   expect(verifyRequests.count).toBe(1);
   await expect(field).toHaveValue('sk-second-parent-key');
+});
+
+test('Enter raises the AI setup check once per deliberate press', async ({ page }) => {
+  const verifyRequests = await countRequests(page, '**/api/verify-key', { ok: true });
+  await seedAiEnabled(page);
+  await gotoApp(page, '/', { gates: 'always' });
+  await openAiArtSection(page, '#aiKeyInput');
+
+  const gate = page.locator('#parentalGate');
+  const field = page.locator('#aiKeyInput');
+  await field.fill('sk-held-enter-key');
+
+  // A held key repeats: the check has to survive the repeats and still be
+  // there once the key comes up.
+  await field.focus();
+  await page.keyboard.down('Enter');
+  await page.keyboard.down('Enter');
+  await page.keyboard.down('Enter');
+  await expect(gate).not.toBeVisible();
+  await page.keyboard.up('Enter');
+  await expect(gate).toBeVisible();
+  await expect(gate.locator('.gate-keypad')).toBeVisible();
+
+  // Dismissing it from the keyboard hands focus back to the field, where that
+  // Enter's release must not raise the check again.
+  await gate.getByRole('button', { name: 'Close' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(gate).not.toBeVisible();
+  await expect(field).toBeFocused();
+  await expect(gate).not.toBeVisible();
+
+  // The Enter that commits an IME composition is not a submission.
+  await field.dispatchEvent('keydown', { key: 'Enter', isComposing: true });
+  await field.dispatchEvent('keyup', { key: 'Enter' });
+  await expect(gate).not.toBeVisible();
+  expect(verifyRequests.count).toBe(0);
 });
 
 test('AI options switch on behind the AI setup check and off without one', async ({ page }) => {
