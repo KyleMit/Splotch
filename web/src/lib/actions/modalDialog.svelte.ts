@@ -219,6 +219,11 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
   }
 
   function onClose() {
+    // `close` is dispatched from a queued task, so a dialog reopened in the
+    // meantime receives its previous close while open again. That event belongs
+    // to an opening that is over: acting on it would unregister, clean up after,
+    // and re-close the one now on screen.
+    if (node.open) return;
     forgetOpenModal(node);
     // A closed dialog has no backdrop to protect; drop the zone so it can't
     // bleed into whatever modal opens next.

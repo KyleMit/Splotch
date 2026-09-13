@@ -132,6 +132,22 @@ describe('respondToSystemBack', () => {
     expect(lower.open).toBe(true);
   });
 
+  it('keeps a reopened dialog reachable when its previous close event arrives late', async () => {
+    const modal = createModal();
+    const onClose = vi.fn();
+    const dialog = mountDialog(() => ({ open: modal.open, onRequestClose: modal.hide, onClose }));
+    modal.show(null);
+    await flush();
+
+    // The browser queues `close`; a reopen can land before the old one is dispatched.
+    dialog.dispatchEvent(new Event('close'));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(modal.open).toBe(true);
+    expect(respondToSystemBack()).toBe('closed-dialog');
+    expect(modal.open).toBe(false);
+  });
+
   it('never leaves while a requested dialog has not reached the screen', () => {
     settingsModal.show(null);
     expect(respondToSystemBack()).toBe('waited');
