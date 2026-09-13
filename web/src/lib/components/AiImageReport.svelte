@@ -192,7 +192,7 @@
 
 <dialog
   bind:this={confirmDialog}
-  class="ai-report-confirm modal-dialog modal-fly-in modal-shell"
+  class="ai-report-confirm confirm-card modal-dialog modal-fly-in modal-shell"
   class:refusal
   class:problem
   aria-labelledby="aiReportConfirmTitle"
@@ -206,8 +206,8 @@
     allowDismiss: () => status !== 'busy',
   })}
 >
-  <div class="ai-report-confirm-content">
-    <div class="ai-report-confirm-heading">
+  <div class="ai-report-confirm-content confirm-card-content">
+    <div class="ai-report-confirm-heading confirm-card-heading">
       <h3 id="aiReportConfirmTitle">
         {problem ? 'Report this problem' : refusal ? 'Report this refusal' : 'Report this picture'}
       </h3>
@@ -283,44 +283,6 @@
   }
 
   /* ── Confirm dialog ─────────────────────────────────────────────────────── */
-
-  /* Phone width and card padding are the parental gate's: this dialog is the
-     step right after it, and the pair should read as one boundary. */
-  .ai-report-confirm {
-    width: min(92vw, 336px);
-  }
-
-  .ai-report-confirm-content {
-    padding: 22px var(--space-6) var(--space-5);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
-  /* Title and copy are one group, so they sit closer than the dialog's own
-     rhythm separates the groups from each other. */
-  .ai-report-confirm-heading {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .ai-report-confirm-heading h3 {
-    margin: 0;
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-strong);
-    line-height: 1.2;
-  }
-
-  .ai-report-confirm-heading p {
-    margin: 0;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-soft);
-    line-height: 1.45;
-    text-wrap: pretty;
-  }
 
   .ai-report-thumbs {
     display: flex;
@@ -437,22 +399,6 @@
 
     .ai-report-confirm.refusal .ai-report-confirm-actions {
       grid-area: actions;
-    }
-  }
-
-  /* Reduced motion: fade instead of flying in, as ParentalGate already does. */
-  @media (prefers-reduced-motion: reduce) {
-    .ai-report-confirm.modal-fly-in[open] {
-      animation: aiReportConfirmFadeIn var(--duration-base) ease;
-    }
-  }
-
-  @keyframes aiReportConfirmFadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
     }
   }
 </style>

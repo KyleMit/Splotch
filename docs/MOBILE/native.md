@@ -100,8 +100,8 @@ namespace, never the proxy.
 ### Custom native plugins
 
 When no published plugin exposes a native capability, add a small **local** plugin in the app target
-itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-only `PhotoLibrary`,
-ADR-0037):
+itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-only `PhotoLibrary`
+(ADR-0037) and `SystemBack` (ADR-0165)):
 
 * iOS — the key gotcha: **Capacitor 8 does not auto-discover plugin classes.**
   `CapacitorBridge.registerPlugins()` only loads its built-ins plus the `packageClassList` that
@@ -273,8 +273,6 @@ The shared baseline both depend on:
       status bar color and splash dismissal timing.
 * [ ] Verify the **Wake Lock** behavior inside the WebView on real devices; if unreliable, add a
       native keep-awake plugin.
-* [ ] (Android) `@capacitor/app` to handle the hardware back button — see
-      **[android.md](android.md)**.
 
 ## 6. Native support matrix
 

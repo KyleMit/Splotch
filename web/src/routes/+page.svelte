@@ -38,6 +38,7 @@
   import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
   import { installUndoShortcut } from '$lib/boot/undoShortcut';
   import { installColoringPackDownloads } from '$lib/boot/coloringPacks';
+  import { installSystemBack } from '$lib/boot/systemBack';
 
   $effect(() => {
     applyDeviceOrientationPreference(
@@ -139,6 +140,7 @@
       installDevHarnessSeam(),
       installUndoShortcut(),
       installColoringPackDownloads(settingsReady),
+      installSystemBack((overlay) => (overlays = [...overlays, overlay])),
     ];
     return () => {
       hiddenOverlays = null;

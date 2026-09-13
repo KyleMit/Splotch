@@ -161,15 +161,15 @@
      policy matrix would leave a box in that layout claiming a width the matrix
      never gives it. -->
 <dialog
-  class="unprotected-confirm modal-dialog modal-fly-in modal-shell"
+  class="unprotected-confirm confirm-card modal-dialog modal-fly-in modal-shell"
   aria-labelledby="parentCenterUnprotectedTitle"
   use:modalDialog={() => ({
     open: confirmingUnprotected,
     onRequestClose: cancelUnprotected,
   })}
 >
-  <div class="unprotected-confirm-content">
-    <div class="unprotected-confirm-heading">
+  <div class="confirm-card-content">
+    <div class="confirm-card-heading">
       <h3 id="parentCenterUnprotectedTitle">Turn off the Parent Center check?</h3>
       <p>{UNPROTECTED_CONSEQUENCE}</p>
     </div>
@@ -397,44 +397,6 @@
 
   /* ── Turn-off confirmation ──────────────────────────────────────────────── */
 
-  /* Phone width and card padding are the parental gate's: this dialog stands in
-     for the check that gate performs, and the two should read as one boundary. */
-  .unprotected-confirm {
-    width: min(92vw, 336px);
-  }
-
-  .unprotected-confirm-content {
-    display: flex;
-    flex-direction: column;
-    padding: 22px var(--space-6) var(--space-5);
-    gap: var(--space-4);
-  }
-
-  /* Title and copy are one group, so they sit closer than the dialog's own
-     rhythm separates the groups from each other. */
-  .unprotected-confirm-heading {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .unprotected-confirm-heading h3 {
-    margin: 0;
-    color: var(--text-strong);
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    line-height: 1.2;
-  }
-
-  .unprotected-confirm-heading p {
-    margin: 0;
-    color: var(--text-soft);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.45;
-    text-wrap: pretty;
-  }
-
   /* Wraps to a column on the narrowest phones: the two labels name what each
      choice does, and a shrunken pair would truncate exactly that. */
   .unprotected-confirm-actions {
@@ -445,21 +407,5 @@
 
   .unprotected-confirm-actions :global(.btn) {
     flex: 1 1 140px;
-  }
-
-  /* Reduced motion: fade instead of flying in, as the parental gate already does. */
-  @media (prefers-reduced-motion: reduce) {
-    .unprotected-confirm.modal-fly-in[open] {
-      animation: unprotectedConfirmFadeIn var(--duration-base) ease;
-    }
-  }
-
-  @keyframes unprotectedConfirmFadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
   }
 </style>
