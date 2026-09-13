@@ -1,5 +1,6 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
 import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
+import { MAX_UNDO_DEPTH } from '../src/lib/drawing/undoHistory';
 
 // The resize inside undo's paper pre-restore used to trigger a full history
 // repaint whose replay runs through the clear being popped, immediately
@@ -175,6 +176,52 @@ test('undo restores the recorded paper after a blank rotation', async ({ page })
     paperOrientation: 'landscape',
   });
   expect((await state(page)).canvasEmpty).toBe(false);
+});
+
+// Ink folded into the history base exists nowhere else. The blank rotation
+// re-adopts a narrower paper; the base must keep the band past it, or undoing
+// the clear shows the ink on the live tiles while the export — composed from
+// the base whenever export scale differs from render scale, as at this DPR —
+// and any later repaint silently lose it.
+test('undoing a clear after a blank rotation keeps folded ink in the export and repaint', async ({
+  page,
+}) => {
+  await page.evaluate(async (depth) => {
+    await window.__engine.resizeTo(400, 300);
+    window.__engine.strokeSync([
+      { x: 330, y: 150 },
+      { x: 380, y: 150 },
+    ]);
+    for (let index = 0; index < depth; index++) {
+      window.__engine.strokeSync([
+        { x: 20 + index * 6, y: 40 },
+        { x: 20 + index * 6, y: 80 },
+      ]);
+    }
+  }, MAX_UNDO_DEPTH);
+  await expect
+    .poll(() => page.evaluate(() => window.__engine.getUndoDebug().historyLength), {
+      timeout: 10_000,
+    })
+    .toBe(MAX_UNDO_DEPTH);
+  const exportedRed = () =>
+    page.evaluate(async () =>
+      window.__engine.blobRedPixelCount(await window.__engine.exportCanvasBlob())
+    );
+  const inkBeforeClear = await count(page);
+  const exportBeforeClear = await exportedRed();
+
+  await page.evaluate(async () => {
+    window.__engine.clearCanvas();
+    window.__engine.setScreenAngleOverride(90);
+    await window.__engine.resizeTo(300, 400);
+    await window.__engine.undo();
+  });
+  await expect.poll(() => count(page)).toBe(inkBeforeClear);
+
+  expect(await exportedRed()).toBe(exportBeforeClear);
+  await page.evaluate(() => window.__engine.remount());
+  await expect.poll(() => count(page)).toBe(inkBeforeClear);
 });
 
 test('undo does not reveal stale pixels after an erase-to-empty command', async ({ page }) => {

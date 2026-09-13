@@ -702,3 +702,26 @@ Hidden crayon preview surfaces are allocated lazily per touched tile instead of 
 every blank paper. Undo-to-empty first paints the ink tiles hidden, waits two animation frames, and
 then re-adopts the viewport. The combination measured 24 ms for undo-to-empty and 30 ms for the
 first five-tile crayon stroke. ADR-0089 contains the isolation table and reconstruction protocol.
+
+## Amendment (2026-09): The History Base Never Shrinks While It Holds Ink
+
+The base was re-tiled to the current paper on every paper change, clipping whatever lay outside it.
+Folded ink exists only in the base, so a paper that shrank and later returned — a blank rotation
+re-adopting the viewport before an undo of the clear, or a same-orientation resize large enough to
+adopt — erased the older part of the drawing for good while the vector tail replayed in full. On
+screens whose export scale differs from render scale, the saved picture lost that ink immediately,
+because the export composes from the base.
+
+A base holding painted tiles now keeps the covering extent of every paper it has served and clips at
+read time instead: live tiles and export targets are paper-sized, so the excess never shows. A base
+with nothing painted, after a folded clear, re-tiles to the current paper, which loses nothing. A
+fold clips each command to the covering extent of the paper it was drawn on and the current paper,
+so a resize between a stroke and its idle fold cannot crop it either; a rotation-locked paper leaves
+both equal, so letterbox margins stay excluded.
+
+Memory: in the common case, where the paper never changes, nothing differs. After a blank rotation
+with folded ink the base covers both orientations — a square on the long side, one third more base
+pixels on a 4:3 iPad (about 7.5 MiB at 2×) — until a clear folds. The base tiles then no longer
+share the live tile boundaries, which costs extra blits during a full repaint, not while drawing.
+`tiledRendererHistoryBase.test.ts` and `engine-undo.spec.ts` ("undoing a clear after a blank
+rotation keeps folded ink in the export and repaint") pin the behavior.

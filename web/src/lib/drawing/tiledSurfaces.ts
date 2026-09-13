@@ -5,6 +5,9 @@ import { viewMatrix, viewToPaper, type PaperView } from './paperView';
 import { clearAllOf, renderOp, type StrokeOp } from './strokeOps';
 import { opPaddedUserBounds } from './opGeometry';
 import { geometryIntersectsTile, tilesIntersect, type TileBounds } from './tiledGeometry';
+import type { RecordedPaperState } from './undoHistory';
+
+export type PaperSize = { width: number; height: number };
 
 export interface LiveTile extends TileBounds {
   canvas: HTMLCanvasElement;
@@ -148,10 +151,7 @@ export function applyLiveTileView(tiles: readonly LiveTile[], paperView: PaperVi
 
 type TileWithContext = Pick<LiveTile, 'ctx'>;
 
-export function clipTilesToPaper(
-  tiles: readonly TileWithContext[],
-  paper: { width: number; height: number }
-) {
+export function clipTilesToPaper(tiles: readonly TileWithContext[], paper: PaperSize) {
   for (const tile of tiles) {
     tile.ctx.save();
     tile.ctx.beginPath();
@@ -299,6 +299,32 @@ export function createHistoryBaseTiles(width: number, height: number): HistoryBa
     }
   }
   return tiles;
+}
+
+function coveringPaper(first: PaperSize, second: PaperSize): PaperSize {
+  return {
+    width: Math.max(first.width, second.width),
+    height: Math.max(first.height, second.height),
+  };
+}
+
+// Folded ink exists nowhere but the base, so a base holding ink never shrinks
+// under a temporarily smaller paper; every read clips at the current paper
+// (live tiles and export targets are paper-sized). Only a base with nothing
+// painted — after a folded clear — re-tiles down, which loses nothing.
+export function historyBaseExtent(
+  tiles: readonly HistoryBaseTile[],
+  current: PaperSize,
+  required: PaperSize
+): PaperSize {
+  return tiles.some((tile) => tile.painted) ? coveringPaper(current, required) : required;
+}
+
+// A command folds within the paper it was drawn on as well as the current one,
+// so a resize landing between a stroke and its idle fold never crops ink the
+// child saw. A rotation-locked paper leaves both equal, keeping margin ink out.
+export function commandFoldExtent(recorded: RecordedPaperState | undefined, paper: PaperSize) {
+  return recorded ? coveringPaper(paper, { width: recorded.pxW, height: recorded.pxH }) : paper;
 }
 
 export function cloneHistoryBaseTiles(

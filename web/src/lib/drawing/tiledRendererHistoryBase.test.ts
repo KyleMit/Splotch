@@ -1,0 +1,339 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { LIVE_TILE_COUNT } from './liveTiles';
+import { IDENTITY_PAPER_VIEW } from './paperView';
+import type { StrokeOp } from './strokeOps';
+import { MAX_UNDO_DEPTH } from './undoHistory';
+
+type Renderer = typeof import('./tiledRenderer');
+type Point = { x: number; y: number };
+type Rect = { x0: number; y0: number; x1: number; y1: number };
+type PaperSize = { width: number; height: number };
+
+interface InkState {
+  ink: Point[];
+  transform: DOMMatrix;
+  clip: Rect | null;
+  pendingRect: Rect | null;
+  stack: Array<{ transform: DOMMatrix; clip: Rect | null }>;
+}
+
+type InkCanvas = HTMLCanvasElement & { _ink?: InkState; _ctx?: CanvasRenderingContext2D };
+
+function freshInkState(): InkState {
+  return { ink: [], transform: new DOMMatrix(), clip: null, pendingRect: null, stack: [] };
+}
+
+function inkState(canvas: InkCanvas) {
+  canvas._ink ??= freshInkState();
+  return canvas._ink;
+}
+
+function intersect(first: Rect | null, second: Rect): Rect {
+  if (!first) return second;
+  return {
+    x0: Math.max(first.x0, second.x0),
+    y0: Math.max(first.y0, second.y0),
+    x1: Math.min(first.x1, second.x1),
+    y1: Math.min(first.y1, second.y1),
+  };
+}
+
+function deviceRect(transform: DOMMatrix, x: number, y: number, width: number, height: number) {
+  const a = transform.transformPoint({ x, y });
+  const b = transform.transformPoint({ x: x + width, y: y + height });
+  return {
+    x0: Math.min(a.x, b.x),
+    y0: Math.min(a.y, b.y),
+    x1: Math.max(a.x, b.x),
+    y1: Math.max(a.y, b.y),
+  };
+}
+
+function inRect(rect: Rect, point: Point) {
+  return point.x >= rect.x0 && point.y >= rect.y0 && point.x < rect.x1 && point.y < rect.y1;
+}
+
+function deposit(canvas: InkCanvas, point: Point) {
+  const state = inkState(canvas);
+  const bounds = { x0: 0, y0: 0, x1: canvas.width, y1: canvas.height };
+  if (inRect(bounds, point) && (!state.clip || inRect(state.clip, point))) state.ink.push(point);
+}
+
+// A 2D context that tracks where each dot's center lands on every canvas —
+// through transforms, blits, clips, clears, and backing resets — so a test can
+// follow folded ink from the history base back onto the live tiles and export.
+function inkTrackingContext(canvas: InkCanvas): CanvasRenderingContext2D {
+  const state = () => inkState(canvas);
+  let pendingDots: Point[] = [];
+  return {
+    canvas,
+    lineCap: '',
+    lineJoin: '',
+    globalAlpha: 1,
+    globalCompositeOperation: 'source-over',
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    createPattern: () => ({}) as CanvasPattern,
+    save() {
+      state().stack.push({ transform: state().transform, clip: state().clip });
+    },
+    restore() {
+      const top = state().stack.pop();
+      if (top) Object.assign(state(), top);
+    },
+    beginPath() {
+      pendingDots = [];
+      state().pendingRect = null;
+    },
+    rect(x: number, y: number, width: number, height: number) {
+      state().pendingRect = deviceRect(state().transform, x, y, width, height);
+    },
+    clip() {
+      const rect = state().pendingRect;
+      if (rect) state().clip = intersect(state().clip, rect);
+    },
+    moveTo() {},
+    lineTo() {},
+    quadraticCurveTo() {},
+    stroke() {},
+    clearRect(x: number, y: number, width: number, height: number) {
+      const rect = deviceRect(state().transform, x, y, width, height);
+      state().ink = state().ink.filter((point) => !inRect(rect, point));
+    },
+    drawImage(source: InkCanvas, ...args: number[]) {
+      const [dx, dy, dw, dh] = args.length >= 8 ? args.slice(4) : args;
+      const [sx, sy, sw, sh] =
+        args.length >= 8 ? args.slice(0, 4) : [0, 0, source.width, source.height];
+      const scaleX = dw === undefined ? 1 : dw / sw;
+      const scaleY = dh === undefined ? 1 : dh / sh;
+      for (const point of inkState(source).ink) {
+        if (!inRect({ x0: sx, y0: sy, x1: sx + sw, y1: sy + sh }, point)) continue;
+        const local = { x: dx + (point.x - sx) * scaleX, y: dy + (point.y - sy) * scaleY };
+        deposit(canvas, state().transform.transformPoint(local));
+      }
+    },
+    getImageData(_x: number, _y: number, width: number, height: number) {
+      const data = new Uint8ClampedArray(width * height * 4);
+      if (state().ink.length > 0) data[3] = 255;
+      return { data };
+    },
+    arc(x: number, y: number) {
+      const { x: px, y: py } = state().transform.transformPoint({ x, y });
+      pendingDots.push({ x: px, y: py });
+    },
+    fill() {
+      for (const point of pendingDots) deposit(canvas, point);
+    },
+    setTransform(...args: [DOMMatrix] | number[]) {
+      const [first] = args;
+      state().transform =
+        typeof first === 'object' ? DOMMatrix.fromMatrix(first) : new DOMMatrix(args as number[]);
+    },
+    getTransform() {
+      return state().transform;
+    },
+  } as unknown as CanvasRenderingContext2D;
+}
+
+let renderer: Renderer;
+let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
+const sizeDescriptors = new Map<'width' | 'height', PropertyDescriptor>();
+
+beforeEach(async () => {
+  vi.resetModules();
+  renderer = await import('./tiledRenderer');
+  const prototype = HTMLCanvasElement.prototype;
+  originalGetContext = prototype.getContext;
+  for (const name of ['width', 'height'] as const) {
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, name)!;
+    sizeDescriptors.set(name, descriptor);
+    Object.defineProperty(prototype, name, {
+      configurable: true,
+      get() {
+        return descriptor.get!.call(this);
+      },
+      set(value: number) {
+        descriptor.set!.call(this, value);
+        (this as InkCanvas)._ink = freshInkState();
+      },
+    });
+  }
+  (prototype as unknown as { getContext: unknown }).getContext = function (
+    this: InkCanvas,
+    kind: string
+  ) {
+    if (kind !== '2d') return null;
+    this._ctx ??= inkTrackingContext(this);
+    return this._ctx;
+  };
+  vi.useFakeTimers();
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+    setTimeout(() => callback(0), 16)
+  );
+});
+
+afterEach(() => {
+  renderer.detachTiledRenderer();
+  HTMLCanvasElement.prototype.getContext = originalGetContext;
+  for (const [name, descriptor] of sizeDescriptors) {
+    Object.defineProperty(HTMLCanvasElement.prototype, name, descriptor);
+  }
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+const LANDSCAPE: PaperSize = { width: 1000, height: 600 };
+const FOLDED_INK_X = 900;
+
+function mountRenderer(initialPaper: PaperSize) {
+  const host = document.createElement('div');
+  const canvas = document.createElement('canvas');
+  host.append(canvas);
+  for (let index = 0; index < LIVE_TILE_COUNT; index++) {
+    for (const surface of ['liveTile', 'liveCrayonBottom', 'liveCrayonTop']) {
+      const tile = document.createElement('canvas');
+      tile.dataset[surface] = '';
+      tile.hidden = true;
+      host.append(tile);
+    }
+  }
+  let paper = initialPaper;
+  renderer.adoptTiledRenderer(canvas, {
+    paperSize: () => paper,
+    recordedPaper: () => ({
+      pxW: paper.width,
+      pxH: paper.height,
+      cssW: paper.width,
+      cssH: paper.height,
+      angle: 0,
+    }),
+    hasActivePointers: () => false,
+  });
+
+  // Mirrors engine.resizeCanvas: adopt the paper, resize the tiles, and repaint
+  // unless the canvas is blank or an undo is about to restore from patches.
+  function adoptPaper(
+    next: PaperSize,
+    { empty = false, repaint = !empty }: { empty?: boolean; repaint?: boolean } = {}
+  ) {
+    paper = next;
+    const resized = renderer.resizeTiledRenderer(next.width, next.height, 1, empty);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
+    if (resized && repaint) renderer.repaintTiledRenderer();
+  }
+
+  function liveInkAt(x: number) {
+    return [...host.querySelectorAll<InkCanvas>('canvas[data-live-tile]')].some((tile) => {
+      if (tile.hidden) return false;
+      const { e, f } = tile.getContext('2d')!.getTransform();
+      return inkState(tile).ink.some((point) => point.x - e === x && point.y - f >= 0);
+    });
+  }
+
+  function exportedInkAt(x: number) {
+    const target = document.createElement('canvas') as InkCanvas;
+    target.width = paper.width;
+    target.height = paper.height;
+    renderer.renderTiledSnapshot(target.getContext('2d')!);
+    return inkState(target).ink.some((point) => point.x === x);
+  }
+
+  adoptPaper(initialPaper);
+  return { adoptPaper, liveInkAt, exportedInkAt };
+}
+
+function dot(x: number, y: number): StrokeOp {
+  return { kind: 'dot', x, y, radius: 5, color: '#f00', erase: false };
+}
+
+function draw(op: StrokeOp, wasEmpty = false) {
+  renderer.beginTiledCommand(wasEmpty);
+  renderer.renderTiledOp(op);
+  renderer.recordTiledOp(op);
+  renderer.commitTiledCommand();
+}
+
+function settleFolds() {
+  vi.runAllTimers();
+}
+
+function drawFarRightInkThenEnoughToFoldIt() {
+  draw(dot(FOLDED_INK_X, 100), true);
+  for (let index = 0; index < MAX_UNDO_DEPTH; index++) draw(dot(100 + index, 100));
+}
+
+describe('folded history-base ink under a temporarily smaller paper', () => {
+  it('survives a full repaint when the paper never changes', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+    expect(renderer.tiledHistoryDebug().historyLength).toBe(MAX_UNDO_DEPTH);
+
+    renderer.repaintTiledRenderer();
+
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+  });
+
+  it('returns when a same-orientation shrink re-adopts the paper and the window grows back', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+
+    view.adoptPaper({ width: 800, height: 600 });
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(false);
+    view.adoptPaper(LANDSCAPE);
+
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+  });
+
+  it('returns when its command folds while the paper is smaller', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+
+    view.adoptPaper({ width: 800, height: 600 });
+    settleFolds();
+    expect(renderer.tiledHistoryDebug().historyLength).toBe(MAX_UNDO_DEPTH);
+    view.adoptPaper(LANDSCAPE);
+
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+  });
+
+  it('survives clear, a blank-page rotation, and undoing the clear', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+    renderer.clearTiledRenderer(false);
+    vi.advanceTimersByTime(500);
+
+    view.adoptPaper({ width: LANDSCAPE.height, height: LANDSCAPE.width }, { empty: true });
+    view.adoptPaper(LANDSCAPE, { repaint: false });
+    const undone = renderer.undoTiledCommand(1);
+    expect(undone.empty).toBe(false);
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+
+    expect(view.exportedInkAt(FOLDED_INK_X)).toBe(true);
+    renderer.repaintTiledRenderer();
+    expect(view.liveInkAt(FOLDED_INK_X)).toBe(true);
+  });
+
+  it('releases the retained extent once a folded clear leaves the base blank', () => {
+    const view = mountRenderer(LANDSCAPE);
+    drawFarRightInkThenEnoughToFoldIt();
+    settleFolds();
+    const paperBytes = renderer.tiledHistoryDebug().baseRasterBytes;
+    expect(paperBytes).toBe(LANDSCAPE.width * LANDSCAPE.height * 4);
+
+    view.adoptPaper({ width: 800, height: 600 });
+    expect(renderer.tiledHistoryDebug().baseRasterBytes).toBe(paperBytes);
+
+    renderer.clearTiledRenderer(false);
+    for (let index = 0; index <= MAX_UNDO_DEPTH; index++) draw(dot(100 + index, 100), index === 0);
+    settleFolds();
+
+    expect(renderer.tiledHistoryDebug().baseRasterBytes).toBe(800 * 600 * 4);
+  });
+});

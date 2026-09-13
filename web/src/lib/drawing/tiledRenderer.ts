@@ -18,9 +18,11 @@ import {
   clearTileBacking,
   clipTilesToPaper,
   cloneHistoryBaseTiles,
+  commandFoldExtent,
   createLiveTiles,
   applyLiveTileView,
   deferHiddenTileClear,
+  historyBaseExtent,
   ensureCrayonTileBacking,
   ensureNormalTileBacking,
   liveTileSurfaces,
@@ -29,12 +31,13 @@ import {
   restoreTileContexts,
   type HistoryBaseTile,
   type LiveTile,
+  type PaperSize,
   type TiledCanvasSnapshot,
 } from './tiledSurfaces';
 import * as readback from './tiledRendererReadback';
 
 interface TiledRendererHost {
-  paperSize: () => { width: number; height: number } | null;
+  paperSize: () => PaperSize | null;
   // Optional only so the renderer's own test hosts can omit it; engine.ts always supplies it.
   recordedPaper?: () => RecordedPaperState | null;
   hasActivePointers: () => boolean;
@@ -164,26 +167,28 @@ export function resizeTiledRenderer(
       if (crayonWasVisible) ensureCrayonTileBacking(tile);
     }
   }
-  if (historyBase.length > 0) ensureHistoryBase();
+  const paper = host?.paperSize();
+  if (historyBase.length > 0 && paper) ensureHistoryBaseCovers(paper);
   if (deferHiddenBackings) migrateHiddenBackingsAcrossFrames();
   else backingMigration = { revision: backingMigration.revision + 1, pending: false };
   return true;
 }
 
-function ensureHistoryBase() {
-  const paper = host?.paperSize();
-  if (!paper) return;
-  if (
-    historyBase.length > 0 &&
-    historyBaseWidth === paper.width &&
-    historyBaseHeight === paper.height
-  ) {
+function ensureHistoryBaseCovers(required: PaperSize) {
+  const current = { width: historyBaseWidth, height: historyBaseHeight };
+  const { width, height } = historyBaseExtent(historyBase, current, required);
+  if (historyBase.length > 0 && historyBaseWidth === width && historyBaseHeight === height) {
     return;
   }
-  const previous = historyBase;
-  historyBase = cloneHistoryBaseTiles(previous, paper.width, paper.height);
-  historyBaseWidth = paper.width;
-  historyBaseHeight = paper.height;
+  historyBase = cloneHistoryBaseTiles(historyBase, width, height);
+  historyBaseWidth = width;
+  historyBaseHeight = height;
+}
+
+function paintCommandIntoBase(command: StrokeGroupCommand, paper: PaperSize) {
+  clipTilesToPaper(historyBase, commandFoldExtent(command.recordedPaper, paper));
+  for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
+  restoreTileContexts(historyBase);
 }
 
 const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
@@ -196,11 +201,7 @@ const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
     historyBase = cloneHistoryBaseTiles(baseline, historyBaseWidth, historyBaseHeight);
     const paper = host?.paperSize();
     if (!paper) return;
-    clipTilesToPaper(historyBase, paper);
-    for (const command of tail) {
-      for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
-    }
-    restoreTileContexts(historyBase);
+    for (const command of tail) paintCommandIntoBase(command, paper);
   },
   commitUndo: (command) => {
     cancelHistoryFold();
@@ -338,11 +339,9 @@ function foldOldestCommand() {
   if (!command) return;
   if (PERF_MARKS) performance.mark('engine.fold:start');
   undoPatches.delete(command);
-  ensureHistoryBase();
+  ensureHistoryBaseCovers(commandFoldExtent(command.recordedPaper, paper));
   magicRecode.beforeFold(command);
-  clipTilesToPaper(historyBase, paper);
-  for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
-  restoreTileContexts(historyBase);
+  paintCommandIntoBase(command, paper);
   magicRecode.afterFold(command);
   if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
 }
