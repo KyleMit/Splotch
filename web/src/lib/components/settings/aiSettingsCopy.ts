@@ -9,4 +9,6 @@ export const AI_CUSTOMIZATION_HELP =
   'Offers a small set of distinct styles to pick from before the picture is generated.';
 
 export const AI_AUTO_SAVE_LABEL = 'Auto-Save AI Images';
-export const AI_AUTO_SAVE_HELP = 'Saves each AI picture and the drawing behind it to your photos';
+export const AI_AUTO_SAVE_HELP = __IS_CAPACITOR__
+  ? 'Saves each AI picture and the drawing behind it to your photos'
+  : 'Saves each AI picture and the drawing behind it to your downloads, or to your chosen folder';

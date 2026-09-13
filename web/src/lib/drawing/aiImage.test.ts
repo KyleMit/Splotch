@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
+import type { SaveOutcome } from './screenshot';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
-  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string) => {}),
+  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveOutcome> => 'download'),
   settings: {
     aiUserApiKey: '',
     aiAccessToken: 'test-token',
@@ -357,6 +358,54 @@ describe('generateAiImage response handling', () => {
     expect(aiResult.resultUrl).toBe('blob:test-2');
     expect(aiResult.resultType).toBe('image/webp');
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports saving until the AI picture save settles, then where it landed', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    const aiSave = Promise.withResolvers<SaveOutcome>();
+    mocks.saveImageBlob.mockReturnValueOnce(aiSave.promise);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
+
+    const run = generateAiImage();
+    await vi.waitFor(() => expect(mocks.saveImageBlob).toHaveBeenCalledOnce());
+    expect(aiResult.autoSave).toBe('saving');
+
+    aiSave.resolve('photos');
+    await run;
+
+    expect(aiResult.autoSave).toBe('photos');
+  });
+
+  it('reports a failed AI picture save even when the drawing copy lands', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    mocks.saveImageBlob.mockResolvedValueOnce('failed').mockResolvedValueOnce('photos');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
+
+    await generateAiImage();
+
+    expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
+    expect(aiResult.autoSave).toBe('failed');
+  });
+
+  it('leaves the save status unset when auto-save is off', async () => {
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
+
+    await generateAiImage();
+
+    expect(aiResult.resultUrl).not.toBeNull();
+    expect(aiResult.autoSave).toBeNull();
   });
 });
 

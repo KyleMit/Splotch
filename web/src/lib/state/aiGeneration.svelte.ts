@@ -1,4 +1,5 @@
 import type { StyleName } from '$lib/ai/styles';
+import type { SaveOutcome } from '$lib/drawing/screenshot';
 
 export const AI_FAILURE_RETRY_LIMIT = 2;
 
@@ -9,6 +10,8 @@ export interface AiFailureDetails {
 }
 
 export type AiErrorKind = 'generic' | 'safety' | 'retry';
+
+export type AiAutoSaveStatus = 'saving' | SaveOutcome;
 
 export interface AiResultState {
   drawing: Blob | null;
@@ -22,6 +25,9 @@ export interface AiResultState {
   minimized: boolean;
   resultUrl: string | null;
   resultType: string | null;
+  // Where auto-save put the finished picture, so the result card only claims what happened.
+  // Null when auto-save hasn't started for this run.
+  autoSave: AiAutoSaveStatus | null;
   previewUrl: string | null;
   style: StyleName | null;
   // Proof this AI attempt ran on this server, spent by the report flow. Safety
@@ -43,6 +49,7 @@ export const aiResult: AiResultState = $state({
   minimized: false,
   resultUrl: null,
   resultType: null,
+  autoSave: null,
   previewUrl: null,
   style: null,
   reportToken: null,
@@ -70,6 +77,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     resultState.previewUrl = swapObjectUrl(resultState.previewUrl, previewUrl);
     resultState.resultUrl = swapObjectUrl(resultState.resultUrl);
     resultState.resultType = null;
+    resultState.autoSave = null;
     resultState.reportToken = null;
     resultState.error = null;
     resultState.failureDetails = null;
@@ -139,6 +147,10 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     return true;
   }
 
+  function setAiAutoSave(id: number, status: AiAutoSaveStatus) {
+    if (isAiGenerationActive(id) && resultState.open) resultState.autoSave = status;
+  }
+
   function failAiGeneration(
     id: number,
     message?: string,
@@ -187,6 +199,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     setAiPreview,
     setAiDrawing,
     finishAiGeneration,
+    setAiAutoSave,
     failAiGeneration,
     closeAiResult,
     minimizeAiResult,
@@ -203,6 +216,7 @@ export const {
   setAiPreview,
   setAiDrawing,
   finishAiGeneration,
+  setAiAutoSave,
   failAiGeneration,
   closeAiResult,
   minimizeAiResult,

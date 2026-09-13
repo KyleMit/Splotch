@@ -11,6 +11,7 @@ function createAiResultState(): AiResultState {
     minimized: false,
     resultUrl: null,
     resultType: null,
+    autoSave: null,
     previewUrl: null,
     style: null,
     reportToken: null,
@@ -134,6 +135,21 @@ describe('createAiGenerationMachine', () => {
 
     expect(resultState.generating).toBe(false);
     expect(resultState.error).toEqual({ kind: 'retry', message: 'Try again' });
+  });
+
+  it('records the auto-save outcome only for the owning run and clears it on the next', () => {
+    const resultState = createAiResultState();
+    const machine = createAiGenerationMachine(resultState);
+    const staleRun = machine.startAiGeneration(null);
+    const run = machine.startAiGeneration(null);
+    machine.finishAiGeneration(run, 'blob:result', 'image/png');
+
+    machine.setAiAutoSave(run, 'failed');
+    machine.setAiAutoSave(staleRun, 'photos');
+    expect(resultState.autoSave).toBe('failed');
+
+    machine.startAiGeneration(null);
+    expect(resultState.autoSave).toBeNull();
   });
 
   it('keeps a report token only when a reportable failure supplies one', () => {

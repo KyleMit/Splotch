@@ -7,6 +7,7 @@ import {
   startAiGeneration,
   setAiPreview,
   finishAiGeneration,
+  setAiAutoSave,
   failAiGeneration,
   closeAiResult,
   isAiGenerationActive,
@@ -123,19 +124,21 @@ async function blobSignature(blob: Blob): Promise<string | null> {
 // changed since the last AI run, so duplicates don't pile up.
 async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
   if (!isAiGenerationActive(runId)) return;
+  setAiAutoSave(runId, 'saving');
   // The save pipeline loads on demand so this module — statically imported by
   // ActionsPanel — doesn't drag it into the startup bundle (issue #461). A
   // failed chunk load is contained here: the AI image already committed to the
-  // result modal, so it must degrade like any other silent save failure rather
-  // than bubbling into generateAiImage's error UI.
+  // result modal, so it must degrade like any other failed save rather than
+  // bubbling into generateAiImage's error UI.
   let saveImageBlob: (typeof import('./screenshot'))['saveImageBlob'];
   try {
     ({ saveImageBlob } = await import('./screenshot'));
   } catch (err) {
     console.error('Auto-save failed:', err);
+    setAiAutoSave(runId, 'failed');
     return;
   }
-  await saveImageBlob(aiBlob, AI_IMAGE_BASENAME);
+  setAiAutoSave(runId, await saveImageBlob(aiBlob, AI_IMAGE_BASENAME));
   if (!isAiGenerationActive(runId)) return;
   const sig = await blobSignature(drawingBlob);
   if (!isAiGenerationActive(runId)) return;

@@ -13,6 +13,7 @@
   import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
+  import { autoSaveFooter } from '$lib/ai/autoSaveCopy';
   import '$lib/components/deferredIcons';
   import {
     timestamp,
@@ -33,6 +34,9 @@
   // result would be a way to lose it (ADR-0116).
   const serverError = $derived(!!aiResult.error && aiResult.error.kind !== 'safety');
   const waiting = $derived(loading && aiResult.generating);
+  const footer = $derived(
+    autoSaveFooter(settings.autoSaveAiEnabled, aiResult.autoSave, settings.saveFolderName)
+  );
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
   let reportOrigin = $state<Origin | null>(null);
@@ -194,9 +198,9 @@
 
       {#if revealed && aiResult.resultUrl}
         <div class="ai-result-footer">
-          {#if settings.autoSaveAiEnabled}
-            <p class="ai-result-saved">✓ Saved to your photos</p>
-          {:else}
+          {#if footer?.kind === 'saved'}
+            <p class="ai-result-saved">✓ {footer.caption}</p>
+          {:else if footer?.kind === 'download'}
             <button class="ai-result-download" onclick={handleDownload}>
               <Icon name="download" class="ai-result-download-icon" />
               <span>Download</span>
