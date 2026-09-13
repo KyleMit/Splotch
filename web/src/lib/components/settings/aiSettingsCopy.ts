@@ -9,6 +9,11 @@ export const AI_CUSTOMIZATION_HELP =
   'Offers a small set of distinct styles to pick from before the picture is generated.';
 
 export const AI_AUTO_SAVE_LABEL = 'Auto-Save AI Images';
-export const AI_AUTO_SAVE_HELP = __IS_CAPACITOR__
-  ? 'Saves each AI picture and the drawing behind it to your photos'
-  : 'Saves each AI picture and the drawing behind it to your downloads, or to your chosen folder';
+// The folder half is only true where Settings shows the "Save drawings to" row (File System Access
+// support); every other web browser saves AI pictures as downloads.
+export function aiAutoSaveHelp(canChooseFolder: boolean) {
+  if (__IS_CAPACITOR__) return 'Saves each AI picture and the drawing behind it to your photos';
+  return canChooseFolder
+    ? 'Saves each AI picture and the drawing behind it to your downloads, or to your chosen folder'
+    : 'Saves each AI picture and the drawing behind it to your downloads';
+}
