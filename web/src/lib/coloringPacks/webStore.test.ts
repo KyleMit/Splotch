@@ -341,12 +341,15 @@ describe('web coloring packs across a deploy', () => {
     vi.mocked(fetch).mockClear();
   });
 
-  it('keeps every unchanged book installed after an app-version bump without refetching', async () => {
+  it('keeps every unchanged book installed after an app-version bump without refetching or hashing', async () => {
     const deployed = deploy(released.books);
+    const digest = vi.spyOn(crypto.subtle, 'digest');
 
     const installed = await createWebColoringPackStore().installed(deployed);
 
     expect(installedIds(installed)).toEqual(['dinosaur', 'space']);
+    expect(digest).not.toHaveBeenCalled();
+    digest.mockRestore();
     await installAll(deployed);
     expect(fetch).not.toHaveBeenCalled();
     expect(await servedByWorker('/coloring/dinosaur/second.webp')).toBe('b');
