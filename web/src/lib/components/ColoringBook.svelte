@@ -23,7 +23,7 @@
   import { guardTapZone } from '$lib/actions/launchGuard';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { availableColoringBooks } from '$lib/state/coloringPacks.svelte';
+  import { createColoringPickerBooks } from '$lib/state/coloringPickerBooks.svelte';
   import {
     cancelImageRequest,
     cancelImagePrefetchesExcept,
@@ -37,8 +37,9 @@
     applyColoringPageWithMagicUndo,
     clearColoringPageWithMagicUndo,
   } from '$lib/drawing/coloringAppearance';
-  const books = $derived(availableColoringBooks(isNative() ? 'mobile' : 'web'));
-  const hasBookPicker = $derived(books.length >= 2);
+  const pickerBooks = createColoringPickerBooks(isNative() ? 'mobile' : 'web');
+  const books = $derived(pickerBooks.shown);
+  const hasBookPicker = $derived(pickerBooks.listsBooks);
 
   let activeBook = $state<Book | null>(null);
   let pagesGridToken = $state(0);
@@ -60,7 +61,7 @@
       ? pageSelectorImageSource(activePage, coloringBookState.orientation, pickerTheme.current)
       : null
   );
-  const bookGridLayout = $derived(coloringBookGridLayout(books.length));
+  const bookGridLayout = $derived(coloringBookGridLayout(pickerBooks.slotCount));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
 
   function nextFrame() {
@@ -76,12 +77,15 @@
     return __IS_CAPACITOR__ ? image.src : { ...image, sizes };
   }
 
+  // The covers the next open will show, so a book that arrived since is warm.
   $effect(() => {
-    if (!hasBookPicker) return;
+    const nextOpenBooks = pickerBooks.installed;
+    if (nextOpenBooks.length < 2) return;
     const theme = resolvedTheme();
+    const sizes = coloringBookGridLayout(nextOpenBooks.length).imageSizes;
     return scheduleIdle(() =>
       prefetchImages(
-        books.map((book) => imageRequest(coverThumbImageSource(book, theme), coverThumbnailSizes))
+        nextOpenBooks.map((book) => imageRequest(coverThumbImageSource(book, theme), sizes))
       )
     );
   });
@@ -158,6 +162,7 @@
   }
 
   function showInitialView() {
+    pickerBooks.holdForOpen();
     retiringAfterPageSelection = false;
     pagesGridToken += 1;
     showView(initialView());
@@ -242,6 +247,9 @@
               />
               <span class="coloring-book-label">{book.name}</span>
             </button>
+          {/each}
+          {#each { length: pickerBooks.reservedSlotCount }, slot (slot)}
+            <div class="coloring-book-slot" aria-hidden="true"></div>
           {/each}
         </div>
       </div>
@@ -364,6 +372,12 @@
     .coloring-books-grid.book-grid-has-orphan {
       --book-cols: 3;
     }
+  }
+
+  /* A reserved place in the book grid for a cover the installed-book scan may
+     still fill: the same square a tile draws, with nothing to see or press. */
+  .coloring-book-slot {
+    aspect-ratio: 1 / 1;
   }
 
   .coloring-pages-grid {

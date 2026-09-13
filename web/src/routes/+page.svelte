@@ -37,7 +37,10 @@
   import { initWebOnlyServices, recordWebInstallRepromptSession } from '$lib/boot/webOnlyServices';
   import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
   import { installUndoShortcut } from '$lib/boot/undoShortcut';
-  import { installColoringPackDownloads } from '$lib/boot/coloringPacks';
+  import {
+    installColoringPackDownloads,
+    type ColoringPackDownloads,
+  } from '$lib/boot/coloringPacks';
   import { installSystemBack } from '$lib/boot/systemBack';
 
   $effect(() => {
@@ -74,6 +77,15 @@
     pwaUpdates.registerDeferredServiceWorker();
   });
 
+  // A first visit's coloring-pack downloads wait for the same settled-in
+  // signal, or for the picker opening, which asks for books outright. Opening
+  // the picker is also how a page gets selected. Native ignores the call and
+  // keeps downloading at boot (lib/coloringPacks/manager.ts).
+  $effect(() => {
+    if (canvasState.strokeCount < SETTLED_IN_STROKES && !coloringBookModal.open) return;
+    coloringPackDownloads?.engage();
+  });
+
   $effect(() => {
     if (__IS_CAPACITOR__) return;
     if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
@@ -87,6 +99,7 @@
   let InstallBanner = $state<Component | null>(null);
   let SettingsModal = $state<Component | null>(null);
   let hiddenOverlays = $state<BootHiddenOverlays | null>(null);
+  let coloringPackDownloads = $state<ColoringPackDownloads | null>(null);
 
   function mountHiddenOverlay(key: BootHiddenOverlayKey, overlay: Component) {
     if (key === 'installBanner') {
@@ -132,6 +145,8 @@
 
     const overlayController = mountBootHiddenOverlays(mountHiddenOverlay);
     hiddenOverlays = overlayController;
+    const packDownloads = installColoringPackDownloads(settingsReady);
+    coloringPackDownloads = packDownloads;
     const teardowns = [
       () => overlayController.stop(),
       installContextMenuGuard(),
@@ -139,11 +154,12 @@
       initWebOnlyServices(),
       installDevHarnessSeam(),
       installUndoShortcut(),
-      installColoringPackDownloads(settingsReady),
+      packDownloads.stop,
       installSystemBack((overlay) => (overlays = [...overlays, overlay])),
     ];
     return () => {
       hiddenOverlays = null;
+      coloringPackDownloads = null;
       teardowns.forEach((teardown) => teardown());
     };
   });

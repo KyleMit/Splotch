@@ -1,14 +1,89 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import {
+  applyFarmPage,
+  gotoAppWithAllColoringBooksInstalled,
   gotoAppWithInstalledColoringBook,
+  openColoringBookGrid,
   openColoringDialog,
   openDrawer,
   openFarmPageGrid,
 } from './flows-harness';
-import { gotoApp, openSettingsModal } from './helpers';
+import { drawCommittedStroke, gotoApp, openSettingsModal, settleFlyIn } from './helpers';
+import {
+  COLORING_PACK_CACHE_FAMILY_PREFIX,
+  coloringPackMarkerPath,
+} from '../src/lib/coloringPacks/cacheKeys';
 import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
+import { booksForPlatform, STARTER_COLORING_BOOK_ID } from '../src/lib/state/books';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+
+const MANIFEST_REQUEST = /\/coloring\/manifest-.+\.json$/;
+const WEB_COLORING_BOOK_COUNT = booksForPlatform('web').length;
+
+// Proves a negative for longer than scheduleIdle's fallback window, so a
+// download that was going to start at idle has had its chance to.
+const IDLE_WORK_OBSERVATION_MS = 750;
+
+// Every /coloring/ request path the page makes from now on, the manifest
+// included.
+function recordColoringRequests(page: Page): string[] {
+  const paths: string[] = [];
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname.startsWith('/coloring/')) paths.push(pathname);
+  });
+  return paths;
+}
+
+// A file of a downloadable book: under /coloring/<book>/ or a responsive tier's
+// /coloring/max-<n>px/<book>/, for any book but the precached starter.
+function downloadedBookFiles(paths: string[]): string[] {
+  return paths.filter((path) => {
+    const segments = path.split('/').slice(2);
+    const book = segments[0]?.startsWith('max-') ? segments[1] : segments[0];
+    return (
+      segments.length > 1 && !!book && !book.includes('.') && book !== STARTER_COLORING_BOOK_ID
+    );
+  });
+}
+
+function bookInstalled(page: Page, bookId: string): Promise<boolean> {
+  return page.evaluate(
+    async ({ prefix, markerPath }) => {
+      for (const name of await caches.keys()) {
+        if (name.startsWith(prefix) && (await (await caches.open(name)).match(markerPath))) {
+          return true;
+        }
+      }
+      return false;
+    },
+    { prefix: COLORING_PACK_CACHE_FAMILY_PREFIX, markerPath: coloringPackMarkerPath(bookId) }
+  );
+}
+
+// The install's marker lands a microtask or two before the picker's state
+// does; two frames let any re-render that change would cause reach the DOM.
+function afterTwoFrames(page: Page) {
+  return page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+  );
+}
+
+async function holdRequests(page: Page, url: RegExp): Promise<() => void> {
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(url, async (route) => {
+    await held;
+    await route.continue();
+  });
+  return release;
+}
 
 async function holdDinosaurDownload(page: Page): Promise<() => void> {
   let releaseDownload!: () => void;
@@ -221,19 +296,28 @@ test('finishing a download keeps the open page grid stable', async ({ page }) =>
       tiles.map((tile) => tile.getAttribute('aria-label'))
     );
 
+    const header = dialog.locator('.coloring-book-header');
+    await settleFlyIn(dialog);
+    const headerBeforeDownload = await header.boundingBox();
+
     releaseDinosaurDownload();
-    await expect(dialog.getByRole('button', { name: 'Back' })).toBeVisible({ timeout: 30_000 });
-    await expect
-      .poll(() =>
-        gridTiles.evaluateAll((tiles) => tiles.map((tile) => tile.getAttribute('aria-label')))
-      )
-      .toEqual(labelsBeforeDownload);
+    await expect.poll(() => bookInstalled(page, 'dinosaur'), { timeout: 30_000 }).toBe(true);
+    await afterTwoFrames(page);
+    // No Back button joins the header and pushes the title aside mid-view.
+    await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+    expect(await header.boundingBox()).toEqual(headerBeforeDownload);
+    expect(
+      await gridTiles.evaluateAll((tiles) => tiles.map((tile) => tile.getAttribute('aria-label')))
+    ).toEqual(labelsBeforeDownload);
   } finally {
     releaseDinosaurDownload();
   }
 });
 
-test('the picker responds when a second book finishes downloading', async ({ page }) => {
+test('a book that finishes downloading while the picker is open joins at the next open', async ({
+  page,
+}) => {
   const releaseDinosaurDownload = await holdDinosaurDownload(page);
 
   try {
@@ -246,7 +330,9 @@ test('the picker responds when a second book finishes downloading', async ({ pag
     await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
 
     releaseDinosaurDownload();
-    await expect(dialog.getByRole('button', { name: 'Back' })).toBeVisible({ timeout: 30_000 });
+    await expect.poll(() => bookInstalled(page, 'dinosaur'), { timeout: 30_000 }).toBe(true);
+    await afterTwoFrames(page);
+    await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
     await dialog.getByRole('button', { name: 'Close' }).click();
     await expect(dialog).toBeHidden();
 
@@ -258,4 +344,155 @@ test('the picker responds when a second book finishes downloading', async ({ pag
   } finally {
     releaseDinosaurDownload();
   }
+});
+
+// A held press on the header's chip spans books landing: on the book grid a
+// cover joining mid-grid would shift the covers after it and grow the centred
+// dialog, lifting the header out from under the pointer so the release misses
+// the chip. The open picker holds its books, so nothing moves.
+test('books landing during a held press move neither the header nor the chip', async ({ page }) => {
+  test.setTimeout(90_000);
+  const releaseCreaturesDownload = await holdRequests(
+    page,
+    /\/coloring\/(?:max-\d+px\/)?creatures\//
+  );
+
+  try {
+    await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+    await openDrawer(page);
+    await applyFarmPage(page);
+    await openColoringBookGrid(page);
+
+    const dialog = page.locator('#coloring-book-dialog');
+    await settleFlyIn(dialog);
+    const covers = dialog.locator('.coloring-books-grid > .coloring-tile');
+    await expect(covers).toHaveCount(2);
+    const header = dialog.locator('.coloring-book-header');
+    const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
+    await chip.hover();
+    await page.mouse.down();
+    await chip.evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished))
+    );
+    const [headerWhilePressed, chipWhilePressed, coversWhilePressed] = await Promise.all([
+      header.boundingBox(),
+      chip.boundingBox(),
+      dialog.locator('.coloring-books-grid').boundingBox(),
+    ]);
+
+    releaseCreaturesDownload();
+    await expect.poll(() => bookInstalled(page, 'creatures'), { timeout: 60_000 }).toBe(true);
+    await afterTwoFrames(page);
+
+    expect(await header.boundingBox()).toEqual(headerWhilePressed);
+    expect(await chip.boundingBox()).toEqual(chipWhilePressed);
+    expect(await dialog.locator('.coloring-books-grid').boundingBox()).toEqual(coversWhilePressed);
+    await expect(covers).toHaveCount(2);
+
+    await page.mouse.up();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#coloringOverlay')).toBeHidden();
+
+    await openColoringBookGrid(page);
+    await expect(dialog.getByRole('button', { name: 'Creatures coloring book' })).toBeVisible();
+  } finally {
+    releaseCreaturesDownload();
+  }
+});
+
+// A returning child can open the picker before the installed-book scan lands
+// (issue #936's cold start). That open shows the book list, not the starter
+// book's pages, with a slot reserved for every catalog book, and the scan's
+// covers fill the slots without moving the header or the starter book's cover.
+test('an open that beats the installed-book scan fills the book list in place', async ({
+  page,
+}) => {
+  await gotoAppWithAllColoringBooksInstalled(page);
+  const releaseManifest = await holdRequests(page, MANIFEST_REQUEST);
+
+  try {
+    await gotoApp(page);
+    await openDrawer(page);
+    await openColoringDialog(page);
+
+    const dialog = page.locator('#coloring-book-dialog');
+    await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+    const covers = dialog.locator('.coloring-books-grid > .coloring-tile');
+    await expect(covers).toHaveCount(1);
+    await expect(dialog.locator('.coloring-books-grid > .coloring-book-slot')).toHaveCount(
+      WEB_COLORING_BOOK_COUNT - 1
+    );
+    await settleFlyIn(dialog);
+    const header = dialog.locator('.coloring-book-header');
+    const farm = dialog.getByRole('button', { name: 'Farm coloring book' });
+    const [headerBeforeScan, farmBeforeScan] = await Promise.all([
+      header.boundingBox(),
+      farm.boundingBox(),
+    ]);
+
+    releaseManifest();
+    await expect(covers).toHaveCount(WEB_COLORING_BOOK_COUNT, { timeout: 30_000 });
+    await expect(dialog.locator('.coloring-book-slot')).toHaveCount(0);
+    await afterTwoFrames(page);
+    expect(await header.boundingBox()).toEqual(headerBeforeScan);
+    expect(await farm.boundingBox()).toEqual(farmBeforeScan);
+  } finally {
+    releaseManifest();
+  }
+});
+
+test('a visit nobody engages with downloads no coloring packs', async ({ page }) => {
+  const coloringRequests = recordColoringRequests(page);
+  await gotoApp(page);
+
+  // The boot publishes "nothing downloaded" from Cache Storage alone, before any
+  // manifest request, so the Coloring section reading it is the positive
+  // signal that the gate has already decided.
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Coloring', exact: true }).click();
+  await expect(
+    settings.getByText(new RegExp(`^0 of ${WEB_COLORING_BOOK_COUNT - 1} extra books`))
+  ).toBeVisible();
+  await page.waitForTimeout(IDLE_WORK_OBSERVATION_MS);
+
+  expect(coloringRequests).toEqual([]);
+});
+
+test('the stroke that settles the child in starts the downloads', async ({ page }) => {
+  const coloringRequests = recordColoringRequests(page);
+  await gotoApp(page);
+
+  // SETTLED_IN_STROKES (lib/state/canvas.svelte.ts) is three; its module runs
+  // runes at load, so the count is spelled out here as pwa-registration.spec.ts
+  // spells it for the service worker's gate.
+  for (const offset of [0, 60]) {
+    await drawCommittedStroke(page, [
+      { x: 140, y: 140 + offset },
+      { x: 280, y: 180 + offset },
+    ]);
+  }
+  await page.waitForTimeout(IDLE_WORK_OBSERVATION_MS);
+  expect(downloadedBookFiles(coloringRequests)).toEqual([]);
+
+  await drawCommittedStroke(page, [
+    { x: 140, y: 260 },
+    { x: 280, y: 300 },
+  ]);
+  await expect
+    .poll(() => downloadedBookFiles(coloringRequests).length, { timeout: 15_000 })
+    .toBeGreaterThan(0);
+});
+
+test('opening the coloring picker starts the downloads', async ({ page }) => {
+  const coloringRequests = recordColoringRequests(page);
+  await gotoApp(page);
+  await openDrawer(page);
+  await page.waitForTimeout(IDLE_WORK_OBSERVATION_MS);
+  expect(downloadedBookFiles(coloringRequests)).toEqual([]);
+
+  await openColoringDialog(page);
+  await expect
+    .poll(() => downloadedBookFiles(coloringRequests).length, { timeout: 15_000 })
+    .toBeGreaterThan(0);
 });

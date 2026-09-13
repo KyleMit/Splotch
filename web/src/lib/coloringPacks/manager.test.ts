@@ -231,6 +231,28 @@ describe('scanning what is installed', () => {
   });
 });
 
+describe('settling the scan for the picker', () => {
+  it('settles when the run fails before it could publish the installed books', async () => {
+    coloringPackState.initialized = false;
+    coloringPackState.scanSettled = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      })
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const downloader = createColoringPackDownloader();
+    downloader.start();
+
+    await vi.waitFor(() => expect(coloringPackState.scanSettled).toBe(true));
+    expect(coloringPackState.initialized).toBe(false);
+    expect(mocks.installed).not.toHaveBeenCalled();
+    warn.mockRestore();
+    downloader.stop();
+  });
+});
+
 describe('removeDownloadedColoringPacks', () => {
   // Reclaiming space is exactly what a device is asked for in a degraded state,
   // so the network failing must not stop it. Before this was keyed off

@@ -4,6 +4,7 @@ import {
   markColoringBookInstalled,
   resetDownloadedColoringBooks,
   setInstalledColoringBooks,
+  settleColoringPackScan,
 } from '$lib/state/coloringPacks.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { clearLocalColoringBookRoots, setLocalColoringBookRoot } from './assetResolver';
@@ -130,6 +131,10 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
         if (!controller?.signal.aborted) console.warn('Coloring-pack download paused', error);
       })
       .finally(() => {
+        // A run that ends before publishing (offline, a metered link, an
+        // error) still settles the scan: an open picker waiting on one would
+        // otherwise keep its reserved slots, and so would every later open.
+        settleColoringPackScan();
         coloringPackState.downloadingBookId = null;
         controller = null;
         activeStore = null;
