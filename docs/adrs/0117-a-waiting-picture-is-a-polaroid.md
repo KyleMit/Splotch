@@ -35,6 +35,10 @@ dimmed behind a spinner while it waits, with the run's progress as the caption s
 the finished picture, a wand-stars badge and "Ready!" when it lands. Arrival is three passes of a
 wiggle — about five seconds of asking to be noticed — and then rest.
 
+> **Amended 2026-09-13:** the motion tuning pass replaced the three identical passes with two cycles
+> of a decaying wiggle (each cycle's second pass at half the first's swing), so the print visibly
+> settles instead of repeating. The intent above — noticed once, then patient — is unchanged.
+
 Two placement constraints, both load-bearing:
 
 * **That corner belongs to the Color Palette in both orientations** (the layout note in

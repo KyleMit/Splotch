@@ -48,8 +48,8 @@ test('the undo button enables on a stroke and reverts it', async ({ page }) => {
   // of history still lands and answers with the shared unavailable cue. force:
   // Playwright's actionability check refuses to click aria-disabled elements,
   // but dispatching the real pointer events is exactly the toddler tap under
-  // test. The class lives only for the animation's 400ms, so retry the tap if
-  // the assertion misses the window.
+  // test. The class lives only as long as the cue's animations, so retry the tap
+  // if the assertion misses the window.
   await expect(async () => {
     await undo.click({ force: true });
     await expect(undo).toHaveClass(/action-unavailable/, { timeout: 350 });
@@ -58,7 +58,8 @@ test('the undo button enables on a stroke and reverts it', async ({ page }) => {
       return { names: style.animationName.split(', '), durations: style.animationDuration };
     });
     expect(animation.names).toEqual(['action-unavailable-shake', 'action-unavailable-flash']);
-    expect(new Set(animation.durations.split(', ')).size).toBe(1);
+    const [shake, flash] = animation.durations.split(', ').map(Number.parseFloat);
+    expect(flash).toBeGreaterThan(shake);
   }).toPass({ timeout: 10_000 });
   // The shake is an affordance, not an action — the canvas stayed blank.
   expect(await firstOpaquePixel(page)).toBeNull();
@@ -214,7 +215,8 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
     runningCount: Number(await shot.getAttribute('data-observed-unavailable-running-count')),
   };
   expect(animation.names).toEqual(['action-unavailable-shake', 'action-unavailable-flash']);
-  expect(new Set(animation.durations?.split(', ')).size).toBe(1);
+  const [shake, flash] = (animation.durations ?? '').split(', ').map(Number.parseFloat);
+  expect(flash).toBeGreaterThan(shake);
   expect(animation.runningCount).toBeGreaterThanOrEqual(2);
 
   const panel = page.locator('.actions-panel');

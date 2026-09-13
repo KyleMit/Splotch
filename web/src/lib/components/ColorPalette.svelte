@@ -19,6 +19,8 @@
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
 
+  const SWATCH_RELEASE_CLASS = 'releasing';
+
   let paletteEl: HTMLDivElement;
   let customSwatchEl: HTMLButtonElement | undefined;
 
@@ -79,6 +81,29 @@
     e.stopPropagation();
   }
 
+  // The press gets its own springy release instead of snapping back from the
+  // :active scale. A press landing while the last one is still settling rewinds
+  // that animation rather than stacking a second. Svelte scopes the keyframe's
+  // name, so the release is found as the swatch's only own CSS animation — its
+  // selection rings animate its pseudo-elements, which getAnimations() without
+  // subtree leaves out.
+  function playSwatchRelease(e: PointerEvent & { currentTarget: HTMLButtonElement }) {
+    const swatch = e.currentTarget;
+    const release = swatch.getAnimations().find((animation) => animation instanceof CSSAnimation);
+    if (release) {
+      release.currentTime = 0;
+      release.play();
+      return;
+    }
+    swatch.classList.add(SWATCH_RELEASE_CLASS);
+  }
+
+  // The rings' animationend bubbles from the swatch's pseudo-elements.
+  function endSwatchRelease(e: AnimationEvent & { currentTarget: HTMLButtonElement }) {
+    if (e.target === e.currentTarget && e.pseudoElement === '')
+      e.currentTarget.classList.remove(SWATCH_RELEASE_CLASS);
+  }
+
   function handleSwatchCancel(e: PointerEvent) {
     releaseAllPointers();
     e.stopPropagation();
@@ -116,7 +141,9 @@
       aria-label={shown === hex ? label : 'White'}
       use:scribbleTap={() => selectSwatch(hex, shown)}
       onpointerdown={handlePaletteDown}
+      onpointerup={playSwatchRelease}
       onpointercancel={handleSwatchCancel}
+      onanimationend={endSwatchRelease}
     ></button>
   {/each}
 
@@ -131,7 +158,9 @@
       : ''}
     use:scribbleTap={selectCustomColor}
     onpointerdown={handlePaletteDown}
+    onpointerup={playSwatchRelease}
     onpointercancel={handleSwatchCancel}
+    onanimationend={endSwatchRelease}
     bind:this={customSwatchEl}
     ><Icon name="more-colors" class="more-colors-icon" aria-hidden="true" /></button
   >
@@ -180,15 +209,36 @@
     transform: scale(0.9);
   }
 
+  .color-swatch:global(.releasing) {
+    animation: swatch-press 420ms var(--ease-pop);
+  }
+
+  @keyframes swatch-press {
+    0% {
+      transform: scale(0.9);
+    }
+    42% {
+      transform: scale(1.075);
+    }
+    72% {
+      transform: scale(0.984);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
   .color-swatch.active {
     border-color: var(--surface);
     /* Selection Ring is set dynamically via JavaScript to match swatch color */
   }
 
-  /* Selection-confirmation flourish: a ring that expands from the center
-     out to the resting selection-ring position. Skipped on the gradient
-     swatch (whose confirmation is the picker opening). */
-  .color-swatch:not(.gradient-swatch)::before {
+  /* Selection-confirmation flourish: ink blooming past the rim — a ring that
+     overshoots the resting selection-ring position as it fades, followed by a
+     thinner, fainter one. Skipped on the gradient swatch (whose confirmation is
+     the picker opening). */
+  .color-swatch:not(.gradient-swatch)::before,
+  .color-swatch:not(.gradient-swatch)::after {
     content: '';
     position: absolute;
     inset: calc(-1 * var(--selection-ring-width));
@@ -200,21 +250,50 @@
     transform: scale(0);
   }
 
+  .color-swatch:not(.gradient-swatch)::after {
+    border-width: 3px;
+  }
+
   .color-swatch.ring-animate:not(.gradient-swatch)::before {
-    animation: swatch-ring-expand 0.45s var(--ease-pop) forwards;
+    animation: swatch-ring-expand 620ms var(--ease-glide) forwards;
+  }
+
+  .color-swatch.ring-animate:not(.gradient-swatch)::after {
+    animation: swatch-ring-trail 700ms 90ms var(--ease-glide) forwards;
   }
 
   @keyframes swatch-ring-expand {
     0% {
-      transform: scale(0);
+      transform: scale(0.34);
       opacity: 0;
     }
-    40% {
-      opacity: 1;
+    26% {
+      opacity: 0.95;
     }
     100% {
-      transform: scale(1);
+      transform: scale(1.16);
       opacity: 0;
+    }
+  }
+
+  @keyframes swatch-ring-trail {
+    0% {
+      transform: scale(0.5);
+      opacity: 0;
+    }
+    34% {
+      opacity: 0.4;
+    }
+    100% {
+      transform: scale(1.34);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .color-swatch:global(.releasing),
+    .color-swatch.ring-animate:not(.gradient-swatch)::after {
+      animation: none;
     }
   }
 

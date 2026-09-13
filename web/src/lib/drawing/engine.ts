@@ -127,7 +127,7 @@ import {
   peekTiledUndoCommand,
   paintVisibleTiledInk,
 } from './tiledRenderer';
-import { createInkMotion } from './inkMotion';
+import { createInkMotion, type ClientPoint } from './inkMotion';
 import type { DrawingWorkDebug } from './drawingWorkDebug';
 
 // --- Canvas, tool, and callback state -------------------------------------
@@ -1066,12 +1066,15 @@ export function isStrokeActive(): boolean {
   return activePointers.size > 0 || penStreamAdopter.hasCanvasExit();
 }
 
-export function undo(): Promise<void> {
+// The undo ghost drifts toward `towards` as it fades; a keyboard undo, whose
+// button may be tucked away in the closed drawer, passes nothing and the ghost
+// fades in place.
+export function undo(towards?: HTMLElement | null): Promise<void> {
   if (!canUndo || !canvas || !ctx) return Promise.resolve();
   if (PERF_MARKS) performance.mark('engine.undo:start');
   const animate = !isStrokeActive();
   const inkMotionStart = PERF_MARKS ? performance.now() : 0;
-  if (animate) inkMotion.undo(canvas, peekTiledUndoCommand(), getViewState(), renderScale);
+  if (animate) inkMotion.undo(canvas, peekTiledUndoCommand(), getViewState(), renderScale, towards);
   if (PERF_MARKS) performance.measure('engine.undoInkMotion', { start: inkMotionStart });
   const recordedPaper = animate ? peekTiledUndoPaper() : undefined;
   if (recordedPaper) setCanvasEmptyState(false, recordedPaper, true);
@@ -1106,11 +1109,13 @@ export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppeara
   return prepared;
 }
 
-export function clearCanvas({ animate = false }: { animate?: boolean } = {}) {
+// `animateInto` is the client point the departing page shrinks into — the
+// clear button's docked centre. Without it the page clears in place.
+export function clearCanvas({ animateInto }: { animateInto?: ClientPoint } = {}) {
   inkMotion.cancel();
   if (!canvas || !ctx) return;
-  if (animate && !isStrokeActive() && !canvasEmpty) {
-    inkMotion.clear(canvas, getViewState(), renderScale, viewport);
+  if (animateInto && !isStrokeActive() && !canvasEmpty) {
+    inkMotion.clear(canvas, getViewState(), renderScale, viewport, animateInto);
   }
   const state = clearTiledRenderer(canvasEmpty);
   crayonPasses.reset();

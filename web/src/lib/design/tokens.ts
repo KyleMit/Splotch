@@ -109,9 +109,9 @@ export const scale = {
   durationBase: '0.2s',
   durationSlow: '0.35s',
   // Two curves only: the springy overshoot for anything that pops in or
-  // celebrates (dialog fly-ins, download-done, swatch ring, Clear Button),
+  // celebrates (dialog fly-ins, download-done, swatch press, Clear Button),
   // and the glide for anything that settles or leaves (the polaroid, the
-  // clear ripple). ADR-0097 folded the former softer pop into this one.
+  // swatch ring, the undo ghost). ADR-0097 folded the former softer pop into this one.
   easePop: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   easeGlide: 'cubic-bezier(0.22, 1, 0.36, 1)',
 
@@ -169,11 +169,9 @@ export const zIndex = {
   zCanvasChrome: 4,
 
   // Clear Button drag feedback: the paper wash previewing the clear, then the
-  // confirmation ripple over it. Both are full-viewport, both sit above the
-  // canvas and below every persistent control.
+  // departing page over it. Both sit above the canvas and below every
+  // persistent control, so the page passes beneath the Clear Button it flies into.
   zClearPreview: 400,
-  zRipple: 500,
-  // Departing ink outranks stationary page art so the clear wash cannot obscure it.
   zClearInk: 600,
 
   zCornerButton: 900, // SettingsButton

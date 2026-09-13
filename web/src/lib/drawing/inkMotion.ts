@@ -1,7 +1,35 @@
 import { paintStrokeFootprint, strokeGhostReadsTiles, strokeMotionBounds } from './inkMotionBounds';
 import { renderOp, type StrokeGroupCommand } from './strokeOps';
-import { viewMatrix, viewTransformCss, type EngineViewState } from './paperView';
+import {
+  containFit,
+  paperToView,
+  viewMatrix,
+  viewToPaper,
+  viewTransformCss,
+  type EngineViewState,
+} from './paperView';
+import { COLORING_OVERLAY_ID } from './overlay';
 import { prefersReducedMotion } from '$lib/platform/reducedMotion';
+
+// How far the undo ghost drifts toward the undo button as it fades, as a
+// fraction of the distance between their centres: far enough to read as ink
+// pulled back into the pen, short enough that the stroke never leaves its place.
+const UNDO_INK_DRIFT_FRACTION = 0.28;
+
+// The clear sheet scales about a point pulled this fraction of the way past the
+// clear button's centre toward the top-right corner it docks in, so the sheet
+// travels a straight line into the button and slides under it rather than
+// shrinking onto its face.
+const CLEAR_SHEET_CORNER_PULL = 0.34;
+
+// Paired with the clear-sheet animation in app.css, which inkMotion.test.ts
+// reads back; the clear gesture holds its exit for the same time.
+export const CLEAR_SHEET_DURATION_MS = 560;
+
+export interface ClientPoint {
+  x: number;
+  y: number;
+}
 
 function canvasOf(width: number, height: number) {
   const canvas = document.createElement('canvas');
@@ -69,11 +97,34 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
   // tiles already hold the pixels, and a bounded number of blits reads them. A
   // pen ghost still replays: that is exact and cheap, and a five-finger drag's
   // footprint covers most of the paper, where the tile copy is the dearer path.
+  // The drift is measured in client space, where the button lives, and handed to
+  // the ghost in its own paper space, which the rotation lock may have turned.
+  function driftTowards(
+    image: HTMLCanvasElement,
+    host: HTMLElement | null,
+    target: HTMLElement | null | undefined,
+    view: EngineViewState,
+    ghostCenter: ClientPoint
+  ) {
+    const targetRect = target?.getBoundingClientRect();
+    const hostRect = host?.getBoundingClientRect();
+    if (!targetRect?.width || !hostRect) return;
+    const center = paperToView(view, ghostCenter.x, ghostCenter.y);
+    const dx =
+      (targetRect.left + targetRect.width / 2 - hostRect.left - center.x) * UNDO_INK_DRIFT_FRACTION;
+    const dy =
+      (targetRect.top + targetRect.height / 2 - hostRect.top - center.y) * UNDO_INK_DRIFT_FRACTION;
+    const drift = viewToPaper(view, view.tx + dx, view.ty + dy);
+    image.style.setProperty('--ink-tx', `${drift.x}px`);
+    image.style.setProperty('--ink-ty', `${drift.y}px`);
+  }
+
   function undo(
     canvas: HTMLCanvasElement,
     command: StrokeGroupCommand | undefined,
     view: EngineViewState,
-    scale: number
+    scale: number,
+    towards: HTMLElement | null | undefined
   ) {
     cancel();
     if (!command || prefersReducedMotion()) return;
@@ -91,6 +142,10 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     else for (const op of command.ops) renderOp(target, op);
     image.className = 'undo-ink-motion';
     image.style.cssText = `left:${bounds.left / scale}px;top:${bounds.top / scale}px;width:${bounds.width / scale}px;height:${bounds.height / scale}px`;
+    driftTowards(image, canvas.parentElement, towards, view, {
+      x: (bounds.left + bounds.width / 2) / scale,
+      y: (bounds.top + bounds.height / 2) / scale,
+    });
     present(canvas.parentElement, image, viewTransformCss(view));
   }
 
@@ -111,11 +166,38 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     paint(target);
   }
 
+  // The coloring page's line art stays on the page through a clear, but it sits
+  // above the ink, so a sheet leaving without it would blank the art for the
+  // first frame and reveal it again as the sheet shrinks.
+  function paintColoringArt(
+    target: CanvasRenderingContext2D,
+    view: EngineViewState,
+    scale: number
+  ) {
+    const art = document.getElementById(COLORING_OVERLAY_ID);
+    if (!(art instanceof HTMLImageElement) || art.hidden || !art.naturalWidth || !art.complete)
+      return;
+    const box = { width: view.paperCssWidth * scale, height: view.paperCssHeight * scale };
+    const fit = containFit({ width: art.naturalWidth, height: art.naturalHeight }, box);
+    target.globalCompositeOperation = 'source-over';
+    target.drawImage(
+      art,
+      fit.offsetX,
+      fit.offsetY,
+      art.naturalWidth * fit.scale,
+      art.naturalHeight * fit.scale
+    );
+  }
+
+  // The whole page — paper, ink and line art as one bitmap — scales into the
+  // clear button, beneath it, so the button hiding the sheet is the
+  // disappearance. The clean page was underneath the whole time.
   function clear(
     canvas: HTMLCanvasElement,
     view: EngineViewState,
     scale: number,
-    viewport: { width: number; height: number }
+    viewport: { width: number; height: number },
+    bin: ClientPoint
   ) {
     cancel();
     if (prefersReducedMotion()) return;
@@ -126,9 +208,15 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     if (!target) return;
     target.setTransform(...viewMatrix({ ...view, tx: view.tx * scale, ty: view.ty * scale }));
     paint(target);
-    image.className = 'clear-ink-motion';
+    paintColoringArt(target, view, scale);
+    image.className = 'clear-sheet-motion';
+    const originX = bin.x - rect.left;
+    const originY = bin.y - rect.top;
+    const pulledX = originX + (rect.width - originX) * CLEAR_SHEET_CORNER_PULL;
+    const pulledY = originY - originY * CLEAR_SHEET_CORNER_PULL;
+    image.style.transformOrigin = `${pulledX}px ${pulledY}px`;
     const wrapper = present(document.body, image, 'none');
-    wrapper.classList.add('clear-ink-layer');
+    wrapper.classList.add('clear-sheet-layer');
     wrapper.style.cssText = `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;
   }
 

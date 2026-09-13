@@ -20,14 +20,27 @@
   }
 
   .brush-button-faces.entering {
-    animation: face-roll var(--duration-slow) var(--ease-pop) backwards;
+    animation: face-roll 460ms var(--ease-pop) backwards;
     transform-origin: center;
   }
 
+  /* Small enough a turn that the tool the child just picked is recognisable from
+     the first frame: it drops into the slot rather than tumbling into it. */
   @keyframes face-roll {
-    from {
+    0% {
       opacity: 0;
-      transform: rotate(-120deg) scale(0.4);
+      transform: rotate(-54deg) scale(0.62);
+    }
+    56% {
+      opacity: 1;
+      transform: rotate(7deg) scale(1.045);
+    }
+    80% {
+      transform: rotate(-2.5deg) scale(0.99);
+    }
+    100% {
+      opacity: 1;
+      transform: rotate(0) scale(1);
     }
   }
 

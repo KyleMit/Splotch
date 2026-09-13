@@ -8,7 +8,7 @@
 // swatch to survive this (see isPointInGradientBlockZone). This generalises
 // that idea for every modal, but deliberately *not* forever: a launch registers
 // a circular dead zone around the triggering button that swallows taps for just
-// long enough (the ~0.35s fly-in plus a beat to notice) before self-clearing.
+// long enough (the fly-in plus a beat to notice) before self-clearing.
 // After it lapses a deliberate tap in the same spot dismisses as usual.
 //
 // modalDialog registers the zone on open and consults it before dismissing on a
@@ -26,8 +26,8 @@ import type { Origin } from '$lib/state/modal.svelte';
 // toddler's aim without reaching neighbouring controls.
 export const LAUNCH_ZONE_RADIUS_PX = 72;
 // Long enough to outlast a toddler's tap burst, and past the modal fly-in
-// (0.35s in app.css) so the dialog is plainly present before the backdrop goes
-// live.
+// (dialogFlyFromOrigin in app.css) so the dialog is plainly present before the
+// backdrop goes live.
 export const LAUNCH_ZONE_DURATION_MS = 600;
 
 interface DeadZone {

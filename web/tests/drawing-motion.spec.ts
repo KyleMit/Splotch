@@ -32,7 +32,7 @@ test('flyouts replay staggered arrivals and unmount immediately on close', async
     const menu = page.locator('.flyout-menu');
     await expect(menu).toBeVisible();
     await expect(menu).toHaveCSS('animation-name', 'flyout-shell');
-    await expect(menu.locator('button').nth(1)).toHaveCSS('animation-delay', '0.065s');
+    await expect(menu.locator('button').nth(1)).toHaveCSS('animation-delay', '0.08s');
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
     await page.locator(trigger).click();
@@ -103,6 +103,9 @@ test('undo retires ink immediately beneath a shrinking overlay and drawing cance
   const overlay = page.locator('.undo-ink-motion');
   await expect(overlay).toBeVisible();
   await expect(overlay).toHaveCSS('animation-name', 'undo-ink');
+  expect(
+    await overlay.evaluate((canvas) => Number.parseFloat(canvas.style.getPropertyValue('--ink-tx')))
+  ).not.toBe(0);
   await expect(page.locator('#undoButton .action-icon')).toHaveCSS('animation-name', 'undo-spin');
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(0);
   expect(
@@ -167,7 +170,9 @@ test('crayon undo ghost carries only the pixels the undone stroke owned', async 
   expect(await ghostAlphaAt(canvasBox.x + 300, canvasBox.y + 210)).toBe(0);
 });
 
-test('clear snapshots ink while clearing history and still permits undo', async ({ page }) => {
+test('clear sends the page off as a sheet while clearing history and still permits undo', async ({
+  page,
+}) => {
   await gotoApp(page);
   await openDrawer(page);
   await drawCommittedStroke(page, [
@@ -182,9 +187,9 @@ test('clear snapshots ink while clearing history and still permits undo', async 
       ?.getAnimations({ subtree: true }) ?? [])
       animation.pause();
   });
-  const snapshot = page.locator('.clear-ink-motion');
+  const snapshot = page.locator('.clear-sheet-motion');
   await expect(snapshot).toBeVisible();
-  await expect(snapshot).toHaveCSS('animation-name', 'clear-ink');
+  await expect(snapshot).toHaveCSS('animation-name', 'clear-sheet');
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(0);
   expect(
     await snapshot.evaluate((canvas: HTMLCanvasElement) =>
@@ -279,4 +284,14 @@ test('live strokes suppress new flyout, face, and undo motion', async ({ page })
   await expect(page.locator('.ink-motion')).toHaveCount(0);
   await expect(page.locator('#undoButton .action-icon')).toHaveCSS('animation-name', 'none');
   await page.mouse.up();
+});
+
+test('a second swatch press replays the release once the first has settled', async ({ page }) => {
+  await gotoApp(page);
+  const swatch = page.locator('.color-swatch[data-color]').first();
+  await swatch.click();
+  await expect(swatch).toHaveClass(/\breleasing\b/);
+  await expect(swatch).not.toHaveClass(/\breleasing\b/);
+  await swatch.click();
+  await expect(swatch).toHaveClass(/\breleasing\b/);
 });
