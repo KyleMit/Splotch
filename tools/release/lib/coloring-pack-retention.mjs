@@ -11,7 +11,9 @@ const WEB_STATIC_DIR = join(ROOT, 'web', 'static');
 // no longer serves, pinned to the exact broken-file count so a further deletion
 // and a partial restore both fail the guard. Each entry is an open defect, not
 // an exemption: ADR-0103 requires retention for the installed app's lifetime.
-// TODO(audit ui-native P1 #1): restore the retired bytes, then drop the entry.
+// TODO: v1.5.0's pack files were deleted or regenerated in place after release, so
+// every downloadable book fails on those installs. Resolve the ADR-0103 retention
+// breach (restore reachable bytes or retire the release), then drop the entry.
 const KNOWN_BROKEN_RELEASES = { '1.5.0': 513 };
 
 /**

@@ -54,9 +54,10 @@ public class ColoringPackWorker extends Worker {
         } catch (StaleJobException error) {
             if (jobFile.exists() && !jobFile.delete()) jobFile.deleteOnExit();
             return Result.failure();
-        } catch (AssetNotServedException error) {
-            // Backoff cannot bring a retired file back. Failing ends the background
-            // loop; the next app-driven install attempts the download once more.
+        } catch (RetiredAssetException error) {
+            // Backoff cannot bring back a file the origin deleted or regenerated in
+            // place. Failing ends the background loop; the next app-driven install
+            // attempts the download once more.
             return Result.failure();
         } catch (Exception error) {
             return Result.retry();
@@ -105,7 +106,7 @@ public class ColoringPackWorker extends Worker {
         try {
             int status = connection.getResponseCode();
             if (status == HttpURLConnection.HTTP_NOT_FOUND || status == HttpURLConnection.HTTP_GONE) {
-                throw new AssetNotServedException();
+                throw new RetiredAssetException();
             }
             if (status != HttpURLConnection.HTTP_OK) {
                 throw new IllegalStateException("Coloring download HTTP " + status);
@@ -124,7 +125,9 @@ public class ColoringPackWorker extends Worker {
                 }
             }
             if (bytes != expectedBytes || !hex(digest.digest()).equals(expectedDigest)) {
-                throw new IllegalStateException("Coloring asset verification failed");
+                long advertisedBytes = connection.getContentLengthLong();
+                if (advertisedBytes < 0 || advertisedBytes == bytes) throw new RetiredAssetException();
+                throw new IllegalStateException("Coloring asset download was truncated");
             }
             if (destination.exists() && !destination.delete()) {
                 throw new IllegalStateException("Could not replace coloring asset");
@@ -178,5 +181,5 @@ public class ColoringPackWorker extends Worker {
 
     private static final class StaleJobException extends Exception {}
 
-    private static final class AssetNotServedException extends Exception {}
+    private static final class RetiredAssetException extends Exception {}
 }
