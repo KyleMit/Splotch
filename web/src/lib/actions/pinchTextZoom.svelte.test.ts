@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   attachPinchTextZoom,
   clampTextZoom,
@@ -6,6 +6,7 @@ import {
   MIN_TEXT_ZOOM,
   nextTextZoom,
 } from './pinchTextZoom.svelte';
+import { PRESS_CLICK_CONSUME_WINDOW_MS } from './scribbleGuard';
 
 describe('clampTextZoom', () => {
   it('keeps values within [MIN, MAX]', () => {
@@ -54,7 +55,7 @@ function pinchPane() {
   document.body.appendChild(node);
   const gesture = attachPinchTextZoom(node, () => ({ target, enabled: true }));
   attached.add(gesture);
-  return { node, target };
+  return { node, target, gesture };
 }
 
 function touch(type: string, pointerId: number, clientX = 0, clientY = 0) {
@@ -68,6 +69,18 @@ function touch(type: string, pointerId: number, clientX = 0, clientY = 0) {
   });
 }
 
+function pinchAndLift(node: HTMLElement) {
+  node.dispatchEvent(touch('pointerdown', 1, 0, 0));
+  node.dispatchEvent(touch('pointerdown', 2, 100, 0));
+  node.dispatchEvent(touch('pointerup', 2, 100, 0));
+  node.dispatchEvent(touch('pointerup', 1, 0, 0));
+}
+
+// A pointer-synthesized click carries detail >= 1; detail 0 is keyboard/AT.
+function pointerClick() {
+  return new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 });
+}
+
 // `hasPointerCapture` here reports happy-dom's own bookkeeping of the action's
 // `setPointerCapture` calls — which is all these assertions claim. A real browser
 // ignores a capture request for a pointer id it has no active pointer for (in
@@ -79,6 +92,7 @@ describe('attachPinchTextZoom', () => {
     for (const gesture of attached) gesture.destroy();
     attached.clear();
     document.body.innerHTML = '';
+    vi.restoreAllMocks();
   });
 
   it('leaves a lone finger uncaptured so the pane still scrolls natively', () => {
@@ -146,18 +160,45 @@ describe('attachPinchTextZoom', () => {
 
   it('swallows the one trailing click a pinch leaks onto the control beneath it', () => {
     const { node } = pinchPane();
-    node.dispatchEvent(touch('pointerdown', 1, 0, 0));
-    node.dispatchEvent(touch('pointerdown', 2, 100, 0));
-    node.dispatchEvent(touch('pointerup', 2, 100, 0));
-    node.dispatchEvent(touch('pointerup', 1, 0, 0));
+    pinchAndLift(node);
 
-    const ghost = new MouseEvent('click', { bubbles: true, cancelable: true });
+    const ghost = pointerClick();
     node.dispatchEvent(ghost);
     expect(ghost.defaultPrevented).toBe(true);
 
-    const realTap = new MouseEvent('click', { bubbles: true, cancelable: true });
+    const realTap = pointerClick();
     node.dispatchEvent(realTap);
     expect(realTap.defaultPrevented).toBe(false);
+  });
+
+  it('lets a keyboard or assistive-tech click through after a pinch', () => {
+    const { node } = pinchPane();
+    pinchAndLift(node);
+
+    const keyboardClick = new MouseEvent('click', { bubbles: true, cancelable: true, detail: 0 });
+    node.dispatchEvent(keyboardClick);
+    expect(keyboardClick.defaultPrevented).toBe(false);
+  });
+
+  it('lets a pointer click through once the pinch has been over for the click window', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0);
+    const { node } = pinchPane();
+    pinchAndLift(node);
+
+    now.mockReturnValue(PRESS_CLICK_CONSUME_WINDOW_MS + 1);
+    const laterClick = pointerClick();
+    node.dispatchEvent(laterClick);
+    expect(laterClick.defaultPrevented).toBe(false);
+  });
+
+  it('lets the first pointer click through after a reset reopens the pane', () => {
+    const { node, gesture } = pinchPane();
+    pinchAndLift(node);
+
+    gesture.reset();
+    const reopenedClick = pointerClick();
+    node.dispatchEvent(reopenedClick);
+    expect(reopenedClick.defaultPrevented).toBe(false);
   });
 
   it('detaches on destroy', () => {
