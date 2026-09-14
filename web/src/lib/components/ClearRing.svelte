@@ -1,4 +1,5 @@
 <script lang="ts">
+  // TypeScript mode keeps the component declaration visible to the project type checker.
 </script>
 
 <!-- Fixed authored contours keep the pen marks identical across gestures without work on pointermove. -->

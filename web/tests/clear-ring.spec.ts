@@ -10,7 +10,7 @@ for (const viewport of [
   { width: 1024, height: 768 },
 ]) {
   for (const colorScheme of ['light', 'dark'] as const) {
-    test(`the pen ring changes state without redrawing at ${viewport.width}px in ${colorScheme}`, async ({
+    test(`the pen ring stays aligned across clear states at ${viewport.width}px in ${colorScheme}`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport);
@@ -37,6 +37,25 @@ for (const viewport of [
       await expect(dashes).toHaveCSS('stroke-linecap', 'round');
       await expect(dashes).toHaveCSS('stroke-width', '4px');
       await expect(dashes).toHaveAttribute('vector-effect', 'non-scaling-stroke');
+      await expect(solid).toHaveCSS('stroke-width', '4px');
+      await expect(solid).toHaveAttribute('vector-effect', 'non-scaling-stroke');
+      await ring.evaluate((element) =>
+        Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished))
+      );
+      const alignment = await ring.evaluate((element) => {
+        const zone = element.getBoundingClientRect();
+        const svg = element.querySelector('svg')!.getBoundingClientRect();
+        return {
+          left: svg.left - zone.left,
+          top: svg.top - zone.top,
+          width: zone.width - svg.width,
+          height: zone.height - svg.height,
+        };
+      });
+      expect(alignment.left).toBeCloseTo(2, 1);
+      expect(alignment.top).toBeCloseTo(2, 1);
+      expect(alignment.width).toBeCloseTo(4, 1);
+      expect(alignment.height).toBeCloseTo(4, 1);
       const contours = await ring
         .locator('path')
         .evaluateAll((paths) => paths.map((path) => path.getAttribute('d')));
@@ -88,4 +107,30 @@ test('the reduced-motion tutorial shows the same continuous pen contour', async 
   expect(
     await tutorialRing.evaluate((element) => element.getAnimations({ subtree: true }).length)
   ).toBe(0);
+});
+
+test('the animated tutorial switches the pen contour at its ready phase', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await gotoApp(page);
+  const button = page.locator('#clearButton');
+  const coachmark = page.locator('.clear-coachmark');
+  await expect(async () => {
+    await button.click({ clickCount: 3 });
+    await expect(coachmark).toHaveClass(/\bvisible\b/, { timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+  const ring = coachmark.locator('.coachmark-ring');
+  for (const phase of [
+    { progress: 0.4, dashes: '1', solid: '0' },
+    { progress: 0.78, dashes: '0', solid: '1' },
+  ]) {
+    await ring.evaluate((element, progress) => {
+      const animation = element.getAnimations()[0];
+      const duration = animation.effect?.getTiming().duration;
+      if (typeof duration !== 'number') throw new Error('The tutorial has no timed animation');
+      animation.pause();
+      animation.currentTime = duration * progress;
+    }, phase.progress);
+    await expect(ring.locator('.dashes')).toHaveCSS('opacity', phase.dashes);
+    await expect(ring.locator('.solid')).toHaveCSS('opacity', phase.solid);
+  }
 });
