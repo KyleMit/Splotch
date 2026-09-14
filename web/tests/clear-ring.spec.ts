@@ -136,6 +136,14 @@ test('the reduced-motion tutorial shows the same continuous pen contour', async 
   const tutorialRing = coachmark.locator('.coachmark-ring');
   await expect(tutorialRing.locator('.dashes')).toHaveCSS('opacity', '0');
   await expect(tutorialRing.locator('.solid')).toHaveCSS('opacity', '1');
+  await expect
+    .poll(() =>
+      tutorialRing.locator('svg').evaluate((svg) => {
+        if (!(svg instanceof SVGSVGElement)) throw new Error('Tutorial SVG is missing');
+        return Math.abs(svg.viewBox.baseVal.width - svg.getBoundingClientRect().width);
+      })
+    )
+    .toBeLessThan(0.1);
   const tutorialContour = await tutorialRing.locator('.solid').getAttribute('d');
   if (!tutorialContour) throw new Error('The tutorial contour is missing');
   const box = await button.boundingBox();
