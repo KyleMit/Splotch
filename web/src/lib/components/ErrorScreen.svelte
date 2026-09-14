@@ -14,6 +14,13 @@
   let { onRestart = () => location.assign('/') }: Props = $props();
 </script>
 
+<!-- The title travels with the screen, not with +error.svelte: the root
+     layout's boundary renders this same screen for a client-side crash, and
+     without it the tab would keep the crashed route's title. -->
+<svelte:head>
+  <title>Oops! · Splotch</title>
+</svelte:head>
+
 <div class="error-screen" role="alert">
   <!-- eslint-disable svelte/no-at-html-tags markup is a first-party SVG imported at build time -->
   <!-- Inline dimensions keep the SVG bounded if the component stylesheet fails. -->

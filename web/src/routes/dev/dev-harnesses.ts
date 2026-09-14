@@ -6,6 +6,11 @@ export interface DevHarness {
 
 export const DEV_HARNESSES: DevHarness[] = [
   {
+    href: '/dev/crash',
+    name: 'Crash',
+    blurb: 'Throws during hydration so the root error boundary can be exercised by a spec.',
+  },
+  {
     href: '/dev/engine',
     name: 'Drawing engine',
     blurb: 'Bare canvas harness driven by the Playwright specs.',
