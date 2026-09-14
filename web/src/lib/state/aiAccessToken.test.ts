@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 const secureStore = vi.hoisted(() => ({ accessCode: null as string | null }));
+const ROUTER_HISTORY_STATE = { 'sveltekit:index': 7 };
 
 vi.mock('../secureStorage', () => ({
   saveAccessCode: vi.fn(async (value: string) => {
@@ -173,7 +174,11 @@ describe('hydrateAiAccessToken', () => {
 
 describe('captureAiAccessTokenFromUrl', () => {
   it('scrubs the invitation parameter only after secure persistence succeeds', async () => {
-    window.history.replaceState({}, '', `/?${AI_ACCESS_TOKEN_PARAM}=invitation-code&other=1`);
+    window.history.replaceState(
+      ROUTER_HISTORY_STATE,
+      '',
+      `/?${AI_ACCESS_TOKEN_PARAM}=invitation-code&other=1`
+    );
 
     await captureAiAccessTokenFromUrl();
 
@@ -181,6 +186,7 @@ describe('captureAiAccessTokenFromUrl', () => {
     expect(settings.aiImageEnabled).toBe(false);
     expect(secureStore.accessCode).toBe('invitation-code');
     expect(window.location.search).toBe('?other=1');
+    expect(window.history.state).toEqual(ROUTER_HISTORY_STATE);
     expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 

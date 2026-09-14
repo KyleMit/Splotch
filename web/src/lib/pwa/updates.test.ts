@@ -353,6 +353,7 @@ describe('initPWAUpdates', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
+    history.replaceState({ 'sveltekit:index': 7 }, '', '/');
     replaceStateSpy = vi.spyOn(history, 'replaceState').mockImplementation(() => {});
     // Prevent checkForUpdates / checkVersionMismatch from doing real work
     stubServiceWorker(undefined);
@@ -374,7 +375,11 @@ describe('initPWAUpdates', () => {
 
     teardown = pwaUpdates.initPWAUpdates();
 
-    expect(replaceStateSpy).toHaveBeenCalledWith(null, '', expect.not.stringContaining('?v='));
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      history.state,
+      '',
+      expect.not.stringContaining('?v=')
+    );
   });
 
   it('does not call replaceState when no ?v= param is present', () => {

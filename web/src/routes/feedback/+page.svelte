@@ -53,12 +53,11 @@
   // /feedback?sent=1 hands the next person a thank-you for someone else's
   // report with no form anywhere on the page.
   //
-  // Plain history.replaceState, like the ?v= strip in pwa/updates.ts: nothing
-  // here reads page.url (the view comes from `data`, resolved before this runs),
-  // so there is no router state to keep in step. A reload after the strip lands
-  // on the form, which is the right page for whoever reloads.
+  // Keep SvelteKit's navigation index on this history entry so Back can render
+  // the route after the query is stripped. This runs too early in hydration for
+  // $app/navigation's replaceState helper.
   $effect(() => {
-    if (sent) history.replaceState(null, '', '/feedback');
+    if (sent) history.replaceState(history.state, '', '/feedback');
   });
 
   const submit: SubmitFunction = () => {

@@ -155,7 +155,7 @@ export function createPWAUpdates() {
     const attemptedVersion = url.searchParams.get(CACHE_BUST_VERSION_PARAM);
     if (attemptedVersion !== null) {
       url.searchParams.delete(CACHE_BUST_VERSION_PARAM);
-      history.replaceState(null, '', url.toString());
+      history.replaceState(history.state, '', url.toString());
     }
 
     void checkForUpdates();
