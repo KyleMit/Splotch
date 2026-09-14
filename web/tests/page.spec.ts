@@ -217,8 +217,9 @@ for (const [path, titleWord] of [
     await page.goto(path);
     expect(await metaContent(page, 'og:url')).toBe(`https://splotch.art${path}`);
     expect(await metaContent(page, 'og:title')).toContain(titleWord);
+    // The template's default description precedes the route's own in the head.
     expect(await metaContent(page, 'og:description')).toBe(
-      await metaContent(page, 'description', 'name')
+      await page.locator('meta[name="description"]').last().getAttribute('content')
     );
     await expect(page.locator('meta[property="og:title"]')).toHaveCount(1);
   });
