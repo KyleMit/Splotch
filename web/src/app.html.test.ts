@@ -5,7 +5,7 @@
 // even to say it is absent, applies it — vitest reads that annotation from any
 // leading comment, sentence or not.
 import { existsSync, readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   BRUSH_ATTRIBUTE,
   CONTROL_OFF_ATTRIBUTES,
@@ -144,6 +144,40 @@ describe("app.html's boot script paints theme-color like the theme module", () =
       });
     }
   }
+
+  it('paints the OS theme when storage refuses every read', () => {
+    const refusedRead = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    });
+    try {
+      expect(boot(THEME_DEFAULT, true).painted()).toBe(THEME_COLORS.dark);
+    } finally {
+      refusedRead.mockRestore();
+    }
+  });
+
+  it('follows OS theme changes when storage refuses every read', () => {
+    const refusedRead = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    });
+    try {
+      const session = boot(THEME_DEFAULT, false);
+      session.onDrawingSurface(false);
+      expect(session.painted()).toBe(THEME_COLORS.light);
+      expect(session.osListeners).toHaveLength(1);
+
+      session.osListeners[0]({ matches: true });
+      expect(session.painted()).toBe(THEME_COLORS.dark);
+      session.osListeners[0]({ matches: false });
+      expect(session.painted()).toBe(THEME_COLORS.light);
+
+      session.onDrawingSurface(true);
+      session.osListeners[0]({ matches: true });
+      expect(session.painted()).toBe(THEME_COLORS.light);
+    } finally {
+      refusedRead.mockRestore();
+    }
+  });
 
   it('reaches the tag by the selector theme.ts uses', () => {
     expect(bootScript).toContain(THEME_COLOR_META_SELECTOR);

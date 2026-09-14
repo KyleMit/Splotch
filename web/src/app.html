@@ -82,8 +82,8 @@
          lib/theme.ts; app.html.test.ts runs this script and fails on divergence. -->
     <script>
       (function () {
+        var el = document.documentElement;
         try {
-          var el = document.documentElement;
           var on = function (key, def) {
             var raw = localStorage.getItem(key);
             if (raw === 'true') return true;
@@ -143,24 +143,29 @@
           if ((brush === 'crayon' && crayon) || (brush === 'magic' && magic)) {
             el.setAttribute('data-brush', brush);
           }
-
-          var theme = localStorage.getItem('splotch-theme');
-          var explicitTheme = theme === 'light' || theme === 'dark';
-          if (explicitTheme) el.setAttribute('data-theme', theme);
-
-          var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
-          var themeColorMeta = document.querySelector('meta[name="theme-color"]');
-          var paintThemeColor = function (dark) {
-            themeColorMeta.setAttribute('content', dark ? '#17171d' : '#ffffff');
-          };
-          paintThemeColor(explicitTheme ? theme === 'dark' : darkQuery.matches);
-          if (!explicitTheme) {
-            darkQuery.addEventListener('change', function (e) {
-              if (!el.hasAttribute('data-app-surface')) paintThemeColor(e.matches);
-            });
-          }
         } catch (e) {
           /* private-mode / disabled storage — fall back to CSS defaults */
+        }
+
+        var theme;
+        try {
+          theme = localStorage.getItem('splotch-theme');
+        } catch (e) {
+          /* unavailable storage leaves the OS preference in control */
+        }
+        var explicitTheme = theme === 'light' || theme === 'dark';
+        if (explicitTheme) el.setAttribute('data-theme', theme);
+
+        var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        var themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        var paintThemeColor = function (dark) {
+          themeColorMeta.setAttribute('content', dark ? '#17171d' : '#ffffff');
+        };
+        paintThemeColor(explicitTheme ? theme === 'dark' : darkQuery.matches);
+        if (!explicitTheme) {
+          darkQuery.addEventListener('change', function (e) {
+            if (!el.hasAttribute('data-app-surface')) paintThemeColor(e.matches);
+          });
         }
       })();
     </script>
