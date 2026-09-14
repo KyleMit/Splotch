@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
   import ClearCoachmark from './ClearCoachmark.svelte';
+  import ClearRing from './ClearRing.svelte';
   import { clearCanvas } from '$lib/drawing/engine';
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
   import { dragToClear } from '$lib/actions/dragToClear';
@@ -80,7 +81,9 @@
   </button>
 </div>
 
-<div class="clear-accept-zone" id="clearAcceptZone" bind:this={acceptZoneEl}></div>
+<div class="clear-accept-zone" id="clearAcceptZone" bind:this={acceptZoneEl} aria-hidden="true">
+  <ClearRing />
+</div>
 
 <!-- Radial paper wash: emanates from the button's home corner and grows with
      drag progress, previewing the clear before the user commits to it. -->
@@ -201,7 +204,7 @@
     display: none;
     z-index: var(--z-clear-accept-zone); /* Below .clear-container so the button sits on top */
     border-radius: 50%;
-    border: 4px dashed rgb(var(--alarm-rgb) / 45%);
+    color: rgb(var(--alarm-rgb) / 45%);
     background: radial-gradient(
       circle,
       rgb(var(--alarm-rgb) / 0%) 55%,
@@ -213,8 +216,7 @@
     transition:
       opacity var(--duration-base) ease,
       transform 0.3s var(--ease-pop),
-      border-color var(--duration-fast) ease,
-      border-style var(--duration-fast) ease,
+      color var(--duration-fast) ease,
       background var(--duration-fast) ease;
   }
 
@@ -225,8 +227,9 @@
   }
 
   .clear-accept-zone:global(.threshold-reached) {
-    border-color: rgb(var(--alarm-rgb) / 90%);
-    border-style: solid;
+    color: rgb(var(--alarm-rgb) / 90%);
+    --clear-ring-dashes: 0;
+    --clear-ring-solid: 1;
     background: radial-gradient(
       circle,
       rgb(var(--alarm-rgb) / 0%) 50%,
@@ -293,6 +296,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     /* Keep the wash (it conveys state, not just motion) but make it instant. */
+    .clear-accept-zone,
     .clear-preview,
     .clear-preview:global(.releasing) {
       transition: none;
