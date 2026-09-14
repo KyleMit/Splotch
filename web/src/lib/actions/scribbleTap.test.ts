@@ -14,13 +14,14 @@ vi.mock('$lib/drawing/engine', () => ({ forgetPenPointer }));
 function pointerEvent(
   type: string,
   pointerId: number,
-  { clientX = 0, clientY = 0, pointerType = 'mouse', buttons = 0 } = {}
+  { clientX = 0, clientY = 0, pointerType = 'mouse', button = 0, buttons = 0 } = {}
 ) {
   const e = new Event(type, { cancelable: true, bubbles: true });
   Object.defineProperty(e, 'pointerId', { value: pointerId });
   Object.defineProperty(e, 'clientX', { value: clientX });
   Object.defineProperty(e, 'clientY', { value: clientY });
   Object.defineProperty(e, 'pointerType', { value: pointerType });
+  Object.defineProperty(e, 'button', { value: button });
   Object.defineProperty(e, 'buttons', { value: buttons });
   return e;
 }
@@ -131,6 +132,18 @@ describe('scribbleTap', () => {
     const { el, activate } = tapElement();
     el.dispatchEvent(new MouseEvent('click', { detail: 0 }));
     expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  // Native click only follows the primary button, so a right or middle press
+  // must not activate through the pointerup path either.
+  it.each([
+    ['auxiliary', 1],
+    ['secondary', 2],
+  ])('does not activate on a completed %s-button press', (_name, button) => {
+    const { el, activate } = tapElement();
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { button }));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { button }));
+    expect(activate).not.toHaveBeenCalled();
   });
 
   it('ignores a pointerup whose press did not start on the control (a drag ending there)', () => {
