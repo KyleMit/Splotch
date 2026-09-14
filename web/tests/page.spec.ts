@@ -98,11 +98,17 @@ test('client-side nav off the drawing route drops the app-surface locks (effect 
 }) => {
   await gotoApp(page);
   expect((await bodySurface(page)).touchAction).toBe('none');
+  const teardownErrors: string[] = [];
+  page.on('pageerror', (error) => teardownErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') teardownErrors.push(message.text());
+  });
 
   await spaNavigate(page, '/privacy');
   await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
 
   await expectNoReload(page);
+  expect(teardownErrors, 'client-side navigation must not log teardown errors').toEqual([]);
   const after = await bodySurface(page);
   expect(after.touchAction).toBe('auto');
   expect(after.userSelect).not.toBe('none');
