@@ -310,7 +310,9 @@ media queries + the head-script stamp in `app.html`).
 * **Clear Button** - Floating trash button for clearing the canvas
   * **Clear Preview Line** - Torn paper edge visual indicator showing where canvas will be cleared
     during drag
-  * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
+  * **Clear Accept Zone** - Hand-drawn radial ring around the Clear Button’s home position; drag
+    beyond it and release to clear. `ClearRing.svelte` shares the dashed and ready contours with the
+    tutorial.
   * **Page Turn Overlay** - White overlay animation that sweeps across when clearing
 * **Actions Panel** - Bottom-corner panel hosting auxiliary controls
   * **Brush Button** (`#brushButton`) - Adapts to the enabled optional brushes (ADR-0067): absent

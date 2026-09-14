@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getAcceptRadius } from '$lib/actions/dragToClearGeometry';
   import Icon from './Icon.svelte';
+  import ClearRing from './ClearRing.svelte';
 
   const COACHMARK_AUTO_DISMISS_MS = 6000;
   // Overshoot past the ring edge so the mime reads "pull past the threshold, not just to it".
@@ -73,7 +74,9 @@
 
 <!-- Animated coachmark: a ghost button + hand mimes the drag-to-clear gesture. -->
 <div class="clear-coachmark" class:visible={tutorialVisible} aria-hidden="true">
-  <div class="coachmark-ring" bind:this={coachmarkRingEl}></div>
+  <div class="coachmark-ring" bind:this={coachmarkRingEl}>
+    <ClearRing />
+  </div>
   <div class="coachmark-ghost" bind:this={coachmarkGhostEl}>
     <div class="coachmark-button">
       <Icon name="trash-open" class="coachmark-trash" aria-hidden="true" />
@@ -98,10 +101,10 @@
     --hint-rgb: 255 107 107;
     /* Settled "ready" rose (solid, alarm-adjacent) — one pair of whole-value
        properties so the coachmarkRing keyframe's 70%,86% frame and the
-       reduced-motion fallback below read the exact same border/fill and
+       reduced-motion fallback below read the exact same ink/fill and
        cannot drift apart. */
     --ready-rgb: 238 90 111;
-    --ready-border: rgb(var(--ready-rgb) / 85%);
+    --ready-ink: rgb(var(--ready-rgb) / 85%);
     --ready-fill: radial-gradient(
       circle,
       rgb(var(--ready-rgb) / 0%) 50%,
@@ -133,7 +136,7 @@
     position: fixed;
     box-sizing: border-box;
     border-radius: 50%;
-    border: 4px dashed rgb(var(--hint-rgb) / 40%);
+    color: rgb(var(--hint-rgb) / 40%);
     background: radial-gradient(
       circle,
       rgb(var(--hint-rgb) / 0%) 60%,
@@ -237,8 +240,9 @@
     8% {
       opacity: 0;
       transform: scale(0.9);
-      border-color: rgb(var(--hint-rgb) / 40%);
-      border-style: dashed;
+      color: rgb(var(--hint-rgb) / 40%);
+      --clear-ring-dashes: 1;
+      --clear-ring-solid: 0;
     }
     18% {
       opacity: 1;
@@ -247,8 +251,9 @@
     57% {
       opacity: 1;
       transform: scale(1);
-      border-color: rgb(var(--hint-rgb) / 40%);
-      border-style: dashed;
+      color: rgb(var(--hint-rgb) / 40%);
+      --clear-ring-dashes: 1;
+      --clear-ring-solid: 0;
       background: radial-gradient(
         circle,
         rgb(var(--hint-rgb) / 0%) 60%,
@@ -259,8 +264,9 @@
     86% {
       opacity: 1;
       transform: scale(1.015);
-      border-color: var(--ready-border);
-      border-style: solid;
+      color: var(--ready-ink);
+      --clear-ring-dashes: 0;
+      --clear-ring-solid: 1;
       background: var(--ready-fill);
     }
     94%,
@@ -281,8 +287,9 @@
     .clear-coachmark.visible .coachmark-ring {
       animation: none;
       opacity: 1;
-      border-color: var(--ready-border);
-      border-style: solid;
+      color: var(--ready-ink);
+      --clear-ring-dashes: 0;
+      --clear-ring-solid: 1;
       background: var(--ready-fill);
     }
   }
