@@ -318,6 +318,13 @@
      nothing in the content column stacks above the root context, so one step
      over the transformed specimens is enough. */
   .site-header {
+    /* The header row's height, declared here on the ancestor both rows share
+       rather than content-sized on the row: the contents row under it
+       subtracts it from its panel's cap, and a custom property only inherits
+       downward. It is the theme pill's 44px options inside the picker track's
+       padding, plus the row's own. */
+    --header-row-height: 72px;
+
     position: sticky;
     top: 0;
     z-index: 9;
@@ -334,7 +341,7 @@
     justify-content: space-between;
     gap: var(--space-4);
     padding: 10px clamp(16px, 4vw, 28px);
-    min-height: 44px;
+    height: var(--header-row-height);
   }
 
   .header-left {
@@ -371,8 +378,11 @@
     text-decoration: none;
   }
 
-  /* Lines the contents row up on the header's own gutter and measure. */
+  /* Lines the contents row up on the header's own gutter and measure. The
+     header row above it is what its open panel has to leave room for. */
   .site-header :global(.header-toc) {
+    --toc-row-inset: var(--header-row-height);
+
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 clamp(16px, 4vw, 28px) 10px;

@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { openHydratedContents } from './helpers';
+import {
+  expectBottomedPanelScrollsRowToPin,
+  expectContentsPanelCappedInsideViewport,
+  openHydratedContents,
+  pinContentsRow,
+} from './helpers';
 
 // The privacy policy's contents rail and disclosure reuse the changelog's
 // treatment; these specs cover the wiring this page owns — that the contents
@@ -128,4 +133,29 @@ test('the complete policy is present in prerendered HTML', async ({ page, reques
     expect(html).toContain(`id="${section.id}"`);
     expect(html).toContain(section.heading);
   }
+});
+
+// A landscape phone is where the list most outruns the room under the row. The
+// cap is a CSS declaration (100dvh less the pinned block's own offsets), so it
+// holds before hydration too; this pins the arithmetic — a host inset left out
+// of it would hang the panel past the viewport.
+test.describe('phone landscape', () => {
+  test.use({ viewport: { width: 812, height: 375 } });
+
+  test('the open contents panel scrolls inside itself, bottom edge on screen', async ({ page }) => {
+    await page.goto('/privacy');
+    const contents = page.locator('.contents-disclosure');
+    await pinContentsRow(contents);
+    await openHydratedContents(contents);
+    await expectContentsPanelCappedInsideViewport(contents);
+  });
+
+  // Opened before the row has pinned, the panel overshoots the fold; a scroll
+  // that bottoms it has to carry the row to its pin rather than stop there.
+  test('a panel opened below its pin scrolls the row into it', async ({ page }) => {
+    await page.goto('/privacy');
+    const contents = page.locator('.contents-disclosure');
+    await openHydratedContents(contents);
+    await expectBottomedPanelScrollsRowToPin(page, contents);
+  });
 });

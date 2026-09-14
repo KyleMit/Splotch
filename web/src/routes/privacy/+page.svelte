@@ -533,7 +533,8 @@
        under its own background. */
     .details-body :global(.contents-disclosure) {
       display: block;
-      padding-top: var(--space-4);
+      --toc-row-inset: var(--space-4);
+      padding-top: var(--toc-row-inset);
       background: var(--page-sheet);
       margin-bottom: var(--space-4);
     }
