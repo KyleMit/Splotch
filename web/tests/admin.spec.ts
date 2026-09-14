@@ -324,6 +324,30 @@ test('web /admin closing the reveal removes its actions from the tab order immed
   expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 });
 
+// The steps straddle AdminConsole's COPY_FEEDBACK_MS: each is shorter than the
+// window, and together they outlast the first copy's timer.
+const COPY_REPEAT_STEP_MS = 1000;
+
+test('web /admin re-copying a cell restarts its Copied feedback window', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.clock.install();
+  await signInToAdmin(page);
+  await page.clock.pauseAt(Date.now() + COPY_REPEAT_STEP_MS);
+  const copy = tokenRow(page, MANAGED_ACCESS_TOKEN).locator('.wide-actions .row-action').first();
+  await expect(copy).toHaveText('Copy');
+
+  await copy.click();
+  await expect(copy).toHaveText('Copied!');
+  await page.clock.runFor(COPY_REPEAT_STEP_MS);
+  await copy.click();
+  await page.clock.runFor(COPY_REPEAT_STEP_MS);
+
+  await expect(copy).toHaveText('Copied!');
+});
+
 test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {
   await signInToAdmin(page);
   await page.route(
