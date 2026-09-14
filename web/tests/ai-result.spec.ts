@@ -10,6 +10,7 @@ import {
   loadingBoxes,
   openAiResult,
   prepareAiGeneration,
+  resolvedStageLengthPx,
   resultBoxes,
   revealAiResult,
   revealedBoxes,
@@ -616,21 +617,18 @@ test.describe('AI result modal', () => {
   // from the card's budget and the picture's aspect rather than measured, so
   // the leaves reach the bottom of the real stage on any viewport.
   test.describe('--stage-h tracks the stage element', () => {
-    const stageHeightVar = (page: Page) =>
-      page
-        .locator('.ai-stage')
-        .evaluate((el) => getComputedStyle(el).getPropertyValue('--stage-h').trim());
+    const stageHeightPx = (page: Page) => resolvedStageLengthPx(page, '--stage-h');
 
     test('reflects the stage element’s real rendered height', async ({ page }) => {
       await openAiResult(page);
 
       await expect
-        .poll(() =>
-          page.locator('.ai-stage').evaluate((el) => {
-            const stageH = parseFloat(getComputedStyle(el).getPropertyValue('--stage-h'));
-            return Math.abs(stageH - el.getBoundingClientRect().height);
-          })
-        )
+        .poll(async () => {
+          const rendered = await page
+            .locator('.ai-stage')
+            .evaluate((el) => el.getBoundingClientRect().height);
+          return Math.abs((await stageHeightPx(page)) - rendered);
+        })
         .toBeLessThan(0.5);
     });
 
@@ -638,14 +636,14 @@ test.describe('AI result modal', () => {
     // element, which carries the declaration like the first did.
     test('declares the height on a fresh .ai-stage after an error-then-retry', async ({ page }) => {
       const endpoint = await openAiResult(page);
-      await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
+      await expect.poll(() => stageHeightPx(page)).toBeGreaterThan(0);
 
       await endpoint.fail();
       await expect(page.getByText(/didn't work/i)).toBeVisible();
 
       await invokeAiGeneration(page);
       await expect(page.locator('.dial')).toBeVisible();
-      await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
+      await expect.poll(() => stageHeightPx(page)).toBeGreaterThan(0);
     });
   });
 
@@ -665,9 +663,7 @@ test.describe('AI result modal', () => {
       await expect
         .poll(async () => {
           const dialWidth = (await dial.boundingBox())?.width ?? 0;
-          const radius = await page
-            .locator('.ai-stage')
-            .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--confetti-rx')));
+          const radius = await resolvedStageLengthPx(page, '--confetti-rx');
           return dialWidth > 0 ? Math.abs(radius - (dialWidth / 2) * MASK_CLEARANCE) : Infinity;
         })
         .toBeLessThan(0.5);
