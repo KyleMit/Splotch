@@ -3,12 +3,13 @@
 A read-only audit of how `web/src` handles reactive and persisted state surfaced the findings below.
 Each one is vetted against current code, confirmed empirically where the failure can be driven, and
 — when confirmed — captured by a red test that asserts the correct behavior and fails today. Fixes
-come after this ledger; the standards (and the ADR or doc that records them) wait until the fixes
-have landed in their final design.
+come after this ledger; the standards wait until the fixes have landed in their final design, and
+are then recorded by amending ADR-0002 rather than writing a new ADR.
 
 Verdicts: **CONFIRMED** (red test fails for the stated reason), **CONFIRMED, untested** (reproduced
 but no automatable red test — reason given), **REFUTED** (the failure cannot happen — evidence
-given), **DROP** (real but not worth fixing — reason given). Withdrawn findings stay listed.
+given), **DROP** (real but not worth fixing — reason given), **ACCEPTED** (real, and ruled
+acceptable by Kyle). Withdrawn findings stay listed.
 
 ## Bugs
 
@@ -53,12 +54,12 @@ given), **DROP** (real but not worth fixing — reason given). Withdrawn finding
 
 ## Gaps
 
-| ID | Finding                                                                                   | Verdict                       | Red test                                |
-| -- | ----------------------------------------------------------------------------------------- | ----------------------------- | --------------------------------------- |
-| G1 | No cross-tab sync: a tightened parental-gate policy does not reach an open second tab     | CONFIRMED                     | `flows-parental-gate-cross-tab.spec.ts` |
-| G2 | IndexedDB version hard-coded to 1; `splotch-secure` opened through two cached connections | DROP                          | —                                       |
-| G3 | `canvas`, `modal`, `network`, `ui`, `persistedStateStatus` have no unit tests             | DROP (network covered by B21) | —                                       |
-| G4 | Nothing prevents a per-request SSR route from writing module-level `$state`               | Real gap, no violation        | —                                       |
+| ID | Finding                                                                                   | Verdict                       | Red test |
+| -- | ----------------------------------------------------------------------------------------- | ----------------------------- | -------- |
+| G1 | No cross-tab sync: a tightened parental-gate policy does not reach an open second tab     | ACCEPTED                      | —        |
+| G2 | IndexedDB version hard-coded to 1; `splotch-secure` opened through two cached connections | DROP                          | —        |
+| G3 | `canvas`, `modal`, `network`, `ui`, `persistedStateStatus` have no unit tests             | DROP (network covered by B21) | —        |
+| G4 | Nothing prevents a per-request SSR route from writing module-level `$state`               | Real gap, no violation        | —        |
 
 ## Evidence
 
@@ -105,10 +106,11 @@ Per-finding evidence, grouped by vetting pass.
   a pending read, and `changeSaveFolder` assigns only after picker and IndexedDB tasks. Covered by
   `folderSave.test.ts` ("uses a replacement folder when the old IndexedDB read resolves during a
   save").
-* **G1 — CONFIRMED (web-only gap).** No `storage` listener or `BroadcastChannel` exists. With two
-  tabs, arming "Sending feedback: Every time" in one leaves the other sending ungated until reload.
-  Not a store-compliance issue (native has one WebView). Red:
-  `web/tests/flows-parental-gate-cross-tab.spec.ts` —
+* **G1 — ACCEPTED.** Kyle ruled no sync between tabs acceptable; the red spec
+  (`flows-parental-gate-cross-tab.spec.ts`) was removed. Original evidence: **confirmed web-only
+  gap.** No `storage` listener or `BroadcastChannel` exists. With two tabs, arming "Sending
+  feedback: Every time" in one leaves the other sending ungated until reload. Not a store-compliance
+  issue (native has one WebView). Red: `web/tests/flows-parental-gate-cross-tab.spec.ts` —
   `a check armed in one tab guards the same action in a tab already open` —
   `#parentalGate … Received: hidden`.
 
@@ -201,12 +203,12 @@ Per-finding evidence, grouped by vetting pass.
 ### Production-build confirmation
 
 One serial run (`SPLOTCH_E2E_PORT=5651`, `--workers=2`, production build, no other agents) over
-every spec this branch touched: 66 passed, 10 failed — exactly the ten red E2E tests, each at its
-bug assertion:
+every spec this branch touched: 66 passed, 10 failed — exactly the ten red E2E tests (nine after
+G1's spec was withdrawn), each at its bug assertion:
 
 * B25 draft field `Received: "e2e-unsent-draft"`; B22 report confirmation `open` false and the
   gate's pending AI prompt never opening; B2 draft `Received: ""` and the first report `"failed"` in
-  place of `"finished"`; G1 `#parentalGate` hidden; B7 `#aiKeyActive` not found.
+  place of `"finished"`; B7 `#aiKeyActive` not found.
 * **B3** fails in all three variants in production: `/feedback` keeps `#drawingCanvas` after Back,
   and both the invite-link and stale-page-recovery cases show the URL at `/` while the Privacy
   Policy heading stays rendered. The `?v=` case, skipped on the dev server, is confirmed here.
