@@ -373,6 +373,29 @@ export async function openSettingsModal(page: Page) {
   return modal;
 }
 
+// Settings is a section list — a table-of-contents entry on tablet/desktop, a
+// hub row on phone. Either way the control carries the section label; activating
+// it brings the section's content into view (a scroll on the wide shell, a
+// drill-in on phone).
+//
+// The wide shell mounts every section at once, so the field a caller works on is
+// present before anything is clicked; the click is what scrolls it into view,
+// and `toBeInViewport` is what proves that happened. Retried rather than clicked
+// once: the dialog itself mounts on first open (ADR-0049) and flies in, so a
+// click lands on markup that is still arriving — the same hazard
+// openSettingsModal rides out.
+export async function openSettingsSection(page: Page, label: string, expectedField: string) {
+  await openSettingsModal(page);
+  const field = page.locator(expectedField);
+  const entry = page.locator('.settings-nav').getByRole('button', { name: label, exact: true });
+  // Clicked on every attempt rather than gated on the field being present: in
+  // this shell it always is, and the click is what scrolls it into view.
+  await expect(async () => {
+    await entry.click({ timeout: 2000 });
+    await expect(field).toBeInViewport({ timeout: 2000 });
+  }).toPass({ timeout: 10_000 });
+}
+
 // Drill the phone Settings hub into one of its sections, identified by a field
 // only that section renders. The rows sit on a scroller that idle-mounts and
 // flies in, so the first tap can land before the section is wired — the hazard
