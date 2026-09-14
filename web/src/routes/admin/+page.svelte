@@ -38,6 +38,10 @@
   );
 </script>
 
+<svelte:head>
+  <title>Admin Console · Splotch</title>
+</svelte:head>
+
 <AdminConsole
   authed={data.authed}
   invites={data.invites}

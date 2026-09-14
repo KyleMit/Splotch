@@ -22,11 +22,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#ffffff" />
-    <meta name="description" content="A simple drawing app for toddlers" />
-    <title>Splotch - Drawing for Kids</title>
-    <!-- No social card here: each shared route renders its own through
-         lib/components/page/SocialCard.svelte, and a template card would
-         precede and outrank it. -->
+    <!-- No title, description, or social card here: every route sets its own
+         in <svelte:head>, and a template copy would precede the route's, so a
+         browser tab and a scraper would both read the template's. The home
+         route's come from lib/components/page/socialCard.ts. -->
 
     <link rel="icon" type="image/png" href="%sveltekit.assets%/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="%sveltekit.assets%/favicon.ico" />

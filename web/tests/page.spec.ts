@@ -187,6 +187,12 @@ test('link-preview meta tags are present and match the real OG image', async ({
 
   const meta = (name: string, attr = 'property') => metaContent(page, name, attr);
 
+  // One title and one description: the template used to carry defaults ahead
+  // of the route's own, so a tab read the wrong title until hydration.
+  await expect(page.locator('head title')).toHaveCount(1);
+  await expect(page.locator('meta[name="description"]')).toHaveCount(1);
+  expect(await page.title()).toBe(await meta('og:title'));
+
   // The Open Graph + Twitter tags social platforms read to unfurl the link.
   expect(await meta('og:url')).toBe(`${SITE_ORIGIN}/`);
   expect(await meta('og:title')).toContain('Splotch');
@@ -222,10 +228,10 @@ for (const [path, titleWord] of [
     await page.goto(path);
     expect(await metaContent(page, 'og:url')).toBe(`https://splotch.art${path}`);
     expect(await metaContent(page, 'og:title')).toContain(titleWord);
-    // The template's default description precedes the route's own in the head.
     expect(await metaContent(page, 'og:description')).toBe(
-      await page.locator('meta[name="description"]').last().getAttribute('content')
+      await metaContent(page, 'description', 'name')
     );
     await expect(page.locator('meta[property="og:title"]')).toHaveCount(1);
+    await expect(page.locator('head title')).toHaveCount(1);
   });
 }

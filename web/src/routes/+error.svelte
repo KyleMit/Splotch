@@ -7,4 +7,8 @@
   import ErrorScreen from '$lib/components/ErrorScreen.svelte';
 </script>
 
+<svelte:head>
+  <title>Oops! · Splotch</title>
+</svelte:head>
+
 <ErrorScreen />

@@ -316,6 +316,10 @@
   });
 </script>
 
+<svelte:head>
+  <title>Engine harness · Splotch dev</title>
+</svelte:head>
+
 <!-- Deliberately bare, unlike the sibling harnesses: nobody browses this page —
      it's an automated Playwright target, and chrome would only sit under the
      viewport-pinned canvas the specs read pixels and pointer coordinates from. -->
