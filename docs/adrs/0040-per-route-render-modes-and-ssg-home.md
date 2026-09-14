@@ -59,18 +59,18 @@ that are already correct in the prerendered HTML:
    insets and native status-bar calls), the coloring-book art (portrait vs landscape *image
    assets*), and the clear-button home-corner reset (imperative geometry). The Actions Panel's
    landscape palette-clearing offset is deterministic at first paint: `app.css` publishes the Color
-   Palette's one- or two-column width as `--palette-landscape-width` at the same media-query
-   breakpoint that selects its layout, and both components consume it. The landscape button cap
-   likewise budgets for the one to five buttons the boot script leaves visible after reading the
-   persisted control toggles (an empty row hides the whole panel); the raw HTML defaults to five,
-   and hydrated sizing uses the live one-to-six-button count once client-only AI visibility
-   resolves. The palette's `ResizeObserver` measurement remains the post-hydration correction for
-   browser rounding, tagged with the orientation it measured. Landscape width and portrait height
-   resolvers reject a measurement from the other orientation during rotation and use the same
-   deterministic CSS fallback geometry until the matching measurement arrives. JS selects the
-   landscape fallback through the same media query rather than the visible viewport height.
-   Drift-guard tests derive the CSS literals from `design/trimGeometry.ts` and the Actions Panel
-   constants, so this shared non-importable geometry cannot silently diverge.
+   Palette's column width as `--palette-landscape-width` and the portrait bar's height as
+   `--palette-portrait-height`, the palette draws itself at both, and the Actions Panel's stylesheet
+   offsets and sizes itself from them. The button size is one `app.css` formula on `.actions-panel`
+   (`--action-btn-size`) for first paint and the hydrated panel alike: the scaled size-class step,
+   capped by the viewport extent (`100vw`, or `100dvh` in portrait) less the palette, the panel's
+   fixed chrome, the gaps and the safe-area insets, divided by `--action-btn-count` — five in the
+   stylesheet, re-seeded on `<html>` by the boot script when persisted toggles hide controls, and
+   republished on the panel by `publishActionPanelState` once client-only AI visibility resolves
+   (issue 1892 retired the palette `ResizeObserver` and the inline `left` / `--action-btn-size`
+   writes that used to correct this after hydration). Drift-guard tests derive the CSS literals from
+   `design/trimGeometry.ts` and the Actions Panel constants, so this shared non-importable geometry
+   cannot silently diverge.
 2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline script runs
    before first paint and stamps `<html>` from `localStorage`, and the Action-center panel's CSS
    reads those stamps so the state is correct at render. During hydration, a publish `$effect` in
@@ -96,9 +96,10 @@ that are already correct in the prerendered HTML:
      button's fixed face independently of the active brush.
    * `data-no-actions` — present when every first-paint action is disabled, hiding both the panel
      and its drawer control.
-   * `--action-btn-first-paint-count` / `--action-btn-first-paint-gap-total` — set only when those
-     persisted off-states reduce the default five-button row. They are derived from the same
-     booleans that stamp `data-off-<control>`, so first-paint sizing matches the visible controls.
+   * `--action-btn-count` — set only when those persisted off-states reduce the default five-button
+     row. It is derived from the same booleans that stamp `data-off-<control>`, so first-paint
+     sizing matches the visible controls; the hydrated panel publishes its live count on its own
+     root.
    * `data-brush` — present for a persisted non-default brush (default: pen).
 
    This is what lets the drawer be **always rendered** (in the DOM) yet shown/hidden and the

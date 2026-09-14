@@ -88,21 +88,17 @@ describe('viewport tracking', () => {
     mocks.portrait = true;
     window.innerWidth = 412;
     window.innerHeight = 906;
-    const { layout, publishPaletteMeasurement } = await freshModule();
-    publishPaletteMeasurement(412, 76);
+    const { layout } = await freshModule();
     window.dispatchEvent(new Event('orientationchange'));
     mocks.portrait = false;
     mocks.phoneLandscape = true;
     window.innerWidth = 906;
     window.innerHeight = 328;
-    publishPaletteMeasurement(0, 0);
     mediaQueryEvents.get(PHONE_LANDSCAPE_QUERY)?.dispatchEvent(new Event('change'));
     expect(layout.phoneLandscape).toBe(true);
     expect(layout.orientation).toBe('portrait');
-    expect(layout.paletteMeasurement).toEqual({ width: 412, height: 76, orientation: 'portrait' });
     vi.advanceTimersByTime(200);
     expect(layout.orientation).toBe('landscape');
-    expect(layout.paletteMeasurement).toEqual({ width: 0, height: 0, orientation: 'landscape' });
   });
 
   it('re-measures on resize', async () => {
@@ -137,21 +133,15 @@ describe('viewport tracking', () => {
   });
 
   it('keeps layout current throughout a continuous non-rotation resize stream', async () => {
-    const { layout, publishPaletteMeasurement } = await freshModule();
+    const { layout } = await freshModule();
 
     for (let step = 1; step <= 20; step += 1) {
       window.innerWidth = 1024 - step * 10;
-      publishPaletteMeasurement(156 - step, 76);
       window.dispatchEvent(new Event('resize'));
       await vi.advanceTimersByTimeAsync(100);
     }
 
     expect(layout.viewportWidth).toBe(824);
-    expect(layout.paletteMeasurement).toEqual({
-      width: 136,
-      height: 76,
-      orientation: 'landscape',
-    });
   });
 
   it('re-measures on re-entry when the device rotated while backgrounded', async () => {
@@ -175,7 +165,7 @@ describe('viewport tracking', () => {
     window.innerWidth = 768;
     window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
-    const { layout, publishPaletteMeasurement } = await freshModule();
+    const { layout } = await freshModule();
 
     // Rotation: the standard orientation event fires, then the insets settle
     // onto a side edge and a resize follows.
@@ -184,18 +174,15 @@ describe('viewport tracking', () => {
     window.innerWidth = 1024;
     window.innerHeight = 768;
     screen.orientation.dispatchEvent(new Event('change'));
-    publishPaletteMeasurement(84, 768);
     mocks.insets = { top: 0, right: 44, bottom: 21, left: 0 };
     window.dispatchEvent(new Event('resize'));
 
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
-    expect(layout.paletteMeasurement).toEqual({ width: 0, height: 0, orientation: null });
     await vi.runAllTimersAsync();
 
     expect(layout.orientation).toBe('landscape');
     expect(layout.safeArea).toEqual({ top: 0, right: 44, bottom: 21, left: 0 });
-    expect(layout.paletteMeasurement).toEqual({ width: 84, height: 768, orientation: 'landscape' });
   });
 
   it('retains the legacy orientationchange trigger used by Mobile Safari', async () => {
@@ -210,44 +197,5 @@ describe('viewport tracking', () => {
     expect(layout.orientation).toBe('landscape');
     await vi.runAllTimersAsync();
     expect(layout.orientation).toBe('portrait');
-  });
-
-  it('tags palette measurements with the live CSS orientation', async () => {
-    const { clearPaletteMeasurement, layout, publishPaletteMeasurement } = await freshModule();
-    document.documentElement.dataset.orientation = 'portrait';
-
-    publishPaletteMeasurement(84, 768);
-    expect(layout.paletteMeasurement).toEqual({
-      width: 84,
-      height: 768,
-      orientation: 'landscape',
-    });
-
-    mocks.portrait = true;
-    window.innerWidth = 768;
-    window.innerHeight = 1024;
-    publishPaletteMeasurement(375, 76);
-    expect(layout.paletteMeasurement.orientation).toBe('portrait');
-
-    clearPaletteMeasurement();
-    expect(layout.paletteMeasurement).toEqual({ width: 0, height: 0, orientation: null });
-  });
-
-  it('keeps a pre-rotation palette rect tagged to its CSS orientation', async () => {
-    const { layout, publishPaletteMeasurement } = await freshModule();
-
-    window.innerWidth = 768;
-    window.innerHeight = 1024;
-    window.dispatchEvent(new Event('orientationchange'));
-    publishPaletteMeasurement(84, 768);
-    mocks.portrait = true;
-    await vi.runAllTimersAsync();
-
-    expect(layout.orientation).toBe('portrait');
-    expect(layout.paletteMeasurement).toEqual({
-      width: 84,
-      height: 768,
-      orientation: 'landscape',
-    });
   });
 });

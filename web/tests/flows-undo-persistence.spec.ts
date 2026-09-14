@@ -461,7 +461,7 @@ test('first-paint sizing excludes the brush control when no optional brush is en
   );
   await gotoApp(page);
 
-  await expect(page.locator('html')).toHaveCSS('--action-btn-first-paint-count', '4');
+  await expect(page.locator('html')).toHaveCSS('--action-btn-count', '4');
   await expect(page.locator('#brushButton')).toBeHidden();
   await expect(page.locator('#undoButton')).toBeVisible();
 });

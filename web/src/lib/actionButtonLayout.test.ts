@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { layout } from './state/layout.svelte';
 import { network } from './state/network.svelte';
@@ -30,11 +32,10 @@ import {
   SINGLE_BRUSH_ATTRIBUTE,
   PALETTE_BAR_RESERVE,
   availablePerButton,
-  buttonSizeCssExpr,
+  ACTION_BUTTON_GAP,
+  ACTION_BUTTON_COUNT_PROPERTY,
   isAiImageButtonVisible,
   visibleActionButtonCount,
-  resolvedLandscapePaletteWidth,
-  resolvedPortraitPaletteHeight,
   maxActionButtonScale,
   publishActionPanelState,
   MAX_ACTION_BUTTON_COUNT,
@@ -58,7 +59,6 @@ function resetState() {
   layout.orientation = 'landscape';
   layout.viewportWidth = 1280;
   layout.viewportHeight = 800;
-  layout.paletteMeasurement = { width: 156, height: 76, orientation: 'landscape' };
   Object.assign(layout.safeArea, { top: 0, right: 0, bottom: 0, left: 0 });
 
   layout.phoneLandscape = false;
@@ -144,55 +144,34 @@ describe('visibleActionButtonCount', () => {
   });
 });
 
-describe('resolvedLandscapePaletteWidth', () => {
-  it('uses the column geometry before the palette measures', () => {
-    layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
-    layout.viewportHeight = 768;
-    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTH_PX);
+describe('availablePerButton', () => {
+  it('clears the declared landscape palette column', () => {
+    layout.viewportWidth = 1024;
+    expect(availablePerButton(5)).toBe((1024 - PALETTE_LANDSCAPE_WIDTH_PX - 128 - 48) / 5);
   });
 
   it('removes the palette reserve on landscape phones', () => {
-    layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
-    layout.viewportHeight = 375;
     layout.phoneLandscape = true;
-    expect(resolvedLandscapePaletteWidth()).toBe(0);
+    layout.viewportWidth = 667;
+    layout.viewportHeight = 375;
+    expect(availablePerButton(5)).toBe((667 - 128 - 48) / 5);
   });
 
   it('keeps the palette reserve when visible height is phone-sized but CSS is tablet-sized', () => {
+    layout.viewportWidth = 1024;
     layout.viewportHeight = 550;
     layout.phoneLandscape = false;
-    layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
-    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTH_PX);
+    expect(availablePerButton(5)).toBe((1024 - PALETTE_LANDSCAPE_WIDTH_PX - 128 - 48) / 5);
   });
 
-  it('keeps the measured width as the hydrated correction', () => {
-    layout.paletteMeasurement = { width: 84.5, height: 768, orientation: 'landscape' };
-    expect(resolvedLandscapePaletteWidth()).toBe(84.5);
-  });
-
-  it('ignores a portrait measurement after rotating to landscape', () => {
-    layout.paletteMeasurement = { width: 375, height: 76, orientation: 'portrait' };
-    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTH_PX);
+  it('clears the declared portrait palette bar', () => {
+    layout.orientation = 'portrait';
+    layout.viewportWidth = 390;
+    layout.viewportHeight = 844;
+    expect(availablePerButton(5)).toBe((844 - PALETTE_BAR_RESERVE - 72 - 48) / 5);
   });
 });
 
-describe('resolvedPortraitPaletteHeight', () => {
-  it('keeps the measured height as the hydrated correction', () => {
-    layout.orientation = 'portrait';
-    layout.paletteMeasurement = { width: 768, height: 76.5, orientation: 'portrait' };
-    expect(resolvedPortraitPaletteHeight()).toBe(76.5);
-  });
-
-  it('ignores a landscape measurement after rotating to portrait', () => {
-    layout.orientation = 'portrait';
-    layout.paletteMeasurement = { width: 84, height: 768, orientation: 'landscape' };
-    expect(resolvedPortraitPaletteHeight()).toBe(PALETTE_BAR_RESERVE);
-  });
-});
-
-// Landscape budget: viewportWidth − palette width − 64 (reserve for the Settings
-// Button) − side insets − (8 inset + 8 margin + 48 toggle + gaps). Portrait
-// swaps in viewportHeight − measured palette height − 8 clearance − vertical insets.
 describe('maxActionButtonScale', () => {
   it('returns the static max when the screen has room to spare', () => {
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
@@ -202,7 +181,6 @@ describe('maxActionButtonScale', () => {
     layout.viewportWidth = 650;
     layout.viewportHeight = 550;
     layout.phoneLandscape = false;
-    layout.paletteMeasurement = { width: 84, height: 600, orientation: 'landscape' };
     expect(maxActionButtonScale()).toBe(116);
   });
 
@@ -224,7 +202,7 @@ describe('maxActionButtonScale', () => {
     layout.orientation = 'portrait';
     layout.viewportWidth = 360;
     layout.viewportHeight = 440;
-    // (440 − 76 − 8 − 124) / 6 = 38.67px per button → 77% of the phone base.
+    // (440 − 75 − 8 − 124) / 6 = 38.83px per button → 77% of the phone base.
     expect(maxActionButtonScale()).toBe(77);
   });
 
@@ -235,18 +213,10 @@ describe('maxActionButtonScale', () => {
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
-  it('uses portrait fallback geometry immediately after rotating from landscape', () => {
+  it('uses the declared portrait bar the moment the orientation flips', () => {
     layout.orientation = 'portrait';
     layout.viewportWidth = 768;
     layout.viewportHeight = 1024;
-    layout.paletteMeasurement = { width: 84, height: 768, orientation: 'landscape' };
-    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
-
-    layout.paletteMeasurement = {
-      width: 768,
-      height: PALETTE_BAR_RESERVE,
-      orientation: 'portrait',
-    };
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
@@ -320,26 +290,54 @@ describe('action button size class', () => {
   // and at its minimum — is actionButtonLayout.touchTargets.test.ts.
 });
 
-// The hydrated render cap (a CSS length) and the slider ceiling (a number) are
-// one formula, so evaluating the string with both safe-area insets at zero — as
-// the fixtures' layout state has them — and --action-btn-scale at 1 has to land
-// on exactly the budget availablePerButton reports.
+// The render cap is app.css's --action-btn-size formula and the slider ceiling
+// is availablePerButton: one budget, two homes. Evaluating the committed CSS
+// with both safe-area insets at zero — as the fixtures' layout state has them —
+// and --action-btn-scale at 1 has to land on exactly the number the ceiling
+// reports, for the landscape formula and the portrait one alike.
 const CSS_TOKEN_PATTERN = /min|calc|[-+*/(),]|\d+(?:\.\d+)?/g;
 
-function tokenizeCssLength(expr: string, viewportWidth: number, basePx: number): string[] {
+/** The value of `property` in `css`, balanced across nested parentheses. */
+function cssValue(css: string, property: string): string {
+  const at = css.indexOf(`${property}:`);
+  expect(at, `expected \`${property}\` in the block`).toBeGreaterThan(-1);
+  let depth = 0;
+  for (let i = at + property.length + 1; i < css.length; i++) {
+    if (css[i] === '(') depth += 1;
+    else if (css[i] === ')') depth -= 1;
+    else if (css[i] === ';' && depth === 0) return css.slice(at + property.length + 1, i).trim();
+  }
+  throw new Error(`unterminated \`${property}\``);
+}
+
+interface FormulaInputs {
+  viewportWidth: number;
+  viewportHeight: number;
+  basePx: number;
+  buttonCount: number;
+  paletteLandscapeWidth: number;
+}
+
+function tokenizeCssLength(expr: string, inputs: FormulaInputs): string[] {
   const resolved = expr
     .replace(/var\(--safe-area-\w+\)/g, '0px')
     .replace('var(--action-btn-scale, 1)', '1')
-    .replace(`var(${ACTION_BUTTON_BASE_PROPERTY})`, `${basePx}px`)
-    .replace('100vw', `${viewportWidth}px`)
+    .replace(`var(${ACTION_BUTTON_BASE_PROPERTY})`, `${inputs.basePx}px`)
+    .replace('100vw', `${inputs.viewportWidth}px`)
+    .replace('100dvh', `${inputs.viewportHeight}px`)
+    .replace('var(--palette-landscape-width)', `${inputs.paletteLandscapeWidth}px`)
+    .replace('var(--palette-portrait-height)', `${PALETTE_BAR_RESERVE}px`)
+    .replace('var(--action-btn-gap-total)', `(${(inputs.buttonCount - 1) * ACTION_BUTTON_GAP}px)`)
+    .replace(`var(${ACTION_BUTTON_COUNT_PROPERTY})`, String(inputs.buttonCount))
     .replace(/px\b/g, '');
+  expect(resolved, `unresolved var() in ${resolved}`).not.toContain('var(');
   return resolved.match(CSS_TOKEN_PATTERN) ?? [];
 }
 
-// Recursive descent over the CSS subset buttonSizeCssExpr emits: min(), calc(),
+// Recursive descent over the CSS subset the formula uses: min(), calc(),
 // px lengths, and the four arithmetic operators.
-function evaluateCssLength(expr: string, viewportWidth: number, basePx: number): number {
-  const tokens = tokenizeCssLength(expr, viewportWidth, basePx);
+function evaluateCssLength(expr: string, inputs: FormulaInputs): number {
+  const tokens = tokenizeCssLength(expr, inputs);
   let index = 0;
 
   function operand(): number {
@@ -384,93 +382,75 @@ function evaluateCssLength(expr: string, viewportWidth: number, basePx: number):
   return sum();
 }
 
+const appCss = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+
+/** The `.actions-panel { … }` block that carries the formula for an orientation. */
+function sizeFormula(orientation: 'landscape' | 'portrait'): string {
+  const from =
+    orientation === 'portrait'
+      ? appCss.indexOf('@media (orientation: portrait) {\n  .actions-panel {')
+      : appCss.indexOf('\n.actions-panel {');
+  expect(from, `app.css has no ${orientation} .actions-panel formula block`).toBeGreaterThan(-1);
+  return cssValue(appCss.slice(from), '--action-btn-size');
+}
+
 const BUTTON_SIZE_FIXTURES = [
   {
     name: 'roomy landscape tablet',
     orientation: 'landscape',
     viewportWidth: 1280,
     viewportHeight: 800,
-    paletteWidth: 156,
-    paletteHeight: 800,
     buttonCount: 5,
     budgetWins: false,
   },
   {
     name: 'narrow landscape tablet with every button',
     orientation: 'landscape',
-    viewportWidth: 650,
+    viewportWidth: 560,
     viewportHeight: 620,
-    paletteWidth: 156,
-    paletteHeight: 320,
     buttonCount: 6,
     budgetWins: true,
-  },
-  {
-    name: 'single-column landscape palette',
-    orientation: 'landscape',
-    viewportWidth: 1024,
-    viewportHeight: 768,
-    paletteWidth: 84,
-    paletteHeight: 768,
-    buttonCount: 3,
-    budgetWins: false,
   },
   {
     name: 'tall portrait phone',
     orientation: 'portrait',
     viewportWidth: 390,
     viewportHeight: 844,
-    paletteWidth: 390,
-    paletteHeight: 76,
     buttonCount: 5,
     budgetWins: false,
   },
   {
-    name: 'short portrait phone with a deep palette',
+    name: 'short portrait phone with every button',
     orientation: 'portrait',
     viewportWidth: 360,
     viewportHeight: 440,
-    paletteWidth: 360,
-    paletteHeight: 92,
     buttonCount: 6,
     budgetWins: true,
   },
 ] as const;
 
-describe('buttonSizeCssExpr', () => {
+describe('the app.css --action-btn-size formula', () => {
   it.each(BUTTON_SIZE_FIXTURES)(
     'resolves to the same cap as the slider ceiling budget on a $name',
     (fixture) => {
       layout.orientation = fixture.orientation;
       layout.viewportWidth = fixture.viewportWidth;
       layout.viewportHeight = fixture.viewportHeight;
-      layout.paletteMeasurement = {
-        width: fixture.paletteWidth,
-        height: fixture.paletteHeight,
-        orientation: fixture.orientation,
-      };
 
       const { buttonCount } = fixture;
-      const inputs =
-        fixture.orientation === 'portrait'
-          ? {
-              orientation: fixture.orientation,
-              buttonCount,
-              paletteHeight: resolvedPortraitPaletteHeight(),
-              viewportHeight: layout.viewportHeight,
-            }
-          : {
-              orientation: fixture.orientation,
-              buttonCount,
-              paletteWidth: resolvedLandscapePaletteWidth(),
-            };
-      const base = actionButtonBase(fixture.orientation);
+      const basePx = actionButtonBase(fixture.orientation);
       const available = availablePerButton(buttonCount);
 
-      expect(available < base).toBe(fixture.budgetWins);
-      expect(evaluateCssLength(buttonSizeCssExpr(inputs), layout.viewportWidth, base)).toBeCloseTo(
-        Math.min(base, available)
-      );
+      expect(available < basePx).toBe(fixture.budgetWins);
+      expect(
+        evaluateCssLength(sizeFormula(fixture.orientation), {
+          viewportWidth: fixture.viewportWidth,
+          viewportHeight: fixture.viewportHeight,
+          basePx,
+          buttonCount,
+          paletteLandscapeWidth: PALETTE_LANDSCAPE_WIDTH_PX,
+        })
+      ).toBeCloseTo(Math.min(basePx, available));
     }
   );
 });
@@ -488,6 +468,9 @@ describe('publishActionPanelState', () => {
     publishActionPanelState(el, false, 1);
 
     expect(el.style.getPropertyValue('--action-btn-scale')).toBe('1');
+    expect(el.style.getPropertyValue(ACTION_BUTTON_COUNT_PROPERTY)).toBe(
+      String(MAX_ACTION_BUTTON_COUNT)
+    );
     expect(el.hasAttribute(ACTION_PANEL_LIVE_ATTRIBUTE)).toBe(true);
     expect(el.hasAttribute('data-drawer-open')).toBe(false);
     expect(el.hasAttribute(SINGLE_BRUSH_ATTRIBUTE)).toBe(false);

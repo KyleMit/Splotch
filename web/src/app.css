@@ -104,19 +104,21 @@ body {
   --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
-/* Shared first-paint width of the landscape Color Palette. The palette and
-   Actions Panel both consume it before ResizeObserver can publish the measured
-   width; actionButtonLayout.fallback.test.ts guards these literals against the
-   palette geometry source. */
+/* The Color Palette's declared extents, which the palette draws itself at and
+   the Actions Panel sizes and offsets itself around — the landscape column's
+   width and the portrait bar's height. actionButtonLayout.fallback.test.ts
+   guards these literals against the palette geometry source and the slider
+   ceiling's reserves. */
 :root {
   --palette-landscape-width: 84px;
+  --palette-portrait-height: 75px;
   --corner-button-size: 48px;
-  --action-btn-first-paint-count: 5;
-  --action-btn-first-paint-gap-total: 48px;
-  /* The portrait bar's counterpart, for chrome that has to start below it —
-     the same height actionButtonLayout.ts reserves as PALETTE_BAR_RESERVE,
-     guarded against it by actionButtonLayout.fallback.test.ts. */
-  --palette-portrait-height: 76px;
+  /* How many action buttons the panel lays out. Five is the prerendered row
+     (the AI button waits for client-only state); app.html re-seeds this on
+     <html> before first paint when persisted settings hide controls, and the
+     hydrated panel publishes its live count on its own root, which wins by
+     being closer. */
+  --action-btn-count: 5;
 }
 
 /* The settings rows' icon column: the icon box and the gap to its label, shared
@@ -522,24 +524,52 @@ body {
   }
 }
 
-/* ActionsPanel and BrushControl share these paper-floating action buttons. */
-.actions-panel .action-button {
-  position: relative;
-  /* --action-btn-size is the hydrated cap. Until then this fallback budgets
-     for the first-paint row seeded by app.html. Its literals mirror
-     actionButtonLayout.ts and are drift-guarded by its fallback test. */
-  --action-btn-fallback: min(
+/* The action button's rendered size: the scaled size-class step, capped so
+   the expanded row never overlaps the Settings Button — 100vw less the
+   landscape palette, the panel's fixed chrome and edge reserve (128px), the
+   gaps between the buttons and the safe-area insets, shared between however
+   many buttons the panel lays out. One formula for first paint and for the
+   hydrated panel, so the two agree by construction (ADR-0040); every literal
+   mirrors actionButtonLayout.ts and is drift-guarded by its fallback test, and
+   actionButtonLayout.test.ts evaluates the formula against the Button Size
+   slider's ceiling. The phone-landscape block below replaces it. */
+.actions-panel {
+  --action-btn-gap-total: calc((var(--action-btn-count) - 1) * 12px);
+  --action-btn-size: min(
     calc(var(--action-btn-base) * var(--action-btn-scale, 1)),
     calc(
       (
-          100vw - var(--palette-landscape-width) - 128px - var(--action-btn-first-paint-gap-total) -
+          100vw - var(--palette-landscape-width) - 128px - var(--action-btn-gap-total) -
             var(--safe-area-left) - var(--safe-area-right)
         ) /
-        var(--action-btn-first-paint-count)
+        var(--action-btn-count)
     )
   );
-  width: var(--action-btn-size, var(--action-btn-fallback));
-  height: var(--action-btn-size, var(--action-btn-fallback));
+}
+
+/* Portrait: the column stops short of the palette bar at the top — 100dvh
+   (the visible viewport, so the budget follows the URL bar) less the bar, the
+   8px clearance under it and the panel's 64px fixed chrome. */
+@media (orientation: portrait) {
+  .actions-panel {
+    --action-btn-size: min(
+      calc(var(--action-btn-base) * var(--action-btn-scale, 1)),
+      calc(
+        (
+            100dvh - var(--palette-portrait-height) - 72px - var(--action-btn-gap-total) -
+              var(--safe-area-top) - var(--safe-area-bottom)
+          ) /
+          var(--action-btn-count)
+      )
+    );
+  }
+}
+
+/* ActionsPanel and BrushControl share these paper-floating action buttons. */
+.actions-panel .action-button {
+  position: relative;
+  width: var(--action-btn-size);
+  height: var(--action-btn-size);
   background: var(--float-surface);
   border: 2px solid var(--float-border);
   border-radius: 18px;
@@ -560,16 +590,6 @@ body {
   padding: calc(var(--action-btn-base) / 6 * var(--action-btn-scale, 1));
 }
 
-@media (orientation: portrait) {
-  .actions-panel .action-button {
-    /* 208px = palette clearance + worst-case panel chrome + palette bar. */
-    --action-btn-fallback: min(
-      calc(var(--action-btn-base) * var(--action-btn-scale, 1)),
-      calc((100vh - 208px - var(--safe-area-top) - var(--safe-area-bottom)) / 6)
-    );
-  }
-}
-
 .actions-panel .action-button[hidden] {
   display: none;
 }
@@ -588,7 +608,6 @@ body {
     );
   }
   .actions-panel .action-button {
-    --action-btn-fallback: var(--landscape-action-size);
     padding: 6px;
   }
 }

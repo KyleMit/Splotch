@@ -71,8 +71,9 @@
              remains, so its direct-button face is correct before hydration.
            • data-no-actions — present when every first-paint action is disabled,
              so the panel and its drawer control never paint empty.
-           • --action-btn-first-paint-count / -gap-total — set only when persisted
-             hidden controls reduce the default five-button first-paint row.
+           • --action-btn-count — set only when persisted hidden controls reduce
+             the default five-button first-paint row; the hydrated panel then
+             publishes its live count on its own root.
            • data-brush — the persisted brush type when it deviates from the default
              pen ('crayon' or 'magic'; the eraser is never persisted), so the Brush
              Button wears the right face at first paint. Mirrors state/tool.svelte.ts.
@@ -148,11 +149,7 @@
             (optionalBrushCount > 0 ? 1 : 0) + stroke + coloring + screenshot + undo;
           el.toggleAttribute('data-no-actions', actionButtonCount === 0);
           if (actionButtonCount !== 5 && actionButtonCount > 0) {
-            el.style.setProperty('--action-btn-first-paint-count', String(actionButtonCount));
-            el.style.setProperty(
-              '--action-btn-first-paint-gap-total',
-              12 * (actionButtonCount - 1) + 'px'
-            );
+            el.style.setProperty('--action-btn-count', String(actionButtonCount));
           }
 
           var brush = localStorage.getItem('splotch-brush-type');

@@ -3,19 +3,12 @@ import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
 import type { Orientation } from '$lib/platform';
 import { measureSafeAreaInsets, ZERO_INSETS, type SafeAreaInsets } from '$lib/platform/safeArea';
 
-interface PaletteMeasurement {
-  width: number;
-  height: number;
-  orientation: Orientation | null;
-}
-
-// Layout measurements published by the component that owns the element, so
-// siblings can position against them without reaching across the DOM with a
-// querySelector. That coupling tied callers to another component's CSS class
-// names and forced a mount-time setTimeout to dodge layout races; reading the
-// value reactively here removes both.
+// Viewport facts JS-side layout consumers derive from — the Button Size
+// slider's ceiling, the Install Banner, the Notch Band, the engine's edge-swipe
+// bands. Element geometry is not published here: the Color Palette's extents
+// are CSS declarations (app.css --palette-landscape-width /
+// --palette-portrait-height) that the Actions Panel reads in the stylesheet.
 interface LayoutState {
-  paletteMeasurement: PaletteMeasurement;
   orientation: Orientation;
   safeArea: SafeAreaInsets;
   orientationAngle: number;
@@ -28,11 +21,11 @@ interface LayoutState {
 const portraitQuery = browser ? window.matchMedia('(orientation: portrait)') : null;
 const phoneLandscapeQuery = browser ? window.matchMedia(PHONE_LANDSCAPE_QUERY) : null;
 // The physical-iPad profile for issue 977 improved with a 200 ms rotation-only
-// hold. This bounds JS layout lag during orientation events; ordinary resizes
+// hold. This bounds JS layout lag during orientation events (ADR-0142 scores
+// the deferred work in the post-action frame window); ordinary resizes
 // continue publishing synchronously.
 const ROTATION_VIEWPORT_SETTLE_MS = 200;
 let rotationViewportSyncTimer: number | undefined;
-let pendingPaletteMeasurement: PaletteMeasurement | undefined;
 
 function readViewportOrientation(): Orientation {
   if (window.innerWidth > window.innerHeight) return 'landscape';
@@ -59,13 +52,6 @@ function readOrientation(): Orientation {
 }
 
 export const layout: LayoutState = $state({
-  // Rendered size of the color palette bar. ActionsPanel sits just past its
-  // width (+ gap) in landscape so it clears the palette, and the
-  // action-button sizing math clears its height in portrait (the top bar).
-  // The orientation tag prevents a dimension measured before rotation from
-  // entering the other orientation's layout while ResizeObserver catches up.
-  paletteMeasurement: { width: 0, height: 0, orientation: null },
-
   // Viewport orientation and the measured env(safe-area-inset-*) values, kept
   // fresh by the single shared listener set below (resize, legacy and standard
   // orientation changes, and visibility re-entry) so components can $derive off them
@@ -89,22 +75,6 @@ export const layout: LayoutState = $state({
   phoneLandscape: phoneLandscapeQuery?.matches ?? false,
 });
 
-export function publishPaletteMeasurement(width: number, height: number): void {
-  // The rect comes from CSS layout, so its guard tag must use the matching
-  // media-query orientation even when viewport geometry flips first.
-  const measurement = { width, height, orientation: readCssOrientation() };
-  if (rotationViewportSyncTimer !== undefined) {
-    pendingPaletteMeasurement = measurement;
-    return;
-  }
-  layout.paletteMeasurement = measurement;
-}
-
-export function clearPaletteMeasurement(): void {
-  pendingPaletteMeasurement = undefined;
-  layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
-}
-
 function syncViewport() {
   const next = readViewportOrientation();
   layout.orientation = next;
@@ -122,16 +92,9 @@ function syncPhoneLandscape() {
   layout.phoneLandscape = phoneLandscapeQuery?.matches ?? false;
 }
 
-function flushPendingPaletteMeasurement() {
-  if (pendingPaletteMeasurement === undefined) return;
-  layout.paletteMeasurement = pendingPaletteMeasurement;
-  pendingPaletteMeasurement = undefined;
-}
-
 function finishViewportRotation() {
   rotationViewportSyncTimer = undefined;
   syncViewport();
-  flushPendingPaletteMeasurement();
 }
 
 function deferViewportSyncForRotation() {
@@ -152,7 +115,6 @@ function syncViewportImmediately() {
     rotationViewportSyncTimer = undefined;
   }
   syncViewport();
-  flushPendingPaletteMeasurement();
 }
 
 // Installed at module load (not from a component) so the values are live before
