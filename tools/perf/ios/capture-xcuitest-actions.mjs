@@ -154,15 +154,6 @@ function actionPanelLacksAttribute(attribute) {
   return `${ACTION_PANEL_STATE_TARGET}.hasAttribute(${JSON.stringify(attribute)}) === false`;
 }
 
-// The Tool Drawer switch stamps no attribute of its own: it hides the drawer's
-// own tools by marking each one off (CONTROL_OFF_ATTRIBUTES in
-// actionButtonLayout.ts). Undo ships on, so its mark is the switch's footprint.
-function toolDrawerReady(enabled) {
-  return enabled
-    ? actionPanelLacksAttribute('data-off-undo')
-    : actionPanelHasAttribute('data-off-undo');
-}
-
 function actionPanelDatasetEquals(key, value) {
   return `${ACTION_PANEL_STATE_TARGET}.dataset[${JSON.stringify(key)}] === ${JSON.stringify(value)}`;
 }
@@ -1386,11 +1377,14 @@ export async function runActionSweep({
       selector: '#quickSoundToggle',
       baseline: true,
     });
+    // No readyFor: the switch stamps nothing of its own on the Actions Panel. It
+    // marks each drawer-owned control off, and every one of those marks is
+    // also stamped by that control's own persisted flag, so no panel attribute
+    // says which of the two hid it. The switch's own state is the readiness.
     await recordToggleRoundTrip({
       label: compactSettingsActionLabel('tool drawer'),
       selector: '#quickToolDrawerToggle',
       baseline: true,
-      readyFor: toolDrawerReady,
     });
   }
 
@@ -1428,7 +1422,6 @@ export async function runActionSweep({
       label: 'tool drawer',
       selector: '#toolDrawerToggle',
       baseline: true,
-      readyFor: toolDrawerReady,
       whileAtBaseline: () =>
         runScreenshotToggleAtDrawerBaseline({
           openSavingSection: () =>
