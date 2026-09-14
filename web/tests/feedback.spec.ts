@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { supportEmail } from '../src/lib/supportEmail';
+import { expectNoReload, spaNavigate } from './helpers';
 
 // /feedback is the standalone, link-shareable twin of Settings' Send
 // Feedback section: the same fields, posted to a form action instead of
@@ -177,4 +178,21 @@ test('the private-report thank-you is a GET with no issue link', async ({ page }
   // The URL is what a reporter passes on next, so the confirmation strips the
   // query it arrived with rather than handing the next visitor a stale thank-you.
   await expect.poll(() => new URL(page.url()).search).toBe('');
+});
+
+test('Back from the drawing app renders the feedback page again, not just its URL', async ({
+  page,
+}) => {
+  await page.goto('/feedback?sent=1');
+  await expect.poll(() => new URL(page.url()).search).toBe('');
+
+  await spaNavigate(page, '/');
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCount(0);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/feedback$/);
+  await expect(page.locator('#drawingCanvas')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Send us feedback', level: 1 })).toBeVisible();
+  await expectNoReload(page);
 });

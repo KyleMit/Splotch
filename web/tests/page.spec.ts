@@ -8,6 +8,8 @@ import {
   renderedCanvasHandle,
   spaNavigate,
 } from './helpers';
+import { AI_ACCESS_TOKEN_PARAM } from '../src/lib/inviteLink';
+import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
@@ -182,6 +184,39 @@ for (const { label, preference, systemDark } of THEME_PREFERENCE_CASES) {
     await expect(page.locator('#drawingCanvas')).toBeVisible();
     await expect.poll(() => themeColor(page)).toBe(drawingColor);
     await expectNoReload(page);
+  });
+}
+
+// Both launch parameters are stripped from the address bar once the drawing app
+// has read them, and the page a later client-side link opens has to hand Back to
+// the drawing app rather than to a URL with nothing rendered behind it.
+const STRIPPED_LAUNCH_PARAMS = [
+  { name: 'an invite link', param: AI_ACCESS_TOKEN_PARAM, value: 'test-token', devServer: true },
+  {
+    name: 'a stale-page recovery',
+    param: CACHE_BUST_VERSION_PARAM,
+    value: '0.0.0-other-build',
+    devServer: false,
+  },
+];
+
+for (const { name, param, value, devServer } of STRIPPED_LAUNCH_PARAMS) {
+  test(`Back to the drawing app after ${name} strips its launch parameter renders the canvas`, async ({
+    page,
+  }) => {
+    test.skip(!devServer && !!process.env.DEV_SERVER, 'the dev server skips PWA update wiring');
+
+    await gotoApp(page, `/?${param}=${value}`);
+    await expect.poll(() => new URL(page.url()).searchParams.has(param)).toBe(false);
+
+    await spaNavigate(page, '/privacy');
+    await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+    await expectNoReload(page);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeHidden();
+    await expect(page.locator('#drawingCanvas')).toBeVisible();
   });
 }
 

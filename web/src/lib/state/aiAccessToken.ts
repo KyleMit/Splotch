@@ -52,5 +52,5 @@ export async function captureAiAccessTokenFromUrl() {
   const persisted = await setAiAccessToken(token);
   if (!persisted) return;
   url.searchParams.delete(AI_ACCESS_TOKEN_PARAM);
-  window.history.replaceState({}, '', url);
+  history.replaceState(history.state, '', url);
 }
