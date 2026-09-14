@@ -142,11 +142,14 @@
        the live canvas (ADR-0116). A circle needs the same radius on both axes,
        which the width-derived radius gives on a stage of any aspect.
 
-       The height budget is the one term the sizer does not take instantly: its
-       max-height glides through the budget change at the reveal, so the box
-       is derived from --stage-budget-h, a registered length that glides on the
-       same tokens (the @property below), and the aspect swap and the natural
-       cap stay instant on both. */
+       The height budget is the one term that glides: it changes at the reveal,
+       and the picture opens up through it rather than jumping. So the budget
+       is --stage-budget-h, a registered length (the @property below) that
+       transitions here, and the sizer's max-height reads the same property —
+       one interpolation drives both boxes where the registration is supported,
+       and both step together where it is not (Firefox before 128), so the
+       declared box and the rendered one never part. The aspect swap and the
+       natural cap stay instant on both. */
     --stage-budget-h: var(--result-stage-max-h);
     --stage-w: min(
       var(--result-stage-max-w),
@@ -200,18 +203,18 @@
        viewport both bind at once and none of the card is empty. A picture too
        tall to project that way is held by the height alone and sits centered. */
     max-width: 100%;
-    max-height: var(--result-stage-max-h);
     /* The budget it sizes against changes at the reveal, when the keep-drawing
        pill leaves and gives its room back to the picture. A decoded image glides
-       through that change so the picture opens up as it lands. An undecoded
-       image follows the fallback box below directly: preserving its footprint
-       takes precedence over animating a resource that has no pixels yet. */
-    transition: max-height var(--duration-slow) var(--ease-glide);
+       through that change so the picture opens up as it lands — by reading the
+       stage's registered budget, which carries the transition, rather than
+       transitioning on its own. An undecoded image follows the fallback box
+       below directly: preserving its footprint takes precedence over animating
+       a resource that has no pixels yet. */
+    max-height: var(--stage-budget-h);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ai-stage,
-    .stage-sizer {
+    .ai-stage {
       transition: none;
     }
   }

@@ -60,15 +60,17 @@ describe('AiResultStage declares the confetti geometry from the dial geometry', 
     expect(stageSource).not.toContain('ResizeObserver');
   });
 
-  it('glides the height budget on the same tokens the sizer glides its max-height', () => {
+  it('drives the sizer and the declared box from one registered, transitioned budget', () => {
     const registration = css.match(/@property --stage-budget-h \{([^}]*)\}/);
     expect(registration).not.toBeNull();
     expect(registration![1]).toContain("syntax: '<length>'");
     expect(registration![1]).toContain('inherits: true');
     const stage = css.match(/\.ai-stage \{([\s\S]*?)\n {2}\}/)![1];
     const sizer = css.match(/\.stage-sizer \{([\s\S]*?)\n {2}\}/)![1];
-    const easing = (block: string, property: string) =>
-      block.match(new RegExp(`transition: ${property} ([^;]+);`))![1];
-    expect(easing(stage, '--stage-budget-h')).toBe(easing(sizer, 'max-height'));
+    expect(stage).toMatch(
+      /transition: --stage-budget-h var\(--duration-slow\) var\(--ease-glide\);/
+    );
+    expect(declaration(sizer, 'max-height')).toBe('var(--stage-budget-h)');
+    expect(sizer).not.toContain('transition:');
   });
 });
