@@ -178,3 +178,19 @@ test('the private-report thank-you is a GET with no issue link', async ({ page }
   // query it arrived with rather than handing the next visitor a stale thank-you.
   await expect.poll(() => new URL(page.url()).search).toBe('');
 });
+
+test('Back from a link on the thank-you page returns to the feedback page', async ({ page }) => {
+  // The strip above rewrites the thank-you's history entry in place. SvelteKit's
+  // router keeps its position in history.state, so an entry rewritten without
+  // it is one the router cannot navigate back to: Back changes the address bar
+  // and leaves the previous page on screen.
+  await page.goto('/feedback?sent=1');
+  await expect.poll(() => new URL(page.url()).search).toBe('');
+  await page.getByRole('link', { name: 'privacy policy', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Privacy policy', level: 1 })).toBeVisible();
+
+  await page.goBack();
+
+  await expect(page).toHaveURL(/\/feedback$/);
+  await expect(page).toHaveTitle('Send Feedback · Splotch');
+});
