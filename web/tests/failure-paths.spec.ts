@@ -175,3 +175,32 @@ test('denied browser storage still leaves drawing and undo usable', async ({ pag
   await expect(undo).toBeDisabled();
   expect(pageErrors).toEqual([]);
 });
+
+// SvelteKit eagerly imports the root error node at startup and ErrorScreen shares
+// its chunk, so the boundary's lazy import reuses that fetch. One dropped request
+// at startup therefore leaves the crash fallback with nothing to render. The
+// chunk is found by its markup because its hashed name changes every build.
+test('a render crash still offers a restart when the error screen chunk cannot load', async ({
+  page,
+}) => {
+  test.skip(!!process.env.DEV_SERVER, 'the dev server serves unbundled modules, not chunks');
+
+  await page.route('**/_app/immutable/**/*.js', async (route) => {
+    const response = await route.fetch();
+    if ((await response.text()).includes('class="error-screen')) return route.abort();
+    return route.fulfill({ response });
+  });
+  await gotoApp(page);
+  await page.evaluate(() => {
+    HTMLDialogElement.prototype.showModal = () => {
+      throw new Error('injected render crash');
+    };
+  });
+
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Settings' }).click({ timeout: 1000 });
+    await expect(page.locator('#drawingCanvas')).toHaveCount(0, { timeout: 1000 });
+  }).toPass();
+
+  await expect(page.getByRole('alert').getByRole('button', { name: 'Start over' })).toBeVisible();
+});
