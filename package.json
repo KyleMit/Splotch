@@ -1,6 +1,17 @@
 {
   "name": "splotch",
   "version": "1.6.0",
+  "description": "Splotch is a drawing app for toddlers: one SvelteKit codebase shipping the splotch.art web app and the Capacitor Android and iOS apps.",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KyleMit/Splotch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KyleMit/Splotch/issues"
+  },
+  "homepage": "https://splotch.art",
   "type": "module",
   "engines": {
     "node": ">=22.13"
