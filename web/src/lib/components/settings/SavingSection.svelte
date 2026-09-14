@@ -17,12 +17,9 @@
        Tool Drawer's chip grid, the way Coloring and AI Art each own their own
        button: it is the other way a drawing gets saved. It leads the section
        because it is the deliberate save — the two rows under it govern what
-       happens without anyone asking.
-
-       Every action button lives inside the drawer, which Advanced Controls
-       gates (see ActionsPanel's data-off-adv rule), so this row states what it
-       can actually deliver in the state the parent is in rather than promising
-       a button that setting is currently suppressing. -->
+       happens without anyone asking. This switch alone decides whether the
+       button appears: the Tool Drawer section's own switch hides only the
+       drawer's own tools (TOOL_DRAWER_CONTROLS), never the camera. -->
   <div class="setting">
     <ToggleRow
       icon="camera"
@@ -30,9 +27,7 @@
       id="screenshotToggle"
       checked={settings.screenshotEnabled}
       onToggle={setScreenshot}
-      help={settings.advancedControlsEnabled
-        ? 'Shows the camera button in the tool drawer'
-        : 'The tool drawer is off, so the camera button stays hidden'}
+      help="Shows the camera button in the tool drawer"
     />
   </div>
 

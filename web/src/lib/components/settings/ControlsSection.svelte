@@ -9,13 +9,13 @@
     setActionButtonScale,
     ACTION_BUTTON_SCALE_MIN,
     ACTION_BUTTON_SCALE_DEFAULT,
-    setAdvancedControls,
+    setToolDrawerEnabled,
     setPencilEraserEnabled,
   } from '$lib/state/settings.svelte';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
   import { SECTION_SLIDE } from './sections';
-  import { DRAWING_TOOLS, type DrawingToolId } from './drawingTools';
+  import { DRAWING_TOOLS, isDrawingToolOn, type DrawingToolId } from './drawingTools';
   import '$lib/components/deferredIcons';
 
   // Ceiling the Button Size slider at what the current screen can actually
@@ -37,13 +37,11 @@
     ({ id, label, icon }) => ({ value: id, label, icon, id })
   );
 
-  const shownTools = $derived(
-    DRAWING_TOOLS.filter((tool) => tool.checked()).map((tool) => tool.id)
-  );
+  const shownTools = $derived(DRAWING_TOOLS.filter(isDrawingToolOn).map((tool) => tool.id));
 
   function toggleTool(id: DrawingToolId) {
     const tool = DRAWING_TOOLS.find((entry) => entry.id === id);
-    tool?.toggle(!tool.checked());
+    if (tool) tool.toggle(!isDrawingToolOn(tool));
   }
 
   // The list wears one of two skins, chosen by how much room the block has.
@@ -116,32 +114,33 @@
   <div class="setting">
     <ToggleRow
       icon="dashboard-customize"
-      label="Enable Advanced Controls"
-      id="advancedControlsToggle"
-      checked={settings.advancedControlsEnabled}
-      onToggle={setAdvancedControls}
-      help="Show and hide individual on-screen buttons"
+      label="Enable tool drawer"
+      id="toolDrawerToggle"
+      checked={settings.toolDrawerEnabled}
+      onToggle={setToolDrawerEnabled}
+      help="Shows the brushes, stroke width, and undo in the drawer"
     />
   </div>
 
-  {#if settings.advancedControlsEnabled}
-    <div class="advanced-controls-settings" transition:slide={SECTION_SLIDE}>
-      <div class="setting button-size-setting">
-        <SliderRow
-          id="actionButtonScaleLabel"
-          label="Button Size"
-          icon="photo-size-select-small"
-          value={displayedScale}
-          min={ACTION_BUTTON_SCALE_MIN}
-          max={scaleCeiling}
-          snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT
-            ? ACTION_BUTTON_SCALE_DEFAULT
-            : undefined}
-          onInput={setActionButtonScale}
-          onActiveChange={onScaleActive}
-        />
-      </div>
+  <!-- The slider sits outside the switch's gate: it sizes every Actions Panel
+       button, and the camera, coloring books, and AI button stay on screen
+       while the drawer's own tools are off. -->
+  <div class="setting button-size-setting">
+    <SliderRow
+      id="actionButtonScaleLabel"
+      label="Button Size"
+      icon="photo-size-select-small"
+      value={displayedScale}
+      min={ACTION_BUTTON_SCALE_MIN}
+      max={scaleCeiling}
+      snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT ? ACTION_BUTTON_SCALE_DEFAULT : undefined}
+      onInput={setActionButtonScale}
+      onActiveChange={onScaleActive}
+    />
+  </div>
 
+  {#if settings.toolDrawerEnabled}
+    <div class="tool-drawer-settings" transition:slide={SECTION_SLIDE}>
       <div class="tools-block" bind:this={toolsBlockEl}>
         <h4 class="tools-heading">Drawing Tools</h4>
         {#if useChips}
@@ -162,7 +161,7 @@
                   icon={tool.icon}
                   label={tool.label}
                   id={tool.id}
-                  checked={tool.checked()}
+                  checked={isDrawingToolOn(tool)}
                   onToggle={tool.toggle}
                 />
               </div>
@@ -188,7 +187,7 @@
 </section>
 
 <style>
-  .advanced-controls-settings {
+  .tool-drawer-settings {
     display: flow-root;
   }
 

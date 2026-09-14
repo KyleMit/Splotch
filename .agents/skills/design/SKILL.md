@@ -45,7 +45,7 @@ let them make a mess. That's the whole idea."). Parent-facing copy — Settings,
 privacy — is plain, professional, and direct ("We never keep a copy of your key.").
 
 * **Sentence case everywhere** — buttons, labels, headings ("Clear drawing", "Save screenshot").
-  Title Case only for proper feature names (Night Mode, Advanced Controls, Guided Access).
+  Title Case only for proper feature names (Night Mode, Parent Center, Guided Access).
 * **No emoji in UI chrome — anywhere.** The one historical exception (`/privacy` used emoji as
   friendly bullet leads on its "no ___" highlight cards) was retired in the 2026-08 privacy
   redesign: list leads that want warmth get a crayon pill (`CrayonStrip` vocabulary, hues via

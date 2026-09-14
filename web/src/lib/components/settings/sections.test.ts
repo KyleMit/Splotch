@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { APP_VERSION } from '$lib/appVersion';
 import {
+  setCrayon,
   setDeleteSound,
   setDrawingSound,
   setSound,
   setSoundVolume,
+  setToolDrawerEnabled,
+  setUndoButton,
 } from '$lib/state/settings.svelte';
 import { SECTIONS, sectionContentStamp, sectionSubtitle } from './sections';
 
@@ -44,4 +47,32 @@ describe('sound section subtitle', () => {
       expect(sectionSubtitle('sound')).toBe(expected);
     }
   );
+});
+
+describe('Tool Drawer section subtitle', () => {
+  beforeEach(() => {
+    setToolDrawerEnabled(true);
+    setCrayon(true);
+    setUndoButton(true);
+  });
+
+  it('lists the drawer while every tool is showing', () => {
+    expect(sectionSubtitle('controls')).toBe('Pen, crayon, magic brush & more');
+  });
+
+  it('counts the tools the parent switched off', () => {
+    setUndoButton(false);
+    expect(sectionSubtitle('controls')).toBe('1 tool hidden');
+    setCrayon(false);
+    expect(sectionSubtitle('controls')).toBe('2 tools hidden');
+  });
+
+  // The switch hides every tool the count would describe, and leaves their
+  // flags as they were, so the row names the switch rather than a count that
+  // means nothing until it is back on.
+  it('names the switch when the drawer is off, whatever the per-tool flags say', () => {
+    setUndoButton(false);
+    setToolDrawerEnabled(false);
+    expect(sectionSubtitle('controls')).toBe('Tool drawer off');
+  });
 });

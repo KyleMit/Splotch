@@ -4,7 +4,7 @@ import { gotoApp, openHubSection, openSettingsModal } from './helpers';
 
 // The phone Settings shell used to truncate the very text that carries its
 // meaning: hub summaries ellipsized on one line ("Choose when grown-up c…"),
-// advanced-control chips cut back to their icons ("Screen…", "Magic …"), and a
+// tool-drawer chips cut back to their icons ("Screen…", "Magic …"), and a
 // save-folder row with no room left to name the destination (issue #905). The
 // fix reflows rather than shrinks, so what these pin is that nothing in the
 // phone shell is clipped and that the Drawing Tools list changes skin between
@@ -75,12 +75,12 @@ for (const { device, width, height, toolSkin, toolColumns } of PHONE_VIEWPORTS) 
 
   test(`the Drawing Tools list keeps its option names (${device})`, async ({ page }) => {
     await openHub(page, width, height);
-    await openHubSection(page, 'controls', '#advancedControlsToggle');
+    await openHubSection(page, 'controls', '#toolDrawerToggle');
 
-    // The tools list is what Advanced Controls reveals; it ships on, so this
+    // The tools list is what the tool drawer switch reveals; it ships on, so this
     // asserts the state rather than toggling into it — a blind click would
     // reveal nothing and leave the assertions below racing the slide-away.
-    await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#toolDrawerToggle')).toHaveAttribute('aria-checked', 'true');
 
     // Chips buy a second column and nothing else, so the narrow phone — which
     // has only one column to give — gets the plain toggle rows instead.
@@ -130,7 +130,7 @@ for (const { device, width, height, toolSkin, toolColumns } of PHONE_VIEWPORTS) 
 test('a tool keeps focus when the block crosses into the other skin', async ({ page }) => {
   const [narrow, wide] = PHONE_VIEWPORTS;
   await openHub(page, wide.width, wide.height);
-  await openHubSection(page, 'controls', '#advancedControlsToggle');
+  await openHubSection(page, 'controls', '#toolDrawerToggle');
   await expect(page.locator('.control-chips')).toHaveCount(1);
 
   const focusedId = () => page.evaluate(() => document.activeElement?.id ?? '');

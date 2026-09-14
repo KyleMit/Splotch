@@ -438,7 +438,7 @@
       if (!frame) frame = requestAnimationFrame(spy);
     };
     pane.addEventListener('scroll', schedule, { passive: true });
-    // A conditional reveal inside a section (volume slider, advanced controls,
+    // A conditional reveal inside a section (volume slider, the tool drawer,
     // force-landscape row, AI toggles) moves every section below it, so the spy
     // re-reads on content growth as well as on scroll — and an unsettled jump
     // re-aims at what it was asked for before the spy elects off the new

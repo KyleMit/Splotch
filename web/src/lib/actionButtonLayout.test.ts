@@ -4,7 +4,7 @@ import { network } from './state/network.svelte';
 import { freeGenerations } from './state/freeGenerations.svelte';
 import {
   settings,
-  setAdvancedControls,
+  setToolDrawerEnabled,
   setAiImage,
   setColoringBook,
   setCrayon,
@@ -41,7 +41,7 @@ import {
 } from './actionButtonLayout';
 
 function resetState() {
-  setAdvancedControls(true);
+  setToolDrawerEnabled(true);
   setStrokeWidthControl(true);
   setCrayon(true);
   setMagicBrush(true);
@@ -516,7 +516,6 @@ describe('publishActionPanelState', () => {
   });
 
   it('stamps every data-off-<control> when all controls are switched off', () => {
-    setAdvancedControls(false);
     setStrokeWidthControl(false);
     setCrayon(false);
     setMagicBrush(false);

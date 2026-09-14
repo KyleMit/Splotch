@@ -12,7 +12,7 @@
     setSound,
     setLockRotation,
     setForceLandscapeOrientation,
-    setAdvancedControls,
+    setToolDrawerEnabled,
   } from '$lib/state/settings.svelte';
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
   import { supportsOrientationLock, type Orientation } from '$lib/platform';
@@ -81,10 +81,10 @@
     <div class="setting">
       <ToggleRow
         icon="dashboard-customize"
-        label="Advanced Controls"
-        id="quickAdvancedControlsToggle"
-        checked={settings.advancedControlsEnabled}
-        onToggle={setAdvancedControls}
+        label="Tool drawer"
+        id="quickToolDrawerToggle"
+        checked={settings.toolDrawerEnabled}
+        onToggle={setToolDrawerEnabled}
       />
     </div>
     <!-- The bottom-right cell is the only one that varies by device: the

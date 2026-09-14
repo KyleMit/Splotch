@@ -52,10 +52,11 @@ const BOOL_SETTINGS = {
   // (a download on the web) along with the child's drawing — no Download button,
   // and the freed space goes to a larger preview.
   autoSaveAiEnabled: [STORAGE_KEYS.autoSaveAi, false],
-  // Master switch for the collapsible action drawer. When on, the chevron
-  // toggle shows and the drawer can be opened/closed; when off, the controls
-  // are always visible and the chevron is hidden.
-  advancedControlsEnabled: [STORAGE_KEYS.advancedControls, true],
+  // The Tool Drawer section's own switch. Off hides the drawer's own tools
+  // (TOOL_DRAWER_CONTROLS) without touching their stored flags, so turning it
+  // back on restores the set the parent chose. Buttons other sections own stay
+  // reachable, so the chevron goes only when no control at all is left.
+  toolDrawerEnabled: [STORAGE_KEYS.toolDrawer, true],
   // Remembered open/closed state of the drawer (defaults closed).
   drawerOpen: [STORAGE_KEYS.drawerOpen, false],
   // Parent device-orientation controls. The force-landscape default is filled
@@ -75,6 +76,37 @@ const BOOL_SETTINGS = {
 } satisfies Record<string, [StorageKey, boolean]>;
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
+
+// The controls the Tool Drawer section's switch governs, in the order the
+// section lists them: what a child draws with, then the controls beside it.
+export const TOOL_DRAWER_CONTROLS = [
+  'crayonEnabled',
+  'magicBrushEnabled',
+  'eraserEnabled',
+  'strokeWidthControlEnabled',
+  'undoButtonEnabled',
+] as const satisfies readonly BoolSettingKey[];
+export type ToolDrawerControl = (typeof TOOL_DRAWER_CONTROLS)[number];
+
+// Every Actions Panel control a parent can switch off: the drawer's own, then
+// the buttons other sections own (Coloring's books, Saving's camera). The AI
+// button is absent because its visibility also hangs on client-only state —
+// see isAiImageButtonVisible in actionButtonLayout.ts.
+const ACTION_PANEL_CONTROLS = [
+  ...TOOL_DRAWER_CONTROLS,
+  'coloringBookEnabled',
+  'screenshotEnabled',
+] as const satisfies readonly BoolSettingKey[];
+export type ActionPanelControl = (typeof ACTION_PANEL_CONTROLS)[number];
+
+function isToolDrawerControl(control: ActionPanelControl): control is ToolDrawerControl {
+  return (TOOL_DRAWER_CONTROLS as readonly ActionPanelControl[]).includes(control);
+}
+
+/** Whether the Actions Panel shows a control: its own flag, and the drawer switch for the drawer's own tools. */
+export function actionControlShown(control: ActionPanelControl): boolean {
+  return settings[control] && (settings.toolDrawerEnabled || !isToolDrawerControl(control));
+}
 
 const boolSettingEntries = () =>
   Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][];
@@ -173,7 +205,7 @@ const OPTIONAL_BRUSH_SETTING = {
 } as const satisfies Record<OptionalBrushType, BoolSettingKey>;
 
 function isOptionalBrushEnabled(brush: OptionalBrushType): boolean {
-  return settings[OPTIONAL_BRUSH_SETTING[brush]];
+  return actionControlShown(OPTIONAL_BRUSH_SETTING[brush]);
 }
 
 export function enabledOptionalBrushes(): OptionalBrushType[] {
@@ -216,7 +248,15 @@ export const setColoringPacksAllowMetered = makeBoolSetter('coloringPacksAllowMe
 export const setAiImage = makeBoolSetter('aiImageEnabled');
 export const setAiCustomization = makeBoolSetter('aiCustomizationEnabled');
 export const setAutoSaveAi = makeBoolSetter('autoSaveAiEnabled');
-export const setAdvancedControls = makeBoolSetter('advancedControlsEnabled');
+const setToolDrawerSetting = makeBoolSetter('toolDrawerEnabled');
+
+// Off takes the drawer's brushes with it, so the held brush falls back the way
+// it does when that one brush is switched off — otherwise a child left holding
+// the eraser would have no visible way back to ink.
+export function setToolDrawerEnabled(v: boolean) {
+  setToolDrawerSetting(v);
+  if (!v) normalizeDisabledBrushes();
+}
 export const setDrawerOpen = makeBoolSetter('drawerOpen');
 export const setLockRotation = makeBoolSetter('lockRotationEnabled');
 export const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');

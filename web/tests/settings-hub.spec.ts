@@ -22,17 +22,17 @@ test('Settings hub drills into a section and back (phone layout)', async ({ page
   await expect(modal).not.toHaveClass(/wide/);
   await expect(page.locator('.hub-list')).toBeVisible();
   // Nothing is drilled in yet, so a section's own controls aren't mounted.
-  await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
+  await expect(page.locator('#toolDrawerToggle')).toHaveCount(0);
 
   // Tapping a row opens the full-page section.
   await page.getByRole('button', { name: 'Tool Drawer' }).click();
-  await expect(page.locator('#advancedControlsToggle')).toBeVisible();
+  await expect(page.locator('#toolDrawerToggle')).toBeVisible();
   await expect(page.locator('.hub-list')).toHaveCount(0);
 
   // The back arrow returns to the hub.
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.hub-list')).toBeVisible();
-  await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
+  await expect(page.locator('#toolDrawerToggle')).toHaveCount(0);
 });
 
 test('the sixth session reveals dots only for sections not read during the quiet period', async ({
@@ -232,10 +232,9 @@ test('the hub switch answers a tap above its track', async ({ page }) => {
   await expect(nightSwitch).toHaveAttribute('aria-checked', 'true');
 });
 
-// Advanced Controls is the umbrella over every tool: with it off the drawer
-// cannot be opened at all, so a per-tool count would describe a panel the child
-// cannot see.
-test('the Tool Drawer row reports the umbrella state rather than a tool count', async ({
+// The section's switch hides every tool the row would count, so with it off the
+// row names the switch rather than a count of flags the child cannot see.
+test('the Tool Drawer row names the switch rather than a tool count while it is off', async ({
   page,
 }) => {
   await openPhoneHub(page);
@@ -243,43 +242,24 @@ test('the Tool Drawer row reports the umbrella state rather than a tool count', 
   const subtitle = page.locator('.hub-row[data-section="controls"] .hub-subtitle');
   await expect(subtitle).toHaveText('Pen, crayon, magic brush & more');
 
-  await openHubSection(page, 'controls', '#advancedControlsToggle');
-  await page.locator('#advancedControlsToggle').click();
-  await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'false');
+  await openHubSection(page, 'controls', '#toolDrawerToggle');
+  await page.locator('#toolDrawerToggle').click();
+  await expect(page.locator('#toolDrawerToggle')).toHaveAttribute('aria-checked', 'false');
 
   await page.getByRole('button', { name: 'Back' }).click();
-  await expect(subtitle).toHaveText('All tools hidden');
-});
-
-// Every action button lives inside the drawer Advanced Controls gates, so this
-// row cannot promise a button that setting is currently suppressing.
-test('the camera row says when the tool drawer is holding its button back', async ({ page }) => {
-  await openPhoneHub(page);
-
-  await openHubSection(page, 'saving', '#screenshotToggle');
-  const help = page.locator('#screenshotToggle-help');
-  await expect(help).toHaveText('Shows the camera button in the tool drawer');
-
-  await page.getByRole('button', { name: 'Back' }).click();
-  await openHubSection(page, 'controls', '#advancedControlsToggle');
-  await page.locator('#advancedControlsToggle').click();
-  await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'false');
-
-  await page.getByRole('button', { name: 'Back' }).click();
-  await openHubSection(page, 'saving', '#screenshotToggle');
-  await expect(help).toHaveText('The tool drawer is off, so the camera button stays hidden');
+  await expect(subtitle).toHaveText('Tool drawer off');
 });
 
 // The camera button is a way of saving a drawing, so it is owned by Saving —
 // like Coloring and AI Art own their own buttons — rather than sitting in the
-// chip grid behind Advanced Controls.
+// chip grid behind the tool drawer switch.
 test('the camera button toggle lives in Saving, not the Tool Drawer', async ({ page }) => {
   await openPhoneHub(page);
 
-  await openHubSection(page, 'controls', '#advancedControlsToggle');
+  await openHubSection(page, 'controls', '#toolDrawerToggle');
   // The chip grid ships revealed, so its absent camera chip is an assertion
   // about this grid rather than about a collapsed section.
-  await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('#toolDrawerToggle')).toHaveAttribute('aria-checked', 'true');
   await expect(page.locator('.control-chips')).toHaveCount(1);
   await expect(page.locator('#screenshotToggle')).toHaveCount(0);
 

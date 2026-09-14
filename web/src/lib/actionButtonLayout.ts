@@ -7,7 +7,9 @@ import {
   settings,
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
+  actionControlShown,
   enabledOptionalBrushes,
+  type ActionPanelControl,
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
@@ -137,11 +139,11 @@ export function isAiImageButtonVisible(): boolean {
 export function visibleActionButtonCount(): number {
   return (
     (enabledOptionalBrushes().length > 0 ? 1 : 0) +
-    (settings.strokeWidthControlEnabled ? 1 : 0) +
-    (settings.coloringBookEnabled ? 1 : 0) +
-    (settings.screenshotEnabled ? 1 : 0) +
+    (actionControlShown('strokeWidthControlEnabled') ? 1 : 0) +
+    (actionControlShown('coloringBookEnabled') ? 1 : 0) +
+    (actionControlShown('screenshotEnabled') ? 1 : 0) +
     (isAiImageButtonVisible() ? 1 : 0) +
-    (settings.undoButtonEnabled ? 1 : 0)
+    (actionControlShown('undoButtonEnabled') ? 1 : 0)
   );
 }
 
@@ -268,16 +270,14 @@ export function maxActionButtonScale(): number {
 // first-paint seed from <html> and reads live state from the panel subtree.
 export const ACTION_PANEL_LIVE_ATTRIBUTE = 'data-action-panel-live';
 
-type BooleanSettingKey = {
-  [K in keyof typeof settings]: (typeof settings)[K] extends boolean ? K : never;
-}[keyof typeof settings];
-
 // Every Actions Panel control a parent can switch off, mapped to the attribute
-// that marks it off. app.html's inline boot script re-types these names as
-// literals because it can't import (see publishActionPanelState below);
-// app.html.test.ts diffs its list against this table.
+// that marks it hidden. An attribute reads the control's effective visibility
+// (actionControlShown), so a drawer-owned control is marked off by the Tool
+// Drawer switch as well as by its own flag. app.html's inline boot script
+// re-types these names as literals because it can't import (see
+// publishActionPanelState below); app.html.test.ts diffs its list against this
+// table.
 export const CONTROL_OFF_ATTRIBUTES = {
-  advancedControlsEnabled: 'data-off-adv',
   strokeWidthControlEnabled: 'data-off-stroke',
   crayonEnabled: 'data-off-crayon',
   magicBrushEnabled: 'data-off-magic',
@@ -285,12 +285,9 @@ export const CONTROL_OFF_ATTRIBUTES = {
   coloringBookEnabled: 'data-off-coloring',
   screenshotEnabled: 'data-off-screenshot',
   undoButtonEnabled: 'data-off-undo',
-} as const satisfies Partial<Record<BooleanSettingKey, `data-off-${string}`>>;
+} as const satisfies Record<ActionPanelControl, `data-off-${string}`>;
 
-const controlOffEntries = Object.entries(CONTROL_OFF_ATTRIBUTES) as [
-  keyof typeof CONTROL_OFF_ATTRIBUTES,
-  string,
-][];
+const controlOffEntries = Object.entries(CONTROL_OFF_ATTRIBUTES) as [ActionPanelControl, string][];
 
 // The rest of the seeded vocabulary app.html's boot script re-types: the
 // drawer's open state, and the brush the Brush Button wears.
@@ -310,8 +307,8 @@ export const NO_ACTIONS_ATTRIBUTE = 'data-no-actions';
 //
 // Polarity: an attribute marks a DEVIATION from the default, so the raw
 // prerendered HTML (no attributes) already shows the defaults — drawer closed,
-// advanced controls + every control on, pen brush. `data-drawer-open` is
-// present when open; `data-off-*` is present when that control is switched off.
+// every control on, pen brush. `data-drawer-open` is present when open;
+// `data-off-*` is present when that control is hidden.
 // --action-btn-scale rides here too (a CSS var, default via the var()
 // fallback, so it's only meaningful when scaled). The reactive reads below run
 // synchronously inside the caller's $effect, so Svelte tracks them as effect
@@ -324,7 +321,7 @@ export function publishActionPanelState(
   el.style.setProperty('--action-btn-scale', String(buttonScale));
   el.toggleAttribute(DRAWER_OPEN_ATTRIBUTE, drawerExpanded);
   for (const [key, attribute] of controlOffEntries) {
-    el.toggleAttribute(attribute, !settings[key]);
+    el.toggleAttribute(attribute, !actionControlShown(key));
   }
   const optionalBrushes = enabledOptionalBrushes();
   if (optionalBrushes.length === 1) {

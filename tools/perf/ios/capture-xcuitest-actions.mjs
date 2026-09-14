@@ -314,7 +314,7 @@ export async function runToggleRoundTrip({
   }
 }
 
-export async function runScreenshotToggleAtAdvancedBaseline({
+export async function runScreenshotToggleAtDrawerBaseline({
   openSavingSection,
   recordScreenshotToggle,
   reopenControlsSection,
@@ -1377,14 +1377,14 @@ export async function runActionSweep({
       selector: '#quickSoundToggle',
       baseline: true,
     });
+    // No readyFor: the switch stamps nothing of its own on the Actions Panel. It
+    // marks each drawer-owned control off, and every one of those marks is
+    // also stamped by that control's own persisted flag, so no panel attribute
+    // says which of the two hid it. The switch's own state is the readiness.
     await recordToggleRoundTrip({
-      label: compactSettingsActionLabel('advanced controls'),
-      selector: '#quickAdvancedControlsToggle',
+      label: compactSettingsActionLabel('tool drawer'),
+      selector: '#quickToolDrawerToggle',
       baseline: true,
-      readyFor: (enabled) =>
-        enabled
-          ? actionPanelLacksAttribute('data-off-adv')
-          : actionPanelHasAttribute('data-off-adv'),
     });
   }
 
@@ -1415,19 +1415,15 @@ export async function runActionSweep({
 
     await openSettingsSection(
       'controls',
-      `document.querySelector('#advancedControlsToggle') !== null`,
+      `document.querySelector('#toolDrawerToggle') !== null`,
       'Buttons section'
     );
     await recordToggleRoundTrip({
-      label: 'advanced controls',
-      selector: '#advancedControlsToggle',
+      label: 'tool drawer',
+      selector: '#toolDrawerToggle',
       baseline: true,
-      readyFor: (enabled) =>
-        enabled
-          ? actionPanelLacksAttribute('data-off-adv')
-          : actionPanelHasAttribute('data-off-adv'),
       whileAtBaseline: () =>
-        runScreenshotToggleAtAdvancedBaseline({
+        runScreenshotToggleAtDrawerBaseline({
           openSavingSection: () =>
             openSettingsSection(
               'saving',
@@ -1447,7 +1443,7 @@ export async function runActionSweep({
           reopenControlsSection: () =>
             openSettingsSection(
               'controls',
-              `document.querySelector('#advancedControlsToggle') !== null`,
+              `document.querySelector('#toolDrawerToggle') !== null`,
               'Buttons section'
             ),
         }),

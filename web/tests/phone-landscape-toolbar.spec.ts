@@ -228,13 +228,12 @@ test.describe('phone landscape interactions', () => {
     await expect(page.locator('.color-menu')).toBeHidden();
   });
 
-  test('color remains available with advanced controls disabled', async ({ page }) => {
-    await page.addInitScript(
-      (key) => localStorage.setItem(key, 'false'),
-      STORAGE_KEYS.advancedControls
-    );
+  test('color remains available with the tool drawer switched off', async ({ page }) => {
+    await page.addInitScript((key) => localStorage.setItem(key, 'false'), STORAGE_KEYS.toolDrawer);
     await gotoApp(page);
-    await expect(page.locator('.drawer-toggle')).toBeHidden();
+    // The camera and coloring books are other sections' buttons, so the drawer
+    // (and its chevron) stays; only the drawer's own brushes go.
+    await expect(page.locator('.drawer-toggle')).toBeVisible();
     await page.locator('#colorButton').click();
     await expect(page.locator('.color-menu')).toBeVisible();
     await swipeColor(page, -50);

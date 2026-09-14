@@ -97,7 +97,7 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
   // In viewport, not merely visible: every section is mounted at all times, and
   // `toBeVisible` ignores the pane's scroll clipping — it would pass without the
   // scroll ever happening.
-  await expect(page.locator('#advancedControlsToggle')).toBeInViewport();
+  await expect(page.locator('#toolDrawerToggle')).toBeInViewport();
   await expect(page.locator('#themeOption-light')).toHaveCount(1);
 
   // The Setup section keeps its own <details> accordions inside the pane.
@@ -402,7 +402,7 @@ test('landscape phone renders compact quick toggles', async ({ page }) => {
   await expect(page.locator('.settings-nav')).toHaveCount(0);
   await expect(page.locator('#quickSoundToggle')).toBeVisible();
   await expect(page.locator('#quickNightToggle')).toBeVisible();
-  await expect(page.locator('#quickAdvancedControlsToggle')).toBeVisible();
+  await expect(page.locator('#quickToolDrawerToggle')).toBeVisible();
   // The orientation lock selector holds the device-varying bottom-right (last)
   // slot, so the other three toggles sit in the same place on lock-incapable
   // devices too.
@@ -439,11 +439,8 @@ test('quick-toggle changes persist into the full portrait Settings', async ({ pa
   await openSettingsModalCompact(page);
 
   // A quick toggle drives the same persisted setting as the full section...
-  await page.locator('#quickAdvancedControlsToggle').click();
-  await expect(page.locator('#quickAdvancedControlsToggle')).toHaveAttribute(
-    'aria-checked',
-    'false'
-  );
+  await page.locator('#quickToolDrawerToggle').click();
+  await expect(page.locator('#quickToolDrawerToggle')).toHaveAttribute('aria-checked', 'false');
 
   // Set a portrait lock through the off state, proving each click acts.
   await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
@@ -458,7 +455,7 @@ test('quick-toggle changes persist into the full portrait Settings', async ({ pa
   await expect(page.locator('.hub-list')).toBeVisible();
   await expect(page.locator('#quickSoundToggle')).toHaveCount(0);
   await page.getByRole('button', { name: 'Tool Drawer' }).click();
-  await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.locator('#toolDrawerToggle')).toHaveAttribute('aria-checked', 'false');
 
   // The Appearance section shows the lock we set, now forced to portrait.
   await page.getByRole('button', { name: 'Back' }).click();
