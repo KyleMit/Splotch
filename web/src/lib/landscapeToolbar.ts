@@ -5,17 +5,11 @@ export const LANDSCAPE_COLORS = PALETTE_COLORS.filter(
   ({ hex }) => TRIM_ORDER.indexOf(hex) >= OMITTED_COLOR_COUNT
 );
 
-export const COLOR_MENU_SWATCH_PX = 56;
-export const COLOR_MENU_GAP_PX = 6;
-export const COLOR_MENU_PADDING_PX = 6;
-const CUSTOM_COLOR_SLOTS = 1;
+/** The rank the menu's trim ladder starts at: the first color it carries. */
+export const LANDSCAPE_FIRST_TRIM_RANK = OMITTED_COLOR_COUNT;
 
-export function landscapeMenuColors(availableWidthPx: number) {
-  const slots = Math.floor(
-    (availableWidthPx - 2 * COLOR_MENU_PADDING_PX + COLOR_MENU_GAP_PX) /
-      (COLOR_MENU_SWATCH_PX + COLOR_MENU_GAP_PX)
-  );
-  const colorCount = Math.max(0, slots - CUSTOM_COLOR_SLOTS);
-  const trimmedCount = TRIM_ORDER.length - colorCount;
-  return LANDSCAPE_COLORS.filter(({ hex }) => TRIM_ORDER.indexOf(hex) >= trimmedCount);
+/** A swatch's place in TRIM_ORDER, which ColorMenu's container-query ladder
+ *  trims by — the same rank ColorPalette tags its swatches with. */
+export function landscapeTrimRank(hex: string): number {
+  return TRIM_ORDER.indexOf(hex);
 }
