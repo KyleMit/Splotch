@@ -32,3 +32,6 @@ timestamp	device	outcome	detail
 2026-09-07T01:27:42.786Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
 2026-09-10T17:39:48.485Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
 2026-09-10T17:44:25.440Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-09-14T14:11:37.801Z	device-003f826c172a	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
+2026-09-14T14:12:36.600Z	device-003f826c172a	blocked	the device is locked — unlock it by hand; a passcode cannot be automated
+2026-09-14T14:24:30.850Z	device-003f826c172a	blocked	the device is locked — unlock it by hand; a passcode cannot be automated
