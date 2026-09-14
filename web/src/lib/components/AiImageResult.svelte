@@ -263,12 +263,12 @@
       var(--result-gutter-max)
     );
 
-    /* The band the card may occupy. Each bound is the deeper of the gutter and
-       whatever that edge demands outright: the display's own inset, which
-       `viewport-fit=cover` puts the viewport under (ADR-0026), and below, the
-       room the disclosure strip hangs in (app.css). The strip lives inside the
-       bottom bound rather than under it — it is the card's own fine print, not a
-       second thing needing its own frame. */
+    /* The band the card may occupy, and its width bound outright — over the UA
+       <dialog> max-width, which on a phone sat inside the band and widened its
+       gutters. Each bound is the deeper of the gutter and what that edge demands:
+       the display's inset, which `viewport-fit=cover` puts the viewport under
+       (ADR-0026), and below, the room the disclosure strip hangs in (app.css),
+       inside the bottom bound as the card's own fine print. */
     --result-top-bound: max(var(--safe-area-top), var(--result-gutter));
     --result-bottom-bound: max(var(--safe-area-bottom), var(--result-gutter));
     --result-side-bound: max(var(--safe-area-left), var(--safe-area-right), var(--result-gutter));
@@ -285,6 +285,7 @@
        difference, in whichever direction the deeper bound lies. */
     --result-shift-y: calc((var(--result-top-bound) - var(--result-bottom-bound)) / 2);
 
+    max-width: var(--result-max-w);
     max-height: var(--result-card-max-h);
     overflow: visible;
     transform: translate(-50%, calc(-50% + var(--result-shift-y)));
@@ -411,7 +412,6 @@
   }
 
   .ai-result-modal.serverError {
-    max-width: var(--result-max-w);
     width: min(var(--result-max-w), 400px);
   }
 

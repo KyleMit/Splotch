@@ -260,3 +260,18 @@ export function stripTokens(page: Page) {
     };
   });
 }
+
+// A custom property declared as `calc(...)` computes to that expression, not to
+// pixels, so a spec cannot parse it off getComputedStyle. Resolving it through
+// a probe's own width inside the stage reads the length the browser actually
+// derives — the same one the confetti spends.
+export function resolvedStageLengthPx(page: Page, property: string) {
+  return page.locator('.ai-stage').evaluate((stage, name) => {
+    const probe = document.createElement('div');
+    probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;width:var(${name})`;
+    stage.append(probe);
+    const width = probe.getBoundingClientRect().width;
+    probe.remove();
+    return width;
+  }, property);
+}
