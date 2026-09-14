@@ -45,9 +45,10 @@ describe('AiResultStage declares the confetti geometry from the dial geometry', 
     expect(declaration(css, '--confetti-ry')).toBe('var(--confetti-mask-radius)');
   });
 
-  it("projects the stage box from the card's budget and the picture's aspect", () => {
+  it("projects the stage box from the card's budget, the picture's aspect, and its decoded width", () => {
+    expect(declaration(css, '--stage-budget-h')).toBe('var(--result-stage-max-h)');
     expect(declaration(css, '--stage-w')).toBe(
-      'min( var(--result-stage-max-w), calc(var(--result-stage-max-h) * var(--result-aspect)) )'
+      'min( var(--result-stage-max-w), calc(var(--stage-budget-h) * var(--result-aspect)), var(--stage-natural-w, var(--result-stage-max-w)) )'
     );
     expect(declaration(css, '--stage-h')).toBe('calc(var(--stage-w) / var(--result-aspect))');
   });
@@ -57,5 +58,17 @@ describe('AiResultStage declares the confetti geometry from the dial geometry', 
     expect(confetti).not.toMatch(/var\(--stage-h,/);
     expect(confetti).not.toMatch(/var\(--confetti-r[xy],/);
     expect(stageSource).not.toContain('ResizeObserver');
+  });
+
+  it('glides the height budget on the same tokens the sizer glides its max-height', () => {
+    const registration = css.match(/@property --stage-budget-h \{([^}]*)\}/);
+    expect(registration).not.toBeNull();
+    expect(registration![1]).toContain("syntax: '<length>'");
+    expect(registration![1]).toContain('inherits: true');
+    const stage = css.match(/\.ai-stage \{([\s\S]*?)\n {2}\}/)![1];
+    const sizer = css.match(/\.stage-sizer \{([\s\S]*?)\n {2}\}/)![1];
+    const easing = (block: string, property: string) =>
+      block.match(new RegExp(`transition: ${property} ([^;]+);`))![1];
+    expect(easing(stage, '--stage-budget-h')).toBe(easing(sizer, 'max-height'));
   });
 });

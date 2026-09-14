@@ -18,9 +18,14 @@
   // A URL exists before its image has intrinsic dimensions. Keep the fallback
   // geometry until this exact resource has decoded, including on the result swap.
   let loadedSizerSrc = $state<string | null>(null);
+  // The decoded picture's own width. The sizer never draws it larger than
+  // this, so the stage's declared box (style block) is capped by it — read once
+  // off the load event, beside the aspect, never off a layout measurement.
+  let naturalWidthPx = $state(0);
 
   const revealed = $derived(aiProgress.revealed);
   const sizerSrc = $derived(aiResult.resultUrl || aiResult.previewUrl);
+  const decodedNaturalWidth = $derived(loadedSizerSrc === sizerSrc ? naturalWidthPx : 0);
 
   const MIN_BLUR_PX = 2;
   const MAX_EXTRA_BLUR_PX = 16;
@@ -37,6 +42,7 @@
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
     if (w > 0 && h > 0) {
       loadedSizerSrc = sizerSrc;
+      naturalWidthPx = w;
       onaspect(w / h);
     }
   }
@@ -50,6 +56,7 @@
 <div
   class="ai-stage"
   style="--result-entry-blur: {MIN_BLUR_PX}px;"
+  style:--stage-natural-w={decodedNaturalWidth > 0 ? `${decodedNaturalWidth}px` : undefined}
   use:pinchZoom={() => ({
     target: zoomLayerEl!,
     // Only once the finished picture is on screen — the loading dial and
@@ -105,33 +112,53 @@
 </div>
 
 <style>
+  /* Registered so it can transition: an unregistered custom property changes
+     in one step. Inherited like every other stage variable. */
+  @property --stage-budget-h {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 0;
+  }
+
   /* Holds the blurred drawing, the dial, and the final image. Its own size comes
      from .stage-sizer below, within the budget the card hands down as
      --result-stage-max-h/-w (AiImageResult). */
   .ai-stage {
-    /* The stage's box, declared from the card's budget and the picture's aspect
-       — the same expression .placeholder-sizer below is drawn at, and what the
-       decoded sizer settles at whenever the picture is at least as large as the
-       budget (every render and preview is). AiConfetti spends these: the fall
-       distance spans --stage-h, and the mask hole is cut around the dial,
-       which is DIAL_STAGE_FRACTION of the stage until DIAL_MAX_SIZE_PX, opened
-       by MASK_CLEARANCE so leaves vanish behind its translucent rim rather
-       than at the exact edge (aiDialGeometry.ts; AiResultStage.geometry.test.ts
-       holds these literals to it). Declared rather than measured, so the hole
-       and the fall are right in the frame the stage first paints, follow the
-       aspect swap, a rotation and the autosave footer through the cascade, and
-       never rewrite this element's style while a generation runs over the live
-       canvas (ADR-0116). A circle needs the same radius on both axes, which the
-       width-derived radius gives on a stage of any aspect. */
+    /* The stage's box, declared from the card's budget, the picture's aspect,
+       and the decoded picture's own width: the same terms .stage-sizer below
+       is drawn from, so this is what the stage renders at in every state — the
+       placeholder before a URL exists, the placeholder box again while a fresh
+       URL decodes (no natural width is published for it yet), and the picture
+       itself once it has, capped by its natural width the way the sizer never
+       upscales past it. AiConfetti spends these: the fall distance spans
+       --stage-h, and the mask hole is cut around the dial, which is
+       DIAL_STAGE_FRACTION of the stage until DIAL_MAX_SIZE_PX, opened by
+       MASK_CLEARANCE so leaves vanish behind its translucent rim rather than at
+       the exact edge (aiDialGeometry.ts; AiResultStage.geometry.test.ts holds
+       these literals to it). Declared rather than measured, so the hole and the
+       fall are right in the frame the stage first paints, follow the aspect
+       swap, a rotation and the autosave footer through the cascade, and never
+       rewrite this element's style from a resize while a generation runs over
+       the live canvas (ADR-0116). A circle needs the same radius on both axes,
+       which the width-derived radius gives on a stage of any aspect.
+
+       The height budget is the one term the sizer does not take instantly: its
+       max-height glides through the budget change at the reveal, so the box
+       is derived from --stage-budget-h, a registered length that glides on the
+       same tokens (the @property below), and the aspect swap and the natural
+       cap stay instant on both. */
+    --stage-budget-h: var(--result-stage-max-h);
     --stage-w: min(
       var(--result-stage-max-w),
-      calc(var(--result-stage-max-h) * var(--result-aspect))
+      calc(var(--stage-budget-h) * var(--result-aspect)),
+      var(--stage-natural-w, var(--result-stage-max-w))
     );
     --stage-h: calc(var(--stage-w) / var(--result-aspect));
     --confetti-mask-radius: calc(min(var(--stage-w) * 0.26, 150px) * 1.19);
     --confetti-rx: var(--confetti-mask-radius);
     --confetti-ry: var(--confetti-mask-radius);
 
+    transition: --stage-budget-h var(--duration-slow) var(--ease-glide);
     position: relative;
     display: block;
     line-height: 0; /* drop the inline-image baseline gap under the sizer */
@@ -183,6 +210,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .ai-stage,
     .stage-sizer {
       transition: none;
     }

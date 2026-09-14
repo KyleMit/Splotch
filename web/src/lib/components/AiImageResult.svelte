@@ -304,6 +304,12 @@
   }
 
   .ai-result-modal:not(.errored) {
+    /* The UA stylesheet caps a <dialog> at calc(100% - 6px - 2em), which on a
+       phone is narrower than the band above and quietly widened the gutters
+       from 10px to 19px. The band is the card's bound, here as on the server
+       error card, so the width below is what the card actually gets — and the
+       stage's declared box (AiResultStage) can trust it. */
+    max-width: var(--result-max-w);
     width: clamp(
       var(--result-min-w),
       calc(var(--result-stage-max-h) * var(--result-aspect) + var(--result-inline-padding)),
