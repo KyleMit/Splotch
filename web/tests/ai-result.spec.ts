@@ -666,7 +666,10 @@ test.describe('AI result modal', () => {
           const radius = await resolvedStageLengthPx(page, '--confetti-rx');
           return dialWidth > 0 ? Math.abs(radius - (dialWidth / 2) * MASK_CLEARANCE) : Infinity;
         })
-        .toBeLessThan(0.5);
+        // A layout unit and a half: the dial is a percentage of a fractional
+        // stage and rounds on its own, while the declared radius does not. A
+        // wrong constant misses by tens of pixels, not by one.
+        .toBeLessThan(1.5);
     });
   }
 });
