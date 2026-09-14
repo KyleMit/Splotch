@@ -1,6 +1,6 @@
 import { apiUrl } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
-import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '$lib/freeGenerations';
+import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
 import { webInstallationId } from './webInstallationId';
@@ -93,8 +93,19 @@ async function refreshFreeGenerationGrant(latest: LatestRequest): Promise<void> 
       signal: request.signal,
     });
     if (!response.ok) throw new Error('Grant status unavailable');
-    const status = (await response.json()) as FreeGenerationGrantStatus;
-    if (latest.isCurrent(request.id) && status.ok) {
+    const status: unknown = await response.json();
+    if (
+      typeof status !== 'object' ||
+      status === null ||
+      !('ok' in status) ||
+      status.ok !== true ||
+      !('remaining' in status) ||
+      typeof status.remaining !== 'number' ||
+      !Number.isFinite(status.remaining)
+    ) {
+      throw new Error('Invalid grant status');
+    }
+    if (latest.isCurrent(request.id)) {
       setFreeGenerationsRemaining(status.remaining);
     }
   } catch {
