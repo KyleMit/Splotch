@@ -156,22 +156,26 @@
   // parent-forwarded props/callbacks — this presentational concern observes the
   // same DOM events as the engine, independently of it.
   $effect(() => {
-    canvasEl.addEventListener('pointerdown', handlePointerDown);
-    canvasEl.addEventListener('pointermove', handlePointerMove);
-    canvasEl.addEventListener('pointerenter', updateEraserCursor);
-    canvasEl.addEventListener('pointerleave', handlePointerLeave);
-    canvasEl.addEventListener('pointerup', removeBrushRing);
-    canvasEl.addEventListener('pointercancel', removeBrushRing);
-    canvasEl.addEventListener('lostpointercapture', removeBrushRing);
+    const listenerCanvas = canvasEl;
+    listenerCanvas.addEventListener('pointerdown', handlePointerDown);
+    listenerCanvas.addEventListener('pointermove', handlePointerMove);
+    listenerCanvas.addEventListener('pointerenter', updateEraserCursor);
+    listenerCanvas.addEventListener('pointerleave', handlePointerLeave);
+    listenerCanvas.addEventListener('pointerup', removeBrushRing);
+    listenerCanvas.addEventListener('pointercancel', removeBrushRing);
+    listenerCanvas.addEventListener('lostpointercapture', removeBrushRing);
     return () => {
-      canvasEl.removeEventListener('pointerdown', handlePointerDown);
-      canvasEl.removeEventListener('pointermove', handlePointerMove);
-      canvasEl.removeEventListener('pointerenter', updateEraserCursor);
-      canvasEl.removeEventListener('pointerleave', handlePointerLeave);
-      canvasEl.removeEventListener('pointerup', removeBrushRing);
-      canvasEl.removeEventListener('pointercancel', removeBrushRing);
-      canvasEl.removeEventListener('lostpointercapture', removeBrushRing);
-      if (haloMoveFrame !== null) cancelAnimationFrame(haloMoveFrame);
+      listenerCanvas.removeEventListener('pointerdown', handlePointerDown);
+      listenerCanvas.removeEventListener('pointermove', handlePointerMove);
+      listenerCanvas.removeEventListener('pointerenter', updateEraserCursor);
+      listenerCanvas.removeEventListener('pointerleave', handlePointerLeave);
+      listenerCanvas.removeEventListener('pointerup', removeBrushRing);
+      listenerCanvas.removeEventListener('pointercancel', removeBrushRing);
+      listenerCanvas.removeEventListener('lostpointercapture', removeBrushRing);
+      if (haloMoveFrame !== null) {
+        cancelAnimationFrame(haloMoveFrame);
+        haloMoveFrame = null;
+      }
     };
   });
 

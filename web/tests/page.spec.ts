@@ -96,7 +96,7 @@ test('non-canvas routes are normal documents by default (/privacy, /admin)', asy
 test('client-side nav off the drawing route drops the app-surface locks (effect cleanup)', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoApp(page);
   expect((await bodySurface(page)).touchAction).toBe('none');
 
   await spaNavigate(page, '/privacy');
