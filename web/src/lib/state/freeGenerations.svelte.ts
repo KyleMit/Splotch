@@ -54,13 +54,18 @@ export function setFreeGenerationsUnavailable(): void {
   freeGenerations.loading = false;
 }
 
-export function createFreeGenerationGrantRefresher(): () => void {
+export function createFreeGenerationGrantRefresher(): (event?: Event) => void {
   let wasReady = false;
   let wasOnline = false;
-  return () => {
+  return (event) => {
     const ready = grantRefreshReady();
     const online = network.online;
-    const shouldRearm = (ready && !wasReady) || (online && !wasOnline);
+    const returnedToApp =
+      event?.type === 'visibilitychange' && document.visibilityState === 'visible';
+    const shouldRearm =
+      (ready && !wasReady) ||
+      (online && !wasOnline) ||
+      (returnedToApp && ready && online && !freeGenerations.loading);
     wasReady = ready;
     wasOnline = online;
     if (!ready || !online) freeGenerationGrantRequest.cancel();
