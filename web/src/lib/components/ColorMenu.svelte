@@ -42,7 +42,8 @@
 
 <style>
   /* The room the flyout has: the viewport less the safe-area insets, the
-     Color Button, its 8px gap and a 16px margin at the right edge. It carries
+     Color Button, the 8px the Actions Panel insets it by, the 8px gap to the
+     pill and an 8px margin at the right edge. It carries
      app.css's phone-landscape flyout placement so the pill inside can sit at
      its origin and hug its swatches. */
   .color-menu-space {
