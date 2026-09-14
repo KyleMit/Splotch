@@ -256,6 +256,32 @@ describe('grantRefreshReady', () => {
     expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 8 });
   });
 
+  it('ignores an invalidated malformed response after a newer request succeeds', async () => {
+    const refreshGrant = createFreeGenerationGrantRefresher();
+    const older = deferred<Response>();
+    const newer = deferred<Response>();
+    const fetchMock = vi.fn().mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
+    vi.stubGlobal('fetch', fetchMock);
+
+    persistedStateStatus.hydrated = true;
+    refreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    network.online = false;
+    refreshGrant();
+    network.online = true;
+    refreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    newer.resolve(grantResponse(8).response);
+    await vi.waitFor(() => expect(freeGenerations.remaining).toBe(8));
+    const stale = Response.json({ ok: true, remaining: 'seven' });
+    const staleJson = vi.spyOn(stale, 'json');
+    older.resolve(stale);
+    await vi.waitFor(() => expect(staleJson).toHaveBeenCalledOnce());
+    expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 8 });
+  });
+
   it.each([
     ['no remaining count', { ok: true, limit: 10 }],
     ['a non-numeric remaining count', { ok: true, remaining: 'seven', limit: 10 }],
@@ -276,6 +302,7 @@ describe('grantRefreshReady', () => {
     await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
     expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
   });
+
   it('settles a non-finite remaining count as unavailable', async () => {
     const refreshGrant = createFreeGenerationGrantRefresher();
     vi.stubGlobal(
