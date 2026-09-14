@@ -399,3 +399,7 @@ script reaches the same state pre-hydration by gating the same five keys behind 
 The hub row reads "Tool drawer off" while the switch is off — naming the switch, as Coloring's row
 does — and counts hidden tools otherwise. Saving's camera help no longer branches on the switch: the
 camera row alone decides whether its button appears.
+
+The Button Size slider moved out from behind the switch in the same change: it sizes every Actions
+Panel button, and the other sections' buttons stay on screen while the drawer's own tools are off,
+so hiding the slider with them left the parent no way to size what remained.

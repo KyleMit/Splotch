@@ -122,24 +122,25 @@
     />
   </div>
 
+  <!-- The slider sits outside the switch's gate: it sizes every Actions Panel
+       button, and the camera, coloring books, and AI button stay on screen
+       while the drawer's own tools are off. -->
+  <div class="setting button-size-setting">
+    <SliderRow
+      id="actionButtonScaleLabel"
+      label="Button Size"
+      icon="photo-size-select-small"
+      value={displayedScale}
+      min={ACTION_BUTTON_SCALE_MIN}
+      max={scaleCeiling}
+      snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT ? ACTION_BUTTON_SCALE_DEFAULT : undefined}
+      onInput={setActionButtonScale}
+      onActiveChange={onScaleActive}
+    />
+  </div>
+
   {#if settings.toolDrawerEnabled}
     <div class="tool-drawer-settings" transition:slide={SECTION_SLIDE}>
-      <div class="setting button-size-setting">
-        <SliderRow
-          id="actionButtonScaleLabel"
-          label="Button Size"
-          icon="photo-size-select-small"
-          value={displayedScale}
-          min={ACTION_BUTTON_SCALE_MIN}
-          max={scaleCeiling}
-          snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT
-            ? ACTION_BUTTON_SCALE_DEFAULT
-            : undefined}
-          onInput={setActionButtonScale}
-          onActiveChange={onScaleActive}
-        />
-      </div>
-
       <div class="tools-block" bind:this={toolsBlockEl}>
         <h4 class="tools-heading">Drawing Tools</h4>
         {#if useChips}
