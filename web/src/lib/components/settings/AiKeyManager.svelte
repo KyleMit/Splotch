@@ -120,12 +120,15 @@
     value: string,
     id: number
   ): Promise<boolean> {
-    if (result.kind === 'apiKey') {
-      await setAiUserApiKey(value, () => latest.isCurrent(id));
-    } else {
-      await setUserSubmittedAiAccessToken(result.accessCode || value, () => latest.isCurrent(id));
-    }
-    return latest.isCurrent(id);
+    const ownsRequest = () => latest.isCurrent(id);
+    const persisted =
+      result.kind === 'apiKey'
+        ? await setAiUserApiKey(value, ownsRequest)
+        : await setUserSubmittedAiAccessToken(result.accessCode || value, ownsRequest);
+    // A write the coordinator refused while this request was still current is
+    // a storage failure the parent must hear about, not a superseded request.
+    if (!persisted && ownsRequest()) throw new Error('Credential write refused');
+    return persisted;
   }
 
   async function submitKey() {
