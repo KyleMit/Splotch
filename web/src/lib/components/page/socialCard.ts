@@ -1,9 +1,9 @@
 import { SITE_ORIGIN } from '$lib/siteUrl';
 
 // The home page's link-preview card, which SocialCard.svelte renders when a
-// route passes nothing. It mirrors the <title> and description in app.html,
-// the one template that cannot import this module; siteUrl.test.ts holds the
-// two together.
+// route passes nothing. The home route's <title> and meta description read
+// the same object, so the tab, the search snippet, and the card agree by
+// import. app.html carries none of them (siteUrl.test.ts keeps it that way).
 export const HOME_CARD = {
   path: '/',
   title: 'Splotch - Drawing for Kids',

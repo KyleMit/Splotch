@@ -13,6 +13,7 @@
   import NotchBand from '$lib/components/NotchBand.svelte';
   import SettingsButton from '$lib/components/SettingsButton.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
+  import { HOME_CARD } from '$lib/components/page/socialCard';
   import {
     aiPromptModal,
     coloringBookModal,
@@ -165,6 +166,11 @@
     };
   });
 </script>
+
+<svelte:head>
+  <title>{HOME_CARD.title}</title>
+  <meta name="description" content={HOME_CARD.description} />
+</svelte:head>
 
 <SocialCard />
 
