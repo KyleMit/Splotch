@@ -151,7 +151,8 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 0 24px;
+    --scrollport-bottom-padding: 0px;
+    padding: 0 24px var(--scrollport-bottom-padding);
   }
 
   .quick-toggles {

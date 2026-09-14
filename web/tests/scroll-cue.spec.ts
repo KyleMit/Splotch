@@ -90,8 +90,8 @@ test.describe('the sign-up page cues its own document scroll', () => {
 
   // The document's scroller has no padding of its own to reach past — the
   // sheet's and the ground's are content, and scroll away with it — so this
-  // pins the measurement resolving to nothing rather than to the nearest
-  // padded ancestor.
+  // pins the fade to the document scroller's zero rather than to the nearest
+  // padded ancestor's declaration.
   test('fades to the foot of the viewport, not to the sheet inside it', async ({ page }) => {
     await page.goto('/beta');
     await expect(page.getByRole('heading', { name: 'Join the Splotch beta' })).toBeVisible();
@@ -140,8 +140,8 @@ test.describe('the landscape-phone settings shell', () => {
   });
 
   // This pane pads only its sides, so it is the surface where a cue stuck to
-  // the content box already sat on the clip edge — the case the measurement
-  // must leave exactly where it was.
+  // the content box already sat on the clip edge — the case the declared
+  // zero must leave exactly where it was.
   test('fades to the foot of a pane that pads only its sides', async ({ page }) => {
     const scroller = await openCompactSettings(page);
     await expect.poll(() => undimmedStripBelow(scroller)).toBe(0);

@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    coverScrollportPadding,
-    excludeScrollportGutter,
-    observeContentEnd,
-  } from '$lib/actions/scrollCue';
+  import { excludeScrollportGutter, observeContentEnd } from '$lib/actions/scrollCue';
 
   import type { Snippet } from 'svelte';
 
@@ -44,13 +40,7 @@
   </div>
 {:else}
   {@render sentinel()}
-  <div
-    class="scroll-cue"
-    class:retired
-    class:pending={contentPending}
-    aria-hidden="true"
-    use:coverScrollportPadding
-  ></div>
+  <div class="scroll-cue" class:retired class:pending={contentPending} aria-hidden="true"></div>
 {/if}
 
 <style>
@@ -81,8 +71,11 @@
        content box, and a sticky inset resolves against the latter — so
        `bottom: 0` lands one bottom-padding short of the edge and leaves the
        content still showing through that strip undimmed, under a hard line where
-       the ramp turns opaque. `coverScrollportPadding` measures the strip; the
-       0px fallback only ever applies before the cue has armed. */
+       the ramp turns opaque. The scroller that hosts the cue declares the strip
+       as `--scrollport-bottom-padding` beside its own `padding-bottom`
+       (ScrollCue.scrollportPadding.test.ts holds the two equal), and the
+       property inherits down to here. The fallback is the document scroller,
+       which pads nothing. */
     bottom: calc(-1 * var(--scrollport-bottom-padding, 0px));
     height: var(--cue-height);
     /* Pulled back over the content it dims: the cue travels with the scrollport

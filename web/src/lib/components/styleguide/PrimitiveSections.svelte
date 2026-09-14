@@ -254,10 +254,12 @@
   </p>
   <p class="sub-intro">
     For content that scrolls with the document, or an existing scrolling dialog, render
-    <code>ScrollCue</code> without children as the last child of the scrolling content. This form places
-    its own sentinel and sticky fade there, measuring bottom padding to reach the scrollport edge. Both
-    forms observe the sentinel through every scrolling ancestor, including this page. A specimen below
-    the page's fold can therefore report more content until you bring it into view.
+    <code>ScrollCue</code> without children as the last child of the scrolling content. This form
+    places its own sentinel and sticky fade there; the scroller declares
+    <code>--scrollport-bottom-padding</code>
+    beside its bottom padding so the fade reaches the scrollport edge. Both forms observe the sentinel
+    through every scrolling ancestor, including this page. A specimen below the page's fold can therefore
+    report more content until you bring it into view.
   </p>
   <p class="sub-intro">
     Depth is the inherited <code>--scroll-cue-height</code>. Set it on an ancestor of the fade; for
@@ -466,7 +468,8 @@
   .cue-scroller {
     height: var(--cue-demo-height);
     overflow-y: auto;
-    padding: var(--space-4);
+    --scrollport-bottom-padding: var(--space-4);
+    padding: var(--space-4) var(--space-4) var(--scrollport-bottom-padding);
     border: var(--border-width) solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
