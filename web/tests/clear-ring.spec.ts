@@ -8,6 +8,7 @@ const OUTSIDE_THRESHOLD = 1.1;
 for (const viewport of [
   { width: 390, height: 844 },
   { width: 1024, height: 768 },
+  { width: 1366, height: 1024 },
 ]) {
   for (const colorScheme of ['light', 'dark'] as const) {
     test(`the pen ring stays aligned across clear states at ${viewport.width}px in ${colorScheme}`, async ({
@@ -56,6 +57,40 @@ for (const viewport of [
       expect(alignment.top).toBeCloseTo(2, 1);
       expect(alignment.width).toBeCloseTo(4, 1);
       expect(alignment.height).toBeCloseTo(4, 1);
+      const marks = await dashes.evaluate((element) => {
+        if (!(element instanceof SVGPathElement)) throw new Error('Pen path is missing');
+        const svg = element.ownerSVGElement!;
+        const radius = svg.viewBox.baseVal.width / 2;
+        const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
+        const segments = element.getAttribute('d')!.split('M').filter(Boolean);
+        const lengths: number[] = [];
+        let maxDeviation = 0;
+        for (const segment of segments) {
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', `M${segment}`);
+          const length = path.getTotalLength();
+          lengths.push(length * scale);
+          for (let sample = 0; sample <= 10; sample++) {
+            const point = path.getPointAtLength((length * sample) / 10);
+            maxDeviation = Math.max(
+              maxDeviation,
+              Math.abs(Math.hypot(point.x - radius, point.y - radius) - radius) * scale
+            );
+          }
+        }
+        return {
+          pitch: (svg.getBoundingClientRect().width * Math.PI) / segments.length,
+          shortest: Math.min(...lengths),
+          longest: Math.max(...lengths),
+          maxDeviation,
+        };
+      });
+      expect(marks.pitch).toBeGreaterThan(24);
+      expect(marks.pitch).toBeLessThan(26);
+      expect(marks.shortest).toBeGreaterThan(8);
+      expect(marks.longest).toBeLessThan(21);
+      expect(marks.maxDeviation).toBeGreaterThan(0.5);
+      expect(marks.maxDeviation).toBeLessThan(1.5);
       const contours = await ring
         .locator('path')
         .evaluateAll((paths) => paths.map((path) => path.getAttribute('d')));
@@ -101,9 +136,15 @@ test('the reduced-motion tutorial shows the same continuous pen contour', async 
   const tutorialRing = coachmark.locator('.coachmark-ring');
   await expect(tutorialRing.locator('.dashes')).toHaveCSS('opacity', '0');
   await expect(tutorialRing.locator('.solid')).toHaveCSS('opacity', '1');
-  const liveContour = await page.locator('#clearAcceptZone .solid').getAttribute('d');
-  if (!liveContour) throw new Error('The live ring contour is missing');
-  await expect(tutorialRing.locator('.solid')).toHaveAttribute('d', liveContour);
+  const tutorialContour = await tutorialRing.locator('.solid').getAttribute('d');
+  if (!tutorialContour) throw new Error('The tutorial contour is missing');
+  const box = await button.boundingBox();
+  if (!box) throw new Error('Clear Button is missing');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x - 50, box.y + 70);
+  await expect(page.locator('#clearAcceptZone .solid')).toHaveAttribute('d', tutorialContour);
+  await page.mouse.up();
   expect(
     await tutorialRing.evaluate((element) => element.getAnimations({ subtree: true }).length)
   ).toBe(0);
