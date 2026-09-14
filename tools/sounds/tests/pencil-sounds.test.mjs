@@ -1,4 +1,13 @@
-import { readFileSync, statSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -8,6 +17,7 @@ import {
   OUTPUT_DIR,
   PENCIL_CLIP_PATTERN,
   pencilClipNames,
+  publishStagedClips,
 } from '../gen-pencil-sounds.mjs';
 import { describeMp3 } from '../lib/mp3-stream.mjs';
 
@@ -78,5 +88,52 @@ describe('encodedClipProblems', () => {
     const problems = encodedClipProblems(master, { ...good, ...change });
     expect(problems).toHaveLength(1);
     expect(problems[0]).toMatch(message);
+  });
+});
+
+describe('publishStagedClips', () => {
+  function fixture(names) {
+    const root = mkdtempSync(join(tmpdir(), 'pencil-publish-'));
+    const dirs = ['staged', 'output', 'backup'].map((dir) => join(root, dir));
+    for (const dir of dirs) mkdirSync(dir);
+    const [stagedDir, outputDir, backupDir] = dirs;
+    const staged = names.map((name) => {
+      writeFileSync(join(stagedDir, name), `new ${name}`);
+      return { name, stagedPath: join(stagedDir, name) };
+    });
+    return { staged, outputDir, backupDir };
+  }
+
+  it('replaces every shipped clip when all copies succeed', () => {
+    const { staged, outputDir, backupDir } = fixture(['a.mp3', 'b.mp3']);
+    writeFileSync(join(outputDir, 'a.mp3'), 'old a.mp3');
+
+    publishStagedClips(staged, outputDir, backupDir);
+
+    expect(readFileSync(join(outputDir, 'a.mp3'), 'utf8')).toBe('new a.mp3');
+    expect(readFileSync(join(outputDir, 'b.mp3'), 'utf8')).toBe('new b.mp3');
+  });
+
+  it('restores replaced clips and removes new ones when a later copy fails', () => {
+    const { staged, outputDir, backupDir } = fixture(['a.mp3', 'b.mp3', 'c.mp3', 'd.mp3']);
+    const shipped = ['a.mp3', 'b.mp3', 'd.mp3'];
+    for (const name of shipped) writeFileSync(join(outputDir, name), `old ${name}`);
+    let copies = 0;
+    const failOnLastCopy = (from, to) => {
+      copies += 1;
+      if (copies === staged.length) {
+        writeFileSync(to, 'partial');
+        throw new Error('EACCES');
+      }
+      copyFileSync(from, to);
+    };
+
+    expect(() => publishStagedClips(staged, outputDir, backupDir, failOnLastCopy)).toThrow(
+      'EACCES'
+    );
+    for (const name of shipped) {
+      expect(readFileSync(join(outputDir, name), 'utf8')).toBe(`old ${name}`);
+    }
+    expect(existsSync(join(outputDir, 'c.mp3'))).toBe(false);
   });
 });

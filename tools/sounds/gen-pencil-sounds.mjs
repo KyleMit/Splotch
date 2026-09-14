@@ -2,7 +2,16 @@
 // Always encodes from the masters, never from web/static, so a re-run is one
 // lossy generation away from the source rather than one more each time.
 
-import { copyFileSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { capture, fail, hasCommand, isMain, ROOT, runMain, tryCapture } from '../lib/proc.mjs';
@@ -84,20 +93,52 @@ function encodeToStaging(name, stagingDir) {
   };
 }
 
-async function main() {
+// Backs up every clip before replacing it and restores the backups when any copy
+// fails, so a failed publish leaves outputDir as it was. `copy` is a seam kept for
+// the fault-injection test; the generator always uses copyFileSync.
+export function publishStagedClips(staged, outputDir, backupDir, copy = copyFileSync) {
+  const touched = [];
+  try {
+    for (const { name, stagedPath } of staged) {
+      const destination = join(outputDir, name);
+      const backup = existsSync(destination) ? join(backupDir, name) : null;
+      if (backup) copyFileSync(destination, backup);
+      touched.push({ destination, backup });
+      copy(stagedPath, destination);
+    }
+  } catch (error) {
+    const restoreFailures = [];
+    for (const { destination, backup } of touched.reverse()) {
+      try {
+        if (backup) copyFileSync(backup, destination);
+        else rmSync(destination, { force: true });
+      } catch (restoreError) {
+        restoreFailures.push(`${destination}: ${restoreError.message}`);
+      }
+    }
+    if (restoreFailures.length) {
+      error.message += `\nCould not restore: ${restoreFailures.join('; ')}`;
+    }
+    throw error;
+  }
+}
+
+export async function generatePencilSounds() {
   if (!hasCommand('lame')) fail('lame is not installed: `brew install lame` or `apt install lame`');
   console.log(capture('lame', ['--version']).split('\n')[0]);
 
-  // Every clip is encoded and verified before any shipped file is touched, so a
-  // failed run leaves web/static/sounds exactly as it was.
+  // Every clip is encoded and verified before any shipped file is touched, and the
+  // publish step rolls back, so a failed run leaves web/static/sounds as it was.
   const stagingDir = mkdtempSync(join(tmpdir(), 'pencil-sounds-'));
   try {
     const encoded = pencilClipNames().map((name) => encodeToStaging(name, stagingDir));
-    for (const { name, stagedPath } of encoded) copyFileSync(stagedPath, join(OUTPUT_DIR, name));
+    const backupDir = join(stagingDir, 'backup');
+    mkdirSync(backupDir);
+    publishStagedClips(encoded, OUTPUT_DIR, backupDir);
     console.table(encoded.map(({ row }) => row));
   } finally {
     rmSync(stagingDir, { recursive: true, force: true });
   }
 }
 
-if (isMain(import.meta.url)) runMain(main);
+if (isMain(import.meta.url)) runMain(generatePencilSounds);

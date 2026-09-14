@@ -68,8 +68,9 @@ master. Neither end of the decoded loop is quieter than the master's, so the sea
 ## Failure and recovery
 
 The script exits nonzero when `lame` is missing, when a LAME step fails, or when any encoded clip
-fails verification. Nothing is copied into `web/static/sounds` until every clip has passed, and the
-staging directory is removed on success and failure alike, so a failed run leaves the working tree
+fails verification. Nothing is copied into `web/static/sounds` until every clip has passed. The copy
+step backs up each clip it replaces and restores them all if any copy fails, and the staging
+directory is removed on success and failure alike, so a failed run leaves the working tree
 unchanged.
 
 ## Maintenance
