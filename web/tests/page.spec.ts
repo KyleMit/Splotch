@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { draw, expectNoReload, gotoApp, renderedCanvasHandle, spaNavigate } from './helpers';
+import {
+  draw,
+  enforceProductionCsp,
+  expectNoReload,
+  gotoApp,
+  renderedCanvasHandle,
+  spaNavigate,
+} from './helpers';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
@@ -108,6 +115,28 @@ test('client-side nav off the drawing route drops the app-surface locks (effect 
 // wearing the drawing color. app.html's pre-paint script can't cover this: it
 // runs on load only.
 const themeColor = (page: Page) => page.getAttribute('meta[name="theme-color"]', 'content');
+
+test('theme-color follows the OS when storage is unavailable under production CSP', async ({
+  page,
+}) => {
+  await enforceProductionCsp(page);
+  await page.addInitScript(() => {
+    Storage.prototype.getItem = () => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    };
+  });
+
+  for (const route of ['/privacy', '/admin']) {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto(route);
+    await expect.poll(() => themeColor(page)).toBe(THEME_COLORS.dark);
+
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect.poll(() => themeColor(page)).toBe(THEME_COLORS.light);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect.poll(() => themeColor(page)).toBe(THEME_COLORS.dark);
+  }
+});
 
 const THEME_PREFERENCE_CASES = [
   { label: 'the system preference under a light OS', preference: 'system', systemDark: false },
