@@ -1,5 +1,6 @@
+import { tick } from 'svelte';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { sectionContentStamp } from '$lib/components/settings/sections';
+import { sectionContentStamp, type SectionId } from '$lib/components/settings/sections';
 import { STORAGE_KEYS } from '$lib/storage';
 import {
   hasSectionActivity,
@@ -78,5 +79,46 @@ describe('section seen stamps', () => {
       appearance: sectionContentStamp('appearance'),
       sound: sectionContentStamp('sound'),
     });
+  });
+});
+
+// WideShell's landing effect marks the section it lands on seen, and that effect
+// also re-locks Parent Center and scrolls the pane back to the landing section
+// every time it runs. Marking is a command, so it must not subscribe its caller.
+describe('marking a section seen from an effect', () => {
+  // Every flush the effect could be rescheduled into has run by the second tick.
+  async function settle() {
+    await tick();
+    await tick();
+  }
+
+  async function countEffectRuns(id: SectionId) {
+    let runs = 0;
+    const stop = $effect.root(() => {
+      $effect(() => {
+        runs += 1;
+        markSectionSeen(id);
+      });
+    });
+    await settle();
+    return { runs: () => runs, stop };
+  }
+
+  it('runs the effect once when the section was unseen', async () => {
+    const effect = await countEffectRuns('appearance');
+
+    expect(effect.runs()).toBe(1);
+    effect.stop();
+  });
+
+  it('leaves the effect alone when the stamps reload', async () => {
+    markSectionSeen('appearance');
+    const effect = await countEffectRuns('appearance');
+
+    reloadSectionsSeen();
+    await settle();
+
+    expect(effect.runs()).toBe(1);
+    effect.stop();
   });
 });
