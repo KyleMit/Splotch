@@ -30,6 +30,14 @@ export function setInstalledColoringBooks(bookIds: string[]) {
   coloringPackState.initialized = true;
 }
 
+// What a scan would publish for a device with no pack storage at all, known
+// without the manifest: the starter book alone, out of the platform's catalog.
+export function setNoDownloadedColoringBooks(platform: BookPlatform) {
+  setInstalledColoringBooks([]);
+  coloringPackState.totalBookCount = booksForPlatform(platform).length;
+  coloringPackState.downloadedBytes = 0;
+}
+
 export function markColoringBookInstalled(bookId: string) {
   if (!coloringPackState.installedBookIds.includes(bookId)) {
     coloringPackState.installedBookIds = [...coloringPackState.installedBookIds, bookId];

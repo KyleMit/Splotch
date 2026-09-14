@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { booksForPlatform } from './books';
 import {
   availableColoringBooks,
+  coloringPackState,
   markColoringBookInstalled,
   resetDownloadedColoringBooks,
   setInstalledColoringBooks,
+  setNoDownloadedColoringBooks,
 } from './coloringPacks.svelte';
 
 afterEach(resetDownloadedColoringBooks);
@@ -22,5 +25,19 @@ describe('available coloring books', () => {
       'dinosaur',
       'creatures',
     ]);
+  });
+});
+
+describe('a device with no pack storage', () => {
+  it('settles on the starter book out of the whole catalog without a scan', () => {
+    coloringPackState.initialized = false;
+    coloringPackState.downloadedBytes = 5;
+
+    setNoDownloadedColoringBooks('web');
+
+    expect(availableColoringBooks('web').map((book) => book.id)).toEqual(['farm']);
+    expect(coloringPackState.totalBookCount).toBe(booksForPlatform('web').length);
+    expect(coloringPackState.downloadedBytes).toBe(0);
+    expect(coloringPackState.initialized).toBe(true);
   });
 });

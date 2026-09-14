@@ -203,17 +203,14 @@ test.describe('active-page chip on a small viewport', () => {
 
   // This press is held open across two assertions — the chip transitions
   // background and border over --duration-base, and both have to land before
-  // the release. A book finishing its download inside that window adds a grid
-  // row, which grows the centred dialog and lifts the header out from under the
-  // pointer: the release then misses the chip, no click fires, and the picker
-  // sits there with the page still applied. `:active` follows the element that
-  // took the pointerdown wherever it moves, so the two colour assertions still
-  // pass and only the close fails. Seed the whole catalog so nothing installs
-  // mid-press.
+  // the release. A plain install is deliberate: opening the picker starts the
+  // background downloads, so books land inside that window, and the open picker
+  // holding its books is what keeps the chip under the pointer
+  // (coloring-pack-download.spec.ts pins that directly).
   test('shows danger feedback while pressed and clears immediately on release', async ({
     page,
   }) => {
-    await gotoAppWithAllColoringBooksInstalled(page);
+    await gotoApp(page);
     await openDrawer(page);
     await applyFarmPage(page);
     await openColoringDialog(page);

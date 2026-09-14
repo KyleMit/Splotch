@@ -15,10 +15,12 @@ import {
   coloringPackMarkerValue,
 } from '../src/lib/coloringPacks/cacheKeys';
 import {
+  coloringPackManifestPath,
   resolveColoringPackManifest,
   type ColoringPackManifest,
 } from '../src/lib/coloringPacks/manifest';
 import { coloringPackResolutionForScreen } from '../src/lib/coloringPacks/resolution';
+import { VERSION_JSON_PATH } from '../src/lib/pwa/versionEndpoint';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -49,23 +51,36 @@ export async function openDrawer(page: Page) {
   );
 }
 
-// The boot that captures the manifest also starts the app's pack downloader,
-// and the web store withdraws a book's marker before it writes any of that
-// book's files (withdrawMarker in webStore.ts). Seeded while that boot is still
-// installing the same book, a marker is deleted moments after it lands, the
-// seeded boot finds the book missing, and the book stays hidden until a real
-// download finishes — racing whatever the spec does first. Seeding from a
-// static same-origin page, outside the app shell, leaves no app running to
-// write.
+// A running app's pack downloader races the seed: the web store withdraws a
+// book's marker before it writes any of that book's files (withdrawMarker in
+// webStore.ts), so a marker seeded while the app is installing the same book is
+// deleted moments after it lands, and the book stays hidden until a real
+// download finishes. Seeding from a static same-origin page, outside the app
+// shell, leaves no app running to write.
 const COLORING_PACK_SEEDING_PAGE = '/robots.txt';
+
+// Read from the seeding page rather than from an app boot: a boot that nobody
+// engages with never requests the manifest.
+async function fetchColoringPackManifest(page: Page): Promise<ColoringPackManifest> {
+  return page.evaluate(
+    async ({ versionPath, manifestPathTemplate }) => {
+      const { version } = (await (await fetch(versionPath)).json()) as { version: string };
+      const response = await fetch(manifestPathTemplate.replace('{version}', version));
+      return (await response.json()) as ColoringPackManifest;
+    },
+    {
+      versionPath: VERSION_JSON_PATH,
+      manifestPathTemplate: coloringPackManifestPath('{version}'),
+    }
+  );
+}
 
 async function gotoAppWithInstalledColoringBooks(
   page: Page,
   installedBookIds: (manifest: ColoringPackManifest) => string[]
 ) {
-  const manifestResponse = page.waitForResponse(/\/coloring\/manifest-.+\.json$/);
-  await gotoApp(page);
-  const sourceManifest = (await (await manifestResponse).json()) as ColoringPackManifest;
+  await page.goto(COLORING_PACK_SEEDING_PAGE);
+  const sourceManifest = await fetchColoringPackManifest(page);
   const screen = await page.evaluate(() => ({
     widthCssPx: window.screen.width,
     heightCssPx: window.screen.height,
@@ -82,7 +97,6 @@ async function gotoAppWithInstalledColoringBooks(
       path: coloringPackMarkerPath(book.id),
       value: coloringPackMarkerValue(book),
     }));
-  await page.goto(COLORING_PACK_SEEDING_PAGE);
   await page.evaluate(
     async ({ cacheName, markers }) => {
       const cache = await caches.open(cacheName);
@@ -278,15 +292,15 @@ export async function openColoringDialog(page: Page) {
 const COLORING_BOOK_GRID_TIMEOUT_MS = 30_000;
 
 // Open the picker on its Coloring Book Grid — the cover menu, which only exists
-// once a second book is installed.
+// once a second book is known.
 //
 // That installed set resolves asynchronously after load (a manifest fetch plus
 // a store scan — coloringPacks/manager.ts), and a dialog opened before it lands
-// shows the starter book's pages instead, by design: a fresh install has one
-// book and drills straight into it (coloring-pack-download.spec.ts pins that
-// view). Crucially the dialog then *stays* there — ColoringBook picks the view
-// once per open (`onOpen`) and only re-picks it when the active book goes away
-// — so no amount of waiting on that open reaches the grid, which is how the
+// shows the starter book's pages instead, by design: one known book drills
+// straight into its pages (coloring-pack-download.spec.ts pins that view).
+// Crucially the dialog then *stays* there — ColoringBook holds what an open
+// shows until it closes, so the scan's books join only at the next open — and no
+// amount of waiting on that open reaches the grid, which is how the
 // eight-viewport cover-geometry spec came to fail with the grid simply absent
 // (issue #936). Reopen until an open lands on it: each attempt re-reads the
 // installed set.
