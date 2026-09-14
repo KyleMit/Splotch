@@ -3,10 +3,17 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PALETTE_COLORS } from '../palette';
 import {
+  LANDSCAPE_COLORS,
+  LANDSCAPE_FIRST_TRIM_RANK,
+  landscapeTrimRank,
+} from '../landscapeToolbar';
+import {
+  COLOR_MENU_GEOMETRY,
   HEX_GRID_GEOMETRY,
   PALETTE_COLUMN_GEOMETRY,
   PALETTE_ROW_GEOMETRY,
   type TrimStep,
+  colorMenuTrimSteps,
   hexGridColumnLadderPx,
   hexGridRowLadderPx,
   landscapeSingleColumnTrimSteps,
@@ -75,6 +82,14 @@ interface MediaRule {
 
 function mediaRules(css: string): MediaRule[] {
   return [...css.matchAll(/@media ([^{]+)\{/g)].map((match) => ({
+    condition: match[1].trim(),
+    body: blockAfter(css, match[0], match.index),
+  }));
+}
+
+/** `@container <name> (<feature>)` rules, read the same way as media rules. */
+function containerRules(css: string, name: string): MediaRule[] {
+  return [...css.matchAll(new RegExp(`@container ${name} ([^{]+)\\{`, 'g'))].map((match) => ({
     condition: match[1].trim(),
     body: blockAfter(css, match[0], match.index),
   }));
@@ -246,5 +261,39 @@ describe('ColorPicker', () => {
 
   it('drops a honeycomb column at a time', () => {
     expect(columnTrim.map((rule) => feature(rule, 'max-width'))).toEqual(hexGridColumnLadderPx());
+  });
+});
+
+describe('ColorMenu', () => {
+  const css = styleBlock('../components/ColorMenu.svelte');
+  const rules = containerRules(css, 'color-menu');
+  const colorCount = LANDSCAPE_COLORS.length;
+
+  it('queries the sizing box it sits in, and nothing else', () => {
+    expect(css).toContain('container: color-menu / inline-size;');
+    expect(mediaRules(css)).toEqual([]);
+    expect(rules).toHaveLength((css.match(/@container /g) ?? []).length);
+  });
+
+  it('restates the row geometry', () => {
+    const menu = blockAfter(css, '.color-menu-space .color-menu {');
+    const option = blockAfter(css, '.color-option {');
+    expect(COLOR_MENU_GEOMETRY.swatchPx).toBe(px(option, 'width', menu));
+    expect(px(option, 'height', menu)).toBe(px(option, 'width', menu));
+    expect(COLOR_MENU_GEOMETRY.gapPx).toBe(px(menu, 'gap'));
+    expect(COLOR_MENU_GEOMETRY.paddingPx).toBe(2 * px(menu, 'padding'));
+  });
+
+  it('drops a swatch at a time as the room to the right of the Color Button narrows', () => {
+    expect(rules.map((rule) => trimStep(rule, 'max-width'))).toEqual(
+      colorMenuTrimSteps(colorCount, LANDSCAPE_FIRST_TRIM_RANK)
+    );
+  });
+
+  it('gives every swatch it carries a rank to be trimmed by', () => {
+    const trimmed = rules.flatMap(hiddenRanks).sort((a, b) => a - b);
+    expect(trimmed).toEqual(
+      LANDSCAPE_COLORS.map(({ hex }) => landscapeTrimRank(hex)).sort((a, b) => a - b)
+    );
   });
 });

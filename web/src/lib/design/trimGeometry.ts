@@ -1,12 +1,13 @@
 import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 
-// Executable form of the responsive-trim ladders in ColorPalette.svelte and
-// ColorPicker.svelte (ADR-0048). Those components trim swatches/rows/columns
-// with pure CSS, so every breakpoint is a hand-evaluated arithmetic result
-// baked into a `@media` rule. This module holds the geometry, the formulas and
-// the step tables — the whole ladder — so a size change is re-derivable rather
-// than re-guessable, and trimGeometry.test.ts parses both `<style>` blocks and
-// asserts the committed CSS still matches what these functions produce.
+// Executable form of the responsive-trim ladders in ColorPalette.svelte,
+// ColorPicker.svelte and ColorMenu.svelte (ADR-0048). Those components trim
+// swatches/rows/columns with pure CSS, so every breakpoint is a hand-evaluated
+// arithmetic result baked into a `@media` or `@container` rule. This module
+// holds the geometry, the formulas and the step tables — the whole ladder — so
+// a size change is re-derivable rather than re-guessable, and
+// trimGeometry.test.ts parses each component's `<style>` block and asserts the
+// committed CSS still matches what these functions produce.
 
 // A `max-*` breakpoint has to sit just below the threshold at which the layout
 // still fits, so the ladders encode `threshold - 0.02` (e.g. 588 → 587.98).
@@ -120,6 +121,30 @@ export function landscapeSingleColumnTrimSteps(colorCount: number): TrimStep[] {
 /** Widths below which the portrait row loses another swatch. */
 export function portraitTrimSteps(colorCount: number): TrimStep[] {
   return trimSteps(colorCount, stackRungs(colorCount, PORTRAIT_FLOOR_SLOTS, PALETTE_ROW_GEOMETRY));
+}
+
+// ── ColorMenu ──────────────────────────────────────────────────────────────
+// The phone-landscape color flyout is one more row of equal squares, but its
+// room is not the viewport: it is what is left to the right of the Color
+// Button, which depends on the button's size and the safe-area insets. So its
+// ladder is a `@container` query on the sizing box the menu sits in.
+
+export const COLOR_MENU_GEOMETRY: PaletteStackGeometry = {
+  swatchPx: 56,
+  gapPx: 6,
+  paddingPx: 12,
+};
+
+/**
+ * Container widths below which the flyout loses another swatch. The custom
+ * swatch takes the same untrimmable slot the palette's gradient does. Ranks
+ * are TRIM_ORDER positions, so the ladder starts at `firstRank`, the rank of
+ * the first color the menu carries.
+ */
+export function colorMenuTrimSteps(colorCount: number, firstRank: number): TrimStep[] {
+  return trimSteps(colorCount, stackRungs(colorCount, GRADIENT_SLOTS, COLOR_MENU_GEOMETRY)).map(
+    ({ thresholdPx, ranks }) => ({ thresholdPx, ranks: ranks.map((rank) => rank + firstRank) })
+  );
 }
 
 // ── ColorPicker ────────────────────────────────────────────────────────────

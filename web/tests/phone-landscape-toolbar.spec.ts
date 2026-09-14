@@ -259,6 +259,28 @@ test.describe('phone landscape interactions', () => {
     await expect(page.locator('dialog[open]')).toBeVisible();
   });
 
+  // The trim is a container query, so every swatch is in the DOM and the ones
+  // that do not fit are hidden in the same layout pass that places the menu —
+  // there is no measured second frame in which the set could change.
+  test('the color menu paints its final swatch set in its first frame', async ({ page }) => {
+    await page.setViewportSize({ width: 628, height: 368 });
+    await gotoApp(page);
+    await page.locator('#colorButton').click();
+    const menu = page.locator('.color-menu');
+    const counts = await menu.evaluate(async (element) => {
+      const visible = () =>
+        [...element.querySelectorAll('button')].filter(
+          (button) => getComputedStyle(button).display !== 'none'
+        ).length;
+      const first = visible();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return { first, settled: visible(), rendered: element.querySelectorAll('button').length };
+    });
+    expect(counts.settled).toBe(counts.first);
+    expect(counts.first).toBe(8);
+    expect(counts.rendered).toBe(12);
+  });
+
   test('an open color menu adapts to width, safe areas, and enlarged controls', async ({
     page,
   }) => {
