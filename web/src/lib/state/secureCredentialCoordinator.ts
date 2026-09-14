@@ -46,11 +46,13 @@ export function createSecureCredentialCoordinator<Key extends string>(
     return enqueue(async () => {
       try {
         await operation(() => version === writeVersion);
-        storedValueUnknown = false;
       } catch (error) {
         storedValueUnknown = true;
         throw error;
       }
+      // A superseded hydration returned at its ownership guard without touching
+      // the mirror, so it proves nothing about what storage holds.
+      if (version === writeVersion) storedValueUnknown = false;
     });
   }
 
