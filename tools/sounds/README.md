@@ -10,9 +10,11 @@ effects come from the [ElevenLabs capability](../elevenlabs/README.md).
 npm run gen:pencil-sounds
 ```
 
-`gen-pencil-sounds.mjs` encodes every `masters/pencil-N.mp3` into `web/static/sounds/pencil-N.mp3`.
-It then reads both files back and fails if the output is not mono, or if its sample rate or gapless
-sample count differs from the master. It prints the bytes and the decoded size of each pair.
+`gen-pencil-sounds.mjs` encodes every `masters/pencil-N.mp3` into a temporary staging directory and
+reads each result back. It fails if a clip is not mono, if its sample rate or gapless sample count
+differs from the master, or if its LAME tag does not record the chosen VBR mode and quality. Only
+when every clip passes does it copy them into `web/static/sounds/pencil-N.mp3`. It prints the bytes
+and the decoded size of each pair.
 
 ## Inputs and outputs
 
@@ -20,7 +22,7 @@ sample count differs from the master. It prints the bytes and the decoded size o
 | -------------------------------- | --------------------------------------------------------------------------------- |
 | `masters/pencil-N.mp3`           | Source. 48 kHz stereo, 192 kbps CBR, 5.000 s loops, loudness-matched in PR #1188. |
 | `web/static/sounds/pencil-N.mp3` | Generated. Never edit these by hand; change a master and re-run.                  |
-| `mp3-stream.mjs`                 | Reads channels, sample rate, and gapless length from an MPEG-1 Layer III file.    |
+| `lib/mp3-stream.mjs`             | Reads channels, sample rate, gapless length, and LAME VBR mode and quality.       |
 | `tests/pencil-sounds.test.mjs`   | Checks the generated clips against the masters and the app's clip list.           |
 
 The masters are the loudness-matched stereo clips the app shipped before this capability existed. No
@@ -65,16 +67,19 @@ master. Neither end of the decoded loop is quieter than the master's, so the sea
 
 ## Failure and recovery
 
-The script exits nonzero when `lame` is missing, when a LAME step fails, or when a generated clip
-fails verification. It writes straight into `web/static/sounds`, so restore a failed run with
-`git checkout -- web/static/sounds`.
+The script exits nonzero when `lame` is missing, when a LAME step fails, or when any encoded clip
+fails verification. Nothing is copied into `web/static/sounds` until every clip has passed, and the
+staging directory is removed on success and failure alike, so a failed run leaves the working tree
+unchanged.
 
 ## Maintenance
 
-To change the encoding, edit `LAME_MONO_ENCODE_ARGS` in `gen-pencil-sounds.mjs`, re-run the script,
-and listen to the clips on a tablet speaker before committing. Update the table above with the new
-measurements. To add a clip, add `masters/pencil-N.mp3`, add its URL to `SOUND_URLS` in
-`drawingSound.ts`, and re-run the script. The test fails until all three agree.
+To change the encoding, edit `LAME_VBR_QUALITY` (or `LAME_MONO_ENCODE_ARGS`, along with
+`EXPECTED_ENCODER`) in `gen-pencil-sounds.mjs`, re-run the script, and listen to the clips on a
+tablet speaker before committing. The test reads the LAME tag of each shipped clip, so an encode
+from a different profile fails it. Update the table above with the new measurements. To add a clip,
+add `masters/pencil-N.mp3`, add its URL to `SOUND_URLS` in `drawingSound.ts`, and re-run the script.
+The test fails until all three agree.
 
 Verify with:
 

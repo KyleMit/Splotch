@@ -2,11 +2,11 @@
 // Always encodes from the masters, never from web/static, so a re-run is one
 // lossy generation away from the source rather than one more each time.
 
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { capture, fail, hasCommand, isMain, ROOT, run, runMain } from '../lib/proc.mjs';
-import { describeMp3 } from './mp3-stream.mjs';
+import { capture, fail, hasCommand, isMain, ROOT, runMain, tryCapture } from '../lib/proc.mjs';
+import { describeMp3 } from './lib/mp3-stream.mjs';
 
 export const MASTERS_DIR = join(import.meta.dirname, 'masters');
 export const OUTPUT_DIR = join(ROOT, 'web/static/sounds');
@@ -17,7 +17,16 @@ export const PENCIL_CLIP_PATTERN = /^pencil-\d+\.mp3$/;
 // 96 kbps AAC or Opus. It keeps the masters' 19.5 kHz bandwidth and loudness;
 // 96 kbps CBR measured 0.5 dB quieter, which undoes the pencil/page-turn level
 // match. tools/sounds/README.md records the comparison.
-const LAME_MONO_ENCODE_ARGS = ['-a', '-m', 'm', '-V', '1'];
+const LAME_VBR_QUALITY = 1;
+const LAME_MONO_ENCODE_ARGS = ['-a', '-m', 'm', '-V', String(LAME_VBR_QUALITY)];
+
+// What LAME writes into the Xing/LAME tag for `-V n`: VBR method 4 (its default
+// VBR mode) and a quality indicator of 100 − 10n.
+const LAME_TAG_VBR_METHOD = 4;
+export const EXPECTED_ENCODER = {
+  vbrMethod: LAME_TAG_VBR_METHOD,
+  qualityIndicator: 100 - 10 * LAME_VBR_QUALITY,
+};
 
 export function pencilClipNames(dir = MASTERS_DIR) {
   return readdirSync(dir)
@@ -25,48 +34,70 @@ export function pencilClipNames(dir = MASTERS_DIR) {
     .sort();
 }
 
-function encodeMono(master, output, scratchDir) {
-  const wav = join(scratchDir, 'decoded.wav');
-  run('lame', ['--quiet', '--decode', master, wav]);
-  run('lame', ['--quiet', ...LAME_MONO_ENCODE_ARGS, wav, output]);
-}
-
-function verifyOutput(name, master, output) {
-  if (output.channels !== 1) fail(`${name}: encoded ${output.channels} channels, expected mono`);
+export function encodedClipProblems(master, output) {
+  const problems = [];
+  if (output.channels !== 1) problems.push(`encoded ${output.channels} channels, expected mono`);
   if (output.sampleRate !== master.sampleRate || output.samples !== master.samples) {
-    fail(
-      `${name}: encoded ${output.samples} samples at ${output.sampleRate} Hz, ` +
-        `master has ${master.samples} at ${master.sampleRate} Hz — the loop length would change`
+    problems.push(
+      `encoded ${output.samples} samples at ${output.sampleRate} Hz, master has ` +
+        `${master.samples} at ${master.sampleRate} Hz — the loop length would change`
     );
   }
+  if (
+    output.vbrMethod !== EXPECTED_ENCODER.vbrMethod ||
+    output.qualityIndicator !== EXPECTED_ENCODER.qualityIndicator
+  ) {
+    problems.push(
+      `LAME tag records VBR method ${output.vbrMethod} quality ${output.qualityIndicator}, ` +
+        `expected method ${EXPECTED_ENCODER.vbrMethod} quality ${EXPECTED_ENCODER.qualityIndicator}`
+    );
+  }
+  return problems;
+}
+
+function lame(args) {
+  const result = tryCapture('lame', ['--quiet', ...args]);
+  if (!result.ok) throw new Error(`lame ${args.join(' ')} failed\n${result.stderr}`);
+}
+
+function encodeToStaging(name, stagingDir) {
+  const masterPath = join(MASTERS_DIR, name);
+  const wavPath = join(stagingDir, `${name}.wav`);
+  const stagedPath = join(stagingDir, name);
+  lame(['--decode', masterPath, wavPath]);
+  lame([...LAME_MONO_ENCODE_ARGS, wavPath, stagedPath]);
+
+  const master = describeMp3(readFileSync(masterPath));
+  const output = describeMp3(readFileSync(stagedPath));
+  const problems = encodedClipProblems(master, output);
+  if (problems.length) throw new Error(`${name}: ${problems.join('; ')}`);
+  return {
+    name,
+    stagedPath,
+    row: {
+      clip: name,
+      'master bytes': statSync(masterPath).size,
+      'output bytes': statSync(stagedPath).size,
+      'master decoded bytes': master.decodedBytes,
+      'output decoded bytes': output.decodedBytes,
+    },
+  };
 }
 
 async function main() {
   if (!hasCommand('lame')) fail('lame is not installed: `brew install lame` or `apt install lame`');
   console.log(capture('lame', ['--version']).split('\n')[0]);
 
-  const scratchDir = mkdtempSync(join(tmpdir(), 'pencil-sounds-'));
-  const rows = [];
+  // Every clip is encoded and verified before any shipped file is touched, so a
+  // failed run leaves web/static/sounds exactly as it was.
+  const stagingDir = mkdtempSync(join(tmpdir(), 'pencil-sounds-'));
   try {
-    for (const name of pencilClipNames()) {
-      const masterPath = join(MASTERS_DIR, name);
-      const outputPath = join(OUTPUT_DIR, name);
-      encodeMono(masterPath, outputPath, scratchDir);
-      const master = describeMp3(readFileSync(masterPath));
-      const output = describeMp3(readFileSync(outputPath));
-      verifyOutput(name, master, output);
-      rows.push({
-        clip: name,
-        'master bytes': statSync(masterPath).size,
-        'output bytes': statSync(outputPath).size,
-        'master decoded bytes': master.decodedBytes,
-        'output decoded bytes': output.decodedBytes,
-      });
-    }
+    const encoded = pencilClipNames().map((name) => encodeToStaging(name, stagingDir));
+    for (const { name, stagedPath } of encoded) copyFileSync(stagedPath, join(OUTPUT_DIR, name));
+    console.table(encoded.map(({ row }) => row));
   } finally {
-    rmSync(scratchDir, { recursive: true, force: true });
+    rmSync(stagingDir, { recursive: true, force: true });
   }
-  console.table(rows);
 }
 
 if (isMain(import.meta.url)) runMain(main);

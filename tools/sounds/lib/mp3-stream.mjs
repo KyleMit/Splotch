@@ -1,7 +1,8 @@
 // Reads the facts about an MPEG-1 Layer III file that decide what the app holds
 // after decodeAudioData: channel count, sample rate, and the gapless sample count
 // the LAME/Xing tag declares. Browsers trim encoder delay and padding by that tag,
-// so a looped clip keeps its length only if the tag stays accurate.
+// so a looped clip keeps its length only if the tag stays accurate. The same tag
+// records the encoder's VBR method and quality indicator.
 
 const ID3V2_HEADER_BYTES = 10;
 const ID3V2_FOOTER_FLAG = 0x10;
@@ -18,6 +19,7 @@ const XING_FLAG_BYTES = 2;
 const XING_FLAG_TOC = 4;
 const XING_FLAG_QUALITY = 8;
 const XING_TOC_BYTES = 100;
+const LAME_VBR_METHOD_OFFSET = 9;
 const LAME_DELAY_PADDING_OFFSET = 21;
 
 function id3v2Length(bytes) {
@@ -44,7 +46,7 @@ function readFrameHeader(bytes, offset) {
   return { sampleRate, channels, length };
 }
 
-function readLameGapless(bytes, frameOffset, channels) {
+function readXingTag(bytes, frameOffset, channels) {
   const xing =
     frameOffset + FRAME_HEADER_BYTES + MPEG1_SIDE_INFO_BYTES[channels === 1 ? 'mono' : 'stereo'];
   const tag = bytes.toString('latin1', xing, xing + 4);
@@ -54,9 +56,15 @@ function readLameGapless(bytes, frameOffset, channels) {
   if (flags & XING_FLAG_FRAMES) lame += 4;
   if (flags & XING_FLAG_BYTES) lame += 4;
   if (flags & XING_FLAG_TOC) lame += XING_TOC_BYTES;
-  if (flags & XING_FLAG_QUALITY) lame += 4;
+  let qualityIndicator = null;
+  if (flags & XING_FLAG_QUALITY) {
+    qualityIndicator = bytes.readUInt32BE(lame);
+    lame += 4;
+  }
   const at = lame + LAME_DELAY_PADDING_OFFSET;
   return {
+    qualityIndicator,
+    vbrMethod: bytes[lame + LAME_VBR_METHOD_OFFSET] & 0x0f,
     delay: (bytes[at] << 4) | (bytes[at + 1] >> 4),
     padding: ((bytes[at + 1] & 0x0f) << 8) | bytes[at + 2],
   };
@@ -66,8 +74,8 @@ export function describeMp3(bytes) {
   let offset = id3v2Length(bytes);
   const first = readFrameHeader(bytes, offset);
   if (!first) throw new Error('no MPEG audio frame after the ID3v2 tag');
-  const gapless = readLameGapless(bytes, offset, first.channels);
-  if (!gapless) throw new Error('first frame carries no Xing/Info gapless tag');
+  const xingTag = readXingTag(bytes, offset, first.channels);
+  if (!xingTag) throw new Error('first frame carries no Xing/Info gapless tag');
   offset += first.length;
 
   const channelCounts = new Set();
@@ -83,12 +91,14 @@ export function describeMp3(bytes) {
   if (channelCounts.size !== 1) throw new Error('frames mix mono and stereo channel modes');
 
   const [channels] = channelCounts;
-  const samples = audioFrames * MPEG1_LAYER3_SAMPLES_PER_FRAME - gapless.delay - gapless.padding;
+  const samples = audioFrames * MPEG1_LAYER3_SAMPLES_PER_FRAME - xingTag.delay - xingTag.padding;
   return {
     channels,
     sampleRate: first.sampleRate,
     samples,
     // decodeAudioData yields Float32 PCM: four bytes per sample per channel.
     decodedBytes: samples * channels * 4,
+    vbrMethod: xingTag.vbrMethod,
+    qualityIndicator: xingTag.qualityIndicator,
   };
 }
