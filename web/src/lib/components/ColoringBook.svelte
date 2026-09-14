@@ -319,6 +319,9 @@
     width: 90%;
     max-height: var(--coloring-book-modal-max-height);
     overflow-y: auto;
+    /* The dialog is the scrollport its ScrollCue sticks to, and .modal-shell
+       pads it by nothing: the content block below carries the inset. */
+    --scrollport-bottom-padding: 0px;
   }
 
   .coloring-book-content {

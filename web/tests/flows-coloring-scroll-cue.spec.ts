@@ -69,6 +69,29 @@ test.describe('coloring picker scroll cues on a phone', () => {
     await expect.poll(() => fadeOpacity(fade)).toBe(1);
   });
 
+  // The dialog is the scrollport and .modal-shell pads it by nothing, so the
+  // fade meets the dialog's own edge: no undimmed strip of tile below it.
+  test('fades to the foot of the dialog, not to a padding above it', async ({ page }) => {
+    await gotoAppWithAllColoringBooksInstalled(page);
+    await openDrawer(page);
+    await openColoringBookGrid(page);
+
+    const dialog = dialogOf(page);
+    await settleFlyIn(dialog);
+    await expect.poll(() => fadeOpacity(dialog.locator('.scroll-cue'))).toBe(1);
+    await expect
+      .poll(() =>
+        dialog.evaluate((node) => {
+          const cue = node.querySelector('.scroll-cue')!;
+          const clipEdge =
+            node.getBoundingClientRect().bottom -
+            Number.parseFloat(getComputedStyle(node).borderBottomWidth);
+          return clipEdge - cue.getBoundingClientRect().bottom;
+        })
+      )
+      .toBe(0);
+  });
+
   test('re-evaluates the cues when the page grid replaces the book grid', async ({ page }) => {
     await gotoAppWithAllColoringBooksInstalled(page);
     await openDrawer(page);

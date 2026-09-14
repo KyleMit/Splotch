@@ -404,6 +404,29 @@ for (const width of [320, 390]) {
   });
 }
 
+// The padded specimen is the one bare-form surface whose scroller pads its bottom
+// by more than nothing, so it is where the declared `--scrollport-bottom-padding`
+// is actually spent: a fade that stopped at the content box would sit a full
+// padding above the edge the box clips at, with the last line showing through.
+test('the padded scroll cue specimen fades to the edge of its box, not to the padding above it', async ({
+  page,
+}) => {
+  await page.goto('/design');
+  const scroller = page.locator('.cue-figure > .cue-scroller').first();
+  await scroller.scrollIntoViewIfNeeded();
+  await expect
+    .poll(() =>
+      scroller.evaluate((node) => {
+        const cue = node.querySelector('.scroll-cue')!;
+        const clipEdge =
+          node.getBoundingClientRect().bottom -
+          Number.parseFloat(getComputedStyle(node).borderBottomWidth);
+        return clipEdge - cue.getBoundingClientRect().bottom;
+      })
+    )
+    .toBe(0);
+});
+
 test('the wrapped scroll cue specimen retires at its own content end', async ({ page }) => {
   await page.goto('/design');
   const specimen = page.locator('.cue-overlay-demo');
