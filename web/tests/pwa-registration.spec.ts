@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { draw, gotoApp, registerServiceWorkerAndControl } from './helpers';
+import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
+import { draw, gotoApp, registerServiceWorkerAndControl, spaNavigate } from './helpers';
 import { openColoringDialog, openDrawer, openFarmPageGrid } from './flows-harness';
 
 // Issue #462: service-worker installation does meaningful offline work, so registration no longer
@@ -120,6 +121,22 @@ test('a repeat visit is controlled by the service worker with no stroke gate', a
   await gotoApp(page);
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   expect(await hasRegistration(page)).toBe(true);
+});
+
+test('Back to a stale-page recovery launch returns to the drawing app', async ({ page }) => {
+  // The update check strips the recovery query by rewriting the history entry in
+  // place. SvelteKit's router keeps its position in history.state, so an entry
+  // rewritten without it is one the router cannot navigate back to: Back
+  // changes the address bar and leaves the previous page on screen.
+  await gotoApp(page, `/?${CACHE_BUST_VERSION_PARAM}=0.0.0-other-build`);
+  await expect.poll(() => new URL(page.url()).search).toBe('');
+  await spaNavigate(page, '/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+
+  await page.goBack();
+
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/');
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
 });
 
 test.describe('responsive coloring offline fallback', () => {
