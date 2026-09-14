@@ -23,10 +23,14 @@ if (browser) {
   if (__IS_CAPACITOR__ && isNative()) {
     import('@capacitor/network')
       .then(({ Network }) => {
+        let receivedStatusEvent = false;
         Network.getStatus()
-          .then((status) => (network.online = status.connected))
+          .then((status) => {
+            if (!receivedStatusEvent) network.online = status.connected;
+          })
           .catch(() => {});
         Network.addListener('networkStatusChange', (status) => {
+          receivedStatusEvent = true;
           network.online = status.connected;
         }).catch(() => {});
       })
