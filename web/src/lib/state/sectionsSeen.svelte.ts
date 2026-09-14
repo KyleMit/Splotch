@@ -1,3 +1,4 @@
+import { untrack } from 'svelte';
 import {
   isSectionId,
   sectionContentStamp,
@@ -38,11 +39,16 @@ export function hasSectionActivity(id: SectionId): boolean {
   );
 }
 
+// Marking is a command, so it must not subscribe its caller: effects call it,
+// and a tracked read of the stamps here would re-run them on their own write
+// and again when a durable restore reloads the stamps.
 export function markSectionSeen(id: SectionId) {
-  const contentStamp = sectionContentStamp(id);
-  if (seenStamps[id] === contentStamp) return;
-  seenStamps[id] = contentStamp;
-  writeString(STORAGE_KEYS.parentSectionsSeen, JSON.stringify(seenStamps));
+  untrack(() => {
+    const contentStamp = sectionContentStamp(id);
+    if (seenStamps[id] === contentStamp) return;
+    seenStamps[id] = contentStamp;
+    writeString(STORAGE_KEYS.parentSectionsSeen, JSON.stringify(seenStamps));
+  });
 }
 
 export function reloadSectionsSeen() {
