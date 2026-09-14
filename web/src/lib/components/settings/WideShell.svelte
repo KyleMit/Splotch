@@ -340,7 +340,10 @@
     // unlocked — asking again for the section the solve was spent on would make
     // the solve worthless. Every other landing re-locks.
     parentCenterUnlocked = landing === 'parentCenter';
-    markDisplayedSectionSeen(landing);
+    // Bookkeeping, deliberately untracked: the reveal check inside reads the
+    // gate policy and the unlock just written above, and neither should re-run
+    // the landing.
+    untrack(() => markDisplayedSectionSeen(landing));
     spiedSection = landing;
     // A section's offset depends only on what stacks above it, so mounting the
     // run up to the landing section is what makes the landing scroll below land
