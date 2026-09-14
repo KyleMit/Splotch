@@ -1,11 +1,14 @@
 <script lang="ts">
   import PageShell from '$lib/components/page/PageShell.svelte';
+  import SocialCard from '$lib/components/page/SocialCard.svelte';
   import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import ReleaseHistory from '$lib/components/page/ReleaseHistory.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
   import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
   import releases from '$lib/releases.json';
+
+  const DESCRIPTION = 'The complete Splotch changelog, with notes for every public release.';
 
   const contents: SidebarTocItem[] = releases.map((release) => ({
     id: release.id,
@@ -69,11 +72,10 @@
 
 <svelte:head>
   <title>Changelog · Splotch</title>
-  <meta
-    name="description"
-    content="The complete Splotch changelog, with notes for every public release."
-  />
+  <meta name="description" content={DESCRIPTION} />
 </svelte:head>
+
+<SocialCard path="/changelog" title="Splotch Changelog" description={DESCRIPTION} />
 
 <div class="changelog" style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh">
   <PageShell title="Changelog" wordmark="Splotch">

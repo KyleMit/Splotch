@@ -3,11 +3,15 @@
   import type { SubmitFunction } from '@sveltejs/kit';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
+  import SocialCard from '$lib/components/page/SocialCard.svelte';
   import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import ReportFields from '$lib/components/report/ReportFields.svelte';
   import type { ReportKind } from '$lib/report';
   import { supportEmail } from '$lib/supportEmail';
   import type { PageProps } from './$types';
+
+  const DESCRIPTION =
+    'Report a bug or suggest an idea for Splotch, the drawing app for toddlers. No account needed.';
 
   // The shareable half of Settings' Send Feedback section: same fields
   // (ReportFields), same server core ($lib/server/report), reached by a URL that
@@ -70,11 +74,10 @@
 
 <svelte:head>
   <title>Send Feedback · Splotch</title>
-  <meta
-    name="description"
-    content="Report a bug or suggest an idea for Splotch, the drawing app for toddlers. No account needed."
-  />
+  <meta name="description" content={DESCRIPTION} />
 </svelte:head>
+
+<SocialCard path="/feedback" title="Send Feedback to Splotch" description={DESCRIPTION} />
 
 {#snippet nextSteps()}
   <aside class="aside">
