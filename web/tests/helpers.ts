@@ -581,3 +581,28 @@ export async function expectContentsPanelCappedInsideViewport(contents: Locator)
     )
     .toBeLessThanOrEqual(0);
 }
+
+// The other way a contents panel gets opened: before its row has scrolled to
+// its pin, sitting below the hero, where the cap (sized for the pinned row)
+// overshoots the fold. Scrolling the panel to its end and then some has to
+// chain to the document and carry the row to its pin, at which point the
+// panel fits and its last row is on screen. Containment on the panel would
+// swallow that scroll and strand the last rows below the viewport.
+export async function expectBottomedPanelScrollsRowToPin(page: Page, contents: Locator) {
+  const panel = contents.locator('.panel');
+  await expect
+    .poll(() =>
+      panel.evaluate((node) => Math.round(node.getBoundingClientRect().bottom - window.innerHeight))
+    )
+    .toBeGreaterThan(0);
+  const box = (await panel.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, Math.min(box.y + 40, box.y + box.height / 2));
+  await expect(async () => {
+    await page.mouse.wheel(0, 400);
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    expect(
+      await panel.evaluate((node) => node.getBoundingClientRect().bottom - window.innerHeight)
+    ).toBeLessThanOrEqual(0);
+  }).toPass();
+  await expect(contents.getByRole('link').last()).toBeInViewport();
+}

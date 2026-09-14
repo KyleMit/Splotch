@@ -4,6 +4,7 @@ import releases from '../src/lib/releases.json' with { type: 'json' };
 import { SHORT_PAGE_HEIGHT_PX } from '../src/lib/breakpoints';
 
 import {
+  expectBottomedPanelScrollsRowToPin,
   expectContentsPanelCappedInsideViewport,
   openHydratedContents,
   pinContentsRow,
@@ -218,5 +219,14 @@ test.describe('phone landscape', () => {
     await pinContentsRow(contents);
     await openHydratedContents(contents);
     await expectContentsPanelCappedInsideViewport(contents);
+  });
+
+  // Opened before the row has pinned, the panel overshoots the fold; a scroll
+  // that bottoms it has to carry the row to its pin rather than stop there.
+  test('a panel opened below its pin scrolls the row into it', async ({ page }) => {
+    await page.goto('/changelog');
+    const contents = page.locator('.contents-disclosure');
+    await openHydratedContents(contents);
+    await expectBottomedPanelScrollsRowToPin(page, contents);
   });
 });

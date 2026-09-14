@@ -58,9 +58,10 @@
   // measured: the panel's max-height in the style block subtracts the pinned
   // block's own offsets from 100dvh, so the cap is right on the prerendered
   // page and follows the URL bar with no resize listener. A panel opened before
-  // its block has pinned sits higher than the cap assumes and is capped a
-  // little generously until the block does pin — the mirror image of the
-  // trade-off the measured version made.
+  // its block has pinned sits lower than the cap assumes and runs past the
+  // fold by that much — which is why the panel lets a scroll that reaches its
+  // end chain to the document: the same flick carries the row to its pin,
+  // where the cap is exact and the panel fits.
 
   // Delegated rather than per-row, so the rows stay the rail's plain anchors —
   // they keep their href for the prerendered page and for open-in-new-tab —
@@ -230,7 +231,12 @@
       )
     );
     overflow-y: auto;
-    overscroll-behavior: contain;
+    /* No overscroll containment, on purpose: the cap above assumes the row is
+       pinned, so a panel opened while its block still sits below the hero
+       runs past the fold until the document scrolls. A scroll that bottoms the
+       panel chains to the document and carries the row to its pin, where the
+       panel fits; contained, the last rows would stay out of reach below the
+       viewport with no scroll that could bring them in. */
     /* The list outruns the panel wherever the viewport is short — a landscape
        phone hides two thirds of it — and a row clipped mid-height leaves the
        panel looking finished, since touch scrollbars don't paint until the flick
