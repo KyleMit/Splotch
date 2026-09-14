@@ -21,9 +21,8 @@ usually is not enough to act on.
 ## What to expect
 
 * An acknowledgement within **7 days** of the report.
-* An assessment and, for a confirmed problem, a fix plan within **30 days**. Anything that puts
-  children's data or the live site at risk is treated as urgent and handled ahead of everything
-  else.
+* An assessment and, for a confirmed problem, a fix plan within **30 days**. Reports involving
+  children's data or active exploitation get the highest priority.
 * Credit in the fix's release notes if you want it, and coordinated disclosure once the fix has
   shipped. We ask that you keep the details private until then.
 
@@ -33,9 +32,10 @@ If a report goes unanswered past those windows, reply on the same advisory threa
 ## What is in scope
 
 * The live site, `https://splotch.art`, including the `/admin` console and the installable web app.
-* The hosted API under `https://splotch.art/api/*`: image generation, image and drawing reports,
-  access-code and key verification, the admin session endpoints, and the CSP violation receiver.
-  [docs/API.md](API.md) describes the contract and the intended authentication and rate limits.
+* Every endpoint under `https://splotch.art/api/*`, including image generation, image reports, the
+  feedback endpoint that files private issues, access-code and key verification, the admin session
+  endpoints, and the CSP violation receiver. [docs/API.md](API.md) describes the contract and the
+  intended authentication and rate limits.
 * The Android and iOS apps on the stores, and the code in this repository that builds all of the
   above.
 
@@ -45,8 +45,10 @@ in a way that costs money, or gets past the Grown-Ups Only gate in a way a toddl
 
 ## What is out of scope
 
-* Vulnerabilities in the third-party services the app depends on (the hosting provider, the app
-  stores, the image-generation providers). Report those to the vendor.
+* Defects in the third-party services themselves (the hosting provider, the app stores, the
+  image-generation providers). Report those to the vendor. A problem caused by how Splotch
+  configures or uses those services, such as its own headers, function settings, credentials, or
+  storage boundaries, is in scope.
 * Findings that need a compromised device, a jailbroken phone, or physical access to a logged-in
   admin session.
 * Missing headers, missing `security.txt`, or other checklist items with no demonstrated impact. The
@@ -57,5 +59,6 @@ in a way that costs money, or gets past the Grown-Ups Only gate in a way a toddl
 
 ## Supported versions
 
-Only the current deployment of the site and the latest release of each store app receive fixes.
-Older app versions are retired by the stores' normal update flow rather than patched in place.
+Only the current deployment of the site and the latest release of each store app receive fixes. An
+app fix ships as a new store version, and a device keeps running the old build until its user
+installs that update, so the fix's release notes say what it addresses.
