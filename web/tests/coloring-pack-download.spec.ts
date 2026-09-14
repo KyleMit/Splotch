@@ -256,7 +256,7 @@ test('a saved disabled setting blocks pack boot until coloring books are enabled
   await openDrawer(page);
 
   await expect(page.locator('html')).toHaveAttribute('data-off-coloring', '');
-  await expect(page.locator('html')).toHaveCSS('--action-btn-first-paint-count', '4');
+  await expect(page.locator('html')).toHaveCSS('--action-btn-count', '4');
   await expect(page.locator('#coloringBookButton')).toBeHidden();
 
   // This proves a negative over longer than scheduleIdle's fallback window: a
