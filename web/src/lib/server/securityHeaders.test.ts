@@ -68,6 +68,15 @@ describe('SECURITY_HEADERS mirrors the netlify.toml `for = "/*"` block', () => {
     });
   }
 
+  // Both copies could weaken together and still mirror each other, so the
+  // opener policy is also pinned to its value: `same-origin` is the one setting
+  // that severs every cross-origin window.opener link; a same-origin popup that
+  // sends the same policy keeps its opener, which rel="noopener" covers (issue
+  // #1957).
+  it('severs cross-origin opener relationships on every document', () => {
+    expect(tomlHeaders['Cross-Origin-Opener-Policy']).toBe('same-origin');
+  });
+
   it('keeps the platform CSP complementary to SvelteKit script enforcement', () => {
     const policy = tomlHeaders['Content-Security-Policy'];
     expect(policy).toContain("frame-ancestors 'none'");
