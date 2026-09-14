@@ -85,3 +85,22 @@ describe('createSecureCredentialCoordinator', () => {
     expect(state.credential).toBe('newer');
   });
 });
+
+describe('createSecureCredentialCoordinator after a failed hydration', () => {
+  it('keeps the stored secret when a save is abandoned mid-write', async () => {
+    const state = { credential: '' };
+    let storedSecret = 'stored-secret';
+    let requestOwned = true;
+    const coordinator = createSecureCredentialCoordinator(state, 'credential', async (value) => {
+      storedSecret = value;
+      requestOwned = false;
+    });
+
+    await expect(
+      coordinator.runHydration(() => Promise.reject(new Error('secure storage unreadable')))
+    ).rejects.toThrow('secure storage unreadable');
+    await expect(coordinator.setCredential('abandoned', () => requestOwned)).resolves.toBe(false);
+
+    expect(storedSecret).toBe('stored-secret');
+  });
+});
