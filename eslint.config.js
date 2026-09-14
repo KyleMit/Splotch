@@ -87,14 +87,19 @@ const MEDIA_QUERY_LITERAL = ['Literal', 'TemplateLiteral'].flatMap((argumentType
 
 const HISTORY_STATE_MESSAGE =
   "Preserve SvelteKit's navigation state with history.replaceState(history.state, '', url); do not add history entries directly.";
+const HISTORY_CALL =
+  ':matches([callee.object.name="history"], [callee.object.property.name="history"])';
+const PRESERVED_HISTORY_STATE = [
+  '[arguments.0.type="MemberExpression"][arguments.0.object.name="history"][arguments.0.property.name="state"]',
+  '[arguments.0.type="MemberExpression"][arguments.0.object.type="MemberExpression"][arguments.0.object.property.name="history"][arguments.0.property.name="state"]',
+];
 const HISTORY_STATE_MUTATION_RESTRICTIONS = [
   {
-    selector: 'CallExpression[callee.object.name="history"][callee.property.name="pushState"]',
+    selector: `CallExpression[callee.property.name="pushState"]${HISTORY_CALL}`,
     message: HISTORY_STATE_MESSAGE,
   },
   {
-    selector:
-      'CallExpression[callee.object.name="history"][callee.property.name="replaceState"]:not([arguments.0.type="MemberExpression"][arguments.0.object.name="history"][arguments.0.property.name="state"])',
+    selector: `CallExpression[callee.property.name="replaceState"]${HISTORY_CALL}${PRESERVED_HISTORY_STATE.map((state) => `:not(${state})`).join('')}`,
     message: HISTORY_STATE_MESSAGE,
   },
 ];

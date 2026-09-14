@@ -353,6 +353,7 @@ describe('initPWAUpdates', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
+    history.replaceState({ 'sveltekit:index': 7 }, '', '/');
     replaceStateSpy = vi.spyOn(history, 'replaceState').mockImplementation(() => {});
     // Prevent checkForUpdates / checkVersionMismatch from doing real work
     stubServiceWorker(undefined);

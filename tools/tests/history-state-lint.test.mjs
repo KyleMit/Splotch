@@ -36,9 +36,30 @@ describe('the browser-history state guard', () => {
     ).toHaveLength(1);
   });
 
+  it('rejects qualified history calls that discard state or add an entry', async () => {
+    expect(
+      await violations(
+        'web/src/lib/probe.ts',
+        [
+          "window.history.replaceState({}, '', '/next');",
+          "globalThis.history.pushState(null, '', '/after');",
+        ].join('\n')
+      )
+    ).toHaveLength(2);
+  });
+
   it('allows replaceState that preserves the current state', async () => {
     expect(
       await violations('web/src/lib/probe.ts', "history.replaceState(history.state, '', '/next');")
+    ).toHaveLength(0);
+  });
+
+  it('allows qualified replaceState that preserves the current state', async () => {
+    expect(
+      await violations(
+        'web/src/lib/probe.ts',
+        "window.history.replaceState(window.history.state, '', '/next');"
+      )
     ).toHaveLength(0);
   });
 
