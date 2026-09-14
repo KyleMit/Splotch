@@ -9,6 +9,12 @@ import { buildDefines } from './defines';
 // for the storage/state layers.
 export default defineConfig({
   plugins: [sveltekit()],
+  // Rune modules compile against Svelte's client runtime, so the helpers a
+  // test imports from 'svelte' (untrack, flushSync, tick) must resolve to
+  // that same build. The package's default export condition is the server
+  // build, where untrack merely calls its function and flushSync flushes
+  // nothing — see svelteRuntime.svelte.test.ts.
+  resolve: { conditions: ['browser'] },
   define: buildDefines({
     appVersion: '1.0.0-test',
     buildTime: '2026-01-01T00:00:00Z',
