@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
+import { AI_ACCESS_TOKEN_PARAM } from '../src/lib/inviteLink';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 import {
@@ -10,6 +11,7 @@ import {
   openSettingsModal,
   seedAiEnabled,
   SECTION_LANDED_MAX_PX,
+  spaNavigate,
 } from './helpers';
 
 import { openDrawer } from './flows-harness';
@@ -61,6 +63,22 @@ test('a fresh installation does not fetch an AI allowance or show the canvas act
 
   await expect(page.locator('#aiImageButton')).toBeHidden();
   expect(grantStatusRequests).toBe(0);
+});
+
+test('Back to an access-code invite returns to the drawing app', async ({ page }) => {
+  // The invite capture strips its query by rewriting the history entry in place.
+  // SvelteKit's router keeps its position in history.state, so an entry
+  // rewritten without it is one the router cannot navigate back to: Back
+  // changes the address bar and leaves the previous page on screen.
+  await gotoApp(page, `/?${AI_ACCESS_TOKEN_PARAM}=test-token`);
+  await expect.poll(() => page.url()).not.toContain(AI_ACCESS_TOKEN_PARAM);
+  await spaNavigate(page, '/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+
+  await page.goBack();
+
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/');
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
 });
 
 test('an access-code invite saves the credential without enabling AI', async ({ page }) => {
