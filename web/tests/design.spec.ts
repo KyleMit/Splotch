@@ -1,6 +1,12 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { themes, toCssVarName, type ThemeTokens } from '../src/lib/design/tokens';
-import { gotoApp, openHydratedContents, openSettingsModal } from './helpers';
+import {
+  gotoApp,
+  expectContentsPanelCappedInsideViewport,
+  pinContentsRow,
+  openHydratedContents,
+  openSettingsModal,
+} from './helpers';
 
 // /design is the public living styleguide (ADR-0096). Axe coverage lives in
 // a11y.spec.ts; the value here is the regressions a scan can't see: the
@@ -437,4 +443,20 @@ test('the wrapped scroll cue specimen retires at its own content end', async ({ 
     .locator('.cue-scroller')
     .evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
   await expect(cue).toHaveCSS('opacity', '0');
+});
+
+// A landscape phone is where the list most outruns the room under the row. The
+// cap is a CSS declaration (100dvh less the pinned block's own offsets), so it
+// holds before hydration too; this pins the arithmetic — a host inset left out
+// of it would hang the panel past the viewport.
+test.describe('phone landscape', () => {
+  test.use({ viewport: { width: 812, height: 375 } });
+
+  test('the open contents panel scrolls inside itself, bottom edge on screen', async ({ page }) => {
+    await page.goto('/design');
+    const contents = page.locator('.header-toc');
+    await pinContentsRow(contents);
+    await openHydratedContents(contents);
+    await expectContentsPanelCappedInsideViewport(contents);
+  });
 });

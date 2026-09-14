@@ -3,7 +3,11 @@ import { expect, test } from '@playwright/test';
 import releases from '../src/lib/releases.json' with { type: 'json' };
 import { SHORT_PAGE_HEIGHT_PX } from '../src/lib/breakpoints';
 
-import { openHydratedContents } from './helpers';
+import {
+  expectContentsPanelCappedInsideViewport,
+  openHydratedContents,
+  pinContentsRow,
+} from './helpers';
 
 test.describe('short touch screens', () => {
   test.use({ hasTouch: true });
@@ -199,4 +203,20 @@ test('the complete changelog is present in prerendered HTML', async ({ request }
     expect(html).toContain(`id="${release.id}"`);
     expect(html).toContain(`Version ${release.version}`);
   }
+});
+
+// A landscape phone is where the list most outruns the room under the row. The
+// cap is a CSS declaration (100dvh less the pinned block's own offsets), so it
+// holds before hydration too; this pins the arithmetic — a host inset left out
+// of it would hang the panel past the viewport.
+test.describe('phone landscape', () => {
+  test.use({ viewport: { width: 812, height: 375 } });
+
+  test('the open contents panel scrolls inside itself, bottom edge on screen', async ({ page }) => {
+    await page.goto('/changelog');
+    const contents = page.locator('.contents-disclosure');
+    await pinContentsRow(contents);
+    await openHydratedContents(contents);
+    await expectContentsPanelCappedInsideViewport(contents);
+  });
 });

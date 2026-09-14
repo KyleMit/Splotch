@@ -245,7 +245,8 @@
        padding means nothing is laid out beside the row to show through. */
     .changelog-body :global(.contents-disclosure) {
       display: block;
-      padding-top: var(--space-6);
+      --toc-row-inset: var(--space-6);
+      padding-top: var(--toc-row-inset);
       background: var(--page-sheet);
       margin-bottom: var(--space-6);
     }

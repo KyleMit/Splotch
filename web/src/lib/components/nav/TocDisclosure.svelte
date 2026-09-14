@@ -37,16 +37,16 @@
 
   let { items, active, showCount, label, noun, stickyTop, class: className }: Props = $props();
 
-  // Floor for the open panel, however little room the viewport leaves: a short
-  // internal scroller still beats a sliver.
-  const PANEL_MIN_PX = 160;
-  // Breathing room between the open panel's bottom edge and the viewport's.
-  const PANEL_TAIL_PX = 8;
-
   let open = $state(false);
   let row = $state<HTMLElement>();
   let panel = $state<HTMLElement>();
-  let panelMaxHeight = $state('');
+  // Test seam: flips once the delegated pick handler below is attached. The
+  // panel wears it as `data-armed` only while this component's own `open` holds
+  // the panel open, so `openHydratedContents` (tests/helpers.ts) can tell a
+  // hydrated, state-backed open from a <details> the reader toggled natively
+  // before hydration — which stays open in the DOM with `open` still false here,
+  // so a pick's `open = false` would change nothing.
+  let armed = $state(false);
 
   const readout = $derived(
     showCount ? `${items.length} ${noun}` : (items.find((item) => item.id === active)?.label ?? '')
@@ -54,25 +54,13 @@
 
   // A sticky element taller than its scrollport can never be scrolled to its
   // own bottom — the pin outlives the scroll — so the panel takes the room left
-  // under the row and scrolls inside itself.
-  //
-  // The cap is taken from the panel's own top edge as it opens, and again on
-  // resize, so it always fits the viewport it was opened in. It is deliberately
-  // not recomputed on scroll: that would re-lay-out the panel under a reader
-  // mid-flick to win back room they can already reach by scrolling it. The cost
-  // is that a panel opened before its block has pinned keeps the shorter cap it
-  // was opened with, and sits above unused viewport once the block does pin.
-  $effect(() => {
-    if (!open) return;
-    const cap = () => {
-      if (!panel) return;
-      const room = window.innerHeight - panel.getBoundingClientRect().top - PANEL_TAIL_PX;
-      panelMaxHeight = `${Math.max(PANEL_MIN_PX, room)}px`;
-    };
-    cap();
-    window.addEventListener('resize', cap);
-    return () => window.removeEventListener('resize', cap);
-  });
+  // under the row and scrolls inside itself. That room is declared, not
+  // measured: the panel's max-height in the style block subtracts the pinned
+  // block's own offsets from 100dvh, so the cap is right on the prerendered
+  // page and follows the URL bar with no resize listener. A panel opened before
+  // its block has pinned sits higher than the cap assumes and is capped a
+  // little generously until the block does pin — the mirror image of the
+  // trade-off the measured version made.
 
   // Delegated rather than per-row, so the rows stay the rail's plain anchors —
   // they keep their href for the prerendered page and for open-in-new-tab —
@@ -88,6 +76,7 @@
     const host = panel;
     if (!host) return;
     host.addEventListener('click', onPanelClick);
+    armed = true;
     return () => host.removeEventListener('click', onPanelClick);
   });
 
@@ -133,7 +122,7 @@
 
 <div
   class={['toc-disclosure', stickyTop !== undefined && 'pinned', className]}
-  style:top={stickyTop}
+  style:--toc-sticky-top={stickyTop}
   bind:this={row}
 >
   <Disclosure class="toc-shell" bind:open>
@@ -141,15 +130,30 @@
       <span class="eyebrow">Contents</span>
       <span class="readout">{readout}</span>
     {/snippet}
-    <div class="panel" bind:this={panel} style:max-height={panelMaxHeight}>
+    <div class="panel" bind:this={panel} data-armed={armed && open ? '' : undefined}>
       <SidebarToc {items} {active} {label} />
     </div>
   </Disclosure>
 </div>
 
 <style>
+  .toc-disclosure {
+    /* The summary row's height, declared rather than content-sized because
+       the panel's cap below subtracts it: the chevron's line box inside the
+       row's padding, a hair over the 48px touch-target floor the row used to
+       state as a minimum. Fixed, so type growth centres inside it instead of
+       growing the row and hanging the panel past the viewport. */
+    --toc-row-height: 50px;
+    /* Floor for the open panel, however little room the viewport leaves: a
+       short internal scroller still beats a sliver. */
+    --toc-panel-min: 160px;
+    /* Breathing room between the open panel's bottom edge and the viewport's. */
+    --toc-panel-tail: 8px;
+  }
+
   .pinned {
     position: sticky;
+    top: var(--toc-sticky-top);
     /* Single-digit on purpose (the token lint bans raw multi-digit z-index):
        one step over the page's own content is all a pinned row needs. */
     z-index: 8;
@@ -163,7 +167,7 @@
   .toc-disclosure :global(.toc-shell summary) {
     gap: var(--space-2);
     /* The whole row is the tap target. */
-    min-height: 48px;
+    height: var(--toc-row-height);
     padding: var(--space-3) var(--space-4);
   }
 
@@ -198,12 +202,33 @@
   }
 
   .panel {
-    /* border-box is load-bearing, not tidiness: max-height is measured from the
-       panel's own top edge, so under content-box this padding would be added on
-       top of it and hang the panel past the bottom of the viewport. */
+    /* border-box is load-bearing, not tidiness: the cap is the room under the
+       row, so under content-box this padding would be added on top of it and
+       hang the panel past the bottom of the viewport. */
     box-sizing: border-box;
     padding: var(--space-2) var(--space-2) var(--space-3);
     border-top: var(--border-width) solid var(--border);
+    /* The room under the row: the viewport, less everything that sits above
+       the panel inside the pinned block — the block's sticky offset, the inset
+       a host pads above the row (`--toc-row-inset`, declared by the host
+       beside the padding it stands for; /design's is the header row the
+       contents rides under), the shell's top border, and the row itself. dvh
+       tracks the visible viewport as the URL bar shows and hides; the vh line
+       is the fallback for engines without it (docs/COMPATIBILITY.md). */
+    max-height: max(
+      var(--toc-panel-min),
+      calc(
+        100vh - var(--toc-sticky-top, 0px) - var(--toc-row-inset, 0px) - var(--border-width) -
+          var(--toc-row-height) - var(--toc-panel-tail)
+      )
+    );
+    max-height: max(
+      var(--toc-panel-min),
+      calc(
+        100dvh - var(--toc-sticky-top, 0px) - var(--toc-row-inset, 0px) - var(--border-width) -
+          var(--toc-row-height) - var(--toc-panel-tail)
+      )
+    );
     overflow-y: auto;
     overscroll-behavior: contain;
     /* The list outruns the panel wherever the viewport is short — a landscape
