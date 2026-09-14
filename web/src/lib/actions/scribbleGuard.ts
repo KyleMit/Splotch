@@ -1,17 +1,11 @@
 import { flushSync } from 'svelte';
+import { PRESS_CLICK_CONSUME_WINDOW_MS } from './clickConsumeWindow';
 import { forgetPenPointer } from '$lib/drawing/engine';
 import { pointerWasResumed } from '$lib/drawing/strokeMath';
 
 // Browsers tolerate small click movement; match that forgiveness before a
 // control exit irreversibly turns the press into a drag.
 const TAP_MOVEMENT_TOLERANCE_PX = 8;
-
-// How long after a finished press its trailing synthesized click is consumed.
-// The click is NOT dispatched synchronously after pointerup — on-device it
-// arrived two tasks later (+2ms), which made a zero-delay timer clear too
-// early and double-fire the control — and legacy WebKit could delay synthesis
-// by its 350ms double-tap window, so the consume window must outlast both.
-export const PRESS_CLICK_CONSUME_WINDOW_MS = 700;
 
 // iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of a
 // pen TAP anywhere on the page: the stroke's pointer events still arrive, the

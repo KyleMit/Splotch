@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { colorFoldGesture } from './colorFoldGesture';
-import { PRESS_CLICK_CONSUME_WINDOW_MS } from './scribbleGuard';
+import { PRESS_CLICK_CONSUME_WINDOW_MS } from './clickConsumeWindow';
 
 describe('color fold gesture', () => {
   let button: HTMLButtonElement;

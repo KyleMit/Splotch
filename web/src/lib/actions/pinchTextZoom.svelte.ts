@@ -1,5 +1,6 @@
-import { createSpreadTracker } from './spreadTracker';
+import { PRESS_CLICK_CONSUME_WINDOW_MS } from './clickConsumeWindow';
 import { capturePointer, releasePointer } from './pointerCapture';
+import { createSpreadTracker } from './spreadTracker';
 
 export const MIN_TEXT_ZOOM = 1;
 export const MAX_TEXT_ZOOM = 3;
@@ -64,9 +65,14 @@ export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTe
   // A pinch can start with the primary finger resting on a hub row / toggle /
   // link while the second finger does the spreading. That primary pointer still
   // fires a `click` when it lifts, which would open the section or flip the
-  // setting underneath it. Mark that a two-finger gesture happened and swallow
-  // the one trailing click it produces (the ghost-click guard from svelte.md).
-  let pinchedRecently = false;
+  // setting underneath it. Remember that the gesture became a pinch, and once
+  // its last finger lifts swallow the one trailing pointer click it produces
+  // (the ghost-click guard from svelte.md) — only within the click window, so a
+  // pinch that leaked no click cannot eat the next mouse tap, and only a
+  // pointer-synthesized click (detail >= 1), so keyboard and assistive-tech
+  // activation always get through.
+  let pinched = false;
+  let consumeClicksUntil = 0;
 
   function apply() {
     const target = getOptions().target;
@@ -75,6 +81,8 @@ export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTe
 
   function reset() {
     tracker.clear();
+    pinched = false;
+    consumeClicksUntil = 0;
     zoom = MIN_TEXT_ZOOM;
     baseZoom = MIN_TEXT_ZOOM;
     baseSpread = 0;
@@ -90,12 +98,15 @@ export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTe
 
   function onPointerDown(e: PointerEvent) {
     if (!getOptions().enabled || e.pointerType !== 'touch') return;
-    // A fresh gesture (first finger down) clears any stale pinch flag, so a
+    // A fresh gesture (first finger down) clears any stale pinch latch, so a
     // pinch that produced no click doesn't swallow a later legitimate tap.
-    if (tracker.pointerCount === 0) pinchedRecently = false;
+    if (tracker.pointerCount === 0) {
+      pinched = false;
+      consumeClicksUntil = 0;
+    }
     tracker.down(e.pointerId, { x: e.clientX, y: e.clientY });
     if (tracker.pointerCount === 2) {
-      pinchedRecently = true;
+      pinched = true;
       rebase();
       // Only the finger that completes the pair is captured; the earlier one is
       // deliberately left alone so a lone finger keeps scrolling natively. Its lift
@@ -123,14 +134,19 @@ export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTe
     if (!tracker.up(e.pointerId)) return;
     releasePointer(node, e.pointerId);
     if (tracker.pointerCount >= 2) rebase();
+    if (tracker.pointerCount === 0 && pinched) {
+      pinched = false;
+      consumeClicksUntil = performance.now() + PRESS_CLICK_CONSUME_WINDOW_MS;
+    }
   }
 
   // Capture phase so it fires before the target's own click handler and can
   // stop the click from ever reaching it. Swallows exactly one click — the one
   // the just-ended pinch would otherwise leak onto the control under a finger.
   function onClickCapture(e: MouseEvent) {
-    if (!pinchedRecently) return;
-    pinchedRecently = false;
+    if (e.detail === 0) return;
+    if (performance.now() >= consumeClicksUntil) return;
+    consumeClicksUntil = 0;
     e.preventDefault();
     e.stopPropagation();
   }
