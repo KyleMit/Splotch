@@ -146,11 +146,11 @@ Secrets compare in constant time, no endpoint echoes one back, and every credent
 limited so guessing is throttled rather than free. Access codes are revocable at any time.
 
 **Backed by.** `securityPolicy.ts` hashes the exact inline script bodies and fails on template
-drift. `securityHeaders.ts` pins HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, and frame
-denial; `csp.spec.ts` checks the delivered policy. Admin secrets compare in constant time.
-Credential endpoints carry sliding-window limits that peek before the check, so a legitimate caller
-never spends budget on someone else's guessing. `pnpm audit` runs in the quality gate, and the
-`security-review` skill reviews a branch before it ships.
+drift. `securityHeaders.ts` pins HSTS, `nosniff`, `Referrer-Policy`, `Cross-Origin-Opener-Policy`,
+`Permissions-Policy`, and frame denial; `csp.spec.ts` checks the delivered policy. Admin secrets
+compare in constant time. Credential endpoints carry sliding-window limits that peek before the
+check, so a legitimate caller never spends budget on someone else's guessing. `pnpm audit` runs in
+the quality gate, and the `security-review` skill reviews a branch before it ships.
 
 ## Compliance
 

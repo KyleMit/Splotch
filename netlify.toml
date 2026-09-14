@@ -100,6 +100,13 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"
+    # Cross-Origin-Opener-Policy: nothing here opens a popup or is opened as one,
+    # so severing the window.opener link costs nothing today; it stops a future
+    # opener relationship from being introduced without first removing this header.
+    # COEP and CORP are deliberately absent — the app collects nothing from
+    # cross-origin isolation, and CORP would block the scrapbook origin from ever
+    # embedding a brand asset (issue #1957).
+    Cross-Origin-Opener-Policy = "same-origin"
     # Strict-Transport-Security: splotch.art is served exclusively over HTTPS by
     # Netlify (automatic certs + HTTP->HTTPS redirect), and the only relevant
     # hostname is the apex itself (the /api the browser calls is same-origin), so
