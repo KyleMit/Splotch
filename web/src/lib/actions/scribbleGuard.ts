@@ -270,7 +270,12 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     if (press && e.pointerId === press.pointerId) finishPress(false);
   }
 
+  // Native click follows only the primary button, so a right or middle press
+  // must not activate through the pointerup path either. `button`, not
+  // `isPrimary`: touch and pen contact report button 0, and a right-click is
+  // still the primary pointer.
   function down(e: PointerEvent) {
+    if (e.button !== 0) return;
     if (press) finishPress(false);
     press = {
       pointerId: e.pointerId,
