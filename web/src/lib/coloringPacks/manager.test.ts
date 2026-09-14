@@ -211,6 +211,29 @@ describe('removal during an in-flight run', () => {
   });
 });
 
+describe('a remounted downloader on native', () => {
+  it('keeps the new run downloading while the stopped run settles its install', async () => {
+    const stale = pendingInstall();
+    const current = pendingInstall();
+    mocks.install.mockReturnValueOnce(stale.promise).mockReturnValueOnce(current.promise);
+    const first = createColoringPackDownloader();
+    first.start();
+    await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
+    first.stop();
+
+    const second = createColoringPackDownloader();
+    second.start();
+    await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
+    expect(coloringPackState.downloadingBookId).toBe('dinosaur');
+
+    stale.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    await flushMicrotasks();
+
+    expect(coloringPackState.downloadingBookId).toBe('dinosaur');
+    second.stop();
+  });
+});
+
 describe('scanning what is installed', () => {
   // Discovering the books and totalling their size were two store reads with
   // identical arguments, so every boot asked twice — a second Capacitor bridge

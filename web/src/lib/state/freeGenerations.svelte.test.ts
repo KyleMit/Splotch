@@ -47,7 +47,10 @@ beforeEach(() => {
   freeGenerations.available = false;
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('grantRefreshReady', () => {
   it('waits for credential hydration before allowing the pseudonymous status request', () => {
@@ -254,5 +257,42 @@ describe('grantRefreshReady', () => {
     older.reject(new Error('stale failure'));
     await vi.waitFor(() => expect(freeGenerations.available).toBe(true));
     expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 8 });
+  });
+
+  it.each([
+    ['no remaining count', { ok: true, limit: 10 }],
+    ['a non-numeric remaining count', { ok: true, remaining: 'seven', limit: 10 }],
+    ['no ok flag', {}],
+  ])('settles a 200 grant response with %s as unavailable', async (_label, body) => {
+    const refreshGrant = createFreeGenerationGrantRefresher();
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(body, { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    persistedStateStatus.hydrated = true;
+    refreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+
+    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
+    expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
+  });
+
+  it('retries a transient status failure while online without waiting for a reconnect', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval'] });
+    const refreshGrant = createFreeGenerationGrantRefresher();
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('connection reset'))
+      .mockResolvedValue(Response.json({ ok: true, remaining: 7, limit: 10 }, { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    persistedStateStatus.hydrated = true;
+    refreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(freeGenerations.available).toBe(true));
   });
 });

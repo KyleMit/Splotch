@@ -12,36 +12,36 @@ given), **DROP** (real but not worth fixing — reason given). Withdrawn finding
 
 ## Bugs
 
-| ID  | Finding                                                                                        | Verdict             | Red test                                                  |
-| --- | ---------------------------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------- |
-| B1  | Ctrl/Cmd+Z undoes a canvas stroke while typing in a dialog field                               | pending             |                                                           |
-| B2  | A late report response overwrites a reopened feedback form and erases the new draft            | CONFIRMED           | `flows-settings-report.spec.ts`                           |
-| B3  | Raw `history.replaceState` erases SvelteKit's history index, so Back changes only the URL      | pending             |                                                           |
-| B4  | The `/design` light/dark toggle persists an origin-wide theme with no way back to system       | pending             |                                                           |
-| B5  | An access code is dropped for the session when secure storage rejects the save                 | DROP                | —                                                         |
-| B6  | Abandoning a credential save after a failed hydrate writes `''` and erases the stored secret   | CONFIRMED           | `secureCredentialCoordinator.test.ts`                     |
-| B7  | The cached IndexedDB connection is never reopened after the browser closes it                  | CONFIRMED           | `secure-storage-connection.spec.ts`                       |
-| B8  | Undoing a coloring-page change restores the page with a stale orientation                      | pending             |                                                           |
-| B9  | An auto-save throw after a delivered AI result also records an error                           | pending             |                                                           |
-| B10 | The `initDrawingCanvas` fallback never replays `canUndo`/`canvasEmpty` into `canvasState`      | pending             |                                                           |
-| B11 | A malformed grant response yields `remaining: NaN` with `available: true`                      | pending             |                                                           |
-| B12 | Pre-hydration strokes never tick `canvasState.strokeCount`                                     | pending             |                                                           |
-| B13 | The Settings landing effect tracks seen-stamps and re-scrolls the pane on durable restore      | CONFIRMED, untested | —                                                         |
-| B14 | `reportStatus` has two writers (parent effect and child teardown)                              | REFUTED             | —                                                         |
-| B15 | A cross-tab race marks the secure vault empty while a secret exists                            | CONFIRMED           | `secureStorage.test.ts`                                   |
-| B16 | A failed native Preferences removal resurrects a removed key on the next reconcile             | CONFIRMED           | `storage.test.ts`                                         |
-| B17 | `app.html`'s boot script skips the `theme-color` repaint when storage throws                   | CONFIRMED           | `app.html.test.ts`                                        |
-| B18 | Session counters accept negative or oversized stored values                                    | DROP                | —                                                         |
-| B19 | `install`'s `onDurableRestore` hook is unreachable on web and reloads only part of its state   | DROP (dead code)    | —                                                         |
-| B20 | Save-folder hydration is last-write-wins against a concurrent folder change                    | REFUTED             | —                                                         |
-| B21 | A slow native `Network.getStatus()` overwrites a newer status event                            | pending             |                                                           |
-| B22 | A non-cancelable dialog `cancel` closes the dialog while state still says open                 | CONFIRMED           | `ai-report.spec.ts`, `flows-parental-gate-escape.spec.ts` |
-| B23 | `ActionsPanel`'s drawer-motion rAF is not cancelled on unmount                                 | pending             |                                                           |
-| B24 | A remounted pack downloader's stale `finally` clears `downloadingBookId` mid-download          | pending             |                                                           |
-| B25 | `AdminConsole`'s new-token draft survives sign-out                                             | CONFIRMED           | `admin.spec.ts`                                           |
-| B26 | Admin sessions are a fixed HMAC with a ten-year cookie and cannot be revoked                   | pending             |                                                           |
-| B27 | A transient grant-fetch failure is never retried while online                                  | pending             |                                                           |
-| B28 | `InstallBanner`'s parting timer is cleared by a separate `onMount`, not the effect that set it | REFUTED             | —                                                         |
+| ID  | Finding                                                                                        | Verdict                                | Red test                                                  |
+| --- | ---------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------- |
+| B1  | Ctrl/Cmd+Z undoes a canvas stroke while typing in a dialog field                               | pending                                |                                                           |
+| B2  | A late report response overwrites a reopened feedback form and erases the new draft            | CONFIRMED                              | `flows-settings-report.spec.ts`                           |
+| B3  | Raw `history.replaceState` erases SvelteKit's history index, so Back changes only the URL      | CONFIRMED (feedback); prod run pending | `feedback.spec.ts`, `page.spec.ts`                        |
+| B4  | The `/design` light/dark toggle persists an origin-wide theme with no way back to system       | DROP (ADR-0096)                        | —                                                         |
+| B5  | An access code is dropped for the session when secure storage rejects the save                 | DROP                                   | —                                                         |
+| B6  | Abandoning a credential save after a failed hydrate writes `''` and erases the stored secret   | CONFIRMED                              | `secureCredentialCoordinator.test.ts`                     |
+| B7  | The cached IndexedDB connection is never reopened after the browser closes it                  | CONFIRMED                              | `secure-storage-connection.spec.ts`                       |
+| B8  | Undoing a coloring-page change restores the page with a stale orientation                      | pending                                |                                                           |
+| B9  | An auto-save throw after a delivered AI result also records an error                           | REFUTED                                | —                                                         |
+| B10 | The `initDrawingCanvas` fallback never replays `canUndo`/`canvasEmpty` into `canvasState`      | pending                                |                                                           |
+| B11 | A malformed grant response yields `remaining: NaN` with `available: true`                      | CONFIRMED                              | `freeGenerations.svelte.test.ts`                          |
+| B12 | Pre-hydration strokes never tick `canvasState.strokeCount`                                     | pending                                |                                                           |
+| B13 | The Settings landing effect tracks seen-stamps and re-scrolls the pane on durable restore      | CONFIRMED, untested                    | —                                                         |
+| B14 | `reportStatus` has two writers (parent effect and child teardown)                              | REFUTED                                | —                                                         |
+| B15 | A cross-tab race marks the secure vault empty while a secret exists                            | CONFIRMED                              | `secureStorage.test.ts`                                   |
+| B16 | A failed native Preferences removal resurrects a removed key on the next reconcile             | CONFIRMED                              | `storage.test.ts`                                         |
+| B17 | `app.html`'s boot script skips the `theme-color` repaint when storage throws                   | CONFIRMED                              | `app.html.test.ts`                                        |
+| B18 | Session counters accept negative or oversized stored values                                    | DROP                                   | —                                                         |
+| B19 | `install`'s `onDurableRestore` hook is unreachable on web and reloads only part of its state   | DROP (dead code)                       | —                                                         |
+| B20 | Save-folder hydration is last-write-wins against a concurrent folder change                    | REFUTED                                | —                                                         |
+| B21 | A slow native `Network.getStatus()` overwrites a newer status event                            | CONFIRMED                              | `network.svelte.test.ts`                                  |
+| B22 | A non-cancelable dialog `cancel` closes the dialog while state still says open                 | CONFIRMED                              | `ai-report.spec.ts`, `flows-parental-gate-escape.spec.ts` |
+| B23 | `ActionsPanel`'s drawer-motion rAF is not cancelled on unmount                                 | pending                                |                                                           |
+| B24 | A remounted pack downloader's stale `finally` clears `downloadingBookId` mid-download          | CONFIRMED                              | `manager.test.ts`                                         |
+| B25 | `AdminConsole`'s new-token draft survives sign-out                                             | CONFIRMED                              | `admin.spec.ts`                                           |
+| B26 | Admin sessions are a fixed HMAC with a ten-year cookie and cannot be revoked                   | DROP (ADR-0016)                        | —                                                         |
+| B27 | A transient grant-fetch failure is never retried while online                                  | CONFIRMED                              | `freeGenerations.svelte.test.ts`                          |
+| B28 | `InstallBanner`'s parting timer is cleared by a separate `onMount`, not the effect that set it | REFUTED                                | —                                                         |
 
 ## Wasted work
 
@@ -53,12 +53,12 @@ given), **DROP** (real but not worth fixing — reason given). Withdrawn finding
 
 ## Gaps
 
-| ID | Finding                                                                                   | Verdict   | Red test                                |
-| -- | ----------------------------------------------------------------------------------------- | --------- | --------------------------------------- |
-| G1 | No cross-tab sync: a tightened parental-gate policy does not reach an open second tab     | CONFIRMED | `flows-parental-gate-cross-tab.spec.ts` |
-| G2 | IndexedDB version hard-coded to 1; `splotch-secure` opened through two cached connections | DROP      | —                                       |
-| G3 | `canvas`, `modal`, `network`, `ui`, `persistedStateStatus` have no unit tests             | pending   |                                         |
-| G4 | Nothing prevents a per-request SSR route from writing module-level `$state`               | pending   |                                         |
+| ID | Finding                                                                                   | Verdict                       | Red test                                |
+| -- | ----------------------------------------------------------------------------------------- | ----------------------------- | --------------------------------------- |
+| G1 | No cross-tab sync: a tightened parental-gate policy does not reach an open second tab     | CONFIRMED                     | `flows-parental-gate-cross-tab.spec.ts` |
+| G2 | IndexedDB version hard-coded to 1; `splotch-secure` opened through two cached connections | DROP                          | —                                       |
+| G3 | `canvas`, `modal`, `network`, `ui`, `persistedStateStatus` have no unit tests             | DROP (network covered by B21) | —                                       |
+| G4 | Nothing prevents a per-request SSR route from writing module-level `$state`               | Real gap, no violation        | —                                       |
 
 ## Evidence
 
@@ -149,3 +149,51 @@ Per-finding evidence, grouped by vetting pass.
 * **New, unvetted — N1.** A parental gate left open after its Settings or result dialog closes still
   runs its destination when solved later; for a picture report that raises the confirmation over a
   closed result.
+
+### Routing, AI, network, packs
+
+* **B3 — CONFIRMED for `/feedback`.** After the `?sent=1` strip `history.state` is `null` (the
+  `/beta` control, which uses `$app/navigation`, keeps `sveltekit:history`); Back from `/` fires a
+  null-state popstate and SvelteKit only updates the URL. Red: `web/tests/feedback.spec.ts` —
+  `Back from the drawing app renders the feedback page again, not just its URL` (4/4 and 2/2 on the
+  dev server, at `#drawingCanvas` count 0), guarded by `expectNoReload` after an early spurious pass
+  from a dep-optimizer reload. `web/tests/page.spec.ts` —
+  `Back to the drawing app after ${name} strips its launch parameter renders the canvas` for an
+  invite link and a stale-page recovery: the `?v=` case skips on the dev server (`initPWAUpdates`
+  returns early in DEV) and the invite case is blocked in dev by S1, so both await the
+  production-build run.
+* **B4 — DROP.** ADR-0096 makes the `/design` picker deliberately write an explicit preference that
+  "persists across reloads and drawing-page visits"; System stays reachable in Settings →
+  Appearance.
+* **B9 — REFUTED.** ce846e16b already guards every throw path in `autoSaveImages`, covered at
+  `aiImage.test.ts`.
+* **B11 — CONFIRMED (low reachability).** Red: `settles a 200 grant response with %s as unavailable`
+  — a missing or non-numeric `remaining` yields `available: true, remaining: NaN` ("NaN free left");
+  a body with no `ok` flag leaves `loading` true forever.
+* **B21 — CONFIRMED (one bridge round-trip at startup).** Red: new `network.svelte.test.ts` —
+  `keeps a status change that arrives before the initial status read resolves`
+  (`expected true to be false`); passes when the late `getStatus` never resolves.
+* **B24 — CONFIRMED (native).** `+page.svelte` installs downloads on mount and stops on unmount, so
+  `/privacy` and back builds a second downloader while native `stop()` leaves the first running; the
+  "Downloading X" label vanishes and both runs install the same book. Red: `manager.test.ts` —
+  `keeps the new run downloading while the stopped run settles its install`
+  (`expected null to be 'dinosaur'`).
+* **B26 — DROP.** Facts verified, but ADR-0016 accepts them ("revocation is only by rotating the
+  secret"). Theft needs the admin's HttpOnly, SameSite=Strict, `path=/admin` cookie. Reopen only
+  with new evidence.
+* **B27 — CONFIRMED.** One failed grant fetch while online hides the canvas AI button until a
+  reconnect, an AI settings change, or a panel remount. Red:
+  `retries a transient status failure while online without waiting for a reconnect`
+  (`called 2 times, but got 1 times`); it assumes a timer retry within ten minutes, so a
+  visibility-change retry design would need the test adjusted.
+* **G3 — DROP**, except `network.svelte.ts`, which now has B21's test file. `canvas` and
+  `persistedStateStatus` are logic-free; `modal` and `ui` are trivial and covered by E2E.
+* **G4 — real gap, no violation today.** Per-request on web: `/admin`, `/feedback`, `/design`, and
+  `+error.svelte`. The only state use there is `/design` reading `resolvedTheme` after mount and
+  calling `setTheme` in a click handler; `iconRegistry` fills module state at SSR import with a
+  constant. Candidate guard: a Vitest render of each non-prerendered route via `svelte/server`
+  asserting module `$state` is unchanged.
+* **Side finding — S1.** On the dev server, client-side navigation off `/` throws
+  `Cannot read properties of null (reading 'removeEventListener')` at `PointerHalos.svelte:192` (the
+  effect cleanup reads the `canvasEl` prop after the parent's binding nulled it), breaking two
+  existing `page.spec.ts` tests in dev. Production behavior pending.
