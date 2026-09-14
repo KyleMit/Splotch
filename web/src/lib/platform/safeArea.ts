@@ -31,11 +31,6 @@ export const SAFE_AREA_PROPERTIES = {
   left: '--safe-area-left',
 } as const satisfies Record<SafeAreaEdge, string>;
 
-/** The CSS length expression for one inset, for use in a calc() built in JS. */
-export function safeAreaLength(edge: SafeAreaEdge): string {
-  return `var(${SAFE_AREA_PROPERTIES[edge]})`;
-}
-
 let safeAreaProbe: HTMLDivElement | undefined;
 
 export function measureSafeAreaInsets(): SafeAreaInsets {
