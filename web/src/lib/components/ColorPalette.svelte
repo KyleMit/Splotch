@@ -14,14 +14,11 @@
   import { colorPickerModal } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
-  import { clearPaletteMeasurement, publishPaletteMeasurement } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';
-  import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
 
   const SWATCH_RELEASE_CLASS = 'releasing';
 
-  let paletteEl: HTMLDivElement;
   let customSwatchEl: HTMLButtonElement | undefined;
 
   const dark = $derived(resolvedTheme() === 'dark');
@@ -29,22 +26,6 @@
   // The selection ring hides while erasing (no ink is being laid down) and
   // stays visible for every other brush, matching the pre-brush-menu behavior.
   const erasing = $derived(toolState.brush === 'eraser');
-
-  // Publish our rendered size so ActionsPanel can offset past our width in
-  // landscape (and the action-button sizing math can clear our height in
-  // portrait) without reaching in via querySelector. A ResizeObserver keeps it
-  // current as the palette trims swatches at breakpoints.
-  onMount(() => {
-    const ro = new ResizeObserver(() => {
-      const rect = paletteEl.getBoundingClientRect();
-      publishPaletteMeasurement(rect.width, rect.height);
-    });
-    ro.observe(paletteEl);
-    return () => {
-      ro.disconnect();
-      clearPaletteMeasurement();
-    };
-  });
 
   // Track the most recent click so we can fire the confirmation ring animation
   // only on the actual selection (not on every reactivity change).
@@ -121,7 +102,6 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="color-palette"
-  bind:this={paletteEl}
   use:scribbleGuard
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
@@ -341,8 +321,12 @@
       display: flex;
       flex-direction: row;
       justify-content: center;
+      align-items: center;
       width: 100%;
-      height: auto;
+      /* Declared, not content-sized: the Actions Panel's portrait column and
+         the AI Waiting Polaroid both start below this bar by reading the same
+         token, so the bar has to be exactly that tall. */
+      height: var(--palette-portrait-height);
       padding: 10px;
       gap: 8px;
       box-shadow: 0 2px 10px rgb(0 0 0 / 10%);

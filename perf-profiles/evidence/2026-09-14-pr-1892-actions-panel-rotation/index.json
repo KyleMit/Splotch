@@ -1,0 +1,18 @@
+{
+  "campaign": "2026-09-14-pr-1892-actions-panel-rotation",
+  "productCommit": "27359a6b3c73a1e05ad016898f25739d56631cb5",
+  "capturedFrom": "perf-profiles/pr-1892-corpus",
+  "kept": [
+    {
+      "file": "ipad-device-web-actions.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-web/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

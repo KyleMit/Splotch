@@ -9,6 +9,15 @@ const LANDSCAPE_VIEWPORTS = [
 ] as const;
 
 const NARROW_LANDSCAPE_VIEWPORTS = LANDSCAPE_VIEWPORTS.slice(0, 2);
+
+// Portrait: the column clears the palette bar at the top and its size comes
+// from the visible viewport height. The bar is the row's whole width, so only
+// the panel's inset and the button size are compared here.
+const PORTRAIT_VIEWPORTS = [
+  { name: 'phone P', width: 390, height: 844 },
+  { name: 'short phone P', width: 360, height: 640 },
+  { name: 'tablet P', width: 768, height: 1024 },
+] as const;
 const PERSISTED_VISIBILITY_CONFIGURATIONS = [
   {
     name: 'three-button row',
@@ -109,6 +118,34 @@ for (const viewport of LANDSCAPE_VIEWPORTS) {
     expect(hydrated.visibleButtonCount).toBe(5);
     expect(preHydration.panelLeft).toBe(hydrated.panelLeft);
     expect(preHydration.buttonWidth).toBeCloseTo(hydrated.buttonWidth, 2);
+  });
+}
+
+for (const viewport of PORTRAIT_VIEWPORTS) {
+  test(`${viewport.name} Actions Panel first paint matches hydrated geometry`, async ({
+    browser,
+    page,
+  }) => {
+    const preHydrationContext = await browser.newContext({
+      javaScriptEnabled: false,
+      viewport,
+    });
+    const preHydrationPage = await preHydrationContext.newPage();
+    await preHydrationPage.goto('/');
+    await expect(preHydrationPage.locator('.color-palette')).toBeVisible();
+    const preHydration = await actionPanelGeometry(preHydrationPage);
+    await preHydrationContext.close();
+
+    expect(preHydration.visibleButtonCount).toBe(5);
+
+    await page.setViewportSize(viewport);
+    await gotoApp(page);
+    await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+    const hydrated = await actionPanelGeometry(page);
+
+    expect(hydrated.visibleButtonCount).toBe(5);
+    expect(hydrated.panelLeft).toBe(preHydration.panelLeft);
+    expect(hydrated.buttonWidth).toBeCloseTo(preHydration.buttonWidth, 2);
   });
 }
 

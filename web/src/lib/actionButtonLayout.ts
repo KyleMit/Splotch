@@ -1,8 +1,12 @@
 // Shared geometry for the Actions Panel button row, used by two consumers that
-// must agree: ActionsPanel caps the rendered button size so the expanded row
-// can never overlap the Settings Button (landscape) or run off the top of
-// the screen (portrait), and the Button Size slider in Settings caps its
-// range so a parent can't even pick a size the current screen can't fit.
+// must agree: app.css caps the rendered button size (the --action-btn-size
+// formula on .actions-panel) so the expanded row can never overlap the Settings
+// Button (landscape) or run off the top of the screen (portrait), and the
+// Button Size slider in Settings caps its range so a parent can't even pick a
+// size the current screen can't fit. The CSS bakes these constants as literals
+// because it owns first paint (ADR-0040); actionButtonLayout.fallback.test.ts
+// holds the literals to the constants and actionButtonLayout.test.ts evaluates
+// the formula against availablePerButton.
 import {
   settings,
   ACTION_BUTTON_SCALE_MIN,
@@ -14,7 +18,6 @@ import {
 import { network } from '$lib/state/network.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 import type { Orientation } from '$lib/platform';
-import { safeAreaLength } from '$lib/platform/safeArea';
 import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import { PALETTE_LANDSCAPE_WIDTH_PX } from '$lib/design/trimGeometry';
@@ -111,25 +114,22 @@ export const MAX_ACTION_BUTTON_COUNT = 6;
 // The AI button is hidden in the prerendered HTML because its visibility depends
 // on client-only credential, grant-availability, and network state. app.html
 // corrects this default count before first paint when persisted settings hide
-// other buttons.
+// other buttons, and publishActionPanelState publishes the live count after.
 export const FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT = MAX_ACTION_BUTTON_COUNT - 1;
-export const FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT =
-  (FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT - 1) * ACTION_BUTTON_GAP;
+
+// The custom property carrying the button count the app.css formula divides
+// by: seeded on <html> by app.html for first paint, published on the panel's
+// own root once hydrated.
+export const ACTION_BUTTON_COUNT_PROPERTY = '--action-btn-count';
 
 export const LANDSCAPE_FIXED_RESERVE = SETTINGS_BUTTON_RESERVE + PANEL_FIXED_CHROME;
+export const PORTRAIT_FIXED_RESERVE = PALETTE_CLEARANCE + PANEL_FIXED_CHROME;
 
-// Conservative portrait fallback chrome: all MAX_ACTION_BUTTON_COUNT buttons
-// (so MAX-1 gaps) plus the panel's screen inset, drawer→toggle collapse margin,
-// and drawer toggle. The CSS --action-btn-fallback bakes the resolved portrait
-// total as a literal because it owns first paint before any TS loads (ADR-0040);
-// actionButtonLayout.fallback.test.ts guards it against these constants.
-export const WORST_CASE_CHROME =
-  (MAX_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME;
-
-// Stable portrait palette-bar height the CSS portrait fallback reserves so the
-// column clears the palette on short screens (the hydrated formula subtracts
-// the measured palette height instead).
-export const PALETTE_BAR_RESERVE = 76;
+// The portrait palette bar's declared height: the 55px swatch row inside its
+// 10px padding. ColorPalette draws the bar at app.css's --palette-portrait-height
+// and the portrait formula there clears it; actionButtonLayout.fallback.test.ts
+// holds the token to this.
+export const PALETTE_BAR_RESERVE = 75;
 
 export function isAiImageButtonVisible(): boolean {
   const hasCredential = Boolean(settings.aiUserApiKey || settings.aiAccessToken);
@@ -147,33 +147,12 @@ export function visibleActionButtonCount(): number {
   );
 }
 
-// ColorPalette publishes its measured width after hydration. Until then its
-// responsive CSS geometry is deterministic, so layout consumers use the same
-// width app.css exposes through --palette-landscape-width instead of
-// briefly treating the palette as zero-width.
-export function resolvedLandscapePaletteWidth(): number {
-  if (layout.phoneLandscape) return 0;
-  const measurement = layout.paletteMeasurement;
-  if (
-    layout.orientation === 'landscape' &&
-    measurement.orientation === 'landscape' &&
-    measurement.width > 0
-  ) {
-    return measurement.width;
-  }
-  return PALETTE_LANDSCAPE_WIDTH_PX;
-}
-
-export function resolvedPortraitPaletteHeight(): number {
-  const measurement = layout.paletteMeasurement;
-  if (
-    layout.orientation === 'portrait' &&
-    measurement.orientation === 'portrait' &&
-    measurement.height > 0
-  ) {
-    return measurement.height;
-  }
-  return PALETTE_BAR_RESERVE;
+// The palette's extent along the row's axis: the landscape column's declared
+// width (app.css --palette-landscape-width, 0 on a landscape phone where the
+// column is hidden) or the portrait bar's declared height.
+function paletteExtent(orientation: Orientation): number {
+  if (orientation === 'portrait') return PALETTE_BAR_RESERVE;
+  return layout.phoneLandscape ? 0 : PALETTE_LANDSCAPE_WIDTH_PX;
 }
 
 // Everything the panel spends out of the viewport extent before the rest is
@@ -191,53 +170,20 @@ function fixedRowCost(
 
 // The space one button may occupy on the current screen, in px, before the row
 // (landscape: up to the reserve for the Settings Button) or the column (portrait:
-// up to the palette bar) runs out. buttonSizeCssExpr builds the render-time cap
-// from the same fixedRowCost, so the two can't drift.
-// Exported only so the equivalence test can hold that CSS expression against
-// this number; maxActionButtonScale is the production caller.
+// up to the palette bar) runs out. The app.css --action-btn-size formula is the
+// same budget in CSS; actionButtonLayout.test.ts evaluates it against this.
+// Exported only so that test can hold the formula to this number;
+// maxActionButtonScale is the production caller.
 export function availablePerButton(buttonCount: number): number {
   const { orientation, safeArea } = layout;
-  const [viewportExtent, paletteExtent, insets] =
+  const [viewportExtent, insets] =
     orientation === 'portrait'
-      ? [layout.viewportHeight, resolvedPortraitPaletteHeight(), safeArea.top + safeArea.bottom]
-      : [layout.viewportWidth, resolvedLandscapePaletteWidth(), safeArea.left + safeArea.right];
+      ? [layout.viewportHeight, safeArea.top + safeArea.bottom]
+      : [layout.viewportWidth, safeArea.left + safeArea.right];
   return (
-    (viewportExtent - fixedRowCost(orientation, buttonCount, paletteExtent) - insets) / buttonCount
+    (viewportExtent - fixedRowCost(orientation, buttonCount, paletteExtent(orientation)) - insets) /
+    buttonCount
   );
-}
-
-export type ActionButtonSizeInputs =
-  | {
-      orientation: 'portrait';
-      buttonCount: number;
-      paletteHeight: number;
-      viewportHeight: number;
-    }
-  | { orientation: 'landscape'; buttonCount: number; paletteWidth: number };
-
-// The hydrated render cap as a CSS length: the scaled base size, capped by the
-// same budget availablePerButton computes. Three terms stay symbolic because the
-// browser resolves them at paint time — the safe-area insets, where
-// availablePerButton subtracts the measured layout.safeArea instead, the
-// landscape viewport width, and the size-class base. Portrait takes the measured
-// viewportHeight rather than 100vh (see ActionsPanel).
-export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
-  const { orientation, buttonCount } = inputs;
-  const axis =
-    inputs.orientation === 'portrait'
-      ? {
-          viewportExtent: `${inputs.viewportHeight}px`,
-          paletteExtent: inputs.paletteHeight,
-          insets: `${safeAreaLength('top')} - ${safeAreaLength('bottom')}`,
-        }
-      : {
-          viewportExtent: '100vw',
-          paletteExtent: inputs.paletteWidth,
-          insets: `${safeAreaLength('left')} - ${safeAreaLength('right')}`,
-        };
-  const fixedCost = fixedRowCost(orientation, buttonCount, axis.paletteExtent);
-  const budget = `${axis.viewportExtent} - ${fixedCost}px - ${axis.insets}`;
-  return `min(calc(var(${ACTION_BUTTON_BASE_PROPERTY}) * var(--action-btn-scale, 1)), calc((${budget}) / ${buttonCount}))`;
 }
 
 // Largest Button Size percentage the current screen can show without the
@@ -310,7 +256,8 @@ export const NO_ACTIONS_ATTRIBUTE = 'data-no-actions';
 // every control on, pen brush. `data-drawer-open` is present when open;
 // `data-off-*` is present when that control is hidden.
 // --action-btn-scale rides here too (a CSS var, default via the var()
-// fallback, so it's only meaningful when scaled). The reactive reads below run
+// fallback, so it's only meaningful when scaled), as does the live button
+// count the size formula divides by. The reactive reads below run
 // synchronously inside the caller's $effect, so Svelte tracks them as effect
 // dependencies exactly as an inline body would.
 export function publishActionPanelState(
@@ -319,6 +266,12 @@ export function publishActionPanelState(
   buttonScale: number
 ): void {
   el.style.setProperty('--action-btn-scale', String(buttonScale));
+  // The live count the app.css size formula divides by; floored at one so an
+  // empty panel (hidden by NO_ACTIONS_ATTRIBUTE) never divides by zero.
+  el.style.setProperty(
+    ACTION_BUTTON_COUNT_PROPERTY,
+    String(Math.max(1, visibleActionButtonCount()))
+  );
   el.toggleAttribute(DRAWER_OPEN_ATTRIBUTE, drawerExpanded);
   for (const [key, attribute] of controlOffEntries) {
     el.toggleAttribute(attribute, !actionControlShown(key));

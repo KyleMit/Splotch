@@ -26,19 +26,8 @@
     createFreeGenerationGrantRefresher,
   } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
-  import { browser } from '$app/environment';
   import { layout } from '$lib/state/layout.svelte';
-  import { safeAreaLength } from '$lib/platform/safeArea';
-  import {
-    PANEL_INSET,
-    MAX_ACTION_BUTTON_COUNT,
-    buttonSizeCssExpr,
-    isAiImageButtonVisible,
-    visibleActionButtonCount,
-    resolvedLandscapePaletteWidth,
-    resolvedPortraitPaletteHeight,
-    publishActionPanelState,
-  } from '$lib/actionButtonLayout';
+  import { isAiImageButtonVisible, publishActionPanelState } from '$lib/actionButtonLayout';
   import { prepareCanvasExport, undo, isStrokeActive } from '$lib/drawing/engine';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
@@ -82,54 +71,17 @@
   // Orientation drives the landscape palette-clearing offset below. Everything
   // else orientation-dependent here (drawer collapse axis, chevron direction)
   // is CSS. The shared layout module owns the listeners.
-  const isPortrait = $derived(layout.orientation === 'portrait');
   const phoneLandscape = $derived(layout.phoneLandscape);
 
-  // Landscape: sit just past the Color Palette so we clear it. The raw
-  // prerendered page gets the same deterministic width from the shared CSS
-  // custom property; hydrated JS uses that geometry until ColorPalette publishes
-  // its measured width, which remains the correction for browser rounding.
-  //
-  // The inline left wins over the stylesheet, so the safe-area inset has to ride
-  // along in this value or it's lost: .app-container's padding-left shifts the
-  // palette right by var(--safe-area-left) (the Android landscape hole-punch),
-  // and the measured width doesn't include that padding — so we clear inset + width.
-  const landscapePaletteWidth = $derived(resolvedLandscapePaletteWidth());
-  const portraitPaletteHeight = $derived(resolvedPortraitPaletteHeight());
-  const leftOffset = $derived(
-    !browser || isPortrait || phoneLandscape
-      ? undefined
-      : `calc(${landscapePaletteWidth + PANEL_INSET}px + ${safeAreaLength('left')})`
-  );
-
-  // Cap the button size so the expanded panel always fits the screen —
-  // landscape: the row stops short of the bottom-right Settings Button;
-  // portrait: the column stops short of the palette bar at the top. The formula
-  // lives in actionButtonLayout, which builds this CSS length and the Button
-  // Size slider's dynamic max in Settings from one budget. An explicit equal
-  // per-button size — rather than letting
-  // the row flex-shrink — keeps the buttons identical (flex distributes by
-  // inner base size, which padding skews) and keeps their positions stable
-  // while the drawer's expand animation sweeps the row's width through zero.
-  //
-  // This precise, measured cap is only set once we're in the browser. During
-  // prerender there's no orientation (SSR is always landscape) and no measured
-  // palette, so baking a value here would force the landscape formula onto
-  // portrait phones — which painted the buttons "incredibly small" until
-  // hydration swapped in the real size (issue #317). Instead we leave
-  // --action-btn-size unset at SSR and let the CSS --action-btn-fallback own
-  // first paint via media query. Once hydrated this value overrides it, and CSS
-  // keeps size out of `transition` so the swap snaps rather than animating.
-  //
-  // Viewport units: landscape uses 100vw — the URL bar doesn't affect width.
-  // Portrait uses layout.viewportHeight (not 100vh): on mobile web 100vh is the
-  // *large* viewport (URL bar collapsed), which overestimates the vertical
-  // budget while the browser chrome is visible. viewportHeight is the same
-  // visible-viewport number the slider ceiling uses (kept live by the shared
-  // resize listener, which fires on URL-bar show/hide), so the render cap and
-  // the ceiling can't disagree.
-  const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
-  const layoutButtonCount = $derived(Math.max(1, buttonCount));
+  // The panel's landscape offset past the Color Palette and its buttons' size
+  // are stylesheet rules (this component's .actions-panel block and app.css's
+  // --action-btn-size formula), parameterised only by custom properties: the
+  // palette's declared extents, the size-class step, the Button Size scale, the
+  // safe-area seam, 100dvh in portrait, and the live button count that
+  // publishActionPanelState publishes below. Nothing here measures the palette
+  // or the viewport, so first paint and the hydrated panel agree by
+  // construction (ADR-0040; the class of issue 317 and issue 706) and a
+  // rotation re-lays the panel out in the browser's own pass.
   const aiImageButtonVisible = $derived(isAiImageButtonVisible());
 
   // A minimized run is the one state where a generation is in flight and this
@@ -138,27 +90,6 @@
   // canvas cannot block it either — the drawing was already sent.
   const aiImageButtonBlocked = $derived(
     aiResult.minimized ? false : canvasState.canvasEmpty || aiResult.generating
-  );
-
-  const buttonSize = $derived(
-    !browser
-      ? undefined
-      : phoneLandscape
-        ? 'var(--landscape-action-size)'
-        : buttonSizeCssExpr(
-            isPortrait
-              ? {
-                  orientation: 'portrait',
-                  buttonCount: layoutButtonCount,
-                  paletteHeight: portraitPaletteHeight,
-                  viewportHeight: layout.viewportHeight,
-                }
-              : {
-                  orientation: 'landscape',
-                  buttonCount: layoutButtonCount,
-                  paletteWidth: landscapePaletteWidth,
-                }
-          )
   );
 
   // The drawer expands per its remembered open state; the whole panel, chevron
@@ -435,8 +366,6 @@
   class="actions-panel"
   class:settings-covered={settingsModal.open && !ui.resizingActionButtons}
   data-drawer-motion={drawerMotion ? '' : undefined}
-  style:left={leftOffset}
-  style:--action-btn-size={buttonSize}
   bind:this={panelEl}
   use:actionPanelEvents={{
     wrapper: openFlyoutWrapper,

@@ -7,20 +7,19 @@ import { PALETTE_LANDSCAPE_WIDTH_PX } from './design/trimGeometry';
 import {
   ACTION_BUTTON_BASE_PROPERTY,
   ACTION_BUTTON_BASE_PX,
+  ACTION_BUTTON_COUNT_PROPERTY,
   ACTION_BUTTON_GAP,
   ACTION_BUTTON_SIZE_CLASS_MEDIA_QUERIES,
   ACTION_PANEL_LIVE_ATTRIBUTE,
   FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT,
-  FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT,
   FLYOUT_OPTION_MIN_BASE_PX,
   LANDSCAPE_FIXED_RESERVE,
-  MAX_ACTION_BUTTON_COUNT,
   PANEL_FIXED_CHROME,
   PANEL_INSET,
   PALETTE_BAR_RESERVE,
   PALETTE_CLEARANCE,
+  PORTRAIT_FIXED_RESERVE,
   SETTINGS_BUTTON_RESERVE,
-  WORST_CASE_CHROME,
 } from './actionButtonLayout';
 
 const appCssSource = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
@@ -41,16 +40,18 @@ function cssRuleBody(selector: string): string {
   return appCssSource.slice(bodyStart, appCssSource.indexOf('\n}', bodyStart));
 }
 
-// The CSS `--action-btn-fallback` in app.css owns the action-button
-// size at first paint (before any TS loads — ADR-0040), so it bakes the sizing
-// constants as literals rather than reading them. That is the one copy of the
-// button-size formula that can't share the TS constants directly. This guard
-// re-derives the expected literals from the constants and asserts the two
-// `min(...)` fallback blocks still match, so a change to a constant can't
-// silently leave the CSS stale (issue #518).
-const fallbackBlocks = [
-  ...appCssSource.matchAll(/--action-btn-fallback:\s*min\(([\s\S]*?)\);/g),
-].map((m) => m[1]);
+// The CSS `--action-btn-size` formula in app.css owns the action-button size
+// at first paint (before any TS loads — ADR-0040) and after hydration alike,
+// so it bakes the sizing constants as literals rather than reading them. That
+// is the one copy of the button-size formula that can't share the TS
+// constants directly. This guard re-derives the expected literals from the
+// constants and asserts the two `min(...)` formula blocks (landscape and
+// portrait) still match, so a change to a constant can't silently leave the
+// CSS stale (issue #518); actionButtonLayout.test.ts evaluates the same
+// formulas against the slider ceiling.
+const sizeFormulas = [...appCssSource.matchAll(/--action-btn-size:\s*min\(([\s\S]*?)\);/g)].map(
+  (m) => m[1]
+);
 
 const scaledBase = `var(${ACTION_BUTTON_BASE_PROPERTY}) * var(--action-btn-scale, 1)`;
 
@@ -93,8 +94,15 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(actionsPanelSource).toContain(ACTION_PANEL_LIVE_ATTRIBUTE);
   });
 
-  it('has exactly two fallback blocks (landscape + portrait)', () => {
-    expect(fallbackBlocks).toHaveLength(2);
+  it('has exactly two size formulas (landscape + portrait)', () => {
+    expect(sizeFormulas).toHaveLength(2);
+  });
+
+  it('sizes the action button from the formula alone', () => {
+    const button = cssRuleBody('.actions-panel .action-button');
+    expect(button).toContain('width: var(--action-btn-size);');
+    expect(button).toContain('height: var(--action-btn-size);');
+    expect(appCssSource).not.toContain('--action-btn-fallback');
   });
 
   it('panel inset literals match PANEL_INSET', () => {
@@ -118,47 +126,58 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
   // The portrait counterpart, published for chrome that must start below the
   // bar rather than beside it — the AI Waiting Polaroid's top inset. CSS cannot
   // import the constant, so the two are held together here.
-  it('shares the portrait palette-bar height before hydration', () => {
+  it('shares the portrait palette-bar height, which the bar draws itself at', () => {
     expect(appCssSource).toMatch(
       new RegExp(`--palette-portrait-height:\\s*${PALETTE_BAR_RESERVE}px`)
     );
+    expect(colorPaletteSource).toContain('height: var(--palette-portrait-height)');
   });
 
-  it('landscape fallback matches the constants', () => {
-    const [landscape] = fallbackBlocks;
+  it('landscape formula matches the constants', () => {
+    const [landscape] = sizeFormulas;
     expect(landscape).toContain(scaledBase);
-    // 100vw minus the palette, fixed chrome, and the dynamic gap total around
-    // the 1–5 buttons that persisted settings leave visible before hydration.
+    // 100vw minus the palette, fixed chrome, and the gap total around however
+    // many buttons the panel lays out.
     expect(landscape).toContain(
-      `100vw - var(--palette-landscape-width) - ${LANDSCAPE_FIXED_RESERVE}px`
+      `100vw - var(--palette-landscape-width) - ${LANDSCAPE_FIXED_RESERVE}px - var(--action-btn-gap-total)`
     );
-    expect(landscape).toContain('var(--action-btn-first-paint-gap-total)');
-    expect(landscape).toMatch(/\/\s*var\(--action-btn-first-paint-count\)(?:\s|$)/);
+    expect(landscape).toMatch(new RegExp(`/\\s*var\\(${ACTION_BUTTON_COUNT_PROPERTY}\\)(?:\\s|$)`));
+    expect(cssRuleBody('.actions-panel')).toContain(
+      `--action-btn-gap-total: calc((var(${ACTION_BUTTON_COUNT_PROPERTY}) - 1) * ${ACTION_BUTTON_GAP}px)`
+    );
+    expect(LANDSCAPE_FIXED_RESERVE).toBe(SETTINGS_BUTTON_RESERVE + PANEL_FIXED_CHROME);
+  });
+
+  // The count the formula divides by: five in the stylesheet for the
+  // prerendered row, re-seeded on <html> by app.html when persisted settings
+  // hide controls, published on the panel once hydrated.
+  it('seeds the first-paint button count where app.html and the panel can override it', () => {
     expect(appCssSource).toMatch(
-      new RegExp(`--action-btn-first-paint-count:\\s*${FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT}\\b`)
-    );
-    expect(appCssSource).toContain(
-      `--action-btn-first-paint-gap-total: ${FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT}px`
+      new RegExp(
+        `${ACTION_BUTTON_COUNT_PROPERTY}:\\s*${FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT}\\b`
+      )
     );
     expect(appHtmlSource).toMatch(
       new RegExp(`if \\(actionButtonCount !== ${FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT}\\b`)
     );
-    expect(appHtmlSource).toContain(`${ACTION_BUTTON_GAP} * (actionButtonCount - 1) + 'px'`);
-    expect(LANDSCAPE_FIXED_RESERVE).toBe(SETTINGS_BUTTON_RESERVE + PANEL_FIXED_CHROME);
+    expect(appHtmlSource).toContain(`setProperty('${ACTION_BUTTON_COUNT_PROPERTY}'`);
+    expect(appHtmlSource).not.toContain('first-paint-gap-total');
   });
 
   it('hydrated drawer gap matches ACTION_BUTTON_GAP', () => {
     expect(actionsPanelSource).toMatch(new RegExp(`gap: ${ACTION_BUTTON_GAP}px;`));
   });
 
-  it('portrait fallback matches the constants', () => {
-    const portrait = fallbackBlocks[1];
+  it('portrait formula matches the constants', () => {
+    const portrait = sizeFormulas[1];
     expect(portrait).toContain(scaledBase);
-    // 100vh minus palette clearance + worst-case chrome + the palette bar.
+    // The visible viewport minus the palette bar, its clearance, the panel's
+    // fixed chrome and the gap total.
     expect(portrait).toContain(
-      `100vh - ${PALETTE_CLEARANCE + WORST_CASE_CHROME + PALETTE_BAR_RESERVE}px`
+      `100dvh - var(--palette-portrait-height) - ${PORTRAIT_FIXED_RESERVE}px - var(--action-btn-gap-total)`
     );
-    expect(portrait).toMatch(new RegExp(`/\\s*${MAX_ACTION_BUTTON_COUNT}\\b`));
+    expect(portrait).toMatch(new RegExp(`/\\s*var\\(${ACTION_BUTTON_COUNT_PROPERTY}\\)(?:\\s|$)`));
+    expect(PORTRAIT_FIXED_RESERVE).toBe(PALETTE_CLEARANCE + PANEL_FIXED_CHROME);
   });
 
   it('pads the action button by a share of its own size-class step', () => {

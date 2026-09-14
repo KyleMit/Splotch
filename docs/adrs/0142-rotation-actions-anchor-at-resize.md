@@ -135,3 +135,14 @@ run-to-run spread) — a straddling cell needs samples, not a single sweep, per 
 − ADR-0090's transition-analysis note that "the app still responds 23–29 ms later" during the system
 rotation interval described this anchor's view; under this ADR that window is attributed to the
 browser transition, and 0090 carries an amendment note pointing here.
+
+## Amendment (2026-09-14)
+
+Issue 1892 moved the Actions Panel's rotation geometry out of JavaScript: the Color Palette no
+longer publishes a measured rect, `layout.svelte.ts` no longer holds a pending palette measurement
+across the rotation settle, and the panel's offset and button size are stylesheet rules
+parameterised by custom properties (ADR-0040). The deferred viewport-sync hold
+(`ROTATION_VIEWPORT_SETTLE_MS`) this ADR describes still exists for the JS consumers that remain —
+the Button Size slider's ceiling, the Install Banner, the Notch Band and the engine's edge-swipe
+bands — so the post-action frame window still scores that deferred work; the Actions Panel's share
+of it is now the browser's own layout pass.
