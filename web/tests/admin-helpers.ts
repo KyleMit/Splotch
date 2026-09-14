@@ -14,7 +14,7 @@ const NEW_CODE_PLACEHOLDER = 'Add a code…';
 // How long one sign-in round trip gets — form action (or /api/admin/login) →
 // redirect → tokens fetch → console render. Every observed pass landed well
 // inside Playwright's 5s default; this is sized for a worker starved past it.
-const SIGN_IN_SETTLE_MS = 20_000;
+export const SIGN_IN_SETTLE_MS = 20_000;
 
 /** The token console's presence sentinel — only rendered once signed in. */
 export function adminConsole(page: Page): Locator {

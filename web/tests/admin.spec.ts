@@ -2,7 +2,13 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 import { HARNESS_PROBE_CODE, MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import { APP_TEMPLATE_SCRIPT_HASH } from '../securityPolicy';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
-import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from './admin-helpers';
+import {
+  adminConsole,
+  ADMIN_ACCESS_TOKEN,
+  SIGN_IN_SETTLE_MS,
+  signInToAdmin,
+  submitAdminKey,
+} from './admin-helpers';
 
 // The admin console is web-only: the server-rendered /admin (form actions +
 // HTTP-only cookie session) over the shared core ($lib/server/admin +
@@ -105,6 +111,20 @@ test('web /admin signs in, fails closed without durable tokens, and signs out', 
   // needed after a reload while signed in — but after sign-out it must be.
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+});
+
+// Costs two of the shared rate-limit budget's sign-ins: the draft only
+// survives within one page lifetime, so the second sign-in cannot follow a
+// reload the way signInToAdmin's navigation would.
+test('web /admin signing out discards an unsent code draft', async ({ page }) => {
+  await signInToAdmin(page);
+  await adminConsole(page).fill('e2e-unsent-draft');
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+
+  await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
+  await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
+  await expect(adminConsole(page)).toHaveValue('');
 });
 
 // The ledger's column grid uses fixed usage/action tracks, so there is a band
