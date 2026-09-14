@@ -42,6 +42,13 @@ export default {
     // Committed scrapbook run outputs (ADR-0059) are promoted output, not
     // hand-authored source, and .prettierignore excludes them for that reason.
     'scrapbook/**',
+    // The native trees' synced web build and Xcode's build products: gitignored
+    // copies of the same generated CSS, present only on a machine that has run
+    // a native build, where they made `npm run lint:css` report hundreds of
+    // errors CI never sees.
+    'ios/App/App/public/**',
+    'ios/DerivedData/**',
+    'android/app/src/main/assets/public/**',
   ],
   rules: {
     // Constructs the CSS parser keeps and the browser then ignores. A

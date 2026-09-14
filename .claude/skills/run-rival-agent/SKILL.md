@@ -110,6 +110,12 @@ since the review, adopts an existing marked review for the same range instead of
 verifies the review landed before reporting success. Posting needs no further authorization: the
 user asked for the review by invoking this skill.
 
+So **do not push to the PR while a round is running** — not a CI fix, not a typo. The publisher
+compares the PR's live head to the head the rival reviewed, and a commit that lands mid-round leaves
+the finished round unpostable: its findings then have to be carried onto the thread by hand, without
+the marker `address-pr-review` keys on, and the next round starts from a head the rival never saw.
+Hold every fix until `next` reports `done` and the review is posted (2026-09-14, PR 1952).
+
 For a diff or commit scope there is no PR to post to; read `findings.json` from the session and
 report it in the chat reply.
 
