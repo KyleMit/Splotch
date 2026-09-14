@@ -161,14 +161,12 @@
           )
   );
 
-  // When advanced controls are disabled the chevron is hidden and the drawer
-  // can't expand, simplifying the UI. When enabled, the chevron shows and the
-  // drawer expands per its remembered open state. Dragging the button-size
-  // slider force-opens the drawer (without persisting) so the parent can watch
-  // the buttons resize live.
-  const drawerExpanded = $derived(
-    (settings.advancedControlsEnabled && settings.drawerOpen) || ui.resizingActionButtons
-  );
+  // The drawer expands per its remembered open state; the whole panel, chevron
+  // included, is gone instead while no control is left to show (the
+  // data-no-actions rule below). Dragging the button-size slider force-opens
+  // the drawer (without persisting) so the parent can watch the buttons resize
+  // live.
+  const drawerExpanded = $derived(settings.drawerOpen || ui.resizingActionButtons);
 
   function stopDrawerMotion() {
     if (drawerMotionProbeFrame !== undefined) cancelAnimationFrame(drawerMotionProbeFrame);
@@ -760,14 +758,6 @@
   }
   :global(html[data-off-undo]) .actions-panel:not([data-action-panel-live]) #undoButton,
   :global(.actions-panel[data-action-panel-live][data-off-undo]) #undoButton {
-    display: none;
-  }
-
-  /* Chevron toggle is hidden (and the drawer can't open) when advanced controls
-     are off — the same gate the old {#if advancedControlsEnabled} enforced.
-     Default on, so `data-off-adv` (present only when off) hides it. */
-  :global(html[data-off-adv]) .actions-panel:not([data-action-panel-live]) .drawer-toggle,
-  :global(.actions-panel[data-action-panel-live][data-off-adv]) .drawer-toggle {
     display: none;
   }
 

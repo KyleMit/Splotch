@@ -32,12 +32,7 @@
   } = $props();
 
   function fold(folded: boolean) {
-    if (
-      !matchMedia(PHONE_LANDSCAPE_QUERY).matches ||
-      !settings.advancedControlsEnabled ||
-      visibleActionButtonCount() === 0
-    )
-      return;
+    if (!matchMedia(PHONE_LANDSCAPE_QUERY).matches || visibleActionButtonCount() === 0) return;
     if (settings.drawerOpen === folded) onfold();
   }
 

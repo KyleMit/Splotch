@@ -17,7 +17,7 @@ export const STORAGE_KEYS = {
   aiCustomizationEnabled: 'splotch-ai-customization-enabled',
   autoSaveAi: 'splotch-auto-save-ai',
   legacyAiAccessToken: 'splotch-ai-access-token',
-  advancedControls: 'splotch-advanced-controls',
+  toolDrawer: 'splotch-tool-drawer-enabled',
   drawerOpen: 'splotch-drawer-open',
   lockRotation: 'splotch-lock-rotation',
   forceLandscape: 'splotch-force-landscape',

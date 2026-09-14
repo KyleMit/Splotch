@@ -97,8 +97,8 @@
   // A hub row answers its section inline, with a switch beside the drill-in,
   // only where the boolean is legible from the row's own name *and* worth
   // flipping mid-session. That is these two and no others: Auto-Save is
-  // set-and-forget, and "Tool Drawer" doesn't say what Advanced Controls would
-  // be turning on. Night Mode is binary over the *resolved* theme — the same
+  // set-and-forget, and so is the tool drawer switch — a parent declutters the
+  // drawer once, not per session. Night Mode is binary over the *resolved* theme — the same
   // quick toggle CompactShell and /design's header carry, with the same
   // accepted trade that flipping it while on System pins the preference; the
   // three-way choice including System stays in the Appearance section.

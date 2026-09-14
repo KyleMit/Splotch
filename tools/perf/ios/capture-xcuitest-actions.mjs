@@ -154,6 +154,15 @@ function actionPanelLacksAttribute(attribute) {
   return `${ACTION_PANEL_STATE_TARGET}.hasAttribute(${JSON.stringify(attribute)}) === false`;
 }
 
+// The Tool Drawer switch stamps no attribute of its own: it hides the drawer's
+// own tools by marking each one off (CONTROL_OFF_ATTRIBUTES in
+// actionButtonLayout.ts). Undo ships on, so its mark is the switch's footprint.
+function toolDrawerReady(enabled) {
+  return enabled
+    ? actionPanelLacksAttribute('data-off-undo')
+    : actionPanelHasAttribute('data-off-undo');
+}
+
 function actionPanelDatasetEquals(key, value) {
   return `${ACTION_PANEL_STATE_TARGET}.dataset[${JSON.stringify(key)}] === ${JSON.stringify(value)}`;
 }
@@ -314,7 +323,7 @@ export async function runToggleRoundTrip({
   }
 }
 
-export async function runScreenshotToggleAtAdvancedBaseline({
+export async function runScreenshotToggleAtDrawerBaseline({
   openSavingSection,
   recordScreenshotToggle,
   reopenControlsSection,
@@ -1378,13 +1387,10 @@ export async function runActionSweep({
       baseline: true,
     });
     await recordToggleRoundTrip({
-      label: compactSettingsActionLabel('advanced controls'),
-      selector: '#quickAdvancedControlsToggle',
+      label: compactSettingsActionLabel('tool drawer'),
+      selector: '#quickToolDrawerToggle',
       baseline: true,
-      readyFor: (enabled) =>
-        enabled
-          ? actionPanelLacksAttribute('data-off-adv')
-          : actionPanelHasAttribute('data-off-adv'),
+      readyFor: toolDrawerReady,
     });
   }
 
@@ -1415,19 +1421,16 @@ export async function runActionSweep({
 
     await openSettingsSection(
       'controls',
-      `document.querySelector('#advancedControlsToggle') !== null`,
+      `document.querySelector('#toolDrawerToggle') !== null`,
       'Buttons section'
     );
     await recordToggleRoundTrip({
-      label: 'advanced controls',
-      selector: '#advancedControlsToggle',
+      label: 'tool drawer',
+      selector: '#toolDrawerToggle',
       baseline: true,
-      readyFor: (enabled) =>
-        enabled
-          ? actionPanelLacksAttribute('data-off-adv')
-          : actionPanelHasAttribute('data-off-adv'),
+      readyFor: toolDrawerReady,
       whileAtBaseline: () =>
-        runScreenshotToggleAtAdvancedBaseline({
+        runScreenshotToggleAtDrawerBaseline({
           openSavingSection: () =>
             openSettingsSection(
               'saving',
@@ -1447,7 +1450,7 @@ export async function runActionSweep({
           reopenControlsSection: () =>
             openSettingsSection(
               'controls',
-              `document.querySelector('#advancedControlsToggle') !== null`,
+              `document.querySelector('#toolDrawerToggle') !== null`,
               'Buttons section'
             ),
         }),

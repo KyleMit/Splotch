@@ -40,7 +40,7 @@
   const weightSpecimens = [
     { token: 'fontWeightBold', sample: 'Let them make a mess.' },
     { token: 'fontWeightSemibold', sample: 'Settings, not a paywall' },
-    { token: 'fontWeightMedium', sample: 'Sound · Night Mode · Advanced Controls' },
+    { token: 'fontWeightMedium', sample: 'Sound · Night Mode · Tool drawer' },
   ] as const;
 
   const typeUsageKeys = [

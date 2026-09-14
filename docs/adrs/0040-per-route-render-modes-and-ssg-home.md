@@ -89,8 +89,9 @@ that are already correct in the prerendered HTML:
    * `--action-btn-scale` — button size; set only when ≠ 100% (the CSS `var()` fallback is the
      default). Keep the key/clamp in sync with `ACTION_BUTTON_SCALE_*`.
    * `data-drawer-open` — present only when the drawer is open (default: closed).
-   * `data-off-adv` / `data-off-<control>` — present only when advanced controls, or that Settings
-     control, is switched **off** (default: on/shown).
+   * `data-off-<control>` — present only when that Settings control is hidden (default: on/shown).
+     The Tool Drawer switch hides its own tools without touching their flags, so those read as off
+     while it is off (issue #1927; `TOOL_DRAWER_CONTROLS` in `settings.svelte.ts`).
    * `data-single-brush` — present when exactly one optional brush is enabled, selecting the direct
      button's fixed face independently of the active brush.
    * `data-no-actions` — present when every first-paint action is disabled, hiding both the panel

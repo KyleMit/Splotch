@@ -498,6 +498,67 @@ test('an Actions Panel with no enabled actions is absent from first paint onward
   await expect(panel.locator('.drawer-toggle')).toBeHidden();
 });
 
+// The Tool Drawer section's switch owns only the drawer's own tools. The camera
+// (Saving) and the coloring books (Coloring) keep their own switches, so with
+// the drawer switch off they still render and the chevron still reaches them —
+// before hydration from the <html> seed, and after it from the panel's own.
+test('the tool drawer switch hides only its own tools, at first paint and after', async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ drawerOpen, toolDrawer }) => {
+      localStorage.setItem(drawerOpen, 'true');
+      localStorage.setItem(toolDrawer, 'false');
+    },
+    { drawerOpen: STORAGE_KEYS.drawerOpen, toolDrawer: STORAGE_KEYS.toolDrawer }
+  );
+  await gotoApp(page);
+
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-off-undo', '');
+  await expect(html).toHaveAttribute('data-off-stroke', '');
+  await expect(html).not.toHaveAttribute('data-off-coloring', '');
+  await expect(html).not.toHaveAttribute('data-no-actions', '');
+
+  const panel = page.locator('.actions-panel');
+  await expect(panel).toHaveAttribute('data-action-panel-live', '');
+  await expect(panel).toHaveAttribute('data-off-undo', '');
+  await expect(panel).not.toHaveAttribute('data-no-actions', '');
+  await expect(panel.locator('.drawer-toggle')).toBeVisible();
+  await expect(page.locator('#coloringBookButton')).toBeVisible();
+  await expect(page.locator('#screenshotButton')).toBeVisible();
+  await expect(page.locator('#undoButton')).toBeHidden();
+  await expect(page.locator('#strokeWidthButton')).toBeHidden();
+  await expect(page.locator('#brushButton')).toBeHidden();
+});
+
+// The chevron goes only when nothing is left for the drawer to show — the
+// drawer switch on its own leaves the other sections' buttons; it takes those
+// sections turning theirs off too. The per-tool flags stay at their defaults
+// here: the switch, not the flags, is what hides the drawer's own tools.
+test('the chevron leaves only once every section has hidden its buttons', async ({ page }) => {
+  await page.addInitScript(
+    ({ drawerOpen, toolDrawer, coloring, screenshot }) => {
+      localStorage.setItem(drawerOpen, 'true');
+      for (const key of [toolDrawer, coloring, screenshot]) localStorage.setItem(key, 'false');
+    },
+    {
+      drawerOpen: STORAGE_KEYS.drawerOpen,
+      toolDrawer: STORAGE_KEYS.toolDrawer,
+      coloring: STORAGE_KEYS.coloringBookEnabled,
+      screenshot: STORAGE_KEYS.screenshotEnabled,
+    }
+  );
+  await gotoApp(page);
+
+  const panel = page.locator('.actions-panel');
+  await expect(page.locator('html')).toHaveAttribute('data-no-actions', '');
+  await expect(panel).toHaveAttribute('data-action-panel-live', '');
+  await expect(panel).toHaveAttribute('data-no-actions', '');
+  await expect(panel).toBeHidden();
+  await expect(panel.locator('.drawer-toggle')).toBeHidden();
+});
+
 // The brush choice is a persisted user setting (default pen; the eraser is
 // deliberately excluded). The head script in app.html stamps [data-brush] on
 // <html> before paint so the Brush Button wears the right face with no flash.

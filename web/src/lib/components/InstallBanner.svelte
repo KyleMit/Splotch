@@ -18,6 +18,7 @@
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { settings } from '$lib/state/settings.svelte';
+  import { visibleActionButtonCount } from '$lib/actionButtonLayout';
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
   import '$lib/components/deferredIcons';
 
@@ -70,7 +71,7 @@
       ? 'at the bottom of the screen'
       : 'in the Safari toolbar'
   );
-  const controlsOpen = $derived(settings.advancedControlsEnabled && settings.drawerOpen);
+  const controlsOpen = $derived(settings.drawerOpen && visibleActionButtonCount() > 0);
   const promptStage = $derived(installPromptStage());
   const promptCopy = $derived(INSTALL_PROMPT_COPY[promptStage ?? 'initial']);
   const visible = $derived(

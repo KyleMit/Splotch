@@ -27,6 +27,7 @@ import {
   ACTION_BUTTON_SCALE_DEFAULT,
   ACTION_BUTTON_SCALE_MAX,
   ACTION_BUTTON_SCALE_MIN,
+  TOOL_DRAWER_CONTROLS,
 } from './lib/state/settings.svelte';
 import { BRUSH_TYPES, OPTIONAL_BRUSH_TYPES } from './lib/state/tool.svelte';
 
@@ -212,6 +213,29 @@ describe("app.html's boot script mirrors the state modules", () => {
       expect(boolDefaults.get(key)).toBe(fallback);
     });
   }
+
+  // The Tool Drawer switch hides its own tools without touching their flags, so
+  // the boot script gates exactly TOOL_DRAWER_CONTROLS' keys behind it. One
+  // gated key too few paints a tool the hydrated panel then hides; one too many
+  // hides the camera or the coloring books the switch is meant to leave alone.
+  it('gates exactly the drawer-owned controls behind the Tool Drawer switch', () => {
+    const storageKeyByProp = new Map(
+      [...settingsSource.matchAll(/(\w+): \[STORAGE_KEYS\.(\w+),/g)].map((m) => [
+        m[1],
+        STORAGE_KEYS[m[2] as keyof typeof STORAGE_KEYS],
+      ])
+    );
+    expect(bootStringLiteral(/var drawer = on\('(splotch-[\w-]+)', true\)/)).toBe(
+      STORAGE_KEYS.toolDrawer
+    );
+
+    const gatedKeys = [...bootScript.matchAll(/= drawer && on\('(splotch-[\w-]+)'/g)].map(
+      (m) => m[1]
+    );
+    expect(new Set(gatedKeys)).toEqual(
+      new Set(TOOL_DRAWER_CONTROLS.map((control) => storageKeyByProp.get(control)))
+    );
+  });
 
   it('clamps the button scale to ACTION_BUTTON_SCALE_MIN/MAX', () => {
     expect(bootLiteral(/Math\.max\((\d+), Math\.min\(\d+, pct\)\)/)).toBe(ACTION_BUTTON_SCALE_MIN);

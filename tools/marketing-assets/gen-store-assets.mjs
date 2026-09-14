@@ -126,7 +126,7 @@ const seedButtonScale = (page) =>
     value: HERO_BUTTON_SCALE_PERCENT,
   });
 
-// Page 05 shows the Tool Drawer section in dark mode: Advanced Controls on
+// Page 05 shows the Tool Drawer section in dark mode: the tool drawer switch on
 // (so the per-tool toggles and the Button Size slider render) with the Stroke
 // width tool turned off — a parent mid-curation, "parents set the guardrails"
 // readable at a glance. The button scale matches the hero capture so the
@@ -134,7 +134,7 @@ const seedButtonScale = (page) =>
 const seedToolDrawerSettings = (page) =>
   page.addInitScript(
     ({ keys, buttonScale }) => {
-      localStorage.setItem(keys.advancedControls, 'true');
+      localStorage.setItem(keys.toolDrawer, 'true');
       localStorage.setItem(keys.strokeWidthControl, 'false');
       localStorage.setItem(keys.actionButtonScale, String(buttonScale));
     },

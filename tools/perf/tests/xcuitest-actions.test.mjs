@@ -29,7 +29,7 @@ import {
   largestNativeRect,
   nativeAccessibilityFallbackWarning,
   parseDeviceClass,
-  runScreenshotToggleAtAdvancedBaseline,
+  runScreenshotToggleAtDrawerBaseline,
   runToggleRoundTrip,
   screenshotActivation,
   selectedActions,
@@ -436,7 +436,7 @@ describe('action state planning', () => {
   });
 
   it('waits for stacked Settings controls to scroll into the active sidebar section', () => {
-    const controlReady = `document.querySelector('#advancedControlsToggle') !== null`;
+    const controlReady = `document.querySelector('#toolDrawerToggle') !== null`;
     const sidebar = settingsSectionSetupReady('controls', controlReady, true);
 
     expect(sidebar).toContain('aria-current');
@@ -453,7 +453,7 @@ describe('action state planning', () => {
       setState: async (state, hint) => events.push(`set:${state}:${hint}`),
       recordState: async (state) => events.push(`record:${state}`),
       whileAtBaseline: async () => events.push('dependent'),
-      originalStateHint: 'advanced controls original state',
+      originalStateHint: 'tool drawer original state',
     });
 
     expect(events).toEqual([
@@ -461,7 +461,7 @@ describe('action state planning', () => {
       'record:false',
       'record:true',
       'dependent',
-      'set:false:advanced controls original state',
+      'set:false:tool drawer original state',
     ]);
   });
 
@@ -485,7 +485,7 @@ describe('action state planning', () => {
   it('visits Saving for the nested Screenshot toggle before returning to Controls', async () => {
     const sections = [];
 
-    await runScreenshotToggleAtAdvancedBaseline({
+    await runScreenshotToggleAtDrawerBaseline({
       openSavingSection: async () => sections.push('saving'),
       recordScreenshotToggle: async () => sections.push('screenshot'),
       reopenControlsSection: async () => sections.push('controls'),
@@ -498,7 +498,7 @@ describe('action state planning', () => {
     const sections = [];
 
     await expect(
-      runScreenshotToggleAtAdvancedBaseline({
+      runScreenshotToggleAtDrawerBaseline({
         openSavingSection: async () => sections.push('saving'),
         recordScreenshotToggle: async () => {
           throw new Error('screenshot toggle failed');
@@ -665,9 +665,10 @@ describe('action state planning', () => {
       'settingsSectionSetupReady(section, ready, settingsModalUsesSidebar)',
       `clickSetupElement(execute, '#parentalGate button[aria-label="Close"]')`,
       'whileAtBaseline: () =>',
-      'runScreenshotToggleAtAdvancedBaseline({',
-      "actionPanelHasAttribute('data-off-adv')",
-      "actionPanelLacksAttribute('data-off-adv')",
+      'runScreenshotToggleAtDrawerBaseline({',
+      'readyFor: toolDrawerReady',
+      "actionPanelHasAttribute('data-off-undo')",
+      "actionPanelLacksAttribute('data-off-undo')",
       'coloringSelectionSteps(hasBookChoice)',
       'activation: screenshotActivation(client.nativeApp)',
       'activationModeFor({',
@@ -1121,7 +1122,7 @@ describe('compact settings shell', () => {
   });
 
   it('measures only quick toggles CompactShell actually renders', () => {
-    for (const id of ['quickNightToggle', 'quickSoundToggle', 'quickAdvancedControlsToggle']) {
+    for (const id of ['quickNightToggle', 'quickSoundToggle', 'quickToolDrawerToggle']) {
       expect(sweep).toContain(`#${id}`);
       expect(compactShell).toContain(`id="${id}"`);
     }

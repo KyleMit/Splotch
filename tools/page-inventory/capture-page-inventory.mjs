@@ -70,7 +70,7 @@ const STORAGE = {
   // without it the AI button stays hidden and every surface reached through it
   // — the parental gate and the whole ai/ group — is unreachable.
   'splotch-ai-image-enabled': 'true',
-  'splotch-advanced-controls': 'true',
+  'splotch-tool-drawer-enabled': 'true',
   'splotch-drawer-open': 'false',
   'splotch-lock-rotation': 'false',
   'splotch-install-dismissed': 'false',

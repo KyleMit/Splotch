@@ -356,12 +356,13 @@ about what a tool is. The shared switch also takes taps past its own box: the tr
 32px tall, under the 44px floor, and a ToggleRow's label makes up the difference where the hub row's
 switch stands alone.
 
-**Both hub summaries of the Tool Drawer answer to Advanced Controls first.** That setting is the
-umbrella over every tool below it — with it off the drawer cannot be opened at all, because its own
-toggle is hidden too (`data-off-adv` in `ActionsPanel`) — so the row reads "All tools hidden" rather
-than counting per-tool flags that describe a panel the child cannot reach. Saving's camera row is
-the same story from the other side: every action button lives inside that drawer, so the row's help
-line says what it can actually deliver in the state the parent is in rather than promising a button
+**Both hub summaries of the Tool Drawer answer to Advanced Controls first.** *(Superseded by the
+2026-09 amendment below: the switch no longer gates the whole drawer.)* That setting is the umbrella
+over every tool below it — with it off the drawer cannot be opened at all, because its own toggle is
+hidden too (`data-off-adv` in `ActionsPanel`) — so the row reads "All tools hidden" rather than
+counting per-tool flags that describe a panel the child cannot reach. Saving's camera row is the
+same story from the other side: every action button lives inside that drawer, so the row's help line
+says what it can actually deliver in the state the parent is in rather than promising a button
 Advanced Controls is currently suppressing.
 
 **A jump made while the Pane is still filling now re-aims until it lands.** The reorder surfaced
@@ -375,3 +376,26 @@ Pane reports itself whole; from there the position belongs to whoever moves it n
 the Pane (pointer, wheel, key) ends it sooner. Such a jump is also instant rather than glided — an
 animation in flight leaves nothing to re-aim against. A jump on a finished Pane is untouched: its
 offsets are already final, and re-aiming there would fight the parent's own scrolling.
+
+## Amendment (2026-09): the Tool Drawer switch owns only the drawer's own tools
+
+Issue #1927 retired "Enable Advanced Controls". The switch predated the split of the button toggles
+across sections — Saving owns the camera, Coloring owns the books, AI Art owns its button — and
+still hid the entire Actions Panel, so a parent decluttering the drawer lost the coloring books
+without being told, and Saving and Coloring then showed switches for buttons that could not appear.
+
+It is now **Enable tool drawer** (`toolDrawerEnabled`, key `splotch-tool-drawer-enabled`; the old
+name, key, and `data-off-adv` were removed outright rather than aliased, the app being in beta) and
+it governs exactly `TOOL_DRAWER_CONTROLS` in `settings.svelte.ts` — the crayon, magic brush, eraser,
+stroke width, and undo — which is also the list `settings/drawingTools.ts` renders, so the switch,
+the chip grid, and the hub count cannot disagree about what a tool is. The switch hides those tools
+without touching their stored flags (`actionControlShown`), so turning it back on restores the set
+the parent chose; a drawer brush held at that moment falls back to ink the way switching that one
+brush off does. The chevron has no rule of its own any more: the panel's existing all-off rule
+(`data-no-actions`) hides it when nothing from any section is left to show, and `app.html`'s boot
+script reaches the same state pre-hydration by gating the same five keys behind the switch
+(drift-guarded by `app.html.test.ts`).
+
+The hub row reads "Tool drawer off" while the switch is off — naming the switch, as Coloring's row
+does — and counts hidden tools otherwise. Saving's camera help no longer branches on the switch: the
+camera row alone decides whether its button appears.

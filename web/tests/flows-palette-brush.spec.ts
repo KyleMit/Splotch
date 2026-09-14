@@ -557,7 +557,9 @@ test('the drawer motion marker clears when a state change starts no transition',
   await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
 });
 
-test('disabling advanced controls does not animate the drawer behind Settings', async ({
+// The switch hides the drawer's own tools in place: the drawer neither closes
+// nor animates, because the other sections' buttons are still in it.
+test('switching the tool drawer off behind Settings leaves the open drawer where it is', async ({
   page,
 }) => {
   await gotoApp(page);
@@ -568,9 +570,11 @@ test('disabling advanced controls does not animate the drawer behind Settings', 
   });
 
   const panel = page.locator('.actions-panel');
-  await page.locator('#advancedControlsToggle').click();
+  await page.locator('#toolDrawerToggle').click();
+  await expect(panel).toHaveAttribute('data-off-undo', '');
+  await expect(panel).not.toHaveAttribute('data-off-coloring', '');
   await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
-  await expect(panel).not.toHaveAttribute('data-drawer-open', '');
+  await expect(panel).toHaveAttribute('data-drawer-open', '');
 });
 
 // Tapping the trigger again is the third path that closes a flyout, and the

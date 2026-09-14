@@ -397,15 +397,17 @@ media queries + the head-script stamp in `app.html`).
       family `installDeviceOs()` detects (iOS, Android, or desktop — the last with no app-lock
       steps, since neither Guided Access nor App Pinning has a desktop analogue), plus the one-tap
       install button when the browser supports it
-    * **Tool Drawer Section** - Enable Advanced Controls toggle, a **Button Size** slider that
-      rescales the Actions Panel buttons (dragging it melts the rest of Settings away so the buttons
-      resize in full view), and a **Drawing Tools** list that toggles each brush and Actions Panel
-      button on/off — brushes first, then the controls beside them. The list wears one of two skins,
-      chosen by the block's own measured width: a 2-column **chip grid** where two chips fit, and
-      the same plain **toggle rows** the rest of Settings uses wherever the block is down to one
-      column. Either way it is one exported list (`settings/drawingTools.ts`), which the hub row's
-      "n tools hidden" subtitle counts. The camera button's own visibility lives in **Saving**
-      instead, leading that section above Auto-Save on Delete.
+    * **Tool Drawer Section** - an **Enable tool drawer** switch that hides only the drawer's own
+      tools (the camera, coloring books, and AI buttons keep their own sections' switches; the
+      chevron goes only when every control is off), a **Button Size** slider that rescales the
+      Actions Panel buttons (dragging it melts the rest of Settings away so the buttons resize in
+      full view), and a **Drawing Tools** list that toggles each brush and Actions Panel button
+      on/off — brushes first, then the controls beside them. The list wears one of two skins, chosen
+      by the block's own measured width: a 2-column **chip grid** where two chips fit, and the same
+      plain **toggle rows** the rest of Settings uses wherever the block is down to one column.
+      Either way it is one exported list (`settings/drawingTools.ts`), which the hub row's "n tools
+      hidden" subtitle counts. The camera button's own visibility lives in **Saving** instead,
+      leading that section above Auto-Save on Delete.
       * **Appearance Control** - Light / Dark / System segmented control at the top of the
         **Appearance** section. Dark mode themes the chrome (app background, palette bar, modals,
         Install Banner), the paper (a near-black warm tone under the same low-alpha texture), and
