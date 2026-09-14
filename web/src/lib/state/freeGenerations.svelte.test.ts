@@ -326,6 +326,7 @@ describe('grantRefreshReady', () => {
     refreshGrant(new Event('visibilitychange'));
 
     expect(fetchMock).toHaveBeenCalledOnce();
+    expect(freeGenerations).toMatchObject({ available: false, loading: false });
   });
 
   it('ignores an invalidated malformed response after a newer request succeeds', async () => {

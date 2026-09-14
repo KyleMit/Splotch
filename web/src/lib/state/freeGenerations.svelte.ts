@@ -63,7 +63,9 @@ export function createFreeGenerationGrantRefresher(): (event?: Event) => void {
     const returnedToApp =
       event?.type === 'visibilitychange' && document.visibilityState === 'visible';
     const shouldRearm =
-      (ready && !wasReady) || (online && !wasOnline) || (returnedToApp && !freeGenerations.loading);
+      (ready && !wasReady) ||
+      (online && !wasOnline) ||
+      (returnedToApp && ready && online && !freeGenerations.loading);
     wasReady = ready;
     wasOnline = online;
     if (!ready || !online) freeGenerationGrantRequest.cancel();
