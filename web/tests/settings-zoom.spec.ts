@@ -260,8 +260,10 @@ test('a pinch swallows the trailing click, so it never toggles the control benea
     .locator('.settings-pane, .settings-scroll')
     .first()
     .evaluate((node) => {
+      // A pointer-synthesized click carries detail >= 1; detail 0 is keyboard/AT
+      // activation, which the action lets through.
       const clickOnce = () => {
-        const ev = new MouseEvent('click', { bubbles: true, cancelable: true });
+        const ev = new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 });
         node.dispatchEvent(ev);
         return ev.defaultPrevented;
       };

@@ -1,4 +1,4 @@
-import { PRESS_CLICK_CONSUME_WINDOW_MS } from './scribbleGuard';
+import { PRESS_CLICK_CONSUME_WINDOW_MS } from './clickConsumeWindow';
 
 const TAP_TRAVEL_PX = 18;
 
