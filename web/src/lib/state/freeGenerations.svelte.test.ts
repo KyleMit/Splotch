@@ -47,7 +47,10 @@ beforeEach(() => {
   freeGenerations.available = false;
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe('grantRefreshReady', () => {
   it('waits for credential hydration before allowing the pseudonymous status request', () => {
@@ -138,6 +141,7 @@ describe('grantRefreshReady', () => {
   });
 
   it('does not restart a pending request when refresh state is unchanged', async () => {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
     const refreshGrant = createFreeGenerationGrantRefresher();
     const pending = deferred<Response>();
     const fetchMock = vi.fn().mockReturnValue(pending.promise);
@@ -149,11 +153,14 @@ describe('grantRefreshReady', () => {
     const signal = requestSignal(fetchMock, 0);
 
     refreshGrant();
+    refreshGrant(new Event('visibilitychange'));
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(signal.aborted).toBe(false);
 
     pending.resolve(grantResponse(6).response);
     await vi.waitFor(() => expect(freeGenerations.remaining).toBe(6));
+    refreshGrant(new Event('visibilitychange'));
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('lets a new refresher invalidate a request owned by an old instance', async () => {
@@ -254,6 +261,71 @@ describe('grantRefreshReady', () => {
     older.reject(new Error('stale failure'));
     await vi.waitFor(() => expect(freeGenerations.available).toBe(true));
     expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 8 });
+  });
+
+  it('retries a transient status failure while online without waiting for a reconnect', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const refreshGrant = createFreeGenerationGrantRefresher();
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('connection reset'))
+      .mockResolvedValue(Response.json({ ok: true, remaining: 7, limit: 10 }, { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    persistedStateStatus.hydrated = true;
+    refreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
+
+    visibility.mockReturnValue('hidden');
+    refreshGrant(new Event('visibilitychange'));
+    expect(fetchMock).toHaveBeenCalledOnce();
+    visibility.mockReturnValue('visible');
+    refreshGrant(new Event('visibilitychange'));
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(freeGenerations.available).toBe(true));
+    expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 7 });
+  });
+
+  it.each([
+    [
+      'offline',
+      () => {
+        network.online = false;
+      },
+    ],
+    [
+      'AI disabled',
+      () => {
+        settings.aiImageEnabled = false;
+      },
+    ],
+    [
+      'a parent key',
+      () => {
+        settings.aiUserApiKey = 'parent-key';
+      },
+    ],
+    [
+      'a managed code',
+      () => {
+        settings.aiAccessToken = 'managed-code';
+      },
+    ],
+  ])('does not retry on visibility return with %s', async (_label, makeIneligible) => {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const refreshGrant = createFreeGenerationGrantRefresher();
+    const fetchMock = vi.fn().mockRejectedValue(new Error('connection reset'));
+    vi.stubGlobal('fetch', fetchMock);
+    persistedStateStatus.hydrated = true;
+    refreshGrant();
+    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
+
+    makeIneligible();
+    refreshGrant(new Event('visibilitychange'));
+
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('ignores an invalidated malformed response after a newer request succeeds', async () => {

@@ -63,6 +63,46 @@ test('a fresh installation does not fetch an AI allowance or show the canvas act
   expect(grantStatusRequests).toBe(0);
 });
 
+test('returning to the visible app recovers a failed free allowance', async ({ page }) => {
+  let grantStatusRequests = 0;
+  await page.route('**/api/free-generation-grant', async (route) => {
+    grantStatusRequests += 1;
+    await route.fulfill({
+      status: grantStatusRequests === 1 ? 503 : 200,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        grantStatusRequests === 1 ? { ok: false } : { ok: true, remaining: 7, limit: 10 }
+      ),
+    });
+  });
+  await seedAiEnabled(page);
+  await gotoApp(page);
+  await openDrawer(page);
+  await expect.poll(() => grantStatusRequests).toBe(1);
+  const settings = await openSettingsModal(page);
+  await settings.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+  await expect(
+    page.getByText('while the free allowance is unavailable', { exact: false })
+  ).toBeVisible();
+  await settings.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('#aiImageButton')).toBeHidden();
+  await expect(settings).not.toBeVisible();
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  await expect.poll(() => grantStatusRequests).toBe(2);
+  await expect(page.locator('#aiImageButton')).toBeVisible();
+  await expect(page.locator('#aiImageButton')).toHaveAccessibleName('Create AI image, 7 free left');
+});
+
 test('an access-code invite saves the credential without enabling AI', async ({ page }) => {
   await gotoApp(page, '/?ai_access_token=test-token');
   await expect.poll(() => page.url()).not.toContain('ai_access_token');

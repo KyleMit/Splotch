@@ -357,6 +357,8 @@
   }
 </script>
 
+<svelte:document onvisibilitychange={refreshFreeGenerationGrant} />
+
 <!-- scribbleGuard cancels a stylus tap's touch stream so it can't arm iPadOS
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's
      synthesized click, so every button here activates via use:scribbleTap
