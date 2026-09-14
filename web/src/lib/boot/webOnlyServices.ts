@@ -11,6 +11,7 @@ import { initInstallPrompt, recordInstallRepromptSession } from '$lib/state/inst
 // - web/src/lib/state/install.svelte.ts: appinstalled
 // - web/src/lib/pwa/updates.ts: controllerchange
 // - web/src/lib/pwa/updates.ts: /sw.js
+// - web/src/lib/components/page/SocialCard.svelte: twitter:card
 export function initWebOnlyServices(): () => void {
   if (__IS_CAPACITOR__) return () => {};
   const teardownPWAUpdates = pwaUpdates.initPWAUpdates();

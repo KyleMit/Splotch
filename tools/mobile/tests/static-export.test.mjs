@@ -17,9 +17,19 @@ describe('WEB_ONLY_STATIC_FILES', () => {
 
 describe('stripWebOnlyHeadTags', () => {
   // app.html is the template every prerendered page's head comes from, so a tag
-  // added there is the realistic input — including the absolute-URL social-card
-  // meta, which a naive path match would miss.
-  const stripped = stripWebOnlyHeadTags(appHtml);
+  // added there is the realistic input. The social card is the exception: each
+  // shared route renders its own through SocialCard.svelte, so this fixture
+  // stands in for that component's output — including the absolute-URL image
+  // tag, which a naive path match would miss, and tags that name no file.
+  const socialCard = `
+    <meta property="og:url" content="https://splotch.art/privacy" />
+    <meta property="og:image" content="https://splotch.art/large-image.png" />
+    <meta property="og:image:width" content="1920" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://splotch.art/large-image.png" />
+  `;
+  const prerenderedPage = appHtml.replace('%sveltekit.head%', `${socialCard}%sveltekit.head%`);
+  const stripped = stripWebOnlyHeadTags(prerenderedPage);
 
   it('removes every tag referencing a stripped file', () => {
     for (const file of WEB_ONLY_STATIC_FILES) {
@@ -29,7 +39,7 @@ describe('stripWebOnlyHeadTags', () => {
   });
 
   it('removes the whole social-card block, including tags that name no file', () => {
-    expect(appHtml).toContain('og:image:width');
+    expect(prerenderedPage).toContain('og:image:width');
     expect(stripped).not.toContain('og:');
     expect(stripped).not.toContain('twitter:');
   });
@@ -42,7 +52,7 @@ describe('stripWebOnlyHeadTags', () => {
 
   it('leaves the pre-hydration boot script untouched', () => {
     const bootScript = (html) => html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-    expect(bootScript(stripped)).toBe(bootScript(appHtml));
+    expect(bootScript(stripped)).toBe(bootScript(prerenderedPage));
   });
 
   it('is a no-op on markup with nothing to strip', () => {

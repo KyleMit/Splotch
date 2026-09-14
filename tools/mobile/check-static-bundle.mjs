@@ -71,6 +71,15 @@ export const WEB_ONLY_MODULE_MARKERS = [
     sourcePath: 'web/src/lib/pwa/updates.ts',
     sourceNeedle: ".register('/sw.js')",
   },
+  // The link-preview card is inert in a WebView, and a card the stripper
+  // removed from the HTML would come straight back on hydration if the
+  // component still carried it, so it is compiled out rather than stripped.
+  {
+    feature: 'link-preview card',
+    marker: 'twitter:card',
+    sourcePath: 'web/src/lib/components/page/SocialCard.svelte',
+    sourceNeedle: '{#if !__IS_CAPACITOR__}',
+  },
 ];
 
 export const NATIVE_ONLY_MODULE_MARKERS = [

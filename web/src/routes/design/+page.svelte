@@ -8,6 +8,7 @@
   import TypeSections from '$lib/components/styleguide/TypeSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
   import BrandMark from '$lib/components/page/BrandMark.svelte';
+  import SocialCard from '$lib/components/page/SocialCard.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
   import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
   import SegmentedPicker, {
@@ -18,6 +19,9 @@
   import { setTheme } from '$lib/state/settings.svelte';
   import { primitiveSections } from '$lib/components/styleguide/primitiveSections';
   import type { PageProps } from './$types';
+
+  const DESCRIPTION =
+    "The Splotch visual language — tokens, components, and voice — rendered live from the app's own sources.";
   import '$lib/components/deferredIcons';
 
   let { data }: PageProps = $props();
@@ -154,11 +158,10 @@
 
 <svelte:head>
   <title>Splotch design system</title>
-  <meta
-    name="description"
-    content="The Splotch visual language — tokens, components, and voice — rendered live from the app's own sources."
-  />
+  <meta name="description" content={DESCRIPTION} />
 </svelte:head>
+
+<SocialCard path="/design" title="Splotch Design System" description={DESCRIPTION} />
 
 <div class="page">
   <header class="site-header" bind:this={siteHeader}>

@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { draw, expectNoReload, gotoApp, renderedCanvasHandle, spaNavigate } from './helpers';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
 
 async function opaquePixelCount(page: Page) {
@@ -175,16 +176,19 @@ test('drawing survives a real-route remount and the fresh tiled canvas accepts m
   expect(await opaquePixelCount(page)).toBeGreaterThan(beforeNavigation);
 });
 
+const metaContent = (page: Page, name: string, attr = 'property') =>
+  page.locator(`meta[${attr}="${name}"]`).getAttribute('content');
+
 test('link-preview meta tags are present and match the real OG image', async ({
   page,
   request,
 }) => {
   await page.goto('/');
 
-  const meta = (name: string, attr = 'property') =>
-    page.locator(`meta[${attr}="${name}"]`).getAttribute('content');
+  const meta = (name: string, attr = 'property') => metaContent(page, name, attr);
 
   // The Open Graph + Twitter tags social platforms read to unfurl the link.
+  expect(await meta('og:url')).toBe(`${SITE_ORIGIN}/`);
   expect(await meta('og:title')).toContain('Splotch');
   expect(await meta('og:image')).toContain('/large-image.png');
   expect(await meta('twitter:card', 'name')).toBe('summary_large_image');
@@ -203,3 +207,25 @@ test('link-preview meta tags are present and match the real OG image', async ({
   expect(png.readUInt32BE(16)).toBe(declaredWidth);
   expect(png.readUInt32BE(20)).toBe(declaredHeight);
 });
+
+// Every public standalone route unfurls as itself, not as the home page
+// (issue #1956). One card per document: a second og:title would hand the
+// scraper the wrong one.
+for (const [path, titleWord] of [
+  ['/beta', 'Beta'],
+  ['/changelog', 'Changelog'],
+  ['/design', 'Design'],
+  ['/feedback', 'Feedback'],
+  ['/privacy', 'Privacy'],
+] as const) {
+  test(`${path} carries its own link-preview card`, async ({ page }) => {
+    await page.goto(path);
+    expect(await metaContent(page, 'og:url')).toBe(`https://splotch.art${path}`);
+    expect(await metaContent(page, 'og:title')).toContain(titleWord);
+    // The template's default description precedes the route's own in the head.
+    expect(await metaContent(page, 'og:description')).toBe(
+      await page.locator('meta[name="description"]').last().getAttribute('content')
+    );
+    await expect(page.locator('meta[property="og:title"]')).toHaveCount(1);
+  });
+}

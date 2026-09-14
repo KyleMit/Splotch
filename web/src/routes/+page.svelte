@@ -12,6 +12,7 @@
   import ClearButton from '$lib/components/ClearButton.svelte';
   import NotchBand from '$lib/components/NotchBand.svelte';
   import SettingsButton from '$lib/components/SettingsButton.svelte';
+  import SocialCard from '$lib/components/page/SocialCard.svelte';
   import {
     aiPromptModal,
     coloringBookModal,
@@ -164,6 +165,8 @@
     };
   });
 </script>
+
+<SocialCard />
 
 <NotchBand />
 
