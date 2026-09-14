@@ -22,6 +22,28 @@ Evidence in this folder:
 
 ![Both palettes under typical, protan, deutan and tritan vision, with confusable hexes badged](proof-sheet.png)
 
+### Per-deficiency grids (added 2026-09-14)
+
+| File               | What it is                                                                                                                                                                                                                                                                                                                                            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `design-grids.mjs` | Designs one picker grid per deficiency from the whole sRGB gamut and writes `grids.json`: rows are lightness steps, columns are fractions of the one color axis that vision keeps (measured on the simulated color), each column's hue may drift 30° per row so it stays one family for a parent, and no two non-neighbouring cells come within ΔE 12 |
+| `grids-sheet.mjs`  | Renders `grids.html`: the grid and a 15-crayon bar per deficiency, with a switch between the authored colors and the child's view, and today's 9 × 9 under the same switch                                                                                                                                                                            |
+| `grids-*.png`      | That page, rendered in both views                                                                                                                                                                                                                                                                                                                     |
+
+What the designer settled on, and why the earlier family-subset answer (yellows, greens, purples,
+greys) is superseded by it: under red-green blindness yellow, orange, red and maroon sit on the
+*same* gamut edge and differ only by lightness, so one warm column runs yellow through orange to
+maroon and reads as a single yellow-to-brown ramp to the child. A grid built from the current
+equal-lightness hue families can never express that; a grid laid out on lightness × axis can. The
+five columns per deficiency are: strong blue, purple, neutral, and two warm steps for protan and
+deutan (41 and 40 cells); strong teal, green, neutral, and two red-side steps for tritan (38 cells).
+Three scoring decisions shaped the picks and are named as constants in the script: vividness is
+capped so neon never wins on chroma alone, a color is docked for how far its appearance drifts
+between parent and child (the "should we show what they see" question, answered as a tiebreaker
+rather than a rule), and the neutral column always keeps white and black.
+
+![The proposed grids and crayon bars per deficiency, as authored](grids-original.png)
+
 ## Method and its limits
 
 Every swatch is passed through the Machado, Oliveira & Fernandes (2009) dichromacy matrices at

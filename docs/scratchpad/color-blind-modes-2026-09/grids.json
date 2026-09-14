@@ -1,0 +1,1848 @@
+{
+  "grids": {
+    "protan": {
+      "vision": "protan",
+      "axis": [
+        -0.18417665781131554,
+        0.9828931573255831
+      ],
+      "columnFractions": [
+        -0.95,
+        -0.5,
+        0,
+        0.5,
+        0.95
+      ],
+      "columnHueCenters": [
+        270,
+        300,
+        null,
+        20,
+        70
+      ],
+      "rowLightness": [
+        95,
+        85,
+        75,
+        65,
+        55,
+        45,
+        35,
+        25,
+        15
+      ],
+      "cells": [
+        {
+          "column": 0,
+          "row": 1,
+          "hex": "#00d8ff",
+          "seen": "#bed1ff"
+        },
+        {
+          "column": 0,
+          "row": 2,
+          "hex": "#8aaeff",
+          "seen": "#90b5ff"
+        },
+        {
+          "column": 0,
+          "row": 3,
+          "hex": "#6090fc",
+          "seen": "#5e9bff"
+        },
+        {
+          "column": 0,
+          "row": 4,
+          "hex": "#1266fc",
+          "seen": "#007cff"
+        },
+        {
+          "column": 0,
+          "row": 5,
+          "hex": "#1e2af0",
+          "seen": "#005cf5"
+        },
+        {
+          "column": 0,
+          "row": 6,
+          "hex": "#0018c6",
+          "seen": "#0047ca"
+        },
+        {
+          "column": 0,
+          "row": 7,
+          "hex": "#001296",
+          "seen": "#003599"
+        },
+        {
+          "column": 0,
+          "row": 8,
+          "hex": "#000666",
+          "seen": "#002068"
+        },
+        {
+          "column": 1,
+          "row": 1,
+          "hex": "#00deea",
+          "seen": "#cbd4eb"
+        },
+        {
+          "column": 1,
+          "row": 3,
+          "hex": "#789cd2",
+          "seen": "#889fd4"
+        },
+        {
+          "column": 1,
+          "row": 4,
+          "hex": "#c06cc6",
+          "seen": "#6285c9"
+        },
+        {
+          "column": 1,
+          "row": 5,
+          "hex": "#4260b4",
+          "seen": "#376ab7"
+        },
+        {
+          "column": 1,
+          "row": 6,
+          "hex": "#843690",
+          "seen": "#235193"
+        },
+        {
+          "column": 1,
+          "row": 7,
+          "hex": "#840c6c",
+          "seen": "#163b6e"
+        },
+        {
+          "column": 1,
+          "row": 8,
+          "hex": "#600048",
+          "seen": "#0e264a"
+        },
+        {
+          "column": 2,
+          "row": 0,
+          "hex": "#ffffff",
+          "seen": "#ffffff"
+        },
+        {
+          "column": 2,
+          "row": 1,
+          "hex": "#cccccc",
+          "seen": "#cccccc"
+        },
+        {
+          "column": 2,
+          "row": 2,
+          "hex": "#aeaeae",
+          "seen": "#aeaeae"
+        },
+        {
+          "column": 2,
+          "row": 3,
+          "hex": "#969696",
+          "seen": "#969696"
+        },
+        {
+          "column": 2,
+          "row": 4,
+          "hex": "#7e7e7e",
+          "seen": "#7e7e7e"
+        },
+        {
+          "column": 2,
+          "row": 5,
+          "hex": "#666666",
+          "seen": "#666666"
+        },
+        {
+          "column": 2,
+          "row": 6,
+          "hex": "#4e4e4e",
+          "seen": "#4e4e4e"
+        },
+        {
+          "column": 2,
+          "row": 7,
+          "hex": "#363636",
+          "seen": "#363636"
+        },
+        {
+          "column": 2,
+          "row": 8,
+          "hex": "#1e1e1e",
+          "seen": "#1e1e1e"
+        },
+        {
+          "column": 3,
+          "row": 0,
+          "hex": "#fffc9c",
+          "seen": "#fff595"
+        },
+        {
+          "column": 3,
+          "row": 1,
+          "hex": "#ead884",
+          "seen": "#e7d47d"
+        },
+        {
+          "column": 3,
+          "row": 2,
+          "hex": "#d2ba72",
+          "seen": "#c8b86c"
+        },
+        {
+          "column": 3,
+          "row": 3,
+          "hex": "#fc9060",
+          "seen": "#ad9e5c"
+        },
+        {
+          "column": 3,
+          "row": 4,
+          "hex": "#ea6c4e",
+          "seen": "#8d814b"
+        },
+        {
+          "column": 3,
+          "row": 5,
+          "hex": "#d25442",
+          "seen": "#766c40"
+        },
+        {
+          "column": 3,
+          "row": 6,
+          "hex": "#b43630",
+          "seen": "#5a522e"
+        },
+        {
+          "column": 3,
+          "row": 7,
+          "hex": "#96121e",
+          "seen": "#3f391d"
+        },
+        {
+          "column": 3,
+          "row": 8,
+          "hex": "#6c0012",
+          "seen": "#282411"
+        },
+        {
+          "column": 4,
+          "row": 0,
+          "hex": "#ffff4e",
+          "seen": "#fff42f"
+        },
+        {
+          "column": 4,
+          "row": 1,
+          "hex": "#f6d812",
+          "seen": "#efd200"
+        },
+        {
+          "column": 4,
+          "row": 2,
+          "hex": "#d8ba0c",
+          "seen": "#cfb600"
+        },
+        {
+          "column": 4,
+          "row": 3,
+          "hex": "#baa20c",
+          "seen": "#b49e00"
+        },
+        {
+          "column": 4,
+          "row": 4,
+          "hex": "#9c8a06",
+          "seen": "#998600"
+        },
+        {
+          "column": 4,
+          "row": 5,
+          "hex": "#846c00",
+          "seen": "#7a6a00"
+        },
+        {
+          "column": 4,
+          "row": 6,
+          "hex": "#9c4800",
+          "seen": "#615400"
+        },
+        {
+          "column": 4,
+          "row": 7,
+          "hex": "#8a2a00",
+          "seen": "#473d00"
+        }
+      ],
+      "crayons": [
+        {
+          "hex": "#00d8ff",
+          "seen": "#bed1ff"
+        },
+        {
+          "hex": "#6090fc",
+          "seen": "#5e9bff"
+        },
+        {
+          "hex": "#1e2af0",
+          "seen": "#005cf5"
+        },
+        {
+          "hex": "#000666",
+          "seen": "#002068"
+        },
+        {
+          "hex": "#843690",
+          "seen": "#235193"
+        },
+        {
+          "hex": "#600048",
+          "seen": "#0e264a"
+        },
+        {
+          "hex": "#cccccc",
+          "seen": "#cccccc"
+        },
+        {
+          "hex": "#7e7e7e",
+          "seen": "#7e7e7e"
+        },
+        {
+          "hex": "#1e1e1e",
+          "seen": "#1e1e1e"
+        },
+        {
+          "hex": "#ead884",
+          "seen": "#e7d47d"
+        },
+        {
+          "hex": "#fc9060",
+          "seen": "#ad9e5c"
+        },
+        {
+          "hex": "#b43630",
+          "seen": "#5a522e"
+        },
+        {
+          "hex": "#ffff4e",
+          "seen": "#fff42f"
+        },
+        {
+          "hex": "#baa20c",
+          "seen": "#b49e00"
+        },
+        {
+          "hex": "#846c00",
+          "seen": "#7a6a00"
+        }
+      ],
+      "stats": {
+        "cellCount": 41,
+        "columnCount": 5,
+        "droppedForProximity": 4,
+        "worstNonNeighbourDe": 12.2,
+        "worstPair": [
+          "#00d8ff",
+          "#00deea"
+        ]
+      }
+    },
+    "deutan": {
+      "vision": "deutan",
+      "axis": [
+        -0.21926141483914288,
+        0.975666147799921
+      ],
+      "columnFractions": [
+        -0.95,
+        -0.5,
+        0,
+        0.5,
+        0.95
+      ],
+      "columnHueCenters": [
+        260,
+        300,
+        null,
+        130,
+        70
+      ],
+      "rowLightness": [
+        95,
+        85,
+        75,
+        65,
+        55,
+        45,
+        35,
+        25,
+        15
+      ],
+      "cells": [
+        {
+          "column": 0,
+          "row": 2,
+          "hex": "#de96ff",
+          "seen": "#96b4fc"
+        },
+        {
+          "column": 0,
+          "row": 3,
+          "hex": "#9096ff",
+          "seen": "#679cfd"
+        },
+        {
+          "column": 0,
+          "row": 4,
+          "hex": "#188aff",
+          "seen": "#0081fd"
+        },
+        {
+          "column": 0,
+          "row": 5,
+          "hex": "#0054ff",
+          "seen": "#005cfc"
+        },
+        {
+          "column": 0,
+          "row": 6,
+          "hex": "#0012e4",
+          "seen": "#0039e1"
+        },
+        {
+          "column": 0,
+          "row": 7,
+          "hex": "#0012ae",
+          "seen": "#002bac"
+        },
+        {
+          "column": 0,
+          "row": 8,
+          "hex": "#000678",
+          "seen": "#001a76"
+        },
+        {
+          "column": 1,
+          "row": 1,
+          "hex": "#ffb4ea",
+          "seen": "#c7cfe8"
+        },
+        {
+          "column": 1,
+          "row": 2,
+          "hex": "#ff8ae4",
+          "seen": "#abb9e1"
+        },
+        {
+          "column": 1,
+          "row": 3,
+          "hex": "#d872d2",
+          "seen": "#899dcf"
+        },
+        {
+          "column": 1,
+          "row": 4,
+          "hex": "#a866c6",
+          "seen": "#6583c3"
+        },
+        {
+          "column": 1,
+          "row": 5,
+          "hex": "#725aba",
+          "seen": "#3768b8"
+        },
+        {
+          "column": 1,
+          "row": 6,
+          "hex": "#5442a2",
+          "seen": "#004fa0"
+        },
+        {
+          "column": 1,
+          "row": 7,
+          "hex": "#541878",
+          "seen": "#003876"
+        },
+        {
+          "column": 1,
+          "row": 8,
+          "hex": "#420054",
+          "seen": "#002652"
+        },
+        {
+          "column": 2,
+          "row": 0,
+          "hex": "#ffffff",
+          "seen": "#ffffff"
+        },
+        {
+          "column": 2,
+          "row": 1,
+          "hex": "#cccccc",
+          "seen": "#cccccc"
+        },
+        {
+          "column": 2,
+          "row": 2,
+          "hex": "#aeaeae",
+          "seen": "#aeaeae"
+        },
+        {
+          "column": 2,
+          "row": 3,
+          "hex": "#969696",
+          "seen": "#969696"
+        },
+        {
+          "column": 2,
+          "row": 4,
+          "hex": "#7e7e7e",
+          "seen": "#7e7e7e"
+        },
+        {
+          "column": 2,
+          "row": 5,
+          "hex": "#666666",
+          "seen": "#666666"
+        },
+        {
+          "column": 2,
+          "row": 6,
+          "hex": "#4e4e4e",
+          "seen": "#4e4e4e"
+        },
+        {
+          "column": 2,
+          "row": 7,
+          "hex": "#363636",
+          "seen": "#363636"
+        },
+        {
+          "column": 2,
+          "row": 8,
+          "hex": "#1e1e1e",
+          "seen": "#1e1e1e"
+        },
+        {
+          "column": 3,
+          "row": 0,
+          "hex": "#d8ff96",
+          "seen": "#fff19c"
+        },
+        {
+          "column": 3,
+          "row": 1,
+          "hex": "#a8ea84",
+          "seen": "#e7d68a"
+        },
+        {
+          "column": 3,
+          "row": 2,
+          "hex": "#84cc6c",
+          "seen": "#c7b872"
+        },
+        {
+          "column": 3,
+          "row": 3,
+          "hex": "#5ab45a",
+          "seen": "#ab9e60"
+        },
+        {
+          "column": 3,
+          "row": 4,
+          "hex": "#249c48",
+          "seen": "#90844e"
+        },
+        {
+          "column": 3,
+          "row": 5,
+          "hex": "#007e36",
+          "seen": "#73693c"
+        },
+        {
+          "column": 3,
+          "row": 6,
+          "hex": "#00662a",
+          "seen": "#5d552f"
+        },
+        {
+          "column": 4,
+          "row": 0,
+          "hex": "#fcfc30",
+          "seen": "#fff745"
+        },
+        {
+          "column": 4,
+          "row": 1,
+          "hex": "#ead224",
+          "seen": "#eed535"
+        },
+        {
+          "column": 4,
+          "row": 2,
+          "hex": "#d2b418",
+          "seen": "#d0b928"
+        },
+        {
+          "column": 4,
+          "row": 3,
+          "hex": "#ae9c00",
+          "seen": "#b19e18"
+        },
+        {
+          "column": 4,
+          "row": 4,
+          "hex": "#968400",
+          "seen": "#978713"
+        },
+        {
+          "column": 4,
+          "row": 5,
+          "hex": "#786c00",
+          "seen": "#7b6d0e"
+        },
+        {
+          "column": 4,
+          "row": 6,
+          "hex": "#605400",
+          "seen": "#615608"
+        },
+        {
+          "column": 4,
+          "row": 7,
+          "hex": "#6c0600",
+          "seen": "#433b00"
+        },
+        {
+          "column": 4,
+          "row": 8,
+          "hex": "#4e0000",
+          "seen": "#2f2800"
+        }
+      ],
+      "crayons": [
+        {
+          "hex": "#de96ff",
+          "seen": "#96b4fc"
+        },
+        {
+          "hex": "#188aff",
+          "seen": "#0081fd"
+        },
+        {
+          "hex": "#0012e4",
+          "seen": "#0039e1"
+        },
+        {
+          "hex": "#000678",
+          "seen": "#001a76"
+        },
+        {
+          "hex": "#725aba",
+          "seen": "#3768b8"
+        },
+        {
+          "hex": "#541878",
+          "seen": "#003876"
+        },
+        {
+          "hex": "#cccccc",
+          "seen": "#cccccc"
+        },
+        {
+          "hex": "#7e7e7e",
+          "seen": "#7e7e7e"
+        },
+        {
+          "hex": "#1e1e1e",
+          "seen": "#1e1e1e"
+        },
+        {
+          "hex": "#a8ea84",
+          "seen": "#e7d68a"
+        },
+        {
+          "hex": "#5ab45a",
+          "seen": "#ab9e60"
+        },
+        {
+          "hex": "#00662a",
+          "seen": "#5d552f"
+        },
+        {
+          "hex": "#fcfc30",
+          "seen": "#fff745"
+        },
+        {
+          "hex": "#d2b418",
+          "seen": "#d0b928"
+        },
+        {
+          "hex": "#786c00",
+          "seen": "#7b6d0e"
+        }
+      ],
+      "stats": {
+        "cellCount": 40,
+        "columnCount": 5,
+        "droppedForProximity": 5,
+        "worstNonNeighbourDe": 13.2,
+        "worstPair": [
+          "#ffb4ea",
+          "#cccccc"
+        ]
+      }
+    },
+    "tritan": {
+      "vision": "tritan",
+      "axis": [
+        0.9609002753606628,
+        0.27689467458187494
+      ],
+      "columnFractions": [
+        -0.95,
+        -0.5,
+        0,
+        0.5,
+        0.95
+      ],
+      "columnHueCenters": [
+        130,
+        110,
+        null,
+        30,
+        10
+      ],
+      "rowLightness": [
+        95,
+        85,
+        75,
+        65,
+        55,
+        45,
+        35,
+        25,
+        15
+      ],
+      "cells": [
+        {
+          "column": 0,
+          "row": 0,
+          "hex": "#78ffc0",
+          "seen": "#48feee"
+        },
+        {
+          "column": 0,
+          "row": 1,
+          "hex": "#00eaba",
+          "seen": "#00ecdc"
+        },
+        {
+          "column": 0,
+          "row": 2,
+          "hex": "#00d296",
+          "seen": "#00d2c2"
+        },
+        {
+          "column": 0,
+          "row": 3,
+          "hex": "#18b46c",
+          "seen": "#00b2a2"
+        },
+        {
+          "column": 0,
+          "row": 4,
+          "hex": "#0c9648",
+          "seen": "#009384"
+        },
+        {
+          "column": 0,
+          "row": 5,
+          "hex": "#007824",
+          "seen": "#007567"
+        },
+        {
+          "column": 0,
+          "row": 6,
+          "hex": "#006000",
+          "seen": "#005d50"
+        },
+        {
+          "column": 0,
+          "row": 7,
+          "hex": "#004800",
+          "seen": "#00453c"
+        },
+        {
+          "column": 0,
+          "row": 8,
+          "hex": "#003000",
+          "seen": "#002e27"
+        },
+        {
+          "column": 1,
+          "row": 0,
+          "hex": "#b4ff96",
+          "seen": "#b1f8e5"
+        },
+        {
+          "column": 1,
+          "row": 1,
+          "hex": "#9cea84",
+          "seen": "#98e4d1"
+        },
+        {
+          "column": 1,
+          "row": 2,
+          "hex": "#84cc66",
+          "seen": "#81c6b4"
+        },
+        {
+          "column": 1,
+          "row": 3,
+          "hex": "#6cae48",
+          "seen": "#6aa898"
+        },
+        {
+          "column": 1,
+          "row": 4,
+          "hex": "#5a9024",
+          "seen": "#5b8a7b"
+        },
+        {
+          "column": 1,
+          "row": 5,
+          "hex": "#487800",
+          "seen": "#497265"
+        },
+        {
+          "column": 2,
+          "row": 0,
+          "hex": "#ffffff",
+          "seen": "#ffffff"
+        },
+        {
+          "column": 2,
+          "row": 1,
+          "hex": "#cccccc",
+          "seen": "#cccccc"
+        },
+        {
+          "column": 2,
+          "row": 2,
+          "hex": "#aeaeae",
+          "seen": "#aeaeae"
+        },
+        {
+          "column": 2,
+          "row": 3,
+          "hex": "#969696",
+          "seen": "#969696"
+        },
+        {
+          "column": 2,
+          "row": 4,
+          "hex": "#7e7e7e",
+          "seen": "#7e7e7e"
+        },
+        {
+          "column": 2,
+          "row": 5,
+          "hex": "#666666",
+          "seen": "#666666"
+        },
+        {
+          "column": 2,
+          "row": 6,
+          "hex": "#4e4e4e",
+          "seen": "#4e4e4e"
+        },
+        {
+          "column": 2,
+          "row": 7,
+          "hex": "#363636",
+          "seen": "#363636"
+        },
+        {
+          "column": 2,
+          "row": 8,
+          "hex": "#1e1e1e",
+          "seen": "#1e1e1e"
+        },
+        {
+          "column": 3,
+          "row": 3,
+          "hex": "#c6962a",
+          "seen": "#d78781"
+        },
+        {
+          "column": 3,
+          "row": 4,
+          "hex": "#c07248",
+          "seen": "#d16368"
+        },
+        {
+          "column": 3,
+          "row": 5,
+          "hex": "#a84890",
+          "seen": "#b04b65"
+        },
+        {
+          "column": 3,
+          "row": 6,
+          "hex": "#842a84",
+          "seen": "#883653"
+        },
+        {
+          "column": 3,
+          "row": 7,
+          "hex": "#661272",
+          "seen": "#672743"
+        },
+        {
+          "column": 3,
+          "row": 8,
+          "hex": "#48005a",
+          "seen": "#471932"
+        },
+        {
+          "column": 4,
+          "row": 1,
+          "hex": "#ffd260",
+          "seen": "#ffc2b9"
+        },
+        {
+          "column": 4,
+          "row": 2,
+          "hex": "#ffa854",
+          "seen": "#ff9595"
+        },
+        {
+          "column": 4,
+          "row": 3,
+          "hex": "#ff7296",
+          "seen": "#ff627f"
+        },
+        {
+          "column": 4,
+          "row": 4,
+          "hex": "#ff3648",
+          "seen": "#ff003f"
+        },
+        {
+          "column": 4,
+          "row": 5,
+          "hex": "#c01812",
+          "seen": "#d4001b"
+        },
+        {
+          "column": 4,
+          "row": 6,
+          "hex": "#960606",
+          "seen": "#a6000b"
+        },
+        {
+          "column": 4,
+          "row": 7,
+          "hex": "#720000",
+          "seen": "#7f0003"
+        },
+        {
+          "column": 4,
+          "row": 8,
+          "hex": "#540000",
+          "seen": "#5e0001"
+        }
+      ],
+      "crayons": [
+        {
+          "hex": "#78ffc0",
+          "seen": "#48feee"
+        },
+        {
+          "hex": "#18b46c",
+          "seen": "#00b2a2"
+        },
+        {
+          "hex": "#004800",
+          "seen": "#00453c"
+        },
+        {
+          "hex": "#b4ff96",
+          "seen": "#b1f8e5"
+        },
+        {
+          "hex": "#5a9024",
+          "seen": "#5b8a7b"
+        },
+        {
+          "hex": "#aeaeae",
+          "seen": "#aeaeae"
+        },
+        {
+          "hex": "#666666",
+          "seen": "#666666"
+        },
+        {
+          "hex": "#1e1e1e",
+          "seen": "#1e1e1e"
+        },
+        {
+          "hex": "#c07248",
+          "seen": "#d16368"
+        },
+        {
+          "hex": "#661272",
+          "seen": "#672743"
+        },
+        {
+          "hex": "#ffd260",
+          "seen": "#ffc2b9"
+        },
+        {
+          "hex": "#ff7296",
+          "seen": "#ff627f"
+        },
+        {
+          "hex": "#ff3648",
+          "seen": "#ff003f"
+        },
+        {
+          "hex": "#960606",
+          "seen": "#a6000b"
+        },
+        {
+          "hex": "#540000",
+          "seen": "#5e0001"
+        }
+      ],
+      "stats": {
+        "cellCount": 38,
+        "columnCount": 5,
+        "droppedForProximity": 7,
+        "worstNonNeighbourDe": 13,
+        "worstPair": [
+          "#c6962a",
+          "#ffa854"
+        ]
+      }
+    }
+  },
+  "today": [
+    {
+      "family": "reds",
+      "shade": 1,
+      "hex": "#FFB3C1",
+      "seen": {
+        "protan": "#bebfc1",
+        "deutan": "#d0cdc0",
+        "tritan": "#ffadb8"
+      }
+    },
+    {
+      "family": "reds",
+      "shade": 2,
+      "hex": "#FF8FA3",
+      "seen": {
+        "protan": "#a3a3a3",
+        "deutan": "#bfb8a1",
+        "tritan": "#ff8496"
+      }
+    },
+    {
+      "family": "reds",
+      "shade": 3,
+      "hex": "#FF6B6B",
+      "seen": {
+        "protan": "#90886a",
+        "deutan": "#b5a767",
+        "tritan": "#ff506c"
+      }
+    },
+    {
+      "family": "reds",
+      "shade": 4,
+      "hex": "#EE5A6F",
+      "seen": {
+        "protan": "#7d7a6f",
+        "deutan": "#a3986b",
+        "tritan": "#ff4062"
+      }
+    },
+    {
+      "family": "reds",
+      "shade": 5,
+      "hex": "#E63946",
+      "seen": {
+        "protan": "#6c6545",
+        "deutan": "#988940",
+        "tritan": "#fd0040"
+      }
+    },
+    {
+      "family": "reds",
+      "shade": 6,
+      "hex": "#D62828",
+      "seen": {
+        "protan": "#615725",
+        "deutan": "#8c7d1f",
+        "tritan": "#ec002b"
+      }
+    },
+    {
+      "family": "reds",
+      "shade": 7,
+      "hex": "#C1121F",
+      "seen": {
+        "protan": "#52491d",
+        "deutan": "#7b6d14",
+        "tritan": "#d5001b"
+      }
+    },
+    {
+      "family": "reds",
+      "shade": 8,
+      "hex": "#9D0208",
+      "seen": {
+        "protan": "#403804",
+        "deutan": "#635700",
+        "tritan": "#ae0009"
+      }
+    },
+    {
+      "family": "reds",
+      "shade": 9,
+      "hex": "#6A040F",
+      "seen": {
+        "protan": "#29240e",
+        "deutan": "#41390a",
+        "tritan": "#76000a"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 1,
+      "hex": "#FFAC81",
+      "seen": {
+        "protan": "#c2b57e",
+        "deutan": "#d6c781",
+        "tritan": "#ff9da1"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 2,
+      "hex": "#FFA07A",
+      "seen": {
+        "protan": "#b9ac77",
+        "deutan": "#cfc079",
+        "tritan": "#ff9096"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 3,
+      "hex": "#FF9E00",
+      "seen": {
+        "protan": "#bea600",
+        "deutan": "#d4bd09",
+        "tritan": "#ff8687"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 4,
+      "hex": "#FF8C42",
+      "seen": {
+        "protan": "#ad9b39",
+        "deutan": "#c8b441",
+        "tritan": "#ff747c"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 5,
+      "hex": "#FB8500",
+      "seen": {
+        "protan": "#a89400",
+        "deutan": "#c5af00",
+        "tritan": "#ff6972"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 6,
+      "hex": "#F77F00",
+      "seen": {
+        "protan": "#a38f00",
+        "deutan": "#c0aa00",
+        "tritan": "#ff636c"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 7,
+      "hex": "#E85D3B",
+      "seen": {
+        "protan": "#847637",
+        "deutan": "#a69536",
+        "tritan": "#ff3c56"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 8,
+      "hex": "#D36135",
+      "seen": {
+        "protan": "#817330",
+        "deutan": "#9c8d32",
+        "tritan": "#e74858"
+      }
+    },
+    {
+      "family": "oranges",
+      "shade": 9,
+      "hex": "#C34A36",
+      "seen": {
+        "protan": "#6b6133",
+        "deutan": "#897c32",
+        "tritan": "#d62d46"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 1,
+      "hex": "#FFEA00",
+      "seen": {
+        "protan": "#ffe200",
+        "deutan": "#ffeb2a",
+        "tritan": "#ffd8c7"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 2,
+      "hex": "#FFE66D",
+      "seen": {
+        "protan": "#fae161",
+        "deutan": "#ffea73",
+        "tritan": "#ffd7cb"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 3,
+      "hex": "#FFD60A",
+      "seen": {
+        "protan": "#efd200",
+        "deutan": "#f9de27",
+        "tritan": "#ffc3b6"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 4,
+      "hex": "#FFC300",
+      "seen": {
+        "protan": "#ddc300",
+        "deutan": "#ecd21c",
+        "tritan": "#ffafa6"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 5,
+      "hex": "#FFB703",
+      "seen": {
+        "protan": "#d3b900",
+        "deutan": "#e4cb18",
+        "tritan": "#ffa29c"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 6,
+      "hex": "#FFAA00",
+      "seen": {
+        "protan": "#c8af00",
+        "deutan": "#dcc411",
+        "tritan": "#ff9491"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 7,
+      "hex": "#F9C74F",
+      "seen": {
+        "protan": "#dec640",
+        "deutan": "#ead354",
+        "tritan": "#ffb6ae"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 8,
+      "hex": "#F9B44A",
+      "seen": {
+        "protan": "#cdb73d",
+        "deutan": "#ddc84d",
+        "tritan": "#ffa29e"
+      }
+    },
+    {
+      "family": "yellows",
+      "shade": 9,
+      "hex": "#F9844A",
+      "seen": {
+        "protan": "#a49444",
+        "deutan": "#c1ae48",
+        "tritan": "#ff6c77"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 1,
+      "hex": "#AED581",
+      "seen": {
+        "protan": "#ddca7b",
+        "deutan": "#d7c885",
+        "tritan": "#b1cec0"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 2,
+      "hex": "#73E2A7",
+      "seen": {
+        "protan": "#e0d4a4",
+        "deutan": "#d0c8ab",
+        "tritan": "#54e1d2"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 3,
+      "hex": "#8FD694",
+      "seen": {
+        "protan": "#d8ca90",
+        "deutan": "#cdc398",
+        "tritan": "#86d3c5"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 4,
+      "hex": "#52B788",
+      "seen": {
+        "protan": "#b5ab85",
+        "deutan": "#a6a08b",
+        "tritan": "#2cb6aa"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 5,
+      "hex": "#2ECC71",
+      "seen": {
+        "protan": "#ccbb6a",
+        "deutan": "#baae77",
+        "tritan": "#00c9b6"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 6,
+      "hex": "#10B981",
+      "seen": {
+        "protan": "#b6aa7e",
+        "deutan": "#a49d85",
+        "tritan": "#00b9aa"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 7,
+      "hex": "#00B894",
+      "seen": {
+        "protan": "#b2ab92",
+        "deutan": "#9f9d97",
+        "tritan": "#00baae"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 8,
+      "hex": "#2D6A4F",
+      "seen": {
+        "protan": "#68634e",
+        "deutan": "#605c51",
+        "tritan": "#166a63"
+      }
+    },
+    {
+      "family": "greens",
+      "shade": 9,
+      "hex": "#1B5E3F",
+      "seen": {
+        "protan": "#5d573d",
+        "deutan": "#545041",
+        "tritan": "#005d56"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 1,
+      "hex": "#90CAF9",
+      "seen": {
+        "protan": "#b6cafb",
+        "deutan": "#a9bff8",
+        "tritan": "#67d5da"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 2,
+      "hex": "#4CC9F0",
+      "seen": {
+        "protan": "#b2c4f2",
+        "deutan": "#9cb4f0",
+        "tritan": "#00d5d6"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 3,
+      "hex": "#64B5F6",
+      "seen": {
+        "protan": "#99b6f9",
+        "deutan": "#85a8f5",
+        "tritan": "#00c5cb"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 4,
+      "hex": "#42A5F5",
+      "seen": {
+        "protan": "#80a8f8",
+        "deutan": "#6797f3",
+        "tritan": "#00b8c2"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 5,
+      "hex": "#2196F3",
+      "seen": {
+        "protan": "#689cf7",
+        "deutan": "#4789f1",
+        "tritan": "#00acb9"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 6,
+      "hex": "#0096C7",
+      "seen": {
+        "protan": "#7d94c9",
+        "deutan": "#6684c6",
+        "tritan": "#00a3a7"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 7,
+      "hex": "#0077B6",
+      "seen": {
+        "protan": "#5879b9",
+        "deutan": "#416bb5",
+        "tritan": "#00878e"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 8,
+      "hex": "#023E8A",
+      "seen": {
+        "protan": "#00478d",
+        "deutan": "#003c89",
+        "tritan": "#00515d"
+      }
+    },
+    {
+      "family": "blues",
+      "shade": 9,
+      "hex": "#03045E",
+      "seen": {
+        "protan": "#001d60",
+        "deutan": "#00135d",
+        "tritan": "#002434"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 1,
+      "hex": "#E0AAFF",
+      "seen": {
+        "protan": "#9cbcff",
+        "deutan": "#a8c0fc",
+        "tritan": "#ddb5c9"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 2,
+      "hex": "#D8A7FF",
+      "seen": {
+        "protan": "#96b8ff",
+        "deutan": "#a1bbfc",
+        "tritan": "#d3b3c7"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 3,
+      "hex": "#C77DFF",
+      "seen": {
+        "protan": "#589bff",
+        "deutan": "#6f9ffc",
+        "tritan": "#bf93b3"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 4,
+      "hex": "#B565D8",
+      "seen": {
+        "protan": "#4982dc",
+        "deutan": "#6389d5",
+        "tritan": "#b27895"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 5,
+      "hex": "#9D4EDD",
+      "seen": {
+        "protan": "#0073e1",
+        "deutan": "#2b76da",
+        "tritan": "#926c8f"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 6,
+      "hex": "#9B59B6",
+      "seen": {
+        "protan": "#4570b9",
+        "deutan": "#5976b4",
+        "tritan": "#99677f"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 7,
+      "hex": "#8E44AD",
+      "seen": {
+        "protan": "#2360b0",
+        "deutan": "#4267aa",
+        "tritan": "#8c5772"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 8,
+      "hex": "#7209B7",
+      "seen": {
+        "protan": "#004abb",
+        "deutan": "#004cb4",
+        "tritan": "#64456b"
+      }
+    },
+    {
+      "family": "purples",
+      "shade": 9,
+      "hex": "#5A189A",
+      "seen": {
+        "protan": "#00409d",
+        "deutan": "#003f98",
+        "tritan": "#4b3e5b"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 1,
+      "hex": "#FFB3D9",
+      "seen": {
+        "protan": "#b9c2da",
+        "deutan": "#cbced7",
+        "tritan": "#ffb2c0"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 2,
+      "hex": "#FF8AC7",
+      "seen": {
+        "protan": "#96a4c9",
+        "deutan": "#b4b8c4",
+        "tritan": "#ff87a1"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 3,
+      "hex": "#F06292",
+      "seen": {
+        "protan": "#7c8293",
+        "deutan": "#a29e8f",
+        "tritan": "#ff5474"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 4,
+      "hex": "#FF4081",
+      "seen": {
+        "protan": "#707582",
+        "deutan": "#a29a7c",
+        "tritan": "#ff065c"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 5,
+      "hex": "#FF006E",
+      "seen": {
+        "protan": "#61656f",
+        "deutan": "#9c9268",
+        "tritan": "#ff0041"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 6,
+      "hex": "#E91E63",
+      "seen": {
+        "protan": "#5e6064",
+        "deutan": "#91875e",
+        "tritan": "#ff0040"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 7,
+      "hex": "#D81B60",
+      "seen": {
+        "protan": "#565961",
+        "deutan": "#857d5b",
+        "tritan": "#ec003d"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 8,
+      "hex": "#C2185B",
+      "seen": {
+        "protan": "#4b505c",
+        "deutan": "#767057",
+        "tritan": "#d40039"
+      }
+    },
+    {
+      "family": "pinks",
+      "shade": 9,
+      "hex": "#AD1457",
+      "seen": {
+        "protan": "#404758",
+        "deutan": "#686454",
+        "tritan": "#bd0035"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 1,
+      "hex": "#BCAAA4",
+      "seen": {
+        "protan": "#aeaca4",
+        "deutan": "#b2afa4",
+        "tritan": "#c1a8a8"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 2,
+      "hex": "#A1887F",
+      "seen": {
+        "protan": "#8e8a7e",
+        "deutan": "#948f7f",
+        "tritan": "#a88485"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 3,
+      "hex": "#8D6E63",
+      "seen": {
+        "protan": "#757162",
+        "deutan": "#7d7763",
+        "tritan": "#95696b"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 4,
+      "hex": "#795548",
+      "seen": {
+        "protan": "#5e5947",
+        "deutan": "#666048",
+        "tritan": "#824f52"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 5,
+      "hex": "#6D4C41",
+      "seen": {
+        "protan": "#545040",
+        "deutan": "#5c5641",
+        "tritan": "#754749"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 6,
+      "hex": "#5D4037",
+      "seen": {
+        "protan": "#474336",
+        "deutan": "#4e4937",
+        "tritan": "#643c3e"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 7,
+      "hex": "#4E342E",
+      "seen": {
+        "protan": "#3a372e",
+        "deutan": "#403c2e",
+        "tritan": "#543032"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 8,
+      "hex": "#3E2723",
+      "seen": {
+        "protan": "#2c2a23",
+        "deutan": "#322f23",
+        "tritan": "#432426"
+      }
+    },
+    {
+      "family": "browns",
+      "shade": 9,
+      "hex": "#2C1810",
+      "seen": {
+        "protan": "#1d1a0f",
+        "deutan": "#221f10",
+        "tritan": "#301516"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 1,
+      "hex": "#FFFFFF",
+      "seen": {
+        "protan": "#ffffff",
+        "deutan": "#ffffff",
+        "tritan": "#ffffff"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 2,
+      "hex": "#90A4AE",
+      "seen": {
+        "protan": "#9fa3af",
+        "deutan": "#9b9fae",
+        "tritan": "#88a7a7"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 3,
+      "hex": "#78909C",
+      "seen": {
+        "protan": "#8a8f9d",
+        "deutan": "#858a9c",
+        "tritan": "#6e9394"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 4,
+      "hex": "#607D8B",
+      "seen": {
+        "protan": "#767c8c",
+        "deutan": "#70778b",
+        "tritan": "#528181"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 5,
+      "hex": "#546E7A",
+      "seen": {
+        "protan": "#686d7b",
+        "deutan": "#62687a",
+        "tritan": "#487272"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 6,
+      "hex": "#455A64",
+      "seen": {
+        "protan": "#555965",
+        "deutan": "#505564",
+        "tritan": "#3b5d5d"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 7,
+      "hex": "#37474F",
+      "seen": {
+        "protan": "#43464f",
+        "deutan": "#3f434f",
+        "tritan": "#304949"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 8,
+      "hex": "#263238",
+      "seen": {
+        "protan": "#2f3138",
+        "deutan": "#2c2f38",
+        "tritan": "#203434"
+      }
+    },
+    {
+      "family": "greys",
+      "shade": 9,
+      "hex": "#1A1F24",
+      "seen": {
+        "protan": "#1d1f24",
+        "deutan": "#1c1e24",
+        "tritan": "#172021"
+      }
+    }
+  ]
+}
