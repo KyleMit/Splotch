@@ -92,7 +92,7 @@ export type ToolDrawerControl = (typeof TOOL_DRAWER_CONTROLS)[number];
 // the buttons other sections own (Coloring's books, Saving's camera). The AI
 // button is absent because its visibility also hangs on client-only state —
 // see isAiImageButtonVisible in actionButtonLayout.ts.
-export const ACTION_PANEL_CONTROLS = [
+const ACTION_PANEL_CONTROLS = [
   ...TOOL_DRAWER_CONTROLS,
   'coloringBookEnabled',
   'screenshotEnabled',
