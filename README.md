@@ -53,6 +53,7 @@ fully static native apps via Capacitor. The best entry points, roughly in readin
 | [Architecture guide](docs/ARCHITECTURE.md)                 | Tech stack, file-by-file source map, UI element glossary         |
 | [Mobile guide](docs/MOBILE/native.md)                      | Android/iOS toolchains, native builds, store releases            |
 | [docs/adrs/](docs/adrs/)                                   | Architectural decision records — the *why* behind how it's built |
+| [Security policy](docs/SECURITY.md)                        | How to report a vulnerability privately, scope, response targets |
 | [GitHub Issues](https://github.com/kylemit/splotch/issues) | The live backlog ([how it's organized](docs/ISSUE-WORKFLOW.md))  |
 
 ## License
