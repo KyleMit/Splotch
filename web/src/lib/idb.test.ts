@@ -69,10 +69,18 @@ describe('requestPersistentStorage', () => {
   });
 });
 
+function stubConnection(): IdbDatabase<TestDb> & { close: () => void } {
+  let close!: () => void;
+  const closed = new Promise<void>((resolve) => {
+    close = resolve;
+  });
+  return { closed, close } as unknown as IdbDatabase<TestDb> & { close: () => void };
+}
+
 describe('lazyIdbDatabase', () => {
   it('retries after an open failure and memoizes the successful connection', async () => {
     const openingError = new Error('database unavailable');
-    const database = {} as IdbDatabase<TestDb>;
+    const database = stubConnection();
     openDatabase.mockRejectedValueOnce(openingError).mockResolvedValueOnce(database);
     const getDb = lazyIdbDatabase<TestDb>('test-db', 'records');
 
@@ -83,6 +91,21 @@ describe('lazyIdbDatabase', () => {
     expect(openDatabase).toHaveBeenCalledTimes(2);
     expect(openDatabase).toHaveBeenCalledWith('test-db', 'records');
   });
+
+  it('opens a new connection after the browser closes the memoized one', async () => {
+    const first = stubConnection();
+    const second = stubConnection();
+    openDatabase.mockResolvedValueOnce(first).mockResolvedValueOnce(second);
+    const getDb = lazyIdbDatabase<TestDb>('test-db', 'records');
+
+    await expect(getDb()).resolves.toBe(first);
+    first.close();
+    await first.closed;
+
+    await expect(getDb()).resolves.toBe(second);
+    await expect(getDb()).resolves.toBe(second);
+    expect(openDatabase).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('idbKvStore', () => {
@@ -90,7 +113,12 @@ describe('idbKvStore', () => {
     const get = vi.fn().mockResolvedValue({ message: 'stored' });
     const put = vi.fn().mockResolvedValue('record');
     const deleteRecord = vi.fn().mockResolvedValue(undefined);
-    const database = { get, put, delete: deleteRecord } as unknown as IdbDatabase<TestDb>;
+    const database = {
+      closed: new Promise<void>(() => {}),
+      get,
+      put,
+      delete: deleteRecord,
+    } as unknown as IdbDatabase<TestDb>;
     openDatabase.mockResolvedValue(database);
     const records = idbKvStore<TestDb>('test-db', 'records');
 

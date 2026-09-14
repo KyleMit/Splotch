@@ -2,7 +2,7 @@ import type { DBSchema } from './idbDatabase';
 import { browser } from '$app/environment';
 import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';
-import { idbKvStore, lazyIdbDatabase } from './idb';
+import { lazyIdbDatabase } from './idb';
 import { readString, removeKey, writeString } from './storage';
 import { STORAGE_KEYS } from './storageKeys';
 
@@ -48,13 +48,6 @@ interface SecureDb extends DBSchema {
   };
 }
 
-interface SecretPayloadDb extends DBSchema {
-  secrets: {
-    key: string;
-    value: SecretPayload;
-  };
-}
-
 // Native plugin, loaded lazily so it's never pulled in on the web or during SSR.
 // Returns the module namespace, not the SecureStorage proxy — see
 // lazyPluginModule for why that distinction is load-bearing.
@@ -69,11 +62,15 @@ const getPlugin = lazyPluginModule(() =>
 
 // --- web: IndexedDB via idb (also lazy) ---
 const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
-// This views SecureDb's physical store only through named secret-payload rows: webSave, webLoad,
-// and webClear receive the secret name, while MASTER_KEY_ROW stays exclusively on getDb (as does
-// the read-only absence re-check, which needs a transaction handle). webLoad still validates
-// persisted data, and the narrow put type prevents payload-path writes of CryptoKey.
-const payloadStore = idbKvStore<SecretPayloadDb>(DB_NAME, STORE);
+// A view of the same connection through named secret-payload rows only: webSave, webLoad, and
+// webClear receive the secret name, while MASTER_KEY_ROW stays exclusively on getDb (as does the
+// read-only absence re-check, which needs a transaction handle). webLoad still validates persisted
+// data, and the narrow put type prevents payload-path writes of CryptoKey.
+const payloadStore = {
+  get: async (name: string) => (await getDb()).get(STORE, name),
+  put: async (name: string, payload: SecretPayload) => (await getDb()).put(STORE, payload, name),
+  delete: async (name: string) => (await getDb()).delete(STORE, name),
+};
 
 function isSecretPayload(value: unknown): value is SecretPayload {
   return (
