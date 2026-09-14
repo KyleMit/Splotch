@@ -1,7 +1,6 @@
 <script lang="ts">
   import AiConfetti from './AiConfetti.svelte';
   import AiDial from './AiDial.svelte';
-  import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { aiProgress } from '$lib/state/aiProgress.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
@@ -15,7 +14,6 @@
 
   let { exiting, onaspect }: Props = $props();
 
-  let stageEl = $state<HTMLDivElement | undefined>();
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
   // A URL exists before its image has intrinsic dimensions. Keep the fallback
   // geometry until this exact resource has decoded, including on the result swap.
@@ -34,30 +32,6 @@
   // an 18px blur and is the knob if that ever stops being true.
   const BLUR_STEP_PX = 0.25;
 
-  // Tracks the stage's rendered size, which AiConfetti needs in real pixels: the
-  // fall distance (--stage-h) spans the stage rather than a fixed guess, and the
-  // mask hole (below) is a circle the stage's own aspect can't express in
-  // percentages. Both vary by viewport, by the autosave variant, and by the
-  // picture's shape. Reactive on stageEl (not onMount): the card unmounts this
-  // whole component for the error state and mounts a fresh one on retry, so the
-  // observer must follow the element rather than bind once at mount.
-  let stageHeight = $state(0);
-  let stageWidth = $state(0);
-  $effect(() => {
-    if (!stageEl) {
-      stageHeight = 0;
-      stageWidth = 0;
-      return;
-    }
-    const el = stageEl;
-    const ro = new ResizeObserver(([entry]) => {
-      stageHeight = entry.contentRect.height;
-      stageWidth = entry.contentRect.width;
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  });
-
   function handleImgLoad(e: Event) {
     if (!(e.currentTarget instanceof HTMLImageElement)) return;
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
@@ -71,35 +45,11 @@
   const previewBlur = $derived(
     `${Math.round((MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - aiProgress.value)) / BLUR_STEP_PX) * BLUR_STEP_PX}px`
   );
-
-  // Keep the confetti's mask hole on the round dial, which means matching the
-  // dial's own two-part size: a fraction of the stage until it stops at its cap.
-  // The clearance opens the hole a little wider than the dial, so leaves vanish
-  // just behind its translucent rim rather than at the exact edge.
-  //
-  // The result is a circle, and a circle on a stage of any aspect needs the same
-  // radius in both axes — which the measured stage width gives directly. Handing
-  // AiConfetti one radius in real pixels for --confetti-rx/--confetti-ry beats
-  // deriving the vertical one from the picture's aspect, and it keeps the value
-  // out of the gradient as CSS math, which is not worth relying on there.
-  const MASK_CLEARANCE = 1.19;
-  const maskRadiusPx = $derived(
-    Math.min(stageWidth * (DIAL_STAGE_FRACTION / 2), DIAL_MAX_SIZE_PX / 2) * MASK_CLEARANCE
-  );
-
-  const stageStyle = $derived(
-    `--result-entry-blur: ${MIN_BLUR_PX}px;` +
-      (maskRadiusPx > 0
-        ? ` --confetti-rx: ${maskRadiusPx.toFixed(1)}px; --confetti-ry: ${maskRadiusPx.toFixed(1)}px;`
-        : '') +
-      (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
-  );
 </script>
 
 <div
   class="ai-stage"
-  bind:this={stageEl}
-  style={stageStyle}
+  style="--result-entry-blur: {MIN_BLUR_PX}px;"
   use:pinchZoom={() => ({
     target: zoomLayerEl!,
     // Only once the finished picture is on screen — the loading dial and
@@ -159,6 +109,29 @@
      from .stage-sizer below, within the budget the card hands down as
      --result-stage-max-h/-w (AiImageResult). */
   .ai-stage {
+    /* The stage's box, declared from the card's budget and the picture's aspect
+       — the same expression .placeholder-sizer below is drawn at, and what the
+       decoded sizer settles at whenever the picture is at least as large as the
+       budget (every render and preview is). AiConfetti spends these: the fall
+       distance spans --stage-h, and the mask hole is cut around the dial,
+       which is DIAL_STAGE_FRACTION of the stage until DIAL_MAX_SIZE_PX, opened
+       by MASK_CLEARANCE so leaves vanish behind its translucent rim rather
+       than at the exact edge (aiDialGeometry.ts; AiResultStage.geometry.test.ts
+       holds these literals to it). Declared rather than measured, so the hole
+       and the fall are right in the frame the stage first paints, follow the
+       aspect swap, a rotation and the autosave footer through the cascade, and
+       never rewrite this element's style while a generation runs over the live
+       canvas (ADR-0116). A circle needs the same radius on both axes, which the
+       width-derived radius gives on a stage of any aspect. */
+    --stage-w: min(
+      var(--result-stage-max-w),
+      calc(var(--result-stage-max-h) * var(--result-aspect))
+    );
+    --stage-h: calc(var(--stage-w) / var(--result-aspect));
+    --confetti-mask-radius: calc(min(var(--stage-w) * 0.26, 150px) * 1.19);
+    --confetti-rx: var(--confetti-mask-radius);
+    --confetti-ry: var(--confetti-mask-radius);
+
     position: relative;
     display: block;
     line-height: 0; /* drop the inline-image baseline gap under the sizer */

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
+import { DIAL_MAX_SIZE_PX, MASK_CLEARANCE } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { aiOutputFor } from './artifacts/ai-output-fixtures';
@@ -612,9 +612,9 @@ test.describe('AI result modal', () => {
     expect(result.afterPinchBack).toBe('');
   });
 
-  // AiConfetti's fall keyframes read --stage-h off .ai-stage (set by a
-  // ResizeObserver in AiImageResult) instead of a fixed 540px, so the leaves
-  // reach the bottom of the real stage on any viewport.
+  // AiConfetti's fall keyframes read --stage-h off .ai-stage, declared there
+  // from the card's budget and the picture's aspect rather than measured, so
+  // the leaves reach the bottom of the real stage on any viewport.
   test.describe('--stage-h tracks the stage element', () => {
     const stageHeightVar = (page: Page) =>
       page
@@ -635,9 +635,8 @@ test.describe('AI result modal', () => {
     });
 
     // The error state's {:else} unmounts .ai-stage; a retry mounts a fresh
-    // element. Regression coverage for the observer staying bound to the old,
-    // now-detached element instead of following aiStageEl to the new one.
-    test('re-observes a fresh .ai-stage after an error-then-retry', async ({ page }) => {
+    // element, which carries the declaration like the first did.
+    test('declares the height on a fresh .ai-stage after an error-then-retry', async ({ page }) => {
       const endpoint = await openAiResult(page);
       await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
 
@@ -649,4 +648,29 @@ test.describe('AI result modal', () => {
       await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
     });
   });
+
+  // The confetti's mask hole is declared from the same two numbers the dial
+  // sizes itself by, opened by the clearance — so on a phone, where the dial is
+  // a fraction of the stage, and on a desktop, where it sits at its cap, the
+  // hole is that much wider than the dial actually renders.
+  for (const [label, viewport] of [
+    ['a phone', NOTCHED_PHONE_VIEWPORT],
+    ['a desktop', DESKTOP_VIEWPORT],
+  ] as const) {
+    test(`cuts the confetti hole a clearance wider than the dial on ${label}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await openAiResult(page);
+      const dial = page.locator('.dial');
+      await expect(dial).toBeVisible();
+      await expect
+        .poll(async () => {
+          const dialWidth = (await dial.boundingBox())?.width ?? 0;
+          const radius = await page
+            .locator('.ai-stage')
+            .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--confetti-rx')));
+          return dialWidth > 0 ? Math.abs(radius - (dialWidth / 2) * MASK_CLEARANCE) : Infinity;
+        })
+        .toBeLessThan(0.5);
+    });
+  }
 });
