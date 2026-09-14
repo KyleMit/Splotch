@@ -223,13 +223,21 @@ function noteSecretAbsent(name: string) {
 // saving tab's readwrite transaction against this one, so either its row is
 // already visible here and nothing is recorded, or its commit — and the flag
 // removal that follows it — waits until this transaction has finished, after
-// the flag write below. Read-only is enough for that ordering, and cheaper.
+// the flag write. Read-only is enough for that ordering, and cheaper.
+//
+// The read and `tx.done` are observed together: an abort rejects both, and a
+// plain `await` on the read would throw past `done` and leave its rejection
+// unhandled. The flag is still written from the read's continuation, before the
+// transaction completes, which is where the ordering above holds.
 async function noteSecretAbsentUnlessSaved(name: string) {
   const db = await getDb();
   const tx = db.transaction(STORE, 'readonly');
-  const row = await tx.store.get(name);
-  if (row === undefined) noteSecretAbsent(name);
-  await tx.done;
+  await Promise.all([
+    tx.store.get(name).then((row) => {
+      if (row === undefined) noteSecretAbsent(name);
+    }),
+    tx.done,
+  ]);
 }
 
 function secureVaultKnownEmpty() {

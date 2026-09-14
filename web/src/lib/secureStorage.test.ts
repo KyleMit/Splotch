@@ -38,12 +38,14 @@ const ctrl = vi.hoisted(() => {
     txPuts: [] as string[],
     failNextGet: false,
     holdNextGet: null as Promise<void> | null,
+    abortNextTransaction: false,
     txGetOverride: null as ((key: string) => unknown) | null,
     reset() {
       rows.clear();
       state.txPuts.length = 0;
       state.failNextGet = false;
       state.holdNextGet = null;
+      state.abortNextTransaction = false;
       state.txGetOverride = null;
     },
   };
@@ -71,10 +73,16 @@ vi.mock('./idb', () => {
     async delete(_store: string, key: string) {
       ctrl.rows.delete(key);
     },
+    // Like idb, `done` is created eagerly, so an aborted transaction rejects it
+    // whether or not the caller ever awaits it.
     transaction(_store: string, _mode: string) {
+      const aborted = ctrl.abortNextTransaction;
+      ctrl.abortNextTransaction = false;
+      const abortError = new Error('transaction aborted');
       return {
         store: {
           async get(key: string) {
+            if (aborted) throw abortError;
             return ctrl.txGetOverride ? ctrl.txGetOverride(key) : ctrl.rows.get(key);
           },
           async put(value: unknown, key: string) {
@@ -82,7 +90,7 @@ vi.mock('./idb', () => {
             ctrl.rows.set(key, value);
           },
         },
-        done: Promise.resolve(),
+        done: aborted ? Promise.reject(abortError) : Promise.resolve(),
       };
     },
   };
@@ -317,6 +325,16 @@ describe('skipping the vault when every row is known absent', () => {
     warn.mockRestore();
     await secureStorage.saveApiKey('secret-key-123');
 
+    expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
+  });
+
+  it('records nothing and leaves no unhandled rejection when the absence re-check aborts', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    ctrl.abortNextTransaction = true;
+
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+
+    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
     expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
   });
 
