@@ -12,13 +12,14 @@ vi.mock('$lib/drawing/engine', () => ({ forgetPenPointer }));
 function pointerEvent(
   type: string,
   pointerId: number,
-  { clientX = 0, clientY = 0, pointerType = 'mouse', buttons = 0 } = {}
+  { clientX = 0, clientY = 0, pointerType = 'mouse', button = 0, buttons = 0 } = {}
 ) {
   const e = new Event(type, { cancelable: true, bubbles: true });
   Object.defineProperty(e, 'pointerId', { value: pointerId });
   Object.defineProperty(e, 'clientX', { value: clientX });
   Object.defineProperty(e, 'clientY', { value: clientY });
   Object.defineProperty(e, 'pointerType', { value: pointerType });
+  Object.defineProperty(e, 'button', { value: button });
   Object.defineProperty(e, 'buttons', { value: buttons });
   return e;
 }
