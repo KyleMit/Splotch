@@ -175,14 +175,16 @@ test('drawing survives a real-route remount and the fresh tiled canvas accepts m
   expect(await opaquePixelCount(page)).toBeGreaterThan(beforeNavigation);
 });
 
+const metaContent = (page: Page, name: string, attr = 'property') =>
+  page.locator(`meta[${attr}="${name}"]`).getAttribute('content');
+
 test('link-preview meta tags are present and match the real OG image', async ({
   page,
   request,
 }) => {
   await page.goto('/');
 
-  const meta = (name: string, attr = 'property') =>
-    page.locator(`meta[${attr}="${name}"]`).getAttribute('content');
+  const meta = (name: string, attr = 'property') => metaContent(page, name, attr);
 
   // The Open Graph + Twitter tags social platforms read to unfurl the link.
   expect(await meta('og:title')).toContain('Splotch');
@@ -203,3 +205,21 @@ test('link-preview meta tags are present and match the real OG image', async ({
   expect(png.readUInt32BE(16)).toBe(declaredWidth);
   expect(png.readUInt32BE(20)).toBe(declaredHeight);
 });
+
+// The routes handed out to testers and linked from the store listings unfurl
+// as themselves, not as the home page (issue #1956). One card per document:
+// a second og:title would hand the scraper the wrong one.
+for (const [path, titleWord] of [
+  ['/beta', 'Beta'],
+  ['/privacy', 'Privacy'],
+] as const) {
+  test(`${path} carries its own link-preview card`, async ({ page }) => {
+    await page.goto(path);
+    expect(await metaContent(page, 'og:url')).toBe(`https://splotch.art${path}`);
+    expect(await metaContent(page, 'og:title')).toContain(titleWord);
+    expect(await metaContent(page, 'og:description')).toBe(
+      await metaContent(page, 'description', 'name')
+    );
+    await expect(page.locator('meta[property="og:title"]')).toHaveCount(1);
+  });
+}

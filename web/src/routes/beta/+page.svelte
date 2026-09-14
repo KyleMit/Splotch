@@ -20,11 +20,15 @@
   } from '$lib/components/design/SegmentedPicker.svelte';
   import type { CommonIconName } from '$lib/components/iconTypes';
   import PageShell from '$lib/components/page/PageShell.svelte';
+  import SocialCard from '$lib/components/page/SocialCard.svelte';
   import { isAndroidBrowser, isIosDevice } from '$lib/platform';
   import '$lib/components/deferredIcons';
 
   // The sniff stays here rather than in betaPlatform.ts: that module is read by
   // the E2E specs, which run outside Vite and cannot resolve a `$app` import.
+  const DESCRIPTION =
+    "How to become a Splotch beta tester on Android via Google Play, or on iPhone and iPad via Apple's TestFlight.";
+
   function detectPlatform(): BetaPlatform | null {
     if (isIosDevice()) return 'ios';
     if (isAndroidBrowser()) return 'android';
@@ -82,10 +86,7 @@
 
 <svelte:head>
   <title>Join the Splotch Beta · Splotch</title>
-  <meta
-    name="description"
-    content="How to become a Splotch beta tester on Android via Google Play, or on iPhone and iPad via Apple's TestFlight."
-  />
+  <meta name="description" content={DESCRIPTION} />
   <!-- Link-only page: keeping it out of search indexes limits how widely the
        support address on it circulates. Deliberately NOT paired with a
        robots.txt Disallow — a blocked crawler never fetches the page, so it
@@ -100,6 +101,8 @@
   <!-- eslint-disable-next-line svelte/no-at-html-tags -- a module constant, never input -->
   {@html `<script>${BETA_PLATFORM_BOOT_SCRIPT}${'<'}/script>`}
 </svelte:head>
+
+<SocialCard path="/beta" title="Join the Splotch Beta" description={DESCRIPTION} />
 
 <div class="beta">
   <PageShell title="Join the Splotch beta" wordmark="Splotch beta">
