@@ -70,8 +70,9 @@ const getPlugin = lazyPluginModule(() =>
 // --- web: IndexedDB via idb (also lazy) ---
 const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
 // This views SecureDb's physical store only through named secret-payload rows: webSave, webLoad,
-// and webClear receive the secret name, while MASTER_KEY_ROW stays exclusively on getDb. webLoad
-// still validates persisted data, and the narrow put type prevents payload-path writes of CryptoKey.
+// and webClear receive the secret name, while MASTER_KEY_ROW stays exclusively on getDb (as does
+// the read-only absence re-check, which needs a transaction handle). webLoad still validates
+// persisted data, and the narrow put type prevents payload-path writes of CryptoKey.
 const payloadStore = idbKvStore<SecretPayloadDb>(DB_NAME, STORE);
 
 function isSecretPayload(value: unknown): value is SecretPayload {
@@ -141,7 +142,7 @@ async function webSave(name: string, value: string) {
 async function webLoad(name: string) {
   const record = await payloadStore.get(name);
   if (record === undefined) {
-    noteSecretAbsent(name);
+    await noteSecretAbsentUnlessSaved(name);
     return null;
   }
   if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
@@ -212,6 +213,31 @@ function noteSecretAbsent(name: string) {
   if (absent.has(name)) return;
   absent.add(name);
   writeString(STORAGE_KEYS.secureVaultEmpty, JSON.stringify([...absent]));
+}
+
+// The read that found the row missing may be stale by the time its result is
+// acted on: another tab can save the secret and drop the flag in between, and
+// an unconditional write here would then re-assert "absent" over a row that
+// exists, hiding the credential from every later launch. Re-reading inside a
+// transaction settles the order against that save. IndexedDB serialises the
+// saving tab's readwrite transaction against this one, so either its row is
+// already visible here and nothing is recorded, or its commit — and the flag
+// removal that follows it — waits until this transaction has finished, after
+// the flag write. Read-only is enough for that ordering, and cheaper.
+//
+// The read and `tx.done` are observed together: an abort rejects both, and a
+// plain `await` on the read would throw past `done` and leave its rejection
+// unhandled. The flag is still written from the read's continuation, before the
+// transaction completes, which is where the ordering above holds.
+async function noteSecretAbsentUnlessSaved(name: string) {
+  const db = await getDb();
+  const tx = db.transaction(STORE, 'readonly');
+  await Promise.all([
+    tx.store.get(name).then((row) => {
+      if (row === undefined) noteSecretAbsent(name);
+    }),
+    tx.done,
+  ]);
 }
 
 function secureVaultKnownEmpty() {

@@ -37,11 +37,15 @@ const ctrl = vi.hoisted(() => {
     rows,
     txPuts: [] as string[],
     failNextGet: false,
+    holdNextGet: null as Promise<void> | null,
+    abortNextTransaction: false,
     txGetOverride: null as ((key: string) => unknown) | null,
     reset() {
       rows.clear();
       state.txPuts.length = 0;
       state.failNextGet = false;
+      state.holdNextGet = null;
+      state.abortNextTransaction = false;
       state.txGetOverride = null;
     },
   };
@@ -55,7 +59,13 @@ vi.mock('./idb', () => {
         ctrl.failNextGet = false;
         throw new Error('transient idb failure');
       }
-      return ctrl.rows.get(key);
+      const value = ctrl.rows.get(key);
+      const hold = ctrl.holdNextGet;
+      if (hold) {
+        ctrl.holdNextGet = null;
+        await hold;
+      }
+      return value;
     },
     async put(_store: string, value: unknown, key: string) {
       ctrl.rows.set(key, value);
@@ -63,10 +73,16 @@ vi.mock('./idb', () => {
     async delete(_store: string, key: string) {
       ctrl.rows.delete(key);
     },
+    // Like idb, `done` is created eagerly, so an aborted transaction rejects it
+    // whether or not the caller ever awaits it.
     transaction(_store: string, _mode: string) {
+      const aborted = ctrl.abortNextTransaction;
+      ctrl.abortNextTransaction = false;
+      const abortError = new Error('transaction aborted');
       return {
         store: {
           async get(key: string) {
+            if (aborted) throw abortError;
             return ctrl.txGetOverride ? ctrl.txGetOverride(key) : ctrl.rows.get(key);
           },
           async put(value: unknown, key: string) {
@@ -74,7 +90,7 @@ vi.mock('./idb', () => {
             ctrl.rows.set(key, value);
           },
         },
-        done: Promise.resolve(),
+        done: aborted ? Promise.reject(abortError) : Promise.resolve(),
       };
     },
   };
@@ -310,5 +326,36 @@ describe('skipping the vault when every row is known absent', () => {
     await secureStorage.saveApiKey('secret-key-123');
 
     expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
+  });
+
+  it('records nothing and leaves no unhandled rejection when the absence re-check aborts', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    ctrl.abortNextTransaction = true;
+
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+
+    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
+    expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
+  });
+
+  it('keeps a secret another tab saved during an absent read reachable on the next launch', async () => {
+    let finishBootRead!: () => void;
+    ctrl.holdNextGet = new Promise<void>((resolve) => {
+      finishBootRead = resolve;
+    });
+    const bootingTabRead = secureStorage.loadApiKey();
+    await vi.waitFor(() => expect(ctrl.holdNextGet).toBeNull());
+
+    vi.resetModules();
+    const savingTab = await import('./secureStorage');
+    await savingTab.saveApiKey('secret-key-123');
+
+    finishBootRead();
+    await expect(bootingTabRead).resolves.toBeNull();
+    await expect(secureStorage.loadAccessCode()).resolves.toBeNull();
+
+    vi.resetModules();
+    const nextLaunch = await import('./secureStorage');
+    await expect(nextLaunch.loadApiKey()).resolves.toBe('secret-key-123');
   });
 });
