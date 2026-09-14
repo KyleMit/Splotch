@@ -441,8 +441,8 @@ entry 87. Paths under `web/src/` unless noted.*
 77. **Idle font warm-up, deliberately no preload** — the drawing route paints no text;
     `document.fonts.load()` in the background; a measured `<link rel=preload>` alternative was
     benchmarked and rejected. `routes/+layout.svelte:19-27`. *ADR-0075*
-78. **Two-stage sound preload** — the first 119 KB pencil mp3 on the earliest boot path, other
-    variants at idle; per-URL promise memos + failed-URL sets. `audio/drawingSound.ts:96-168`.
+78. **Two-stage sound preload** — the first pencil mp3 on the earliest boot path, other variants at
+    idle; per-URL promise memos + failed-URL sets. `audio/drawingSound.ts:96-168`.
 79. **Procedural clear-feedback audio** — synthesized resonances driven by drag distance instead of
     an asset (length-independent, nothing to load). *ADR-0131, ADR-0085*
 80. **Dual-layer storage: sync reads, fire-and-forget native mirror** — all reads synchronous (no
