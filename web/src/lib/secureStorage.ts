@@ -1,4 +1,4 @@
-import type { DBSchema } from './idbDatabase';
+import type { DBSchema, IdbDatabase } from './idbDatabase';
 import { browser } from '$app/environment';
 import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';
@@ -68,7 +68,21 @@ const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
 // data, and the narrow put type prevents payload-path writes of CryptoKey.
 const payloadStore = {
   get: async (name: string) => (await getDb()).get(STORE, name),
-  put: async (name: string, payload: SecretPayload) => (await getDb()).put(STORE, payload, name),
+  // Written in one transaction with a check that the key row is still there. A
+  // database recreated after the browser closed the previous connection has no
+  // key row yet, and a payload encrypted with the key the closed connection
+  // had read would be unreadable on every later launch; a failed save is the
+  // outcome a parent can act on.
+  putBesideMasterKey: async (name: string, payload: SecretPayload) => {
+    const tx = (await getDb()).transaction(STORE, 'readwrite');
+    await Promise.all([
+      tx.store.get(MASTER_KEY_ROW).then((keyRow) => {
+        if (keyRow === undefined) throw new Error('The secure-storage master key is gone');
+        return tx.store.put(payload, name);
+      }),
+      tx.done,
+    ]);
+  },
   delete: async (name: string) => (await getDb()).delete(STORE, name),
 };
 
@@ -94,18 +108,32 @@ function isSecretPayload(value: unknown): value is SecretPayload {
 // one key (cleared on rejection so a transient IDB failure doesn't poison
 // future calls). Cross-tab, the re-check-then-put runs inside one readwrite
 // transaction, so a tab that loses the race adopts the winner's key.
+//
+// The memo lives exactly as long as the connection it was read through. The
+// key row is gone with the database once the browser closes the connection
+// (site data cleared, a deletion from another connection), and a key kept past
+// that would encrypt new payloads nothing on disk can ever decrypt again.
 let masterKeyPromise: Promise<CryptoKey> | null = null;
 
 function getMasterKey(): Promise<CryptoKey> {
-  masterKeyPromise ??= loadOrCreateMasterKey().catch((err) => {
-    masterKeyPromise = null;
-    throw err;
-  });
+  if (!masterKeyPromise) {
+    const loading: Promise<CryptoKey> = getDb()
+      .then((db) => {
+        void db.closed.then(() => {
+          if (masterKeyPromise === loading) masterKeyPromise = null;
+        });
+        return loadOrCreateMasterKey(db);
+      })
+      .catch((err: unknown) => {
+        if (masterKeyPromise === loading) masterKeyPromise = null;
+        throw err;
+      });
+    masterKeyPromise = loading;
+  }
   return masterKeyPromise;
 }
 
-async function loadOrCreateMasterKey(): Promise<CryptoKey> {
-  const db = await getDb();
+async function loadOrCreateMasterKey(db: IdbDatabase<SecureDb>): Promise<CryptoKey> {
   const existing = await db.get(STORE, MASTER_KEY_ROW);
   if (existing && !isSecretPayload(existing)) return existing;
   // Generated *before* the transaction: an IDB transaction auto-commits once
@@ -133,7 +161,7 @@ async function webSave(name: string, value: string) {
     new TextEncoder().encode(value)
   );
   const payload: SecretPayload = { iv, data };
-  await payloadStore.put(name, payload);
+  await payloadStore.putBesideMasterKey(name, payload);
 }
 
 async function webLoad(name: string) {

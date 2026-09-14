@@ -40,6 +40,7 @@ const ctrl = vi.hoisted(() => {
     holdNextGet: null as Promise<void> | null,
     abortNextTransaction: false,
     txGetOverride: null as ((key: string) => unknown) | null,
+    closeConnection: () => {},
     reset() {
       rows.clear();
       state.txPuts.length = 0;
@@ -47,6 +48,7 @@ const ctrl = vi.hoisted(() => {
       state.holdNextGet = null;
       state.abortNextTransaction = false;
       state.txGetOverride = null;
+      state.closeConnection = () => {};
     },
   };
   return state;
@@ -54,6 +56,7 @@ const ctrl = vi.hoisted(() => {
 
 vi.mock('./idb', () => {
   const db = {
+    closed: Promise.resolve(),
     async get(_store: string, key: string) {
       if (ctrl.failNextGet) {
         ctrl.failNextGet = false;
@@ -94,13 +97,25 @@ vi.mock('./idb', () => {
       };
     },
   };
+  // Each connection stays open until the test closes it; like the real memo, a
+  // closed one is replaced on the next call.
   return {
-    lazyIdbDatabase: () => () => Promise.resolve(db as unknown as IdbDatabase<SecretsDb>),
-    idbKvStore: () => ({
-      get: (key: string) => db.get('secrets', key),
-      put: (key: string, value: unknown) => db.put('secrets', value, key),
-      delete: (key: string) => db.delete('secrets', key),
-    }),
+    lazyIdbDatabase: () => {
+      let connection: Promise<typeof db> | null = null;
+      return () => {
+        if (!connection) {
+          const opened = new Promise<void>((resolve) => {
+            ctrl.closeConnection = resolve;
+          });
+          const current = Promise.resolve({ ...db, closed: opened });
+          void opened.then(() => {
+            if (connection === current) connection = null;
+          });
+          connection = current;
+        }
+        return connection as unknown as Promise<IdbDatabase<SecretsDb>>;
+      };
+    },
   };
 });
 
@@ -246,6 +261,32 @@ describe('master key creation', () => {
       data: expect.any(ArrayBuffer),
     });
     await expect(secureStorage.loadApiKey()).resolves.toBe('secret-key-123');
+  });
+
+  it('reads the key again after the browser closes the connection it was read through', async () => {
+    await secureStorage.saveApiKey('before-close');
+    const closeConnection = ctrl.closeConnection;
+    // The database went with the connection.
+    ctrl.rows.clear();
+    closeConnection();
+    await Promise.resolve();
+
+    await secureStorage.saveApiKey('after-close');
+
+    expect(ctrl.rows.has(MASTER_KEY_ROW)).toBe(true);
+    vi.resetModules();
+    const nextLaunch = await import('./secureStorage');
+    await expect(nextLaunch.loadApiKey()).resolves.toBe('after-close');
+  });
+
+  it('refuses to write a payload into a database that has no master key row', async () => {
+    await secureStorage.saveApiKey('before-loss');
+    ctrl.rows.delete(MASTER_KEY_ROW);
+    ctrl.txPuts.length = 0;
+
+    await expect(secureStorage.saveApiKey('orphaned')).rejects.toThrow('master key is gone');
+
+    expect(ctrl.txPuts).toEqual([]);
   });
 
   it('a tab that loses the cross-tab race adopts the winner key instead of overwriting it', async () => {
