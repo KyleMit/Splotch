@@ -188,11 +188,9 @@ test.describe('coloring book picker via touch', () => {
     await openDrawer(page);
 
     // This spec proves the launch guard, not the picker's cold start. An open
-    // that beats the installed-set scan drills into the starter book and stays
-    // there even once the other books arrive (openColoringBookGrid, issue
-    // #936) — a returning child's first tap on a slow start can land there
-    // too. That is a product gap, not a guard failure, so land one open on the
-    // grid first rather than let it decide this spec.
+    // that beats the installed-book scan drills into the starter book, by design
+    // (coloring-pack-download.spec.ts pins that), and the ghost click must be
+    // aimed at a real cover, so land one open on the grid first.
     const dialog = page.locator('#coloring-book-dialog');
     await openColoringBookGrid(page);
     await page.keyboard.press('Escape');

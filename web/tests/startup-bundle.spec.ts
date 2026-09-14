@@ -28,6 +28,10 @@ const SAVE_MODULE_MARKERS: Record<string, string> = {
 const COLORING_PACK_MODULE_MARKERS: Record<string, string> = {
   'manager.ts': 'Coloring-pack download paused',
   'nativeStore.ts': 'ColoringPacks',
+  // The startup-path boot copies its cache family prefix instead of importing
+  // this module (boot/coloringPacks.ts); the marker keeps the import from
+  // coming back.
+  'cacheKeys.ts': '/coloring/.installed/',
 };
 
 // ADR-0164: the icons under src/lib/icons/deferred/ ship in the chunk of
