@@ -404,28 +404,27 @@ test('books landing during a held press move neither the header nor the chip', a
 });
 
 // A returning child can open the picker before the installed-book scan lands
-// (issue #936's cold start). That open shows the book list, not the starter
-// book's pages, with a slot reserved for every catalog book, and the scan's
-// covers fill the slots without moving the header, the starter book's cover, or
-// the grid, whichever column count the viewport lays out.
+// (issue #936's cold start). With only the starter book known, that open drills
+// straight into its pages, as a single-book install always has. The scan's
+// books join at the next open: no Back button or cover appears, and nothing
+// moves, while that open stays up.
 const COLD_START_VIEWPORTS = [
   { name: 'phone portrait', ...PHONE_PORTRAIT_VIEWPORT },
-  { name: 'phone landscape', width: 844, height: 390 },
-  { name: 'tablet portrait', width: 820, height: 1180 },
   { name: 'tablet landscape', width: 1180, height: 820 },
 ];
 for (const viewport of COLD_START_VIEWPORTS) {
-  test(`an open that beats the installed-book scan fills the book list in place (${viewport.name})`, async ({
+  test(`an open that beats the installed-book scan shows the starter book's pages until it closes (${viewport.name})`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await expectColdStartFillsBookListInPlace(page);
+    await expectColdStartOpensStarterPagesUntilReopen(page);
   });
 }
 
-async function expectColdStartFillsBookListInPlace(page: Page) {
+async function expectColdStartOpensStarterPagesUntilReopen(page: Page) {
   await gotoAppWithAllColoringBooksInstalled(page);
   const releaseManifest = await holdRequests(page, MANIFEST_REQUEST);
+  const coloringRequests = recordColoringRequests(page);
 
   try {
     await gotoApp(page);
@@ -433,67 +432,45 @@ async function expectColdStartFillsBookListInPlace(page: Page) {
     await openColoringDialog(page);
 
     const dialog = page.locator('#coloring-book-dialog');
-    await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
+    const pageTiles = dialog.locator('.coloring-pages-grid > .coloring-tile');
+    await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
+    await expect(pageTiles).toHaveCount(6);
     await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
-    const covers = dialog.locator('.coloring-books-grid > .coloring-tile');
-    await expect(covers).toHaveCount(1);
-    await expect(dialog.locator('.coloring-books-grid > .coloring-book-slot')).toHaveCount(
-      WEB_COLORING_BOOK_COUNT - 1
-    );
     await settleFlyIn(dialog);
     const header = dialog.locator('.coloring-book-header');
-    const farm = dialog.getByRole('button', { name: 'Farm coloring book' });
-    const grid = dialog.locator('.coloring-books-grid');
-    const [headerBeforeScan, farmBeforeScan, gridBeforeScan] = await Promise.all([
+    const firstPage = pageTiles.first();
+    const [headerBeforeScan, firstPageBeforeScan] = await Promise.all([
       header.boundingBox(),
-      farm.boundingBox(),
-      grid.boundingBox(),
+      firstPage.boundingBox(),
     ]);
 
+    // The picker warms the covers the next open will show as soon as the scan
+    // publishes them, so a cover request for a seeded book is the signal that
+    // the scan landed while this open was up.
     releaseManifest();
-    await expect(covers).toHaveCount(WEB_COLORING_BOOK_COUNT, { timeout: 30_000 });
-    await expect(dialog.locator('.coloring-book-slot')).toHaveCount(0);
+    await expect
+      .poll(() => coloringRequests.some((path) => /\/dinosaur\/.*thumb\.webp$/.test(path)), {
+        timeout: 30_000,
+      })
+      .toBe(true);
     await afterTwoFrames(page);
+    await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+    await expect(dialog.locator('.coloring-books-grid')).toHaveCount(0);
     expect(await header.boundingBox()).toEqual(headerBeforeScan);
-    expect(await farm.boundingBox()).toEqual(farmBeforeScan);
-    expect(await grid.boundingBox()).toEqual(gridBeforeScan);
+    expect(await firstPage.boundingBox()).toEqual(firstPageBeforeScan);
+
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
+    await openColoringDialog(page);
+    await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
+    await expect(dialog.locator('.coloring-books-grid > .coloring-tile')).toHaveCount(
+      WEB_COLORING_BOOK_COUNT
+    );
   } finally {
     releaseManifest();
   }
 }
-
-// Before the boot's Cache Storage check lands, a device could be a first visit
-// or a returning one. The picker treats it as a first visit: guessing
-// "returning" would leave a real first visit on a grid of empty places.
-test('an open that beats the pack storage check drills into the starter book', async ({ page }) => {
-  await page.addInitScript(() => {
-    const keys = CacheStorage.prototype.keys;
-    let release = () => {};
-    const held = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    Object.assign(window, { __releaseCacheKeys: () => release() });
-    CacheStorage.prototype.keys = async function (this: CacheStorage) {
-      await held;
-      return keys.call(this);
-    };
-  });
-  await gotoApp(page);
-  await openDrawer(page);
-  await openColoringDialog(page);
-
-  const dialog = page.locator('#coloring-book-dialog');
-  await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
-  await expect(dialog.locator('.coloring-book-slot')).toHaveCount(0);
-  await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
-
-  await page.evaluate(() =>
-    (window as Window & { __releaseCacheKeys?: () => void }).__releaseCacheKeys?.()
-  );
-  await afterTwoFrames(page);
-  await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
-});
 
 test('a visit nobody engages with downloads no coloring packs', async ({ page }) => {
   const coloringRequests = recordColoringRequests(page);

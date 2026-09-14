@@ -11,8 +11,6 @@ const mocks = vi.hoisted(() => ({
   createDownloader: vi.fn(),
   cacheNames: [] as string[],
   isNative: vi.fn(),
-  setColoringPackStorage: vi.fn(),
-  settleColoringScan: vi.fn(),
   setNoDownloadedColoringBooks: vi.fn(),
 }));
 
@@ -23,10 +21,6 @@ vi.mock('$lib/idle', () => ({
   },
 }));
 vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
-vi.mock('$lib/state/coloringScan.svelte', () => ({
-  setColoringPackStorage: mocks.setColoringPackStorage,
-  settleColoringScan: mocks.settleColoringScan,
-}));
 vi.mock('$lib/state/coloringPacks.svelte', () => ({
   setNoDownloadedColoringBooks: mocks.setNoDownloadedColoringBooks,
 }));
@@ -68,12 +62,11 @@ function deferred() {
 const settlePromises = () => new Promise<void>((done) => setTimeout(done, 0));
 
 describe('a device that holds pack storage', () => {
-  it('publishes the storage answer before settings recover, then waits for them to schedule', async () => {
+  it('waits for durable settings before scheduling downloads', async () => {
     const settingsReady = deferred();
 
     downloads = installColoringPackDownloads(settingsReady.promise);
 
-    await vi.waitFor(() => expect(mocks.setColoringPackStorage).toHaveBeenCalledWith('present'));
     await settlePromises();
     expect(mocks.idleQueue).toHaveLength(0);
     settingsReady.resolve();
@@ -122,7 +115,7 @@ describe('a device that holds pack storage', () => {
     expect(mocks.start).toHaveBeenCalledOnce();
   });
 
-  it('settles the scan when the manager chunk fails to load, and retries on the next engagement', async () => {
+  it('retries a manager chunk that failed to load on the next engagement', async () => {
     let failuresLeft = 1;
     const loadManager = async () => {
       if (failuresLeft-- > 0) throw new TypeError('Failed to fetch dynamically imported module');
@@ -132,7 +125,7 @@ describe('a device that holds pack storage', () => {
     await vi.waitFor(() => expect(mocks.idleQueue).toHaveLength(1));
 
     mocks.idleQueue.shift()?.();
-    await vi.waitFor(() => expect(mocks.settleColoringScan).toHaveBeenCalledOnce());
+    await settlePromises();
     expect(mocks.start).not.toHaveBeenCalled();
 
     downloads.engage();
@@ -151,7 +144,6 @@ describe('a web visit with no pack storage', () => {
     downloads = installColoringPackDownloads(Promise.resolve());
 
     await vi.waitFor(() => expect(mocks.setNoDownloadedColoringBooks).toHaveBeenCalledWith('web'));
-    expect(mocks.setColoringPackStorage).toHaveBeenCalledWith('absent');
     await settlePromises();
     expect(mocks.idleQueue).toHaveLength(0);
     expect(mocks.createDownloader).not.toHaveBeenCalled();
@@ -190,18 +182,19 @@ describe('a web visit with no pack storage', () => {
     vi.stubGlobal('caches', undefined);
     downloads = installColoringPackDownloads(Promise.resolve());
 
-    await vi.waitFor(() => expect(mocks.setColoringPackStorage).toHaveBeenCalledWith('absent'));
+    await vi.waitFor(() => expect(mocks.setNoDownloadedColoringBooks).toHaveBeenCalledWith('web'));
   });
 });
 
 describe('a native launch', () => {
-  it('marks pack storage present and schedules downloads without waiting for engagement', async () => {
+  it('schedules downloads without checking storage or waiting for engagement', async () => {
     mocks.isNative.mockReturnValue(true);
-    mocks.cacheNames = [];
+    const keys = vi.fn(async () => []);
+    vi.stubGlobal('caches', { keys });
     downloads = installColoringPackDownloads(Promise.resolve());
 
-    expect(mocks.setColoringPackStorage).toHaveBeenCalledWith('present');
     await vi.waitFor(() => expect(mocks.idleQueue).toHaveLength(1));
+    expect(keys).not.toHaveBeenCalled();
     expect(mocks.setNoDownloadedColoringBooks).not.toHaveBeenCalled();
   });
 });

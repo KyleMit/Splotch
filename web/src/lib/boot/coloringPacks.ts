@@ -1,7 +1,6 @@
 import { scheduleIdle } from '$lib/idle';
 import { COLORING_PACK_POLICY_EVENT } from '$lib/coloringPacks/policy';
 import { isNative } from '$lib/platform';
-import { setColoringPackStorage, settleColoringScan } from '$lib/state/coloringScan.svelte';
 import { settings } from '$lib/state/settings.svelte';
 
 export interface ColoringPackDownloads {
@@ -65,15 +64,10 @@ export function installColoringPackDownloads(
   let managerLoadFailed = false;
   let stopped = false;
 
-  // The check starts at once rather than after settings recover: it reads only
-  // local storage, and the picker treats a device whose answer has not landed
-  // as a first visit.
+  // One storage check serves every scheduling attempt this visit: a device
+  // gains pack storage only through the downloader this gate releases.
   const waits = waitsForEngagement();
   const packStorageExists = waits ? webPackStorageExists() : Promise.resolve(true);
-  if (!waits) setColoringPackStorage('present');
-  void packStorageExists.then((exists) => {
-    if (!stopped) setColoringPackStorage(exists ? 'present' : 'absent');
-  });
 
   const alreadyScheduledOrOff = () =>
     stopped ||
@@ -96,11 +90,11 @@ export function installColoringPackDownloads(
           stopDownloader = downloader.stop;
         },
         () => {
-          // The scan this was loading will not run, so no open picker should
-          // keep waiting on it. The next engagement or reconnect tries again.
+          // A failed chunk fetch (a flaky link, a deploy that retired the
+          // chunk) would otherwise leave downloads off for the whole visit.
+          // The next engagement or reconnect tries again.
           startingDownloader = false;
           managerLoadFailed = true;
-          settleColoringScan();
         }
       );
     });

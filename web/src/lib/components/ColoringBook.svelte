@@ -61,7 +61,7 @@
       ? pageSelectorImageSource(activePage, coloringBookState.orientation, pickerTheme.current)
       : null
   );
-  const bookGridLayout = $derived(coloringBookGridLayout(pickerBooks.slotCount));
+  const bookGridLayout = $derived(coloringBookGridLayout(books.length));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
 
   function nextFrame() {
@@ -248,9 +248,6 @@
               <span class="coloring-book-label">{book.name}</span>
             </button>
           {/each}
-          {#each { length: pickerBooks.reservedSlotCount }, slot (slot)}
-            <div class="coloring-book-slot" aria-hidden="true"></div>
-          {/each}
         </div>
       </div>
     {:else}
@@ -372,12 +369,6 @@
     .coloring-books-grid.book-grid-has-orphan {
       --book-cols: 3;
     }
-  }
-
-  /* A reserved place in the book grid for a cover the installed-book scan may
-     still fill: the same square a tile draws, with nothing to see or press. */
-  .coloring-book-slot {
-    aspect-ratio: 1 / 1;
   }
 
   .coloring-pages-grid {

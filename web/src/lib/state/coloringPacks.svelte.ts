@@ -1,5 +1,4 @@
 import { STARTER_COLORING_BOOK_ID, booksForPlatform, type Book, type BookPlatform } from './books';
-import { settleColoringScan } from './coloringScan.svelte';
 
 interface ColoringPackState {
   installedBookIds: string[];
@@ -29,7 +28,6 @@ export function setInstalledColoringBooks(bookIds: string[]) {
     ...bookIds.filter((id) => id !== STARTER_COLORING_BOOK_ID),
   ];
   coloringPackState.initialized = true;
-  settleColoringScan();
 }
 
 // What a scan would publish for a device with no pack storage at all, known

@@ -1,16 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { tick } from 'svelte';
-import { booksForPlatform } from './books';
 import {
-  coloringPackState,
   markColoringBookInstalled,
   resetDownloadedColoringBooks,
   setInstalledColoringBooks,
 } from './coloringPacks.svelte';
 import { createColoringPickerBooks } from './coloringPicker.svelte';
-import { coloringScan, setColoringPackStorage } from './coloringScan.svelte';
-
-const CATALOG_BOOK_COUNT = booksForPlatform('web').length;
 
 let stop: (() => void) | undefined;
 
@@ -25,40 +20,47 @@ async function harness() {
 
 const ids = (books: { id: string }[]) => books.map((book) => book.id);
 
-beforeEach(() => {
-  resetDownloadedColoringBooks();
-  coloringScan.settled = false;
-  coloringPackState.initialized = false;
-  setColoringPackStorage('present');
-});
+beforeEach(resetDownloadedColoringBooks);
 
 afterEach(() => {
   stop?.();
   stop = undefined;
 });
 
-describe('an open after the installed-book scan', () => {
-  it('drills into the only book and keeps a download that lands mid-open for the next open', async () => {
-    setInstalledColoringBooks([]);
+describe('an open while only the starter book is known', () => {
+  it('drills into it and keeps books the scan publishes mid-open for the next open', async () => {
     const pickerBooks = await harness();
 
     pickerBooks.holdForOpen();
     expect(pickerBooks.listsBooks).toBe(false);
     expect(ids(pickerBooks.shown)).toEqual(['farm']);
 
-    markColoringBookInstalled('dinosaur');
+    setInstalledColoringBooks(['dinosaur', 'creatures']);
     await tick();
-    expect(ids(pickerBooks.shown)).toEqual(['farm']);
     expect(pickerBooks.listsBooks).toBe(false);
-    expect(ids(pickerBooks.installed)).toEqual(['farm', 'dinosaur']);
+    expect(ids(pickerBooks.shown)).toEqual(['farm']);
+    expect(ids(pickerBooks.installed)).toEqual(['farm', 'dinosaur', 'creatures']);
 
     pickerBooks.holdForOpen();
     expect(pickerBooks.listsBooks).toBe(true);
-    expect(ids(pickerBooks.shown)).toEqual(['farm', 'dinosaur']);
-    expect(pickerBooks.reservedSlotCount).toBe(0);
+    expect(ids(pickerBooks.shown)).toEqual(['farm', 'dinosaur', 'creatures']);
   });
 
-  it('holds the book list and its slot count while more books land', async () => {
+  it('keeps a download that lands mid-open for the next open', async () => {
+    setInstalledColoringBooks([]);
+    const pickerBooks = await harness();
+
+    pickerBooks.holdForOpen();
+    markColoringBookInstalled('dinosaur');
+    await tick();
+
+    expect(pickerBooks.listsBooks).toBe(false);
+    expect(ids(pickerBooks.shown)).toEqual(['farm']);
+  });
+});
+
+describe('an open that lists books', () => {
+  it('holds the list while more books land', async () => {
     setInstalledColoringBooks(['dinosaur']);
     const pickerBooks = await harness();
 
@@ -66,59 +68,7 @@ describe('an open after the installed-book scan', () => {
     markColoringBookInstalled('creatures');
     await tick();
 
+    expect(pickerBooks.listsBooks).toBe(true);
     expect(ids(pickerBooks.shown)).toEqual(['farm', 'dinosaur']);
-    expect(pickerBooks.slotCount).toBe(2);
-  });
-});
-
-describe('an open that beats the storage check', () => {
-  it('treats the device as a first visit and never reserves places', async () => {
-    setColoringPackStorage('unknown');
-    const pickerBooks = await harness();
-
-    pickerBooks.holdForOpen();
-    expect(pickerBooks.listsBooks).toBe(false);
-    expect(ids(pickerBooks.shown)).toEqual(['farm']);
-    expect(pickerBooks.reservedSlotCount).toBe(0);
-
-    setColoringPackStorage('present');
-    setInstalledColoringBooks(['dinosaur']);
-    await tick();
-    expect(pickerBooks.listsBooks).toBe(false);
-    expect(ids(pickerBooks.shown)).toEqual(['farm']);
-  });
-});
-
-describe('an open that beats the installed-book scan', () => {
-  it('lists the books with a place for every catalog book and takes the scan once', async () => {
-    const pickerBooks = await harness();
-
-    pickerBooks.holdForOpen();
-    expect(pickerBooks.listsBooks).toBe(true);
-    expect(ids(pickerBooks.shown)).toEqual(['farm']);
-    expect(pickerBooks.slotCount).toBe(CATALOG_BOOK_COUNT);
-    expect(pickerBooks.reservedSlotCount).toBe(CATALOG_BOOK_COUNT - 1);
-
-    setInstalledColoringBooks(['creatures', 'dinosaur']);
-    await tick();
-    expect(ids(pickerBooks.shown)).toEqual(['farm', 'dinosaur', 'creatures']);
-    expect(pickerBooks.slotCount).toBe(CATALOG_BOOK_COUNT);
-    expect(pickerBooks.reservedSlotCount).toBe(CATALOG_BOOK_COUNT - 3);
-
-    markColoringBookInstalled('nature');
-    await tick();
-    expect(ids(pickerBooks.shown)).toEqual(['farm', 'dinosaur', 'creatures']);
-  });
-
-  it('keeps the book list when the settled answer is only the starter book', async () => {
-    const pickerBooks = await harness();
-
-    pickerBooks.holdForOpen();
-    coloringScan.settled = true;
-    await tick();
-
-    expect(pickerBooks.listsBooks).toBe(true);
-    expect(ids(pickerBooks.shown)).toEqual(['farm']);
-    expect(pickerBooks.slotCount).toBe(CATALOG_BOOK_COUNT);
   });
 });

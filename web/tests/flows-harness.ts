@@ -292,22 +292,22 @@ export async function openColoringDialog(page: Page) {
 const COLORING_BOOK_GRID_TIMEOUT_MS = 30_000;
 
 // Open the picker on its Coloring Book Grid — the cover menu, which only exists
-// once a second book is installed — holding every installed book.
+// once a second book is known.
 //
-// ColoringBook holds what an open shows until it closes (coloring-pack-
-// download.spec.ts pins that), so the installed set an open reads is the one it
-// keeps. An open that beats the installed-book scan (a manifest fetch plus a
-// store scan — coloringPacks/manager.ts) lands on the grid with a slot
-// reserved for every catalog book and takes the scan's covers when it lands,
-// which with the whole catalog seeded fills every slot. With fewer books seeded
-// that open keeps its unfilled slots, and an open once only the starter book is
-// installed drills straight into its pages and never reaches the grid (issue
-// #936). Reopen until an open shows the grid with no slot left: each attempt
-// re-reads the installed set.
+// That installed set resolves asynchronously after load (a manifest fetch plus
+// a store scan — coloringPacks/manager.ts), and a dialog opened before it lands
+// shows the starter book's pages instead, by design: one known book drills
+// straight into its pages (coloring-pack-download.spec.ts pins that view).
+// Crucially the dialog then *stays* there — ColoringBook holds what an open
+// shows until it closes, so the scan's books join only at the next open — and no
+// amount of waiting on that open reaches the grid, which is how the
+// eight-viewport cover-geometry spec came to fail with the grid simply absent
+// (issue #936). Reopen until an open lands on it: each attempt re-reads the
+// installed set.
 export async function openColoringBookGrid(page: Page) {
   const dialog = page.locator('#coloring-book-dialog');
   await retryOpen(
-    dialog.locator('.coloring-books-grid:not(:has(.coloring-book-slot)) .coloring-tile').first(),
+    dialog.locator('.coloring-books-grid .coloring-tile').first(),
     async () => {
       if (await dialog.isVisible().catch(() => false)) {
         await page.keyboard.press('Escape');

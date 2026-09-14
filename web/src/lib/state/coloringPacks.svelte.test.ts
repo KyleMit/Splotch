@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { booksForPlatform } from './books';
-import { coloringScan } from './coloringScan.svelte';
 import {
   availableColoringBooks,
   coloringPackState,
@@ -32,7 +31,6 @@ describe('available coloring books', () => {
 describe('a device with no pack storage', () => {
   it('settles on the starter book out of the whole catalog without a scan', () => {
     coloringPackState.initialized = false;
-    coloringScan.settled = false;
     coloringPackState.downloadedBytes = 5;
 
     setNoDownloadedColoringBooks('web');
@@ -41,6 +39,5 @@ describe('a device with no pack storage', () => {
     expect(coloringPackState.totalBookCount).toBe(booksForPlatform('web').length);
     expect(coloringPackState.downloadedBytes).toBe(0);
     expect(coloringPackState.initialized).toBe(true);
-    expect(coloringScan.settled).toBe(true);
   });
 });

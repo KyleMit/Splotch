@@ -273,52 +273,49 @@ Waiting on engagement there would delay offline books for nothing the platform p
 already protect.
 
 **The open picker holds its books.** `state/coloringPicker.svelte.ts` records, when the picker
-opens, which books it shows and whether it lists books or drills into the only one. Books that
-finish downloading while it is open join at the next open. No cover moves, and no Back button
-appears while a finger may be on the view.
+opens, which books it shows and whether it lists books or drills into the only one. A book that
+becomes known while it is open, by a download finishing or by the installed-book scan landing, joins
+at the next open. No cover moves, and no Back button appears while a finger may be on the view.
 
-The one answer an open still takes is the installed-book scan it beat, and only on a device known to
-hold pack storage. `state/coloringScan.svelte.ts` carries both facts, apart from the pack state so
-the startup-path boot can publish them: `storage` is unknown until the web check lands (absent or
-present) and present from the start on native, and `settled` is true once this boot's list changes
-only by downloads or removal. A scan publishing the list settles it, and so does a run that ends
-before scanning (offline without a service worker, a metered link, an error) or a manager chunk that
-fails to load, which retries on the next engagement or reconnect.
+That includes the cold start. A picker opened before the scan lands knows only Farm, so it drills
+straight into Farm's pages, the way a single-book install always has, and a returning child's books
+appear as the book list at the next open. An earlier draft of this amendment reserved an invisible
+place in the book list for every catalog book and let the scan's covers fill them. On a phone that
+read as a tall, nearly empty sheet with one card, which looked broken, so Kyle replaced it with this
+rule.
 
-An open on present storage before the scan settles shows the book list, with a place for every book
-in the catalog and the grid laid out for the whole catalog. The scan's covers fill those places.
-Farm is first in the catalog, so its cover never moves. An open that ends with fewer books than the
-catalog keeps the empty places until it closes. An open that beats the storage check itself is
-treated as a first visit and drills into Farm, with the books held for the next open: guessing a
-returning visit would leave a real first visit on a grid of empty places, and the check is local, so
-the window is short.
+A manager chunk that fails to load (a flaky link, a deploy that retired the chunk) would otherwise
+leave downloads off for the whole visit, so the next engagement or reconnect retries the load.
 
 Considered and rejected:
 
 * Anchoring the modal to the top. The header would stay still, but a book landing mid-grid still
   shifts the covers after it, and the Back button still pushes the title aside.
-* Reserving places for the whole catalog on every open. Every partial install would show gaps.
+* Reserving places for the whole catalog, on every open or only on an open that beats the scan.
+  Every partial install would show gaps, and a cold start showed a tall sheet with one card.
 * Letting covers join an open grid only at its end. A child who taps empty space as a cover appears
   there opens a book nobody chose.
 * Waiting for an installed PWA on engines without `navigator.connection`. A parent who only ever
   uses a Safari tab would never get the books.
 * Deferring the cold-start view until the scan lands. On a first visit the manifest can take seconds
   to arrive, and the picker would stay empty until then.
+* Letting an open that beat the scan switch from Farm's pages to the book list when the scan lands.
+  The view would change under a finger that may already be on a page tile.
 
 ### Consequences
 
 * **+** A visit with no strokes and no picker open downloads no pack file and no manifest, and does
   not load the manager chunk. The same capture measured 0 requests and 0 bytes. Three strokes or
   opening the picker still install the full 525 files.
-* **+** Nothing in the open picker moves while books arrive, and a returning child's early tap shows
-  the book list instead of Farm's pages.
+* **+** Nothing in the open picker moves while books arrive, and a picker opened before the scan no
+  longer stays on Farm with a Back button appearing mid-view.
 * **-** A first visit that goes offline before the child engages has only Farm offline, even if it
   stayed online for a while.
-* **-** A child who opens the picker immediately on a first visit sees Farm's pages, and the books
-  that download meanwhile appear only at the next open.
-* **-** The storage check and the scan state it publishes add about 1.1 KB to the startup
-  JavaScript, measured against the bundle budget. The boot copies the pack cache family prefix
-  instead of importing `coloringPacks/cacheKeys.ts`, which would add a modulepreloaded chunk;
+* **-** A child who opens the picker before the scan lands, or on a first visit before any book has
+  downloaded, sees Farm's pages; their other books appear only at the next open.
+* **-** The storage check and the engagement gate add about 0.8 KB to the startup JavaScript,
+  measured against the bundle budget. The boot copies the pack cache family prefix instead of
+  importing `coloringPacks/cacheKeys.ts`, which would add a modulepreloaded chunk;
   `coloringPacks.cacheFamilyPrefix.test.ts` guards the copy and `startup-bundle.spec.ts` keeps
   `cacheKeys.ts` off the startup path. The "no downloaded books" answer that Settings reads loads
   the pack state lazily.
