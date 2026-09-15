@@ -1,13 +1,11 @@
 import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
 import { STORAGE_KEYS, readBool, readInt, removeKey, writeBool, writeInt } from '$lib/storage';
-import { canvasState, SETTLED_IN_STROKES } from './canvas.svelte';
+import { canvasState, SETTLED_IN_STROKES, type CanvasState } from './canvas.svelte';
 import {
-  clearSessionCount,
-  excludeCurrentSession,
   INSTALL_REPROMPT_SESSION_MILESTONES,
-  recordSession,
-  sessionCount,
+  sessionCountersState,
+  type SessionCountersState,
 } from './sessionCounters.svelte';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
@@ -38,22 +36,9 @@ export type InstallDeviceOs = 'ios' | 'android' | 'desktop';
 export type InstallPromptOutcome = 'accepted' | 'dismissed' | 'unavailable';
 export type InstallPromptStage = 'initial' | 'returning' | 'final';
 
-export const installState = $state({
-  mode: 'none' as InstallMode,
-  // Parent tapped "not now" — suppress the floating banner until its bounded
-  // re-prompt schedule is due. The Install section in Settings stays available.
-  dismissed: false,
-  installed: false,
-});
-
-let deferredPrompt: BeforeInstallPromptEvent | null = null;
-let initialized = false;
-let installAutoClearArmedAt: number | null = null;
 const STROKES_BEFORE_AUTO_CLEAR = 5;
 const MAX_INSTALL_REPROMPTS = INSTALL_REPROMPT_SESSION_MILESTONES.length;
 const VALID_REPROMPTS_USED = Array.from({ length: MAX_INSTALL_REPROMPTS + 1 }, (_, index) => index);
-
-let repromptsUsed = $state(readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED));
 
 function isIosSafari() {
   if (!isIosDevice()) return false;
@@ -89,168 +74,252 @@ function manualMode(): InstallMode {
   return 'none';
 }
 
-// A spent/stale one-tap prompt drops to the manual hint so the UI falls back to
-// something a tap can actually do.
-function fallBackToManualHint() {
-  if (installState.mode === 'oneTap') installState.mode = manualMode();
+export interface InstallState {
+  readonly mode: InstallMode;
+  // Parent tapped "not now" — suppress the floating banner until its bounded
+  // re-prompt schedule is due. The Install section in Settings stays available.
+  readonly dismissed: boolean;
+  readonly installed: boolean;
+  installPromptStage(): InstallPromptStage | null;
+  recordInstallRepromptSession(): void;
+  markInstalled(): void;
+  captureInstallPrompt(e: BeforeInstallPromptEvent): void;
+  initInstallPrompt(): void;
+  promptInstall(): Promise<InstallPromptOutcome>;
+  dismissInstall(): void;
+  disarmInstallAutoClear(): void;
+  armInstallAutoClear(): void;
+  autoDismissInstallIfDue(): boolean;
+  // Registers the one-shot beforeinstallprompt capture and the appinstalled
+  // listener (web only; the native shell is already installed).
+  install(): void;
+  dispose(): void;
 }
 
-function resetInstallRepromptCycle() {
-  installState.dismissed = false;
-  repromptsUsed = 0;
-  installAutoClearArmedAt = null;
-  removeKey(STORAGE_KEYS.installDismissed);
-  removeKey(STORAGE_KEYS.installRepromptsUsed);
-  clearSessionCount('installReprompt');
-}
+export function createInstall(
+  canvas: CanvasState,
+  sessionCounters: SessionCountersState
+): InstallState {
+  const s = $state<{
+    mode: InstallMode;
+    dismissed: boolean;
+    installed: boolean;
+  }>({
+    mode: 'none',
+    dismissed: false,
+    installed: false,
+  });
+  let repromptsUsed = $state(readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED));
 
-function reloadInstallRepromptState() {
-  repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED);
-}
+  // Deliberately untracked: nothing renders them.
+  let deferredPrompt: BeforeInstallPromptEvent | null = null;
+  let initialized = false;
+  let installAutoClearArmedAt: number | null = null;
+  let listening = false;
 
-export function installPromptStage(): InstallPromptStage | null {
-  if (installState.installed) return null;
-  if (!installState.dismissed) return 'initial';
-  if (repromptsUsed >= MAX_INSTALL_REPROMPTS) return null;
-
-  const milestone = INSTALL_REPROMPT_SESSION_MILESTONES[repromptsUsed];
-  if (sessionCount('installReprompt') < milestone) return null;
-  return repromptsUsed === 0 ? 'returning' : 'final';
-}
-
-export function recordInstallRepromptSession() {
-  if (
-    canvasState.strokeCount < SETTLED_IN_STROKES ||
-    !installState.dismissed ||
-    installState.installed ||
-    installState.mode === 'none' ||
-    repromptsUsed >= MAX_INSTALL_REPROMPTS ||
-    installPromptStage() !== null
-  ) {
-    return;
+  // A spent/stale one-tap prompt drops to the manual hint so the UI falls back to
+  // something a tap can actually do.
+  function fallBackToManualHint() {
+    if (s.mode === 'oneTap') s.mode = manualMode();
   }
-  recordSession('installReprompt');
-}
 
-// Exported so the native-configured unit suite can drive the production event
-// callbacks without compiling their web-only listener registrations back in.
-export function markInstalled() {
-  deferredPrompt = null;
-  resetInstallRepromptCycle();
-  installState.installed = true;
-  installState.mode = 'none';
-  writeBool(STORAGE_KEYS.installCompleted, true);
-}
+  function resetInstallRepromptCycle() {
+    s.dismissed = false;
+    repromptsUsed = 0;
+    installAutoClearArmedAt = null;
+    removeKey(STORAGE_KEYS.installDismissed);
+    removeKey(STORAGE_KEYS.installRepromptsUsed);
+    sessionCounters.clearSessionCount('installReprompt');
+  }
 
-export function captureInstallPrompt(e: BeforeInstallPromptEvent) {
-  // Stop Chrome's default mini-infobar — we own the timing and presentation.
-  e.preventDefault();
-  deferredPrompt = e;
-  // The browser only fires this when the app is NOT currently installed, so
-  // it outranks a stale persisted flag (installed once, later uninstalled —
-  // localStorage survives a PWA uninstall).
-  if (installState.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
+  function reloadInstallRepromptState() {
+    repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED);
+  }
+
+  function installPromptStage(): InstallPromptStage | null {
+    if (s.installed) return null;
+    if (!s.dismissed) return 'initial';
+    if (repromptsUsed >= MAX_INSTALL_REPROMPTS) return null;
+
+    const milestone = INSTALL_REPROMPT_SESSION_MILESTONES[repromptsUsed];
+    if (sessionCounters.sessionCount('installReprompt') < milestone) return null;
+    return repromptsUsed === 0 ? 'returning' : 'final';
+  }
+
+  function recordInstallRepromptSession() {
+    if (
+      canvas.strokeCount < SETTLED_IN_STROKES ||
+      !s.dismissed ||
+      s.installed ||
+      s.mode === 'none' ||
+      repromptsUsed >= MAX_INSTALL_REPROMPTS ||
+      installPromptStage() !== null
+    ) {
+      return;
+    }
+    sessionCounters.recordSession('installReprompt');
+  }
+
+  function markInstalled() {
+    deferredPrompt = null;
     resetInstallRepromptCycle();
-    installState.installed = false;
-    writeBool(STORAGE_KEYS.installCompleted, false);
-  }
-  installState.mode = 'oneTap';
-  // Desktop installability can arrive after the drawing route's settled-in gate.
-  recordInstallRepromptSession();
-}
-
-// beforeinstallprompt is one-shot and can fire before the page component
-// mounts (on a repeat visit the service worker already controls the page, so
-// Chromium's installability check races hydration). Listen from module load,
-// not from initInstallPrompt(), so an early event isn't silently lost.
-if (browser && !__IS_CAPACITOR__) {
-  window.addEventListener('beforeinstallprompt', captureInstallPrompt);
-
-  // Fires after any install path (our dialog, the browser menu, etc.).
-  window.addEventListener('appinstalled', markInstalled);
-}
-
-// Web-only; no-op inside the native shell. Seeds mode and the persisted install
-// lifecycle from storage plus the manual-hint heuristic.
-export function initInstallPrompt() {
-  if (!browser || initialized || (__IS_CAPACITOR__ && isNative())) return;
-  initialized = true;
-
-  installState.dismissed = readBool(STORAGE_KEYS.installDismissed, false);
-  reloadInstallRepromptState();
-
-  // A live prompt captured before init already proved the app is installable
-  // (and not installed) — the listener above has set mode/installed.
-  if (deferredPrompt) return;
-
-  if (readBool(STORAGE_KEYS.installCompleted, false) || isStandalone()) {
-    markInstalled();
-    return;
+    s.installed = true;
+    s.mode = 'none';
+    writeBool(STORAGE_KEYS.installCompleted, true);
   }
 
-  installState.mode = manualMode();
+  function captureInstallPrompt(e: BeforeInstallPromptEvent) {
+    // Stop Chrome's default mini-infobar — we own the timing and presentation.
+    e.preventDefault();
+    deferredPrompt = e;
+    // The browser only fires this when the app is NOT currently installed, so
+    // it outranks a stale persisted flag (installed once, later uninstalled —
+    // localStorage survives a PWA uninstall).
+    if (s.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
+      resetInstallRepromptCycle();
+      s.installed = false;
+      writeBool(STORAGE_KEYS.installCompleted, false);
+    }
+    s.mode = 'oneTap';
+    // Desktop installability can arrive after the drawing route's settled-in gate.
+    recordInstallRepromptSession();
+  }
+
+  function dismissInstall() {
+    const stage = installPromptStage();
+    sessionCounters.excludeCurrentSession('installReprompt');
+    if (stage === 'returning' || stage === 'final') {
+      repromptsUsed += 1;
+      writeInt(STORAGE_KEYS.installRepromptsUsed, repromptsUsed);
+    }
+    s.dismissed = true;
+    installAutoClearArmedAt = null;
+    writeBool(STORAGE_KEYS.installDismissed, true);
+  }
+
+  return {
+    get mode() {
+      return s.mode;
+    },
+    get dismissed() {
+      return s.dismissed;
+    },
+    get installed() {
+      return s.installed;
+    },
+    installPromptStage,
+    recordInstallRepromptSession,
+    // Also reached by the native-configured unit suite, which drives the
+    // production event callbacks without compiling their web-only listener
+    // registrations back in.
+    markInstalled,
+    captureInstallPrompt,
+    // Web-only; no-op inside the native shell. Seeds mode and the persisted install
+    // lifecycle from storage plus the manual-hint heuristic.
+    initInstallPrompt() {
+      if (!browser || initialized || (__IS_CAPACITOR__ && isNative())) return;
+      initialized = true;
+
+      s.dismissed = readBool(STORAGE_KEYS.installDismissed, false);
+      reloadInstallRepromptState();
+
+      // A live prompt captured before init already proved the app is installable
+      // (and not installed) — the capture has set mode/installed.
+      if (deferredPrompt) return;
+
+      if (readBool(STORAGE_KEYS.installCompleted, false) || isStandalone()) {
+        markInstalled();
+        return;
+      }
+
+      s.mode = manualMode();
+    },
+    // Replay the stashed Chromium prompt. MUST be called from a user gesture.
+    // Returns the user's choice, or 'unavailable' when there's no live prompt
+    // (already used, gone stale, never fired, or non-Chromium). On 'unavailable'
+    // a still-'oneTap' mode drops to the manual hint so the UI falls back to
+    // something a tap can actually do.
+    async promptInstall() {
+      if (!deferredPrompt) {
+        fallBackToManualHint();
+        return 'unavailable';
+      }
+      const evt = deferredPrompt;
+      deferredPrompt = null; // a beforeinstallprompt event can only be prompt()ed once
+      let outcome: Exclude<InstallPromptOutcome, 'unavailable'>;
+      try {
+        await evt.prompt();
+        ({ outcome } = await evt.userChoice);
+      } catch {
+        // The stashed event went stale (e.g. Chrome revoked installability since
+        // capture). Swallow it — callers must never be left with a stuck busy flag.
+        fallBackToManualHint();
+        return 'unavailable';
+      }
+      if (outcome === 'accepted') {
+        markInstalled();
+      } else {
+        // Declined: the one-shot prompt is spent. Drop to the manual menu hint and
+        // route through the same bounded re-prompt cycle as every other dismissal.
+        fallBackToManualHint();
+        dismissInstall();
+      }
+      return outcome;
+    },
+    dismissInstall,
+    disarmInstallAutoClear() {
+      installAutoClearArmedAt = null;
+    },
+    armInstallAutoClear() {
+      installAutoClearArmedAt ??= canvas.strokeCount;
+    },
+    autoDismissInstallIfDue() {
+      if (
+        installAutoClearArmedAt === null ||
+        canvas.strokeCount < installAutoClearArmedAt + STROKES_BEFORE_AUTO_CLEAR
+      ) {
+        return false;
+      }
+      dismissInstall();
+      return true;
+    },
+    // beforeinstallprompt is one-shot and can fire before the page component
+    // mounts (on a repeat visit the service worker already controls the page, so
+    // Chromium's installability check races hydration). Listen from module load,
+    // not from initInstallPrompt(), so an early event isn't silently lost.
+    // The compile-time constant leads the condition so the native build folds the
+    // whole block away (tools/mobile/check-static-bundle.mjs scans for it).
+    install() {
+      if (!__IS_CAPACITOR__ && browser && !listening) {
+        listening = true;
+        window.addEventListener('beforeinstallprompt', captureInstallPrompt);
+        // Fires after any install path (our dialog, the browser menu, etc.).
+        window.addEventListener('appinstalled', markInstalled);
+      }
+    },
+    dispose() {
+      if (!__IS_CAPACITOR__ && listening) {
+        listening = false;
+        window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
+        window.removeEventListener('appinstalled', markInstalled);
+      }
+    },
+  };
 }
 
-// Replay the stashed Chromium prompt. MUST be called from a user gesture.
-// Returns the user's choice, or 'unavailable' when there's no live prompt
-// (already used, gone stale, never fired, or non-Chromium). On 'unavailable'
-// a still-'oneTap' mode drops to the manual hint so the UI falls back to
-// something a tap can actually do.
-export async function promptInstall(): Promise<InstallPromptOutcome> {
-  if (!deferredPrompt) {
-    fallBackToManualHint();
-    return 'unavailable';
-  }
-  const evt = deferredPrompt;
-  deferredPrompt = null; // a beforeinstallprompt event can only be prompt()ed once
-  let outcome: Exclude<InstallPromptOutcome, 'unavailable'>;
-  try {
-    await evt.prompt();
-    ({ outcome } = await evt.userChoice);
-  } catch {
-    // The stashed event went stale (e.g. Chrome revoked installability since
-    // capture). Swallow it — callers must never be left with a stuck busy flag.
-    fallBackToManualHint();
-    return 'unavailable';
-  }
-  if (outcome === 'accepted') {
-    markInstalled();
-  } else {
-    // Declined: the one-shot prompt is spent. Drop to the manual menu hint and
-    // route through the same bounded re-prompt cycle as every other dismissal.
-    fallBackToManualHint();
-    dismissInstall();
-  }
-  return outcome;
-}
+export const installState = createInstall(canvasState, sessionCountersState);
 
-export function dismissInstall() {
-  const stage = installPromptStage();
-  excludeCurrentSession('installReprompt');
-  if (stage === 'returning' || stage === 'final') {
-    repromptsUsed += 1;
-    writeInt(STORAGE_KEYS.installRepromptsUsed, repromptsUsed);
-  }
-  installState.dismissed = true;
-  installAutoClearArmedAt = null;
-  writeBool(STORAGE_KEYS.installDismissed, true);
-}
+export const {
+  installPromptStage,
+  recordInstallRepromptSession,
+  markInstalled,
+  captureInstallPrompt,
+  initInstallPrompt,
+  promptInstall,
+  dismissInstall,
+  disarmInstallAutoClear,
+  armInstallAutoClear,
+  autoDismissInstallIfDue,
+} = installState;
 
-export function disarmInstallAutoClear() {
-  installAutoClearArmedAt = null;
-}
-
-export function armInstallAutoClear() {
-  installAutoClearArmedAt ??= canvasState.strokeCount;
-}
-
-export function autoDismissInstallIfDue(): boolean {
-  if (
-    installAutoClearArmedAt === null ||
-    canvasState.strokeCount < installAutoClearArmedAt + STROKES_BEFORE_AUTO_CLEAR
-  ) {
-    return false;
-  }
-  dismissInstall();
-  return true;
-}
+installState.install();

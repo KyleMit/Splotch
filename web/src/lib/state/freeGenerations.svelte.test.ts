@@ -41,7 +41,7 @@ beforeEach(() => {
   setAiImage(true);
   settingsState.mirrorAiUserApiKey('');
   settingsState.mirrorAiAccessToken('');
-  networkState.online = true;
+  networkState.setOnline(true);
   freeGenerationsState.remaining = 10;
   freeGenerationsState.loading = true;
   freeGenerationsState.available = false;
@@ -91,10 +91,10 @@ describe('grantRefreshReady', () => {
 
     refreshGrant();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     await vi.waitFor(() => expect(freeGenerationsState.available).toBe(true));
@@ -107,7 +107,7 @@ describe('grantRefreshReady', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     persistedStateStatus.hydrated = true;
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
     expect(freeGenerationsState).toMatchObject({ available: false, loading: true });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -197,9 +197,9 @@ describe('grantRefreshReady', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const olderSignal = requestSignal(fetchMock, 0);
 
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(olderSignal.aborted).toBe(true);
@@ -225,9 +225,9 @@ describe('grantRefreshReady', () => {
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
@@ -250,9 +250,9 @@ describe('grantRefreshReady', () => {
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
@@ -292,7 +292,7 @@ describe('grantRefreshReady', () => {
     [
       'offline',
       () => {
-        networkState.online = false;
+        networkState.setOnline(false);
       },
     ],
     [
@@ -340,9 +340,9 @@ describe('grantRefreshReady', () => {
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 

@@ -79,7 +79,6 @@ export function createSessionCounters(): SessionCountersState {
 
 export const sessionCountersState = createSessionCounters();
 
-export const { sessionCount, recordSession, excludeCurrentSession, clearSessionCount } =
-  sessionCountersState;
+export const { sessionCount, recordSession } = sessionCountersState;
 
 onDurableRestore(sessionCountersState.reloadSessionCounters);

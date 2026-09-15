@@ -45,8 +45,8 @@ function createHarness() {
   });
   const machine = createAiGenerationMachine(state);
   const progress = createAiProgress(state, ESTIMATE_MS);
-  const destroy = $effect.root(() => progress.watch());
-  return { state, machine, progress, destroy };
+  progress.install();
+  return { state, machine, progress, destroy: progress.dispose };
 }
 
 // Start a run and let it fill for a while — the state every case here branches

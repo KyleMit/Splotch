@@ -51,7 +51,9 @@ export const WEB_ONLY_MODULE_MARKERS = [
     marker: 'beforeinstallprompt',
     sourcePath: 'web/src/lib/state/install.svelte.ts',
     sourceNeedle:
-      "if (browser && !__IS_CAPACITOR__) {\n  window.addEventListener('beforeinstallprompt'",
+      'if (!__IS_CAPACITOR__ && browser && !listening) {\n' +
+      '        listening = true;\n' +
+      "        window.addEventListener('beforeinstallprompt'",
   },
   {
     feature: 'install completion',

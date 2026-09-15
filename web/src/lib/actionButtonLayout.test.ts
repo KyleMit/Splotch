@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { PHONE_LANDSCAPE_QUERY } from './breakpoints';
+import type { SafeAreaInsets } from './platform/safeArea';
 import { layoutState } from './state/layout.svelte';
 import { networkState } from './state/network.svelte';
 import { freeGenerationsState } from './state/freeGenerations.svelte';
@@ -41,6 +43,41 @@ import {
   MAX_ACTION_BUTTON_COUNT,
 } from './actionButtonLayout';
 
+// The layout store measures the window, so a case describes the device it wants
+// and lets the store measure it: the phone media class through a matchMedia stub,
+// the insets through the safe-area probe, the rest through the window itself.
+const device = vi.hoisted(() => ({
+  phoneLandscape: false,
+  insets: { top: 0, right: 0, bottom: 0, left: 0 } as SafeAreaInsets,
+}));
+
+vi.mock('./platform/safeArea', () => ({
+  ZERO_INSETS: { top: 0, right: 0, bottom: 0, left: 0 },
+  measureSafeAreaInsets: (): SafeAreaInsets => ({ ...device.insets }),
+}));
+
+function setViewport(width: number, height: number, phoneLandscape = false) {
+  device.phoneLandscape = phoneLandscape;
+  window.innerWidth = width;
+  window.innerHeight = height;
+  window.dispatchEvent(new Event('resize'));
+}
+
+beforeAll(() => {
+  window.matchMedia = ((query: string) => ({
+    get matches() {
+      return query === PHONE_LANDSCAPE_QUERY ? device.phoneLandscape : false;
+    },
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+  })) as unknown as typeof window.matchMedia;
+  // The singleton installed at import against the real matchMedia; re-install it
+  // on the stub so the phone class follows the case.
+  layoutState.dispose();
+  layoutState.install();
+});
+
 function resetState() {
   setToolDrawerEnabled(true);
   setStrokeWidthControl(true);
@@ -53,15 +90,11 @@ function resetState() {
   setAiImage(true);
   settingsState.mirrorAiAccessToken('');
   settingsState.mirrorAiUserApiKey('');
-  networkState.online = true;
+  networkState.setOnline(true);
   freeGenerationsState.available = true;
 
-  layoutState.orientation = 'landscape';
-  layoutState.viewportWidth = 1280;
-  layoutState.viewportHeight = 800;
-  Object.assign(layoutState.safeArea, { top: 0, right: 0, bottom: 0, left: 0 });
-
-  layoutState.phoneLandscape = false;
+  device.insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  setViewport(1280, 800);
 }
 
 beforeEach(resetState);
@@ -87,11 +120,11 @@ describe('visibleActionButtonCount', () => {
     settingsState.mirrorAiUserApiKey('key');
     expect(visibleActionButtonCount()).toBe(6);
 
-    networkState.online = false;
+    networkState.setOnline(false);
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
 
-    networkState.online = true;
+    networkState.setOnline(true);
     setAiImage(false);
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
@@ -146,28 +179,22 @@ describe('visibleActionButtonCount', () => {
 
 describe('availablePerButton', () => {
   it('clears the declared landscape palette column', () => {
-    layoutState.viewportWidth = 1024;
+    setViewport(1024, 800);
     expect(availablePerButton(5)).toBe((1024 - PALETTE_LANDSCAPE_WIDTH_PX - 128 - 48) / 5);
   });
 
   it('removes the palette reserve on landscape phones', () => {
-    layoutState.phoneLandscape = true;
-    layoutState.viewportWidth = 667;
-    layoutState.viewportHeight = 375;
+    setViewport(667, 375, true);
     expect(availablePerButton(5)).toBe((667 - 128 - 48) / 5);
   });
 
   it('keeps the palette reserve when visible height is phone-sized but CSS is tablet-sized', () => {
-    layoutState.viewportWidth = 1024;
-    layoutState.viewportHeight = 550;
-    layoutState.phoneLandscape = false;
+    setViewport(1024, 550);
     expect(availablePerButton(5)).toBe((1024 - PALETTE_LANDSCAPE_WIDTH_PX - 128 - 48) / 5);
   });
 
   it('clears the declared portrait palette bar', () => {
-    layoutState.orientation = 'portrait';
-    layoutState.viewportWidth = 390;
-    layoutState.viewportHeight = 844;
+    setViewport(390, 844);
     expect(availablePerButton(5)).toBe((844 - PALETTE_BAR_RESERVE - 72 - 48) / 5);
   });
 });
@@ -178,70 +205,51 @@ describe('maxActionButtonScale', () => {
   });
 
   it('keeps the row size ceiling when CSS is tablet-sized behind browser chrome', () => {
-    layoutState.viewportWidth = 650;
-    layoutState.viewportHeight = 550;
-    layoutState.phoneLandscape = false;
+    setViewport(650, 550);
     expect(maxActionButtonScale()).toBe(116);
   });
 
   it('allows the full slider range on a landscape phone', () => {
-    layoutState.phoneLandscape = true;
-    layoutState.viewportWidth = 600;
-    layoutState.viewportHeight = 375;
+    setViewport(600, 375, true);
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('never drops below the slider minimum', () => {
-    layoutState.phoneLandscape = true;
-    layoutState.viewportWidth = 520;
-    layoutState.viewportHeight = 160;
+    setViewport(520, 160, true);
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 
   it('uses the vertical budget and the portrait base in portrait', () => {
-    layoutState.orientation = 'portrait';
-    layoutState.viewportWidth = 360;
-    layoutState.viewportHeight = 440;
+    setViewport(360, 440);
     // (440 − 75 − 8 − 124) / 6 = 38.83px per button → 77% of the phone base.
     expect(maxActionButtonScale()).toBe(77);
   });
 
   it('portrait tall screens clear the static max', () => {
-    layoutState.orientation = 'portrait';
-    layoutState.viewportWidth = 360;
-    layoutState.viewportHeight = 740;
+    setViewport(360, 740);
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('uses the declared portrait bar the moment the orientation flips', () => {
-    layoutState.orientation = 'portrait';
-    layoutState.viewportWidth = 768;
-    layoutState.viewportHeight = 1024;
+    setViewport(768, 1024);
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('retains the full slider range when phone controls are switched off', () => {
-    layoutState.phoneLandscape = true;
-    layoutState.viewportWidth = 600;
-    layoutState.viewportHeight = 375;
+    setViewport(600, 375, true);
     setScreenshot(false);
     setUndoButton(false);
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('budgets for the free AI button without a credential', () => {
-    layoutState.phoneLandscape = true;
-    layoutState.viewportWidth = 680;
-    layoutState.viewportHeight = 360;
+    setViewport(680, 360, true);
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('subtracts safe-area insets from the budget', () => {
-    layoutState.phoneLandscape = true;
-    layoutState.viewportWidth = 667;
-    layoutState.viewportHeight = 375;
-    layoutState.viewportHeight = 250;
-    Object.assign(layoutState.safeArea, { top: 20, bottom: 20 });
+    device.insets = { top: 20, right: 0, bottom: 20, left: 0 };
+    setViewport(667, 250, true);
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 });
@@ -266,12 +274,10 @@ describe('action button size class', () => {
   });
 
   it('keeps its step through a rotation', () => {
-    layoutState.viewportWidth = 1376;
-    layoutState.viewportHeight = 1032;
+    setViewport(1376, 1032);
     expect(actionButtonBase('landscape')).toBe(ACTION_BUTTON_BASE_PX.largeTablet.landscape);
 
-    layoutState.viewportWidth = 1032;
-    layoutState.viewportHeight = 1376;
+    setViewport(1032, 1376);
     expect(actionButtonBase('portrait')).toBe(ACTION_BUTTON_BASE_PX.largeTablet.portrait);
   });
 
@@ -403,11 +409,13 @@ const BUTTON_SIZE_FIXTURES = [
     buttonCount: 5,
     budgetWins: false,
   },
+  // Width past height: the layout store derives orientation from the viewport,
+  // so a landscape fixture has to be landscape-shaped.
   {
     name: 'narrow landscape tablet with every button',
     orientation: 'landscape',
     viewportWidth: 560,
-    viewportHeight: 620,
+    viewportHeight: 500,
     buttonCount: 6,
     budgetWins: true,
   },
@@ -433,9 +441,8 @@ describe('the app.css --action-btn-size formula', () => {
   it.each(BUTTON_SIZE_FIXTURES)(
     'resolves to the same cap as the slider ceiling budget on a $name',
     (fixture) => {
-      layoutState.orientation = fixture.orientation;
-      layoutState.viewportWidth = fixture.viewportWidth;
-      layoutState.viewportHeight = fixture.viewportHeight;
+      setViewport(fixture.viewportWidth, fixture.viewportHeight);
+      expect(layoutState.orientation).toBe(fixture.orientation);
 
       const { buttonCount } = fixture;
       const basePx = actionButtonBase(fixture.orientation);

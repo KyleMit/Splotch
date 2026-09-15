@@ -35,7 +35,7 @@ beforeEach(() => {
   setAiImage(true);
   settingsState.mirrorAiAccessToken('');
   settingsState.mirrorAiUserApiKey('');
-  networkState.online = true;
+  networkState.setOnline(true);
   freeGenerationsState.available = true;
   selectBrush('pen');
 });

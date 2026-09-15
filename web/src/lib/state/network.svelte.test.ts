@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createNetwork, type NetworkState } from './network.svelte';
 
 type StatusListener = (status: { connected: boolean }) => void;
 
 const mocks = vi.hoisted(() => ({
+  native: false,
   getStatus: vi.fn<() => Promise<{ connected: boolean }>>(),
   addListener:
     vi.fn<(event: string, listener: StatusListener) => Promise<{ remove: () => void }>>(),
@@ -11,15 +13,65 @@ const mocks = vi.hoisted(() => ({
 vi.mock('$app/environment', () => ({ browser: true }));
 vi.mock('$lib/platform', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/platform')>()),
-  isNative: () => true,
+  isNative: () => mocks.native,
 }));
 vi.mock('@capacitor/network', () => ({
   Network: { getStatus: mocks.getStatus, addListener: mocks.addListener },
 }));
 
+let network: NetworkState | null = null;
+
+function installNetwork() {
+  network = createNetwork();
+  network.install();
+  return network;
+}
+
+afterEach(() => {
+  network?.dispose();
+  network = null;
+});
+
+describe('web network status', () => {
+  beforeEach(() => {
+    mocks.native = false;
+    vi.clearAllMocks();
+  });
+
+  it('seeds from navigator.onLine and follows the online/offline events', () => {
+    const state = installNetwork();
+    expect(state.online).toBe(true);
+
+    window.dispatchEvent(new Event('offline'));
+    expect(state.online).toBe(false);
+
+    window.dispatchEvent(new Event('online'));
+    expect(state.online).toBe(true);
+  });
+
+  it('stops following the events once disposed', () => {
+    const state = installNetwork();
+    state.dispose();
+
+    window.dispatchEvent(new Event('offline'));
+
+    expect(state.online).toBe(true);
+  });
+
+  it('installs its listeners once', () => {
+    const state = installNetwork();
+    const addListener = vi.spyOn(window, 'addEventListener');
+
+    state.install();
+
+    expect(addListener).not.toHaveBeenCalled();
+    addListener.mockRestore();
+  });
+});
+
 describe('native network status', () => {
   beforeEach(() => {
-    vi.resetModules();
+    mocks.native = true;
     vi.clearAllMocks();
   });
 
@@ -32,7 +84,7 @@ describe('native network status', () => {
       return { remove: () => {} };
     });
 
-    const { networkState } = await import('./network.svelte');
+    const state = installNetwork();
     await vi.waitFor(() => expect(listener).toBeDefined());
 
     listener!({ connected: false });
@@ -40,16 +92,16 @@ describe('native network status', () => {
     await vi.waitFor(() => expect(mocks.getStatus).toHaveBeenCalledOnce());
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(networkState.online).toBe(false);
+    expect(state.online).toBe(false);
   });
 
   it('uses the initial native status when no event has arrived', async () => {
     mocks.getStatus.mockResolvedValue({ connected: false });
     mocks.addListener.mockResolvedValue({ remove: () => {} });
 
-    const { networkState } = await import('./network.svelte');
+    const state = installNetwork();
 
-    await vi.waitFor(() => expect(networkState.online).toBe(false));
+    await vi.waitFor(() => expect(state.online).toBe(false));
     expect(mocks.getStatus).toHaveBeenCalledOnce();
   });
 
@@ -60,12 +112,30 @@ describe('native network status', () => {
       listener = callback;
       return { remove: () => {} };
     });
-    const { networkState } = await import('./network.svelte');
-    await vi.waitFor(() => expect(networkState.online).toBe(false));
+    const state = installNetwork();
+    await vi.waitFor(() => expect(state.online).toBe(false));
 
     listener!({ connected: true });
-    expect(networkState.online).toBe(true);
+    expect(state.online).toBe(true);
     listener!({ connected: false });
-    expect(networkState.online).toBe(false);
+    expect(state.online).toBe(false);
+  });
+
+  it('removes the native listener and ignores late events once disposed', async () => {
+    mocks.getStatus.mockResolvedValue({ connected: true });
+    const remove = vi.fn();
+    let listener: StatusListener | undefined;
+    mocks.addListener.mockImplementation(async (_event, callback) => {
+      listener = callback;
+      return { remove };
+    });
+    const state = installNetwork();
+    await vi.waitFor(() => expect(listener).toBeDefined());
+
+    state.dispose();
+    listener!({ connected: false });
+
+    expect(remove).toHaveBeenCalledOnce();
+    expect(state.online).toBe(true);
   });
 });
