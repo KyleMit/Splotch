@@ -23,6 +23,24 @@ describe('the top-level browser-global guard', () => {
     ).toHaveLength(1);
   });
 
+  it('rejects a browser-global read at the top level of a rune module', async () => {
+    expect(
+      await violations(
+        'web/src/lib/state/network.svelte.ts',
+        'export const width = window.innerWidth;'
+      )
+    ).toHaveLength(1);
+  });
+
+  it('allows a top-level browser read guarded by SvelteKit environment state', async () => {
+    expect(
+      await violations(
+        'web/src/lib/state/network.svelte.ts',
+        "import { browser } from '$app/environment'; export const width = browser ? window.innerWidth : 0;"
+      )
+    ).toHaveLength(0);
+  });
+
   it('allows browser access inside a function that runs only when called', async () => {
     expect(
       await violations(

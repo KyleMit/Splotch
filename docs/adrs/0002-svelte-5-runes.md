@@ -46,7 +46,8 @@ for rune-based state.
   read-only getters, and named mutators. Its shared instance is exported as `<basename>State`; modal
   controllers end in `Modal`. Nested mutable objects need a genuinely read-only view rather than
   TypeScript's shallow `Readonly<T>`. `tools/tests/state-export-names.test.mjs` drift-guards the
-  singleton naming and one-instance rule. Tests create fresh instances through the factory.
+  singleton naming: one `<basename>State`, plus any `*Modal` controllers. Tests create fresh
+  instances through the factory.
 * A module that subscribes to browser or platform state exposes symmetric `install()` and
   `dispose()` methods on that same instance. The production singleton still installs once at module
   load behind its client guard; tests install and dispose their own instance.
@@ -68,10 +69,10 @@ for rune-based state.
 * Threshold behavior gates on a `$derived` boolean, so an effect follows the threshold state rather
   than reimplementing its comparison. Bookkeeping that an effect writes but must not subscribe to is
   read with `untrack`.
-* Use `onMount(() => teardown)` for imperative wiring that installs exactly once for a component's
-  mount and is removed at unmount. Use an `$effect` cleanup when the subscription depends on
-  reactive inputs and must be replaced as those inputs change. Browser-only cleanup also belongs in
-  an effect rather than `onDestroy`, because `onDestroy` runs during SSR while effects do not.
+* Never put browser-only cleanup in `onDestroy`, which also runs during SSR. Use
+  `onMount(() => teardown)` for imperative wiring that installs exactly once for a component's mount
+  and an `$effect` cleanup for a subscription that depends on reactive inputs and must be replaced
+  when they change.
 
 ### Async ownership
 
@@ -97,10 +98,10 @@ for rune-based state.
 * A conditionally rendered dialog remains mounted until the native dialog and its close animation
   have retired. State scoped to one open of a long-lived component is cleared on close, not left for
   the next visit.
-* Gesture guards share only `PRESS_CLICK_CONSUME_WINDOW_MS`. They do not share a click-swallowing
-  helper: `scribbleGuard`, `colorFoldGesture`, `pinchTextZoom`, and `launchGuard` consume the click
-  at different points in different pointer lifecycles, and a common helper would merely encode those
-  differences as options.
+* The trailing-click guards in `scribbleGuard`, `colorFoldGesture`, and `pinchTextZoom` share only
+  `PRESS_CLICK_CONSUME_WINDOW_MS`. They do not share a click-swallowing helper because they consume
+  the click at different points in different pointer lifecycles. `launchGuard` is a spatial tap-zone
+  guard with its own `LAUNCH_ZONE_DURATION_MS`, not part of that trailing-click family.
 * A newly attached drawing-engine callback set receives the engine's current flags immediately on
   both paths: adopting the early-boot engine and falling back to a fresh initialization. Waiting for
   the next change leaves reactive UI stale.
@@ -110,9 +111,10 @@ for rune-based state.
 * A route rendered per request on the web never writes module-level state while rendering. The
   separate Vitest pass under `web/vitest.webSsr.config.ts` compiles the web branches, snapshots
   every module instance, renders every per-request route, and drift-guards both inventories.
-* Svelte instance scripts do not read browser globals at top level. The
-  `svelte/no-top-level-browser-globals` lint rule enforces this; `/dev/engine` carries the narrow
-  exemption because its route declares `ssr = false`.
+* Svelte components, module scripts, and `.svelte.ts` modules do not read browser globals at top
+  level. `svelte/no-top-level-browser-globals` catches globals that Node does not also define;
+  Node-shared globals such as `navigator` still require an explicit `browser` guard. `/dev/engine`
+  carries the narrow exemption because its route declares `ssr = false`.
 * Code that strips a query before SvelteKit's router has mounted uses
   `history.replaceState(history.state, '', url)`. Preserving `history.state` keeps SvelteKit's
   navigation index intact, and `eslint.config.js` rejects direct `pushState` or a replacement that
