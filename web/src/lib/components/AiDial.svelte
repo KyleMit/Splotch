@@ -1,7 +1,7 @@
 <script lang="ts">
   import { scale } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
-  import { aiProgress } from '$lib/state/aiProgress.svelte';
+  import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
 
   const HUE_START_DEG = 282;
@@ -13,7 +13,7 @@
   // A pure view of the shared progress (state/aiProgress.svelte.ts): the loop
   // that fills this belongs to the run, not to the dial, so minimizing and
   // restoring the modal never restarts it.
-  const progress = $derived(aiProgress.value);
+  const progress = $derived(aiProgressState.value);
 
   // A friendly violet → blue → teal → green sweep as the dial fills.
   const hueA = $derived(HUE_START_DEG - HUE_SWEEP_DEG * progress);
@@ -25,7 +25,7 @@
 <div class="dial-wrap">
   <div
     class="dial"
-    class:waiting={aiProgress.waiting}
+    class:waiting={aiProgressState.waiting}
     style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle}; --dial-size: min({DIAL_STAGE_FRACTION *
       100}%, {DIAL_MAX_SIZE_PX}px);"
     out:scale={{

@@ -9,7 +9,7 @@ vi.mock('$lib/platform', async (importOriginal) => ({
   isAndroidBrowser: () => mocks.android,
 }));
 
-// The module seeds `fullscreen.supported`/`active` and registers its
+// The module seeds `fullscreenState.supported`/`active` and registers its
 // `fullscreenchange` listener at load time, so each test needs a clean import.
 async function freshModule() {
   vi.resetModules();
@@ -37,48 +37,48 @@ beforeEach(() => {
 describe('fullscreenSupported gate', () => {
   it('is unsupported when running inside the native shell', async () => {
     mocks.native = true;
-    const { fullscreen } = await freshModule();
-    expect(fullscreen.supported).toBe(false);
+    const { fullscreenState } = await freshModule();
+    expect(fullscreenState.supported).toBe(false);
   });
 
   it('is unsupported when running as an installed PWA', async () => {
     mocks.standalone = true;
-    const { fullscreen } = await freshModule();
-    expect(fullscreen.supported).toBe(false);
+    const { fullscreenState } = await freshModule();
+    expect(fullscreenState.supported).toBe(false);
   });
 
   it('is unsupported when the Fullscreen API is unavailable', async () => {
     setFullscreenEnabled(false);
-    const { fullscreen } = await freshModule();
-    expect(fullscreen.supported).toBe(false);
+    const { fullscreenState } = await freshModule();
+    expect(fullscreenState.supported).toBe(false);
   });
 
   it('is unsupported off Android', async () => {
     mocks.android = false;
-    const { fullscreen } = await freshModule();
-    expect(fullscreen.supported).toBe(false);
+    const { fullscreenState } = await freshModule();
+    expect(fullscreenState.supported).toBe(false);
   });
 
   it('is supported and reflects the current fullscreen element when all gates pass', async () => {
     setFullscreenElement(document.body);
-    const { fullscreen } = await freshModule();
-    expect(fullscreen.supported).toBe(true);
-    expect(fullscreen.active).toBe(true);
+    const { fullscreenState } = await freshModule();
+    expect(fullscreenState.supported).toBe(true);
+    expect(fullscreenState.active).toBe(true);
   });
 });
 
 describe('fullscreenchange sync', () => {
-  it('updates fullscreen.active when the document enters and leaves fullscreen', async () => {
-    const { fullscreen } = await freshModule();
-    expect(fullscreen.active).toBe(false);
+  it('updates fullscreenState.active when the document enters and leaves fullscreen', async () => {
+    const { fullscreenState } = await freshModule();
+    expect(fullscreenState.active).toBe(false);
 
     setFullscreenElement(document.body);
     document.dispatchEvent(new Event('fullscreenchange'));
-    expect(fullscreen.active).toBe(true);
+    expect(fullscreenState.active).toBe(true);
 
     setFullscreenElement(null);
     document.dispatchEvent(new Event('fullscreenchange'));
-    expect(fullscreen.active).toBe(false);
+    expect(fullscreenState.active).toBe(false);
   });
 });
 

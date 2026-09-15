@@ -8,7 +8,7 @@ interface ColoringPackState {
   initialized: boolean;
 }
 
-export const coloringPackState: ColoringPackState = $state({
+export const coloringPacksState: ColoringPackState = $state({
   installedBookIds: [STARTER_COLORING_BOOK_ID],
   downloadingBookId: null,
   downloadedBytes: 0,
@@ -18,34 +18,34 @@ export const coloringPackState: ColoringPackState = $state({
 
 export function availableColoringBooks(platform: BookPlatform): Book[] {
   return booksForPlatform(platform).filter((book) =>
-    coloringPackState.installedBookIds.includes(book.id)
+    coloringPacksState.installedBookIds.includes(book.id)
   );
 }
 
 export function setInstalledColoringBooks(bookIds: string[]) {
-  coloringPackState.installedBookIds = [
+  coloringPacksState.installedBookIds = [
     STARTER_COLORING_BOOK_ID,
     ...bookIds.filter((id) => id !== STARTER_COLORING_BOOK_ID),
   ];
-  coloringPackState.initialized = true;
+  coloringPacksState.initialized = true;
 }
 
 // What a scan would publish for a device with no pack storage at all, known
 // without the manifest: the starter book alone, out of the platform's catalog.
 export function setNoDownloadedColoringBooks(platform: BookPlatform) {
   setInstalledColoringBooks([]);
-  coloringPackState.totalBookCount = booksForPlatform(platform).length;
-  coloringPackState.downloadedBytes = 0;
+  coloringPacksState.totalBookCount = booksForPlatform(platform).length;
+  coloringPacksState.downloadedBytes = 0;
 }
 
 export function markColoringBookInstalled(bookId: string) {
-  if (!coloringPackState.installedBookIds.includes(bookId)) {
-    coloringPackState.installedBookIds = [...coloringPackState.installedBookIds, bookId];
+  if (!coloringPacksState.installedBookIds.includes(bookId)) {
+    coloringPacksState.installedBookIds = [...coloringPacksState.installedBookIds, bookId];
   }
 }
 
 export function resetDownloadedColoringBooks() {
-  coloringPackState.installedBookIds = [STARTER_COLORING_BOOK_ID];
-  coloringPackState.downloadedBytes = 0;
-  coloringPackState.downloadingBookId = null;
+  coloringPacksState.installedBookIds = [STARTER_COLORING_BOOK_ID];
+  coloringPacksState.downloadedBytes = 0;
+  coloringPacksState.downloadingBookId = null;
 }

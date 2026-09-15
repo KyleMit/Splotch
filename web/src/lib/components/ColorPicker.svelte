@@ -1,6 +1,6 @@
 <script lang="ts">
   import { colorPickerModal } from '$lib/state/ui.svelte';
-  import { pickCustomColor, colors, isWhite } from '$lib/state/colors.svelte';
+  import { pickCustomColor, colorsState, isWhite } from '$lib/state/colors.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
@@ -177,7 +177,7 @@
                 class:hover={hoveredHex === hex}
                 class:border={isWhite(hex)}
                 class:border-dim={hex === PICKER_DIM_BORDER}
-                class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
+                class:selected={colorsState.customColor.toLowerCase() === hex.toLowerCase()}
                 style="--color: {hex};"
                 data-color={hex}
                 aria-label={hex}

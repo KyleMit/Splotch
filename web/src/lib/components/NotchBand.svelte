@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { colors } from '$lib/state/colors.svelte';
+  import { colorsState } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { isNative, getPlatform } from '$lib/platform';
   import {
@@ -8,7 +8,7 @@
     listenForStatusBarReentry,
     type StatusBarStyle,
   } from '$lib/platform/notchBand';
-  import { layout } from '$lib/state/layout.svelte';
+  import { layoutState } from '$lib/state/layout.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { PAPER_COLORS, setThemeColorMeta, updateThemeColorMeta } from '$lib/theme';
 
@@ -28,12 +28,12 @@
     computeNotchBandState({
       platform: getPlatform(),
       native: isNative(),
-      orientation: layout.orientation,
-      insetTop: layout.safeArea.top,
-      insetLeft: layout.safeArea.left,
-      insetRight: layout.safeArea.right,
-      orientationAngle: layout.orientationAngle,
-      activeColor: colors.activeColor,
+      orientation: layoutState.orientation,
+      insetTop: layoutState.safeArea.top,
+      insetLeft: layoutState.safeArea.left,
+      insetRight: layoutState.safeArea.right,
+      orientationAngle: layoutState.orientationAngle,
+      activeColor: colorsState.activeColor,
       eraser: toolState.brush === 'eraser',
       paperColor: PAPER_COLORS[resolvedTheme()],
     })

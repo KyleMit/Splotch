@@ -2,7 +2,7 @@ import { STORAGE_KEYS, readString, removeKey } from '../storage';
 import { looksLikeRetiredGeminiKey } from '../ai/keyFormat';
 import { saveApiKey, loadApiKey, clearApiKey } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
-import { settings } from './settings.svelte';
+import { settingsState } from './settings.svelte';
 import { createSecureCredentialCoordinator } from './secureCredentialCoordinator';
 
 // The parent's own AI provider API key (BYOK). Stored only on this device and sent
@@ -18,7 +18,7 @@ async function persistAiUserApiKey(v: string) {
 }
 
 const aiKeyWriteCoordinator = createSecureCredentialCoordinator(
-  settings,
+  settingsState,
   'aiUserApiKey',
   persistAiUserApiKey
 );
@@ -42,14 +42,14 @@ export function hydrateApiKey() {
     const legacy = readString(STORAGE_KEYS.legacyAiUserApiKey, '');
     if (!ownsHydration()) return;
 
-    if (!key && legacy && !settings.aiUserApiKey) {
+    if (!key && legacy && !settingsState.aiUserApiKey) {
       await saveApiKey(legacy);
       key = legacy;
     }
 
     if (legacy) removeKey(STORAGE_KEYS.legacyAiUserApiKey);
 
-    if (settings.aiUserApiKey || !ownsHydration()) return;
+    if (settingsState.aiUserApiKey || !ownsHydration()) return;
 
     // Deleting is driven by recognising the retired shape, not by failing to
     // recognise the current one: a destructive step keyed off a negation removes
@@ -63,6 +63,6 @@ export function hydrateApiKey() {
       return;
     }
 
-    if (key) settings.aiUserApiKey = key;
+    if (key) settingsState.aiUserApiKey = key;
   });
 }

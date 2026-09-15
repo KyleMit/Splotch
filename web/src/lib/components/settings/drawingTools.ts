@@ -1,6 +1,6 @@
 import type { CommonIconName } from '../iconTypes';
 import {
-  settings,
+  settingsState,
   setCrayon,
   setEraser,
   setMagicBrush,
@@ -71,7 +71,7 @@ export const DRAWING_TOOLS: readonly DrawingTool[] = TOOL_DRAWER_CONTROLS.map((s
 
 /** Whether the parent has this tool switched on, regardless of the drawer switch above it. */
 export function isDrawingToolOn(tool: DrawingTool): boolean {
-  return settings[tool.setting];
+  return settingsState[tool.setting];
 }
 
 /** How many tools the parent has turned off — what the hub row reports. */

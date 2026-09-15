@@ -9,7 +9,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import '$lib/components/deferredIcons';
-  import { gate, pressGateKey, GATE_KEYPAD_KEYS } from '$lib/state/parentalGate.svelte';
+  import {
+    parentalGateState,
+    pressGateKey,
+    GATE_KEYPAD_KEYS,
+  } from '$lib/state/parentalGate.svelte';
 
   interface Props {
     /** The gate moves focus onto a key and routes Enter by whether a key has it. */
@@ -28,7 +32,7 @@
       class="gate-key"
       data-key={key}
       aria-label={typeof key === 'number' ? undefined : KEY_LABELS[key]}
-      aria-disabled={gate.lockoutUntil !== null}
+      aria-disabled={parentalGateState.lockoutUntil !== null}
       onclick={() => pressGateKey(key)}
     >
       {#if typeof key === 'number'}

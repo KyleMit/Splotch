@@ -82,7 +82,7 @@ reference; an icon-part token only ever paints the one path that names it.
 * **Two files per icon, `light/` and `dark/`** (the shape the original handoff assumed). Doubles the
   shipped bytes for icons whose geometry is identical, and forces three pipeline changes:
   `Icon.svelte`'s `import.meta.glob` keyed by `name + theme`, `generate-icon-names.mjs` filtering
-  out the duplicate names, and a runtime read of the *resolved* theme (`settings.theme` can be
+  out the duplicate names, and a runtime read of the *resolved* theme (`settingsState.theme` can be
   `'system'`) to pick the variant — a JS dependency for something CSS does with no script at all. It
   also gives the two sets no shared geometry, so a shape edit has to be made twice.
 * **`light-dark()` in the SVG paint.** Needs Chrome 123 / Safari 17.5, above the supported floor

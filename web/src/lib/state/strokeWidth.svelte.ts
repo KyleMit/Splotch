@@ -58,7 +58,7 @@ function readStrokeLevel(key: StorageKey, fallback: StrokeSize): StrokeSize {
 // Drawing brushes (pen/crayon/magic) share one remembered level and the eraser
 // keeps its own, persisted separately, so switching tools restores the size the
 // child last used for that tool.
-export const strokeState = $state({
+export const strokeWidthState = $state({
   penSize: readStrokeLevel(STORAGE_KEYS.strokeWidthSize, DEFAULT_SIZE),
   eraserSize: readStrokeLevel(STORAGE_KEYS.eraserWidthSize, DEFAULT_SIZE),
 });
@@ -66,8 +66,14 @@ export const strokeState = $state({
 // Re-read the persisted pen/eraser levels into the live store after the durable
 // storage layer recovers values evicted by the native WebView (see storage.ts).
 export function reloadStrokeWidth() {
-  strokeState.penSize = readStrokeLevel(STORAGE_KEYS.strokeWidthSize, strokeState.penSize);
-  strokeState.eraserSize = readStrokeLevel(STORAGE_KEYS.eraserWidthSize, strokeState.eraserSize);
+  strokeWidthState.penSize = readStrokeLevel(
+    STORAGE_KEYS.strokeWidthSize,
+    strokeWidthState.penSize
+  );
+  strokeWidthState.eraserSize = readStrokeLevel(
+    STORAGE_KEYS.eraserWidthSize,
+    strokeWidthState.eraserSize
+  );
 }
 
 onDurableRestore(reloadStrokeWidth);
@@ -75,17 +81,17 @@ onDurableRestore(reloadStrokeWidth);
 // The level for the tool that's currently active. Reads toolState so it stays
 // reactive inside $derived, $effect, and template expressions.
 export function activeStrokeSize(): StrokeSize {
-  return toolState.brush === 'eraser' ? strokeState.eraserSize : strokeState.penSize;
+  return toolState.brush === 'eraser' ? strokeWidthState.eraserSize : strokeWidthState.penSize;
 }
 
 // Set the level for the active tool, persisting only that tool's value.
 export function setStrokeSize(size: StrokeSize) {
   if (!STROKE_SIZES.includes(size)) return;
   if (toolState.brush === 'eraser') {
-    strokeState.eraserSize = size;
+    strokeWidthState.eraserSize = size;
     writeInt(STORAGE_KEYS.eraserWidthSize, size);
   } else {
-    strokeState.penSize = size;
+    strokeWidthState.penSize = size;
     writeInt(STORAGE_KEYS.strokeWidthSize, size);
   }
 }

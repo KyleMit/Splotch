@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
-import { network } from './network.svelte';
-import { settings } from './settings.svelte';
+import { networkState } from './network.svelte';
+import { settingsState } from './settings.svelte';
 import {
   createFreeGenerationGrantRefresher,
-  freeGenerations,
+  freeGenerationsState,
   grantRefreshReady,
 } from './freeGenerations.svelte';
 
@@ -38,13 +38,13 @@ function requestSignal(fetchMock: ReturnType<typeof vi.fn>, callIndex: number): 
 
 beforeEach(() => {
   persistedStateStatus.hydrated = false;
-  settings.aiImageEnabled = true;
-  settings.aiUserApiKey = '';
-  settings.aiAccessToken = '';
-  network.online = true;
-  freeGenerations.remaining = 10;
-  freeGenerations.loading = true;
-  freeGenerations.available = false;
+  settingsState.aiImageEnabled = true;
+  settingsState.aiUserApiKey = '';
+  settingsState.aiAccessToken = '';
+  networkState.online = true;
+  freeGenerationsState.remaining = 10;
+  freeGenerationsState.loading = true;
+  freeGenerationsState.available = false;
 });
 
 afterEach(() => {
@@ -63,15 +63,15 @@ describe('grantRefreshReady', () => {
   it('stays false for disabled, BYOK, and managed-access paths', () => {
     persistedStateStatus.hydrated = true;
 
-    settings.aiImageEnabled = false;
+    settingsState.aiImageEnabled = false;
     expect(grantRefreshReady()).toBe(false);
 
-    settings.aiImageEnabled = true;
-    settings.aiUserApiKey = 'parent-key';
+    settingsState.aiImageEnabled = true;
+    settingsState.aiUserApiKey = 'parent-key';
     expect(grantRefreshReady()).toBe(false);
 
-    settings.aiUserApiKey = '';
-    settings.aiAccessToken = 'managed-code';
+    settingsState.aiUserApiKey = '';
+    settingsState.aiAccessToken = 'managed-code';
     expect(grantRefreshReady()).toBe(false);
   });
 
@@ -86,19 +86,19 @@ describe('grantRefreshReady', () => {
     persistedStateStatus.hydrated = true;
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
-    expect(freeGenerations).toMatchObject({ available: false, loading: false });
+    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: false });
 
     refreshGrant();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    network.online = false;
+    networkState.online = false;
     refreshGrant();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    network.online = true;
+    networkState.online = true;
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    await vi.waitFor(() => expect(freeGenerations.available).toBe(true));
-    expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 7 });
+    await vi.waitFor(() => expect(freeGenerationsState.available).toBe(true));
+    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 7 });
   });
 
   it('waits while an eligible grant is offline and marks an ineligible grant unavailable', () => {
@@ -107,14 +107,14 @@ describe('grantRefreshReady', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     persistedStateStatus.hydrated = true;
-    network.online = false;
+    networkState.online = false;
     refreshGrant();
-    expect(freeGenerations).toMatchObject({ available: false, loading: true });
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: true });
     expect(fetchMock).not.toHaveBeenCalled();
 
-    settings.aiUserApiKey = 'parent-key';
+    settingsState.aiUserApiKey = 'parent-key';
     refreshGrant();
-    expect(freeGenerations).toMatchObject({ available: false, loading: false });
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -129,15 +129,15 @@ describe('grantRefreshReady', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const signal = requestSignal(fetchMock, 0);
 
-    settings.aiUserApiKey = 'parent-key';
+    settingsState.aiUserApiKey = 'parent-key';
     refreshGrant();
     expect(signal.aborted).toBe(true);
-    expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
 
     const stale = grantResponse(3);
     pending.resolve(stale.response);
     await vi.waitFor(() => expect(stale.json).toHaveBeenCalledOnce());
-    expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
   });
 
   it('does not restart a pending request when refresh state is unchanged', async () => {
@@ -158,7 +158,7 @@ describe('grantRefreshReady', () => {
     expect(signal.aborted).toBe(false);
 
     pending.resolve(grantResponse(6).response);
-    await vi.waitFor(() => expect(freeGenerations.remaining).toBe(6));
+    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(6));
     refreshGrant(new Event('visibilitychange'));
     expect(fetchMock).toHaveBeenCalledOnce();
   });
@@ -175,14 +175,14 @@ describe('grantRefreshReady', () => {
     const signal = requestSignal(fetchMock, 0);
 
     const newRefreshGrant = createFreeGenerationGrantRefresher();
-    settings.aiUserApiKey = 'parent-key';
+    settingsState.aiUserApiKey = 'parent-key';
     newRefreshGrant();
     expect(signal.aborted).toBe(true);
 
     const stale = grantResponse(4);
     pending.resolve(stale.response);
     await vi.waitFor(() => expect(stale.json).toHaveBeenCalledOnce());
-    expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
   });
 
   it('keeps the reconnect result when the older request settles first', async () => {
@@ -197,9 +197,9 @@ describe('grantRefreshReady', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const olderSignal = requestSignal(fetchMock, 0);
 
-    network.online = false;
+    networkState.online = false;
     refreshGrant();
-    network.online = true;
+    networkState.online = true;
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(olderSignal.aborted).toBe(true);
@@ -207,11 +207,11 @@ describe('grantRefreshReady', () => {
     const olderResponse = grantResponse(2);
     older.resolve(olderResponse.response);
     await vi.waitFor(() => expect(olderResponse.json).toHaveBeenCalledOnce());
-    expect(freeGenerations).toMatchObject({ available: false, loading: true, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: true, remaining: 10 });
 
     newer.resolve(grantResponse(7).response);
-    await vi.waitFor(() => expect(freeGenerations.remaining).toBe(7));
-    expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 7 });
+    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(7));
+    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 7 });
   });
 
   it('keeps the reconnect result when the newer request settles first', async () => {
@@ -225,18 +225,18 @@ describe('grantRefreshReady', () => {
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    network.online = false;
+    networkState.online = false;
     refreshGrant();
-    network.online = true;
+    networkState.online = true;
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     newer.resolve(grantResponse(7).response);
-    await vi.waitFor(() => expect(freeGenerations.remaining).toBe(7));
+    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(7));
     const olderResponse = grantResponse(2);
     older.resolve(olderResponse.response);
     await vi.waitFor(() => expect(olderResponse.json).toHaveBeenCalledOnce());
-    expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 7 });
+    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 7 });
   });
 
   it('ignores an invalidated failure after a newer request succeeds', async () => {
@@ -250,17 +250,17 @@ describe('grantRefreshReady', () => {
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    network.online = false;
+    networkState.online = false;
     refreshGrant();
-    network.online = true;
+    networkState.online = true;
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     newer.resolve(grantResponse(8).response);
-    await vi.waitFor(() => expect(freeGenerations.remaining).toBe(8));
+    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(8));
     older.reject(new Error('stale failure'));
-    await vi.waitFor(() => expect(freeGenerations.available).toBe(true));
-    expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 8 });
+    await vi.waitFor(() => expect(freeGenerationsState.available).toBe(true));
+    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 8 });
   });
 
   it('retries a transient status failure while online without waiting for a reconnect', async () => {
@@ -275,7 +275,7 @@ describe('grantRefreshReady', () => {
     persistedStateStatus.hydrated = true;
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
-    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
+    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
 
     visibility.mockReturnValue('hidden');
     refreshGrant(new Event('visibilitychange'));
@@ -284,33 +284,33 @@ describe('grantRefreshReady', () => {
     refreshGrant(new Event('visibilitychange'));
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    await vi.waitFor(() => expect(freeGenerations.available).toBe(true));
-    expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 7 });
+    await vi.waitFor(() => expect(freeGenerationsState.available).toBe(true));
+    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 7 });
   });
 
   it.each([
     [
       'offline',
       () => {
-        network.online = false;
+        networkState.online = false;
       },
     ],
     [
       'AI disabled',
       () => {
-        settings.aiImageEnabled = false;
+        settingsState.aiImageEnabled = false;
       },
     ],
     [
       'a parent key',
       () => {
-        settings.aiUserApiKey = 'parent-key';
+        settingsState.aiUserApiKey = 'parent-key';
       },
     ],
     [
       'a managed code',
       () => {
-        settings.aiAccessToken = 'managed-code';
+        settingsState.aiAccessToken = 'managed-code';
       },
     ],
   ])('does not retry on visibility return with %s', async (_label, makeIneligible) => {
@@ -320,13 +320,13 @@ describe('grantRefreshReady', () => {
     vi.stubGlobal('fetch', fetchMock);
     persistedStateStatus.hydrated = true;
     refreshGrant();
-    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
+    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
 
     makeIneligible();
     refreshGrant(new Event('visibilitychange'));
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(freeGenerations).toMatchObject({ available: false, loading: false });
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: false });
   });
 
   it('ignores an invalidated malformed response after a newer request succeeds', async () => {
@@ -340,19 +340,19 @@ describe('grantRefreshReady', () => {
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    network.online = false;
+    networkState.online = false;
     refreshGrant();
-    network.online = true;
+    networkState.online = true;
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     newer.resolve(grantResponse(8).response);
-    await vi.waitFor(() => expect(freeGenerations.remaining).toBe(8));
+    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(8));
     const stale = Response.json({ ok: true, remaining: 'seven' });
     const staleJson = vi.spyOn(stale, 'json');
     older.resolve(stale);
     await vi.waitFor(() => expect(staleJson).toHaveBeenCalledOnce());
-    expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 8 });
+    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 8 });
   });
 
   it.each([
@@ -372,8 +372,8 @@ describe('grantRefreshReady', () => {
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
 
-    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
-    expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
+    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
   });
 
   it('settles a non-finite remaining count as unavailable', async () => {
@@ -386,7 +386,7 @@ describe('grantRefreshReady', () => {
     persistedStateStatus.hydrated = true;
     refreshGrant();
 
-    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
-    expect(freeGenerations).toMatchObject({ available: false, loading: false, remaining: 10 });
+    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
+    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
   });
 });

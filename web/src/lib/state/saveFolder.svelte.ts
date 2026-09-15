@@ -1,4 +1,4 @@
-import { settings } from './settings.svelte';
+import { settingsState } from './settings.svelte';
 
 // folderSave is save-time-only, so it loads on demand and stays out of the
 // startup bundle (issue #461). The first load registers the stale-folder
@@ -16,7 +16,7 @@ function loadFolderSave() {
   folderSaveModule ??= import('$lib/drawing/folderSave').then(
     (m) => {
       m.setSaveFolderClearedListener(() => {
-        settings.saveFolderName = null;
+        settingsState.saveFolderName = null;
       });
       return m;
     },
@@ -50,7 +50,7 @@ export async function changeSaveFolder() {
   const mod = await tryLoadFolderSave();
   if (!mod) return;
   const name = await mod.chooseSaveFolder();
-  if (name) settings.saveFolderName = name;
+  if (name) settingsState.saveFolderName = name;
 }
 
 // Forget the chosen folder, so web saves revert to the browser's default
@@ -59,7 +59,7 @@ export async function forgetSaveFolder() {
   const mod = await tryLoadFolderSave();
   if (!mod) return;
   await mod.clearSaveFolder();
-  settings.saveFolderName = null;
+  settingsState.saveFolderName = null;
 }
 
 // Boot hydration (web/desktop only): read the remembered folder name from the
@@ -83,5 +83,5 @@ export async function hydrateSaveFolder() {
   if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
   const mod = await tryLoadFolderSave();
   if (!mod) return;
-  settings.saveFolderName = await mod.getSaveFolderName();
+  settingsState.saveFolderName = await mod.getSaveFolderName();
 }

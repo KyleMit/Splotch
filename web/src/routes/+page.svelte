@@ -20,10 +20,10 @@
     colorPickerModal,
     settingsModal,
   } from '$lib/state/ui.svelte';
-  import { gate } from '$lib/state/parentalGate.svelte';
-  import { aiResult } from '$lib/state/aiGeneration.svelte';
+  import { parentalGateState } from '$lib/state/parentalGate.svelte';
+  import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
-  import { settings } from '$lib/state/settings.svelte';
+  import { settingsState } from '$lib/state/settings.svelte';
   import { captureAiAccessTokenFromUrl } from '$lib/state/aiAccessToken';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
@@ -47,8 +47,8 @@
 
   $effect(() => {
     applyDeviceOrientationPreference(
-      settings.lockRotationEnabled,
-      settings.forceLandscapeOrientation
+      settingsState.lockRotationEnabled,
+      settingsState.forceLandscapeOrientation
     );
   });
 
@@ -105,7 +105,7 @@
   }
 
   $effect(() => {
-    if (gate.open) hiddenOverlays?.demand('parentalGate');
+    if (parentalGateState.open) hiddenOverlays?.demand('parentalGate');
   });
   $effect(() => {
     if (colorPickerModal.open) hiddenOverlays?.demand('colorPicker');
@@ -117,7 +117,7 @@
     if (aiPromptModal.open) hiddenOverlays?.demand('aiPrompt');
   });
   $effect(() => {
-    if (aiResult.open) hiddenOverlays?.demand('aiResult');
+    if (aiGenerationState.open) hiddenOverlays?.demand('aiResult');
   });
   $effect(() => {
     if (settingsModal.open) hiddenOverlays?.demand('settings');
@@ -131,7 +131,7 @@
     // this re-stamps it as a fallback if that inline script was blocked. The
     // theme-color meta and OS-switch tracking now fall out of the single
     // reactive source in lib/state/appearance.svelte.ts.
-    applyTheme(settings.theme);
+    applyTheme(settingsState.theme);
     const settingsReady = capturedAccessToken.then(hydrateSettings);
 
     const overlayController = mountBootHiddenOverlays(mountHiddenOverlay);

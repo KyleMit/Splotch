@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  gate,
-  parentalGatePolicies,
+  parentalGateState,
+  parentalGatePoliciesState,
   requireParentalGate,
   pressGateDigit,
   submitGateAnswer,
@@ -30,7 +30,7 @@ function typeAnswer(value: string) {
 }
 
 function correctAnswer() {
-  return String(gate.x * gate.y);
+  return String(parentalGateState.x * parentalGateState.y);
 }
 
 function answerWrongly() {
@@ -44,20 +44,22 @@ function lockOut() {
 }
 
 function remainingLockoutMs() {
-  return gate.lockoutUntil === null ? null : gate.lockoutUntil - Date.now();
+  return parentalGateState.lockoutUntil === null
+    ? null
+    : parentalGateState.lockoutUntil - Date.now();
 }
 
 describe('parental gate lockout', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     dismissGate();
-    Object.assign(gate, {
+    Object.assign(parentalGateState, {
       wrongStreak: 0,
       lockouts: 0,
       lockoutUntil: null,
       escalationQuietSince: null,
     });
-    for (const feature of PARENTAL_GATE_FEATURES) parentalGatePolicies[feature] = 'always';
+    for (const feature of PARENTAL_GATE_FEATURES) parentalGatePoliciesState[feature] = 'always';
     requireParentalGate('aiImage', vi.fn());
   });
 
@@ -71,22 +73,24 @@ describe('parental gate lockout', () => {
     lockOut();
     expect(remainingLockoutMs()).toBe(GATE_LOCKOUT_BASE_MS);
     typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(false);
-    expect(gate.input).toBe('');
+    expect(parentalGateState.unlocked).toBe(false);
+    expect(parentalGateState.input).toBe('');
   });
 
   it('counts the pause down on each whole second while the card is open', () => {
     lockOut();
-    expect(gate.lockoutMessage).toBe(gateLockoutMessage(GATE_LOCKOUT_BASE_MS));
+    expect(parentalGateState.lockoutMessage).toBe(gateLockoutMessage(GATE_LOCKOUT_BASE_MS));
 
     vi.advanceTimersByTime(ONE_SECOND_MS);
-    expect(gate.lockoutMessage).toBe(gateLockoutMessage(GATE_LOCKOUT_BASE_MS - ONE_SECOND_MS));
+    expect(parentalGateState.lockoutMessage).toBe(
+      gateLockoutMessage(GATE_LOCKOUT_BASE_MS - ONE_SECOND_MS)
+    );
 
     vi.advanceTimersByTime(GATE_LOCKOUT_BASE_MS - ONE_SECOND_MS);
-    expect(gate.lockoutUntil).toBeNull();
-    expect(gate.lockoutMessage).toBeNull();
+    expect(parentalGateState.lockoutUntil).toBeNull();
+    expect(parentalGateState.lockoutMessage).toBeNull();
     typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(true);
+    expect(parentalGateState.unlocked).toBe(true);
   });
 
   it('shows the time actually left when the card is reopened mid-pause', () => {
@@ -95,15 +99,15 @@ describe('parental gate lockout', () => {
     vi.advanceTimersByTime(ELAPSED_BEFORE_REOPEN_MS);
 
     requireParentalGate('aiImage', vi.fn());
-    expect(gate.lockoutMessage).toBe(
+    expect(parentalGateState.lockoutMessage).toBe(
       gateLockoutMessage(GATE_LOCKOUT_BASE_MS - ELAPSED_BEFORE_REOPEN_MS)
     );
     typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(false);
+    expect(parentalGateState.unlocked).toBe(false);
 
     vi.advanceTimersByTime(GATE_LOCKOUT_BASE_MS - ELAPSED_BEFORE_REOPEN_MS);
     typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(true);
+    expect(parentalGateState.unlocked).toBe(true);
   });
 
   it('ends the pause by the clock, even when no timer ran through it', () => {
@@ -112,36 +116,36 @@ describe('parental gate lockout', () => {
     vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
 
     requireParentalGate('aiImage', vi.fn());
-    expect(gate.lockoutMessage).toBeNull();
+    expect(parentalGateState.lockoutMessage).toBeNull();
     typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(true);
+    expect(parentalGateState.unlocked).toBe(true);
   });
 
   it('announces a pause when it starts, on reopen, and when it ends, never per tick', () => {
     lockOut();
     const started = gateLockoutMessage(GATE_LOCKOUT_BASE_MS);
-    expect(gate.announcement).toBe(started);
+    expect(parentalGateState.announcement).toBe(started);
     vi.advanceTimersByTime(ONE_SECOND_MS);
-    expect(gate.announcement).toBe(started);
+    expect(parentalGateState.announcement).toBe(started);
 
     dismissGate();
     requireParentalGate('aiImage', vi.fn());
-    expect(gate.announcement).toBe('');
+    expect(parentalGateState.announcement).toBe('');
     vi.advanceTimersByTime(GATE_ANNOUNCE_DELAY_MS);
-    expect(gate.announcement).toBe(gate.lockoutMessage);
+    expect(parentalGateState.announcement).toBe(parentalGateState.lockoutMessage);
 
     vi.advanceTimersByTime(GATE_LOCKOUT_BASE_MS);
-    expect(gate.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
+    expect(parentalGateState.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
   });
 
   it('says a wrong answer again when the last one is still showing', () => {
     answerWrongly();
-    expect(gate.announcement).toBe(GATE_ERROR_MESSAGE);
+    expect(parentalGateState.announcement).toBe(GATE_ERROR_MESSAGE);
 
     typeAnswer('');
-    expect(gate.announcement).toBe('');
+    expect(parentalGateState.announcement).toBe('');
     vi.advanceTimersByTime(GATE_ANNOUNCE_DELAY_MS);
-    expect(gate.announcement).toBe(GATE_ERROR_MESSAGE);
+    expect(parentalGateState.announcement).toBe(GATE_ERROR_MESSAGE);
   });
 
   it('holds a pause to the longest one when the clock is set backwards', () => {
@@ -167,9 +171,9 @@ describe('parental gate lockout', () => {
 
     answerWrongly();
     typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(true);
-    expect(gate.wrongStreak).toBe(0);
-    expect(gate.lockouts).toBe(0);
+    expect(parentalGateState.unlocked).toBe(true);
+    expect(parentalGateState.wrongStreak).toBe(0);
+    expect(parentalGateState.lockouts).toBe(0);
   });
 
   it('starts a quiet device back at the first pause instead of the last one', () => {
@@ -195,8 +199,8 @@ describe('parental gate lockout', () => {
     vi.advanceTimersByTime(GATE_ESCALATION_QUIET_MS);
 
     answerWrongly();
-    expect(gate.wrongStreak).toBe(1);
-    expect(gate.lockoutUntil).toBeNull();
+    expect(parentalGateState.wrongStreak).toBe(1);
+    expect(parentalGateState.lockoutUntil).toBeNull();
   });
 
   it('names the time left in rounded-up seconds, then whole minutes', () => {

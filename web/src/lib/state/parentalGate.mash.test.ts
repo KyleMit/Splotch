@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  gate,
-  parentalGatePolicies,
+  parentalGateState,
+  parentalGatePoliciesState,
   requireParentalGate,
   pressGateKey,
   dismissGate,
@@ -57,10 +57,10 @@ function resetGate() {
   vi.clearAllTimers();
   vi.restoreAllMocks();
   dismissGate();
-  gate.wrongStreak = 0;
-  gate.lockouts = 0;
-  gate.lockoutUntil = null;
-  gate.escalationQuietSince = null;
+  parentalGateState.wrongStreak = 0;
+  parentalGateState.lockouts = 0;
+  parentalGateState.lockoutUntil = null;
+  parentalGateState.escalationQuietSince = null;
 }
 
 // A tap landing inside a lockout changes nothing, and most of a two-minute
@@ -68,7 +68,7 @@ function resetGate() {
 // taps made this suite too slow under CI's coverage instrumentation, so they
 // only draw from the generator, as choosing a key would.
 function lockoutSwallows(tapAtMs: number) {
-  return gate.lockoutUntil !== null && tapAtMs < gate.lockoutUntil;
+  return parentalGateState.lockoutUntil !== null && tapAtMs < parentalGateState.lockoutUntil;
 }
 
 type TapModel = (random: () => number) => (typeof GATE_KEYPAD_KEYS)[number];
@@ -77,7 +77,7 @@ const anyKey: TapModel = (random) =>
   GATE_KEYPAD_KEYS[Math.floor(random() * GATE_KEYPAD_KEYS.length)];
 
 const fillDabsThenCheck: TapModel = (random) =>
-  gate.input.length < String(gate.x * gate.y).length
+  parentalGateState.input.length < String(parentalGateState.x * parentalGateState.y).length
     ? GATE_KEYPAD_KEYS[Math.floor(random() * DIGIT_KEY_COUNT)]
     : GATE_CHECK_KEY;
 
@@ -93,7 +93,7 @@ function tappingUnlocks(seed: number, tapIntervalMs: number, chooseKey: TapModel
     }
     vi.advanceTimersByTime(startMs + elapsed - Date.now());
     pressGateKey(chooseKey(random));
-    if (gate.unlocked) return true;
+    if (parentalGateState.unlocked) return true;
   }
   return false;
 }
@@ -110,7 +110,7 @@ function unlockRate(tapIntervalMs: number, chooseKey: TapModel) {
 describe('parental gate under random tapping', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    for (const feature of PARENTAL_GATE_FEATURES) parentalGatePolicies[feature] = 'always';
+    for (const feature of PARENTAL_GATE_FEATURES) parentalGatePoliciesState[feature] = 'always';
   });
 
   afterEach(() => {

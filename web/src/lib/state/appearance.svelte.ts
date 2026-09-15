@@ -10,8 +10,8 @@
 // theme-dependent JS state follows the same source — an effect below reads
 // resolvedTheme(), repaints the theme-color meta, and syncs the selected Black
 // swatch's ink, so both an OS switch (systemDark) and an explicit setting change
-// (settings.theme) update them from one reactive path.
-import { settings, setTheme } from './settings.svelte';
+// (settingsState.theme) update them from one reactive path.
+import { settingsState, setTheme } from './settings.svelte';
 import { syncInkToTheme } from './colors.svelte';
 import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
 
@@ -26,7 +26,7 @@ systemQuery?.addEventListener('change', (e) => {
 });
 
 export function resolvedTheme(): ResolvedTheme {
-  return resolveTheme(settings.theme, appearance.systemDark);
+  return resolveTheme(settingsState.theme, appearance.systemDark);
 }
 
 // A quick toggle (no three-way UI to name 'system' explicitly) can only

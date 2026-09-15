@@ -7,12 +7,12 @@
   import InkOrMagicIcon from './InkOrMagicIcon.svelte';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
-  import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
+  import { colorsState, isWhite, isDarkInk } from '$lib/state/colors.svelte';
+  import { settingsState, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import {
-    ui,
+    uiState,
     coloringBookModal,
     aiPromptModal,
     settingsModal,
@@ -20,13 +20,13 @@
     SCREENSHOT_BUTTON_ID,
   } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
-  import { aiResult, restoreAiResult } from '$lib/state/aiGeneration.svelte';
+  import { aiGenerationState, restoreAiResult } from '$lib/state/aiGeneration.svelte';
   import {
-    freeGenerations,
+    freeGenerationsState,
     createFreeGenerationGrantRefresher,
   } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
-  import { layout } from '$lib/state/layout.svelte';
+  import { layoutState } from '$lib/state/layout.svelte';
   import { isAiImageButtonVisible, publishActionPanelState } from '$lib/actionButtonLayout';
   import { prepareCanvasExport, undo, isStrokeActive } from '$lib/drawing/engine';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
@@ -71,7 +71,7 @@
   // Orientation drives the landscape palette-clearing offset below. Everything
   // else orientation-dependent here (drawer collapse axis, chevron direction)
   // is CSS. The shared layout module owns the listeners.
-  const phoneLandscape = $derived(layout.phoneLandscape);
+  const phoneLandscape = $derived(layoutState.phoneLandscape);
 
   // The panel's landscape offset past the Color Palette and its buttons' size
   // are stylesheet rules (this component's .actions-panel block and app.css's
@@ -89,7 +89,7 @@
   // disabled by the same flag that stops a second one being started. An empty
   // canvas cannot block it either — the drawing was already sent.
   const aiImageButtonBlocked = $derived(
-    aiResult.minimized ? false : canvasState.canvasEmpty || aiResult.generating
+    aiGenerationState.minimized ? false : canvasState.canvasEmpty || aiGenerationState.generating
   );
 
   // The drawer expands per its remembered open state; the whole panel, chevron
@@ -97,7 +97,7 @@
   // data-no-actions rule below). Dragging the button-size slider force-opens
   // the drawer (without persisting) so the parent can watch the buttons resize
   // live.
-  const drawerExpanded = $derived(settings.drawerOpen || ui.resizingActionButtons);
+  const drawerExpanded = $derived(settingsState.drawerOpen || uiState.resizingActionButtons);
 
   function stopDrawerMotion() {
     if (drawerMotionProbeFrame !== undefined) cancelAnimationFrame(drawerMotionProbeFrame);
@@ -124,7 +124,7 @@
     }
     if (lastDrawerExpanded === expanded) return;
     lastDrawerExpanded = expanded;
-    if (settingsModal.open && !ui.resizingActionButtons) {
+    if (settingsModal.open && !uiState.resizingActionButtons) {
       stopDrawerMotion();
       return;
     }
@@ -132,7 +132,7 @@
     scheduleDrawerMotionProbe();
   });
 
-  const buttonScale = $derived(settings.actionButtonScale / 100);
+  const buttonScale = $derived(settingsState.actionButtonScale / 100);
 
   // app.html seeds <html> for first paint of the prerendered page. Hydration
   // publishes the live copy to this panel so later settings changes invalidate
@@ -151,18 +151,18 @@
   // currentColor. Only the pen uses it — the eraser previews are theme-driven
   // "holes in the paper" (--paper / --hole-stroke), never color-tinted, so
   // they stay distinct from every pen color (including pink).
-  const strokeMenuColor = $derived(colors.activeColor);
+  const strokeMenuColor = $derived(colorsState.activeColor);
 
   // A white brush color vanishes against the light icon buttons, so the
   // color-tinted icons (the pen/crayon currentColor parts, the stroke-weight
   // lines) get a black outline while white is active.
-  const inkWhite = $derived(isWhite(colors.activeColor));
+  const inkWhite = $derived(isWhite(colorsState.activeColor));
 
   // The dark-mode mirror: near-black ink vanishes against the dark cards, so it
   // gets a light outline there. The class applies in every theme; the keyline
   // color (--dark-ink-keyline) is transparent in light, so it only ever shows
   // in dark.
-  const inkDark = $derived(isDarkInk(colors.activeColor));
+  const inkDark = $derived(isDarkInk(colorsState.activeColor));
 
   // The stroke-weight control drops the keylines while erasing — its icons
   // carry the eraser's own coloring then. The Brush Button keeps them: its
@@ -173,7 +173,7 @@
   const darkStroke = $derived(!erasing && inkDark);
 
   function toggleDrawer() {
-    const next = !settings.drawerOpen;
+    const next = !settingsState.drawerOpen;
     drawerOpening = next && !isStrokeActive();
     setDrawerOpen(next);
     // Tidy up any open flyout as the controls tuck away. No focus restore: the
@@ -325,25 +325,25 @@
     // the same button that started it, and ADR-0116 promises it reveals the one
     // already running. No gate — the gate was passed to start this very run, and
     // asking again to look at it would be a second toll on one action.
-    if (aiResult.minimized) {
+    if (aiGenerationState.minimized) {
       restoreAiResult();
       return;
     }
-    if (aiResult.generating || canvasState.canvasEmpty || !aiBtnEl) return;
+    if (aiGenerationState.generating || canvasState.canvasEmpty || !aiBtnEl) return;
 
     const origin = buttonCenter(aiBtnEl);
     requireParentalGate(
       'aiImage',
       () => {
         if (
-          !settings.aiUserApiKey &&
-          !settings.aiAccessToken &&
-          (!freeGenerations.available || freeGenerations.remaining === 0)
+          !settingsState.aiUserApiKey &&
+          !settingsState.aiAccessToken &&
+          (!freeGenerationsState.available || freeGenerationsState.remaining === 0)
         ) {
           openAiSettings(origin);
           return;
         }
-        if (settings.aiCustomizationEnabled) {
+        if (settingsState.aiCustomizationEnabled) {
           aiPromptModal.show(origin);
           return;
         }
@@ -366,7 +366,7 @@
      resolved here that no press consumed — issue 1237) instead of onclick. -->
 <div
   class="actions-panel"
-  class:settings-covered={settingsModal.open && !ui.resizingActionButtons}
+  class:settings-covered={settingsModal.open && !uiState.resizingActionButtons}
   data-drawer-motion={drawerMotion ? '' : undefined}
   bind:this={panelEl}
   use:actionPanelEvents={{
@@ -397,7 +397,7 @@
         bind:wrapperEl={brushWrapperEl}
         bind:triggerEl={brushTriggerEl}
         open={openFlyout === 'brush'}
-        activeColor={colors.activeColor}
+        activeColor={colorsState.activeColor}
         {inkWhite}
         {inkDark}
         onOpenChange={setBrushFlyout}
@@ -416,7 +416,7 @@
           use:scribbleTap={handleStrokeBtnClick}
           onclick={restoreFlyoutTriggerFocus}
           bind:this={strokeTriggerEl}
-          style:color={colors.activeColor}
+          style:color={colorsState.activeColor}
         >
           {#if erasing}
             <Icon name="line-weight-eraser" class="action-icon" />
@@ -464,34 +464,36 @@
       <button
         class="action-button"
         class:disabled={aiImageButtonBlocked}
-        class:loading={aiResult.generating && !aiResult.minimized}
+        class:loading={aiGenerationState.generating && !aiGenerationState.minimized}
         id="aiImageButton"
         style:--i="4"
-        aria-label={aiResult.minimized
-          ? aiResult.generating
+        aria-label={aiGenerationState.minimized
+          ? aiGenerationState.generating
             ? 'Show the picture being made'
-            : aiResult.error
+            : aiGenerationState.error
               ? "Show what didn't work"
               : 'Show your finished picture'
-          : settings.aiUserApiKey || settings.aiAccessToken
+          : settingsState.aiUserApiKey || settingsState.aiAccessToken
             ? 'Create AI image'
-            : freeGenerations.available && freeGenerations.remaining > 0
-              ? `Create AI image, ${freeGenerations.remaining} free left`
-              : freeGenerations.available
+            : freeGenerationsState.available && freeGenerationsState.remaining > 0
+              ? `Create AI image, ${freeGenerationsState.remaining} free left`
+              : freeGenerationsState.available
                 ? 'Set up AI image'
                 : 'Create AI image'}
-        aria-busy={aiResult.generating && !aiResult.minimized}
+        aria-busy={aiGenerationState.generating && !aiGenerationState.minimized}
         disabled={aiImageButtonBlocked}
         hidden={!aiImageButtonVisible}
         use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >
         <Icon
-          name={aiResult.generating && !aiResult.minimized ? 'loading' : 'wand-stars'}
+          name={aiGenerationState.generating && !aiGenerationState.minimized
+            ? 'loading'
+            : 'wand-stars'}
           class="action-icon"
         />
-        {#if !settings.aiUserApiKey && !settings.aiAccessToken && freeGenerations.available && !storeCapture}
-          <span class="free-count" aria-hidden="true">{freeGenerations.remaining}</span>
+        {#if !settingsState.aiUserApiKey && !settingsState.aiAccessToken && freeGenerationsState.available && !storeCapture}
+          <span class="free-count" aria-hidden="true">{freeGenerationsState.remaining}</span>
         {/if}
       </button>
 
@@ -520,8 +522,8 @@
 
   <button
     class="drawer-toggle corner-button"
-    aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
-    aria-expanded={settings.drawerOpen}
+    aria-label={settingsState.drawerOpen ? 'Collapse controls' : 'Expand controls'}
+    aria-expanded={settingsState.drawerOpen}
     use:scribbleTap={toggleDrawer}
   >
     <Icon name="chevron-right" class="drawer-toggle-icon corner-button-icon" />

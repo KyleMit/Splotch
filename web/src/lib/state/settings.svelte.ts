@@ -105,7 +105,9 @@ function isToolDrawerControl(control: ActionPanelControl): control is ToolDrawer
 
 /** Whether the Actions Panel shows a control: its own flag, and the drawer switch for the drawer's own tools. */
 export function actionControlShown(control: ActionPanelControl): boolean {
-  return settings[control] && (settings.toolDrawerEnabled || !isToolDrawerControl(control));
+  return (
+    settingsState[control] && (settingsState.toolDrawerEnabled || !isToolDrawerControl(control))
+  );
 }
 
 const boolSettingEntries = () =>
@@ -176,7 +178,7 @@ interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey
   saveFolderName: string | null;
 }
 
-export const settings: Settings = $state({
+export const settingsState: Settings = $state({
   ...(Object.fromEntries(
     boolSettingEntries().map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
@@ -193,7 +195,7 @@ export const settings: Settings = $state({
 function makeBoolSetter(prop: BoolSettingKey) {
   const [key] = BOOL_SETTINGS[prop];
   return (v: boolean) => {
-    settings[prop] = v;
+    settingsState[prop] = v;
     writeBool(key, v);
   };
 }
@@ -264,7 +266,7 @@ export const setPencilEraserEnabled = makeBoolSetter('pencilEraserEnabled');
 export const setApplePencilSeen = makeBoolSetter('applePencilSeen');
 
 export function setTheme(v: ThemePreference) {
-  settings.theme = v;
+  settingsState.theme = v;
   writeString(STORAGE_KEYS.theme, v);
   applyTheme(v);
 }
@@ -274,7 +276,7 @@ function makeIntSetter(prop: IntSettingKey) {
   const [key, , clamp] = INT_SETTINGS[prop];
   return (v: number) => {
     const next = clamp(v);
-    settings[prop] = next;
+    settingsState[prop] = next;
     writeInt(key, next);
   };
 }
@@ -291,8 +293,8 @@ export type AiCredentialKind = CredentialKind | 'none';
 // Which AI credential is "active" when both happen to be set (nothing clears
 // one when the other is submitted): a BYOK key wins over an access code.
 export function aiCredentialKind(): AiCredentialKind {
-  if (settings.aiUserApiKey) return 'apiKey';
-  if (settings.aiAccessToken) return 'accessCode';
+  if (settingsState.aiUserApiKey) return 'apiKey';
+  if (settingsState.aiAccessToken) return 'accessCode';
   return 'none';
 }
 
@@ -301,13 +303,13 @@ export function aiCredentialKind(): AiCredentialKind {
 // hydrateDurableStorage in storage.ts). A no-op visually when nothing changed.
 export function reloadSettings() {
   for (const [prop, [key]] of boolSettingEntries()) {
-    settings[prop] = readBool(key, settings[prop]);
+    settingsState[prop] = readBool(key, settingsState[prop]);
   }
   for (const [prop, [key, , clamp]] of intSettingEntries()) {
-    settings[prop] = clamp(readInt(key, settings[prop]));
+    settingsState[prop] = clamp(readInt(key, settingsState[prop]));
   }
-  settings.theme = readTheme(settings.theme);
-  applyTheme(settings.theme);
+  settingsState.theme = readTheme(settingsState.theme);
+  applyTheme(settingsState.theme);
   normalizeDisabledBrushes();
 }
 

@@ -9,7 +9,7 @@
   import type { Origin } from '$lib/state/modal.svelte';
   import '$lib/components/deferredIcons';
   import {
-    gate,
+    parentalGateState,
     dismissGate,
     pressGateDigit,
     pressGateBackspace,
@@ -28,7 +28,7 @@
   // Parent Center is where these checks are managed, so a challenge standing in
   // front of it is already at that destination: it names it in the subtitle and
   // drops the footer that would otherwise offer the trip the parent is on.
-  const managingPolicies = $derived(gate.feature === 'parentCenter');
+  const managingPolicies = $derived(parentalGateState.feature === 'parentCenter');
 
   // The keypad, for the focus handoff below.
   let keypadEl = $state<HTMLDivElement>();
@@ -75,22 +75,22 @@
   id="parentalGate"
   aria-labelledby="parentalGateTitle"
   use:modalDialog={() => ({
-    open: gate.open,
-    origin: gate.origin,
+    open: parentalGateState.open,
+    origin: parentalGateState.origin,
     onRequestClose: dismissGate,
     // A correct answer is committed: dismissing during the success hold would
     // silently drop the captured destination, so backdrop taps and Esc are
     // blocked until the handoff runs.
-    allowDismiss: () => !gate.unlocked,
+    allowDismiss: () => !parentalGateState.unlocked,
   })}
   onkeydown={handleKeydown}
 >
   <div
     class="gate-content"
-    class:shaking={gate.shaking}
+    class:shaking={parentalGateState.shaking}
     style:--gate-shake-duration={`${GATE_SHAKE_MS}ms`}
   >
-    {#if gate.unlocked}
+    {#if parentalGateState.unlocked}
       <div class="gate-success" role="status">
         <span class="gate-success-badge">
           <Icon name="check" class="gate-success-icon" />

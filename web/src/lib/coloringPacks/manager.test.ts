@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('$lib/state/coloringBook.svelte', () => ({ clearOverlay: vi.fn() }));
 vi.mock('$lib/state/settings.svelte', () => ({
-  settings: { coloringBookEnabled: true, coloringPacksAllowMetered: false },
+  settingsState: { coloringBookEnabled: true, coloringPacksAllowMetered: false },
 }));
 vi.mock('./assetResolver', () => ({
   clearLocalColoringBookRoots: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock('./nativeStore', () => ({
 }));
 
 import { createColoringPackDownloader, removeDownloadedColoringPacks } from './manager';
-import { coloringPackState, resetDownloadedColoringBooks } from '$lib/state/coloringPacks.svelte';
+import { coloringPacksState, resetDownloadedColoringBooks } from '$lib/state/coloringPacks.svelte';
 
 const manifest = {
   formatVersion: 3,
@@ -112,7 +112,7 @@ describe('coloring-pack downloader policy boundaries', () => {
     allowed = false;
     first.resolve({ id: 'dinosaur', bytes: 1 });
 
-    await vi.waitFor(() => expect(coloringPackState.downloadingBookId).toBeNull());
+    await vi.waitFor(() => expect(coloringPacksState.downloadingBookId).toBeNull());
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
     downloader.stop();
   });
@@ -131,7 +131,7 @@ describe('coloring-pack downloader policy boundaries', () => {
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
     window.dispatchEvent(new Event(COLORING_PACK_REMOVE_EVENT));
     first.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
-    await vi.waitFor(() => expect(coloringPackState.downloadingBookId).toBeNull());
+    await vi.waitFor(() => expect(coloringPacksState.downloadingBookId).toBeNull());
 
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
@@ -158,9 +158,9 @@ describe('coloring-pack downloader policy boundaries', () => {
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
 
     await vi.waitFor(() => expect(mocks.cancel).toHaveBeenCalledOnce());
-    await vi.waitFor(() => expect(coloringPackState.downloadingBookId).toBeNull());
+    await vi.waitFor(() => expect(coloringPacksState.downloadingBookId).toBeNull());
     expect(mocks.remove).not.toHaveBeenCalled();
-    expect(coloringPackState.installedBookIds).toContain('space');
+    expect(coloringPacksState.installedBookIds).toContain('space');
 
     allowed = true;
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
@@ -183,8 +183,8 @@ describe('removal during an in-flight run', () => {
     scan.resolve([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
     await flushMicrotasks();
 
-    expect(coloringPackState.installedBookIds).toEqual(['farm']);
-    expect(coloringPackState.downloadedBytes).toBe(0);
+    expect(coloringPacksState.installedBookIds).toEqual(['farm']);
+    expect(coloringPacksState.downloadedBytes).toBe(0);
     expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
     expect(mocks.install).not.toHaveBeenCalled();
     downloader.stop();
@@ -201,11 +201,11 @@ describe('removal during an in-flight run', () => {
     vi.mocked(setLocalColoringBookRoot).mockClear();
 
     first.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
-    await vi.waitFor(() => expect(coloringPackState.downloadingBookId).toBeNull());
+    await vi.waitFor(() => expect(coloringPacksState.downloadingBookId).toBeNull());
     await flushMicrotasks();
 
-    expect(coloringPackState.installedBookIds).toEqual(['farm']);
-    expect(coloringPackState.downloadedBytes).toBe(0);
+    expect(coloringPacksState.installedBookIds).toEqual(['farm']);
+    expect(coloringPacksState.downloadedBytes).toBe(0);
     expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
     downloader.stop();
   });
@@ -235,7 +235,7 @@ describe('a remounted downloader on native', () => {
       window.dispatchEvent(new Event(COLORING_PACK_REMOVE_EVENT));
 
       expect(mocks.cancel).toHaveBeenCalledOnce();
-      expect(coloringPackState.installedBookIds).toEqual(['farm']);
+      expect(coloringPacksState.installedBookIds).toEqual(['farm']);
       expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
     }
   );
@@ -256,18 +256,18 @@ describe('a remounted downloader on native', () => {
     second.start();
     await flushMicrotasks();
     expect(mocks.install).toHaveBeenCalledOnce();
-    expect(coloringPackState.downloadingBookId).toBe('dinosaur');
+    expect(coloringPacksState.downloadingBookId).toBe('dinosaur');
 
     stale.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
     expect(mocks.install.mock.calls[1][1].id).toBe('space');
     await flushMicrotasks();
 
-    expect(coloringPackState.downloadingBookId).toBe('space');
+    expect(coloringPacksState.downloadingBookId).toBe('space');
     second.stop();
     current.resolve({ id: 'space', bytes: 1, rootPath: 'file:///space' });
     await flushMicrotasks();
-    expect(coloringPackState.downloadingBookId).toBeNull();
+    expect(coloringPacksState.downloadingBookId).toBeNull();
   });
 
   it('drops a remount that stops while waiting for the previous native install', async () => {
@@ -286,7 +286,7 @@ describe('a remounted downloader on native', () => {
 
     expect(mocks.install).toHaveBeenCalledOnce();
     expect(mocks.installed).toHaveBeenCalledOnce();
-    expect(coloringPackState.downloadingBookId).toBeNull();
+    expect(coloringPacksState.downloadingBookId).toBeNull();
   });
 
   it('retries a failed stopped install from the waiting remount', async () => {
@@ -304,7 +304,7 @@ describe('a remounted downloader on native', () => {
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
 
     expect(mocks.install.mock.calls[1][1].id).toBe('dinosaur');
-    expect(coloringPackState.downloadingBookId).toBe('dinosaur');
+    expect(coloringPacksState.downloadingBookId).toBe('dinosaur');
     second.stop();
     current.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
     await flushMicrotasks();
@@ -325,9 +325,9 @@ describe('scanning what is installed', () => {
     const downloader = createColoringPackDownloader();
     downloader.start();
 
-    await vi.waitFor(() => expect(coloringPackState.downloadedBytes).toBe(7));
+    await vi.waitFor(() => expect(coloringPacksState.downloadedBytes).toBe(7));
     expect(mocks.installed).toHaveBeenCalledOnce();
-    expect(coloringPackState.installedBookIds).toContain('dinosaur');
+    expect(coloringPacksState.installedBookIds).toContain('dinosaur');
     downloader.stop();
   });
 });

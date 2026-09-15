@@ -21,7 +21,7 @@ vi.mock('../idb', () => ({
 import { loadAccessCode, saveAccessCode } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
 import { STORAGE_KEYS } from '../storage';
-import { aiCredentialKind, settings } from './settings.svelte';
+import { aiCredentialKind, settingsState } from './settings.svelte';
 import {
   captureAiAccessTokenFromUrl,
   hydrateAiAccessToken,
@@ -32,9 +32,9 @@ import {
 beforeEach(() => {
   localStorage.clear();
   secureStore.accessCode = null;
-  settings.aiAccessToken = '';
-  settings.aiUserApiKey = '';
-  settings.aiImageEnabled = false;
+  settingsState.aiAccessToken = '';
+  settingsState.aiUserApiKey = '';
+  settingsState.aiImageEnabled = false;
   vi.mocked(saveAccessCode)
     .mockReset()
     .mockImplementation(async (value: string) => {
@@ -67,11 +67,11 @@ describe('setAiAccessToken', () => {
     const saving = setAiAccessToken('managed-code');
     await vi.waitFor(() => expect(saveAccessCode).toHaveBeenCalledOnce());
 
-    expect(settings.aiAccessToken).toBe('');
+    expect(settingsState.aiAccessToken).toBe('');
     finishSave();
     await saving;
 
-    expect(settings.aiAccessToken).toBe('managed-code');
+    expect(settingsState.aiAccessToken).toBe('managed-code');
     expect(secureStore.accessCode).toBe('managed-code');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
   });
@@ -81,7 +81,7 @@ describe('setAiAccessToken', () => {
 
     await expect(setAiAccessToken('rejected-code')).rejects.toThrow('secure storage unavailable');
 
-    expect(settings.aiAccessToken).toBe('');
+    expect(settingsState.aiAccessToken).toBe('');
     expect(secureStore.accessCode).toBeNull();
   });
 });
@@ -124,7 +124,7 @@ describe('hydrateAiAccessToken', () => {
     await hydrating;
 
     expect(aiCredentialKind()).toBe('accessCode');
-    expect(settings.aiAccessToken).toBe('stored-code');
+    expect(settingsState.aiAccessToken).toBe('stored-code');
   });
 
   it('migrates a legacy plaintext code and scrubs the plaintext copy', async () => {
@@ -132,7 +132,7 @@ describe('hydrateAiAccessToken', () => {
 
     await hydrateAiAccessToken();
 
-    expect(settings.aiAccessToken).toBe('legacy-code');
+    expect(settingsState.aiAccessToken).toBe('legacy-code');
     expect(secureStore.accessCode).toBe('legacy-code');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
   });
@@ -143,7 +143,7 @@ describe('hydrateAiAccessToken', () => {
 
     await expect(hydrateAiAccessToken()).rejects.toThrow('secure storage unavailable');
 
-    expect(settings.aiAccessToken).toBe('');
+    expect(settingsState.aiAccessToken).toBe('');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-code');
   });
 
@@ -153,7 +153,7 @@ describe('hydrateAiAccessToken', () => {
 
     await hydrateAiAccessToken();
 
-    expect(settings.aiAccessToken).toBe('secure-code');
+    expect(settingsState.aiAccessToken).toBe('secure-code');
     expect(secureStore.accessCode).toBe('secure-code');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
   });
@@ -166,7 +166,7 @@ describe('hydrateAiAccessToken', () => {
     vi.mocked(loadAccessCode).mockResolvedValueOnce(null);
     await hydrateAiAccessToken();
 
-    expect(settings.aiAccessToken).toBe('fresh-invitation-code');
+    expect(settingsState.aiAccessToken).toBe('fresh-invitation-code');
     expect(secureStore.accessCode).toBe('fresh-invitation-code');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
   });
@@ -182,8 +182,8 @@ describe('captureAiAccessTokenFromUrl', () => {
 
     await captureAiAccessTokenFromUrl();
 
-    expect(settings.aiAccessToken).toBe('invitation-code');
-    expect(settings.aiImageEnabled).toBe(false);
+    expect(settingsState.aiAccessToken).toBe('invitation-code');
+    expect(settingsState.aiImageEnabled).toBe(false);
     expect(secureStore.accessCode).toBe('invitation-code');
     expect(window.location.search).toBe('?other=1');
     expect(window.history.state).toEqual(ROUTER_HISTORY_STATE);
@@ -196,7 +196,7 @@ describe('captureAiAccessTokenFromUrl', () => {
 
     await expect(captureAiAccessTokenFromUrl()).rejects.toThrow('secure storage unavailable');
 
-    expect(settings.aiAccessToken).toBe('');
+    expect(settingsState.aiAccessToken).toBe('');
     expect(window.location.search).toContain(`${AI_ACCESS_TOKEN_PARAM}=retry-code`);
   });
 
@@ -220,7 +220,7 @@ describe('captureAiAccessTokenFromUrl', () => {
     await capturing;
     await newerWrite;
 
-    expect(settings.aiAccessToken).toBe('newer-code');
+    expect(settingsState.aiAccessToken).toBe('newer-code');
     expect(secureStore.accessCode).toBe('newer-code');
     expect(window.location.search).toContain(`${AI_ACCESS_TOKEN_PARAM}=invitation-code`);
   });
@@ -230,7 +230,7 @@ describe('captureAiAccessTokenFromUrl', () => {
 
     await captureAiAccessTokenFromUrl();
 
-    expect(settings.aiAccessToken).toBe('');
+    expect(settingsState.aiAccessToken).toBe('');
     expect(saveAccessCode).not.toHaveBeenCalled();
   });
 });

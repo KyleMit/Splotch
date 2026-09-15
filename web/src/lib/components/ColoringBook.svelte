@@ -21,7 +21,7 @@
   import ScrollCue from './design/ScrollCue.svelte';
   import { cutTrailingRow } from '$lib/actions/scrollCue';
   import { guardTapZone } from '$lib/actions/launchGuard';
-  import { layout } from '$lib/state/layout.svelte';
+  import { layoutState } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { createColoringPickerBooks } from '$lib/state/coloringPicker.svelte';
   import {
@@ -49,8 +49,8 @@
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
   // so the variant the child colored on must stay applied — and any page picked
   // mid-lock must match that same locked space. The viewport-driven
-  // layout.orientation is only a fallback until the engine mounts.
-  const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
+  // layoutState.orientation is only a fallback until the engine mounts.
+  const orientation = $derived(canvasState.paperOrientation ?? layoutState.orientation);
   const activePage = $derived(coloringBookState.overlayPage);
   // The picker's covers, page tiles, and active-page preview are themed art
   // behind a closed dialog most of the time; they follow the theme only while

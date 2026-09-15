@@ -27,7 +27,7 @@ import { canvasState } from '$lib/state/canvas.svelte';
 import { leaveConfirmModal } from '$lib/state/leaveConfirm';
 import {
   dismissGate,
-  gate,
+  parentalGateState,
   requireParentalGate,
   setParentalGateMode,
 } from '$lib/state/parentalGate.svelte';
@@ -159,16 +159,16 @@ describe('respondToSystemBack', () => {
     setParentalGateMode('aiImage', 'always');
     // ParentalGate.svelte's own modalDialog options.
     mountDialog(() => ({
-      open: gate.open,
+      open: parentalGateState.open,
       onRequestClose: dismissGate,
-      allowDismiss: () => !gate.unlocked,
+      allowDismiss: () => !parentalGateState.unlocked,
     }));
     requireParentalGate('aiImage', destination);
     await flush();
 
     expect(respondToSystemBack()).toBe('closed-dialog');
-    expect(gate.open).toBe(false);
-    expect(gate.feature).toBeNull();
+    expect(parentalGateState.open).toBe(false);
+    expect(parentalGateState.feature).toBeNull();
     await flush();
     await afterRetirement();
     expect(destination).not.toHaveBeenCalled();
@@ -177,16 +177,16 @@ describe('respondToSystemBack', () => {
   it('holds the check open while a solved answer hands off', async () => {
     setParentalGateMode('aiImage', 'always');
     mountDialog(() => ({
-      open: gate.open,
+      open: parentalGateState.open,
       onRequestClose: dismissGate,
-      allowDismiss: () => !gate.unlocked,
+      allowDismiss: () => !parentalGateState.unlocked,
     }));
     requireParentalGate('aiImage', () => {});
     await flush();
-    gate.unlocked = true;
+    parentalGateState.unlocked = true;
 
     expect(respondToSystemBack()).toBe('kept-dialog');
-    expect(gate.open).toBe(true);
+    expect(parentalGateState.open).toBe(true);
   });
 
   it('never turns mashed Back on a drawing into leaving', async () => {

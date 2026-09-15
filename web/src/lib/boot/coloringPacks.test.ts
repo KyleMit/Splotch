@@ -20,7 +20,7 @@ vi.mock('$lib/idle', () => ({
     return mocks.cancelIdle;
   },
 }));
-vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
+vi.mock('$lib/state/settings.svelte', () => ({ settingsState: mocks.settings }));
 vi.mock('$lib/state/coloringPacks.svelte', () => ({
   setNoDownloadedColoringBooks: mocks.setNoDownloadedColoringBooks,
 }));

@@ -89,7 +89,7 @@ Two surfaces consume the state:
 2. **Settings → Setup tab** — the existing step list, upgraded to show the one-tap button above the
    per-OS manual steps when available (the prompt is browser-wide — Android *or* desktop Chromium —
    so it belongs to no single OS section). Section ordering and the installed checkmark come from
-   the install module (`installDeviceOs()`, `install.installed`), not a component-local
+   the install module (`installDeviceOs()`, `installState.installed`), not a component-local
    re-detection. The Setup guide ignores the banner's `dismissed` flag, so a parent can always find
    it.
 

@@ -5,7 +5,7 @@
   import Disclosure from '../design/Disclosure.svelte';
   import '$lib/components/deferredIcons';
   import {
-    install,
+    installState,
     promptInstall,
     installDeviceOs,
     isIosOutsideSafari,
@@ -209,7 +209,7 @@
 <!-- Chromium hands us a real one-tap install dialog (Android and desktop alike),
      so offer it above the manual steps rather than inside the section — the
      checklist below stays as the fallback. Never true on native. -->
-{#if install.mode === 'oneTap'}
+{#if installState.mode === 'oneTap'}
   <div class="one-tap">
     <Button variant="brand" onclick={oneTapInstall} disabled={installing}>
       <Icon name="home" class="one-tap-icon" />
@@ -241,7 +241,7 @@
       {#snippet summary()}
         <span class="summary-text">
           <span class="section-number step-number">1</span> Install as App
-          {#if install.installed}<span class="install-check">✓</span>{/if}
+          {#if installState.installed}<span class="install-check">✓</span>{/if}
         </span>
       {/snippet}
       {@render installSteps(deviceOs)}

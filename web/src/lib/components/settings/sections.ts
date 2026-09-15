@@ -1,8 +1,8 @@
 import type { IconName } from '../icon-names';
 import { APP_VERSION } from '$lib/appVersion';
-import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
-import { coloringPackState } from '$lib/state/coloringPacks.svelte';
-import { freeGenerations } from '$lib/state/freeGenerations.svelte';
+import { aiCredentialKind, settingsState } from '$lib/state/settings.svelte';
+import { coloringPacksState } from '$lib/state/coloringPacks.svelte';
+import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
 import { hiddenDrawingToolCount } from './drawingTools';
 import '$lib/components/deferredIcons';
 
@@ -86,7 +86,7 @@ export const SECTION_SLIDE = { duration: 220 };
 const ALL_TOOLS_SHOWING = 'Pen, crayon, magic brush & more';
 
 // The one-line status shown under each row in the phone hub. Reads live
-// `settings`, so it stays reactive wherever it's rendered in a component.
+// `settingsState`, so it stays reactive wherever it's rendered in a component.
 //
 // A row the hub answers with an inline switch (HUB_TOGGLES in SettingsModal)
 // drops the on/off word from its subtitle and names the boolean instead — the
@@ -98,39 +98,40 @@ export function sectionSubtitle(id: SectionId): string {
       // words: the inline switch leaves this row the least subtitle width in
       // the hub, and a summary that wraps past two lines is clipped.
       const parts: string[] = ['Night Mode'];
-      if (settings.lockRotationEnabled) {
-        parts.push(settings.forceLandscapeOrientation ? 'landscape lock' : 'portrait lock');
+      if (settingsState.lockRotationEnabled) {
+        parts.push(settingsState.forceLandscapeOrientation ? 'landscape lock' : 'portrait lock');
       }
       return parts.join(' · ');
     }
     case 'sound': {
-      if (!settings.soundEnabled) return 'Muted';
-      if (!settings.drawingSoundEnabled && !settings.deleteSoundEnabled) return 'No sources';
-      const volume = `Volume ${settings.soundVolume}%`;
-      if (settings.drawingSoundEnabled && settings.deleteSoundEnabled) return volume;
-      return `${volume} · ${settings.drawingSoundEnabled ? 'drawing' : 'deleting'} only`;
+      if (!settingsState.soundEnabled) return 'Muted';
+      if (!settingsState.drawingSoundEnabled && !settingsState.deleteSoundEnabled)
+        return 'No sources';
+      const volume = `Volume ${settingsState.soundVolume}%`;
+      if (settingsState.drawingSoundEnabled && settingsState.deleteSoundEnabled) return volume;
+      return `${volume} · ${settingsState.drawingSoundEnabled ? 'drawing' : 'deleting'} only`;
     }
     case 'saving':
-      return settings.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
+      return settingsState.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
     case 'coloring':
-      return settings.coloringBookEnabled
-        ? `${Math.max(0, coloringPackState.installedBookIds.length - 1)} extra books ready`
+      return settingsState.coloringBookEnabled
+        ? `${Math.max(0, coloringPacksState.installedBookIds.length - 1)} extra books ready`
         : 'Coloring books off';
     case 'controls': {
       // The section's own switch hides every tool the row would count, so with
       // it off the row names the switch, as Coloring's does; the per-tool flags
       // it leaves untouched describe nothing a child can see until it is back on.
-      if (!settings.toolDrawerEnabled) return 'Tool drawer off';
+      if (!settingsState.toolDrawerEnabled) return 'Tool drawer off';
       const hidden = hiddenDrawingToolCount();
       if (!hidden) return ALL_TOOLS_SHOWING;
       return `${hidden} ${hidden === 1 ? 'tool' : 'tools'} hidden`;
     }
     case 'ai': {
-      if (!settings.aiImageEnabled) return 'Turned off';
+      if (!settingsState.aiImageEnabled) return 'Turned off';
       const kind = aiCredentialKind();
       if (kind === 'none') {
-        return freeGenerations.available
-          ? `${freeGenerations.remaining} free ${freeGenerations.remaining === 1 ? 'creation' : 'creations'} left`
+        return freeGenerationsState.available
+          ? `${freeGenerationsState.remaining} free ${freeGenerationsState.remaining === 1 ? 'creation' : 'creations'} left`
           : 'Free allowance unavailable';
       }
       return kind === 'apiKey' ? 'Your OpenAI key' : 'Access code';

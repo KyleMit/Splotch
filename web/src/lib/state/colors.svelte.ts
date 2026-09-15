@@ -15,7 +15,7 @@ export function themedSwatchColor(hex: string, dark: boolean): string {
 
 export const CUSTOM_SWATCH = 'custom';
 
-export const colors = $state({
+export const colorsState = $state({
   activeSwatch: PALETTE_COLORS[0].hex,
   activeColor: PALETTE_COLORS[0].hex,
   customColor: PALETTE_COLORS[0].hex,
@@ -23,30 +23,30 @@ export const colors = $state({
 });
 
 export function syncInkToTheme(dark: boolean) {
-  if (colors.activeSwatch !== BLACK_INK) return;
-  colors.activeColor = themedSwatchColor(BLACK_INK, dark);
+  if (colorsState.activeSwatch !== BLACK_INK) return;
+  colorsState.activeColor = themedSwatchColor(BLACK_INK, dark);
 }
 
 // `hex` is the swatch's stable identity (what activeSwatch/trim/keys compare
 // against); `paintColor` is what actually gets drawn, which differs only for the
 // Black swatch in dark mode (it paints white). Defaults to painting the identity.
 export function selectPaletteColor(hex: string, paintColor: string = hex) {
-  colors.activeSwatch = hex;
-  colors.activeColor = paintColor;
+  colorsState.activeSwatch = hex;
+  colorsState.activeColor = paintColor;
 }
 
 export function selectCustomSwatch() {
-  colors.activeSwatch = CUSTOM_SWATCH;
-  if (colors.customColorSelected) {
-    colors.activeColor = colors.customColor;
+  colorsState.activeSwatch = CUSTOM_SWATCH;
+  if (colorsState.customColorSelected) {
+    colorsState.activeColor = colorsState.customColor;
   }
 }
 
 export function pickCustomColor(hex: string) {
-  colors.customColor = hex;
-  colors.customColorSelected = true;
-  colors.activeSwatch = CUSTOM_SWATCH;
-  colors.activeColor = hex;
+  colorsState.customColor = hex;
+  colorsState.customColorSelected = true;
+  colorsState.activeSwatch = CUSTOM_SWATCH;
+  colorsState.activeColor = hex;
 }
 
 // White is the one selectable color that vanishes against the white icon

@@ -11,7 +11,7 @@
 <script lang="ts">
   import { paletteHex } from '$lib/palette';
   import { COLOR_FAMILIES } from '$lib/hexPickerLayout';
-  import { gate } from '$lib/state/parentalGate.svelte';
+  import { parentalGateState } from '$lib/state/parentalGate.svelte';
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
   // Both fills must hold ≥3:1 against the --on-brand digit (WCAG AA large
@@ -28,7 +28,10 @@
 
   // One dab per answer digit, filled left-to-right as the adult types.
   const dabs = $derived(
-    Array.from({ length: String(gate.x * gate.y).length }, (_, i) => gate.input[i] ?? '')
+    Array.from(
+      { length: String(parentalGateState.x * parentalGateState.y).length },
+      (_, i) => parentalGateState.input[i] ?? ''
+    )
   );
 </script>
 
@@ -36,27 +39,33 @@
   <!-- The row's label carries the whole equation for assistive tech (and
        the native smoke test); the digit visuals inside are aria-hidden so
        the only "5" in the accessibility tree is the keypad key. -->
-  <div class="gate-equation" role="img" aria-label={`What is ${gate.x} times ${gate.y}?`}>
+  <div
+    class="gate-equation"
+    role="img"
+    aria-label={`What is ${parentalGateState.x} times ${parentalGateState.y}?`}
+  >
     <span
       class="gate-operand"
       aria-hidden="true"
       style:background={OPERAND_FILLS[0]}
-      style:border-radius={OPERAND_RADII[0]}>{gate.x}</span
+      style:border-radius={OPERAND_RADII[0]}>{parentalGateState.x}</span
     >
     <span class="gate-operator" aria-hidden="true">×</span>
     <span
       class="gate-operand"
       aria-hidden="true"
       style:background={OPERAND_FILLS[1]}
-      style:border-radius={OPERAND_RADII[1]}>{gate.y}</span
+      style:border-radius={OPERAND_RADII[1]}>{parentalGateState.y}</span
     >
     <span class="gate-operator" aria-hidden="true">=</span>
     {#each dabs as digit, i (i)}
       <span class="gate-dab" class:filled={digit !== ''} aria-hidden="true">{digit}</span>
     {/each}
   </div>
-  <p class="gate-error" aria-hidden="true">{gate.lockoutMessage ?? gate.error ?? ''}</p>
-  <p class="visually-hidden" role="status">{gate.announcement}</p>
+  <p class="gate-error" aria-hidden="true">
+    {parentalGateState.lockoutMessage ?? parentalGateState.error ?? ''}
+  </p>
+  <p class="visually-hidden" role="status">{parentalGateState.announcement}</p>
 </div>
 
 <style>

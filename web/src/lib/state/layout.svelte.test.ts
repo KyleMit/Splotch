@@ -68,46 +68,46 @@ describe('viewport tracking', () => {
     window.innerWidth = 768;
     window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
-    const { layout } = await freshModule();
-    expect(layout.orientation).toBe('portrait');
-    expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
+    const { layoutState } = await freshModule();
+    expect(layoutState.orientation).toBe('portrait');
+    expect(layoutState.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
     expect(document.documentElement.dataset.orientation).toBe('portrait');
   });
 
   it('takes the phone class from CSS rather than the visible viewport height', async () => {
     window.innerWidth = 960;
     window.innerHeight = 550;
-    const { layout } = await freshModule();
-    expect(layout.phoneLandscape).toBe(false);
+    const { layoutState } = await freshModule();
+    expect(layoutState.phoneLandscape).toBe(false);
     mocks.phoneLandscape = true;
     window.dispatchEvent(new Event('resize'));
-    expect(layout.phoneLandscape).toBe(true);
+    expect(layoutState.phoneLandscape).toBe(true);
   });
 
   it('updates the phone media class without releasing a pending rotation', async () => {
     mocks.portrait = true;
     window.innerWidth = 412;
     window.innerHeight = 906;
-    const { layout } = await freshModule();
+    const { layoutState } = await freshModule();
     window.dispatchEvent(new Event('orientationchange'));
     mocks.portrait = false;
     mocks.phoneLandscape = true;
     window.innerWidth = 906;
     window.innerHeight = 328;
     mediaQueryEvents.get(PHONE_LANDSCAPE_QUERY)?.dispatchEvent(new Event('change'));
-    expect(layout.phoneLandscape).toBe(true);
-    expect(layout.orientation).toBe('portrait');
+    expect(layoutState.phoneLandscape).toBe(true);
+    expect(layoutState.orientation).toBe('portrait');
     vi.advanceTimersByTime(200);
-    expect(layout.orientation).toBe('landscape');
+    expect(layoutState.orientation).toBe('landscape');
   });
 
   it('re-measures on resize', async () => {
     window.innerWidth = 1024;
     window.innerHeight = 768;
-    const { layout } = await freshModule();
-    expect(layout.orientation).toBe('landscape');
-    expect(layout.viewportWidth).toBe(1024);
-    expect(layout.viewportHeight).toBe(768);
+    const { layoutState } = await freshModule();
+    expect(layoutState.orientation).toBe('landscape');
+    expect(layoutState.viewportWidth).toBe(1024);
+    expect(layoutState.viewportHeight).toBe(768);
 
     mocks.portrait = true;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
@@ -117,23 +117,23 @@ describe('viewport tracking', () => {
     window.innerHeight = 1024;
     window.dispatchEvent(new Event('resize'));
 
-    expect(layout.orientation).toBe('portrait');
-    expect(layout.safeArea.top).toBe(44);
-    expect(layout.viewportWidth).toBe(768);
-    expect(layout.viewportHeight).toBe(1024);
+    expect(layoutState.orientation).toBe('portrait');
+    expect(layoutState.safeArea.top).toBe(44);
+    expect(layoutState.viewportWidth).toBe(768);
+    expect(layoutState.viewportHeight).toBe(1024);
   });
 
   it('keeps the DOM stamp defined by CSS orientation when viewport geometry differs', async () => {
     window.innerWidth = 768;
     window.innerHeight = 1024;
-    const { layout } = await freshModule();
+    const { layoutState } = await freshModule();
 
-    expect(layout.orientation).toBe('portrait');
+    expect(layoutState.orientation).toBe('portrait');
     expect(document.documentElement.dataset.orientation).toBe('landscape');
   });
 
   it('keeps layout current throughout a continuous non-rotation resize stream', async () => {
-    const { layout } = await freshModule();
+    const { layoutState } = await freshModule();
 
     for (let step = 1; step <= 20; step += 1) {
       window.innerWidth = 1024 - step * 10;
@@ -141,12 +141,12 @@ describe('viewport tracking', () => {
       await vi.advanceTimersByTimeAsync(100);
     }
 
-    expect(layout.viewportWidth).toBe(824);
+    expect(layoutState.viewportWidth).toBe(824);
   });
 
   it('re-measures on re-entry when the device rotated while backgrounded', async () => {
-    const { layout } = await freshModule();
-    expect(layout.orientation).toBe('landscape');
+    const { layoutState } = await freshModule();
+    expect(layoutState.orientation).toBe('landscape');
 
     // A hidden document fires no resize/orientationchange, so the rotation
     // reaches the app only via the visibilitychange on return.
@@ -156,8 +156,8 @@ describe('viewport tracking', () => {
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
     document.dispatchEvent(new Event('visibilitychange'));
 
-    expect(layout.orientation).toBe('portrait');
-    expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
+    expect(layoutState.orientation).toBe('portrait');
+    expect(layoutState.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
   });
 
   it('follows the cutout inset from the top to a side edge across a rotation', async () => {
@@ -165,7 +165,7 @@ describe('viewport tracking', () => {
     window.innerWidth = 768;
     window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
-    const { layout } = await freshModule();
+    const { layoutState } = await freshModule();
 
     // Rotation: the standard orientation event fires, then the insets settle
     // onto a side edge and a resize follows.
@@ -177,16 +177,16 @@ describe('viewport tracking', () => {
     mocks.insets = { top: 0, right: 44, bottom: 21, left: 0 };
     window.dispatchEvent(new Event('resize'));
 
-    expect(layout.orientation).toBe('portrait');
-    expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
+    expect(layoutState.orientation).toBe('portrait');
+    expect(layoutState.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
     await vi.runAllTimersAsync();
 
-    expect(layout.orientation).toBe('landscape');
-    expect(layout.safeArea).toEqual({ top: 0, right: 44, bottom: 21, left: 0 });
+    expect(layoutState.orientation).toBe('landscape');
+    expect(layoutState.safeArea).toEqual({ top: 0, right: 44, bottom: 21, left: 0 });
   });
 
   it('retains the legacy orientationchange trigger used by Mobile Safari', async () => {
-    const { layout } = await freshModule();
+    const { layoutState } = await freshModule();
 
     mocks.portrait = true;
     window.innerWidth = 768;
@@ -194,8 +194,8 @@ describe('viewport tracking', () => {
     window.dispatchEvent(new Event('orientationchange'));
     window.dispatchEvent(new Event('resize'));
 
-    expect(layout.orientation).toBe('landscape');
+    expect(layoutState.orientation).toBe('landscape');
     await vi.runAllTimersAsync();
-    expect(layout.orientation).toBe('portrait');
+    expect(layoutState.orientation).toBe('portrait');
   });
 });

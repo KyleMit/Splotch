@@ -44,9 +44,9 @@ import { STORAGE_KEYS, hydrateDurableStorage } from './storage';
 // Importing the real store modules runs their module-init code: each calls
 // onDurableRestore() to register its reloader — exactly what earlyBoot.ts does
 // at boot.
-import { strokeState } from './state/strokeWidth.svelte';
+import { strokeWidthState } from './state/strokeWidth.svelte';
 import { toolState } from './state/tool.svelte';
-import { settings } from './state/settings.svelte';
+import { settingsState } from './state/settings.svelte';
 import { sessionCount, SETTINGS_ACTIVITY_DOTS_START_SESSION } from './state/sessionCounters.svelte';
 
 function settingsActivityDotsEnabled() {
@@ -63,9 +63,9 @@ describe('hydrateDurableStorage restores real persisted stores (issue #521)', ()
   it('refreshes live $state from the durable mirror after a native eviction', async () => {
     // Sanity: the stores initialised to their defaults (localStorage was empty
     // at import), so a post-hydrate change to the restored value is meaningful.
-    expect(strokeState.penSize).toBe(3);
+    expect(strokeWidthState.penSize).toBe(3);
     expect(toolState.brush).toBe('pen');
-    expect(settings.soundVolume).toBe(50);
+    expect(settingsState.soundVolume).toBe(50);
     expect(settingsActivityDotsEnabled()).toBe(false);
 
     ctrl.native = true;
@@ -87,9 +87,9 @@ describe('hydrateDurableStorage restores real persisted stores (issue #521)', ()
     // the live $state reflects the recovered values rather than the defaults.
     // If any store dropped its onDurableRestore(...) registration or fell out of
     // the boot import graph, its assertion below fails.
-    expect(strokeState.penSize).toBe(5);
+    expect(strokeWidthState.penSize).toBe(5);
     expect(toolState.brush).toBe('crayon');
-    expect(settings.soundVolume).toBe(80);
+    expect(settingsState.soundVolume).toBe(80);
     expect(settingsActivityDotsEnabled()).toBe(true);
   });
 });

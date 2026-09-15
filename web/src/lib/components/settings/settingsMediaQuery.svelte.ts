@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { scheduleIdle } from '$lib/idle';
-import { ui, settingsModal } from '$lib/state/ui.svelte';
+import { uiState, settingsModal } from '$lib/state/ui.svelte';
 
 // Read both breakpoints in one flush: independent updates transiently mount the
 // wide pane when a phone rotates between its hub and compact shells.
@@ -13,7 +13,7 @@ export function createSettingsMediaQueries(queries: { wide: string; compact: str
   // a Button Size drag tore down two MediaQueryList listeners, built two fresh
   // ones and re-evaluated both queries — on the Settings open path, which the
   // staged mount watermarks next door exist to keep under a frame budget.
-  const foreground = () => settingsModal.open || ui.resizingActionButtons;
+  const foreground = () => settingsModal.open || uiState.resizingActionButtons;
 
   // Cancellation is lifecycle bookkeeping, deliberately untracked.
   let cancelPending: (() => void) | undefined;

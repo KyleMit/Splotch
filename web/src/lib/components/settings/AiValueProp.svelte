@@ -2,7 +2,7 @@
   import Icon from '../Icon.svelte';
   import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { freeGenerations } from '$lib/state/freeGenerations.svelte';
+  import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
   import { aiCredentialKind } from '$lib/state/settings.svelte';
   import '$lib/components/deferredIcons';
 
@@ -62,10 +62,10 @@
           Your access code is saved — turn this on whenever you're ready.
         {:else if credentialKind === 'apiKey'}
           Your OpenAI key is saved and ready whenever you turn this on.
-        {:else if freeGenerations.remaining === 0}
+        {:else if freeGenerationsState.remaining === 0}
           Your {FREE_GENERATION_LIMIT} free pictures are used up.
-        {:else if freeGenerations.remaining < FREE_GENERATION_LIMIT}
-          You have {freeGenerations.remaining} free pictures left — nothing to set up, no card.
+        {:else if freeGenerationsState.remaining < FREE_GENERATION_LIMIT}
+          You have {freeGenerationsState.remaining} free pictures left — nothing to set up, no card.
         {:else}
           The first {FREE_GENERATION_LIMIT} pictures are free — nothing to set up, no card.
         {/if}

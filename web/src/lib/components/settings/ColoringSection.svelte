@@ -4,9 +4,9 @@
   import ToggleRow from './ToggleRow.svelte';
   import { BOOKS, STARTER_COLORING_BOOK_ID } from '$lib/state/books';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
-  import { coloringPackState } from '$lib/state/coloringPacks.svelte';
+  import { coloringPacksState } from '$lib/state/coloringPacks.svelte';
   import {
-    settings,
+    settingsState,
     setColoringBook,
     setColoringPacksAllowMetered,
   } from '$lib/state/settings.svelte';
@@ -16,10 +16,10 @@
   let removing = $state(false);
   let removeError = $state(false);
   const downloadedBookCount = $derived(
-    coloringPackState.installedBookIds.filter((id) => id !== STARTER_COLORING_BOOK_ID).length
+    coloringPacksState.installedBookIds.filter((id) => id !== STARTER_COLORING_BOOK_ID).length
   );
   const downloadingBookName = $derived(
-    BOOKS.find((book) => book.id === coloringPackState.downloadingBookId)?.name ?? null
+    BOOKS.find((book) => book.id === coloringPacksState.downloadingBookId)?.name ?? null
   );
 
   function megabytes(bytes: number): string {
@@ -57,7 +57,7 @@
       icon="shapes"
       label="Coloring book"
       id="coloringBookToggle"
-      checked={settings.coloringBookEnabled}
+      checked={settingsState.coloringBookEnabled}
       onToggle={setColoringBooksEnabled}
       help="Show coloring pages and download new books automatically"
     />
@@ -68,10 +68,10 @@
       icon="download"
       label="Download over mobile data"
       id="coloringPacksMeteredToggle"
-      checked={settings.coloringPacksAllowMetered}
+      checked={settingsState.coloringPacksAllowMetered}
       onToggle={setAllowMetered}
       help="Allows automatic picture downloads when Wi-Fi isn't available"
-      disabled={!settings.coloringBookEnabled}
+      disabled={!settingsState.coloringBookEnabled}
     />
   </div>
 
@@ -80,18 +80,18 @@
       <Icon name="shapes" class="setting-icon" />
       <div>
         <span class="pack-title">Downloaded pictures</span>
-        {#if coloringPackState.initialized}
+        {#if coloringPacksState.initialized}
           <p>
-            {downloadedBookCount} of {coloringPackState.totalBookCount - 1} extra books · {megabytes(
-              coloringPackState.downloadedBytes
+            {downloadedBookCount} of {coloringPacksState.totalBookCount - 1} extra books · {megabytes(
+              coloringPacksState.downloadedBytes
             )}
           </p>
           {#if downloadingBookName}
             <p>Downloading {downloadingBookName} in the background</p>
-          {:else if downloadedBookCount === coloringPackState.totalBookCount - 1}
+          {:else if downloadedBookCount === coloringPacksState.totalBookCount - 1}
             <p>Every coloring book is ready offline</p>
           {/if}
-        {:else if !settings.coloringBookEnabled}
+        {:else if !settingsState.coloringBookEnabled}
           <p>Storage details are unavailable while coloring books are off</p>
         {/if}
       </div>
@@ -99,7 +99,7 @@
     <Button
       variant="danger"
       size="sm"
-      disabled={removing || (coloringPackState.initialized && downloadedBookCount === 0)}
+      disabled={removing || (coloringPacksState.initialized && downloadedBookCount === 0)}
       onclick={removeDownloadedPictures}
     >
       {removing ? 'Removing…' : 'Remove downloaded pictures'}

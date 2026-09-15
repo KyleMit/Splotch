@@ -1,17 +1,17 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { fullscreen, toggleFullscreen } from '$lib/state/fullscreen.svelte';
+  import { fullscreenState, toggleFullscreen } from '$lib/state/fullscreen.svelte';
 </script>
 
-{#if fullscreen.supported}
+{#if fullscreenState.supported}
   <button
     class="fullscreen-toggle corner-button"
-    aria-label={fullscreen.active ? 'Exit fullscreen' : 'Enter fullscreen'}
-    aria-pressed={fullscreen.active}
+    aria-label={fullscreenState.active ? 'Exit fullscreen' : 'Enter fullscreen'}
+    aria-pressed={fullscreenState.active}
     onclick={toggleFullscreen}
   >
     <Icon
-      name={fullscreen.active ? 'fullscreen-exit' : 'fullscreen'}
+      name={fullscreenState.active ? 'fullscreen-exit' : 'fullscreen'}
       class="corner-button-icon"
       role="img"
     />

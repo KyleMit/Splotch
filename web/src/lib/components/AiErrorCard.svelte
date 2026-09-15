@@ -2,12 +2,16 @@
   import type { Snippet } from 'svelte';
   import Icon from './Icon.svelte';
   import Button from './design/Button.svelte';
-  import { aiResult, closeAiResult, AI_FAILURE_RETRY_LIMIT } from '$lib/state/aiGeneration.svelte';
+  import {
+    aiGenerationState,
+    closeAiResult,
+    AI_FAILURE_RETRY_LIMIT,
+  } from '$lib/state/aiGeneration.svelte';
   import { retryAiImage } from '$lib/drawing/aiImage';
   import '$lib/components/deferredIcons';
 
   let { children }: { children: Snippet } = $props();
-  const repeatedFailure = $derived(aiResult.consecutiveFailures >= AI_FAILURE_RETRY_LIMIT);
+  const repeatedFailure = $derived(aiGenerationState.consecutiveFailures >= AI_FAILURE_RETRY_LIMIT);
 </script>
 
 <div class="ai-error-card">

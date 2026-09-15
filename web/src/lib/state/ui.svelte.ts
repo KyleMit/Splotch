@@ -14,7 +14,7 @@ export interface UiState {
   requestedSettingsSection: RequestedSettingsSection | null;
 }
 
-export const ui: UiState = $state({
+export const uiState: UiState = $state({
   resizingActionButtons: false,
   requestedSettingsSection: null,
 });
@@ -36,11 +36,11 @@ export const settingsModal = createModal();
 export const aiPromptModal = createModal();
 
 export function setResizingActionButtons(active: boolean) {
-  ui.resizingActionButtons = active;
+  uiState.resizingActionButtons = active;
 }
 
 export function openAiSettings(origin: import('./modal.svelte').Origin | null): void {
-  ui.requestedSettingsSection = 'ai';
+  uiState.requestedSettingsSection = 'ai';
   settingsModal.show(origin);
 }
 
@@ -49,6 +49,6 @@ export function openAiSettings(origin: import('./modal.svelte').Origin | null): 
 // for the policy editor. Reaching it therefore counts as already gated — the wide
 // shell reads that from the landing section rather than asking again.
 export function openParentCenterSettings(origin: import('./modal.svelte').Origin | null): void {
-  ui.requestedSettingsSection = 'parentCenter';
+  uiState.requestedSettingsSection = 'parentCenter';
   settingsModal.show(origin);
 }

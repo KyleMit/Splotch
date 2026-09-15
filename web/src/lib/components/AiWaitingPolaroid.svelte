@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { aiResult, restoreAiResult } from '$lib/state/aiGeneration.svelte';
-  import { aiProgress } from '$lib/state/aiProgress.svelte';
+  import { aiGenerationState, restoreAiResult } from '$lib/state/aiGeneration.svelte';
+  import { aiProgressState } from '$lib/state/aiProgress.svelte';
 
   // The picture-in-progress, pinned to the top-left of the canvas while the
   // child keeps drawing (ADR-0116, ADR-0117). A photo rather than a chip: what
@@ -9,9 +9,13 @@
   // without any reading. It is also deliberately the only way back — minimizing
   // must never be a way to lose a picture that is already being paid for.
 
-  const waiting = $derived(aiResult.open && aiResult.minimized && aiResult.generating);
-  const ready = $derived(aiResult.open && aiResult.minimized && !aiResult.generating);
-  const failed = $derived(ready && !!aiResult.error);
+  const waiting = $derived(
+    aiGenerationState.open && aiGenerationState.minimized && aiGenerationState.generating
+  );
+  const ready = $derived(
+    aiGenerationState.open && aiGenerationState.minimized && !aiGenerationState.generating
+  );
+  const failed = $derived(ready && !!aiGenerationState.error);
 
   const label = $derived(
     waiting
@@ -25,7 +29,7 @@
   // tracks is half a minute long, so a per-frame width would write a new style
   // sixty times a second — over the canvas the child is drawing on — to move it
   // by a hundredth of a pixel.
-  const fillPercent = $derived(Math.round(aiProgress.value * 100));
+  const fillPercent = $derived(Math.round(aiProgressState.value * 100));
 </script>
 
 {#if waiting || ready}
@@ -38,10 +42,10 @@
     onclick={restoreAiResult}
   >
     <span class="polaroid-window">
-      {#if ready && aiResult.resultUrl && !failed}
-        <img src={aiResult.resultUrl} alt="" />
-      {:else if aiResult.previewUrl}
-        <img class="waiting-art" src={aiResult.previewUrl} alt="" />
+      {#if ready && aiGenerationState.resultUrl && !failed}
+        <img src={aiGenerationState.resultUrl} alt="" />
+      {:else if aiGenerationState.previewUrl}
+        <img class="waiting-art" src={aiGenerationState.previewUrl} alt="" />
       {/if}
       {#if waiting}<span class="polaroid-spinner"></span>{/if}
     </span>

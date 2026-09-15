@@ -28,7 +28,7 @@ function fullscreenSupported(): boolean {
   return isAndroidBrowser();
 }
 
-export const fullscreen = $state({
+export const fullscreenState = $state({
   // Whether to surface the toggle at all (Android web browsers only).
   supported: false,
   // Whether the document is currently in immersive fullscreen.
@@ -40,12 +40,12 @@ export const fullscreen = $state({
 // permissions change), so `active` must track the real state, not our requests.
 // Installed at module load (not from a component), gated on `browser`, so the
 // value is live before the first component renders — FullscreenToggle reads
-// fullscreen.* on mount, before +page.svelte's onMount would run.
+// fullscreenState.* on mount, before +page.svelte's onMount would run.
 if (browser && fullscreenSupported()) {
-  fullscreen.supported = true;
+  fullscreenState.supported = true;
 
   const sync = () => {
-    fullscreen.active = document.fullscreenElement !== null;
+    fullscreenState.active = document.fullscreenElement !== null;
   };
   sync();
   document.addEventListener('fullscreenchange', sync);
@@ -56,7 +56,7 @@ if (browser && fullscreenSupported()) {
 // requestFullscreen() needs. Failures are swallowed: a refused request just
 // leaves the chrome where it was.
 export async function toggleFullscreen() {
-  if (!fullscreen.supported) return;
+  if (!fullscreenState.supported) return;
   try {
     if (document.fullscreenElement) {
       await document.exitFullscreen();
