@@ -36,8 +36,10 @@ export interface BootHiddenOverlays {
 
 // A failed chunk fetch is retried explicitly rather than by whatever happens to
 // re-run a demand: each failure re-arms one idle attempt, this many times, and a
-// demand meanwhile retries at once (the memo resets on rejection). Past the
-// limit only a demand retries, so a dead connection stops costing idle time.
+// demand retries at once — including a demand that arrived while an attempt was
+// already pending, which the failure answers with an immediate retry outside
+// this budget, so a resident someone is waiting on is never left to idle luck.
+// Past the limit only demands retry, so a dead connection stops costing idle time.
 const OVERLAY_CHUNK_IDLE_RETRY_LIMIT = 3;
 
 type OverlayCatalogLoader = () => Promise<OverlayCatalog>;
@@ -54,6 +56,7 @@ export function mountBootHiddenOverlays(
 ): BootHiddenOverlays {
   let stopped = false;
   let idleRetriesLeft = OVERLAY_CHUNK_IDLE_RETRY_LIMIT;
+  let foregroundDemandPending = false;
   let catalog: OverlayCatalog | null = null;
   let catalogPromise: Promise<OverlayCatalog> | null = null;
   let cancelBootIdle = () => {};
@@ -98,6 +101,7 @@ export function mountBootHiddenOverlays(
       .then((module) => {
         if (stopped) return module;
         catalog = module;
+        foregroundDemandPending = false;
         mountRequested();
         scheduleBackground();
         return module;
@@ -105,7 +109,10 @@ export function mountBootHiddenOverlays(
       .catch((err) => {
         catalogPromise = null;
         console.error('Boot-hidden overlay chunk failed to load:', err);
-        if (!stopped && idleRetriesLeft > 0) {
+        if (!stopped && foregroundDemandPending) {
+          foregroundDemandPending = false;
+          void loadCatalog().catch(() => {});
+        } else if (!stopped && idleRetriesLeft > 0) {
           idleRetriesLeft -= 1;
           cancelBootIdle();
           cancelBootIdle = scheduleIdle(() => {
@@ -134,6 +141,7 @@ export function mountBootHiddenOverlays(
         return;
       }
       cancelBootIdle();
+      foregroundDemandPending = true;
       void loadCatalog().catch(() => {});
     },
     stop() {
