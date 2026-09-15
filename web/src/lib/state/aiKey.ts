@@ -22,6 +22,17 @@ const aiKeyWriteCoordinator = createSecureCredentialCoordinator(
   persistAiUserApiKey
 );
 
+// Dev-harness scenario for the Settings E2E regression: it reaches the otherwise
+// timing-dependent state through the real persistence and coordinator paths.
+export async function prepareRefusedAiKeyForget(value: string) {
+  if (!__DEV_HARNESS__) throw new Error('Credential test scenario is unavailable');
+  const persisted = await setAiUserApiKey(value);
+  if (!persisted) throw new Error('Credential test scenario could not save the key');
+  await aiKeyWriteCoordinator
+    .runHydration(() => Promise.reject(new Error('forced secure storage failure')))
+    .catch(() => undefined);
+}
+
 export async function setAiUserApiKey(value: string, ownsRequest?: () => boolean) {
   const persisted = await aiKeyWriteCoordinator.setCredential(value, ownsRequest);
   // Best-effort, and only after a successful explicit save: requesting during

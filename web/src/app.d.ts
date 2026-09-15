@@ -94,6 +94,8 @@ declare global {
     };
     // Dev-gated invoke handle for the production AI flow (ADR-0109).
     __aiGenerate?: typeof import('$lib/drawing/aiImage').generateAiImage;
+    // Dev-gated setup for the refused-credential-forget Settings regression.
+    __prepareRefusedAiKeyForget?: typeof import('$lib/state/aiKey').prepareRefusedAiKeyForget;
     // Dev-gated engine-rendered stroke replay for store hero captures (ADR-0122).
     __replayStroke?: typeof import('$lib/boot/devHarnessSeam').replayStoreDrawingStroke;
     __probe?: BundledCaptureProbe;

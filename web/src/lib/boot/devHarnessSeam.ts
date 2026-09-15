@@ -10,6 +10,7 @@ import { generateAiImage } from '$lib/drawing/aiImage';
 import { PALETTE_COLORS, type PaletteLabel } from '$lib/palette';
 import { PERF_MARKS } from '$lib/drawing/perf';
 import { removeCaptureReportFromPreferences, writeCaptureReportToPreferences } from '$lib/storage';
+import { prepareRefusedAiKeyForget } from '$lib/state/aiKey';
 
 type StoreDrawingColor = { kind: 'palette'; label: PaletteLabel } | { kind: 'picker'; hex: string };
 
@@ -127,12 +128,14 @@ export function installDevHarnessSeam(): () => void {
   window.__committedBrushMode = committedBrushMode;
   window.__drawingDebug = { getDrawingWorkDebug, getLiveSurfaceTopology, getUndoDebug };
   window.__aiGenerate = generateAiImage;
+  if (dev || __DEV_HARNESS__) window.__prepareRefusedAiKeyForget = prepareRefusedAiKeyForget;
   if (dev || __DEV_HARNESS__) window.__replayStroke = replayStoreDrawingStroke;
   if (dev || __DEV_HARNESS__) window.__bundledCaptureReport = createBundledCaptureReportSeam();
   return () => {
     delete window.__committedBrushMode;
     delete window.__drawingDebug;
     delete window.__aiGenerate;
+    delete window.__prepareRefusedAiKeyForget;
     delete window.__replayStroke;
     delete window.__bundledCaptureReport;
   };

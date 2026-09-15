@@ -66,6 +66,11 @@
     web: 'Your key is encrypted and stored only in this browser on this device.',
   };
 
+  const FORGET_FAILED_MESSAGES = {
+    apiKey: 'Your key could not be removed securely. Please try again.',
+    accessCode: 'Your access code could not be removed securely. Please try again.',
+  } satisfies Record<'apiKey' | 'accessCode', string>;
+
   interface Props {
     // `open` flips true when the Settings modal opens; we use it to clear
     // the input and any stale feedback, and to re-read the current platform.
@@ -173,16 +178,25 @@
     }
   }
 
-  function forgetKey() {
-    setAiUserApiKey('');
+  async function forgetCredential(kind: 'apiKey' | 'accessCode', clear: () => Promise<boolean>) {
+    try {
+      const forgotten = await clear();
+      if (!forgotten) throw new Error('Credential write refused');
+    } catch {
+      keyStatus = 'error';
+      keyMessage = FORGET_FAILED_MESSAGES[kind];
+      return;
+    }
     keyInput = '';
     resetKeyFeedback();
   }
 
-  async function forgetAccessCode() {
-    await setUserSubmittedAiAccessToken('');
-    keyInput = '';
-    resetKeyFeedback();
+  function forgetKey() {
+    return forgetCredential('apiKey', () => setAiUserApiKey(''));
+  }
+
+  function forgetAccessCode() {
+    return forgetCredential('accessCode', () => setUserSubmittedAiAccessToken(''));
   }
 </script>
 

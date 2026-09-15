@@ -10,6 +10,7 @@ const ctrl = vi.hoisted(() => ({
   rasterizedOps: 5,
 }));
 const generateAiImage = vi.hoisted(() => vi.fn());
+const prepareRefusedAiKeyForget = vi.hoisted(() => vi.fn());
 const replayHarnessStroke = vi.hoisted(() => vi.fn());
 const captureReports = vi.hoisted(() => new Map<string, string>());
 
@@ -28,6 +29,7 @@ vi.mock('$lib/drawing/engine', () => ({
 }));
 
 vi.mock('$lib/drawing/aiImage', () => ({ generateAiImage }));
+vi.mock('$lib/state/aiKey', () => ({ prepareRefusedAiKeyForget }));
 
 vi.mock('$lib/drawing/perf', () => ({
   get PERF_MARKS() {
@@ -55,6 +57,7 @@ beforeEach(() => {
   delete window.__committedBrushMode;
   delete window.__drawingDebug;
   delete window.__aiGenerate;
+  delete window.__prepareRefusedAiKeyForget;
   delete window.__replayStroke;
   delete window.__bundledCaptureReport;
   delete window.__probe;
