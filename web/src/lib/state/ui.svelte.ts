@@ -61,10 +61,10 @@ export const SETTINGS_BUTTON_ID = 'settingsButton';
 // caught. This module is already on the startup path, so the id costs nothing here.
 export const SCREENSHOT_BUTTON_ID = 'screenshotButton';
 
-export const colorPickerModal = createModal();
-export const coloringBookModal = createModal();
-export const settingsModal = createModal();
-export const aiPromptModal = createModal();
+export const colorPickerModal = createModal('colorPicker');
+export const coloringBookModal = createModal('coloringBook');
+export const settingsModal = createModal('settings');
+export const aiPromptModal = createModal('aiPrompt');
 
 export function openAiSettings(origin: Origin | null): void {
   uiState.requestSettingsSection('ai');

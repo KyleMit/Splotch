@@ -8,6 +8,7 @@ import {
 } from '../storage';
 import { getPlatform, type Platform } from '$lib/platform';
 import { openParentCenterSettings } from './ui.svelte';
+import { demandOverlay } from './overlayDemand';
 import type { Origin } from './modal.svelte';
 import {
   GATE_ESCALATION_QUIET_MS,
@@ -428,6 +429,7 @@ export function createParentalGate(): ParentalGateState {
       s.immediate = immediate;
       s.origin = origin;
       s.open = true;
+      demandOverlay('parentalGate');
       if (lockedOut) {
         tickLockout();
         announceTimer = setTimeout(

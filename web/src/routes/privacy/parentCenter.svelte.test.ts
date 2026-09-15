@@ -4,9 +4,6 @@ import { createPrivacyParentCenter } from './parentCenter.svelte';
 
 vi.mock('$lib/components/SettingsModal.svelte', () => ({ default: vi.fn() }));
 vi.mock('$lib/boot/persistedState', () => ({ hydratePersistedState: vi.fn() }));
-vi.mock('$lib/state/freeGenerations.svelte', () => ({
-  createFreeGenerationGrantRefresher: () => vi.fn(),
-}));
 
 function createParentCenterUnderEffects() {
   let parentCenter!: ReturnType<typeof createPrivacyParentCenter>;

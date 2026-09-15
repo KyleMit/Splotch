@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { actionPanelEvents } from '$lib/actions/actionPanelEvents';
   import { drawerCascade } from '$lib/actions/drawerCascade';
   import Icon from './Icon.svelte';
@@ -8,7 +9,7 @@
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colorsState, isWhite, isDarkInk } from '$lib/state/colors.svelte';
-  import { settingsState, setDrawerOpen } from '$lib/state/settings.svelte';
+  import { enabledOptionalBrushes, settingsState, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import {
@@ -21,10 +22,7 @@
   } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { aiGenerationState, restoreAiResult } from '$lib/state/aiGeneration.svelte';
-  import {
-    freeGenerationsState,
-    createFreeGenerationGrantRefresher,
-  } from '$lib/state/freeGenerations.svelte';
+  import { freeGenerationsState, retryOnVisibleReturn } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { layoutState } from '$lib/state/layout.svelte';
   import { isAiImageButtonVisible, publishActionPanelState } from '$lib/actionButtonLayout';
@@ -54,13 +52,10 @@
   let strokeTriggerEl: HTMLButtonElement | undefined;
   let drawerMotion = $state(false);
   let drawerOpening = $state(false);
-  // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
-  let lastDrawerExpanded: boolean | undefined;
   // Intentionally untracked: this frame only verifies the imperative animation state.
   let drawerMotionProbeFrame: number | undefined;
   // Intentionally untracked: this only memoizes the save-time chunk after the first screenshot press.
   let screenshotModulePromise: Promise<typeof import('$lib/drawing/screenshot')> | null = null;
-  const refreshFreeGenerationGrant = createFreeGenerationGrantRefresher();
 
   // Flyouts share one open-state slot so dismissal and focus restoration
   // always act on the control that owns the open menu.
@@ -116,20 +111,21 @@
     });
   }
 
-  $effect(() => {
-    const expanded = drawerExpanded;
-    if (lastDrawerExpanded === undefined) {
-      lastDrawerExpanded = expanded;
-      return;
-    }
-    if (lastDrawerExpanded === expanded) return;
-    lastDrawerExpanded = expanded;
-    if (settingsModal.open && !uiState.resizingActionButtons) {
-      stopDrawerMotion();
-      return;
-    }
+  function startDrawerMotion() {
     drawerMotion = true;
     scheduleDrawerMotionProbe();
+  }
+
+  // The button-size slider force-opens the drawer for the drag and lets it fall
+  // back when the drag ends. That transition animates on the way in and is
+  // cut short on the way out (Settings is still in front of it), and it only
+  // exists while the drawer was closed to begin with. An effect rather than a
+  // handler because the drag lives in the Settings dialog, not in this panel.
+  $effect(() => {
+    const resizing = uiState.resizingActionButtons;
+    if (untrack(() => settingsState.drawerOpen)) return;
+    if (resizing) startDrawerMotion();
+    else stopDrawerMotion();
   });
 
   const buttonScale = $derived(settingsState.actionButtonScale / 100);
@@ -141,10 +137,6 @@
   $effect(() => {
     if (!panelEl) return;
     publishActionPanelState(panelEl, drawerExpanded, buttonScale);
-  });
-
-  $effect(() => {
-    refreshFreeGenerationGrant();
   });
 
   // The stroke-size lines preview the ink you'll lay down, tinted via
@@ -176,6 +168,7 @@
     const next = !settingsState.drawerOpen;
     drawerOpening = next && !isStrokeActive();
     setDrawerOpen(next);
+    startDrawerMotion();
     // Tidy up any open flyout as the controls tuck away. No focus restore: the
     // trigger is on its way to visibility:hidden with the rest of the drawer.
     if (!next) closeFlyout();
@@ -307,6 +300,15 @@
     openFlyout = 'brush';
   }
 
+  // Settings can switch the drawer's brushes off while the brush menu is open,
+  // from inside a dialog whose keyboard session never sends this panel the
+  // outside pointer that closes a flyout. With fewer than two brushes left there
+  // is no menu, so the slot it held is released here — an effect because the
+  // change is made elsewhere; the slot is this panel's to clear.
+  $effect(() => {
+    if (openFlyout === 'brush' && enabledOptionalBrushes().length < 2) setBrushFlyout(false);
+  });
+
   function handleStrokeSizeClick(size: StrokeSize) {
     setStrokeSize(size);
     closeFlyout({ restoreFocus: true });
@@ -357,7 +359,7 @@
   }
 </script>
 
-<svelte:document onvisibilitychange={refreshFreeGenerationGrant} />
+<svelte:document onvisibilitychange={retryOnVisibleReturn} />
 
 <!-- scribbleGuard cancels a stylus tap's touch stream so it can't arm iPadOS
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's

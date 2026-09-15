@@ -1,5 +1,6 @@
 import type { StyleName } from '$lib/ai/styles';
 import type { SaveResult } from '$lib/saveNaming';
+import { demandOverlay } from './overlayDemand';
 
 export const AI_FAILURE_RETRY_LIMIT = 2;
 
@@ -186,6 +187,7 @@ export function createAiGeneration(): AiGenerationState {
       s.style = style;
       s.generating = true;
       s.open = true;
+      demandOverlay('aiResult');
       return id;
     },
     isAiGenerationActive,

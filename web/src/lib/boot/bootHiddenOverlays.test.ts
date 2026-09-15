@@ -116,6 +116,78 @@ describe('mountBootHiddenOverlays', () => {
     await vi.waitFor(() => expect(mounted).toEqual(['aiWaiting', 'aiResult']));
   });
 
+  it('retries a failed chunk load at idle, a bounded number of times, and at once on demand', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let failuresLeft = 5;
+    // The stand-in catalog crosses the loader's typed boundary the same way the
+    // module mock above does.
+    const loadChunk = vi.fn(async () => {
+      if (failuresLeft > 0) {
+        failuresLeft -= 1;
+        throw new Error('chunk fetch failed');
+      }
+      return overlays as unknown as typeof import('$lib/components/overlayChunk');
+    });
+    const mounted: BootHiddenOverlayKey[] = [];
+    const controller = mountBootHiddenOverlays((key) => mounted.push(key), loadChunk);
+
+    // The boot attempt plus three idle retries, then idle gives up.
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      await flushNext(scheduler.idle);
+      expect(loadChunk).toHaveBeenCalledTimes(attempt);
+    }
+    expect(scheduler.idle.some((entry) => entry.active)).toBe(false);
+
+    // A demand retries regardless of the budget, and its own failure is answered
+    // at once: one more failure, then the load lands.
+    controller.demand('settings');
+    await vi.waitFor(() => expect(mounted).toEqual(['settings']));
+    expect(loadChunk).toHaveBeenCalledTimes(6);
+    error.mockRestore();
+  });
+
+  it('retries at once for a demand that arrived during a pending attempt, past the idle budget', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const attempts: Array<{ resolve: () => void; reject: () => void }> = [];
+    const loadChunk = vi.fn(
+      () =>
+        new Promise<typeof import('$lib/components/overlayChunk')>((resolve, reject) => {
+          attempts.push({
+            resolve: () =>
+              resolve(overlays as unknown as typeof import('$lib/components/overlayChunk')),
+            reject: () => reject(new Error('chunk fetch failed')),
+          });
+        })
+    );
+    const mounted: BootHiddenOverlayKey[] = [];
+    const controller = mountBootHiddenOverlays((key) => mounted.push(key), loadChunk);
+
+    // Burn the idle budget: the boot attempt and three idle retries all fail.
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      await flushNext(scheduler.idle);
+      attempts[attempt - 1].reject();
+      await Promise.resolve();
+      await Promise.resolve();
+    }
+    expect(loadChunk).toHaveBeenCalledTimes(4);
+    expect(scheduler.idle.some((entry) => entry.active)).toBe(false);
+
+    // A demand starts an attempt; a second demand lands while it is pending.
+    controller.demand('settings');
+    expect(loadChunk).toHaveBeenCalledTimes(5);
+    controller.demand('aiResult');
+    attempts[4].reject();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // The failure answers the waiting demand at once, with no idle slot to wait for.
+    expect(loadChunk).toHaveBeenCalledTimes(6);
+    expect(scheduler.idle.some((entry) => entry.active)).toBe(false);
+    attempts[5].resolve();
+    await vi.waitFor(() => expect(mounted).toEqual(['settings', 'aiWaiting', 'aiResult']));
+    error.mockRestore();
+  });
+
   it('stops idle and import continuations from mounting residents', async () => {
     const mounted: BootHiddenOverlayKey[] = [];
     const controller = mountBootHiddenOverlays((key) => mounted.push(key));

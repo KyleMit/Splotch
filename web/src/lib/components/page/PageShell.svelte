@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount, type Snippet } from 'svelte';
+  import type { Snippet } from 'svelte';
+  import { createHydratedFlag } from '$lib/hydration.svelte';
   import BrandMark from './BrandMark.svelte';
 
   // The chrome every standalone page wears: a ground, a centered sheet, a
@@ -27,11 +28,7 @@
   let { title, wordmark, lede, actions, children }: Props = $props();
   const ledeId = $props.id();
   let ledeOpen = $state(false);
-  let enhanced = $state(false);
-
-  onMount(() => {
-    enhanced = true;
-  });
+  const hydration = createHydratedFlag();
 </script>
 
 <main class="page">
@@ -49,7 +46,7 @@
       <div class="hero-text">
         <h1>{title}</h1>
         {#if lede}
-          {#if enhanced}
+          {#if hydration.hydrated}
             <button
               type="button"
               class="lede-toggle"
@@ -61,7 +58,7 @@
               <span class="lede-chevron" class:open={ledeOpen} aria-hidden="true">›</span>
             </button>
           {/if}
-          <p class="lede" id={ledeId} class:collapsed={enhanced && !ledeOpen}>
+          <p class="lede" id={ledeId} class:collapsed={hydration.hydrated && !ledeOpen}>
             {@render lede()}
           </p>
         {/if}

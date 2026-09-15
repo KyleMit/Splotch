@@ -44,6 +44,7 @@
     type ColoringPackDownloads,
   } from '$lib/boot/coloringPacks';
   import { installSystemBack } from '$lib/boot/systemBack';
+  import { installOverlayDemand } from '$lib/state/overlayDemand';
 
   $effect(() => {
     applyDeviceOrientationPreference(
@@ -104,24 +105,23 @@
     overlays = [...overlays, overlay];
   }
 
-  $effect(() => {
-    if (parentalGateState.open) hiddenOverlays?.demand('parentalGate');
-  });
-  $effect(() => {
-    if (colorPickerModal.open) hiddenOverlays?.demand('colorPicker');
-  });
-  $effect(() => {
-    if (coloringBookModal.open) hiddenOverlays?.demand('coloringBook');
-  });
-  $effect(() => {
-    if (aiPromptModal.open) hiddenOverlays?.demand('aiPrompt');
-  });
-  $effect(() => {
-    if (aiGenerationState.open) hiddenOverlays?.demand('aiResult');
-  });
-  $effect(() => {
-    if (settingsModal.open) hiddenOverlays?.demand('settings');
-  });
+  // An overlay is demanded by the action that opens it (a modal's show(), the
+  // gate opening, an AI run starting — lib/state/overlayDemand.ts). One that is
+  // already open when this route mounts had its action run while no controller
+  // was installed, so the mount reconciles it once, here, rather than watching
+  // every open flag for the life of the route.
+  const OPEN_OVERLAYS: [() => boolean, BootHiddenOverlayKey][] = [
+    [() => parentalGateState.open, 'parentalGate'],
+    [() => colorPickerModal.open, 'colorPicker'],
+    [() => coloringBookModal.open, 'coloringBook'],
+    [() => aiPromptModal.open, 'aiPrompt'],
+    [() => aiGenerationState.open, 'aiResult'],
+    [() => settingsModal.open, 'settings'],
+  ];
+
+  function demandOpenOverlays(controller: BootHiddenOverlays) {
+    for (const [isOpen, key] of OPEN_OVERLAYS) if (isOpen()) controller.demand(key);
+  }
 
   onMount(() => {
     const capturedAccessToken = captureAiAccessTokenFromUrl().catch((err) => {
@@ -136,9 +136,12 @@
 
     const overlayController = mountBootHiddenOverlays(mountHiddenOverlay);
     hiddenOverlays = overlayController;
+    const uninstallOverlayDemand = installOverlayDemand(overlayController.demand);
+    demandOpenOverlays(overlayController);
     const packDownloads = installColoringPackDownloads(settingsReady);
     coloringPackDownloads = packDownloads;
     const teardowns = [
+      uninstallOverlayDemand,
       () => overlayController.stop(),
       installContextMenuGuard(),
       installWakeLock(),

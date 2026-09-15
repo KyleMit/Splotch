@@ -106,3 +106,41 @@ test('disabling Eraser hides its Apple Pencil gesture setting', async ({ page })
   await page.locator('#eraserToggle').click();
   await expect(page.locator('#pencilEraserToggle')).toHaveCount(0);
 });
+
+// Settings can take the menu's brushes away while the menu is open, and a
+// keyboard-driven Settings session never sends the panel the outside pointer
+// that would otherwise close a flyout. The slot the menu held must be released
+// all the same, or the old menu comes back when Settings closes.
+test('a brush menu open under a keyboard Settings session does not return once its brushes come back', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await openBrushMenu(page);
+  await expect(page.locator('.brush-menu')).toBeVisible();
+
+  await page.locator('#settingsButton').focus();
+  await page.keyboard.press('Enter');
+  const modal = page.locator('#settingsModal');
+  await expect(modal).toBeVisible();
+  await retryOpen(page.locator('#crayonToggle'), async () => {
+    await page.getByRole('button', { name: 'Tool Drawer' }).focus();
+    await page.keyboard.press('Enter');
+  });
+
+  for (const toggle of ['#magicBrushToggle', '#eraserToggle', '#eraserToggle']) {
+    await page.locator(toggle).focus();
+    await page.keyboard.press('Space');
+  }
+  await expect(page.locator('#eraserToggle')).toHaveAttribute('aria-pressed', 'true');
+
+  // Escape would also reach the panel's own Escape handler and close the flyout
+  // for a different reason; the header's Close button is the keyboard path that
+  // only closes Settings.
+  await modal.getByRole('button', { name: 'Close' }).first().focus();
+  await page.keyboard.press('Enter');
+  await expect(modal).toBeHidden();
+
+  await expect(page.locator('.brush-menu')).toBeHidden();
+  await expect(page.locator('#penBrushButton')).toBeHidden();
+});
