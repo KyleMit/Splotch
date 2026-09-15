@@ -2,7 +2,6 @@ import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
 import {
   STORAGE_KEYS,
-  onDurableRestore,
   readBool,
   readInt,
   removeKey,
@@ -115,8 +114,6 @@ function resetInstallRepromptCycle() {
 function reloadInstallRepromptState() {
   repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED);
 }
-
-onDurableRestore(reloadInstallRepromptState);
 
 export function installPromptStage(): InstallPromptStage | null {
   if (install.installed) return null;
