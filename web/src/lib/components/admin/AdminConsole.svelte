@@ -152,13 +152,12 @@
   }
 
   // A half-typed code is one admin session's draft, not the next one's: the
-  // component stays mounted across sign-out, so the drafts are cleared here
-  // once the session has actually ended (a failed logout leaves them alone).
+  // component stays mounted across sign-out, so the draft is cleared here once
+  // the session has actually ended (a failed logout leaves it alone).
   function handleLogout() {
     run(async () => {
       await onlogout();
       newToken = '';
-      copied = '';
     });
   }
 </script>
