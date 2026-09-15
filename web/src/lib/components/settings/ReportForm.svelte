@@ -57,20 +57,27 @@
     const text = message.trim();
     if (!text || submitting) return;
 
+    const submission = {
+      kind,
+      message: text,
+      attachDevice: kind === 'bug' && includeDevice,
+      honeypot,
+    };
+
     const { id, signal } = latest.begin();
     status = 'busy';
     feedback = '';
 
-    const attachDevice = kind === 'bug' && includeDevice;
     try {
+      const device = submission.attachDevice ? await fields.ensureDevice() : undefined;
       const res = await fetch(apiUrl('/api/report'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          kind,
-          message: text,
-          device: attachDevice ? await fields.ensureDevice() : undefined,
-          [REPORT_HONEYPOT_FIELD]: honeypot,
+          kind: submission.kind,
+          message: submission.message,
+          device,
+          [REPORT_HONEYPOT_FIELD]: submission.honeypot,
         }),
         signal,
       });
