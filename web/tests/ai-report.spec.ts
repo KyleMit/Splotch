@@ -1,3 +1,5 @@
+import { createServer } from 'node:http';
+import type { AddressInfo, Socket } from 'node:net';
 import { expect, test } from '@playwright/test';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '../src/lib/ai/limits';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
@@ -16,6 +18,32 @@ import {
 // The result modal's own presentation lives in ai-result.spec.ts.
 // Watch it run with:
 //   npm run test:e2e:headed -- ai-report
+
+// Answers with a 200 and the opening bytes of a JSON body, then holds the
+// socket open without finishing it. Bound to an OS-assigned loopback port, so
+// parallel workers and other worktrees never contend for it.
+async function startStalledBodyServer() {
+  const sockets = new Set<Socket>();
+  const server = createServer((request, response) => {
+    request.resume();
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.write('{"ok":');
+  });
+  server.on('connection', (socket) => {
+    sockets.add(socket);
+    socket.on('close', () => sockets.delete(socket));
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${port}/api/report-image`,
+    close: () =>
+      new Promise<void>((resolve) => {
+        for (const socket of sockets) socket.destroy();
+        server.close(() => resolve());
+      }),
+  };
+}
 
 test.describe('AI picture report', () => {
   test('confirms and sends an AI picture report from the result', async ({ page }) => {
@@ -158,6 +186,45 @@ test.describe('AI picture report', () => {
     // The dialog that closed took the focused button with it, so the retry it
     // left behind is where a keyboard user has to land.
     await expect(retry).toBeFocused();
+  });
+
+  // The deadline can also land after the server has answered with headers but
+  // while the body is still arriving: the abort then rejects `response.json()`
+  // rather than `fetch`, a different path through the send than the stall above.
+  //
+  // A `route.fulfill()` delivers its body whole, so it cannot stall one. The
+  // request is instead handed on, unchanged as far as the page can observe, to
+  // a local server that sends the headers and the start of the JSON and then
+  // goes quiet — Chromium's own network stack resolves the fetch, streams the
+  // body, and errors that stream when the deadline aborts it.
+  test('a report whose response body stalls times out into the retry state', async ({ page }) => {
+    test.setTimeout(CLIENT_REQUEST_TIMEOUT_MS * 3);
+    const stall = await startStalledBodyServer();
+    try {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.addInitScript(
+        (key) => localStorage.setItem(key, 'never'),
+        STORAGE_KEYS.parentalGateImageReportMode
+      );
+      await page.route('**/api/report-image', (route) => route.continue({ url: stall.url }));
+      await revealAiResult(page);
+
+      await page.getByRole('button', { name: 'Report this picture' }).click();
+      const confirm = await landedReportConfirm(page);
+      const headersArrived = page.waitForResponse((response) =>
+        response.url().includes('/api/report-image')
+      );
+      await page.getByRole('button', { name: 'Send report' }).click();
+      await headersArrived;
+      await expect(page.getByRole('button', { name: 'Sending…' })).toBeVisible();
+
+      const retry = page.getByRole('button', { name: 'Try again' });
+      await expect(retry).toBeVisible({ timeout: CLIENT_REQUEST_TIMEOUT_MS * 1.5 });
+      await expect(confirm).not.toBeVisible();
+      await expect(page.getByRole('alert')).toContainText('taking too long');
+    } finally {
+      await stall.close();
+    }
   });
 
   // Issue #960: a free-tier picture was unreportable because the client sent an
