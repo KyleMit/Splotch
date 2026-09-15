@@ -9,12 +9,15 @@ Where things live (full file-by-file map: `architecture` skill):
   pointer tracking, public API; callbacks out, direct function calls in — ADR-0004); ops/undo/export
   live in sibling modules (`strokeOps`, `undoHistory`, `exportDrawing` — map in the `architecture`
   skill).
-* `lib/state/` — all shared state, as Svelte 5 rune modules (`*.svelte.ts`). A
-  listening/side-effecting store self-initializes at module load behind a client-only guard —
-  `browser` from `$app/environment`, or a `typeof` probe of the exact global the module is about to
-  touch (`appearance.svelte.ts` probes `matchMedia`/`document`); both spellings are in deliberate
-  use (`docs/audit-deferred/decisions/ssr-guard-idioms.md`) — never behind an exported `initX()` a
-  route must remember to call (see `layout.svelte.ts`, `appearance.svelte.ts`, `network.svelte.ts`,
+* `lib/state/` — all shared state, as Svelte 5 rune modules (`*.svelte.ts`), each one a `createX()`
+  factory over private `$state` returning read-only getters plus named mutators, with one instance
+  (exported when something imports it) and the mutators re-exported by name from it (issue #1920). A
+  listening/side-effecting store exposes `install()`/`dispose()` on its instance and still
+  self-initializes at module load behind a client-only guard — `browser` from `$app/environment`, or
+  a `typeof` probe of the exact global the module is about to touch (`appearance.svelte.ts` probes
+  `matchMedia`/`document`); both spellings are in deliberate use
+  (`docs/audit-deferred/decisions/ssr-guard-idioms.md`) — never behind an exported `initX()` a route
+  must remember to call (see `layout.svelte.ts`, `appearance.svelte.ts`, `network.svelte.ts`,
   `fullscreen.svelte.ts`). `install.svelte.ts` is the one exception: its one-shot
   `beforeinstallprompt` listener must be eager (a deferred listener could miss an event that fires
   before hydration), but its state seeding stays behind `initInstallPrompt()`, called from
@@ -27,8 +30,9 @@ Where things live (full file-by-file map: `architecture` skill):
   unit test with no reactive context. A module's exported reactive singleton is named after the
   module basename plus a kind suffix — a `$state(...)` object or `createX()` instance is
   `<basename>State` (`settingsState`, `aiProgressState`), a modal controller ends in `Modal`
-  (`settingsModal`) — mechanically enough that `tools/tests/state-export-names.test.mjs` enforces it
-  and carries the one second-singleton exception (`parentalGatePoliciesState`).
+  (`settingsModal`) — mechanically enough that `tools/tests/state-export-names.test.mjs` enforces
+  it, one singleton per module. Tests build fresh instances from the factories rather than
+  `vi.resetModules()`.
 * `lib/boot/` — the drawing route's boot steps as named helpers, called in order from
   `routes/+page.svelte`'s `onMount`: `hydrateSettings()`, then `mountBootHiddenOverlays()` (the idle
   overlay pump, ADR-0049), `installContextMenuGuard()`, `installWakeLock()`, `initWebOnlyServices()`

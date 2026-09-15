@@ -28,8 +28,10 @@ import { leaveConfirmModal } from '$lib/state/leaveConfirm';
 import {
   dismissGate,
   parentalGateState,
+  pressGateDigit,
   requireParentalGate,
   setParentalGateMode,
+  submitGateAnswer,
 } from '$lib/state/parentalGate.svelte';
 import { settingsModal } from '$lib/state/ui.svelte';
 import { listenForSystemBack, respondToSystemBack } from './systemBackHandler';
@@ -183,7 +185,11 @@ describe('respondToSystemBack', () => {
     }));
     requireParentalGate('aiImage', () => {});
     await flush();
-    parentalGateState.unlocked = true;
+    for (const digit of String(parentalGateState.x * parentalGateState.y)) {
+      pressGateDigit(Number(digit));
+    }
+    submitGateAnswer();
+    expect(parentalGateState.unlocked).toBe(true);
 
     expect(respondToSystemBack()).toBe('kept-dialog');
     expect(parentalGateState.open).toBe(true);

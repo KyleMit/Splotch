@@ -63,7 +63,7 @@ import {
   settingsState,
 } from '../state/settings.svelte';
 import { hydratePersistedState } from './persistedState';
-import { persistedStateStatus } from './persistedStateStatus.svelte';
+import { createPersistedStateStatus } from './persistedStateStatus.svelte';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -78,7 +78,6 @@ beforeEach(() => {
   // The setters persist; the durable-restore cases want an empty local store.
   localStorage.clear();
   ctrl.native = false;
-  persistedStateStatus.hydrated = false;
   vi.mocked(saveAccessCode)
     .mockReset()
     .mockImplementation(async (value: string) => {
@@ -116,13 +115,14 @@ describe('hydratePersistedState', () => {
     prefsStore.set(STORAGE_KEYS.legacyAiAccessToken, 'retryable-managed-code');
     vi.mocked(saveAccessCode).mockRejectedValueOnce(new Error('secure storage unavailable'));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const status = createPersistedStateStatus();
 
-    await hydratePersistedState();
+    await hydratePersistedState(status);
 
     expect(settingsState.aiAccessToken).toBe('');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-managed-code');
     expect(prefsStore.get(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-managed-code');
-    expect(persistedStateStatus.hydrated).toBe(true);
+    expect(status.hydrated).toBe(true);
     expect(warn).toHaveBeenCalledWith(
       'Secure credential hydration failed',
       expect.objectContaining({ message: 'secure storage unavailable' })

@@ -5,6 +5,7 @@ import { PHONE_LANDSCAPE_QUERY } from './breakpoints';
 import type { SafeAreaInsets } from './platform/safeArea';
 import { layoutState } from './state/layout.svelte';
 import { networkState } from './state/network.svelte';
+import { FREE_GENERATION_LIMIT } from './freeGenerations';
 import { freeGenerationsState } from './state/freeGenerations.svelte';
 import {
   settingsState,
@@ -91,7 +92,7 @@ function resetState() {
   settingsState.mirrorAiAccessToken('');
   settingsState.mirrorAiUserApiKey('');
   networkState.setOnline(true);
-  freeGenerationsState.available = true;
+  freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
 
   device.insets = { top: 0, right: 0, bottom: 0, left: 0 };
   setViewport(1280, 800);
@@ -131,7 +132,7 @@ describe('visibleActionButtonCount', () => {
   });
 
   it('requires a usable free-generation path when no credential is saved', () => {
-    freeGenerationsState.available = false;
+    freeGenerationsState.setFreeGenerationsUnavailable();
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
 
@@ -160,7 +161,7 @@ describe('visibleActionButtonCount', () => {
   });
 
   it('reaches zero when every first-paint action is disabled', () => {
-    freeGenerationsState.available = false;
+    freeGenerationsState.setFreeGenerationsUnavailable();
     setCrayon(false);
     setMagicBrush(false);
     setEraser(false);
@@ -530,7 +531,7 @@ describe('publishActionPanelState', () => {
   });
 
   it('hides the whole panel when no action is visible', () => {
-    freeGenerationsState.available = false;
+    freeGenerationsState.setFreeGenerationsUnavailable();
     setCrayon(false);
     setMagicBrush(false);
     setEraser(false);

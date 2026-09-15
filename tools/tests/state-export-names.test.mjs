@@ -44,15 +44,9 @@ const exportedSingletons = (source) =>
 
 const expectedStateName = (file) => `${basename(file, RUNE_MODULE_SUFFIX)}State`;
 
-// A module that holds a second reactive singleton names it basename + noun + `State`. Only
-// `parentalGate.svelte.ts` does; issue #1920 may fold the policies into `parentalGateState`, and
-// this entry leaves with them.
-const SECOND_SINGLETONS = { 'parentalGate.svelte.ts': ['parentalGatePoliciesState'] };
-
-const conforms = (file, name) =>
-  name === expectedStateName(file) ||
-  name.endsWith('Modal') ||
-  (SECOND_SINGLETONS[file] ?? []).includes(name);
+// One reactive singleton per module: a second store (the parental-gate policies once were one)
+// folds into the module's instance rather than earning a second exported name.
+const conforms = (file, name) => name === expectedStateName(file) || name.endsWith('Modal');
 
 const violations = (file, source) =>
   exportedSingletons(source).filter((name) => !conforms(file, name));
@@ -162,11 +156,8 @@ describe('web/src/lib/state', () => {
     expect(found['ui.svelte.ts']).toContain('settingsModal');
   });
 
-  it('keeps the parentalGate second-singleton exception honest', () => {
-    expect(found['parentalGate.svelte.ts']).toEqual([
-      'parentalGatePoliciesState',
-      'parentalGateState',
-    ]);
+  it('keeps parentalGate on one singleton now that the policies live inside it', () => {
+    expect(found['parentalGate.svelte.ts']).toEqual(['parentalGateState']);
   });
 
   it('names every exported reactive singleton after its module', () => {

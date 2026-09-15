@@ -5,7 +5,7 @@ import { recordSession } from '$lib/state/sessionCounters.svelte';
 import { settingsState } from '$lib/state/settings.svelte';
 import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
-import { persistedStateStatus } from './persistedStateStatus.svelte';
+import { persistedStateStatus, type PersistedStateStatus } from './persistedStateStatus.svelte';
 
 async function hydrateSettingsStores(): Promise<void> {
   // Load the optional saved-photo folder name for display in Settings
@@ -36,14 +36,14 @@ async function hydrateSettingsStores(): Promise<void> {
 // hydration onto its queue and stamps it with a write version, so a boot run and
 // a later Settings open cannot interleave destructively. A module-level promise
 // here would add state this module does not need and would outlive a test.
-async function hydrateCredentials(): Promise<void> {
+async function hydrateCredentials(status: PersistedStateStatus): Promise<void> {
   const hydrations = await Promise.allSettled([hydrateApiKey(), hydrateAiAccessToken()]);
   for (const hydration of hydrations) {
     if (hydration.status === 'rejected') {
       console.warn('Secure credential hydration failed', hydration.reason);
     }
   }
-  persistedStateStatus.hydrated = true;
+  status.markHydrated();
 }
 
 /**
@@ -61,14 +61,18 @@ export async function hydrateSettings(): Promise<void> {
   // Durable hydration must finish before the credential migrations, so a legacy
   // plaintext value that survived only in Preferences can move into secure
   // storage before both plaintext copies are scrubbed.
-  void hydrateCredentials();
+  void hydrateCredentials(persistedStateStatus);
 }
 
 /**
  * Settings *and* credentials. The Settings modal renders the stored key and
  * access code, so it must not open before those have loaded.
  */
-export async function hydratePersistedState(): Promise<void> {
+// `status` is a test seam: the routes always pass the shared flag, and the test
+// hands in a fresh one so a flip from an earlier case cannot satisfy a later one.
+export async function hydratePersistedState(
+  status: PersistedStateStatus = persistedStateStatus
+): Promise<void> {
   await hydrateSettingsStores();
-  await hydrateCredentials();
+  await hydrateCredentials(status);
 }

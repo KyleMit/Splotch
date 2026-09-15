@@ -1,33 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAiGenerationMachine, type AiResultState } from './aiGeneration.svelte';
-
-function createAiResultState(): AiResultState {
-  return {
-    drawing: null,
-    consecutiveFailures: 0,
-    failureDetails: null,
-    generating: false,
-    open: false,
-    minimized: false,
-    resultUrl: null,
-    resultType: null,
-    autoSave: null,
-    previewUrl: null,
-    style: null,
-    reportToken: null,
-    error: null,
-  };
-}
+import { createAiGeneration } from './aiGeneration.svelte';
 
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 });
 
-describe('createAiGenerationMachine', () => {
+describe('createAiGeneration', () => {
   it('gives each machine independent run ownership', () => {
-    const machineA = createAiGenerationMachine(createAiResultState());
-    const machineB = createAiGenerationMachine(createAiResultState());
+    const machineA = createAiGeneration();
+    const machineB = createAiGeneration();
 
     const runA = machineA.startAiGeneration(null);
     const runB = machineB.startAiGeneration(null);
@@ -39,8 +21,8 @@ describe('createAiGenerationMachine', () => {
   });
 
   it('aborts the prior controller and clears its stale UI without letting its end clear the replacement', () => {
-    const resultState = createAiResultState();
-    const machine = createAiGenerationMachine(resultState);
+    const machine = createAiGeneration();
+    const resultState = machine;
     const firstController = new AbortController();
     const firstRun = machine.startAiGeneration('blob:first-preview', firstController, 'Crayon');
     machine.finishAiGeneration(firstRun, 'blob:first-result', 'image/png');
@@ -66,8 +48,8 @@ describe('createAiGenerationMachine', () => {
   });
 
   it('closes the active result and allows a fresh run to start', () => {
-    const resultState = createAiResultState();
-    const machine = createAiGenerationMachine(resultState);
+    const machine = createAiGeneration();
+    const resultState = machine;
     const controller = new AbortController();
     const firstRun = machine.startAiGeneration('blob:preview', controller, 'Paper');
     machine.finishAiGeneration(firstRun, 'blob:result', 'image/webp');
@@ -94,8 +76,8 @@ describe('createAiGenerationMachine', () => {
   });
 
   it('revokes stale preview and result URLs without changing the active run', () => {
-    const resultState = createAiResultState();
-    const machine = createAiGenerationMachine(resultState);
+    const machine = createAiGeneration();
+    const resultState = machine;
     const staleRun = machine.startAiGeneration('blob:first-preview');
     const activeRun = machine.startAiGeneration('blob:active-preview');
 
@@ -114,8 +96,8 @@ describe('createAiGenerationMachine', () => {
   });
 
   it('commits the active result as a successful terminal state', () => {
-    const resultState = createAiResultState();
-    const machine = createAiGenerationMachine(resultState);
+    const machine = createAiGeneration();
+    const resultState = machine;
     const run = machine.startAiGeneration(null, undefined, 'Felt');
 
     expect(machine.finishAiGeneration(run, 'blob:result', 'image/jpeg')).toBe(true);
@@ -127,8 +109,8 @@ describe('createAiGenerationMachine', () => {
   });
 
   it('commits an active failure with its message and kind', () => {
-    const resultState = createAiResultState();
-    const machine = createAiGenerationMachine(resultState);
+    const machine = createAiGeneration();
+    const resultState = machine;
     const run = machine.startAiGeneration(null);
 
     machine.failAiGeneration(run, 'Try again', 'retry');
@@ -138,8 +120,8 @@ describe('createAiGenerationMachine', () => {
   });
 
   it('records the auto-save outcome only for the owning run and clears it on the next', () => {
-    const resultState = createAiResultState();
-    const machine = createAiGenerationMachine(resultState);
+    const machine = createAiGeneration();
+    const resultState = machine;
     const staleRun = machine.startAiGeneration(null);
     const run = machine.startAiGeneration(null);
     machine.finishAiGeneration(run, 'blob:result', 'image/png');
@@ -153,8 +135,8 @@ describe('createAiGenerationMachine', () => {
   });
 
   it('keeps a report token only when a reportable failure supplies one', () => {
-    const resultState = createAiResultState();
-    const machine = createAiGenerationMachine(resultState);
+    const machine = createAiGeneration();
+    const resultState = machine;
     const run = machine.startAiGeneration(null);
 
     machine.failAiGeneration(run, 'Draw something else', 'safety', 'signed-refusal-token');
@@ -166,8 +148,8 @@ describe('createAiGenerationMachine', () => {
 
 describe('minimizing a waiting generation', () => {
   it('keeps the run alive so the picture can still be delivered into it', () => {
-    const state = createAiResultState();
-    const machine = createAiGenerationMachine(state);
+    const machine = createAiGeneration();
+    const state = machine;
     const id = machine.startAiGeneration(null);
 
     machine.minimizeAiResult();
@@ -180,8 +162,8 @@ describe('minimizing a waiting generation', () => {
   });
 
   it('refuses to minimize a result there is already something to look at', () => {
-    const state = createAiResultState();
-    const machine = createAiGenerationMachine(state);
+    const machine = createAiGeneration();
+    const state = machine;
     const id = machine.startAiGeneration(null);
     machine.finishAiGeneration(id, 'blob:done', 'image/png');
 
@@ -190,8 +172,8 @@ describe('minimizing a waiting generation', () => {
   });
 
   it('restores, and clears the flag when the run is closed or a new one starts', () => {
-    const state = createAiResultState();
-    const machine = createAiGenerationMachine(state);
+    const machine = createAiGeneration();
+    const state = machine;
     machine.startAiGeneration(null);
 
     machine.minimizeAiResult();
@@ -211,8 +193,8 @@ describe('minimizing a waiting generation', () => {
 
 describe('consecutive generation failures', () => {
   it('retains failures across retries and resets them on success and close', () => {
-    const state = createAiResultState();
-    const machine = createAiGenerationMachine(state);
+    const machine = createAiGeneration();
+    const state = machine;
     const first = machine.startAiGeneration(null);
     machine.failAiGeneration(first, undefined, 'retry');
     expect(state.consecutiveFailures).toBe(1);
@@ -228,8 +210,8 @@ describe('consecutive generation failures', () => {
   });
 
   it('ignores stale failures and clears the streak on a safety refusal', () => {
-    const state = createAiResultState();
-    const machine = createAiGenerationMachine(state);
+    const machine = createAiGeneration();
+    const state = machine;
     const first = machine.startAiGeneration(null);
     machine.failAiGeneration(first, undefined, 'retry');
     const second = machine.startAiGeneration(null);
@@ -240,8 +222,8 @@ describe('consecutive generation failures', () => {
   });
 
   it('retains only the owning drawing and releases it when closed', () => {
-    const state = createAiResultState();
-    const machine = createAiGenerationMachine(state);
+    const machine = createAiGeneration();
+    const state = machine;
     const first = machine.startAiGeneration(null);
     const second = machine.startAiGeneration(null);
     const drawing = new Blob(['drawing']);

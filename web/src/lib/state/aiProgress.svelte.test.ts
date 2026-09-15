@@ -1,6 +1,6 @@
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAiGenerationMachine, type AiResultState } from './aiGeneration.svelte';
+import { createAiGeneration } from './aiGeneration.svelte';
 import { createAiProgress } from './aiProgress.svelte';
 
 const ESTIMATE_MS = 30_000;
@@ -28,22 +28,8 @@ function pendingFrames() {
 }
 
 function createHarness() {
-  const state: AiResultState = $state({
-    drawing: null,
-    consecutiveFailures: 0,
-    failureDetails: null,
-    generating: false,
-    open: false,
-    minimized: false,
-    resultUrl: null,
-    resultType: null,
-    autoSave: null,
-    previewUrl: null,
-    style: null,
-    reportToken: null,
-    error: null,
-  });
-  const machine = createAiGenerationMachine(state);
+  const machine = createAiGeneration();
+  const state = machine;
   const progress = createAiProgress(state, ESTIMATE_MS);
   progress.install();
   return { state, machine, progress, destroy: progress.dispose };
