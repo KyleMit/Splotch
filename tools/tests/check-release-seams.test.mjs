@@ -50,6 +50,7 @@ it('derives every current window seam and engine measure family', () => {
     '__bundledCaptureReport',
     '__committedBrushMode',
     '__drawingDebug',
+    '__prepareRefusedAiKeyForget',
     '__probe',
     '__replayStroke',
     '__screenshotSaveSink',
