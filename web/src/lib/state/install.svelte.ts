@@ -1,13 +1,6 @@
 import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
-import {
-  STORAGE_KEYS,
-  readBool,
-  readInt,
-  removeKey,
-  writeBool,
-  writeInt,
-} from '$lib/storage';
+import { STORAGE_KEYS, readBool, readInt, removeKey, writeBool, writeInt } from '$lib/storage';
 import { canvasState, SETTLED_IN_STROKES } from './canvas.svelte';
 import {
   clearSessionCount,
