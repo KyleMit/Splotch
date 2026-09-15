@@ -115,7 +115,7 @@
     [() => colorPickerModal.open, 'colorPicker'],
     [() => coloringBookModal.open, 'coloringBook'],
     [() => aiPromptModal.open, 'aiPrompt'],
-    [() => aiGenerationState.open, 'aiResult'],
+    [() => aiGenerationState.phase.kind !== 'closed', 'aiResult'],
     [() => settingsModal.open, 'settings'],
   ];
 

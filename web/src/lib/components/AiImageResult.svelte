@@ -7,7 +7,7 @@
   import Button from './design/Button.svelte';
   import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
   import { closeAiResult, minimizeAiResult } from '$lib/state/aiGeneration.svelte';
-  import AiErrorCard from './AiErrorCard.svelte';
+  import AiResultError from './AiResultError.svelte';
   import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -24,14 +24,20 @@
   // generation that finishes while minimized is revealed before this dialog is
   // ever shown again, so restoring it lands on the picture, not on the dial.
   const revealed = $derived(aiProgressState.revealed);
-  const loading = $derived(aiGenerationState.open && !revealed && !aiGenerationState.error);
+  const phase = $derived(aiGenerationState.phase);
+  const open = $derived(phase.kind !== 'closed');
+  const generating = $derived(phase.kind === 'generating');
+  // The two phases with something to show, narrowed once so the markup below
+  // reads their fields without re-checking the kind.
+  const result = $derived(phase.kind === 'result' ? phase : null);
+  const aiError = $derived(phase.kind === 'error' ? phase : null);
+  const loading = $derived(open && !revealed && !aiError);
+  const serverError = $derived(!!aiError && aiError.errorKind !== 'safety');
   // The window in which leaving is a real offer: once the picture has landed
   // there is nothing to go back to the canvas for, and minimizing a finished
   // result would be a way to lose it (ADR-0116).
-  const aiError = $derived(aiGenerationState.error);
-  const serverError = $derived(!!aiError && aiError.kind !== 'safety');
-  const waiting = $derived(loading && aiGenerationState.generating);
-  const footer = $derived(autoSaveFooter(aiGenerationState.autoSave));
+  const waiting = $derived(loading && generating);
+  const footer = $derived(autoSaveFooter(result?.autoSave ?? null));
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
   let reportOrigin = $state<Origin | null>(null);
@@ -58,15 +64,13 @@
   // so the placeholder box closely matches the preview that slots in a beat later.
   let imgAspect = $state(DEFAULT_ASPECT);
   $effect(() => {
-    if (aiGenerationState.open && aiGenerationState.generating) {
-      if (window.innerHeight > 0) {
-        imgAspect = window.innerWidth / window.innerHeight;
-      }
+    if (generating && window.innerHeight > 0) {
+      imgAspect = window.innerWidth / window.innerHeight;
     }
   });
 
   $effect(() => {
-    if (!aiGenerationState.open || aiGenerationState.generating) {
+    if (!open || generating) {
       exiting = false;
       reportStatus = 'idle';
     }
@@ -76,8 +80,8 @@
   const cardStyle = $derived(`--result-aspect: ${imgAspect.toFixed(4)};`);
 
   function handleDownload() {
-    if (!aiGenerationState.resultUrl || exiting) return;
-    downloadAiResult(aiGenerationState.resultUrl, aiGenerationState.resultType);
+    if (!result || exiting) return;
+    downloadAiResult(result.url, result.type);
 
     // Morph the modal into a polaroid, hold it in the center, then let it fly
     // off to the bottom-left. The fly-out animation's end dismisses the modal.
@@ -100,18 +104,18 @@
   class="ai-result-modal modal-dialog modal-shell"
   class:polaroid-mode={exiting}
   class:autosave={settingsState.autoSaveAiEnabled}
-  class:errored={!!aiGenerationState.error}
+  class:errored={!!aiError}
   class:serverError
   class:loading
   class:waiting
   style={cardStyle}
   bind:this={dialogEl}
   use:modalDialog={() => ({
-    open: aiGenerationState.open && !aiGenerationState.minimized,
+    open: open && !aiGenerationState.minimized,
     // While the picture is still being made, dismissing tucks it into the corner
     // rather than throwing away an in-flight request the child can't get back
     // (ADR-0116). Once there is something to look at, dismissing means dismissing.
-    onRequestClose: () => (aiGenerationState.generating ? minimizeAiResult() : closeAiResult()),
+    onRequestClose: () => (generating ? minimizeAiResult() : closeAiResult()),
     allowDismiss: () => true,
     // During the polaroid send-off the modal is animating away; swallow stray
     // backdrop taps without dismissing (the fly-out's end closes it).
@@ -121,54 +125,20 @@
 >
   <DialogHeader
     closeClass="ai-result-close"
-    closeLabel={aiGenerationState.generating ? 'Keep drawing while this is made' : 'Close'}
-    onclose={() => (aiGenerationState.generating ? minimizeAiResult() : closeAiResult())}
+    closeLabel={generating ? 'Keep drawing while this is made' : 'Close'}
+    onclose={() => (generating ? minimizeAiResult() : closeAiResult())}
   />
   <div class="ai-result-content">
-    {#if aiGenerationState.error}
-      {@const safety = aiGenerationState.error.kind === 'safety'}
-      <div class="ai-result-error" class:safety>
-        {#if safety}
-          <p>{aiGenerationState.error.message}</p>
-          <p class="ai-result-error-sub">
-            That picture didn't work — try drawing something different!
-          </p>
-          <div class="ai-refusal-report">
-            <span class="ai-refusal-report-label" id="refusalReportAudience">For grown-ups</span>
-            {#if !reportSettled}
-              <Button
-                size="md"
-                aria-describedby="refusalReportAudience"
-                onclick={requestReport}
-                disabled={!aiGenerationState.previewUrl}>Report this refusal</Button
-              >
-            {/if}
-            <AiImageReport
-              kind="false-positive-refusal"
-              drawingUrl={aiGenerationState.previewUrl}
-              outputUrl={null}
-              style={aiGenerationState.style}
-              reportToken={aiGenerationState.reportToken}
-              origin={reportOrigin}
-              bind:status={reportStatus}
-            />
-          </div>
-        {:else}
-          <AiErrorCard>
-            <AiImageReport
-              kind="generation-error"
-              drawingUrl={null}
-              outputUrl={null}
-              style={aiGenerationState.style}
-              reportToken={null}
-              failure={aiGenerationState.failureDetails}
-              attempts={aiGenerationState.consecutiveFailures}
-              origin={reportOrigin}
-              bind:status={reportStatus}
-            />
-          </AiErrorCard>
-        {/if}
-      </div>
+    {#if aiError}
+      <AiResultError
+        error={aiError}
+        previewUrl={aiGenerationState.previewUrl}
+        style={aiGenerationState.style}
+        attempts={aiGenerationState.consecutiveFailures}
+        {reportOrigin}
+        onRequestReport={requestReport}
+        bind:status={reportStatus}
+      />
     {:else}
       <AiResultStage {exiting} onaspect={(aspect) => (imgAspect = aspect)} />
 
@@ -188,7 +158,7 @@
         </div>
       {/if}
 
-      {#if revealed && aiGenerationState.resultUrl}
+      {#if revealed && result}
         <div class="ai-result-footer">
           {#if footer?.kind === 'saved'}
             <p class="ai-result-saved">✓ {footer.caption}</p>
@@ -200,9 +170,9 @@
           {/if}
           <AiImageReport
             drawingUrl={aiGenerationState.previewUrl}
-            outputUrl={aiGenerationState.resultUrl}
+            outputUrl={result.url}
             style={aiGenerationState.style}
-            reportToken={aiGenerationState.reportToken}
+            reportToken={result.reportToken}
             origin={reportOrigin}
             bind:status={reportStatus}
           />
@@ -215,7 +185,7 @@
        of the chrome (.polaroid-mode below) instead of vanishing on the first frame. -->
   {#if serverError && !reportSettled}
     <AiResultDisclosure kind="problem" onclick={requestReport} />
-  {:else if revealed && aiGenerationState.resultUrl && !reportSettled}
+  {:else if revealed && result && !reportSettled}
     <AiResultDisclosure onclick={requestReport} disabled={!aiGenerationState.previewUrl} />
   {/if}
 </dialog>
@@ -381,30 +351,6 @@
     font-weight: var(--font-weight-bold);
   }
 
-  /* ── Error state ── */
-  .ai-result-error {
-    width: min(86vw, 380px);
-    min-height: 240px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    text-align: center;
-    color: var(--text);
-  }
-  .ai-result-error p {
-    margin: 0;
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
-  }
-  .ai-result-error p.ai-result-error-sub {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-soft);
-    max-width: 280px;
-  }
-
   .ai-result-modal.serverError {
     width: min(var(--result-max-w), 400px);
   }
@@ -414,34 +360,6 @@
     max-height: var(--result-card-max-h);
     overflow-y: auto;
     border-radius: inherit;
-  }
-
-  .serverError .ai-result-error {
-    width: 100%;
-    min-height: 0;
-    height: auto;
-    flex-shrink: 0;
-    gap: 0;
-  }
-
-  .ai-refusal-report {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-1);
-  }
-
-  .ai-refusal-report-label {
-    color: var(--text-soft);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-  }
-
-  /* Keep this adult-only secondary action quieter than a primary `lg` decision
-     while preserving the app's minimum touch target. */
-  .ai-refusal-report :global(.btn) {
-    min-height: 44px;
   }
 
   /* ── Saved caption (auto-save mode, replaces the Download button) ── */
@@ -561,14 +479,6 @@
     .ai-result-modal.polaroid-mode {
       transition: none;
       animation: ai-polaroid-fly 0.4s 0.5s ease forwards;
-    }
-  }
-
-  /* Very short viewports: shrink the error art so it still fits. */
-  @media (max-height: 480px) {
-    .ai-result-error {
-      min-height: 0;
-      height: calc(94vh - 96px);
     }
   }
 </style>

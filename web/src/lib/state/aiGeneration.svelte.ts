@@ -10,35 +10,55 @@ export interface AiFailureDetails {
   message: string;
 }
 
+// 'safety'  — the model refused the drawing; guide the child to draw something else.
+// 'retry'   — a transient failure (timeout, server); the same drawing may work.
+// 'generic' — anything else.
 type AiErrorKind = 'generic' | 'safety' | 'retry';
 
 export type AiAutoSave = { status: 'saving' } | SaveResult;
 
+// Where a run is. One value, so a result and an error cannot both be on
+// screen, a picture cannot exist while generating, and every consumer branches
+// on `kind` rather than re-deriving the phase from a handful of fields.
+type AiPhase =
+  | { kind: 'closed' }
+  | { kind: 'generating' }
+  | {
+      kind: 'result';
+      url: string;
+      type: string;
+      // Proof this AI attempt ran on this server, spent by the report flow.
+      // Null on the BYOK and managed paths, which carry their own credential.
+      reportToken: string | null;
+      // Where auto-save put the finished picture, so the result card only claims
+      // what happened. Null when no auto-save ran for this run.
+      autoSave: AiAutoSave | null;
+    }
+  | {
+      kind: 'error';
+      errorKind: AiErrorKind;
+      message: string | null;
+      // Safety refusals receive the same proof as a picture, without persisting evidence.
+      reportToken: string | null;
+      details: AiFailureDetails | null;
+    };
+
+// The phase the result card's error section renders; exported for its props.
+export type AiErrorPhase = Extract<AiPhase, { kind: 'error' }>;
+
 export interface AiResultState {
-  readonly drawing: Blob | null;
-  readonly consecutiveFailures: number;
-  readonly failureDetails: AiFailureDetails | null;
-  readonly generating: boolean;
-  readonly open: boolean;
+  readonly phase: AiPhase;
   // Tucked into the corner so the child can keep drawing while the picture is
-  // made (ADR-0116). The run is untouched — `open` stays true, which is what
-  // keeps finishAiGeneration willing to deliver into it.
+  // made (ADR-0116). The run is untouched — the phase stays 'generating', which
+  // is what keeps finishAiGeneration willing to deliver into it.
   readonly minimized: boolean;
-  readonly resultUrl: string | null;
-  readonly resultType: string | null;
-  // Where auto-save put the finished picture, so the result card only claims what happened.
-  // Null when no auto-save ran for this run, whatever the setting says now.
-  readonly autoSave: AiAutoSave | null;
+  readonly consecutiveFailures: number;
+  // The run's own inputs, kept beside the phase because they outlive it within
+  // the run: the drawing a retry resends, the preview shown behind the dial and
+  // the result alike, and the style the picture was asked for.
+  readonly drawing: Blob | null;
   readonly previewUrl: string | null;
   readonly style: StyleName | null;
-  // Proof this AI attempt ran on this server, spent by the report flow. Safety
-  // refusals receive the same proof without persisting evidence.
-  // Null on the BYOK and managed paths, which carry their own credential.
-  readonly reportToken: string | null;
-  // 'safety'  — the model refused the drawing; guide the child to draw something else.
-  // 'retry'   — a transient failure (timeout, server); the same drawing may work.
-  // 'generic' — anything else.
-  readonly error: { kind: AiErrorKind; message: string | null } | null;
 }
 
 interface AiGenerationMachine {
@@ -87,92 +107,57 @@ function swapObjectUrl(prev: string | null, next: string | null = null): string 
 
 export function createAiGeneration(): AiGenerationState {
   const s = $state<{
-    drawing: Blob | null;
-    consecutiveFailures: number;
-    failureDetails: AiFailureDetails | null;
-    generating: boolean;
-    open: boolean;
+    phase: AiPhase;
     minimized: boolean;
-    resultUrl: string | null;
-    resultType: string | null;
-    autoSave: AiAutoSave | null;
+    consecutiveFailures: number;
+    drawing: Blob | null;
     previewUrl: string | null;
     style: StyleName | null;
-    reportToken: string | null;
-    error: { kind: AiErrorKind; message: string | null } | null;
   }>({
-    drawing: null,
-    consecutiveFailures: 0,
-    failureDetails: null,
-    generating: false,
-    open: false,
+    phase: { kind: 'closed' },
     minimized: false,
-    resultUrl: null,
-    resultType: null,
-    autoSave: null,
+    consecutiveFailures: 0,
+    drawing: null,
     previewUrl: null,
     style: null,
-    reportToken: null,
-    error: null,
   });
 
   // Deliberately untracked: run ownership that nothing renders.
   let nextAiGenerationId = 0;
   let activeAiGeneration: ActiveAiGeneration | null = null;
 
-  function resetAiRunUi(previewUrl: string | null) {
-    s.previewUrl = swapObjectUrl(s.previewUrl, previewUrl);
-    s.resultUrl = swapObjectUrl(s.resultUrl);
-    s.resultType = null;
-    s.autoSave = null;
-    s.reportToken = null;
-    s.error = null;
-    s.failureDetails = null;
-  }
-
   function isAiGenerationActive(id: number): boolean {
     return activeAiGeneration?.id === id;
   }
 
+  function open(): boolean {
+    return s.phase.kind !== 'closed';
+  }
+
+  // Leaving the result phase releases its picture; nothing else holds an object URL.
+  function leavePhase(next: AiPhase) {
+    if (s.phase.kind === 'result') swapObjectUrl(s.phase.url);
+    s.phase = next;
+  }
+
   return {
-    get drawing() {
-      return s.drawing;
-    },
-    get consecutiveFailures() {
-      return s.consecutiveFailures;
-    },
-    get failureDetails() {
-      return s.failureDetails;
-    },
-    get generating() {
-      return s.generating;
-    },
-    get open() {
-      return s.open;
+    get phase() {
+      return s.phase;
     },
     get minimized() {
       return s.minimized;
     },
-    get resultUrl() {
-      return s.resultUrl;
+    get consecutiveFailures() {
+      return s.consecutiveFailures;
     },
-    get resultType() {
-      return s.resultType;
-    },
-    get autoSave() {
-      return s.autoSave;
+    get drawing() {
+      return s.drawing;
     },
     get previewUrl() {
       return s.previewUrl;
     },
     get style() {
       return s.style;
-    },
-    get reportToken() {
-      return s.reportToken;
-    },
-    get error() {
-      return s.error;
     },
     // Open the result modal in its loading state. `previewUrl` is an object URL of
     // the child's own drawing — shown blurred behind the progress dial while the
@@ -181,12 +166,11 @@ export function createAiGeneration(): AiGenerationState {
       activeAiGeneration?.controller.abort();
       const id = ++nextAiGenerationId;
       activeAiGeneration = { id, controller };
-      resetAiRunUi(previewUrl);
+      s.previewUrl = swapObjectUrl(s.previewUrl, previewUrl);
       s.drawing = null;
       s.minimized = false;
       s.style = style;
-      s.generating = true;
-      s.open = true;
+      leavePhase({ kind: 'generating' });
       demandOverlay('aiResult');
       return id;
     },
@@ -198,51 +182,51 @@ export function createAiGeneration(): AiGenerationState {
     // modal was opened ahead of the canvas export (so the spinner launches on tap),
     // then the preview arrives a beat later.
     setAiPreview(id, previewUrl) {
-      if (!isAiGenerationActive(id) || !s.open) {
+      if (!isAiGenerationActive(id) || !open()) {
         URL.revokeObjectURL(previewUrl);
         return;
       }
       s.previewUrl = swapObjectUrl(s.previewUrl, previewUrl);
     },
     setAiDrawing(id, drawing) {
-      if (isAiGenerationActive(id) && s.open) s.drawing = drawing;
+      if (isAiGenerationActive(id) && open()) s.drawing = drawing;
     },
     // The finished image has arrived — hand it to the modal so the dial can race to
     // completion and reveal it.
     finishAiGeneration(id, url, imageType, reportToken = null) {
-      if (!isAiGenerationActive(id) || !s.open) {
+      if (!isAiGenerationActive(id) || !open()) {
         URL.revokeObjectURL(url);
         return false;
       }
       s.consecutiveFailures = 0;
       s.drawing = null;
-      s.resultUrl = swapObjectUrl(s.resultUrl, url);
-      s.resultType = imageType;
-      s.reportToken = reportToken;
-      s.generating = false;
+      leavePhase({ kind: 'result', url, type: imageType, reportToken, autoSave: null });
       return true;
     },
     setAiAutoSave(id, autoSave) {
-      if (isAiGenerationActive(id) && s.open) s.autoSave = autoSave;
+      if (!isAiGenerationActive(id) || s.phase.kind !== 'result') return;
+      s.phase = { ...s.phase, autoSave };
     },
     failAiGeneration(id, message, kind = 'generic', reportToken = null, details = null) {
-      if (!isAiGenerationActive(id) || !s.open) return;
-      s.generating = false;
-      s.reportToken = reportToken;
-      s.error = { kind, message: message ?? null };
+      if (!isAiGenerationActive(id) || !open()) return;
       s.consecutiveFailures = kind === 'safety' ? 0 : s.consecutiveFailures + 1;
-      s.failureDetails = details;
+      leavePhase({
+        kind: 'error',
+        errorKind: kind,
+        message: message ?? null,
+        reportToken,
+        details,
+      });
     },
     closeAiResult() {
       activeAiGeneration?.controller.abort();
       activeAiGeneration = null;
-      s.open = false;
-      s.generating = false;
+      leavePhase({ kind: 'closed' });
       s.minimized = false;
       s.style = null;
       s.drawing = null;
       s.consecutiveFailures = 0;
-      resetAiRunUi(null);
+      s.previewUrl = swapObjectUrl(s.previewUrl);
     },
     /**
      * Send the waiting modal to the corner. Only meaningful while a picture is
@@ -250,7 +234,7 @@ export function createAiGeneration(): AiGenerationState {
      * dismissing.
      */
     minimizeAiResult() {
-      if (!s.open || !s.generating) return;
+      if (s.phase.kind !== 'generating') return;
       s.minimized = true;
     },
     restoreAiResult() {

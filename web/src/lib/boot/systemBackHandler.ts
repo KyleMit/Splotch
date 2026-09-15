@@ -33,7 +33,7 @@ function dialogRequested(): boolean {
     coloringBookModal.open ||
     aiPromptModal.open ||
     parentalGateState.open ||
-    (aiGenerationState.open && !aiGenerationState.minimized) ||
+    (aiGenerationState.phase.kind !== 'closed' && !aiGenerationState.minimized) ||
     leaveConfirmModal.open
   );
 }

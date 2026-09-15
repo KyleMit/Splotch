@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { actionPanelEvents } from '$lib/actions/actionPanelEvents';
+  import { unreachable } from '$lib/unreachable';
   import { drawerCascade } from '$lib/actions/drawerCascade';
   import Icon from './Icon.svelte';
   import ColorControl from './ColorControl.svelte';
@@ -83,9 +84,29 @@
   // button is still live: it is what reveals the run again, so it must not be
   // disabled by the same flag that stops a second one being started. An empty
   // canvas cannot block it either — the drawing was already sent.
+  const aiGenerating = $derived(aiGenerationState.phase.kind === 'generating');
   const aiImageButtonBlocked = $derived(
-    aiGenerationState.minimized ? false : canvasState.canvasEmpty || aiGenerationState.generating
+    aiGenerationState.minimized ? false : canvasState.canvasEmpty || aiGenerating
   );
+
+  // What a tap on the AI button does while a run waits in the corner: it shows
+  // that run again, and the label says what it will find there.
+  const minimizedRunLabel = $derived.by((): string | null => {
+    if (!aiGenerationState.minimized) return null;
+    const phase = aiGenerationState.phase;
+    switch (phase.kind) {
+      case 'generating':
+        return 'Show the picture being made';
+      case 'error':
+        return "Show what didn't work";
+      case 'result':
+        return 'Show your finished picture';
+      case 'closed':
+        return null;
+      default:
+        return unreachable(phase);
+    }
+  });
 
   // The drawer expands per its remembered open state; the whole panel, chevron
   // included, is gone instead while no control is left to show (the
@@ -331,7 +352,7 @@
       restoreAiResult();
       return;
     }
-    if (aiGenerationState.generating || canvasState.canvasEmpty || !aiBtnEl) return;
+    if (aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
     const origin = buttonCenter(aiBtnEl);
     requireParentalGate(
@@ -466,15 +487,11 @@
       <button
         class="action-button"
         class:disabled={aiImageButtonBlocked}
-        class:loading={aiGenerationState.generating && !aiGenerationState.minimized}
+        class:loading={aiGenerating && !aiGenerationState.minimized}
         id="aiImageButton"
         style:--i="4"
-        aria-label={aiGenerationState.minimized
-          ? aiGenerationState.generating
-            ? 'Show the picture being made'
-            : aiGenerationState.error
-              ? "Show what didn't work"
-              : 'Show your finished picture'
+        aria-label={minimizedRunLabel
+          ? minimizedRunLabel
           : settingsState.aiUserApiKey || settingsState.aiAccessToken
             ? 'Create AI image'
             : freeGenerationsState.available && freeGenerationsState.remaining > 0
@@ -482,16 +499,14 @@
               : freeGenerationsState.available
                 ? 'Set up AI image'
                 : 'Create AI image'}
-        aria-busy={aiGenerationState.generating && !aiGenerationState.minimized}
+        aria-busy={aiGenerating && !aiGenerationState.minimized}
         disabled={aiImageButtonBlocked}
         hidden={!aiImageButtonVisible}
         use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >
         <Icon
-          name={aiGenerationState.generating && !aiGenerationState.minimized
-            ? 'loading'
-            : 'wand-stars'}
+          name={aiGenerating && !aiGenerationState.minimized ? 'loading' : 'wand-stars'}
           class="action-icon"
         />
         {#if !settingsState.aiUserApiKey && !settingsState.aiAccessToken && freeGenerationsState.available && !storeCapture}
