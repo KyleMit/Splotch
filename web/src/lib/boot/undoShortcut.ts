@@ -3,8 +3,8 @@ import { undo } from '$lib/drawing/engine';
 
 function isNativeUndoTarget(target: EventTarget | null) {
   return (
-    target instanceof Element &&
-    target.closest('input, textarea, [contenteditable], dialog[open]') !== null
+    document.querySelector('dialog[open]') !== null ||
+    (target instanceof Element && target.closest('input, textarea, [contenteditable]') !== null)
   );
 }
 

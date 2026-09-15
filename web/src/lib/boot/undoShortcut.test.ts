@@ -97,6 +97,26 @@ it('leaves native undo to descendants of contenteditable regions', () => {
 it('ignores the shortcut anywhere inside an open dialog', () => {
   const dialog = document.createElement('dialog');
   dialog.setAttribute('open', '');
+  document.body.append(dialog);
+  teardown = installUndoShortcut();
+
+  pressCtrlZFrom(document.body);
+
+  expect(undo).not.toHaveBeenCalled();
+});
+
+it('undoes from an ordinary page control', () => {
+  const target = document.createElement('button');
+  document.body.append(target);
+  teardown = installUndoShortcut();
+
+  pressCtrlZFrom(target);
+
+  expect(undo).toHaveBeenCalledTimes(1);
+});
+
+it('undoes from a control inside a closed dialog', () => {
+  const dialog = document.createElement('dialog');
   const target = document.createElement('button');
   dialog.append(target);
   document.body.append(dialog);
@@ -104,7 +124,7 @@ it('ignores the shortcut anywhere inside an open dialog', () => {
 
   pressCtrlZFrom(target);
 
-  expect(undo).not.toHaveBeenCalled();
+  expect(undo).toHaveBeenCalledTimes(1);
 });
 
 it('stops handling keydown after teardown', () => {
