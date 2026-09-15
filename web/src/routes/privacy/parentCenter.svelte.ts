@@ -1,4 +1,5 @@
 import type { Component } from 'svelte';
+import { waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
 import { parentalGateLink } from '$lib/actions/parentalGateLink';
 import { createSingleFlight } from '$lib/singleFlight';
 import type { Origin } from '$lib/state/modal.svelte';
@@ -60,7 +61,15 @@ export function createPrivacyParentCenter() {
   }
 
   $effect(() => {
-    if (managingPolicies && !settingsModal.open) managingPolicies = false;
+    if (!managingPolicies || settingsModal.open) return;
+    const dialog = document.querySelector<HTMLDialogElement>('#settingsModal');
+    if (!dialog) {
+      managingPolicies = false;
+      return;
+    }
+    void waitForDialogRetirement(dialog).then(() => {
+      if (!settingsModal.open) managingPolicies = false;
+    });
   });
 
   $effect(() => {
