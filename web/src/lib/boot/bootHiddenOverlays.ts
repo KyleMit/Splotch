@@ -34,14 +34,26 @@ export interface BootHiddenOverlays {
   stop(): void;
 }
 
+// A failed chunk fetch is retried explicitly rather than by whatever happens to
+// re-run a demand: each failure re-arms one idle attempt, this many times, and a
+// demand meanwhile retries at once (the memo resets on rejection). Past the
+// limit only a demand retries, so a dead connection stops costing idle time.
+const OVERLAY_CHUNK_IDLE_RETRY_LIMIT = 3;
+
+type OverlayCatalogLoader = () => Promise<OverlayCatalog>;
+
 // The boot-hidden overlays (see components/overlayChunk.ts) stay in one lazy
 // chunk so startup never evaluates their component graph (ADR-0049). Demand
 // mounts a requested resident as soon as that catalog is available; unrelated
 // residents mount one at a time only after interaction has gone quiet.
+// `loadChunk` is a test seam: the route always takes the default import, and the
+// test hands in a loader it can fail on purpose to exercise the retry.
 export function mountBootHiddenOverlays(
-  onOverlay: (key: BootHiddenOverlayKey, overlay: Component) => void
+  onOverlay: (key: BootHiddenOverlayKey, overlay: Component) => void,
+  loadChunk: OverlayCatalogLoader = () => import('$lib/components/overlayChunk')
 ): BootHiddenOverlays {
   let stopped = false;
+  let idleRetriesLeft = OVERLAY_CHUNK_IDLE_RETRY_LIMIT;
   let catalog: OverlayCatalog | null = null;
   let catalogPromise: Promise<OverlayCatalog> | null = null;
   let cancelBootIdle = () => {};
@@ -82,7 +94,7 @@ export function mountBootHiddenOverlays(
   }
 
   function loadCatalog(): Promise<OverlayCatalog> {
-    catalogPromise ??= import('$lib/components/overlayChunk')
+    catalogPromise ??= loadChunk()
       .then((module) => {
         if (stopped) return module;
         catalog = module;
@@ -93,6 +105,13 @@ export function mountBootHiddenOverlays(
       .catch((err) => {
         catalogPromise = null;
         console.error('Boot-hidden overlay chunk failed to load:', err);
+        if (!stopped && idleRetriesLeft > 0) {
+          idleRetriesLeft -= 1;
+          cancelBootIdle();
+          cancelBootIdle = scheduleIdle(() => {
+            void loadCatalog().catch(() => {});
+          });
+        }
         throw err;
       });
     return catalogPromise;

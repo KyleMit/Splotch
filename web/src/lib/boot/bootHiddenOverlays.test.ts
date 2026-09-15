@@ -116,6 +116,41 @@ describe('mountBootHiddenOverlays', () => {
     await vi.waitFor(() => expect(mounted).toEqual(['aiWaiting', 'aiResult']));
   });
 
+  it('retries a failed chunk load at idle, a bounded number of times, and at once on demand', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let failuresLeft = 5;
+    // The stand-in catalog crosses the loader's typed boundary the same way the
+    // module mock above does.
+    const loadChunk = vi.fn(async () => {
+      if (failuresLeft > 0) {
+        failuresLeft -= 1;
+        throw new Error('chunk fetch failed');
+      }
+      return overlays as unknown as typeof import('$lib/components/overlayChunk');
+    });
+    const mounted: BootHiddenOverlayKey[] = [];
+    const controller = mountBootHiddenOverlays((key) => mounted.push(key), loadChunk);
+
+    // The boot attempt plus three idle retries, then idle gives up.
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      await flushNext(scheduler.idle);
+      expect(loadChunk).toHaveBeenCalledTimes(attempt);
+    }
+    expect(scheduler.idle.some((entry) => entry.active)).toBe(false);
+
+    // A demand retries regardless: one more failure, then the load lands.
+    controller.demand('settings');
+    await vi.waitFor(() => expect(loadChunk).toHaveBeenCalledTimes(5));
+    // Let that rejection settle so the memo is clear before the next demand.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mounted).toEqual([]);
+    controller.demand('settings');
+    await vi.waitFor(() => expect(mounted).toEqual(['settings']));
+    expect(loadChunk).toHaveBeenCalledTimes(6);
+    error.mockRestore();
+  });
+
   it('stops idle and import continuations from mounting residents', async () => {
     const mounted: BootHiddenOverlayKey[] = [];
     const controller = mountBootHiddenOverlays((key) => mounted.push(key));
