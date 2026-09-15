@@ -1,5 +1,6 @@
 import { AI_ESTIMATE_MS, createDialProgress } from '$lib/ai/dialProgress';
 import { aiGenerationState, type AiResultState } from './aiGeneration.svelte';
+import { unreachable } from '$lib/unreachable';
 
 export interface AiProgressState {
   readonly value: number;
@@ -97,27 +98,30 @@ export function createAiProgress(
     if (!rafId) rafId = requestAnimationFrame(loop);
   }
 
+  // One effect per phase transition the loop reacts to. Reading `kind` alone
+  // keeps a result's later auto-save update from re-running the reveal.
   function watch() {
     $effect(() => {
-      if (state.open && state.generating) start();
-    });
-
-    $effect(() => {
-      if (state.open && !state.generating && state.resultUrl) {
-        // Nothing is watching the dial while the run waits in the corner, so
-        // there is nothing for a ramp to animate — reveal outright, and the
-        // restoring tap lands on the finished picture instead of a dial
-        // catching up to a result that has been ready for a minute.
-        complete(state.minimized);
+      switch (state.phase.kind) {
+        case 'generating':
+          start();
+          return;
+        case 'result':
+          // Nothing is watching the dial while the run waits in the corner, so
+          // there is nothing for a ramp to animate — reveal outright, and the
+          // restoring tap lands on the finished picture instead of a dial
+          // catching up to a result that has been ready for a minute.
+          complete(state.minimized);
+          return;
+        case 'error':
+          stop();
+          return;
+        case 'closed':
+          reset();
+          return;
+        default:
+          unreachable(state.phase);
       }
-    });
-
-    $effect(() => {
-      if (state.error) stop();
-    });
-
-    $effect(() => {
-      if (!state.open) reset();
     });
   }
 

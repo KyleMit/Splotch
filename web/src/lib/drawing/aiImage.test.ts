@@ -2,6 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
 import type { SaveResult } from '$lib/saveNaming';
+import type { AiResultState } from '$lib/state/aiGeneration.svelte';
+
+// The run's phase as one assertion: the discriminant plus the fields that matter.
+function expectPhase(
+  state: AiResultState,
+  phase: { kind: AiResultState['phase']['kind'] } & Record<string, unknown>
+) {
+  expect(state.phase).toMatchObject(phase);
+}
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
@@ -118,8 +127,7 @@ describe('generateAiImage request ownership', () => {
 
     await generateAiImage();
 
-    expect(aiGenerationState.generating).toBe(false);
-    expect(aiGenerationState.error).not.toBeNull();
+    expect(aiGenerationState.phase.kind).toBe('error');
     expect(console.error).toHaveBeenCalledWith(exportError);
   });
 
@@ -150,13 +158,12 @@ describe('generateAiImage request ownership', () => {
     await runA;
     signal.throwIfAborted();
     expect(fetch).toHaveBeenCalledOnce();
-    expect(aiGenerationState.generating).toBe(true);
+    expect(aiGenerationState.phase.kind).toBe('generating');
 
     requestB.resolve(okResponse(new Blob(['result-b'])));
     await runB;
     signal.throwIfAborted();
-    expect(aiGenerationState.resultUrl).toBe('blob:test-2');
-    expect(aiGenerationState.autoSave).toBeNull();
+    expectPhase(aiGenerationState, { kind: 'result', url: 'blob:test-2', autoSave: null });
   });
 
   it('never auto-saves a stale run after close and restart', async ({ signal }) => {
@@ -215,10 +222,12 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expect(aiGenerationState.generating).toBe(false);
-    expect(aiGenerationState.error?.kind).toBe('safety');
-    expect(aiGenerationState.error?.message).toBe("Let's try drawing something else!");
-    expect(aiGenerationState.reportToken).toBe('signed-refusal-token');
+    expectPhase(aiGenerationState, {
+      kind: 'error',
+      errorKind: 'safety',
+      message: "Let's try drawing something else!",
+      reportToken: 'signed-refusal-token',
+    });
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 
@@ -241,9 +250,7 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expect(aiGenerationState.generating).toBe(false);
-    expect(aiGenerationState.error?.kind).toBe('retry');
-    expect(aiGenerationState.error?.message).toBeNull();
+    expectPhase(aiGenerationState, { kind: 'error', errorKind: 'retry', message: null });
     expect(console.error).toHaveBeenCalledWith(
       'AI image request throttled (retry after 12s): Please wait'
     );
@@ -264,9 +271,7 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expect(aiGenerationState.generating).toBe(false);
-    expect(aiGenerationState.error?.kind).toBe('retry');
-    expect(aiGenerationState.error?.message).toBeNull();
+    expectPhase(aiGenerationState, { kind: 'error', errorKind: 'retry', message: null });
     expect(console.error).toHaveBeenCalledWith(
       'AI image request failed (502): Upstream unavailable'
     );
@@ -287,7 +292,7 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expect(aiGenerationState.error?.kind).toBe('generic');
+    expectPhase(aiGenerationState, { kind: 'error', errorKind: 'generic' });
     expect(console.error).toHaveBeenCalledWith('AI image request failed (413): Image is too large');
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
@@ -356,10 +361,7 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expect(aiGenerationState.generating).toBe(false);
-    expect(aiGenerationState.error).toBeNull();
-    expect(aiGenerationState.resultUrl).toBe('blob:test-2');
-    expect(aiGenerationState.resultType).toBe('image/webp');
+    expectPhase(aiGenerationState, { kind: 'result', url: 'blob:test-2', type: 'image/webp' });
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
 
@@ -375,12 +377,15 @@ describe('generateAiImage response handling', () => {
 
     const run = generateAiImage();
     await vi.waitFor(() => expect(mocks.saveImageBlob).toHaveBeenCalledOnce());
-    expect(aiGenerationState.autoSave).toEqual({ status: 'saving' });
+    expectPhase(aiGenerationState, { kind: 'result', autoSave: { status: 'saving' } });
 
     aiSave.resolve({ status: 'chosenFolder', folderName: 'Drawings' });
     await run;
 
-    expect(aiGenerationState.autoSave).toEqual({ status: 'chosenFolder', folderName: 'Drawings' });
+    expectPhase(aiGenerationState, {
+      kind: 'result',
+      autoSave: { status: 'chosenFolder', folderName: 'Drawings' },
+    });
   });
 
   it.each([
@@ -403,8 +408,7 @@ describe('generateAiImage response handling', () => {
       await generateAiImage();
 
       expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
-      expect(aiGenerationState).toMatchObject({ autoSave: { status: 'failed' }, error: null });
-      expect(aiGenerationState.resultUrl).not.toBeNull();
+      expectPhase(aiGenerationState, { kind: 'result', autoSave: { status: 'failed' } });
     }
   );
 });
@@ -496,7 +500,7 @@ describe('generateAiImage upload format', () => {
     expect(uploadedImage().type).toBe('image/webp');
     expect(uploadedImage(1).type).toBe('image/webp');
     expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(1);
-    expect(aiGenerationState.error).toBeNull();
+    expect(aiGenerationState.phase.kind).not.toBe('error');
   });
 
   it('uses the installation pseudonym instead of a credential for a free generation', async () => {
@@ -571,10 +575,9 @@ describe('retryAiImage', () => {
       expect.objectContaining({ body: drawing }),
     ]);
     expect(aiGenerationState.consecutiveFailures).toBe(2);
-    expect(aiGenerationState.failureDetails).toEqual({
-      status: 503,
-      endpoint: '/api/generate-image',
-      message: 'Server unavailable',
+    expectPhase(aiGenerationState, {
+      kind: 'error',
+      details: { status: 503, endpoint: '/api/generate-image', message: 'Server unavailable' },
     });
     await retryAiImage();
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -598,10 +601,9 @@ describe('retryAiImage', () => {
     const running = generateAiImage();
     await vi.runAllTimersAsync();
     await running;
-    expect(aiGenerationState.failureDetails).toEqual({
-      status: 502,
-      endpoint: '/api/generation-result',
-      message: 'Provider failed',
+    expectPhase(aiGenerationState, {
+      kind: 'error',
+      details: { status: 502, endpoint: '/api/generation-result', message: 'Provider failed' },
     });
   });
 });

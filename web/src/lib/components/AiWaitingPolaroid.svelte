@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte';
   import { aiGenerationState, restoreAiResult } from '$lib/state/aiGeneration.svelte';
   import { aiProgressState } from '$lib/state/aiProgress.svelte';
+  import { unreachable } from '$lib/unreachable';
 
   // The picture-in-progress, pinned to the top-left of the canvas while the
   // child keeps drawing (ADR-0116, ADR-0117). A photo rather than a chip: what
@@ -9,13 +10,30 @@
   // without any reading. It is also deliberately the only way back — minimizing
   // must never be a way to lose a picture that is already being paid for.
 
-  const waiting = $derived(
-    aiGenerationState.open && aiGenerationState.minimized && aiGenerationState.generating
+  // What the corner shows for the run, if anything: nothing unless minimized,
+  // then one face per phase.
+  const face = $derived.by((): 'hidden' | 'waiting' | 'ready' | 'failed' => {
+    if (!aiGenerationState.minimized) return 'hidden';
+    const phase = aiGenerationState.phase;
+    switch (phase.kind) {
+      case 'closed':
+        return 'hidden';
+      case 'generating':
+        return 'waiting';
+      case 'result':
+        return 'ready';
+      case 'error':
+        return 'failed';
+      default:
+        return unreachable(phase);
+    }
+  });
+  const waiting = $derived(face === 'waiting');
+  const ready = $derived(face === 'ready' || face === 'failed');
+  const failed = $derived(face === 'failed');
+  const resultUrl = $derived(
+    aiGenerationState.phase.kind === 'result' ? aiGenerationState.phase.url : null
   );
-  const ready = $derived(
-    aiGenerationState.open && aiGenerationState.minimized && !aiGenerationState.generating
-  );
-  const failed = $derived(ready && !!aiGenerationState.error);
 
   const label = $derived(
     waiting
@@ -42,8 +60,8 @@
     onclick={restoreAiResult}
   >
     <span class="polaroid-window">
-      {#if ready && aiGenerationState.resultUrl && !failed}
-        <img src={aiGenerationState.resultUrl} alt="" />
+      {#if resultUrl}
+        <img src={resultUrl} alt="" />
       {:else if aiGenerationState.previewUrl}
         <img class="waiting-art" src={aiGenerationState.previewUrl} alt="" />
       {/if}

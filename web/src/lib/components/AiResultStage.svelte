@@ -24,7 +24,10 @@
   let naturalWidthPx = $state(0);
 
   const revealed = $derived(aiProgressState.revealed);
-  const sizerSrc = $derived(aiGenerationState.resultUrl || aiGenerationState.previewUrl);
+  const resultUrl = $derived(
+    aiGenerationState.phase.kind === 'result' ? aiGenerationState.phase.url : null
+  );
+  const sizerSrc = $derived(resultUrl || aiGenerationState.previewUrl);
   const decodedNaturalWidth = $derived(loadedSizerSrc === sizerSrc ? naturalWidthPx : 0);
 
   const MIN_BLUR_PX = 2;
@@ -61,9 +64,9 @@
     target: zoomLayerEl!,
     // Only once the finished picture is on screen — the loading dial and
     // blurred preview shouldn't zoom.
-    enabled: revealed && !!aiGenerationState.resultUrl && !exiting,
+    enabled: revealed && !!resultUrl && !exiting,
     // A fresh result resets the zoom back to fit.
-    resetKey: aiGenerationState.resultUrl,
+    resetKey: resultUrl,
   })}
 >
   <!-- The zoom layer holds only the picture; the dial and confetti stay
@@ -100,13 +103,8 @@
       />
     {/if}
 
-    {#if aiGenerationState.resultUrl}
-      <img
-        class="stage-img result"
-        class:shown={revealed}
-        src={aiGenerationState.resultUrl}
-        alt=""
-      />
+    {#if resultUrl}
+      <img class="stage-img result" class:shown={revealed} src={resultUrl} alt="" />
     {/if}
   </div>
 

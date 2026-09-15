@@ -318,7 +318,7 @@ export async function generateAiImage({
   drawing = null,
   style = '',
 }: { drawing?: Blob | null; style?: StyleName | '' } = {}) {
-  if (aiGenerationState.generating) {
+  if (aiGenerationState.phase.kind === 'generating') {
     // A run is already going, and this early return used to be unobservable —
     // the modal's backdrop swallowed every tap. Now that the chrome is
     // deliberately live while a run waits in the corner (ADR-0116), a tap on the
@@ -411,9 +411,10 @@ export async function generateAiImage({
 }
 
 export function retryAiImage() {
+  const phase = aiGenerationState.phase;
   if (
-    !aiGenerationState.error ||
-    aiGenerationState.error.kind === 'safety' ||
+    phase.kind !== 'error' ||
+    phase.errorKind === 'safety' ||
     aiGenerationState.consecutiveFailures >= AI_FAILURE_RETRY_LIMIT
   )
     return;
