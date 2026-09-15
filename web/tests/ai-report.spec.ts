@@ -227,6 +227,32 @@ test.describe('AI picture report', () => {
     }
   });
 
+  // Chromium's CloseWatcher makes a dialog's `cancel` non-cancelable once the
+  // previous preventDefault spent the page's user activation, and Escape itself
+  // grants none — so a second Escape closes the dialog natively.
+  test('the confirmation stays up through repeated Escape presses while sending', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'never'),
+      STORAGE_KEYS.parentalGateImageReportMode
+    );
+    await page.route('**/api/report-image', async () => {});
+    await revealAiResult(page);
+
+    await page.getByRole('button', { name: 'Report this picture' }).click();
+    const confirm = await landedReportConfirm(page);
+    await page.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByRole('button', { name: 'Sending…' })).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+
+    await expect(confirm).toHaveJSProperty('open', true);
+    await expect(page.getByRole('button', { name: 'Sending…' })).toBeVisible();
+  });
+
   // Issue #960: a free-tier picture was unreportable because the client sent an
   // empty X-Access-Token, which the server answered 403 to. The credentials the
   // report carries are the whole regression, so assert the headers themselves.

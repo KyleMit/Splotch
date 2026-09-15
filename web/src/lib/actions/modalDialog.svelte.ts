@@ -207,8 +207,21 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
   function onCancel(e: Event) {
     const o = getOptions();
     // Block Esc when dismissal is currently disallowed (e.g. an in-flight
-    // request the dialog can't get back).
+    // request the dialog can't get back). Chromium's CloseWatcher lets this
+    // hold only while the page has user activation to spend, so the native
+    // close it fails to stop is caught again in onClose.
     if (!dismissAllowed(o)) e.preventDefault();
+  }
+
+  // A `cancel` the platform refused to let onCancel block — a repeated Escape
+  // or Android back gesture with no user activation since the last one — has
+  // closed the dialog natively while state still owns it open. Reopen it in
+  // place rather than letting state follow the DOM. The fly-in is keyed on
+  // [open], so it is held off until the dialog closes for real; otherwise the
+  // re-show would replay the launch from the opener.
+  function reopenRefusedDismissal() {
+    node.style.animation = 'none';
+    node.showModal();
   }
 
   function requestDismiss(): ModalDismissal {
@@ -224,11 +237,16 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     // to an opening that is over: acting on it would unregister, clean up after,
     // and re-close the one now on screen.
     if (node.open) return;
+    const o = getOptions();
+    if (o.open && !dismissAllowed(o)) {
+      reopenRefusedDismissal();
+      return;
+    }
+    node.style.removeProperty('animation');
     forgetOpenModal(node);
     // A closed dialog has no backdrop to protect; drop the zone so it can't
     // bleed into whatever modal opens next.
     clearLaunchZones();
-    const o = getOptions();
     o.onClose?.();
     // Closed via Esc while the flag is still set — re-sync it.
     if (o.open) o.onRequestClose();
