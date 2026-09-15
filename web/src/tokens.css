@@ -62,7 +62,8 @@
   --scrim-pill: rgb(23 23 29 / 72%);
 
   --z-toolbar-paper: 3;
-  --z-canvas-chrome: 4;
+  --z-pointer-halo: 4;
+  --z-canvas-chrome: 5;
   --z-clear-preview: 400;
   --z-clear-ink: 600;
   --z-corner-button: 900;

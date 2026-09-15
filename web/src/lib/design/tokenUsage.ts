@@ -81,6 +81,7 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
 
 export const zIndexUsage: Record<keyof typeof zIndex, string> = {
   zToolbarPaper: 'Bare glass panes and printed margin rule, above ink and below controls.',
+  zPointerHalo: 'Brush ring and eraser footprint, above toolbar glass and below controls.',
   zCanvasChrome: 'The floor of the shared root context — chrome that must clear the canvas layers.',
   zClearPreview: 'The full-viewport paper wash previewing a drag-to-clear.',
   zClearInk: 'The departing page above the clear wash, beneath the Clear Button it flies into.',

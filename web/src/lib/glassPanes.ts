@@ -1,5 +1,7 @@
 import {
   ACTION_BUTTON_GAP,
+  DRAWER_TOGGLE_SIZE,
+  PHONE_TOOLBAR_GAP_PX,
   FLYOUT_OPTION_MIN_BASE_PX,
   PANEL_INSET,
   PHONE_TOOLBAR_BUTTON_PX,
@@ -15,19 +17,23 @@ import { actionControlShown, enabledOptionalBrushes, settingsState } from './sta
 import { STROKE_SIZES } from './state/strokeWidth.svelte';
 import { COLOR_MENU_GEOMETRY } from './design/trimGeometry';
 import { LANDSCAPE_COLORS } from './landscapeToolbar';
+import { fullscreenState } from './state/fullscreen.svelte';
 
 export type OpenFlyout = 'brush' | 'stroke' | 'color' | null;
-import { BARE_RAIL_WIDTH_PX, BARE_RAIL_HEIGHT_PX } from './bareToolbar';
+import {
+  BARE_RAIL_WIDTH_PX,
+  BARE_RAIL_HEIGHT_PX,
+  BARE_MENU_GAP_PX,
+  VERTICAL_MENU_MAX_WIDTH_PX,
+} from './bareToolbar';
 const FEATHER_SIGMA_PX = 10;
 const INFLATE_PX = 14;
 const BLEED_PX = 44;
 const MENU_PADDING_PX = 24;
 const MENU_RADIUS_PX = 20;
-const COMPACT_GAP_PX = 10;
-const MENU_GAP_PX = 4;
-const TOGGLE_SIZE_PX = 48;
 const CORNER_DEPTH_PX = 78;
-const VERTICAL_MENU_MAX_WIDTH_PX = 540;
+const FULLSCREEN_DEPTH_PX = 70;
+const FULLSCREEN_RADIUS_PX = 18;
 
 interface Rect {
   x: number;
@@ -101,8 +107,8 @@ function flyoutRectangle(
   const option = Math.max(size, FLYOUT_OPTION_MIN_BASE_PX);
   const count = open === 'brush' ? enabledOptionalBrushes().length + 1 : STROKE_SIZES.length;
   const vertical = portrait && width <= VERTICAL_MENU_MAX_WIDTH_PX;
-  let menuWidth = vertical ? option : count * option + (count - 1) * MENU_GAP_PX;
-  let menuHeight = vertical ? count * option + (count - 1) * MENU_GAP_PX : option;
+  let menuWidth = vertical ? option : count * option + (count - 1) * BARE_MENU_GAP_PX;
+  let menuHeight = vertical ? count * option + (count - 1) * BARE_MENU_GAP_PX : option;
   if (open === 'color') {
     const room = width - safe.left - safe.right - size - 3 * PANEL_INSET;
     const { swatchPx, gapPx, paddingPx } = COLOR_MENU_GEOMETRY;
@@ -139,17 +145,19 @@ export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
   const hasActions = count > 0;
   const drawerOpen = expanded && hasActions;
   const size = bareButtonSize();
-  const pitch = size + (compact ? COMPACT_GAP_PX : ACTION_BUTTON_GAP);
+  const pitch = size + (compact ? PHONE_TOOLBAR_GAP_PX : ACTION_BUTTON_GAP);
   const railX = compact || portrait ? 0 : safe.left + BARE_RAIL_WIDTH_PX;
   const railY = portrait ? safe.top + BARE_RAIL_HEIGHT_PX : 0;
   const clip = rectangle(railX, railY, width, height);
   const x = safe.left + PANEL_INSET + (compact || portrait ? 0 : BARE_RAIL_WIDTH_PX);
   const bottom = height - safe.bottom - PANEL_INSET;
-  const depth = drawerOpen ? size + 2 * PANEL_INSET : TOGGLE_SIZE_PX + 2 * PANEL_INSET;
+  const depth = drawerOpen ? size + 2 * PANEL_INSET : DRAWER_TOGGLE_SIZE + 2 * PANEL_INSET;
   const rowEnd =
-    x + (drawerOpen ? count * pitch - ACTION_BUTTON_GAP + PANEL_INSET : 0) + TOGGLE_SIZE_PX;
+    x + (drawerOpen ? count * pitch - ACTION_BUTTON_GAP + PANEL_INSET : 0) + DRAWER_TOGGLE_SIZE;
   const columnTop =
-    bottom - (drawerOpen ? count * pitch - ACTION_BUTTON_GAP + PANEL_INSET : 0) - TOGGLE_SIZE_PX;
+    bottom -
+    (drawerOpen ? count * pitch - ACTION_BUTTON_GAP + PANEL_INSET : 0) -
+    DRAWER_TOGGLE_SIZE;
   const brush = enabledOptionalBrushes().length > 0;
   const stroke = actionControlShown('strokeWidthControlEnabled');
   const colorTop = drawerOpen
@@ -185,8 +193,8 @@ export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
       strip.push(
         rectangle(
           -BLEED_PX,
-          bottom - TOGGLE_SIZE_PX - INFLATE_PX,
-          x + TOGGLE_SIZE_PX + INFLATE_PX,
+          bottom - DRAWER_TOGGLE_SIZE - INFLATE_PX,
+          x + DRAWER_TOGGLE_SIZE + INFLATE_PX,
           height + BLEED_PX
         )
       );
@@ -234,7 +242,19 @@ export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
     height + BLEED_PX,
     MENU_RADIUS_PX
   );
-  if (compact) strip.push(gear);
+  if (compact) {
+    strip.push(gear);
+    if (fullscreenState.supported)
+      strip.push(
+        rectangle(
+          safe.left - BLEED_PX,
+          safe.top - BLEED_PX,
+          safe.left + FULLSCREEN_DEPTH_PX,
+          safe.top + FULLSCREEN_DEPTH_PX,
+          FULLSCREEN_RADIUS_PX
+        )
+      );
+  }
   const panes = strip.length ? [glassPane(strip, clip)] : [];
   if (!compact) panes.push(glassPane([gear], clip));
   return panes;

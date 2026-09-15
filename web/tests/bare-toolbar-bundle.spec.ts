@@ -13,4 +13,9 @@ test('Bare glass ships a prefixed dynamic mask for the Chromium browser floor', 
     .join('\n');
   expect(css).toMatch(/-webkit-mask-image:\s*var\(--glass-mask\)/);
   expect(css).toMatch(/(?:[;{])mask-image:\s*var\(--glass-mask\)/);
+  for (const selector of ['glass-pane', 'rail-glass']) {
+    expect(css).toMatch(
+      new RegExp(`@supports \\(\\(-webkit-backdrop-filter:[^{]+or[^{}]+\\)\\)\\{\\.${selector}`)
+    );
+  }
 });

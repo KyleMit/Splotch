@@ -214,7 +214,7 @@
     background-color: rgb(255 255 255 / 35%);
     box-shadow: 0 0 0 1px rgb(255 255 255 / 60%);
     pointer-events: none;
-    z-index: 3;
+    z-index: var(--z-pointer-halo);
   }
 
   /* content-box puts the ring line just OUTSIDE the stroke footprint (the
@@ -230,7 +230,7 @@
     border-radius: 50%;
     box-shadow: 0 0 0 1px rgb(255 255 255 / 35%);
     pointer-events: none;
-    z-index: 3;
+    z-index: var(--z-pointer-halo);
   }
 
   /* Magic-brush flavor: a conic rainbow masked down to the outer band (the

@@ -95,13 +95,13 @@ export const SETTINGS_BUTTON_RESERVE = 64;
 // collapse margin (8px), and the 48px drawer toggle.
 export const PANEL_INSET = 8;
 const DRAWER_TOGGLE_MARGIN = 8;
-const DRAWER_TOGGLE_SIZE = 48;
+export const DRAWER_TOGGLE_SIZE = 48;
 export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE;
 
 // Leave the top-left corner control clear even at the largest button scale.
 export const PHONE_TOOLBAR_BUTTON_PX = 48;
 export const PHONE_TOOLBAR_LEG_SLOTS = 4;
-const PHONE_TOOLBAR_GAP_PX = 10;
+export const PHONE_TOOLBAR_GAP_PX = 10;
 export const PHONE_TOOLBAR_VERTICAL_CHROME_PX =
   2 * PANEL_INSET + DRAWER_TOGGLE_SIZE + 3 * PHONE_TOOLBAR_GAP_PX;
 export const PHONE_TOOLBAR_HORIZONTAL_CHROME_PX =

@@ -1358,6 +1358,9 @@ html[data-toolbar='bare'] .corner-button {
   box-shadow: none;
   opacity: 0.4;
 }
+html[data-toolbar='bare'] .corner-button:active {
+  opacity: 1;
+}
 html[data-toolbar='bare'] .actions-panel[data-open-flyout] .drawer-toggle {
   opacity: 0.2;
 }
@@ -1365,10 +1368,12 @@ html[data-toolbar='bare'] .actions-panel .free-count {
   box-shadow: 0 0 0 2px var(--paper);
 }
 @media (hover: hover) {
-  html[data-toolbar='bare'] .actions-panel .action-button:not(:disabled):hover {
+  html[data-toolbar='bare']
+    .actions-panel
+    .action-button:not(:disabled):not(.disabled):hover:not(:active) {
     transform: scale(1.08);
   }
-  html[data-toolbar='bare'] .corner-button:hover {
+  html[data-toolbar='bare'] .corner-button:hover:not(:active) {
     opacity: 0.7;
   }
 }

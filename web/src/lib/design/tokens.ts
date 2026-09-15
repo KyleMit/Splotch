@@ -165,11 +165,12 @@ export const scale = {
 // The tiers are a convention, not a containment guarantee.
 export const zIndex = {
   zToolbarPaper: 3,
+  zPointerHalo: 4,
   // FullscreenToggle — the floor of that shared root context, not a separate
   // local scale. It clears DrawingCanvas's other root-level layers
   // (.paper-sheet 0, .canvas-stack 1, .paper-view 2, .brush-ring/.eraser-bubble
-  // 3) and deliberately loses to every persistent control below.
-  zCanvasChrome: 4,
+  // zPointerHalo) and deliberately loses to every persistent control below.
+  zCanvasChrome: 5,
 
   // Clear Button drag feedback: the paper wash previewing the clear, then the
   // departing page over it. Both sit above the canvas and below every

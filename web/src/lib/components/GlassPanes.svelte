@@ -1,5 +1,6 @@
 <script lang="ts">
   import { toolbarGlassPanes, type OpenFlyout } from '$lib/glassPanes';
+  import { layoutState } from '$lib/state/layout.svelte';
   let { openFlyout, drawerExpanded }: { openFlyout: OpenFlyout; drawerExpanded: boolean } =
     $props();
   const panes = $derived(toolbarGlassPanes(openFlyout, drawerExpanded));
@@ -10,6 +11,7 @@
     class="glass-pane"
     aria-hidden="true"
     data-glass-pane={index}
+    data-pane-orientation={layoutState.orientation}
     style:left={`${pane.x}px`}
     style:top={`${pane.y}px`}
     style:width={`${pane.width}px`}
@@ -24,12 +26,17 @@
     position: fixed;
     pointer-events: none;
     z-index: var(--z-toolbar-paper);
-    background-color: rgb(var(--glass-tint-rgb) / var(--glass-strip));
+    background-color: var(--paper);
     background-image: url('/icons/handmade-paper.webp');
-    backdrop-filter: blur(5.1px);
     mask-image: var(--glass-mask);
     mask-size: 100% 100%;
     mask-repeat: no-repeat;
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    .glass-pane {
+      background-color: rgb(var(--glass-tint-rgb) / var(--glass-strip));
+      backdrop-filter: blur(5.1px);
+    }
   }
   @media (prefers-reduced-transparency: reduce) {
     .glass-pane {
@@ -37,9 +44,14 @@
       backdrop-filter: none;
     }
   }
-  @supports not (backdrop-filter: blur(1px)) {
-    .glass-pane {
-      background-color: var(--paper);
+  @media (orientation: portrait) {
+    .glass-pane[data-pane-orientation='landscape'] {
+      visibility: hidden;
+    }
+  }
+  @media (orientation: landscape) {
+    .glass-pane[data-pane-orientation='portrait'] {
+      visibility: hidden;
     }
   }
 </style>

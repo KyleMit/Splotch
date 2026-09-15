@@ -1,4 +1,9 @@
-import { BARE_RAIL_WIDTH_PX, BARE_RAIL_HEIGHT_PX } from './bareToolbar';
+import {
+  BARE_RAIL_WIDTH_PX,
+  BARE_RAIL_HEIGHT_PX,
+  BARE_MENU_GAP_PX,
+  VERTICAL_MENU_MAX_WIDTH_PX,
+} from './bareToolbar';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -10,6 +15,8 @@ import {
   ACTION_BUTTON_BASE_PX,
   ACTION_BUTTON_COUNT_PROPERTY,
   ACTION_BUTTON_GAP,
+  DRAWER_TOGGLE_SIZE,
+  PHONE_TOOLBAR_GAP_PX,
   ACTION_BUTTON_SIZE_CLASS_MEDIA_QUERIES,
   ACTION_PANEL_LIVE_ATTRIBUTE,
   FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT,
@@ -69,6 +76,18 @@ const declaredBaseSteps = [
 }));
 
 describe('action-button CSS fallback mirrors the layout constants', () => {
+  it('keeps Bare masks aligned with the shared control and menu spacing', () => {
+    expect(appCssSource).toContain(`--corner-button-size: ${DRAWER_TOGGLE_SIZE}px`);
+    expect(appCssSource).toContain(
+      `--landscape-pitch: calc(var(--action-btn-size) + ${PHONE_TOOLBAR_GAP_PX}px)`
+    );
+    expect(appCssSource).toContain(
+      `html[data-toolbar='bare'] .actions-panel .flyout-menu {\n  padding: 0;\n  gap: ${BARE_MENU_GAP_PX}px;`
+    );
+    expect(appCssSource).toContain(
+      `@media (orientation: portrait) and (max-width: ${VERTICAL_MENU_MAX_WIDTH_PX}px)`
+    );
+  });
   it('declares one size-class step per entry in ACTION_BUTTON_BASE_PX', () => {
     expect(declaredBaseSteps).toEqual([
       { query: undefined, ...ACTION_BUTTON_BASE_PX.tablet },

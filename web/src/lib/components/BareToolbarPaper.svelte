@@ -22,16 +22,14 @@
   .rail-glass {
     inset: 0 auto 0 0;
     width: calc(var(--palette-landscape-width) + var(--safe-area-left));
-    background: rgb(var(--glass-tint-rgb) / var(--glass-rail)) url('/icons/handmade-paper.webp');
-    backdrop-filter: blur(4.6px);
+    background: var(--paper) url('/icons/handmade-paper.webp');
   }
   .fullscreen-glass {
     top: var(--safe-area-top);
     left: calc(var(--palette-landscape-width) + var(--safe-area-left));
     width: 114px;
     height: 114px;
-    background: rgb(var(--glass-tint-rgb) / var(--glass-strip)) url('/icons/handmade-paper.webp');
-    backdrop-filter: blur(5.1px);
+    background: var(--paper) url('/icons/handmade-paper.webp');
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='114' height='114'%3E%3Cfilter id='f' x='-50%25' y='-50%25' width='200%25' height='200%25'%3E%3CfeGaussianBlur stdDeviation='10'/%3E%3C/filter%3E%3Crect x='-44' y='-44' width='114' height='114' rx='18' filter='url(%23f)'/%3E%3C/svg%3E");
   }
   .margin-rule {
@@ -89,19 +87,24 @@
     }
   }
   @media (orientation: landscape) and (max-height: 599.98px) {
-    :global(html[data-toolbar='bare']) :is(.rail-glass, .margin-rule) {
+    :global(html[data-toolbar='bare']) :is(.rail-glass, .margin-rule, .fullscreen-glass) {
       display: none;
+    }
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    .rail-glass {
+      background-color: rgb(var(--glass-tint-rgb) / var(--glass-rail));
+      backdrop-filter: blur(4.6px);
+    }
+    .fullscreen-glass {
+      background-color: rgb(var(--glass-tint-rgb) / var(--glass-strip));
+      backdrop-filter: blur(5.1px);
     }
   }
   @media (prefers-reduced-transparency: reduce) {
     :is(.rail-glass, .fullscreen-glass) {
       background-color: var(--paper);
       backdrop-filter: none;
-    }
-  }
-  @supports not (backdrop-filter: blur(1px)) {
-    :is(.rail-glass, .fullscreen-glass) {
-      background-color: var(--paper);
     }
   }
 </style>

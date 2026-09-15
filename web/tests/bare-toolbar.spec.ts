@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   gotoApp,
   openSettingsModal,
@@ -6,7 +6,7 @@ import {
   drawCommittedStroke,
   firstOpaquePixel,
 } from './helpers';
-import { openDrawer, openBrushMenu } from './flows-harness';
+import { openDrawer, openBrushMenu, openStrokeMenu } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 const layouts = [
@@ -14,6 +14,44 @@ const layouts = [
   { name: 'portrait', width: 390, height: 844 },
   { name: 'compact', width: 844, height: 390 },
 ];
+
+async function expectGlassCovers(page: Page, selector: string) {
+  await expect
+    .poll(() =>
+      page.evaluate((selector) => {
+        const panes = Array.from(document.querySelectorAll<HTMLElement>('[data-glass-pane]'));
+        const rects = panes.flatMap((pane) => {
+          const bounds = pane.getBoundingClientRect();
+          const mask = getComputedStyle(pane).maskImage;
+          const svg = decodeURIComponent(mask.slice(mask.indexOf(',') + 1, -2));
+          return Array.from(
+            new DOMParser().parseFromString(svg, 'image/svg+xml').querySelectorAll('rect')
+          ).map((rect) => ({
+            x: bounds.x + Number(rect.getAttribute('x')),
+            y: bounds.y + Number(rect.getAttribute('y')),
+            width: Number(rect.getAttribute('width')),
+            height: Number(rect.getAttribute('height')),
+          }));
+        });
+        const targets = Array.from(document.querySelectorAll(selector))
+          .map((el) => el.getBoundingClientRect())
+          .filter((rect) => rect.width && rect.height);
+        return (
+          targets.length > 0 &&
+          targets.every((target) =>
+            rects.some(
+              (rect) =>
+                rect.x <= target.x &&
+                rect.y <= target.y &&
+                rect.x + rect.width >= target.right &&
+                rect.y + rect.height >= target.bottom
+            )
+          )
+        );
+      }, selector)
+    )
+    .toBe(true);
+}
 
 for (const layout of layouts) {
   for (const theme of ['light', 'dark']) {
@@ -37,33 +75,22 @@ for (const layout of layouts) {
           'background-color',
           'rgba(0, 0, 0, 0)'
         );
-        await expect
-          .poll(() =>
-            page.evaluate(() => {
-              const menu = document.querySelector('.brush-menu')!.getBoundingClientRect();
-              const pane = document.querySelector<HTMLElement>('[data-glass-pane="0"]')!;
-              const bounds = pane.getBoundingClientRect();
-              const mask = getComputedStyle(pane).maskImage;
-              const svg = decodeURIComponent(mask.slice(mask.indexOf(',') + 1, -2));
-              const rects = new DOMParser()
-                .parseFromString(svg, 'image/svg+xml')
-                .querySelectorAll('rect');
-              return Array.from(rects).some((rect) => {
-                const x = bounds.x + Number(rect.getAttribute('x'));
-                const y = bounds.y + Number(rect.getAttribute('y'));
-                return (
-                  x <= menu.x &&
-                  y <= menu.y &&
-                  x + Number(rect.getAttribute('width')) >= menu.right &&
-                  y + Number(rect.getAttribute('height')) >= menu.bottom
-                );
-              });
-            })
-          )
-          .toBe(true);
+        await expectGlassCovers(page, '.brush-menu');
         await page.keyboard.press('Escape');
         await expect(page.locator('.brush-menu')).toHaveCount(0);
         await expect(page.locator('#brushButton')).toBeFocused();
+        await openStrokeMenu(page);
+        await expectGlassCovers(page, '.stroke-width-menu');
+        await page.keyboard.press('Escape');
+        await expectGlassCovers(
+          page,
+          '.actions-panel .action-button, .drawer-toggle, #settingsButton'
+        );
+        if (layout.name === 'compact') {
+          await page.locator('#colorButton').click();
+          await page.locator('.color-menu').waitFor();
+          await expectGlassCovers(page, '.color-menu');
+        }
       });
     }
   }
@@ -159,9 +186,75 @@ for (const theme of ['light', 'dark']) {
     const undo = page.locator('#undoButton');
     await expect(undo).toHaveAttribute('aria-disabled', 'true');
     await undo.hover();
+    await expect(undo).toHaveCSS('transform', 'none');
     await page.mouse.down();
     await expect(undo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(undo).toHaveCSS('box-shadow', 'none');
     await page.mouse.up();
+    const toggle = page.locator('.drawer-toggle');
+    await toggle.hover();
+    await page.mouse.down();
+    await expect(toggle).toHaveCSS('opacity', '1');
+    await page.mouse.up();
   });
 }
+
+test('Bare compact fullscreen shares one pane with the toolbar', async ({ page }) => {
+  await page.setViewportSize({ width: 740, height: 360 });
+  await page.addInitScript((keys) => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value:
+        'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36',
+    });
+    localStorage.setItem(keys.toolbarStyle, 'bare');
+    localStorage.setItem(keys.actionButtonScale, '130');
+  }, STORAGE_KEYS);
+  await gotoApp(page);
+  await openDrawer(page);
+  await expect(page.locator('.fullscreen-toggle')).toBeVisible();
+  await expect(page.locator('.fullscreen-glass')).toBeHidden();
+  await expect(page.locator('[data-glass-pane]')).toHaveCount(1);
+  await expectGlassCovers(
+    page,
+    '.fullscreen-toggle, .actions-panel .action-button, #settingsButton'
+  );
+});
+
+test('Bare hides stale pane geometry until rotation layout settles', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 820 });
+  await page.addInitScript((key) => localStorage.setItem(key, 'bare'), STORAGE_KEYS.toolbarStyle);
+  await gotoApp(page);
+  await openDrawer(page);
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await page.evaluate(() => window.dispatchEvent(new Event('orientationchange')));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('[data-glass-pane="0"]')).toHaveCSS('visibility', 'hidden');
+  await page.clock.runFor(250);
+  await expect(page.locator('[data-glass-pane="0"]')).toHaveCSS('visibility', 'visible');
+  await expectGlassCovers(page, '.actions-panel .action-button, .drawer-toggle, #settingsButton');
+});
+
+test('Bare brush and eraser footprints remain above the glass', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 820 });
+  await page.addInitScript((key) => localStorage.setItem(key, 'bare'), STORAGE_KEYS.toolbarStyle);
+  await gotoApp(page);
+  await openDrawer(page);
+  const glassZ = await page
+    .locator('[data-glass-pane="0"]')
+    .evaluate((el) => Number(getComputedStyle(el).zIndex));
+  await page.mouse.move(450, 735);
+  await page.mouse.down();
+  await expect(page.locator('.brush-ring')).toBeVisible();
+  expect(
+    await page.locator('.brush-ring').evaluate((el) => Number(getComputedStyle(el).zIndex))
+  ).toBeGreaterThan(glassZ);
+  await page.mouse.up();
+  await openBrushMenu(page);
+  await page.locator('#eraserButton').click();
+  await page.mouse.move(450, 735);
+  await expect(page.locator('.eraser-bubble')).toBeVisible();
+  expect(
+    await page.locator('.eraser-bubble').evaluate((el) => Number(getComputedStyle(el).zIndex))
+  ).toBeGreaterThan(glassZ);
+});

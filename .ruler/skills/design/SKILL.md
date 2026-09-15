@@ -96,7 +96,7 @@ Foundations and only reach past a default when a rule says so.
 |           | the print white every polaroid in the app is made of and the brand ink written on it, unthemed                                                                                                   |
 |           | for the same kind of reason (ADR-0117): a photograph doesn't repaint at night, so what is                                                                                                        |
 |           | written on it can't either                                                                                                                                                                       |
-| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-polaroid`                                                                                                         |
+| Stacking  | `--z-*` — the cross-component chrome order, from toolbar paper and pointer halos through `--z-canvas-chrome` up to `--z-polaroid`                                                                |
 |           | (1004, the screenshot flight), listed low-to-high in `tokens.ts`. One list, not one context: all                                                                                                 |
 |           | root-context except                                                                                                                                                                              |
 |           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under                                                                                             |

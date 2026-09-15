@@ -32,17 +32,9 @@
   };
 
   const easeKeys = ['easePop', 'easeGlide'] as const;
+  const glassKeys = ['glassRail', 'glassStrip'] as const;
 </script>
 
-<div class="space-rows">
-  {#each ['glassRail', 'glassStrip'] as key (key)}
-    <p>
-      <code>{key === 'glassRail' ? '--glass-rail' : '--glass-strip'}</code> —
-      {key === 'glassRail' ? scale.glassRail : scale.glassStrip}
-      {key === 'glassRail' ? scaleUsage.glassRail : scaleUsage.glassStrip}
-    </p>
-  {/each}
-</div>
 <section id="space" data-sg-section>
   <h3>Spacing, radius &amp; hairlines</h3>
   <div class="space-rows">
@@ -81,6 +73,16 @@
 
 <section id="elevation" data-sg-section>
   <h3>Elevation</h3>
+  <h4>Toolbar glass</h4>
+  <div class="space-rows">
+    {#each glassKeys as key (key)}
+      <div class="space-row" title={scaleUsage[key]}>
+        <code>{toCssVarName(key)}</code>
+        <span>{scaleUsage[key]}</span>
+        <span class="space-value">{scale[key]}</span>
+      </div>
+    {/each}
+  </div>
   <div class="shadow-grid">
     {#each shadowKeys as key (key)}
       <div class="shadow-tile">
