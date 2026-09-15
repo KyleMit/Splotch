@@ -4,6 +4,7 @@ import {
   adminConsole,
   ADMIN_ACCESS_TOKEN,
   expect,
+  SIGN_IN_SETTLE_MS,
   signInToAdmin,
   submitAdminKey,
   test,
@@ -16,8 +17,8 @@ import {
 // behaviour under test, and `beginAdminLogin` charges the bucket before it
 // looks at the key, so the wrong-key spec counts too. That budget is what
 // keeps these apart from admin.spec.ts, whose signed-in specs share one
-// session and repeat freely: this file spends three hits per repetition, so
-// `--repeat-each` on it stays at three inside one window. Past that, verify
+// session and repeat freely: this file spends five hits per repetition, so
+// `--repeat-each` on it stays at two inside one window. Past that, verify
 // with repeated full runs, as CI does.
 
 async function expectTokenAddUnavailable(page: Page, token: string) {
@@ -58,6 +59,20 @@ test('web /admin signs in, fails closed without durable tokens, and signs out', 
   // needed after a reload while signed in — but after sign-out it must be.
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+});
+
+// Costs two sign-ins: the draft only survives within one page lifetime, so the
+// second sign-in cannot follow a reload the way signInToAdmin's navigation
+// would.
+test('web /admin signing out discards an unsent code draft', async ({ page }) => {
+  await signInToAdmin(page);
+  await adminConsole(page).fill('e2e-unsent-draft');
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+
+  await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
+  await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
+  await expect(adminConsole(page)).toHaveValue('');
 });
 
 test('admin API requires a valid bearer session and durable mutation storage', async ({
