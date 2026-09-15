@@ -12,12 +12,35 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 const stateDir = join(repoRoot, 'web', 'src', 'lib', 'state');
 const RUNE_MODULE_SUFFIX = '.svelte.ts';
 
-// A generic argument (`$state<Settings>(`) may sit between the initializer and its call.
-const EXPORTED_SINGLETON =
-  /^export const (\w+)(?:\s*:[^=]+)?\s*=\s*(?:\$state(?:\.raw)?|create[A-Z]\w*)(?:<[^(]*>)?\s*\(/gm;
+const EXPORTED_DECLARATION =
+  /^export const (\w+)(?:\s*:[^\n]*?)?\s*=\s*(?:\$state(?:\.raw)?|create[A-Z]\w*)/gm;
+
+// A type argument may sit between the initializer and its call — `$state<Settings>(` or
+// `$state<Record<string, () => void>>(` — so the call is found by a balanced angle-bracket scan
+// that ignores the `>` of an arrow, rather than by a character class that stops at `(`.
+const callFollows = (source, from) => {
+  let index = from;
+  if (source[index] === '<') {
+    let depth = 0;
+    for (; index < source.length; index++) {
+      if (source[index] === '<') depth++;
+      else if (source[index] === '>' && source[index - 1] !== '=') {
+        depth--;
+        if (depth === 0) {
+          index++;
+          break;
+        }
+      }
+    }
+  }
+  while (/\s/.test(source[index] ?? '')) index++;
+  return source[index] === '(';
+};
 
 const exportedSingletons = (source) =>
-  Array.from(source.matchAll(EXPORTED_SINGLETON), (match) => match[1]);
+  Array.from(source.matchAll(EXPORTED_DECLARATION))
+    .filter((match) => callFollows(source, match.index + match[0].length))
+    .map((match) => match[1]);
 
 const expectedStateName = (file) => `${basename(file, RUNE_MODULE_SUFFIX)}State`;
 
@@ -76,6 +99,30 @@ describe('the state-module export naming rule', () => {
     expect(
       violations('layout.svelte.ts', 'export const layout = $state.raw<LayoutState>({});')
     ).toEqual(['layout']);
+  });
+
+  it('rejects a type argument that contains parentheses', () => {
+    expect(
+      violations(
+        'settings.svelte.ts',
+        'export const settings = $state<Record<string, () => void>>({});'
+      )
+    ).toEqual(['settings']);
+  });
+
+  it('rejects a generic createX() instance whose type argument contains parentheses', () => {
+    expect(
+      violations(
+        'aiProgress.svelte.ts',
+        'export const aiProgress = createAiProgress<(() => void) | null>(aiGenerationState);'
+      )
+    ).toEqual(['aiProgress']);
+  });
+
+  it('accepts a function-typed annotation under the right name', () => {
+    expect(
+      violations('network.svelte.ts', 'export const networkState: () => void = $state(noop);')
+    ).toEqual([]);
   });
 
   it('accepts a typed initializer under the right name', () => {
