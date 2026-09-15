@@ -51,8 +51,8 @@ function resetState() {
   setScreenshot(true);
   setUndoButton(true);
   setAiImage(true);
-  settingsState.aiAccessToken = '';
-  settingsState.aiUserApiKey = '';
+  settingsState.mirrorAiAccessToken('');
+  settingsState.mirrorAiUserApiKey('');
   networkState.online = true;
   freeGenerationsState.available = true;
 
@@ -75,8 +75,8 @@ describe('visibleActionButtonCount', () => {
   ])(
     'keeps layout counting in sync with visibility for $credentialState',
     ({ apiKey, accessCode }) => {
-      settingsState.aiUserApiKey = apiKey;
-      settingsState.aiAccessToken = accessCode;
+      settingsState.mirrorAiUserApiKey(apiKey);
+      settingsState.mirrorAiAccessToken(accessCode);
 
       expect(isAiImageButtonVisible()).toBe(true);
       expect(visibleActionButtonCount()).toBe(6);
@@ -84,7 +84,7 @@ describe('visibleActionButtonCount', () => {
   );
 
   it('requires the AI toggle and connectivity even with a credential', () => {
-    settingsState.aiUserApiKey = 'key';
+    settingsState.mirrorAiUserApiKey('key');
     expect(visibleActionButtonCount()).toBe(6);
 
     networkState.online = false;
@@ -102,7 +102,7 @@ describe('visibleActionButtonCount', () => {
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
 
-    settingsState.aiAccessToken = 'code';
+    settingsState.mirrorAiAccessToken('code');
     expect(isAiImageButtonVisible()).toBe(true);
     expect(visibleActionButtonCount()).toBe(6);
   });
@@ -139,7 +139,7 @@ describe('visibleActionButtonCount', () => {
   });
 
   it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
-    settingsState.aiAccessToken = 'tok';
+    settingsState.mirrorAiAccessToken('tok');
     expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
   });
 });

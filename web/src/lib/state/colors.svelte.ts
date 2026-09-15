@@ -75,8 +75,7 @@ export function createColors(): ColorsState {
 
 export const colorsState = createColors();
 
-export const { syncInkToTheme, selectPaletteColor, selectCustomSwatch, pickCustomColor } =
-  colorsState;
+export const { selectPaletteColor, selectCustomSwatch, pickCustomColor } = colorsState;
 
 // White is the one selectable color that vanishes against the white icon
 // buttons and paper (it's only reachable via the picker's greys ramp — the

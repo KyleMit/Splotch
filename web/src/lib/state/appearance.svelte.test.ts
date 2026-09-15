@@ -1,7 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { tick } from 'svelte';
 import { themes } from '$lib/design/tokens';
 import { THEME_COLORS } from '../theme';
+import { createAppearance, type AppearanceState } from './appearance.svelte';
+import { createColors } from './colors.svelte';
+import { createSettings, type SettingsState } from './settings.svelte';
+import { createTool } from './tool.svelte';
 
 // secureStorage reaches for IndexedDB/WebCrypto on the web path; settings.svelte
 // (imported transitively via appearance) only needs its function bindings, so
@@ -15,7 +19,7 @@ vi.mock('../secureStorage', () => ({
 const THEME_COLOR_DARK = themes.dark.appBg;
 
 // One controllable prefers-color-scheme query, recording every subscription so
-// the test can prove exactly one listener is registered across the whole graph.
+// the test can prove exactly one listener is registered per install.
 type ChangeHandler = (e: { matches: boolean }) => void;
 const query = vi.hoisted(() => ({
   matches: false,
@@ -40,11 +44,20 @@ function emitSystemChange(matches: boolean) {
   query.handlers.forEach((cb) => cb({ matches }));
 }
 
-async function freshModule() {
-  vi.resetModules();
-  const settingsState = await import('./settings.svelte');
-  const appearance = await import('./appearance.svelte');
-  return { ...settingsState, ...appearance };
+let installed: AppearanceState | null = null;
+
+// Builds the settings → appearance pair on the query installMatchMedia() left in
+// place and installs it, the way the module singleton does at load.
+async function freshAppearance(): Promise<{
+  settings: SettingsState;
+  appearance: AppearanceState;
+}> {
+  const settings = createSettings(createTool());
+  const appearance = createAppearance(settings, createColors());
+  appearance.install();
+  installed = appearance;
+  await tick();
+  return { settings, appearance };
 }
 
 function themeColorContent() {
@@ -56,11 +69,16 @@ beforeEach(() => {
   document.head.innerHTML = `<meta name="theme-color" content="${THEME_COLORS.light}" />`;
 });
 
+afterEach(() => {
+  installed?.dispose();
+  installed = null;
+});
+
 describe('single prefers-color-scheme source', () => {
-  it('opens exactly one media-query subscription for the whole module graph', async () => {
+  it('opens exactly one media-query subscription per install', async () => {
     const matchMedia = installMatchMedia();
-    await freshModule();
-    await tick();
+    const { appearance } = await freshAppearance();
+    appearance.install();
 
     const darkQueries = matchMedia.mock.calls.filter(([q]) => q === '(prefers-color-scheme: dark)');
     expect(darkQueries).toHaveLength(1);
@@ -70,50 +88,59 @@ describe('single prefers-color-scheme source', () => {
 
   it('one OS change event updates BOTH resolvedTheme() and the theme-color meta', async () => {
     installMatchMedia();
-    const { resolvedTheme } = await freshModule();
-    await tick();
+    const { appearance } = await freshAppearance();
 
     // Default setting is 'system' with the OS reporting light.
-    expect(resolvedTheme()).toBe('light');
+    expect(appearance.resolvedTheme()).toBe('light');
     expect(themeColorContent()).toBe(THEME_COLORS.light);
 
     emitSystemChange(true);
     await tick();
 
-    expect(resolvedTheme()).toBe('dark');
+    expect(appearance.resolvedTheme()).toBe('dark');
     expect(themeColorContent()).toBe(THEME_COLOR_DARK);
 
     emitSystemChange(false);
     await tick();
 
-    expect(resolvedTheme()).toBe('light');
+    expect(appearance.resolvedTheme()).toBe('light');
     expect(themeColorContent()).toBe(THEME_COLORS.light);
   });
 
   it('an explicit setting change repaints the meta from the same reactive source', async () => {
     installMatchMedia();
-    const { resolvedTheme, setTheme } = await freshModule();
-    await tick();
+    const { settings, appearance } = await freshAppearance();
 
-    setTheme('dark');
+    settings.setTheme('dark');
     await tick();
-    expect(resolvedTheme()).toBe('dark');
+    expect(appearance.resolvedTheme()).toBe('dark');
     expect(themeColorContent()).toBe(THEME_COLOR_DARK);
 
-    setTheme('light');
+    settings.setTheme('light');
     await tick();
-    expect(resolvedTheme()).toBe('light');
+    expect(appearance.resolvedTheme()).toBe('light');
     expect(themeColorContent()).toBe(THEME_COLORS.light);
   });
 
-  it('seeds systemDark from the query at load so a dark OS resolves before any event', async () => {
+  it('seeds systemDark from the query at install so a dark OS resolves before any event', async () => {
     installMatchMedia();
     query.matches = true;
-    const { resolvedTheme } = await freshModule();
-    await tick();
+    const { appearance } = await freshAppearance();
 
-    expect(resolvedTheme()).toBe('dark');
+    expect(appearance.resolvedTheme()).toBe('dark');
     expect(themeColorContent()).toBe(THEME_COLOR_DARK);
+  });
+
+  it('stops following the OS and the setting once disposed', async () => {
+    installMatchMedia();
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.dispose();
+    expect(query.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+
+    settings.setTheme('dark');
+    await tick();
+    expect(themeColorContent()).toBe(THEME_COLORS.light);
   });
 });
 
@@ -121,48 +148,44 @@ describe('setResolvedTheme', () => {
   it('requesting the appearance the dark OS already renders restores system', async () => {
     installMatchMedia();
     query.matches = true;
-    const { settingsState, setResolvedTheme } = await freshModule();
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.setResolvedTheme('dark');
     await tick();
 
-    setResolvedTheme('dark');
-    await tick();
-
-    expect(settingsState.theme).toBe('system');
+    expect(settings.theme).toBe('system');
   });
 
   it('requesting the appearance opposite a dark OS pins an explicit choice', async () => {
     installMatchMedia();
     query.matches = true;
-    const { settingsState, setResolvedTheme } = await freshModule();
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.setResolvedTheme('light');
     await tick();
 
-    setResolvedTheme('light');
-    await tick();
-
-    expect(settingsState.theme).toBe('light');
+    expect(settings.theme).toBe('light');
   });
 
   it('requesting the appearance opposite a light OS pins an explicit choice', async () => {
     installMatchMedia();
     query.matches = false;
-    const { settingsState, setResolvedTheme } = await freshModule();
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.setResolvedTheme('dark');
     await tick();
 
-    setResolvedTheme('dark');
-    await tick();
-
-    expect(settingsState.theme).toBe('dark');
+    expect(settings.theme).toBe('dark');
   });
 
   it('requesting the appearance the light OS already renders restores system', async () => {
     installMatchMedia();
     query.matches = false;
-    const { settingsState, setResolvedTheme } = await freshModule();
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.setResolvedTheme('light');
     await tick();
 
-    setResolvedTheme('light');
-    await tick();
-
-    expect(settingsState.theme).toBe('system');
+    expect(settings.theme).toBe('system');
   });
 });

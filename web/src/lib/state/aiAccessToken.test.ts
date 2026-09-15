@@ -21,7 +21,7 @@ vi.mock('../idb', () => ({
 import { loadAccessCode, saveAccessCode } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
 import { STORAGE_KEYS } from '../storage';
-import { aiCredentialKind, settingsState } from './settings.svelte';
+import { aiCredentialKind, setAiImage, settingsState } from './settings.svelte';
 import {
   captureAiAccessTokenFromUrl,
   hydrateAiAccessToken,
@@ -32,9 +32,9 @@ import {
 beforeEach(() => {
   localStorage.clear();
   secureStore.accessCode = null;
-  settingsState.aiAccessToken = '';
-  settingsState.aiUserApiKey = '';
-  settingsState.aiImageEnabled = false;
+  settingsState.mirrorAiAccessToken('');
+  settingsState.mirrorAiUserApiKey('');
+  setAiImage(false);
   vi.mocked(saveAccessCode)
     .mockReset()
     .mockImplementation(async (value: string) => {

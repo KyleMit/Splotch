@@ -33,8 +33,8 @@ beforeEach(() => {
   setColoringBook(true);
   setScreenshot(true);
   setAiImage(true);
-  settingsState.aiAccessToken = '';
-  settingsState.aiUserApiKey = '';
+  settingsState.mirrorAiAccessToken('');
+  settingsState.mirrorAiUserApiKey('');
   networkState.online = true;
   freeGenerationsState.available = true;
   selectBrush('pen');

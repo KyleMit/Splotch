@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
 
 import {
@@ -17,9 +17,10 @@ import {
   setDrawerOpen,
   setTheme,
   reloadSettings,
-  aiCredentialKind,
+  createSettings,
+  type SettingsState,
 } from './settings.svelte';
-import { selectBrush, toolState } from './tool.svelte';
+import { createTool, selectBrush, toolState } from './tool.svelte';
 
 beforeEach(() => {
   setSound(true);
@@ -33,9 +34,8 @@ beforeEach(() => {
 });
 
 describe('defaults', () => {
-  it('enables both sound sources for existing installs without source preferences', async () => {
-    vi.resetModules();
-    const { settingsState: freshSettings } = await import('./settings.svelte');
+  it('enables both sound sources for existing installs without source preferences', () => {
+    const freshSettings = createSettings(createTool());
 
     expect(freshSettings.drawingSoundEnabled).toBe(true);
     expect(freshSettings.deleteSoundEnabled).toBe(true);
@@ -205,28 +205,36 @@ describe('reloadSettings', () => {
 });
 
 describe('aiCredentialKind', () => {
+  let settings: SettingsState;
+
   beforeEach(() => {
-    settingsState.aiUserApiKey = '';
-    settingsState.aiAccessToken = '';
+    settings = createSettings(createTool());
   });
 
   it('returns apiKey when only the BYOK key is set', () => {
-    settingsState.aiUserApiKey = 'user-key';
-    expect(aiCredentialKind()).toBe('apiKey');
+    settings.mirrorAiUserApiKey('user-key');
+    expect(settings.aiCredentialKind()).toBe('apiKey');
   });
 
   it('returns accessCode when only the access token is set', () => {
-    settingsState.aiAccessToken = 'access-token';
-    expect(aiCredentialKind()).toBe('accessCode');
+    settings.mirrorAiAccessToken('access-token');
+    expect(settings.aiCredentialKind()).toBe('accessCode');
   });
 
   it('returns none when neither credential is set', () => {
-    expect(aiCredentialKind()).toBe('none');
+    expect(settings.aiCredentialKind()).toBe('none');
   });
 
   it('prefers apiKey when both credentials are set', () => {
-    settingsState.aiUserApiKey = 'user-key';
-    settingsState.aiAccessToken = 'access-token';
-    expect(aiCredentialKind()).toBe('apiKey');
+    settings.mirrorAiUserApiKey('user-key');
+    settings.mirrorAiAccessToken('access-token');
+    expect(settings.aiCredentialKind()).toBe('apiKey');
+  });
+
+  it('refuses a write into the read-only view', () => {
+    expect(() => {
+      Object.assign(settings, { aiUserApiKey: 'smuggled' });
+    }).toThrow(TypeError);
+    expect(settings.aiUserApiKey).toBe('');
   });
 });

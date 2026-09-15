@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
 import { networkState } from './network.svelte';
-import { settingsState } from './settings.svelte';
+import { setAiImage, settingsState } from './settings.svelte';
 import {
   createFreeGenerationGrantRefresher,
   freeGenerationsState,
@@ -38,9 +38,9 @@ function requestSignal(fetchMock: ReturnType<typeof vi.fn>, callIndex: number): 
 
 beforeEach(() => {
   persistedStateStatus.hydrated = false;
-  settingsState.aiImageEnabled = true;
-  settingsState.aiUserApiKey = '';
-  settingsState.aiAccessToken = '';
+  setAiImage(true);
+  settingsState.mirrorAiUserApiKey('');
+  settingsState.mirrorAiAccessToken('');
   networkState.online = true;
   freeGenerationsState.remaining = 10;
   freeGenerationsState.loading = true;
@@ -63,15 +63,15 @@ describe('grantRefreshReady', () => {
   it('stays false for disabled, BYOK, and managed-access paths', () => {
     persistedStateStatus.hydrated = true;
 
-    settingsState.aiImageEnabled = false;
+    setAiImage(false);
     expect(grantRefreshReady()).toBe(false);
 
-    settingsState.aiImageEnabled = true;
-    settingsState.aiUserApiKey = 'parent-key';
+    setAiImage(true);
+    settingsState.mirrorAiUserApiKey('parent-key');
     expect(grantRefreshReady()).toBe(false);
 
-    settingsState.aiUserApiKey = '';
-    settingsState.aiAccessToken = 'managed-code';
+    settingsState.mirrorAiUserApiKey('');
+    settingsState.mirrorAiAccessToken('managed-code');
     expect(grantRefreshReady()).toBe(false);
   });
 
@@ -112,7 +112,7 @@ describe('grantRefreshReady', () => {
     expect(freeGenerationsState).toMatchObject({ available: false, loading: true });
     expect(fetchMock).not.toHaveBeenCalled();
 
-    settingsState.aiUserApiKey = 'parent-key';
+    settingsState.mirrorAiUserApiKey('parent-key');
     refreshGrant();
     expect(freeGenerationsState).toMatchObject({ available: false, loading: false });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -129,7 +129,7 @@ describe('grantRefreshReady', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const signal = requestSignal(fetchMock, 0);
 
-    settingsState.aiUserApiKey = 'parent-key';
+    settingsState.mirrorAiUserApiKey('parent-key');
     refreshGrant();
     expect(signal.aborted).toBe(true);
     expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
@@ -175,7 +175,7 @@ describe('grantRefreshReady', () => {
     const signal = requestSignal(fetchMock, 0);
 
     const newRefreshGrant = createFreeGenerationGrantRefresher();
-    settingsState.aiUserApiKey = 'parent-key';
+    settingsState.mirrorAiUserApiKey('parent-key');
     newRefreshGrant();
     expect(signal.aborted).toBe(true);
 
@@ -298,19 +298,19 @@ describe('grantRefreshReady', () => {
     [
       'AI disabled',
       () => {
-        settingsState.aiImageEnabled = false;
+        setAiImage(false);
       },
     ],
     [
       'a parent key',
       () => {
-        settingsState.aiUserApiKey = 'parent-key';
+        settingsState.mirrorAiUserApiKey('parent-key');
       },
     ],
     [
       'a managed code',
       () => {
-        settingsState.aiAccessToken = 'managed-code';
+        settingsState.mirrorAiAccessToken('managed-code');
       },
     ],
   ])('does not retry on visibility return with %s', async (_label, makeIneligible) => {

@@ -1,7 +1,19 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest';
-import { createSecureCredentialCoordinator } from './secureCredentialCoordinator';
+import {
+  createSecureCredentialCoordinator,
+  type CredentialMirror,
+} from './secureCredentialCoordinator';
+
+function mirrorOf(state: { credential: string }): CredentialMirror {
+  return {
+    read: () => state.credential,
+    write: (value) => {
+      state.credential = value;
+    },
+  };
+}
 
 describe('createSecureCredentialCoordinator', () => {
   it('gives each coordinator an independent write queue', async () => {
@@ -9,16 +21,14 @@ describe('createSecureCredentialCoordinator', () => {
     const firstState = { credential: '' };
     const secondState = { credential: '' };
     const firstCoordinator = createSecureCredentialCoordinator(
-      firstState,
-      'credential',
+      mirrorOf(firstState),
       () =>
         new Promise<void>((resolve) => {
           finishFirstWrite = resolve;
         })
     );
     const secondCoordinator = createSecureCredentialCoordinator(
-      secondState,
-      'credential',
+      mirrorOf(secondState),
       async () => {}
     );
 
@@ -38,8 +48,7 @@ describe('createSecureCredentialCoordinator', () => {
     const events: string[] = [];
     const state = { credential: '' };
     const coordinator = createSecureCredentialCoordinator(
-      state,
-      'credential',
+      mirrorOf(state),
       () =>
         new Promise<void>((resolve) => {
           finishWrite = () => {
@@ -65,7 +74,7 @@ describe('createSecureCredentialCoordinator', () => {
     let finishHydration!: () => void;
     let ownsAfterWait = true;
     const state = { credential: '' };
-    const coordinator = createSecureCredentialCoordinator(state, 'credential', async () => {});
+    const coordinator = createSecureCredentialCoordinator(mirrorOf(state), async () => {});
 
     const hydration = coordinator.runHydration(
       (ownsHydration) =>
@@ -91,7 +100,7 @@ describe('createSecureCredentialCoordinator after a failed hydration', () => {
     const state = { credential: '' };
     let storedSecret = 'stored-secret';
     let requestOwned = true;
-    const coordinator = createSecureCredentialCoordinator(state, 'credential', async (value) => {
+    const coordinator = createSecureCredentialCoordinator(mirrorOf(state), async (value) => {
       storedSecret = value;
       requestOwned = false;
     });
@@ -108,7 +117,7 @@ describe('createSecureCredentialCoordinator after a failed hydration', () => {
     const state = { credential: '' };
     let storedSecret = 'stored-secret';
     let requestOwned = true;
-    const coordinator = createSecureCredentialCoordinator(state, 'credential', async (value) => {
+    const coordinator = createSecureCredentialCoordinator(mirrorOf(state), async (value) => {
       storedSecret = value;
       requestOwned = false;
     });

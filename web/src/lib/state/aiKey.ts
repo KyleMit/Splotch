@@ -18,8 +18,7 @@ async function persistAiUserApiKey(v: string) {
 }
 
 const aiKeyWriteCoordinator = createSecureCredentialCoordinator(
-  settingsState,
-  'aiUserApiKey',
+  { read: () => settingsState.aiUserApiKey, write: settingsState.mirrorAiUserApiKey },
   persistAiUserApiKey
 );
 
@@ -63,6 +62,6 @@ export function hydrateApiKey() {
       return;
     }
 
-    if (key) settingsState.aiUserApiKey = key;
+    if (key) settingsState.mirrorAiUserApiKey(key);
   });
 }

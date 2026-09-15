@@ -15,9 +15,7 @@ function loadFolderSave() {
   // next tap should retry the import instead of replaying the old failure.
   folderSaveModule ??= import('$lib/drawing/folderSave').then(
     (m) => {
-      m.setSaveFolderClearedListener(() => {
-        settingsState.saveFolderName = null;
-      });
+      m.setSaveFolderClearedListener(() => settingsState.mirrorSaveFolderName(null));
       return m;
     },
     (err) => {
@@ -50,7 +48,7 @@ export async function changeSaveFolder() {
   const mod = await tryLoadFolderSave();
   if (!mod) return;
   const name = await mod.chooseSaveFolder();
-  if (name) settingsState.saveFolderName = name;
+  if (name) settingsState.mirrorSaveFolderName(name);
 }
 
 // Forget the chosen folder, so web saves revert to the browser's default
@@ -59,7 +57,7 @@ export async function forgetSaveFolder() {
   const mod = await tryLoadFolderSave();
   if (!mod) return;
   await mod.clearSaveFolder();
-  settingsState.saveFolderName = null;
+  settingsState.mirrorSaveFolderName(null);
 }
 
 // Boot hydration (web/desktop only): read the remembered folder name from the
@@ -83,5 +81,5 @@ export async function hydrateSaveFolder() {
   if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
   const mod = await tryLoadFolderSave();
   if (!mod) return;
-  settingsState.saveFolderName = await mod.getSaveFolderName();
+  settingsState.mirrorSaveFolderName(await mod.getSaveFolderName());
 }
