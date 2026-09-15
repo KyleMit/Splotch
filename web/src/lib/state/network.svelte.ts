@@ -13,7 +13,22 @@ export interface NetworkState {
   dispose(): void;
 }
 
-export function createNetwork(): NetworkState {
+// The two plugin members the native path uses, so a test can stand the plugin
+// in without the rest of its surface. `loadNetworkPlugin` is a test seam:
+// production always takes the default, and a test hands in a loader it can
+// hold open to prove a disposal during the pending import subscribes to nothing.
+interface NetworkPluginLike {
+  getStatus(): Promise<{ connected: boolean }>;
+  addListener(
+    event: 'networkStatusChange',
+    listener: (status: { connected: boolean }) => void
+  ): Promise<{ remove(): void | Promise<void> }>;
+}
+type NetworkPluginModule = { Network: NetworkPluginLike };
+
+export function createNetwork(
+  loadNetworkPlugin?: () => Promise<NetworkPluginModule>
+): NetworkState {
   const s = $state({ online: true });
 
   let installed = false;
@@ -26,13 +41,13 @@ export function createNetwork(): NetworkState {
     s.online = online;
   }
 
-  function installNativeStatus() {
+  function installNativeStatus(loadPlugin: () => Promise<NetworkPluginModule>) {
     let receivedStatusEvent = false;
     let disposed = false;
     removeNativeListener = () => {
       disposed = true;
     };
-    void import('@capacitor/network')
+    void loadPlugin()
       .then(({ Network }) => {
         if (disposed) return;
         Network.getStatus()
@@ -70,8 +85,11 @@ export function createNetwork(): NetworkState {
       window.addEventListener('online', onOnline);
       window.addEventListener('offline', onOffline);
       // __IS_CAPACITOR__ makes the branch compile-time dead on web so Rollup drops
-      // the plugin chunk (isNative() alone can't tree-shake across modules).
-      if (__IS_CAPACITOR__ && isNative()) installNativeStatus();
+      // the plugin chunk (isNative() alone can't tree-shake across modules). The
+      // default loader stays inside the branch for the same reason.
+      if (__IS_CAPACITOR__ && isNative()) {
+        installNativeStatus(loadNetworkPlugin ?? (() => import('@capacitor/network')));
+      }
     },
     dispose() {
       if (!installed) return;

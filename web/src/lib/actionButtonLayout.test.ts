@@ -409,13 +409,14 @@ const BUTTON_SIZE_FIXTURES = [
     buttonCount: 5,
     budgetWins: false,
   },
-  // Width past height: the layout store derives orientation from the viewport,
-  // so a landscape fixture has to be landscape-shaped.
+  // Landscape-shaped, since the store derives orientation from the viewport, and
+  // tall enough (height at the tablet floor) that the phone-landscape media query
+  // real CSS applies would not match either.
   {
     name: 'narrow landscape tablet with every button',
     orientation: 'landscape',
-    viewportWidth: 560,
-    viewportHeight: 500,
+    viewportWidth: 620,
+    viewportHeight: 600,
     buttonCount: 6,
     budgetWins: true,
   },

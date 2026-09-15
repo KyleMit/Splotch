@@ -121,6 +121,28 @@ describe('native network status', () => {
     expect(state.online).toBe(false);
   });
 
+  it('subscribes to nothing when disposed while the plugin is still loading', async () => {
+    mocks.getStatus.mockResolvedValue({ connected: false });
+    mocks.addListener.mockResolvedValue({ remove: () => {} });
+    let deliverPlugin!: () => void;
+    const pluginLoaded = new Promise<void>((resolve) => (deliverPlugin = resolve));
+    network = createNetwork(() =>
+      pluginLoaded.then(() => ({
+        Network: { getStatus: mocks.getStatus, addListener: mocks.addListener },
+      }))
+    );
+    network.install();
+
+    network.dispose();
+    deliverPlugin();
+    await pluginLoaded;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mocks.getStatus).not.toHaveBeenCalled();
+    expect(mocks.addListener).not.toHaveBeenCalled();
+    expect(network.online).toBe(true);
+  });
+
   it('removes the native listener and ignores late events once disposed', async () => {
     mocks.getStatus.mockResolvedValue({ connected: true });
     const remove = vi.fn();
