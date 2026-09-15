@@ -192,7 +192,9 @@ test('a render crash still offers a restart when the error screen chunk cannot l
   });
   await gotoApp(page);
   await page.evaluate(() => {
-    HTMLDialogElement.prototype.showModal = () => {
+    const showModal = HTMLDialogElement.prototype.showModal;
+    HTMLDialogElement.prototype.showModal = function () {
+      HTMLDialogElement.prototype.showModal = showModal;
       throw new Error('injected render crash');
     };
   });
