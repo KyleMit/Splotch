@@ -90,6 +90,17 @@ export const NATIVE_ONLY_MODULE_MARKERS = [
       "if (__IS_CAPACITOR__) listen(removers, document, 'resume', handlers.resyncOnReentry);",
     bundlePattern: /document\s*,\s*["'`]resume["'`]\s*,/,
   },
+  // The native coloring-pack store is reached only behind __IS_CAPACITOR__
+  // (lib/coloringPacks/manager.ts), so its plugin registration literal must
+  // ship in the native build and never in the web one. Guarded here rather
+  // than in web/tests/startup-bundle.spec.ts, whose web-only scan can neither
+  // see the module nor name a marker for it.
+  {
+    feature: 'native coloring-pack store',
+    sourcePath: 'web/src/lib/plugins/coloringPacks.ts',
+    sourceNeedle: "registerPlugin<ColoringPacksPlugin>('ColoringPacks')",
+    bundlePattern: /["'`]ColoringPacks["'`]/,
+  },
 ];
 
 // Scanning by **host** rather than whole URL is deliberate. The route's

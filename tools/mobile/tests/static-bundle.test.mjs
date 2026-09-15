@@ -166,22 +166,33 @@ describe('native-only bundle boundaries', () => {
     expect(nativeOnlyMarkerSourceProblems()).toEqual([]);
     expect(nativeOnlyMarkerSourceProblems(() => 'missing')).toEqual([
       expect.stringContaining('no longer contains the Capacitor resume lifecycle boundary'),
+      expect.stringContaining('no longer contains the native coloring-pack store boundary'),
     ]);
   });
 
-  it('requires the resume lifecycle in native output and excludes it from web output', () => {
+  it('requires the native-only markers in native output and excludes them from web output', () => {
     const root = mkdtempSync(join(tmpdir(), 'splotch-platform-boundary-'));
     try {
-      writeFileSync(join(root, 'app.js'), "register(document,'resume',resync)");
+      writeFileSync(
+        join(root, 'app.js'),
+        "register(document,'resume',resync);const p=registerPlugin(`ColoringPacks`)"
+      );
       expect(nativeOnlyMarkerBundleProblems(root, true)).toEqual([]);
       expect(nativeOnlyMarkerBundleProblems(root, false)).toEqual([
         'Web bundle retains the native-only Capacitor resume lifecycle',
+        'Web bundle retains the native-only native coloring-pack store',
       ]);
 
-      writeFileSync(join(root, 'app.js'), 'register(document,"visibilitychange",resync)');
+      // An identifier that merely contains the plugin name (a settings mutator, the
+      // state factory) is not the registration literal.
+      writeFileSync(
+        join(root, 'app.js'),
+        'register(document,"visibilitychange",resync);const s={setColoringPacksAllowMetered:l}'
+      );
       expect(nativeOnlyMarkerBundleProblems(root, false)).toEqual([]);
       expect(nativeOnlyMarkerBundleProblems(root, true)).toEqual([
         'Native bundle is missing the native-only Capacitor resume lifecycle',
+        'Native bundle is missing the native-only native coloring-pack store',
       ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -189,7 +200,7 @@ describe('native-only bundle boundaries', () => {
   });
 
   it('defines one source-backed marker for every checked native-only feature', () => {
-    expect(NATIVE_ONLY_MODULE_MARKERS).toHaveLength(1);
+    expect(NATIVE_ONLY_MODULE_MARKERS).toHaveLength(2);
     expect(NATIVE_ONLY_MODULE_MARKERS.every(({ sourceNeedle }) => sourceNeedle.length > 0)).toBe(
       true
     );
