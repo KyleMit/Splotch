@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRawSnippet, type Component } from 'svelte';
+import { parse } from 'svelte/compiler';
 import { render } from 'svelte/server';
 import { describe, expect, it, vi } from 'vitest';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
@@ -257,8 +258,9 @@ function readIfPresent(path: string): string | null {
 
 // A module-level instance is a top-level binding initialised by a createX()
 // factory or a rune. Test files are not shipped and are skipped.
+// The initializer may sit on the line after `=` once a formatter wraps it.
 const MODULE_INSTANCE =
-  /^(?:export )?(?:const|let) (\w+)(?:\s*:[^=\n]+)? = (?:create[A-Z]\w*[<(]|\$state)/gm;
+  /^(?:export )?(?:const|let) (\w+)(?:\s*:[^=\n]+)? =\s*(?:create[A-Z]\w*\s*[<(]|\$state)/gm;
 
 describe('the state observer table', () => {
   it('observes every module-level instance declared under lib/', () => {
@@ -271,6 +273,26 @@ describe('the state observer table', () => {
 
     expect(declared.length).toBeGreaterThan(0);
     expect(declared.filter((name) => !(name in OBSERVERS))).toEqual([]);
+  });
+
+  // A component's `<script module>` runs once per server instance too, so a rune
+  // there is shared across requests exactly like a lib/state module — but it has
+  // no read API to observe. Shared state belongs in lib/state, where the table
+  // above can see it; a module script holds constants and helpers only.
+  it('finds no rune state in any component module script', () => {
+    const svelteFiles = filesUnder(join(routesDir, '..'), (path) => path.endsWith('.svelte'));
+    const moduleScripts = svelteFiles.flatMap((path) => {
+      const source = readFileSync(path, 'utf8');
+      const module = parse(source, { modern: true }).module;
+      return module ? [{ path, body: source.slice(module.start, module.end) }] : [];
+    });
+
+    expect(moduleScripts.length).toBeGreaterThan(0);
+    expect(
+      moduleScripts
+        .filter(({ body }) => /\$state\b|\$derived\b/.test(body))
+        .map(({ path }) => relative(join(routesDir, '..'), path))
+    ).toEqual([]);
   });
 });
 
