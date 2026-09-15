@@ -45,33 +45,40 @@
   // on when it opens.
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
 
-  // Whether the overlay was open the last time the landing effect ran.
-  // Deliberately untracked: nothing renders it, and tracking it would make the
-  // effect below its own dependency.
-  let wasOpen = false;
+  // Intentionally untracked: read only to tell an open transition from a request
+  // arriving while already open.
+  let dialogEl: HTMLDialogElement;
 
-  // The landing view, for both ways a section is reached. Opening Settings lands
-  // on the hub (phone) / the deep-linked section, never wherever the last visit
-  // stopped reading. A request can also arrive while the overlay is already open,
-  // with no open transition behind it: a Grown-Ups Only challenge raised over a
-  // Settings action (sending feedback, following a link out) offers its own way
-  // into Parent Center. The open transition is latched rather than read from a
-  // second effect so both cases stay in one place — consuming the request reruns
-  // this, and without the latch that rerun would read "nothing requested, still
-  // open" and bounce the parent straight back to the hub.
+  // Counts opens for the wide shell, which re-stages its pane on each one.
+  let openGeneration = $state(0);
+
+  function landOn(section: SectionId) {
+    markSectionSeen(section);
+    view = section;
+    clearRequestedSettingsSection();
+  }
+
+  // The landing view on each open: the deep-linked section, else the hub
+  // (phone) — never wherever the last visit stopped reading. Runs from the
+  // dialog action just before showModal(), so the first painted frame already
+  // shows the landing.
+  function landOnOpen() {
+    openGeneration += 1;
+    const requested = uiState.requestedSettingsSection;
+    if (requested) landOn(requested);
+    else view = 'hub';
+  }
+
+  // A request can also arrive while the overlay is already open, with no open
+  // transition behind it: a Grown-Ups Only challenge raised over a Settings
+  // action (sending feedback, following a link out) offers its own way into
+  // Parent Center. During the open flush the dialog is not yet shown, so that
+  // request is left for landOnOpen; only a request against a shown dialog lands
+  // here. Consuming it reruns this once with nothing requested.
   $effect(() => {
-    const open = settingsModal.open;
-    const requestedSection = uiState.requestedSettingsSection;
-    const opening = open && !wasOpen;
-    wasOpen = open;
-    if (!open) return;
-    if (requestedSection) {
-      markSectionSeen(requestedSection);
-      view = requestedSection;
-      clearRequestedSettingsSection();
-      return;
-    }
-    if (opening) view = 'hub';
+    const requested = uiState.requestedSettingsSection;
+    if (!requested || !settingsModal.open || !dialogEl.open) return;
+    landOn(requested);
   });
 
   function openSection(id: SectionId, trigger: HTMLElement) {
@@ -153,10 +160,12 @@
   class:wide={shell.wide}
   class:compact={shell.compact}
   id="settingsModal"
+  bind:this={dialogEl}
   use:modalDialog={() => ({
     open: settingsModal.open,
     origin: settingsModal.origin,
     onRequestClose: settingsModal.hide,
+    onOpen: landOnOpen,
   })}
 >
   <div class="settings-content">
@@ -166,7 +175,7 @@
       <div class="settings-header">
         <DialogHeader onclose={settingsModal.hide} closeFeedback><h2>Settings</h2></DialogHeader>
       </div>
-      <WideShell landingSection={activeSection} />
+      <WideShell landingSection={activeSection} {openGeneration} />
     {:else if view === 'hub'}
       <!-- Phone: top-level hub list. -->
       <div class="settings-header">
