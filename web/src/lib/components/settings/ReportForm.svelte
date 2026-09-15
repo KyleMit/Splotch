@@ -36,6 +36,7 @@
   const latest = createLatestRequest();
 
   function reset() {
+    latest.detach();
     kind = 'bug';
     message = '';
     includeDevice = false;
@@ -47,9 +48,10 @@
 
   // Deliberately no abort on open/close, unlike AiKeyManager's idempotent
   // verify: this POST files an issue, so a report the parent already sent must
-  // be left to land. A late result can only write to this instance, and every
-  // reopen clears it through `reset` below, so stale feedback never greets the
-  // next visit.
+  // be left to land. `reset` detaches it instead: its result belongs to the
+  // visit that sent it, so it is dropped when it arrives rather than clearing
+  // the draft the parent has since begun, and the next send neither waits on
+  // it nor aborts it.
   $effect(() => {
     if (open) reset();
   });
