@@ -6,6 +6,7 @@ paths:
   - "web/playwright.config.ts"
   - "web/playwright.shared.ts"
   - "web/vitest.config.ts"
+  - "web/vitest.webSsr.config.ts"
   - "web/vitest-setup.ts"
   - ".maestro/**"
 ---

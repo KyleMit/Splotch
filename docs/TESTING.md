@@ -155,9 +155,9 @@ Three Node smoke entry points guard the server contract:
 ## Unit tests — Vitest
 
 ```bash
-npm run test:unit          # one-shot
-npm run test:unit:coverage # one-shot with the measured coverage ratchet enforced
-npm run test:unit:watch    # watch mode
+npm run test:unit          # one-shot, then the web-build SSR guards
+npm run test:unit:coverage # the same, with the measured coverage ratchet enforced on the first run
+npm run test:unit:watch    # watch mode (unit config only)
 ```
 
 Configured in `web/vitest.config.ts`. Environment is **happy-dom** (not jsdom). Covers the pure
@@ -191,6 +191,31 @@ callback keeps running, producing secondary mock-count failures in a test that d
 Prefer fake timers when they represent the behavior faithfully. If a cold dynamic import alone
 exceeds the default timeout on a contended shared host, scope a named larger timeout to that one
 test — never raise the whole file's timeout with `vi.setConfig`.
+
+### Web-build SSR guards
+
+`test:unit` and `test:unit:coverage` each finish with a second Vitest run,
+`vitest run --config vitest.webSsr.config.ts`, over `web/src/**/*.webSsr.test.ts` only. The unit
+config excludes that pattern. The second config differs in two ways, and both are the point:
+
+* It compiles `__IS_CAPACITOR__` as `false`, as the Netlify SSR bundle does. The unit config
+  compiles it `true`, so a web-only render branch never renders there.
+* It loads no setup file, so `browser` is not pinned `true`. A test in this tier mocks
+  `$app/environment` to `browser: false`, which is what the server bundle sees.
+
+`perRequestRoutes.webSsr.test.ts` lives here (#1924). It server-renders every page the web build
+renders per request and fails if any module-level state reads differently afterwards, because that
+state is shared by every request a server instance answers. Its drift checks fail when a new
+module-level instance under `lib/` has no observer in its table, when a component's
+`<script module>` declares rune state, or when a page's effective `prerender` becomes `false`
+without an entry in its render table. A new per-request page or a new `lib/state` singleton
+therefore needs a line in that file before the suite is green.
+
+Run the tier on its own with:
+
+```bash
+node tools/run-web-tool.mjs vitest run --config vitest.webSsr.config.ts
+```
 
 ## Asset-pipeline unit tests — Vitest
 
