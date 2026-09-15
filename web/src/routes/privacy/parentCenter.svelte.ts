@@ -14,20 +14,19 @@ export function createPrivacyParentCenter() {
   let managingPolicies = $state(false);
   let gateComponent = $state<Component | null>(null);
   let modalComponent = $state<Component | null>(null);
-  let refreshFreeGenerationGrant = $state<(() => void) | null>(null);
 
   const loadParentalGate = createSingleFlight(
     async () => (await import('$lib/components/ParentalGate.svelte')).default
   );
 
+  // The free-generation grant follows hydration on its own: the store the
+  // modal imports installs its reaction when its module loads.
   const loadSettingsModal = createSingleFlight(async () => {
-    const [module, { hydratePersistedState }, grants] = await Promise.all([
+    const [module, { hydratePersistedState }] = await Promise.all([
       import('$lib/components/SettingsModal.svelte'),
       import('$lib/boot/persistedState'),
-      import('$lib/state/freeGenerations.svelte'),
     ]);
     await hydratePersistedState();
-    refreshFreeGenerationGrant ??= grants.createFreeGenerationGrantRefresher();
     return module.default;
   });
 
@@ -70,10 +69,6 @@ export function createPrivacyParentCenter() {
     void waitForDialogRetirement(dialog).then(() => {
       if (!settingsModal.open) managingPolicies = false;
     });
-  });
-
-  $effect(() => {
-    refreshFreeGenerationGrant?.();
   });
 
   return {

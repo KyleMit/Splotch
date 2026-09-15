@@ -22,10 +22,7 @@
   } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { aiGenerationState, restoreAiResult } from '$lib/state/aiGeneration.svelte';
-  import {
-    freeGenerationsState,
-    createFreeGenerationGrantRefresher,
-  } from '$lib/state/freeGenerations.svelte';
+  import { freeGenerationsState, retryOnVisibleReturn } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { layoutState } from '$lib/state/layout.svelte';
   import { isAiImageButtonVisible, publishActionPanelState } from '$lib/actionButtonLayout';
@@ -59,7 +56,6 @@
   let drawerMotionProbeFrame: number | undefined;
   // Intentionally untracked: this only memoizes the save-time chunk after the first screenshot press.
   let screenshotModulePromise: Promise<typeof import('$lib/drawing/screenshot')> | null = null;
-  const refreshFreeGenerationGrant = createFreeGenerationGrantRefresher();
 
   // Flyouts share one open-state slot so dismissal and focus restoration
   // always act on the control that owns the open menu.
@@ -141,10 +137,6 @@
   $effect(() => {
     if (!panelEl) return;
     publishActionPanelState(panelEl, drawerExpanded, buttonScale);
-  });
-
-  $effect(() => {
-    refreshFreeGenerationGrant();
   });
 
   // The stroke-size lines preview the ink you'll lay down, tinted via
@@ -358,7 +350,7 @@
   }
 </script>
 
-<svelte:document onvisibilitychange={refreshFreeGenerationGrant} />
+<svelte:document onvisibilitychange={retryOnVisibleReturn} />
 
 <!-- scribbleGuard cancels a stylus tap's touch stream so it can't arm iPadOS
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's

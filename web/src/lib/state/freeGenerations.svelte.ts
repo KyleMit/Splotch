@@ -53,7 +53,13 @@ export interface FreeGenerationsState {
   setFreeGenerationsRemaining(remaining: number): void;
   setFreeGenerationsUnavailable(): void;
   grantRefreshReady(): boolean;
-  createFreeGenerationGrantRefresher(): (event?: Event) => void;
+  // Follows readiness and connectivity: a grant is requested whenever both hold
+  // and none is known yet, and cancelled the moment either drops.
+  install(): void;
+  dispose(): void;
+  // The one trigger that is an event rather than a state change: coming back to
+  // a visible page retries a grant that failed, while ready and online.
+  retryOnVisibleReturn(): void;
 }
 
 export function createFreeGenerations({
@@ -68,6 +74,7 @@ export function createFreeGenerations({
   });
 
   const freeGenerationGrantRequest = createLatestRequest();
+  let stopEffects: (() => void) | null = null;
 
   function setFreeGenerationsRemaining(remaining: number): void {
     s.remaining = Math.max(0, Math.min(FREE_GENERATION_LIMIT, Math.floor(remaining)));
@@ -120,6 +127,27 @@ export function createFreeGenerations({
     }
   }
 
+  function requestGrant() {
+    s.loading = true;
+    void refreshFreeGenerationGrant(freeGenerationGrantRequest);
+  }
+
+  // Re-runs when readiness, connectivity, or the known grant changes. A failed
+  // request leaves `available` false without changing it, so a failure alone
+  // never re-runs this: the next attempt waits for a reconnect, a settings
+  // change, or a visible return.
+  function followEligibility() {
+    const ready = grantRefreshReady();
+    const online = network.online;
+    if (!ready || !online) {
+      freeGenerationGrantRequest.cancel();
+      if (persistedStateStatus.hydrated && !ready) setFreeGenerationsUnavailable();
+      return;
+    }
+    if (s.available) return;
+    requestGrant();
+  }
+
   return {
     get remaining() {
       return s.remaining;
@@ -133,28 +161,23 @@ export function createFreeGenerations({
     setFreeGenerationsRemaining,
     setFreeGenerationsUnavailable,
     grantRefreshReady,
-    createFreeGenerationGrantRefresher() {
-      let wasReady = false;
-      let wasOnline = false;
-      return (event) => {
-        const ready = grantRefreshReady();
-        const online = network.online;
-        const returnedToApp =
-          event?.type === 'visibilitychange' && document.visibilityState === 'visible';
-        const shouldRearm =
-          (ready && !wasReady) ||
-          (online && !wasOnline) ||
-          (returnedToApp && ready && online && !s.loading);
-        wasReady = ready;
-        wasOnline = online;
-        if (!ready || !online) freeGenerationGrantRequest.cancel();
-        if (shouldRearm && !s.available) s.loading = true;
-        if (shouldRearm && ready && online && s.loading) {
-          void refreshFreeGenerationGrant(freeGenerationGrantRequest);
-        } else if (persistedStateStatus.hydrated && !ready) {
-          setFreeGenerationsUnavailable();
-        }
-      };
+    install() {
+      stopEffects ??= $effect.root(() => {
+        $effect(followEligibility);
+      });
+    },
+    dispose() {
+      stopEffects?.();
+      stopEffects = null;
+      freeGenerationGrantRequest.cancel();
+    },
+    // Only a grant that failed is retried here: one in flight keeps its request,
+    // and a known grant needs none. Offline or not ready, there is nothing to
+    // retry into, and a hidden page is not a return.
+    retryOnVisibleReturn() {
+      if (document.visibilityState !== 'visible') return;
+      if (!grantRefreshReady() || !network.online || s.loading || s.available) return;
+      requestGrant();
     },
   };
 }
@@ -165,8 +188,10 @@ export const freeGenerationsState = createFreeGenerations({
   persistedStateStatus,
 });
 
-export const {
-  setFreeGenerationsRemaining,
-  setFreeGenerationsUnavailable,
-  createFreeGenerationGrantRefresher,
-} = freeGenerationsState;
+export const { setFreeGenerationsRemaining, setFreeGenerationsUnavailable, retryOnVisibleReturn } =
+  freeGenerationsState;
+
+// Installed at module load (no component host): the grant follows readiness
+// from the moment the module is part of a route, which is when a surface that
+// shows it first imports it. Client-only: effects never run during SSR anyway.
+if (typeof document !== 'undefined') freeGenerationsState.install();
