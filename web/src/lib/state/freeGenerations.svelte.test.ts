@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
-import { networkState } from './network.svelte';
-import { settingsState } from './settings.svelte';
 import {
-  createFreeGenerationGrantRefresher,
-  freeGenerationsState,
-  grantRefreshReady,
-} from './freeGenerations.svelte';
+  createPersistedStateStatus,
+  type PersistedStateStatus,
+} from '$lib/boot/persistedStateStatus.svelte';
+import { createNetwork, type NetworkState } from './network.svelte';
+import { createSettings, type SettingsState } from './settings.svelte';
+import { createTool } from './tool.svelte';
+import { createFreeGenerations, type FreeGenerationsState } from './freeGenerations.svelte';
 
 function deferred<T>(): {
   promise: Promise<T>;
@@ -36,15 +36,25 @@ function requestSignal(fetchMock: ReturnType<typeof vi.fn>, callIndex: number): 
   return signal;
 }
 
+// Every case gets its own store and dependencies: AI on with no credential, the
+// network online, hydration not yet landed, the grant loading and unavailable.
+let persistedStateStatus: PersistedStateStatus;
+let networkState: NetworkState;
+let settingsState: SettingsState;
+let freeGenerationsState: FreeGenerationsState;
+
 beforeEach(() => {
-  persistedStateStatus.hydrated = false;
-  settingsState.aiImageEnabled = true;
-  settingsState.aiUserApiKey = '';
-  settingsState.aiAccessToken = '';
-  networkState.online = true;
-  freeGenerationsState.remaining = 10;
-  freeGenerationsState.loading = true;
-  freeGenerationsState.available = false;
+  localStorage.clear();
+  persistedStateStatus = createPersistedStateStatus();
+  networkState = createNetwork();
+  settingsState = createSettings(createTool());
+  settingsState.setAiImage(true);
+  networkState.setOnline(true);
+  freeGenerationsState = createFreeGenerations({
+    settings: settingsState,
+    network: networkState,
+    persistedStateStatus,
+  });
 });
 
 afterEach(() => {
@@ -54,36 +64,36 @@ afterEach(() => {
 
 describe('grantRefreshReady', () => {
   it('waits for credential hydration before allowing the pseudonymous status request', () => {
-    expect(grantRefreshReady()).toBe(false);
+    expect(freeGenerationsState.grantRefreshReady()).toBe(false);
 
-    persistedStateStatus.hydrated = true;
-    expect(grantRefreshReady()).toBe(true);
+    persistedStateStatus.markHydrated();
+    expect(freeGenerationsState.grantRefreshReady()).toBe(true);
   });
 
   it('stays false for disabled, BYOK, and managed-access paths', () => {
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
 
-    settingsState.aiImageEnabled = false;
-    expect(grantRefreshReady()).toBe(false);
+    settingsState.setAiImage(false);
+    expect(freeGenerationsState.grantRefreshReady()).toBe(false);
 
-    settingsState.aiImageEnabled = true;
-    settingsState.aiUserApiKey = 'parent-key';
-    expect(grantRefreshReady()).toBe(false);
+    settingsState.setAiImage(true);
+    settingsState.mirrorAiUserApiKey('parent-key');
+    expect(freeGenerationsState.grantRefreshReady()).toBe(false);
 
-    settingsState.aiUserApiKey = '';
-    settingsState.aiAccessToken = 'managed-code';
-    expect(grantRefreshReady()).toBe(false);
+    settingsState.mirrorAiUserApiKey('');
+    settingsState.mirrorAiAccessToken('managed-code');
+    expect(freeGenerationsState.grantRefreshReady()).toBe(false);
   });
 
   it('re-arms a failed status request so a reconnect can recover the free path', async () => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const fetchMock = vi
       .fn()
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValueOnce(Response.json({ ok: true, remaining: 7, limit: 10 }, { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
@@ -91,10 +101,10 @@ describe('grantRefreshReady', () => {
 
     refreshGrant();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     await vi.waitFor(() => expect(freeGenerationsState.available).toBe(true));
@@ -102,34 +112,34 @@ describe('grantRefreshReady', () => {
   });
 
   it('waits while an eligible grant is offline and marks an ineligible grant unavailable', () => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
-    networkState.online = false;
+    persistedStateStatus.markHydrated();
+    networkState.setOnline(false);
     refreshGrant();
     expect(freeGenerationsState).toMatchObject({ available: false, loading: true });
     expect(fetchMock).not.toHaveBeenCalled();
 
-    settingsState.aiUserApiKey = 'parent-key';
+    settingsState.mirrorAiUserApiKey('parent-key');
     refreshGrant();
     expect(freeGenerationsState).toMatchObject({ available: false, loading: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('ignores an eligible response after the free path becomes ineligible', async () => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const pending = deferred<Response>();
     const fetchMock = vi.fn().mockReturnValue(pending.promise);
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const signal = requestSignal(fetchMock, 0);
 
-    settingsState.aiUserApiKey = 'parent-key';
+    settingsState.mirrorAiUserApiKey('parent-key');
     refreshGrant();
     expect(signal.aborted).toBe(true);
     expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
@@ -142,12 +152,12 @@ describe('grantRefreshReady', () => {
 
   it('does not restart a pending request when refresh state is unchanged', async () => {
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const pending = deferred<Response>();
     const fetchMock = vi.fn().mockReturnValue(pending.promise);
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const signal = requestSignal(fetchMock, 0);
@@ -164,18 +174,18 @@ describe('grantRefreshReady', () => {
   });
 
   it('lets a new refresher invalidate a request owned by an old instance', async () => {
-    const oldRefreshGrant = createFreeGenerationGrantRefresher();
+    const oldRefreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const pending = deferred<Response>();
     const fetchMock = vi.fn().mockReturnValue(pending.promise);
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     oldRefreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const signal = requestSignal(fetchMock, 0);
 
-    const newRefreshGrant = createFreeGenerationGrantRefresher();
-    settingsState.aiUserApiKey = 'parent-key';
+    const newRefreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
+    settingsState.mirrorAiUserApiKey('parent-key');
     newRefreshGrant();
     expect(signal.aborted).toBe(true);
 
@@ -186,20 +196,20 @@ describe('grantRefreshReady', () => {
   });
 
   it('keeps the reconnect result when the older request settles first', async () => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const older = deferred<Response>();
     const newer = deferred<Response>();
     const fetchMock = vi.fn().mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const olderSignal = requestSignal(fetchMock, 0);
 
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(olderSignal.aborted).toBe(true);
@@ -215,19 +225,19 @@ describe('grantRefreshReady', () => {
   });
 
   it('keeps the reconnect result when the newer request settles first', async () => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const older = deferred<Response>();
     const newer = deferred<Response>();
     const fetchMock = vi.fn().mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
@@ -240,19 +250,19 @@ describe('grantRefreshReady', () => {
   });
 
   it('ignores an invalidated failure after a newer request succeeds', async () => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const older = deferred<Response>();
     const newer = deferred<Response>();
     const fetchMock = vi.fn().mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
@@ -265,14 +275,14 @@ describe('grantRefreshReady', () => {
 
   it('retries a transient status failure while online without waiting for a reconnect', async () => {
     const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const fetchMock = vi
       .fn()
       .mockRejectedValueOnce(new Error('connection reset'))
       .mockResolvedValue(Response.json({ ok: true, remaining: 7, limit: 10 }, { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
@@ -292,33 +302,33 @@ describe('grantRefreshReady', () => {
     [
       'offline',
       () => {
-        networkState.online = false;
+        networkState.setOnline(false);
       },
     ],
     [
       'AI disabled',
       () => {
-        settingsState.aiImageEnabled = false;
+        settingsState.setAiImage(false);
       },
     ],
     [
       'a parent key',
       () => {
-        settingsState.aiUserApiKey = 'parent-key';
+        settingsState.mirrorAiUserApiKey('parent-key');
       },
     ],
     [
       'a managed code',
       () => {
-        settingsState.aiAccessToken = 'managed-code';
+        settingsState.mirrorAiAccessToken('managed-code');
       },
     ],
   ])('does not retry on visibility return with %s', async (_label, makeIneligible) => {
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const fetchMock = vi.fn().mockRejectedValue(new Error('connection reset'));
     vi.stubGlobal('fetch', fetchMock);
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
 
@@ -330,19 +340,19 @@ describe('grantRefreshReady', () => {
   });
 
   it('ignores an invalidated malformed response after a newer request succeeds', async () => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const older = deferred<Response>();
     const newer = deferred<Response>();
     const fetchMock = vi.fn().mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    networkState.online = false;
+    networkState.setOnline(false);
     refreshGrant();
-    networkState.online = true;
+    networkState.setOnline(true);
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
@@ -364,11 +374,11 @@ describe('grantRefreshReady', () => {
     ['a null body', null],
     ['an array body', []],
   ])('settles a 200 grant response with %s as unavailable', async (_label, body) => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     const fetchMock = vi.fn().mockResolvedValue(Response.json(body, { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
 
@@ -377,13 +387,13 @@ describe('grantRefreshReady', () => {
   });
 
   it('settles a non-finite remaining count as unavailable', async () => {
-    const refreshGrant = createFreeGenerationGrantRefresher();
+    const refreshGrant = freeGenerationsState.createFreeGenerationGrantRefresher();
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(new Response('{"ok":true,"remaining":1e400}'))
     );
 
-    persistedStateStatus.hydrated = true;
+    persistedStateStatus.markHydrated();
     refreshGrant();
 
     await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));

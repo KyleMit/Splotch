@@ -28,8 +28,10 @@ import { leaveConfirmModal } from '$lib/state/leaveConfirm';
 import {
   dismissGate,
   parentalGateState,
+  pressGateDigit,
   requireParentalGate,
   setParentalGateMode,
+  submitGateAnswer,
 } from '$lib/state/parentalGate.svelte';
 import { settingsModal } from '$lib/state/ui.svelte';
 import { listenForSystemBack, respondToSystemBack } from './systemBackHandler';
@@ -64,7 +66,7 @@ async function flush() {
 
 describe('respondToSystemBack', () => {
   beforeEach(() => {
-    canvasState.canvasEmpty = true;
+    canvasState.setCanvasEmpty(true);
     plugin.moveToBackground.mockClear();
   });
 
@@ -86,7 +88,7 @@ describe('respondToSystemBack', () => {
   });
 
   it('asks before leaving a canvas with ink', async () => {
-    canvasState.canvasEmpty = false;
+    canvasState.setCanvasEmpty(false);
     expect(respondToSystemBack()).toBe('confirming');
     await flush();
     expect(leaveConfirmModal.open).toBe(true);
@@ -183,14 +185,18 @@ describe('respondToSystemBack', () => {
     }));
     requireParentalGate('aiImage', () => {});
     await flush();
-    parentalGateState.unlocked = true;
+    for (const digit of String(parentalGateState.x * parentalGateState.y)) {
+      pressGateDigit(Number(digit));
+    }
+    submitGateAnswer();
+    expect(parentalGateState.unlocked).toBe(true);
 
     expect(respondToSystemBack()).toBe('kept-dialog');
     expect(parentalGateState.open).toBe(true);
   });
 
   it('never turns mashed Back on a drawing into leaving', async () => {
-    canvasState.canvasEmpty = false;
+    canvasState.setCanvasEmpty(false);
     mountModal(leaveConfirmModal);
 
     const responses = new Set<string>();
@@ -207,7 +213,7 @@ describe('respondToSystemBack', () => {
 
 describe('listenForSystemBack', () => {
   it('answers Back from the plugin and detaches on cleanup', async () => {
-    canvasState.canvasEmpty = true;
+    canvasState.setCanvasEmpty(true);
     plugin.moveToBackground.mockClear();
     const stop = listenForSystemBack();
     await vi.waitFor(() => expect(plugin.listeners).toHaveLength(1));

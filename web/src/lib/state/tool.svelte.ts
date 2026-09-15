@@ -12,6 +12,7 @@ import type { CommonIconName } from '../components/iconTypes';
 // Pen and crayon are the "ink brushes": both lay down the active palette color.
 export type BrushType = 'pen' | 'crayon' | 'magic' | 'eraser';
 export type OptionalBrushType = Exclude<BrushType, 'pen'>;
+export type InkBrushType = Extract<BrushType, 'pen' | 'crayon'>;
 
 // Fields are readonly, not just the array slots: BRUSH_TYPES is derived from
 // this list once at module load, so a mutable `brush` would let a consumer
@@ -54,7 +55,7 @@ function isBrushType(raw: string): raw is BrushType {
   return (BRUSH_TYPES as readonly string[]).includes(raw);
 }
 
-export function isInkBrush(brush: BrushType): brush is 'pen' | 'crayon' {
+export function isInkBrush(brush: BrushType): brush is InkBrushType {
   return brush === 'pen' || brush === 'crayon';
 }
 
@@ -68,58 +69,84 @@ function readBrush(fallback: BrushType): BrushType {
   return isBrushType(raw) && raw !== 'eraser' ? raw : fallback;
 }
 
-export const toolState = $state({
-  brush: readBrush(DEFAULT_BRUSH),
-});
-
-// The last ink brush the child held — where a color pick or a canvas clear
-// lands them when it pulls them out of the eraser or magic brush (picking a
-// color means "draw with this", so it must resume a brush that uses color).
-// Runtime-only: across a relaunch it's rebuilt from the persisted brush,
-// falling back to the pen when the stored choice was the magic brush.
-let inkBrush: 'pen' | 'crayon' = isInkBrush(toolState.brush) ? toolState.brush : 'pen';
-
-export function selectBrush(brush: BrushType) {
-  toolState.brush = brush;
-  if (isInkBrush(brush)) inkBrush = brush;
-  if (brush !== 'eraser') writeString(STORAGE_KEYS.brushType, brush);
+export interface ToolState {
+  readonly brush: BrushType;
+  selectBrush(brush: BrushType): void;
+  selectInkBrush(): void;
+  fallBackFromBrush(brush: OptionalBrushType): void;
+  toggleEraser(): void;
+  resetToolAfterClear(): void;
+  reloadBrushType(): void;
 }
 
-// Resume drawing with the active color: the last-used pen/crayon. Called by
-// the palette when a color is picked while the eraser or magic brush is held.
-export function selectInkBrush() {
-  selectBrush(inkBrush);
+export function createTool(): ToolState {
+  const s = $state({ brush: readBrush(DEFAULT_BRUSH) });
+
+  // The last ink brush the child held — where a color pick or a canvas clear
+  // lands them when it pulls them out of the eraser or magic brush (picking a
+  // color means "draw with this", so it must resume a brush that uses color).
+  // Runtime-only: across a relaunch it's rebuilt from the persisted brush,
+  // falling back to the pen when the stored choice was the magic brush.
+  // Deliberately untracked: nothing renders it.
+  let inkBrush: InkBrushType = isInkBrush(s.brush) ? s.brush : 'pen';
+
+  function selectBrush(brush: BrushType) {
+    s.brush = brush;
+    if (isInkBrush(brush)) inkBrush = brush;
+    if (brush !== 'eraser') writeString(STORAGE_KEYS.brushType, brush);
+  }
+
+  // Resume drawing with the active color: the last-used pen/crayon. Called by
+  // the palette when a color is picked while the eraser or magic brush is held.
+  function selectInkBrush() {
+    selectBrush(inkBrush);
+  }
+
+  return {
+    get brush() {
+      return s.brush;
+    },
+    selectBrush,
+    selectInkBrush,
+    fallBackFromBrush(brush) {
+      if (brush === 'crayon' && inkBrush === 'crayon') inkBrush = 'pen';
+      if (s.brush === brush) selectInkBrush();
+    },
+    // Flip between the ink brush and the eraser. Shared by the Brush Menu's eraser
+    // entry-toggle semantics and the Apple Pencil double-tap bridge
+    // (web/src/lib/plugins/pencilEraser.ts). Leaving the eraser always lands on
+    // the last ink brush (never the magic brush).
+    toggleEraser() {
+      if (s.brush === 'eraser') selectInkBrush();
+      else selectBrush('eraser');
+    },
+    // After the canvas is cleared, an active eraser would strand the child holding
+    // a non-drawing tool on a blank page — switch back to the last ink brush,
+    // which also restores the last-used color for free (the eraser never touches
+    // colors.activeColor). The magic brush survives the clear: it draws on a fresh
+    // page too, and the engine re-locks a new magic sheet during clearCanvas()
+    // while the brush stays selected.
+    resetToolAfterClear() {
+      if (s.brush === 'eraser') selectInkBrush();
+    },
+    // Re-read the persisted brush into the live store after the durable storage
+    // layer recovers values evicted by the native WebView (see storage.ts).
+    reloadBrushType() {
+      s.brush = readBrush(s.brush);
+      if (isInkBrush(s.brush)) inkBrush = s.brush;
+    },
+  };
 }
 
-export function fallBackFromBrush(brush: OptionalBrushType) {
-  if (brush === 'crayon' && inkBrush === 'crayon') inkBrush = 'pen';
-  if (toolState.brush === brush) selectInkBrush();
-}
+export const toolState = createTool();
 
-// Flip between the ink brush and the eraser. Shared by the Brush Menu's eraser
-// entry-toggle semantics and the Apple Pencil double-tap bridge
-// (web/src/lib/plugins/pencilEraser.ts). Leaving the eraser always lands on
-// the last ink brush (never the magic brush).
-export function toggleEraser() {
-  if (toolState.brush === 'eraser') selectInkBrush();
-  else selectBrush('eraser');
-}
-
-// After the canvas is cleared, an active eraser would strand the child holding
-// a non-drawing tool on a blank page — switch back to the last ink brush,
-// which also restores the last-used color for free (the eraser never touches
-// colors.activeColor). The magic brush survives the clear: it draws on a fresh
-// page too, and the engine re-locks a new magic sheet during clearCanvas()
-// while the brush stays selected.
-export function resetToolAfterClear() {
-  if (toolState.brush === 'eraser') selectInkBrush();
-}
-
-// Re-read the persisted brush into the live store after the durable storage
-// layer recovers values evicted by the native WebView (see storage.ts).
-export function reloadBrushType() {
-  toolState.brush = readBrush(toolState.brush);
-  if (isInkBrush(toolState.brush)) inkBrush = toolState.brush;
-}
+export const {
+  selectBrush,
+  selectInkBrush,
+  fallBackFromBrush,
+  toggleEraser,
+  resetToolAfterClear,
+  reloadBrushType,
+} = toolState;
 
 onDurableRestore(reloadBrushType);

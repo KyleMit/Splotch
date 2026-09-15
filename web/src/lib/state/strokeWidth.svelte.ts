@@ -1,5 +1,5 @@
 import { STORAGE_KEYS, readInt, writeInt, onDurableRestore, type StorageKey } from '../storage';
-import { toolState } from './tool.svelte';
+import { toolState, type ToolState } from './tool.svelte';
 import type { CommonIconName } from '$lib/components/iconTypes';
 
 export type StrokeSize = 1 | 2 | 3 | 4 | 5;
@@ -58,43 +58,57 @@ function readStrokeLevel(key: StorageKey, fallback: StrokeSize): StrokeSize {
 // Drawing brushes (pen/crayon/magic) share one remembered level and the eraser
 // keeps its own, persisted separately, so switching tools restores the size the
 // child last used for that tool.
-export const strokeWidthState = $state({
-  penSize: readStrokeLevel(STORAGE_KEYS.strokeWidthSize, DEFAULT_SIZE),
-  eraserSize: readStrokeLevel(STORAGE_KEYS.eraserWidthSize, DEFAULT_SIZE),
-});
-
-// Re-read the persisted pen/eraser levels into the live store after the durable
-// storage layer recovers values evicted by the native WebView (see storage.ts).
-export function reloadStrokeWidth() {
-  strokeWidthState.penSize = readStrokeLevel(
-    STORAGE_KEYS.strokeWidthSize,
-    strokeWidthState.penSize
-  );
-  strokeWidthState.eraserSize = readStrokeLevel(
-    STORAGE_KEYS.eraserWidthSize,
-    strokeWidthState.eraserSize
-  );
+export interface StrokeWidthState {
+  readonly penSize: StrokeSize;
+  readonly eraserSize: StrokeSize;
+  // The level for the tool that's currently active. Reads the tool state so it
+  // stays reactive inside $derived, $effect, and template expressions.
+  activeStrokeSize(): StrokeSize;
+  // Set the level for the active tool, persisting only that tool's value.
+  setStrokeSize(size: StrokeSize): void;
+  reloadStrokeWidth(): void;
 }
 
-onDurableRestore(reloadStrokeWidth);
+export function createStrokeWidth(tool: ToolState): StrokeWidthState {
+  const s = $state({
+    penSize: readStrokeLevel(STORAGE_KEYS.strokeWidthSize, DEFAULT_SIZE),
+    eraserSize: readStrokeLevel(STORAGE_KEYS.eraserWidthSize, DEFAULT_SIZE),
+  });
 
-// The level for the tool that's currently active. Reads toolState so it stays
-// reactive inside $derived, $effect, and template expressions.
-export function activeStrokeSize(): StrokeSize {
-  return toolState.brush === 'eraser' ? strokeWidthState.eraserSize : strokeWidthState.penSize;
+  return {
+    get penSize() {
+      return s.penSize;
+    },
+    get eraserSize() {
+      return s.eraserSize;
+    },
+    activeStrokeSize() {
+      return tool.brush === 'eraser' ? s.eraserSize : s.penSize;
+    },
+    setStrokeSize(size) {
+      if (!STROKE_SIZES.includes(size)) return;
+      if (tool.brush === 'eraser') {
+        s.eraserSize = size;
+        writeInt(STORAGE_KEYS.eraserWidthSize, size);
+      } else {
+        s.penSize = size;
+        writeInt(STORAGE_KEYS.strokeWidthSize, size);
+      }
+    },
+    // Re-read the persisted pen/eraser levels into the live store after the durable
+    // storage layer recovers values evicted by the native WebView (see storage.ts).
+    reloadStrokeWidth() {
+      s.penSize = readStrokeLevel(STORAGE_KEYS.strokeWidthSize, s.penSize);
+      s.eraserSize = readStrokeLevel(STORAGE_KEYS.eraserWidthSize, s.eraserSize);
+    },
+  };
 }
 
-// Set the level for the active tool, persisting only that tool's value.
-export function setStrokeSize(size: StrokeSize) {
-  if (!STROKE_SIZES.includes(size)) return;
-  if (toolState.brush === 'eraser') {
-    strokeWidthState.eraserSize = size;
-    writeInt(STORAGE_KEYS.eraserWidthSize, size);
-  } else {
-    strokeWidthState.penSize = size;
-    writeInt(STORAGE_KEYS.strokeWidthSize, size);
-  }
-}
+export const strokeWidthState = createStrokeWidth(toolState);
+
+export const { activeStrokeSize, setStrokeSize } = strokeWidthState;
+
+onDurableRestore(strokeWidthState.reloadStrokeWidth);
 
 export function getStrokeWidthPx(size: StrokeSize): number {
   return SIZE_TO_PX[size];

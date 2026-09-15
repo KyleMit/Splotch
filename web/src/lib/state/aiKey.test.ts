@@ -28,7 +28,7 @@ import { STORAGE_KEYS } from '../storage';
 beforeEach(() => {
   localStorage.clear();
   secureStore.apiKey = null;
-  settingsState.aiUserApiKey = '';
+  settingsState.mirrorAiUserApiKey('');
   vi.mocked(saveApiKey)
     .mockReset()
     .mockImplementation(async (value: string) => {
@@ -120,7 +120,7 @@ describe('setAiUserApiKey', () => {
   });
 
   it('ownership lost mid-flight restores the prior credential', async () => {
-    settingsState.aiUserApiKey = 'prior-key';
+    settingsState.mirrorAiUserApiKey('prior-key');
     secureStore.apiKey = 'prior-key';
 
     let ownsRequest = true;

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { settingsModal, uiState } from '$lib/state/ui.svelte';
+import { clearRequestedSettingsSection, settingsModal } from '$lib/state/ui.svelte';
 import { createPrivacyParentCenter } from './parentCenter.svelte';
 
 vi.mock('$lib/components/SettingsModal.svelte', () => ({ default: vi.fn() }));
@@ -22,7 +22,7 @@ function afterDialogRetirementCheck() {
 
 afterEach(() => {
   settingsModal.hide();
-  uiState.requestedSettingsSection = null;
+  clearRequestedSettingsSection();
   document.querySelector('#settingsModal')?.remove();
 });
 

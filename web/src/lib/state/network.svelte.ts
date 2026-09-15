@@ -5,35 +5,106 @@ import { isNative } from '$lib/platform';
 // when offline — everything else in Splotch works fully offline. On the web we
 // lean on navigator.onLine + the online/offline events; on native we also use
 // @capacitor/network, which reports real device connectivity reliably.
-export const networkState = $state({
-  online: true,
-});
+export interface NetworkState {
+  readonly online: boolean;
+  setOnline(online: boolean): void;
+  // Seeds `online` from the platform and subscribes to its changes.
+  install(): void;
+  dispose(): void;
+}
 
-// Installed at module load (not from a component), gated on `browser`, so the
-// value is live before the first component renders — ActionsPanel reads
-// networkState.online on mount, before +page.svelte's onMount would run.
-if (browser) {
-  // Some old WebViews report `undefined` for navigator.onLine; assume online then.
-  networkState.online = navigator.onLine ?? true;
-  window.addEventListener('online', () => (networkState.online = true));
-  window.addEventListener('offline', () => (networkState.online = false));
+// The two plugin members the native path uses, so a test can stand the plugin
+// in without the rest of its surface. `loadNetworkPlugin` is a test seam:
+// production always takes the default, and a test hands in a loader it can
+// hold open to prove a disposal during the pending import subscribes to nothing.
+interface NetworkPluginLike {
+  getStatus(): Promise<{ connected: boolean }>;
+  addListener(
+    event: 'networkStatusChange',
+    listener: (status: { connected: boolean }) => void
+  ): Promise<{ remove(): void | Promise<void> }>;
+}
+type NetworkPluginModule = { Network: NetworkPluginLike };
 
-  // __IS_CAPACITOR__ makes the branch compile-time dead on web so Rollup drops
-  // the plugin chunk (isNative() alone can't tree-shake across modules).
-  if (__IS_CAPACITOR__ && isNative()) {
-    import('@capacitor/network')
+export function createNetwork(
+  loadNetworkPlugin?: () => Promise<NetworkPluginModule>
+): NetworkState {
+  const s = $state({ online: true });
+
+  let installed = false;
+  let removeNativeListener: (() => void) | null = null;
+
+  const onOnline = () => setOnline(true);
+  const onOffline = () => setOnline(false);
+
+  function setOnline(online: boolean) {
+    s.online = online;
+  }
+
+  function installNativeStatus(loadPlugin: () => Promise<NetworkPluginModule>) {
+    let receivedStatusEvent = false;
+    let disposed = false;
+    removeNativeListener = () => {
+      disposed = true;
+    };
+    void loadPlugin()
       .then(({ Network }) => {
-        let receivedStatusEvent = false;
+        if (disposed) return;
         Network.getStatus()
           .then((status) => {
-            if (!receivedStatusEvent) networkState.online = status.connected;
+            if (!receivedStatusEvent && !disposed) setOnline(status.connected);
           })
           .catch(() => {});
         Network.addListener('networkStatusChange', (status) => {
           receivedStatusEvent = true;
-          networkState.online = status.connected;
-        }).catch(() => {});
+          if (!disposed) setOnline(status.connected);
+        })
+          .then((handle) => {
+            if (disposed) void handle.remove();
+            else
+              removeNativeListener = () => {
+                disposed = true;
+                void handle.remove();
+              };
+          })
+          .catch(() => {});
       })
       .catch(() => {});
   }
+
+  return {
+    get online() {
+      return s.online;
+    },
+    setOnline,
+    install() {
+      if (installed) return;
+      installed = true;
+      // Some old WebViews report `undefined` for navigator.onLine; assume online then.
+      setOnline(navigator.onLine ?? true);
+      window.addEventListener('online', onOnline);
+      window.addEventListener('offline', onOffline);
+      // __IS_CAPACITOR__ makes the branch compile-time dead on web so Rollup drops
+      // the plugin chunk (isNative() alone can't tree-shake across modules). The
+      // default loader stays inside the branch for the same reason.
+      if (__IS_CAPACITOR__ && isNative()) {
+        installNativeStatus(loadNetworkPlugin ?? (() => import('@capacitor/network')));
+      }
+    },
+    dispose() {
+      if (!installed) return;
+      installed = false;
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+      removeNativeListener?.();
+      removeNativeListener = null;
+    },
+  };
 }
+
+export const networkState = createNetwork();
+
+// Installed at module load (not from a component), gated on `browser`, so the
+// value is live before the first component renders — ActionsPanel reads
+// networkState.online on mount, before +page.svelte's onMount would run.
+if (browser) networkState.install();

@@ -51,7 +51,7 @@ describe('an open while only the starter book is known', () => {
     const pickerBooks = await harness();
 
     pickerBooks.holdForOpen();
-    markColoringBookInstalled('dinosaur');
+    markColoringBookInstalled('dinosaur', 1);
     await tick();
 
     expect(pickerBooks.listsBooks).toBe(false);
@@ -65,7 +65,7 @@ describe('an open that lists books', () => {
     const pickerBooks = await harness();
 
     pickerBooks.holdForOpen();
-    markColoringBookInstalled('creatures');
+    markColoringBookInstalled('creatures', 1);
     await tick();
 
     expect(pickerBooks.listsBooks).toBe(true);

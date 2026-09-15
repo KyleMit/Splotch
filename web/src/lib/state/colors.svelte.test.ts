@@ -5,14 +5,11 @@ import {
   CUSTOM_SWATCH,
   BLACK_INK,
   WHITE_INK,
-  colorsState,
-  selectPaletteColor,
-  selectCustomSwatch,
-  pickCustomColor,
-  syncInkToTheme,
+  createColors,
   themedSwatchColor,
   isWhite,
   isDarkInk,
+  type ColorsState,
 } from './colors.svelte';
 import { PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 import { colorContrast } from '$lib/design/colorContrast';
@@ -34,17 +31,22 @@ const PERCEIVED_BRIGHTNESS_MISSES = [
 // what makes the keyline load-bearing rather than decorative.
 const UNREADABLE_CONTRAST_CEILING = 3;
 
+let colors: ColorsState;
+
 beforeEach(() => {
-  // Reset to the documented default selection (Purple at index 0).
-  colorsState.activeSwatch = PALETTE_COLORS[0].hex;
-  colorsState.activeColor = PALETTE_COLORS[0].hex;
-  colorsState.customColor = '#AB71E1';
-  colorsState.customColorSelected = false;
+  colors = createColors();
 });
+
+function selection(state: ColorsState) {
+  const { activeSwatch, activeColor, customColor, customColorSelected } = state;
+  return { activeSwatch, activeColor, customColor, customColorSelected };
+}
 
 describe('palette invariants', () => {
   it('keeps Purple as the index-0 default selection', () => {
     expect(PALETTE_COLORS[0].label).toBe('Purple');
+    expect(colors.activeSwatch).toBe(PALETTE_COLORS[0].hex);
+    expect(colors.activeColor).toBe(PALETTE_COLORS[0].hex);
   });
 
   it('TRIM_ORDER lists exactly the palette hexes (no missing/extra colors)', () => {
@@ -54,17 +56,17 @@ describe('palette invariants', () => {
 
 describe('selectPaletteColor', () => {
   it('sets the active swatch and color', () => {
-    selectPaletteColor('#62A2E9');
-    expect(colorsState.activeSwatch).toBe('#62A2E9');
-    expect(colorsState.activeColor).toBe('#62A2E9');
+    colors.selectPaletteColor('#62A2E9');
+    expect(colors.activeSwatch).toBe('#62A2E9');
+    expect(colors.activeColor).toBe('#62A2E9');
   });
 
   it('paints a distinct color while keeping the swatch identity (dark-mode Black)', () => {
-    selectPaletteColor(BLACK_INK, WHITE_INK);
+    colors.selectPaletteColor(BLACK_INK, WHITE_INK);
     // The last swatch stays the active one (its ring/position are unchanged)...
-    expect(colorsState.activeSwatch).toBe(BLACK_INK);
+    expect(colors.activeSwatch).toBe(BLACK_INK);
     // ...but it draws white so it shows on dark paper.
-    expect(colorsState.activeColor).toBe(WHITE_INK);
+    expect(colors.activeColor).toBe(WHITE_INK);
   });
 });
 
@@ -85,52 +87,52 @@ describe('themedSwatchColor', () => {
 
 describe('syncInkToTheme', () => {
   it('switches selected Black ink to white for dark and back to black for light', () => {
-    selectPaletteColor(BLACK_INK);
+    colors.selectPaletteColor(BLACK_INK);
 
-    syncInkToTheme(true);
-    expect(colorsState.activeSwatch).toBe(BLACK_INK);
-    expect(colorsState.activeColor).toBe(WHITE_INK);
+    colors.syncInkToTheme(true);
+    expect(colors.activeSwatch).toBe(BLACK_INK);
+    expect(colors.activeColor).toBe(WHITE_INK);
 
-    syncInkToTheme(false);
-    expect(colorsState.activeSwatch).toBe(BLACK_INK);
-    expect(colorsState.activeColor).toBe(BLACK_INK);
+    colors.syncInkToTheme(false);
+    expect(colors.activeSwatch).toBe(BLACK_INK);
+    expect(colors.activeColor).toBe(BLACK_INK);
   });
 
   it('leaves a non-Black selection unchanged', () => {
-    pickCustomColor('#123456');
-    const before = { ...colorsState };
+    colors.pickCustomColor('#123456');
+    const before = selection(colors);
 
-    syncInkToTheme(true);
+    colors.syncInkToTheme(true);
 
-    expect({ ...colorsState }).toEqual(before);
+    expect(selection(colors)).toEqual(before);
   });
 });
 
 describe('pickCustomColor', () => {
   it('records the custom color, selects the custom swatch, and marks it chosen', () => {
-    pickCustomColor('#123456');
-    expect(colorsState.customColor).toBe('#123456');
-    expect(colorsState.customColorSelected).toBe(true);
-    expect(colorsState.activeSwatch).toBe(CUSTOM_SWATCH);
-    expect(colorsState.activeColor).toBe('#123456');
+    colors.pickCustomColor('#123456');
+    expect(colors.customColor).toBe('#123456');
+    expect(colors.customColorSelected).toBe(true);
+    expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
+    expect(colors.activeColor).toBe('#123456');
   });
 });
 
 describe('selectCustomSwatch', () => {
   it('adopts the custom color once one has been picked', () => {
-    pickCustomColor('#abcdef');
-    selectPaletteColor('#8CC864'); // move selection away
-    selectCustomSwatch(); // back to custom
-    expect(colorsState.activeSwatch).toBe(CUSTOM_SWATCH);
-    expect(colorsState.activeColor).toBe('#abcdef');
+    colors.pickCustomColor('#abcdef');
+    colors.selectPaletteColor('#8CC864'); // move selection away
+    colors.selectCustomSwatch(); // back to custom
+    expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
+    expect(colors.activeColor).toBe('#abcdef');
   });
 
   it('selects the custom swatch but does NOT change color when none picked yet', () => {
-    selectPaletteColor('#8CC864');
-    selectCustomSwatch();
-    expect(colorsState.activeSwatch).toBe(CUSTOM_SWATCH);
+    colors.selectPaletteColor('#8CC864');
+    colors.selectCustomSwatch();
+    expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
     // No custom color chosen, so the active drawing color stays put.
-    expect(colorsState.activeColor).toBe('#8CC864');
+    expect(colors.activeColor).toBe('#8CC864');
   });
 });
 

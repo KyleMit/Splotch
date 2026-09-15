@@ -1,6 +1,6 @@
 import { flushSync, tick } from 'svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createCanvas, SETTLED_IN_STROKES, type CanvasState } from '$lib/state/canvas.svelte';
 import { installSettledInEffects } from './settledIn.svelte';
 
 const services = vi.hoisted(() => ({
@@ -11,23 +11,27 @@ vi.mock('$lib/pwa/updates', () => ({ pwaUpdates: services }));
 vi.mock('./webOnlyServices', () => services);
 
 let stop = () => {};
+let canvas: CanvasState;
+
+beforeEach(() => {
+  canvas = createCanvas();
+});
 
 afterEach(() => {
   stop();
-  canvasState.strokeCount = 0;
   vi.resetAllMocks();
 });
 
 function drawThroughThreshold() {
   for (let count = 1; count <= SETTLED_IN_STROKES + 3; count += 1) {
-    canvasState.strokeCount = count;
+    canvas.recordStrokeEnd();
     flushSync();
   }
 }
 
 describe('settled-in drawing effects', () => {
   it('requests registration only once across strokes past the threshold', () => {
-    stop = $effect.root(() => installSettledInEffects(() => null));
+    stop = $effect.root(() => installSettledInEffects(() => null, canvas));
     flushSync();
     expect(services.registerDeferredServiceWorker).not.toHaveBeenCalled();
 
@@ -38,7 +42,7 @@ describe('settled-in drawing effects', () => {
 
   it('records the install session and demands its banner once across later strokes', () => {
     const demand = vi.fn();
-    stop = $effect.root(() => installSettledInEffects(() => ({ demand })));
+    stop = $effect.root(() => installSettledInEffects(() => ({ demand }), canvas));
     flushSync();
     expect(demand).not.toHaveBeenCalled();
 
@@ -52,7 +56,7 @@ describe('settled-in drawing effects', () => {
     const attempt = Promise.withResolvers<boolean>();
     services.registerDeferredServiceWorker.mockReturnValueOnce(attempt.promise);
     services.registerDeferredServiceWorker.mockResolvedValueOnce(false);
-    stop = $effect.root(() => installSettledInEffects(() => null));
+    stop = $effect.root(() => installSettledInEffects(() => null, canvas));
     drawThroughThreshold();
     expect(services.registerDeferredServiceWorker).toHaveBeenCalledTimes(1);
 
@@ -61,15 +65,15 @@ describe('settled-in drawing effects', () => {
     await tick();
     expect(services.registerDeferredServiceWorker).toHaveBeenCalledTimes(1);
 
-    canvasState.strokeCount += 1;
+    canvas.recordStrokeEnd();
     await tick();
     await tick();
     expect(services.registerDeferredServiceWorker).toHaveBeenCalledTimes(2);
 
-    canvasState.strokeCount += 1;
+    canvas.recordStrokeEnd();
     await tick();
     await tick();
-    canvasState.strokeCount += 1;
+    canvas.recordStrokeEnd();
     await tick();
     expect(services.registerDeferredServiceWorker).toHaveBeenCalledTimes(3);
   });
@@ -81,7 +85,7 @@ describe('settled-in drawing effects', () => {
     services.recordWebInstallRepromptSession.mockImplementation(() => {
       void recorded;
     });
-    stop = $effect.root(() => installSettledInEffects(() => overlays));
+    stop = $effect.root(() => installSettledInEffects(() => overlays, canvas));
     drawThroughThreshold();
     expect(demand).not.toHaveBeenCalled();
 
@@ -97,12 +101,12 @@ describe('settled-in drawing effects', () => {
   it('ignores a registration failure after the route unmounts', async () => {
     const attempt = Promise.withResolvers<boolean>();
     services.registerDeferredServiceWorker.mockReturnValueOnce(attempt.promise);
-    stop = $effect.root(() => installSettledInEffects(() => null));
+    stop = $effect.root(() => installSettledInEffects(() => null, canvas));
     drawThroughThreshold();
     stop();
     attempt.resolve(false);
     await tick();
-    canvasState.strokeCount += 1;
+    canvas.recordStrokeEnd();
     await tick();
 
     expect(services.registerDeferredServiceWorker).toHaveBeenCalledTimes(1);

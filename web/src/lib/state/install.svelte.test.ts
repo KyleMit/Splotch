@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { STORAGE_KEYS } from '$lib/storage';
+import { createCanvas, SETTLED_IN_STROKES, type CanvasState } from './canvas.svelte';
+import { createInstall, isIosOutsideSafari } from './install.svelte';
+import { createSessionCounters } from './sessionCounters.svelte';
 
 const mocks = vi.hoisted(() => ({ native: false }));
 vi.mock('$app/environment', () => ({ browser: true }));
@@ -35,24 +38,56 @@ function makePromptEvent(outcome: 'accepted' | 'dismissed') {
   return e;
 }
 
-// The module guards init() with a one-shot flag and holds the deferred prompt in
-// module scope, so each test needs a pristine copy.
-async function freshModule() {
-  vi.resetModules();
-  return import('./install.svelte');
+// One page load: a fresh canvas (zero strokes), fresh session counters (their
+// once-per-document record starts empty), and a fresh install instance holding
+// its own deferred prompt and one-shot init flag. The instance's methods are
+// spread out so a test reads like the module's consumers do.
+function freshModule() {
+  const canvas = createCanvas();
+  const installState = createInstall(canvas, createSessionCounters());
+  const {
+    initInstallPrompt,
+    captureInstallPrompt,
+    promptInstall,
+    markInstalled,
+    dismissInstall,
+    installPromptStage,
+    recordInstallRepromptSession,
+    armInstallAutoClear,
+    disarmInstallAutoClear,
+    autoDismissInstallIfDue,
+  } = installState;
+  return {
+    canvas,
+    installState,
+    initInstallPrompt,
+    captureInstallPrompt,
+    promptInstall,
+    markInstalled,
+    dismissInstall,
+    installPromptStage,
+    recordInstallRepromptSession,
+    armInstallAutoClear,
+    disarmInstallAutoClear,
+    autoDismissInstallIfDue,
+  };
 }
 
-async function openAndroidSession() {
+// A fresh canvas starts at zero strokes, so counts only ever climb.
+function drawStrokesTo(canvas: CanvasState, count: number) {
+  while (canvas.strokeCount < count) canvas.recordStrokeEnd();
+}
+
+function openAndroidSession() {
   setUA(ANDROID_UA);
-  const session = await freshModule();
+  const session = freshModule();
   session.initInstallPrompt();
   return session;
 }
 
-async function qualifyingInstallSession() {
-  const session = await openAndroidSession();
-  const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
-  canvasState.strokeCount = SETTLED_IN_STROKES;
+function qualifyingInstallSession() {
+  const session = openAndroidSession();
+  drawStrokesTo(session.canvas, SETTLED_IN_STROKES);
   session.recordInstallRepromptSession();
   return session;
 }
@@ -74,28 +109,28 @@ beforeEach(() => {
 describe('initInstallPrompt — mode detection', () => {
   it('offers the Share-sheet hint on iOS Safari', async () => {
     setUA(IOS_SAFARI_UA);
-    const { installState, initInstallPrompt } = await freshModule();
+    const { installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     expect(installState.mode).toBe('ios');
   });
 
   it('does not promise Add-to-Home-Screen in an iOS in-app browser', async () => {
     setUA(IOS_CHROME_UA);
-    const { installState, initInstallPrompt } = await freshModule();
+    const { installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     expect(installState.mode).toBe('none');
   });
 
   it('shows the menu hint on Android before any prompt fires', async () => {
     setUA(ANDROID_UA);
-    const { installState, initInstallPrompt } = await freshModule();
+    const { installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     expect(installState.mode).toBe('android');
   });
 
   it('upgrades to one-tap when Chromium fires beforeinstallprompt', async () => {
     setUA(ANDROID_UA);
-    const { captureInstallPrompt, installState, initInstallPrompt } = await freshModule();
+    const { captureInstallPrompt, installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
     expect(installState.mode).toBe('oneTap');
@@ -103,7 +138,7 @@ describe('initInstallPrompt — mode detection', () => {
 
   it('preserves a prompt captured before init', async () => {
     setUA(ANDROID_UA);
-    const { captureInstallPrompt, installState, initInstallPrompt } = await freshModule();
+    const { captureInstallPrompt, installState, initInstallPrompt } = freshModule();
     captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
     initInstallPrompt();
     expect(installState.mode).toBe('oneTap');
@@ -115,7 +150,7 @@ describe('initInstallPrompt — mode detection', () => {
       'MacIntel',
       5
     );
-    const { installState, initInstallPrompt } = await freshModule();
+    const { installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     expect(installState.mode).toBe('ios');
   });
@@ -126,13 +161,11 @@ describe('initInstallPrompt — mode detection', () => {
 describe('isIosOutsideSafari', () => {
   it('is false in iOS Safari, which the steps already describe', async () => {
     setUA(IOS_SAFARI_UA);
-    const { isIosOutsideSafari } = await freshModule();
     expect(isIosOutsideSafari()).toBe(false);
   });
 
   it('is true in a third-party iOS browser, which reaches install its own way', async () => {
     setUA(IOS_CHROME_UA);
-    const { isIosOutsideSafari } = await freshModule();
     expect(isIosOutsideSafari()).toBe(true);
   });
 
@@ -140,13 +173,11 @@ describe('isIosOutsideSafari', () => {
     setUA(
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS]'
     );
-    const { isIosOutsideSafari } = await freshModule();
     expect(isIosOutsideSafari()).toBe(true);
   });
 
   it('is false off iOS entirely, where Safari is not the path', async () => {
     setUA(ANDROID_UA);
-    const { isIosOutsideSafari } = await freshModule();
     expect(isIosOutsideSafari()).toBe(false);
   });
 });
@@ -155,7 +186,7 @@ describe('initInstallPrompt — already installed', () => {
   it('suppresses everything when running standalone', async () => {
     setUA(ANDROID_UA);
     setStandalone(true);
-    const { installState, initInstallPrompt } = await freshModule();
+    const { installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     expect(installState.installed).toBe(true);
     expect(installState.mode).toBe('none');
@@ -164,7 +195,7 @@ describe('initInstallPrompt — already installed', () => {
   it('stays suppressed once a prior install was recorded', async () => {
     setUA(ANDROID_UA);
     localStorage.setItem(STORAGE_KEYS.installCompleted, 'true');
-    const { installState, initInstallPrompt } = await freshModule();
+    const { installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     expect(installState.installed).toBe(true);
     expect(installState.mode).toBe('none');
@@ -175,7 +206,7 @@ describe('initInstallPrompt — already installed', () => {
     // when the app is NOT installed, so the live event wins.
     setUA(ANDROID_UA);
     localStorage.setItem(STORAGE_KEYS.installCompleted, 'true');
-    const { captureInstallPrompt, installState, initInstallPrompt } = await freshModule();
+    const { captureInstallPrompt, installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     expect(installState.mode).toBe('none');
 
@@ -188,7 +219,7 @@ describe('initInstallPrompt — already installed', () => {
   it('is inert inside the native Capacitor shell', async () => {
     setUA(ANDROID_UA);
     mocks.native = true;
-    const { installState, initInstallPrompt } = await freshModule();
+    const { installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
     expect(installState.mode).toBe('none');
   });
@@ -197,8 +228,7 @@ describe('initInstallPrompt — already installed', () => {
 describe('promptInstall', () => {
   it('marks installed and persists when the dialog is accepted', async () => {
     setUA(ANDROID_UA);
-    const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } =
-      await freshModule();
+    const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
     captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
 
@@ -211,8 +241,7 @@ describe('promptInstall', () => {
 
   it('falls back to the manual hint and stops nagging when declined', async () => {
     setUA(ANDROID_UA);
-    const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } =
-      await freshModule();
+    const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
     captureInstallPrompt(makePromptEvent('dismissed') as BeforeInstallPromptEvent);
 
@@ -226,14 +255,14 @@ describe('promptInstall', () => {
 
   it('reports unavailable when there is no live prompt to replay', async () => {
     setUA(ANDROID_UA);
-    const { initInstallPrompt, promptInstall } = await freshModule();
+    const { initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
     expect(await promptInstall()).toBe('unavailable');
   });
 
   it('cannot be replayed twice from a single event', async () => {
     setUA(ANDROID_UA);
-    const { captureInstallPrompt, initInstallPrompt, promptInstall } = await freshModule();
+    const { captureInstallPrompt, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
     captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
     expect(await promptInstall()).toBe('accepted');
@@ -242,8 +271,7 @@ describe('promptInstall', () => {
 
   it('reports unavailable and drops to the manual hint when the prompt throws', async () => {
     setUA(ANDROID_UA);
-    const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } =
-      await freshModule();
+    const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
     const e = new Event('beforeinstallprompt');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -258,8 +286,7 @@ describe('promptInstall', () => {
 
   it('drops a stale oneTap mode to the manual hint when the prompt is already spent', async () => {
     setUA(ANDROID_UA);
-    const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } =
-      await freshModule();
+    const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
     const e = new Event('beforeinstallprompt');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -277,7 +304,7 @@ describe('promptInstall', () => {
 describe('install completion', () => {
   it('marks installed and persists when the browser installs by any path', async () => {
     setUA(ANDROID_UA);
-    const { installState, initInstallPrompt, markInstalled } = await freshModule();
+    const { installState, initInstallPrompt, markInstalled } = freshModule();
     initInstallPrompt();
     markInstalled();
     expect(installState.installed).toBe(true);
@@ -286,10 +313,10 @@ describe('install completion', () => {
   });
 
   it('ends and clears an in-progress re-prompt cycle', async () => {
-    const first = await openAndroidSession();
+    const first = openAndroidSession();
     first.dismissInstall();
-    await qualifyingInstallSession();
-    const active = await qualifyingInstallSession();
+    qualifyingInstallSession();
+    const active = qualifyingInstallSession();
 
     active.markInstalled();
     active.recordInstallRepromptSession();
@@ -307,7 +334,7 @@ describe('install completion', () => {
     localStorage.setItem(STORAGE_KEYS.installDismissed, 'true');
     localStorage.setItem(STORAGE_KEYS.installRepromptSessionCount, '10');
     localStorage.setItem(STORAGE_KEYS.installRepromptsUsed, '2');
-    const session = await freshModule();
+    const session = freshModule();
     session.initInstallPrompt();
 
     session.captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
@@ -322,21 +349,20 @@ describe('install completion', () => {
 describe('dismissInstall', () => {
   it('remembers the dismissal across sessions', async () => {
     setUA(ANDROID_UA);
-    const { installState, initInstallPrompt, dismissInstall } = await freshModule();
+    const { installState, initInstallPrompt, dismissInstall } = freshModule();
     initInstallPrompt();
     dismissInstall();
     expect(installState.dismissed).toBe(true);
     expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBe('true');
 
-    const next = await freshModule();
+    const next = freshModule();
     next.initInstallPrompt();
     expect(next.installState.dismissed).toBe(true);
   });
 
   it('does not count the session where the initial prompt was dismissed', async () => {
-    const session = await openAndroidSession();
-    const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
-    canvasState.strokeCount = SETTLED_IN_STROKES;
+    const session = openAndroidSession();
+    drawStrokesTo(session.canvas, SETTLED_IN_STROKES);
 
     session.dismissInstall();
     session.recordInstallRepromptSession();
@@ -347,39 +373,39 @@ describe('dismissInstall', () => {
 
 describe('bounded install re-prompts', () => {
   it('re-prompts after five and ten qualifying sessions, then stays permanently quiet', async () => {
-    const initial = await openAndroidSession();
+    const initial = openAndroidSession();
     initial.dismissInstall();
 
-    let session = await qualifyingInstallSession();
-    for (let count = 2; count <= 4; count += 1) session = await qualifyingInstallSession();
+    let session = qualifyingInstallSession();
+    for (let count = 2; count <= 4; count += 1) session = qualifyingInstallSession();
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('4');
     expect(session.installPromptStage()).toBeNull();
 
-    session = await qualifyingInstallSession();
+    session = qualifyingInstallSession();
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('5');
     expect(session.installPromptStage()).toBe('returning');
     session.dismissInstall();
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptsUsed)).toBe('1');
 
-    for (let count = 6; count <= 9; count += 1) session = await qualifyingInstallSession();
+    for (let count = 6; count <= 9; count += 1) session = qualifyingInstallSession();
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('9');
     expect(session.installPromptStage()).toBeNull();
 
-    session = await qualifyingInstallSession();
+    session = qualifyingInstallSession();
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('10');
     expect(session.installPromptStage()).toBe('final');
     session.dismissInstall();
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptsUsed)).toBe('2');
 
-    session = await qualifyingInstallSession();
+    session = qualifyingInstallSession();
     expect(session.installPromptStage()).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('10');
   });
 
   it('counts a qualifying session at most once per page load', async () => {
-    const initial = await openAndroidSession();
+    const initial = openAndroidSession();
     initial.dismissInstall();
-    const session = await qualifyingInstallSession();
+    const session = qualifyingInstallSession();
 
     session.recordInstallRepromptSession();
     session.recordInstallRepromptSession();
@@ -388,9 +414,9 @@ describe('bounded install re-prompts', () => {
   });
 
   it('does not count a page load without enough drawing', async () => {
-    const initial = await openAndroidSession();
+    const initial = openAndroidSession();
     initial.dismissInstall();
-    const session = await openAndroidSession();
+    const session = openAndroidSession();
 
     session.recordInstallRepromptSession();
 
@@ -398,9 +424,8 @@ describe('bounded install re-prompts', () => {
   });
 
   it('does not count before the initial banner has been dismissed', async () => {
-    const session = await openAndroidSession();
-    const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
-    canvasState.strokeCount = SETTLED_IN_STROKES;
+    const session = openAndroidSession();
+    drawStrokesTo(session.canvas, SETTLED_IN_STROKES);
 
     session.recordInstallRepromptSession();
 
@@ -410,10 +435,9 @@ describe('bounded install re-prompts', () => {
 
   it('does not count while install is unavailable', async () => {
     localStorage.setItem(STORAGE_KEYS.installDismissed, 'true');
-    const session = await freshModule();
+    const session = freshModule();
     session.initInstallPrompt();
-    const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
-    canvasState.strokeCount = SETTLED_IN_STROKES;
+    drawStrokesTo(session.canvas, SETTLED_IN_STROKES);
 
     session.recordInstallRepromptSession();
 
@@ -422,11 +446,11 @@ describe('bounded install re-prompts', () => {
   });
 
   it('keeps an unconsumed re-prompt at the same milestone across relaunches', async () => {
-    const initial = await openAndroidSession();
+    const initial = openAndroidSession();
     initial.dismissInstall();
-    for (let count = 1; count <= 5; count += 1) await qualifyingInstallSession();
+    for (let count = 1; count <= 5; count += 1) qualifyingInstallSession();
 
-    const relaunched = await qualifyingInstallSession();
+    const relaunched = qualifyingInstallSession();
 
     expect(relaunched.installPromptStage()).toBe('returning');
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('5');
@@ -436,17 +460,16 @@ describe('bounded install re-prompts', () => {
 
 describe('install auto-clear', () => {
   it('dismisses and persists after five strokes relative to when it is armed', async () => {
-    const { installState, armInstallAutoClear, autoDismissInstallIfDue } = await freshModule();
-    const { canvasState } = await import('./canvas.svelte');
-    canvasState.strokeCount = 12;
+    const { canvas, installState, armInstallAutoClear, autoDismissInstallIfDue } = freshModule();
+    drawStrokesTo(canvas, 12);
     armInstallAutoClear();
 
-    canvasState.strokeCount = 16;
+    drawStrokesTo(canvas, 16);
     expect(autoDismissInstallIfDue()).toBe(false);
     expect(installState.dismissed).toBe(false);
     expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBeNull();
 
-    canvasState.strokeCount = 17;
+    drawStrokesTo(canvas, 17);
     expect(autoDismissInstallIfDue()).toBe(true);
     expect(installState.dismissed).toBe(true);
     expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBe('true');
@@ -455,20 +478,24 @@ describe('install auto-clear', () => {
 
 describe('hidden install auto-clear', () => {
   it('starts a fresh countdown after the banner is disarmed and shown again', async () => {
-    const { installState, armInstallAutoClear, disarmInstallAutoClear, autoDismissInstallIfDue } =
-      await freshModule();
-    const { canvasState } = await import('./canvas.svelte');
-    canvasState.strokeCount = 3;
+    const {
+      canvas,
+      installState,
+      armInstallAutoClear,
+      disarmInstallAutoClear,
+      autoDismissInstallIfDue,
+    } = freshModule();
+    drawStrokesTo(canvas, 3);
     armInstallAutoClear();
-    canvasState.strokeCount = 5;
+    drawStrokesTo(canvas, 5);
     disarmInstallAutoClear();
-    canvasState.strokeCount = 20;
+    drawStrokesTo(canvas, 20);
     expect(autoDismissInstallIfDue()).toBe(false);
     expect(installState.dismissed).toBe(false);
     armInstallAutoClear();
-    canvasState.strokeCount = 24;
+    drawStrokesTo(canvas, 24);
     expect(autoDismissInstallIfDue()).toBe(false);
-    canvasState.strokeCount = 25;
+    drawStrokesTo(canvas, 25);
     expect(autoDismissInstallIfDue()).toBe(true);
   });
 });

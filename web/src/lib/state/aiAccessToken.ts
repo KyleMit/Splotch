@@ -11,8 +11,7 @@ async function persistAiAccessToken(value: string) {
 }
 
 const aiAccessTokenCoordinator = createSecureCredentialCoordinator(
-  settingsState,
-  'aiAccessToken',
+  { read: () => settingsState.aiAccessToken, write: settingsState.mirrorAiAccessToken },
   persistAiAccessToken
 );
 
@@ -39,7 +38,7 @@ export function hydrateAiAccessToken() {
 
     if (legacy) removeKey(STORAGE_KEYS.legacyAiAccessToken);
     if (settingsState.aiAccessToken) return;
-    if (ownsHydration() && token) settingsState.aiAccessToken = token;
+    if (ownsHydration() && token) settingsState.mirrorAiAccessToken(token);
   });
 }
 

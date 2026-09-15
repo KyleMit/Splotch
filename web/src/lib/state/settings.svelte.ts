@@ -14,9 +14,11 @@ import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import type { CredentialKind } from '$lib/aiCredential';
 import {
   OPTIONAL_BRUSH_TYPES,
-  fallBackFromBrush,
+  toolState,
   type OptionalBrushType,
+  type ToolState,
 } from '$lib/state/tool.svelte';
+import { readonlyView } from './readonlyView';
 
 // Phone-class devices stay below the shared tablet floor even in landscape, so
 // they default to portrait. The threshold itself is owned by $lib/platform, which
@@ -103,13 +105,6 @@ function isToolDrawerControl(control: ActionPanelControl): control is ToolDrawer
   return (TOOL_DRAWER_CONTROLS as readonly ActionPanelControl[]).includes(control);
 }
 
-/** Whether the Actions Panel shows a control: its own flag, and the drawer switch for the drawer's own tools. */
-export function actionControlShown(control: ActionPanelControl): boolean {
-  return (
-    settingsState[control] && (settingsState.toolDrawerEnabled || !isToolDrawerControl(control))
-  );
-}
-
 const boolSettingEntries = () =>
   Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][];
 
@@ -161,6 +156,18 @@ function readTheme(fallback: ThemePreference): ThemePreference {
   return isThemePreference(raw) ? raw : fallback;
 }
 
+function readBoolSettings(): Record<BoolSettingKey, boolean> {
+  return Object.fromEntries(
+    boolSettingEntries().map(([prop, [key, def]]) => [prop, readBool(key, def)])
+  ) as Record<BoolSettingKey, boolean>;
+}
+
+function readIntSettings(): Record<IntSettingKey, number> {
+  return Object.fromEntries(
+    intSettingEntries().map(([prop, [key, def, clamp]]) => [prop, clamp(readInt(key, def))])
+  ) as Record<IntSettingKey, number>;
+}
+
 interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {
   // Appearance: explicit light/dark, or 'system' to follow the OS setting.
   theme: ThemePreference;
@@ -178,141 +185,224 @@ interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey
   saveFolderName: string | null;
 }
 
-export const settingsState: Settings = $state({
-  ...(Object.fromEntries(
-    boolSettingEntries().map(([prop, [key, def]]) => [prop, readBool(key, def)])
-  ) as Record<BoolSettingKey, boolean>),
-  ...(Object.fromEntries(
-    intSettingEntries().map(([prop, [key, def, clamp]]) => [prop, clamp(readInt(key, def))])
-  ) as Record<IntSettingKey, number>),
-  theme: readTheme(THEME_DEFAULT),
-  aiAccessToken: '',
-  aiUserApiKey: '',
-  saveFolderName: null,
-});
-
-// Build a setter that updates the live value and persists it to localStorage.
-function makeBoolSetter(prop: BoolSettingKey) {
-  const [key] = BOOL_SETTINGS[prop];
-  return (v: boolean) => {
-    settingsState[prop] = v;
-    writeBool(key, v);
-  };
-}
-
-const OPTIONAL_BRUSH_SETTING = {
-  crayon: 'crayonEnabled',
-  magic: 'magicBrushEnabled',
-  eraser: 'eraserEnabled',
-} as const satisfies Record<OptionalBrushType, BoolSettingKey>;
-
-function isOptionalBrushEnabled(brush: OptionalBrushType): boolean {
-  return actionControlShown(OPTIONAL_BRUSH_SETTING[brush]);
-}
-
-export function enabledOptionalBrushes(): OptionalBrushType[] {
-  return OPTIONAL_BRUSH_TYPES.filter(isOptionalBrushEnabled);
-}
-
-function normalizeDisabledBrushes() {
-  for (const brush of OPTIONAL_BRUSH_TYPES) {
-    if (!isOptionalBrushEnabled(brush)) fallBackFromBrush(brush);
-  }
-}
-
-export const setSound = makeBoolSetter('soundEnabled');
-export const setDrawingSound = makeBoolSetter('drawingSoundEnabled');
-export const setDeleteSound = makeBoolSetter('deleteSoundEnabled');
-export const setSaveOnDelete = makeBoolSetter('saveOnDeleteEnabled');
-export const setScreenshot = makeBoolSetter('screenshotEnabled');
-export const setUndoButton = makeBoolSetter('undoButtonEnabled');
-export const setStrokeWidthControl = makeBoolSetter('strokeWidthControlEnabled');
-const setCrayonSetting = makeBoolSetter('crayonEnabled');
-const setMagicBrushSetting = makeBoolSetter('magicBrushEnabled');
-const setEraserSetting = makeBoolSetter('eraserEnabled');
-
-export function setCrayon(v: boolean) {
-  setCrayonSetting(v);
-  if (!v) fallBackFromBrush('crayon');
-}
-
-export function setMagicBrush(v: boolean) {
-  setMagicBrushSetting(v);
-  if (!v) fallBackFromBrush('magic');
-}
-
-export function setEraser(v: boolean) {
-  setEraserSetting(v);
-  if (!v) fallBackFromBrush('eraser');
-}
-export const setColoringBook = makeBoolSetter('coloringBookEnabled');
-export const setColoringPacksAllowMetered = makeBoolSetter('coloringPacksAllowMetered');
-export const setAiImage = makeBoolSetter('aiImageEnabled');
-export const setAiCustomization = makeBoolSetter('aiCustomizationEnabled');
-export const setAutoSaveAi = makeBoolSetter('autoSaveAiEnabled');
-const setToolDrawerSetting = makeBoolSetter('toolDrawerEnabled');
-
-// Off takes the drawer's brushes with it, so the held brush falls back the way
-// it does when that one brush is switched off — otherwise a child left holding
-// the eraser would have no visible way back to ink.
-export function setToolDrawerEnabled(v: boolean) {
-  setToolDrawerSetting(v);
-  if (!v) normalizeDisabledBrushes();
-}
-export const setDrawerOpen = makeBoolSetter('drawerOpen');
-export const setLockRotation = makeBoolSetter('lockRotationEnabled');
-export const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');
-export const setPencilEraserEnabled = makeBoolSetter('pencilEraserEnabled');
-export const setApplePencilSeen = makeBoolSetter('applePencilSeen');
-
-export function setTheme(v: ThemePreference) {
-  settingsState.theme = v;
-  writeString(STORAGE_KEYS.theme, v);
-  applyTheme(v);
-}
-
-// Build a setter that clamps, updates the live value, and persists it.
-function makeIntSetter(prop: IntSettingKey) {
-  const [key, , clamp] = INT_SETTINGS[prop];
-  return (v: number) => {
-    const next = clamp(v);
-    settingsState[prop] = next;
-    writeInt(key, next);
-  };
-}
-
-export const setSoundVolume = makeIntSetter('soundVolume');
-export const setActionButtonScale = makeIntSetter('actionButtonScale');
-
 // Extends the verification vocabulary rather than restating it, so a new
 // credential kind cannot compile in aiCredential.ts while being silently absent
 // from persisted-state classification. 'none' is this module's own addition:
 // verification always has a kind, but stored state may have neither credential.
-export type AiCredentialKind = CredentialKind | 'none';
+type AiCredentialKind = CredentialKind | 'none';
 
-// Which AI credential is "active" when both happen to be set (nothing clears
-// one when the other is submitted): a BYOK key wins over an access code.
-export function aiCredentialKind(): AiCredentialKind {
-  if (settingsState.aiUserApiKey) return 'apiKey';
-  if (settingsState.aiAccessToken) return 'accessCode';
-  return 'none';
+interface SettingsMutators {
+  setSound(v: boolean): void;
+  setDrawingSound(v: boolean): void;
+  setDeleteSound(v: boolean): void;
+  setSaveOnDelete(v: boolean): void;
+  setScreenshot(v: boolean): void;
+  setUndoButton(v: boolean): void;
+  setStrokeWidthControl(v: boolean): void;
+  setCrayon(v: boolean): void;
+  setMagicBrush(v: boolean): void;
+  setEraser(v: boolean): void;
+  setColoringBook(v: boolean): void;
+  setColoringPacksAllowMetered(v: boolean): void;
+  setAiImage(v: boolean): void;
+  setAiCustomization(v: boolean): void;
+  setAutoSaveAi(v: boolean): void;
+  setToolDrawerEnabled(v: boolean): void;
+  setDrawerOpen(v: boolean): void;
+  setLockRotation(v: boolean): void;
+  setForceLandscapeOrientation(v: boolean): void;
+  setPencilEraserEnabled(v: boolean): void;
+  setApplePencilSeen(v: boolean): void;
+  setTheme(v: ThemePreference): void;
+  setSoundVolume(v: number): void;
+  setActionButtonScale(v: number): void;
+  // The in-memory mirrors of values persisted elsewhere (secure storage, the
+  // IndexedDB directory handle). The credential coordinators and the save-folder
+  // hydration own persistence and are the only production callers.
+  mirrorAiUserApiKey(value: string): void;
+  mirrorAiAccessToken(value: string): void;
+  mirrorSaveFolderName(name: string | null): void;
+  /** Whether the Actions Panel shows a control: its own flag, and the drawer switch for the drawer's own tools. */
+  actionControlShown(control: ActionPanelControl): boolean;
+  enabledOptionalBrushes(): OptionalBrushType[];
+  aiCredentialKind(): AiCredentialKind;
+  reloadSettings(): void;
 }
 
-// Re-read every persisted setting into the live store. Used after the durable
-// storage layer recovers values that the native WebView had evicted (see
-// hydrateDurableStorage in storage.ts). A no-op visually when nothing changed.
-export function reloadSettings() {
-  for (const [prop, [key]] of boolSettingEntries()) {
-    settingsState[prop] = readBool(key, settingsState[prop]);
+export type SettingsState = Readonly<Settings> & SettingsMutators;
+
+export function createSettings(tool: ToolState): SettingsState {
+  const s: Settings = $state({
+    ...readBoolSettings(),
+    ...readIntSettings(),
+    theme: readTheme(THEME_DEFAULT),
+    aiAccessToken: '',
+    aiUserApiKey: '',
+    saveFolderName: null,
+  });
+
+  // Build a setter that updates the live value and persists it to localStorage.
+  function makeBoolSetter(prop: BoolSettingKey) {
+    const [key] = BOOL_SETTINGS[prop];
+    return (v: boolean) => {
+      s[prop] = v;
+      writeBool(key, v);
+    };
   }
-  for (const [prop, [key, , clamp]] of intSettingEntries()) {
-    settingsState[prop] = clamp(readInt(key, settingsState[prop]));
+
+  // Build a setter that clamps, updates the live value, and persists it.
+  function makeIntSetter(prop: IntSettingKey) {
+    const [key, , clamp] = INT_SETTINGS[prop];
+    return (v: number) => {
+      const next = clamp(v);
+      s[prop] = next;
+      writeInt(key, next);
+    };
   }
-  settingsState.theme = readTheme(settingsState.theme);
-  applyTheme(settingsState.theme);
+
+  function actionControlShown(control: ActionPanelControl): boolean {
+    return s[control] && (s.toolDrawerEnabled || !isToolDrawerControl(control));
+  }
+
+  const OPTIONAL_BRUSH_SETTING = {
+    crayon: 'crayonEnabled',
+    magic: 'magicBrushEnabled',
+    eraser: 'eraserEnabled',
+  } as const satisfies Record<OptionalBrushType, BoolSettingKey>;
+
+  function isOptionalBrushEnabled(brush: OptionalBrushType): boolean {
+    return actionControlShown(OPTIONAL_BRUSH_SETTING[brush]);
+  }
+
+  function normalizeDisabledBrushes() {
+    for (const brush of OPTIONAL_BRUSH_TYPES) {
+      if (!isOptionalBrushEnabled(brush)) tool.fallBackFromBrush(brush);
+    }
+  }
+
+  const setCrayonSetting = makeBoolSetter('crayonEnabled');
+  const setMagicBrushSetting = makeBoolSetter('magicBrushEnabled');
+  const setEraserSetting = makeBoolSetter('eraserEnabled');
+  const setToolDrawerSetting = makeBoolSetter('toolDrawerEnabled');
+
+  function setTheme(v: ThemePreference) {
+    s.theme = v;
+    writeString(STORAGE_KEYS.theme, v);
+    applyTheme(v);
+  }
+
+  const mutators: SettingsMutators = {
+    setSound: makeBoolSetter('soundEnabled'),
+    setDrawingSound: makeBoolSetter('drawingSoundEnabled'),
+    setDeleteSound: makeBoolSetter('deleteSoundEnabled'),
+    setSaveOnDelete: makeBoolSetter('saveOnDeleteEnabled'),
+    setScreenshot: makeBoolSetter('screenshotEnabled'),
+    setUndoButton: makeBoolSetter('undoButtonEnabled'),
+    setStrokeWidthControl: makeBoolSetter('strokeWidthControlEnabled'),
+    setCrayon(v) {
+      setCrayonSetting(v);
+      if (!v) tool.fallBackFromBrush('crayon');
+    },
+    setMagicBrush(v) {
+      setMagicBrushSetting(v);
+      if (!v) tool.fallBackFromBrush('magic');
+    },
+    setEraser(v) {
+      setEraserSetting(v);
+      if (!v) tool.fallBackFromBrush('eraser');
+    },
+    setColoringBook: makeBoolSetter('coloringBookEnabled'),
+    setColoringPacksAllowMetered: makeBoolSetter('coloringPacksAllowMetered'),
+    setAiImage: makeBoolSetter('aiImageEnabled'),
+    setAiCustomization: makeBoolSetter('aiCustomizationEnabled'),
+    setAutoSaveAi: makeBoolSetter('autoSaveAiEnabled'),
+    // Off takes the drawer's brushes with it, so the held brush falls back the way
+    // it does when that one brush is switched off — otherwise a child left holding
+    // the eraser would have no visible way back to ink.
+    setToolDrawerEnabled(v) {
+      setToolDrawerSetting(v);
+      if (!v) normalizeDisabledBrushes();
+    },
+    setDrawerOpen: makeBoolSetter('drawerOpen'),
+    setLockRotation: makeBoolSetter('lockRotationEnabled'),
+    setForceLandscapeOrientation: makeBoolSetter('forceLandscapeOrientation'),
+    setPencilEraserEnabled: makeBoolSetter('pencilEraserEnabled'),
+    setApplePencilSeen: makeBoolSetter('applePencilSeen'),
+    setTheme,
+    setSoundVolume: makeIntSetter('soundVolume'),
+    setActionButtonScale: makeIntSetter('actionButtonScale'),
+    mirrorAiUserApiKey(value) {
+      s.aiUserApiKey = value;
+    },
+    mirrorAiAccessToken(value) {
+      s.aiAccessToken = value;
+    },
+    mirrorSaveFolderName(name) {
+      s.saveFolderName = name;
+    },
+    actionControlShown,
+    enabledOptionalBrushes() {
+      return OPTIONAL_BRUSH_TYPES.filter(isOptionalBrushEnabled);
+    },
+    // Which AI credential is "active" when both happen to be set (nothing clears
+    // one when the other is submitted): a BYOK key wins over an access code.
+    aiCredentialKind() {
+      if (s.aiUserApiKey) return 'apiKey';
+      if (s.aiAccessToken) return 'accessCode';
+      return 'none';
+    },
+    // Re-read every persisted setting into the live store. Used after the durable
+    // storage layer recovers values that the native WebView had evicted (see
+    // hydrateDurableStorage in storage.ts). A no-op visually when nothing changed.
+    reloadSettings() {
+      for (const [prop, [key]] of boolSettingEntries()) {
+        s[prop] = readBool(key, s[prop]);
+      }
+      for (const [prop, [key, , clamp]] of intSettingEntries()) {
+        s[prop] = clamp(readInt(key, s[prop]));
+      }
+      s.theme = readTheme(s.theme);
+      applyTheme(s.theme);
+      normalizeDisabledBrushes();
+    },
+  };
+
   normalizeDisabledBrushes();
+
+  return Object.assign(readonlyView(s), mutators);
 }
 
-normalizeDisabledBrushes();
+export const settingsState = createSettings(toolState);
+
+export const {
+  setSound,
+  setDrawingSound,
+  setDeleteSound,
+  setSaveOnDelete,
+  setScreenshot,
+  setUndoButton,
+  setStrokeWidthControl,
+  setCrayon,
+  setMagicBrush,
+  setEraser,
+  setColoringBook,
+  setColoringPacksAllowMetered,
+  setAiImage,
+  setAiCustomization,
+  setAutoSaveAi,
+  setToolDrawerEnabled,
+  setDrawerOpen,
+  setLockRotation,
+  setForceLandscapeOrientation,
+  setPencilEraserEnabled,
+  setApplePencilSeen,
+  setTheme,
+  setSoundVolume,
+  setActionButtonScale,
+  actionControlShown,
+  enabledOptionalBrushes,
+  aiCredentialKind,
+  reloadSettings,
+} = settingsState;
 
 onDurableRestore(reloadSettings);

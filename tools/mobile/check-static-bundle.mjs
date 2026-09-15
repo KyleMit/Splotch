@@ -51,7 +51,9 @@ export const WEB_ONLY_MODULE_MARKERS = [
     marker: 'beforeinstallprompt',
     sourcePath: 'web/src/lib/state/install.svelte.ts',
     sourceNeedle:
-      "if (browser && !__IS_CAPACITOR__) {\n  window.addEventListener('beforeinstallprompt'",
+      'if (!__IS_CAPACITOR__ && browser && !listening) {\n' +
+      '        listening = true;\n' +
+      "        window.addEventListener('beforeinstallprompt'",
   },
   {
     feature: 'install completion',
@@ -89,6 +91,17 @@ export const NATIVE_ONLY_MODULE_MARKERS = [
     sourceNeedle:
       "if (__IS_CAPACITOR__) listen(removers, document, 'resume', handlers.resyncOnReentry);",
     bundlePattern: /document\s*,\s*["'`]resume["'`]\s*,/,
+  },
+  // The native coloring-pack store is reached only behind __IS_CAPACITOR__
+  // (lib/coloringPacks/manager.ts), so its plugin registration literal must
+  // ship in the native build and never in the web one. Guarded here rather
+  // than in web/tests/startup-bundle.spec.ts, whose web-only scan can neither
+  // see the module nor name a marker for it.
+  {
+    feature: 'native coloring-pack store',
+    sourcePath: 'web/src/lib/plugins/coloringPacks.ts',
+    sourceNeedle: "registerPlugin<ColoringPacksPlugin>('ColoringPacks')",
+    bundlePattern: /["'`]ColoringPacks["'`]/,
   },
 ];
 

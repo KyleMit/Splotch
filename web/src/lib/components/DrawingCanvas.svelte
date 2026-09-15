@@ -87,17 +87,11 @@
     // back to a full init.
     const engine = adoptDrawingCanvas(canvasEl, {
       initialColor: colorsState.activeColor,
-      onUndo: () => {
-        canvasState.undoCount++;
-      },
+      onUndo: canvasState.recordUndo,
       onDrawSound: playDrawSound,
       onDrawStop: stopDrawSound,
-      onUndoStateChange: (canUndo) => {
-        canvasState.canUndo = canUndo;
-      },
-      onCanvasEmptyChange: (empty) => {
-        canvasState.canvasEmpty = empty;
-      },
+      onUndoStateChange: canvasState.setCanUndo,
+      onCanvasEmptyChange: canvasState.setCanvasEmpty,
       // The engine tells us where a stroke really began, so a down-less pen
       // stream it adopts mid-move (WebKit merges a fast tap-then-stroke into
       // one, dropping the pointerdown) grows its ring like any other stroke.
@@ -107,13 +101,10 @@
         if (toolState.brush === 'eraser') return;
         pointerHalos?.growBrushRing(stroke);
       },
-      onStrokeEnd: () => {
-        canvasState.strokeCount++;
-      },
+      onStrokeEnd: canvasState.recordStrokeEnd,
       onViewChange: (view) => {
         Object.assign(paperView, view);
-        canvasState.paperOrientation = view.paperOrientation;
-        canvasState.paperCssWidth = view.paperCssWidth;
+        canvasState.setPaperView(view);
       },
     });
 

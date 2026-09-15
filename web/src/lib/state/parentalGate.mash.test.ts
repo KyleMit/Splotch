@@ -1,13 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  parentalGateState,
-  parentalGatePoliciesState,
-  requireParentalGate,
-  pressGateKey,
-  dismissGate,
+  createParentalGate,
   GATE_CHECK_KEY,
   GATE_KEYPAD_KEYS,
-  PARENTAL_GATE_FEATURES,
+  type ParentalGateState,
 } from './parentalGate.svelte';
 
 // A child tapping keypad keys at random, at the cadence the product audit
@@ -53,14 +49,14 @@ function seededRandom(seed: number) {
   };
 }
 
+// Every trial is a fresh gate: policies at the build default, no escalation state.
+let gate: ParentalGateState = createParentalGate();
+
 function resetGate() {
   vi.clearAllTimers();
   vi.restoreAllMocks();
-  dismissGate();
-  parentalGateState.wrongStreak = 0;
-  parentalGateState.lockouts = 0;
-  parentalGateState.lockoutUntil = null;
-  parentalGateState.escalationQuietSince = null;
+  gate.dismissGate();
+  gate = createParentalGate();
 }
 
 // A tap landing inside a lockout changes nothing, and most of a two-minute
@@ -68,7 +64,7 @@ function resetGate() {
 // taps made this suite too slow under CI's coverage instrumentation, so they
 // only draw from the generator, as choosing a key would.
 function lockoutSwallows(tapAtMs: number) {
-  return parentalGateState.lockoutUntil !== null && tapAtMs < parentalGateState.lockoutUntil;
+  return gate.lockoutUntil !== null && tapAtMs < gate.lockoutUntil;
 }
 
 type TapModel = (random: () => number) => (typeof GATE_KEYPAD_KEYS)[number];
@@ -77,14 +73,14 @@ const anyKey: TapModel = (random) =>
   GATE_KEYPAD_KEYS[Math.floor(random() * GATE_KEYPAD_KEYS.length)];
 
 const fillDabsThenCheck: TapModel = (random) =>
-  parentalGateState.input.length < String(parentalGateState.x * parentalGateState.y).length
+  gate.input.length < String(gate.x * gate.y).length
     ? GATE_KEYPAD_KEYS[Math.floor(random() * DIGIT_KEY_COUNT)]
     : GATE_CHECK_KEY;
 
 function tappingUnlocks(seed: number, tapIntervalMs: number, chooseKey: TapModel): boolean {
   const random = seededRandom(seed);
   vi.spyOn(Math, 'random').mockImplementation(random);
-  requireParentalGate('parentCenter', () => {});
+  gate.requireParentalGate('parentCenter', () => {});
   const startMs = Date.now();
   for (let elapsed = 0; elapsed < MASH_WINDOW_MS; elapsed += tapIntervalMs) {
     if (lockoutSwallows(startMs + elapsed)) {
@@ -92,8 +88,8 @@ function tappingUnlocks(seed: number, tapIntervalMs: number, chooseKey: TapModel
       continue;
     }
     vi.advanceTimersByTime(startMs + elapsed - Date.now());
-    pressGateKey(chooseKey(random));
-    if (parentalGateState.unlocked) return true;
+    gate.pressGateKey(chooseKey(random));
+    if (gate.unlocked) return true;
   }
   return false;
 }
@@ -110,7 +106,7 @@ function unlockRate(tapIntervalMs: number, chooseKey: TapModel) {
 describe('parental gate under random tapping', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    for (const feature of PARENTAL_GATE_FEATURES) parentalGatePoliciesState[feature] = 'always';
+    localStorage.clear();
   });
 
   afterEach(() => {

@@ -1,6 +1,12 @@
-export function createSecureCredentialCoordinator<Key extends string>(
-  credentialState: Record<Key, string>,
-  credentialKey: Key,
+// The in-memory mirror of a secret that lives in secure storage: the settings
+// module owns the value, and the coordinator is its only production writer.
+export interface CredentialMirror {
+  read(): string;
+  write(value: string): void;
+}
+
+export function createSecureCredentialCoordinator(
+  mirror: CredentialMirror,
   persistCredential: (value: string) => Promise<void>
 ) {
   let writeVersion = 0;
@@ -32,11 +38,11 @@ export function createSecureCredentialCoordinator<Key extends string>(
 
       if (version !== writeVersion) return false;
       if (!ownsRequest()) {
-        await persistCredential(credentialState[credentialKey]);
+        await persistCredential(mirror.read());
         return false;
       }
 
-      credentialState[credentialKey] = value;
+      mirror.write(value);
       return true;
     });
   }

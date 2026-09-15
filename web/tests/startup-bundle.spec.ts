@@ -25,9 +25,14 @@ const SAVE_MODULE_MARKERS: Record<string, string> = {
   'folderSave.ts': 'Persisting the save folder failed:',
   'screenshotFeedback.ts': 'screenshot-capture-feedback',
 };
+// nativeStore.ts has no entry: manager.ts reaches it only behind
+// `__IS_CAPACITOR__`, so the web client build compiles it out entirely and no
+// marker can identify it here. A bare `ColoringPacks` marker used to stand in
+// for it and matched unrelated identifiers instead (`createColoringPacks`,
+// `setColoringPacksAllowMetered`), which is how it failed the moment a settings
+// mutator became a property name in the startup chunk.
 const COLORING_PACK_MODULE_MARKERS: Record<string, string> = {
   'manager.ts': 'Coloring-pack download paused',
-  'nativeStore.ts': 'ColoringPacks',
   // The startup-path boot copies its cache family prefix instead of importing
   // this module (boot/coloringPacks.ts); the marker keeps the import from
   // coming back.

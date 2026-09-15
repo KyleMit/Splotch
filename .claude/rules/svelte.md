@@ -13,14 +13,19 @@ paths:
 * Props that forward `...rest` extend the matching `svelte/elements` attributes type
   (`HTMLAttributes<...>`); index-signature prop bags are lint-banned.
 * Shared state lives in `src/lib/state/*.svelte.ts`. Components read state and call setters; they
-  never own shared state.
+  never own shared state. Every module has one shape: a `createX()` factory over private `$state`
+  that returns read-only getters plus named mutators, one instance named `<basename>State` (exported
+  when something imports it; `npm run lint:dead` refuses an unused export), and the mutators
+  re-exported by name from that instance so consumers import functions. A module that subscribes to
+  the platform (`network`, `layout`, `fullscreen`, `install`, `appearance`, `aiProgress`) puts that
+  in `install()`/`dispose()` on the instance and still calls `install()` once at module load behind
+  its client guard. Tests take fresh instances from the factory, never `vi.resetModules()`.
 * A state module's exported reactive singleton is named after the module basename plus a kind
   suffix: a `$state(...)` object or a `createX()` instance is `<basename>State` (`settingsState` in
   `settings.svelte.ts`, `aiProgressState` in `aiProgress.svelte.ts`); a modal controller ends in
   `Modal` (`settingsModal`). The rule is mechanical on purpose —
-  `tools/tests/state-export-names.test.mjs` enforces it, and a second singleton in one module
-  (`parentalGatePoliciesState`) is listed there as the exception. Private module-scope `$state`
-  (`appearance`, `seenStamps`) is outside the rule.
+  `tools/tests/state-export-names.test.mjs` enforces it, one singleton per module. Private
+  module-scope `$state` is outside the rule.
 * Complex gestures and dialog wiring are Svelte actions in `src/lib/actions/` (see `dragToClear.ts`,
   `modalDialog.svelte.ts`), not inline component logic.
 * The drawing engine (`src/lib/drawing/engine.ts`) is imperative by design (ADR-0004) and boots

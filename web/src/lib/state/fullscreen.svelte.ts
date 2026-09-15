@@ -28,40 +28,69 @@ function fullscreenSupported(): boolean {
   return isAndroidBrowser();
 }
 
-export const fullscreenState = $state({
+export interface FullscreenState {
   // Whether to surface the toggle at all (Android web browsers only).
-  supported: false,
+  readonly supported: boolean;
   // Whether the document is currently in immersive fullscreen.
-  active: false,
-});
+  readonly active: boolean;
+  toggleFullscreen(): Promise<void>;
+  // Seeds `supported` and keeps `active` in sync with the platform. The browser
+  // can drop out of fullscreen on its own (Esc, the back gesture, a permissions
+  // change), so `active` must track the real state, not our requests.
+  install(): void;
+  dispose(): void;
+}
 
-// Web-only; seeds `supported` and keeps `active` in sync with the platform. The
-// browser can drop out of fullscreen on its own (Esc, the back gesture, a
-// permissions change), so `active` must track the real state, not our requests.
+export function createFullscreen(): FullscreenState {
+  const s = $state({ supported: false, active: false });
+
+  let installed = false;
+
+  const sync = () => {
+    s.active = document.fullscreenElement !== null;
+  };
+
+  return {
+    get supported() {
+      return s.supported;
+    },
+    get active() {
+      return s.active;
+    },
+    // Enter immersive fullscreen (dismissing the URL bar) or exit back out. MUST be
+    // called from a user gesture — a button click carries the transient activation
+    // requestFullscreen() needs. Failures are swallowed: a refused request just
+    // leaves the chrome where it was.
+    async toggleFullscreen() {
+      if (!s.supported) return;
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch {}
+    },
+    install() {
+      if (installed || !fullscreenSupported()) return;
+      installed = true;
+      s.supported = true;
+      sync();
+      document.addEventListener('fullscreenchange', sync);
+    },
+    dispose() {
+      if (!installed) return;
+      installed = false;
+      document.removeEventListener('fullscreenchange', sync);
+    },
+  };
+}
+
+export const fullscreenState = createFullscreen();
+
+export const { toggleFullscreen } = fullscreenState;
+
 // Installed at module load (not from a component), gated on `browser`, so the
 // value is live before the first component renders — FullscreenToggle reads
 // fullscreenState.* on mount, before +page.svelte's onMount would run.
-if (browser && fullscreenSupported()) {
-  fullscreenState.supported = true;
-
-  const sync = () => {
-    fullscreenState.active = document.fullscreenElement !== null;
-  };
-  sync();
-  document.addEventListener('fullscreenchange', sync);
-}
-
-// Enter immersive fullscreen (dismissing the URL bar) or exit back out. MUST be
-// called from a user gesture — a button click carries the transient activation
-// requestFullscreen() needs. Failures are swallowed: a refused request just
-// leaves the chrome where it was.
-export async function toggleFullscreen() {
-  if (!fullscreenState.supported) return;
-  try {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-    } else {
-      await document.documentElement.requestFullscreen();
-    }
-  } catch {}
-}
+if (browser) fullscreenState.install();

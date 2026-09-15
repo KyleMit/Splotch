@@ -29,7 +29,7 @@ it('counts a returning desktop session when its install prompt arrives after set
   expect(installState.mode).toBe('none');
   const stop = $effect.root(() => installSettledInEffects(() => ({ demand() {} })));
   try {
-    canvasState.strokeCount = SETTLED_IN_STROKES;
+    for (let stroke = 0; stroke < SETTLED_IN_STROKES; stroke += 1) canvasState.recordStrokeEnd();
     flushSync();
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBeNull();
 
@@ -44,7 +44,6 @@ it('counts a returning desktop session when its install prompt arrives after set
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('1');
   } finally {
     stop();
-    canvasState.strokeCount = 0;
     localStorage.clear();
   }
 });

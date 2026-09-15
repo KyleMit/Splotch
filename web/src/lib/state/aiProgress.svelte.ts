@@ -1,6 +1,20 @@
 import { AI_ESTIMATE_MS, createDialProgress } from '$lib/ai/dialProgress';
 import { aiGenerationState, type AiResultState } from './aiGeneration.svelte';
 
+export interface AiProgressState {
+  readonly value: number;
+  // The estimate has run out and the picture is still coming — the dial holds
+  // a pulse rather than a stalled bar.
+  readonly waiting: boolean;
+  // The reveal has finished: the dial and its confetti are done, and the
+  // picture itself is what the modal shows.
+  readonly revealed: boolean;
+  // Follows the generation machine from a detached effect root, so the loop
+  // outlives the dial that unmounts when the child minimizes.
+  install(): void;
+  dispose(): void;
+}
+
 /**
  * How far along the running generation is, and whether its picture has been
  * revealed yet — shared by every surface that shows a run in flight: the result
@@ -12,7 +26,10 @@ import { aiGenerationState, type AiResultState } from './aiGeneration.svelte';
  * lets a picture that lands while minimized be *already revealed* when the tap
  * comes back — a finished picture must never be shown behind a progress dial.
  */
-export function createAiProgress(state: AiResultState, estimateMs: number = AI_ESTIMATE_MS) {
+export function createAiProgress(
+  state: AiResultState,
+  estimateMs: number = AI_ESTIMATE_MS
+): AiProgressState {
   const dial = createDialProgress(estimateMs);
 
   let value = $state(0);
@@ -24,6 +41,7 @@ export function createAiProgress(state: AiResultState, estimateMs: number = AI_E
   // picture that is already on screen a second time.
   let rafId = 0;
   let settled = false;
+  let stopEffects: (() => void) | null = null;
 
   function finishReveal() {
     cancelAnimationFrame(rafId);
@@ -79,10 +97,6 @@ export function createAiProgress(state: AiResultState, estimateMs: number = AI_E
     if (!rafId) rafId = requestAnimationFrame(loop);
   }
 
-  /**
-   * Follow the generation machine. Registers effects, so it must be called from
-   * an effect context: the session-long root below, or a test's own root.
-   */
   function watch() {
     $effect(() => {
       if (state.open && state.generating) start();
@@ -111,25 +125,26 @@ export function createAiProgress(state: AiResultState, estimateMs: number = AI_E
     get value() {
       return value;
     },
-    // The estimate has run out and the picture is still coming — the dial holds
-    // a pulse rather than a stalled bar.
     get waiting() {
       return waiting;
     },
-    // The reveal has finished: the dial and its confetti are done, and the
-    // picture itself is what the modal shows.
     get revealed() {
       return revealed;
     },
-    watch,
+    install() {
+      stopEffects ??= $effect.root(watch);
+    },
+    dispose() {
+      stopEffects?.();
+      stopEffects = null;
+      stop();
+    },
   };
 }
 
 export const aiProgressState = createAiProgress(aiGenerationState);
 
-// A detached effect root (no component host) is what keeps this alive while the
-// modal is unmounted in the corner. Client-only: the loop is rAF-driven, and
+// Installed at module load (no component host) so the loop keeps running while
+// the modal is unmounted in the corner. Client-only: the loop is rAF-driven, and
 // effects never run during SSR anyway.
-if (typeof requestAnimationFrame !== 'undefined') {
-  $effect.root(() => aiProgressState.watch());
-}
+if (typeof requestAnimationFrame !== 'undefined') aiProgressState.install();
