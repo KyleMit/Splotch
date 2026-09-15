@@ -1,4 +1,5 @@
 import { PRESS_CLICK_CONSUME_WINDOW_MS } from './clickConsumeWindow';
+import { capturePointer } from './pointerCapture';
 
 const TAP_TRAVEL_PX = 18;
 
@@ -22,7 +23,7 @@ export function colorFoldGesture(node: HTMLButtonElement, handlers: ColorFoldHan
     startX = event.clientX;
     startY = event.clientY;
     travel = 0;
-    node.setPointerCapture(pointerId);
+    capturePointer(node, pointerId);
     event.preventDefault();
   }
 

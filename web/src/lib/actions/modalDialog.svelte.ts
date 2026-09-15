@@ -34,6 +34,7 @@
 // toddler's repeat taps (which would dismiss the modal they just opened) and
 // the opening tap's own trailing synthesized click (which would activate
 // whatever content painted under the finger — issue #308).
+import { untrack } from 'svelte';
 import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launchGuard';
 import type { Origin } from '$lib/state/modal.svelte';
 
@@ -269,7 +270,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
       }
       if (!node.open) {
         guardLaunchZone(o.origin ?? null);
-        o.onOpen?.();
+        untrack(() => o.onOpen?.());
         node.showModal();
         forgetOpenModal(node);
         openModals.push({ node, requestDismiss });

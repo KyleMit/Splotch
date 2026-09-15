@@ -123,16 +123,20 @@
     // module namespace, never the plugin proxy.
     let pencilCleanup: (() => void) | undefined;
     let cancelPencilIdle: (() => void) | undefined;
+    let disposed = false;
     if (__IS_CAPACITOR__ && isNative()) {
       const initPencil = () => {
-        import('$lib/plugins/pencilEraser').then(({ initPencilEraser }) => {
-          pencilCleanup = initPencilEraser();
-        });
+        import('$lib/plugins/pencilEraser')
+          .then(({ initPencilEraser }) => {
+            if (!disposed) pencilCleanup = initPencilEraser();
+          })
+          .catch(() => {});
       };
       cancelPencilIdle = scheduleIdle(initPencil);
     }
 
     return () => {
+      disposed = true;
       engine.teardown();
       cancelPencilIdle?.();
       pencilCleanup?.();
