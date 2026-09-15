@@ -356,6 +356,7 @@ export default tseslint.config(
       'svelte/no-target-blank': 'error',
       'svelte/valid-prop-names-in-kit-pages': 'error',
       'svelte/prefer-writable-derived': 'error',
+      'svelte/no-top-level-browser-globals': 'error',
     },
   },
   {

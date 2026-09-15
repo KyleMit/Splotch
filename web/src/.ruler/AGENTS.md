@@ -32,7 +32,11 @@ Where things live (full file-by-file map: `architecture` skill):
   `<basename>State` (`settingsState`, `aiProgressState`), a modal controller ends in `Modal`
   (`settingsModal`) — mechanically enough that `tools/tests/state-export-names.test.mjs` enforces
   it, one singleton per module. Tests build fresh instances from the factories rather than
-  `vi.resetModules()`.
+  `vi.resetModules()`. Multi-phase async state is a tagged union, and every late async result checks
+  that it still belongs to the request/visit that started it; a reset detaches side-effectful work
+  that must finish without allowing its result to mutate the new visit. An in-memory mirror of
+  persisted state lives no longer than the storage fact it mirrors: failed or superseded reads do
+  not prove absence, and writes/hydrations carry ownership checks.
 * `lib/boot/` — the drawing route's boot steps as named helpers, called in order from
   `routes/+page.svelte`'s `onMount`: `hydrateSettings()`, then `mountBootHiddenOverlays()` (the idle
   overlay pump, ADR-0049), `installContextMenuGuard()`, `installWakeLock()`, `initWebOnlyServices()`

@@ -32,10 +32,11 @@
   the measured rejected candidates — don't re-litigate them without new evidence). The empirically
   ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `web/src`
   uses named exports only, a mixed import marks its types inline (`import { a, type B }`),
-  `prefer-const` runs rune-aware on Svelte files (`svelte/prefer-const`), and "should" is banned
-  from test titles. CSS gets its own linter: `npm run lint:css` runs stylelint over every `<style>`
-  block and hand-authored `.css` file in the repo, and its rules were chosen the same measured way —
-  the ones that catch CSS the parser keeps and the browser silently never applies
+  `prefer-const` runs rune-aware on Svelte files (`svelte/prefer-const`), top-level browser globals
+  are banned from Svelte instance scripts (`svelte/no-top-level-browser-globals`), and "should" is
+  banned from test titles. CSS gets its own linter: `npm run lint:css` runs stylelint over every
+  `<style>` block and hand-authored `.css` file in the repo, and its rules were chosen the same
+  measured way — the ones that catch CSS the parser keeps and the browser silently never applies
   (`media-feature-name-no-unknown`, `property-no-unknown`, `selector-pseudo-class-no-unknown`) plus
   the notation conventions, colour included (`rgb(0 0 0 / 60%)`, never `rgba(`). `!important` fails
   `npm run lint:tokens`; test placement (`.test.ts` colocated under `web/src`, `.spec.ts` in

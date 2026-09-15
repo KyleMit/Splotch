@@ -37,6 +37,7 @@
     __engineReady: boolean;
   }
   // ssr = false in +page.ts is what makes this top-level window read safe (see the comment there).
+  // eslint-disable-next-line svelte/no-top-level-browser-globals -- this route never renders on the server
   const win = window as unknown as Window & EngineHarnessWindow;
 
   // Mirrors how the app wires the engine (see DrawingCanvas.svelte), but routes
