@@ -90,7 +90,6 @@
 <div class="clear-preview" bind:this={clearPreviewEl} aria-hidden="true"></div>
 
 <ClearCoachmark bind:this={coachmark} />
-}
 
 <style>
   .clear-container {

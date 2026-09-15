@@ -115,7 +115,6 @@
     <AiDial />
   {/if}
 </div>
-}}
 
 <style>
   /* Registered so it can transition: an unregistered custom property changes

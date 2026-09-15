@@ -5,11 +5,8 @@
   import AiResultDisclosure from './AiResultDisclosure.svelte';
   import AiResultStage from './AiResultStage.svelte';
   import Button from './design/Button.svelte';
-  import {
-    aiGenerationState,
-    closeAiResult,
-    minimizeAiResult,
-  } from '$lib/state/aiGeneration.svelte';
+  import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
+  import { closeAiResult, minimizeAiResult } from '$lib/state/aiGeneration.svelte';
   import AiErrorCard from './AiErrorCard.svelte';
   import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
@@ -36,9 +33,8 @@
   // The window in which leaving is a real offer: once the picture has landed
   // there is nothing to go back to the canvas for, and minimizing a finished
   // result would be a way to lose it (ADR-0116).
-  const serverError = $derived(
-    !!aiGenerationState.error && aiGenerationState.error.kind !== 'safety'
-  );
+  const aiError = $derived(aiGenerationState.error);
+  const serverError = $derived(!!aiError && aiError.kind !== 'safety');
   const waiting = $derived(loading && aiGenerationState.generating);
   const footer = $derived(autoSaveFooter(aiGenerationState.autoSave));
   let exiting = $state(false);
