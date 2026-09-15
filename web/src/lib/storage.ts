@@ -97,7 +97,52 @@ async function runWithDurablePreferences<T>(
 // Fire-and-forget durable mirror. Never throws into the caller — a failed
 // durable write just means we fall back to the localStorage copy.
 function mirror(key: StorageKey, value: string) {
+  if (!__IS_CAPACITOR__ || !isNative()) return;
+  // A new value supersedes a removal that never landed.
+  setDurableRemovalPending(key, false);
   void runWithDurablePreferences((Preferences) => Preferences.set({ key, value }));
+}
+
+// The keys removeKey has asked Preferences to forget and not yet heard back
+// about. Kept in localStorage and mirrored like any value, so the list itself
+// survives a WebView eviction through the same durable copy it guards.
+function parsePendingDurableRemovals(raw: string | null): StorageKey[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? hydrationKeys.filter(
+          (key) => key !== STORAGE_KEYS.pendingDurableRemovals && parsed.includes(key)
+        )
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function setDurableRemovalPending(key: StorageKey, pending: boolean) {
+  const raw = safeStorageRead(
+    () => localStorage.getItem(STORAGE_KEYS.pendingDurableRemovals),
+    null
+  );
+  const current = new Set(parsePendingDurableRemovals(raw));
+  if (current.has(key) === pending) return;
+  if (pending) current.add(key);
+  else current.delete(key);
+  const next = JSON.stringify([...current]);
+  safeStorageMutation(() => localStorage.setItem(STORAGE_KEYS.pendingDurableRemovals, next));
+  void runWithDurablePreferences((Preferences) =>
+    Preferences.set({ key: STORAGE_KEYS.pendingDurableRemovals, value: next })
+  );
+}
+
+async function forgetInDurablePreferences(Preferences: DurablePreferences, key: StorageKey) {
+  try {
+    await Preferences.remove({ key });
+    setDurableRemovalPending(key, false);
+  } catch {
+    // Still pending: the next durable restore retries instead of restoring.
+  }
 }
 
 export async function writeCaptureReportToPreferences(
@@ -158,11 +203,15 @@ export function writeString(key: StorageKey, value: string) {
 
 // Delete a key from localStorage and, on native, its durable Preferences mirror.
 // Used to scrub a value that has moved elsewhere (e.g. a plaintext API key that's
-// been migrated into secure storage).
+// been migrated into secure storage). The durable removal is recorded as pending
+// first: if it never lands (bridge error, app killed), the next durable restore
+// would otherwise copy the Preferences value straight back into localStorage.
 export function removeKey(key: StorageKey) {
   if (!browser) return;
   safeStorageMutation(() => localStorage.removeItem(key));
-  void runWithDurablePreferences((Preferences) => Preferences.remove({ key }));
+  if (!__IS_CAPACITOR__ || !isNative()) return;
+  setDurableRemovalPending(key, true);
+  void runWithDurablePreferences((Preferences) => forgetInDurablePreferences(Preferences, key));
 }
 
 // The `allowed` list has already narrowed the value by the time it is returned, so the signature
@@ -214,8 +263,22 @@ export async function hydrateDurableStorage() {
     // Fire every durable get concurrently rather than one serial bridge
     // round-trip per declared key on the cold-start critical path.
     const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
+    // Read from both copies: after a WebView eviction only the durable one
+    // still names the removals that never landed.
+    const pendingRemovals = new Set([
+      ...parsePendingDurableRemovals(
+        safeStorageRead(() => localStorage.getItem(STORAGE_KEYS.pendingDurableRemovals), null)
+      ),
+      ...parsePendingDurableRemovals(
+        durable[hydrationKeys.indexOf(STORAGE_KEYS.pendingDurableRemovals)].value
+      ),
+    ]);
     const backups: Promise<unknown>[] = [];
     hydrationKeys.forEach((key, i) => {
+      if (pendingRemovals.has(key)) {
+        backups.push(forgetInDurablePreferences(Preferences, key));
+        return;
+      }
       const local = safeStorageRead(() => localStorage.getItem(key), null);
       const { value } = durable[i];
       const action = reconcileStorageValues(local, value);
