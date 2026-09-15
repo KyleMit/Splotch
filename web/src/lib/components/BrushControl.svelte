@@ -32,9 +32,9 @@
     BRUSH_OPTIONS.find((option) => option.brush === singleOptionalBrush)?.label
   );
 
-  $effect(() => {
-    if (optionalBrushes.length < 2 && open) onOpenChange(false);
-  });
+  // With fewer than two optional brushes there is no menu to show, whatever the
+  // panel's flyout slot says: the trigger then toggles the one brush directly.
+  const menuOpen = $derived(open && optionalBrushes.length > 1);
 
   function handleTrigger() {
     if (singleOptionalBrush) {
@@ -45,11 +45,10 @@
     onOpenChange(!open);
   }
 
+  // The roll a pick started; it only shows while that pick is still the held
+  // brush, so a brush change elsewhere retires it without a fix-up.
   let faceRoll = $state.raw<{ brush: BrushType } | null>(null);
-
-  $effect(() => {
-    if (faceRoll && faceRoll.brush !== toolState.brush) faceRoll = null;
-  });
+  const shownFaceRoll = $derived(faceRoll?.brush === toolState.brush ? faceRoll : null);
 
   function handlePick(brush: BrushType) {
     if (brush !== toolState.brush && !isStrokeActive()) faceRoll = { brush };
@@ -67,17 +66,17 @@
     id="brushButton"
     style:--i={0}
     aria-label={singleOptionalBrushLabel ?? 'Brushes'}
-    aria-expanded={optionalBrushes.length > 1 ? open : undefined}
+    aria-expanded={optionalBrushes.length > 1 ? menuOpen : undefined}
     aria-pressed={singleOptionalBrush ? toolState.brush === singleOptionalBrush : undefined}
     use:scribbleTap={handleTrigger}
     onclick={onTriggerClick}
     bind:this={triggerEl}
     style:color={activeColor}
   >
-    <BrushButtonFaces {faceRoll} />
+    <BrushButtonFaces faceRoll={shownFaceRoll} />
   </button>
   <BrushMenu
-    {open}
+    open={menuOpen}
     {activeColor}
     {inkWhite}
     {inkDark}
