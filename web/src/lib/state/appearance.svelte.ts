@@ -11,6 +11,7 @@
 // reads resolvedTheme(), repaints the theme-color meta, and syncs the selected
 // Black swatch's ink, so both an OS switch (systemDark) and an explicit setting
 // change (settingsState.theme) update them from one reactive path.
+import { untrack } from 'svelte';
 import { settingsState, type SettingsState } from './settings.svelte';
 import { colorsState, type ColorsState } from './colors.svelte';
 import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
@@ -66,7 +67,9 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
         $effect(() => {
           const theme = resolvedTheme();
           updateThemeColorMeta(theme);
-          colors.syncInkToTheme(theme === 'dark');
+          // The theme dependency is captured above; the active swatch read inside
+          // this command must not make palette selection rerun the effect.
+          untrack(() => colors.syncInkToTheme(theme === 'dark'));
         });
       });
     },
