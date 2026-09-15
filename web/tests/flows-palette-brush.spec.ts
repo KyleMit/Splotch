@@ -322,6 +322,18 @@ test('picking a color exits eraser mode', async ({ page }) => {
   await expect(page.locator('#drawingCanvas')).not.toHaveClass(/erasing/);
 });
 
+test('picking a palette color closes an open Brush Menu', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await openBrushMenu(page);
+
+  const red = swatch(page, TEST_PALETTE.red);
+  await red.click();
+
+  await expect(red).toHaveClass(/active/);
+  await expect(page.locator('.brush-menu')).toBeHidden();
+});
+
 // Issue #276: a toddler mashing the eraser entry should keep erasing, not toggle
 // the tool off and on. Repeated selections are idempotent — you leave the eraser
 // by picking another brush or a color, not by tapping the eraser again.

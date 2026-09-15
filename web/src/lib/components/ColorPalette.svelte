@@ -55,7 +55,6 @@
   function handlePaletteDown(e: PointerEvent) {
     releaseAllPointers();
     e.preventDefault();
-    e.stopPropagation();
   }
 
   function handlePaletteUp(e: PointerEvent) {
@@ -120,7 +119,6 @@
         : ''}"
       aria-label={shown === hex ? label : 'White'}
       use:scribbleTap={() => selectSwatch(hex, shown)}
-      onpointerdown={handlePaletteDown}
       onpointerup={playSwatchRelease}
       onpointercancel={handleSwatchCancel}
       onanimationend={endSwatchRelease}
@@ -137,7 +135,6 @@
       ? `box-shadow: ${selectionRingShadow(colors.customColor)};`
       : ''}
     use:scribbleTap={selectCustomColor}
-    onpointerdown={handlePaletteDown}
     onpointerup={playSwatchRelease}
     onpointercancel={handleSwatchCancel}
     onanimationend={endSwatchRelease}
