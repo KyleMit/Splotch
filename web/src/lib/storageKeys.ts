@@ -39,6 +39,11 @@ export const STORAGE_KEYS = {
   // secureVaultKnownEmpty), which is where a failed read can still be told
   // apart from an absent row.
   secureVaultEmpty: 'splotch-secure-vault-empty',
+  // Keys whose native Preferences removal has not landed, as a JSON key list.
+  // removeKey records the key before asking Preferences to forget it and
+  // clears it once that succeeds; hydrateDurableStorage retries a listed
+  // removal instead of restoring the copy it left behind (storage.ts).
+  pendingDurableRemovals: 'splotch-pending-durable-removals',
   saveFolderChosen: 'splotch-save-folder-chosen',
   parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',
   parentalGateImageReportMode: 'splotch-parental-gate-image-report-mode',
