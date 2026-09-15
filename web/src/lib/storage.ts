@@ -280,20 +280,25 @@ export async function hydrateDurableStorage() {
     // Fire every durable get concurrently rather than one serial bridge
     // round-trip per declared key on the cold-start critical path.
     const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
-    // The union of both copies is the working list for this pass: after a
-    // WebView eviction only the durable copy still names the removals that
-    // never landed, and after a failed local write only the durable copy has
-    // the newest entry. Every settlement below persists from this set, never
-    // from a re-read of one copy.
+    // Both copies are brought to their union before anything is settled:
+    // after a WebView eviction only the durable copy still names the removals
+    // that never landed, and after a failed local write only the durable copy
+    // has the newest entry. From then on localStorage is the live list — a
+    // removal requested or superseded while a retry below awaits Preferences
+    // lands there — so each settlement re-reads it and drops only its own key
+    // rather than persisting a snapshot from the start of the pass.
+    const localPending = localPendingDurableRemovals();
     const pendingRemovals = new Set([
-      ...localPendingDurableRemovals(),
+      ...localPending,
       ...parsePendingDurableRemovals(
         durable[hydrationKeys.indexOf(STORAGE_KEYS.pendingDurableRemovals)].value
       ),
     ]);
+    if (pendingRemovals.size !== localPending.size) persistPendingDurableRemovals(pendingRemovals);
     const settleRemoval = (key: StorageKey) => {
-      pendingRemovals.delete(key);
-      persistPendingDurableRemovals(pendingRemovals);
+      const live = localPendingDurableRemovals();
+      live.delete(key);
+      persistPendingDurableRemovals(live);
     };
     const backups: Promise<unknown>[] = [];
     hydrationKeys.forEach((key, i) => {
