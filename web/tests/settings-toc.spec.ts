@@ -35,6 +35,20 @@ async function parkHeadingBelowPaneTop(page: Page, section: string, offsetPx: nu
   );
 }
 
+async function triggerSettingsContentResize(page: Page) {
+  await page.locator('.settings-zoom').evaluate(
+    (content) =>
+      new Promise<void>((resolve) => {
+        const observer = new ResizeObserver(() => {
+          observer.disconnect();
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+        observer.observe(content);
+        content.style.paddingBottom = '1px';
+      })
+  );
+}
+
 test('the default section is seen on open and a selected section clears before highlighting', async ({
   page,
 }) => {
@@ -230,12 +244,16 @@ test('a Parent Center jump unlocked after the pane filled does not follow a reop
   await solveParentalGate(page);
   await expect(gate).not.toBeVisible();
 
+  const appearance = page.locator('.settings-nav .toc-row[data-section="appearance"]');
+  await modal.locator('.settings-pane').evaluate((pane) => pane.scrollTo({ top: 0 }));
+  await expect(appearance).toHaveClass(/active/);
+  await triggerSettingsContentResize(page);
+  await expect(appearance).toHaveClass(/active/);
+
   await modal.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(modal).not.toBeVisible();
   await openSettingsModal(page);
 
-  await expect(page.locator('.settings-nav .toc-row[data-section="appearance"]')).toHaveClass(
-    /active/
-  );
+  await expect(appearance).toHaveClass(/active/);
   expect(await headingOffsetFromPaneTop(page, 'appearance')).toBeLessThan(SECTION_LANDED_MAX_PX);
 });
