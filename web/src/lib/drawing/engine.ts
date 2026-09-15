@@ -1163,9 +1163,14 @@ export function setCrayonParams(params: Partial<CrayonOptions>) {
 let engineLive = false;
 let listenerRemovers: (() => void)[] = [];
 
-function attachCallbacks(options: InitOptions) {
-  const { initialColor: _initialColor, ...rest } = options;
+function attachCallbacks({ initialColor: _initialColor, ...rest }: InitOptions) {
   callbacks = rest;
+}
+
+function replayEngineState() {
+  callbacks.onUndoStateChange?.(canUndo);
+  callbacks.onCanvasEmptyChange?.(canvasEmpty);
+  notifyViewChange();
 }
 
 function teardownEngine() {
@@ -1201,9 +1206,8 @@ export function engineOwnsCanvas(canvasElement: HTMLCanvasElement): boolean {
 }
 
 // Adopt the already-running engine (ADR-0072): attach the component's
-// callbacks and replay the current state to the new subscriber — strokes may
-// have landed between early boot and this mount, so canUndo / canvasEmpty /
-// the paper view push immediately instead of waiting for their next change.
+// callbacks and replay the current state immediately — strokes may have landed
+// between early boot and this mount, so waiting for the next change leaves stale UI.
 // Falls back to a full init when the engine isn't live on this exact element
 // (client-side navigation back to `/` remounts a fresh canvas; a hydration
 // fallback can replace the prerendered one). Either way the returned teardown
@@ -1214,9 +1218,7 @@ export function engineOwnsCanvas(canvasElement: HTMLCanvasElement): boolean {
 export function adoptDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   if (!engineOwnsCanvas(canvasElement)) return initDrawingCanvas(canvasElement, options);
   attachCallbacks(options);
-  callbacks.onUndoStateChange?.(canUndo);
-  callbacks.onCanvasEmptyChange?.(canvasEmpty);
-  notifyViewChange();
+  replayEngineState();
   return { teardown: teardownEngine };
 }
 
@@ -1270,6 +1272,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   currentColor = options.initialColor || DEFAULT_STROKE_COLOR;
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
   resizeCanvas();
+  replayEngineState();
 
   registerDrawingEngineListeners(listenerRemovers, canvas, {
     handleResize: resizeListener.handleResize,
