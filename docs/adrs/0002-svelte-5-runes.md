@@ -72,7 +72,8 @@ for rune-based state.
 * Never put browser-only cleanup in `onDestroy`, which also runs during SSR. Use
   `onMount(() => teardown)` for imperative wiring that installs exactly once for a component's mount
   and an `$effect` cleanup for a subscription that depends on reactive inputs and must be replaced
-  when they change.
+  when they change. A dependency-free `$effect(() => () => teardown())` owns unmount-only cleanup
+  for resources that handlers may create later during the component's lifetime.
 
 ### Async ownership
 

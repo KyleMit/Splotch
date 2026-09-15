@@ -34,7 +34,9 @@ paths:
   keep a previous-value latch.
 * Never put browser-only cleanup in `onDestroy`, which also runs during SSR. An
   `onMount(() => teardown)` owns mount-once imperative wiring; an `$effect` cleanup owns a reactive
-  subscription that must be replaced when its inputs change.
+  subscription that must be replaced when its inputs change; and a dependency-free
+  `$effect(() => () => teardown())` owns unmount-only cleanup for resources that handlers may create
+  later.
 * Multi-phase async state is a tagged union. A reset invalidates the previous visit's in-flight
   work; if the operation's external side effect must still land, detach it without aborting and
   reject its late result through a visit/request ownership check. Distinguish an operation's own
@@ -105,8 +107,9 @@ paths:
   top-level init) throws `ReferenceError: window is not defined` the moment a prerendered/SSR'd
   route imports the component, even one that only mounts client-side today (a prerendered route
   renders every component it imports at build time). Put mount-once browser teardown in the function
-  returned from `onMount`, or input-dependent teardown in an `$effect` cleanup, rather than in
-  `onDestroy`.
+  returned from `onMount`, input-dependent teardown in a reactive `$effect` cleanup, or unmount-only
+  cleanup for handler-created resources in a dependency-free `$effect` cleanup, rather than in
+  `onDestroy` — see `Slider.svelte`'s `$effect(() => removeWindowListeners)`.
 * **`$state` deep-proxies objects and arrays** — a value read back from `$state` is never `===` the
   raw object it was created from, so identity checks against a plain constant list silently fail
   (e.g. `checked={selected === option}` never matches, and the selection UI looks correct but
