@@ -73,6 +73,7 @@ beforeEach(() => {
 afterEach(() => {
   installed?.dispose();
   installed = null;
+  vi.restoreAllMocks();
 });
 
 describe('single prefers-color-scheme source', () => {

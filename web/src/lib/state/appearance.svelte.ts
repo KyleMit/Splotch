@@ -67,6 +67,8 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
         $effect(() => {
           const theme = resolvedTheme();
           updateThemeColorMeta(theme);
+          // The theme dependency is captured above; the active swatch read inside
+          // this command must not make palette selection rerun the effect.
           untrack(() => colors.syncInkToTheme(theme === 'dark'));
         });
       });
