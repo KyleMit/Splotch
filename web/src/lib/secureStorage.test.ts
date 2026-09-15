@@ -273,6 +273,12 @@ describe('master key creation', () => {
     await expect(secureStorage.loadApiKey()).resolves.toBe('second');
   });
 
+  it('leaves no unhandled rejection when the master-key transaction aborts', async () => {
+    ctrl.abortNextTransaction = true;
+
+    await expect(secureStorage.saveApiKey('secret-key-123')).rejects.toThrow('transaction aborted');
+  });
+
   it('replaces a payload-shaped master-key row with a generated key', async () => {
     ctrl.rows.set(MASTER_KEY_ROW, {
       iv: new Uint8Array(12),

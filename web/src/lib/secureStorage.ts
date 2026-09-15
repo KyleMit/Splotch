@@ -158,10 +158,14 @@ async function loadOrCreateMasterKey(db: IdbDatabase<SecureDb>): Promise<CryptoK
     'decrypt',
   ]);
   const tx = db.transaction(STORE, 'readwrite');
-  const winner = await tx.store.get(MASTER_KEY_ROW);
-  const winningKey = winner && !isSecretPayload(winner) ? winner : null;
-  if (!winningKey) await tx.store.put(fresh, MASTER_KEY_ROW);
-  await tx.done;
+  const [winningKey] = await Promise.all([
+    tx.store.get(MASTER_KEY_ROW).then(async (winner) => {
+      const key = winner && !isSecretPayload(winner) ? winner : null;
+      if (!key) await tx.store.put(fresh, MASTER_KEY_ROW);
+      return key;
+    }),
+    tx.done,
+  ]);
   return winningKey ?? fresh;
 }
 
