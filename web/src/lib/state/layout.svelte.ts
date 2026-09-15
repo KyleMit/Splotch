@@ -125,10 +125,9 @@ if (browser) {
   phoneLandscapeQuery?.addEventListener('change', syncPhoneLandscape);
   window.addEventListener('orientationchange', deferViewportSyncForRotation);
   screen.orientation?.addEventListener('change', deferViewportSyncForRotation);
-  // Neither event fires while the document is hidden, so a rotation while the
-  // app is backgrounded would otherwise stay stale on re-entry. Re-measure when
-  // the document becomes visible again (the native WebViews hide the document
-  // while the app is backgrounded, so this covers Capacitor resume too).
+  // Hidden documents can miss rotations, so re-measure on visibility re-entry.
+  // Android WebViews can remain visible while backgrounded; their resume-time
+  // resize already reaches syncViewportOnResize, without a separate resume listener.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') syncViewportImmediately();
   });

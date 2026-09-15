@@ -12,6 +12,9 @@
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { PAPER_COLORS, setThemeColorMeta, updateThemeColorMeta } from '$lib/theme';
 
+  // Intentionally untracked: this mount's lifetime gates late plugin imports.
+  let disposed = false;
+
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
   // matter so the band can follow the hole-punch as it rotates from the top
@@ -52,7 +55,10 @@
   // A separate effect, reading nothing reactive, so this runs on destroy alone
   // rather than between every band repaint. resolvedTheme() honors the parent's
   // three-state preference, so the tag lands on the theme the next page renders.
-  $effect(() => () => updateThemeColorMeta(resolvedTheme()));
+  $effect(() => () => {
+    disposed = true;
+    updateThemeColorMeta(resolvedTheme());
+  });
 
   // Native: flip the system clock/battery icons light or dark for contrast.
   // The literal __IS_CAPACITOR__ keeps the status-bar plugin out of the web
@@ -67,7 +73,9 @@
   function pushStatusBar(style: StatusBarStyle | null, hidden: boolean | null) {
     if (!__IS_CAPACITOR__ || !isNative()) return;
     import('@capacitor/status-bar')
-      .then(({ StatusBar, Style }) => statusBar.apply(style, hidden, StatusBar, Style))
+      .then(({ StatusBar, Style }) => {
+        if (!disposed) statusBar.apply(style, hidden, StatusBar, Style);
+      })
       .catch(() => {});
   }
 
