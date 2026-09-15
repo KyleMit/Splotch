@@ -40,17 +40,39 @@ afterEach(() => {
 });
 
 describe('installWakeLock', () => {
-  it('requests a sentinel on the first pointerdown', async () => {
+  it('requests a sentinel on the first pointerup', async () => {
     install();
 
-    document.dispatchEvent(new Event('pointerdown'));
+    document.dispatchEvent(new Event('pointerup'));
 
     await vi.waitFor(() => expect(request).toHaveBeenCalledWith('screen'));
   });
 
+  it('does not request a sentinel on pointerdown alone', () => {
+    install();
+
+    document.dispatchEvent(new Event('pointerdown'));
+
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('requests from capture phase when a descendant stops pointerup propagation', async () => {
+    const child = document.body.appendChild(document.createElement('button'));
+    child.addEventListener('pointerup', (event) => event.stopPropagation());
+    try {
+      install();
+
+      child.dispatchEvent(new Event('pointerup', { bubbles: true }));
+
+      await vi.waitFor(() => expect(request).toHaveBeenCalledWith('screen'));
+    } finally {
+      child.remove();
+    }
+  });
+
   it('releases the acquired sentinel on teardown', async () => {
     const teardown = install();
-    document.dispatchEvent(new Event('pointerdown'));
+    document.dispatchEvent(new Event('pointerup'));
     await vi.waitFor(() => expect(request).toHaveBeenCalled());
 
     teardown();
@@ -66,7 +88,7 @@ describe('installWakeLock', () => {
       })
     );
     const teardown = install();
-    document.dispatchEvent(new Event('pointerdown'));
+    document.dispatchEvent(new Event('pointerup'));
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
 
     teardown();
@@ -82,20 +104,20 @@ describe('installWakeLock', () => {
     expect(release).not.toHaveBeenCalled();
   });
 
-  it('retries on a later pointerdown after the first request is rejected', async () => {
+  it('retries on a later pointerup after the first request is rejected', async () => {
     request.mockRejectedValueOnce(new Error('NotAllowedError'));
     install();
 
-    document.dispatchEvent(new Event('pointerdown'));
+    document.dispatchEvent(new Event('pointerup'));
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
 
-    document.dispatchEvent(new Event('pointerdown'));
+    document.dispatchEvent(new Event('pointerup'));
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2));
   });
 
   it('re-acquires the lock on visibilitychange after the system released it while hidden', async () => {
     install();
-    document.dispatchEvent(new Event('pointerdown'));
+    document.dispatchEvent(new Event('pointerup'));
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
 
     sentinel.released = true;
@@ -105,7 +127,7 @@ describe('installWakeLock', () => {
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2));
   });
 
-  it('does not request a wake lock on visibilitychange before any pointerdown', () => {
+  it('does not request a wake lock on visibilitychange before any pointerup', () => {
     install();
 
     setVisibilityState('visible');
