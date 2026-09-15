@@ -139,25 +139,46 @@
   // Per-button "copied" feedback. The key distinguishes which cell flashed
   // (e.g. `token:code` vs `token:url`) so only the clicked button reacts.
   let copied = $state('');
+  // One timer for the one cell that can be showing "Copied!": a repeat copy
+  // restarts the window instead of leaving the earlier timer to end it early.
+  // Plain `let`s — a timer handle and a session counter are bookkeeping, not
+  // state the template reads.
+  let copyFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
+  // Bumped on sign-out so a clipboard write still pending from the signed-out
+  // session cannot re-arm the feedback after the next sign-in.
+  let copySession = 0;
+
   async function copy(key: string, text: string) {
+    const session = copySession;
     try {
       await navigator.clipboard.writeText(text);
-      copied = key;
-      setTimeout(() => {
-        if (copied === key) copied = '';
-      }, COPY_FEEDBACK_MS);
     } catch {
       // Clipboard may be unavailable (e.g. non-secure context); ignore.
+      return;
     }
+    if (session !== copySession) return;
+    clearTimeout(copyFeedbackTimer);
+    copied = key;
+    copyFeedbackTimer = setTimeout(() => {
+      copied = '';
+    }, COPY_FEEDBACK_MS);
+  }
+
+  function endCopyFeedback() {
+    copySession += 1;
+    clearTimeout(copyFeedbackTimer);
+    copied = '';
   }
 
   // A half-typed code is one admin session's draft, not the next one's: the
-  // component stays mounted across sign-out, so the draft is cleared here once
-  // the session has actually ended (a failed logout leaves it alone).
+  // component stays mounted across sign-out, so the draft and the copy
+  // feedback are cleared here once the session has actually ended (a failed
+  // logout leaves them alone).
   function handleLogout() {
     run(async () => {
       await onlogout();
       newToken = '';
+      endCopyFeedback();
     });
   }
 </script>

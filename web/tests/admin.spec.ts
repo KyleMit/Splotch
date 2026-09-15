@@ -286,6 +286,55 @@ test('web /admin closing the reveal removes its actions from the tab order immed
   expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 });
 
+// The steps straddle AdminConsole's COPY_FEEDBACK_MS: each is shorter than the
+// window, and together they outlast the first copy's timer.
+const COPY_REPEAT_STEP_MS = 1000;
+
+// The clipboard is stubbed to resolve at once rather than granted for real: the
+// copy's continuation (where the timer is started) must have run before the
+// clock advances, and a write that is still pending when it does lets the old
+// timer clear the label and the late continuation re-arm it — so the defect
+// passes. A resolved promise queues the continuation inside the click's own
+// task, ahead of any later clock command.
+async function stubClipboardWrites(page: Page) {
+  await page.evaluate(() => {
+    const writes: string[] = [];
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: (text: string) => {
+          writes.push(text);
+          return Promise.resolve();
+        },
+      },
+    });
+    Object.assign(window, { __clipboardWrites: writes });
+  });
+  return () =>
+    page.evaluate(
+      () => (window as Window & { __clipboardWrites?: string[] }).__clipboardWrites?.length ?? 0
+    );
+}
+
+test('web /admin re-copying a cell restarts its Copied feedback window', async ({
+  adminPage: page,
+}) => {
+  const clipboardWrites = await stubClipboardWrites(page);
+  await page.clock.install();
+  await page.clock.pauseAt(Date.now() + COPY_REPEAT_STEP_MS);
+  const copy = tokenRow(page, MANAGED_ACCESS_TOKEN).locator('.wide-actions .row-action').first();
+  await expect(copy).toHaveText('Copy');
+
+  await copy.click();
+  await expect(copy).toHaveText('Copied!');
+  await page.clock.runFor(COPY_REPEAT_STEP_MS);
+  await copy.click();
+  await expect.poll(clipboardWrites).toBe(2);
+  await page.clock.runFor(COPY_REPEAT_STEP_MS);
+
+  await expect(copy).toHaveText('Copied!');
+});
+
 test('web /admin surfaces a network failure instead of failing silently', async ({
   adminPage: page,
 }) => {

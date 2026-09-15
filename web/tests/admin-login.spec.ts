@@ -17,9 +17,9 @@ import {
 // behaviour under test, and `beginAdminLogin` charges the bucket before it
 // looks at the key, so the wrong-key spec counts too. That budget is what
 // keeps these apart from admin.spec.ts, whose signed-in specs share one
-// session and repeat freely: this file spends five hits per repetition, so
-// `--repeat-each` on it stays at two inside one window. Past that, verify
-// with repeated full runs, as CI does.
+// session and repeat freely: this file spends six hits per repetition, so
+// `--repeat-each` on it does not fit inside one window at all. Verify it with
+// repeated full runs, as CI does.
 
 async function expectTokenAddUnavailable(page: Page, token: string) {
   await adminConsole(page).fill(token);
@@ -73,6 +73,44 @@ test('web /admin signing out discards an unsent code draft', async ({ page }) =>
   await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
   await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
   await expect(adminConsole(page)).toHaveValue('');
+});
+
+// The copy's clipboard write is held open across the sign-out so its
+// continuation runs inside the next session. Costs one sign-in: the fixture's
+// session opens the console and only the second sign-in submits the form.
+//
+// The verdict is read inside the page right after the continuation has run,
+// not through a retrying assertion: the defect shows "Copied!" for only
+// COPY_FEEDBACK_MS, so a web-first `toHaveText('Copy')` would wait it out
+// and pass against the bug.
+test('web /admin a copy left pending at sign-out cannot mark the next session copied', async ({
+  adminPage: page,
+}) => {
+  await page.evaluate(() => {
+    let releaseClipboard!: () => void;
+    const pendingWrite = new Promise<void>((resolve) => {
+      releaseClipboard = resolve;
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: () => pendingWrite },
+    });
+    Object.assign(window, { releaseClipboard });
+  });
+  const copyCodeButton = '.wide-actions .row-action';
+  await page.locator(copyCodeButton).first().click();
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+
+  await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
+  await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
+  const labelAfterRelease = await page.evaluate(async (selector) => {
+    (window as Window & { releaseClipboard?: () => void }).releaseClipboard?.();
+    // A macrotask later, the write's continuation and Svelte's flush are done.
+    await new Promise((settle) => setTimeout(settle, 0));
+    return document.querySelector(selector)?.textContent?.trim();
+  }, copyCodeButton);
+  expect(labelAfterRelease).toBe('Copy');
 });
 
 test('admin API requires a valid bearer session and durable mutation storage', async ({
