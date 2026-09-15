@@ -1,6 +1,8 @@
-// Wake lock to prevent screen sleep — request on first pointerdown, and
-// re-request when the page becomes visible again (the system can release the
-// sentinel while hidden, e.g. backgrounding the tab).
+// Request on the first pointerup because the pointer/activation rule in
+// .claude/rules/svelte.md and the HTML specification's activation-triggering
+// events make it the first pointer event with transient activation for touch
+// and pen. Re-request when the page becomes visible again because the system
+// can release the sentinel while hidden, e.g. backgrounding the tab.
 export function installWakeLock(): () => void {
   let wakeLock: WakeLockSentinel | null = null;
   let pendingRequest = false;
@@ -28,7 +30,7 @@ export function installWakeLock(): () => void {
       pendingRequest = false;
     }
   }
-  const onPointerDown = () => {
+  const onPointerUp = () => {
     hasInteracted = true;
     if (hasLiveLock()) return;
     void requestWakeLock();
@@ -38,12 +40,12 @@ export function installWakeLock(): () => void {
       void requestWakeLock();
     }
   };
-  document.addEventListener('pointerdown', onPointerDown);
+  document.addEventListener('pointerup', onPointerUp);
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   return () => {
     disposed = true;
-    document.removeEventListener('pointerdown', onPointerDown);
+    document.removeEventListener('pointerup', onPointerUp);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     void wakeLock?.release().catch(() => {});
     wakeLock = null;
