@@ -1,0 +1,112 @@
+// @vitest-environment node
+import { readdirSync, readFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+// Every `web/src/lib/state/*.svelte.ts` names its exported reactive singleton after the module
+// basename plus a kind suffix: a `$state(...)` object or a `createX()` instance is `<basename>State`,
+// a modal controller ends in `Modal`. The rule is mechanical so that this guard, not review, is
+// what enforces the convention (issue #564; the prose lives in `.claude/rules/svelte.md` and
+// `web/src/.ruler/AGENTS.md`).
+const repoRoot = join(import.meta.dirname, '..', '..');
+const stateDir = join(repoRoot, 'web', 'src', 'lib', 'state');
+const RUNE_MODULE_SUFFIX = '.svelte.ts';
+
+const EXPORTED_SINGLETON =
+  /^export const (\w+)(?:\s*:[^=]+)?\s*=\s*(?:\$state(?:\.raw)?|create[A-Z]\w*)\(/gm;
+
+const exportedSingletons = (source) =>
+  Array.from(source.matchAll(EXPORTED_SINGLETON), (match) => match[1]);
+
+const expectedStateName = (file) => `${basename(file, RUNE_MODULE_SUFFIX)}State`;
+
+// A module that holds a second reactive singleton names it basename + noun + `State`. Only
+// `parentalGate.svelte.ts` does; issue #1920 may fold the policies into `parentalGateState`, and
+// this entry leaves with them.
+const SECOND_SINGLETONS = { 'parentalGate.svelte.ts': ['parentalGatePoliciesState'] };
+
+const conforms = (file, name) =>
+  name === expectedStateName(file) ||
+  name.endsWith('Modal') ||
+  (SECOND_SINGLETONS[file] ?? []).includes(name);
+
+const violations = (file, source) =>
+  exportedSingletons(source).filter((name) => !conforms(file, name));
+
+describe('the state-module export naming rule', () => {
+  it('accepts the basename plus State', () => {
+    expect(violations('settings.svelte.ts', 'export const settingsState = $state({});')).toEqual(
+      []
+    );
+  });
+
+  it('accepts a typed binding and a createX() instance', () => {
+    expect(
+      violations(
+        'aiProgress.svelte.ts',
+        'export const aiProgressState: AiProgress = createAiProgress(aiGenerationState);'
+      )
+    ).toEqual([]);
+  });
+
+  it('accepts a modal controller ending in Modal', () => {
+    expect(violations('ui.svelte.ts', 'export const settingsModal = createModal();')).toEqual([]);
+  });
+
+  it('rejects the bare module noun', () => {
+    expect(violations('settings.svelte.ts', 'export const settings = $state({});')).toEqual([
+      'settings',
+    ]);
+  });
+
+  it('rejects a State name that is not the module basename', () => {
+    expect(violations('strokeWidth.svelte.ts', 'export const strokeState = $state({});')).toEqual([
+      'strokeState',
+    ]);
+  });
+
+  it('rejects an exported $state.raw under the wrong name', () => {
+    expect(violations('layout.svelte.ts', 'export const viewport = $state.raw({});')).toEqual([
+      'viewport',
+    ]);
+  });
+
+  it('ignores private module-scope state and exported functions', () => {
+    expect(
+      violations(
+        'appearance.svelte.ts',
+        ['const appearance = $state({});', 'export function resolvedTheme() {}'].join('\n')
+      )
+    ).toEqual([]);
+  });
+});
+
+describe('web/src/lib/state', () => {
+  const runeModules = readdirSync(stateDir).filter((file) => file.endsWith(RUNE_MODULE_SUFFIX));
+  const found = Object.fromEntries(
+    runeModules.map((file) => [
+      file,
+      exportedSingletons(readFileSync(join(stateDir, file), 'utf8')),
+    ])
+  );
+
+  it('still exposes singletons the matcher can see, so the rule cannot pass vacuously', () => {
+    expect(found['settings.svelte.ts']).toEqual(['settingsState']);
+    expect(found['ui.svelte.ts']).toContain('uiState');
+    expect(found['ui.svelte.ts']).toContain('settingsModal');
+  });
+
+  it('keeps the parentalGate second-singleton exception honest', () => {
+    expect(found['parentalGate.svelte.ts']).toEqual([
+      'parentalGatePoliciesState',
+      'parentalGateState',
+    ]);
+  });
+
+  it('names every exported reactive singleton after its module', () => {
+    const offenders = Object.entries(found).flatMap(([file, names]) =>
+      names.filter((name) => !conforms(file, name)).map((name) => `${file}: ${name}`)
+    );
+    expect(offenders).toEqual([]);
+  });
+});

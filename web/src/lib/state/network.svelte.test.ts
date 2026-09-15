@@ -32,7 +32,7 @@ describe('native network status', () => {
       return { remove: () => {} };
     });
 
-    const { network } = await import('./network.svelte');
+    const { networkState } = await import('./network.svelte');
     await vi.waitFor(() => expect(listener).toBeDefined());
 
     listener!({ connected: false });
@@ -40,16 +40,16 @@ describe('native network status', () => {
     await vi.waitFor(() => expect(mocks.getStatus).toHaveBeenCalledOnce());
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(network.online).toBe(false);
+    expect(networkState.online).toBe(false);
   });
 
   it('uses the initial native status when no event has arrived', async () => {
     mocks.getStatus.mockResolvedValue({ connected: false });
     mocks.addListener.mockResolvedValue({ remove: () => {} });
 
-    const { network } = await import('./network.svelte');
+    const { networkState } = await import('./network.svelte');
 
-    await vi.waitFor(() => expect(network.online).toBe(false));
+    await vi.waitFor(() => expect(networkState.online).toBe(false));
     expect(mocks.getStatus).toHaveBeenCalledOnce();
   });
 
@@ -60,12 +60,12 @@ describe('native network status', () => {
       listener = callback;
       return { remove: () => {} };
     });
-    const { network } = await import('./network.svelte');
-    await vi.waitFor(() => expect(network.online).toBe(false));
+    const { networkState } = await import('./network.svelte');
+    await vi.waitFor(() => expect(networkState.online).toBe(false));
 
     listener!({ connected: true });
-    expect(network.online).toBe(true);
+    expect(networkState.online).toBe(true);
     listener!({ connected: false });
-    expect(network.online).toBe(false);
+    expect(networkState.online).toBe(false);
   });
 });

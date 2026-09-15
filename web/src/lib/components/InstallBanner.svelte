@@ -6,7 +6,7 @@
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import {
-    install,
+    installState,
     promptInstall,
     dismissInstall,
     armInstallAutoClear,
@@ -15,9 +15,9 @@
     installPromptStage,
   } from '$lib/state/install.svelte';
   import { SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
-  import { aiResult } from '$lib/state/aiGeneration.svelte';
-  import { layout } from '$lib/state/layout.svelte';
-  import { settings } from '$lib/state/settings.svelte';
+  import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
+  import { layoutState } from '$lib/state/layout.svelte';
+  import { settingsState } from '$lib/state/settings.svelte';
   import { visibleActionButtonCount } from '$lib/actionButtonLayout';
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
   import '$lib/components/deferredIcons';
@@ -65,20 +65,20 @@
   // paid for (ADR-0116). An install prompt is re-offerable after sustained use,
   // and Settings carries the same action.
   const shareLocation = $derived(
-    layout.viewportWidth > 0 &&
-      layout.viewportWidth < TABLET_MIN_SIDE_PX &&
-      layout.orientation === 'portrait'
+    layoutState.viewportWidth > 0 &&
+      layoutState.viewportWidth < TABLET_MIN_SIDE_PX &&
+      layoutState.orientation === 'portrait'
       ? 'at the bottom of the screen'
       : 'in the Safari toolbar'
   );
-  const controlsOpen = $derived(settings.drawerOpen && visibleActionButtonCount() > 0);
+  const controlsOpen = $derived(settingsState.drawerOpen && visibleActionButtonCount() > 0);
   const promptStage = $derived(installPromptStage());
   const promptCopy = $derived(INSTALL_PROMPT_COPY[promptStage ?? 'initial']);
   const visible = $derived(
-    !install.installed &&
+    !installState.installed &&
       promptStage !== null &&
-      install.mode !== 'none' &&
-      !aiResult.minimized &&
+      installState.mode !== 'none' &&
+      !aiGenerationState.minimized &&
       canvasState.strokeCount >= SETTLED_IN_STROKES
   );
 
@@ -124,7 +124,7 @@
   }
 
   async function onPrimary() {
-    if (install.mode === 'oneTap') {
+    if (installState.mode === 'oneTap') {
       busy = true;
       try {
         // If the live prompt has gone stale, promptInstall() drops mode to the
@@ -169,13 +169,13 @@
         <button
           class="install-cta"
           class:expanded={showHint}
-          aria-expanded={install.mode === 'oneTap' ? undefined : showHint}
-          aria-controls={install.mode === 'oneTap' ? undefined : 'install-hint'}
+          aria-expanded={installState.mode === 'oneTap' ? undefined : showHint}
+          aria-controls={installState.mode === 'oneTap' ? undefined : 'install-hint'}
           onclick={onPrimary}
           disabled={busy}
           type="button"
         >
-          {#if install.mode === 'oneTap'}
+          {#if installState.mode === 'oneTap'}
             <Icon name="install-homescreen" class="install-cta-icon" />
             Install
           {:else}
@@ -191,9 +191,9 @@
         >
       </div>
 
-      {#if showHint && install.mode !== 'oneTap'}
+      {#if showHint && installState.mode !== 'oneTap'}
         <div id="install-hint" class="install-hint" transition:fade={{ duration: HINT_FADE_MS }}>
-          {#if install.mode === 'ios'}
+          {#if installState.mode === 'ios'}
             <ol role="list">
               <li>
                 <span class="step-number" aria-hidden="true">1</span>

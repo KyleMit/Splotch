@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { layout } from './state/layout.svelte';
-import { network } from './state/network.svelte';
-import { freeGenerations } from './state/freeGenerations.svelte';
+import { layoutState } from './state/layout.svelte';
+import { networkState } from './state/network.svelte';
+import { freeGenerationsState } from './state/freeGenerations.svelte';
 import {
-  settings,
+  settingsState,
   setToolDrawerEnabled,
   setAiImage,
   setColoringBook,
@@ -51,17 +51,17 @@ function resetState() {
   setScreenshot(true);
   setUndoButton(true);
   setAiImage(true);
-  settings.aiAccessToken = '';
-  settings.aiUserApiKey = '';
-  network.online = true;
-  freeGenerations.available = true;
+  settingsState.aiAccessToken = '';
+  settingsState.aiUserApiKey = '';
+  networkState.online = true;
+  freeGenerationsState.available = true;
 
-  layout.orientation = 'landscape';
-  layout.viewportWidth = 1280;
-  layout.viewportHeight = 800;
-  Object.assign(layout.safeArea, { top: 0, right: 0, bottom: 0, left: 0 });
+  layoutState.orientation = 'landscape';
+  layoutState.viewportWidth = 1280;
+  layoutState.viewportHeight = 800;
+  Object.assign(layoutState.safeArea, { top: 0, right: 0, bottom: 0, left: 0 });
 
-  layout.phoneLandscape = false;
+  layoutState.phoneLandscape = false;
 }
 
 beforeEach(resetState);
@@ -75,8 +75,8 @@ describe('visibleActionButtonCount', () => {
   ])(
     'keeps layout counting in sync with visibility for $credentialState',
     ({ apiKey, accessCode }) => {
-      settings.aiUserApiKey = apiKey;
-      settings.aiAccessToken = accessCode;
+      settingsState.aiUserApiKey = apiKey;
+      settingsState.aiAccessToken = accessCode;
 
       expect(isAiImageButtonVisible()).toBe(true);
       expect(visibleActionButtonCount()).toBe(6);
@@ -84,25 +84,25 @@ describe('visibleActionButtonCount', () => {
   );
 
   it('requires the AI toggle and connectivity even with a credential', () => {
-    settings.aiUserApiKey = 'key';
+    settingsState.aiUserApiKey = 'key';
     expect(visibleActionButtonCount()).toBe(6);
 
-    network.online = false;
+    networkState.online = false;
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
 
-    network.online = true;
+    networkState.online = true;
     setAiImage(false);
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
   });
 
   it('requires a usable free-generation path when no credential is saved', () => {
-    freeGenerations.available = false;
+    freeGenerationsState.available = false;
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
 
-    settings.aiAccessToken = 'code';
+    settingsState.aiAccessToken = 'code';
     expect(isAiImageButtonVisible()).toBe(true);
     expect(visibleActionButtonCount()).toBe(6);
   });
@@ -127,7 +127,7 @@ describe('visibleActionButtonCount', () => {
   });
 
   it('reaches zero when every first-paint action is disabled', () => {
-    freeGenerations.available = false;
+    freeGenerationsState.available = false;
     setCrayon(false);
     setMagicBrush(false);
     setEraser(false);
@@ -139,35 +139,35 @@ describe('visibleActionButtonCount', () => {
   });
 
   it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
-    settings.aiAccessToken = 'tok';
+    settingsState.aiAccessToken = 'tok';
     expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
   });
 });
 
 describe('availablePerButton', () => {
   it('clears the declared landscape palette column', () => {
-    layout.viewportWidth = 1024;
+    layoutState.viewportWidth = 1024;
     expect(availablePerButton(5)).toBe((1024 - PALETTE_LANDSCAPE_WIDTH_PX - 128 - 48) / 5);
   });
 
   it('removes the palette reserve on landscape phones', () => {
-    layout.phoneLandscape = true;
-    layout.viewportWidth = 667;
-    layout.viewportHeight = 375;
+    layoutState.phoneLandscape = true;
+    layoutState.viewportWidth = 667;
+    layoutState.viewportHeight = 375;
     expect(availablePerButton(5)).toBe((667 - 128 - 48) / 5);
   });
 
   it('keeps the palette reserve when visible height is phone-sized but CSS is tablet-sized', () => {
-    layout.viewportWidth = 1024;
-    layout.viewportHeight = 550;
-    layout.phoneLandscape = false;
+    layoutState.viewportWidth = 1024;
+    layoutState.viewportHeight = 550;
+    layoutState.phoneLandscape = false;
     expect(availablePerButton(5)).toBe((1024 - PALETTE_LANDSCAPE_WIDTH_PX - 128 - 48) / 5);
   });
 
   it('clears the declared portrait palette bar', () => {
-    layout.orientation = 'portrait';
-    layout.viewportWidth = 390;
-    layout.viewportHeight = 844;
+    layoutState.orientation = 'portrait';
+    layoutState.viewportWidth = 390;
+    layoutState.viewportHeight = 844;
     expect(availablePerButton(5)).toBe((844 - PALETTE_BAR_RESERVE - 72 - 48) / 5);
   });
 });
@@ -178,70 +178,70 @@ describe('maxActionButtonScale', () => {
   });
 
   it('keeps the row size ceiling when CSS is tablet-sized behind browser chrome', () => {
-    layout.viewportWidth = 650;
-    layout.viewportHeight = 550;
-    layout.phoneLandscape = false;
+    layoutState.viewportWidth = 650;
+    layoutState.viewportHeight = 550;
+    layoutState.phoneLandscape = false;
     expect(maxActionButtonScale()).toBe(116);
   });
 
   it('allows the full slider range on a landscape phone', () => {
-    layout.phoneLandscape = true;
-    layout.viewportWidth = 600;
-    layout.viewportHeight = 375;
+    layoutState.phoneLandscape = true;
+    layoutState.viewportWidth = 600;
+    layoutState.viewportHeight = 375;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('never drops below the slider minimum', () => {
-    layout.phoneLandscape = true;
-    layout.viewportWidth = 520;
-    layout.viewportHeight = 160;
+    layoutState.phoneLandscape = true;
+    layoutState.viewportWidth = 520;
+    layoutState.viewportHeight = 160;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 
   it('uses the vertical budget and the portrait base in portrait', () => {
-    layout.orientation = 'portrait';
-    layout.viewportWidth = 360;
-    layout.viewportHeight = 440;
+    layoutState.orientation = 'portrait';
+    layoutState.viewportWidth = 360;
+    layoutState.viewportHeight = 440;
     // (440 − 75 − 8 − 124) / 6 = 38.83px per button → 77% of the phone base.
     expect(maxActionButtonScale()).toBe(77);
   });
 
   it('portrait tall screens clear the static max', () => {
-    layout.orientation = 'portrait';
-    layout.viewportWidth = 360;
-    layout.viewportHeight = 740;
+    layoutState.orientation = 'portrait';
+    layoutState.viewportWidth = 360;
+    layoutState.viewportHeight = 740;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('uses the declared portrait bar the moment the orientation flips', () => {
-    layout.orientation = 'portrait';
-    layout.viewportWidth = 768;
-    layout.viewportHeight = 1024;
+    layoutState.orientation = 'portrait';
+    layoutState.viewportWidth = 768;
+    layoutState.viewportHeight = 1024;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('retains the full slider range when phone controls are switched off', () => {
-    layout.phoneLandscape = true;
-    layout.viewportWidth = 600;
-    layout.viewportHeight = 375;
+    layoutState.phoneLandscape = true;
+    layoutState.viewportWidth = 600;
+    layoutState.viewportHeight = 375;
     setScreenshot(false);
     setUndoButton(false);
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('budgets for the free AI button without a credential', () => {
-    layout.phoneLandscape = true;
-    layout.viewportWidth = 680;
-    layout.viewportHeight = 360;
+    layoutState.phoneLandscape = true;
+    layoutState.viewportWidth = 680;
+    layoutState.viewportHeight = 360;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('subtracts safe-area insets from the budget', () => {
-    layout.phoneLandscape = true;
-    layout.viewportWidth = 667;
-    layout.viewportHeight = 375;
-    layout.viewportHeight = 250;
-    Object.assign(layout.safeArea, { top: 20, bottom: 20 });
+    layoutState.phoneLandscape = true;
+    layoutState.viewportWidth = 667;
+    layoutState.viewportHeight = 375;
+    layoutState.viewportHeight = 250;
+    Object.assign(layoutState.safeArea, { top: 20, bottom: 20 });
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 });
@@ -266,12 +266,12 @@ describe('action button size class', () => {
   });
 
   it('keeps its step through a rotation', () => {
-    layout.viewportWidth = 1376;
-    layout.viewportHeight = 1032;
+    layoutState.viewportWidth = 1376;
+    layoutState.viewportHeight = 1032;
     expect(actionButtonBase('landscape')).toBe(ACTION_BUTTON_BASE_PX.largeTablet.landscape);
 
-    layout.viewportWidth = 1032;
-    layout.viewportHeight = 1376;
+    layoutState.viewportWidth = 1032;
+    layoutState.viewportHeight = 1376;
     expect(actionButtonBase('portrait')).toBe(ACTION_BUTTON_BASE_PX.largeTablet.portrait);
   });
 
@@ -433,9 +433,9 @@ describe('the app.css --action-btn-size formula', () => {
   it.each(BUTTON_SIZE_FIXTURES)(
     'resolves to the same cap as the slider ceiling budget on a $name',
     (fixture) => {
-      layout.orientation = fixture.orientation;
-      layout.viewportWidth = fixture.viewportWidth;
-      layout.viewportHeight = fixture.viewportHeight;
+      layoutState.orientation = fixture.orientation;
+      layoutState.viewportWidth = fixture.viewportWidth;
+      layoutState.viewportHeight = fixture.viewportHeight;
 
       const { buttonCount } = fixture;
       const basePx = actionButtonBase(fixture.orientation);
@@ -522,7 +522,7 @@ describe('publishActionPanelState', () => {
   });
 
   it('hides the whole panel when no action is visible', () => {
-    freeGenerations.available = false;
+    freeGenerationsState.available = false;
     setCrayon(false);
     setMagicBrush(false);
     setEraser(false);

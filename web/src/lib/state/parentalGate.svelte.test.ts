@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
-import { settingsModal, ui } from './ui.svelte';
+import { settingsModal, uiState } from './ui.svelte';
 import {
-  gate,
-  parentalGatePolicies,
+  parentalGateState,
+  parentalGatePoliciesState,
   requireParentalGate,
   requiresParentalGate,
   pressGateDigit,
@@ -34,7 +34,7 @@ function typeAnswer(value: string) {
 }
 
 function correctAnswer() {
-  return String(gate.x * gate.y);
+  return String(parentalGateState.x * parentalGateState.y);
 }
 
 const MAX_OPERAND_RANDOM = 0.999;
@@ -51,17 +51,17 @@ describe('parental gate', () => {
     localStorage.clear();
     globalThis.Capacitor = undefined;
     dismissGate();
-    Object.assign(gate, {
+    Object.assign(parentalGateState, {
       wrongStreak: 0,
       lockouts: 0,
       lockoutUntil: null,
       escalationQuietSince: null,
     });
     settingsModal.hide();
-    ui.requestedSettingsSection = null;
+    uiState.requestedSettingsSection = null;
     for (const feature of PARENTAL_GATE_FEATURES) {
-      parentalGatePolicies[feature] = 'always';
-      gate.sessionSolved[feature] = false;
+      parentalGatePoliciesState[feature] = 'always';
+      parentalGateState.sessionSolved[feature] = false;
     }
   });
 
@@ -74,7 +74,7 @@ describe('parental gate', () => {
 
   it('asks every time for every feature set to that mode', () => {
     for (const feature of PARENTAL_GATE_FEATURES) {
-      expect(parentalGatePolicies[feature]).toBe('always');
+      expect(parentalGatePoliciesState[feature]).toBe('always');
       expect(requiresParentalGate(feature)).toBe(true);
     }
   });
@@ -91,7 +91,7 @@ describe('parental gate', () => {
     const fresh = await import('./parentalGate.svelte');
 
     for (const feature of fresh.PARENTAL_GATE_FEATURES) {
-      expect(fresh.parentalGatePolicies[feature]).toBe(fresh.DEFAULT_PARENTAL_GATE_MODE);
+      expect(fresh.parentalGatePoliciesState[feature]).toBe(fresh.DEFAULT_PARENTAL_GATE_MODE);
     }
   });
 
@@ -99,11 +99,11 @@ describe('parental gate', () => {
     const destination = vi.fn();
     requireParentalGate('aiImage', destination, { x: 10, y: 20 });
     expect(destination).not.toHaveBeenCalled();
-    expect(gate.open).toBe(true);
-    expect(gate.feature).toBe('aiImage');
-    expect(gate.origin).toEqual({ x: 10, y: 20 });
-    expect(gate.input).toBe('');
-    for (const operand of [gate.x, gate.y]) {
+    expect(parentalGateState.open).toBe(true);
+    expect(parentalGateState.feature).toBe('aiImage');
+    expect(parentalGateState.origin).toEqual({ x: 10, y: 20 });
+    expect(parentalGateState.input).toBe('');
+    for (const operand of [parentalGateState.x, parentalGateState.y]) {
       expect(operand).toBeGreaterThanOrEqual(GATE_OPERAND_MIN);
       expect(operand).toBeLessThanOrEqual(GATE_OPERAND_MAX);
     }
@@ -113,63 +113,63 @@ describe('parental gate', () => {
     const destination = vi.fn();
     requireParentalGate('aiImage', destination);
     typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(true);
+    expect(parentalGateState.unlocked).toBe(true);
     expect(destination).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
     expect(destination).toHaveBeenCalledOnce();
-    expect(gate.open).toBe(false);
+    expect(parentalGateState.open).toBe(false);
   });
 
   it('a wrong answer regenerates the problem, clears input, and shows a timed error', () => {
     requireParentalGate('aiImage', vi.fn());
     typeAnswer(wrongAnswer());
-    expect(gate.input).toBe('');
-    expect(gate.error).toBe(GATE_ERROR_MESSAGE);
-    expect(gate.shaking).toBe(true);
-    expect(gate.unlocked).toBe(false);
+    expect(parentalGateState.input).toBe('');
+    expect(parentalGateState.error).toBe(GATE_ERROR_MESSAGE);
+    expect(parentalGateState.shaking).toBe(true);
+    expect(parentalGateState.unlocked).toBe(false);
 
     vi.advanceTimersByTime(GATE_SHAKE_MS);
-    expect(gate.shaking).toBe(false);
+    expect(parentalGateState.shaking).toBe(false);
     vi.advanceTimersByTime(GATE_ERROR_VISIBLE_MS - GATE_SHAKE_MS);
-    expect(gate.error).toBeNull();
+    expect(parentalGateState.error).toBeNull();
   });
 
   it('waits for the check key instead of submitting a complete answer', () => {
     const destination = vi.fn();
     requireParentalGate('aiImage', destination);
     for (const digit of correctAnswer()) pressGateDigit(Number(digit));
-    expect(gate.unlocked).toBe(false);
-    expect(gate.input).toBe(correctAnswer());
+    expect(parentalGateState.unlocked).toBe(false);
+    expect(parentalGateState.input).toBe(correctAnswer());
 
     pressGateKey('submit');
-    expect(gate.unlocked).toBe(true);
+    expect(parentalGateState.unlocked).toBe(true);
   });
 
   it('counts a digit past the answer, or a check before it is complete, as wrong', () => {
     vi.spyOn(Math, 'random').mockReturnValue(MAX_OPERAND_RANDOM);
     requireParentalGate('aiImage', vi.fn());
     typeAnswer('');
-    expect(gate.error).toBe(GATE_ERROR_MESSAGE);
-    expect(gate.wrongStreak).toBe(1);
+    expect(parentalGateState.error).toBe(GATE_ERROR_MESSAGE);
+    expect(parentalGateState.wrongStreak).toBe(1);
 
     vi.advanceTimersByTime(GATE_SHAKE_MS);
     for (const digit of correctAnswer()) pressGateDigit(Number(digit));
     pressGateDigit(1);
-    expect(gate.input).toBe('');
-    expect(gate.wrongStreak).toBe(2);
-    expect(gate.unlocked).toBe(false);
+    expect(parentalGateState.input).toBe('');
+    expect(parentalGateState.wrongStreak).toBe(2);
+    expect(parentalGateState.unlocked).toBe(false);
   });
 
   it('ignores keypad input while the wrong-answer shake plays', () => {
     requireParentalGate('aiImage', vi.fn());
     typeAnswer(wrongAnswer());
     pressGateDigit(1);
-    expect(gate.input).toBe('');
+    expect(parentalGateState.input).toBe('');
 
     vi.advanceTimersByTime(GATE_SHAKE_MS);
     pressGateDigit(1);
-    expect(gate.input).toBe('1');
+    expect(parentalGateState.input).toBe('1');
   });
 
   it('backspace deletes the last typed digit', () => {
@@ -178,9 +178,9 @@ describe('parental gate', () => {
     expect(correctAnswer()).toBe(String(GATE_OPERAND_MAX * GATE_OPERAND_MAX));
 
     pressGateDigit(5);
-    expect(gate.input).toBe('5');
+    expect(parentalGateState.input).toBe('5');
     pressGateBackspace();
-    expect(gate.input).toBe('');
+    expect(parentalGateState.input).toBe('');
   });
 
   it('every-time mode asks again after a successful solve', () => {
@@ -191,7 +191,7 @@ describe('parental gate', () => {
     const destination = vi.fn();
     requireParentalGate('aiImage', destination);
     expect(destination).not.toHaveBeenCalled();
-    expect(gate.open).toBe(true);
+    expect(parentalGateState.open).toBe(true);
   });
 
   it('an every-time solve does not satisfy a later switch to per-session mode', () => {
@@ -201,7 +201,7 @@ describe('parental gate', () => {
 
     setParentalGateMode('parentCenter', 'session');
 
-    expect(gate.sessionSolved.parentCenter).toBe(false);
+    expect(parentalGateState.sessionSolved.parentCenter).toBe(false);
     expect(requiresParentalGate('parentCenter')).toBe(true);
   });
 
@@ -214,7 +214,7 @@ describe('parental gate', () => {
 
     setParentalGateMode('feedback', 'always');
 
-    expect(gate.sessionSolved.feedback).toBe(false);
+    expect(parentalGateState.sessionSolved.feedback).toBe(false);
     expect(requiresParentalGate('feedback')).toBe(true);
   });
 
@@ -232,7 +232,7 @@ describe('parental gate', () => {
     const feedbackDestination = vi.fn();
     requireParentalGate('feedback', feedbackDestination);
     expect(feedbackDestination).not.toHaveBeenCalled();
-    expect(gate.feature).toBe('feedback');
+    expect(parentalGateState.feature).toBe('feedback');
   });
 
   it('never mode bypasses the challenge for that feature', () => {
@@ -240,29 +240,29 @@ describe('parental gate', () => {
     const destination = vi.fn();
     requireParentalGate('feedback', destination);
     expect(destination).toHaveBeenCalledOnce();
-    expect(gate.open).toBe(false);
+    expect(parentalGateState.open).toBe(false);
   });
 
   it('retargets the open challenge at Parent Center, keeping the problem on screen', () => {
     const destination = vi.fn();
     requireParentalGate('externalLinks', destination, { x: 10, y: 20 }, { immediate: true });
-    const problem = [gate.x, gate.y];
+    const problem = [parentalGateState.x, parentalGateState.y];
     pressGateDigit(4);
 
     redirectGateToParentCenter();
 
-    expect(gate.open).toBe(true);
-    expect(gate.feature).toBe('parentCenter');
-    expect([gate.x, gate.y]).toEqual(problem);
-    expect(gate.input).toBe('');
+    expect(parentalGateState.open).toBe(true);
+    expect(parentalGateState.feature).toBe('parentCenter');
+    expect([parentalGateState.x, parentalGateState.y]).toEqual(problem);
+    expect(parentalGateState.input).toBe('');
 
     // The link's immediate handoff went with the link: this solve earns the
     // success card, then Settings opens on Parent Center itself.
     typeAnswer(correctAnswer());
-    expect(gate.unlocked).toBe(true);
+    expect(parentalGateState.unlocked).toBe(true);
     vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
     expect(destination).not.toHaveBeenCalled();
-    expect(ui.requestedSettingsSection).toBe('parentCenter');
+    expect(uiState.requestedSettingsSection).toBe('parentCenter');
     expect(settingsModal.open).toBe(true);
     expect(settingsModal.origin).toEqual({ x: 10, y: 20 });
   });
@@ -274,9 +274,9 @@ describe('parental gate', () => {
 
     redirectGateToParentCenter();
 
-    expect(gate.open).toBe(false);
+    expect(parentalGateState.open).toBe(false);
     expect(destination).not.toHaveBeenCalled();
-    expect(ui.requestedSettingsSection).toBe('parentCenter');
+    expect(uiState.requestedSettingsSection).toBe('parentCenter');
     expect(settingsModal.open).toBe(true);
   });
 
@@ -288,7 +288,7 @@ describe('parental gate', () => {
 
     redirectGateToParentCenter(destination);
 
-    expect(gate.open).toBe(false);
+    expect(parentalGateState.open).toBe(false);
     expect(destination).toHaveBeenCalledWith(origin);
     expect(settingsModal.open).toBe(false);
   });
@@ -339,7 +339,7 @@ describe('parental gate', () => {
     PARENTAL_GATE_FEATURES.forEach((feature) => {
       const mode = modeByFeature[feature];
       setParentalGateMode(feature, mode);
-      expect(parentalGatePolicies[feature]).toBe(mode);
+      expect(parentalGatePoliciesState[feature]).toBe(mode);
       expect(localStorage.getItem(storageKeyByFeature[feature])).toBe(mode);
     });
   });
@@ -351,8 +351,8 @@ describe('parental gate', () => {
     typeAnswer(correctAnswer());
 
     expect(destination).toHaveBeenCalledOnce();
-    expect(gate.open).toBe(false);
-    expect(gate.sessionSolved.externalLinks).toBe(true);
+    expect(parentalGateState.open).toBe(false);
+    expect(parentalGateState.sessionSolved.externalLinks).toBe(true);
     expect(requiresParentalGate('externalLinks')).toBe(false);
   });
 
@@ -362,44 +362,44 @@ describe('parental gate', () => {
     requireParentalGate('feedback', destination);
     pressGateDigit(4);
     dismissGate();
-    expect(gate.open).toBe(false);
-    expect(gate.input).toBe('');
-    expect(gate.sessionSolved.feedback).toBe(false);
+    expect(parentalGateState.open).toBe(false);
+    expect(parentalGateState.input).toBe('');
+    expect(parentalGateState.sessionSolved.feedback).toBe(false);
     vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS * 2);
     expect(destination).not.toHaveBeenCalled();
   });
 
   it('ignores keypad input while closed or already unlocked', () => {
     pressGateDigit(5);
-    expect(gate.input).toBe('');
+    expect(parentalGateState.input).toBe('');
 
     requireParentalGate('aiImage', vi.fn());
     typeAnswer(correctAnswer());
-    const solvedInput = gate.input;
+    const solvedInput = parentalGateState.input;
     pressGateDigit(1);
     pressGateBackspace();
-    expect(gate.input).toBe(solvedInput);
+    expect(parentalGateState.input).toBe(solvedInput);
   });
 
   it('reloads valid stored modes, rejects garbage, and migrates the legacy AI choice', () => {
     localStorage.setItem(STORAGE_KEYS.parentalGateFeedbackMode, 'session');
     localStorage.setItem(STORAGE_KEYS.parentalGateParentCenterMode, 'never');
     reloadParentalGate();
-    expect(parentalGatePolicies.feedback).toBe('session');
-    expect(parentalGatePolicies.parentCenter).toBe('never');
+    expect(parentalGatePoliciesState.feedback).toBe('session');
+    expect(parentalGatePoliciesState.parentCenter).toBe('never');
 
     localStorage.setItem(STORAGE_KEYS.parentalGateFeedbackMode, 'sparkles');
     reloadParentalGate();
-    expect(parentalGatePolicies.feedback).toBe('session');
+    expect(parentalGatePoliciesState.feedback).toBe('session');
 
     localStorage.removeItem(STORAGE_KEYS.parentalGateAiImageMode);
     localStorage.setItem(STORAGE_KEYS.legacyGateRememberMode, 'forever');
     reloadParentalGate();
-    expect(parentalGatePolicies.aiImage).toBe('always');
+    expect(parentalGatePoliciesState.aiImage).toBe('always');
 
     localStorage.setItem(STORAGE_KEYS.legacyGateUnlockedForever, 'true');
     reloadParentalGate();
-    expect(parentalGatePolicies.aiImage).toBe('never');
+    expect(parentalGatePoliciesState.aiImage).toBe('never');
   });
 
   it.each(['web', 'android'] as const)('allows Never for external links on %s', (platform) => {
@@ -407,7 +407,7 @@ describe('parental gate', () => {
     expect(isParentalGateModeAvailable('externalLinks', 'never', platform)).toBe(true);
 
     setParentalGateMode('externalLinks', 'never');
-    expect(parentalGatePolicies.externalLinks).toBe('never');
+    expect(parentalGatePoliciesState.externalLinks).toBe('never');
     expect(localStorage.getItem(STORAGE_KEYS.parentalGateExternalLinksMode)).toBe('never');
   });
 
@@ -416,13 +416,13 @@ describe('parental gate', () => {
     expect(isParentalGateModeAvailable('externalLinks', 'never', 'ios')).toBe(false);
     localStorage.setItem(STORAGE_KEYS.parentalGateExternalLinksMode, 'never');
     reloadParentalGate();
-    expect(parentalGatePolicies.externalLinks).toBe('always');
+    expect(parentalGatePoliciesState.externalLinks).toBe('always');
 
     localStorage.removeItem(STORAGE_KEYS.parentalGateExternalLinksMode);
     expect(() => setParentalGateMode('externalLinks', 'never')).toThrow(
       'Unsupported parental gate mode: externalLinks/never'
     );
-    expect(parentalGatePolicies.externalLinks).toBe('always');
+    expect(parentalGatePoliciesState.externalLinks).toBe('always');
     expect(localStorage.getItem(STORAGE_KEYS.parentalGateExternalLinksMode)).toBeNull();
   });
 });

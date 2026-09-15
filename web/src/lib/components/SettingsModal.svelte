@@ -2,7 +2,7 @@
   import DialogHeader from './design/DialogHeader.svelte';
   import type { CommonIconName } from './iconTypes';
   import SectionIcon from './SectionIcon.svelte';
-  import { ui, settingsModal } from '$lib/state/ui.svelte';
+  import { uiState, settingsModal } from '$lib/state/ui.svelte';
   import SectionBody from './settings/SectionBody.svelte';
   import CompactShell from './settings/CompactShell.svelte';
   import WideShell from './settings/WideShell.svelte';
@@ -15,7 +15,7 @@
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
-  import { settings, setSound } from '$lib/state/settings.svelte';
+  import { settingsState, setSound } from '$lib/state/settings.svelte';
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
   import { hasSectionActivity, markSectionSeen } from '$lib/state/sectionsSeen.svelte';
   import { createSettingsMediaQueries } from './settings/settingsMediaQuery.svelte';
@@ -61,14 +61,14 @@
   // open" and bounce the parent straight back to the hub.
   $effect(() => {
     const open = settingsModal.open;
-    const requestedSection = ui.requestedSettingsSection;
+    const requestedSection = uiState.requestedSettingsSection;
     const opening = open && !wasOpen;
     wasOpen = open;
     if (!open) return;
     if (requestedSection) {
       markSectionSeen(requestedSection);
       view = requestedSection;
-      ui.requestedSettingsSection = null;
+      uiState.requestedSettingsSection = null;
       return;
     }
     if (opening) view = 'hub';
@@ -122,7 +122,7 @@
     sound: {
       id: 'hubSoundToggle',
       label: 'Sound',
-      checked: () => settings.soundEnabled,
+      checked: () => settingsState.soundEnabled,
       onToggle: setSound,
     },
   };
@@ -149,7 +149,7 @@
 
 <dialog
   class="settings-modal modal-dialog modal-fly-in modal-shell {view === 'ai' ? 'ai-section' : ''}"
-  class:resizing={ui.resizingActionButtons}
+  class:resizing={uiState.resizingActionButtons}
   class:wide={shell.wide}
   class:compact={shell.compact}
   id="settingsModal"

@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   saveImageBlob: vi.fn(),
 }));
 
-vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
+vi.mock('$lib/state/settings.svelte', () => ({ settingsState: mocks.settings }));
 vi.mock('./engine', () => ({
   exportCanvasBlob: mocks.exportCanvasBlob,
   isCanvasEmpty: mocks.isCanvasEmpty,

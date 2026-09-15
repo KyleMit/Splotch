@@ -24,7 +24,11 @@ Where things live (full file-by-file map: `architecture` skill):
   `activeStrokeSize()` in `strokeWidth.svelte.ts`), never module-level `$derived` — the getter reads
   reactive state so a caller opts into reactivity locally by wrapping it in its own `$derived` when
   a template needs it (e.g. `ColorPalette.svelte`), yet stays callable as a plain function from a
-  unit test with no reactive context.
+  unit test with no reactive context. A module's exported reactive singleton is named after the
+  module basename plus a kind suffix — a `$state(...)` object or `createX()` instance is
+  `<basename>State` (`settingsState`, `aiProgressState`), a modal controller ends in `Modal`
+  (`settingsModal`) — mechanically enough that `tools/tests/state-export-names.test.mjs` enforces it
+  and carries the one second-singleton exception (`parentalGatePoliciesState`).
 * `lib/boot/` — the drawing route's boot steps as named helpers, called in order from
   `routes/+page.svelte`'s `onMount`: `hydrateSettings()`, then `mountBootHiddenOverlays()` (the idle
   overlay pump, ADR-0049), `installContextMenuGuard()`, `installWakeLock()`, `initWebOnlyServices()`

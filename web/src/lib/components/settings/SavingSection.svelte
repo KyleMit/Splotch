@@ -2,7 +2,7 @@
   import ToggleRow from './ToggleRow.svelte';
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
-  import { settings, setSaveOnDelete, setScreenshot } from '$lib/state/settings.svelte';
+  import { settingsState, setSaveOnDelete, setScreenshot } from '$lib/state/settings.svelte';
   import { changeSaveFolder, forgetSaveFolder } from '$lib/state/saveFolder.svelte';
   import { folderSaveSupported } from '$lib/drawing/folderSave';
   import '$lib/components/deferredIcons';
@@ -25,7 +25,7 @@
       icon="camera"
       label="Camera button"
       id="screenshotToggle"
-      checked={settings.screenshotEnabled}
+      checked={settingsState.screenshotEnabled}
       onToggle={setScreenshot}
       help="Shows the camera button in the tool drawer"
     />
@@ -36,7 +36,7 @@
       icon="camera-party"
       label="Auto-Save on Delete"
       id="saveOnDeleteToggle"
-      checked={settings.saveOnDeleteEnabled}
+      checked={settingsState.saveOnDeleteEnabled}
       onToggle={setSaveOnDelete}
       help="Saves the current drawing each time the page is cleared"
     />
@@ -48,7 +48,7 @@
         <Icon name="folder" class="setting-icon" />
         <span class="folder-title">Save drawings to</span>
       </div>
-      {#if settings.saveFolderName}
+      {#if settingsState.saveFolderName}
         <div class="folder-actions">
           <Button
             variant="wash"
@@ -58,7 +58,7 @@
             title="Change folder"
             onclick={changeSaveFolder}
           >
-            {settings.saveFolderName}
+            {settingsState.saveFolderName}
           </Button>
           <button
             class="folder-clear"

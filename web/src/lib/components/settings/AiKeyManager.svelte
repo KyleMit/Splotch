@@ -9,7 +9,7 @@
   import ToggleRow from './ToggleRow.svelte';
   import { AI_CREATE_HELP, AI_CREATE_LABEL } from './aiSettingsCopy';
   import { SECTION_SLIDE } from './sections';
-  import { settings, setAiImage, aiCredentialKind } from '$lib/state/settings.svelte';
+  import { settingsState, setAiImage, aiCredentialKind } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
   import { setUserSubmittedAiAccessToken } from '$lib/state/aiAccessToken';
   import {
@@ -24,7 +24,7 @@
     type SubmitStatus,
   } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
-  import { freeGenerations } from '$lib/state/freeGenerations.svelte';
+  import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
   import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
   import '$lib/components/deferredIcons';
 
@@ -88,7 +88,7 @@
 
   // Show the saved key with everything but the last four characters masked, so
   // a parent can recognise it without exposing the whole secret.
-  let maskedKey = $derived(maskSecret(settings.aiUserApiKey));
+  let maskedKey = $derived(maskSecret(settingsState.aiUserApiKey));
 
   function maskSecret(value: string) {
     if (!value) return '';
@@ -193,35 +193,35 @@
         icon="wand-stars"
         label={AI_CREATE_LABEL}
         id="aiImageToggle"
-        checked={settings.aiImageEnabled}
+        checked={settingsState.aiImageEnabled}
         onToggle={setAiImage}
-        help={settings.aiImageEnabled ? AI_CREATE_HELP.on : AI_CREATE_HELP.off}
+        help={settingsState.aiImageEnabled ? AI_CREATE_HELP.on : AI_CREATE_HELP.off}
       />
     </div>
   </section>
 
-  {#if !settings.aiImageEnabled}
+  {#if !settingsState.aiImageEnabled}
     <div transition:slide={SECTION_SLIDE}>
       <AiValueProp />
     </div>
   {/if}
 
-  {#if settings.aiImageEnabled}
+  {#if settingsState.aiImageEnabled}
     <div class="ai-enabled-settings" transition:slide={SECTION_SLIDE}>
       <section class="setting-group">
         {#if aiLocked}
           <div class="setting byok">
             <p class="byok-intro">
-              {#if freeGenerations.loading}
+              {#if freeGenerationsState.loading}
                 <strong>Checking your free AI creations…</strong>
-              {:else if freeGenerations.available && freeGenerations.remaining > 0}
+              {:else if freeGenerationsState.available && freeGenerationsState.remaining > 0}
                 <strong
-                  >{freeGenerations.remaining} free AI {freeGenerations.remaining === 1
+                  >{freeGenerationsState.remaining} free AI {freeGenerationsState.remaining === 1
                     ? 'creation'
                     : 'creations'} left.</strong
                 >
                 No setup is needed. After those are used, add your own OpenAI API key to keep creating.
-              {:else if freeGenerations.available}
+              {:else if freeGenerationsState.available}
                 <strong>Your {FREE_GENERATION_LIMIT} free AI creations are used up.</strong> Add your
                 own OpenAI API key to keep creating.
               {:else}
@@ -326,7 +326,7 @@
                   type="text"
                   readonly
                   aria-label="Saved access code"
-                  value={settings.aiAccessToken}
+                  value={settingsState.aiAccessToken}
                 />
                 <Button variant="danger" class="access-code-submit" onclick={forgetAccessCode}>
                   Forget

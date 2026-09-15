@@ -4,13 +4,13 @@ import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
 import { webInstallationId } from './webInstallationId';
-import { network } from '$lib/state/network.svelte';
-import { settings } from '$lib/state/settings.svelte';
+import { networkState } from '$lib/state/network.svelte';
+import { settingsState } from '$lib/state/settings.svelte';
 
 const INSTALLATION_NAMESPACE = 'splotch-free-generation-v1';
 const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
 
-export const freeGenerations = $state({
+export const freeGenerationsState = $state({
   remaining: FREE_GENERATION_LIMIT,
   loading: true,
   available: false,
@@ -44,14 +44,17 @@ export function installationId(): Promise<string> {
 }
 
 export function setFreeGenerationsRemaining(remaining: number): void {
-  freeGenerations.remaining = Math.max(0, Math.min(FREE_GENERATION_LIMIT, Math.floor(remaining)));
-  freeGenerations.available = true;
-  freeGenerations.loading = false;
+  freeGenerationsState.remaining = Math.max(
+    0,
+    Math.min(FREE_GENERATION_LIMIT, Math.floor(remaining))
+  );
+  freeGenerationsState.available = true;
+  freeGenerationsState.loading = false;
 }
 
 export function setFreeGenerationsUnavailable(): void {
-  freeGenerations.available = false;
-  freeGenerations.loading = false;
+  freeGenerationsState.available = false;
+  freeGenerationsState.loading = false;
 }
 
 export function createFreeGenerationGrantRefresher(): (event?: Event) => void {
@@ -59,18 +62,18 @@ export function createFreeGenerationGrantRefresher(): (event?: Event) => void {
   let wasOnline = false;
   return (event) => {
     const ready = grantRefreshReady();
-    const online = network.online;
+    const online = networkState.online;
     const returnedToApp =
       event?.type === 'visibilitychange' && document.visibilityState === 'visible';
     const shouldRearm =
       (ready && !wasReady) ||
       (online && !wasOnline) ||
-      (returnedToApp && ready && online && !freeGenerations.loading);
+      (returnedToApp && ready && online && !freeGenerationsState.loading);
     wasReady = ready;
     wasOnline = online;
     if (!ready || !online) freeGenerationGrantRequest.cancel();
-    if (shouldRearm && !freeGenerations.available) freeGenerations.loading = true;
-    if (shouldRearm && ready && online && freeGenerations.loading) {
+    if (shouldRearm && !freeGenerationsState.available) freeGenerationsState.loading = true;
+    if (shouldRearm && ready && online && freeGenerationsState.loading) {
       void refreshFreeGenerationGrant(freeGenerationGrantRequest);
     } else if (persistedStateStatus.hydrated && !ready) {
       setFreeGenerationsUnavailable();
@@ -81,9 +84,9 @@ export function createFreeGenerationGrantRefresher(): (event?: Event) => void {
 export function grantRefreshReady(): boolean {
   return (
     persistedStateStatus.hydrated &&
-    settings.aiImageEnabled &&
-    !settings.aiUserApiKey &&
-    !settings.aiAccessToken
+    settingsState.aiImageEnabled &&
+    !settingsState.aiUserApiKey &&
+    !settingsState.aiAccessToken
   );
 }
 

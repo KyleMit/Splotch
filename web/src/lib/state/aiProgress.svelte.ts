@@ -1,5 +1,5 @@
 import { AI_ESTIMATE_MS, createDialProgress } from '$lib/ai/dialProgress';
-import { aiResult, type AiResultState } from './aiGeneration.svelte';
+import { aiGenerationState, type AiResultState } from './aiGeneration.svelte';
 
 /**
  * How far along the running generation is, and whether its picture has been
@@ -125,11 +125,11 @@ export function createAiProgress(state: AiResultState, estimateMs: number = AI_E
   };
 }
 
-export const aiProgress = createAiProgress(aiResult);
+export const aiProgressState = createAiProgress(aiGenerationState);
 
 // A detached effect root (no component host) is what keeps this alive while the
 // modal is unmounted in the corner. Client-only: the loop is rAF-driven, and
 // effects never run during SSR anyway.
 if (typeof requestAnimationFrame !== 'undefined') {
-  $effect.root(() => aiProgress.watch());
+  $effect.root(() => aiProgressState.watch());
 }

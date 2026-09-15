@@ -3,7 +3,7 @@
   import ToggleRow from './ToggleRow.svelte';
   import SliderRow from './SliderRow.svelte';
   import {
-    settings,
+    settingsState,
     setDeleteSound,
     setDrawingSound,
     setSound,
@@ -23,7 +23,7 @@
   // While the volume slider is being adjusted, loop the pencil-scratch sound so
   // the parent hears the level they're setting.
   function previewVolume() {
-    if (!settings.soundEnabled || !previewingVolume) return;
+    if (!settingsState.soundEnabled || !previewingVolume) return;
     playVolumePreview({ speed: PREVIEW_SPEED, isStrokeStart: false });
   }
 
@@ -43,18 +43,18 @@
 <section class="setting-group">
   <div class="setting">
     <ToggleRow
-      icon={settings.soundEnabled ? 'volume-on' : 'volume-off'}
+      icon={settingsState.soundEnabled ? 'volume-on' : 'volume-off'}
       label="Sound"
       id="soundToggle"
-      checked={settings.soundEnabled}
+      checked={settingsState.soundEnabled}
       onToggle={setSound}
     />
-    {#if settings.soundEnabled}
+    {#if settingsState.soundEnabled}
       <div class="slider-setting" transition:slide={SECTION_SLIDE}>
         <SliderRow
           id="soundVolumeLabel"
           label="Volume"
-          value={settings.soundVolume}
+          value={settingsState.soundVolume}
           min={SOUND_VOLUME_MIN}
           max={SOUND_VOLUME_MAX}
           snap={SOUND_VOLUME_DEFAULT}
@@ -65,7 +65,7 @@
     {/if}
   </div>
 
-  {#if settings.soundEnabled}
+  {#if settingsState.soundEnabled}
     <div class="sound-sources" transition:slide={SECTION_SLIDE}>
       <h4 class="sources-heading">What makes sound</h4>
       <div class="source-rows">
@@ -74,7 +74,7 @@
             icon="brush-pen"
             label="Drawing"
             id="drawingSoundToggle"
-            checked={settings.drawingSoundEnabled}
+            checked={settingsState.drawingSoundEnabled}
             onToggle={setDrawingSound}
           />
         </div>
@@ -83,7 +83,7 @@
             icon="trash-closed"
             label="Deleting"
             id="deleteSoundToggle"
-            checked={settings.deleteSoundEnabled}
+            checked={settingsState.deleteSoundEnabled}
             onToggle={setDeleteSound}
           />
         </div>

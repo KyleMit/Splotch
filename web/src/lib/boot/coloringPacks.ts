@@ -1,7 +1,7 @@
 import { scheduleIdle } from '$lib/idle';
 import { COLORING_PACK_POLICY_EVENT } from '$lib/coloringPacks/policy';
 import { isNative } from '$lib/platform';
-import { settings } from '$lib/state/settings.svelte';
+import { settingsState } from '$lib/state/settings.svelte';
 
 export interface ColoringPackDownloads {
   // The child has engaged: a few strokes, or the coloring picker opened. Safe
@@ -75,7 +75,7 @@ export function installColoringPackDownloads(
     checkingStorage ||
     startingDownloader ||
     stopDownloader !== undefined ||
-    !settings.coloringBookEnabled;
+    !settingsState.coloringBookEnabled;
 
   const startDownloadManagerAtIdle = () => {
     cancelIdle = scheduleIdle(() => {
@@ -84,7 +84,7 @@ export function installColoringPackDownloads(
       void loadManager().then(
         ({ createColoringPackDownloader }) => {
           startingDownloader = false;
-          if (stopped || !settings.coloringBookEnabled) return;
+          if (stopped || !settingsState.coloringBookEnabled) return;
           const downloader = createColoringPackDownloader();
           downloader.start();
           stopDownloader = downloader.stop;
@@ -106,7 +106,7 @@ export function installColoringPackDownloads(
     checkingStorage = true;
     void packStorageExists.then((hasPackStorage) => {
       checkingStorage = false;
-      if (stopped || !settings.coloringBookEnabled) return;
+      if (stopped || !settingsState.coloringBookEnabled) return;
       if (!hasPackStorage) publishNoDownloadedBooks().catch(() => {});
       heldForEngagement = !hasPackStorage && !engaged;
       if (!heldForEngagement) startDownloadManagerAtIdle();
@@ -118,7 +118,7 @@ export function installColoringPackDownloads(
   };
 
   const handlePolicyChange = () => {
-    if (!settings.coloringBookEnabled) {
+    if (!settingsState.coloringBookEnabled) {
       cancelIdle?.();
       cancelIdle = undefined;
       return;

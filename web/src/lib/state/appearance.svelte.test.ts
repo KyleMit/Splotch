@@ -42,9 +42,9 @@ function emitSystemChange(matches: boolean) {
 
 async function freshModule() {
   vi.resetModules();
-  const settings = await import('./settings.svelte');
+  const settingsState = await import('./settings.svelte');
   const appearance = await import('./appearance.svelte');
-  return { ...settings, ...appearance };
+  return { ...settingsState, ...appearance };
 }
 
 function themeColorContent() {
@@ -121,48 +121,48 @@ describe('setResolvedTheme', () => {
   it('requesting the appearance the dark OS already renders restores system', async () => {
     installMatchMedia();
     query.matches = true;
-    const { settings, setResolvedTheme } = await freshModule();
+    const { settingsState, setResolvedTheme } = await freshModule();
     await tick();
 
     setResolvedTheme('dark');
     await tick();
 
-    expect(settings.theme).toBe('system');
+    expect(settingsState.theme).toBe('system');
   });
 
   it('requesting the appearance opposite a dark OS pins an explicit choice', async () => {
     installMatchMedia();
     query.matches = true;
-    const { settings, setResolvedTheme } = await freshModule();
+    const { settingsState, setResolvedTheme } = await freshModule();
     await tick();
 
     setResolvedTheme('light');
     await tick();
 
-    expect(settings.theme).toBe('light');
+    expect(settingsState.theme).toBe('light');
   });
 
   it('requesting the appearance opposite a light OS pins an explicit choice', async () => {
     installMatchMedia();
     query.matches = false;
-    const { settings, setResolvedTheme } = await freshModule();
+    const { settingsState, setResolvedTheme } = await freshModule();
     await tick();
 
     setResolvedTheme('dark');
     await tick();
 
-    expect(settings.theme).toBe('dark');
+    expect(settingsState.theme).toBe('dark');
   });
 
   it('requesting the appearance the light OS already renders restores system', async () => {
     installMatchMedia();
     query.matches = false;
-    const { settings, setResolvedTheme } = await freshModule();
+    const { settingsState, setResolvedTheme } = await freshModule();
     await tick();
 
     setResolvedTheme('light');
     await tick();
 
-    expect(settings.theme).toBe('system');
+    expect(settingsState.theme).toBe('system');
   });
 });

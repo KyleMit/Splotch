@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { booksForPlatform } from './books';
 import {
   availableColoringBooks,
-  coloringPackState,
+  coloringPacksState,
   markColoringBookInstalled,
   resetDownloadedColoringBooks,
   setInstalledColoringBooks,
@@ -30,14 +30,14 @@ describe('available coloring books', () => {
 
 describe('a device with no pack storage', () => {
   it('settles on the starter book out of the whole catalog without a scan', () => {
-    coloringPackState.initialized = false;
-    coloringPackState.downloadedBytes = 5;
+    coloringPacksState.initialized = false;
+    coloringPacksState.downloadedBytes = 5;
 
     setNoDownloadedColoringBooks('web');
 
     expect(availableColoringBooks('web').map((book) => book.id)).toEqual(['farm']);
-    expect(coloringPackState.totalBookCount).toBe(booksForPlatform('web').length);
-    expect(coloringPackState.downloadedBytes).toBe(0);
-    expect(coloringPackState.initialized).toBe(true);
+    expect(coloringPacksState.totalBookCount).toBe(booksForPlatform('web').length);
+    expect(coloringPacksState.downloadedBytes).toBe(0);
+    expect(coloringPacksState.initialized).toBe(true);
   });
 });

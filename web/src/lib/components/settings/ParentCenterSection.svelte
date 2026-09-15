@@ -7,7 +7,7 @@
     endsParentCenterProtection,
     isParentalGateModeAvailable,
     isParentCenterUnprotected,
-    parentalGatePolicies,
+    parentalGatePoliciesState,
     PARENTAL_GATE_FEATURES,
     PARENTAL_GATE_MODES,
     setParentalGateMode,
@@ -126,7 +126,7 @@
           label={`${feature.label} parental gate frequency`}
           describedBy={[helpId, unavailableHelpId, warningId].filter(Boolean).join(' ')}
           options={optionsFor(featureId)}
-          selected={parentalGatePolicies[featureId]}
+          selected={parentalGatePoliciesState[featureId]}
           onSelect={(mode) => chooseMode(featureId, mode)}
         />
 

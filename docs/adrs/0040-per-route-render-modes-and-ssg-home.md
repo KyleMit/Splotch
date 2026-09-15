@@ -112,9 +112,9 @@ that are already correct in the prerendered HTML:
    and tab order.
 
 The one exception is the AI button, whose visibility also depends on a *runtime*, non-persisted
-signal (`network.online`) the head script can't know, and which defaults hidden (no access token) —
-so it keeps its reactive binding and needs no stamp. Fully non-persisted state (the active color
-always boots to Purple) needs no treatment either.
+signal (`networkState.online`) the head script can't know, and which defaults hidden (no access
+token) — so it keeps its reactive binding and needs no stamp. Fully non-persisted state (the active
+color always boots to Purple) needs no treatment either.
 
 ### Performance
 

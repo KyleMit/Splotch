@@ -1,8 +1,8 @@
 <script lang="ts">
   import AiConfetti from './AiConfetti.svelte';
   import AiDial from './AiDial.svelte';
-  import { aiResult } from '$lib/state/aiGeneration.svelte';
-  import { aiProgress } from '$lib/state/aiProgress.svelte';
+  import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
+  import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
 
   interface Props {
@@ -23,8 +23,8 @@
   // off the load event, beside the aspect, never off a layout measurement.
   let naturalWidthPx = $state(0);
 
-  const revealed = $derived(aiProgress.revealed);
-  const sizerSrc = $derived(aiResult.resultUrl || aiResult.previewUrl);
+  const revealed = $derived(aiProgressState.revealed);
+  const sizerSrc = $derived(aiGenerationState.resultUrl || aiGenerationState.previewUrl);
   const decodedNaturalWidth = $derived(loadedSizerSrc === sizerSrc ? naturalWidthPx : 0);
 
   const MIN_BLUR_PX = 2;
@@ -49,7 +49,7 @@
 
   // The drawing stays blurry to keep the suspense, sharpening as we progress.
   const previewBlur = $derived(
-    `${Math.round((MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - aiProgress.value)) / BLUR_STEP_PX) * BLUR_STEP_PX}px`
+    `${Math.round((MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - aiProgressState.value)) / BLUR_STEP_PX) * BLUR_STEP_PX}px`
   );
 </script>
 
@@ -61,9 +61,9 @@
     target: zoomLayerEl!,
     // Only once the finished picture is on screen — the loading dial and
     // blurred preview shouldn't zoom.
-    enabled: revealed && !!aiResult.resultUrl && !exiting,
+    enabled: revealed && !!aiGenerationState.resultUrl && !exiting,
     // A fresh result resets the zoom back to fit.
-    resetKey: aiResult.resultUrl,
+    resetKey: aiGenerationState.resultUrl,
   })}
 >
   <!-- The zoom layer holds only the picture; the dial and confetti stay
@@ -90,18 +90,23 @@
       <div class="stage-sizer placeholder-sizer" aria-hidden="true"></div>
     {/if}
 
-    {#if aiResult.previewUrl}
+    {#if aiGenerationState.previewUrl}
       <img
         class="stage-img preview"
         class:gone={revealed}
         style="filter: blur({previewBlur}) saturate(1.1);"
-        src={aiResult.previewUrl}
+        src={aiGenerationState.previewUrl}
         alt=""
       />
     {/if}
 
-    {#if aiResult.resultUrl}
-      <img class="stage-img result" class:shown={revealed} src={aiResult.resultUrl} alt="" />
+    {#if aiGenerationState.resultUrl}
+      <img
+        class="stage-img result"
+        class:shown={revealed}
+        src={aiGenerationState.resultUrl}
+        alt=""
+      />
     {/if}
   </div>
 
@@ -110,6 +115,7 @@
     <AiDial />
   {/if}
 </div>
+}}
 
 <style>
   /* Registered so it can transition: an unregistered custom property changes

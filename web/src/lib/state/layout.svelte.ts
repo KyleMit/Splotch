@@ -51,7 +51,7 @@ function readOrientation(): Orientation {
   return readCssOrientation();
 }
 
-export const layout: LayoutState = $state({
+export const layoutState: LayoutState = $state({
   // Viewport orientation and the measured env(safe-area-inset-*) values, kept
   // fresh by the single shared listener set below (resize, legacy and standard
   // orientation changes, and visibility re-entry) so components can $derive off them
@@ -77,19 +77,19 @@ export const layout: LayoutState = $state({
 
 function syncViewport() {
   const next = readViewportOrientation();
-  layout.orientation = next;
+  layoutState.orientation = next;
   // Keep the [data-orientation] hook the head script stamped in sync on rotate.
   document.documentElement.dataset.orientation = readCssOrientation();
   // Per-field assign so equal re-measurements don't wake dependents.
-  Object.assign(layout.safeArea, measureSafeAreaInsets());
-  layout.orientationAngle = readOrientationAngle();
-  layout.viewportWidth = window.innerWidth;
-  layout.viewportHeight = window.innerHeight;
+  Object.assign(layoutState.safeArea, measureSafeAreaInsets());
+  layoutState.orientationAngle = readOrientationAngle();
+  layoutState.viewportWidth = window.innerWidth;
+  layoutState.viewportHeight = window.innerHeight;
   syncPhoneLandscape();
 }
 
 function syncPhoneLandscape() {
-  layout.phoneLandscape = phoneLandscapeQuery?.matches ?? false;
+  layoutState.phoneLandscape = phoneLandscapeQuery?.matches ?? false;
 }
 
 function finishViewportRotation() {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
 
 import {
-  settings,
+  settingsState,
   setDeleteSound,
   setDrawingSound,
   setSound,
@@ -35,31 +35,31 @@ beforeEach(() => {
 describe('defaults', () => {
   it('enables both sound sources for existing installs without source preferences', async () => {
     vi.resetModules();
-    const { settings: freshSettings } = await import('./settings.svelte');
+    const { settingsState: freshSettings } = await import('./settings.svelte');
 
     expect(freshSettings.drawingSoundEnabled).toBe(true);
     expect(freshSettings.deleteSoundEnabled).toBe(true);
   });
 
   it('keeps AI image creation off until a parent opts in', () => {
-    expect(settings.aiImageEnabled).toBe(false);
+    expect(settingsState.aiImageEnabled).toBe(false);
   });
 });
 
 describe('boolean setters', () => {
   it('updates the live store and persists to localStorage', () => {
     setSound(false);
-    expect(settings.soundEnabled).toBe(false);
+    expect(settingsState.soundEnabled).toBe(false);
     expect(localStorage.getItem(STORAGE_KEYS.soundEnabled)).toBe('false');
 
     setSound(true);
-    expect(settings.soundEnabled).toBe(true);
+    expect(settingsState.soundEnabled).toBe(true);
     expect(localStorage.getItem(STORAGE_KEYS.soundEnabled)).toBe('true');
   });
 
   it('each setter writes only its own key', () => {
     setEraser(false);
-    expect(settings.eraserEnabled).toBe(false);
+    expect(settingsState.eraserEnabled).toBe(false);
     expect(localStorage.getItem(STORAGE_KEYS.eraserEnabled)).toBe('false');
     expect(localStorage.getItem(STORAGE_KEYS.soundEnabled)).toBeNull();
   });
@@ -90,23 +90,23 @@ describe('boolean setters', () => {
 describe('setSoundVolume', () => {
   it('updates the live store and persists the volume percentage', () => {
     setSoundVolume(75);
-    expect(settings.soundVolume).toBe(75);
+    expect(settingsState.soundVolume).toBe(75);
     expect(localStorage.getItem(STORAGE_KEYS.soundVolume)).toBe('75');
   });
 
   it('clamps stored volume between 0 and 100', () => {
     setSoundVolume(125);
-    expect(settings.soundVolume).toBe(100);
+    expect(settingsState.soundVolume).toBe(100);
     expect(localStorage.getItem(STORAGE_KEYS.soundVolume)).toBe('100');
 
     setSoundVolume(-10);
-    expect(settings.soundVolume).toBe(0);
+    expect(settingsState.soundVolume).toBe(0);
     expect(localStorage.getItem(STORAGE_KEYS.soundVolume)).toBe('0');
   });
 
   it('falls back to normal volume for invalid values', () => {
     setSoundVolume(NaN);
-    expect(settings.soundVolume).toBe(50);
+    expect(settingsState.soundVolume).toBe(50);
     expect(localStorage.getItem(STORAGE_KEYS.soundVolume)).toBe('50');
   });
 });
@@ -114,19 +114,19 @@ describe('setSoundVolume', () => {
 describe('setActionButtonScale', () => {
   it('updates the live store and persists the scale percentage', () => {
     setActionButtonScale(120);
-    expect(settings.actionButtonScale).toBe(120);
+    expect(settingsState.actionButtonScale).toBe(120);
     expect(localStorage.getItem(STORAGE_KEYS.actionButtonScale)).toBe('120');
   });
 
   it('clamps stored scale to the allowed range', () => {
     setActionButtonScale(999);
-    expect(settings.actionButtonScale).toBe(ACTION_BUTTON_SCALE_MAX);
+    expect(settingsState.actionButtonScale).toBe(ACTION_BUTTON_SCALE_MAX);
     expect(localStorage.getItem(STORAGE_KEYS.actionButtonScale)).toBe(
       String(ACTION_BUTTON_SCALE_MAX)
     );
 
     setActionButtonScale(0);
-    expect(settings.actionButtonScale).toBe(ACTION_BUTTON_SCALE_MIN);
+    expect(settingsState.actionButtonScale).toBe(ACTION_BUTTON_SCALE_MIN);
     expect(localStorage.getItem(STORAGE_KEYS.actionButtonScale)).toBe(
       String(ACTION_BUTTON_SCALE_MIN)
     );
@@ -134,7 +134,7 @@ describe('setActionButtonScale', () => {
 
   it('falls back to the default scale for invalid values', () => {
     setActionButtonScale(NaN);
-    expect(settings.actionButtonScale).toBe(ACTION_BUTTON_SCALE_DEFAULT);
+    expect(settingsState.actionButtonScale).toBe(ACTION_BUTTON_SCALE_DEFAULT);
     expect(localStorage.getItem(STORAGE_KEYS.actionButtonScale)).toBe(
       String(ACTION_BUTTON_SCALE_DEFAULT)
     );
@@ -144,7 +144,7 @@ describe('setActionButtonScale', () => {
 describe('setTheme', () => {
   it('persists the choice and stamps data-theme on <html>', () => {
     setTheme('dark');
-    expect(settings.theme).toBe('dark');
+    expect(settingsState.theme).toBe('dark');
     expect(localStorage.getItem(STORAGE_KEYS.theme)).toBe('dark');
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
 
@@ -155,7 +155,7 @@ describe('setTheme', () => {
   it('system clears the attribute so the prefers-color-scheme CSS drives the theme', () => {
     setTheme('dark');
     setTheme('system');
-    expect(settings.theme).toBe('system');
+    expect(settingsState.theme).toBe('system');
     expect(localStorage.getItem(STORAGE_KEYS.theme)).toBe('system');
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
   });
@@ -179,13 +179,13 @@ describe('reloadSettings', () => {
 
     reloadSettings();
 
-    expect(settings.soundEnabled).toBe(false);
-    expect(settings.drawingSoundEnabled).toBe(false);
-    expect(settings.deleteSoundEnabled).toBe(false);
-    expect(settings.soundVolume).toBe(35);
-    expect(settings.actionButtonScale).toBe(130);
-    expect(settings.drawerOpen).toBe(true);
-    expect(settings.theme).toBe('dark');
+    expect(settingsState.soundEnabled).toBe(false);
+    expect(settingsState.drawingSoundEnabled).toBe(false);
+    expect(settingsState.deleteSoundEnabled).toBe(false);
+    expect(settingsState.soundVolume).toBe(35);
+    expect(settingsState.actionButtonScale).toBe(130);
+    expect(settingsState.drawerOpen).toBe(true);
+    expect(settingsState.theme).toBe('dark');
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
@@ -193,30 +193,30 @@ describe('reloadSettings', () => {
     setEraser(false);
     localStorage.removeItem(STORAGE_KEYS.eraserEnabled);
     reloadSettings();
-    expect(settings.eraserEnabled).toBe(false);
+    expect(settingsState.eraserEnabled).toBe(false);
   });
 
   it('keeps the current theme when the stored value is invalid', () => {
     setTheme('dark');
     localStorage.setItem(STORAGE_KEYS.theme, 'blorange');
     reloadSettings();
-    expect(settings.theme).toBe('dark');
+    expect(settingsState.theme).toBe('dark');
   });
 });
 
 describe('aiCredentialKind', () => {
   beforeEach(() => {
-    settings.aiUserApiKey = '';
-    settings.aiAccessToken = '';
+    settingsState.aiUserApiKey = '';
+    settingsState.aiAccessToken = '';
   });
 
   it('returns apiKey when only the BYOK key is set', () => {
-    settings.aiUserApiKey = 'user-key';
+    settingsState.aiUserApiKey = 'user-key';
     expect(aiCredentialKind()).toBe('apiKey');
   });
 
   it('returns accessCode when only the access token is set', () => {
-    settings.aiAccessToken = 'access-token';
+    settingsState.aiAccessToken = 'access-token';
     expect(aiCredentialKind()).toBe('accessCode');
   });
 
@@ -225,8 +225,8 @@ describe('aiCredentialKind', () => {
   });
 
   it('prefers apiKey when both credentials are set', () => {
-    settings.aiUserApiKey = 'user-key';
-    settings.aiAccessToken = 'access-token';
+    settingsState.aiUserApiKey = 'user-key';
+    settingsState.aiAccessToken = 'access-token';
     expect(aiCredentialKind()).toBe('apiKey');
   });
 });

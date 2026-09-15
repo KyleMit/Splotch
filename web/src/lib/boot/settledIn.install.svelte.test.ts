@@ -2,7 +2,7 @@ import { flushSync } from 'svelte';
 import { expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '$lib/storage';
 import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
-import { captureInstallPrompt, initInstallPrompt, install } from '$lib/state/install.svelte';
+import { captureInstallPrompt, initInstallPrompt, installState } from '$lib/state/install.svelte';
 import { installSettledInEffects } from './settledIn.svelte';
 
 vi.mock('$lib/platform', async (importOriginal) => ({
@@ -26,7 +26,7 @@ it('counts a returning desktop session when its install prompt arrives after set
     configurable: true,
   });
   initInstallPrompt();
-  expect(install.mode).toBe('none');
+  expect(installState.mode).toBe('none');
   const stop = $effect.root(() => installSettledInEffects(() => ({ demand() {} })));
   try {
     canvasState.strokeCount = SETTLED_IN_STROKES;

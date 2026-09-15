@@ -1,4 +1,4 @@
-import { settings, SOUND_VOLUME_DEFAULT } from '$lib/state/settings.svelte';
+import { settingsState, SOUND_VOLUME_DEFAULT } from '$lib/state/settings.svelte';
 import type { DrawSoundData } from '$lib/drawing/engine';
 
 const SOUND_URLS = ['/sounds/pencil-1.mp3', '/sounds/pencil-2.mp3', '/sounds/pencil-3.mp3'];
@@ -77,15 +77,15 @@ let noiseBuffer: AudioBuffer | null = null;
 const clearCancelTimers = new Set<ReturnType<typeof setTimeout>>();
 
 function volumeMultiplier() {
-  return settings.soundVolume / SOUND_VOLUME_DEFAULT;
+  return settingsState.soundVolume / SOUND_VOLUME_DEFAULT;
 }
 
 export function canPlayDrawingSound() {
-  return settings.soundEnabled && settings.drawingSoundEnabled;
+  return settingsState.soundEnabled && settingsState.drawingSoundEnabled;
 }
 
 function canPlayDeleteSound() {
-  return settings.soundEnabled && settings.deleteSoundEnabled;
+  return settingsState.soundEnabled && settingsState.deleteSoundEnabled;
 }
 
 function ensureContext(): AudioContext | null {
@@ -185,7 +185,7 @@ export function playDrawSound(data: DrawSoundData) {
 }
 
 export function playVolumePreview(data: DrawSoundData) {
-  if (!settings.soundEnabled) {
+  if (!settingsState.soundEnabled) {
     if (playbackRequest || currentPlayback) stopDrawSound();
     return;
   }
@@ -384,8 +384,8 @@ function startPlaybackIfReady() {
     !ctx ||
     currentPlayback ||
     !request ||
-    !settings.soundEnabled ||
-    (request.kind === 'drawing' && !settings.drawingSoundEnabled) ||
+    !settingsState.soundEnabled ||
+    (request.kind === 'drawing' && !settingsState.drawingSoundEnabled) ||
     buffers.length === 0
   )
     return;

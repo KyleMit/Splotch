@@ -7,7 +7,7 @@
     aiAutoSaveHelp,
   } from './aiSettingsCopy';
   import { folderSaveSupported } from '$lib/drawing/folderSave';
-  import { settings, setAiCustomization, setAutoSaveAi } from '$lib/state/settings.svelte';
+  import { settingsState, setAiCustomization, setAutoSaveAi } from '$lib/state/settings.svelte';
   import '$lib/components/deferredIcons';
 </script>
 
@@ -17,7 +17,7 @@
       icon="customize"
       label={AI_CUSTOMIZATION_LABEL}
       id="aiCustomizationToggle"
-      checked={settings.aiCustomizationEnabled}
+      checked={settingsState.aiCustomizationEnabled}
       onToggle={setAiCustomization}
       help={AI_CUSTOMIZATION_HELP}
     />
@@ -28,7 +28,7 @@
       icon="download"
       label={AI_AUTO_SAVE_LABEL}
       id="autoSaveAiToggle"
-      checked={settings.autoSaveAiEnabled}
+      checked={settingsState.autoSaveAiEnabled}
       onToggle={setAutoSaveAi}
       help={aiAutoSaveHelp(folderSaveSupported())}
     />

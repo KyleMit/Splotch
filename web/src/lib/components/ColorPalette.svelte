@@ -3,7 +3,7 @@
     PALETTE_COLORS,
     TRIM_ORDER,
     CUSTOM_SWATCH,
-    colors,
+    colorsState,
     selectPaletteColor,
     selectCustomSwatch,
     themedSwatchColor,
@@ -110,11 +110,11 @@
     {@const ringColor = getRingColor(shown)}
     <button
       class="color-swatch"
-      class:active={!erasing && colors.activeSwatch === hex}
+      class:active={!erasing && colorsState.activeSwatch === hex}
       class:ring-animate={ringAnimateHex === hex}
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
-      style="background-color: {shown}; {!erasing && colors.activeSwatch === hex
+      style="background-color: {shown}; {!erasing && colorsState.activeSwatch === hex
         ? `box-shadow: ${selectionRingShadow(ringColor)}; --ring-color: ${ringColor};`
         : ''}"
       aria-label={shown === hex ? label : 'White'}
@@ -127,12 +127,14 @@
 
   <button
     class="color-swatch gradient-swatch"
-    class:active={!erasing && colors.activeSwatch === CUSTOM_SWATCH}
-    class:ringed={!erasing && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected}
+    class:active={!erasing && colorsState.activeSwatch === CUSTOM_SWATCH}
+    class:ringed={!erasing &&
+      colorsState.activeSwatch === CUSTOM_SWATCH &&
+      colorsState.customColorSelected}
     data-color="custom"
     aria-label="Custom Color"
-    style={!erasing && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected
-      ? `box-shadow: ${selectionRingShadow(colors.customColor)};`
+    style={!erasing && colorsState.activeSwatch === CUSTOM_SWATCH && colorsState.customColorSelected
+      ? `box-shadow: ${selectionRingShadow(colorsState.customColor)};`
       : ''}
     use:scribbleTap={selectCustomColor}
     onpointerup={playSwatchRelease}

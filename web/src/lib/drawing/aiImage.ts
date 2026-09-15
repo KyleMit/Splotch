@@ -1,5 +1,5 @@
 import {
-  aiResult,
+  aiGenerationState,
   AI_FAILURE_RETRY_LIMIT,
   type AiFailureDetails,
   setAiDrawing,
@@ -13,7 +13,7 @@ import {
   isAiGenerationActive,
   endAiGeneration,
 } from '$lib/state/aiGeneration.svelte';
-import { settings } from '$lib/state/settings.svelte';
+import { settingsState } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
 import {
   ASYNC_GENERATION_HEADER,
@@ -318,12 +318,12 @@ export async function generateAiImage({
   drawing = null,
   style = '',
 }: { drawing?: Blob | null; style?: StyleName | '' } = {}) {
-  if (aiResult.generating) {
+  if (aiGenerationState.generating) {
     // A run is already going, and this early return used to be unobservable —
     // the modal's backdrop swallowed every tap. Now that the chrome is
     // deliberately live while a run waits in the corner (ADR-0116), a tap on the
     // magic button has to mean something: show me the one already running.
-    if (aiResult.minimized) restoreAiResult();
+    if (aiGenerationState.minimized) restoreAiResult();
     return;
   }
 
@@ -386,7 +386,7 @@ export async function generateAiImage({
       settledHeaders.get(REPORT_TOKEN_HEADER),
       failureEndpoint
     );
-    if (committed && settings.autoSaveAiEnabled) {
+    if (committed && settingsState.autoSaveAiEnabled) {
       await autoSaveImages(committed.committedBlob, exported.preview, runId);
     }
   } catch (err) {
@@ -412,10 +412,13 @@ export async function generateAiImage({
 
 export function retryAiImage() {
   if (
-    !aiResult.error ||
-    aiResult.error.kind === 'safety' ||
-    aiResult.consecutiveFailures >= AI_FAILURE_RETRY_LIMIT
+    !aiGenerationState.error ||
+    aiGenerationState.error.kind === 'safety' ||
+    aiGenerationState.consecutiveFailures >= AI_FAILURE_RETRY_LIMIT
   )
     return;
-  return generateAiImage({ drawing: aiResult.drawing, style: aiResult.style ?? '' });
+  return generateAiImage({
+    drawing: aiGenerationState.drawing,
+    style: aiGenerationState.style ?? '',
+  });
 }

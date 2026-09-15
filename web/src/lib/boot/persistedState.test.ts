@@ -57,7 +57,7 @@ vi.mock('../platform/orientation', () => ({
 import { STORAGE_KEYS } from '../storage';
 import { saveAccessCode } from '../secureStorage';
 import { applyDeviceOrientationPreference } from '../platform/orientation';
-import { settings } from '../state/settings.svelte';
+import { settingsState } from '../state/settings.svelte';
 import { hydratePersistedState } from './persistedState';
 import { persistedStateStatus } from './persistedStateStatus.svelte';
 
@@ -67,10 +67,10 @@ beforeEach(() => {
   prefsStore.clear();
   secureStore.apiKey = null;
   secureStore.accessCode = null;
-  settings.aiUserApiKey = '';
-  settings.aiAccessToken = '';
-  settings.lockRotationEnabled = true;
-  settings.forceLandscapeOrientation = false;
+  settingsState.aiUserApiKey = '';
+  settingsState.aiAccessToken = '';
+  settingsState.lockRotationEnabled = true;
+  settingsState.forceLandscapeOrientation = false;
   ctrl.native = false;
   persistedStateStatus.hydrated = false;
   vi.mocked(saveAccessCode)
@@ -87,7 +87,7 @@ describe('hydratePersistedState', () => {
 
     await hydratePersistedState();
 
-    expect(settings.aiUserApiKey).toBe('sk-durable-legacy-key');
+    expect(settingsState.aiUserApiKey).toBe('sk-durable-legacy-key');
     expect(secureStore.apiKey).toBe('sk-durable-legacy-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
     await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiUserApiKey)).toBe(false));
@@ -99,7 +99,7 @@ describe('hydratePersistedState', () => {
 
     await hydratePersistedState();
 
-    expect(settings.aiAccessToken).toBe('durable-managed-code');
+    expect(settingsState.aiAccessToken).toBe('durable-managed-code');
     expect(secureStore.accessCode).toBe('durable-managed-code');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
     await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiAccessToken)).toBe(false));
@@ -113,7 +113,7 @@ describe('hydratePersistedState', () => {
 
     await hydratePersistedState();
 
-    expect(settings.aiAccessToken).toBe('');
+    expect(settingsState.aiAccessToken).toBe('');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-managed-code');
     expect(prefsStore.get(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-managed-code');
     expect(persistedStateStatus.hydrated).toBe(true);

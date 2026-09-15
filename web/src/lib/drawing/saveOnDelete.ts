@@ -1,4 +1,4 @@
-import { settings } from '$lib/state/settings.svelte';
+import { settingsState } from '$lib/state/settings.svelte';
 import { exportCanvasBlob, isCanvasEmpty } from './engine';
 
 // Deliberately imported statically by ClearButton (unlike the other save
@@ -8,7 +8,7 @@ import { exportCanvasBlob, isCanvasEmpty } from './engine';
 // (screenshot → folderSave, the export compositor) still loads on demand
 // (issue #461).
 export async function saveDrawingIfEnabled() {
-  if (!settings.saveOnDeleteEnabled) return;
+  if (!settingsState.saveOnDeleteEnabled) return;
   if (isCanvasEmpty()) return;
 
   const screenshotModule = import('./screenshot');

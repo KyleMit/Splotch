@@ -12,12 +12,16 @@
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
   import { COLORING_OVERLAY_ID } from '$lib/drawing/overlay';
   import { paperCssLength, viewTransformCss } from '$lib/drawing/paperView';
-  import { layout } from '$lib/state/layout.svelte';
-  import { colors } from '$lib/state/colors.svelte';
+  import { layoutState } from '$lib/state/layout.svelte';
+  import { colorsState } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
-  import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte';
+  import {
+    strokeWidthState,
+    getStrokeWidthPx,
+    getEraserWidthPx,
+  } from '$lib/state/strokeWidth.svelte';
   import {
     overlayUrl,
     coloringBookState,
@@ -61,13 +65,13 @@
   const paperTransform = $derived(viewTransformCss(paperView));
 
   const eraserSizePx = $derived(
-    getEraserWidthPx(strokeState.eraserSize) * (paperView.active ? paperView.scale : 1)
+    getEraserWidthPx(strokeWidthState.eraserSize) * (paperView.active ? paperView.scale : 1)
   );
 
   // Pen and magic strokes share the pen width (the engine applies no multiplier
   // to magic ops), so both ring flavors share this size.
   const brushRingSizePx = $derived(
-    getStrokeWidthPx(strokeState.penSize) * (paperView.active ? paperView.scale : 1)
+    getStrokeWidthPx(strokeWidthState.penSize) * (paperView.active ? paperView.scale : 1)
   );
 
   // The sheet/wrapper track the engine's paper; before the engine reports a
@@ -82,7 +86,7 @@
     // this exact element (client-side nav back to `/`, dev HMR), adopt falls
     // back to a full init.
     const engine = adoptDrawingCanvas(canvasEl, {
-      initialColor: colors.activeColor,
+      initialColor: colorsState.activeColor,
       onUndo: () => {
         canvasState.undoCount++;
       },
@@ -148,7 +152,7 @@
   // The insets move between edges on rotation; the shared layout module
   // re-measures them, and this re-pushes whenever a value actually changes.
   $effect(() => {
-    setSafeAreaInsets({ ...layout.safeArea });
+    setSafeAreaInsets({ ...layoutState.safeArea });
   });
 
   // The first 119 KB pencil sound is prepared on the earliest drawing boot path.
@@ -165,7 +169,7 @@
 
   // Reactive bridges: when the store changes, push into the imperative engine.
   $effect(() => {
-    setColor(colors.activeColor);
+    setColor(colorsState.activeColor);
   });
 
   // Push the toolState-derived engine settings the pre-hydration boot also

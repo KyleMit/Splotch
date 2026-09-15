@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { network } from './state/network.svelte';
-import { freeGenerations } from './state/freeGenerations.svelte';
+import { networkState } from './state/network.svelte';
+import { freeGenerationsState } from './state/freeGenerations.svelte';
 import {
-  settings,
+  settingsState,
   setAiImage,
   setColoringBook,
   setCrayon,
@@ -33,10 +33,10 @@ beforeEach(() => {
   setColoringBook(true);
   setScreenshot(true);
   setAiImage(true);
-  settings.aiAccessToken = '';
-  settings.aiUserApiKey = '';
-  network.online = true;
-  freeGenerations.available = true;
+  settingsState.aiAccessToken = '';
+  settingsState.aiUserApiKey = '';
+  networkState.online = true;
+  freeGenerationsState.available = true;
   selectBrush('pen');
 });
 
@@ -63,8 +63,8 @@ describe('the Tool Drawer switch', () => {
   it('leaves the per-tool flags untouched, so switching it back on restores them', () => {
     setUndoButton(false);
     setToolDrawerEnabled(false);
-    expect(settings.undoButtonEnabled).toBe(false);
-    expect(settings.crayonEnabled).toBe(true);
+    expect(settingsState.undoButtonEnabled).toBe(false);
+    expect(settingsState.crayonEnabled).toBe(true);
 
     setToolDrawerEnabled(true);
     expect(visibleActionButtonCount()).toBe(5);

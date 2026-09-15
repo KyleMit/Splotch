@@ -5,7 +5,7 @@
   import SliderRow from './SliderRow.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import {
-    settings,
+    settingsState,
     setActionButtonScale,
     ACTION_BUTTON_SCALE_MIN,
     ACTION_BUTTON_SCALE_DEFAULT,
@@ -26,13 +26,13 @@
   // stored value above today's ceiling (e.g. set on a wider screen) is only
   // displayed clamped — it isn't rewritten unless the parent drags the slider.
   const scaleCeiling = $derived(maxActionButtonScale());
-  const displayedScale = $derived(Math.min(settings.actionButtonScale, scaleCeiling));
+  const displayedScale = $derived(Math.min(settingsState.actionButtonScale, scaleCeiling));
 
   // The per-tool on/off list shows or hides that brush or Actions Panel button.
   // One list rather than a split between the two — a parent turning something
   // off is choosing what a child can reach, and whether it lives in the brush
   // menu or on the panel isn't the distinction they're acting on. Each entry
-  // reads live `settings` so its on-state stays reactive.
+  // reads live `settingsState` so its on-state stays reactive.
   const toolOptions: SegmentedPickerOption<DrawingToolId>[] = DRAWING_TOOLS.map(
     ({ id, label, icon }) => ({ value: id, label, icon, id })
   );
@@ -116,7 +116,7 @@
       icon="dashboard-customize"
       label="Enable tool drawer"
       id="toolDrawerToggle"
-      checked={settings.toolDrawerEnabled}
+      checked={settingsState.toolDrawerEnabled}
       onToggle={setToolDrawerEnabled}
       help="Shows the brushes, stroke width, and undo in the drawer"
     />
@@ -139,7 +139,7 @@
     />
   </div>
 
-  {#if settings.toolDrawerEnabled}
+  {#if settingsState.toolDrawerEnabled}
     <div class="tool-drawer-settings" transition:slide={SECTION_SLIDE}>
       <div class="tools-block" bind:this={toolsBlockEl}>
         <h4 class="tools-heading">Drawing Tools</h4>
@@ -172,13 +172,13 @@
     </div>
   {/if}
 
-  {#if settings.applePencilSeen && settings.eraserEnabled}
+  {#if settingsState.applePencilSeen && settingsState.eraserEnabled}
     <div class="setting pencil-eraser" transition:slide={SECTION_SLIDE}>
       <ToggleRow
         icon="brush-eraser"
         label="Apple Pencil double-tap to erase"
         id="pencilEraserToggle"
-        checked={settings.pencilEraserEnabled}
+        checked={settingsState.pencilEraserEnabled}
         onToggle={setPencilEraserEnabled}
         help="Double-tap an Apple Pencil to switch between drawing and erasing"
       />

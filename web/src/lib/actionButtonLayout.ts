@@ -8,17 +8,17 @@
 // holds the literals to the constants and actionButtonLayout.test.ts evaluates
 // the formula against availablePerButton.
 import {
-  settings,
+  settingsState,
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
   actionControlShown,
   enabledOptionalBrushes,
   type ActionPanelControl,
 } from '$lib/state/settings.svelte';
-import { network } from '$lib/state/network.svelte';
-import { freeGenerations } from '$lib/state/freeGenerations.svelte';
+import { networkState } from '$lib/state/network.svelte';
+import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
 import type { Orientation } from '$lib/platform';
-import { layout } from '$lib/state/layout.svelte';
+import { layoutState } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import { PALETTE_LANDSCAPE_WIDTH_PX } from '$lib/design/trimGeometry';
 import {
@@ -80,7 +80,9 @@ export const ACTION_BUTTON_SIZE_CLASS_MEDIA_QUERIES = {
 // while the CSS above reads the layout one, which can disagree by the height of
 // a mobile URL bar; that only ever shifts the ceiling, never the rendered size.
 export function actionButtonBase(orientation: Orientation): number {
-  const sizeClass = actionButtonSizeClass(Math.min(layout.viewportWidth, layout.viewportHeight));
+  const sizeClass = actionButtonSizeClass(
+    Math.min(layoutState.viewportWidth, layoutState.viewportHeight)
+  );
   return ACTION_BUTTON_BASE_PX[sizeClass][orientation];
 }
 
@@ -132,8 +134,12 @@ export const PORTRAIT_FIXED_RESERVE = PALETTE_CLEARANCE + PANEL_FIXED_CHROME;
 export const PALETTE_BAR_RESERVE = 75;
 
 export function isAiImageButtonVisible(): boolean {
-  const hasCredential = Boolean(settings.aiUserApiKey || settings.aiAccessToken);
-  return settings.aiImageEnabled && network.online && (hasCredential || freeGenerations.available);
+  const hasCredential = Boolean(settingsState.aiUserApiKey || settingsState.aiAccessToken);
+  return (
+    settingsState.aiImageEnabled &&
+    networkState.online &&
+    (hasCredential || freeGenerationsState.available)
+  );
 }
 
 export function visibleActionButtonCount(): number {
@@ -152,7 +158,7 @@ export function visibleActionButtonCount(): number {
 // column is hidden) or the portrait bar's declared height.
 function paletteExtent(orientation: Orientation): number {
   if (orientation === 'portrait') return PALETTE_BAR_RESERVE;
-  return layout.phoneLandscape ? 0 : PALETTE_LANDSCAPE_WIDTH_PX;
+  return layoutState.phoneLandscape ? 0 : PALETTE_LANDSCAPE_WIDTH_PX;
 }
 
 // Everything the panel spends out of the viewport extent before the rest is
@@ -175,11 +181,11 @@ function fixedRowCost(
 // Exported only so that test can hold the formula to this number;
 // maxActionButtonScale is the production caller.
 export function availablePerButton(buttonCount: number): number {
-  const { orientation, safeArea } = layout;
+  const { orientation, safeArea } = layoutState;
   const [viewportExtent, insets] =
     orientation === 'portrait'
-      ? [layout.viewportHeight, safeArea.top + safeArea.bottom]
-      : [layout.viewportWidth, safeArea.left + safeArea.right];
+      ? [layoutState.viewportHeight, safeArea.top + safeArea.bottom]
+      : [layoutState.viewportWidth, safeArea.left + safeArea.right];
   return (
     (viewportExtent - fixedRowCost(orientation, buttonCount, paletteExtent(orientation)) - insets) /
     buttonCount
@@ -192,20 +198,26 @@ export function availablePerButton(buttonCount: number): number {
 // slider's static range: on an absurdly small viewport the render cap (below)
 // still bounds the actual size.
 function phoneToolbarAvailablePerButton(): number {
-  const { safeArea } = layout;
+  const { safeArea } = layoutState;
   return Math.min(
-    (layout.viewportHeight - safeArea.top - safeArea.bottom - PHONE_TOOLBAR_VERTICAL_CHROME_PX) /
+    (layoutState.viewportHeight -
+      safeArea.top -
+      safeArea.bottom -
+      PHONE_TOOLBAR_VERTICAL_CHROME_PX) /
       PHONE_TOOLBAR_LEG_SLOTS,
-    (layout.viewportWidth - safeArea.left - safeArea.right - PHONE_TOOLBAR_HORIZONTAL_CHROME_PX) /
+    (layoutState.viewportWidth -
+      safeArea.left -
+      safeArea.right -
+      PHONE_TOOLBAR_HORIZONTAL_CHROME_PX) /
       PHONE_TOOLBAR_LEG_SLOTS
   );
 }
 
 export function maxActionButtonScale(): number {
-  const base = layout.phoneLandscape
+  const base = layoutState.phoneLandscape
     ? PHONE_TOOLBAR_BUTTON_PX
-    : actionButtonBase(layout.orientation);
-  const available = layout.phoneLandscape
+    : actionButtonBase(layoutState.orientation);
+  const available = layoutState.phoneLandscape
     ? phoneToolbarAvailablePerButton()
     : availablePerButton(visibleActionButtonCount());
   const pct = Math.floor((available / base) * 100);

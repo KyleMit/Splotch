@@ -38,7 +38,7 @@ export type InstallDeviceOs = 'ios' | 'android' | 'desktop';
 export type InstallPromptOutcome = 'accepted' | 'dismissed' | 'unavailable';
 export type InstallPromptStage = 'initial' | 'returning' | 'final';
 
-export const install = $state({
+export const installState = $state({
   mode: 'none' as InstallMode,
   // Parent tapped "not now" — suppress the floating banner until its bounded
   // re-prompt schedule is due. The Install section in Settings stays available.
@@ -92,11 +92,11 @@ function manualMode(): InstallMode {
 // A spent/stale one-tap prompt drops to the manual hint so the UI falls back to
 // something a tap can actually do.
 function fallBackToManualHint() {
-  if (install.mode === 'oneTap') install.mode = manualMode();
+  if (installState.mode === 'oneTap') installState.mode = manualMode();
 }
 
 function resetInstallRepromptCycle() {
-  install.dismissed = false;
+  installState.dismissed = false;
   repromptsUsed = 0;
   installAutoClearArmedAt = null;
   removeKey(STORAGE_KEYS.installDismissed);
@@ -109,8 +109,8 @@ function reloadInstallRepromptState() {
 }
 
 export function installPromptStage(): InstallPromptStage | null {
-  if (install.installed) return null;
-  if (!install.dismissed) return 'initial';
+  if (installState.installed) return null;
+  if (!installState.dismissed) return 'initial';
   if (repromptsUsed >= MAX_INSTALL_REPROMPTS) return null;
 
   const milestone = INSTALL_REPROMPT_SESSION_MILESTONES[repromptsUsed];
@@ -121,9 +121,9 @@ export function installPromptStage(): InstallPromptStage | null {
 export function recordInstallRepromptSession() {
   if (
     canvasState.strokeCount < SETTLED_IN_STROKES ||
-    !install.dismissed ||
-    install.installed ||
-    install.mode === 'none' ||
+    !installState.dismissed ||
+    installState.installed ||
+    installState.mode === 'none' ||
     repromptsUsed >= MAX_INSTALL_REPROMPTS ||
     installPromptStage() !== null
   ) {
@@ -137,8 +137,8 @@ export function recordInstallRepromptSession() {
 export function markInstalled() {
   deferredPrompt = null;
   resetInstallRepromptCycle();
-  install.installed = true;
-  install.mode = 'none';
+  installState.installed = true;
+  installState.mode = 'none';
   writeBool(STORAGE_KEYS.installCompleted, true);
 }
 
@@ -149,12 +149,12 @@ export function captureInstallPrompt(e: BeforeInstallPromptEvent) {
   // The browser only fires this when the app is NOT currently installed, so
   // it outranks a stale persisted flag (installed once, later uninstalled —
   // localStorage survives a PWA uninstall).
-  if (install.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
+  if (installState.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
     resetInstallRepromptCycle();
-    install.installed = false;
+    installState.installed = false;
     writeBool(STORAGE_KEYS.installCompleted, false);
   }
-  install.mode = 'oneTap';
+  installState.mode = 'oneTap';
   // Desktop installability can arrive after the drawing route's settled-in gate.
   recordInstallRepromptSession();
 }
@@ -176,7 +176,7 @@ export function initInstallPrompt() {
   if (!browser || initialized || (__IS_CAPACITOR__ && isNative())) return;
   initialized = true;
 
-  install.dismissed = readBool(STORAGE_KEYS.installDismissed, false);
+  installState.dismissed = readBool(STORAGE_KEYS.installDismissed, false);
   reloadInstallRepromptState();
 
   // A live prompt captured before init already proved the app is installable
@@ -188,7 +188,7 @@ export function initInstallPrompt() {
     return;
   }
 
-  install.mode = manualMode();
+  installState.mode = manualMode();
 }
 
 // Replay the stashed Chromium prompt. MUST be called from a user gesture.
@@ -231,7 +231,7 @@ export function dismissInstall() {
     repromptsUsed += 1;
     writeInt(STORAGE_KEYS.installRepromptsUsed, repromptsUsed);
   }
-  install.dismissed = true;
+  installState.dismissed = true;
   installAutoClearArmedAt = null;
   writeBool(STORAGE_KEYS.installDismissed, true);
 }

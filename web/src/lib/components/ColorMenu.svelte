@@ -2,7 +2,7 @@
   import Icon from './Icon.svelte';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
   import { LANDSCAPE_COLORS, landscapeTrimRank } from '$lib/landscapeToolbar';
-  import { colors, isDarkInk, themedSwatchColor } from '$lib/state/colors.svelte';
+  import { colorsState, isDarkInk, themedSwatchColor } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { toolState } from '$lib/state/tool.svelte';
 
@@ -30,7 +30,7 @@
         style:background={paint}
         data-trim-rank={landscapeTrimRank(hex)}
         aria-label={paint === hex ? label : 'White'}
-        aria-pressed={toolState.brush !== 'eraser' && colors.activeSwatch === hex}
+        aria-pressed={toolState.brush !== 'eraser' && colorsState.activeSwatch === hex}
         use:scribbleTap={() => onpick(hex, paint)}
       ></button>
     {/each}

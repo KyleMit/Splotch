@@ -40,7 +40,7 @@ export interface AiResultState {
   error: { kind: AiErrorKind; message: string | null } | null;
 }
 
-export const aiResult: AiResultState = $state({
+export const aiGenerationState: AiResultState = $state({
   drawing: null,
   consecutiveFailures: 0,
   failureDetails: null,
@@ -207,7 +207,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
   };
 }
 
-const aiGenerationMachine = createAiGenerationMachine(aiResult);
+const aiGenerationMachine = createAiGenerationMachine(aiGenerationState);
 
 export const {
   startAiGeneration,

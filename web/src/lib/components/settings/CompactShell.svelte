@@ -8,7 +8,7 @@
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import { APP_VERSION } from '$lib/appVersion';
   import {
-    settings,
+    settingsState,
     setSound,
     setLockRotation,
     setForceLandscapeOrientation,
@@ -35,8 +35,8 @@
     { value: 'landscape', label: 'Landscape', icon: 'mobile-landscape', id: 'quickLockLandscape' },
   ];
   const lockedOrientation = $derived<LockedOrientation | null>(
-    settings.lockRotationEnabled
-      ? settings.forceLandscapeOrientation
+    settingsState.lockRotationEnabled
+      ? settingsState.forceLandscapeOrientation
         ? 'landscape'
         : 'portrait'
       : null
@@ -62,10 +62,10 @@
   <div class="quick-toggles">
     <div class="setting">
       <ToggleRow
-        icon={settings.soundEnabled ? 'volume-on' : 'volume-off'}
+        icon={settingsState.soundEnabled ? 'volume-on' : 'volume-off'}
         label="Sound"
         id="quickSoundToggle"
-        checked={settings.soundEnabled}
+        checked={settingsState.soundEnabled}
         onToggle={setSound}
       />
     </div>
@@ -83,7 +83,7 @@
         icon="dashboard-customize"
         label="Tool drawer"
         id="quickToolDrawerToggle"
-        checked={settings.toolDrawerEnabled}
+        checked={settingsState.toolDrawerEnabled}
         onToggle={setToolDrawerEnabled}
       />
     </div>

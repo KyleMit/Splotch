@@ -1,9 +1,9 @@
 import type { PluginListenerHandle } from '@capacitor/core';
 import { dismissTopModal } from '$lib/actions/modalDialog.svelte';
-import { aiResult } from '$lib/state/aiGeneration.svelte';
+import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
 import { canvasState } from '$lib/state/canvas.svelte';
 import { leaveApp, leaveConfirmModal, loadSystemBackPlugin } from '$lib/state/leaveConfirm';
-import { gate } from '$lib/state/parentalGate.svelte';
+import { parentalGateState } from '$lib/state/parentalGate.svelte';
 import {
   aiPromptModal,
   coloringBookModal,
@@ -32,8 +32,8 @@ function dialogRequested(): boolean {
     colorPickerModal.open ||
     coloringBookModal.open ||
     aiPromptModal.open ||
-    gate.open ||
-    (aiResult.open && !aiResult.minimized) ||
+    parentalGateState.open ||
+    (aiGenerationState.open && !aiGenerationState.minimized) ||
     leaveConfirmModal.open
   );
 }

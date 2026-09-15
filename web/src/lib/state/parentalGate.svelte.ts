@@ -94,7 +94,7 @@ function readFeatureMode(
   return isAllowedParentalGateMode(feature, fallback) ? fallback : 'always';
 }
 
-export const parentalGatePolicies: Record<ParentalGateFeature, ParentalGateMode> = $state(
+export const parentalGatePoliciesState: Record<ParentalGateFeature, ParentalGateMode> = $state(
   Object.fromEntries(
     PARENTAL_GATE_FEATURES.map((feature) => [feature, readFeatureMode(feature)])
   ) as Record<ParentalGateFeature, ParentalGateMode>
@@ -108,7 +108,7 @@ export const parentalGatePolicies: Record<ParentalGateFeature, ParentalGateMode>
  * holding it.
  */
 export function isParentCenterUnprotected(): boolean {
-  return parentalGatePolicies.parentCenter === 'never';
+  return parentalGatePoliciesState.parentCenter === 'never';
 }
 
 /**
@@ -179,7 +179,7 @@ export interface ParentalGateState {
   announcement: string;
 }
 
-export const gate: ParentalGateState = $state({
+export const parentalGateState: ParentalGateState = $state({
   open: false,
   origin: null,
   x: GATE_OPERAND_MIN,
@@ -226,15 +226,15 @@ function randomOperand() {
 
 // A fresh problem on every attempt keeps a child from brute-forcing one answer.
 function newChallenge() {
-  gate.x = randomOperand();
-  gate.y = randomOperand();
-  gate.input = '';
+  parentalGateState.x = randomOperand();
+  parentalGateState.y = randomOperand();
+  parentalGateState.input = '';
 }
 
 /** Exported so unit tests can assert the policy decision without opening the modal. */
 export function requiresParentalGate(feature: ParentalGateFeature): boolean {
-  const mode = parentalGatePolicies[feature];
-  return mode === 'always' || (mode === 'session' && !gate.sessionSolved[feature]);
+  const mode = parentalGatePoliciesState[feature];
+  return mode === 'always' || (mode === 'session' && !parentalGateState.sessionSolved[feature]);
 }
 
 /**
@@ -256,18 +256,18 @@ export function requireParentalGate(
   const lockedOut = lockoutHolds();
   pendingDestination = destination;
   newChallenge();
-  gate.error = null;
-  gate.announcement = '';
-  gate.shaking = false;
-  gate.unlocked = false;
-  gate.feature = feature;
-  gate.immediate = immediate;
-  gate.origin = origin;
-  gate.open = true;
+  parentalGateState.error = null;
+  parentalGateState.announcement = '';
+  parentalGateState.shaking = false;
+  parentalGateState.unlocked = false;
+  parentalGateState.feature = feature;
+  parentalGateState.immediate = immediate;
+  parentalGateState.origin = origin;
+  parentalGateState.open = true;
   if (lockedOut) {
     tickLockout();
     announceTimer = setTimeout(
-      () => (gate.announcement = gate.lockoutMessage ?? ''),
+      () => (parentalGateState.announcement = parentalGateState.lockoutMessage ?? ''),
       GATE_ANNOUNCE_DELAY_MS
     );
   }
@@ -282,7 +282,7 @@ export function requireParentalGate(
  * Never there is nothing left to solve, so the handoff runs immediately.
  */
 export function redirectGateToParentCenter(destination?: (origin: Origin | null) => void) {
-  const origin = gate.origin;
+  const origin = parentalGateState.origin;
   const openPolicies = () => {
     if (destination) destination(origin);
     else openParentCenterSettings(origin);
@@ -294,31 +294,32 @@ export function redirectGateToParentCenter(destination?: (origin: Origin | null)
   }
   clearTimers();
   pendingDestination = openPolicies;
-  gate.feature = 'parentCenter';
-  gate.immediate = false;
-  gate.input = '';
-  gate.shaking = false;
-  gate.error = null;
+  parentalGateState.feature = 'parentCenter';
+  parentalGateState.immediate = false;
+  parentalGateState.input = '';
+  parentalGateState.shaking = false;
+  parentalGateState.error = null;
   if (lockoutHolds()) tickLockout();
 }
 
 function succeed() {
-  gate.wrongStreak = 0;
-  gate.lockouts = 0;
-  const feature = gate.feature;
-  if (feature && parentalGatePolicies[feature] === 'session') gate.sessionSolved[feature] = true;
+  parentalGateState.wrongStreak = 0;
+  parentalGateState.lockouts = 0;
+  const feature = parentalGateState.feature;
+  if (feature && parentalGatePoliciesState[feature] === 'session')
+    parentalGateState.sessionSolved[feature] = true;
 
   // External navigations run synchronously inside the solving tap's trusted event, or
   // the popup gets blocked — a deferred replay loses transient user activation,
   // and while the gate is open the anchor sits in an inert dialog underneath
   // it. No success card: the link just opens.
-  if (gate.immediate) {
+  if (parentalGateState.immediate) {
     const destination = pendingDestination;
     dismissGate();
     destination?.();
     return;
   }
-  gate.unlocked = true;
+  parentalGateState.unlocked = true;
   successTimer = setTimeout(() => {
     const destination = pendingDestination;
     dismissGate();
@@ -328,37 +329,44 @@ function succeed() {
 
 function endLockout() {
   clearTimeout(lockoutTickTimer);
-  gate.escalationQuietSince = gate.lockoutUntil;
-  gate.lockoutUntil = null;
-  gate.lockoutMessage = null;
-  if (gate.open) announce(GATE_LOCKOUT_ENDED_MESSAGE);
+  parentalGateState.escalationQuietSince = parentalGateState.lockoutUntil;
+  parentalGateState.lockoutUntil = null;
+  parentalGateState.lockoutMessage = null;
+  if (parentalGateState.open) announce(GATE_LOCKOUT_ENDED_MESSAGE);
 }
 
 function announce(message: string) {
   clearTimeout(announceTimer);
-  if (gate.announcement !== message) {
-    gate.announcement = message;
+  if (parentalGateState.announcement !== message) {
+    parentalGateState.announcement = message;
     return;
   }
-  gate.announcement = '';
-  announceTimer = setTimeout(() => (gate.announcement = message), GATE_ANNOUNCE_DELAY_MS);
+  parentalGateState.announcement = '';
+  announceTimer = setTimeout(
+    () => (parentalGateState.announcement = message),
+    GATE_ANNOUNCE_DELAY_MS
+  );
 }
 
 // Checked against the clock rather than trusted to a timer, which stops while
 // a device sleeps and does not run at all while the card is closed. A clock
 // set backwards would otherwise stretch the pause past the longest one.
 function lockoutHolds() {
-  if (gate.lockoutUntil !== null) {
-    gate.lockoutUntil = Math.min(gate.lockoutUntil, Date.now() + GATE_LOCKOUT_MAX_MS);
+  if (parentalGateState.lockoutUntil !== null) {
+    parentalGateState.lockoutUntil = Math.min(
+      parentalGateState.lockoutUntil,
+      Date.now() + GATE_LOCKOUT_MAX_MS
+    );
   }
-  if (gate.lockoutUntil !== null && Date.now() >= gate.lockoutUntil) endLockout();
-  return gate.lockoutUntil !== null;
+  if (parentalGateState.lockoutUntil !== null && Date.now() >= parentalGateState.lockoutUntil)
+    endLockout();
+  return parentalGateState.lockoutUntil !== null;
 }
 
 function tickLockout() {
   if (!lockoutHolds()) return;
-  const remainingMs = gate.lockoutUntil! - Date.now();
-  gate.lockoutMessage = gateLockoutMessage(remainingMs);
+  const remainingMs = parentalGateState.lockoutUntil! - Date.now();
+  parentalGateState.lockoutMessage = gateLockoutMessage(remainingMs);
   clearTimeout(lockoutTickTimer);
   lockoutTickTimer = setTimeout(
     tickLockout,
@@ -367,48 +375,53 @@ function tickLockout() {
 }
 
 function lockOut() {
-  gate.lockoutUntil = Date.now() + gateLockoutDurationMs(gate.lockouts);
-  gate.wrongStreak = 0;
-  gate.lockouts += 1;
+  parentalGateState.lockoutUntil = Date.now() + gateLockoutDurationMs(parentalGateState.lockouts);
+  parentalGateState.wrongStreak = 0;
+  parentalGateState.lockouts += 1;
   clearTimeout(errorTimer);
-  gate.error = null;
+  parentalGateState.error = null;
   tickLockout();
-  announce(gate.lockoutMessage ?? '');
+  announce(parentalGateState.lockoutMessage ?? '');
 }
 
 function decayQuietEscalation() {
-  const quietSince = gate.escalationQuietSince;
+  const quietSince = parentalGateState.escalationQuietSince;
   if (quietSince !== null && Date.now() - quietSince >= GATE_ESCALATION_QUIET_MS) {
-    gate.wrongStreak = 0;
-    gate.lockouts = 0;
+    parentalGateState.wrongStreak = 0;
+    parentalGateState.lockouts = 0;
   }
-  gate.escalationQuietSince = Date.now();
+  parentalGateState.escalationQuietSince = Date.now();
 }
 
 function fail() {
   newChallenge();
-  gate.shaking = true;
+  parentalGateState.shaking = true;
   clearTimeout(shakeTimer);
-  shakeTimer = setTimeout(() => (gate.shaking = false), GATE_SHAKE_MS);
+  shakeTimer = setTimeout(() => (parentalGateState.shaking = false), GATE_SHAKE_MS);
   decayQuietEscalation();
-  gate.wrongStreak += 1;
-  if (gate.wrongStreak >= GATE_WRONG_ANSWERS_BEFORE_LOCKOUT) {
+  parentalGateState.wrongStreak += 1;
+  if (parentalGateState.wrongStreak >= GATE_WRONG_ANSWERS_BEFORE_LOCKOUT) {
     lockOut();
     return;
   }
-  gate.error = GATE_ERROR_MESSAGE;
+  parentalGateState.error = GATE_ERROR_MESSAGE;
   announce(GATE_ERROR_MESSAGE);
   clearTimeout(errorTimer);
   errorTimer = setTimeout(() => {
-    gate.error = null;
-    gate.announcement = '';
+    parentalGateState.error = null;
+    parentalGateState.announcement = '';
   }, GATE_ERROR_VISIBLE_MS);
 }
 
 // Input taken while the card shakes would land on a problem the eye hasn't
 // caught up with, and nothing a grown-up does needs it.
 function acceptsInput() {
-  return gate.open && !gate.unlocked && !gate.shaking && !lockoutHolds();
+  return (
+    parentalGateState.open &&
+    !parentalGateState.unlocked &&
+    !parentalGateState.shaking &&
+    !lockoutHolds()
+  );
 }
 
 /**
@@ -418,20 +431,21 @@ function acceptsInput() {
  */
 export function pressGateDigit(digit: number) {
   if (!acceptsInput()) return;
-  if (gate.input.length >= String(gate.x * gate.y).length) fail();
-  else gate.input += String(digit);
+  if (parentalGateState.input.length >= String(parentalGateState.x * parentalGateState.y).length)
+    fail();
+  else parentalGateState.input += String(digit);
 }
 
 export function pressGateBackspace() {
   if (!acceptsInput()) return;
-  gate.input = gate.input.slice(0, -1);
+  parentalGateState.input = parentalGateState.input.slice(0, -1);
 }
 
 /** Check the typed answer. Checking before every dab is filled is a wrong answer too. */
 export function submitGateAnswer() {
   if (!acceptsInput()) return;
-  const answer = String(gate.x * gate.y);
-  if (gate.input === answer) succeed();
+  const answer = String(parentalGateState.x * parentalGateState.y);
+  if (parentalGateState.input === answer) succeed();
   else fail();
 }
 
@@ -444,15 +458,15 @@ export function pressGateKey(key: GateKeypadKey) {
 /** Close without recording a solve. Typed digits and the destination are discarded. */
 export function dismissGate() {
   clearTimers();
-  gate.open = false;
-  gate.input = '';
-  gate.error = null;
-  gate.lockoutMessage = null;
-  gate.announcement = '';
-  gate.shaking = false;
-  gate.unlocked = false;
-  gate.feature = null;
-  gate.immediate = false;
+  parentalGateState.open = false;
+  parentalGateState.input = '';
+  parentalGateState.error = null;
+  parentalGateState.lockoutMessage = null;
+  parentalGateState.announcement = '';
+  parentalGateState.shaking = false;
+  parentalGateState.unlocked = false;
+  parentalGateState.feature = null;
+  parentalGateState.immediate = false;
   pendingDestination = null;
 }
 
@@ -460,8 +474,8 @@ export function setParentalGateMode(feature: ParentalGateFeature, mode: Parental
   if (!isAllowedParentalGateMode(feature, mode)) {
     throw new Error(`Unsupported parental gate mode: ${feature}/${mode}`);
   }
-  if (parentalGatePolicies[feature] !== mode) gate.sessionSolved[feature] = false;
-  parentalGatePolicies[feature] = mode;
+  if (parentalGatePoliciesState[feature] !== mode) parentalGateState.sessionSolved[feature] = false;
+  parentalGatePoliciesState[feature] = mode;
   writeString(POLICY_STORAGE_KEYS[feature], mode);
 }
 
@@ -469,7 +483,10 @@ export function setParentalGateMode(feature: ParentalGateFeature, mode: Parental
 // the WebView evicted (see hydrateDurableStorage).
 export function reloadParentalGate() {
   for (const feature of PARENTAL_GATE_FEATURES) {
-    parentalGatePolicies[feature] = readFeatureMode(feature, parentalGatePolicies[feature]);
+    parentalGatePoliciesState[feature] = readFeatureMode(
+      feature,
+      parentalGatePoliciesState[feature]
+    );
   }
 }
 

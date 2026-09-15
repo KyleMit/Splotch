@@ -5,7 +5,7 @@
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import { SECTION_SLIDE } from './sections';
   import {
-    settings,
+    settingsState,
     setLockRotation,
     setForceLandscapeOrientation,
     setTheme,
@@ -34,7 +34,7 @@
     <SegmentedPicker
       label="Theme"
       options={themeOptions}
-      selected={settings.theme}
+      selected={settingsState.theme}
       onSelect={setTheme}
     />
   </div>
@@ -42,21 +42,21 @@
   {#if showOrientationControls}
     <div class="setting">
       <ToggleRow
-        icon={settings.lockRotationEnabled ? 'mobile-lock' : 'mobile-rotate'}
+        icon={settingsState.lockRotationEnabled ? 'mobile-lock' : 'mobile-rotate'}
         label="Lock device rotation"
         id="lockRotationToggle"
-        checked={settings.lockRotationEnabled}
+        checked={settingsState.lockRotationEnabled}
         onToggle={setLockRotation}
       />
     </div>
 
-    {#if settings.lockRotationEnabled}
+    {#if settingsState.lockRotationEnabled}
       <div class="setting" transition:slide={SECTION_SLIDE}>
         <ToggleRow
-          icon={settings.forceLandscapeOrientation ? 'mobile-landscape' : 'mobile-portrait'}
+          icon={settingsState.forceLandscapeOrientation ? 'mobile-landscape' : 'mobile-portrait'}
           label="Force landscape orientation"
           id="forceLandscapeToggle"
-          checked={settings.forceLandscapeOrientation}
+          checked={settingsState.forceLandscapeOrientation}
           onToggle={setForceLandscapeOrientation}
         />
       </div>

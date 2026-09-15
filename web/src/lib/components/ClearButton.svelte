@@ -8,7 +8,7 @@
   import { dragToClear } from '$lib/actions/dragToClear';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
   import type { Orientation } from '$lib/platform';
-  import { layout } from '$lib/state/layout.svelte';
+  import { layoutState } from '$lib/state/layout.svelte';
   import { resetToolAfterClear } from '$lib/state/tool.svelte';
 
   let containerEl: HTMLDivElement;
@@ -32,7 +32,7 @@
   // it calls reads the coachmark's visibility state, and subscribing to that
   // would re-run this effect on reveal and instantly dismiss the tutorial.
   $effect(() => {
-    const orientation = layout.orientation;
+    const orientation = layoutState.orientation;
     untrack(() => resetButtonPosition(orientation));
   });
 </script>
@@ -90,6 +90,7 @@
 <div class="clear-preview" bind:this={clearPreviewEl} aria-hidden="true"></div>
 
 <ClearCoachmark bind:this={coachmark} />
+}
 
 <style>
   .clear-container {

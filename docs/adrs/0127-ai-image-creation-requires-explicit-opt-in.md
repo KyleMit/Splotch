@@ -23,11 +23,11 @@ Alternatives considered:
 
 ## Decision
 
-AI image creation is an explicit persisted preference. The fallback for `settings.aiImageEnabled` in
-`web/src/lib/state/settings.svelte.ts` is `false`; when storage already contains a value, the
-dual-layer storage behavior in ADR-0005 continues to preserve that value. There is no one-time
-migration. An installation with no stored preference receives the new off fallback, while an
-explicit stored `true` or `false` remains authoritative.
+AI image creation is an explicit persisted preference. The fallback for
+`settingsState.aiImageEnabled` in `web/src/lib/state/settings.svelte.ts` is `false`; when storage
+already contains a value, the dual-layer storage behavior in ADR-0005 continues to preserve that
+value. There is no one-time migration. An installation with no stored preference receives the new
+off fallback, while an explicit stored `true` or `false` remains authoritative.
 
 The **Create AI Images** switch in `AiKeyManager.svelte` is the master control. While it is off, the
 Settings section renders an explanation of the feature and does not mount credential, customization,

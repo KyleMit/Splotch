@@ -1,12 +1,12 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { settings } from '$lib/state/settings.svelte';
+  import { settingsState } from '$lib/state/settings.svelte';
   import { visibleActionButtonCount } from '$lib/actionButtonLayout';
   import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
   import ColorMenu from './ColorMenu.svelte';
   import { colorFoldGesture } from '$lib/actions/colorFoldGesture';
   import {
-    colors,
+    colorsState,
     isWhite,
     selectPaletteColor,
     selectCustomSwatch,
@@ -33,7 +33,7 @@
 
   function fold(folded: boolean) {
     if (!matchMedia(PHONE_LANDSCAPE_QUERY).matches || visibleActionButtonCount() === 0) return;
-    if (settings.drawerOpen === folded) onfold();
+    if (settingsState.drawerOpen === folded) onfold();
   }
 
   function toggle() {
@@ -62,9 +62,9 @@
   <button
     id="colorButton"
     class="action-button color-button"
-    class:ink-outlined={isDarkInk(colors.activeColor)}
-    class:white-stroke={isWhite(colors.activeColor)}
-    style:color={colors.activeColor}
+    class:ink-outlined={isDarkInk(colorsState.activeColor)}
+    class:white-stroke={isWhite(colorsState.activeColor)}
+    style:color={colorsState.activeColor}
     aria-label="Colors"
     aria-expanded={open}
     bind:this={triggerEl}

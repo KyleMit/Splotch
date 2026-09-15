@@ -19,7 +19,7 @@ vi.mock('../idb', () => ({
   requestPersistentStorage: vi.fn(async () => false),
 }));
 
-import { settings } from './settings.svelte';
+import { settingsState } from './settings.svelte';
 import { hydrateApiKey, setAiUserApiKey } from './aiKey';
 import { loadApiKey, saveApiKey } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
@@ -28,7 +28,7 @@ import { STORAGE_KEYS } from '../storage';
 beforeEach(() => {
   localStorage.clear();
   secureStore.apiKey = null;
-  settings.aiUserApiKey = '';
+  settingsState.aiUserApiKey = '';
   vi.mocked(saveApiKey)
     .mockReset()
     .mockImplementation(async (value: string) => {
@@ -74,11 +74,11 @@ describe('setAiUserApiKey', () => {
     const saving = setAiUserApiKey('sk-persisted');
     await vi.waitFor(() => expect(saveApiKey).toHaveBeenCalledOnce());
 
-    expect(settings.aiUserApiKey).toBe('');
+    expect(settingsState.aiUserApiKey).toBe('');
     finishSave();
     await saving;
 
-    expect(settings.aiUserApiKey).toBe('sk-persisted');
+    expect(settingsState.aiUserApiKey).toBe('sk-persisted');
     expect(secureStore.apiKey).toBe('sk-persisted');
   });
 
@@ -87,7 +87,7 @@ describe('setAiUserApiKey', () => {
 
     await expect(setAiUserApiKey('sk-rejected')).rejects.toThrow('secure storage unavailable');
 
-    expect(settings.aiUserApiKey).toBe('');
+    expect(settingsState.aiUserApiKey).toBe('');
     expect(secureStore.apiKey).toBeNull();
     expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
@@ -111,16 +111,16 @@ describe('setAiUserApiKey', () => {
     finishSave();
 
     expect(await secondWrite).toBe(true);
-    expect(settings.aiUserApiKey).toBe('second');
+    expect(settingsState.aiUserApiKey).toBe('second');
 
     expect(await firstWrite).toBe(false);
-    expect(settings.aiUserApiKey).toBe('second');
+    expect(settingsState.aiUserApiKey).toBe('second');
     expect(secureStore.apiKey).toBe('second');
     expect(requestPersistentStorage).toHaveBeenCalledOnce();
   });
 
   it('ownership lost mid-flight restores the prior credential', async () => {
-    settings.aiUserApiKey = 'prior-key';
+    settingsState.aiUserApiKey = 'prior-key';
     secureStore.apiKey = 'prior-key';
 
     let ownsRequest = true;
@@ -132,7 +132,7 @@ describe('setAiUserApiKey', () => {
     const result = await setAiUserApiKey('new-key', () => ownsRequest);
 
     expect(result).toBe(false);
-    expect(settings.aiUserApiKey).toBe('prior-key');
+    expect(settingsState.aiUserApiKey).toBe('prior-key');
     expect(secureStore.apiKey).toBe('prior-key');
     expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
@@ -150,7 +150,7 @@ describe('hydrateApiKey', () => {
   it('hydrates the live store from secure storage', async () => {
     secureStore.apiKey = 'sk-stored-key';
     await hydrateApiKey();
-    expect(settings.aiUserApiKey).toBe('sk-stored-key');
+    expect(settingsState.aiUserApiKey).toBe('sk-stored-key');
   });
 
   it('never deletes a key that arrived while hydration was still reading', async () => {
@@ -182,7 +182,7 @@ describe('hydrateApiKey', () => {
     await Promise.all([hydrating, saving]);
 
     expect(secureStore.apiKey).toBe('sk-just-saved');
-    expect(settings.aiUserApiKey).toBe('sk-just-saved');
+    expect(settingsState.aiUserApiKey).toBe('sk-just-saved');
   });
 
   it('leaves an unrecognised key alone rather than deleting what it cannot classify', async () => {
@@ -199,13 +199,13 @@ describe('hydrateApiKey', () => {
     // into the state that explains what to do.
     secureStore.apiKey = 'AIzaSyStoredBeforeTheMigration';
     await hydrateApiKey();
-    expect(settings.aiUserApiKey).toBe('');
+    expect(settingsState.aiUserApiKey).toBe('');
     expect(secureStore.apiKey).toBeNull();
   });
 
   it('leaves the store empty when nothing is saved anywhere', async () => {
     await hydrateApiKey();
-    expect(settings.aiUserApiKey).toBe('');
+    expect(settingsState.aiUserApiKey).toBe('');
     expect(secureStore.apiKey).toBeNull();
   });
 
@@ -214,7 +214,7 @@ describe('hydrateApiKey', () => {
 
     await hydrateApiKey();
 
-    expect(settings.aiUserApiKey).toBe('sk-legacy-key');
+    expect(settingsState.aiUserApiKey).toBe('sk-legacy-key');
     expect(secureStore.apiKey).toBe('sk-legacy-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
@@ -225,7 +225,7 @@ describe('hydrateApiKey', () => {
 
     await hydrateApiKey();
 
-    expect(settings.aiUserApiKey).toBe('sk-secure-key');
+    expect(settingsState.aiUserApiKey).toBe('sk-secure-key');
     expect(secureStore.apiKey).toBe('sk-secure-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
@@ -235,7 +235,7 @@ describe('hydrateApiKey', () => {
 
     await Promise.all([hydrateApiKey(), hydrateApiKey()]);
 
-    expect(settings.aiUserApiKey).toBe('sk-legacy-key');
+    expect(settingsState.aiUserApiKey).toBe('sk-legacy-key');
     expect(secureStore.apiKey).toBe('sk-legacy-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });

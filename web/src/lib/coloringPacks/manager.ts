@@ -1,11 +1,11 @@
 import { clearOverlay } from '$lib/state/coloringBook.svelte';
 import {
-  coloringPackState,
+  coloringPacksState,
   markColoringBookInstalled,
   resetDownloadedColoringBooks,
   setInstalledColoringBooks,
 } from '$lib/state/coloringPacks.svelte';
-import { settings } from '$lib/state/settings.svelte';
+import { settingsState } from '$lib/state/settings.svelte';
 import { clearLocalColoringBookRoots, setLocalColoringBookRoot } from './assetResolver';
 import {
   coloringPackManifestPath,
@@ -46,8 +46,8 @@ function connection(): NetworkInformationLike | undefined {
 }
 
 function automaticDownloadAllowed(): boolean {
-  if (!settings.coloringBookEnabled) return false;
-  if (__IS_CAPACITOR__ || settings.coloringPacksAllowMetered) return true;
+  if (!settingsState.coloringBookEnabled) return false;
+  if (__IS_CAPACITOR__ || settingsState.coloringPacksAllowMetered) return true;
   const network = connection();
   if (!network) return true;
   if (network.saveData || network.type === 'cellular') return false;
@@ -72,8 +72,8 @@ function applyInstalledPacks(
   setInstalledColoringBooks(
     manifest.books.filter((book) => installed.has(book.id)).map((book) => book.id)
   );
-  coloringPackState.totalBookCount = manifest.books.length;
-  coloringPackState.downloadedBytes = packs.reduce((total, pack) => total + pack.bytes, 0);
+  coloringPacksState.totalBookCount = manifest.books.length;
+  coloringPacksState.downloadedBytes = packs.reduce((total, pack) => total + pack.bytes, 0);
   return installed;
 }
 
@@ -120,18 +120,18 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
       if (stopped || paused || controller.signal.aborted) return;
       if (book.id === manifest.starterBookId || installed.has(book.id)) continue;
       if (!downloadAllowed()) return;
-      coloringPackState.downloadingBookId = book.id;
+      coloringPacksState.downloadingBookId = book.id;
       const pack = await store.install(
         manifest,
         book,
-        settings.coloringPacksAllowMetered,
+        settingsState.coloringPacksAllowMetered,
         controller.signal
       );
       if (controller.signal.aborted) return;
       applyLocalRoots([pack]);
       installed.add(book.id);
       markColoringBookInstalled(book.id);
-      coloringPackState.downloadedBytes += book.bytes;
+      coloringPacksState.downloadedBytes += book.bytes;
     }
   }
 
@@ -141,7 +141,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
         if (!controller?.signal.aborted) console.warn('Coloring-pack download paused', error);
       })
       .finally(() => {
-        if (controller) coloringPackState.downloadingBookId = null;
+        if (controller) coloringPacksState.downloadingBookId = null;
         controller = null;
         activeStore = null;
         runPromise = null;
