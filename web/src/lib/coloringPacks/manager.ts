@@ -145,6 +145,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
         controller = null;
         activeStore = null;
         runPromise = null;
+        if (stopped) removeCancellationListeners();
         if (rerunRequested) requestRun();
       });
   }
@@ -180,6 +181,11 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     requestRun();
   };
 
+  function removeCancellationListeners() {
+    window.removeEventListener(COLORING_PACK_POLICY_EVENT, applyDownloadPolicy);
+    window.removeEventListener(COLORING_PACK_REMOVE_EVENT, pause);
+  }
+
   return {
     start() {
       requestRun();
@@ -191,13 +197,12 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     },
     stop() {
       stopped = true;
-      // Route teardown leaves native background work running; only an explicit
-      // policy or removal pause cancels it.
+      // Native work survives teardown, but keeps its cancellation listeners
+      // until settlement so removal or policy-off can still abort its owner.
       if (!__IS_CAPACITOR__) controller?.abort();
       window.removeEventListener('online', requestRun);
       document.removeEventListener('visibilitychange', requestWhenVisible);
-      window.removeEventListener(COLORING_PACK_POLICY_EVENT, applyDownloadPolicy);
-      window.removeEventListener(COLORING_PACK_REMOVE_EVENT, pause);
+      if (!__IS_CAPACITOR__ || !runPromise) removeCancellationListeners();
       network?.removeEventListener('change', requestRun);
     },
   };

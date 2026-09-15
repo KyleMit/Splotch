@@ -212,6 +212,34 @@ describe('removal during an in-flight run', () => {
 });
 
 describe('a remounted downloader on native', () => {
+  it.each(['removal', 'policy-off'])(
+    'cancels the stopped install during a queued remount on %s',
+    async (action) => {
+      const stale = pendingInstall();
+      let allowed = true;
+      mocks.install.mockReturnValueOnce(stale.promise);
+      const first = createColoringPackDownloader(() => allowed);
+      first.start();
+      await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
+      first.stop();
+      const second = createColoringPackDownloader(() => allowed);
+      second.start();
+      await flushMicrotasks();
+
+      allowed = false;
+      if (action === 'removal') await removeDownloadedColoringPacks();
+      else window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
+      stale.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+      await flushMicrotasks();
+      second.stop();
+      window.dispatchEvent(new Event(COLORING_PACK_REMOVE_EVENT));
+
+      expect(mocks.cancel).toHaveBeenCalledOnce();
+      expect(coloringPackState.installedBookIds).toEqual(['farm']);
+      expect(setLocalColoringBookRoot).not.toHaveBeenCalled();
+    }
+  );
+
   it('keeps the new run downloading while the stopped run settles its install', async () => {
     const stale = pendingInstall();
     const current = pendingInstall();
