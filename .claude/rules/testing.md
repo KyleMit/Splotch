@@ -75,6 +75,11 @@ paths:
 * One behavior per test: a spec accumulating assertion clusters across behaviors gets split, with
   setup-only helpers carrying zero assertions. Imperative logic whose only coverage is E2E (inline
   in a component or config) is an extraction candidate: pure injectable module + unit tests.
+* Async lifecycle tests exercise reset, supersede, unmount, deadline, and late settlement as
+  independent boundaries instead of asserting only on reopen. Every new red regression test gets a
+  negative control against the pre-fix code.
+* Dialog keyboard tests account for focus falling back to `<body>` when focused content unmounts,
+  then prove the product deliberately restores or moves it.
 * Shared per-test setup lives in a Playwright **fixture**, never in a top-level `test.beforeEach` in
   a helper module: a helper is evaluated once per worker, so such a hook attaches only to the first
   spec file that imports it and every later spec file in that worker silently runs with no setup.
