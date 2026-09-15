@@ -150,6 +150,16 @@
       // Clipboard may be unavailable (e.g. non-secure context); ignore.
     }
   }
+
+  // A half-typed code is one admin session's draft, not the next one's: the
+  // component stays mounted across sign-out, so the draft is cleared here once
+  // the session has actually ended (a failed logout leaves it alone).
+  function handleLogout() {
+    run(async () => {
+      await onlogout();
+      newToken = '';
+    });
+  }
 </script>
 
 <PageShell title="Admin" wordmark="Splotch Admin">
@@ -159,7 +169,7 @@
 
   {#snippet actions()}
     {#if authed}
-      <button type="button" class="sign-out" disabled={busy} onclick={() => run(onlogout)}>
+      <button type="button" class="sign-out" disabled={busy} onclick={handleLogout}>
         Sign out
       </button>
     {/if}
