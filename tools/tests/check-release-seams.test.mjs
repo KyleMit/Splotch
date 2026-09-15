@@ -5,9 +5,9 @@ import { afterEach, expect, it, vi } from 'vitest';
 import {
   checkReleaseSeams,
   CLIENT_SOURCE_EXTENSIONS,
-  DEV_GATED_ENGINE_EXPORTS,
+  DEV_GATED_EXPORTS,
+  devGateProblems,
   drawingWorkHotPathProblems,
-  engineDevGateProblems,
   engineMeasureNames,
   RELEASE_ONLY_TOKENS,
   RELEASE_SEAM_SOURCE_FILES,
@@ -126,18 +126,21 @@ it('scans every source file that emits an engine measure', () => {
   expect(emitters.filter((path) => !RELEASE_SEAM_SOURCE_FILES.includes(path))).toEqual([]);
 });
 
-it('requires every engine dev export to start behind the compile-time gate', () => {
-  expect(engineDevGateProblems()).toEqual([]);
+it('requires every dev-only export to start behind the compile-time gate', () => {
+  expect(devGateProblems()).toEqual([]);
 });
 
-it.each(DEV_GATED_ENGINE_EXPORTS)('rejects an ungated %s export', (name) => {
-  const source = DEV_GATED_ENGINE_EXPORTS.map(
-    (exportName) =>
-      `export function ${exportName}() { ${exportName === name ? '' : 'if (!dev && !__DEV_HARNESS__) return;'} }`
-  ).join('\n');
+it.each(DEV_GATED_EXPORTS)('rejects an ungated $name export', ({ name, sourcePath }) => {
+  const readSource = (path) =>
+    DEV_GATED_EXPORTS.filter((entry) => entry.sourcePath === path)
+      .map(
+        ({ name: exportName }) =>
+          `export ${exportName === 'prepareRefusedAiKeyForget' ? 'async ' : ''}function ${exportName}() { ${exportName === name && path === sourcePath ? '' : 'if (!dev && !__DEV_HARNESS__) return;'} }`
+      )
+      .join('\n');
 
-  expect(engineDevGateProblems(source)).toContain(
-    `${name} must begin with the __DEV_HARNESS__ compile-time guard`
+  expect(devGateProblems(readSource)).toContain(
+    `${name} in ${sourcePath} must begin with the __DEV_HARNESS__ compile-time guard`
   );
 });
 

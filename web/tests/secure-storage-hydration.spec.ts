@@ -62,7 +62,7 @@ test('a key stays present when a failed hydration makes forget refuse the write'
   });
   await openAiSettings(page, '#aiKeyActive');
 
-  await page.getByRole('button', { name: 'Forget' }).click();
+  await page.getByRole('button', { name: 'Forget', exact: true }).click();
 
   await expect(page.getByRole('alert')).toContainText('could not be removed securely');
   await expect(page.locator('#aiKeyActive')).toHaveValue('***********-key');

@@ -105,7 +105,10 @@ export function replayStoreDrawingStroke({ color, ...stroke }: StoreDrawingStrok
 // and a profiling seam that mutates can invalidate its own measurement.
 // __aiGenerate is the distinct allowed shape: an invoke handle for a production
 // function with its production arguments, not a setter for otherwise-unreachable
-// state (ADR-0109).
+// state (ADR-0109). __prepareRefusedAiKeyForget is a dev-harness scenario seam:
+// it drives production persistence and coordinator APIs into a timing-dependent
+// failure state that no outside-only spec can reliably construct. Its exported
+// body is compile-time guarded and checked by tools/check-release-seams.mjs.
 //
 //   __committedBrushMode (ADR-0080) — the engine's committed brush mode. The
 //     toolState→engine bridge runs in a $effect, so a spec that clicks a brush
@@ -121,6 +124,8 @@ export function replayStoreDrawingStroke({ color, ...stroke }: StoreDrawingStrok
 //   __aiGenerate (ADR-0109) — invokes the production AI-generation flow so
 //     Playwright can mock its existing HTTP boundary while covering canvas
 //     export, upload encoding, response parsing, and state application.
+//   __prepareRefusedAiKeyForget — persists a key and overlaps it with a failed
+//     hydration so Settings can exercise a refused secure removal.
 //   __replayStroke (ADR-0122) — commits one compiled store-art stroke through
 //     the engine's renderer and history while the store capture harness is open.
 export function installDevHarnessSeam(): () => void {
