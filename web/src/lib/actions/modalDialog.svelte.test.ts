@@ -279,6 +279,54 @@ describe('modalDialog', () => {
     }
   });
 
+  // Chromium's CloseWatcher makes a dialog's `cancel` non-cancelable once the
+  // previous preventDefault spent the page's user activation, so a repeated
+  // Escape or Android back closes the dialog natively past onCancel. Stood in
+  // for here by a direct native close with dismissal disallowed.
+  it('reopens a dialog the platform closed past a refused dismissal', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    let dismissAllowed = false;
+    const onRequestClose = vi.fn(modal.hide);
+    const onClose = vi.fn();
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: modal.open,
+        onRequestClose,
+        onClose,
+        allowDismiss: () => dismissAllowed,
+      }));
+      return action.destroy;
+    });
+
+    try {
+      modal.show(null);
+      await Promise.resolve();
+      expect(dialog.open).toBe(true);
+
+      dialog.close();
+      await afterContentRetirementPaint();
+
+      expect(dialog.open).toBe(true);
+      expect(modal.open).toBe(true);
+      expect(onRequestClose).not.toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+      expect(dialog.style.animation).toBe('none');
+
+      dismissAllowed = true;
+      modal.hide();
+      await Promise.resolve();
+      await afterContentRetirementPaint();
+
+      expect(dialog.open).toBe(false);
+      expect(onClose).toHaveBeenCalledOnce();
+      expect(dialog.style.animation).toBe('');
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
+
   it('retires compositor content after the transparent dialog closes', async () => {
     const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));
