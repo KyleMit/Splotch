@@ -272,6 +272,9 @@ media queries + the head-script stamp in `app.html`).
 >   (`top: 8px; left: 8px; z-index: var(--z-canvas-chrome)`) is the reference example. Note
 >   `.canvas-container` sets up no stacking context, so such a control still competes with the
 >   viewport chrome below — it just sits under all of it.
+> * **Bare toolbar** makes the canvas full-bleed beneath the pointer-intercepting palette.
+>   `BareToolbarPaper.svelte` supplies its rail glass and printed margin; `GlassPanes.svelte`
+>   supplies the action strip and menu glass. Fullscreen explicitly clears the rail in this mode.
 > * **Bottom edge is contested**: the **Settings Button** (`#settingsButton`,
 >   `var(--z-corner-button)`, bottom-right, `SettingsButton.svelte`) and the **Actions Panel**
 >   flyouts (`var(--z-panel)`/`var(--z-flyout)`, bottom-left, `ActionsPanel.svelte`) share it and

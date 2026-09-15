@@ -7,6 +7,13 @@
   import '$lib/drawing/earlyBoot';
   import { onMount, type Component } from 'svelte';
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
+  import { tick } from 'svelte';
+  import { syncDrawingViewport } from '$lib/drawing/engine';
+  import { uiState } from '$lib/state/ui.svelte';
+  import GlassPanes from '$lib/components/GlassPanes.svelte';
+  import type { OpenFlyout } from '$lib/glassPanes';
+  let openFlyout: OpenFlyout = $state(null);
+  import BareToolbarPaper from '$lib/components/BareToolbarPaper.svelte';
   import ColorPalette from '$lib/components/ColorPalette.svelte';
   import ActionsPanel from '$lib/components/ActionsPanel.svelte';
   import ClearButton from '$lib/components/ClearButton.svelte';
@@ -157,6 +164,10 @@
       teardowns.forEach((teardown) => teardown());
     };
   });
+  $effect(() => {
+    document.documentElement.dataset.toolbar = settingsState.toolbarStyle;
+    void tick().then(syncDrawingViewport);
+  });
 </script>
 
 <svelte:head>
@@ -173,9 +184,16 @@
   <DrawingCanvas />
 </main>
 
+{#if settingsState.toolbarStyle === 'bare'}
+  <GlassPanes
+    {openFlyout}
+    drawerExpanded={settingsState.drawerOpen || uiState.resizingActionButtons}
+  />
+{/if}
+<BareToolbarPaper />
 <ClearButton />
 <div class="bottom-dock">
-  <ActionsPanel />
+  <ActionsPanel bind:openFlyout />
   {#if InstallBanner}
     <InstallBanner />
   {/if}

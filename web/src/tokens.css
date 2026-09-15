@@ -17,6 +17,8 @@
   --brand-rgb: 171 113 225;
   --on-brand: #fff;
 
+  --glass-rail: 77%;
+  --glass-strip: 85%;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -59,6 +61,7 @@
   --scrim-ink-soft: #a6a3b0;
   --scrim-pill: rgb(23 23 29 / 72%);
 
+  --z-toolbar-paper: 3;
   --z-canvas-chrome: 4;
   --z-clear-preview: 400;
   --z-clear-ink: 600;
@@ -105,6 +108,11 @@
   --warning-text: #895a0a;
   --warning-chip: #ffe5a8;
   --paper: #fcfbf8;
+  --glass-tint-rgb: 252 251 248;
+  --rule-ink: #e4a0ab;
+  --rule-blend: multiply;
+  --rule-opacity: 1;
+  --rule-secondary-opacity: .6;
   --paper-margin: #f1efeb;
   --hole-stroke: #8a8a93;
   --lineart-filter: none;
@@ -168,6 +176,11 @@
   --warning-text: #f2d488;
   --warning-chip: #544620;
   --paper: #211f29;
+  --glass-tint-rgb: 33 31 41;
+  --rule-ink: #b07683;
+  --rule-blend: screen;
+  --rule-opacity: .55;
+  --rule-secondary-opacity: .33;
   --paper-margin: #1a1922;
   --hole-stroke: #b9b9c2;
   --lineart-filter: invert(1);
@@ -232,6 +245,11 @@
     --warning-text: #f2d488;
     --warning-chip: #544620;
     --paper: #211f29;
+    --glass-tint-rgb: 33 31 41;
+    --rule-ink: #b07683;
+    --rule-blend: screen;
+    --rule-opacity: .55;
+    --rule-secondary-opacity: .33;
     --paper-margin: #1a1922;
     --hole-stroke: #b9b9c2;
     --lineart-filter: invert(1);

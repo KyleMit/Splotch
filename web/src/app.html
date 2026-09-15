@@ -147,6 +147,10 @@
           /* private-mode / disabled storage — fall back to CSS defaults */
         }
 
+        try {
+          if (localStorage.getItem('splotch-toolbar-style') === 'bare')
+            el.setAttribute('data-toolbar', 'bare');
+        } catch (_) {}
         var theme;
         try {
           theme = localStorage.getItem('splotch-theme');

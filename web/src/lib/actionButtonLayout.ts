@@ -15,6 +15,7 @@ import {
   enabledOptionalBrushes,
   type ActionPanelControl,
 } from '$lib/state/settings.svelte';
+import { BARE_RAIL_WIDTH_PX, BARE_RAIL_HEIGHT_PX } from './bareToolbar';
 import { networkState } from '$lib/state/network.svelte';
 import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
 import type { Orientation } from '$lib/platform';
@@ -157,6 +158,10 @@ export function visibleActionButtonCount(): number {
 // width (app.css --palette-landscape-width, 0 on a landscape phone where the
 // column is hidden) or the portrait bar's declared height.
 function paletteExtent(orientation: Orientation): number {
+  if (settingsState.toolbarStyle === 'bare') {
+    if (orientation === 'portrait') return BARE_RAIL_HEIGHT_PX;
+    return layoutState.phoneLandscape ? 0 : BARE_RAIL_WIDTH_PX;
+  }
   if (orientation === 'portrait') return PALETTE_BAR_RESERVE;
   return layoutState.phoneLandscape ? 0 : PALETTE_LANDSCAPE_WIDTH_PX;
 }

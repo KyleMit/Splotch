@@ -445,8 +445,8 @@ function handleResize() {
 // Browser visibility and Capacitor's document-level resume event both land
 // here. Rebuild synchronously only when the geometry actually moved while away,
 // so a plain tab switch doesn't pay the backing-store wipe + repaint.
-function resyncOnReentry() {
-  if (document.visibilityState !== 'visible') return;
+export function syncDrawingViewport() {
+  if (!engineLive || document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
   const stale =
@@ -1277,7 +1277,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   registerDrawingEngineListeners(listenerRemovers, canvas, {
     handleResize,
     refreshCanvasRect: () => refreshCanvasRect(),
-    resyncOnReentry,
+    resyncOnReentry: syncDrawingViewport,
     startDrawing,
     draw,
     stopDrawing,

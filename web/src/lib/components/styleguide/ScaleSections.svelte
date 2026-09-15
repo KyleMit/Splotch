@@ -34,6 +34,15 @@
   const easeKeys = ['easePop', 'easeGlide'] as const;
 </script>
 
+<div class="space-rows">
+  {#each ['glassRail', 'glassStrip'] as key (key)}
+    <p>
+      <code>{key === 'glassRail' ? '--glass-rail' : '--glass-strip'}</code> —
+      {key === 'glassRail' ? scale.glassRail : scale.glassStrip}
+      {key === 'glassRail' ? scaleUsage.glassRail : scaleUsage.glassStrip}
+    </p>
+  {/each}
+</div>
 <section id="space" data-sg-section>
   <h3>Spacing, radius &amp; hairlines</h3>
   <div class="space-rows">

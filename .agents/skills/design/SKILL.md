@@ -63,51 +63,52 @@ rendered beside its specimen on `/design` (ADR-0097). The table below is the sha
 vocabulary; the usage rules are the law — start from the defaults callout at the top of `/design`'s
 Foundations and only reach past a default when a rule says so.
 
-| Group     | Tokens                                                                                                 |
-| --------- | ------------------------------------------------------------------------------------------------------ |
-| Brand     | `--brand`, `--brand-rgb` (plain-RGBA brand fallbacks), `--on-brand` (the ink on brand fills).          |
-|           | `--brand` is the identity hue — hairlines, focus rings, `accent-color`, tints, and **textless** fills  |
-|           | (it is only 3.4:1 against `--on-brand`). A brand fill that carries a label rests on the themed         |
-|           | `--brand-solid`, and every brand fill hovers through the same ramp (`--brand-solid`, then              |
-|           | `--brand-solid-hover`) — there is deliberately no second, unthemed hover step (ADR-0097)               |
-| Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                               |
-| Radius    | `--radius-sm/md/lg` (8/12/16px), `--radius-pill` — inline chips sm, controls md, everything            |
-|           | card-sized and up (cards, modal cards, banners, page sheets) lg, pills pill. There is no xs step       |
-|           | and no xl step (ADR-0098 folded it into lg)                                                            |
-| Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,           |
-|           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token    |
-| Type      | `--font-size-xs/sm/md/lg/xl` (12/14/16/18/22px) — fine print · UI chrome · body prose ·                |
-|           | ledes/section heads · titles (the ceiling inside any surface) — plus `--font-size-display`             |
-|           | (fluid 34–46px), the H1 of a whole page: PageShell's hero, the crash screen. There is no 2xl           |
-|           | step between them (ADR-0098). `--font-family`, `--font-mono`,                                          |
-|           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·   |
-|           | headings; body prose stays at the untokenized 400 default)                                             |
-| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s); two curves only — `--ease-pop` (springy overshoot:       |
-|           | anything that pops in or celebrates) and `--ease-glide` (anything that settles or leaves).             |
-|           | Control-state motion (hover, press, reveal, fades) pairs a curve with a duration token; tuned          |
-|           | one-shot choreography — celebration keyframes, staged sequences like the AI reveal and polaroid        |
-|           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it                  |
-| Elevation | Three shadows only: `--shadow-control` (the tight lift on a small raised control — modal close         |
-|           | disc, selected segment thumb), `--shadow-pop` (deep overlay lift under modal cards), and the           |
-|           | themed `--float-shadow` (everything floating on the paper — cards, flyouts, page sheets)               |
-| Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                   |
-|           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on           |
-|           | purpose (ADR-0052): it reads the same on both papers. `--polaroid-paper` / `--polaroid-ink` —          |
-|           | the print white every polaroid in the app is made of and the brand ink written on it, unthemed         |
-|           | for the same kind of reason (ADR-0117): a photograph doesn't repaint at night, so what is              |
-|           | written on it can't either                                                                             |
-| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-polaroid`               |
-|           | (1004, the screenshot flight), listed low-to-high in `tokens.ts`. One list, not one context: all       |
-|           | root-context except                                                                                    |
-|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under   |
-|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                        |
-| Scrim     | `--scrim-ink`, `--scrim-ink-danger`, `--scrim-ink-soft`, `--scrim-pill` —                              |
-|           | fixed inks and glass for disclosure text on the dark backdrop in both themes.                          |
-| Steps     | `--step-wash-strength` / `--step-ink-strength` — numbered-step disc and digit mixes.                   |
-|           | Light sheets keep crayon tints; dark digits use full heading ink on lifted discs.                      |
-| Theme     | surfaces, borders, the three-step text ramp (`--text-strong` headings · `--text` body ·                |
-|           | `--text-soft` de-emphasized, pinned to hold 4.5:1 at small sizes), icon inks, brand/success/danger     |
-|           | washes, paper, float-card chrome — the full list with per-token docs is in `tokens.ts` (`ThemeTokens`) |
+| Group     | Tokens                                                                                                                                                                                           |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Brand     | `--brand`, `--brand-rgb` (plain-RGBA brand fallbacks), `--on-brand` (the ink on brand fills).                                                                                                    |
+|           | `--brand` is the identity hue — hairlines, focus rings, `accent-color`, tints, and **textless** fills                                                                                            |
+|           | (it is only 3.4:1 against `--on-brand`). A brand fill that carries a label rests on the themed                                                                                                   |
+|           | `--brand-solid`, and every brand fill hovers through the same ramp (`--brand-solid`, then                                                                                                        |
+|           | `--brand-solid-hover`) — there is deliberately no second, unthemed hover step (ADR-0097)                                                                                                         |
+| Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                                                                                                                         |
+| Radius    | `--radius-sm/md/lg` (8/12/16px), `--radius-pill` — inline chips sm, controls md, everything                                                                                                      |
+|           | card-sized and up (cards, modal cards, banners, page sheets) lg, pills pill. There is no xs step                                                                                                 |
+|           | and no xl step (ADR-0098 folded it into lg)                                                                                                                                                      |
+| Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,                                                                                                     |
+|           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token                                                                                              |
+| Type      | `--font-size-xs/sm/md/lg/xl` (12/14/16/18/22px) — fine print · UI chrome · body prose ·                                                                                                          |
+|           | ledes/section heads · titles (the ceiling inside any surface) — plus `--font-size-display`                                                                                                       |
+|           | (fluid 34–46px), the H1 of a whole page: PageShell's hero, the crash screen. There is no 2xl                                                                                                     |
+|           | step between them (ADR-0098). `--font-family`, `--font-mono`,                                                                                                                                    |
+|           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·                                                                                             |
+|           | headings; body prose stays at the untokenized 400 default)                                                                                                                                       |
+| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s); two curves only — `--ease-pop` (springy overshoot:                                                                                                 |
+|           | anything that pops in or celebrates) and `--ease-glide` (anything that settles or leaves).                                                                                                       |
+|           | Control-state motion (hover, press, reveal, fades) pairs a curve with a duration token; tuned                                                                                                    |
+|           | one-shot choreography — celebration keyframes, staged sequences like the AI reveal and polaroid                                                                                                  |
+|           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it                                                                                                            |
+| Elevation | Three shadows only: `--shadow-control` (the tight lift on a small raised control — modal close                                                                                                   |
+|           | disc, selected segment thumb), `--shadow-pop` (deep overlay lift under modal cards), and the                                                                                                     |
+|           | themed `--float-shadow` (everything floating on the paper — cards, flyouts, page sheets)                                                                                                         |
+| Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                                                                                                             |
+|           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on                                                                                                     |
+|           | purpose (ADR-0052): it reads the same on both papers. `--polaroid-paper` / `--polaroid-ink` —                                                                                                    |
+|           | the print white every polaroid in the app is made of and the brand ink written on it, unthemed                                                                                                   |
+|           | for the same kind of reason (ADR-0117): a photograph doesn't repaint at night, so what is                                                                                                        |
+|           | written on it can't either                                                                                                                                                                       |
+| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-polaroid`                                                                                                         |
+|           | (1004, the screenshot flight), listed low-to-high in `tokens.ts`. One list, not one context: all                                                                                                 |
+|           | root-context except                                                                                                                                                                              |
+|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under                                                                                             |
+|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                                                                                                                  |
+| Glass     | `--glass-rail` / `--glass-strip` set Bare toolbar tint strength; `--glass-tint-rgb` follows paper. `--rule-ink`, `--rule-blend`, `--rule-opacity` / `--rule-secondary-opacity` paint its margin. |
+| Scrim     | `--scrim-ink`, `--scrim-ink-danger`, `--scrim-ink-soft`, `--scrim-pill` —                                                                                                                        |
+|           | fixed inks and glass for disclosure text on the dark backdrop in both themes.                                                                                                                    |
+| Steps     | `--step-wash-strength` / `--step-ink-strength` — numbered-step disc and digit mixes.                                                                                                             |
+|           | Light sheets keep crayon tints; dark digits use full heading ink on lifted discs.                                                                                                                |
+| Theme     | surfaces, borders, the three-step text ramp (`--text-strong` headings · `--text` body ·                                                                                                          |
+|           | `--text-soft` de-emphasized, pinned to hold 4.5:1 at small sizes), icon inks, brand/success/danger                                                                                               |
+|           | washes, paper, float-card chrome — the full list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                                                           |
 
 **Adding a token:** it must earn its place — a semantic meaning used (or clearly about to be used)
 in 2–3 places. Prefer reusing an existing step of a ramp over minting a near-duplicate (ADR-0097

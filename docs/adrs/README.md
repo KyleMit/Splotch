@@ -96,6 +96,9 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0157](0157-no-backdrop-blur-on-coarse-pointers.md)             | Modal Backdrops Blur Only Under a Fine Pointer                                                                    | Active (amends [0087](0087-frame-bound-theme-switch-on-ipad-webkit.md))                                                                                                                                                                                                                                                               |
 | [0164](0164-deferred-icon-registry-off-the-startup-path.md)     | Deferred Icon Registry Keeps Lazily Rendered Icons Off the Startup Path                                           | Active (amends [0044](0044-svg-optimization-audit.md))                                                                                                                                                                                                                                                                                |
 
+| [0166](0166-bare-toolbar-paper-glass.md) | Bare Toolbar Uses Paper Glass over the Drawing | Active
+|
+
 ## Native (Capacitor / Android / iOS)
 
 | #                                                         | Title                                                                                | Status                                                                                                                                                                                                                                                                                                               |

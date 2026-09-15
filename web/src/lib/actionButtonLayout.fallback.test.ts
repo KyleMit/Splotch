@@ -1,3 +1,4 @@
+import { BARE_RAIL_WIDTH_PX, BARE_RAIL_HEIGHT_PX } from './bareToolbar';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -119,7 +120,8 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     const widths = [...appCssSource.matchAll(/--palette-landscape-width:\s*(\d+)px/g)].map(
       (match) => Number(match[1])
     );
-    expect(widths).toEqual([PALETTE_LANDSCAPE_WIDTH_PX, 0]);
+    expect(widths).toEqual([PALETTE_LANDSCAPE_WIDTH_PX, 0, BARE_RAIL_WIDTH_PX, 0]);
+    expect(appCssSource).toContain(`--palette-portrait-height: ${BARE_RAIL_HEIGHT_PX}px`);
     expect(colorPaletteSource).toContain('width: var(--palette-landscape-width)');
   });
 

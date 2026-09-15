@@ -1,4 +1,12 @@
 <script lang="ts">
+  import { bareButtonSize } from '$lib/glassPanes';
+  import { settingsState } from '$lib/state/settings.svelte';
+  import { layoutState } from '$lib/state/layout.svelte';
+  const bareBottom = $derived(
+    settingsState.toolbarStyle === 'bare' && layoutState.viewportWidth > 0
+      ? 8 + bareButtonSize() / 2 - 30 + layoutState.safeArea.bottom
+      : 8
+  );
   import {
     PALETTE_COLORS,
     TRIM_ORDER,
@@ -35,7 +43,7 @@
   // dark mode it reads as bar background and the colored ring floats around the
   // swatch. Light mode is unchanged (surface is white there).
   function selectionRingShadow(ringColor: string): string {
-    return `0 0 0 0.5px var(--surface), 0 0 0 var(--selection-ring-width) ${ringColor}, 0 4px 8px rgb(0 0 0 / 20%)`;
+    return `0 0 0 0.5px var(--palette-surface, var(--surface)), 0 0 0 var(--selection-ring-width) ${ringColor}, 0 4px 8px rgb(0 0 0 / 20%)`;
   }
 
   function selectSwatch(hex: string, paint: string) {
@@ -101,6 +109,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="color-palette"
+  style:--bare-palette-bottom={`${bareBottom}px`}
   use:scribbleGuard
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
@@ -155,7 +164,7 @@
     width: var(--palette-landscape-width);
     gap: 12px;
     padding: 12px;
-    background: var(--surface);
+    background: var(--palette-surface, var(--surface));
     box-shadow: 2px 0 10px rgb(0 0 0 / 10%);
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
@@ -208,7 +217,7 @@
   }
 
   .color-swatch.active {
-    border-color: var(--surface);
+    border-color: var(--palette-surface, var(--surface));
     /* Selection Ring is set dynamically via JavaScript to match swatch color */
   }
 
@@ -281,7 +290,7 @@
      "more colors" beside the flat swatches and follows the theme in dark mode. */
   .gradient-swatch {
     --pop-scale: 1.12;
-    background: var(--surface);
+    background: var(--palette-surface, var(--surface));
     position: relative;
   }
 
@@ -485,6 +494,30 @@
   @media (orientation: landscape) and (max-height: 599.98px) {
     .color-palette {
       display: none;
+    }
+  }
+  :global(html[data-toolbar='bare']) .color-palette {
+    --palette-surface: var(--paper);
+    position: absolute;
+    top: var(--safe-area-top);
+    left: var(--safe-area-left);
+    bottom: 0;
+    background: transparent;
+    box-shadow: none;
+    align-content: space-between;
+    padding: 20px 0 var(--bare-palette-bottom);
+  }
+  :global(html[data-toolbar='bare']) .gradient-swatch {
+    background: transparent;
+    box-shadow: none;
+  }
+  @media (orientation: portrait) {
+    :global(html[data-toolbar='bare']) .color-palette {
+      width: calc(100% - var(--safe-area-left) - var(--safe-area-right));
+      bottom: auto;
+      justify-content: space-evenly;
+      padding: 10px;
+      gap: 0;
     }
   }
 </style>

@@ -34,8 +34,12 @@ describe('isColorToken', () => {
     );
     expect(nonColors.sort()).toEqual([
       'floatShadow',
+      'glassTintRgb',
       'lineartBlend',
       'lineartFilter',
+      'ruleBlend',
+      'ruleOpacity',
+      'ruleSecondaryOpacity',
       'stepInkStrength',
       'stepWashStrength',
     ]);

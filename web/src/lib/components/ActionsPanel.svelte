@@ -4,6 +4,7 @@
   import { unreachable } from '$lib/unreachable';
   import { drawerCascade } from '$lib/actions/drawerCascade';
   import Icon from './Icon.svelte';
+  import type { OpenFlyout } from '$lib/glassPanes';
   import ColorControl from './ColorControl.svelte';
   import BrushControl from './BrushControl.svelte';
   import InkOrMagicIcon from './InkOrMagicIcon.svelte';
@@ -60,7 +61,7 @@
 
   // Flyouts share one open-state slot so dismissal and focus restoration
   // always act on the control that owns the open menu.
-  let openFlyout = $state<'color' | 'brush' | 'stroke' | null>(null);
+  let { openFlyout = $bindable(null) }: { openFlyout?: OpenFlyout } = $props();
 
   const erasing = $derived(toolState.brush === 'eraser');
 
@@ -389,6 +390,7 @@
      resolved here that no press consumed — issue 1237) instead of onclick. -->
 <div
   class="actions-panel"
+  data-open-flyout={openFlyout ?? undefined}
   class:settings-covered={settingsModal.open && !uiState.resizingActionButtons}
   data-drawer-motion={drawerMotion ? '' : undefined}
   bind:this={panelEl}

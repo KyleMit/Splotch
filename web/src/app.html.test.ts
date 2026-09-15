@@ -362,3 +362,15 @@ describe("app.html's boot script mirrors the state modules", () => {
     expect(pageSource).toMatch(/removeAttribute\('data-app-surface'\)/);
   });
 });
+
+describe('toolbar before first paint', () => {
+  it.each(['bare', 'buttons', 'invalid'])('validates the stored %s preference', (preference) => {
+    localStorage.clear();
+    document.documentElement.removeAttribute('data-toolbar');
+    localStorage.setItem(STORAGE_KEYS.toolbarStyle, preference);
+    new Function(bootScript)();
+    expect(document.documentElement.getAttribute('data-toolbar')).toBe(
+      preference === 'bare' ? 'bare' : null
+    );
+  });
+});
