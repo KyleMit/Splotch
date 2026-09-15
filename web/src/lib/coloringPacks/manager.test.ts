@@ -211,6 +211,79 @@ describe('removal during an in-flight run', () => {
   });
 });
 
+describe('a remounted downloader on native', () => {
+  it('keeps the new run downloading while the stopped run settles its install', async () => {
+    const stale = pendingInstall();
+    const current = pendingInstall();
+    mocks.install.mockReturnValueOnce(stale.promise).mockReturnValueOnce(current.promise);
+    mocks.installed
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
+    const first = createColoringPackDownloader();
+    first.start();
+    await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
+    first.stop();
+
+    const second = createColoringPackDownloader();
+    second.start();
+    await flushMicrotasks();
+    expect(mocks.install).toHaveBeenCalledOnce();
+    expect(coloringPackState.downloadingBookId).toBe('dinosaur');
+
+    stale.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
+    expect(mocks.install.mock.calls[1][1].id).toBe('space');
+    await flushMicrotasks();
+
+    expect(coloringPackState.downloadingBookId).toBe('space');
+    second.stop();
+    current.resolve({ id: 'space', bytes: 1, rootPath: 'file:///space' });
+    await flushMicrotasks();
+    expect(coloringPackState.downloadingBookId).toBeNull();
+  });
+
+  it('drops a remount that stops while waiting for the previous native install', async () => {
+    const stale = pendingInstall();
+    mocks.install.mockReturnValueOnce(stale.promise);
+    const first = createColoringPackDownloader();
+    first.start();
+    await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
+    first.stop();
+    const second = createColoringPackDownloader();
+    second.start();
+    second.stop();
+
+    stale.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    await flushMicrotasks();
+
+    expect(mocks.install).toHaveBeenCalledOnce();
+    expect(mocks.installed).toHaveBeenCalledOnce();
+    expect(coloringPackState.downloadingBookId).toBeNull();
+  });
+
+  it('retries a failed stopped install from the waiting remount', async () => {
+    const stale = pendingInstall();
+    const current = pendingInstall();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mocks.install.mockReturnValueOnce(stale.promise).mockReturnValueOnce(current.promise);
+    const first = createColoringPackDownloader();
+    first.start();
+    await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
+    first.stop();
+    const second = createColoringPackDownloader();
+    second.start();
+    stale.reject(new Error('download failed'));
+    await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
+
+    expect(mocks.install.mock.calls[1][1].id).toBe('dinosaur');
+    expect(coloringPackState.downloadingBookId).toBe('dinosaur');
+    second.stop();
+    current.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    await flushMicrotasks();
+    warn.mockRestore();
+  });
+});
+
 describe('scanning what is installed', () => {
   // Discovering the books and totalling their size were two store reads with
   // identical arguments, so every boot asked twice — a second Capacitor bridge

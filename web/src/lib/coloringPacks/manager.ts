@@ -77,6 +77,23 @@ function applyInstalledPacks(
   return installed;
 }
 
+function createNativeRunQueue() {
+  let pending: Promise<void> | null = null;
+  return (run: () => Promise<void>) => {
+    const queued = pending ? pending.then(run, run) : run();
+    pending = queued;
+    const release = () => {
+      if (pending === queued) pending = null;
+    };
+    void queued.then(release, release);
+    return queued;
+  };
+}
+
+// Native installs survive route teardown. A remount waits through the old run's
+// cleanup before rescanning the store, so only one run owns progress and installs.
+const queueNativeRun = createNativeRunQueue();
+
 // The predicate parameter is a test seam for policy changes between sequential book installs.
 export function createColoringPackDownloader(downloadAllowed = automaticDownloadAllowed) {
   let stopped = false;
@@ -87,7 +104,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
   let activeStore: ColoringPackStore | null = null;
 
   async function run() {
-    if (!downloadAllowed()) return;
+    if (stopped || paused || !downloadAllowed()) return;
     controller = new AbortController();
     const manifest = await loadManifest(controller.signal);
     if (controller.signal.aborted || !downloadAllowed()) return;
@@ -118,6 +135,20 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     }
   }
 
+  function runWithCleanup() {
+    return run()
+      .catch((error) => {
+        if (!controller?.signal.aborted) console.warn('Coloring-pack download paused', error);
+      })
+      .finally(() => {
+        if (controller) coloringPackState.downloadingBookId = null;
+        controller = null;
+        activeStore = null;
+        runPromise = null;
+        if (rerunRequested) requestRun();
+      });
+  }
+
   function requestRun() {
     if (stopped || paused) return;
     if (runPromise) {
@@ -125,17 +156,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
       return;
     }
     rerunRequested = false;
-    runPromise = run()
-      .catch((error) => {
-        if (!controller?.signal.aborted) console.warn('Coloring-pack download paused', error);
-      })
-      .finally(() => {
-        coloringPackState.downloadingBookId = null;
-        controller = null;
-        activeStore = null;
-        runPromise = null;
-        if (rerunRequested) requestRun();
-      });
+    runPromise = __IS_CAPACITOR__ ? queueNativeRun(runWithCleanup) : runWithCleanup();
   }
 
   const requestWhenVisible = () => {
