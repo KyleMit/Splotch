@@ -6,6 +6,7 @@
     "web/svelte.config.js",
     "web/vite.config.ts",
     "web/vitest.config.ts",
+    "web/vitest.webSsr.config.ts",
     "web/vitest-setup.ts",
     "web/defines.ts",
     "web/playwright.config.ts",

@@ -79,7 +79,7 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
   };
 }
 
-const appearanceState = createAppearance(settingsState, colorsState);
+export const appearanceState = createAppearance(settingsState, colorsState);
 
 export const { resolvedTheme, setResolvedTheme } = appearanceState;
 

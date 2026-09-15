@@ -70,7 +70,7 @@ export function createSectionsSeen(sessionCounters: SessionCountersState): Secti
   };
 }
 
-const sectionsSeenState = createSectionsSeen(sessionCountersState);
+export const sectionsSeenState = createSectionsSeen(sessionCountersState);
 
 export const { hasSectionActivity, markSectionSeen } = sectionsSeenState;
 
