@@ -1,4 +1,4 @@
-import { createModal } from './modal.svelte';
+import { createModal, type Origin } from './modal.svelte';
 
 // The Settings sections another surface can deep-link into. Deliberately a
 // literal union rather than the `SectionId` it must agree with: this module is on
@@ -10,14 +10,45 @@ type RequestedSettingsSection = 'ai' | 'parentCenter';
 export interface UiState {
   // True while the parent is dragging the button-size slider. Settings
   // hides everything but the slider so the live-resizing action buttons show.
-  resizingActionButtons: boolean;
-  requestedSettingsSection: RequestedSettingsSection | null;
+  readonly resizingActionButtons: boolean;
+  readonly requestedSettingsSection: RequestedSettingsSection | null;
+  setResizingActionButtons(active: boolean): void;
+  requestSettingsSection(section: RequestedSettingsSection): void;
+  // SettingsModal consumes a request once it has landed on the section.
+  clearRequestedSettingsSection(): void;
 }
 
-export const uiState: UiState = $state({
-  resizingActionButtons: false,
-  requestedSettingsSection: null,
-});
+export function createUi(): UiState {
+  const s = $state<{
+    resizingActionButtons: boolean;
+    requestedSettingsSection: RequestedSettingsSection | null;
+  }>({
+    resizingActionButtons: false,
+    requestedSettingsSection: null,
+  });
+
+  return {
+    get resizingActionButtons() {
+      return s.resizingActionButtons;
+    },
+    get requestedSettingsSection() {
+      return s.requestedSettingsSection;
+    },
+    setResizingActionButtons(active) {
+      s.resizingActionButtons = active;
+    },
+    requestSettingsSection(section) {
+      s.requestedSettingsSection = section;
+    },
+    clearRequestedSettingsSection() {
+      s.requestedSettingsSection = null;
+    },
+  };
+}
+
+export const uiState = createUi();
+
+export const { setResizingActionButtons, clearRequestedSettingsSection } = uiState;
 
 export const SETTINGS_BUTTON_ID = 'settingsButton';
 
@@ -35,12 +66,8 @@ export const coloringBookModal = createModal();
 export const settingsModal = createModal();
 export const aiPromptModal = createModal();
 
-export function setResizingActionButtons(active: boolean) {
-  uiState.resizingActionButtons = active;
-}
-
-export function openAiSettings(origin: import('./modal.svelte').Origin | null): void {
-  uiState.requestedSettingsSection = 'ai';
+export function openAiSettings(origin: Origin | null): void {
+  uiState.requestSettingsSection('ai');
   settingsModal.show(origin);
 }
 
@@ -48,7 +75,7 @@ export function openAiSettings(origin: import('./modal.svelte').Origin | null): 
 // caller is a solved Grown-Ups Only challenge, and the parent who solved it asked
 // for the policy editor. Reaching it therefore counts as already gated — the wide
 // shell reads that from the landing section rather than asking again.
-export function openParentCenterSettings(origin: import('./modal.svelte').Origin | null): void {
-  uiState.requestedSettingsSection = 'parentCenter';
+export function openParentCenterSettings(origin: Origin | null): void {
+  uiState.requestSettingsSection('parentCenter');
   settingsModal.show(origin);
 }

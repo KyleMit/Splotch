@@ -9,48 +9,64 @@ import {
 } from './books';
 import type { ResolvedTheme } from '../theme';
 
-interface ColoringBookState {
-  overlayPage: ColoringPage | null;
-  orientation: BookOrientation;
+export interface ColoringBookState {
+  readonly overlayPage: ColoringPage | null;
+  readonly orientation: BookOrientation;
+  setOverlayPage(page: ColoringPage, orientation: BookOrientation): void;
+  setOverlayOrientation(orientation: BookOrientation): void;
+  clearOverlay(): void;
+  overlayUrl(): string | null;
+  themedOverlayUrl(theme: ResolvedTheme, orientation?: BookOrientation): string | null;
+  colorSheetUrl(): string | null;
+  nightSheetUrl(): string | null;
 }
 
-export const coloringBookState: ColoringBookState = $state({
-  overlayPage: null,
-  orientation: 'portrait',
-});
+export function createColoringBook(): ColoringBookState {
+  const s = $state<{ overlayPage: ColoringPage | null; orientation: BookOrientation }>({
+    overlayPage: null,
+    orientation: 'portrait',
+  });
 
-export function setOverlayPage(page: ColoringPage, orientation: BookOrientation) {
-  coloringBookState.overlayPage = page;
-  coloringBookState.orientation = orientation;
+  return {
+    get overlayPage() {
+      return s.overlayPage;
+    },
+    get orientation() {
+      return s.orientation;
+    },
+    setOverlayPage(page, orientation) {
+      s.overlayPage = page;
+      s.orientation = orientation;
+    },
+    setOverlayOrientation(orientation) {
+      s.orientation = orientation;
+    },
+    clearOverlay() {
+      s.overlayPage = null;
+    },
+    overlayUrl() {
+      return s.overlayPage ? pageImage(s.overlayPage, s.orientation) : null;
+    },
+    themedOverlayUrl(theme, orientation = s.orientation) {
+      return s.overlayPage ? pageOverlayImage(s.overlayPage, orientation, theme) : null;
+    },
+    colorSheetUrl() {
+      return s.overlayPage ? pageColorImage(s.overlayPage, s.orientation) : null;
+    },
+    nightSheetUrl() {
+      return s.overlayPage ? pageNightImage(s.overlayPage, s.orientation) : null;
+    },
+  };
 }
 
-export function setOverlayOrientation(orientation: BookOrientation) {
-  coloringBookState.orientation = orientation;
-}
+export const coloringBookState = createColoringBook();
 
-export function overlayUrl(): string | null {
-  const page = coloringBookState.overlayPage;
-  return page ? pageImage(page, coloringBookState.orientation) : null;
-}
-
-export function themedOverlayUrl(
-  theme: ResolvedTheme,
-  orientation = coloringBookState.orientation
-): string | null {
-  const page = coloringBookState.overlayPage;
-  return page ? pageOverlayImage(page, orientation, theme) : null;
-}
-
-export function colorSheetUrl(): string | null {
-  const page = coloringBookState.overlayPage;
-  return page ? pageColorImage(page, coloringBookState.orientation) : null;
-}
-
-export function nightSheetUrl(): string | null {
-  const page = coloringBookState.overlayPage;
-  return page ? pageNightImage(page, coloringBookState.orientation) : null;
-}
-
-export function clearOverlay() {
-  coloringBookState.overlayPage = null;
-}
+export const {
+  setOverlayPage,
+  setOverlayOrientation,
+  clearOverlay,
+  overlayUrl,
+  themedOverlayUrl,
+  colorSheetUrl,
+  nightSheetUrl,
+} = coloringBookState;

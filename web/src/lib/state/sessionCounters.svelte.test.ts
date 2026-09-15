@@ -1,19 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { STORAGE_KEYS } from '$lib/storage';
+import {
+  createSessionCounters,
+  SETTINGS_ACTIVITY_DOTS_START_SESSION,
+} from './sessionCounters.svelte';
 
 beforeEach(() => {
   localStorage.clear();
-  vi.resetModules();
 });
 
-async function freshSessionCounters() {
-  return import('./sessionCounters.svelte');
-}
-
 describe('session counters', () => {
-  it('keeps Settings dots disabled through the fifth session and records once per document', async () => {
+  it('keeps Settings dots disabled through the fifth session and records once per document', () => {
     localStorage.setItem(STORAGE_KEYS.settingsActivitySessionCount, '4');
-    const counters = await freshSessionCounters();
+    const counters = createSessionCounters();
 
     counters.recordSession('settingsActivity');
     counters.recordSession('settingsActivity');
@@ -22,21 +21,19 @@ describe('session counters', () => {
     expect(counters.sessionCount('settingsActivity')).toBe(5);
   });
 
-  it('enables the Settings milestone on the sixth session', async () => {
+  it('enables the Settings milestone on the sixth session', () => {
     localStorage.setItem(STORAGE_KEYS.settingsActivitySessionCount, '5');
-    const counters = await freshSessionCounters();
+    const counters = createSessionCounters();
 
     counters.recordSession('settingsActivity');
 
-    expect(counters.sessionCount('settingsActivity')).toBe(
-      counters.SETTINGS_ACTIVITY_DOTS_START_SESSION
-    );
+    expect(counters.sessionCount('settingsActivity')).toBe(SETTINGS_ACTIVITY_DOTS_START_SESSION);
   });
 
-  it('tracks the two feature counters independently', async () => {
+  it('tracks the two feature counters independently', () => {
     localStorage.setItem(STORAGE_KEYS.settingsActivitySessionCount, '5');
     localStorage.setItem(STORAGE_KEYS.installRepromptSessionCount, '4');
-    const counters = await freshSessionCounters();
+    const counters = createSessionCounters();
 
     counters.recordSession('settingsActivity');
     counters.recordSession('installReprompt');
@@ -47,15 +44,24 @@ describe('session counters', () => {
     expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBeNull();
   });
 
-  it('saturates each persisted count at its final milestone', async () => {
+  it('saturates each persisted count at its final milestone', () => {
     localStorage.setItem(STORAGE_KEYS.settingsActivitySessionCount, '6');
     localStorage.setItem(STORAGE_KEYS.installRepromptSessionCount, '10');
-    const counters = await freshSessionCounters();
+    const counters = createSessionCounters();
 
     counters.recordSession('settingsActivity');
     counters.recordSession('installReprompt');
 
     expect(counters.sessionCount('settingsActivity')).toBe(6);
     expect(counters.sessionCount('installReprompt')).toBe(10);
+  });
+
+  it('gives each instance its own once-per-document record', () => {
+    createSessionCounters().recordSession('settingsActivity');
+    const counters = createSessionCounters();
+
+    counters.recordSession('settingsActivity');
+
+    expect(counters.sessionCount('settingsActivity')).toBe(2);
   });
 });

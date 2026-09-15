@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
-import { settingsModal, uiState } from './ui.svelte';
+import { clearRequestedSettingsSection, settingsModal, uiState } from './ui.svelte';
 import {
   parentalGateState,
   parentalGatePoliciesState,
@@ -58,7 +58,7 @@ describe('parental gate', () => {
       escalationQuietSince: null,
     });
     settingsModal.hide();
-    uiState.requestedSettingsSection = null;
+    clearRequestedSettingsSection();
     for (const feature of PARENTAL_GATE_FEATURES) {
       parentalGatePoliciesState[feature] = 'always';
       parentalGateState.sessionSolved[feature] = false;

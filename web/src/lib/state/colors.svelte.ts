@@ -15,39 +15,68 @@ export function themedSwatchColor(hex: string, dark: boolean): string {
 
 export const CUSTOM_SWATCH = 'custom';
 
-export const colorsState = $state({
-  activeSwatch: PALETTE_COLORS[0].hex,
-  activeColor: PALETTE_COLORS[0].hex,
-  customColor: PALETTE_COLORS[0].hex,
-  customColorSelected: false,
-});
-
-export function syncInkToTheme(dark: boolean) {
-  if (colorsState.activeSwatch !== BLACK_INK) return;
-  colorsState.activeColor = themedSwatchColor(BLACK_INK, dark);
+export interface ColorsState {
+  // The swatch's stable identity (what trim/keys compare against): a palette hex
+  // or CUSTOM_SWATCH.
+  readonly activeSwatch: string;
+  // What actually gets drawn; differs from the swatch only for the Black swatch
+  // in dark mode (it paints white).
+  readonly activeColor: string;
+  readonly customColor: string;
+  readonly customColorSelected: boolean;
+  syncInkToTheme(dark: boolean): void;
+  selectPaletteColor(hex: string, paintColor?: string): void;
+  selectCustomSwatch(): void;
+  pickCustomColor(hex: string): void;
 }
 
-// `hex` is the swatch's stable identity (what activeSwatch/trim/keys compare
-// against); `paintColor` is what actually gets drawn, which differs only for the
-// Black swatch in dark mode (it paints white). Defaults to painting the identity.
-export function selectPaletteColor(hex: string, paintColor: string = hex) {
-  colorsState.activeSwatch = hex;
-  colorsState.activeColor = paintColor;
+export function createColors(): ColorsState {
+  const s = $state({
+    activeSwatch: PALETTE_COLORS[0].hex,
+    activeColor: PALETTE_COLORS[0].hex,
+    customColor: PALETTE_COLORS[0].hex,
+    customColorSelected: false,
+  });
+
+  return {
+    get activeSwatch() {
+      return s.activeSwatch;
+    },
+    get activeColor() {
+      return s.activeColor;
+    },
+    get customColor() {
+      return s.customColor;
+    },
+    get customColorSelected() {
+      return s.customColorSelected;
+    },
+    syncInkToTheme(dark) {
+      if (s.activeSwatch !== BLACK_INK) return;
+      s.activeColor = themedSwatchColor(BLACK_INK, dark);
+    },
+    // `paintColor` defaults to painting the identity.
+    selectPaletteColor(hex, paintColor = hex) {
+      s.activeSwatch = hex;
+      s.activeColor = paintColor;
+    },
+    selectCustomSwatch() {
+      s.activeSwatch = CUSTOM_SWATCH;
+      if (s.customColorSelected) s.activeColor = s.customColor;
+    },
+    pickCustomColor(hex) {
+      s.customColor = hex;
+      s.customColorSelected = true;
+      s.activeSwatch = CUSTOM_SWATCH;
+      s.activeColor = hex;
+    },
+  };
 }
 
-export function selectCustomSwatch() {
-  colorsState.activeSwatch = CUSTOM_SWATCH;
-  if (colorsState.customColorSelected) {
-    colorsState.activeColor = colorsState.customColor;
-  }
-}
+export const colorsState = createColors();
 
-export function pickCustomColor(hex: string) {
-  colorsState.customColor = hex;
-  colorsState.customColorSelected = true;
-  colorsState.activeSwatch = CUSTOM_SWATCH;
-  colorsState.activeColor = hex;
-}
+export const { syncInkToTheme, selectPaletteColor, selectCustomSwatch, pickCustomColor } =
+  colorsState;
 
 // White is the one selectable color that vanishes against the white icon
 // buttons and paper (it's only reachable via the picker's greys ramp — the

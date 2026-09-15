@@ -64,7 +64,7 @@ async function flush() {
 
 describe('respondToSystemBack', () => {
   beforeEach(() => {
-    canvasState.canvasEmpty = true;
+    canvasState.setCanvasEmpty(true);
     plugin.moveToBackground.mockClear();
   });
 
@@ -86,7 +86,7 @@ describe('respondToSystemBack', () => {
   });
 
   it('asks before leaving a canvas with ink', async () => {
-    canvasState.canvasEmpty = false;
+    canvasState.setCanvasEmpty(false);
     expect(respondToSystemBack()).toBe('confirming');
     await flush();
     expect(leaveConfirmModal.open).toBe(true);
@@ -190,7 +190,7 @@ describe('respondToSystemBack', () => {
   });
 
   it('never turns mashed Back on a drawing into leaving', async () => {
-    canvasState.canvasEmpty = false;
+    canvasState.setCanvasEmpty(false);
     mountModal(leaveConfirmModal);
 
     const responses = new Set<string>();
@@ -207,7 +207,7 @@ describe('respondToSystemBack', () => {
 
 describe('listenForSystemBack', () => {
   it('answers Back from the plugin and detaches on cleanup', async () => {
-    canvasState.canvasEmpty = true;
+    canvasState.setCanvasEmpty(true);
     plugin.moveToBackground.mockClear();
     const stop = listenForSystemBack();
     await vi.waitFor(() => expect(plugin.listeners).toHaveLength(1));

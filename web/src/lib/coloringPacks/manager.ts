@@ -72,8 +72,10 @@ function applyInstalledPacks(
   setInstalledColoringBooks(
     manifest.books.filter((book) => installed.has(book.id)).map((book) => book.id)
   );
-  coloringPacksState.totalBookCount = manifest.books.length;
-  coloringPacksState.downloadedBytes = packs.reduce((total, pack) => total + pack.bytes, 0);
+  coloringPacksState.recordInstalledPacks(
+    manifest.books.length,
+    packs.reduce((total, pack) => total + pack.bytes, 0)
+  );
   return installed;
 }
 
@@ -120,7 +122,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
       if (stopped || paused || controller.signal.aborted) return;
       if (book.id === manifest.starterBookId || installed.has(book.id)) continue;
       if (!downloadAllowed()) return;
-      coloringPacksState.downloadingBookId = book.id;
+      coloringPacksState.startBookDownload(book.id);
       const pack = await store.install(
         manifest,
         book,
@@ -130,8 +132,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
       if (controller.signal.aborted) return;
       applyLocalRoots([pack]);
       installed.add(book.id);
-      markColoringBookInstalled(book.id);
-      coloringPacksState.downloadedBytes += book.bytes;
+      markColoringBookInstalled(book.id, book.bytes);
     }
   }
 
@@ -141,7 +142,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
         if (!controller?.signal.aborted) console.warn('Coloring-pack download paused', error);
       })
       .finally(() => {
-        if (controller) coloringPacksState.downloadingBookId = null;
+        if (controller) coloringPacksState.endBookDownload();
         controller = null;
         activeStore = null;
         runPromise = null;

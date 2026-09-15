@@ -1,43 +1,58 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { booksForPlatform } from './books';
-import {
-  availableColoringBooks,
-  coloringPacksState,
-  markColoringBookInstalled,
-  resetDownloadedColoringBooks,
-  setInstalledColoringBooks,
-  setNoDownloadedColoringBooks,
-} from './coloringPacks.svelte';
+import { createColoringPacks, type ColoringPacksState } from './coloringPacks.svelte';
 
-afterEach(resetDownloadedColoringBooks);
+let packs: ColoringPacksState;
+
+beforeEach(() => {
+  packs = createColoringPacks();
+});
 
 describe('available coloring books', () => {
   it('starts with only the complete starter book', () => {
-    expect(availableColoringBooks('web').map((book) => book.id)).toEqual(['farm']);
+    expect(packs.availableColoringBooks('web').map((book) => book.id)).toEqual(['farm']);
   });
 
   it('publishes each additional book only when its install completes', () => {
-    setInstalledColoringBooks(['dinosaur']);
-    expect(availableColoringBooks('web').map((book) => book.id)).toEqual(['farm', 'dinosaur']);
-    markColoringBookInstalled('creatures');
-    expect(availableColoringBooks('web').map((book) => book.id)).toEqual([
+    packs.setInstalledColoringBooks(['dinosaur']);
+    expect(packs.availableColoringBooks('web').map((book) => book.id)).toEqual([
+      'farm',
+      'dinosaur',
+    ]);
+    packs.markColoringBookInstalled('creatures', 1);
+    expect(packs.availableColoringBooks('web').map((book) => book.id)).toEqual([
       'farm',
       'dinosaur',
       'creatures',
     ]);
   });
+
+  it('counts an installed book once and adds its bytes to the downloaded total', () => {
+    packs.markColoringBookInstalled('dinosaur', 3);
+    packs.markColoringBookInstalled('dinosaur', 3);
+
+    expect(packs.installedBookIds).toEqual(['farm', 'dinosaur']);
+    expect(packs.downloadedBytes).toBe(6);
+  });
+
+  it('publishes the book in flight only for the length of its download', () => {
+    packs.startBookDownload('dinosaur');
+    expect(packs.downloadingBookId).toBe('dinosaur');
+
+    packs.endBookDownload();
+    expect(packs.downloadingBookId).toBeNull();
+  });
 });
 
 describe('a device with no pack storage', () => {
   it('settles on the starter book out of the whole catalog without a scan', () => {
-    coloringPacksState.initialized = false;
-    coloringPacksState.downloadedBytes = 5;
+    packs.markColoringBookInstalled('dinosaur', 5);
 
-    setNoDownloadedColoringBooks('web');
+    packs.setNoDownloadedColoringBooks('web');
 
-    expect(availableColoringBooks('web').map((book) => book.id)).toEqual(['farm']);
-    expect(coloringPacksState.totalBookCount).toBe(booksForPlatform('web').length);
-    expect(coloringPacksState.downloadedBytes).toBe(0);
-    expect(coloringPacksState.initialized).toBe(true);
+    expect(packs.availableColoringBooks('web').map((book) => book.id)).toEqual(['farm']);
+    expect(packs.totalBookCount).toBe(booksForPlatform('web').length);
+    expect(packs.downloadedBytes).toBe(0);
+    expect(packs.initialized).toBe(true);
   });
 });

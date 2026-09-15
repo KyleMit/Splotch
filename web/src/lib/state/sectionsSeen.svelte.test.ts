@@ -2,44 +2,42 @@ import { tick } from 'svelte';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { sectionContentStamp, type SectionId } from '$lib/components/settings/sections';
 import { STORAGE_KEYS } from '$lib/storage';
-import {
-  hasSectionActivity,
-  isSectionUnseen,
-  markSectionSeen,
-  reloadSectionsSeen,
-} from './sectionsSeen.svelte';
-import { reloadSessionCounters } from './sessionCounters.svelte';
+import { createSectionsSeen, type SectionsSeenState } from './sectionsSeen.svelte';
+import { createSessionCounters, type SessionCountersState } from './sessionCounters.svelte';
+
+let counters: SessionCountersState;
+let seen: SectionsSeenState;
 
 beforeEach(() => {
   localStorage.clear();
-  reloadSectionsSeen();
-  reloadSessionCounters();
+  counters = createSessionCounters();
+  seen = createSectionsSeen(counters);
 });
 
 describe('section seen stamps', () => {
   it('treats a section with no stored stamp as unseen', () => {
-    expect(isSectionUnseen('appearance')).toBe(true);
+    expect(seen.isSectionUnseen('appearance')).toBe(true);
   });
 
   it('marks a section seen and persists its current content stamp', () => {
-    markSectionSeen('appearance');
+    seen.markSectionSeen('appearance');
 
-    expect(isSectionUnseen('appearance')).toBe(false);
+    expect(seen.isSectionUnseen('appearance')).toBe(false);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.parentSectionsSeen)!)).toEqual({
       appearance: sectionContentStamp('appearance'),
     });
   });
 
   it('records seen sections while activity dots are still suppressed', () => {
-    expect(hasSectionActivity('appearance')).toBe(false);
+    expect(seen.hasSectionActivity('appearance')).toBe(false);
 
-    markSectionSeen('appearance');
+    seen.markSectionSeen('appearance');
     localStorage.setItem(STORAGE_KEYS.settingsActivitySessionCount, '6');
-    reloadSessionCounters();
+    counters.reloadSessionCounters();
 
-    expect(isSectionUnseen('appearance')).toBe(false);
-    expect(hasSectionActivity('appearance')).toBe(false);
-    expect(hasSectionActivity('sound')).toBe(true);
+    expect(seen.isSectionUnseen('appearance')).toBe(false);
+    expect(seen.hasSectionActivity('appearance')).toBe(false);
+    expect(seen.hasSectionActivity('sound')).toBe(true);
   });
 
   it('re-dots a section when its content stamp changes', () => {
@@ -49,9 +47,9 @@ describe('section seen stamps', () => {
       JSON.stringify({ appearance: `${currentStamp}-older` })
     );
 
-    reloadSectionsSeen();
+    seen.reloadSectionsSeen();
 
-    expect(isSectionUnseen('appearance')).toBe(true);
+    expect(seen.isSectionUnseen('appearance')).toBe(true);
   });
 
   it('re-reads restored stamps into the live store', () => {
@@ -60,10 +58,10 @@ describe('section seen stamps', () => {
       JSON.stringify({ sound: sectionContentStamp('sound') })
     );
 
-    reloadSectionsSeen();
+    seen.reloadSectionsSeen();
 
-    expect(isSectionUnseen('sound')).toBe(false);
-    expect(isSectionUnseen('appearance')).toBe(true);
+    expect(seen.isSectionUnseen('sound')).toBe(false);
+    expect(seen.isSectionUnseen('appearance')).toBe(true);
   });
 
   it('ignores unknown section ids from persisted data', () => {
@@ -72,8 +70,8 @@ describe('section seen stamps', () => {
       JSON.stringify({ retiredSection: '1', appearance: sectionContentStamp('appearance') })
     );
 
-    reloadSectionsSeen();
-    markSectionSeen('sound');
+    seen.reloadSectionsSeen();
+    seen.markSectionSeen('sound');
 
     expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.parentSectionsSeen)!)).toEqual({
       appearance: sectionContentStamp('appearance'),
@@ -97,7 +95,7 @@ describe('marking a section seen from an effect', () => {
     const stop = $effect.root(() => {
       $effect(() => {
         runs += 1;
-        markSectionSeen(id);
+        seen.markSectionSeen(id);
       });
     });
     await settle();
@@ -112,10 +110,10 @@ describe('marking a section seen from an effect', () => {
   });
 
   it('leaves the effect alone when the stamps reload', async () => {
-    markSectionSeen('appearance');
+    seen.markSectionSeen('appearance');
     const effect = await countEffectRuns('appearance');
 
-    reloadSectionsSeen();
+    seen.reloadSectionsSeen();
     await settle();
 
     expect(effect.runs()).toBe(1);

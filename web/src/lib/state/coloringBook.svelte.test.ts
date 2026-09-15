@@ -1,14 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  coloringBookState,
-  setOverlayPage,
-  setOverlayOrientation,
-  overlayUrl,
-  themedOverlayUrl,
-  colorSheetUrl,
-  nightSheetUrl,
-  clearOverlay,
-} from './coloringBook.svelte';
+import { createColoringBook, type ColoringBookState } from './coloringBook.svelte';
 import { BOOKS, bookAssetPaths, pageNightImage } from './books';
 
 const page = BOOKS[0].pages[0];
@@ -17,34 +8,44 @@ const spacePage = spaceBook.pages[0];
 const pageWithoutNight = { ...page, nightImages: {} };
 
 describe('coloring book state', () => {
-  beforeEach(() => clearOverlay());
+  let book: ColoringBookState;
+
+  beforeEach(() => {
+    book = createColoringBook();
+  });
+
+  it('starts with no overlay in portrait', () => {
+    expect(book.overlayPage).toBeNull();
+    expect(book.orientation).toBe('portrait');
+    expect(book.overlayUrl()).toBeNull();
+  });
 
   it('setOverlayPage tracks the line art and the colored fill together', () => {
-    setOverlayPage(page, 'landscape');
-    expect(overlayUrl()).toBe(page.images.landscape);
-    expect(colorSheetUrl()).toBe(page.colorImages.landscape);
-    expect(coloringBookState.overlayPage?.id).toBe(page.id);
+    book.setOverlayPage(page, 'landscape');
+    expect(book.overlayUrl()).toBe(page.images.landscape);
+    expect(book.colorSheetUrl()).toBe(page.colorImages.landscape);
+    expect(book.overlayPage?.id).toBe(page.id);
   });
 
   it('updates every asset accessor when only the orientation changes', () => {
-    setOverlayPage(spacePage, 'landscape');
-    expect(overlayUrl()).toBe(spacePage.images.landscape);
-    expect(colorSheetUrl()).toBe(spacePage.colorImages.landscape);
-    expect(nightSheetUrl()).toBe(spacePage.nightImages.landscape);
+    book.setOverlayPage(spacePage, 'landscape');
+    expect(book.overlayUrl()).toBe(spacePage.images.landscape);
+    expect(book.colorSheetUrl()).toBe(spacePage.colorImages.landscape);
+    expect(book.nightSheetUrl()).toBe(spacePage.nightImages.landscape);
 
-    setOverlayOrientation('portrait');
-    expect(overlayUrl()).toBe(spacePage.images.portrait);
-    expect(colorSheetUrl()).toBe(spacePage.colorImages.portrait);
-    expect(nightSheetUrl()).toBe(spacePage.nightImages.portrait);
+    book.setOverlayOrientation('portrait');
+    expect(book.overlayUrl()).toBe(spacePage.images.portrait);
+    expect(book.colorSheetUrl()).toBe(spacePage.colorImages.portrait);
+    expect(book.nightSheetUrl()).toBe(spacePage.nightImages.portrait);
   });
 
   it('clearOverlay drops the line art, color sheet, and night sheet', () => {
-    setOverlayPage(spacePage, 'portrait');
-    clearOverlay();
-    expect(overlayUrl()).toBeNull();
-    expect(colorSheetUrl()).toBeNull();
-    expect(nightSheetUrl()).toBeNull();
-    expect(coloringBookState.overlayPage).toBeNull();
+    book.setOverlayPage(spacePage, 'portrait');
+    book.clearOverlay();
+    expect(book.overlayUrl()).toBeNull();
+    expect(book.colorSheetUrl()).toBeNull();
+    expect(book.nightSheetUrl()).toBeNull();
+    expect(book.overlayPage).toBeNull();
   });
 
   it('the colored fill is derived from the line-art path', () => {
@@ -59,34 +60,38 @@ describe('coloring book state', () => {
   it('tracks the night fill for each orientation that has one', () => {
     // Space ships night fills for both orientations (ADR-0052 direction B),
     // derived from the line-art path.
-    setOverlayPage(spacePage, 'portrait');
-    expect(nightSheetUrl()).toBe(spacePage.nightImages.portrait);
-    expect(nightSheetUrl()).toBe(spacePage.images.portrait.replace('.overlay.svg', '.night.webp'));
-    setOverlayOrientation('landscape');
-    expect(nightSheetUrl()).toBe(spacePage.nightImages.landscape);
-    expect(nightSheetUrl()).toBe(spacePage.images.landscape.replace('.overlay.svg', '.night.webp'));
+    book.setOverlayPage(spacePage, 'portrait');
+    expect(book.nightSheetUrl()).toBe(spacePage.nightImages.portrait);
+    expect(book.nightSheetUrl()).toBe(
+      spacePage.images.portrait.replace('.overlay.svg', '.night.webp')
+    );
+    book.setOverlayOrientation('landscape');
+    expect(book.nightSheetUrl()).toBe(spacePage.nightImages.landscape);
+    expect(book.nightSheetUrl()).toBe(
+      spacePage.images.landscape.replace('.overlay.svg', '.night.webp')
+    );
   });
 
   it('pages without a night fill track a null night sheet', () => {
-    setOverlayPage(pageWithoutNight, 'portrait');
-    expect(nightSheetUrl()).toBeNull();
+    book.setOverlayPage(pageWithoutNight, 'portrait');
+    expect(book.nightSheetUrl()).toBeNull();
     expect(pageNightImage(pageWithoutNight, 'portrait')).toBeNull();
   });
 
   it('picks matching full-resolution art for the resolved theme', () => {
-    setOverlayPage(spacePage, 'landscape');
-    expect(themedOverlayUrl('light')).toBe(spacePage.images.landscape);
-    expect(themedOverlayUrl('dark')).toBe(
+    book.setOverlayPage(spacePage, 'landscape');
+    expect(book.themedOverlayUrl('light')).toBe(spacePage.images.landscape);
+    expect(book.themedOverlayUrl('dark')).toBe(
       spacePage.images.landscape.replace('.overlay.svg', '.dark.overlay.svg')
     );
   });
 
   it('can derive another orientation without changing the active orientation', () => {
-    setOverlayPage(spacePage, 'landscape');
-    expect(themedOverlayUrl('dark', 'portrait')).toBe(
+    book.setOverlayPage(spacePage, 'landscape');
+    expect(book.themedOverlayUrl('dark', 'portrait')).toBe(
       spacePage.images.portrait.replace('.overlay.svg', '.dark.overlay.svg')
     );
-    expect(coloringBookState.orientation).toBe('landscape');
+    expect(book.orientation).toBe('landscape');
   });
 });
 

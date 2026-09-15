@@ -5,7 +5,11 @@ import {
   type SectionId,
 } from '$lib/components/settings/sections';
 import { onDurableRestore, readString, STORAGE_KEYS, writeString } from '$lib/storage';
-import { sessionCount, SETTINGS_ACTIVITY_DOTS_START_SESSION } from './sessionCounters.svelte';
+import {
+  sessionCountersState,
+  SETTINGS_ACTIVITY_DOTS_START_SESSION,
+  type SessionCountersState,
+} from './sessionCounters.svelte';
 
 type SeenStamps = Partial<Record<SectionId, string>>;
 
@@ -27,32 +31,47 @@ function readSeenStamps(): SeenStamps {
   }
 }
 
-let seenStamps = $state<SeenStamps>(readSeenStamps());
-
-export function isSectionUnseen(id: SectionId): boolean {
-  return seenStamps[id] !== sectionContentStamp(id);
+export interface SectionsSeenState {
+  isSectionUnseen(id: SectionId): boolean;
+  hasSectionActivity(id: SectionId): boolean;
+  markSectionSeen(id: SectionId): void;
+  reloadSectionsSeen(): void;
 }
 
-export function hasSectionActivity(id: SectionId): boolean {
-  return (
-    sessionCount('settingsActivity') >= SETTINGS_ACTIVITY_DOTS_START_SESSION && isSectionUnseen(id)
-  );
+export function createSectionsSeen(sessionCounters: SessionCountersState): SectionsSeenState {
+  let seenStamps = $state<SeenStamps>(readSeenStamps());
+
+  function isSectionUnseen(id: SectionId): boolean {
+    return seenStamps[id] !== sectionContentStamp(id);
+  }
+
+  return {
+    isSectionUnseen,
+    hasSectionActivity(id) {
+      return (
+        sessionCounters.sessionCount('settingsActivity') >= SETTINGS_ACTIVITY_DOTS_START_SESSION &&
+        isSectionUnseen(id)
+      );
+    },
+    // Marking is a command, so it must not subscribe its caller: effects call it,
+    // and a tracked read of the stamps here would re-run them on their own write
+    // and again when a durable restore reloads the stamps.
+    markSectionSeen(id) {
+      untrack(() => {
+        const contentStamp = sectionContentStamp(id);
+        if (seenStamps[id] === contentStamp) return;
+        seenStamps[id] = contentStamp;
+        writeString(STORAGE_KEYS.parentSectionsSeen, JSON.stringify(seenStamps));
+      });
+    },
+    reloadSectionsSeen() {
+      seenStamps = readSeenStamps();
+    },
+  };
 }
 
-// Marking is a command, so it must not subscribe its caller: effects call it,
-// and a tracked read of the stamps here would re-run them on their own write
-// and again when a durable restore reloads the stamps.
-export function markSectionSeen(id: SectionId) {
-  untrack(() => {
-    const contentStamp = sectionContentStamp(id);
-    if (seenStamps[id] === contentStamp) return;
-    seenStamps[id] = contentStamp;
-    writeString(STORAGE_KEYS.parentSectionsSeen, JSON.stringify(seenStamps));
-  });
-}
+const sectionsSeenState = createSectionsSeen(sessionCountersState);
 
-export function reloadSectionsSeen() {
-  seenStamps = readSeenStamps();
-}
+export const { hasSectionActivity, markSectionSeen } = sectionsSeenState;
 
-onDurableRestore(reloadSectionsSeen);
+onDurableRestore(sectionsSeenState.reloadSectionsSeen);

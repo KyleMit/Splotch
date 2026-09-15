@@ -23,11 +23,6 @@ const SESSION_COUNTER_STORAGE_KEYS: Record<SessionCounterKind, StorageKey> = {
   installReprompt: STORAGE_KEYS.installRepromptSessionCount,
 };
 
-const recordedDocuments: Record<SessionCounterKind, WeakSet<Document>> = {
-  settingsActivity: new WeakSet<Document>(),
-  installReprompt: new WeakSet<Document>(),
-};
-
 function readSessionCounts(): Record<SessionCounterKind, number> {
   return {
     settingsActivity: readInt(STORAGE_KEYS.settingsActivitySessionCount, 0),
@@ -35,36 +30,56 @@ function readSessionCounts(): Record<SessionCounterKind, number> {
   };
 }
 
-let sessionCounts = $state(readSessionCounts());
-
-export function recordSession(kind: SessionCounterKind): number {
-  if (!browser || recordedDocuments[kind].has(document)) return sessionCounts[kind];
-  recordedDocuments[kind].add(document);
-
-  const limit = SESSION_COUNTER_LIMITS[kind];
-  if (sessionCounts[kind] >= limit) return sessionCounts[kind];
-
-  sessionCounts[kind] += 1;
-  writeInt(SESSION_COUNTER_STORAGE_KEYS[kind], sessionCounts[kind]);
-  return sessionCounts[kind];
+export interface SessionCountersState {
+  sessionCount(kind: SessionCounterKind): number;
+  // Counts the current document once per kind, saturating at that kind's last
+  // milestone; returns the count after recording.
+  recordSession(kind: SessionCounterKind): number;
+  excludeCurrentSession(kind: SessionCounterKind): void;
+  clearSessionCount(kind: SessionCounterKind): void;
+  reloadSessionCounters(): void;
 }
 
-export function excludeCurrentSession(kind: SessionCounterKind) {
-  if (!browser) return;
-  recordedDocuments[kind].add(document);
+export function createSessionCounters(): SessionCountersState {
+  let sessionCounts = $state(readSessionCounts());
+
+  const recordedDocuments: Record<SessionCounterKind, WeakSet<Document>> = {
+    settingsActivity: new WeakSet<Document>(),
+    installReprompt: new WeakSet<Document>(),
+  };
+
+  return {
+    sessionCount(kind) {
+      return sessionCounts[kind];
+    },
+    recordSession(kind) {
+      if (!browser || recordedDocuments[kind].has(document)) return sessionCounts[kind];
+      recordedDocuments[kind].add(document);
+
+      const limit = SESSION_COUNTER_LIMITS[kind];
+      if (sessionCounts[kind] >= limit) return sessionCounts[kind];
+
+      sessionCounts[kind] += 1;
+      writeInt(SESSION_COUNTER_STORAGE_KEYS[kind], sessionCounts[kind]);
+      return sessionCounts[kind];
+    },
+    excludeCurrentSession(kind) {
+      if (!browser) return;
+      recordedDocuments[kind].add(document);
+    },
+    clearSessionCount(kind) {
+      sessionCounts[kind] = 0;
+      removeKey(SESSION_COUNTER_STORAGE_KEYS[kind]);
+    },
+    reloadSessionCounters() {
+      sessionCounts = readSessionCounts();
+    },
+  };
 }
 
-export function sessionCount(kind: SessionCounterKind): number {
-  return sessionCounts[kind];
-}
+export const sessionCountersState = createSessionCounters();
 
-export function clearSessionCount(kind: SessionCounterKind) {
-  sessionCounts[kind] = 0;
-  removeKey(SESSION_COUNTER_STORAGE_KEYS[kind]);
-}
+export const { sessionCount, recordSession, excludeCurrentSession, clearSessionCount } =
+  sessionCountersState;
 
-export function reloadSessionCounters() {
-  sessionCounts = readSessionCounts();
-}
-
-onDurableRestore(reloadSessionCounters);
+onDurableRestore(sessionCountersState.reloadSessionCounters);

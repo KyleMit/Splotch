@@ -20,7 +20,7 @@ let teardown: (() => void) | null = null;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  canvasState.canUndo = true;
+  canvasState.setCanUndo(true);
   document.body.replaceChildren();
 });
 
@@ -46,7 +46,7 @@ it('undoes on Cmd+Z (metaKey) the same as Ctrl+Z', () => {
 });
 
 it('does nothing when history is empty', () => {
-  canvasState.canUndo = false;
+  canvasState.setCanUndo(false);
   teardown = installUndoShortcut();
 
   pressCtrlZ();

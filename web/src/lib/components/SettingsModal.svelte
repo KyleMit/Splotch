@@ -2,7 +2,7 @@
   import DialogHeader from './design/DialogHeader.svelte';
   import type { CommonIconName } from './iconTypes';
   import SectionIcon from './SectionIcon.svelte';
-  import { uiState, settingsModal } from '$lib/state/ui.svelte';
+  import { clearRequestedSettingsSection, settingsModal, uiState } from '$lib/state/ui.svelte';
   import SectionBody from './settings/SectionBody.svelte';
   import CompactShell from './settings/CompactShell.svelte';
   import WideShell from './settings/WideShell.svelte';
@@ -68,7 +68,7 @@
     if (requestedSection) {
       markSectionSeen(requestedSection);
       view = requestedSection;
-      uiState.requestedSettingsSection = null;
+      clearRequestedSettingsSection();
       return;
     }
     if (opening) view = 'hub';

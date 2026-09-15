@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { STORAGE_KEYS } from '$lib/storage';
+import type { CanvasState } from './canvas.svelte';
 
 const mocks = vi.hoisted(() => ({ native: false }));
 vi.mock('$app/environment', () => ({ browser: true }));
@@ -42,6 +43,11 @@ async function freshModule() {
   return import('./install.svelte');
 }
 
+// The fresh module's canvas starts at zero strokes, so counts only ever climb.
+function drawStrokesTo(canvas: CanvasState, count: number) {
+  while (canvas.strokeCount < count) canvas.recordStrokeEnd();
+}
+
 async function openAndroidSession() {
   setUA(ANDROID_UA);
   const session = await freshModule();
@@ -52,7 +58,7 @@ async function openAndroidSession() {
 async function qualifyingInstallSession() {
   const session = await openAndroidSession();
   const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
-  canvasState.strokeCount = SETTLED_IN_STROKES;
+  drawStrokesTo(canvasState, SETTLED_IN_STROKES);
   session.recordInstallRepromptSession();
   return session;
 }
@@ -336,7 +342,7 @@ describe('dismissInstall', () => {
   it('does not count the session where the initial prompt was dismissed', async () => {
     const session = await openAndroidSession();
     const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
-    canvasState.strokeCount = SETTLED_IN_STROKES;
+    drawStrokesTo(canvasState, SETTLED_IN_STROKES);
 
     session.dismissInstall();
     session.recordInstallRepromptSession();
@@ -400,7 +406,7 @@ describe('bounded install re-prompts', () => {
   it('does not count before the initial banner has been dismissed', async () => {
     const session = await openAndroidSession();
     const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
-    canvasState.strokeCount = SETTLED_IN_STROKES;
+    drawStrokesTo(canvasState, SETTLED_IN_STROKES);
 
     session.recordInstallRepromptSession();
 
@@ -413,7 +419,7 @@ describe('bounded install re-prompts', () => {
     const session = await freshModule();
     session.initInstallPrompt();
     const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
-    canvasState.strokeCount = SETTLED_IN_STROKES;
+    drawStrokesTo(canvasState, SETTLED_IN_STROKES);
 
     session.recordInstallRepromptSession();
 
@@ -438,15 +444,15 @@ describe('install auto-clear', () => {
   it('dismisses and persists after five strokes relative to when it is armed', async () => {
     const { installState, armInstallAutoClear, autoDismissInstallIfDue } = await freshModule();
     const { canvasState } = await import('./canvas.svelte');
-    canvasState.strokeCount = 12;
+    drawStrokesTo(canvasState, 12);
     armInstallAutoClear();
 
-    canvasState.strokeCount = 16;
+    drawStrokesTo(canvasState, 16);
     expect(autoDismissInstallIfDue()).toBe(false);
     expect(installState.dismissed).toBe(false);
     expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBeNull();
 
-    canvasState.strokeCount = 17;
+    drawStrokesTo(canvasState, 17);
     expect(autoDismissInstallIfDue()).toBe(true);
     expect(installState.dismissed).toBe(true);
     expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBe('true');
@@ -458,17 +464,17 @@ describe('hidden install auto-clear', () => {
     const { installState, armInstallAutoClear, disarmInstallAutoClear, autoDismissInstallIfDue } =
       await freshModule();
     const { canvasState } = await import('./canvas.svelte');
-    canvasState.strokeCount = 3;
+    drawStrokesTo(canvasState, 3);
     armInstallAutoClear();
-    canvasState.strokeCount = 5;
+    drawStrokesTo(canvasState, 5);
     disarmInstallAutoClear();
-    canvasState.strokeCount = 20;
+    drawStrokesTo(canvasState, 20);
     expect(autoDismissInstallIfDue()).toBe(false);
     expect(installState.dismissed).toBe(false);
     armInstallAutoClear();
-    canvasState.strokeCount = 24;
+    drawStrokesTo(canvasState, 24);
     expect(autoDismissInstallIfDue()).toBe(false);
-    canvasState.strokeCount = 25;
+    drawStrokesTo(canvasState, 25);
     expect(autoDismissInstallIfDue()).toBe(true);
   });
 });
