@@ -37,20 +37,10 @@
     message?: string;
     includeDevice: boolean;
     /**
-     * The collected snapshot. Bindable for ReportForm, which sends it as JSON
-     * rather than through the hidden field below; /feedback never reads it.
+     * Bindable so ReportForm can forward it in its JSON body; /feedback posts
+     * the field itself. No host has business reading a bot trap beyond that.
      */
-    device?: DeviceInfo | null;
-    /** Bindable for the same reason — no host has business reading a bot trap. */
     honeypot?: string;
-    /**
-     * Bindable so ReportForm can await the same in-flight/memoized collection
-     * this component's own effect starts, instead of calling
-     * collectDeviceInfo independently — the two callers share one collection
-     * (in flight or already resolved into `device`), never two concurrent
-     * ones, so submit always sends what the preview last rendered.
-     */
-    ensureDevice?: () => Promise<DeviceInfo | undefined>;
   }
 
   let {
@@ -58,10 +48,13 @@
     kind = $bindable('bug'),
     message = $bindable(''),
     includeDevice = $bindable(),
-    device = $bindable(null),
     honeypot = $bindable(''),
-    ensureDevice = $bindable(),
   }: Props = $props();
+
+  // The collected snapshot, owned here alone: the hosts that send it as JSON
+  // reach it through `ensureDevice` below rather than a binding, so a host
+  // resetting its form cannot race the collection that writes it.
+  let device = $state<DeviceInfo | null>(null);
 
   let deviceRows = $derived(device ? describeDeviceInfo(device) : []);
 
@@ -86,19 +79,23 @@
   });
 
   // Collect the device snapshot the first time the parent opts in, so the
-  // preview below reflects exactly what will be sent. Shared with ReportForm via
-  // the bindable ensureDevice above. A failed collection resolves to undefined
-  // rather than throwing — an unavailable snapshot must not surface to the
-  // reporter as a failed send — and clears the memo so a later opt-in retries.
-  function ensureDeviceInfo(): Promise<DeviceInfo | undefined> {
+  // preview below reflects exactly what will be sent. Exported so a host that
+  // sends the snapshot as JSON (ReportForm, AiImageReport, via bind:this)
+  // awaits the same in-flight/memoized collection this component's own effect
+  // starts, instead of calling collectDeviceInfo independently — the callers
+  // share one collection (in flight or already resolved into `device`), never
+  // two concurrent ones, so submit always sends what the preview last
+  // rendered. A failed collection resolves to undefined rather than throwing —
+  // an unavailable snapshot must not surface to the reporter as a failed send
+  // — and clears the memo so a later opt-in retries.
+  export function ensureDevice(): Promise<DeviceInfo | undefined> {
     if (device) return Promise.resolve(device);
     return collectDeviceOnce().catch(() => undefined);
   }
-  ensureDevice = ensureDeviceInfo;
 
   $effect(() => {
     if (includeDevice && kind === 'bug' && !device) {
-      void ensureDeviceInfo();
+      void ensureDevice();
     }
   });
 </script>

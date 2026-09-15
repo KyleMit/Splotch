@@ -6,7 +6,6 @@
   import ReportFields from './report/ReportFields.svelte';
   import { failureReportRows } from '$lib/ai/failureReport';
   import type { AiFailureDetails } from '$lib/state/aiGeneration.svelte';
-  import type { DeviceInfo } from '$lib/platform/deviceReport';
   import type { ReportResponse } from '../../routes/api/report/+server';
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
@@ -51,7 +50,10 @@
   const problem = $derived(kind === 'generation-error');
   const diagnosticRows = $derived(failureReportRows(failure, attempts, style));
   let includeDevice = $state(false);
-  let ensureDevice = $state<() => Promise<DeviceInfo | undefined>>();
+  // Rendered only for a problem report, so absent for the picture and refusal
+  // kinds — and bound inside that conditional block, which is why Svelte wants
+  // the holder to be state rather than the plain `let` a top-level bind uses.
+  let fields = $state<ReportFields>();
   const refusal = $derived(kind === 'false-positive-refusal');
 
   let message = $state('');
@@ -84,7 +86,7 @@
 
   async function submit(signal: AbortSignal): Promise<Response> {
     if (problem) {
-      const device = includeDevice ? await ensureDevice?.() : undefined;
+      const device = includeDevice ? await fields?.ensureDevice() : undefined;
       return fetch(apiUrl('/api/report'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -250,7 +252,7 @@
         <p>Not sent: the drawing, names, accounts, or location.</p>
       </section>
       <fieldset class="ai-report-device" disabled={status === 'busy'}>
-        <ReportFields mode="device-only" bind:includeDevice bind:ensureDevice />
+        <ReportFields mode="device-only" bind:this={fields} bind:includeDevice />
       </fieldset>
     {:else}
       <div class="ai-report-thumbs" class:single={!outputUrl}>
