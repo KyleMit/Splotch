@@ -108,7 +108,7 @@ export function devGateProblems(
 ) {
   return DEV_GATED_EXPORTS.flatMap(({ name, sourcePath }) => {
     const source = readSource(sourcePath);
-    const body = exportedFunctionBody(source, name);
+    const body = exportedFunctionBody(withoutComments(source), name);
     if (body === null) return [`${name} export is missing from ${sourcePath}`];
     if (
       !/^if\s*\(\s*!dev\s*&&\s*!__DEV_HARNESS__(?:\s*&&\s*!PERF_MARKS)?\s*\)\s*(?:return\b|throw\b|\{\s*(?:return\b|throw\b))/.test(

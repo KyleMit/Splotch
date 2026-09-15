@@ -144,6 +144,26 @@ it.each(DEV_GATED_EXPORTS)('rejects an ungated $name export', ({ name, sourcePat
   );
 });
 
+it('ignores commented-out dev guards when checking the live export', () => {
+  const target = DEV_GATED_EXPORTS.find(({ name }) => name === 'prepareRefusedAiKeyForget');
+  const readSource = (path) =>
+    DEV_GATED_EXPORTS.filter((entry) => entry.sourcePath === path)
+      .map(({ name }) => {
+        if (name !== target.name) {
+          return `export function ${name}() { if (!dev && !__DEV_HARNESS__) return; }`;
+        }
+        return [
+          `// export async function ${name}() { if (!dev && !__DEV_HARNESS__) return; }`,
+          `export async function ${name}() { await persistCredential(); }`,
+        ].join('\n');
+      })
+      .join('\n');
+
+  expect(devGateProblems(readSource)).toContain(
+    `${target.name} in ${target.sourcePath} must begin with the __DEV_HARNESS__ compile-time guard`
+  );
+});
+
 it('requires surface-visit accounting to stay behind the compile-time gate', () => {
   expect(drawingWorkHotPathProblems()).toEqual([]);
   expect(drawingWorkHotPathProblems('const untouched = true;\nsurfaceVisits += 1;')).toEqual([
