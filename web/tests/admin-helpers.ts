@@ -56,15 +56,10 @@ export async function submitAdminKey(page: Page, key: string) {
 // belongs to Playwright's own `retries`, which re-runs the spec instead of
 // stacking hits inside one.
 //
-// So only the specs *about* signing in call this — correct key, wrong key,
-// sign out. Every other admin spec takes `adminPage` from the `test` exported
-// below, which spends one sign-in per run instead of one per test, so those
-// specs repeat under `--repeat-each` without touching the bucket. The login
-// specs themselves still spend one hit per repetition each, and `--repeat-each`
-// runs the whole file inside one window, so they bound how far the file as a
-// whole can be repeated: three login specs plus the run's one sign-in fit
-// exactly three repetitions. Past that, repeat with a `--grep` that leaves the
-// login specs out, or verify them with repeated full runs as CI does.
+// So only the specs *about* signing in call this — admin-login.spec.ts, which
+// states its own `--repeat-each` ceiling. Every other admin spec takes
+// `adminPage` from the `test` exported below, which spends one sign-in per run
+// instead of one per test, so those specs repeat without touching the bucket.
 export async function signInToAdmin(page: Page) {
   await page.goto('/admin');
   await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
@@ -72,7 +67,7 @@ export async function signInToAdmin(page: Page) {
 }
 
 /** Open the token console on a page whose context already holds a session. */
-export async function openAdminConsole(page: Page) {
+async function openAdminConsole(page: Page) {
   await page.goto('/admin');
   await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
 }
@@ -87,10 +82,39 @@ type AdminSessionCookies = Awaited<ReturnType<BrowserContext['storageState']>>['
 // pass the login bucket inside half a minute. A cached cookie is trusted only
 // after it opens the console, so a stale or foreign file costs one page load,
 // never a wrong session.
+//
+// Workers that start together would all miss the cache and each sign in, which
+// at five workers spent the bucket the login specs needed. So the first worker
+// to create the lock file signs in and the rest wait for its cookies, falling
+// back to their own sign-in only if the cookies never arrive.
 const SESSION_CACHE_FILE = 'admin-session-cookies.json';
+const SESSION_LOCK_FILE = 'admin-session-cookies.lock';
+const SESSION_CACHE_POLL_MS = 100;
 
-function sessionCachePath(workerInfo: WorkerInfo) {
-  return join(workerInfo.project.outputDir, SESSION_CACHE_FILE);
+function sessionCachePaths(workerInfo: WorkerInfo) {
+  const { outputDir } = workerInfo.project;
+  return { cache: join(outputDir, SESSION_CACHE_FILE), lock: join(outputDir, SESSION_LOCK_FILE) };
+}
+
+/** True for exactly one worker per run: the one whose exclusive create won. */
+async function claimSignIn(lockPath: string) {
+  try {
+    await writeFile(lockPath, String(process.pid), { flag: 'wx' });
+    return true;
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'EEXIST') return false;
+    throw error;
+  }
+}
+
+async function waitForCachedSession(path: string): Promise<AdminSessionCookies | null> {
+  const deadline = Date.now() + SIGN_IN_SETTLE_MS;
+  while (Date.now() < deadline) {
+    const cookies = await readCachedSession(path);
+    if (cookies) return cookies;
+    await new Promise((resolve) => setTimeout(resolve, SESSION_CACHE_POLL_MS));
+  }
+  return null;
 }
 
 async function readCachedSession(path: string): Promise<AdminSessionCookies | null> {
@@ -106,7 +130,6 @@ async function readCachedSession(path: string): Promise<AdminSessionCookies | nu
 // Written beside then renamed into place, so a worker reading while another
 // writes sees either no file or a whole one.
 async function writeCachedSession(path: string, cookies: AdminSessionCookies) {
-  await mkdir(dirname(path), { recursive: true });
   const partial = `${path}.${process.pid}`;
   await writeFile(partial, JSON.stringify(cookies));
   await rename(partial, path);
@@ -125,15 +148,17 @@ async function cachedSessionOpensConsole(
 }
 
 async function establishAdminSession(browser: Browser, workerInfo: WorkerInfo) {
-  const cachePath = sessionCachePath(workerInfo);
+  const { cache, lock } = sessionCachePaths(workerInfo);
+  await mkdir(dirname(cache), { recursive: true });
   const context = await browser.newContext({ baseURL: workerInfo.project.use.baseURL });
   const page = await context.newPage();
-  let cookies = await readCachedSession(cachePath);
+  let cookies = await readCachedSession(cache);
+  if (!cookies && !(await claimSignIn(lock))) cookies = await waitForCachedSession(cache);
   if (!cookies || !(await cachedSessionOpensConsole(context, page, cookies))) {
     await context.clearCookies();
     await signInToAdmin(page);
     cookies = (await context.storageState()).cookies;
-    await writeCachedSession(cachePath, cookies);
+    await writeCachedSession(cache, cookies);
   }
   await context.close();
   return cookies;
