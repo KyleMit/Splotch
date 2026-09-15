@@ -177,6 +177,61 @@ describe('removeKey', () => {
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 
+  it('settling one pending removal keeps another that only the durable list names', async () => {
+    ctrl.native = true;
+    for (const key of [STORAGE_KEYS.legacyAiAccessToken, STORAGE_KEYS.legacyAiUserApiKey]) {
+      localStorage.setItem(key, 'plaintext');
+      prefsStore.set(key, 'plaintext');
+    }
+    prefsRemoveFailure.key = STORAGE_KEYS.legacyAiAccessToken;
+    removeKey(STORAGE_KEYS.legacyAiAccessToken);
+    await vi.waitFor(() => expect(prefsRemoveFailure.attempts).toBe(1));
+    // The API-key tombstone reaches the durable list but not localStorage.
+    const setItem = localStorage.setItem.bind(localStorage);
+    vi.spyOn(localStorage, 'setItem').mockImplementationOnce((key, value) => {
+      if (key !== STORAGE_KEYS.pendingDurableRemovals) setItem(key, value);
+    });
+    prefsRemoveFailure.key = STORAGE_KEYS.legacyAiUserApiKey;
+    removeKey(STORAGE_KEYS.legacyAiUserApiKey);
+    await vi.waitFor(() => expect(prefsRemoveFailure.attempts).toBe(2));
+    vi.restoreAllMocks();
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.pendingDurableRemovals) ?? '[]')).toEqual([
+      STORAGE_KEYS.legacyAiAccessToken,
+    ]);
+
+    // The token removal now lands; the API-key removal keeps failing.
+    await hydrateDurableStorage();
+    await hydrateDurableStorage();
+
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
+    expect(prefsStore.has(STORAGE_KEYS.legacyAiAccessToken)).toBe(false);
+  });
+
+  it('a later write survives the durable restore even when its clear of the list failed', async () => {
+    ctrl.native = true;
+    prefsStore.set(STORAGE_KEYS.legacyAiUserApiKey, 'plaintext-key');
+    prefsRemoveFailure.key = STORAGE_KEYS.legacyAiUserApiKey;
+    removeKey(STORAGE_KEYS.legacyAiUserApiKey);
+    await vi.waitFor(() => expect(prefsRemoveFailure.attempts).toBe(1));
+    prefsRemoveFailure.key = null;
+
+    prefsSetFailure.key = STORAGE_KEYS.pendingDurableRemovals;
+    writeString(STORAGE_KEYS.legacyAiUserApiKey, 'new');
+    await vi.waitFor(() => expect(prefsStore.get(STORAGE_KEYS.legacyAiUserApiKey)).toBe('new'));
+    expect(prefsStore.get(STORAGE_KEYS.pendingDurableRemovals)).toContain(
+      STORAGE_KEYS.legacyAiUserApiKey
+    );
+    prefsSetFailure.key = null;
+
+    await hydrateDurableStorage();
+
+    expect(prefsStore.get(STORAGE_KEYS.legacyAiUserApiKey)).toBe('new');
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBe('new');
+    await vi.waitFor(() =>
+      expect(JSON.parse(prefsStore.get(STORAGE_KEYS.pendingDurableRemovals) ?? '[]')).toEqual([])
+    );
+  });
+
   it('a later write to the key supersedes its pending removal', async () => {
     ctrl.native = true;
     prefsStore.set(STORAGE_KEYS.legacyAiUserApiKey, 'plaintext-key');

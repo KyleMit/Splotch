@@ -120,28 +120,43 @@ function parsePendingDurableRemovals(raw: string | null): StorageKey[] {
   }
 }
 
-function setDurableRemovalPending(key: StorageKey, pending: boolean) {
-  const raw = safeStorageRead(
-    () => localStorage.getItem(STORAGE_KEYS.pendingDurableRemovals),
-    null
+function localPendingDurableRemovals(): Set<StorageKey> {
+  return new Set(
+    parsePendingDurableRemovals(
+      safeStorageRead(() => localStorage.getItem(STORAGE_KEYS.pendingDurableRemovals), null)
+    )
   );
-  const current = new Set(parsePendingDurableRemovals(raw));
-  if (current.has(key) === pending) return;
-  if (pending) current.add(key);
-  else current.delete(key);
-  const next = JSON.stringify([...current]);
+}
+
+function persistPendingDurableRemovals(pending: ReadonlySet<StorageKey>) {
+  const next = JSON.stringify([...pending]);
   safeStorageMutation(() => localStorage.setItem(STORAGE_KEYS.pendingDurableRemovals, next));
   void runWithDurablePreferences((Preferences) =>
     Preferences.set({ key: STORAGE_KEYS.pendingDurableRemovals, value: next })
   );
 }
 
-async function forgetInDurablePreferences(Preferences: DurablePreferences, key: StorageKey) {
+function setDurableRemovalPending(key: StorageKey, pending: boolean) {
+  const current = localPendingDurableRemovals();
+  if (current.has(key) === pending) return;
+  if (pending) current.add(key);
+  else current.delete(key);
+  persistPendingDurableRemovals(current);
+}
+
+// Resolves whether Preferences no longer holds the key. The caller owns the
+// pending list it settles on success, since the two copies of that list can
+// disagree and a clear computed from one copy alone would drop the other's
+// entries.
+async function forgetInDurablePreferences(
+  Preferences: DurablePreferences,
+  key: StorageKey
+): Promise<boolean> {
   try {
     await Preferences.remove({ key });
-    setDurableRemovalPending(key, false);
+    return true;
   } catch {
-    // Still pending: the next durable restore retries instead of restoring.
+    return false;
   }
 }
 
@@ -211,7 +226,9 @@ export function removeKey(key: StorageKey) {
   safeStorageMutation(() => localStorage.removeItem(key));
   if (!__IS_CAPACITOR__ || !isNative()) return;
   setDurableRemovalPending(key, true);
-  void runWithDurablePreferences((Preferences) => forgetInDurablePreferences(Preferences, key));
+  void runWithDurablePreferences(async (Preferences) => {
+    if (await forgetInDurablePreferences(Preferences, key)) setDurableRemovalPending(key, false);
+  });
 }
 
 // The `allowed` list has already narrowed the value by the time it is returned, so the signature
@@ -263,23 +280,37 @@ export async function hydrateDurableStorage() {
     // Fire every durable get concurrently rather than one serial bridge
     // round-trip per declared key on the cold-start critical path.
     const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
-    // Read from both copies: after a WebView eviction only the durable one
-    // still names the removals that never landed.
+    // The union of both copies is the working list for this pass: after a
+    // WebView eviction only the durable copy still names the removals that
+    // never landed, and after a failed local write only the durable copy has
+    // the newest entry. Every settlement below persists from this set, never
+    // from a re-read of one copy.
     const pendingRemovals = new Set([
-      ...parsePendingDurableRemovals(
-        safeStorageRead(() => localStorage.getItem(STORAGE_KEYS.pendingDurableRemovals), null)
-      ),
+      ...localPendingDurableRemovals(),
       ...parsePendingDurableRemovals(
         durable[hydrationKeys.indexOf(STORAGE_KEYS.pendingDurableRemovals)].value
       ),
     ]);
+    const settleRemoval = (key: StorageKey) => {
+      pendingRemovals.delete(key);
+      persistPendingDurableRemovals(pendingRemovals);
+    };
     const backups: Promise<unknown>[] = [];
     hydrationKeys.forEach((key, i) => {
-      if (pendingRemovals.has(key)) {
-        backups.push(forgetInDurablePreferences(Preferences, key));
-        return;
-      }
       const local = safeStorageRead(() => localStorage.getItem(key), null);
+      if (pendingRemovals.has(key)) {
+        // A value written since the removal supersedes it; its own clear of
+        // the list may not have landed, so it is settled here instead.
+        if (local !== null) settleRemoval(key);
+        else {
+          backups.push(
+            forgetInDurablePreferences(Preferences, key).then((forgotten) => {
+              if (forgotten) settleRemoval(key);
+            })
+          );
+          return;
+        }
+      }
       const { value } = durable[i];
       const action = reconcileStorageValues(local, value);
       if (action.restore !== undefined) {
