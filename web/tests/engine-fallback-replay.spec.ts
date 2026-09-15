@@ -2,6 +2,11 @@ import { expect, test } from '@playwright/test';
 import { draw, firstOpaquePixel, spaNavigate, expectNoReload } from './helpers';
 import { openDrawer } from './flows-harness';
 
+test.skip(
+  !!process.env.DEV_SERVER,
+  'guards prerendered-page hydration; the dev server does not prerender'
+);
+
 for (const replaceCanvas of [false, true]) {
   test(`pre-hydration ink and undo state, forced replacement=${replaceCanvas}`, async ({
     page,
