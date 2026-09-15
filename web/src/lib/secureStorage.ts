@@ -68,23 +68,31 @@ const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
 // data, and the narrow put type prevents payload-path writes of CryptoKey.
 const payloadStore = {
   get: async (name: string) => (await getDb()).get(STORE, name),
-  // Written in one transaction with a check that the key row is still there. A
-  // database recreated after the browser closed the previous connection has no
-  // key row yet, and a payload encrypted with the key the closed connection
-  // had read would be unreadable on every later launch; a failed save is the
-  // outcome a parent can act on.
-  putBesideMasterKey: async (name: string, payload: SecretPayload) => {
-    const tx = (await getDb()).transaction(STORE, 'readwrite');
-    await Promise.all([
-      tx.store.get(MASTER_KEY_ROW).then((keyRow) => {
-        if (keyRow === undefined) throw new Error('The secure-storage master key is gone');
-        return tx.store.put(payload, name);
-      }),
-      tx.done,
-    ]);
-  },
   delete: async (name: string) => (await getDb()).delete(STORE, name),
 };
+
+// A payload is written through the connection its key was read from, in one
+// transaction with a check that the key row is still there. The browser closes
+// that connection when it deletes the database (site data cleared, a deletion
+// from another tab), and a closed connection cannot open a transaction, so a
+// save that was already encrypting fails instead of landing its ciphertext in
+// a recreated database whose key — possibly another tab's fresh one — never
+// encrypted it. Re-resolving the connection here would let exactly that
+// through. A failed save is the outcome a parent can act on.
+async function putBesideMasterKey(
+  db: IdbDatabase<SecureDb>,
+  name: string,
+  payload: SecretPayload
+): Promise<void> {
+  const tx = db.transaction(STORE, 'readwrite');
+  await Promise.all([
+    tx.store.get(MASTER_KEY_ROW).then((keyRow) => {
+      if (keyRow === undefined) throw new Error('The secure-storage master key is gone');
+      return tx.store.put(payload, name);
+    }),
+    tx.done,
+  ]);
+}
 
 function isSecretPayload(value: unknown): value is SecretPayload {
   return (
@@ -113,16 +121,21 @@ function isSecretPayload(value: unknown): value is SecretPayload {
 // key row is gone with the database once the browser closes the connection
 // (site data cleared, a deletion from another connection), and a key kept past
 // that would encrypt new payloads nothing on disk can ever decrypt again.
-let masterKeyPromise: Promise<CryptoKey> | null = null;
+//
+// The key travels with that connection so a write can go through the same
+// one; see putBesideMasterKey.
+type MasterKeyHandle = { key: CryptoKey; db: IdbDatabase<SecureDb> };
 
-function getMasterKey(): Promise<CryptoKey> {
+let masterKeyPromise: Promise<MasterKeyHandle> | null = null;
+
+function getMasterKey(): Promise<MasterKeyHandle> {
   if (!masterKeyPromise) {
-    const loading: Promise<CryptoKey> = getDb()
+    const loading: Promise<MasterKeyHandle> = getDb()
       .then((db) => {
         void db.closed.then(() => {
           if (masterKeyPromise === loading) masterKeyPromise = null;
         });
-        return loadOrCreateMasterKey(db);
+        return loadOrCreateMasterKey(db).then((key) => ({ key, db }));
       })
       .catch((err: unknown) => {
         if (masterKeyPromise === loading) masterKeyPromise = null;
@@ -153,7 +166,7 @@ async function loadOrCreateMasterKey(db: IdbDatabase<SecureDb>): Promise<CryptoK
 }
 
 async function webSave(name: string, value: string) {
-  const key = await getMasterKey();
+  const { key, db } = await getMasterKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
@@ -161,7 +174,7 @@ async function webSave(name: string, value: string) {
     new TextEncoder().encode(value)
   );
   const payload: SecretPayload = { iv, data };
-  await payloadStore.putBesideMasterKey(name, payload);
+  await putBesideMasterKey(db, name, payload);
 }
 
 async function webLoad(name: string) {
@@ -171,7 +184,7 @@ async function webLoad(name: string) {
     return null;
   }
   if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
-  const key = await getMasterKey();
+  const { key } = await getMasterKey();
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
   return new TextDecoder().decode(plain);
 }

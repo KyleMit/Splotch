@@ -98,17 +98,43 @@ vi.mock('./idb', () => {
     },
   };
   // Each connection stays open until the test closes it; like the real memo, a
-  // closed one is replaced on the next call.
+  // closed one is replaced on the next call, and like a real closed connection
+  // it can no longer open a transaction.
   return {
     lazyIdbDatabase: () => {
       let connection: Promise<typeof db> | null = null;
       return () => {
         if (!connection) {
-          const opened = new Promise<void>((resolve) => {
-            ctrl.closeConnection = resolve;
+          let isClosed = false;
+          const closed = new Promise<void>((resolve) => {
+            ctrl.closeConnection = () => {
+              isClosed = true;
+              resolve();
+            };
           });
-          const current = Promise.resolve({ ...db, closed: opened });
-          void opened.then(() => {
+          const assertOpen = () => {
+            if (isClosed) throw new Error('The database connection is closing');
+          };
+          const current = Promise.resolve({
+            closed,
+            get(store: string, key: string) {
+              assertOpen();
+              return db.get(store, key);
+            },
+            put(store: string, value: unknown, key: string) {
+              assertOpen();
+              return db.put(store, value, key);
+            },
+            delete(store: string, key: string) {
+              assertOpen();
+              return db.delete(store, key);
+            },
+            transaction(store: string, mode: string) {
+              assertOpen();
+              return db.transaction(store, mode);
+            },
+          });
+          void closed.then(() => {
             if (connection === current) connection = null;
           });
           connection = current;
@@ -277,6 +303,34 @@ describe('master key creation', () => {
     vi.resetModules();
     const nextLaunch = await import('./secureStorage');
     await expect(nextLaunch.loadApiKey()).resolves.toBe('after-close');
+  });
+
+  it('fails a save that was encrypting when the database was deleted and another tab saved', async () => {
+    await secureStorage.saveApiKey('initial');
+    const closeConnection = ctrl.closeConnection;
+    let releaseEncrypt!: () => void;
+    const encrypt = crypto.subtle.encrypt.bind(crypto.subtle);
+    vi.spyOn(crypto.subtle, 'encrypt').mockImplementationOnce(async (...args) => {
+      await new Promise<void>((resolve) => {
+        releaseEncrypt = resolve;
+      });
+      return encrypt(...args);
+    });
+    const heldSave = secureStorage.saveApiKey('held');
+    await vi.waitFor(() => expect(releaseEncrypt).toBeTypeOf('function'));
+
+    // The browser deletes the database and closes the connection the held save
+    // read its key through; another tab then saves into the recreated one.
+    ctrl.rows.clear();
+    closeConnection();
+    vi.resetModules();
+    const otherTab = await import('./secureStorage');
+    await otherTab.saveApiKey('other');
+
+    releaseEncrypt();
+    await expect(heldSave).rejects.toThrow('connection is closing');
+
+    await expect(otherTab.loadApiKey()).resolves.toBe('other');
   });
 
   it('refuses to write a payload into a database that has no master key row', async () => {
