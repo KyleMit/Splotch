@@ -16,12 +16,7 @@
   import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
   import { autoSaveFooter } from '$lib/ai/autoSaveCopy';
   import '$lib/components/deferredIcons';
-  import {
-    timestamp,
-    triggerDownload,
-    extensionForImageType,
-    AI_IMAGE_BASENAME,
-  } from '$lib/saveNaming';
+  import { downloadAiResult } from '$lib/ai/resultDownload';
 
   let dialogEl: HTMLDialogElement;
 
@@ -82,10 +77,7 @@
 
   function handleDownload() {
     if (!aiGenerationState.resultUrl || exiting) return;
-    triggerDownload(
-      aiGenerationState.resultUrl,
-      `${AI_IMAGE_BASENAME}-${timestamp()}.${extensionForImageType(aiGenerationState.resultType ?? '')}`
-    );
+    downloadAiResult(aiGenerationState.resultUrl, aiGenerationState.resultType);
 
     // Morph the modal into a polaroid, hold it in the center, then let it fly
     // off to the bottom-left. The fly-out animation's end dismisses the modal.
