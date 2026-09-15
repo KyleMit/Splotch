@@ -1,8 +1,15 @@
-import { expect, test, type Page, type Request } from '@playwright/test';
+import type { Page, Request } from '@playwright/test';
 import { HARNESS_PROBE_CODE, MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import { APP_TEMPLATE_SCRIPT_HASH } from '../securityPolicy';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
-import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from './admin-helpers';
+import {
+  adminConsole,
+  ADMIN_ACCESS_TOKEN,
+  expect,
+  signInToAdmin,
+  submitAdminKey,
+  test,
+} from './admin-helpers';
 
 // The admin console is web-only: the server-rendered /admin (form actions +
 // HTTP-only cookie session) over the shared core ($lib/server/admin +
@@ -111,10 +118,10 @@ test('web /admin signs in, fails closed without durable tokens, and signs out', 
 // of widths where the tracks fit the viewport but not the sheet's content box
 // (PR 767 review: at 561px the code column computed to 0px and rows tripled in
 // height). The collapse must key off where the grid actually fits, not just
-// phone widths. This costs one of the shared rate-limit budget's sign-ins —
-// see the tally in admin-helpers.ts.
-test('web /admin ledger keeps its rows usable across viewport widths', async ({ page }) => {
-  await signInToAdmin(page);
+// phone widths.
+test('web /admin ledger keeps its rows usable across viewport widths', async ({
+  adminPage: page,
+}) => {
   const token = MANAGED_ACCESS_TOKEN;
   const row = tokenRow(page, token);
   await expect(row).toBeVisible();
@@ -232,10 +239,9 @@ async function resolveTokenColor(page: Page, name: string) {
 // 560px, which includes narrow desktop windows and trackpad hybrids, not just
 // touch.
 test('web /admin chevron press feedback beats hover on a hover-capable pointer', async ({
-  page,
+  adminPage: page,
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
-  await signInToAdmin(page);
   const token = MANAGED_ACCESS_TOKEN;
 
   const more = tokenRow(page, token).getByRole('button', {
@@ -283,10 +289,9 @@ test('web /admin chevron press feedback beats hover on a hover-capable pointer',
 // Chromium, which flips a transitioned visibility discretely rather than
 // holding it like WebKit/Firefox — the attribute is the cross-engine gate.
 test('web /admin closing the reveal removes its actions from the tab order immediately', async ({
-  page,
+  adminPage: page,
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
-  await signInToAdmin(page);
   // allowedTokensList appends the harness probe after the managed codes, so a
   // second row after the probed one gives the forward Tab a landing spot
   // inside the ledger. From the last row's chevron it would legitimately leave
@@ -324,8 +329,9 @@ test('web /admin closing the reveal removes its actions from the tab order immed
   expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 });
 
-test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {
-  await signInToAdmin(page);
+test('web /admin surfaces a network failure instead of failing silently', async ({
+  adminPage: page,
+}) => {
   await page.route(
     (url) => url.pathname === '/admin' && url.search === '?/add',
     (route) => route.abort()

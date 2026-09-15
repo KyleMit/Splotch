@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { MANAGED_ACCESS_TOKEN } from '../playwright.shared';
-import { signInToAdmin } from './admin-helpers';
+import { expect, test } from './admin-helpers';
 import {
   gotoApp,
   openSettingsModal,
@@ -110,9 +110,7 @@ test('/admin logged out has no serious accessibility violations', async ({ page 
   await expectNoSeriousViolations(page);
 });
 
-test('/admin logged in has no serious accessibility violations', async ({ page }) => {
-  await signInToAdmin(page);
-
+test('/admin logged in has no serious accessibility violations', async ({ adminPage: page }) => {
   // The env-seeded invite row keeps the token list UI in the scan without a
   // mutation that the production preview refuses.
   const row = page.getByRole('row').filter({
