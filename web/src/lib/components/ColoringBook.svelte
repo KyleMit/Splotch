@@ -106,7 +106,10 @@
 
   // Swap the active overlay to the paper's portrait/landscape art when the
   // paper re-adopts the viewport — i.e. only on rotations with a blank canvas;
-  // a locked paper keeps `orientation` (and so the art) unchanged.
+  // a locked paper keeps `orientation` (and so the art) unchanged. An effect
+  // for now because the overlay store does not yet derive its orientation from
+  // the paper itself; that derivation is #1916's change, and this site goes
+  // with it.
   $effect(() => {
     setOverlayOrientation(orientation);
   });
