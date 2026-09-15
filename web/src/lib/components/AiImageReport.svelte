@@ -135,14 +135,23 @@
 
     try {
       const response = await submit(requestController.signal);
-      const result: ImageReportResponse | ReportResponse = await response.json().catch(() => ({
-        ok: false,
-        error: problem
-          ? 'Could not send your problem report.'
-          : refusal
-            ? 'Could not send your refusal report.'
-            : 'Could not send your picture report.',
-      }));
+      // The deadline can fire while the body is still arriving, which rejects
+      // this read rather than the fetch. That rejection belongs to the catch
+      // below, where the deadline is told apart from an unmount; swallowing it
+      // here would leave the dialog on "Sending…" with dismissal blocked.
+      const result: ImageReportResponse | ReportResponse = await response
+        .json()
+        .catch((error: unknown) => {
+          if (requestController.signal.aborted) throw error;
+          return {
+            ok: false,
+            error: problem
+              ? 'Could not send your problem report.'
+              : refusal
+                ? 'Could not send your refusal report.'
+                : 'Could not send your picture report.',
+          };
+        });
       if (requestController.signal.aborted) return;
       if (response.ok && result.ok) {
         status = 'success';
