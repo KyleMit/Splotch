@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { createHydratedFlag } from '$lib/hydration.svelte';
   import AssetSections from '$lib/components/styleguide/AssetSections.svelte';
   import ChromeSections from '$lib/components/styleguide/ChromeSections.svelte';
   import ColorSections from '$lib/components/styleguide/ColorSections.svelte';
@@ -27,12 +27,8 @@
   let { data }: PageProps = $props();
 
   // Adopt browser state after hydration so the SSR radio attributes are updated.
-  let mounted = $state(false);
-  const theme = $derived(mounted ? resolvedTheme() : 'light');
-
-  onMount(() => {
-    mounted = true;
-  });
+  const hydration = createHydratedFlag();
+  const theme = $derived(hydration.hydrated ? resolvedTheme() : 'light');
 
   const themeOptions: SegmentedPickerOption<ResolvedTheme>[] = [
     { value: 'light', label: 'Light', icon: 'theme-light' },

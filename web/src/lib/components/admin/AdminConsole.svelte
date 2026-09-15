@@ -37,7 +37,7 @@
 </script>
 
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { createHydratedFlag } from '$lib/hydration.svelte';
   import { FREE_GENERATION_LIMIT, type FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
   import PageShell from '../page/PageShell.svelte';
   import RuleLabel from '../design/RuleLabel.svelte';
@@ -94,12 +94,9 @@
   // (issue #615, whose reported failure was this GET:
   // `navigated to "/admin?access-key=…"`). Both flows already required JS, so
   // nothing that worked stops working — it just fails visibly instead of leaking.
-  let hydrated = $state(false);
-  onMount(() => {
-    hydrated = true;
-  });
+  const hydration = createHydratedFlag();
 
-  let submitDisabled = $derived(busy || !hydrated);
+  let submitDisabled = $derived(busy || !hydration.hydrated);
 
   // Callbacks that reject (e.g. a fetch failing offline) would otherwise be
   // unhandled rejections with no UI feedback, so catch here and surface a
