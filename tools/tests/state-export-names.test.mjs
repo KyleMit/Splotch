@@ -12,8 +12,9 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 const stateDir = join(repoRoot, 'web', 'src', 'lib', 'state');
 const RUNE_MODULE_SUFFIX = '.svelte.ts';
 
+// A generic argument (`$state<Settings>(`) may sit between the initializer and its call.
 const EXPORTED_SINGLETON =
-  /^export const (\w+)(?:\s*:[^=]+)?\s*=\s*(?:\$state(?:\.raw)?|create[A-Z]\w*)\(/gm;
+  /^export const (\w+)(?:\s*:[^=]+)?\s*=\s*(?:\$state(?:\.raw)?|create[A-Z]\w*)(?:<[^(]*>)?\s*\(/gm;
 
 const exportedSingletons = (source) =>
   Array.from(source.matchAll(EXPORTED_SINGLETON), (match) => match[1]);
@@ -63,6 +64,24 @@ describe('the state-module export naming rule', () => {
     expect(violations('strokeWidth.svelte.ts', 'export const strokeState = $state({});')).toEqual([
       'strokeState',
     ]);
+  });
+
+  it('rejects a typed $state<T>() initializer under the bare noun', () => {
+    expect(
+      violations('settings.svelte.ts', 'export const settings = $state<Settings>({});')
+    ).toEqual(['settings']);
+  });
+
+  it('rejects a typed $state.raw<T>() initializer under the wrong name', () => {
+    expect(
+      violations('layout.svelte.ts', 'export const layout = $state.raw<LayoutState>({});')
+    ).toEqual(['layout']);
+  });
+
+  it('accepts a typed initializer under the right name', () => {
+    expect(
+      violations('layout.svelte.ts', 'export const layoutState = $state.raw<LayoutState>({});')
+    ).toEqual([]);
   });
 
   it('rejects an exported $state.raw under the wrong name', () => {
