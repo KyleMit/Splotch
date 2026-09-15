@@ -50,8 +50,10 @@
   const problem = $derived(kind === 'generation-error');
   const diagnosticRows = $derived(failureReportRows(failure, attempts, style));
   let includeDevice = $state(false);
-  // Rendered only for a problem report, so absent for the picture and refusal kinds.
-  let fields: ReportFields | undefined;
+  // Rendered only for a problem report, so absent for the picture and refusal
+  // kinds — and bound inside that conditional block, which is why Svelte wants
+  // the holder to be state rather than the plain `let` a top-level bind uses.
+  let fields = $state<ReportFields>();
   const refusal = $derived(kind === 'false-positive-refusal');
 
   let message = $state('');
