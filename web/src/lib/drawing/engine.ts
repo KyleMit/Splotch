@@ -85,7 +85,8 @@ import {
   type CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
-import { type HistoryDebug, type RecordedPaperState } from './undoHistory';
+import { paperStateMatches, type HistoryDebug, type RecordedPaperState } from './undoHistory';
+import { recordPaper, restorePaperLayout } from './paperLayout';
 import { createCanvasMeasure, createCanvasLayoutUpdater, type CanvasRect } from './canvasMeasure';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import { createStrokeRasterQueue, type RasterBatch } from './strokeRasterQueue';
@@ -223,24 +224,23 @@ function setCanvasEmptyState(
   // An in-flight stroke already owns the live paper and marks it non-empty; undo must not replace
   // its coordinate space with metadata from the removed command.
   if (canvasEmpty === empty) return;
-  const paperUnchanged =
-    recordedPaper !== undefined &&
-    paper.pxW === recordedPaper.pxW &&
-    paper.pxH === recordedPaper.pxH &&
-    paper.cssW === recordedPaper.cssW &&
-    paper.cssH === recordedPaper.cssH &&
-    paperAngle === recordedPaper.angle;
-  const restoringPaper = !empty && !paperUnchanged ? recordedPaper : undefined;
+  const paperUnchanged = paperStateMatches(paper, paperAngle, recordedPaper);
+  const restoringPaper =
+    !empty && (!paperUnchanged || recordedPaper?.presentation) ? recordedPaper : undefined;
   canvasEmpty = empty;
   if (restoringPaper) {
-    paper = {
-      pxW: restoringPaper.pxW,
-      pxH: restoringPaper.pxH,
-      cssW: restoringPaper.cssW,
-      cssH: restoringPaper.cssH,
-    };
+    paper = { ...restoringPaper };
     paperAngle = restoringPaper.angle;
-    resizeCanvas(undefined, { repaintDeferredToRestore });
+    const rect = canvas.getBoundingClientRect();
+    resizeCanvas(rect, {
+      repaintDeferredToRestore,
+      preservedView: restorePaperLayout(
+        restoringPaper.presentation,
+        rect,
+        renderScale,
+        currentScreenAngle()
+      ),
+    });
   }
   callbacks.onCanvasEmptyChange?.(empty);
   // A blank canvas frees the locked paper to match the live viewport again
@@ -337,7 +337,7 @@ function adoptPaper(rect: DOMRect) {
 
 function recordedPaperState(): RecordedPaperState | null {
   if (!paperIsSized()) return null;
-  return { ...paper, angle: paperAngle };
+  return recordPaper(paper, paperAngle, paperView, measure.rect, currentScreenAngle());
 }
 
 // Keep tile contexts in upright paper coordinates and report the presentation

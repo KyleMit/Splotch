@@ -60,6 +60,16 @@ for (const layout of [
         await expect(overlay).toHaveAttribute('src', source!);
         await expect.poll(() => screenPixel(page, x, y)).toEqual(ink);
         await expect(page.locator('#undoButton')).toHaveAttribute('aria-disabled', 'false');
+        const clear = (await page.locator('#clearButton').boundingBox())!;
+        await page.mouse.move(clear.x + clear.width / 2, clear.y + clear.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(layout.width / 2, layout.height / 2, { steps: 12 });
+        await page.mouse.up();
+        await expect.poll(() => screenPixel(page, x, y)).not.toEqual(ink);
+        await page.locator('#undoButton').click();
+        await expect.poll(() => page.locator('.paper-sheet').boundingBox()).toEqual(paper);
+        await expect.poll(() => overlay.boundingBox()).toEqual(art);
+        await expect.poll(() => screenPixel(page, x, y)).toEqual(ink);
       }
     });
   }

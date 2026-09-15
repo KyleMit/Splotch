@@ -21,7 +21,10 @@ the style through `updateDrawingLayout`: an occupied paper keeps its dimensions 
 the view translation compensates for the canvas origin moving. Ink, coloring art, and magic fill
 remain aligned at the same screen positions in either direction. An empty paper adopts the new
 viewport; clearing releases the lock through the existing ADR-0050 path. Keeping the canvas box
-identical in both styles was rejected because it would change the default Buttons drawing area.
+identical in both styles was rejected because it would change the default Buttons drawing area. Undo
+records non-identity presentations with their canvas origin, viewport, and screen angle. Restoring a
+cleared paper reuses that presentation while the window and orientation still match; a genuine
+resize or rotation uses the existing presentation policy.
 
 `glassPanes.ts` derives the action strip and open flyout rectangles from the existing button layout,
 visible controls, viewport, and safe areas. A single SVG union mask feathers each pane; menu
