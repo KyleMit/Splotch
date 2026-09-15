@@ -20,6 +20,7 @@ import { solveParentalGate } from './flows-harness';
 
 const ABOVE_SCROLLSPY_BAND_PX = 118;
 const BELOW_SCROLLSPY_BAND_PX = 142;
+const RESIZE_DELIVERY_TIMEOUT_MS = 1_000;
 
 // Park a section's heading an exact distance below the pane's top edge, so a
 // spec can state where the scrollspy's reading line is rather than where some
@@ -37,15 +38,25 @@ async function parkHeadingBelowPaneTop(page: Page, section: string, offsetPx: nu
 
 async function triggerSettingsContentResize(page: Page) {
   await page.locator('.settings-zoom').evaluate(
-    (content) =>
-      new Promise<void>((resolve) => {
-        const observer = new ResizeObserver(() => {
+    (content, timeoutMs) =>
+      new Promise<void>((resolve, reject) => {
+        const startingHeight = content.getBoundingClientRect().height;
+        const observer = new ResizeObserver(([entry]) => {
+          if (entry.contentRect.height === startingHeight) return;
           observer.disconnect();
+          clearTimeout(timeout);
           requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
         });
+        const timeout = window.setTimeout(() => {
+          observer.disconnect();
+          reject(new Error('Settings content did not resize'));
+        }, timeoutMs);
         observer.observe(content);
-        content.style.paddingBottom = '1px';
-      })
+        const spacer = document.createElement('div');
+        spacer.style.height = '1px';
+        content.append(spacer);
+      }),
+    RESIZE_DELIVERY_TIMEOUT_MS
   );
 }
 
