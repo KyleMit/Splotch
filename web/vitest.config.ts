@@ -2,6 +2,22 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
 import { buildDefines } from './defines';
 
+// The per-request SSR guard renders pages the way the Netlify SSR bundle does,
+// which compiles `__IS_CAPACITOR__` as false. It runs under
+// vitest.webSsr.config.ts instead of here, where the native define is true.
+export const WEB_SSR_TESTS = 'src/**/*.webSsr.test.ts';
+
+export function unitTestDefines(isCapacitor: boolean) {
+  return buildDefines({
+    appVersion: '1.0.0-test',
+    buildTime: '2026-01-01T00:00:00Z',
+    nativeApiBase: '',
+    isCapacitor,
+    perfMarks: false,
+    devHarness: false,
+  });
+}
+
 // Unit-test config, separate from the Playwright E2E suite (`npm test`).
 // The SvelteKit plugin gives us the `$lib` / `$app/*` aliases and, crucially,
 // compiles the runes in `*.svelte.ts` state modules so they can be imported
@@ -15,18 +31,11 @@ export default defineConfig({
   // build, where untrack merely calls its function and flushSync flushes
   // nothing — see svelteRuntime.svelte.test.ts.
   resolve: { conditions: ['browser'] },
-  define: buildDefines({
-    appVersion: '1.0.0-test',
-    buildTime: '2026-01-01T00:00:00Z',
-    nativeApiBase: '',
-    // `true` keeps runtime native branches compiled in when they pair
-    // `__IS_CAPACITOR__` with `isNative()`, so tests control those branches
-    // through their isNative() mocks. Pure compile-time branches intentionally
-    // dead-code-eliminate here and need source/build boundary coverage instead.
-    isCapacitor: true,
-    perfMarks: false,
-    devHarness: false,
-  }),
+  // `true` keeps runtime native branches compiled in when they pair
+  // `__IS_CAPACITOR__` with `isNative()`, so tests control those branches
+  // through their isNative() mocks. Pure compile-time branches intentionally
+  // dead-code-eliminate here and need source/build boundary coverage instead.
+  define: unitTestDefines(true),
   test: {
     environment: 'happy-dom',
     coverage: {
@@ -53,6 +62,6 @@ export default defineConfig({
     // tools/tests/web-root-unit-tests.test.mjs fails if this entry is dropped.
     include: ['src/**/*.{test,spec}.{js,ts}', '*.test.ts'],
     // The Playwright specs live under tests/ and must not be picked up here.
-    exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**'],
+    exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**', WEB_SSR_TESTS],
   },
 });
