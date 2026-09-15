@@ -1294,6 +1294,7 @@ html[data-toolbar='bare'] .app-container {
 html[data-toolbar='bare'] .actions-panel .action-button,
 html[data-toolbar='bare'] .actions-panel .action-button:hover:not(:disabled):not(.disabled),
 html[data-toolbar='bare'] .actions-panel .action-button:active:not(:disabled):not(.disabled),
+html[data-toolbar='bare'] .actions-panel #undoButton.disabled:active,
 html[data-toolbar='bare'] .actions-panel .flyout-option,
 html[data-toolbar='bare'] .actions-panel .flyout-menu {
   background: transparent;
@@ -1326,6 +1327,7 @@ html[data-toolbar='bare']
   filter: grayscale(1) opacity(0.35);
 }
 html[data-toolbar='bare'] .actions-panel .action-button:active:not(:disabled):not(.disabled),
+html[data-toolbar='bare'] .actions-panel #undoButton.disabled:active,
 html[data-toolbar='bare'] .actions-panel .action-button:active {
   transform: scale(0.9);
 }

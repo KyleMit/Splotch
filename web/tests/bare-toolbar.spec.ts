@@ -144,3 +144,24 @@ test('Bare compact color menu keeps its swatches and dismissal', async ({ page }
   await expect(page.locator('.color-menu')).toHaveCount(0);
   await expect(page.locator('#colorButton')).toHaveCSS('color', 'rgb(236, 83, 78)');
 });
+
+for (const theme of ['light', 'dark']) {
+  test(`Bare unavailable Undo stays transparent while pressed in ${theme}`, async ({ page }) => {
+    await page.addInitScript(
+      ({ keys, theme }) => {
+        localStorage.setItem(keys.toolbarStyle, 'bare');
+        localStorage.setItem(keys.theme, theme);
+      },
+      { keys: STORAGE_KEYS, theme }
+    );
+    await gotoApp(page);
+    await openDrawer(page);
+    const undo = page.locator('#undoButton');
+    await expect(undo).toHaveAttribute('aria-disabled', 'true');
+    await undo.hover();
+    await page.mouse.down();
+    await expect(undo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(undo).toHaveCSS('box-shadow', 'none');
+    await page.mouse.up();
+  });
+}
