@@ -2,32 +2,20 @@ import type { Page, Request } from '@playwright/test';
 import { HARNESS_PROBE_CODE, MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import { APP_TEMPLATE_SCRIPT_HASH } from '../securityPolicy';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
-import {
-  adminConsole,
-  ADMIN_ACCESS_TOKEN,
-  expect,
-  signInToAdmin,
-  submitAdminKey,
-  test,
-} from './admin-helpers';
+import { adminConsole, expect, test } from './admin-helpers';
 
 // The admin console is web-only: the server-rendered /admin (form actions +
 // HTTP-only cookie session) over the shared core ($lib/server/admin +
 // $lib/server/tokens). Nothing in the app links to it and the native bundle has
 // no admin route at all — an in-app door to a privileged console reads as
-// hidden functionality to a store reviewer. The JSON /api/admin/* endpoints
-// remain (tools/api-smoke/lib/admin-client.mjs drives them) and are covered here
-// too. The production preview has no Blobs, so its env-seeded rows are read-only;
-// writable in-memory coverage belongs to the Vite-dev API smoke.
-
-async function expectTokenAddUnavailable(page: Page, token: string) {
-  await adminConsole(page).fill(token);
-  await page.getByRole('button', { name: 'Add code' }).click();
-  await expect(
-    page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
-  ).toBeVisible();
-  await expect(page.getByText(token, { exact: true })).toBeHidden();
-}
+// hidden functionality to a store reviewer. The production preview has no
+// Blobs, so its env-seeded rows are read-only; writable in-memory coverage
+// belongs to the Vite-dev API smoke.
+//
+// Every signed-in spec here rides the run's shared session through `adminPage`,
+// so none of them spends a login hit and the file repeats freely under
+// `--repeat-each`. The specs that exercise signing in itself — and so must
+// spend hits — live in admin-login.spec.ts with their own budget.
 
 function tokenRow(page: Page, token: string) {
   return page.getByRole('row').filter({
@@ -82,37 +70,6 @@ async function expectVisibleActionsMeetTargetFloor(row: ReturnType<typeof tokenR
     expect(box!.height).toBeGreaterThanOrEqual(44);
   }
 }
-
-test('web /admin rejects a wrong key', async ({ page }) => {
-  await page.goto('/admin');
-  await submitAdminKey(page, 'wrong-key');
-  await expect(page.getByRole('alert')).toContainText('Incorrect access key');
-});
-
-test('web /admin signs in, fails closed without durable tokens, and signs out', async ({
-  page,
-}) => {
-  await signInToAdmin(page);
-  // Production preview has no Netlify Blobs: reads retain the env seed, but
-  // mutations must not claim an in-memory success that disappears on restart.
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Netlify Blobs is unavailable' })
-  ).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Free generation grants' })).toBeVisible();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Free grant monitoring is using local memory' })
-  ).toBeVisible();
-  await expect(page.getByText('Sampled successes').locator('..')).toContainText('0');
-  await expectTokenAddUnavailable(page, `e2e-web-${Date.now()}`);
-
-  await page.getByRole('button', { name: 'Sign out' }).click();
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-
-  // The session survives in an HTTP-only cookie, so signing back in isn't
-  // needed after a reload while signed in — but after sign-out it must be.
-  await page.reload();
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-});
 
 // The ledger's column grid uses fixed usage/action tracks, so there is a band
 // of widths where the tracks fit the viewport but not the sheet's content box
@@ -339,41 +296,6 @@ test('web /admin surfaces a network failure instead of failing silently', async 
   await adminConsole(page).fill(`e2e-offline-${Date.now()}`);
   await page.getByRole('button', { name: 'Add code' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'Something went wrong' })).toBeVisible();
-});
-
-test('admin API requires a valid bearer session and durable mutation storage', async ({
-  request,
-}) => {
-  expect((await request.get('/api/admin/tokens')).status()).toBe(401);
-  expect(
-    (
-      await request.get('/api/admin/tokens', {
-        headers: { Authorization: 'Bearer not-a-session' },
-      })
-    ).status()
-  ).toBe(401);
-
-  const login = await request.post('/api/admin/login', { data: { key: ADMIN_ACCESS_TOKEN } });
-  expect(login.ok()).toBe(true);
-  const { session } = await login.json();
-  // The session is the derived HMAC, never the raw secret.
-  expect(session).toMatch(/^[0-9a-f]{64}$/);
-  expect(session).not.toContain(ADMIN_ACCESS_TOKEN);
-
-  const headers = { Authorization: `Bearer ${session}` };
-  const token = `e2e-api-${Date.now()}`;
-
-  const added = await request.post('/api/admin/tokens', { headers, data: { token } });
-  expect(added.status()).toBe(503);
-  const addedBody = await added.json();
-  expect(addedBody).toMatchObject({ ok: false, error: expect.any(String) });
-
-  const removed = await request.delete('/api/admin/tokens', {
-    headers,
-    data: { token: MANAGED_ACCESS_TOKEN },
-  });
-  expect(removed.status()).toBe(503);
-  expect(await removed.json()).toMatchObject({ ok: false, error: expect.any(String) });
 });
 
 // /admin is function-served (prerender = false), so Netlify's static-only
