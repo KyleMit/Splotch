@@ -1,4 +1,5 @@
 // Shared product contracts for the tiled history implementation.
+import type { PaperLayoutSnapshot } from './paperLayout';
 
 // The number of committed drawing actions a child can take back. Exported so
 // tiled history, the perf scenarios, and E2E coverage share one value.
@@ -10,6 +11,22 @@ export interface RecordedPaperState {
   cssW: number;
   cssH: number;
   angle: number;
+  presentation?: PaperLayoutSnapshot;
+}
+
+export function paperStateMatches(
+  paper: Omit<RecordedPaperState, 'angle'>,
+  angle: number,
+  recorded: RecordedPaperState | undefined
+): boolean {
+  return (
+    recorded !== undefined &&
+    paper.pxW === recorded.pxW &&
+    paper.pxH === recorded.pxH &&
+    paper.cssW === recorded.cssW &&
+    paper.cssH === recorded.cssH &&
+    angle === recorded.angle
+  );
 }
 
 export interface HistoryDebug {

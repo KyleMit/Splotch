@@ -33,4 +33,13 @@
        it just sits below all of it, above DrawingCanvas's own 0–3 layers. */
     z-index: var(--z-canvas-chrome);
   }
+  :global(html[data-toolbar='bare']) .fullscreen-toggle {
+    left: calc(var(--palette-landscape-width) + var(--space-2));
+  }
+  @media (orientation: portrait) {
+    :global(html[data-toolbar='bare']) .fullscreen-toggle {
+      left: var(--space-2);
+      top: calc(var(--palette-portrait-height) + var(--space-2));
+    }
+  }
 </style>

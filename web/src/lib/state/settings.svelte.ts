@@ -168,9 +168,16 @@ function readIntSettings(): Record<IntSettingKey, number> {
   ) as Record<IntSettingKey, number>;
 }
 
+export type ToolbarStyle = 'buttons' | 'bare';
+
+function readToolbarStyle(): ToolbarStyle {
+  return readString(STORAGE_KEYS.toolbarStyle, 'buttons') === 'bare' ? 'bare' : 'buttons';
+}
+
 interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {
   // Appearance: explicit light/dark, or 'system' to follow the OS setting.
   theme: ThemePreference;
+  toolbarStyle: ToolbarStyle;
   // Managed-access token. Held in memory only; hydrated from secure storage on
   // boot by hydrateAiAccessToken(). Empty until then / unless set.
   aiAccessToken: string;
@@ -214,6 +221,7 @@ interface SettingsMutators {
   setPencilEraserEnabled(v: boolean): void;
   setApplePencilSeen(v: boolean): void;
   setTheme(v: ThemePreference): void;
+  setToolbarStyle(v: ToolbarStyle): void;
   setSoundVolume(v: number): void;
   setActionButtonScale(v: number): void;
   // The in-memory mirrors of values persisted elsewhere (secure storage, the
@@ -236,6 +244,7 @@ export function createSettings(tool: ToolState): SettingsState {
     ...readBoolSettings(),
     ...readIntSettings(),
     theme: readTheme(THEME_DEFAULT),
+    toolbarStyle: readToolbarStyle(),
     aiAccessToken: '',
     aiUserApiKey: '',
     saveFolderName: null,
@@ -329,6 +338,10 @@ export function createSettings(tool: ToolState): SettingsState {
     setPencilEraserEnabled: makeBoolSetter('pencilEraserEnabled'),
     setApplePencilSeen: makeBoolSetter('applePencilSeen'),
     setTheme,
+    setToolbarStyle(v) {
+      s.toolbarStyle = v;
+      writeString(STORAGE_KEYS.toolbarStyle, v);
+    },
     setSoundVolume: makeIntSetter('soundVolume'),
     setActionButtonScale: makeIntSetter('actionButtonScale'),
     mirrorAiUserApiKey(value) {
@@ -362,6 +375,7 @@ export function createSettings(tool: ToolState): SettingsState {
         s[prop] = clamp(readInt(key, s[prop]));
       }
       s.theme = readTheme(s.theme);
+      s.toolbarStyle = readToolbarStyle();
       applyTheme(s.theme);
       normalizeDisabledBrushes();
     },
@@ -397,6 +411,7 @@ export const {
   setPencilEraserEnabled,
   setApplePencilSeen,
   setTheme,
+  setToolbarStyle,
   setSoundVolume,
   setActionButtonScale,
   actionControlShown,

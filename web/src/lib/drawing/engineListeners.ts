@@ -1,6 +1,27 @@
 import { listen } from './listenerRegistry';
 import type { ListenWindowFn } from './penStreamQuirks';
 
+export const RESIZE_SETTLE_MS = 150;
+
+export function createResizeListener(refresh: () => void, settle: () => void) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const dispose = () => {
+    if (timer !== undefined) clearTimeout(timer);
+    timer = undefined;
+  };
+  return {
+    handleResize() {
+      refresh();
+      dispose();
+      timer = setTimeout(() => {
+        timer = undefined;
+        settle();
+      }, RESIZE_SETTLE_MS);
+    },
+    dispose,
+  };
+}
+
 interface EngineListenerHandlers {
   handleResize: () => void;
   refreshCanvasRect: () => void;

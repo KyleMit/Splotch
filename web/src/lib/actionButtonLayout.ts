@@ -15,6 +15,7 @@ import {
   enabledOptionalBrushes,
   type ActionPanelControl,
 } from '$lib/state/settings.svelte';
+import { BARE_RAIL_WIDTH_PX, BARE_RAIL_HEIGHT_PX } from './bareToolbar';
 import { networkState } from '$lib/state/network.svelte';
 import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
 import type { Orientation } from '$lib/platform';
@@ -94,13 +95,13 @@ export const SETTINGS_BUTTON_RESERVE = 64;
 // collapse margin (8px), and the 48px drawer toggle.
 export const PANEL_INSET = 8;
 const DRAWER_TOGGLE_MARGIN = 8;
-const DRAWER_TOGGLE_SIZE = 48;
+export const DRAWER_TOGGLE_SIZE = 48;
 export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE;
 
 // Leave the top-left corner control clear even at the largest button scale.
 export const PHONE_TOOLBAR_BUTTON_PX = 48;
 export const PHONE_TOOLBAR_LEG_SLOTS = 4;
-const PHONE_TOOLBAR_GAP_PX = 10;
+export const PHONE_TOOLBAR_GAP_PX = 10;
 export const PHONE_TOOLBAR_VERTICAL_CHROME_PX =
   2 * PANEL_INSET + DRAWER_TOGGLE_SIZE + 3 * PHONE_TOOLBAR_GAP_PX;
 export const PHONE_TOOLBAR_HORIZONTAL_CHROME_PX =
@@ -157,6 +158,10 @@ export function visibleActionButtonCount(): number {
 // width (app.css --palette-landscape-width, 0 on a landscape phone where the
 // column is hidden) or the portrait bar's declared height.
 function paletteExtent(orientation: Orientation): number {
+  if (settingsState.toolbarStyle === 'bare') {
+    if (orientation === 'portrait') return BARE_RAIL_HEIGHT_PX;
+    return layoutState.phoneLandscape ? 0 : BARE_RAIL_WIDTH_PX;
+  }
   if (orientation === 'portrait') return PALETTE_BAR_RESERVE;
   return layoutState.phoneLandscape ? 0 : PALETTE_LANDSCAPE_WIDTH_PX;
 }

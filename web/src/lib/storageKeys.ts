@@ -24,6 +24,7 @@ export const STORAGE_KEYS = {
   pencilEraserEnabled: 'splotch-pencil-eraser-enabled',
   applePencilSeen: 'splotch-apple-pencil-seen',
   theme: 'splotch-theme',
+  toolbarStyle: 'splotch-toolbar-style',
   brushType: 'splotch-brush-type',
   strokeWidthSize: 'splotch-stroke-width-size',
   eraserWidthSize: 'splotch-eraser-width-size',

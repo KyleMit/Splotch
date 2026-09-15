@@ -9,6 +9,8 @@
     setLockRotation,
     setForceLandscapeOrientation,
     setTheme,
+    setToolbarStyle,
+    type ToolbarStyle,
   } from '$lib/state/settings.svelte';
   import type { ThemePreference } from '$lib/theme';
   import { supportsOrientationLock } from '$lib/platform';
@@ -17,6 +19,11 @@
   // Windowed platforms (iPadOS 26+) own device orientation through their own
   // window controls and ignore in-app locks, so the toggles are hidden there.
   const showOrientationControls = supportsOrientationLock();
+
+  const toolbarOptions: SegmentedPickerOption<ToolbarStyle>[] = [
+    { value: 'buttons', label: 'Buttons' },
+    { value: 'bare', label: 'Bare' },
+  ];
 
   const themeOptions: SegmentedPickerOption<ThemePreference>[] = [
     { value: 'light', label: 'Light', icon: 'theme-light', id: 'themeOption-light' },
@@ -36,6 +43,16 @@
       options={themeOptions}
       selected={settingsState.theme}
       onSelect={setTheme}
+    />
+  </div>
+
+  <div class="setting">
+    <div class="appearance-label"><span class="appearance-title">Toolbar</span></div>
+    <SegmentedPicker
+      label="Toolbar"
+      options={toolbarOptions}
+      selected={settingsState.toolbarStyle}
+      onSelect={setToolbarStyle}
     />
   </div>
 

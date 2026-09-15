@@ -129,6 +129,7 @@
       'floatSurfaceHover',
       'floatBorder',
       'darkInkKeyline',
+      'ruleInk',
     ]),
   ];
 

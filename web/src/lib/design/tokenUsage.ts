@@ -15,6 +15,8 @@ export const brandUsage: Record<keyof typeof brand, string> = {
 };
 
 export const scaleUsage: Record<keyof typeof scale, string> = {
+  glassRail: 'Paper tint strength under the Bare color rail.',
+  glassStrip: 'Paper tint strength under Bare tools, flyouts and corner controls.',
   space1: 'Hairline gaps: icon-to-label, stacked fine print.',
   space2: 'Gaps inside a control: chip rows, button icon gaps.',
   space3: 'Control padding and gaps between siblings in a group.',
@@ -78,6 +80,8 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
 };
 
 export const zIndexUsage: Record<keyof typeof zIndex, string> = {
+  zToolbarPaper: 'Bare glass panes and printed margin rule, above ink and below controls.',
+  zPointerHalo: 'Brush ring and eraser footprint, above toolbar glass and below controls.',
   zCanvasChrome: 'The floor of the shared root context — chrome that must clear the canvas layers.',
   zClearPreview: 'The full-viewport paper wash previewing a drag-to-clear.',
   zClearInk: 'The departing page above the clear wash, beneath the Clear Button it flies into.',
@@ -135,6 +139,11 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   warningWash: 'Warning banners: degraded but working (persistence off, sampled data).',
   warningText: 'Ink on --warning-wash.',
   warningChip: 'Inline <code> inside a warning banner.',
+  glassTintRgb: 'Paper RGB channels for the Bare toolbar glass tint.',
+  ruleInk: 'Printed notebook margin ink in the Bare toolbar.',
+  ruleBlend: 'How the printed margin combines with the drawing ink.',
+  ruleOpacity: 'Strength of the first printed margin pass.',
+  ruleSecondaryOpacity: 'Strength of the second printed margin pass.',
   paper: 'The drawing paper under the grain texture; JS reads it via PAPER_COLORS.',
   paperMargin: 'The flat tone behind the rotation-locked sheet.',
   holeStroke: 'The dashed outline of the size-eraser hole previews.',

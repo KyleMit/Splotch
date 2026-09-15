@@ -1282,3 +1282,106 @@ body {
     transition: none;
   }
 }
+
+/* Bare is seeded by app.html before paint; the default toolbar keeps its own geometry. */
+html[data-toolbar='bare'] {
+  --palette-landscape-width: 100px;
+  --palette-portrait-height: 91px;
+}
+html[data-toolbar='bare'] .app-container {
+  background: var(--paper) url('/icons/handmade-paper.webp');
+}
+html[data-toolbar='bare'] .actions-panel .action-button,
+html[data-toolbar='bare'] .actions-panel .action-button:hover:not(:disabled):not(.disabled),
+html[data-toolbar='bare'] .actions-panel .action-button:active:not(:disabled):not(.disabled),
+html[data-toolbar='bare'] .actions-panel #undoButton.disabled:active,
+html[data-toolbar='bare'] .actions-panel .flyout-option,
+html[data-toolbar='bare'] .actions-panel .flyout-menu {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+html[data-toolbar='bare'] .actions-panel .action-button {
+  padding: calc(var(--action-btn-size) / 10);
+  opacity: 1;
+  transition:
+    transform var(--duration-base) var(--ease-glide),
+    filter var(--duration-base) var(--ease-glide);
+}
+html[data-toolbar='bare'] .actions-panel .action-button:is(:disabled, .disabled) {
+  filter: grayscale(1) contrast(0.55) brightness(1.2);
+}
+html[data-toolbar='bare']
+  .actions-panel
+  .action-button:is(:disabled, .disabled)
+  .action-icon:not(.icon-color)
+  svg {
+  fill: var(--icon-ink);
+}
+html[data-toolbar='bare'] .actions-panel .action-button[aria-expanded='true'] {
+  transform: scale(1.08);
+}
+html[data-toolbar='bare']
+  .actions-panel[data-open-flyout]
+  .action-button:not([aria-expanded='true']) {
+  filter: grayscale(1) opacity(0.35);
+}
+html[data-toolbar='bare'] .actions-panel .action-button:active:not(:disabled):not(.disabled),
+html[data-toolbar='bare'] .actions-panel #undoButton.disabled:active,
+html[data-toolbar='bare'] .actions-panel .action-button:active {
+  transform: scale(0.9);
+}
+html[data-toolbar='bare'] .actions-panel .flyout-menu {
+  padding: 0;
+  gap: 4px;
+}
+html[data-toolbar='bare'] .actions-panel .flyout-option {
+  width: max(var(--action-btn-size), 60px);
+  height: max(var(--action-btn-size), 60px);
+}
+html[data-toolbar='bare'] .actions-panel .flyout-option.active .action-icon {
+  filter: drop-shadow(2px 0 0 var(--text-strong)) drop-shadow(-2px 0 0 var(--text-strong))
+    drop-shadow(0 2px 0 var(--text-strong)) drop-shadow(0 -2px 0 var(--text-strong));
+}
+html[data-toolbar='bare'] .actions-panel .flyout-option.active .action-icon:not(.icon-color) svg {
+  fill: var(--icon-ink);
+}
+html[data-toolbar='bare'] .actions-panel .color-menu {
+  gap: 6px;
+}
+html[data-toolbar='bare'] .actions-panel .color-option.outlined {
+  box-shadow: none;
+}
+html[data-toolbar='bare'] .corner-button {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  opacity: 0.4;
+}
+html[data-toolbar='bare'] .corner-button:active {
+  opacity: 1;
+}
+html[data-toolbar='bare'] .actions-panel[data-open-flyout] .drawer-toggle {
+  opacity: 0.2;
+}
+html[data-toolbar='bare'] .actions-panel .free-count {
+  box-shadow: 0 0 0 2px var(--paper);
+}
+@media (hover: hover) {
+  html[data-toolbar='bare']
+    .actions-panel
+    .action-button:not(:disabled):not(.disabled):hover:not(:active) {
+    transform: scale(1.08);
+  }
+  html[data-toolbar='bare'] .corner-button:hover:not(:active) {
+    opacity: 0.7;
+  }
+}
+@media (orientation: landscape) and (max-height: 599.98px) {
+  html[data-toolbar='bare'] {
+    --palette-landscape-width: 0px;
+  }
+  html[data-toolbar='bare'] .actions-panel .color-button {
+    padding: 0;
+  }
+}

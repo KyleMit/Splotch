@@ -47,6 +47,8 @@ export const brand = {
 // *fills*: chrome color that reads the same on both papers, so it has no
 // light/dark pair to live in ThemeTokens.
 export const scale = {
+  glassRail: '77%',
+  glassStrip: '85%',
   space1: '4px',
   space2: '8px',
   space3: '12px',
@@ -162,11 +164,13 @@ export const scale = {
 // establishes nothing and its children compete directly with the fixed chrome.
 // The tiers are a convention, not a containment guarantee.
 export const zIndex = {
+  zToolbarPaper: 3,
+  zPointerHalo: 4,
   // FullscreenToggle — the floor of that shared root context, not a separate
   // local scale. It clears DrawingCanvas's other root-level layers
   // (.paper-sheet 0, .canvas-stack 1, .paper-view 2, .brush-ring/.eraser-bubble
-  // 3) and deliberately loses to every persistent control below.
-  zCanvasChrome: 4,
+  // zPointerHalo) and deliberately loses to every persistent control below.
+  zCanvasChrome: 5,
 
   // Clear Button drag feedback: the paper wash previewing the clear, then the
   // departing page over it. Both sit above the canvas and below every
@@ -300,6 +304,11 @@ export interface ThemeTokens {
    * against this source (ADR-0071's 2026-09 amendment).
    */
   paper: string;
+  glassTintRgb: string;
+  ruleInk: string;
+  ruleBlend: string;
+  ruleOpacity: string;
+  ruleSecondaryOpacity: string;
   /** the flat tone behind the rotation-locked sheet */
   paperMargin: string;
   /**
@@ -372,6 +381,11 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     warningText: '#895a0a',
     warningChip: '#ffe5a8',
     paper: '#fcfbf8',
+    glassTintRgb: '252 251 248',
+    ruleInk: '#e4a0ab',
+    ruleBlend: 'multiply',
+    ruleOpacity: '1',
+    ruleSecondaryOpacity: '.6',
     paperMargin: '#f1efeb',
     holeStroke: '#8a8a93',
     lineartFilter: 'none',
@@ -414,6 +428,11 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     warningText: '#f2d488',
     warningChip: '#544620',
     paper: '#211f29',
+    glassTintRgb: '33 31 41',
+    ruleInk: '#b07683',
+    ruleBlend: 'screen',
+    ruleOpacity: '.55',
+    ruleSecondaryOpacity: '.33',
     paperMargin: '#1a1922',
     holeStroke: '#b9b9c2',
     lineartFilter: 'invert(1)',
@@ -463,6 +482,11 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   warningText: true,
   warningChip: true,
   paper: true,
+  glassTintRgb: false,
+  ruleInk: true,
+  ruleBlend: false,
+  ruleOpacity: false,
+  ruleSecondaryOpacity: false,
   paperMargin: true,
   holeStroke: true,
   lineartFilter: false,

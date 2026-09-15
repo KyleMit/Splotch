@@ -46,6 +46,7 @@ import {
 } from './strokeMath';
 import {
   isIdentityView,
+  describePaperView,
   IDENTITY_PAPER_VIEW,
   paperPresentationFor,
   viewForPresentation,
@@ -84,8 +85,9 @@ import {
   type CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
-import { type HistoryDebug, type RecordedPaperState } from './undoHistory';
-import { createCanvasMeasure, type CanvasRect } from './canvasMeasure';
+import { paperStateMatches, type HistoryDebug, type RecordedPaperState } from './undoHistory';
+import { recordPaper, restorePaperLayout, createPaperLayoutMemory } from './paperLayout';
+import { createCanvasMeasure, createCanvasLayoutUpdater, type CanvasRect } from './canvasMeasure';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import { createStrokeRasterQueue, type RasterBatch } from './strokeRasterQueue';
 import { createIdleEmptyScan } from './idleEmptyScan';
@@ -97,7 +99,7 @@ import {
   captureTiledSnapshot,
   createStrokeSnapshot,
 } from './strokeSnapshot';
-import { registerDrawingEngineListeners } from './engineListeners';
+import { registerDrawingEngineListeners, createResizeListener } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 import {
@@ -178,7 +180,7 @@ let lastColorChangeTime = 0;
 // recording halves it cannot own.
 const crayonPasses = createCrayonPassBoundaries({
   renderOp: (op) => renderTiledOp(op),
-  recordOp: (op) => recordCurrentOp(op),
+  recordOp: (op) => recordTiledOp(op),
 });
 
 let callbacks: Omit<InitOptions, 'initialColor'> = {};
@@ -222,24 +224,23 @@ function setCanvasEmptyState(
   // An in-flight stroke already owns the live paper and marks it non-empty; undo must not replace
   // its coordinate space with metadata from the removed command.
   if (canvasEmpty === empty) return;
-  const paperUnchanged =
-    recordedPaper !== undefined &&
-    paper.pxW === recordedPaper.pxW &&
-    paper.pxH === recordedPaper.pxH &&
-    paper.cssW === recordedPaper.cssW &&
-    paper.cssH === recordedPaper.cssH &&
-    paperAngle === recordedPaper.angle;
-  const restoringPaper = !empty && !paperUnchanged ? recordedPaper : undefined;
+  const paperUnchanged = paperStateMatches(paper, paperAngle, recordedPaper);
+  const restoringPaper =
+    !empty && (!paperUnchanged || recordedPaper?.presentation) ? recordedPaper : undefined;
   canvasEmpty = empty;
   if (restoringPaper) {
-    paper = {
-      pxW: restoringPaper.pxW,
-      pxH: restoringPaper.pxH,
-      cssW: restoringPaper.cssW,
-      cssH: restoringPaper.cssH,
-    };
+    paper = { ...restoringPaper };
     paperAngle = restoringPaper.angle;
-    resizeCanvas(undefined, { repaintDeferredToRestore });
+    const rect = canvas.getBoundingClientRect();
+    resizeCanvas(rect, {
+      repaintDeferredToRestore,
+      preservedView: restorePaperLayout(
+        restoringPaper.presentation,
+        rect,
+        renderScale,
+        currentScreenAngle()
+      ),
+    });
   }
   callbacks.onCanvasEmptyChange?.(empty);
   // A blank canvas frees the locked paper to match the live viewport again
@@ -292,16 +293,7 @@ function currentScreenAngle(): number {
 export { INITIAL_ENGINE_VIEW_STATE, type EngineViewState } from './paperView';
 
 export function getViewState(): EngineViewState {
-  return {
-    active: !isIdentityView(paperView),
-    scale: paperView.scale,
-    rotate: paperView.rotate,
-    tx: paperView.tx / renderScale,
-    ty: paperView.ty / renderScale,
-    paperCssWidth: paper.cssW,
-    paperCssHeight: paper.cssH,
-    paperOrientation: paper.pxW > paper.pxH ? 'landscape' : 'portrait',
-  };
+  return describePaperView(paperView, renderScale, paper);
 }
 
 function notifyViewChange() {
@@ -345,7 +337,7 @@ function adoptPaper(rect: DOMRect) {
 
 function recordedPaperState(): RecordedPaperState | null {
   if (!paperIsSized()) return null;
-  return { ...paper, angle: paperAngle };
+  return recordPaper(paper, paperAngle, paperView, measure.rect, currentScreenAngle());
 }
 
 // Keep tile contexts in upright paper coordinates and report the presentation
@@ -361,6 +353,7 @@ function applyPaperView(presentation: PaperPresentation) {
 // why rebuilding from one is unrecoverable — and the rebuild re-arms for the
 // first layout that gives the canvas a box.
 interface ResizeCanvasOptions {
+  preservedView?: PaperView;
   repaintRecoveredPixels?: boolean;
   // Undo's pre-restore telling the resize that an immediate snapshot restore
   // (or its repaint fallback) owns the next paint: the full history repaint
@@ -376,18 +369,31 @@ interface ResizeCanvasOptions {
 
 function resizeCanvas(
   rect: DOMRect = canvas.getBoundingClientRect(),
-  { repaintRecoveredPixels = false, repaintDeferredToRestore = false }: ResizeCanvasOptions = {}
+  {
+    preservedView,
+    repaintRecoveredPixels = false,
+    repaintDeferredToRestore = false,
+  }: ResizeCanvasOptions = {}
 ) {
   const retry = (measured: DOMRect) => resizeCanvas(measured, { repaintRecoveredPixels });
   if (!measure.accept(rect, retry)) return;
+  preservedView = preserveLayout(
+    preservedView,
+    rect,
+    renderScale,
+    currentScreenAngle(),
+    canvasEmpty
+  );
   if (PERF_MARKS) performance.mark('engine.resize:start');
-  const presentation = paperPresentationFor({
-    canvasEmpty,
-    paper: { width: paper.cssW, height: paper.cssH },
-    paperAngle,
-    screenAngle: currentScreenAngle(),
-    viewport: rect,
-  });
+  const presentation = preservedView
+    ? 'window'
+    : paperPresentationFor({
+        canvasEmpty,
+        paper: { width: paper.cssW, height: paper.cssH },
+        paperAngle,
+        screenAngle: currentScreenAngle(),
+        viewport: rect,
+      });
   paperLocked = presentation !== 'adopt';
   if (!paperLocked) adoptPaper(rect);
   resizedAngle = currentScreenAngle();
@@ -402,6 +408,7 @@ function resizeCanvas(
   const tiledRendererResized = resizeTiledRenderer(paper.pxW, paper.pxH, renderScale, canvasEmpty);
   if (PERF_MARKS) performance.measure('engine.resize.tiles', 'engine.resize.tiles:start');
   applyPaperView(presentation);
+  if (preservedView) paperView = preservedView;
 
   resizeMagicSheet(magicActive);
   if (
@@ -427,17 +434,9 @@ function resizeCanvas(
 // settles. Native rotation also crosses intermediate layout sizes before its
 // orientation signal settles, so it needs the same trailing edge. Exported so
 // the dev harness's resizeTo() can wait out the settle window.
-export const RESIZE_SETTLE_MS = 150;
-let resizeSettleTimer: ReturnType<typeof setTimeout> | null = null;
-
-function handleResize() {
-  refreshCanvasRect();
-  if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer);
-  resizeSettleTimer = setTimeout(() => {
-    resizeSettleTimer = null;
-    resizeCanvas();
-  }, RESIZE_SETTLE_MS);
-}
+export { RESIZE_SETTLE_MS } from './engineListeners';
+const resizeListener = createResizeListener(refreshCanvasRect, resyncOnReentry);
+const preserveLayout = createPaperLayoutMemory();
 
 // A hidden document gets no resize/orientationchange, so rotating the device
 // while the app is backgrounded leaves the backing store, the cached rect, and
@@ -446,7 +445,7 @@ function handleResize() {
 // here. Rebuild synchronously only when the geometry actually moved while away,
 // so a plain tab switch doesn't pay the backing-store wipe + repaint.
 function resyncOnReentry() {
-  if (document.visibilityState !== 'visible') return;
+  if (!engineLive || document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
   const stale =
@@ -460,6 +459,11 @@ function resyncOnReentry() {
   }
 }
 
+export const updateDrawingLayout = createCanvasLayoutUpdater(
+  () => ({ canvas: engineLive ? canvas : null, view: canvasEmpty ? null : paperView, renderScale }),
+  resizeCanvas
+);
+
 // --- Stroke rendering -------------------------------------------------------
 
 // One undo command + one empty-state flip per stroke group (all fingers down
@@ -467,10 +471,6 @@ function resyncOnReentry() {
 // buffered edge-swipe candidate that's later discarded never pollutes the undo
 // stack or the empty flag. Reset when the last finger lifts.
 let groupHasDrawn = false;
-
-function recordCurrentOp(op: StrokeOp) {
-  recordTiledOp(op);
-}
 
 function beginStrokeGroup() {
   if (groupHasDrawn) return;
@@ -504,7 +504,7 @@ function renderStrokeStart(ps: PointerState) {
     ...strokeStyleOf(ps),
   };
   renderTiledOp(dot);
-  recordCurrentOp(dot);
+  recordTiledOp(dot);
 
   callbacks.onDrawSound?.({ speed: 0, isStrokeStart: true });
 }
@@ -537,7 +537,7 @@ function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) 
     ps.midY = midY;
   }
   renderTiledOp(op);
-  recordCurrentOp(op);
+  recordTiledOp(op);
   crayonPasses.creditMoves(ps, moveCount);
 }
 
@@ -1174,10 +1174,7 @@ function teardownEngine() {
   engineLive = false;
   for (const remove of listenerRemovers) remove();
   listenerRemovers = [];
-  if (resizeSettleTimer !== null) {
-    clearTimeout(resizeSettleTimer);
-    resizeSettleTimer = null;
-  }
+  resizeListener.dispose();
   measure.cancel();
   // Pointer-input state must not outlive the mount, unlike tiled drawing
   // history: a stale
@@ -1275,7 +1272,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   resizeCanvas();
 
   registerDrawingEngineListeners(listenerRemovers, canvas, {
-    handleResize,
+    handleResize: resizeListener.handleResize,
     refreshCanvasRect: () => refreshCanvasRect(),
     resyncOnReentry,
     startDrawing,
