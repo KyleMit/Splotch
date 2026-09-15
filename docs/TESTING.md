@@ -196,10 +196,12 @@ test — never raise the whole file's timeout with `vi.setConfig`.
 
 `test:unit` and `test:unit:coverage` each finish with a second Vitest run,
 `vitest run --config vitest.webSsr.config.ts`, over `web/src/**/*.webSsr.test.ts` only. The unit
-config excludes that pattern. The second config differs in two ways, and both are the point:
+config excludes that pattern. These differences from the unit config are the point of the tier:
 
 * It compiles `__IS_CAPACITOR__` as `false`, as the Netlify SSR bundle does. The unit config
   compiles it `true`, so a web-only render branch never renders there.
+* Its environment is `node`, not happy-dom, so a test here has no `window`, `document`, or
+  `localStorage`, as on the server.
 * It loads no setup file, so `browser` is not pinned `true`. A test in this tier mocks
   `$app/environment` to `browser: false`, which is what the server bundle sees.
 
