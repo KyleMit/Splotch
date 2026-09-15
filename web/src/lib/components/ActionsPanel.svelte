@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { actionPanelEvents } from '$lib/actions/actionPanelEvents';
   import { drawerCascade } from '$lib/actions/drawerCascade';
   import Icon from './Icon.svelte';
@@ -54,8 +55,6 @@
   let strokeTriggerEl: HTMLButtonElement | undefined;
   let drawerMotion = $state(false);
   let drawerOpening = $state(false);
-  // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
-  let lastDrawerExpanded: boolean | undefined;
   // Intentionally untracked: this frame only verifies the imperative animation state.
   let drawerMotionProbeFrame: number | undefined;
   // Intentionally untracked: this only memoizes the save-time chunk after the first screenshot press.
@@ -116,20 +115,21 @@
     });
   }
 
-  $effect(() => {
-    const expanded = drawerExpanded;
-    if (lastDrawerExpanded === undefined) {
-      lastDrawerExpanded = expanded;
-      return;
-    }
-    if (lastDrawerExpanded === expanded) return;
-    lastDrawerExpanded = expanded;
-    if (settingsModal.open && !uiState.resizingActionButtons) {
-      stopDrawerMotion();
-      return;
-    }
+  function startDrawerMotion() {
     drawerMotion = true;
     scheduleDrawerMotionProbe();
+  }
+
+  // The button-size slider force-opens the drawer for the drag and lets it fall
+  // back when the drag ends. That transition animates on the way in and is
+  // cut short on the way out (Settings is still in front of it), and it only
+  // exists while the drawer was closed to begin with. An effect rather than a
+  // handler because the drag lives in the Settings dialog, not in this panel.
+  $effect(() => {
+    const resizing = uiState.resizingActionButtons;
+    if (untrack(() => settingsState.drawerOpen)) return;
+    if (resizing) startDrawerMotion();
+    else stopDrawerMotion();
   });
 
   const buttonScale = $derived(settingsState.actionButtonScale / 100);
@@ -176,6 +176,7 @@
     const next = !settingsState.drawerOpen;
     drawerOpening = next && !isStrokeActive();
     setDrawerOpen(next);
+    startDrawerMotion();
     // Tidy up any open flyout as the controls tuck away. No focus restore: the
     // trigger is on its way to visibility:hidden with the rest of the drawer.
     if (!next) closeFlyout();
