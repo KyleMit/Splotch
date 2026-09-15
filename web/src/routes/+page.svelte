@@ -7,8 +7,8 @@
   import '$lib/drawing/earlyBoot';
   import { onMount, type Component } from 'svelte';
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
-  import { tick } from 'svelte';
-  import { syncDrawingViewport } from '$lib/drawing/engine';
+  import { updateDrawingLayout } from '$lib/drawing/engine';
+  import { untrack } from 'svelte';
   import { uiState } from '$lib/state/ui.svelte';
   import GlassPanes from '$lib/components/GlassPanes.svelte';
   import type { OpenFlyout } from '$lib/glassPanes';
@@ -165,8 +165,12 @@
     };
   });
   $effect(() => {
-    document.documentElement.dataset.toolbar = settingsState.toolbarStyle;
-    void tick().then(syncDrawingViewport);
+    const toolbarStyle = settingsState.toolbarStyle;
+    untrack(() => {
+      updateDrawingLayout(() => {
+        document.documentElement.dataset.toolbar = toolbarStyle;
+      });
+    });
   });
 </script>
 

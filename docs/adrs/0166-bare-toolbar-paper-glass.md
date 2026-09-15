@@ -16,16 +16,23 @@ Offer Buttons (default) and Bare under Appearance. Persist the choice in `settin
 seed `data-toolbar` in `app.html` before paint. The template hash and boot tests guard that
 boundary.
 
-Bare makes the canvas full width behind the pointer-intercepting palette. The drawing route calls
-`syncDrawingViewport` after its style change so the engine updates paper presentation and pointer
-coordinates through the existing resize path, including locked-paper preservation (ADR-0050).
+Bare makes the canvas full width behind the pointer-intercepting palette. The drawing route changes
+the style through `updateDrawingLayout`: an occupied paper keeps its dimensions and view scale, and
+the view translation compensates for the canvas origin moving. Ink, coloring art, and magic fill
+remain aligned at the same screen positions in either direction. An empty paper adopts the new
+viewport; clearing releases the lock through the existing ADR-0050 path. Keeping the canvas box
+identical in both styles was rejected because it would change the default Buttons drawing area.
 
 `glassPanes.ts` derives the action strip and open flyout rectangles from the existing button layout,
 visible controls, viewport, and safe areas. A single SVG union mask feathers each pane; menu
 geometry changes with the state rather than sampling animated DOM bounds. There are no drawing-loop
-DOM measurements. The compact L and gear share one pane. The other layouts have a separate gear
-pane. `BareToolbarPaper.svelte` owns the rail, fullscreen glass, and two fiber-textured margin
-passes. Reduced transparency and unsupported backdrop filtering use opaque paper in the same shapes.
+DOM measurements. The compact L, gear, and supported fullscreen control share one pane. The other
+layouts have a separate gear pane. `BareToolbarPaper.svelte` owns the rail, fullscreen glass, and
+two fiber-textured margin passes. Positive feature queries enable translucent glass with either
+backdrop-filter spelling; reduced transparency and unsupported backdrop filtering use opaque paper
+in the same shapes. Dynamic masks pass through CSS variables so the build emits browser-floor
+prefixes. Pointer halos sit above glass, and CSS hides panes whose recorded orientation differs from
+the viewport during rotation settling.
 
 The existing tokens own control stacking and colors; the glass strengths and margin inks are added
 to the generated design vocabulary. Existing hit sizes, trim ladders, clear gestures, and flyout

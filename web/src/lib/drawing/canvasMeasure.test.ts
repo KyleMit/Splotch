@@ -1,9 +1,49 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createCanvasMeasure, rectIsMeasured } from './canvasMeasure';
+import { createCanvasMeasure, createCanvasLayoutUpdater, rectIsMeasured } from './canvasMeasure';
 
 const rect = (left: number, top: number, width: number, height: number) =>
   ({ left, top, width, height }) as DOMRect;
+
+describe('canvas layout changes', () => {
+  it.each([1, 2])(
+    'keeps a transformed paper at the same screen position at render scale %s',
+    (renderScale) => {
+      const canvas = document.createElement('canvas');
+      vi.spyOn(canvas, 'getBoundingClientRect')
+        .mockReturnValueOnce(new DOMRect(84, 75, 300, 400))
+        .mockReturnValueOnce(new DOMRect(0, 0, 384, 475));
+      const resize = vi.fn();
+      const update = vi.fn();
+      createCanvasLayoutUpdater(
+        () => ({ canvas, renderScale, view: { scale: 0.5, rotate: 0, tx: 10, ty: 20 } }),
+        resize
+      )(update);
+      expect(update).toHaveBeenCalledOnce();
+      expect(resize).toHaveBeenCalledWith(expect.any(DOMRect), {
+        preservedView: {
+          scale: 0.5,
+          rotate: 0,
+          tx: 10 + 84 * renderScale,
+          ty: 20 + 75 * renderScale,
+        },
+      });
+    }
+  );
+  it('allows empty paper to adopt the new layout', () => {
+    const canvas = document.createElement('canvas');
+    const resize = vi.fn();
+    createCanvasLayoutUpdater(() => ({ canvas, renderScale: 1, view: null }), resize)(() => {});
+    expect(resize).toHaveBeenCalledWith(expect.any(DOMRect), { preservedView: undefined });
+  });
+  it('applies pre-mount layout without resizing an absent canvas', () => {
+    const resize = vi.fn();
+    const update = vi.fn();
+    createCanvasLayoutUpdater(() => ({ canvas: null, renderScale: 1, view: null }), resize)(update);
+    expect(update).toHaveBeenCalledOnce();
+    expect(resize).not.toHaveBeenCalled();
+  });
+});
 
 function harness(viewport = { width: 600, height: 400 }) {
   const canvas = document.createElement('canvas');

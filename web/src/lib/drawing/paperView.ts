@@ -249,6 +249,23 @@ export interface EngineViewState {
   paperOrientation: Orientation;
 }
 
+export function describePaperView(
+  view: PaperView,
+  renderScale: number,
+  paper: { pxW: number; pxH: number; cssW: number; cssH: number }
+): EngineViewState {
+  return {
+    active: !isIdentityView(view),
+    scale: view.scale,
+    rotate: view.rotate,
+    tx: view.tx / renderScale,
+    ty: view.ty / renderScale,
+    paperCssWidth: paper.cssW,
+    paperCssHeight: paper.cssH,
+    paperOrientation: paper.pxW > paper.pxH ? 'landscape' : 'portrait',
+  };
+}
+
 // The pre-adoption SSR-shell value of EngineViewState, before getViewState() has
 // any paper/render-scale state to derive from.
 export const INITIAL_ENGINE_VIEW_STATE: EngineViewState = Object.freeze({

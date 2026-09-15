@@ -17,6 +17,8 @@
 // and nothing re-runs the rebuild: an installed PWA at a fixed size gets no
 // later resize or rotation, so it stays dead until the app is reloaded.
 
+import type { PaperView } from './paperView';
+
 export interface CanvasRect {
   left: number;
   top: number;
@@ -32,6 +34,32 @@ export interface CanvasMeasureHost {
 
 export function rectIsMeasured(rect: { width: number; height: number }): boolean {
   return rect.width > 0 && rect.height > 0;
+}
+
+export function createCanvasLayoutUpdater(
+  readState: () => {
+    canvas: HTMLCanvasElement | null;
+    view: PaperView | null;
+    renderScale: number;
+  },
+  resize: (rect: DOMRect, options: { preservedView?: PaperView }) => void
+) {
+  return (updateLayout: () => void) => {
+    const { canvas, view, renderScale } = readState();
+    const previousRect = canvas?.getBoundingClientRect();
+    updateLayout();
+    if (!canvas || !previousRect) return;
+    const rect = canvas.getBoundingClientRect();
+    resize(rect, {
+      preservedView: view
+        ? {
+            ...view,
+            tx: view.tx + (previousRect.x - rect.x) * renderScale,
+            ty: view.ty + (previousRect.y - rect.y) * renderScale,
+          }
+        : undefined,
+    });
+  };
 }
 
 export function createCanvasMeasure(host: CanvasMeasureHost) {

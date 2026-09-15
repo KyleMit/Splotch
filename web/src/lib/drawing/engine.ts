@@ -46,6 +46,7 @@ import {
 } from './strokeMath';
 import {
   isIdentityView,
+  describePaperView,
   IDENTITY_PAPER_VIEW,
   paperPresentationFor,
   viewForPresentation,
@@ -85,7 +86,7 @@ import {
   type CrayonOptions,
 } from './crayonBrush';
 import { type HistoryDebug, type RecordedPaperState } from './undoHistory';
-import { createCanvasMeasure, type CanvasRect } from './canvasMeasure';
+import { createCanvasMeasure, createCanvasLayoutUpdater, type CanvasRect } from './canvasMeasure';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import { createStrokeRasterQueue, type RasterBatch } from './strokeRasterQueue';
 import { createIdleEmptyScan } from './idleEmptyScan';
@@ -178,7 +179,7 @@ let lastColorChangeTime = 0;
 // recording halves it cannot own.
 const crayonPasses = createCrayonPassBoundaries({
   renderOp: (op) => renderTiledOp(op),
-  recordOp: (op) => recordCurrentOp(op),
+  recordOp: (op) => recordTiledOp(op),
 });
 
 let callbacks: Omit<InitOptions, 'initialColor'> = {};
@@ -292,16 +293,7 @@ function currentScreenAngle(): number {
 export { INITIAL_ENGINE_VIEW_STATE, type EngineViewState } from './paperView';
 
 export function getViewState(): EngineViewState {
-  return {
-    active: !isIdentityView(paperView),
-    scale: paperView.scale,
-    rotate: paperView.rotate,
-    tx: paperView.tx / renderScale,
-    ty: paperView.ty / renderScale,
-    paperCssWidth: paper.cssW,
-    paperCssHeight: paper.cssH,
-    paperOrientation: paper.pxW > paper.pxH ? 'landscape' : 'portrait',
-  };
+  return describePaperView(paperView, renderScale, paper);
 }
 
 function notifyViewChange() {
@@ -361,6 +353,7 @@ function applyPaperView(presentation: PaperPresentation) {
 // why rebuilding from one is unrecoverable — and the rebuild re-arms for the
 // first layout that gives the canvas a box.
 interface ResizeCanvasOptions {
+  preservedView?: PaperView;
   repaintRecoveredPixels?: boolean;
   // Undo's pre-restore telling the resize that an immediate snapshot restore
   // (or its repaint fallback) owns the next paint: the full history repaint
@@ -376,18 +369,24 @@ interface ResizeCanvasOptions {
 
 function resizeCanvas(
   rect: DOMRect = canvas.getBoundingClientRect(),
-  { repaintRecoveredPixels = false, repaintDeferredToRestore = false }: ResizeCanvasOptions = {}
+  {
+    preservedView,
+    repaintRecoveredPixels = false,
+    repaintDeferredToRestore = false,
+  }: ResizeCanvasOptions = {}
 ) {
   const retry = (measured: DOMRect) => resizeCanvas(measured, { repaintRecoveredPixels });
   if (!measure.accept(rect, retry)) return;
   if (PERF_MARKS) performance.mark('engine.resize:start');
-  const presentation = paperPresentationFor({
-    canvasEmpty,
-    paper: { width: paper.cssW, height: paper.cssH },
-    paperAngle,
-    screenAngle: currentScreenAngle(),
-    viewport: rect,
-  });
+  const presentation = preservedView
+    ? 'window'
+    : paperPresentationFor({
+        canvasEmpty,
+        paper: { width: paper.cssW, height: paper.cssH },
+        paperAngle,
+        screenAngle: currentScreenAngle(),
+        viewport: rect,
+      });
   paperLocked = presentation !== 'adopt';
   if (!paperLocked) adoptPaper(rect);
   resizedAngle = currentScreenAngle();
@@ -402,6 +401,7 @@ function resizeCanvas(
   const tiledRendererResized = resizeTiledRenderer(paper.pxW, paper.pxH, renderScale, canvasEmpty);
   if (PERF_MARKS) performance.measure('engine.resize.tiles', 'engine.resize.tiles:start');
   applyPaperView(presentation);
+  if (preservedView) paperView = preservedView;
 
   resizeMagicSheet(magicActive);
   if (
@@ -445,7 +445,7 @@ function handleResize() {
 // Browser visibility and Capacitor's document-level resume event both land
 // here. Rebuild synchronously only when the geometry actually moved while away,
 // so a plain tab switch doesn't pay the backing-store wipe + repaint.
-export function syncDrawingViewport() {
+function resyncOnReentry() {
   if (!engineLive || document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
@@ -460,6 +460,11 @@ export function syncDrawingViewport() {
   }
 }
 
+export const updateDrawingLayout = createCanvasLayoutUpdater(
+  () => ({ canvas: engineLive ? canvas : null, view: canvasEmpty ? null : paperView, renderScale }),
+  resizeCanvas
+);
+
 // --- Stroke rendering -------------------------------------------------------
 
 // One undo command + one empty-state flip per stroke group (all fingers down
@@ -467,10 +472,6 @@ export function syncDrawingViewport() {
 // buffered edge-swipe candidate that's later discarded never pollutes the undo
 // stack or the empty flag. Reset when the last finger lifts.
 let groupHasDrawn = false;
-
-function recordCurrentOp(op: StrokeOp) {
-  recordTiledOp(op);
-}
 
 function beginStrokeGroup() {
   if (groupHasDrawn) return;
@@ -504,7 +505,7 @@ function renderStrokeStart(ps: PointerState) {
     ...strokeStyleOf(ps),
   };
   renderTiledOp(dot);
-  recordCurrentOp(dot);
+  recordTiledOp(dot);
 
   callbacks.onDrawSound?.({ speed: 0, isStrokeStart: true });
 }
@@ -537,7 +538,7 @@ function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) 
     ps.midY = midY;
   }
   renderTiledOp(op);
-  recordCurrentOp(op);
+  recordTiledOp(op);
   crayonPasses.creditMoves(ps, moveCount);
 }
 
@@ -1277,7 +1278,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   registerDrawingEngineListeners(listenerRemovers, canvas, {
     handleResize,
     refreshCanvasRect: () => refreshCanvasRect(),
-    resyncOnReentry: syncDrawingViewport,
+    resyncOnReentry,
     startDrawing,
     draw,
     stopDrawing,
