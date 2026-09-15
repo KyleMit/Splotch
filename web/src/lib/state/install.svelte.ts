@@ -1,14 +1,6 @@
 import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
-import {
-  STORAGE_KEYS,
-  onDurableRestore,
-  readBool,
-  readInt,
-  removeKey,
-  writeBool,
-  writeInt,
-} from '$lib/storage';
+import { STORAGE_KEYS, readBool, readInt, removeKey, writeBool, writeInt } from '$lib/storage';
 import { canvasState, SETTLED_IN_STROKES } from './canvas.svelte';
 import {
   clearSessionCount,
@@ -115,8 +107,6 @@ function resetInstallRepromptCycle() {
 function reloadInstallRepromptState() {
   repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED);
 }
-
-onDurableRestore(reloadInstallRepromptState);
 
 export function installPromptStage(): InstallPromptStage | null {
   if (install.installed) return null;
