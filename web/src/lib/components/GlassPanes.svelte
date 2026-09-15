@@ -15,7 +15,7 @@
     style:width={`${pane.width}px`}
     style:height={`${pane.height}px`}
     style:background-position={`${-pane.x}px ${-pane.y}px`}
-    style:mask-image={pane.mask}
+    style:--glass-mask={pane.mask}
   ></div>
 {/each}
 
@@ -27,6 +27,7 @@
     background-color: rgb(var(--glass-tint-rgb) / var(--glass-strip));
     background-image: url('/icons/handmade-paper.webp');
     backdrop-filter: blur(5.1px);
+    mask-image: var(--glass-mask);
     mask-size: 100% 100%;
     mask-repeat: no-repeat;
   }
