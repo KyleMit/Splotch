@@ -78,6 +78,16 @@ describe('parental gate', () => {
     }
   });
 
+  it('refuses writes into the policy and session-solved maps', () => {
+    expect(() => {
+      Object.assign(gate.sessionSolved, { aiImage: true });
+    }).toThrow(TypeError);
+    expect(() => {
+      Object.assign(gate.policies, { aiImage: 'never' });
+    }).toThrow(TypeError);
+    expect(gate.requiresParentalGate('aiImage')).toBe(true);
+  });
+
   it('opens with a fresh single-digit challenge instead of running the destination', () => {
     const destination = vi.fn();
     gate.requireParentalGate('aiImage', destination, { x: 10, y: 20 });

@@ -148,8 +148,6 @@ interface ParentalGateFields {
   feature: ParentalGateFeature | null;
   /** External navigation must run inside the solving tap's user activation. */
   immediate: boolean;
-  /** In-memory only, so an app relaunch always re-asks for per-session features. */
-  sessionSolved: Record<ParentalGateFeature, boolean>;
   /** Wrong answers since the last solve, lockout, or quiet period. Survives closing the card. */
   wrongStreak: number;
   /** Lockouts since the last solve or quiet period; sets how long the next one lasts. */
@@ -167,6 +165,13 @@ interface ParentalGateFields {
 interface ParentalGateMutators {
   /** Parent Center's persisted frequency for every protected operation. */
   readonly policies: Readonly<Record<ParentalGateFeature, ParentalGateMode>>;
+  /**
+   * In-memory only, so an app relaunch always re-asks for per-session features.
+   * Its own read-only view rather than a field of the state object: `Readonly<T>`
+   * is shallow, and a nested map handed out through a getter would still accept a
+   * write that bypasses the check without a mutator.
+   */
+  readonly sessionSolved: Readonly<Record<ParentalGateFeature, boolean>>;
   requiresParentalGate(feature: ParentalGateFeature): boolean;
   requireParentalGate(
     feature: ParentalGateFeature,
@@ -190,6 +195,7 @@ export type ParentalGateState = Readonly<ParentalGateFields> & ParentalGateMutat
 
 export function createParentalGate(): ParentalGateState {
   const policies = $state(readPolicies());
+  const sessionSolved = $state(unsolvedSession());
   const s: ParentalGateFields = $state({
     open: false,
     origin: null,
@@ -201,7 +207,6 @@ export function createParentalGate(): ParentalGateState {
     unlocked: false,
     feature: null,
     immediate: false,
-    sessionSolved: unsolvedSession(),
     wrongStreak: 0,
     lockouts: 0,
     lockoutUntil: null,
@@ -242,7 +247,7 @@ export function createParentalGate(): ParentalGateState {
 
   function requiresParentalGate(feature: ParentalGateFeature): boolean {
     const mode = policies[feature];
-    return mode === 'always' || (mode === 'session' && !s.sessionSolved[feature]);
+    return mode === 'always' || (mode === 'session' && !sessionSolved[feature]);
   }
 
   function isParentCenterUnprotected(): boolean {
@@ -268,7 +273,7 @@ export function createParentalGate(): ParentalGateState {
     s.wrongStreak = 0;
     s.lockouts = 0;
     const feature = s.feature;
-    if (feature && policies[feature] === 'session') s.sessionSolved[feature] = true;
+    if (feature && policies[feature] === 'session') sessionSolved[feature] = true;
 
     // External navigations run synchronously inside the solving tap's trusted event, or
     // the popup gets blocked — a deferred replay loses transient user activation,
@@ -399,6 +404,7 @@ export function createParentalGate(): ParentalGateState {
 
   const mutators: ParentalGateMutators = {
     policies: readonlyView(policies),
+    sessionSolved: readonlyView(sessionSolved),
     requiresParentalGate,
     /**
      * Run `destination` behind one feature's configured gate. `origin` is the
@@ -471,7 +477,7 @@ export function createParentalGate(): ParentalGateState {
       if (!isAllowedParentalGateMode(feature, mode)) {
         throw new Error(`Unsupported parental gate mode: ${feature}/${mode}`);
       }
-      if (policies[feature] !== mode) s.sessionSolved[feature] = false;
+      if (policies[feature] !== mode) sessionSolved[feature] = false;
       policies[feature] = mode;
       writeString(POLICY_STORAGE_KEYS[feature], mode);
     },
