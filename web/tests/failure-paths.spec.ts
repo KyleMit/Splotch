@@ -202,5 +202,10 @@ test('a render crash still offers a restart when the error screen chunk cannot l
     await expect(page.locator('#drawingCanvas')).toHaveCount(0, { timeout: 1000 });
   }).toPass();
 
-  await expect(page.getByRole('alert').getByRole('button', { name: 'Start over' })).toBeVisible();
+  const alert = page.getByRole('alert');
+  await expect(alert.getByRole('heading', { name: 'Oops!' })).toBeVisible();
+  await expect(page).toHaveTitle('Oops! · Splotch');
+
+  await alert.getByRole('button', { name: 'Start over' }).click();
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
 });

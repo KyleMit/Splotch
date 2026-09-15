@@ -28,7 +28,14 @@
     {#await import('$lib/components/ErrorScreen.svelte') then { default: ErrorScreen }}
       <ErrorScreen onRestart={reset} />
     {:catch}
-      <div class="error-fallback" role="alert">
+      <div
+        class="error-fallback"
+        role="alert"
+        {@attach () => {
+          document.title = 'Oops! · Splotch';
+        }}
+      >
+        <h1>Oops!</h1>
         <p>Something went wrong.<br />Let's start a fresh drawing.</p>
         <button type="button" onclick={reset}>Start over</button>
       </div>
@@ -51,8 +58,17 @@
     color: var(--text-strong);
   }
 
+  h1,
   p {
     margin: 0;
+  }
+
+  h1 {
+    font-size: var(--font-size-display);
+    font-weight: var(--font-weight-bold);
+  }
+
+  p {
     font-size: var(--font-size-md);
     color: var(--text-soft);
   }
