@@ -5,9 +5,13 @@ import {
   gotoApp,
   headingOffsetFromPaneTop,
   openSettingsModal,
+  retryOpen,
   seedCompletedSettingsActivitySessions,
   SECTION_LANDED_MAX_PX,
+  settleFlyIn,
+  settleSettingsPane,
 } from './helpers';
+import { solveParentalGate } from './flows-harness';
 
 // The wide Settings shell's table of contents (ADR-0061): one continuously
 // scrolling pane whose position drives the sidebar highlight, and a sidebar
@@ -16,6 +20,7 @@ import {
 
 const ABOVE_SCROLLSPY_BAND_PX = 118;
 const BELOW_SCROLLSPY_BAND_PX = 142;
+const RESIZE_DELIVERY_TIMEOUT_MS = 1_000;
 
 // Park a section's heading an exact distance below the pane's top edge, so a
 // spec can state where the scrollspy's reading line is rather than where some
@@ -28,6 +33,30 @@ async function parkHeadingBelowPaneTop(page: Page, section: string, offsetPx: nu
         el.getBoundingClientRect().top - pane.getBoundingClientRect().top - offsetPx;
     },
     { section, offsetPx }
+  );
+}
+
+async function triggerSettingsContentResize(page: Page) {
+  await page.locator('.settings-zoom').evaluate(
+    (content, timeoutMs) =>
+      new Promise<void>((resolve, reject) => {
+        const startingHeight = content.getBoundingClientRect().height;
+        const observer = new ResizeObserver(([entry]) => {
+          if (entry.contentRect.height === startingHeight) return;
+          observer.disconnect();
+          clearTimeout(timeout);
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+        const timeout = window.setTimeout(() => {
+          observer.disconnect();
+          reject(new Error('Settings content did not resize'));
+        }, timeoutMs);
+        observer.observe(content);
+        const spacer = document.createElement('div');
+        spacer.style.height = '1px';
+        content.append(spacer);
+      }),
+    RESIZE_DELIVERY_TIMEOUT_MS
   );
 }
 
@@ -192,4 +221,50 @@ test('a jump under reduced motion lands in one step', async ({ page }) => {
 
   const steps = await scrollStepsDuringJump(page, 'about');
   expect(steps).toHaveLength(1);
+});
+
+test('a Parent Center jump unlocked after the pane filled does not follow a reopen', async ({
+  page,
+}) => {
+  // Holding the idle prewarm makes this open the one that mounts the pane, so it
+  // is still filling when the row is tapped — the only way a jump is held.
+  await page.addInitScript(() => {
+    window.requestIdleCallback = () => 0;
+  });
+  await gotoApp(page, '/', { gates: 'always' });
+  const modal = page.locator('#settingsModal');
+  await retryOpen(modal, () =>
+    page.getByRole('button', { name: 'Settings' }).click({ timeout: 3000 })
+  );
+
+  const paneBusyAtTap = await modal.evaluate(async (dialog) => {
+    await Promise.all(
+      dialog.getAnimations().map((animation) => animation.finished.catch(() => {}))
+    );
+    const busy = dialog.querySelector('.settings-pane')!.getAttribute('aria-busy');
+    dialog.querySelector<HTMLElement>('.settings-nav [data-section="parentCenter"]')!.click();
+    return busy;
+  });
+  expect(paneBusyAtTap).toBe('true');
+
+  const gate = page.locator('#parentalGate');
+  await expect(gate).toBeVisible();
+  await settleFlyIn(gate);
+  // The fill finishes behind the challenge, before the solve hands the jump back.
+  await settleSettingsPane(modal.locator('.settings-pane'));
+  await solveParentalGate(page);
+  await expect(gate).not.toBeVisible();
+
+  const appearance = page.locator('.settings-nav .toc-row[data-section="appearance"]');
+  await modal.locator('.settings-pane').evaluate((pane) => pane.scrollTo({ top: 0 }));
+  await expect(appearance).toHaveClass(/active/);
+  await triggerSettingsContentResize(page);
+  await expect(appearance).toHaveClass(/active/);
+
+  await modal.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(modal).not.toBeVisible();
+  await openSettingsModal(page);
+
+  await expect(appearance).toHaveClass(/active/);
+  expect(await headingOffsetFromPaneTop(page, 'appearance')).toBeLessThan(SECTION_LANDED_MAX_PX);
 });

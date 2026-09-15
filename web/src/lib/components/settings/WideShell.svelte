@@ -321,6 +321,8 @@
   $effect(() => {
     if (!settingsModal.open) {
       landingWasOpen = false;
+      pendingJump = null;
+      smoothJumpTarget = null;
       return;
     }
     const opening = !landingWasOpen;
@@ -501,7 +503,7 @@
       return;
     }
     unlockParentCenter(trigger, () => {
-      if (hold) pendingJump = id;
+      if (hold && !fullyMounted) pendingJump = id;
       scrollToSection(id, behavior);
     });
   }
