@@ -16,6 +16,7 @@ vi.mock('$lib/idbDatabase', () => ({
     openDbCalls++;
     if (failIdb) throw new Error('idb unavailable');
     return {
+      closed: new Promise<void>(() => {}),
       get: async (_s: string, k: string) => {
         getCalls++;
         if (pendingGet) return pendingGet;

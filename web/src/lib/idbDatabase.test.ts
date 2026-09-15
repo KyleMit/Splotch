@@ -33,8 +33,10 @@ function stubRequest(outcome: { result?: unknown; error?: DOMException }): StubR
 // the stored version is behind the requested one.
 function stubOpenRequest(): StubRequest {
   if (failures.open) return stubRequest({ error: failures.open });
+  const database = stubDatabase();
+  openedDatabases.push(database);
   const request: StubRequest = {
-    result: stubDatabase(),
+    result: database,
     error: null,
     onsuccess: null,
     onerror: null,
@@ -60,6 +62,8 @@ let rows: Map<string, unknown>;
 let createdStores: string[];
 let existingStores: string[];
 let transactionsOpened: { store: string; mode: string }[];
+let closeCalls: string[];
+let openedDatabases: ReturnType<typeof stubDatabase>[];
 
 function stubObjectStore(storeName: string) {
   return {
@@ -79,6 +83,9 @@ function stubObjectStore(storeName: string) {
 
 function stubDatabase() {
   return {
+    onclose: null as (() => void) | null,
+    onversionchange: null as (() => void) | null,
+    close: () => closeCalls.push('close'),
     objectStoreNames: { contains: (name: string) => existingStores.includes(name) },
     createObjectStore: (name: string) => {
       createdStores.push(name);
@@ -113,6 +120,8 @@ beforeEach(() => {
   createdStores = [];
   existingStores = [];
   transactionsOpened = [];
+  closeCalls = [];
+  openedDatabases = [];
   failures.open = null;
   failures.read = null;
   failures.write = null;
@@ -241,6 +250,30 @@ describe('database operations', () => {
     failures.write = new DOMException('write failed');
 
     await expect(database.put('records', { message: 'x' }, 'first')).rejects.toBe(failures.write);
+  });
+});
+
+describe('connection lifetime', () => {
+  it('settles closed when the browser closes the connection on its own', async () => {
+    const database = await open();
+    let settled = false;
+    void database.closed.then(() => (settled = true));
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    openedDatabases[0].onclose?.();
+    await database.closed;
+
+    expect(closeCalls).toEqual([]);
+  });
+
+  it('closes itself and settles closed when another connection changes the version', async () => {
+    const database = await open();
+
+    openedDatabases[0].onversionchange?.();
+    await database.closed;
+
+    expect(closeCalls).toEqual(['close']);
   });
 });
 

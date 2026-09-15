@@ -43,6 +43,10 @@ export interface IdbTransaction<Schema extends DBSchema, Name extends StoreNames
 }
 
 export interface IdbDatabase<Schema extends DBSchema> {
+  // Settles once this connection can no longer be used: the browser closed it
+  // on its own, or it closed itself to let another connection's version change
+  // or deletion proceed. Never rejects.
+  closed: Promise<void>;
   get<Name extends StoreNames<Schema>>(
     storeName: Name,
     key: StoreKey<Schema, Name>
@@ -98,12 +102,28 @@ function transactionDone(transaction: IDBTransaction, storeName: string): Promis
   });
 }
 
+// The browser closes a connection without being asked — WebKit drops a
+// backgrounded page's, clearing site data force-closes every one — and it asks
+// a connection to step aside before another one upgrades or deletes the
+// database. `close()` fires no close event, so stepping aside settles this
+// explicitly.
+function connectionClosed(database: IDBDatabase): Promise<void> {
+  return new Promise((resolve) => {
+    database.onclose = () => resolve();
+    database.onversionchange = () => {
+      database.close();
+      resolve();
+    };
+  });
+}
+
 function wrapDatabase<Schema extends DBSchema>(database: IDBDatabase): IdbDatabase<Schema> {
   // Each is async because opening the transaction is the one call here that
   // reports failure by throwing rather than through onerror — a store that does
   // not exist, or a connection the browser has force-closed. A plain arrow would
   // throw that synchronously out of a method the type says returns a promise.
   return {
+    closed: connectionClosed(database),
     get: async (storeName, key) =>
       requestResult(objectStore(database, storeName, 'readonly').get(key), `Reading ${storeName}`),
     put: async (storeName, value, key) =>

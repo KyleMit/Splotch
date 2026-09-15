@@ -1,8 +1,8 @@
-import type { DBSchema } from './idbDatabase';
+import type { DBSchema, IdbDatabase } from './idbDatabase';
 import { browser } from '$app/environment';
 import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';
-import { idbKvStore, lazyIdbDatabase } from './idb';
+import { lazyIdbDatabase } from './idb';
 import { readString, removeKey, writeString } from './storage';
 import { STORAGE_KEYS } from './storageKeys';
 
@@ -48,13 +48,6 @@ interface SecureDb extends DBSchema {
   };
 }
 
-interface SecretPayloadDb extends DBSchema {
-  secrets: {
-    key: string;
-    value: SecretPayload;
-  };
-}
-
 // Native plugin, loaded lazily so it's never pulled in on the web or during SSR.
 // Returns the module namespace, not the SecureStorage proxy — see
 // lazyPluginModule for why that distinction is load-bearing.
@@ -69,11 +62,37 @@ const getPlugin = lazyPluginModule(() =>
 
 // --- web: IndexedDB via idb (also lazy) ---
 const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
-// This views SecureDb's physical store only through named secret-payload rows: webSave, webLoad,
-// and webClear receive the secret name, while MASTER_KEY_ROW stays exclusively on getDb (as does
-// the read-only absence re-check, which needs a transaction handle). webLoad still validates
-// persisted data, and the narrow put type prevents payload-path writes of CryptoKey.
-const payloadStore = idbKvStore<SecretPayloadDb>(DB_NAME, STORE);
+// A view of the same connection through named secret-payload rows only: webSave, webLoad, and
+// webClear receive the secret name, while MASTER_KEY_ROW stays exclusively on getDb (as does the
+// read-only absence re-check, which needs a transaction handle). webLoad still validates persisted
+// data, and the narrow put type prevents payload-path writes of CryptoKey.
+const payloadStore = {
+  get: async (name: string) => (await getDb()).get(STORE, name),
+  delete: async (name: string) => (await getDb()).delete(STORE, name),
+};
+
+// A payload is written through the connection its key was read from, in one
+// transaction with a check that the key row is still there. The browser closes
+// that connection when it deletes the database (site data cleared, a deletion
+// from another tab), and a closed connection cannot open a transaction, so a
+// save that was already encrypting fails instead of landing its ciphertext in
+// a recreated database whose key — possibly another tab's fresh one — never
+// encrypted it. Re-resolving the connection here would let exactly that
+// through. A failed save is the outcome a parent can act on.
+async function putBesideMasterKey(
+  db: IdbDatabase<SecureDb>,
+  name: string,
+  payload: SecretPayload
+): Promise<void> {
+  const tx = db.transaction(STORE, 'readwrite');
+  await Promise.all([
+    tx.store.get(MASTER_KEY_ROW).then((keyRow) => {
+      if (keyRow === undefined) throw new Error('The secure-storage master key is gone');
+      return tx.store.put(payload, name);
+    }),
+    tx.done,
+  ]);
+}
 
 function isSecretPayload(value: unknown): value is SecretPayload {
   return (
@@ -97,18 +116,37 @@ function isSecretPayload(value: unknown): value is SecretPayload {
 // one key (cleared on rejection so a transient IDB failure doesn't poison
 // future calls). Cross-tab, the re-check-then-put runs inside one readwrite
 // transaction, so a tab that loses the race adopts the winner's key.
-let masterKeyPromise: Promise<CryptoKey> | null = null;
+//
+// The memo lives exactly as long as the connection it was read through. The
+// key row is gone with the database once the browser closes the connection
+// (site data cleared, a deletion from another connection), and a key kept past
+// that would encrypt new payloads nothing on disk can ever decrypt again.
+//
+// The key travels with that connection so a write can go through the same
+// one; see putBesideMasterKey.
+type MasterKeyHandle = { key: CryptoKey; db: IdbDatabase<SecureDb> };
 
-function getMasterKey(): Promise<CryptoKey> {
-  masterKeyPromise ??= loadOrCreateMasterKey().catch((err) => {
-    masterKeyPromise = null;
-    throw err;
-  });
+let masterKeyPromise: Promise<MasterKeyHandle> | null = null;
+
+function getMasterKey(): Promise<MasterKeyHandle> {
+  if (!masterKeyPromise) {
+    const loading: Promise<MasterKeyHandle> = getDb()
+      .then((db) => {
+        void db.closed.then(() => {
+          if (masterKeyPromise === loading) masterKeyPromise = null;
+        });
+        return loadOrCreateMasterKey(db).then((key) => ({ key, db }));
+      })
+      .catch((err: unknown) => {
+        if (masterKeyPromise === loading) masterKeyPromise = null;
+        throw err;
+      });
+    masterKeyPromise = loading;
+  }
   return masterKeyPromise;
 }
 
-async function loadOrCreateMasterKey(): Promise<CryptoKey> {
-  const db = await getDb();
+async function loadOrCreateMasterKey(db: IdbDatabase<SecureDb>): Promise<CryptoKey> {
   const existing = await db.get(STORE, MASTER_KEY_ROW);
   if (existing && !isSecretPayload(existing)) return existing;
   // Generated *before* the transaction: an IDB transaction auto-commits once
@@ -128,7 +166,7 @@ async function loadOrCreateMasterKey(): Promise<CryptoKey> {
 }
 
 async function webSave(name: string, value: string) {
-  const key = await getMasterKey();
+  const { key, db } = await getMasterKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
@@ -136,7 +174,7 @@ async function webSave(name: string, value: string) {
     new TextEncoder().encode(value)
   );
   const payload: SecretPayload = { iv, data };
-  await payloadStore.put(name, payload);
+  await putBesideMasterKey(db, name, payload);
 }
 
 async function webLoad(name: string) {
@@ -146,7 +184,7 @@ async function webLoad(name: string) {
     return null;
   }
   if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
-  const key = await getMasterKey();
+  const { key } = await getMasterKey();
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
   return new TextDecoder().decode(plain);
 }
