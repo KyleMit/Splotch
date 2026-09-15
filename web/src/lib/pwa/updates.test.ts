@@ -206,7 +206,7 @@ describe('deferred service worker registration', () => {
   it('registers sw.js only once the idle slot is released', async () => {
     const container = stubServiceWorker(undefined);
 
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
     expect(container.register).not.toHaveBeenCalled();
 
     await flushIdle();
@@ -217,12 +217,12 @@ describe('deferred service worker registration', () => {
   it('is idempotent: repeated gate calls schedule a single registration', async () => {
     const container = stubServiceWorker(undefined);
 
-    pwaUpdates.registerDeferredServiceWorker();
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
     expect(idle.queue).toHaveLength(1);
 
     await flushIdle();
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
 
     expect(container.register).toHaveBeenCalledTimes(1);
@@ -232,7 +232,7 @@ describe('deferred service worker registration', () => {
     const container = stubServiceWorker(undefined);
     stubConnection(true);
 
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
 
     expect(container.register).not.toHaveBeenCalled();
@@ -254,7 +254,7 @@ describe('deferred service worker registration', () => {
     const container = stubServiceWorker(undefined);
     stubConnection(false);
 
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
     await flushIdle();
 
     expect(container.register).toHaveBeenCalledWith('/sw.js');
@@ -264,7 +264,7 @@ describe('deferred service worker registration', () => {
     const container = stubServiceWorker(undefined);
     (import.meta.env as Record<string, unknown>).DEV = true;
 
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
 
     expect(idle.queue).toHaveLength(0);
     expect(container.register).not.toHaveBeenCalled();
@@ -274,14 +274,32 @@ describe('deferred service worker registration', () => {
     const container = stubServiceWorker(undefined);
     container.register.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
     await flushIdle();
     expect(container.register).toHaveBeenCalledTimes(1);
 
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
     await flushIdle();
 
     expect(container.register).toHaveBeenCalledTimes(2);
+  });
+
+  it('shares a repeat-visit registration failure with the stroke gate', async () => {
+    const container = stubServiceWorker(makeRegistration());
+    container.register.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const teardown = pwaUpdates.initPWAUpdates();
+    await flushAsync();
+
+    const result = pwaUpdates.registerDeferredServiceWorker();
+    expect(pwaUpdates.registerDeferredServiceWorker()).toBe(result);
+    await flushIdle();
+    await expect(result).resolves.toBe(false);
+
+    const retry = pwaUpdates.registerDeferredServiceWorker();
+    await flushIdle();
+    await expect(retry).resolves.toBe(true);
+    expect(container.register).toHaveBeenCalledTimes(2);
+    teardown?.();
   });
 
   it('update checks no-op before registration and arm once one exists', async () => {
@@ -297,7 +315,7 @@ describe('deferred service worker registration', () => {
     const worker = makeWorker();
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
     container.getRegistration.mockResolvedValue(reg);
-    pwaUpdates.registerDeferredServiceWorker();
+    void pwaUpdates.registerDeferredServiceWorker();
     await flushIdle();
 
     expect(container.register).toHaveBeenCalledWith('/sw.js');

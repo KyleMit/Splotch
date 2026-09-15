@@ -155,6 +155,8 @@ export function captureInstallPrompt(e: BeforeInstallPromptEvent) {
     writeBool(STORAGE_KEYS.installCompleted, false);
   }
   install.mode = 'oneTap';
+  // Desktop installability can arrive after the drawing route's settled-in gate.
+  recordInstallRepromptSession();
 }
 
 // beforeinstallprompt is one-shot and can fire before the page component

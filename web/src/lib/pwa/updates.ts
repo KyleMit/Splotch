@@ -98,7 +98,7 @@ export function createPWAUpdates() {
   // Held so applyPendingUpdate can reach registration.waiting synchronously
   // inside the visibilitychange handler.
   let updateRegistration: ServiceWorkerRegistration | null = null;
-  let registrationScheduled = false;
+  let registrationScheduled: Promise<boolean> | null = null;
   let lastUpdateCheckAt = 0;
   // A revalidation in flight is shared, never skipped past: registration.waiting
   // may still hold a worker from an earlier deploy while update() is fetching,
@@ -120,29 +120,33 @@ export function createPWAUpdates() {
   // The register() call itself still waits for an idle slot: the stroke gate
   // fires at stroke end, and kicking off the precache in that same frame could
   // contend with the commit fold of the stroke that tripped it.
-  function scheduleRegistration() {
+  function scheduleRegistration(): Promise<boolean> {
     // Save-Data users never get the offline install forced on them — offline
     // support waits for a session without the preference set.
-    if (saveDataEnabled()) return;
-    if (registrationScheduled) return;
-    registrationScheduled = true;
-    scheduleIdle(() => {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then(() => checkForUpdates())
-        .catch(() => {
-          // offline or the fetch failed — release the latch so a later gate call
-          // (the next stroke) retries; otherwise the next visit picks it up
-          registrationScheduled = false;
-        });
+    if (saveDataEnabled()) return Promise.resolve(true);
+    if (registrationScheduled) return registrationScheduled;
+    registrationScheduled = new Promise((resolve) => {
+      scheduleIdle(() => {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then(() => checkForUpdates())
+          .then(() => resolve(true))
+          .catch(() => {
+            // Share failures with the stroke gate, including an attempt started
+            // by repeat-visit initialization, so the next stroke can retry.
+            registrationScheduled = null;
+            resolve(false);
+          });
+      });
     });
+    return registrationScheduled;
   }
 
   // First-visit registration, called from +page.svelte's stroke-count gate.
+  // Resolves false only when a later stroke needs to retry the registration.
   function registerDeferredServiceWorker() {
-    if (import.meta.env.DEV) return;
-    if (!serviceWorkerSupported()) return;
-    scheduleRegistration();
+    if (import.meta.env.DEV || !serviceWorkerSupported()) return Promise.resolve(true);
+    return scheduleRegistration();
   }
 
   function initPWAUpdates(): (() => void) | undefined {
@@ -166,7 +170,7 @@ export function createPWAUpdates() {
     navigator.serviceWorker
       .getRegistration()
       .then((existing) => {
-        if (existing) scheduleRegistration();
+        if (existing) void scheduleRegistration();
       })
       .catch(() => {});
 

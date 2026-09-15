@@ -23,7 +23,6 @@
   import { gate } from '$lib/state/parentalGate.svelte';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
-  import { pwaUpdates } from '$lib/pwa/updates';
   import { settings } from '$lib/state/settings.svelte';
   import { captureAiAccessTokenFromUrl } from '$lib/state/aiAccessToken';
   import { applyTheme } from '$lib/theme';
@@ -36,7 +35,8 @@
   import { installWakeLock } from '$lib/boot/wakeLock';
   import { installContextMenuGuard } from '$lib/boot/contextMenuGuard';
   import { hydrateSettings } from '$lib/boot/persistedState';
-  import { initWebOnlyServices, recordWebInstallRepromptSession } from '$lib/boot/webOnlyServices';
+  import { initWebOnlyServices } from '$lib/boot/webOnlyServices';
+  import { installSettledInEffects } from '$lib/boot/settledIn.svelte';
   import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
   import { installUndoShortcut } from '$lib/boot/undoShortcut';
   import {
@@ -73,11 +73,7 @@
   // Banner uses). Pre-hydration strokes (ADR-0072) don't tick strokeCount, so
   // only post-hydration strokes count — acceptable, it only defers
   // registration slightly further.
-  $effect(() => {
-    if (__IS_CAPACITOR__) return;
-    if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
-    pwaUpdates.registerDeferredServiceWorker();
-  });
+  if (!__IS_CAPACITOR__) installSettledInEffects(() => hiddenOverlays);
 
   // A first visit's coloring-pack downloads wait for the same settled-in
   // signal, or for the picker opening, which asks for books outright. Opening
@@ -86,13 +82,6 @@
   $effect(() => {
     if (canvasState.strokeCount < SETTLED_IN_STROKES && !coloringBookModal.open) return;
     coloringPackDownloads?.engage();
-  });
-
-  $effect(() => {
-    if (__IS_CAPACITOR__) return;
-    if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
-    recordWebInstallRepromptSession();
-    hiddenOverlays?.demand('installBanner');
   });
 
   // Filled once by foreground demand or one at a time by the interaction-quiet
