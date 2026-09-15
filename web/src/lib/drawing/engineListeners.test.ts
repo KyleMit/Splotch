@@ -1,6 +1,30 @@
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 
-import { registerDrawingEngineListeners } from './engineListeners';
+import {
+  registerDrawingEngineListeners,
+  createResizeListener,
+  RESIZE_SETTLE_MS,
+} from './engineListeners';
+
+afterEach(() => vi.useRealTimers());
+
+it('refreshes resize geometry immediately and settles only the last event', () => {
+  vi.useFakeTimers();
+  const refresh = vi.fn();
+  const settle = vi.fn();
+  const listener = createResizeListener(refresh, settle);
+  listener.handleResize();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS - 1);
+  listener.handleResize();
+  expect(refresh).toHaveBeenCalledTimes(2);
+  expect(settle).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS);
+  expect(settle).toHaveBeenCalledOnce();
+  listener.handleResize();
+  listener.dispose();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS);
+  expect(settle).toHaveBeenCalledOnce();
+});
 
 function listenerHandlers(pointeroutCalls: string[], trackPenCanvasExit: () => void) {
   return {

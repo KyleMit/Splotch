@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { drawCommittedStroke, gotoApp, openHubSection, openSettingsModal } from './helpers';
 import { applyFarmPage, openDrawer } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { RESIZE_SETTLE_MS } from '../src/lib/drawing/engineListeners';
 
 async function screenPixel(page: Page, x: number, y: number) {
   const image = await page.screenshot({ clip: { x, y, width: 1, height: 1 } });
@@ -41,6 +42,7 @@ for (const layout of [
       const overlay = page.locator('#coloringOverlay');
       const art = await overlay.boundingBox();
       const source = await overlay.getAttribute('src');
+      await page.clock.install();
       for (const target of [
         initial === 'bare' ? 'Buttons' : 'Bare',
         initial === 'bare' ? 'Bare' : 'Buttons',
@@ -54,6 +56,10 @@ for (const layout of [
         await page.keyboard.press('Escape');
         await page.keyboard.press('Escape');
         await expect(page.locator('#settingsModal')).toBeHidden();
+        await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+        await page.clock.runFor(RESIZE_SETTLE_MS + 1);
+        await page.setViewportSize({ width: layout.width + 1, height: layout.height });
+        await page.clock.runFor(RESIZE_SETTLE_MS + 1);
         await page.mouse.move(layout.width - 30, 120);
         await expect.poll(() => page.locator('.paper-sheet').boundingBox()).toEqual(paper);
         await expect.poll(() => overlay.boundingBox()).toEqual(art);
@@ -67,6 +73,8 @@ for (const layout of [
         await page.mouse.up();
         await expect.poll(() => screenPixel(page, x, y)).not.toEqual(ink);
         await page.locator('#undoButton').click();
+        await page.setViewportSize(layout);
+        await page.clock.runFor(RESIZE_SETTLE_MS + 1);
         await expect.poll(() => page.locator('.paper-sheet').boundingBox()).toEqual(paper);
         await expect.poll(() => overlay.boundingBox()).toEqual(art);
         await expect.poll(() => screenPixel(page, x, y)).toEqual(ink);

@@ -86,7 +86,7 @@ import {
   type CrayonOptions,
 } from './crayonBrush';
 import { paperStateMatches, type HistoryDebug, type RecordedPaperState } from './undoHistory';
-import { recordPaper, restorePaperLayout } from './paperLayout';
+import { recordPaper, restorePaperLayout, createPaperLayoutMemory } from './paperLayout';
 import { createCanvasMeasure, createCanvasLayoutUpdater, type CanvasRect } from './canvasMeasure';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import { createStrokeRasterQueue, type RasterBatch } from './strokeRasterQueue';
@@ -99,7 +99,7 @@ import {
   captureTiledSnapshot,
   createStrokeSnapshot,
 } from './strokeSnapshot';
-import { registerDrawingEngineListeners } from './engineListeners';
+import { registerDrawingEngineListeners, createResizeListener } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 import {
@@ -377,6 +377,13 @@ function resizeCanvas(
 ) {
   const retry = (measured: DOMRect) => resizeCanvas(measured, { repaintRecoveredPixels });
   if (!measure.accept(rect, retry)) return;
+  preservedView = preserveLayout(
+    preservedView,
+    rect,
+    renderScale,
+    currentScreenAngle(),
+    canvasEmpty
+  );
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const presentation = preservedView
     ? 'window'
@@ -427,17 +434,9 @@ function resizeCanvas(
 // settles. Native rotation also crosses intermediate layout sizes before its
 // orientation signal settles, so it needs the same trailing edge. Exported so
 // the dev harness's resizeTo() can wait out the settle window.
-export const RESIZE_SETTLE_MS = 150;
-let resizeSettleTimer: ReturnType<typeof setTimeout> | null = null;
-
-function handleResize() {
-  refreshCanvasRect();
-  if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer);
-  resizeSettleTimer = setTimeout(() => {
-    resizeSettleTimer = null;
-    resizeCanvas();
-  }, RESIZE_SETTLE_MS);
-}
+export { RESIZE_SETTLE_MS } from './engineListeners';
+const resizeListener = createResizeListener(refreshCanvasRect, resyncOnReentry);
+const preserveLayout = createPaperLayoutMemory();
 
 // A hidden document gets no resize/orientationchange, so rotating the device
 // while the app is backgrounded leaves the backing store, the cached rect, and
@@ -1175,10 +1174,7 @@ function teardownEngine() {
   engineLive = false;
   for (const remove of listenerRemovers) remove();
   listenerRemovers = [];
-  if (resizeSettleTimer !== null) {
-    clearTimeout(resizeSettleTimer);
-    resizeSettleTimer = null;
-  }
+  resizeListener.dispose();
   measure.cancel();
   // Pointer-input state must not outlive the mount, unlike tiled drawing
   // history: a stale
@@ -1276,7 +1272,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   resizeCanvas();
 
   registerDrawingEngineListeners(listenerRemovers, canvas, {
-    handleResize,
+    handleResize: resizeListener.handleResize,
     refreshCanvasRect: () => refreshCanvasRect(),
     resyncOnReentry,
     startDrawing,

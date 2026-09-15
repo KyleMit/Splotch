@@ -283,6 +283,11 @@ Configured in `web/playwright.config.ts`. By default it builds the production ar
 with `vite preview` (set `DEV_SERVER=1` for fast iteration against `vite dev`). Specs live in
 `web/tests/` and exercise the real drawing engine, the responsive palette, and the full UI flows.
 
+Run Vitest and SvelteKit sync/type checks before or after production Playwright runs in the same
+checkout. Their SvelteKit plugins rewrite shared generated files; overlapping them with the browser
+build can mismatch the HTML and client bootstrap IDs and prevent the app from starting. Use separate
+checkouts when these commands need to run concurrently.
+
 These run on real Chromium but **cannot catch native or WebView boot failures** — that's what the
 Android smoke test is for.
 

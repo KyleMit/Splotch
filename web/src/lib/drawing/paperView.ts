@@ -41,7 +41,7 @@ const PAPER_COVERAGE_TOLERANCE_CSS_PX = 8;
 // MORE than this on an axis is a deliberate resize — a dragged window edge,
 // split-screen, a keyboard — which should re-fit the drawing rather than hide
 // part of it behind nothing.
-const SYSTEM_BAR_OCCLUSION_MAX_CSS_PX = 96;
+export const SYSTEM_BAR_OCCLUSION_MAX_CSS_PX = 96;
 
 // Whether the viewport differs from the paper by no more than system chrome and
 // inset drift can account for — the band inside which the paper is worth

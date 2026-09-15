@@ -1,4 +1,9 @@
-import { isIdentityView, type PaperView, type Size } from './paperView';
+import {
+  isIdentityView,
+  SYSTEM_BAR_OCCLUSION_MAX_CSS_PX,
+  type PaperView,
+  type Size,
+} from './paperView';
 import type { CanvasRect } from './canvasMeasure';
 import type { RecordedPaperState } from './undoHistory';
 
@@ -16,18 +21,23 @@ export function recordPaper(
   rect: CanvasRect,
   screenAngle: number
 ): RecordedPaperState {
-  return { ...paper, angle, presentation: capturePaperLayout(view, rect, screenAngle) };
+  const ordinaryView =
+    isIdentityView(view) && paper.cssW === rect.width && paper.cssH === rect.height;
+  return {
+    ...paper,
+    angle,
+    presentation: ordinaryView ? undefined : capturePaperLayout(view, rect, screenAngle),
+  };
 }
 
 export function capturePaperLayout(
   view: PaperView,
   rect: CanvasRect,
   angle: number
-): PaperLayoutSnapshot | undefined {
-  if (isIdentityView(view)) return undefined;
+): PaperLayoutSnapshot {
   return {
     view: { ...view },
-    rect: { ...rect },
+    rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
     angle,
     windowSize: { width: window.innerWidth, height: window.innerHeight },
   };
@@ -42,13 +52,38 @@ export function restorePaperLayout(
   if (
     !snapshot ||
     snapshot.angle !== angle ||
-    snapshot.windowSize.width !== window.innerWidth ||
-    snapshot.windowSize.height !== window.innerHeight
+    Math.abs(snapshot.windowSize.width - window.innerWidth) > SYSTEM_BAR_OCCLUSION_MAX_CSS_PX ||
+    Math.abs(snapshot.windowSize.height - window.innerHeight) > SYSTEM_BAR_OCCLUSION_MAX_CSS_PX ||
+    snapshot.windowSize.width > snapshot.windowSize.height !==
+      window.innerWidth > window.innerHeight
   )
     return undefined;
   return {
     ...snapshot.view,
     tx: snapshot.view.tx + (snapshot.rect.left - rect.left) * renderScale,
     ty: snapshot.view.ty + (snapshot.rect.top - rect.top) * renderScale,
+  };
+}
+
+export function createPaperLayoutMemory() {
+  let snapshot: PaperLayoutSnapshot | undefined;
+  return (
+    preservedView: PaperView | undefined,
+    rect: CanvasRect,
+    renderScale: number,
+    angle: number,
+    empty: boolean
+  ) => {
+    if (empty) {
+      snapshot = undefined;
+      return undefined;
+    }
+    if (preservedView) {
+      snapshot = capturePaperLayout(preservedView, rect, angle);
+      return preservedView;
+    }
+    const view = restorePaperLayout(snapshot, rect, renderScale, angle);
+    if (!view) snapshot = undefined;
+    return view;
   };
 }
