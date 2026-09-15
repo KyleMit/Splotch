@@ -9,7 +9,7 @@
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colorsState, isWhite, isDarkInk } from '$lib/state/colors.svelte';
-  import { settingsState, setDrawerOpen } from '$lib/state/settings.svelte';
+  import { enabledOptionalBrushes, settingsState, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import {
@@ -299,6 +299,15 @@
     }
     openFlyout = 'brush';
   }
+
+  // Settings can switch the drawer's brushes off while the brush menu is open,
+  // from inside a dialog whose keyboard session never sends this panel the
+  // outside pointer that closes a flyout. With fewer than two brushes left there
+  // is no menu, so the slot it held is released here — an effect because the
+  // change is made elsewhere; the slot is this panel's to clear.
+  $effect(() => {
+    if (openFlyout === 'brush' && enabledOptionalBrushes().length < 2) setBrushFlyout(false);
+  });
 
   function handleStrokeSizeClick(size: StrokeSize) {
     setStrokeSize(size);
