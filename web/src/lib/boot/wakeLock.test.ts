@@ -56,6 +56,20 @@ describe('installWakeLock', () => {
     expect(request).not.toHaveBeenCalled();
   });
 
+  it('requests from capture phase when a descendant stops pointerup propagation', async () => {
+    const child = document.body.appendChild(document.createElement('button'));
+    child.addEventListener('pointerup', (event) => event.stopPropagation());
+    try {
+      install();
+
+      child.dispatchEvent(new Event('pointerup', { bubbles: true }));
+
+      await vi.waitFor(() => expect(request).toHaveBeenCalledWith('screen'));
+    } finally {
+      child.remove();
+    }
+  });
+
   it('releases the acquired sentinel on teardown', async () => {
     const teardown = install();
     document.dispatchEvent(new Event('pointerup'));

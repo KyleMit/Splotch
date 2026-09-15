@@ -40,12 +40,12 @@ export function installWakeLock(): () => void {
       void requestWakeLock();
     }
   };
-  document.addEventListener('pointerup', onPointerUp);
+  document.addEventListener('pointerup', onPointerUp, { capture: true });
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   return () => {
     disposed = true;
-    document.removeEventListener('pointerup', onPointerUp);
+    document.removeEventListener('pointerup', onPointerUp, { capture: true });
     document.removeEventListener('visibilitychange', onVisibilityChange);
     void wakeLock?.release().catch(() => {});
     wakeLock = null;
