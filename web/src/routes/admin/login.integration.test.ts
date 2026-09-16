@@ -71,8 +71,9 @@ describe('the admin login doors (real rateLimit)', () => {
     const response = await jsonDoor('203.0.113.15', JSON.stringify({ key: SECRET }));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, session: sessionToken() });
-    expect(sessionToken()).not.toContain(SECRET);
+    const body = await response.json();
+    expect(body).toEqual({ ok: true, session: sessionToken() });
+    expect(body.session).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('spends one shared budget per IP, whichever door the attempts came from', async () => {

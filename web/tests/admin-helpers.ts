@@ -73,6 +73,7 @@ export async function signInToAdmin(page: Page) {
 async function openAdminConsole(page: Page) {
   await page.goto('/admin');
   await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
+  await expect(page.getByRole('button', { name: 'Add code' })).toBeEnabled();
 }
 
 type AdminSessionCookies = Awaited<ReturnType<BrowserContext['storageState']>>['cookies'];
