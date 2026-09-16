@@ -46,6 +46,18 @@ for another repository during preflight.
   continuing. Do not promote an issue-local failure into a campaign failure merely because its
   repair budget ran out.
 
+## The installed policy does not enforce the no-merge boundary
+
+`npm run issue-stack:install` writes GitHub and push approval rules into
+`~/.codex/rules/default.rules`, which every Codex session on the machine reads. It deliberately does
+not forbid `gh pr merge` or `gh stack merge`: a global `forbidden` rule outlives the queue and
+blocks other workflows that legitimately hold merge authority. The fixed boundary above remains this
+workflow's contract, while merge commands retain the general `gh` prompt for host access.
+
+Installations made before this rule changed can still contain the stale merge bans. Run
+`npm run issue-stack:install` once to replace the managed block, then restart Codex. There is no
+per-queue cleanup step.
+
 ## Preflight the whole queue
 
 Complete preflight before creating any branch or PR:

@@ -87,8 +87,8 @@ describe('Codex policy installation', () => {
     const twice = replaceIssueStackRules(once);
     expect(twice).toBe(once);
     expect(once).toContain('pattern = ["gh"]');
-    expect(once).toContain('pattern = ["gh", "pr", "merge"]');
-    expect(once).toContain('decision = "forbidden"');
+    expect(once).not.toContain('pattern = ["gh", "pr", "merge"]');
+    expect(once).not.toContain('pattern = ["gh", "stack", "merge"]');
     expect(once).toContain('pattern = ["npm"]');
     expect(() => validateIssueStackRules(once)).not.toThrow();
   });

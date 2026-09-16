@@ -12,8 +12,8 @@ import { ISSUE_STACK_POLICY_RULES } from './install-codex-policy.mjs';
 
 const POLICY_CASES = [
   { command: ['gh', 'pr', 'view', '1'], expected: 'prompt' },
-  { command: ['gh', 'pr', 'merge', '1'], expected: 'forbidden' },
-  { command: ['gh', 'stack', 'merge'], expected: 'forbidden' },
+  { command: ['gh', 'pr', 'merge', '1'], expected: 'prompt' },
+  { command: ['gh', 'stack', 'merge'], expected: 'prompt' },
   { command: ['git', 'push', 'origin', 'codex/policy-check'], expected: 'prompt' },
 ];
 
