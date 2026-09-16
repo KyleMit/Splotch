@@ -1,4 +1,3 @@
-import { MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import type { Page } from '@playwright/test';
 import {
   adminConsole,
@@ -11,15 +10,13 @@ import {
 } from './admin-helpers';
 
 // The specs about signing in to /admin: the form action's verdicts, the sign-out
-// path, and the JSON /api/admin/* twin (tools/api-smoke/lib/admin-client.mjs
-// drives it). Each spec necessarily spends a hit of rateLimitPolicy.adminLogin
+// path. Each form login necessarily spends a hit of rateLimitPolicy.adminLogin
 // — 10 per client address per trailing minute — because the sign-in is the
 // behaviour under test, and `beginAdminLogin` charges the bucket before it
-// looks at the key, so the wrong-key spec counts too. That budget is what
-// keeps these apart from admin.spec.ts, whose signed-in specs share one
-// session and repeat freely: this file spends six hits per repetition, so
-// `--repeat-each` on it does not fit inside one window at all. Verify it with
-// repeated full runs, as CI does.
+// looks at the key, so the wrong-key spec counts too. That budget is what keeps
+// these apart from admin.spec.ts, whose signed-in specs share one session and
+// repeat freely: this file spends four hits per repetition after the fixture's
+// one shared sign-in, so two repetitions fit inside one window.
 
 async function expectTokenAddUnavailable(page: Page, token: string) {
   await adminConsole(page).fill(token);
@@ -61,11 +58,9 @@ test('web /admin signs in, fails closed without durable tokens, and signs out', 
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 });
 
-// Costs two sign-ins: the draft only survives within one page lifetime, so the
-// second sign-in cannot follow a reload the way signInToAdmin's navigation
-// would.
-test('web /admin signing out discards an unsent code draft', async ({ page }) => {
-  await signInToAdmin(page);
+// Costs one sign-in after the shared fixture session: the draft only survives
+// within one page lifetime, so the second sign-in cannot follow a reload.
+test('web /admin signing out discards an unsent code draft', async ({ adminPage: page }) => {
   await adminConsole(page).fill('e2e-unsent-draft');
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -111,39 +106,4 @@ test('web /admin a copy left pending at sign-out cannot mark the next session co
     return document.querySelector(selector)?.textContent?.trim();
   }, copyCodeButton);
   expect(labelAfterRelease).toBe('Copy');
-});
-
-test('admin API requires a valid bearer session and durable mutation storage', async ({
-  request,
-}) => {
-  expect((await request.get('/api/admin/tokens')).status()).toBe(401);
-  expect(
-    (
-      await request.get('/api/admin/tokens', {
-        headers: { Authorization: 'Bearer not-a-session' },
-      })
-    ).status()
-  ).toBe(401);
-
-  const login = await request.post('/api/admin/login', { data: { key: ADMIN_ACCESS_TOKEN } });
-  expect(login.ok()).toBe(true);
-  const { session } = await login.json();
-  // The session is the derived HMAC, never the raw secret.
-  expect(session).toMatch(/^[0-9a-f]{64}$/);
-  expect(session).not.toContain(ADMIN_ACCESS_TOKEN);
-
-  const headers = { Authorization: `Bearer ${session}` };
-  const token = `e2e-api-${Date.now()}`;
-
-  const added = await request.post('/api/admin/tokens', { headers, data: { token } });
-  expect(added.status()).toBe(503);
-  const addedBody = await added.json();
-  expect(addedBody).toMatchObject({ ok: false, error: expect.any(String) });
-
-  const removed = await request.delete('/api/admin/tokens', {
-    headers,
-    data: { token: MANAGED_ACCESS_TOKEN },
-  });
-  expect(removed.status()).toBe(503);
-  expect(await removed.json()).toMatchObject({ ok: false, error: expect.any(String) });
 });

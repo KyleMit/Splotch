@@ -56,20 +56,24 @@ export async function submitAdminKey(page: Page, key: string) {
 // belongs to Playwright's own `retries`, which re-runs the spec instead of
 // stacking hits inside one.
 //
-// So only the specs *about* signing in call this — admin-login.spec.ts, which
-// states its own `--repeat-each` ceiling. Every other admin spec takes
+// So only the specs *about* signing in call this — admin-login.spec.ts, whose
+// four form-login hits per repetition plus one shared fixture sign-in let
+// `--repeat-each=2` fit the shared allowance. Every other admin spec takes
 // `adminPage` from the `test` exported below, which spends one sign-in per run
 // instead of one per test, so those specs repeat without touching the bucket.
 export async function signInToAdmin(page: Page) {
   await page.goto('/admin');
   await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
-  await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
+  const throttledAlert = page.getByRole('alert').filter({ hasText: 'Too many attempts' });
+  await expect(adminConsole(page).or(throttledAlert)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
+  expect(await throttledAlert.isVisible(), 'admin sign-in was throttled (429)').toBe(false);
 }
 
 /** Open the token console on a page whose context already holds a session. */
 async function openAdminConsole(page: Page) {
   await page.goto('/admin');
   await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
+  await expect(page.getByRole('button', { name: 'Add code' })).toBeEnabled();
 }
 
 type AdminSessionCookies = Awaited<ReturnType<BrowserContext['storageState']>>['cookies'];
