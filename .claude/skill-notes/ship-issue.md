@@ -98,6 +98,26 @@ Three conditions carry more weight than they look:
 Merge method is `--merge`, not squash or rebase: `main` is a merge-commit trunk. Branch protection
 is never bypassed — GitHub refusing is a correct outcome to report.
 
+## Why linked-worktree merges have a GitHub CLI floor
+
+Three consecutive autonomous merges on 2026-09-16 exposed a partial-success trap in GitHub CLI
+2.96.0. Each API merge succeeded, then `gh pr merge --delete-branch` tried to check out `main`
+before deleting the local head. The primary checkout already owned `main`, so Git rejected that
+checkout and `gh` exited 1 with `fatal: 'main' is already used by worktree ...`. Reading only the
+exit code made a completed irreversible operation look retryable.
+
+GitHub CLI 2.99.0 shipped [upstream worktree handling](https://github.com/cli/cli/pull/14007). The
+machine was upgraded from 2.96.0 to 2.101.0, and the skill now treats 2.99.0 as a pre-merge floor in
+linked worktrees. An explicit `--repo` would also suppress the old local cleanup path, but that was
+rejected as the permanent answer: it would preserve a workaround for an upstream-fixed bug and make
+the skill own behavior the maintained CLI already understands. The agent still detaches at
+`origin/main` and deletes its local head after verification; current `gh` deliberately leaves a
+branch alone while an active linked worktree owns it.
+
+The second invariant is broader than this particular bug: a nonzero command that performs a remote
+write can be a partial success. The PR state and merge commit must be read before retrying. A blind
+retry is harmless for some APIs and dangerous for others; reconciliation is the reusable rule.
+
 ## Why autonomous does not file the follow-up issues
 
 The mode automates exactly one new decision — merging — and nothing else. Filing issues was

@@ -152,11 +152,24 @@ with the PR open and the failed condition named.
 * **Nothing on the blocker list happened** — no test weakened, no protection bypassed, no decision
   that crossed a security boundary.
 
-Merge with a **merge commit**, matching this repo's trunk (`create-stacked-prs` documents why):
+Merge with a **merge commit**, matching this repo's trunk (`create-stacked-prs` documents why). In a
+linked worktree, first confirm GitHub CLI is 2.99.0 or newer; that is the release where
+`--delete-branch` learned to handle linked worktrees safely. If it is older, stop before merging and
+report the installed version and required upgrade — do not route around the missing safety.
 
 ```bash
 gh pr merge <n> --merge --delete-branch
 ```
+
+After fetching and verifying the merge, detach this worktree at `origin/main`, then delete any local
+head that `gh` correctly left checked out while the worktree was active. Never check out the local
+`main` branch in an agent worktree; the primary checkout normally owns it.
+
+Treat a nonzero merge command as **unknown outcome**, not as proof that the merge failed. Before any
+retry, read the PR's live state and merge commit. If it is merged, the irreversible operation
+succeeded; finish or report branch cleanup separately. If it is still open, report the exact command
+failure and follow the ordinary ruleset/transient-failure path. Never issue a second merge attempt
+until that reconciliation is complete.
 
 Never pass a flag that bypasses branch protection, and never merge past a ruleset failure — GitHub
 evaluating the rules and refusing is a correct outcome to report, not an obstacle to route around.
