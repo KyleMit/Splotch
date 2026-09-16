@@ -1,6 +1,6 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { buildDefines } from './defines';
 import { BROWSER_TARGETS } from './browserTargets';
@@ -29,6 +29,12 @@ import {
   isAppShellNavigation,
   prependAppShellEntry,
 } from './src/lib/pwa/appShellRoute.ts';
+import {
+  PAGE_CACHE_CLEANUP_SCRIPT_PREFIX,
+  PAGES_CACHE_NAME,
+  pageCacheCleanupScript,
+  pageCacheCleanupScriptFilename,
+} from './src/lib/pwa/pageCacheCleanup.ts';
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
@@ -60,6 +66,17 @@ const APP_SHELL_PRECACHE_URL = appShellPrecacheUrl(randomUUID());
 // A stalled navigation answers from the service worker after this long instead of
 // leaving a child waiting for a load that may not finish.
 const NAVIGATION_NETWORK_TIMEOUT_SECONDS = 5;
+// The page cache holds only the secondary pages (privacy, changelog, and the
+// like), so the cap sits well above that set and bounds only what unexpected
+// navigations could accumulate against the origin's storage, which is evicted
+// whole, coloring books included, under storage pressure. There is no age
+// limit: Workbox refuses an expired entry even when the network is down, and a
+// stale page offline is better than none.
+const PAGES_CACHE_MAX_ENTRIES = 20;
+const PAGE_CACHE_CLEANUP_SCRIPT = pageCacheCleanupScript();
+const PAGE_CACHE_CLEANUP_SCRIPT_FILENAME = pageCacheCleanupScriptFilename(
+  createHash('sha256').update(PAGE_CACHE_CLEANUP_SCRIPT).digest('hex').slice(0, 8)
+);
 const coloringPackManifest = buildColoringPackManifest(APP_VERSION, isCapacitor ? 'mobile' : 'web');
 const downloadableColoringGlobIgnores = BOOKS.filter(
   (book) => book.id !== STARTER_COLORING_BOOK_ID
@@ -131,6 +148,16 @@ export default defineConfig({
     ...(isCapacitor
       ? []
       : [
+          {
+            name: 'emit-service-worker-imports',
+            generateBundle() {
+              this.emitFile({
+                type: 'asset',
+                fileName: PAGE_CACHE_CLEANUP_SCRIPT_FILENAME,
+                source: PAGE_CACHE_CLEANUP_SCRIPT,
+              });
+            },
+          } satisfies Plugin,
           VitePWA({
             // 'prompt' disables vite-plugin-pwa's own auto-send-SKIP_WAITING /
             // auto-reload, leaving updates.ts as the sole driver. This preserves
@@ -160,6 +187,8 @@ export default defineConfig({
               // additionalManifestEntries are appended after this transform runs,
               // so the shell is prepended here to be the first entry installed.
               manifestTransforms: [prependAppShellEntry(APP_SHELL_PRECACHE_URL)],
+              // The worker fetches imported scripts itself when it installs.
+              importScripts: [`/${PAGE_CACHE_CLEANUP_SCRIPT_FILENAME}`],
               // Exclude html — navigations stay NetworkFirst below so a manual
               // refresh always fetches fresh markup; the app shell is precached
               // above under a URL no navigation requests.
@@ -167,6 +196,7 @@ export default defineConfig({
               globIgnores: [
                 // The social card is served but never fetched by the application.
                 'large-image.png',
+                `${PAGE_CACHE_CLEANUP_SCRIPT_PREFIX}*.js`,
                 '**/*.outline.webp',
                 '**/*.chalk.webp',
                 ...responsiveColoringGlobIgnores,
@@ -214,8 +244,9 @@ export default defineConfig({
                   urlPattern: ({ request }) => request.mode === 'navigate',
                   handler: 'NetworkFirst',
                   options: {
-                    cacheName: 'pages',
+                    cacheName: PAGES_CACHE_NAME,
                     networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
+                    expiration: { maxEntries: PAGES_CACHE_MAX_ENTRIES },
                   },
                 },
               ],
