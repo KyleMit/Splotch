@@ -21,8 +21,8 @@ item, not a third round.
 **Default (interactive).** Invoking this skill is the user's standing approval to **create the
 branch, open the PR, and post the rival's review to it**. It is *not* approval to merge the PR, to
 open follow-up issues, or to close anything. The run still takes the PR **all the way to mergeable**
-— review rounds answered, CI driven to green, conflicts reconciled — and stops with it open, so the
-only thing left for the user is the merge click.
+— review rounds answered, CI driven to green, conflicts reconciled — and stops with it open, handing
+the user the merge and post-merge claim cleanup.
 
 **`mode=autonomous`.** Everything above, plus the authority to **merge the PR** once step 5's gate
 passes in full. Naming the mode is what grants that — merging is irreversible and outward-facing, so
@@ -93,8 +93,8 @@ where the wrong pick ships the wrong software — is a blocked unit in either mo
   updated test whenever the change is a feature or a bug fix. Docs, skills, or rules: re-read the
   surrounding section, and run `npm run ruler:apply` if you edited anything under `.ruler/**`.
 * **Commit and push.** Put `Fixes #<NN>` in the commit body when an issue exists, so the merge
-  closes it. Closing does not remove labels; step 5 explicitly retires the claim after a verified
-  merge.
+  closes it. Closing does not remove labels; autonomous mode retires the claim in step 5, while
+  default mode hands that post-merge action to the user in step 4.
 
 If the work turns out to be far larger than it read, or needs a product decision: for an issue,
 remove `in-progress` again and comment on the issue with exactly what blocks it; for a free-form
@@ -121,7 +121,7 @@ What this skill adds on top of that loop:
 
 * **Both modes take the PR all the way to mergeable.** The only thing the default mode withholds is
   the merge itself — it does not stop early, hand back a red PR, or leave conflicts for the user. A
-  run that ends with "shippable" means the user has nothing left to do but click merge.
+  run that ends with "shippable" means the PR is ready for the merge and cleanup handoff below.
 * **A substituted reviewer withdraws the merge authority.** If the rival cannot run and the loop
   falls back to a same-runner subagent, `mode=autonomous` may keep going, but the PR finishes as an
   open PR with the verdict, for the user to merge. Downgrading the reviewer and then merging on the
@@ -136,7 +136,13 @@ What this skill adds on top of that loop:
   it does not get to also decide what enters the backlog.
 
 In the default mode, a shippable verdict is where the run stops: say so plainly, name the PR URL,
-and leave the merge to the user. In `mode=autonomous`, a shippable verdict is what unlocks step 5.
+and leave the merge to the user. Whenever handing an open PR back for the user to merge (including a
+substituted review), report that the issue still carries `in-progress`. Give the concrete post-merge
+action with the actual issue number: after verifying the PR merged and the issue closed, remove that
+label with the native GitHub tool or `gh issue edit <NN> --remove-label in-progress`, then re-read
+the issue to verify it is closed and the label is absent. If the issue remains open, retain the
+claim and report the unclosed issue for the user to resolve. Do not clear a live claim merely
+because the PR is ready. In `mode=autonomous`, a shippable verdict is what unlocks step 5.
 
 ## 5. Merge — `mode=autonomous` only
 
@@ -148,10 +154,11 @@ with the PR open and the failed condition named.
 * **Re-verify it from live state, at merge time.** Step 4's answer can be minutes old, and a push, a
   new review, or a base that moved invalidates it. Confirm the head you are merging is the head you
   verified, and repeat `drive-pr-to-mergeable` step 5's registration-and-completion gate on that
-  head: every expected applicable workflow/job is present and finished, the required checks are
-  green, and no thread reopened. A missing or pending check, an empty check list, or a successful
-  early `gh pr checks --watch` is not merge evidence. If the head changed, discard the old CI
-  verdict and verify the new head before merging.
+  head: every expected applicable workflow/job is present and finished, all applicable checks
+  succeeded except evidenced and named pre-existing failures, every required check is green, and no
+  thread reopened. A missing or pending check, an empty check list, or a successful early
+  `gh pr checks --watch` is not merge evidence. If the head changed, discard the old CI verdict and
+  verify the new head before merging.
 * **A rival review actually ran and posted** at least round one. A skipped, failed, or
   same-vendor-substituted review withdraws the merge authority (step 4).
 * **Nothing on the blocker list happened** — no test weakened, no protection bypassed, no decision
@@ -179,8 +186,11 @@ until that reconciliation is complete.
 Never pass a flag that bypasses branch protection, and never merge past a ruleset failure — GitHub
 evaluating the rules and refusing is a correct outcome to report, not an obstacle to route around.
 
-**After the merge**, confirm rather than assume: the PR reads merged, `main` carries the commit, the
-branch is gone, and — for an issue — `Fixes #<NN>` actually closed it. **Explicitly remove
+**After the merge**, confirm rather than assume: the PR reads merged and `main` carries the commit.
+Verify branch cleanup separately; a failed branch deletion must not prevent issue cleanup. For an
+issue, verify that `Fixes #<NN>` actually closed it. If it remains open, retain `in-progress` and
+report the unclosed issue for the user to resolve; do not close it under this skill's authority or
+make already-merged work eligible for another pickup. Once closure is verified, **explicitly remove
 `in-progress` from this issue** using the native GitHub label-removal tool, or
 `gh issue edit <NN> --remove-label in-progress` when the native path is unavailable. Re-read the
 issue and verify both that it is closed and that the label is absent; an already-absent label is a
