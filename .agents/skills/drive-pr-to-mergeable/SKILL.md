@@ -126,8 +126,29 @@ else.
 
 ## 5. Drive it to mergeable
 
-**Drive CI to green.** Subscribe to the PR's activity and let the events arrive rather than polling
-with `sleep`. On a failure, first establish which kind it is:
+**Establish the expected CI set before waiting.** Record the live PR head SHA, then read the
+workflow definitions and required-check configuration for this PR. Derive the applicable workflows
+and jobs from their event, branch, path, and job conditions, including matrix jobs and jobs behind
+`needs`. Do not infer that set from the checks already visible: a fast ADR check can finish before
+Tests registers. Record exclusions and the condition that makes each inapplicable; a path-filtered
+workflow is not evidence that its tests passed. Post-merge-only jobs are excluded from the pre-merge
+set and handed to the caller for post-merge verification.
+
+**Wait for registration, then completion, on that head.** Use the native GitHub workflow-run/job and
+check/status tools first. Subscribe to activity when available; otherwise re-query with a bounded
+wait and backoff. Verify that every expected applicable workflow and job has registered for the
+recorded PR head (and its associated PR test-merge run where applicable), then wait until all have
+finished. Use the latest attempts and expand paginated job lists; queued, pending, waiting, or
+in-progress work is unfinished. An empty check list, only the fast checks, or a single successful
+`gh pr checks --watch` immediately after a push cannot establish green. A missing expected run/job
+or an unexplained skip, cancellation, or neutral result is unresolved coverage, not a pass. If
+registration stalls, diagnose the trigger/permissions/queue and report the missing set as a blocker
+when it cannot be recovered; never time out into success. Re-read the live head before the verdict;
+every push invalidates the old CI verdict and restarts this gate for the new SHA.
+
+**Drive CI to green.** Once the complete expected set is registered and finished, require successful
+conclusions for applicable checks, subject only to the evidenced pre-existing-failure policy below.
+On a failure, first establish which kind it is:
 
 * **The PR introduced it** — the check passes on `main` and fails here. Diagnose and push a fix,
   iterating until it is green. This is part of the job, not a finding to report.
@@ -140,11 +161,6 @@ That is the one CI-failure policy. Fix what the PR broke; name and draft what it
 nothing — an unattended run does not decide what enters the backlog, and the thread comment keeps
 the evidence durable until someone does.
 
-Check that the checks are real while you are there: a check *skipped* by a `paths`/`paths-ignore`
-filter has not run, and green concluded from an absence of red is not green. Jobs gated on
-`github.event_name == 'push' && github.ref == 'refs/heads/main'` are the exception — they cannot run
-before a merge and are not a reason to hold anything.
-
 **Make it actually mergeable.** Confirm from live PR state that it has no conflicts with its base,
 that nothing is sitting unpushed on the local branch, and that it is not a draft — except where the
 caller deliberately keeps its PRs in draft until its own wrap-up (a campaign does), in which case
@@ -156,10 +172,11 @@ cannot merge. Inside a stack, "its base" is the branch below, and the mid-stack-
 
 ## 6. The verdict
 
-**Shippable** means all four: CI green (with any pre-existing red named), the PR mergeable and
-conflict-free, every review thread ended in a fix or a reasoned rebuttal, and no open finding you
-would want fixed before merge. Say so plainly and name the PR URL. Merging is the caller's decision
-— and, for a human-driven run, the user's.
+**Shippable** means all four: the complete expected CI set registered and finished on the current
+head, green with any evidenced pre-existing red named; the PR mergeable and conflict-free, every
+review thread ended in a fix or a reasoned rebuttal, and no open finding you would want fixed before
+merge. Say so plainly and name the PR URL. Merging is the caller's decision — and, for a
+human-driven run, the user's.
 
 **Not shippable, or shippable with leftovers:** list every open action item, each with what it is,
 why it was not done in this PR (out of scope, needs a decision, larger than it reads), and whether
@@ -170,5 +187,5 @@ still hands the user the drafts to file.
 
 Report, for the caller to fold into its own summary: the PR URL; what each review round found and
 how it was resolved, and whether the reviewer was the rival or a named substitute; the CI state with
-the run for the exact head SHA; every autonomous decision as question, options, and choice; and the
-action items with their drafts.
+the runs for the exact head SHA, the expected set and any justified exclusions or missing jobs;
+every autonomous decision as question, options, and choice; and the action items with their drafts.
