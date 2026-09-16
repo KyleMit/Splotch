@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 import { GENERATION_JOB_STORE_NAME } from './generationJobStoreName';
 import { settleWithRetentionConcurrency } from './retentionSweep';
@@ -71,6 +71,7 @@ export type GenerationJobState =
 interface StoredJob {
   context: GenerationJobContext;
   outcome: GenerationJobOutcome | null;
+  claimId: string | null;
   expiresAt: number;
 }
 
@@ -140,8 +141,29 @@ export async function markJobPending(
   context: GenerationJobContext,
   now = Date.now()
 ): Promise<void> {
-  const record: StoredJob = { context, outcome: null, expiresAt: now + GENERATION_JOB_TTL_MS };
+  const record: StoredJob = {
+    context,
+    outcome: null,
+    claimId: null,
+    expiresAt: now + GENERATION_JOB_TTL_MS,
+  };
   await store().setJSON(statusKey(jobId), record);
+}
+
+export async function claimJob(jobId: string): Promise<string | null> {
+  const jobStore = store();
+  const existing = (await jobStore.getWithMetadata(statusKey(jobId), {
+    type: 'json',
+  })) as { data: StoredJob; etag: string } | null;
+  if (!existing || existing.data.outcome || existing.data.claimId) return null;
+
+  const claimId = randomUUID();
+  const write = await jobStore.setJSON(
+    statusKey(jobId),
+    { ...existing.data, claimId },
+    { onlyIfMatch: existing.etag }
+  );
+  return write.modified ? claimId : null;
 }
 
 /** The drawing the worker will render, written before the worker is invoked. */
@@ -162,25 +184,29 @@ export async function takeJobInput(jobId: string): Promise<Uint8Array | null> {
 
 export async function completeJob(
   jobId: string,
+  claimId: string,
   outcome: GenerationJobOutcome,
-  image: ArrayBuffer | null,
-  now = Date.now()
+  image: ArrayBuffer | null
 ): Promise<void> {
+  const jobStore = store();
+  const existing = (await jobStore.getWithMetadata(statusKey(jobId), {
+    type: 'json',
+  })) as { data: StoredJob; etag: string } | null;
+  if (!existing || existing.data.outcome || existing.data.claimId !== claimId) return;
+
   // Bytes first: a poll that saw `image` but found nothing to send would be a
   // dead end, whereas one more `pending` is simply the next poll's problem.
-  if (image) await store().set(imageKey(jobId), image);
-  const existing = (await store().get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
+  if (image) await jobStore.set(imageKey(jobId), image);
   const record: StoredJob = {
-    // A worker that outlived its own start record has nothing to settle, which
-    // is the same shape as a job that never had a reservation.
-    context: existing?.context ?? { free: null, style: null },
+    context: existing.data.context,
     outcome,
+    claimId,
     // Kept from the start, not restarted: the free reservation's lease runs from
     // the start too, and an outcome still collectable after that lease lapses
     // hands over a picture the ledger can no longer charge.
-    expiresAt: existing?.expiresAt ?? now + GENERATION_JOB_TTL_MS,
+    expiresAt: existing.data.expiresAt,
   };
-  await store().setJSON(statusKey(jobId), record);
+  await jobStore.setJSON(statusKey(jobId), record, { onlyIfMatch: existing.etag });
 }
 
 export async function readJob(jobId: string, now = Date.now()): Promise<GenerationJobState> {

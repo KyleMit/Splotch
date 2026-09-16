@@ -564,6 +564,48 @@ describe('the background worker', () => {
     expect(grantOf()).toMatchObject({ successful: 0, failures: 1, reservations: {} });
   });
 
+  it('keeps the first picture when the same valid dispatch reaches the worker twice', async () => {
+    const { jobId, dispatch } = await startHandedOffGeneration();
+
+    expect((await runWorker(dispatch)).status).toBe(200);
+    expect((await runWorker(dispatch)).status).toBe(200);
+
+    expect(provider.generateImage).toHaveBeenCalledOnce();
+    const response = await collect(jobId);
+    expect(response.status).toBe(200);
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(PICTURE);
+    expect(response.headers.get(FREE_GENERATIONS_REMAINING_HEADER)).toBe(
+      String(FREE_GENERATION_LIMIT - 1)
+    );
+    expect(grantOf()).toMatchObject({
+      successful: 1,
+      failures: 0,
+      reservations: {},
+    });
+  });
+
+  it('keeps an in-flight picture when a duplicate dispatch arrives before it finishes', async () => {
+    const generation = Promise.withResolvers();
+    provider.generateImage.mockReturnValue(generation.promise);
+    const { jobId, dispatch } = await startHandedOffGeneration();
+
+    const firstRun = runWorker(dispatch);
+    await vi.waitFor(() => expect(provider.generateImage).toHaveBeenCalledOnce());
+    expect((await runWorker(dispatch)).status).toBe(200);
+    generation.resolve({
+      kind: 'image',
+      data: PICTURE.toString('base64'),
+      mimeType: 'image/png',
+    });
+    expect((await firstRun).status).toBe(200);
+
+    expect(provider.generateImage).toHaveBeenCalledOnce();
+    const response = await collect(jobId);
+    expect(response.status).toBe(200);
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(PICTURE);
+    expect(grantOf()).toMatchObject({ successful: 1, failures: 0, reservations: {} });
+  });
+
   it('refuses a platform retry once the ticket has lapsed, leaving the recorded picture intact', async () => {
     const { jobId, dispatch } = await startHandedOffGeneration();
     await runWorker(dispatch);

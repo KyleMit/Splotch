@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const store = vi.hoisted(() => ({
   get: vi.fn(),
+  getWithMetadata: vi.fn(),
   set: vi.fn(),
   setJSON: vi.fn(),
   list: vi.fn(),
@@ -12,6 +13,7 @@ const store = vi.hoisted(() => ({
 vi.mock('@netlify/blobs', () => ({ getStore: () => store }));
 
 import {
+  claimJob,
   completeJob,
   issueWorkTicket,
   markJobPending,
@@ -89,6 +91,8 @@ describe('purgeExpiredGenerationJobs', () => {
 
   beforeEach(() => {
     store.get.mockReset();
+    store.getWithMetadata.mockReset();
+    store.set.mockReset().mockResolvedValue({ modified: true });
     store.setJSON.mockReset().mockResolvedValue({ modified: true });
     store.delete.mockReset().mockResolvedValue(undefined);
     store.list.mockReset().mockReturnValue(pageOf(JOB));
@@ -227,36 +231,81 @@ describe('purgeExpiredGenerationJobs', () => {
     expect(store.setJSON).toHaveBeenCalledWith(`${JOB}/status.json`, {
       context: { free: null, style: null },
       outcome: null,
+      claimId: null,
       expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
     });
+  });
+
+  it('lets only one worker claim a pending job', async () => {
+    const pending = {
+      context: { free: null, style: null },
+      outcome: null,
+      claimId: null,
+      expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+    };
+    store.getWithMetadata.mockResolvedValue({ data: pending, etag: 'pending-v1', metadata: {} });
+    store.setJSON
+      .mockResolvedValueOnce({ modified: true })
+      .mockResolvedValueOnce({ modified: false });
+
+    const winner = await claimJob(JOB);
+    const loser = await claimJob(JOB);
+
+    expect(winner).toEqual(expect.any(String));
+    expect(loser).toBeNull();
+    expect(store.setJSON).toHaveBeenNthCalledWith(
+      1,
+      `${JOB}/status.json`,
+      { ...pending, claimId: winner },
+      { onlyIfMatch: 'pending-v1' }
+    );
   });
 
   it('keeps the lifetime the start gave a job when the worker records its outcome', async () => {
     const context = { free: { installationId: 'c'.repeat(64), reservationId: 'r1' }, style: null };
-    store.get.mockResolvedValueOnce({
-      context,
-      outcome: null,
-      expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+    const claimId = 'claim-1';
+    store.getWithMetadata.mockResolvedValueOnce({
+      data: { context, outcome: null, claimId, expiresAt: 5_000 + GENERATION_JOB_TTL_MS },
+      etag: 'pending-v1',
+      metadata: {},
     });
 
-    await completeJob(JOB, { status: 'refusal', reason: 'IMAGE_SAFETY' }, null, 245_000);
+    await completeJob(JOB, claimId, { status: 'refusal', reason: 'IMAGE_SAFETY' }, null);
 
-    expect(store.setJSON).toHaveBeenCalledWith(`${JOB}/status.json`, {
-      context,
-      outcome: { status: 'refusal', reason: 'IMAGE_SAFETY' },
-      expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
-    });
+    expect(store.setJSON).toHaveBeenCalledWith(
+      `${JOB}/status.json`,
+      {
+        context,
+        outcome: { status: 'refusal', reason: 'IMAGE_SAFETY' },
+        claimId,
+        expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+      },
+      { onlyIfMatch: 'pending-v1' }
+    );
   });
 
-  it('gives an outcome whose start record is gone a lifetime of its own', async () => {
-    store.get.mockResolvedValueOnce(null);
+  it('does not recreate an outcome whose pending start record is gone', async () => {
+    store.getWithMetadata.mockResolvedValueOnce(null);
 
-    await completeJob(JOB, { status: 'error', reason: 'late' }, null, 245_000);
+    await completeJob(JOB, 'claim-1', { status: 'error', reason: 'late' }, null);
 
-    expect(store.setJSON).toHaveBeenCalledWith(`${JOB}/status.json`, {
-      context: { free: null, style: null },
-      outcome: { status: 'error', reason: 'late' },
-      expiresAt: 245_000 + GENERATION_JOB_TTL_MS,
+    expect(store.setJSON).not.toHaveBeenCalled();
+  });
+
+  it('does not replace a job that already has an outcome', async () => {
+    store.getWithMetadata.mockResolvedValueOnce({
+      data: {
+        context: { free: null, style: null },
+        outcome: { status: 'image', mimeType: 'image/png' },
+        claimId: 'claim-1',
+        expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+      },
+      etag: 'complete-v1',
+      metadata: {},
     });
+
+    await completeJob(JOB, 'claim-1', { status: 'error', reason: 'duplicate' }, null);
+
+    expect(store.setJSON).not.toHaveBeenCalled();
   });
 });
