@@ -379,9 +379,7 @@ describe('scribbleTap', () => {
       onPressCancel: () => events.push('cancel'),
     });
     tapActions.add(action);
-    vi.spyOn(document, 'elementFromPoint').mockImplementation((x) =>
-      x < 20 ? el : document.body
-    );
+    vi.spyOn(document, 'elementFromPoint').mockImplementation((x) => (x < 20 ? el : document.body));
 
     el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 10 }));
     window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 10 }));
