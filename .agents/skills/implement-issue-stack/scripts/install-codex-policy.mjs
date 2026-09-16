@@ -19,8 +19,6 @@ prefix_rule(
 )
 prefix_rule(pattern = ["gh", "auth", "logout"], decision = "forbidden", justification = "Durable GitHub authentication may not be removed by the issue-stack workflow.")
 prefix_rule(pattern = ["gh", "repo", "delete"], decision = "forbidden", justification = "Repository deletion requires direct human action.")
-prefix_rule(pattern = ["gh", "pr", "merge"], decision = "forbidden", justification = "The issue-stack workflow must never merge pull requests.")
-prefix_rule(pattern = ["gh", "stack", "merge"], decision = "forbidden", justification = "The issue-stack workflow must never merge a PR stack.")
 prefix_rule(pattern = ["git", "push"], decision = "prompt", justification = "Codex Auto-review must evaluate every remote Git push.")
 ${END_MARKER}`;
 

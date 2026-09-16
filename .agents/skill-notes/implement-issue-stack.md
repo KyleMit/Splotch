@@ -12,9 +12,15 @@ validated interface in preflight rather than pretending it is stable forever.
 ## Permission boundary
 
 The stack workflow installs `run-rival-agent`'s Claude wrappers together with its own GitHub and
-push rules. General `gh` and `git push` stay at `prompt`; PR/stack merge, repository deletion, and
-GitHub logout remain forbidden. See the `run-rival-agent` design note for the Claude subprocess and
-publication boundary.
+push rules. General `gh` and `git push` stay at `prompt`; repository deletion and GitHub logout
+remain forbidden. PR and stack merges deliberately receive only the general `gh` prompt. A previous
+version forbade them globally to enforce the workflow's no-merge boundary, but the rule persisted
+after the queue and blocked `ship-issue mode=autonomous` sessions that explicitly held merge
+authority. Codex has no workflow-scoped rule selector, and a project-local rule would still affect
+concurrent Splotch sessions, so the no-merge boundary stays in the skill contract rather than a
+machine-global rule. Missing an authorized merge is more disruptive than the residual risk that this
+workflow violates its explicit boundary. See the `run-rival-agent` design note for the Claude
+subprocess and publication boundary.
 
 The checkpoint names CI attempts `ciRepairContinuations`: only handing a confirmed failure back to
 the implementer for product-code changes consumes the limit. Polls, infrastructure reruns,
