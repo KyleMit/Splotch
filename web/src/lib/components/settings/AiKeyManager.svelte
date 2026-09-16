@@ -44,9 +44,15 @@
       // to make another one.
       checkUnavailable: "We couldn't check that key just now. Please try again.",
     },
+    // Secure storage that failed once stays unavailable until the app starts
+    // again: the coordinator refuses writes while the stored value is unknown,
+    // and only a fresh launch re-runs hydration. Retrying in place cannot clear
+    // that, so the copy asks for the restart instead.
     saveFailed: {
-      apiKey: 'Your key works, but could not be saved securely on this device. Please try again.',
-      accessCode: 'Your credential works, but could not be saved securely.',
+      apiKey:
+        'Your key works, but could not be saved securely on this device. Close and reopen Splotch, then try again.',
+      accessCode:
+        'Your credential works, but could not be saved securely. Close and reopen Splotch, then try again.',
       // Unreachable: neither of these verifies, so neither reaches saving.
       retiredGeminiKey: 'That key could not be saved securely on this device.',
       checkUnavailable: 'That key could not be saved securely on this device.',
@@ -67,8 +73,9 @@
   };
 
   const FORGET_FAILED_MESSAGES = {
-    apiKey: 'Your key could not be removed securely. Please try again.',
-    accessCode: 'Your access code could not be removed securely. Please try again.',
+    apiKey: 'Your key could not be removed securely. Close and reopen Splotch, then try again.',
+    accessCode:
+      'Your access code could not be removed securely. Close and reopen Splotch, then try again.',
   } satisfies Record<'apiKey' | 'accessCode', string>;
 
   interface Props {
