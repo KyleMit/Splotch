@@ -3,6 +3,7 @@ import { ASYNC_GENERATION_HEADER } from '$lib/apiHeaders';
 import { config } from './config';
 import { GENERATE_DEADLINE_MS } from '$lib/ai/limits';
 import {
+  claimJob,
   discardJob,
   issueWorkTicket,
   markJobPending,
@@ -41,6 +42,11 @@ export interface StartedGeneration {
   jobId: string;
   pollAfterMs: number;
 }
+
+const startedGeneration = (jobId: string): StartedGeneration => ({
+  jobId,
+  pollAfterMs: FIRST_POLL_DELAY_MS,
+});
 
 /**
  * What the worker is told. Small on purpose: a background function's invocation
@@ -154,9 +160,24 @@ export async function startBackgroundGeneration(
       '[generate-image] could not hand off to the worker:',
       cause instanceof Error ? cause.message : cause
     );
+
+    try {
+      // A lost reply is ambiguous: the worker may already own the job. Compete
+      // for that same claim so exactly one side is allowed to reach the model.
+      // If this request wins, a later worker delivery sees the claim and exits;
+      // if it loses, the client must keep polling for the worker's result.
+      if (!(await claimJob(jobId))) return startedGeneration(jobId);
+    } catch (claimCause) {
+      console.error(
+        '[generate-image] could not determine who owns the job:',
+        claimCause instanceof Error ? claimCause.message : claimCause
+      );
+      return startedGeneration(jobId);
+    }
+
     await abandon(jobId);
     return null;
   }
 
-  return { jobId, pollAfterMs: FIRST_POLL_DELAY_MS };
+  return startedGeneration(jobId);
 }

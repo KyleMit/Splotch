@@ -1,5 +1,31 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  advance,
+  collect,
+  dailyProviderStarts,
+  DRAWING,
+  grantOf,
+  jobBlobKeys,
+  LATE_COLLECTION_MARGIN_MS,
+  OTHER_INSTALLATION,
+  PICTURE,
+  PLATFORM_RETRY_DELAY_MS,
+  runWorker,
+  settlementTestState,
+  setWorkerAnswer,
+  SLOW_GENERATION_MS,
+  startFreeGeneration,
+  startHandedOffGeneration,
+  STORE_CALL_LATENCY_MS,
+} from './settlementTestHarness';
+import { describe, expect, it, vi } from 'vitest';
+import { FREE_GENERATIONS_REMAINING_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
+import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
+import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
+import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
+import { GENERATION_JOB_STORE_NAME } from '$lib/server/generationJobStoreName';
+import { WORK_TICKET_HEADER } from '$lib/server/generationJobs';
+import worker from '../../../../../netlify/functions/generate-image-background';
 
 // The free-generation allowance is settled across three requests that never
 // share memory: the start reserves a slot and hands it to a job, the background
@@ -9,232 +35,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // the real worker, the real job store module, and the real grant ledger over one
 // in-memory Blobs fake, and mocks only the model call and the rate limiter.
 
-interface StoredBlob {
-  value: unknown;
-  etag: string;
-}
-
-type BlobOperation = 'get' | 'set' | 'setJSON' | 'delete';
-
-const blobs = vi.hoisted(() => {
-  const stores = new Map<string, Map<string, StoredBlob>>();
-  const faults = new Set<string>();
-  let version = 0;
-  // Real store calls take time, and the gap between the ledger's clock and the
-  // job's clock is where a picture slips out uncharged.
-  const latency = { ms: 0 };
-  return { stores, faults, latency, nextEtag: () => `v${++version}` };
-});
-
-const env = vi.hoisted(() => ({}) as Record<string, string | undefined>);
-const provider = vi.hoisted(() => ({ generateImage: vi.fn() }));
-
-vi.mock('@netlify/blobs', () => {
-  const yieldToOtherRequests = () => new Promise<void>((resolve) => setImmediate(resolve));
-  const copy = (value: unknown) =>
-    value instanceof ArrayBuffer ? value.slice(0) : structuredClone(value);
-  const toStored = (value: unknown) =>
-    ArrayBuffer.isView(value)
-      ? value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)
-      : copy(value);
-
-  return {
-    getStore: ({ name }: { name: string }) => {
-      const entries = blobs.stores.get(name) ?? new Map<string, StoredBlob>();
-      blobs.stores.set(name, entries);
-      const guard = async (operation: BlobOperation) => {
-        await yieldToOtherRequests();
-        if (blobs.latency.ms) vi.setSystemTime(Date.now() + blobs.latency.ms);
-        if (blobs.faults.has(`${name}:${operation}`))
-          throw new Error(`${name} ${operation} failed`);
-      };
-      return {
-        async get(key: string) {
-          await guard('get');
-          const entry = entries.get(key);
-          return entry ? copy(entry.value) : null;
-        },
-        async getWithMetadata(key: string) {
-          await guard('get');
-          const entry = entries.get(key);
-          return entry ? { data: copy(entry.value), etag: entry.etag, metadata: {} } : null;
-        },
-        async set(key: string, value: unknown) {
-          await guard('set');
-          entries.set(key, { value: toStored(value), etag: blobs.nextEtag() });
-          return { modified: true };
-        },
-        async setJSON(
-          key: string,
-          value: unknown,
-          condition: { onlyIfNew?: boolean; onlyIfMatch?: string } = {}
-        ) {
-          await guard('setJSON');
-          const existing = entries.get(key);
-          if (condition.onlyIfNew && existing) return { modified: false };
-          if (condition.onlyIfMatch && existing?.etag !== condition.onlyIfMatch) {
-            return { modified: false };
-          }
-          entries.set(key, { value: structuredClone(value), etag: blobs.nextEtag() });
-          return { modified: true };
-        },
-        async delete(key: string) {
-          await guard('delete');
-          entries.delete(key);
-        },
-      };
-    },
-  };
-});
-vi.mock('$app/environment', () => ({ dev: false }));
-vi.mock('$env/dynamic/private', () => ({ env }));
-vi.mock('$lib/server/ai/provider', () => ({ aiProvider: provider }));
-vi.mock('$lib/server/rateLimit', () => ({
-  rateLimit: () => ({ limited: false, retryAfter: 0 }),
-  peekRateLimit: () => ({ limited: false, retryAfter: 0 }),
-}));
-
-import {
-  ASYNC_GENERATION_HEADER,
-  FREE_GENERATIONS_REMAINING_HEADER,
-  INSTALLATION_ID_HEADER,
-} from '$lib/apiHeaders';
-import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
-import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
-import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
-import { GENERATION_JOB_STORE_NAME } from '$lib/server/generationJobStoreName';
-import { WORK_TICKET_HEADER } from '$lib/server/generationJobs';
-import worker from '../../../../../netlify/functions/generate-image-background';
-import { POST as startGeneration } from '../generate-image/+server';
-import { GET as collectGeneration } from './+server';
-
-const GRANT_STORE_NAME = 'free-generation-grants';
-const REPORT_TOKEN_SECRET = 'integration-report-secret';
-const INSTALLATION = 'c'.repeat(64);
-const OTHER_INSTALLATION = 'd'.repeat(64);
-const DRAWING = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
-const PICTURE = Buffer.from('a finished picture');
-const START_TIME = new Date('2026-09-12T10:00:00Z');
-// Netlify re-invokes a failed background function a minute after it fails; the
-// work ticket the start signed is meant to be dead by then.
-const PLATFORM_RETRY_DELAY_MS = 60_000;
-// Inside the worker's own deadline, so a job that finishes this late is one the
-// platform considers healthy.
-const SLOW_GENERATION_MS = 4 * 60 * 1000;
-// How far either side of the reservation lease's end a poll lands.
-const LATE_COLLECTION_MARGIN_MS = 60_000;
-// A plausible round trip to Netlify Blobs, applied to every fake store call.
-const STORE_CALL_LATENCY_MS = 40;
-
-interface StoredGrant {
-  successful: number;
-  attempts: number;
-  failures: number;
-  lastFailureKind: string | null;
-  reservations: Record<string, string>;
-}
-
-let dispatched: Request[] = [];
-let workerAnswer: () => Response | Promise<Response>;
-
-function event(request: Request) {
-  return {
-    request,
-    url: new URL(request.url),
-    getClientAddress: () => '198.51.100.3',
-    platform: undefined,
-  };
-}
-
-async function startFreeGeneration(installationId = INSTALLATION): Promise<Response> {
-  const request = new Request('https://splotch.test/api/generate-image?style=Crayon', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'image/png',
-      [INSTALLATION_ID_HEADER]: installationId,
-      [ASYNC_GENERATION_HEADER]: '1',
-    },
-    body: DRAWING,
-  });
-  return startGeneration(event(request) as unknown as Parameters<typeof startGeneration>[0]);
-}
-
-async function startHandedOffGeneration(): Promise<{ jobId: string; dispatch: Request }> {
-  const response = await startFreeGeneration();
-  expect(response.status).toBe(202);
-  const { jobId } = (await response.json()) as { jobId: string };
-  const dispatch = dispatched.at(-1);
-  if (!dispatch) throw new Error('the start did not dispatch the worker');
-  return { jobId, dispatch };
-}
-
-function runWorker(dispatch: Request): Promise<Response> {
-  return worker(dispatch.clone());
-}
-
-async function collect(jobId: string, headers: Record<string, string> = {}): Promise<Response> {
-  const request = new Request(`https://splotch.test/api/generation-result?job=${jobId}`, {
-    headers: { [INSTALLATION_ID_HEADER]: INSTALLATION, ...headers },
-  });
-  return collectGeneration(event(request) as unknown as Parameters<typeof collectGeneration>[0]);
-}
-
-function grantOf(installationId = INSTALLATION): StoredGrant | undefined {
-  return blobs.stores.get(GRANT_STORE_NAME)?.get(installationId)?.value as StoredGrant | undefined;
-}
-
-function dailyProviderStarts(): number {
-  const [daily] = [...(blobs.stores.get(GRANT_STORE_NAME)?.entries() ?? [])]
-    .filter(([key]) => key.startsWith('daily-provider-starts/'))
-    .map(([, entry]) => entry.value as { starts: number });
-  return daily?.starts ?? 0;
-}
-
-function jobBlobKeys(jobId: string): string[] {
-  return [...(blobs.stores.get(GENERATION_JOB_STORE_NAME)?.keys() ?? [])].filter((key) =>
-    key.startsWith(jobId)
-  );
-}
-
-function advance(ms: number) {
-  vi.setSystemTime(Date.now() + ms);
-}
-
-function answerWithPicture() {
-  provider.generateImage.mockResolvedValue({
-    kind: 'image',
-    data: PICTURE.toString('base64'),
-    mimeType: 'image/png',
-  });
-}
-
-beforeEach(() => {
-  blobs.stores.clear();
-  blobs.faults.clear();
-  blobs.latency.ms = 0;
-  dispatched = [];
-  workerAnswer = () => new Response(null, { status: 202 });
-  env.OPENAI_API_KEY = 'project-key';
-  env.REPORT_TOKEN_SECRET = REPORT_TOKEN_SECRET;
-  vi.stubEnv('REPORT_TOKEN_SECRET', REPORT_TOKEN_SECRET);
-  vi.useFakeTimers({ toFake: ['Date'] });
-  vi.setSystemTime(START_TIME);
-  provider.generateImage.mockReset();
-  answerWithPicture();
-  vi.stubGlobal('fetch', async (input: string, init: RequestInit) => {
-    dispatched.push(new Request(input, init));
-    return workerAnswer();
-  });
-  vi.spyOn(console, 'warn').mockImplementation(() => {});
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-  vi.unstubAllEnvs();
-  vi.unstubAllGlobals();
-  vi.restoreAllMocks();
-});
+const { blobs, provider } = settlementTestState;
 
 describe('free generation settlement across the background handoff', () => {
   it('holds the slot for the job rather than releasing it on the way out of the start', async () => {
@@ -441,7 +242,7 @@ describe('free generation settlement across the background handoff', () => {
   });
 
   it('settles a failed handoff in the start request itself, exactly once', async () => {
-    workerAnswer = () => new Response('nope', { status: 500 });
+    setWorkerAnswer(() => new Response('nope', { status: 500 }));
 
     const response = await startFreeGeneration();
 
@@ -454,8 +255,39 @@ describe('free generation settlement across the background handoff', () => {
     expect(blobs.stores.get(GENERATION_JOB_STORE_NAME)?.size ?? 0).toBe(0);
   });
 
+  it('keeps polling after the worker accepts a handoff whose reply is lost', async () => {
+    const generation = Promise.withResolvers<{
+      kind: 'image';
+      data: string;
+      mimeType: string;
+    }>();
+    provider.generateImage.mockImplementationOnce(() => generation.promise);
+    let workerRun: Promise<Response> | undefined;
+    setWorkerAnswer(async (dispatch) => {
+      workerRun = runWorker(dispatch);
+      await vi.waitFor(() => expect(provider.generateImage).toHaveBeenCalledOnce());
+      throw new Error('connection reset after acceptance');
+    });
+
+    const start = await startFreeGeneration();
+    generation.resolve({
+      kind: 'image',
+      data: PICTURE.toString('base64'),
+      mimeType: 'image/png',
+    });
+    await workerRun;
+
+    expect(start.status).toBe(202);
+    const { jobId } = (await start.json()) as { jobId: string };
+    const response = await collect(jobId);
+    expect(response.status).toBe(200);
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(PICTURE);
+    expect(provider.generateImage).toHaveBeenCalledOnce();
+    expect(grantOf()).toMatchObject({ successful: 1, failures: 0, reservations: {} });
+  });
+
   it('refunds a handoff that could not reach the worker when the in-line fallback is refused', async () => {
-    workerAnswer = () => Promise.reject(new Error('connection reset'));
+    setWorkerAnswer(() => Promise.reject(new Error('connection reset')));
     provider.generateImage.mockResolvedValue({ kind: 'refusal', reason: 'IMAGE_SAFETY' });
 
     const response = await startFreeGeneration();
