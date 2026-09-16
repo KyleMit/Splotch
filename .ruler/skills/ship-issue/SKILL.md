@@ -93,7 +93,8 @@ where the wrong pick ships the wrong software — is a blocked unit in either mo
   updated test whenever the change is a feature or a bug fix. Docs, skills, or rules: re-read the
   surrounding section, and run `npm run ruler:apply` if you edited anything under `.ruler/**`.
 * **Commit and push.** Put `Fixes #<NN>` in the commit body when an issue exists, so the merge
-  closes it and retires the claim label.
+  closes it. Closing does not remove labels; step 5 explicitly retires the claim after a verified
+  merge.
 
 If the work turns out to be far larger than it read, or needs a product decision: for an issue,
 remove `in-progress` again and comment on the issue with exactly what blocks it; for a free-form
@@ -146,7 +147,11 @@ with the PR open and the failed condition named.
 * **Step 4 returned shippable** — all four conditions, not a near miss.
 * **Re-verify it from live state, at merge time.** Step 4's answer can be minutes old, and a push, a
   new review, or a base that moved invalidates it. Confirm the head you are merging is the head you
-  verified, the required checks are green *on that head*, and no thread reopened.
+  verified, and repeat `drive-pr-to-mergeable` step 5's registration-and-completion gate on that
+  head: every expected applicable workflow/job is present and finished, the required checks are
+  green, and no thread reopened. A missing or pending check, an empty check list, or a successful
+  early `gh pr checks --watch` is not merge evidence. If the head changed, discard the old CI
+  verdict and verify the new head before merging.
 * **A rival review actually ran and posted** at least round one. A skipped, failed, or
   same-vendor-substituted review withdraws the merge authority (step 4).
 * **Nothing on the blocker list happened** — no test weakened, no protection bypassed, no decision
@@ -175,12 +180,22 @@ Never pass a flag that bypasses branch protection, and never merge past a rulese
 evaluating the rules and refusing is a correct outcome to report, not an obstacle to route around.
 
 **After the merge**, confirm rather than assume: the PR reads merged, `main` carries the commit, the
-branch is gone, and — for an issue — `Fixes #<NN>` actually closed it and retired `in-progress`.
-Then watch the post-merge-only jobs, because the merge is their first and only chance to run and
-their failures land on `main`. If one goes red, say so immediately and offer the revert; do not
-start a fix pass under the same authorization, which covered shipping this unit, not repairing
-trunk.
+branch is gone, and — for an issue — `Fixes #<NN>` actually closed it. **Explicitly remove
+`in-progress` from this issue** using the native GitHub label-removal tool, or
+`gh issue edit <NN> --remove-label in-progress` when the native path is unavailable. Re-read the
+issue and verify both that it is closed and that the label is absent; an already-absent label is a
+successful no-op. Closing an issue never implies label removal. If cleanup fails, report it
+separately from the successful merge, with the exact issue and remaining label; do not retry the
+merge or sweep other issues' labels.
+
+Then watch the post-merge-only jobs on the verified merge SHA, waiting for the expected applicable
+set to register and finish as in `drive-pr-to-mergeable` step 5. The merge is their first and only
+chance to run and their failures land on `main`. If one goes red, say so immediately and offer the
+revert; do not start a fix pass under the same authorization, which covered shipping this unit, not
+repairing trunk.
 
 Close the report with: the issue or task shipped, the branch and PR URL, what each review round
 found and how it was resolved, CI status, the merge commit (copied from command output, never
-typed), the post-merge job results, and the action items left for the user to file.
+typed), the post-merge job results, and the action items left for the user to file. Include the
+issue's verified closed state and claim-label cleanup result separately from merge and branch
+cleanup results.
