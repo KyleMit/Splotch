@@ -1,46 +1,31 @@
-// Page-cache cleanup the service worker runs on activation.
+// The service worker's runtime page cache, and the cleanup its activation runs.
 //
-// Navigations to the drawing app were once cached in the runtime page cache
-// under their exact URLs. The app-shell route (appShellRoute.ts) now answers
-// them and never reads or writes that cache, so those entries, and the one per
-// update each stale-page recovery reload wrote, would stay on the device forever.
+// Navigations to the drawing app were once cached in the page cache under their
+// exact URLs, one more for each update a stale-page recovery reload carried. The
+// app-shell route (appShellRoute.ts) now answers them and never reads that cache,
+// so those entries would stay on the device forever. Workbox's expiration
+// plugin cannot cap them either: it tracks only the entries it wrote itself.
+// The navigation route therefore writes a cache of a new name, and activation
+// deletes the old cache whole. Nothing reads the old cache any more, and every
+// entry in the new one is counted against its cap.
 //
 // Workbox's generated worker has no activate hook of its own, so the listener
-// ships as a separate script the worker loads with `importScripts`. The script
-// is assembled from `toString()` copies, so every function body here must stay
-// self-contained. `pageCacheCleanup.test.ts` pins that by running the script.
+// ships as a separate script the worker loads with `importScripts`.
 
-import { isAppShellNavigation } from './appShellRoute';
+export const PAGES_CACHE_NAME = 'pages-v2';
+export const LEGACY_PAGES_CACHE_NAME = 'pages';
+export const PAGE_CACHE_CLEANUP_SCRIPT_PREFIX = 'sw-page-cache-cleanup-';
 
-// The runtime cache the generic navigation route in vite.config.ts writes.
-export const PAGES_CACHE_NAME = 'pages';
-export const PAGE_CACHE_CLEANUP_SCRIPT_FILENAME = 'sw-page-cache-cleanup.js';
-
-async function deleteOrphanedPageEntries(
-  cacheName: string,
-  cacheBustParam: string,
-  isShellNavigation: typeof isAppShellNavigation
-): Promise<void> {
-  // Opening a cache creates it, and a device that never cached a page has none.
-  if (!(await caches.has(cacheName))) return;
-  const cache = await caches.open(cacheName);
-  for (const request of await cache.keys()) {
-    const url = new URL(request.url);
-    const orphaned =
-      isShellNavigation({ request: { mode: 'navigate' }, url }) ||
-      url.searchParams.has(cacheBustParam);
-    if (orphaned) await cache.delete(request);
-  }
-}
-
-export function pageCacheCleanupScript(cacheBustParam: string): string {
-  const args = [
-    JSON.stringify(PAGES_CACHE_NAME),
-    JSON.stringify(cacheBustParam),
-    `(${isAppShellNavigation.toString()})`,
-  ].join(', ');
+export function pageCacheCleanupScript(): string {
   return `self.addEventListener('activate', (event) => {
-  event.waitUntil((${deleteOrphanedPageEntries.toString()})(${args}));
+  event.waitUntil(caches.delete(${JSON.stringify(LEGACY_PAGES_CACHE_NAME)}));
 });
 `;
+}
+
+// The host serves root-level scripts as immutable, so the name carries the
+// script's content hash: a stable name would let a later worker import an
+// earlier build's bytes from the HTTP cache.
+export function pageCacheCleanupScriptFilename(contentHash: string): string {
+  return `${PAGE_CACHE_CLEANUP_SCRIPT_PREFIX}${contentHash}.js`;
 }

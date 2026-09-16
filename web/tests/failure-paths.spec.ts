@@ -11,6 +11,7 @@ import {
   spaNavigate,
 } from './helpers';
 import { openDrawer } from './flows-harness';
+import { PAGES_CACHE_NAME } from '../src/lib/pwa/pageCacheCleanup';
 import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
 
 test('an offline PWA session preserves the drawing through supported client navigation', async ({
@@ -74,17 +75,20 @@ for (const launch of [
     await gotoApp(page);
     expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 
-    const plantedChunkReferences = await page.evaluate(async (launchPath) => {
-      const html = await (await fetch('/', { cache: 'no-store' })).text();
-      const chunkReference = /(_app\/immutable\/[\w./-]+?)\.js/g;
-      const otherBuildHtml = html.replace(chunkReference, '$1-other-build.js');
-      const pages = await caches.open('pages');
-      await pages.put(
-        launchPath,
-        new Response(otherBuildHtml, { headers: { 'Content-Type': 'text/html' } })
-      );
-      return html.match(chunkReference)?.length ?? 0;
-    }, launch.path);
+    const plantedChunkReferences = await page.evaluate(
+      async ({ launchPath, pagesCacheName }) => {
+        const html = await (await fetch('/', { cache: 'no-store' })).text();
+        const chunkReference = /(_app\/immutable\/[\w./-]+?)\.js/g;
+        const otherBuildHtml = html.replace(chunkReference, '$1-other-build.js');
+        const pages = await caches.open(pagesCacheName);
+        await pages.put(
+          launchPath,
+          new Response(otherBuildHtml, { headers: { 'Content-Type': 'text/html' } })
+        );
+        return html.match(chunkReference)?.length ?? 0;
+      },
+      { launchPath: launch.path, pagesCacheName: PAGES_CACHE_NAME }
+    );
     expect(plantedChunkReferences).toBeGreaterThan(0);
 
     const cdp = await page.context().newCDPSession(page);

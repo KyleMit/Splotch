@@ -1,7 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 import { draw, gotoApp, registerServiceWorkerAndControl } from './helpers';
 import { openColoringDialog, openDrawer, openFarmPageGrid } from './flows-harness';
-import { PAGES_CACHE_NAME } from '../src/lib/pwa/pageCacheCleanup';
+import {
+  LEGACY_PAGES_CACHE_NAME,
+  PAGE_CACHE_CLEANUP_SCRIPT_PREFIX,
+  PAGES_CACHE_NAME,
+} from '../src/lib/pwa/pageCacheCleanup';
 import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
 
 // Issue #462: service-worker installation does meaningful offline work, so registration no longer
@@ -124,18 +128,20 @@ test('a repeat visit is controlled by the service worker with no stroke gate', a
   expect(await hasRegistration(page)).toBe(true);
 });
 
-// Entries an earlier worker wrote before the app shell answered these
-// navigations, and one per update the stale-page recovery reload carried.
-test('activating the service worker clears page-cache entries the app shell replaced', async ({
+// The page cache an earlier worker wrote holds the drawing app's own entries,
+// which the app shell replaced, and entries Workbox's expiration never counted,
+// so activation deletes it whole and navigations fill the capped cache instead.
+test('activating the service worker deletes the page cache earlier workers wrote', async ({
   page,
 }) => {
   test.setTimeout(120_000);
   await gotoApp(page);
-  const cachedPaths = () =>
-    page.evaluate(async (cacheName) => {
-      const keys = await (await caches.open(cacheName)).keys();
-      return keys.map((request) => new URL(request.url)).map((url) => url.pathname + url.search);
-    }, PAGES_CACHE_NAME);
+  const legacyPaths = [
+    '/',
+    '/index.html',
+    `/?${CACHE_BUST_VERSION_PARAM}=0.0.0-earlier`,
+    ...Array.from({ length: 25 }, (_, index) => `/privacy?earlier=${index}`),
+  ];
   await page.evaluate(
     async ({ cacheName, paths }) => {
       const cache = await caches.open(cacheName);
@@ -146,22 +152,61 @@ test('activating the service worker clears page-cache entries the app shell repl
         );
       }
     },
-    {
-      cacheName: PAGES_CACHE_NAME,
-      paths: [
-        '/',
-        '/index.html',
-        `/?${CACHE_BUST_VERSION_PARAM}=0.0.0-earlier`,
-        `/privacy?${CACHE_BUST_VERSION_PARAM}=0.0.0-earlier`,
-        '/privacy',
-      ],
-    }
+    { cacheName: LEGACY_PAGES_CACHE_NAME, paths: legacyPaths }
   );
-  expect(await cachedPaths()).toHaveLength(5);
 
   await registerServiceWorkerAndControl(page);
 
-  await expect.poll(cachedPaths, { timeout: 15_000 }).toEqual(['/privacy']);
+  await expect
+    .poll(() => page.evaluate((name) => caches.has(name), LEGACY_PAGES_CACHE_NAME), {
+      timeout: 15_000,
+    })
+    .toBe(false);
+  await page.goto('/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(async (name) => {
+        const keys = await (await caches.open(name)).keys();
+        return keys.map((request) => new URL(request.url).pathname);
+      }, PAGES_CACHE_NAME)
+    )
+    .toEqual(['/privacy']);
+});
+
+// Root-level scripts are served immutable, so a stable name would let a later
+// worker import an earlier build's cleanup from the HTTP cache.
+test('the service worker imports its page-cache cleanup under a content-hashed name', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  const hashedName = new RegExp(`${PAGE_CACHE_CLEANUP_SCRIPT_PREFIX}[0-9a-f]{8}\\.js`).source;
+  const imported = await page.evaluate(async (pattern) => {
+    const worker = await (await fetch('/sw.js')).text();
+    const name = new RegExp(pattern).exec(worker)?.[0];
+    return { name, status: name ? (await fetch(`/${name}`)).status : 0 };
+  }, hashedName);
+  expect(imported).toEqual({ name: expect.any(String), status: 200 });
+});
+
+// NetworkFirst answers an offline navigation from the page cache however old
+// the copy is: an age limit would refuse it and leave the page unreachable.
+test('an old cached page still opens offline', async ({ page }) => {
+  test.setTimeout(120_000);
+  await gotoApp(page);
+  await registerServiceWorkerAndControl(page);
+  await page.evaluate(async (cacheName) => {
+    const response = await fetch('/privacy');
+    const headers = new Headers(response.headers);
+    const yearMs = 365 * 24 * 60 * 60 * 1000;
+    headers.set('Date', new Date(Date.now() - yearMs).toUTCString());
+    const cache = await caches.open(cacheName);
+    await cache.put('/privacy', new Response(await response.text(), { headers }));
+  }, PAGES_CACHE_NAME);
+
+  await page.context().setOffline(true);
+  await page.goto('/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
 });
 
 test.describe('responsive coloring offline fallback', () => {

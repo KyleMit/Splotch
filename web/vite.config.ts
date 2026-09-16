@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -30,9 +30,10 @@ import {
   prependAppShellEntry,
 } from './src/lib/pwa/appShellRoute.ts';
 import {
-  PAGE_CACHE_CLEANUP_SCRIPT_FILENAME,
+  PAGE_CACHE_CLEANUP_SCRIPT_PREFIX,
   PAGES_CACHE_NAME,
   pageCacheCleanupScript,
+  pageCacheCleanupScriptFilename,
 } from './src/lib/pwa/pageCacheCleanup.ts';
 
 // The native apps bundle a static export and never use a service worker (the
@@ -67,11 +68,15 @@ const APP_SHELL_PRECACHE_URL = appShellPrecacheUrl(randomUUID());
 const NAVIGATION_NETWORK_TIMEOUT_SECONDS = 5;
 // The page cache holds only the secondary pages (privacy, changelog, and the
 // like), so the cap sits well above that set and bounds only what unexpected
-// navigations could accumulate. A page unvisited this long is refetched rather
-// than kept against the origin's storage, which is evicted whole, coloring
-// books included, under storage pressure.
+// navigations could accumulate against the origin's storage, which is evicted
+// whole, coloring books included, under storage pressure. There is no age
+// limit: Workbox refuses an expired entry even when the network is down, and a
+// stale page offline is better than none.
 const PAGES_CACHE_MAX_ENTRIES = 20;
-const PAGES_CACHE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+const PAGE_CACHE_CLEANUP_SCRIPT = pageCacheCleanupScript();
+const PAGE_CACHE_CLEANUP_SCRIPT_FILENAME = pageCacheCleanupScriptFilename(
+  createHash('sha256').update(PAGE_CACHE_CLEANUP_SCRIPT).digest('hex').slice(0, 8)
+);
 const coloringPackManifest = buildColoringPackManifest(APP_VERSION, isCapacitor ? 'mobile' : 'web');
 const downloadableColoringGlobIgnores = BOOKS.filter(
   (book) => book.id !== STARTER_COLORING_BOOK_ID
@@ -149,7 +154,7 @@ export default defineConfig({
               this.emitFile({
                 type: 'asset',
                 fileName: PAGE_CACHE_CLEANUP_SCRIPT_FILENAME,
-                source: pageCacheCleanupScript(CACHE_BUST_VERSION_PARAM),
+                source: PAGE_CACHE_CLEANUP_SCRIPT,
               });
             },
           } satisfies Plugin,
@@ -191,7 +196,7 @@ export default defineConfig({
               globIgnores: [
                 // The social card is served but never fetched by the application.
                 'large-image.png',
-                PAGE_CACHE_CLEANUP_SCRIPT_FILENAME,
+                `${PAGE_CACHE_CLEANUP_SCRIPT_PREFIX}*.js`,
                 '**/*.outline.webp',
                 '**/*.chalk.webp',
                 ...responsiveColoringGlobIgnores,
@@ -241,10 +246,7 @@ export default defineConfig({
                   options: {
                     cacheName: PAGES_CACHE_NAME,
                     networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
-                    expiration: {
-                      maxEntries: PAGES_CACHE_MAX_ENTRIES,
-                      maxAgeSeconds: PAGES_CACHE_MAX_AGE_SECONDS,
-                    },
+                    expiration: { maxEntries: PAGES_CACHE_MAX_ENTRIES },
                   },
                 },
               ],

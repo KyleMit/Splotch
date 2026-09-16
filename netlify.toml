@@ -142,7 +142,7 @@
 # file it writes into the publish dir, and the deployed woff2/js under that path serve
 # with that header (verified 2026-07-22, issue #459). The two rules below cover hashed
 # output OUTSIDE /_app: today that's the root-level workbox-<hash>.js emitted by
-# vite-plugin-pwa. Rule order matters — a later matching rule's Cache-Control replaces
+# vite-plugin-pwa and the service worker's content-hashed page-cache cleanup import. Rule order matters — a later matching rule's Cache-Control replaces
 # an earlier one's, which is how the /sw.js no-cache rule below beats /*.js.
 [[headers]]
   for = "/*.js"
