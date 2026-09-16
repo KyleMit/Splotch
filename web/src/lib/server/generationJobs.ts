@@ -163,24 +163,28 @@ export async function takeJobInput(jobId: string): Promise<Uint8Array | null> {
 export async function completeJob(
   jobId: string,
   outcome: GenerationJobOutcome,
-  image: ArrayBuffer | null,
-  now = Date.now()
+  image: ArrayBuffer | null
 ): Promise<void> {
+  const jobStore = store();
+  const existing = (await jobStore.getWithMetadata(statusKey(jobId), {
+    type: 'json',
+  })) as { data: StoredJob; etag: string } | null;
+  if (!existing || existing.data.outcome) return;
+
   // Bytes first: a poll that saw `image` but found nothing to send would be a
   // dead end, whereas one more `pending` is simply the next poll's problem.
-  if (image) await store().set(imageKey(jobId), image);
-  const existing = (await store().get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
+  // `onlyIfNew` keeps a concurrent duplicate completion from replacing the
+  // first picture even before the status compare-and-set chooses its winner.
+  if (image) await jobStore.set(imageKey(jobId), image, { onlyIfNew: true });
   const record: StoredJob = {
-    // A worker that outlived its own start record has nothing to settle, which
-    // is the same shape as a job that never had a reservation.
-    context: existing?.context ?? { free: null, style: null },
+    context: existing.data.context,
     outcome,
     // Kept from the start, not restarted: the free reservation's lease runs from
     // the start too, and an outcome still collectable after that lease lapses
     // hands over a picture the ledger can no longer charge.
-    expiresAt: existing?.expiresAt ?? now + GENERATION_JOB_TTL_MS,
+    expiresAt: existing.data.expiresAt,
   };
-  await store().setJSON(statusKey(jobId), record);
+  await jobStore.setJSON(statusKey(jobId), record, { onlyIfMatch: existing.etag });
 }
 
 export async function readJob(jobId: string, now = Date.now()): Promise<GenerationJobState> {

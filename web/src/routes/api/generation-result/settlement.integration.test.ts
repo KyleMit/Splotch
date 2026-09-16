@@ -564,6 +564,26 @@ describe('the background worker', () => {
     expect(grantOf()).toMatchObject({ successful: 0, failures: 1, reservations: {} });
   });
 
+  it('keeps the first picture when the same valid dispatch reaches the worker twice', async () => {
+    const { jobId, dispatch } = await startHandedOffGeneration();
+
+    expect((await runWorker(dispatch)).status).toBe(200);
+    expect((await runWorker(dispatch)).status).toBe(200);
+
+    expect(provider.generateImage).toHaveBeenCalledOnce();
+    const response = await collect(jobId);
+    expect(response.status).toBe(200);
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(PICTURE);
+    expect(response.headers.get(FREE_GENERATIONS_REMAINING_HEADER)).toBe(
+      String(FREE_GENERATION_LIMIT - 1)
+    );
+    expect(grantOf()).toMatchObject({
+      successful: 1,
+      failures: 0,
+      reservations: {},
+    });
+  });
+
   it('refuses a platform retry once the ticket has lapsed, leaving the recorded picture intact', async () => {
     const { jobId, dispatch } = await startHandedOffGeneration();
     await runWorker(dispatch);
