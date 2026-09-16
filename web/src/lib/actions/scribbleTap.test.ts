@@ -58,6 +58,14 @@ describe('scribbleTap', () => {
     expect(flushSync).not.toHaveBeenCalled();
   });
 
+  it('activates once when a left-first mouse chord clicks before the secondary pointerup', () => {
+    const { el, activate } = tapElement();
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { button: 0, buttons: 1 }));
+    el.dispatchEvent(new MouseEvent('click', { button: 0, detail: 1 }));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { button: 2 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
   it('prepares a press before activating its completed tap', () => {
     const el = document.createElement('button');
     document.body.appendChild(el);
@@ -359,6 +367,28 @@ describe('scribbleTap', () => {
     el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
     el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
     expect(activate).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not let a late click finish the next press before it drags off', () => {
+    const el = document.createElement('button');
+    document.body.appendChild(el);
+    const events: string[] = [];
+    const action = scribbleTap(el, {
+      activate: () => events.push('activate'),
+      onPressStart: () => events.push('prepare'),
+      onPressCancel: () => events.push('cancel'),
+    });
+    tapActions.add(action);
+    vi.spyOn(document, 'elementFromPoint').mockImplementation((x) => (x < 20 ? el : document.body));
+
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 10 }));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 10 }));
+    el.dispatchEvent(pointerEvent('pointerdown', 2, { clientX: 10 }));
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    window.dispatchEvent(pointerEvent('pointermove', 2, { clientX: 30 }));
+    window.dispatchEvent(pointerEvent('pointerup', 2, { clientX: 30 }));
+
+    expect(events).toEqual(['prepare', 'activate', 'prepare', 'cancel']);
   });
 
   // A pointercancel produces no synthesized click, so it must not arm

@@ -300,7 +300,10 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
   // on-device as a click synthesized dead-center on the undo button while its
   // pointerdown landed a pixel outside (issue 1237). The browser's tap
   // resolution is the authority; discarding it leaves a control that plays no
-  // feedback and does nothing.
+  // feedback and does nothing. A primary-first mouse chord is the exception to
+  // the usual pointerup-before-click order: its primary click arrives while the
+  // press is live, then the final pointerup names the secondary button. Finish
+  // that press through the click so the later pointerup cannot activate again.
   const click = (e: MouseEvent) => {
     if (e.detail === 0) {
       activate();
@@ -309,6 +312,10 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     if (performance.now() >= consumeClicksUntil) consumableClicks = 0;
     if (consumableClicks > 0) {
       consumableClicks -= 1;
+      return;
+    }
+    if (press) {
+      finishPress(!press.dragged);
       return;
     }
     activate();
