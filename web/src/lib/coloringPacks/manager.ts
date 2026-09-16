@@ -10,6 +10,7 @@ import { clearLocalColoringBookRoots, setLocalColoringBookRoot } from './assetRe
 import {
   coloringPackManifestPath,
   parseColoringPackManifest,
+  type ColoringPackManifest,
   resolveColoringPackManifest,
   type ResolvedColoringPackManifest,
 } from './manifest';
@@ -23,16 +24,13 @@ interface NetworkInformationLike extends EventTarget {
   type?: string;
 }
 
-async function loadManifest(signal?: AbortSignal): Promise<ResolvedColoringPackManifest> {
+async function fetchManifest(signal?: AbortSignal): Promise<ColoringPackManifest> {
   const response = await fetch(coloringPackManifestPath(__APP_VERSION__), {
     cache: 'no-store',
     signal,
   });
   if (!response.ok) throw new Error(`Coloring-pack manifest unavailable (${response.status})`);
-  return resolveColoringPackManifest(
-    parseColoringPackManifest(await response.json(), __APP_VERSION__),
-    currentColoringPackResolution()
-  );
+  return parseColoringPackManifest(await response.json(), __APP_VERSION__);
 }
 
 async function createStore(): Promise<ColoringPackStore> {
@@ -100,20 +98,27 @@ const queueNativeRun = createNativeRunQueue();
 export function createColoringPackDownloader(downloadAllowed = automaticDownloadAllowed) {
   let stopped = false;
   let paused = false;
-  let discovered = false;
+  let fetchedManifest: ColoringPackManifest | null = null;
   let installing = false;
   let rerunRequested = false;
   let runPromise: Promise<void> | null = null;
   let controller: AbortController | null = null;
   let activeStore: ColoringPackStore | null = null;
 
+  // A run that may download refetches the manifest, as every run always has. One
+  // that may not reuses this downloader's copy: the manifest is named by the app
+  // version, and a metered connection should pay for it once, while the store
+  // scan still repeats so books another tab installed or removed are seen.
+  async function loadManifest(signal: AbortSignal): Promise<ResolvedColoringPackManifest> {
+    if (!fetchedManifest || downloadAllowed()) fetchedManifest = await fetchManifest(signal);
+    return resolveColoringPackManifest(fetchedManifest, currentColoringPackResolution());
+  }
+
   // Discovering what is installed never waits on the download policy: a
   // metered or Save-Data connection forbids new packs, not the books already on
-  // disk. Once a session has discovered them, a run that may not download has
-  // nothing left to do, so it skips the manifest request.
+  // disk.
   async function run() {
     if (stopped || paused || !settingsState.coloringBookEnabled) return;
-    if (discovered && !downloadAllowed()) return;
     controller = new AbortController();
     const manifest = await loadManifest(controller.signal);
     if (controller.signal.aborted) return;
@@ -123,7 +128,6 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     const installedPacks = await store.installed(manifest);
     if (controller.signal.aborted) return;
     const installed = applyInstalledPacks(manifest, installedPacks);
-    discovered = true;
     if (!downloadAllowed()) return;
 
     for (const book of manifest.books) {
@@ -181,7 +185,6 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
   };
   const pause = () => {
     paused = true;
-    discovered = false;
     rerunRequested = false;
     cancelActiveWork();
   };

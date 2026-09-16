@@ -121,25 +121,28 @@ describe('coloring-pack downloader policy boundaries', () => {
     downloader.stop();
   });
 
-  it('skips the manifest on later triggers once a session without downloads has scanned', async () => {
+  it('rescans the store on later triggers without refetching the manifest', async () => {
+    mocks.installed
+      .mockResolvedValueOnce([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }])
+      .mockResolvedValue([{ id: 'space', bytes: 1, rootPath: 'file:///space' }]);
     const downloader = createColoringPackDownloader(() => false);
     downloader.start();
-    await vi.waitFor(() => expect(mocks.installed).toHaveBeenCalledOnce());
-    await flushMicrotasks();
+    await vi.waitFor(() => expect(coloringPacksState.installedBookIds).toContain('dinosaur'));
 
     window.dispatchEvent(new Event('online'));
-    window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
-    await flushMicrotasks();
 
+    await vi.waitFor(() => expect(coloringPacksState.installedBookIds).toEqual(['farm', 'space']));
     expect(fetch).toHaveBeenCalledOnce();
-    expect(mocks.installed).toHaveBeenCalledOnce();
+    expect(mocks.install).not.toHaveBeenCalled();
     downloader.stop();
   });
 
   it('keeps a scan running when downloads are disallowed before it finishes', async () => {
     const scan = pendingScan();
     let allowed = true;
-    mocks.installed.mockReturnValueOnce(scan.promise);
+    mocks.installed
+      .mockReturnValueOnce(scan.promise)
+      .mockResolvedValue([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
     const downloader = createColoringPackDownloader(() => allowed);
     downloader.start();
 
@@ -165,7 +168,8 @@ describe('coloring-pack downloader policy boundaries', () => {
     settings.coloringBookEnabled = true;
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
 
-    await vi.waitFor(() => expect(mocks.installed).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(mocks.installed.mock.calls.length).toBeGreaterThan(1));
+    expect(fetch).toHaveBeenCalledOnce();
     expect(mocks.install).not.toHaveBeenCalled();
     downloader.stop();
   });
