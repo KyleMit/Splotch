@@ -3,6 +3,10 @@ import { setLocalColoringBookRoot } from './assetResolver';
 import { COLORING_PACK_POLICY_EVENT, COLORING_PACK_REMOVE_EVENT } from './policy';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 
+const settings = vi.hoisted(() => ({
+  coloringBookEnabled: true,
+  coloringPacksAllowMetered: false,
+}));
 const mocks = vi.hoisted(() => ({
   installed: vi.fn(),
   install: vi.fn(),
@@ -11,9 +15,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('$lib/state/coloringBook.svelte', () => ({ clearOverlay: vi.fn() }));
-vi.mock('$lib/state/settings.svelte', () => ({
-  settingsState: { coloringBookEnabled: true, coloringPacksAllowMetered: false },
-}));
+vi.mock('$lib/state/settings.svelte', () => ({ settingsState: settings }));
 vi.mock('./assetResolver', () => ({
   clearLocalColoringBookRoots: vi.fn(),
   setLocalColoringBookRoot: vi.fn(),
@@ -92,12 +94,79 @@ afterEach(() => {
 });
 
 describe('coloring-pack downloader policy boundaries', () => {
-  it('does not load the manifest when downloads are disabled at startup', () => {
+  it('does not load the manifest while coloring books are turned off', () => {
+    settings.coloringBookEnabled = false;
+    try {
+      const downloader = createColoringPackDownloader();
+      downloader.start();
+
+      expect(fetch).not.toHaveBeenCalled();
+      expect(mocks.installed).not.toHaveBeenCalled();
+      downloader.stop();
+    } finally {
+      settings.coloringBookEnabled = true;
+    }
+  });
+
+  it('publishes installed books without downloading when downloads are not allowed', async () => {
+    mocks.installed.mockResolvedValue([{ id: 'space', bytes: 2, rootPath: 'file:///space' }]);
     const downloader = createColoringPackDownloader(() => false);
     downloader.start();
 
-    expect(fetch).not.toHaveBeenCalled();
-    expect(mocks.installed).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(coloringPacksState.installedBookIds).toContain('space'));
+    expect(coloringPacksState.downloadedBytes).toBe(2);
+    expect(setLocalColoringBookRoot).toHaveBeenCalledWith('space', 'file:///space');
+    await flushMicrotasks();
+    expect(mocks.install).not.toHaveBeenCalled();
+    downloader.stop();
+  });
+
+  it('skips the manifest on later triggers once a session without downloads has scanned', async () => {
+    const downloader = createColoringPackDownloader(() => false);
+    downloader.start();
+    await vi.waitFor(() => expect(mocks.installed).toHaveBeenCalledOnce());
+    await flushMicrotasks();
+
+    window.dispatchEvent(new Event('online'));
+    window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
+    await flushMicrotasks();
+
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(mocks.installed).toHaveBeenCalledOnce();
+    downloader.stop();
+  });
+
+  it('keeps a scan running when downloads are disallowed before it finishes', async () => {
+    const scan = pendingScan();
+    let allowed = true;
+    mocks.installed.mockReturnValueOnce(scan.promise);
+    const downloader = createColoringPackDownloader(() => allowed);
+    downloader.start();
+
+    await vi.waitFor(() => expect(mocks.installed).toHaveBeenCalledOnce());
+    allowed = false;
+    window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
+    scan.resolve([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
+
+    await vi.waitFor(() => expect(coloringPacksState.installedBookIds).toContain('dinosaur'));
+    expect(mocks.cancel).not.toHaveBeenCalled();
+    expect(mocks.install).not.toHaveBeenCalled();
+    downloader.stop();
+  });
+
+  it('rescans after coloring books are turned off and back on without downloads', async () => {
+    const downloader = createColoringPackDownloader(() => false);
+    downloader.start();
+    await vi.waitFor(() => expect(mocks.installed).toHaveBeenCalledOnce());
+    await flushMicrotasks();
+
+    settings.coloringBookEnabled = false;
+    window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
+    settings.coloringBookEnabled = true;
+    window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
+
+    await vi.waitFor(() => expect(mocks.installed).toHaveBeenCalledTimes(2));
+    expect(mocks.install).not.toHaveBeenCalled();
     downloader.stop();
   });
 

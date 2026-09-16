@@ -472,6 +472,51 @@ async function expectColdStartOpensStarterPagesUntilReopen(page: Page) {
   }
 }
 
+// Chromium on desktop reports neither Save-Data nor a cellular link, so each
+// connection the download policy refuses is installed over navigator.connection
+// before any page script runs.
+const METERED_CONNECTIONS = [
+  { name: 'Save-Data', connection: { saveData: true, type: 'wifi', effectiveType: '4g' } },
+  { name: 'cellular', connection: { saveData: false, type: 'cellular', effectiveType: '4g' } },
+  { name: '2g', connection: { saveData: false, type: 'unknown', effectiveType: '2g' } },
+];
+for (const { name, connection } of METERED_CONNECTIONS) {
+  test(`books already downloaded show in the picker on a ${name} connection without new downloads`, async ({
+    page,
+  }) => {
+    await page.addInitScript((fields) => {
+      const network = Object.assign(new EventTarget(), fields);
+      Object.defineProperty(Navigator.prototype, 'connection', {
+        configurable: true,
+        get: () => network,
+      });
+    }, connection);
+    const coloringRequests = recordColoringRequests(page);
+    await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+    await openDrawer(page);
+
+    const dialog = page.locator('#coloring-book-dialog');
+    // An open that beats the installed-book scan shows the starter's pages, and
+    // the scan's books join at the next open.
+    await expect(async () => {
+      if (await dialog.isVisible()) {
+        await dialog.getByRole('button', { name: 'Close' }).click({ timeout: 2000 });
+        await dialog.waitFor({ state: 'hidden', timeout: 2000 });
+      }
+      await openColoringDialog(page);
+      await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 30_000 });
+    await expect(dialog.getByRole('button', { name: 'Dinosaurs coloring book' })).toBeVisible();
+
+    await page.waitForTimeout(IDLE_WORK_OBSERVATION_MS);
+    expect(
+      downloadedBookFiles(coloringRequests).filter((path) => !path.includes('/dinosaur/'))
+    ).toEqual([]);
+  });
+}
+
 test('a visit nobody engages with downloads no coloring packs', async ({ page }) => {
   const coloringRequests = recordColoringRequests(page);
   await gotoApp(page);
