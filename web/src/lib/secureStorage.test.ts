@@ -273,6 +273,23 @@ describe('master key creation', () => {
     await expect(secureStorage.loadApiKey()).resolves.toBe('second');
   });
 
+  it('leaves no unhandled rejection when the master-key transaction aborts', async () => {
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    try {
+      ctrl.abortNextTransaction = true;
+
+      await expect(secureStorage.saveApiKey('secret-key-123')).rejects.toThrow(
+        'transaction aborted'
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
+  });
+
   it('replaces a payload-shaped master-key row with a generated key', async () => {
     ctrl.rows.set(MASTER_KEY_ROW, {
       iv: new Uint8Array(12),
