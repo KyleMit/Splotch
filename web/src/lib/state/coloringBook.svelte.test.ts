@@ -36,6 +36,15 @@ describe('coloring book state', () => {
     expect(book.overlayPage?.images.portrait).toBe(page.images.portrait);
   });
 
+  it('keeps the same view when an overlay-page getter value is stored again', () => {
+    book.setOverlayPage(page, 'portrait');
+    const view = book.overlayPage!;
+
+    book.setOverlayPage(view, 'portrait');
+
+    expect(book.overlayPage).toBe(view);
+  });
+
   it('setOverlayPage tracks the line art and the colored fill together', () => {
     book.setOverlayPage(page, 'landscape');
     expect(book.overlayUrl()).toBe(page.images.landscape);

@@ -7,6 +7,7 @@ export type DeepReadonly<T> = T extends (...args: never[]) => unknown
       : T;
 
 const nestedViews = new WeakMap<object, object>();
+const readonlyValues = new WeakSet<object>();
 
 function isPlainRecordOrArray(value: object): boolean {
   if (Array.isArray(value)) return true;
@@ -18,13 +19,24 @@ export function readonlyValue<T>(value: T): DeepReadonly<T> {
   if (typeof value !== 'object' || value === null || !isPlainRecordOrArray(value)) {
     return value as DeepReadonly<T>;
   }
+  if (readonlyValues.has(value)) return value as DeepReadonly<T>;
 
   const cached = nestedViews.get(value);
   if (cached) return cached as DeepReadonly<T>;
 
-  const view = new Proxy(value, {
+  const target = Object.isFrozen(value)
+    ? Array.isArray(value)
+      ? [...value]
+      : Object.assign(Object.create(Object.getPrototypeOf(value)), value)
+    : value;
+  const view = new Proxy(target, {
     get(target, key, receiver) {
       return readonlyValue(Reflect.get(target, key, receiver));
+    },
+    getOwnPropertyDescriptor(target, key) {
+      const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
+      if (!descriptor || !('value' in descriptor) || !descriptor.configurable) return descriptor;
+      return { ...descriptor, value: readonlyValue(descriptor.value) };
     },
     set: () => false,
     defineProperty: () => false,
@@ -33,6 +45,7 @@ export function readonlyValue<T>(value: T): DeepReadonly<T> {
     preventExtensions: () => false,
   });
   nestedViews.set(value, view);
+  readonlyValues.add(view);
   return view as DeepReadonly<T>;
 }
 
