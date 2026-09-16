@@ -10,6 +10,7 @@ import { clearLocalColoringBookRoots, setLocalColoringBookRoot } from './assetRe
 import {
   coloringPackManifestPath,
   parseColoringPackManifest,
+  type ColoringPackManifest,
   resolveColoringPackManifest,
   type ResolvedColoringPackManifest,
 } from './manifest';
@@ -23,16 +24,13 @@ interface NetworkInformationLike extends EventTarget {
   type?: string;
 }
 
-async function loadManifest(signal?: AbortSignal): Promise<ResolvedColoringPackManifest> {
+async function fetchManifest(signal?: AbortSignal): Promise<ColoringPackManifest> {
   const response = await fetch(coloringPackManifestPath(__APP_VERSION__), {
     cache: 'no-store',
     signal,
   });
   if (!response.ok) throw new Error(`Coloring-pack manifest unavailable (${response.status})`);
-  return resolveColoringPackManifest(
-    parseColoringPackManifest(await response.json(), __APP_VERSION__),
-    currentColoringPackResolution()
-  );
+  return parseColoringPackManifest(await response.json(), __APP_VERSION__);
 }
 
 async function createStore(): Promise<ColoringPackStore> {
@@ -100,18 +98,32 @@ const queueNativeRun = createNativeRunQueue();
 export function createColoringPackDownloader(downloadAllowed = automaticDownloadAllowed) {
   let stopped = false;
   let paused = false;
+  let fetchedManifest: ColoringPackManifest | null = null;
+  let installing = false;
   let rerunRequested = false;
   let runPromise: Promise<void> | null = null;
   let controller: AbortController | null = null;
   let activeStore: ColoringPackStore | null = null;
 
+  // A run that may download refetches the manifest, as every run always has. One
+  // that may not reuses this downloader's copy: the manifest is named by the app
+  // version, and a metered connection should pay for it once, while the store
+  // scan still repeats so books another tab installed or removed are seen.
+  async function loadManifest(signal: AbortSignal): Promise<ResolvedColoringPackManifest> {
+    if (!fetchedManifest || downloadAllowed()) fetchedManifest = await fetchManifest(signal);
+    return resolveColoringPackManifest(fetchedManifest, currentColoringPackResolution());
+  }
+
+  // Discovering what is installed never waits on the download policy: a
+  // metered or Save-Data connection forbids new packs, not the books already on
+  // disk.
   async function run() {
-    if (stopped || paused || !downloadAllowed()) return;
+    if (stopped || paused || !settingsState.coloringBookEnabled) return;
     controller = new AbortController();
     const manifest = await loadManifest(controller.signal);
-    if (controller.signal.aborted || !downloadAllowed()) return;
+    if (controller.signal.aborted) return;
     const store = await createStore();
-    if (controller.signal.aborted || !downloadAllowed()) return;
+    if (controller.signal.aborted) return;
     activeStore = store;
     const installedPacks = await store.installed(manifest);
     if (controller.signal.aborted) return;
@@ -123,12 +135,12 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
       if (book.id === manifest.starterBookId || installed.has(book.id)) continue;
       if (!downloadAllowed()) return;
       coloringPacksState.startBookDownload(book.id);
-      const pack = await store.install(
-        manifest,
-        book,
-        settingsState.coloringPacksAllowMetered,
-        controller.signal
-      );
+      installing = true;
+      const pack = await store
+        .install(manifest, book, settingsState.coloringPacksAllowMetered, controller.signal)
+        .finally(() => {
+          installing = false;
+        });
       if (controller.signal.aborted) return;
       applyLocalRoots([pack]);
       installed.add(book.id);
@@ -165,19 +177,25 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     if (document.visibilityState === 'visible') requestRun();
   };
   const network = connection();
-  const pause = () => {
-    paused = true;
-    rerunRequested = false;
+  const cancelActiveWork = () => {
     controller?.abort();
     void activeStore?.cancel().catch((error) => {
       console.warn('Coloring-pack cancellation failed', error);
     });
   };
+  const pause = () => {
+    paused = true;
+    rerunRequested = false;
+    cancelActiveWork();
+  };
+  // Disallowing downloads cancels only a transfer: the books a finished scan
+  // published stay visible, and a scan still running keeps going to publish them.
   const applyDownloadPolicy = () => {
-    if (!downloadAllowed()) {
+    if (!settingsState.coloringBookEnabled) {
       pause();
       return;
     }
+    if (installing && !downloadAllowed()) cancelActiveWork();
     paused = false;
     requestRun();
   };

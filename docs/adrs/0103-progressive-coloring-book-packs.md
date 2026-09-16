@@ -82,8 +82,13 @@ The same TypeScript store contract has platform-specific implementations:
   termination. Expensive and constrained network access are disabled by default.
 
 The Parent Settings Coloring section can allow automatic downloads over mobile data and can remove
-all downloaded books. Removal cancels/pauses installation for the current app session, clears both
-resolution namespaces for the current app version, and immediately returns the picker to Farm.
+all downloaded books. On the web that policy decides only whether new books download, never whether
+installed ones show: a Save-Data, cellular, or 2G connection still fetches the manifest once per
+session and rescans Cache Storage on every trigger, so books installed or removed by another tab
+appear or disappear. Disallowing downloads mid-session cancels an active transfer without hiding
+what the scan found (issue #1932). Removal cancels/pauses installation for the current app session,
+clears both resolution namespaces for the current app version, and immediately returns the picker to
+Farm.
 
 The section's Coloring Book master toggle gates the whole feature. Disabling it clears the active
 page, hides the canvas action, aborts web transfers, and cancels Android WorkManager or iOS
