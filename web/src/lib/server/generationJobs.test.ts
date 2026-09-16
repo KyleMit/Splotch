@@ -261,6 +261,31 @@ describe('purgeExpiredGenerationJobs', () => {
     );
   });
 
+  it('recovers a claim whose successful write loses its reply', async () => {
+    const pending = {
+      context: { free: null, style: null },
+      outcome: null,
+      claimId: null,
+      expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+    };
+    let written: unknown;
+    store.getWithMetadata.mockResolvedValueOnce({
+      data: pending,
+      etag: 'pending-v1',
+      metadata: {},
+    });
+    store.setJSON.mockImplementationOnce(async (_key, value) => {
+      written = value;
+      throw new Error('reply lost');
+    });
+    store.get.mockImplementationOnce(async () => written);
+
+    const claim = await claimJob(JOB);
+
+    expect(claim).toEqual(expect.any(String));
+    expect(written).toEqual({ ...pending, claimId: claim });
+  });
+
   it('keeps the lifetime the start gave a job when the worker records its outcome', async () => {
     const context = { free: { installationId: 'c'.repeat(64), reservationId: 'r1' }, style: null };
     const claimId = 'claim-1';

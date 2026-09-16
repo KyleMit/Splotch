@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { discardJob, issueWorkTicket, markJobPending, putJobInput } = vi.hoisted(() => ({
+const { claimJob, discardJob, issueWorkTicket, markJobPending, putJobInput } = vi.hoisted(() => ({
+  claimJob: vi.fn(),
   discardJob: vi.fn(),
   issueWorkTicket: vi.fn(),
   markJobPending: vi.fn(),
@@ -13,6 +14,7 @@ const { discardJob, issueWorkTicket, markJobPending, putJobInput } = vi.hoisted(
 // factory that named it again would reintroduce the drift as a test fixture.
 vi.mock('./generationJobs', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./generationJobs')>()),
+  claimJob,
   discardJob,
   issueWorkTicket,
   markJobPending,
@@ -31,6 +33,7 @@ const work = { apiKey: 'sk-test', prompt: 'draw a cat' };
 const start = () => startBackgroundGeneration('https://splotch.art', context, image, work);
 
 beforeEach(() => {
+  claimJob.mockReset().mockResolvedValue('fallback-claim');
   discardJob.mockReset().mockResolvedValue(undefined);
   issueWorkTicket.mockReset().mockReturnValue('ticket');
   markJobPending.mockReset().mockResolvedValue(undefined);
@@ -60,7 +63,24 @@ describe('startBackgroundGeneration', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('socket hang up')));
 
     await expect(start()).resolves.toBeNull();
+    expect(claimJob).toHaveBeenCalledWith('a'.repeat(64));
     expect(discardJob).toHaveBeenCalledWith('a'.repeat(64));
+  });
+
+  it('keeps the job when a worker already claimed an ambiguously failed handoff', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('socket hang up')));
+    claimJob.mockResolvedValue(null);
+
+    await expect(start()).resolves.toMatchObject({ jobId: 'a'.repeat(64) });
+    expect(discardJob).not.toHaveBeenCalled();
+  });
+
+  it('keeps polling when the ownership check is unavailable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('socket hang up')));
+    claimJob.mockRejectedValue(new Error('store unreachable'));
+
+    await expect(start()).resolves.toMatchObject({ jobId: 'a'.repeat(64) });
+    expect(discardJob).not.toHaveBeenCalled();
   });
 
   it('still falls back when the cleanup itself fails', async () => {
