@@ -4,6 +4,7 @@ import { ROOT, isMain, runMain } from './lib/proc.mjs';
 import { isInstrumentedBuild } from './lib/build-instrumentation.mjs';
 
 const CLIENT_BUNDLE_DIR = join(ROOT, 'web/.svelte-kit/output/client/_app/immutable');
+const AI_KEY_SOURCE_PATH = 'web/src/lib/state/aiKey.ts';
 const ENGINE_SOURCE_PATH = 'web/src/lib/drawing/engine.ts';
 const TILED_RENDERER_SOURCE_PATH = 'web/src/lib/drawing/tiledRenderer.ts';
 export const RELEASE_SEAM_SOURCE_FILES = [
@@ -39,12 +40,16 @@ const RELEASE_ONLY_DEBUG_PROPERTIES = [
   'totalLiveBackingBytes',
 ];
 
-export const DEV_GATED_ENGINE_EXPORTS = [
+const DEV_GATED_ENGINE_EXPORTS = [
   'setScreenAngleOverride',
   'getDrawingWorkDebug',
   'getUndoDebug',
   'setCrayonParams',
   'replayHarnessStroke',
+];
+export const DEV_GATED_EXPORTS = [
+  ...DEV_GATED_ENGINE_EXPORTS.map((name) => ({ name, sourcePath: ENGINE_SOURCE_PATH })),
+  { name: 'prepareRefusedAiKeyForget', sourcePath: AI_KEY_SOURCE_PATH },
 ];
 
 // Source extensions that can ship client code and therefore emit an engine measure.
@@ -82,8 +87,9 @@ export const RELEASE_ONLY_TOKENS = [
 ].sort();
 
 function exportedFunctionBody(source, name) {
-  const declarationStart = source.indexOf(`export function ${name}`);
-  if (declarationStart === -1) return null;
+  const declaration = new RegExp(`export\\s+(?:async\\s+)?function\\s+${name}\\b`).exec(source);
+  if (!declaration) return null;
+  const declarationStart = declaration.index;
   const bodyStart = source.indexOf('{', declarationStart);
   if (bodyStart === -1) return null;
 
@@ -97,18 +103,19 @@ function exportedFunctionBody(source, name) {
   return null;
 }
 
-export function engineDevGateProblems(
-  source = readFileSync(join(ROOT, ENGINE_SOURCE_PATH), 'utf8')
+export function devGateProblems(
+  readSource = (sourcePath) => readFileSync(join(ROOT, sourcePath), 'utf8')
 ) {
-  return DEV_GATED_ENGINE_EXPORTS.flatMap((name) => {
-    const body = exportedFunctionBody(source, name);
-    if (body === null) return [`${name} export is missing from ${ENGINE_SOURCE_PATH}`];
+  return DEV_GATED_EXPORTS.flatMap(({ name, sourcePath }) => {
+    const source = readSource(sourcePath);
+    const body = exportedFunctionBody(withoutComments(source), name);
+    if (body === null) return [`${name} export is missing from ${sourcePath}`];
     if (
       !/^if\s*\(\s*!dev\s*&&\s*!__DEV_HARNESS__(?:\s*&&\s*!PERF_MARKS)?\s*\)\s*(?:return\b|throw\b|\{\s*(?:return\b|throw\b))/.test(
         body.trimStart()
       )
     ) {
-      return [`${name} must begin with the __DEV_HARNESS__ compile-time guard`];
+      return [`${name} in ${sourcePath} must begin with the __DEV_HARNESS__ compile-time guard`];
     }
     return [];
   });
@@ -178,7 +185,7 @@ export async function checkReleaseSeams({
   env = process.env,
   log = console.log,
 } = {}) {
-  const sourceProblems = [...engineDevGateProblems(), ...drawingWorkHotPathProblems()];
+  const sourceProblems = [...devGateProblems(), ...drawingWorkHotPathProblems()];
   if (sourceProblems.length) throw new Error(sourceProblems.join('\n'));
   if (isInstrumentedBuild(env)) {
     log('[release-seams] instrumented build: profiling seams retained');

@@ -10,6 +10,7 @@ const ctrl = vi.hoisted(() => ({
   rasterizedOps: 5,
 }));
 const generateAiImage = vi.hoisted(() => vi.fn());
+const prepareRefusedAiKeyForget = vi.hoisted(() => vi.fn());
 const replayHarnessStroke = vi.hoisted(() => vi.fn());
 const captureReports = vi.hoisted(() => new Map<string, string>());
 
@@ -28,6 +29,7 @@ vi.mock('$lib/drawing/engine', () => ({
 }));
 
 vi.mock('$lib/drawing/aiImage', () => ({ generateAiImage }));
+vi.mock('$lib/state/aiKey', () => ({ prepareRefusedAiKeyForget }));
 
 vi.mock('$lib/drawing/perf', () => ({
   get PERF_MARKS() {
@@ -55,6 +57,7 @@ beforeEach(() => {
   delete window.__committedBrushMode;
   delete window.__drawingDebug;
   delete window.__aiGenerate;
+  delete window.__prepareRefusedAiKeyForget;
   delete window.__replayStroke;
   delete window.__bundledCaptureReport;
   delete window.__probe;
@@ -92,6 +95,7 @@ it('publishes the undo-history debug reader while the gate is open', () => {
 it('publishes the production AI generation function while the gate is open', () => {
   installDevHarnessSeam();
   expect(window.__aiGenerate).toBe(generateAiImage);
+  expect(window.__prepareRefusedAiKeyForget).toBe(prepareRefusedAiKeyForget);
 });
 
 it('publishes the store drawing replay while the dev-harness gate is open', () => {
@@ -162,6 +166,7 @@ it('installs nothing when the gate is closed, so the deploy has no seam', () => 
   expect(window.__committedBrushMode).toBeUndefined();
   expect(window.__drawingDebug).toBeUndefined();
   expect(window.__aiGenerate).toBeUndefined();
+  expect(window.__prepareRefusedAiKeyForget).toBeUndefined();
   expect(window.__replayStroke).toBeUndefined();
   expect(window.__bundledCaptureReport).toBeUndefined();
 });
@@ -173,6 +178,7 @@ it('publishes the read-only profiling seams in an instrumented physical build', 
   expect(window.__committedBrushMode?.()).toBe('pen');
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
   expect(window.__aiGenerate).toBe(generateAiImage);
+  expect(window.__prepareRefusedAiKeyForget).toBeUndefined();
   expect(window.__replayStroke).toBeUndefined();
   expect(window.__bundledCaptureReport).toBeUndefined();
 });
@@ -182,6 +188,7 @@ it('removes every seam on teardown', () => {
   expect(window.__committedBrushMode).toBeUndefined();
   expect(window.__drawingDebug).toBeUndefined();
   expect(window.__aiGenerate).toBeUndefined();
+  expect(window.__prepareRefusedAiKeyForget).toBeUndefined();
   expect(window.__replayStroke).toBeUndefined();
   expect(window.__bundledCaptureReport).toBeUndefined();
 });

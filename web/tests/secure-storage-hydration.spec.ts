@@ -51,3 +51,19 @@ test('a key submitted after a failed credential hydration reports the save failu
   await expect(page.locator('#aiKeyInput')).toBeVisible();
   await expect(page.locator('#aiKeyActive')).toHaveCount(0);
 });
+
+test('a key stays present when a failed hydration makes forget refuse the write', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await page.evaluate(async () => {
+    if (!window.__prepareRefusedAiKeyForget) throw new Error('Credential test seam missing');
+    await window.__prepareRefusedAiKeyForget('sk-existing-key');
+  });
+  await openAiSettings(page, '#aiKeyActive');
+
+  await page.getByRole('button', { name: 'Forget', exact: true }).click();
+
+  await expect(page.getByRole('alert')).toContainText('could not be removed securely');
+  await expect(page.locator('#aiKeyActive')).toHaveValue('***********-key');
+});
