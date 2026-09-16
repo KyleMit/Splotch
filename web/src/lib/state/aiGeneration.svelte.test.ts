@@ -20,6 +20,16 @@ describe('createAiGeneration', () => {
     expect(machineB.isAiGenerationActive(runB)).toBe(true);
   });
 
+  it('refuses writes through the phase getter', () => {
+    const machine = createAiGeneration();
+    machine.startAiGeneration(null);
+
+    expect(() => {
+      Object.assign(machine.phase, { kind: 'closed' });
+    }).toThrow(TypeError);
+    expect(machine.phase).toEqual({ kind: 'generating' });
+  });
+
   it('aborts the prior controller and clears its stale UI without letting its end clear the replacement', () => {
     const machine = createAiGeneration();
     const firstController = new AbortController();

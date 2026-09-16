@@ -18,7 +18,7 @@ import {
   gateLockoutDurationMs,
   gateLockoutMessage,
 } from './parentalGateLockout';
-import { readonlyView } from './readonlyView';
+import { readonlyView, type DeepReadonly } from './readonlyView';
 
 // The Grown-Ups Only gate (App Store Guideline 5.1.4): an adult solves a
 // multiplication problem on a keypad before a gated operation runs. Gates sit
@@ -135,6 +135,8 @@ export const GATE_KEYPAD_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 'delete', GATE_CH
 type GateKeypadKey = (typeof GATE_KEYPAD_KEYS)[number];
 
 interface ParentalGateFields {
+  policies: Record<ParentalGateFeature, ParentalGateMode>;
+  sessionSolved: Record<ParentalGateFeature, boolean>;
   open: boolean;
   origin: Origin | null;
   /** Current operands; regenerated on every open and every wrong answer. */
@@ -164,15 +166,6 @@ interface ParentalGateFields {
 }
 
 interface ParentalGateMutators {
-  /** Parent Center's persisted frequency for every protected operation. */
-  readonly policies: Readonly<Record<ParentalGateFeature, ParentalGateMode>>;
-  /**
-   * In-memory only, so an app relaunch always re-asks for per-session features.
-   * Its own read-only view rather than a field of the state object: `Readonly<T>`
-   * is shallow, and a nested map handed out through a getter would still accept a
-   * write that bypasses the check without a mutator.
-   */
-  readonly sessionSolved: Readonly<Record<ParentalGateFeature, boolean>>;
   requiresParentalGate(feature: ParentalGateFeature): boolean;
   requireParentalGate(
     feature: ParentalGateFeature,
@@ -192,12 +185,12 @@ interface ParentalGateMutators {
   reloadParentalGate(): void;
 }
 
-export type ParentalGateState = Readonly<ParentalGateFields> & ParentalGateMutators;
+export type ParentalGateState = DeepReadonly<ParentalGateFields> & ParentalGateMutators;
 
 export function createParentalGate(): ParentalGateState {
-  const policies = $state(readPolicies());
-  const sessionSolved = $state(unsolvedSession());
   const s: ParentalGateFields = $state({
+    policies: readPolicies(),
+    sessionSolved: unsolvedSession(),
     open: false,
     origin: null,
     x: GATE_OPERAND_MIN,
@@ -215,6 +208,7 @@ export function createParentalGate(): ParentalGateState {
     lockoutMessage: null,
     announcement: '',
   });
+  const { policies, sessionSolved } = s;
 
   // Per-attempt continuation and timer handles — deliberately untracked: nothing
   // renders them, and dismissGate() (reachable from every path) resets them.
@@ -404,8 +398,6 @@ export function createParentalGate(): ParentalGateState {
   }
 
   const mutators: ParentalGateMutators = {
-    policies: readonlyView(policies),
-    sessionSolved: readonlyView(sessionSolved),
     requiresParentalGate,
     /**
      * Run `destination` behind one feature's configured gate. `origin` is the
@@ -508,7 +500,7 @@ export function createParentalGate(): ParentalGateState {
     },
   };
 
-  return Object.assign(readonlyView(s), mutators);
+  return readonlyView(s, mutators);
 }
 
 export const parentalGateState = createParentalGate();

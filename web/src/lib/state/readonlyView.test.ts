@@ -28,4 +28,20 @@ describe('readonlyView', () => {
     }).toThrow(TypeError);
     expect(source.count).toBe(1);
   });
+
+  it('keeps nested objects live while refusing writes through the view', () => {
+    const source = { nested: { count: 1 }, items: [{ id: 'one' }] };
+    const view = readonlyView(source);
+
+    expect(() => {
+      Object.assign(view.nested, { count: 5 });
+    }).toThrow(TypeError);
+    expect(() => {
+      Object.assign(view.items[0], { id: 'two' });
+    }).toThrow(TypeError);
+
+    source.nested.count = 2;
+    expect(view.nested.count).toBe(2);
+    expect(view.nested).toBe(view.nested);
+  });
 });

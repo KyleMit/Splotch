@@ -1,5 +1,6 @@
 import type { BootHiddenOverlayKey } from '$lib/boot/bootHiddenOverlays';
 import { demandOverlay } from './overlayDemand';
+import { readonlyValue } from './readonlyView';
 
 // Screen-space point a modal animates out from (the tapped button's center).
 export interface Origin {
@@ -9,7 +10,7 @@ export interface Origin {
 
 export interface Modal {
   readonly open: boolean;
-  readonly origin: Origin | null;
+  readonly origin: Readonly<Origin> | null;
   show(origin: Origin | null): void;
   hide(): void;
 }
@@ -28,7 +29,7 @@ export function createModal(overlayKey?: BootHiddenOverlayKey): Modal {
       return s.open;
     },
     get origin() {
-      return s.origin;
+      return readonlyValue(s.origin);
     },
     show(origin) {
       s.origin = origin;

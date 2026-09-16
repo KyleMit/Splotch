@@ -34,6 +34,15 @@ beforeEach(() => {
 });
 
 describe('defaults', () => {
+  it('enumerates fields without mutator methods', () => {
+    const settings = createSettings(createTool());
+
+    expect(Object.keys(settings)).toEqual(
+      expect.arrayContaining(['theme', 'toolbarStyle', 'soundEnabled'])
+    );
+    expect(Object.values(settings).map((value) => typeof value)).not.toContain('function');
+  });
+
   it('enables both sound sources for existing installs without source preferences', () => {
     const freshSettings = createSettings(createTool());
 

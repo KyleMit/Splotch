@@ -20,6 +20,22 @@ describe('coloring book state', () => {
     expect(book.overlayUrl()).toBeNull();
   });
 
+  it('refuses writes through the overlay-page getter', () => {
+    const mutablePage = {
+      ...page,
+      images: { ...page.images },
+      colorImages: { ...page.colorImages },
+      nightImages: { ...page.nightImages },
+      darkImages: { ...page.darkImages },
+    };
+    book.setOverlayPage(mutablePage, 'portrait');
+
+    expect(() => {
+      Object.assign(book.overlayPage!.images, { portrait: '/tampered.svg' });
+    }).toThrow(TypeError);
+    expect(book.overlayPage?.images.portrait).toBe(page.images.portrait);
+  });
+
   it('setOverlayPage tracks the line art and the colored fill together', () => {
     book.setOverlayPage(page, 'landscape');
     expect(book.overlayUrl()).toBe(page.images.landscape);

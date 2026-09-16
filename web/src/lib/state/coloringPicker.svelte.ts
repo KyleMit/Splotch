@@ -1,11 +1,12 @@
 import { availableColoringBooks } from './coloringPacks.svelte';
 import { type Book, type BookPlatform } from './books';
+import { readonlyValue } from './readonlyView';
 
 export interface ColoringPickerBooks {
   // Every installed book, live: what the next open will show.
-  readonly installed: Book[];
+  readonly installed: readonly Book[];
   // The books this open shows.
-  readonly shown: Book[];
+  readonly shown: readonly Book[];
   // Whether this open has a book list to go back to, rather than one book.
   readonly listsBooks: boolean;
   holdForOpen(): void;
@@ -26,10 +27,10 @@ export function createColoringPickerBooks(platform: BookPlatform): ColoringPicke
 
   return {
     get installed() {
-      return installed;
+      return readonlyValue(installed);
     },
     get shown() {
-      return shown;
+      return readonlyValue(shown);
     },
     get listsBooks() {
       return listsBooks;

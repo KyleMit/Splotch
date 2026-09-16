@@ -48,6 +48,12 @@ for rune-based state.
   TypeScript's shallow `Readonly<T>`. `tools/tests/state-export-names.test.mjs` drift-guards the
   singleton naming: one `<basename>State`, plus any `*Modal` controllers. Tests create fresh
   instances through the factory.
+* Mutable arrays and plain records exposed by a state getter use the cached recursive proxy from
+  `state/readonlyView.ts`; branded platform values such as `Blob` pass through unchanged so their
+  methods retain the required receiver. Table-generated state objects use that helper's own
+  enumerable field getters and prototype-hosted, non-enumerable mutators, so `Object.keys` and
+  object spread contain state fields only. State code keeps writing the private rune value; the
+  public proxy rejects nested assignment, definition, deletion, and prototype changes.
 * A module that subscribes to browser or platform state exposes symmetric `install()` and
   `dispose()` methods on that same instance. The production singleton still installs once at module
   load behind its client guard; tests install and dispose their own instance.

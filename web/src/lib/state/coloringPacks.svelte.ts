@@ -1,4 +1,5 @@
 import { STARTER_COLORING_BOOK_ID, booksForPlatform, type Book, type BookPlatform } from './books';
+import { readonlyValue } from './readonlyView';
 
 export interface ColoringPacksState {
   readonly installedBookIds: readonly string[];
@@ -42,7 +43,7 @@ export function createColoringPacks(): ColoringPacksState {
 
   return {
     get installedBookIds() {
-      return s.installedBookIds;
+      return readonlyValue(s.installedBookIds);
     },
     get downloadingBookId() {
       return s.downloadingBookId;
