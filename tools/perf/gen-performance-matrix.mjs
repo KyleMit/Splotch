@@ -2507,7 +2507,13 @@ tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}
   .mx-cell{font-size:.62rem;height:26px}
   .mx-label{font-size:.66rem}
   .heat-row{grid-template-columns:118px max-content}
+  /* A mode name and its passing count do not fit one line of this column, and
+     overflowing it draws them over the first cell. Stacking keeps every cell in
+     view and every word of the label: widening the column hides cells, and
+     truncating drops the theme that tells two rows apart. */
   .heat-label{font-size:.66rem}
+  .heat-row:not(.target) .heat-label{flex-direction:column;align-items:flex-start;justify-content:center;
+    gap:0;line-height:1.2;white-space:normal}
   .action-key ol{columns:1}
 }
 @media (max-width:370px){
