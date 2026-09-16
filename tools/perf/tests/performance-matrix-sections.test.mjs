@@ -142,6 +142,15 @@ describe('the published matrix page', () => {
       'the other 3 are gates-in-waiting until theirs are calibrated. Mac rows are a regression tripwire, and simulator and emulator rows are advisory (ADR-0156).'
     );
   });
+
+  it('stacks the heatmap passing count under its mode at phone width', () => {
+    const html = renderReport(published());
+    const phoneStart = html.indexOf('@media (max-width:720px){');
+    const phone = html.slice(phoneStart, html.indexOf('@media (max-width:370px){', phoneStart));
+    expect(phone).toMatch(
+      /\.heat-row:not\(\.target\) \.heat-label\{flex-direction:column;[^}]*white-space:normal\}/
+    );
+  });
 });
 
 describe('overview empty cells', () => {
