@@ -106,6 +106,16 @@ Release signing material (`android/keystore.properties`, `android/upload-keystor
 deliberately **not** copied. Store builds are host-exclusive and run from the main checkout, so
 spreading the upload key across every throwaway worktree buys nothing.
 
+Raw performance captures are not copied either, and `npm run gen:performance-matrix` needs them. The
+matrix's `sources.json` names raw captures under gitignored `perf-profiles/<campaign>/` for every
+section it declares by path, so in a fresh worktree the generator stops with `ENOENT` on the first
+such file. It does not fall back to published numbers. Symlink that campaign directory from the main
+checkout (the first entry of `git worktree list`), or copy it back from a `worktrees:salvage`
+folder; the ignore rule keeps either out of commits. Sections declared `preserved` or
+`captured-untracked` in `sources.json` never read raw captures: they are copied from the published
+`data.json` in every checkout and are listed in each mode's `preservedSections` or
+`untrackedSections`. A section not on either list was freshly normalized from its raw capture.
+
 `.claude/settings.local.json` needs no entry: Claude Code saves worktree permission approvals to the
 main checkout's copy and reads them from there in every worktree of the repository.
 
