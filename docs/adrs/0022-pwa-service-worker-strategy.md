@@ -76,7 +76,8 @@ update-lifecycle and manifest-generation features are explicitly disabled. A cus
 | `workbox.globIgnores`       | social card, source line art, responsive tiers, and non-starter coloring books                      | Avoids served-only assets, duplicate resolutions, and post-install book packs                                                                                     |
 | `additionalManifestEntries` | the versioned coloring-pack manifest                                                                | Keeps the downloader's integrity/file inventory available offline. No client module reads `$env/dynamic/public`, so SvelteKit emits no `/_app/env.js` to precache |
 | `manifestTransforms`        | prepends the app shell at a build-unique `/?app-shell-build=` URL                                   | Keeps offline boot on the worker's own build; first so a deploy mid-install fails the install                                                                     |
-| `workbox.runtimeCaching`    | responsive and installed-canonical coloring handlers; `NetworkFirst` navigations with a 5 s timeout | `/` falls back to the precached shell; other routes fall back to the `pages` runtime cache                                                                        |
+| `workbox.runtimeCaching`    | responsive and installed-canonical coloring handlers; `NetworkFirst` navigations with a 5 s timeout | `/` falls back to the precached shell; other routes fall back to the `pages` runtime cache, capped at 20 entries and 30 days                                      |
+| `workbox.importScripts`     | `/sw-page-cache-cleanup.js`, emitted by the build from `lib/pwa/pageCacheCleanup.ts`                | On activation, deletes the `pages` entries for `/`, `/index.html`, and any `?v=` URL, which the app-shell route replaced and never reads (issue #1933)            |
 
 ### Responsive coloring and offline fallback
 

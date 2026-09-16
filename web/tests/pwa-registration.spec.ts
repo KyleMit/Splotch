@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { draw, gotoApp, registerServiceWorkerAndControl } from './helpers';
 import { openColoringDialog, openDrawer, openFarmPageGrid } from './flows-harness';
+import { PAGES_CACHE_NAME } from '../src/lib/pwa/pageCacheCleanup';
+import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
 
 // Issue #462: service-worker installation does meaningful offline work, so registration no longer
 // happens at load — it
@@ -120,6 +122,46 @@ test('a repeat visit is controlled by the service worker with no stroke gate', a
   await gotoApp(page);
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   expect(await hasRegistration(page)).toBe(true);
+});
+
+// Entries an earlier worker wrote before the app shell answered these
+// navigations, and one per update the stale-page recovery reload carried.
+test('activating the service worker clears page-cache entries the app shell replaced', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await gotoApp(page);
+  const cachedPaths = () =>
+    page.evaluate(async (cacheName) => {
+      const keys = await (await caches.open(cacheName)).keys();
+      return keys.map((request) => new URL(request.url)).map((url) => url.pathname + url.search);
+    }, PAGES_CACHE_NAME);
+  await page.evaluate(
+    async ({ cacheName, paths }) => {
+      const cache = await caches.open(cacheName);
+      for (const path of paths) {
+        await cache.put(
+          path,
+          new Response('earlier page', { headers: { 'Content-Type': 'text/html' } })
+        );
+      }
+    },
+    {
+      cacheName: PAGES_CACHE_NAME,
+      paths: [
+        '/',
+        '/index.html',
+        `/?${CACHE_BUST_VERSION_PARAM}=0.0.0-earlier`,
+        `/privacy?${CACHE_BUST_VERSION_PARAM}=0.0.0-earlier`,
+        '/privacy',
+      ],
+    }
+  );
+  expect(await cachedPaths()).toHaveLength(5);
+
+  await registerServiceWorkerAndControl(page);
+
+  await expect.poll(cachedPaths, { timeout: 15_000 }).toEqual(['/privacy']);
 });
 
 test.describe('responsive coloring offline fallback', () => {
