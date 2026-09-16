@@ -216,6 +216,7 @@ test.describe('a generation minimized to the corner', () => {
     await invokeAiGeneration(page);
     await page.getByLabel('Keep drawing while this is made').click();
     await expect(page.locator(polaroid)).toBeVisible();
+    await expect(page.locator('dialog.ai-result-modal')).not.toHaveAttribute('open', /.*/);
 
     // A tie is settled by DOM order, and the banner mounts second — which left
     // the chip this replaced completely covered and the paid run unreachable.
