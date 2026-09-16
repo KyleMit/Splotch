@@ -92,6 +92,28 @@ describe('Codex policy installation', () => {
     expect(once).toContain('pattern = ["npm"]');
     expect(() => validateIssueStackRules(once)).not.toThrow();
   });
+
+  it('replaces a previously installed block that forbade merges', () => {
+    const legacy = [
+      'prefix_rule(pattern = ["npm"], decision = "allow")',
+      '',
+      '# BEGIN SPLOTCH ISSUE STACK',
+      'prefix_rule(pattern = ["gh"], decision = "prompt")',
+      'prefix_rule(pattern = ["gh", "pr", "merge"], decision = "forbidden", justification = "The issue-stack workflow must never merge pull requests.")',
+      'prefix_rule(pattern = ["gh", "stack", "merge"], decision = "forbidden", justification = "The issue-stack workflow must never merge a PR stack.")',
+      '# END SPLOTCH ISSUE STACK',
+      'prefix_rule(pattern = ["ls"], decision = "allow")',
+      '',
+    ].join('\n');
+
+    expect(() => validateIssueStackRules(legacy)).toThrow('missing or stale');
+    const upgraded = replaceIssueStackRules(legacy);
+    expect(upgraded).not.toMatch(/"merge"/);
+    expect(upgraded.match(/# BEGIN SPLOTCH ISSUE STACK/g)).toHaveLength(1);
+    expect(upgraded).toContain('pattern = ["npm"]');
+    expect(upgraded).toContain('pattern = ["ls"]');
+    expect(() => validateIssueStackRules(upgraded)).not.toThrow();
+  });
 });
 
 describe('skill contracts', () => {
