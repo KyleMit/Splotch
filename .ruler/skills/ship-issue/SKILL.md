@@ -152,11 +152,26 @@ with the PR open and the failed condition named.
 * **Nothing on the blocker list happened** — no test weakened, no protection bypassed, no decision
   that crossed a security boundary.
 
-Merge with a **merge commit**, matching this repo's trunk (`create-stacked-prs` documents why):
+Merge with a **merge commit**, matching this repo's trunk (`create-stacked-prs` documents why).
+Always pass the repository explicitly, even when the current checkout already identifies it:
 
 ```bash
-gh pr merge <n> --merge --delete-branch
+gh pr merge <n> --repo <owner/repo> --merge --delete-branch
 ```
+
+The explicit `--repo` makes `gh` skip local branch deletion and its implicit checkout of the base
+branch while still deleting the remote branch. That distinction is load-bearing in an agent
+worktree: the primary checkout normally owns `main`, so an older `gh` can merge successfully on
+GitHub and then exit nonzero when its local cleanup tries to check out `main` here. Local cleanup is
+ours instead: after fetching and verifying the merge, detach this worktree at `origin/main`, then
+delete the former head with `git branch -d <head>`. Never check out the local `main` branch in an
+agent worktree.
+
+Treat a nonzero merge command as **unknown outcome**, not as proof that the merge failed. Before any
+retry, read the PR's live state and merge commit with the same explicit repository. If it is merged,
+the irreversible operation succeeded; finish or report branch cleanup separately. If it is still
+open, report the exact command failure and follow the ordinary ruleset/transient-failure path. Never
+issue a second merge attempt until that reconciliation is complete.
 
 Never pass a flag that bypasses branch protection, and never merge past a ruleset failure — GitHub
 evaluating the rules and refusing is a correct outcome to report, not an obstacle to route around.
