@@ -158,12 +158,25 @@ export async function claimJob(jobId: string): Promise<string | null> {
   if (!existing || existing.data.outcome || existing.data.claimId) return null;
 
   const claimId = randomUUID();
-  const write = await jobStore.setJSON(
-    statusKey(jobId),
-    { ...existing.data, claimId },
-    { onlyIfMatch: existing.etag }
-  );
-  return write.modified ? claimId : null;
+  try {
+    const write = await jobStore.setJSON(
+      statusKey(jobId),
+      { ...existing.data, claimId },
+      { onlyIfMatch: existing.etag }
+    );
+    return write.modified ? claimId : null;
+  } catch (cause) {
+    // A conditional write may commit even when its reply is lost. Recovering
+    // that ownership keeps the claimant from abandoning work only it can do.
+    let recorded: StoredJob | null;
+    try {
+      recorded = (await jobStore.get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
+    } catch {
+      throw cause;
+    }
+    if (recorded?.claimId === claimId) return claimId;
+    throw cause;
+  }
 }
 
 /** The drawing the worker will render, written before the worker is invoked. */

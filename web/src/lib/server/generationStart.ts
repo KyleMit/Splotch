@@ -172,6 +172,8 @@ export async function startBackgroundGeneration(
         '[generate-image] could not determine who owns the job:',
         claimCause instanceof Error ? claimCause.message : claimCause
       );
+      // Ownership is still ambiguous, so falling back could authorize a second
+      // paid model call. The existing job lifetime bounds how long polling lasts.
       return startedGeneration(jobId);
     }
 
