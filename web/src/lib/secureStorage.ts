@@ -158,6 +158,8 @@ async function loadOrCreateMasterKey(db: IdbDatabase<SecureDb>): Promise<CryptoK
     'decrypt',
   ]);
   const tx = db.transaction(STORE, 'readwrite');
+  // The read and `tx.done` are observed together so an abort cannot leave the
+  // transaction rejection unhandled. The put stays inside the live read continuation.
   const [winningKey] = await Promise.all([
     tx.store.get(MASTER_KEY_ROW).then(async (winner) => {
       const key = winner && !isSecretPayload(winner) ? winner : null;
