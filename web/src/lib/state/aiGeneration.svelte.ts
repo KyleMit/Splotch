@@ -1,6 +1,7 @@
 import type { StyleName } from '$lib/ai/styles';
 import type { SaveResult } from '$lib/saveNaming';
 import { demandOverlay } from './overlayDemand';
+import { readonlyValue, type DeepReadonly } from './readonlyView';
 
 export const AI_FAILURE_RETRY_LIMIT = 2;
 
@@ -47,7 +48,7 @@ type AiPhase =
 export type AiErrorPhase = Extract<AiPhase, { kind: 'error' }>;
 
 export interface AiResultState {
-  readonly phase: AiPhase;
+  readonly phase: DeepReadonly<AiPhase>;
   // Tucked into the corner so the child can keep drawing while the picture is
   // made (ADR-0116). The run is untouched — the phase stays 'generating', which
   // is what keeps finishAiGeneration willing to deliver into it.
@@ -142,7 +143,7 @@ export function createAiGeneration(): AiGenerationState {
 
   return {
     get phase() {
-      return s.phase;
+      return readonlyValue(s.phase);
     },
     get minimized() {
       return s.minimized;

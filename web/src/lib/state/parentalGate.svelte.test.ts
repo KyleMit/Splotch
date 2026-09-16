@@ -88,6 +88,22 @@ describe('parental gate', () => {
     expect(gate.requiresParentalGate('aiImage')).toBe(true);
   });
 
+  it('refuses writes through the origin getter', () => {
+    gate.requireParentalGate('aiImage', vi.fn(), { x: 10, y: 20 });
+
+    expect(() => {
+      Object.assign(gate.origin!, { x: 30 });
+    }).toThrow(TypeError);
+    expect(gate.origin).toEqual({ x: 10, y: 20 });
+  });
+
+  it('enumerates fields without mutator methods', () => {
+    expect(Object.keys(gate)).toEqual(
+      expect.arrayContaining(['policies', 'sessionSolved', 'open', 'origin'])
+    );
+    expect(Object.values(gate).map((value) => typeof value)).not.toContain('function');
+  });
+
   it('opens with a fresh single-digit challenge instead of running the destination', () => {
     const destination = vi.fn();
     gate.requireParentalGate('aiImage', destination, { x: 10, y: 20 });

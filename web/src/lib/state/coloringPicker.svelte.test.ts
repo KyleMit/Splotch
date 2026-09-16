@@ -18,7 +18,7 @@ async function harness() {
   return pickerBooks;
 }
 
-const ids = (books: { id: string }[]) => books.map((book) => book.id);
+const ids = (books: readonly { id: string }[]) => books.map((book) => book.id);
 
 beforeEach(resetDownloadedColoringBooks);
 
@@ -28,6 +28,20 @@ afterEach(() => {
 });
 
 describe('an open while only the starter book is known', () => {
+  it('refuses writes through both book-list getters', async () => {
+    const pickerBooks = await harness();
+    pickerBooks.holdForOpen();
+
+    expect(() => {
+      Object.assign(pickerBooks.installed, { 0: undefined });
+    }).toThrow(TypeError);
+    expect(() => {
+      Object.assign(pickerBooks.shown, { 0: undefined });
+    }).toThrow(TypeError);
+    expect(ids(pickerBooks.installed)).toEqual(['farm']);
+    expect(ids(pickerBooks.shown)).toEqual(['farm']);
+  });
+
   it('drills into it and keeps books the scan publishes mid-open for the next open', async () => {
     const pickerBooks = await harness();
 

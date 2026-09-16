@@ -8,9 +8,10 @@ import {
   type ColoringPage,
 } from './books';
 import type { ResolvedTheme } from '../theme';
+import { readonlyValue, type DeepReadonly } from './readonlyView';
 
 export interface ColoringBookState {
-  readonly overlayPage: ColoringPage | null;
+  readonly overlayPage: DeepReadonly<ColoringPage> | null;
   readonly orientation: BookOrientation;
   setOverlayPage(page: ColoringPage, orientation: BookOrientation): void;
   setOverlayOrientation(orientation: BookOrientation): void;
@@ -29,7 +30,7 @@ export function createColoringBook(): ColoringBookState {
 
   return {
     get overlayPage() {
-      return s.overlayPage;
+      return readonlyValue(s.overlayPage);
     },
     get orientation() {
       return s.orientation;

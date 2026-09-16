@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
 import type { Orientation } from '$lib/platform';
 import { measureSafeAreaInsets, ZERO_INSETS, type SafeAreaInsets } from '$lib/platform/safeArea';
+import { readonlyValue } from './readonlyView';
 
 // Viewport facts JS-side layout consumers derive from — the Button Size
 // slider's ceiling, the Install Banner, the Notch Band, the engine's edge-swipe
@@ -127,7 +128,7 @@ export function createLayout(): LayoutState {
       return s.orientation;
     },
     get safeArea() {
-      return s.safeArea;
+      return readonlyValue(s.safeArea);
     },
     get orientationAngle() {
       return s.orientationAngle;

@@ -76,6 +76,15 @@ describe('viewport tracking', () => {
     expect(state.safeArea).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
   });
 
+  it('refuses writes through the safe-area getter', () => {
+    const state = createLayout();
+
+    expect(() => {
+      Object.assign(state.safeArea, { top: 44 });
+    }).toThrow(TypeError);
+    expect(state.safeArea.top).toBe(0);
+  });
+
   it('seeds orientation and safe-area insets on install', () => {
     mocks.portrait = true;
     window.innerWidth = 768;

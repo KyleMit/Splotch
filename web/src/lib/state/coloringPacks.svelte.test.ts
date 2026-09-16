@@ -9,6 +9,13 @@ beforeEach(() => {
 });
 
 describe('available coloring books', () => {
+  it('refuses writes through the installed-book getter', () => {
+    expect(() => {
+      Object.assign(packs.installedBookIds, { 0: 'dinosaur' });
+    }).toThrow(TypeError);
+    expect(packs.installedBookIds).toEqual(['farm']);
+  });
+
   it('starts with only the complete starter book', () => {
     expect(packs.availableColoringBooks('web').map((book) => book.id)).toEqual(['farm']);
   });

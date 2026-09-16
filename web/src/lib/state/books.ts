@@ -32,26 +32,26 @@ interface ColoringBookGridLayout {
 }
 
 export interface ColoringPage {
-  id: string;
-  name: string;
-  images: Record<BookOrientation, string>;
+  readonly id: string;
+  readonly name: string;
+  readonly images: Readonly<Record<BookOrientation, string>>;
   /** Flat-colored fill per orientation, revealed by the magic brush (ADR-0043). */
-  colorImages: Record<BookOrientation, string>;
+  readonly colorImages: Readonly<Record<BookOrientation, string>>;
   /** Pre-colored "night" fill per orientation — the dark-mode magic-brush reveal
       (ADR-0052 direction B). Only present for orientations whose night asset has
       been generated; dark mode falls back to the light fill where it's absent. */
-  nightImages: Partial<Record<BookOrientation, string>>;
+  readonly nightImages: Readonly<Partial<Record<BookOrientation, string>>>;
   /** Transparent white-ink SVG used in dark mode (ADR-0129). */
-  darkImages: Record<BookOrientation, string>;
+  readonly darkImages: Readonly<Record<BookOrientation, string>>;
 }
 
 export interface Book {
-  id: string;
-  name: string;
-  platforms: BookPlatform[];
-  cover: string;
-  darkCover: string;
-  pages: ColoringPage[];
+  readonly id: string;
+  readonly name: string;
+  readonly platforms: readonly BookPlatform[];
+  readonly cover: string;
+  readonly darkCover: string;
+  readonly pages: readonly ColoringPage[];
 }
 
 const COLORING_ROOT = '/coloring';

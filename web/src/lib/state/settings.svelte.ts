@@ -94,12 +94,7 @@ export type ToolDrawerControl = (typeof TOOL_DRAWER_CONTROLS)[number];
 // the buttons other sections own (Coloring's books, Saving's camera). The AI
 // button is absent because its visibility also hangs on client-only state —
 // see isAiImageButtonVisible in actionButtonLayout.ts.
-const ACTION_PANEL_CONTROLS = [
-  ...TOOL_DRAWER_CONTROLS,
-  'coloringBookEnabled',
-  'screenshotEnabled',
-] as const satisfies readonly BoolSettingKey[];
-export type ActionPanelControl = (typeof ACTION_PANEL_CONTROLS)[number];
+export type ActionPanelControl = ToolDrawerControl | 'coloringBookEnabled' | 'screenshotEnabled';
 
 function isToolDrawerControl(control: ActionPanelControl): control is ToolDrawerControl {
   return (TOOL_DRAWER_CONTROLS as readonly ActionPanelControl[]).includes(control);
@@ -383,7 +378,7 @@ export function createSettings(tool: ToolState): SettingsState {
 
   normalizeDisabledBrushes();
 
-  return Object.assign(readonlyView(s), mutators);
+  return readonlyView(s, mutators);
 }
 
 export const settingsState = createSettings(toolState);
