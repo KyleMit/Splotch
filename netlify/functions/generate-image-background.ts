@@ -1,5 +1,6 @@
 import { aiProvider } from '../../web/src/lib/server/ai/provider';
 import {
+  claimJob,
   completeJob,
   takeJobInput,
   verifyWorkTicket,
@@ -48,12 +49,21 @@ export default async (request: Request): Promise<Response> => {
     return new Response('Forbidden', { status: 403 });
   }
 
+  let claimId: string | null = null;
   try {
+    claimId = await claimJob(work.jobId);
+    if (!claimId) return new Response(null, { status: 200 });
+
     // Read and delete in one step: from here the drawing lives in this worker's
     // memory, and a copy left at rest for the whole generation serves nothing.
     const input = await takeJobInput(work.jobId);
     if (!input) {
-      await completeJob(work.jobId, { status: 'error', reason: 'the drawing was not there' }, null);
+      await completeJob(
+        work.jobId,
+        claimId,
+        { status: 'error', reason: 'the drawing was not there' },
+        null
+      );
       return new Response(null, { status: 200 });
     }
 
@@ -68,11 +78,12 @@ export default async (request: Request): Promise<Response> => {
       const bytes = Buffer.from(result.data, 'base64');
       await completeJob(
         work.jobId,
+        claimId,
         { status: 'image', mimeType: result.mimeType },
         bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
       );
     } else {
-      await completeJob(work.jobId, { status: result.kind, reason: result.reason }, null);
+      await completeJob(work.jobId, claimId, { status: result.kind, reason: result.reason }, null);
     }
   } catch (cause) {
     // Netlify retries a background function that fails — twice, a minute apart.
@@ -81,9 +92,10 @@ export default async (request: Request): Promise<Response> => {
     // is recorded as this job's answer and reported as success to the platform.
     const reason = cause instanceof Error ? cause.message : String(cause);
     console.error(`[generate-image-background] ${work.jobId} failed: ${reason}`);
-    await completeJob(work.jobId, { status: 'error', reason }, null).catch(() => {
-      // Nothing left to do: the poll falls through to `expired` on its own.
-    });
+    if (claimId)
+      await completeJob(work.jobId, claimId, { status: 'error', reason }, null).catch(() => {
+        // Nothing left to do: the poll falls through to `expired` on its own.
+      });
   }
 
   return new Response(null, { status: 200 });

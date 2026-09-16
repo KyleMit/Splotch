@@ -13,6 +13,7 @@ const store = vi.hoisted(() => ({
 vi.mock('@netlify/blobs', () => ({ getStore: () => store }));
 
 import {
+  claimJob,
   completeJob,
   issueWorkTicket,
   markJobPending,
@@ -230,25 +231,53 @@ describe('purgeExpiredGenerationJobs', () => {
     expect(store.setJSON).toHaveBeenCalledWith(`${JOB}/status.json`, {
       context: { free: null, style: null },
       outcome: null,
+      claimId: null,
       expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
     });
   });
 
+  it('lets only one worker claim a pending job', async () => {
+    const pending = {
+      context: { free: null, style: null },
+      outcome: null,
+      claimId: null,
+      expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+    };
+    store.getWithMetadata.mockResolvedValue({ data: pending, etag: 'pending-v1', metadata: {} });
+    store.setJSON
+      .mockResolvedValueOnce({ modified: true })
+      .mockResolvedValueOnce({ modified: false });
+
+    const winner = await claimJob(JOB);
+    const loser = await claimJob(JOB);
+
+    expect(winner).toEqual(expect.any(String));
+    expect(loser).toBeNull();
+    expect(store.setJSON).toHaveBeenNthCalledWith(
+      1,
+      `${JOB}/status.json`,
+      { ...pending, claimId: winner },
+      { onlyIfMatch: 'pending-v1' }
+    );
+  });
+
   it('keeps the lifetime the start gave a job when the worker records its outcome', async () => {
     const context = { free: { installationId: 'c'.repeat(64), reservationId: 'r1' }, style: null };
+    const claimId = 'claim-1';
     store.getWithMetadata.mockResolvedValueOnce({
-      data: { context, outcome: null, expiresAt: 5_000 + GENERATION_JOB_TTL_MS },
+      data: { context, outcome: null, claimId, expiresAt: 5_000 + GENERATION_JOB_TTL_MS },
       etag: 'pending-v1',
       metadata: {},
     });
 
-    await completeJob(JOB, { status: 'refusal', reason: 'IMAGE_SAFETY' }, null);
+    await completeJob(JOB, claimId, { status: 'refusal', reason: 'IMAGE_SAFETY' }, null);
 
     expect(store.setJSON).toHaveBeenCalledWith(
       `${JOB}/status.json`,
       {
         context,
         outcome: { status: 'refusal', reason: 'IMAGE_SAFETY' },
+        claimId,
         expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
       },
       { onlyIfMatch: 'pending-v1' }
@@ -258,7 +287,7 @@ describe('purgeExpiredGenerationJobs', () => {
   it('does not recreate an outcome whose pending start record is gone', async () => {
     store.getWithMetadata.mockResolvedValueOnce(null);
 
-    await completeJob(JOB, { status: 'error', reason: 'late' }, null);
+    await completeJob(JOB, 'claim-1', { status: 'error', reason: 'late' }, null);
 
     expect(store.setJSON).not.toHaveBeenCalled();
   });
@@ -268,13 +297,14 @@ describe('purgeExpiredGenerationJobs', () => {
       data: {
         context: { free: null, style: null },
         outcome: { status: 'image', mimeType: 'image/png' },
+        claimId: 'claim-1',
         expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
       },
       etag: 'complete-v1',
       metadata: {},
     });
 
-    await completeJob(JOB, { status: 'error', reason: 'duplicate' }, null);
+    await completeJob(JOB, 'claim-1', { status: 'error', reason: 'duplicate' }, null);
 
     expect(store.setJSON).not.toHaveBeenCalled();
   });
