@@ -20,6 +20,7 @@ vi.mock('$lib/server/tokens', () => ({
 }));
 vi.mock('$lib/server/usage', () => ({ getUsage: vi.fn() }));
 
+import { sessionToken } from '$lib/server/admin';
 import { POST } from '../api/admin/login/+server';
 import { actions } from './+page.server';
 
@@ -66,6 +67,14 @@ beforeEach(() => {
 });
 
 describe('the admin login doors (real rateLimit)', () => {
+  it('mints a derived bearer session at the JSON door', async () => {
+    const response = await jsonDoor('203.0.113.15', JSON.stringify({ key: SECRET }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, session: sessionToken() });
+    expect(sessionToken()).not.toContain(SECRET);
+  });
+
   it('spends one shared budget per IP, whichever door the attempts came from', async () => {
     const address = '203.0.113.10';
 
