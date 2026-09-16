@@ -309,13 +309,13 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
       activate();
       return;
     }
-    if (press) {
-      finishPress(true);
-      return;
-    }
     if (performance.now() >= consumeClicksUntil) consumableClicks = 0;
     if (consumableClicks > 0) {
       consumableClicks -= 1;
+      return;
+    }
+    if (press) {
+      finishPress(!press.dragged);
       return;
     }
     activate();
