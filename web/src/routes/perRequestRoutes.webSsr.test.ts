@@ -23,6 +23,7 @@ import { installState } from '$lib/state/install.svelte';
 import { layoutState } from '$lib/state/layout.svelte';
 import { networkState } from '$lib/state/network.svelte';
 import { parentalGateState } from '$lib/state/parentalGate.svelte';
+import { saveFailureState } from '$lib/state/saveFailure.svelte';
 import { sectionsSeenState } from '$lib/state/sectionsSeen.svelte';
 import { sessionCountersState } from '$lib/state/sessionCounters.svelte';
 import { setSound, settingsState } from '$lib/state/settings.svelte';
@@ -97,6 +98,7 @@ const OBSERVERS: Record<string, () => unknown> = {
   layoutState: () => readGetters(layoutState),
   networkState: () => readGetters(networkState),
   parentalGateState: () => readGetters(parentalGateState),
+  saveFailureState: () => readGetters(saveFailureState),
   sectionsSeenState: () =>
     SECTIONS.map(({ id }) => [
       sectionsSeenState.isSectionUnseen(id),
