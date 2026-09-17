@@ -281,58 +281,94 @@ function isGlobalPseudo(selectorNode) {
   return selectorNode.type === 'PseudoClassSelector' && selectorNode.name === 'global';
 }
 
-function hasBlockGlobal(selector) {
-  return selector.children.some((node) => isGlobalPseudo(node) && node.args === null);
+function firstCompoundNode(relativeSelector) {
+  return relativeSelector.selectors[0];
 }
 
-function hasFunctionalGlobal(selector) {
-  return selector.children.some((node) => isGlobalPseudo(node) && node.args !== null);
+function endsWithBlockGlobal(selector) {
+  const first = firstCompoundNode(selector.children.at(-1));
+  return isGlobalPseudo(first) && first.args === null;
 }
 
-function hasScopedCompound(selector) {
-  return selector.children.some((node) => node.type !== 'Combinator' && !isGlobalPseudo(node));
+function hasArgumentlessGlobal(selector) {
+  return selector.children.some((compound) => {
+    const first = firstCompoundNode(compound);
+    return isGlobalPseudo(first) && first.args === null;
+  });
+}
+
+function hasGlobalCompound(selector) {
+  return selector.children.some((compound) => isGlobalPseudo(firstCompoundNode(compound)));
+}
+
+function hasNestingCompound(selector) {
+  return selector.children.some(
+    (compound) => firstCompoundNode(compound)?.type === 'NestingSelector'
+  );
+}
+
+function hasScopedCompound(selector, insideGlobalBlock) {
+  if (insideGlobalBlock) return false;
+
+  let globalTail = false;
+  return selector.children.some((compound) => {
+    if (globalTail) return false;
+
+    const first = firstCompoundNode(compound);
+    if (isGlobalPseudo(first)) {
+      globalTail = first.args === null;
+      return false;
+    }
+    return first?.type !== 'NestingSelector';
+  });
+}
+
+function containsRule(children) {
+  return children.some(
+    (child) =>
+      child.type === 'Rule' || (child.block?.children && containsRule(child.block.children))
+  );
 }
 
 export function countUnpinnedGlobalSelectors(source) {
-  const style = parse(source).css;
+  const style = parse(source, { modern: true }).css;
   if (!style) return 0;
 
   let count = 0;
 
-  function walk(children, parentScopeStates, insideGlobalBlock) {
+  function walk(children, parentContexts) {
     for (const child of children) {
       if (child.type !== 'Rule') {
-        if (child.block?.children) walk(child.block.children, parentScopeStates, insideGlobalBlock);
+        if (child.block?.children) walk(child.block.children, parentContexts);
         continue;
       }
 
       const selectors = child.prelude.children;
-      if (selectors.some(hasBlockGlobal)) {
-        const nextScopeStates = parentScopeStates.flatMap((parentScoped) =>
-          selectors.map(
-            (selector) => parentScoped || (!insideGlobalBlock && hasScopedCompound(selector))
-          )
-        );
-        walk(child.block.children, nextScopeStates, true);
-        continue;
-      }
+      const hasNestedRule = containsRule(child.block.children);
 
       for (const selector of selectors) {
-        const isGlobal = insideGlobalBlock || hasFunctionalGlobal(selector);
-        const isDirectlyScoped = !insideGlobalBlock && hasScopedCompound(selector);
-        if (isGlobal && !isDirectlyScoped && parentScopeStates.includes(false)) count++;
+        const isBlockWrapper = hasNestedRule && endsWithBlockGlobal(selector);
+        const isUnpinned = parentContexts.some((parent) => {
+          const isGlobal =
+            parent.insideGlobalBlock || hasGlobalCompound(selector) || hasNestingCompound(selector);
+          const isScoped = parent.scoped || hasScopedCompound(selector, parent.insideGlobalBlock);
+          return isGlobal && !isScoped;
+        });
+        if (!isBlockWrapper && isUnpinned) count++;
       }
 
-      const nextScopeStates = parentScopeStates.flatMap((parentScoped) =>
-        selectors.map(
-          (selector) => parentScoped || (!insideGlobalBlock && hasScopedCompound(selector))
-        )
+      const nextContexts = parentContexts.flatMap((parent) =>
+        selectors.map((selector) => ({
+          scoped: parent.scoped || hasScopedCompound(selector, parent.insideGlobalBlock),
+          insideGlobalBlock:
+            parent.insideGlobalBlock || (hasNestedRule && hasArgumentlessGlobal(selector)),
+        }))
       );
-      walk(child.block.children, nextScopeStates, insideGlobalBlock);
+      walk(child.block.children, nextContexts);
     }
   }
 
-  walk(style.children, [false], false);
+  walk(style.children, [{ scoped: false, insideGlobalBlock: false }]);
   return count;
 }
 

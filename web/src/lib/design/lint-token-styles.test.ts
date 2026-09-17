@@ -51,6 +51,29 @@ describe('countUnpinnedGlobalSelectors', () => {
     ).toBe(1);
   });
 
+  it.each([
+    ':global(.a):hover',
+    ':global(.a)::before',
+    ':global(.a):not(.b)',
+    ':global(.a) :global(.b):focus-visible',
+  ])('counts a pseudo suffix on a global compound: %s', (selector) => {
+    expect(countUnpinnedGlobalSelectors(`<style>${selector} { color: red; }</style>`)).toBe(1);
+  });
+
+  it('counts the inline argumentless global form unless an earlier compound pins it', () => {
+    const source = `<style>
+  :global .loose {
+    color: red;
+    .nested { color: red; }
+  }
+  .shell :global .pinned {
+    color: red;
+    .nested { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(2);
+  });
+
   it('counts global compounds joined only by combinators', () => {
     expect(
       countUnpinnedGlobalSelectors(
@@ -87,6 +110,33 @@ describe('countUnpinnedGlobalSelectors', () => {
   }
 </style>`;
     expect(countUnpinnedGlobalSelectors(source)).toBe(0);
+  });
+
+  it('tracks nesting selectors inherited from an unpinned global parent', () => {
+    const source = `<style>
+  :global(.parent) {
+    & :global(.global-child) { color: red; }
+    &.global-suffix { color: red; }
+    & .scoped-child { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(3);
+  });
+
+  it('counts only the unpinned member beside a scoped global-block selector', () => {
+    const source = `<style>
+  :global(.loose),
+  .shell :global {
+    .child { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(1);
+  });
+
+  it('allows a local compound after a global one to pin the selector', () => {
+    expect(countUnpinnedGlobalSelectors('<style>:global(.parent) * { color: red; }</style>')).toBe(
+      0
+    );
   });
 });
 
