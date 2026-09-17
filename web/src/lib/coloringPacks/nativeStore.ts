@@ -2,15 +2,16 @@ import {
   ColoringPacks,
   nativeColoringPackRootUrl,
   type NativeColoringPack,
+  type NativeColoringPackBook,
 } from '$lib/plugins/coloringPacks';
+import { coloringPackMarkerValue } from './cacheKeys';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
-import type { ResolvedColoringPackManifest } from './manifest';
-import { COLORING_PACK_RESOLUTIONS } from './resolution';
+import type { ResolvedColoringPackBookManifest } from './manifest';
 
-function storageVersion(
-  target: Pick<ResolvedColoringPackManifest, 'appVersion' | 'resolution'>
-): string {
-  return `${target.appVersion}-${target.resolution}`;
+// Native storage is keyed by resolution, not app version, so an app update
+// keeps every book whose files it did not change (ADR-0103).
+function nativeBook(book: ResolvedColoringPackBookManifest): NativeColoringPackBook {
+  return { ...book, marker: coloringPackMarkerValue(book) };
 }
 
 function resolvedPack(pack: NativeColoringPack, bytes: number): InstalledColoringPack {
@@ -20,20 +21,21 @@ function resolvedPack(pack: NativeColoringPack, bytes: number): InstalledColorin
 export function createNativeColoringPackStore(): ColoringPackStore {
   return {
     async installed(manifest) {
+      const books = manifest.books.filter((book) => book.id !== manifest.starterBookId);
       const { installed } = await ColoringPacks.status({
-        version: storageVersion(manifest),
-        bookIds: manifest.books.map((book) => book.id),
+        resolution: manifest.resolution,
+        books: books.map(nativeBook),
       });
-      const bytesByBookId = new Map(manifest.books.map((book) => [book.id, book.bytes]));
+      const bytesByBookId = new Map(books.map((book) => [book.id, book.bytes]));
       return installed.map((pack) => resolvedPack(pack, bytesByBookId.get(pack.id) ?? 0));
     },
 
     async install(manifest, book, allowMetered) {
       const pack = await ColoringPacks.install({
-        version: storageVersion(manifest),
+        resolution: manifest.resolution,
         appVersion: manifest.appVersion,
         baseUrl: __NATIVE_API_BASE__,
-        book,
+        book: nativeBook(book),
         allowMetered,
       });
       return resolvedPack(pack, book.bytes);
@@ -43,10 +45,8 @@ export function createNativeColoringPackStore(): ColoringPackStore {
       await ColoringPacks.cancel();
     },
 
-    async remove(target) {
-      for (const resolution of COLORING_PACK_RESOLUTIONS) {
-        await ColoringPacks.remove({ version: storageVersion({ ...target, resolution }) });
-      }
+    async remove() {
+      await ColoringPacks.remove();
     },
   };
 }

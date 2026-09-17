@@ -11,11 +11,16 @@ fileprivate struct ColoringPackFile: Codable {
 
 fileprivate struct ColoringPackBook: Codable {
     let id: String
+    // The manifest's marker value for this book: every file's path, byte length, and SHA-256.
+    // A book's marker is trusted only while its contents equal this (ADR-0103).
+    let marker: String
     let files: [ColoringPackFile]
 }
 
+// A job written before storage was keyed by resolution has no `resolution` or `marker`, so it
+// fails to decode and is discarded; the next scan adopts the files it had written.
 fileprivate struct ColoringPackJob: Codable {
-    let version: String
+    let resolution: String
     let appVersion: String
     let baseURL: String
     let book: ColoringPackBook
@@ -46,13 +51,13 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
     fileprivate func install(job: ColoringPackJob, completion: @escaping (Result<URL, Error>) -> Void) {
         queue.async {
             do {
-                if Self.markerURL(version: job.version, bookID: job.book.id).isFileURL,
-                   FileManager.default.fileExists(atPath: Self.markerURL(version: job.version, bookID: job.book.id).path) {
-                    completion(.success(Self.bookDirectory(version: job.version, bookID: job.book.id)))
+                let directory = Self.bookDirectory(resolution: job.resolution, bookID: job.book.id)
+                if Self.markerMatches(directory, marker: job.book.marker) {
+                    completion(.success(directory))
                     return
                 }
                 if let active = self.currentJob,
-                   active.version == job.version,
+                   active.resolution == job.resolution,
                    active.book.id == job.book.id {
                     self.completion = completion
                     return
@@ -61,6 +66,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
                     completion(.failure(ColoringPackError.downloadInProgress))
                     return
                 }
+                try Self.withdrawMarker(directory)
                 self.currentJob = job
                 self.completion = completion
                 try self.persist(job)
@@ -85,7 +91,6 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
             }
             let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
             guard job.appVersion == appVersion else {
-                try? FileManager.default.removeItem(at: Self.versionDirectory(job.version))
                 try? FileManager.default.removeItem(at: Self.jobURL)
                 self.cancelAllTasks()
                 return
@@ -100,24 +105,103 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         }
     }
 
-    func remove(version: String, completion: @escaping (Error?) -> Void) {
+    // Removes every stored book whatever layout or resolution wrote it, and the pending job. The
+    // root itself stays: it carries the backup exclusion.
+    func remove(completion: @escaping (Error?) -> Void) {
         queue.async {
             self.cancelAllTasks()
             self.currentJob = nil
             self.completion = nil
             do {
-                let directory = Self.versionDirectory(version)
-                if FileManager.default.fileExists(atPath: directory.path) {
-                    try FileManager.default.removeItem(at: directory)
-                }
-                if FileManager.default.fileExists(atPath: Self.jobURL.path) {
-                    try FileManager.default.removeItem(at: Self.jobURL)
+                for child in Self.children(of: Self.rootDirectory) {
+                    for book in Self.children(of: child) { try Self.withdrawMarker(book) }
+                    try FileManager.default.removeItem(at: child)
                 }
                 completion(nil)
             } catch {
                 completion(error)
             }
         }
+    }
+
+    // Reconciles storage with the manifest on the download queue, so it never interleaves with a
+    // file being published, and reports which books are installed. Each book keeps the files that
+    // still match, adopts matching files from any other directory (an earlier version-scoped
+    // layout or the other resolution), and is marked only after every file is verified. Books the
+    // manifest no longer lists are deleted, and so is every other directory once drained.
+    fileprivate func reconcile(
+        resolution: String,
+        books: [ColoringPackBook],
+        completion: @escaping ([String: URL]) -> Void
+    ) {
+        queue.async {
+            let namespace = Self.rootDirectory.appendingPathComponent(resolution, isDirectory: true)
+            let sources = Self.children(of: Self.rootDirectory).filter {
+                $0.lastPathComponent != resolution && $0.lastPathComponent != Self.jobsDirectoryName
+            }
+            var installed: [String: URL] = [:]
+            for book in books {
+                let directory = namespace.appendingPathComponent(book.id, isDirectory: true)
+                // A failure on one book (a full disk, say) leaves that book unmarked rather than
+                // failing the scan, which would hide every installed book on every launch.
+                if (try? self.reconcile(book: book, directory: directory, sources: sources)) == true {
+                    installed[book.id] = directory
+                }
+            }
+            let listedBookIDs = Set(books.map(\.id))
+            for directory in Self.children(of: namespace) where !listedBookIDs.contains(directory.lastPathComponent) {
+                try? Self.withdrawMarker(directory)
+                try? FileManager.default.removeItem(at: directory)
+            }
+            for source in sources {
+                try? FileManager.default.removeItem(at: source)
+            }
+            completion(installed)
+        }
+    }
+
+    private func reconcile(book: ColoringPackBook, directory: URL, sources: [URL]) throws -> Bool {
+        let marker = Self.markerURL(directory)
+        if FileManager.default.fileExists(atPath: marker.path) {
+            if Self.markerMatches(directory, marker: book.marker) {
+                try Self.removeUnlistedFiles(in: directory, book: book)
+                return true
+            }
+            try Self.withdrawMarker(directory)
+        }
+        var complete = true
+        for file in book.files {
+            let target = try Self.destination(of: file, in: directory, bookID: book.id)
+            if try Self.fileMatches(target, file) { continue }
+            if FileManager.default.fileExists(atPath: target.path) {
+                try FileManager.default.removeItem(at: target)
+            }
+            if !(try adopt(file, bookID: book.id, into: target, from: sources)) { complete = false }
+        }
+        try Self.removeUnlistedFiles(in: directory, book: book)
+        if complete {
+            try Data(book.marker.utf8).write(to: marker, options: .atomic)
+        }
+        return complete
+    }
+
+    private func adopt(_ file: ColoringPackFile, bookID: String, into target: URL, from sources: [URL]) throws -> Bool {
+        for source in sources {
+            let sourceBook = source.appendingPathComponent(bookID, isDirectory: true)
+            let candidate = try Self.destination(of: file, in: sourceBook, bookID: bookID)
+            guard FileManager.default.fileExists(atPath: candidate.path) else { continue }
+            guard try Self.fileMatches(candidate, file) else {
+                try? FileManager.default.removeItem(at: candidate)
+                continue
+            }
+            try FileManager.default.createDirectory(
+                at: target.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try FileManager.default.moveItem(at: candidate, to: target)
+            return true
+        }
+        return false
     }
 
     func cancel(completion: @escaping () -> Void) {
@@ -164,8 +248,26 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         "art.splotch.app.coloring-packs.\(allowMetered ? "metered" : "wifi")"
     }
 
+    // An unchanged file is kept, so an app update or an interrupted install transfers only the
+    // files the manifest changed or that never arrived.
     private func startNextFile() {
-        guard let job = currentJob else { return }
+        guard var job = currentJob else { return }
+        do {
+            let directory = Self.bookDirectory(resolution: job.resolution, bookID: job.book.id)
+            let skipped = job.nextFileIndex
+            while job.nextFileIndex < job.book.files.count {
+                let file = job.book.files[job.nextFileIndex]
+                guard try Self.fileMatches(Self.destination(of: file, in: directory, bookID: job.book.id), file) else { break }
+                job.nextFileIndex += 1
+            }
+            if job.nextFileIndex != skipped {
+                currentJob = job
+                try persist(job)
+            }
+        } catch {
+            fail(error)
+            return
+        }
         if job.nextFileIndex >= job.book.files.count {
             finish(job)
             return
@@ -218,19 +320,18 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
     }
 
     private func publish(location: URL, file: ColoringPackFile, job: ColoringPackJob) throws {
-        let prefix = "/coloring/\(job.book.id)/"
-        guard file.path.hasPrefix(prefix) else { throw ColoringPackError.invalidPath }
-        let relativePath = String(file.path.dropFirst(prefix.count))
-        guard !relativePath.contains("..") else { throw ColoringPackError.invalidPath }
-        let destination = Self.bookDirectory(version: job.version, bookID: job.book.id)
-            .appendingPathComponent(relativePath)
+        let destination = try Self.destination(
+            of: file,
+            in: Self.bookDirectory(resolution: job.resolution, bookID: job.book.id),
+            bookID: job.book.id
+        )
         try FileManager.default.createDirectory(
             at: destination.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
         let attributes = try FileManager.default.attributesOfItem(atPath: location.path)
         guard (attributes[.size] as? NSNumber)?.int64Value == file.bytes,
-              try sha256(location) == file.sha256 else {
+              try Self.sha256(location) == file.sha256 else {
             throw ColoringPackError.verificationFailed
         }
         if FileManager.default.fileExists(atPath: destination.path) {
@@ -241,9 +342,15 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
 
     private func finish(_ job: ColoringPackJob) {
         do {
-            let directory = Self.bookDirectory(version: job.version, bookID: job.book.id)
+            let directory = Self.bookDirectory(resolution: job.resolution, bookID: job.book.id)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            try Data(job.book.id.utf8).write(to: Self.markerURL(version: job.version, bookID: job.book.id), options: .atomic)
+            // A size check only: each file was hashed as it was published, and a scan deletes only
+            // files that fail the manifest.
+            for file in job.book.files {
+                let destination = try Self.destination(of: file, in: directory, bookID: job.book.id)
+                guard Self.fileSize(destination) == file.bytes else { throw ColoringPackError.verificationFailed }
+            }
+            try Data(job.book.marker.utf8).write(to: Self.markerURL(directory), options: .atomic)
             try? FileManager.default.removeItem(at: Self.jobURL)
             currentJob = nil
             let callback = completion
@@ -273,7 +380,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         try JSONDecoder().decode(ColoringPackJob.self, from: Data(contentsOf: Self.jobURL))
     }
 
-    private func sha256(_ url: URL) throws -> String {
+    private static func sha256(_ url: URL) throws -> String {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         var digest = SHA256()
@@ -285,17 +392,72 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         return digest.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
-    static func bookDirectory(version: String, bookID: String) -> URL {
-        versionDirectory(version).appendingPathComponent(bookID, isDirectory: true)
+    private static func fileSize(_ url: URL) -> Int64? {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              (attributes[.type] as? FileAttributeType) == .typeRegular else { return nil }
+        return (attributes[.size] as? NSNumber)?.int64Value
     }
 
-    static func markerURL(version: String, bookID: String) -> URL {
-        bookDirectory(version: version, bookID: bookID).appendingPathComponent(".installed")
+    private static func fileMatches(_ url: URL, _ file: ColoringPackFile) throws -> Bool {
+        guard fileSize(url) == file.bytes else { return false }
+        return try sha256(url) == file.sha256
     }
 
-    static func versionDirectory(_ version: String) -> URL {
-        rootDirectory.appendingPathComponent(version, isDirectory: true)
+    private static func destination(of file: ColoringPackFile, in bookDirectory: URL, bookID: String) throws -> URL {
+        let prefix = "/coloring/\(bookID)/"
+        guard file.path.hasPrefix(prefix) else { throw ColoringPackError.invalidPath }
+        let relativePath = String(file.path.dropFirst(prefix.count))
+        guard !relativePath.contains("..") else { throw ColoringPackError.invalidPath }
+        return bookDirectory.appendingPathComponent(relativePath)
     }
+
+    private static func removeUnlistedFiles(in directory: URL, book: ColoringPackBook) throws {
+        var listed = Set([markerURL(directory).standardizedFileURL.path])
+        for file in book.files {
+            listed.insert(try destination(of: file, in: directory, bookID: book.id).standardizedFileURL.path)
+        }
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey]
+        ) else { return }
+        let unlisted = enumerator.compactMap { $0 as? URL }.filter {
+            (try? $0.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true
+                && !listed.contains($0.standardizedFileURL.path)
+        }
+        for url in unlisted {
+            try FileManager.default.removeItem(at: url)
+        }
+    }
+
+    private static func children(of directory: URL) -> [URL] {
+        (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+    }
+
+    fileprivate static func markerMatches(_ bookDirectory: URL, marker: String) -> Bool {
+        guard let data = try? Data(contentsOf: markerURL(bookDirectory)) else { return false }
+        return String(decoding: data, as: UTF8.self) == marker
+    }
+
+    // Every write or delete of a book's file withdraws the marker first, so an interruption never
+    // leaves a marker vouching for bytes that are no longer there.
+    private static func withdrawMarker(_ bookDirectory: URL) throws {
+        let marker = markerURL(bookDirectory)
+        if FileManager.default.fileExists(atPath: marker.path) {
+            try FileManager.default.removeItem(at: marker)
+        }
+    }
+
+    static func bookDirectory(resolution: String, bookID: String) -> URL {
+        rootDirectory
+            .appendingPathComponent(resolution, isDirectory: true)
+            .appendingPathComponent(bookID, isDirectory: true)
+    }
+
+    private static func markerURL(_ bookDirectory: URL) -> URL {
+        bookDirectory.appendingPathComponent(".installed")
+    }
+
+    static let jobsDirectoryName = "jobs"
 
     static let rootDirectory: URL = {
         let applicationSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -309,7 +471,8 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
     }()
 
     static var jobURL: URL {
-        rootDirectory.appendingPathComponent("jobs/current.json")
+        rootDirectory.appendingPathComponent(jobsDirectoryName, isDirectory: true)
+            .appendingPathComponent("current.json")
     }
 }
 
@@ -333,45 +496,37 @@ public class ColoringPacksPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
 
     @objc func status(_ call: CAPPluginCall) {
-        guard let version = safeComponent(call.getString("version")),
-              let bookIDs = call.getArray("bookIds", String.self) else {
+        guard let resolution = safeResolution(call.getString("resolution")),
+              let bookObjects = call.getArray("books"),
+              let booksData = try? JSONSerialization.data(withJSONObject: bookObjects),
+              let books = try? JSONDecoder().decode([ColoringPackBook].self, from: booksData),
+              books.allSatisfy({ safeBookID($0.id) != nil }) else {
             call.reject("Invalid coloring-pack status request")
             return
         }
-        let coloringRoot = ColoringPackDownloadCoordinator.rootDirectory
-        if let directories = try? FileManager.default.contentsOfDirectory(
-            at: coloringRoot,
-            includingPropertiesForKeys: [.isDirectoryKey]
-        ) {
-            for directory in directories where directory.lastPathComponent != version && directory.lastPathComponent != "jobs" {
-                try? FileManager.default.removeItem(at: directory)
-            }
+        ColoringPackDownloadCoordinator.shared.reconcile(resolution: resolution, books: books) { installed in
+            call.resolve([
+                "installed": books.compactMap { book -> [String: String]? in
+                    guard let directory = installed[book.id] else { return nil }
+                    return ["id": book.id, "rootPath": directory.absoluteString]
+                }
+            ])
         }
-        let installed = bookIDs.compactMap { bookID -> [String: String]? in
-            guard safeComponent(bookID) != nil else { return nil }
-            let marker = ColoringPackDownloadCoordinator.markerURL(version: version, bookID: bookID)
-            guard FileManager.default.fileExists(atPath: marker.path) else { return nil }
-            return [
-                "id": bookID,
-                "rootPath": ColoringPackDownloadCoordinator.bookDirectory(version: version, bookID: bookID).absoluteString
-            ]
-        }
-        call.resolve(["installed": installed])
     }
 
     @objc func install(_ call: CAPPluginCall) {
-        guard let version = safeComponent(call.getString("version")),
+        guard let resolution = safeResolution(call.getString("resolution")),
               let appVersion = safeComponent(call.getString("appVersion")),
               let baseURL = call.getString("baseUrl"),
               let bookObject = call.getObject("book"),
               let bookData = try? JSONSerialization.data(withJSONObject: bookObject),
               let book = try? JSONDecoder().decode(ColoringPackBook.self, from: bookData),
-              safeComponent(book.id) != nil else {
+              safeBookID(book.id) != nil else {
             call.reject("Invalid coloring-pack install request")
             return
         }
         let job = ColoringPackJob(
-            version: version,
+            resolution: resolution,
             appVersion: appVersion,
             baseURL: baseURL,
             book: book,
@@ -389,11 +544,7 @@ public class ColoringPacksPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func remove(_ call: CAPPluginCall) {
-        guard let version = safeComponent(call.getString("version")) else {
-            call.reject("Invalid coloring-pack version")
-            return
-        }
-        ColoringPackDownloadCoordinator.shared.remove(version: version) { error in
+        ColoringPackDownloadCoordinator.shared.remove { error in
             if let error {
                 call.reject("Downloaded pictures could not be removed", nil, error)
             } else {
@@ -406,6 +557,18 @@ public class ColoringPacksPlugin: CAPPlugin, CAPBridgedPlugin {
         ColoringPackDownloadCoordinator.shared.cancel {
             call.resolve()
         }
+    }
+
+    private func safeResolution(_ value: String?) -> String? {
+        guard let value,
+              value != ColoringPackDownloadCoordinator.jobsDirectoryName,
+              value.range(of: "^[a-z]+$", options: .regularExpression) != nil else { return nil }
+        return value
+    }
+
+    private func safeBookID(_ value: String?) -> String? {
+        guard let value, value.range(of: "^[a-z0-9-]+$", options: .regularExpression) != nil else { return nil }
+        return value
     }
 
     private func safeComponent(_ value: String?) -> String? {

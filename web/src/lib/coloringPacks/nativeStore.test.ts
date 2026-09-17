@@ -1,14 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { coloringPackMarkerValue } from './cacheKeys';
 import type { ResolvedColoringPackManifest } from './manifest';
 
-const mocks = vi.hoisted(() => ({ status: vi.fn() }));
+const mocks = vi.hoisted(() => ({ status: vi.fn(), install: vi.fn() }));
 
 vi.mock('$lib/plugins/coloringPacks', () => ({
-  ColoringPacks: { status: mocks.status },
+  ColoringPacks: { status: mocks.status, install: mocks.install },
   nativeColoringPackRootUrl: (path: string) => path,
 }));
 
 import { createNativeColoringPackStore } from './nativeStore';
+
+const dinosaurFile = {
+  path: '/coloring/dinosaur/cover.webp',
+  downloadPath: '/coloring/dinosaur/cover.webp',
+  bytes: 3,
+  sha256: 'a'.repeat(64),
+};
 
 const manifest: ResolvedColoringPackManifest = {
   appVersion: '1.2.3-test',
@@ -16,7 +24,7 @@ const manifest: ResolvedColoringPackManifest = {
   starterBookId: 'farm',
   books: [
     { id: 'farm', bytes: 5, files: [] },
-    { id: 'dinosaur', bytes: 3, files: [] },
+    { id: 'dinosaur', bytes: 3, files: [dinosaurFile] },
     { id: 'space', bytes: 4, files: [] },
   ],
 };
@@ -28,6 +36,7 @@ beforeEach(() => {
       { id: 'space', rootPath: '/packs/space' },
     ],
   });
+  mocks.install.mockReset().mockResolvedValue({ id: 'dinosaur', rootPath: '/packs/dinosaur' });
 });
 
 describe('native coloring-pack inventory', () => {
@@ -44,13 +53,33 @@ describe('native coloring-pack inventory', () => {
     ]);
   });
 
-  // A pack left on disk by an earlier manifest has no size to report, and must
-  // not make the total NaN.
-  it('reports no bytes for an installed pack the manifest no longer lists', async () => {
-    mocks.status.mockResolvedValue({ installed: [{ id: 'retired', rootPath: '/packs/retired' }] });
+  // An app update keeps a book only if its stored marker still equals the new
+  // manifest's, and a version in the storage key would discard every book on
+  // every update regardless.
+  it('scopes the scan by resolution and hands native each book with its marker', async () => {
+    await createNativeColoringPackStore().installed(manifest);
 
-    const packs = await createNativeColoringPackStore().installed(manifest);
+    const [request] = mocks.status.mock.calls[0];
+    expect(request).not.toHaveProperty('version');
+    expect(request.resolution).toBe('compact');
+    expect(request.books.map((book: { id: string }) => book.id)).toEqual(['dinosaur', 'space']);
+    expect(request.books[0]).toEqual({
+      ...manifest.books[1],
+      marker: coloringPackMarkerValue(manifest.books[1]),
+    });
+  });
 
-    expect(packs).toEqual([{ id: 'retired', bytes: 0, rootPath: '/packs/retired' }]);
+  it('installs into the same resolution store with the marker the scan trusts', async () => {
+    await createNativeColoringPackStore().install(
+      manifest,
+      manifest.books[1],
+      false,
+      new AbortController().signal
+    );
+
+    const [request] = mocks.install.mock.calls[0];
+    expect(request).not.toHaveProperty('version');
+    expect(request.resolution).toBe('compact');
+    expect(request.book.marker).toBe(coloringPackMarkerValue(manifest.books[1]));
   });
 });

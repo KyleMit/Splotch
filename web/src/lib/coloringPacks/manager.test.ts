@@ -407,8 +407,8 @@ describe('scanning what is installed', () => {
 
 describe('removeDownloadedColoringPacks', () => {
   // Reclaiming space is exactly what a device is asked for in a degraded state,
-  // so the network failing must not stop it. Before this was keyed off
-  // __APP_VERSION__ the path fetched the manifest first and surfaced a failure.
+  // so the network failing must not stop it. The path once fetched the manifest
+  // first and surfaced that failure.
   it('clears the packs while every network request fails', async () => {
     const fetchMock = vi.fn(async () => {
       throw new TypeError('Failed to fetch');
@@ -418,6 +418,6 @@ describe('removeDownloadedColoringPacks', () => {
     await expect(removeDownloadedColoringPacks()).resolves.toBeUndefined();
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(mocks.remove).toHaveBeenCalledWith({ appVersion: __APP_VERSION__ });
+    expect(mocks.remove).toHaveBeenCalledWith();
   });
 });
