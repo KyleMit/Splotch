@@ -1076,11 +1076,19 @@ body {
   z-index: 2;
 }
 /* The ghost drifts part of the way toward the undo button as it fades — ink pulled back into
-   the pen. inkMotion.ts measures --ink-tx/--ink-ty. */
+   the pen. inkMotion.ts measures --ink-tx/--ink-ty.
+
+   The ghost holds its first keyframe until the frame that paints it has reached the screen, and
+   inkMotion.ts adds .undo-ink-running once it has. A tile-read ghost rasterizes a stroke-sized
+   canvas in that first frame, which on iPadOS costs long enough that the fade would otherwise be a
+   quarter over before any of it is visible (issue 1775). */
 .undo-ink-motion {
   position: absolute;
   transform-origin: center;
-  animation: undo-ink 420ms var(--ease-glide) forwards;
+  animation: undo-ink 420ms var(--ease-glide) forwards paused;
+}
+.undo-ink-motion.undo-ink-running {
+  animation-play-state: running;
 }
 @keyframes undo-ink {
   0% {

@@ -119,6 +119,22 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     image.style.setProperty('--ink-ty', `${drift.y}px`);
   }
 
+  // The ghost's animation is paused in app.css and starts here, one frame after
+  // the one that paints it. A tile-read ghost carries a stroke-sized canvas
+  // whose pixels are rasterized during that first frame — 70 ms for a
+  // paper-width crayon stroke on an iPad — while a CSS animation's clock starts
+  // at the frame it was created in either way, so the fade was already a quarter
+  // over by the time any of it reached the screen (issue #1775). The first
+  // callback runs at the top of the painting frame, before its pixels exist; the
+  // frame after it begins only once they do.
+  function runWhenPainted(image: HTMLCanvasElement) {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        if (image.isConnected) image.classList.add('undo-ink-running');
+      })
+    );
+  }
+
   function undo(
     canvas: HTMLCanvasElement,
     command: StrokeGroupCommand | undefined,
@@ -146,6 +162,7 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
       x: (bounds.left + bounds.width / 2) / scale,
       y: (bounds.top + bounds.height / 2) / scale,
     });
+    runWhenPainted(image);
     present(canvas.parentElement, image, viewTransformCss(view));
   }
 
