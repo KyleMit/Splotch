@@ -81,6 +81,9 @@ const COLORING_SCROLL_MS = 450;
 const COLORING_SCROLL_DISTANCE_PX = 400;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
+// A capped walk back through history: enough to empty a sweep's own strokes,
+// never an unbounded loop against a button that refuses to disable.
+const MAX_UNDO_EXHAUST_TAPS = 12;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
 const ALL_ACTIONS = new Set(FULL_ACTION_GROUPS);
 
@@ -945,6 +948,135 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   return { ...sample, activation: 'native-system' };
 }
 
+// The AI waiting print is reached through the __aiGenerate dev seam (ADR-0109)
+// with the generate endpoint answered inside the page, so the cue runs on every
+// target without a network round trip, a key, or the parental gate. The mocked
+// response is held until the run releases it: that is what separates the waiting
+// cue (arrival, wiggle) from the badge that lands when the picture arrives.
+async function installAiGenerationStub(execute) {
+  return execute(`
+    window.__perfAiOriginalFetch ??= window.fetch.bind(window);
+    window.__perfAiRelease = false;
+    window.fetch = async function (input, init) {
+      const url = typeof input === 'string' ? input : (input?.url ?? String(input));
+      if (!url.includes('/api/generate-image')) return window.__perfAiOriginalFetch(input, init);
+      while (!window.__perfAiRelease) await new Promise((resolve) => setTimeout(resolve, 50));
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 384;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#b9d9ff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = '#ff9ec3';
+      context.beginPath();
+      context.arc(256, 192, 120, 0, Math.PI * 2);
+      context.fill();
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      return new Response(blob, { status: 200, headers: { 'content-type': 'image/jpeg' } });
+    };
+    return true;
+  `);
+}
+
+async function removeAiGenerationStub(execute) {
+  return execute(`
+    if (window.__perfAiOriginalFetch) window.fetch = window.__perfAiOriginalFetch;
+    delete window.__perfAiOriginalFetch;
+    delete window.__perfAiRelease;
+    return true;
+  `);
+}
+
+// The waiting print is the minimized face of a run (AiWaitingPolaroid renders
+// only while aiGenerationState.minimized), so the measured activation is the
+// "Keep drawing while you wait" button inside the AI dialog, not the seam call.
+async function startAiRun(execute) {
+  await execute(`
+    void window.__aiGenerate({ style: 'Magical' });
+    return true;
+  `);
+  await waitForReady(
+    execute,
+    `document.querySelector('.ai-keep-drawing button') !== null`,
+    'the AI run to offer "Keep drawing while you wait"'
+  );
+  await sleep(ACTION_SETTLE_MS);
+}
+
+async function measureAiWaitingBadge(execute) {
+  await ensureActionProbe(execute);
+  await execute(`
+    window.__actionProbe.beginExternal('finish AI waiting print', []);
+    window.__actionProbe.markExternalAction();
+    window.__perfAiRelease = true;
+    return true;
+  `);
+  const readyAt = await waitForReady(
+    execute,
+    `document.querySelector('.polaroid-badge') !== null`,
+    'the AI waiting print to show its badge'
+  );
+  await sleep(ANIMATED_ACTION_SETTLE_MS);
+  const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
+  return { ...sample, activation: 'driver' };
+}
+
+// Undo at the end of history answers with the shake-and-flash instead of undoing
+// (ActionsPanel.handleUndoClick), so the cue needs an exhausted history to reach.
+async function exhaustUndoHistory(execute) {
+  for (let attempt = 0; attempt < MAX_UNDO_EXHAUST_TAPS; attempt += 1) {
+    if (await execute(`return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'true';`))
+      return true;
+    await clickSetupElement(execute, '#undoButton');
+    await sleep(ANIMATED_ACTION_SETTLE_MS);
+  }
+  return execute(
+    `return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'true';`
+  );
+}
+
+async function closeColoringPage(execute) {
+  await clickSetupElement(execute, '#coloringBookButton');
+  await waitForReady(
+    execute,
+    `document.querySelector('#coloring-book-dialog')?.open === true`,
+    'coloring books to put the page back'
+  );
+  await sleep(ANIMATED_ACTION_SETTLE_MS);
+  await clickSetupElement(
+    execute,
+    '#coloring-book-dialog button[aria-label^="Clear active coloring page:"]'
+  );
+  await waitForReady(
+    execute,
+    `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.hidden === true`,
+    'the coloring page to be put back'
+  );
+  await sleep(ANIMATED_ACTION_SETTLE_MS);
+}
+
+async function openColoringPageForClear(execute) {
+  await clickSetupElement(execute, '#coloringBookButton');
+  await waitForReady(
+    execute,
+    `document.querySelector('#coloring-book-dialog')?.open === true`,
+    'coloring books for the coloring-page clear'
+  );
+  await sleep(ANIMATED_ACTION_SETTLE_MS);
+  await showColoringBookChoices(execute);
+  const hasBookChoice = await execute(
+    `return document.querySelector('#coloring-book-dialog button[aria-label$="coloring book"]') !== null;`
+  );
+  for (const step of coloringSelectionSteps(hasBookChoice)) {
+    await clickSetupElement(execute, step.selector);
+    await waitForReady(execute, step.ready, step.label);
+    await sleep(ANIMATED_ACTION_SETTLE_MS);
+  }
+  return execute(
+    `return document.querySelector('#coloringOverlay')?.hidden === false && document.querySelector('#coloringOverlay')?.naturalWidth > 0;`
+  );
+}
+
 export async function runActionSweep({
   client,
   sessionId,
@@ -1513,7 +1645,13 @@ export async function runActionSweep({
     );
   }
 
-  if (actions.has('screenshot') || actions.has('undo') || actions.has('clear')) {
+  if (
+    actions.has('screenshot') ||
+    actions.has('undo') ||
+    actions.has('clear') ||
+    actions.has('ai-waiting') ||
+    actions.has('unavailable')
+  ) {
     await addTrustedStroke(client, sessionId, execute);
   }
 
@@ -1558,6 +1696,40 @@ export async function runActionSweep({
     `);
   }
 
+  if (actions.has('ai-waiting')) {
+    const seamAvailable = await execute(`return typeof window.__aiGenerate === 'function';`);
+    if (!seamAvailable) {
+      const reason = 'the dev harness seam __aiGenerate is not exposed by this build (ADR-0109)';
+      notApplicable.set('show AI waiting print', reason);
+      notApplicable.set('finish AI waiting print', reason);
+    } else {
+      await installAiGenerationStub(execute);
+      try {
+        await startAiRun(execute);
+        await record(
+          measureClick({
+            client,
+            sessionId,
+            execute,
+            label: 'show AI waiting print',
+            selector: '.ai-keep-drawing button',
+            ready: `document.querySelector('.ai-waiting-polaroid') !== null`,
+            settleMs: ANIMATED_ACTION_SETTLE_MS,
+          })
+        );
+        await record(await measureAiWaitingBadge(execute));
+      } finally {
+        await removeAiGenerationStub(execute);
+        await execute(`
+          document.querySelector('.ai-waiting-polaroid')?.click();
+          return true;
+        `);
+        await sleep(ACTION_SETTLE_MS);
+        await closeDialogs(execute);
+      }
+    }
+  }
+
   if (actions.has('undo')) {
     await record(
       measureClick({
@@ -1572,9 +1744,47 @@ export async function runActionSweep({
     );
   }
 
+  if (actions.has('unavailable')) {
+    const exhausted = await exhaustUndoHistory(execute);
+    if (!exhausted) {
+      notApplicable.set(
+        'tap unavailable undo',
+        'undo history could not be emptied, so the unavailable cue is unreachable'
+      );
+    } else {
+      await record(
+        measureClick({
+          client,
+          sessionId,
+          execute,
+          label: 'tap unavailable undo',
+          selector: '#undoButton',
+          ready: `document.querySelector('#undoButton')?.classList.contains('action-unavailable') === true`,
+          settleMs: ANIMATED_ACTION_SETTLE_MS,
+        })
+      );
+    }
+  }
+
   if (actions.has('clear')) {
     await ensureStableTrustedStroke(client, sessionId, execute);
     await record(measureClear(client, sessionId, execute));
+    // The clear sheet carries the paper texture on a blank page and the line art
+    // as well on a coloring page (inkMotion.clear paints it at commit), so the
+    // coloring-page clear is a separate measured case rather than the same one.
+    const coloringReady = await openColoringPageForClear(execute);
+    if (!coloringReady) {
+      notApplicable.set(
+        'clear drawing on a coloring page',
+        'no coloring page could be opened on this target'
+      );
+    } else {
+      await ensureStableTrustedStroke(client, sessionId, execute);
+      await record(measureClear(client, sessionId, execute, 'clear drawing on a coloring page'));
+      // Hand the next group a blank page: rotation asserts an empty canvas, and
+      // a retained coloring page would change what every later action measures.
+      await closeColoringPage(execute);
+    }
   }
 
   if (actions.has('rotation')) {

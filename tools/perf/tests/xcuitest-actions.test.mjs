@@ -1153,6 +1153,72 @@ describe('compact settings shell', () => {
     expect(compactShell).not.toContain('data-section');
   });
 });
+describe('the cues #1867 retuned that had no action (issue 1870)', () => {
+  it('offers an action group for the AI waiting print and the unavailable flash', () => {
+    expect(FULL_ACTION_GROUPS).toContain('ai-waiting');
+    expect(FULL_ACTION_GROUPS).toContain('unavailable');
+  });
+
+  it('reaches the AI waiting print through the dev seam with the endpoint answered in the page', () => {
+    const start = IPAD_ACTIONS.indexOf("if (actions.has('ai-waiting'))");
+    const end = IPAD_ACTIONS.indexOf("if (actions.has('undo'))", start);
+    const block = IPAD_ACTIONS.slice(start, end);
+
+    expect(start).toBeGreaterThan(-1);
+    // The seam, not the AI button: the button needs a key and the parental gate.
+    expect(block).toContain('__aiGenerate');
+    expect(block).toContain('installAiGenerationStub');
+    // The measured activation is the product's own minimize control, because the
+    // print only exists while the run is minimized.
+    expect(block).toContain('.ai-keep-drawing button');
+    expect(block).toContain('.ai-waiting-polaroid')
+    // A build without the dev harness records the gap instead of failing the sweep.
+    expect(block).toContain('notApplicable.set');
+    // The stub must always come back off, or every later action runs on a mocked fetch.
+    expect(block).toContain('finally');
+    expect(block).toContain('removeAiGenerationStub');
+  });
+
+  it('separates the waiting cue from the badge by holding the mocked response', () => {
+    const stub = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf('async function installAiGenerationStub'),
+      IPAD_ACTIONS.indexOf('async function startAiRun')
+    );
+    const badge = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf('async function measureAiWaitingBadge'),
+      IPAD_ACTIONS.indexOf('async function exhaustUndoHistory')
+    );
+
+    expect(stub).toContain('__perfAiRelease');
+    expect(badge).toContain('window.__perfAiRelease = true');
+    expect(badge).toContain('.polaroid-badge');
+  });
+
+  it('taps undo at the end of history for the unavailable cue, with a capped walk back', () => {
+    const start = IPAD_ACTIONS.indexOf("if (actions.has('unavailable'))");
+    const end = IPAD_ACTIONS.indexOf("if (actions.has('clear'))", start);
+    const block = IPAD_ACTIONS.slice(start, end);
+
+    expect(start).toBeGreaterThan(-1);
+    expect(block).toContain('exhaustUndoHistory');
+    expect(block).toContain("classList.contains('action-unavailable')");
+    expect(IPAD_ACTIONS).toContain('MAX_UNDO_EXHAUST_TAPS');
+  });
+
+  it('measures the clear sheet over a coloring page as well as a blank page', () => {
+    const start = IPAD_ACTIONS.indexOf("if (actions.has('clear'))");
+    const end = IPAD_ACTIONS.indexOf("if (actions.has('rotation'))", start);
+    const block = IPAD_ACTIONS.slice(start, end);
+    const blank = block.indexOf('measureClear(client, sessionId, execute)');
+    const coloring = block.indexOf("'clear drawing on a coloring page'");
+
+    expect(blank).toBeGreaterThan(-1);
+    expect(coloring).toBeGreaterThan(blank);
+    // Rotation asserts an empty canvas right after, so the page goes back.
+    expect(block).toContain('closeColoringPage');
+  });
+});
+
 describe('runActionSweep callers', () => {
   // The sweep returns {samples, settingsShell, actionPlan} rather than a bare array, and it has
   // three transports. Changing that shape broke the two callers that no test covers
