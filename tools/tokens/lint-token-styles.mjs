@@ -42,13 +42,22 @@
 //    one-off gets a BASELINE-style per-file allowlist map like the hex
 //    ratchet, never an inline exception or weakened check.
 //
+// 5. Entirely unpinned :global() selectors — a per-file ratchet against
+//    UNPINNED_GLOBAL_SELECTOR_BASELINE. Legitimate global seams stay legal
+//    when a scoped compound pins them to the component; a selector made only
+//    of global compounds and combinators can leak anywhere its class names
+//    happen to match. Svelte's parsed CSS tree preserves top-level comma-list
+//    members and nested :global { … } blocks, so the count follows selector
+//    semantics rather than raw :global token count.
+//
 // Run via `npm run lint:tokens` (wired into the CI Quality job).
-// The countRaw* seams are unit-tested in
+// The counting seams are unit-tested in
 // web/src/lib/design/lint-token-styles.test.ts.
 
 import { readFileSync } from 'node:fs';
 import { readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+import { parse } from 'svelte/compiler';
 import { isMain } from '../lib/proc.mjs';
 
 // file (relative to web/src) → allowed raw-hex count, with the reason.
@@ -111,6 +120,60 @@ const FONT_SIZE_BASELINE = new Map(
     // The Play feature graphic's display type (128px wordmark, 38px tagline,
     // 24px sub) — sized to a fixed 1024×500 store canvas, not the UI ramp.
     'routes/dev/store-frames/lib/FeatureGraphic.svelte': 3,
+  })
+);
+
+// file (relative to web/src) → allowed entirely unpinned :global() selector count.
+const UNPINNED_GLOBAL_SELECTOR_BASELINE = new Map(
+  Object.entries({
+    // Cross-component panel state and its forwarded Icon class require global seams.
+    'lib/components/ActionsPanel.svelte': 5,
+    // The chip sizes and re-inks the class forwarded into its child Icon.
+    'lib/components/ActivePageChip.svelte': 2,
+    // The prompt positions the close class forwarded into DialogHeader.
+    'lib/components/AiImagePrompt.svelte': 2,
+    // The result styles classes forwarded into DialogHeader and its child Icon.
+    'lib/components/AiImageResult.svelte': 3,
+    // The disclosure sizes and re-inks the class forwarded into its child Icon.
+    'lib/components/AiResultDisclosure.svelte': 2,
+    // The waiting print positions the class forwarded into its child Icon.
+    'lib/components/AiWaitingPolaroid.svelte': 2,
+    // The clear control sizes the class forwarded into its child Icon.
+    'lib/components/ClearButton.svelte': 2,
+    // The coachmark positions and re-inks classes forwarded into child Icons.
+    'lib/components/ClearCoachmark.svelte': 3,
+    // The install surface sizes classes forwarded into SplotchyIcon and Icon children.
+    'lib/components/InstallBanner.svelte': 4,
+    // The gate sizes classes forwarded into its SplotchyIcon and Icon children.
+    'lib/components/ParentalGate.svelte': 6,
+    // The keypad sizes the class forwarded into its child Icon.
+    'lib/components/ParentalGateKeypad.svelte': 3,
+    // The footer sizes and re-inks the class forwarded into its child Icons.
+    'lib/components/ParentalGateManageFooter.svelte': 3,
+    // The settings hub sizes and re-inks the class forwarded into SectionIcon.
+    'lib/components/SettingsModal.svelte': 2,
+    // The empty ledger sizes the class forwarded into its child Icon.
+    'lib/components/admin/InviteLedger.svelte': 1,
+    // The row action sizes and re-inks the class forwarded into its child Icon.
+    'lib/components/admin/InviteRowActions.svelte': 4,
+    // The about section sizes classes forwarded into SplotchyIcon and Icon children.
+    'lib/components/settings/AboutSection.svelte': 2,
+    // The key manager sizes and re-inks the class forwarded into its child Icon.
+    'lib/components/settings/AiKeyManager.svelte': 2,
+    // The value proposition sizes and re-inks the class forwarded into child Icons.
+    'lib/components/settings/AiValueProp.svelte': 2,
+    // The compact shell sizes classes forwarded into SplotchyIcon and Icon children.
+    'lib/components/settings/CompactShell.svelte': 3,
+    // The saving section sizes the class forwarded into its child Icon.
+    'lib/components/settings/SavingSection.svelte': 1,
+    // The setup steps size classes forwarded into Button and Icon children.
+    'lib/components/settings/SetupInstructions.svelte': 2,
+    // The toggle row sizes the class forwarded into its child Icon.
+    'lib/components/settings/ToggleRow.svelte': 1,
+    // The switch sizes and re-inks the class forwarded into its child Icon.
+    'lib/components/settings/ToggleSwitch.svelte': 2,
+    // The styleguide re-inks nested Icon SVGs rendered by child furniture components.
+    'lib/components/styleguide/ChromeSections.svelte': 1,
   })
 );
 
@@ -214,6 +277,65 @@ export function countRawFontSize(source) {
   return (stripped.match(RAW_FONT_SIZE) ?? []).length + countRawFontShorthand(stripped);
 }
 
+function isGlobalPseudo(selectorNode) {
+  return selectorNode.type === 'PseudoClassSelector' && selectorNode.name === 'global';
+}
+
+function hasBlockGlobal(selector) {
+  return selector.children.some((node) => isGlobalPseudo(node) && node.args === null);
+}
+
+function hasFunctionalGlobal(selector) {
+  return selector.children.some((node) => isGlobalPseudo(node) && node.args !== null);
+}
+
+function hasScopedCompound(selector) {
+  return selector.children.some((node) => node.type !== 'Combinator' && !isGlobalPseudo(node));
+}
+
+export function countUnpinnedGlobalSelectors(source) {
+  const style = parse(source).css;
+  if (!style) return 0;
+
+  let count = 0;
+
+  function walk(children, parentScopeStates, insideGlobalBlock) {
+    for (const child of children) {
+      if (child.type !== 'Rule') {
+        if (child.block?.children) walk(child.block.children, parentScopeStates, insideGlobalBlock);
+        continue;
+      }
+
+      const selectors = child.prelude.children;
+      if (selectors.some(hasBlockGlobal)) {
+        const nextScopeStates = parentScopeStates.flatMap((parentScoped) =>
+          selectors.map(
+            (selector) => parentScoped || (!insideGlobalBlock && hasScopedCompound(selector))
+          )
+        );
+        walk(child.block.children, nextScopeStates, true);
+        continue;
+      }
+
+      for (const selector of selectors) {
+        const isGlobal = insideGlobalBlock || hasFunctionalGlobal(selector);
+        const isDirectlyScoped = !insideGlobalBlock && hasScopedCompound(selector);
+        if (isGlobal && !isDirectlyScoped && parentScopeStates.includes(false)) count++;
+      }
+
+      const nextScopeStates = parentScopeStates.flatMap((parentScoped) =>
+        selectors.map(
+          (selector) => parentScoped || (!insideGlobalBlock && hasScopedCompound(selector))
+        )
+      );
+      walk(child.block.children, nextScopeStates, insideGlobalBlock);
+    }
+  }
+
+  walk(style.children, [false], false);
+  return count;
+}
+
 async function main() {
   const { ROOT } = await import('../lib/proc.mjs');
   const SRC = resolve(ROOT, 'web/src');
@@ -265,6 +387,22 @@ async function main() {
           `now lower its entry in tools/tokens/lint-token-styles.mjs so the ratchet holds.`
       );
     }
+    if (!isCss) {
+      const globalCount = countUnpinnedGlobalSelectors(source);
+      const globalAllowed = UNPINNED_GLOBAL_SELECTOR_BASELINE.get(rel) ?? 0;
+      if (globalCount > globalAllowed) {
+        problems.push(
+          `${rel}: ${globalCount} entirely unpinned :global() selector(s) (baseline ${globalAllowed}) — ` +
+            `add a scoped compound to each new selector; legitimate scoped global seams remain allowed.`
+        );
+      } else if (globalCount < globalAllowed) {
+        problems.push(
+          `${rel}: ${globalCount} entirely unpinned :global() selector(s) but baseline says ` +
+            `${globalAllowed} — nice, now lower its entry in tools/tokens/lint-token-styles.mjs ` +
+            `so the ratchet holds.`
+        );
+      }
+    }
   }
 
   for (const rel of BASELINE.keys()) {
@@ -277,6 +415,13 @@ async function main() {
       problems.push(`${rel}: in the font-size baseline but no longer exists — remove its entry.`);
     }
   }
+  for (const rel of UNPINNED_GLOBAL_SELECTOR_BASELINE.keys()) {
+    if (!seen.has(rel)) {
+      problems.push(
+        `${rel}: in the unpinned :global() baseline but no longer exists — remove its entry.`
+      );
+    }
+  }
 
   if (problems.length) {
     console.error('Token style lint failed:\n\n' + problems.map((p) => `  ${p}`).join('\n'));
@@ -284,7 +429,9 @@ async function main() {
   }
   console.log(
     `Token style lint passed (${BASELINE.size} allowlisted raw-hex files, ` +
-      `${FONT_SIZE_BASELINE.size} allowlisted raw-font-size files, 0 raw z-index, 0 !important).`
+      `${FONT_SIZE_BASELINE.size} allowlisted raw-font-size files, ` +
+      `${UNPINNED_GLOBAL_SELECTOR_BASELINE.size} ratcheted unpinned-:global() files, ` +
+      `0 raw z-index, 0 !important).`
   );
 }
 

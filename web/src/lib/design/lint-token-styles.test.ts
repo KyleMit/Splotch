@@ -13,7 +13,82 @@ import {
   countRawHexCss,
   countRawZIndex,
   countRawZIndexCss,
+  countUnpinnedGlobalSelectors,
 } from '../../../../tools/tokens/lint-token-styles.mjs';
+
+describe('countUnpinnedGlobalSelectors', () => {
+  it('allows a scoped compound to the left of :global()', () => {
+    expect(countUnpinnedGlobalSelectors('<style>.a :global(.b) { color: red; }</style>')).toBe(0);
+  });
+
+  it('allows a scoped compound to the right of :global()', () => {
+    expect(
+      countUnpinnedGlobalSelectors(
+        '<style>:global(html[data-drawer-open]) .actions-drawer { color: red; }</style>'
+      )
+    ).toBe(0);
+  });
+
+  it('counts a selector made entirely from :global()', () => {
+    expect(
+      countUnpinnedGlobalSelectors('<style>:global(.gate-mascot) { color: red; }</style>')
+    ).toBe(1);
+  });
+
+  it('counts only the unpinned member of a comma list', () => {
+    const source = `<style>
+  .card :global(.icon),
+  :global(.loose-icon) { color: red; }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(1);
+  });
+
+  it('handles nested functional selectors inside :global()', () => {
+    expect(
+      countUnpinnedGlobalSelectors(
+        '<style>:global(:where(.row):not([hidden])) { color: red; }</style>'
+      )
+    ).toBe(1);
+  });
+
+  it('counts global compounds joined only by combinators', () => {
+    expect(
+      countUnpinnedGlobalSelectors(
+        '<style>:global(.panel) > :global(.panel-icon) { color: red; }</style>'
+      )
+    ).toBe(1);
+  });
+
+  it('counts unpinned selectors nested inside an at-rule', () => {
+    const source = `<style>
+  @media (orientation: landscape) {
+    :global(.wide-icon) { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(1);
+  });
+
+  it('treats a root global block as unpinned', () => {
+    const source = `<style>
+  :global {
+    .first,
+    .second:not(.hidden) { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(2);
+  });
+
+  it('allows a global block nested under a scoped selector', () => {
+    const source = `<style>
+  .shell {
+    :global {
+      .child { color: red; }
+    }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(0);
+  });
+});
 
 describe('countRawHex', () => {
   it('counts hex colors only inside <style> blocks', () => {
