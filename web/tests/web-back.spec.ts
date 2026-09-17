@@ -83,6 +83,23 @@ test('dialog controls remove their entries across repeated open and close cycles
   await expect(page).toHaveURL(/\/privacy$/);
 });
 
+test('native dialog closes remove their entries across repeated open and close cycles', async ({
+  page,
+}) => {
+  await enterDrawingFromPrivacy(page);
+
+  for (let cycle = 0; cycle < 3; cycle++) {
+    const settings = await openSettingsModal(page);
+    await expectBackLayer(page, { guard: false, dialogs: 1 });
+    await page.keyboard.press('Escape');
+    await expect(settings).not.toBeVisible();
+    await expectBackLayer(page, null);
+  }
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/privacy$/);
+});
+
 test('Back closes nested dialogs from the top down', async ({ page }) => {
   await page.goto('/privacy');
   await gotoApp(page, '/', { gates: 'always' });

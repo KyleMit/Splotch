@@ -265,6 +265,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
       return;
     }
     node.style.removeProperty('animation');
+    noticeModalClosing(node);
     forgetOpenModal(node);
     // A closed dialog has no backdrop to protect; drop the zone so it can't
     // bleed into whatever modal opens next.
