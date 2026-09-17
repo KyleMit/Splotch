@@ -102,6 +102,9 @@ export function isAiReadyCueAnimation(name, cueNames = AI_READY_CUE_ANIMATIONS) 
 // How long to wait for the cue to exist at all before releasing a build that
 // does not play one (a reduced-motion device, or a product that drops it).
 const AI_READY_CUE_GRACE_MS = 1_000;
+// A run that is going to offer its waiting state does so in a second or two;
+// beyond this the flow has failed and the cue is unreachable on this target.
+const AI_RUN_READY_TIMEOUT_MS = 8_000;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
 const ALL_ACTIONS = new Set(FULL_ACTION_GROUPS);
 
@@ -975,8 +978,10 @@ async function installAiGenerationStub(execute) {
   return execute(`
     window.__perfAiOriginalFetch ??= window.fetch.bind(window);
     window.__perfAiRelease = false;
+    window.__perfAiSeenUrls = [];
     window.fetch = async function (input, init) {
       const url = typeof input === 'string' ? input : (input?.url ?? String(input));
+      window.__perfAiSeenUrls.push(url.slice(0, 120));
       if (!url.includes('/api/generate-image')) return window.__perfAiOriginalFetch(input, init);
       while (!window.__perfAiRelease) await new Promise((resolve) => setTimeout(resolve, 50));
       const canvas = document.createElement('canvas');
@@ -1001,6 +1006,7 @@ async function removeAiGenerationStub(execute) {
     if (window.__perfAiOriginalFetch) window.fetch = window.__perfAiOriginalFetch;
     delete window.__perfAiOriginalFetch;
     delete window.__perfAiRelease;
+    delete window.__perfAiSeenUrls;
     return true;
   `);
 }
@@ -1008,17 +1014,45 @@ async function removeAiGenerationStub(execute) {
 // The waiting print is the minimized face of a run (AiWaitingPolaroid renders
 // only while aiGenerationState.minimized), so the measured activation is the
 // "Keep drawing while you wait" button inside the AI dialog, not the seam call.
+// Returns the run's state rather than throwing: a target where the generation
+// flow cannot reach its waiting state records the gap and lets the rest of the
+// sweep run, which is what a capture needs from a cue it cannot reach.
 async function startAiRun(execute) {
   await execute(`
-    void window.__aiGenerate({ style: 'Magical' });
+    window.__perfAiSeenUrls = [];
+    Promise.resolve(window.__aiGenerate({ style: 'Magical' })).catch(() => {});
     return true;
   `);
-  await waitForReady(
-    execute,
-    `document.querySelector('.ai-keep-drawing button') !== null`,
-    'the AI run to offer "Keep drawing while you wait"'
-  );
+  try {
+    await waitForReady(
+      execute,
+      `document.querySelector('.ai-keep-drawing button') !== null`,
+      'the AI run to offer "Keep drawing while you wait"',
+      AI_RUN_READY_TIMEOUT_MS
+    );
+  } catch {
+    return { offered: false, state: await aiRunState(execute) };
+  }
   await sleep(ACTION_SETTLE_MS);
+  const offered = await execute(
+    `return document.querySelector('.ai-keep-drawing button') !== null;`
+  );
+  return offered ? { offered: true } : { offered: false, state: await aiRunState(execute) };
+}
+
+async function aiRunState(execute) {
+  return execute(`
+    const q = (selector) => document.querySelector(selector);
+    const text = (selector) => {
+      const node = q(selector);
+      return node ? String(node.textContent).trim().slice(0, 90) : null;
+    };
+    return {
+      failedUi: text('.ai-result-error') !== null,
+      message: text('.ai-result-error'),
+      requests: (window.__perfAiSeenUrls || []).length,
+    };
+  `);
 }
 
 async function measureAiWaitingBadge(execute) {
@@ -1768,19 +1802,33 @@ export async function runActionSweep({
     } else {
       await installAiGenerationStub(execute);
       try {
-        await startAiRun(execute);
-        await record(
-          measureClick({
-            client,
-            sessionId,
-            execute,
-            label: 'show AI waiting print',
-            selector: '.ai-keep-drawing button',
-            ready: `document.querySelector('.ai-waiting-polaroid') !== null`,
-            settleMs: ANIMATED_ACTION_SETTLE_MS,
-          })
-        );
-        await record(await measureAiWaitingBadge(execute));
+        const run = await startAiRun(execute);
+        if (!run.offered) {
+          // The flow never reached its waiting state on this target. It is the
+          // cue that is unreachable, not the measurement: on a physical iPad the
+          // run fails before it makes any request at all (issue #1870).
+          const reason =
+            `the AI run failed before the waiting print appeared ` +
+            `(${JSON.stringify(run.state)})`;
+          notApplicable.set('show AI waiting print', reason);
+          notApplicable.set('finish AI waiting print', reason);
+        } else {
+          await record(
+            measureClick({
+              client,
+              sessionId,
+              execute,
+              label: 'show AI waiting print',
+              selector: '.ai-keep-drawing button',
+              ready: `document.querySelector('.ai-waiting-polaroid') !== null`,
+              settleMs: ANIMATED_ACTION_SETTLE_MS,
+              // Inside the AI dialog, like the coloring-book steps: a dialog's
+              // contents have no native-gesture geometry on a physical device.
+              activation: 'webdriver',
+            })
+          );
+          await record(await measureAiWaitingBadge(execute));
+        }
       } finally {
         await removeAiGenerationStub(execute);
         await execute(`
