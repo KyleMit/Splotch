@@ -365,15 +365,19 @@ leaves that book unmarked instead of failing the scan, because a scan that throw
 installed book.
 
 The installers withdraw a book's marker before they write any of its files, skip files that already
-match, and write the marker only after every file has the manifest's length. Android's WorkManager
-job and iOS's pending job now name the resolution and carry the marker. A job written before this
-amendment has neither, so it is discarded, and the next scan adopts the files it wrote. On Android
-the worker keeps running after the WebView that started it is gone. So the scan, each file's
-publish, the marker check, and the commit all hold one process-wide lock, and the network transfer
-stays outside it. The scan also runs on a dedicated executor, because Capacitor runs every plugin's
-calls on one shared thread, and the first scan after the update hashes the whole catalog. It skips
-`.part` files, which belong to a transfer that may still be streaming. On iOS the scan runs on the
-download coordinator's serial queue, which the `URLSession` delegate also uses, so no lock is
+match, and write the marker only after the whole book verifies. On iOS a length check is enough,
+because each file is hashed as it is published on the same serial queue as the commit. On Android
+the commit hashes every file again. WorkManager can replace or cancel a worker that keeps running
+until it notices, and its job may come from an earlier manifest. So each publish also checks under
+the lock that its worker has not been stopped and withdraws the book's marker first. Android's
+WorkManager job and iOS's pending job now name the resolution and carry the marker. A job written
+before this amendment has neither, so it is discarded, and the next scan adopts the files it wrote.
+On Android the worker keeps running after the WebView that started it is gone. So the scan, each
+file's publish, the marker check, and the commit all hold one process-wide lock, and the network
+transfer stays outside it. The scan also runs on a dedicated executor, because Capacitor runs every
+plugin's calls on one shared thread, and the first scan after the update hashes the whole catalog.
+It skips `.part` files, which belong to a transfer that may still be streaming. On iOS the scan runs
+on the download coordinator's serial queue, which the `URLSession` delegate also uses, so no lock is
 needed.
 
 Removal is `remove()` with no arguments on both stores. Native removal cancels background work and

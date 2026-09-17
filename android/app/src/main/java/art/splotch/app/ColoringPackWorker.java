@@ -56,7 +56,7 @@ public class ColoringPackWorker extends Worker {
             }
 
             synchronized (ColoringPackStorage.LOCK) {
-                if (isStopped() || !ColoringPackStorage.hasEveryFile(bookDirectory, files)) {
+                if (isStopped() || !ColoringPackStorage.hasEveryMatchingFile(bookDirectory, files)) {
                     return Result.retry();
                 }
                 ColoringPackStorage.writeTextAtomically(ColoringPackStorage.markerFile(bookDirectory), marker);
@@ -136,7 +136,13 @@ public class ColoringPackWorker extends Worker {
                 if (advertisedBytes < 0 || advertisedBytes == bytes) throw new RetiredAssetException();
                 throw new IllegalStateException("Coloring asset download was truncated");
             }
+            // A worker that WorkManager replaced or cancelled keeps running until it notices, and
+            // its job may come from an earlier manifest. Checking under the lock keeps it from
+            // publishing once stopped, and withdrawing the marker keeps anything it did publish from
+            // being vouched for until a commit or scan verifies the book again.
             synchronized (ColoringPackStorage.LOCK) {
+                if (isStopped()) throw new InterruptedException("Coloring download stopped");
+                ColoringPackStorage.withdrawMarker(bookDirectory);
                 if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
                     throw new IllegalStateException("Could not create coloring directory");
                 }

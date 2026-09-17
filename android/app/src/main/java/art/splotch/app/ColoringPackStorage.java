@@ -99,13 +99,12 @@ final class ColoringPackStorage {
         return hex(digest.digest()).equals(entry.getString("sha256"));
     }
 
-    // A size check only: the worker hashed each file as it wrote it, and the scan deletes only
-    // files that fail the manifest, so a file of the right length here is one the worker verified.
-    static boolean hasEveryFile(File bookDirectory, JSONArray files) throws Exception {
+    // Hashes the whole book rather than trusting each file's publish: a replaced worker from an
+    // earlier manifest can publish between this worker's check of a file and its commit.
+    static boolean hasEveryMatchingFile(File bookDirectory, JSONArray files) throws Exception {
         for (int index = 0; index < files.length(); index++) {
             JSONObject entry = files.getJSONObject(index);
-            File file = bookFile(bookDirectory, entry.getString("path"));
-            if (!file.isFile() || file.length() != entry.getLong("bytes")) return false;
+            if (!matches(bookFile(bookDirectory, entry.getString("path")), entry)) return false;
         }
         return true;
     }
