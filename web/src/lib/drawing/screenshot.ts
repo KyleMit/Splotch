@@ -4,9 +4,12 @@ import {
   DRAWING_BASENAME,
   extensionForImageType,
   timestamp,
+  isUnsaved,
   triggerDownload,
   type SaveResult,
+  type UnsavedStatus,
 } from '$lib/saveNaming';
+import { reportSaveFailure } from '$lib/state/saveFailure.svelte';
 import { saveBlobToFolder } from './folderSave';
 import { playScreenshotFeedback, playScreenshotSuppressedFeedback } from './screenshotFeedback';
 import { SCREENSHOT_COOLDOWN_MS } from './screenshotTiming';
@@ -17,12 +20,22 @@ let activeScreenshotSave: Promise<void> | null = null;
 let nextScreenshotAllowedAt = 0;
 let preparedScreenshot: PreparedScreenshot | null = null;
 
+// The code both native save paths reject with when the OS withholds the permission: iOS through
+// @capacitor-community/media, Android 7–9 through PhotoLibraryPlugin.java. screenshot.test.ts reads
+// both native sources to hold them to it.
+export const ACCESS_DENIED_ERROR_CODE = 'accessDenied';
+
 type ExportResult = { blob: Blob | null; error?: never } | { blob?: never; error: unknown };
 
 interface PreparedScreenshot {
   activate(): Promise<ExportResult>;
   cancel(): void;
   discardPreview(): void;
+}
+
+function unsavedStatusForError(err: unknown): UnsavedStatus {
+  const code = typeof err === 'object' && err !== null && 'code' in err ? err.code : undefined;
+  return code === ACCESS_DENIED_ERROR_CODE ? 'denied' : 'failed';
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -73,7 +86,7 @@ export async function saveImageBlob(
       return { status: 'photos' };
     } catch (err) {
       console.error('Save to gallery failed:', err);
-      return { status: 'failed' };
+      return { status: unsavedStatusForError(err) };
     }
   } else {
     const filename = `${baseName}-${timestamp()}.${extensionForImageType(blob.type)}`;
@@ -119,19 +132,31 @@ export function cancelScreenshotPreparation() {
   preparedScreenshot = null;
 }
 
-async function savePreparedScreenshot(prepared: PreparedScreenshot): Promise<SaveResult> {
-  const result = await prepared.activate();
-  if ('error' in result) throw result.error;
-  if (!result.blob) return { status: 'failed' };
-  return saveImageBlob(result.blob, undefined, { allowPrompt: true });
+interface ScreenshotSave {
+  result: SaveResult;
+  blob: Blob | null;
+}
+
+async function savePreparedScreenshot(prepared: PreparedScreenshot): Promise<ScreenshotSave> {
+  const exported = await prepared.activate();
+  if ('error' in exported) throw exported.error;
+  if (!exported.blob) return { result: { status: 'failed' }, blob: null };
+  const result = await saveImageBlob(exported.blob, DRAWING_BASENAME, { allowPrompt: true });
+  return { result, blob: exported.blob };
 }
 
 // The capture cue and polaroid start on the tap so the toddler sees an instant response; a save
 // that turns out not to land takes the polaroid back and shakes the camera instead of letting the
-// flight finish as if the picture were kept.
-function showScreenshotFailed(prepared: PreparedScreenshot) {
+// flight finish as if the picture were kept. The shake is for the child; the parent's explanation
+// and the retry go to the save-failure banner, carrying the captured picture when there is one.
+function showScreenshotFailed(
+  prepared: PreparedScreenshot,
+  status: UnsavedStatus,
+  blob: Blob | null
+) {
   prepared.discardPreview();
   playScreenshotSuppressedFeedback();
+  void reportSaveFailure(status, blob && { blob, baseName: DRAWING_BASENAME });
 }
 
 export function saveScreenshot(): Promise<void> {
@@ -150,12 +175,12 @@ export function saveScreenshot(): Promise<void> {
   preparedScreenshot = null;
   activeScreenshotSave = savePreparedScreenshot(prepared)
     .then(
-      (saved) => {
-        if (saved.status === 'failed') return showScreenshotFailed(prepared);
+      ({ result, blob }) => {
+        if (isUnsaved(result)) return showScreenshotFailed(prepared, result.status, blob);
         nextScreenshotAllowedAt = performance.now() + SCREENSHOT_COOLDOWN_MS;
       },
       (error: unknown) => {
-        showScreenshotFailed(prepared);
+        showScreenshotFailed(prepared, 'failed', null);
         throw error;
       }
     )

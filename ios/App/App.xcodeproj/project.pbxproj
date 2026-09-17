@@ -11,6 +11,7 @@
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
+		A995E77100000000000000A1 /* AppSettingsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A995E77100000000000000A2 /* AppSettingsPlugin.swift */; };
 		DE1CE10C0000000000000001 /* DeviceLockPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1CE10C0000000000000002 /* DeviceLockPlugin.swift */; };
 		DE1CE10C0000000000000005 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1CE10C0000000000000006 /* MainViewController.swift */; };
 		DE1CE10C0000000000000007 /* PencilEraserPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1CE10C0000000000000008 /* PencilEraserPlugin.swift */; };
@@ -27,6 +28,7 @@
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A995E77100000000000000A2 /* AppSettingsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsPlugin.swift; sourceTree = "<group>"; };
 		DE1CE10C0000000000000002 /* DeviceLockPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLockPlugin.swift; sourceTree = "<group>"; };
 		DE1CE10C0000000000000006 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		DE1CE10C0000000000000008 /* PencilEraserPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PencilEraserPlugin.swift; sourceTree = "<group>"; };
@@ -74,6 +76,7 @@
 			children = (
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+				A995E77100000000000000A2 /* AppSettingsPlugin.swift */,
 				DE1CE10C0000000000000002 /* DeviceLockPlugin.swift */,
 				DE1CE10C0000000000000008 /* PencilEraserPlugin.swift */,
 				DE1CE10C000000000000000C /* ColoringPacksPlugin.swift */,
@@ -172,6 +175,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				A995E77100000000000000A1 /* AppSettingsPlugin.swift in Sources */,
 				DE1CE10C0000000000000001 /* DeviceLockPlugin.swift in Sources */,
 				DE1CE10C0000000000000007 /* PencilEraserPlugin.swift in Sources */,
 				DE1CE10C000000000000000B /* ColoringPacksPlugin.swift in Sources */,

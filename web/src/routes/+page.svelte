@@ -98,6 +98,7 @@
   // background pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
   let InstallBanner = $state<Component | null>(null);
+  let SaveFailureBanner = $state<Component | null>(null);
   let SettingsModal = $state<Component | null>(null);
   let hiddenOverlays = $state<BootHiddenOverlays | null>(null);
   let coloringPackDownloads = $state<ColoringPackDownloads | null>(null);
@@ -105,6 +106,10 @@
   function mountHiddenOverlay(key: BootHiddenOverlayKey, overlay: Component) {
     if (key === 'installBanner') {
       InstallBanner = overlay;
+      return;
+    }
+    if (key === 'saveFailureBanner') {
+      SaveFailureBanner = overlay;
       return;
     }
     if (key === 'settings') {
@@ -200,6 +205,9 @@
 <ClearButton />
 <div class="bottom-dock">
   <ActionsPanel bind:openFlyout />
+  {#if SaveFailureBanner}
+    <SaveFailureBanner />
+  {/if}
   {#if InstallBanner}
     <InstallBanner />
   {/if}

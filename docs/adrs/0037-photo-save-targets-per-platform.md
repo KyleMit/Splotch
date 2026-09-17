@@ -163,3 +163,47 @@ maintaining.
 Drawings saved before this change stay where they are, in the app-specific album, and are not
 migrated. Only closed-testing builds shipped the old path, and copying them would duplicate every
 picture in Photos until the originals were deleted.
+
+## Amendment (2026-09-17): unsaved pictures reach the parent, with retry and Open Settings
+
+Issue 1936. Before this amendment, a save that did not land told only the child: the screenshot
+polaroid returned and the camera shook, the AI result card offered its Download button, and a failed
+save-on-delete told nobody. Now every save that does not land also raises a non-blocking,
+parent-directed **Save Failure Banner** in the bottom dock (`SaveFailureBanner.svelte`, state in
+`lib/state/saveFailure.svelte.ts`). A successful save stays silent.
+
+**`SaveResult` gains `denied`.** A native save the OS refused for want of a permission rejects with
+the code `accessDenied`, which `saveImageBlob` maps to `denied`; every other rejection stays
+`failed`. iOS gets the code from `@capacitor-community/media`, whose add-only authorization check
+already rejects with it. `screenshot.gallery.test.ts` reads that Swift source and
+`PhotoLibraryPlugin.java` to keep both codes equal to `ACCESS_DENIED_ERROR_CODE`.
+
+**Android 7–9 keeps the denial fallback above.** The issue read a declined storage permission as a
+failed save. It is not one: the picture lands in the app-specific media directory, which the gallery
+shows. That is a successful save, so it stays silent, and the reasons the fallback exists still
+hold. Only when that fallback write *also* fails does `PhotoLibraryPlugin` reject with
+`accessDenied` rather than `writeFailed`, because granting the permission moves the save to shared
+Pictures and is then the parent's way to a working save. API 29+ needs no permission, so its
+failures are always `failed`. Whether a parent should also be told that those fallback pictures
+leave with the app is a separate product decision this amendment does not make.
+
+**Retry saves the pictures that failed, not the canvas.** Each report carries the exported blob and
+its basename, so Try again saves those exact bytes even after save-on-delete wiped the page or the
+child drew on. Reports from the three entry points (Screenshot button, AI auto-save for the AI
+picture and the drawing, save-on-delete) collect in one banner. Identical bytes are held once, and
+the oldest is released past `UNSAVED_PICTURE_LIMIT`, because a toddler can keep tapping the camera
+while a permission stays denied. A capture that produced no picture raises the banner without Try
+again. Retry is user-initiated, so a web folder save may re-confirm its permission. A dismissal
+releases every held picture and outranks any report or retry that settles afterwards.
+
+**Open Settings is native-only and gated.** For `denied`, the banner adds Open Settings, which calls
+the app-local `AppSettings` plugin (`ACTION_APPLICATION_DETAILS_SETTINGS` on Android,
+`UIApplication.openSettingsURLString` on iOS). Settings is outside the app, so the action goes
+through the `externalLinks` parental gate, the same as every other way out (ADR-0094). The web never
+reports `denied`, so it never offers Settings.
+
+**Placement.** The banner is a boot-hidden overlay (ADR-0049) demanded by the first report, so its
+code stays off the startup path. It is not a dialog, so it adds no browser history layer (ADR-0168).
+It lives in the bottom dock and follows the Install Banner's rules there: it hides while the Actions
+drawer is open and while an AI generation is minimized. The Install Banner steps aside while it
+shows, because an unsaved picture outranks an install prompt that can be offered again later.

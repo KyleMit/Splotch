@@ -11,6 +11,7 @@ const BACKGROUND_ORDER = [
   'aiWaiting',
   'aiResult',
   'installBanner',
+  'saveFailureBanner',
   'settings',
 ] as const;
 
@@ -26,6 +27,7 @@ const COMPONENT_EXPORTS = {
   aiWaiting: 'AiWaitingPolaroid',
   aiResult: 'AiImageResult',
   installBanner: 'InstallBanner',
+  saveFailureBanner: 'SaveFailureBanner',
   settings: 'SettingsModal',
 } as const satisfies Record<BootHiddenOverlayKey, keyof OverlayCatalog>;
 

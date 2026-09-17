@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   createPolaroidPreviewRequest: vi.fn(),
   triggerDownload: vi.fn(),
   savePhoto: vi.fn(),
+  reportSaveFailure: vi.fn(),
   perfMarks: false,
 }));
 
@@ -27,6 +28,9 @@ vi.mock('./polaroidAnimation', () => ({
 vi.mock('$lib/saveNaming', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/saveNaming')>()),
   triggerDownload: mocks.triggerDownload,
+}));
+vi.mock('$lib/state/saveFailure.svelte', () => ({
+  reportSaveFailure: mocks.reportSaveFailure,
 }));
 vi.mock('./screenshotTiming', () => ({ SCREENSHOT_COOLDOWN_MS: 4_000 }));
 vi.mock('./perf', () => ({
@@ -106,6 +110,35 @@ describe('saveScreenshot', () => {
     expect(preview.discard).toHaveBeenCalledOnce();
   });
 
+  it('hands the parent banner the exact picture a denied save captured', async () => {
+    const drawing = new Blob(['drawing'], { type: 'image/png' });
+    mocks.isNative.mockReturnValue(true);
+    mocks.exportCanvasBlob.mockResolvedValue(drawing);
+    mocks.savePhoto.mockRejectedValue(
+      Object.assign(new Error('Access to photos not allowed by user'), { code: 'accessDenied' })
+    );
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.reportSaveFailure).toHaveBeenCalledExactlyOnceWith('denied', {
+      blob: drawing,
+      baseName: 'splotch',
+    });
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a landed save silent', async () => {
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue(null);
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.reportSaveFailure).not.toHaveBeenCalled();
+  });
+
   it('takes the polaroid back when the export produces no image', async () => {
     const preview = { width: 640, onReady: vi.fn(), discard: vi.fn() };
     mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
@@ -116,6 +149,7 @@ describe('saveScreenshot', () => {
 
     expect(preview.discard).toHaveBeenCalledOnce();
     expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+    expect(mocks.reportSaveFailure).toHaveBeenCalledExactlyOnceWith('failed', null);
   });
 
   it('requests the worker preview alongside the settled export snapshot', async () => {

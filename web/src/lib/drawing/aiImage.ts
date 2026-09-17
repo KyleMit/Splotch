@@ -30,7 +30,8 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { awaitGeneration, generationResultUrl } from './aiGenerationPoll';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
-import { AI_IMAGE_BASENAME, DRAWING_BASENAME, type SaveResult } from '$lib/saveNaming';
+import { AI_IMAGE_BASENAME, DRAWING_BASENAME, isUnsaved, type SaveResult } from '$lib/saveNaming';
+import { reportSaveFailure } from '$lib/state/saveFailure.svelte';
 import type { StyleName } from '$lib/ai/styles';
 
 const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
@@ -136,15 +137,19 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
   } catch (err) {
     console.error('Auto-save failed:', err);
     setAiAutoSave(runId, { status: 'failed' });
+    void reportSaveFailure('failed', { blob: aiBlob, baseName: AI_IMAGE_BASENAME });
     return;
   }
   // A throw must land as 'failed' here rather than reach generateAiImage's catch, which would
   // replace the revealed picture with the error card and strand the status at 'saving'.
-  const save = (blob: Blob, baseName: string): Promise<SaveResult> =>
-    saveImageBlob(blob, baseName).catch((err: unknown): SaveResult => {
+  const save = async (blob: Blob, baseName: string): Promise<SaveResult> => {
+    const result = await saveImageBlob(blob, baseName).catch((err: unknown): SaveResult => {
       console.error('Auto-save failed:', err);
       return { status: 'failed' };
     });
+    if (isUnsaved(result)) void reportSaveFailure(result.status, { blob, baseName });
+    return result;
+  };
   setAiAutoSave(runId, await save(aiBlob, AI_IMAGE_BASENAME));
   if (!isAiGenerationActive(runId)) return;
   const sig = await blobSignature(drawingBlob);

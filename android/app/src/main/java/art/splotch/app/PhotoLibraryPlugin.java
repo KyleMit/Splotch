@@ -33,7 +33,9 @@ import java.io.OutputStream;
  * 24–28 has no RELATIVE_PATH, so it writes the public directory directly behind the
  * maxSdkVersion-28 WRITE_EXTERNAL_STORAGE grant. A parent who denies that prompt still gets the
  * drawing in the gallery, written to the app-specific media directory that needs no permission;
- * that copy is removed with the app, which is the trade the denial asked for.
+ * that copy is removed with the app, which is the trade the denial asked for. Only when that
+ * fallback write also fails does the call reject as {@code accessDenied} rather than
+ * {@code writeFailed}, because granting the permission is then the parent's way to a working save.
  */
 @CapacitorPlugin(
         name = "PhotoLibrary",
@@ -47,6 +49,8 @@ public class PhotoLibraryPlugin extends Plugin {
     private static final String ALBUM_NAME = "Splotch";
     private static final String ERROR_INVALID_ARGUMENT = "argumentError";
     private static final String ERROR_WRITE_FAILED = "writeFailed";
+    // Matches ACCESS_DENIED_ERROR_CODE in web/src/lib/drawing/screenshot.ts, drift-guarded there.
+    private static final String ERROR_ACCESS_DENIED = "accessDenied";
 
     @PluginMethod
     public void saveImage(PluginCall call) {
@@ -54,11 +58,11 @@ public class PhotoLibraryPlugin extends Plugin {
         if (image == null) return;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            write(call, () -> insertIntoMediaStore(image));
+            write(call, ERROR_WRITE_FAILED, () -> insertIntoMediaStore(image));
         } else if (getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.PROMPT) {
             requestPermissionForAlias(LEGACY_STORAGE_ALIAS, call, "legacyStoragePermissionResult");
         } else {
-            write(call, () -> writeToDirectory(legacyDirectory(), image));
+            writeLegacy(call, image);
         }
     }
 
@@ -67,7 +71,15 @@ public class PhotoLibraryPlugin extends Plugin {
         ImageSave image = parseOrReject(call);
         if (image == null) return;
         // Permission results arrive on the main thread; the decode and write do not belong there.
-        execute(() -> write(call, () -> writeToDirectory(legacyDirectory(), image)));
+        execute(() -> writeLegacy(call, image));
+    }
+
+    private void writeLegacy(PluginCall call, ImageSave image) {
+        boolean granted = getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.GRANTED;
+        write(
+                call,
+                granted ? ERROR_WRITE_FAILED : ERROR_ACCESS_DENIED,
+                () -> writeToDirectory(granted ? sharedPicturesDirectory() : appMediaDirectory(), image));
     }
 
     private static ImageSave parseOrReject(PluginCall call) {
@@ -83,12 +95,12 @@ public class PhotoLibraryPlugin extends Plugin {
         void run() throws IOException;
     }
 
-    private static void write(PluginCall call, ImageWrite imageWrite) {
+    private static void write(PluginCall call, String errorCode, ImageWrite imageWrite) {
         try {
             imageWrite.run();
             call.resolve();
         } catch (IOException | RuntimeException error) {
-            call.reject("Saving the image to the photo library failed", ERROR_WRITE_FAILED, error);
+            call.reject("Saving the image to the photo library failed", errorCode, error);
         }
     }
 
@@ -138,11 +150,6 @@ public class PhotoLibraryPlugin extends Plugin {
     // Only a never-asked permission prompts. Capacitor records any denial as PROMPT_WITH_RATIONALE
     // or DENIED, and those save to the fallback silently, so the dialog cannot return on every tap.
     // A grant made later in system Settings reads as GRANTED again.
-    private File legacyDirectory() {
-        return getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.GRANTED
-                ? sharedPicturesDirectory()
-                : appMediaDirectory();
-    }
 
     private File sharedPicturesDirectory() {
         return new File(

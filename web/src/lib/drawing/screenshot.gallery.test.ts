@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -60,5 +61,54 @@ describe('saveImageBlob native gallery routing', () => {
 
     expect(saved).toEqual({ status: 'failed' });
     expect(console.error).toHaveBeenCalledWith('Save to gallery failed:', failure);
+  });
+
+  it.each([
+    ['android', 'saveToAndroidGallery'],
+    ['ios', 'savePhoto'],
+  ] as const)(
+    'reports a %s save refused for a permission as denied',
+    async (platform, nativeSave) => {
+      mocks.getPlatform.mockReturnValue(platform);
+      mocks[nativeSave].mockRejectedValue(
+        Object.assign(new Error('Access to photos not allowed by user'), { code: 'accessDenied' })
+      );
+      const { saveImageBlob } = await import('./screenshot');
+
+      await expect(saveImageBlob(blob)).resolves.toEqual({ status: 'denied' });
+    }
+  );
+
+  it('reports any other rejection code as failed', async () => {
+    mocks.getPlatform.mockReturnValue('ios');
+    mocks.savePhoto.mockRejectedValue(
+      Object.assign(new Error('Unable to save image to album'), { code: 'filesystemError' })
+    );
+    const { saveImageBlob } = await import('./screenshot');
+
+    await expect(saveImageBlob(blob)).resolves.toEqual({ status: 'failed' });
+  });
+});
+
+// The path stays a parameter so Vite leaves the URL alone (see app.html.test.ts).
+function sourceFile(path: string): string {
+  return readFileSync(new URL(path, import.meta.url), 'utf8');
+}
+
+describe('the native access-denied rejection code', () => {
+  it('matches the code both native save paths reject with', async () => {
+    const { ACCESS_DENIED_ERROR_CODE } = await import('./screenshot');
+    const android = sourceFile(
+      '../../../../android/app/src/main/java/art/splotch/app/PhotoLibraryPlugin.java'
+    );
+    const ios = sourceFile(
+      '../../../../node_modules/@capacitor-community/media/ios/Sources/MediaPlugin/MediaPlugin.swift'
+    );
+
+    expect(android).toContain(`ERROR_ACCESS_DENIED = "${ACCESS_DENIED_ERROR_CODE}";`);
+    expect(ios).toContain(`EC_ACCESS_DENIED = "${ACCESS_DENIED_ERROR_CODE}"`);
+    expect(ios).toMatch(
+      /func savePhoto[\s\S]*?checkAuthorization\(permission: \.addOnly[\s\S]*?call\.reject\([^)]*EC_ACCESS_DENIED\)/
+    );
   });
 });

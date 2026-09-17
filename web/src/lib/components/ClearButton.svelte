@@ -57,9 +57,9 @@
       onClear: (home) => {
         // Fire-and-forget: the save must not delay the clear. Its export
         // snapshot is taken synchronously inside this call, before clearCanvas
-        // wipes the paper (see saveOnDelete.ts). The catch covers the save
-        // pipeline's on-demand chunk failing to load on a dead connection —
-        // the clear itself must never be blocked by that.
+        // wipes the paper (see saveOnDelete.ts), which reports its own failed
+        // saves to the save-failure banner; the catch only keeps an unexpected
+        // throw from reaching the clear, which must never be blocked by a save.
         saveDrawingIfEnabled().catch((err) => console.error('Save on delete failed:', err));
         clearCanvas({ animateInto: home });
         resetToolAfterClear();
