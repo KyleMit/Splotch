@@ -1,6 +1,5 @@
 package art.splotch.app;
 
-import android.content.Context;
 import android.net.Uri;
 
 import androidx.core.content.ContextCompat;
@@ -27,41 +26,36 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @CapacitorPlugin(name = "ColoringPacks")
 public class ColoringPacksPlugin extends Plugin {
     private static final String WORK_NAME = "splotch-coloring-pack";
-    private static final String MARKER_NAME = ".installed";
 
-    static File bookDirectory(Context context, String version, String bookId) {
-        return new File(new File(new File(context.getNoBackupFilesDir(), "coloring"), version), bookId);
-    }
-
-    static File markerFile(File bookDirectory) {
-        return new File(bookDirectory, MARKER_NAME);
-    }
+    // Capacitor runs every plugin's calls on one shared thread, and the first scan after an
+    // update hashes every downloaded file, so storage work runs here instead of stalling the
+    // other plugins the app is booting with.
+    private final ExecutorService storageExecutor = Executors.newSingleThreadExecutor();
 
     @PluginMethod
     public void status(PluginCall call) {
         try {
-            String version = requiredComponent(call, "version");
-            deleteOldVersions(version);
-            List<Object> ids = call.getArray("bookIds", new JSArray()).toList();
-            JSArray installed = new JSArray();
-            for (Object value : ids) {
-                String id = String.valueOf(value);
-                File directory = bookDirectory(getContext(), version, id);
-                if (markerFile(directory).isFile()) {
-                    JSObject pack = new JSObject();
-                    pack.put("id", id);
-                    pack.put("rootPath", Uri.fromFile(directory).toString());
-                    installed.put(pack);
+            String resolution = requiredResolution(call);
+            JSONArray books = new JSONArray(call.getArray("books", new JSArray()).toString());
+            storageExecutor.execute(() -> {
+                try {
+                    JSArray installed = new JSArray();
+                    for (String bookId : ColoringPackStorage.reconcile(getContext(), resolution, books)) {
+                        installed.put(installedPack(bookId, ColoringPackStorage.bookDirectory(getContext(), resolution, bookId)));
+                    }
+                    JSObject result = new JSObject();
+                    result.put("installed", installed);
+                    call.resolve(result);
+                } catch (Exception error) {
+                    call.reject(error.getMessage(), error);
                 }
-            }
-            JSObject result = new JSObject();
-            result.put("installed", installed);
-            call.resolve(result);
+            });
         } catch (Exception error) {
             call.reject(error.getMessage(), error);
         }
@@ -70,29 +64,29 @@ public class ColoringPacksPlugin extends Plugin {
     @PluginMethod
     public void install(PluginCall call) {
         try {
-            String version = requiredComponent(call, "version");
+            String resolution = requiredResolution(call);
             String baseUrl = requiredString(call, "baseUrl");
             JSObject book = call.getObject("book");
             if (book == null) throw new IllegalArgumentException("book is required");
-            String bookId = book.getString("id");
-            if (bookId == null || !bookId.matches("[a-z0-9-]+")) {
-                throw new IllegalArgumentException("Invalid book id");
-            }
+            String bookId = ColoringPackStorage.validBookId(book.getString("id"));
+            String marker = book.getString("marker");
+            if (marker == null || marker.isEmpty()) throw new IllegalArgumentException("marker is required");
             boolean allowMetered = call.getBoolean("allowMetered", false);
-            File directory = bookDirectory(getContext(), version, bookId);
-            if (markerFile(directory).isFile()) {
-                resolveInstalled(call, bookId, directory);
+            File directory = ColoringPackStorage.bookDirectory(getContext(), resolution, bookId);
+            if (ColoringPackStorage.markerMatches(directory, marker)) {
+                call.resolve(installedPack(bookId, directory));
                 return;
             }
 
             JSONObject job = new JSONObject();
-            job.put("version", version);
+            job.put("resolution", resolution);
+            job.put("marker", marker);
             job.put("baseUrl", baseUrl);
             job.put("bookId", bookId);
             job.put("allowMetered", allowMetered);
             job.put("files", new JSONArray(book.getJSONArray("files").toString()));
-            File jobFile = new File(new File(getContext().getNoBackupFilesDir(), "coloring/jobs"), bookId + ".json");
-            ColoringPackWorker.writeText(jobFile, job.toString());
+            File jobFile = new File(ColoringPackStorage.jobsDirectory(getContext()), bookId + ".json");
+            ColoringPackStorage.writeTextAtomically(jobFile, job.toString());
 
             Constraints constraints = new Constraints.Builder()
                     .setRequiredNetworkType(allowMetered ? NetworkType.CONNECTED : NetworkType.UNMETERED)
@@ -103,7 +97,7 @@ public class ColoringPacksPlugin extends Plugin {
                     .build();
             WorkManager manager = WorkManager.getInstance(getContext());
             manager.enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request);
-            observe(call, manager, request, bookId, directory);
+            observe(call, manager, request, bookId, directory, marker);
         } catch (Exception error) {
             call.reject(error.getMessage(), error);
         }
@@ -114,7 +108,8 @@ public class ColoringPacksPlugin extends Plugin {
             WorkManager manager,
             OneTimeWorkRequest request,
             String bookId,
-            File directory) {
+            File directory,
+            String marker) {
         getActivity().runOnUiThread(() -> {
             Observer<WorkInfo> observer = new Observer<>() {
                 @Override
@@ -127,8 +122,9 @@ public class ColoringPacksPlugin extends Plugin {
                         return;
                     }
                     manager.getWorkInfoByIdLiveData(request.getId()).removeObserver(this);
-                    if (info.getState() == WorkInfo.State.SUCCEEDED && markerFile(directory).isFile()) {
-                        resolveInstalled(call, bookId, directory);
+                    if (info.getState() == WorkInfo.State.SUCCEEDED
+                            && ColoringPackStorage.markerMatches(directory, marker)) {
+                        call.resolve(installedPack(bookId, directory));
                     } else {
                         call.reject("Coloring-pack download did not complete");
                     }
@@ -143,17 +139,17 @@ public class ColoringPacksPlugin extends Plugin {
         cancelWork(call, call::resolve);
     }
 
+    // Removes every stored book whatever layout or resolution wrote it, and every pending job.
     @PluginMethod
     public void remove(PluginCall call) {
-        try {
-            String version = requiredComponent(call, "version");
-            cancelWork(call, () -> {
-                deleteRecursively(new File(new File(getContext().getNoBackupFilesDir(), "coloring"), version));
+        cancelWork(call, () -> storageExecutor.execute(() -> {
+            try {
+                ColoringPackStorage.removeAll(getContext());
                 call.resolve();
-            });
-        } catch (Exception error) {
-            call.reject(error.getMessage(), error);
-        }
+            } catch (Exception error) {
+                call.reject(error.getMessage(), error);
+            }
+        }));
     }
 
     private void cancelWork(PluginCall call, Runnable onCancelled) {
@@ -175,47 +171,18 @@ public class ColoringPacksPlugin extends Plugin {
         return value;
     }
 
-    private static String requiredComponent(PluginCall call, String key) {
-        String value = requiredString(call, key);
-        if (!value.matches("[A-Za-z0-9._-]+")) {
-            throw new IllegalArgumentException("Invalid " + key);
+    private static String requiredResolution(PluginCall call) {
+        String value = requiredString(call, "resolution");
+        if (!value.matches("[a-z]+") || value.equals(ColoringPackStorage.JOBS_DIRECTORY)) {
+            throw new IllegalArgumentException("Invalid resolution");
         }
         return value;
     }
 
-    private static void resolveInstalled(PluginCall call, String bookId, File directory) {
+    private static JSObject installedPack(String bookId, File directory) {
         JSObject result = new JSObject();
         result.put("id", bookId);
         result.put("rootPath", Uri.fromFile(directory).toString());
-        call.resolve(result);
-    }
-
-    private void deleteOldVersions(String currentVersion) {
-        File root = new File(getContext().getNoBackupFilesDir(), "coloring");
-        File[] children = root.listFiles();
-        if (children == null) return;
-        for (File child : children) {
-            if (child.isDirectory()
-                    && !child.getName().equals(currentVersion)
-                    && !child.getName().equals("jobs")) {
-                tryDeleteRecursively(child);
-            }
-        }
-    }
-
-    private static boolean tryDeleteRecursively(File file) {
-        try {
-            deleteRecursively(file);
-            return true;
-        } catch (RuntimeException ignored) {
-            return false;
-        }
-    }
-
-    private static void deleteRecursively(File file) {
-        if (!file.exists()) return;
-        File[] children = file.listFiles();
-        if (children != null) for (File child : children) deleteRecursively(child);
-        if (!file.delete()) throw new IllegalStateException("Could not remove " + file.getName());
+        return result;
     }
 }

@@ -13,11 +13,9 @@ import org.json.JSONObject;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 public class ColoringPackWorker extends Worker {
@@ -35,21 +33,34 @@ public class ColoringPackWorker extends Worker {
         File jobFile = new File(jobPath);
 
         try {
-            JSONObject job = new JSONObject(readText(jobFile));
+            JSONObject job = new JSONObject(ColoringPackStorage.readText(jobFile));
+            // A job written before storage was keyed by resolution names a version directory the
+            // next scan drains, and carries no marker to publish.
+            if (!job.has("resolution") || !job.has("marker")) throw new StaleJobException();
             if (job.getBoolean("allowMetered") && dataSaverEnabled()) return Result.retry();
 
-            File bookDirectory = ColoringPacksPlugin.bookDirectory(
-                    getApplicationContext(), job.getString("version"), job.getString("bookId"));
-            if (!bookDirectory.exists() && !bookDirectory.mkdirs()) return Result.retry();
+            String marker = job.getString("marker");
+            File bookDirectory = ColoringPackStorage.bookDirectory(
+                    getApplicationContext(),
+                    job.getString("resolution"),
+                    ColoringPackStorage.validBookId(job.getString("bookId")));
+            synchronized (ColoringPackStorage.LOCK) {
+                if (ColoringPackStorage.markerMatches(bookDirectory, marker)) return Result.success();
+                ColoringPackStorage.withdrawMarker(bookDirectory);
+            }
 
             JSONArray files = job.getJSONArray("files");
             for (int index = 0; index < files.length(); index++) {
                 if (isStopped()) return Result.retry();
-                JSONObject file = files.getJSONObject(index);
-                downloadVerifiedFile(job.getString("baseUrl"), bookDirectory, file);
+                downloadVerifiedFile(job.getString("baseUrl"), bookDirectory, files.getJSONObject(index));
             }
 
-            writeText(ColoringPacksPlugin.markerFile(bookDirectory), job.getString("bookId"));
+            synchronized (ColoringPackStorage.LOCK) {
+                if (isStopped() || !ColoringPackStorage.hasEveryMatchingFile(bookDirectory, files)) {
+                    return Result.retry();
+                }
+                ColoringPackStorage.writeTextAtomically(ColoringPackStorage.markerFile(bookDirectory), marker);
+            }
             return Result.success();
         } catch (StaleJobException error) {
             if (jobFile.exists() && !jobFile.delete()) jobFile.deleteOnExit();
@@ -72,26 +83,20 @@ public class ColoringPackWorker extends Worker {
                 == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED;
     }
 
+    // An unchanged file is kept, so an app update or an interrupted install transfers only the
+    // files the manifest changed or that never arrived.
     private void downloadVerifiedFile(String baseUrl, File bookDirectory, JSONObject entry)
             throws Exception {
-        String path = entry.getString("path");
-        String bookPrefix = "/coloring/" + bookDirectory.getName() + "/";
-        if (!path.startsWith(bookPrefix)) throw new IllegalArgumentException("Invalid coloring path");
-
-        String relativePath = path.substring(bookPrefix.length());
-        File destination = new File(bookDirectory, relativePath);
-        if (!destination.getCanonicalPath().startsWith(bookDirectory.getCanonicalPath() + File.separator)) {
-            throw new IllegalArgumentException("Coloring path escaped its book directory");
+        File destination = ColoringPackStorage.bookFile(bookDirectory, entry.getString("path"));
+        synchronized (ColoringPackStorage.LOCK) {
+            if (ColoringPackStorage.matches(destination, entry)) return;
         }
-        long expectedBytes = entry.getLong("bytes");
-        String expectedDigest = entry.getString("sha256");
-        if (matches(destination, expectedBytes, expectedDigest)) return;
 
         File parent = destination.getParentFile();
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
             throw new IllegalStateException("Could not create coloring directory");
         }
-        File partial = new File(destination.getPath() + ".part");
+        File partial = ColoringPackStorage.partialFile(destination);
         if (partial.exists() && !partial.delete()) throw new IllegalStateException("Stale partial file");
 
         String downloadPath = entry.optString("downloadPath", null);
@@ -99,6 +104,8 @@ public class ColoringPackWorker extends Worker {
         if (!downloadPath.startsWith("/coloring/") || downloadPath.contains("..")) {
             throw new IllegalArgumentException("Invalid coloring download path");
         }
+        long expectedBytes = entry.getLong("bytes");
+        String expectedDigest = entry.getString("sha256");
         HttpURLConnection connection = (HttpURLConnection) new URL(baseUrl + downloadPath).openConnection();
         connection.setConnectTimeout(30_000);
         connection.setReadTimeout(30_000);
@@ -124,59 +131,30 @@ public class ColoringPackWorker extends Worker {
                     bytes += count;
                 }
             }
-            if (bytes != expectedBytes || !hex(digest.digest()).equals(expectedDigest)) {
+            if (bytes != expectedBytes || !ColoringPackStorage.hex(digest.digest()).equals(expectedDigest)) {
                 long advertisedBytes = connection.getContentLengthLong();
                 if (advertisedBytes < 0 || advertisedBytes == bytes) throw new RetiredAssetException();
                 throw new IllegalStateException("Coloring asset download was truncated");
             }
-            if (destination.exists() && !destination.delete()) {
-                throw new IllegalStateException("Could not replace coloring asset");
+            // A worker that WorkManager replaced or cancelled keeps running until it notices, and
+            // its job may come from an earlier manifest. Checking under the lock keeps it from
+            // publishing once stopped, and withdrawing the marker keeps anything it did publish from
+            // being vouched for until a commit or scan verifies the book again.
+            synchronized (ColoringPackStorage.LOCK) {
+                if (isStopped()) throw new InterruptedException("Coloring download stopped");
+                ColoringPackStorage.withdrawMarker(bookDirectory);
+                if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
+                    throw new IllegalStateException("Could not create coloring directory");
+                }
+                if (destination.exists() && !destination.delete()) {
+                    throw new IllegalStateException("Could not replace coloring asset");
+                }
+                if (!partial.renameTo(destination)) throw new IllegalStateException("Could not publish asset");
             }
-            if (!partial.renameTo(destination)) throw new IllegalStateException("Could not publish asset");
         } finally {
             connection.disconnect();
             if (partial.exists() && !partial.delete()) partial.deleteOnExit();
         }
-    }
-
-    private boolean matches(File file, long expectedBytes, String expectedDigest) throws Exception {
-        if (!file.isFile() || file.length() != expectedBytes) return false;
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(file))) {
-            byte[] buffer = new byte[64 * 1024];
-            int count;
-            while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
-        }
-        return hex(digest.digest()).equals(expectedDigest);
-    }
-
-    private static String readText(File file) throws Exception {
-        try (FileInputStream input = new FileInputStream(file)) {
-            byte[] bytes = new byte[(int) file.length()];
-            int offset = 0;
-            while (offset < bytes.length) {
-                int count = input.read(bytes, offset, bytes.length - offset);
-                if (count == -1) break;
-                offset += count;
-            }
-            return new String(bytes, 0, offset, StandardCharsets.UTF_8);
-        }
-    }
-
-    static void writeText(File file, String text) throws Exception {
-        File parent = file.getParentFile();
-        if (parent != null && !parent.exists() && !parent.mkdirs()) {
-            throw new IllegalStateException("Could not create job directory");
-        }
-        try (FileOutputStream output = new FileOutputStream(file)) {
-            output.write(text.getBytes(StandardCharsets.UTF_8));
-        }
-    }
-
-    private static String hex(byte[] bytes) {
-        StringBuilder result = new StringBuilder(bytes.length * 2);
-        for (byte value : bytes) result.append(String.format("%02x", value));
-        return result.toString();
     }
 
     private static final class StaleJobException extends Exception {}

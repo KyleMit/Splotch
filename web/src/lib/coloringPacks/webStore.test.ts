@@ -512,7 +512,7 @@ it('never reports an install that another tab removed mid-download as served', a
     new AbortController().signal
   );
   await vi.waitFor(() => expect(secondDownload.started).toHaveBeenCalled());
-  await createWebColoringPackStore().remove({ appVersion: released.appVersion });
+  await createWebColoringPackStore().remove();
   secondDownload.release();
   await installing;
 

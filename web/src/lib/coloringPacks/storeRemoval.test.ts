@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ResolvedColoringPackManifest } from './manifest';
 
 const mocks = vi.hoisted(() => ({
   nativeCancel: vi.fn(),
@@ -14,13 +13,6 @@ vi.mock('$lib/plugins/coloringPacks', () => ({
 
 import { createNativeColoringPackStore } from './nativeStore';
 import { createWebColoringPackStore } from './webStore';
-
-const manifest: ResolvedColoringPackManifest = {
-  appVersion: '1.2.3-test',
-  resolution: 'compact',
-  starterBookId: 'farm',
-  books: [],
-};
 
 beforeEach(() => {
   mocks.nativeCancel.mockReset().mockResolvedValue(undefined);
@@ -50,10 +42,9 @@ describe('coloring-pack removal', () => {
     expect(mocks.nativeRemove).not.toHaveBeenCalled();
   });
 
-  // The web cache is not scoped by app version, so the version is ignored and
-  // every pack cache goes, including one an earlier store layout left behind.
+  // Every pack cache goes, including one an earlier store layout left behind.
   it('removes every web pack cache and nothing else', async () => {
-    await createWebColoringPackStore().remove({ appVersion: manifest.appVersion });
+    await createWebColoringPackStore().remove();
 
     expect(mocks.webDelete.mock.calls).toEqual([
       ['coloring-packs-v2-compact'],
@@ -62,14 +53,11 @@ describe('coloring-pack removal', () => {
     ]);
   });
 
-  // Passing only the app version, not the whole manifest: that narrowing is
-  // what lets removal run with no network.
-  it('removes both native resolution namespaces', async () => {
-    await createNativeColoringPackStore().remove({ appVersion: manifest.appVersion });
+  // The native side removes every resolution and every earlier layout in one
+  // call, with nothing from a manifest: that is what lets removal run offline.
+  it('removes native packs in one call that names no manifest', async () => {
+    await createNativeColoringPackStore().remove();
 
-    expect(mocks.nativeRemove.mock.calls).toEqual([
-      [{ version: '1.2.3-test-compact' }],
-      [{ version: '1.2.3-test-full' }],
-    ]);
+    expect(mocks.nativeRemove.mock.calls).toEqual([[]]);
   });
 });
