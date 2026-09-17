@@ -1,0 +1,53 @@
+{
+  "target": "chrome",
+  "kind": "magic",
+  "log": [
+    {
+      "event": "page",
+      "hostMs": 1789673285372,
+      "url": "http://192.168.40.54:4173/"
+    },
+    {
+      "event": "reduced-motion",
+      "hostMs": 1789673285382,
+      "matches": false
+    },
+    {
+      "event": "viewport",
+      "hostMs": 1789673285385,
+      "w": 360,
+      "h": 643,
+      "dpr": 3,
+      "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"
+    },
+    {
+      "event": "clear",
+      "hostMs": 1789673285394
+    },
+    {
+      "event": "page-choice",
+      "hostMs": 1789673288985,
+      "pageLabel": "Cat coloring page"
+    },
+    {
+      "event": "magic-draw",
+      "hostMs": 1789673294578
+    },
+    {
+      "event": "record-start",
+      "hostMs": 1789673300369
+    },
+    {
+      "event": "undo-tap",
+      "hostMs": 1789673302171
+    },
+    {
+      "event": "undo-tapped",
+      "hostMs": 1789673302293
+    },
+    {
+      "event": "record-stop",
+      "hostMs": 1789673306071
+    }
+  ]
+}

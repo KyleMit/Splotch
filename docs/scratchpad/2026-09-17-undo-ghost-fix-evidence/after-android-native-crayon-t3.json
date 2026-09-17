@@ -1,0 +1,52 @@
+{
+  "target": "native",
+  "kind": "crayon",
+  "log": [
+    {
+      "event": "page",
+      "hostMs": 1789673618217,
+      "url": "https://localhost/"
+    },
+    {
+      "event": "reduced-motion",
+      "hostMs": 1789673618225,
+      "matches": false
+    },
+    {
+      "event": "viewport",
+      "hostMs": 1789673618229,
+      "w": 360,
+      "h": 780,
+      "dpr": 3,
+      "ua": "Mozilla/5.0 (Linux; Android 16; SM-G990U1 Build/BP2A.250605.031.A3; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/151.0.7922.199 Mobile Safari/537.36"
+    },
+    {
+      "event": "clear",
+      "hostMs": 1789673618237
+    },
+    {
+      "event": "yellow-draw",
+      "hostMs": 1789673622329
+    },
+    {
+      "event": "blue-draw",
+      "hostMs": 1789673625547
+    },
+    {
+      "event": "record-start",
+      "hostMs": 1789673629720
+    },
+    {
+      "event": "undo-tap",
+      "hostMs": 1789673631522
+    },
+    {
+      "event": "undo-tapped",
+      "hostMs": 1789673631640
+    },
+    {
+      "event": "record-stop",
+      "hostMs": 1789673635465
+    }
+  ]
+}

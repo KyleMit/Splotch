@@ -1,0 +1,43 @@
+{
+  "bundleId": "com.apple.mobilesafari",
+  "kind": "crayon",
+  "log": [
+    {
+      "event": "clear",
+      "hostMs": 1789672136652
+    },
+    {
+      "event": "yellow-draw",
+      "hostMs": 1789672149113
+    },
+    {
+      "event": "blue-draw",
+      "hostMs": 1789672172238
+    },
+    {
+      "event": "record-start-request",
+      "hostMs": 1789672199679
+    },
+    {
+      "event": "record-started",
+      "hostMs": 1789672199789
+    },
+    {
+      "event": "video",
+      "startedAtDeviceEpoch": 1789672199.815487,
+      "uuid": "ECF1DE60-5786-449A-AD11-17DBC6E2E88F"
+    },
+    {
+      "event": "undo-tap",
+      "hostMs": 1789672200991
+    },
+    {
+      "event": "undo-tapped",
+      "hostMs": 1789672202505
+    },
+    {
+      "event": "record-stop",
+      "hostMs": 1789672204306
+    }
+  ]
+}

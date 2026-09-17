@@ -1,0 +1,43 @@
+{
+  "bundleId": "com.apple.mobilesafari",
+  "kind": "magic",
+  "log": [
+    {
+      "event": "clear",
+      "hostMs": 1789672281535
+    },
+    {
+      "event": "page:Cat coloring page",
+      "hostMs": 1789672291051
+    },
+    {
+      "event": "magic-draw",
+      "hostMs": 1789672302865
+    },
+    {
+      "event": "record-start-request",
+      "hostMs": 1789672342264
+    },
+    {
+      "event": "record-started",
+      "hostMs": 1789672342371
+    },
+    {
+      "event": "video",
+      "startedAtDeviceEpoch": 1789672342.396195,
+      "uuid": "3D23A1AC-5137-49DE-BEF6-82AD0879ED66"
+    },
+    {
+      "event": "undo-tap",
+      "hostMs": 1789672343573
+    },
+    {
+      "event": "undo-tapped",
+      "hostMs": 1789672345106
+    },
+    {
+      "event": "record-stop",
+      "hostMs": 1789672346908
+    }
+  ]
+}

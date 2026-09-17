@@ -1,0 +1,52 @@
+{
+  "target": "chrome",
+  "kind": "crayon",
+  "log": [
+    {
+      "event": "page",
+      "hostMs": 1789673249583,
+      "url": "http://192.168.40.54:4173/"
+    },
+    {
+      "event": "reduced-motion",
+      "hostMs": 1789673249597,
+      "matches": false
+    },
+    {
+      "event": "viewport",
+      "hostMs": 1789673249601,
+      "w": 360,
+      "h": 643,
+      "dpr": 3,
+      "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"
+    },
+    {
+      "event": "clear",
+      "hostMs": 1789673249610
+    },
+    {
+      "event": "yellow-draw",
+      "hostMs": 1789673253725
+    },
+    {
+      "event": "blue-draw",
+      "hostMs": 1789673257006
+    },
+    {
+      "event": "record-start",
+      "hostMs": 1789673261188
+    },
+    {
+      "event": "undo-tap",
+      "hostMs": 1789673262990
+    },
+    {
+      "event": "undo-tapped",
+      "hostMs": 1789673263108
+    },
+    {
+      "event": "record-stop",
+      "hostMs": 1789673266913
+    }
+  ]
+}
