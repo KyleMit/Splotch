@@ -13,8 +13,8 @@ import {
 // theme picker must expose its selected state to assistive tech (a role=radio
 // aria-checked segment, not styled buttons), every color chip must paint
 // a real fill — a non-color token dropped straight into `background` computes
-// as transparent and renders a silently blank chip (the --brand-rgb channel
-// triplet did exactly that) — and the specimens must lay out the way the real
+// as transparent and renders a silently blank chip (a channel triplet once did
+// exactly that) — and the specimens must lay out the way the real
 // app lays them out, which for a shared component means the styleguide is the
 // one place it renders outside its usual ancestor.
 

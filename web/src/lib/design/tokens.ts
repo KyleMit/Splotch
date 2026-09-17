@@ -14,11 +14,6 @@ import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
 // a "these blocks MUST stay identical" comment.
 
 const BRAND_HEX = '#ab71e1';
-const BRAND_RGB = [
-  Number.parseInt(BRAND_HEX.slice(1, 3), 16),
-  Number.parseInt(BRAND_HEX.slice(3, 5), 16),
-  Number.parseInt(BRAND_HEX.slice(5, 7), 16),
-].join(' ');
 
 // Brand accent used for active/hover chrome across parent + AI UI.
 // Custom properties pierce Svelte's style scoping, so components reference
@@ -32,10 +27,6 @@ const BRAND_RGB = [
 // unthemed hover step.
 export const brand = {
   brand: BRAND_HEX,
-  // Space-separated channels, so a brand-shadow fallback composes as
-  // rgb(var(--brand-rgb) / NN%); the following color-mix declaration remains
-  // the modern rendering path.
-  brandRgb: BRAND_RGB,
   // Text/icon ink on --brand fills. Lives here (unthemed) because --brand
   // itself is constant across themes, so what sits on it is too.
   onBrand: '#fff',

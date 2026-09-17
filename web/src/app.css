@@ -616,7 +616,6 @@ body {
   .actions-panel .action-button:hover:not(:disabled):not(.disabled) {
     background: var(--float-surface-hover);
     border-color: var(--brand);
-    box-shadow: 0 4px 12px rgb(var(--brand-rgb) / 30%);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
   }
 }
@@ -629,7 +628,6 @@ body {
 .actions-panel .action-button.active {
   border-color: var(--brand);
   background: var(--brand-wash);
-  box-shadow: 0 0 0 2px rgb(var(--brand-rgb) / 35%);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
 }
 
@@ -764,7 +762,6 @@ body {
 .flyout-option.active {
   border-color: var(--brand);
   background: var(--brand-wash);
-  box-shadow: 0 0 0 2px rgb(var(--brand-rgb) / 35%);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
 }
 
@@ -868,11 +865,9 @@ body {
     opacity: 1;
     border-color: var(--brand);
     background: var(--brand-wash);
-    box-shadow: 0 0 0 10px rgb(var(--brand-rgb) / 42%);
     box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 42%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 16px rgb(var(--brand-rgb) / 0%);
     box-shadow: 0 0 0 16px color-mix(in srgb, var(--brand) 0%, transparent);
   }
 }
