@@ -66,6 +66,11 @@ the rest pending for the next run, soonest-expiring first. The budget it watches
 `gh api rate_limit` does not report it, so a local run can exhaust it while that endpoint still
 shows the full allowance.
 
+Runs are listed from the start of the report retention window, or from the previous harvest when
+that is older; a run an earlier harvest left without its job list is fetched again by id. A re-run
+of a run created before the listing window is not seen; its original report artifacts have already
+expired by then.
+
 ## What is and is not a sample
 
 A **sample** is a report job whose `flaky.json` was read, has the schema version this reader

@@ -47,6 +47,12 @@ describe('createGithubActionsApi', () => {
     expect(requests[0].init.headers.authorization).toBe('Bearer t');
   });
 
+  it('fetches a single run by id', async () => {
+    const { api, requests } = apiWith(() => response({ id: 9 }));
+    expect(await api.getRun('9')).toEqual({ id: 9 });
+    expect(requests[0].url.pathname).toBe('/repos/o/r/actions/runs/9');
+  });
+
   it('filters workflow runs by creation date and stops on a short page', async () => {
     const { api, requests } = apiWith(() => response({ workflow_runs: [{ id: 1 }] }));
     expect(await api.listWorkflowRuns('test.yml', new Date('2026-09-09T00:00:00Z'))).toEqual([

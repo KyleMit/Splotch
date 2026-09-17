@@ -127,10 +127,10 @@ export function isCountedRecord(record) {
   return COUNTED_RECORD_STATUSES.has(record.status);
 }
 
-// Every harvest relists the whole retention window: a run re-run days later gains a new attempt and
-// new artifacts, and a run still in progress at the previous harvest has finished since. When the
-// previous harvest is older than that window, listing reaches back to it instead, so the runs
-// whose artifacts expired during the outage are listed and surface as gaps rather than vanishing.
+// Every harvest relists the whole report retention window: a run re-run inside it gains a new
+// attempt and new artifacts, and a run still in progress at the previous harvest has finished since.
+// When the previous harvest is older than that window, listing reaches back to it instead, so the
+// runs whose artifacts expired during the outage are listed and surface as gaps rather than vanishing.
 function listSince(history, now) {
   const retentionStart = now.getTime() - REPORT_ARTIFACT_RETENTION_DAYS * DAY_MS;
   const last = history.harvests.at(-1);
@@ -181,7 +181,29 @@ function recordRunArtifacts(history, runId, artifacts) {
  */
 async function refreshRuns(api, history, since, errors) {
   const runs = await api.listWorkflowRuns(TESTS_WORKFLOW_FILE, since);
-  const unsettled = runs.filter((run) => {
+  // A run left unresolved by an earlier harvest can fall out of the listing window; fetch it by id
+  // so it is retried rather than stranded.
+  const listed = new Set(runs.map((run) => String(run.id)));
+  const stranded = Object.values(history.runs).filter(
+    (run) => !run.executions && !listed.has(run.id)
+  );
+  const refetched = [];
+  let refetchLimited = false;
+  await forEachConcurrently(
+    stranded,
+    async (run) => {
+      try {
+        refetched.push(await api.getRun(run.id));
+      } catch (error) {
+        if (error?.fatal) throw error;
+        if (error?.rateLimited) refetchLimited = true;
+        else errors.push(`run ${run.id}: unavailable: ${error.message}`);
+      }
+    },
+    () => !refetchLimited
+  );
+  if (refetchLimited) errors.push('rate limit reached refetching unresolved runs');
+  const unsettled = [...runs, ...refetched].filter((run) => {
     const known = history.runs[run.id];
     return !(
       known?.status === 'completed' &&

@@ -98,6 +98,8 @@ export function createGithubActionsApi({ repo, token, fetchImpl = fetch }) {
       return runs;
     },
 
+    getRun: (runId) => json(`/repos/${repo}/actions/runs/${runId}`),
+
     async listJobs(runId) {
       const jobs = [];
       for await (const page of pages(

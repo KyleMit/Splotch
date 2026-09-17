@@ -301,6 +301,22 @@ describe('harvest', () => {
     expect(summary.listedSince).toBe(ago(24 * 10));
   });
 
+  it('retries a run left unresolved after it falls out of the listing window', async () => {
+    const history = createHistory();
+    history.harvests.push({ at: ago(3) });
+    history.runs['9'] = { id: '9', createdAt: ago(24 * 9), status: 'completed', executions: null };
+    const api = fakeApi({
+      runs: [],
+      jobs: { 9: [job('Tests (1/8)', 1)] },
+      artifacts: [artifact(90, 9, 'playwright-report-shard-1')],
+      files: { 90: record() },
+    });
+    api.getRun = async (id) => run(Number(id), { created_at: ago(24 * 9) });
+    await harvest(api, history, NOW);
+    expect(history.runs['9'].executions).toHaveLength(1);
+    expect(history.artifacts['90'].state).toBe('read');
+  });
+
   it('stops on a fatal API error instead of recording it per item', async () => {
     const api = fakeApi({
       runs: [run(1)],
