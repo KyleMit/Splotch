@@ -404,6 +404,22 @@ describe('saveImageBlob', () => {
     expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
   });
 
+  it('lets a banner retry re-confirm a lapsed folder permission like the camera button', async () => {
+    const blob = new Blob(['held'], { type: 'image/png' });
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { retryImageSave } = await import('./screenshot');
+
+    await expect(retryImageSave(blob, 'splotch-ai')).resolves.toEqual({
+      status: 'chosenFolder',
+      folderName: 'Drawings',
+    });
+    expect(mocks.saveBlobToFolder).toHaveBeenCalledWith(
+      blob,
+      expect.stringMatching(/^splotch-ai-.+\.png$/),
+      { allowPrompt: true }
+    );
+  });
+
   it('reports a native gallery save as saved to photos', async () => {
     mocks.isNative.mockReturnValue(true);
     mocks.savePhoto.mockResolvedValue({});

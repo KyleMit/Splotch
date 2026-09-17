@@ -40,12 +40,12 @@ async function pictureSignature(blob: Blob): Promise<string | null> {
   }
 }
 
-// The save pipeline loads on demand (issue #461); a retry is user-initiated, so it may re-confirm a
-// lapsed web folder permission like the camera button does.
+// The save pipeline loads on demand (issue #461), and this module is on the startup path, so the
+// retry's save options stay inside it (web/tests/startup-bundle.spec.ts).
 const savePictureOnDemand: SavePicture = async ({ blob, baseName }) => {
   try {
-    const { saveImageBlob } = await import('$lib/drawing/screenshot');
-    return await saveImageBlob(blob, baseName, { allowPrompt: true });
+    const { retryImageSave } = await import('$lib/drawing/screenshot');
+    return await retryImageSave(blob, baseName);
   } catch (err) {
     console.error('Retrying the save failed:', err);
     return { status: 'failed' };

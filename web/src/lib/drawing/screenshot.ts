@@ -99,6 +99,12 @@ export async function saveImageBlob(
   }
 }
 
+// The save-failure banner's Try again is a tap, so like the camera button it may re-confirm a lapsed
+// web folder permission.
+export function retryImageSave(blob: Blob, baseName: string): Promise<SaveResult> {
+  return saveImageBlob(blob, baseName, { allowPrompt: true });
+}
+
 function createPreparedScreenshot(
   exportPreparation: CanvasExportPreparation | null = null
 ): PreparedScreenshot {
