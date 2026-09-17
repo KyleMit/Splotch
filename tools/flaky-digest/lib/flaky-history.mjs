@@ -48,9 +48,10 @@ export function reportArtifactForJob(jobName) {
   return null;
 }
 
-// The upload steps run `if: !cancelled()`, so a job only uploads when it reached a verdict. A job
-// cut off by `timeout-minutes` concludes `cancelled` and uploads nothing.
-export const UPLOADING_CONCLUSIONS = new Set(['success', 'failure']);
+// The upload steps run `if: !cancelled()`, so a job that reached a verdict must have uploaded. A
+// cancelled job usually uploaded nothing, but a cancellation that lands after the upload step still
+// leaves its artifact, so an artifact is always read whatever the job's conclusion.
+export const VERDICT_CONCLUSIONS = new Set(['success', 'failure']);
 
 // Playwright statuses a digest counts. An interrupted or timed-out run still writes a record, and
 // counting it would read as a small clean sample (see FlakyRecord.status in the reporter).

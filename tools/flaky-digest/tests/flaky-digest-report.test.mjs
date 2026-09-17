@@ -216,6 +216,34 @@ describe('buildDigest', () => {
     });
   });
 
+  it('reads the artifact a job cancelled after its upload step left behind', () => {
+    const history = historyWith(
+      [
+        run('1', {
+          executions: [
+            {
+              artifact: 'playwright-report-shard-1',
+              attempt: 1,
+              conclusion: 'cancelled',
+              completedAt: ago(9),
+            },
+          ],
+        }),
+      ],
+      [{ ...readArtifact('a', '1', { status: 'interrupted' }), state: 'read' }]
+    );
+    expect(digestOf(history).coverage.gapCounts).toEqual({ 'status-interrupted': 1 });
+
+    history.artifacts.a = {
+      id: 'a',
+      runId: '1',
+      name: 'playwright-report-shard-1',
+      createdAt: ago(9),
+      state: 'pending',
+    };
+    expect(digestOf(history).coverage.gapCounts).toEqual({ pending: 1 });
+  });
+
   it('only accounts runs created inside the window', () => {
     const history = historyWith(
       [run('old', { createdAt: ago(24 * 8) }), run('new')],
@@ -254,7 +282,7 @@ describe('renderDigestMarkdown', () => {
     );
     const markdown = renderDigestMarkdown(digestOf(history));
     expect(markdown).toContain('| 1 | 1 | 0 |');
-    expect(markdown).toContain('chromium › a \\| b');
+    expect(markdown).toContain('| a \\| b |');
     expect(markdown).toContain('(https://example.test/runs/1)');
     expect(markdown).toContain('None of these are clean runs.');
     expect(markdown).toContain('| jobs-unavailable | 1 |');

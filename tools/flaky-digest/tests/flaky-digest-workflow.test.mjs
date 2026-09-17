@@ -70,7 +70,7 @@ describe('test.yml report uploads', () => {
     }
   });
 
-  // UPLOADING_CONCLUSIONS treats a cancelled job as one that uploaded nothing.
+  // VERDICT_CONCLUSIONS expects an artifact from every job that reached a verdict.
   it('uploads whenever the job was not cancelled', () => {
     for (const upload of uploads) expect(upload.uploadsUnlessCancelled).toBe(true);
   });

@@ -78,19 +78,19 @@ understands (`READABLE_FLAKY_RECORD_SCHEMA_VERSION`), and finished `passed` or `
 report job in the window that is not a sample is listed as a **gap** with its reason — never counted
 as a clean run:
 
-| Reason                                  | Meaning                                                                        |
-| --------------------------------------- | ------------------------------------------------------------------------------ |
-| `pending`                               | Listed but not read yet (rate-limit budget)                                    |
-| `expired-unread`                        | Expired before any harvest read it                                             |
-| `unreadable`                            | Download or parse failed; retried next harvest while the artifact lives        |
-| `no-record`                             | The report zip holds no `flaky.json`                                           |
-| `unsupported-schema-<n>`                | A record version this reader does not understand; bump the reader, never guess |
-| `status-interrupted`, `status-timedout` | The run was cut short, so its record would read as a small clean sample        |
-| `no-artifact`                           | The job reached a verdict but no artifact of its name exists                   |
-| `replaced-by-later-attempt`             | A re-run's upload replaced this attempt's artifact                             |
-| `job-cancelled`, `job-skipped`, …       | The job never reached its upload step                                          |
-| `jobs-unavailable`                      | The run's job list could not be read                                           |
-| `run-in-progress`                       | The run had not finished at the latest harvest                                 |
+| Reason                                  | Meaning                                                                                 |
+| --------------------------------------- | --------------------------------------------------------------------------------------- |
+| `pending`                               | Listed but not read yet (rate-limit budget)                                             |
+| `expired-unread`                        | Expired before any harvest read it                                                      |
+| `unreadable`                            | Download or parse failed; retried next harvest while the artifact lives                 |
+| `no-record`                             | The report zip holds no `flaky.json`                                                    |
+| `unsupported-schema-<n>`                | A record version this reader does not understand; bump the reader, never guess          |
+| `status-interrupted`, `status-timedout` | The run was cut short, so its record would read as a small clean sample                 |
+| `no-artifact`                           | The job reached a verdict but no artifact of its name exists                            |
+| `replaced-by-later-attempt`             | A re-run's upload replaced this attempt's artifact                                      |
+| `job-cancelled`, `job-skipped`, …       | The job uploaded no artifact and reached no verdict (an artifact it did upload is read) |
+| `jobs-unavailable`                      | The run's job list could not be read                                                    |
+| `run-in-progress`                       | The run had not finished at the latest harvest                                          |
 
 The digest also warns when the history does not reach back to the window start, when two harvests
 are further apart than artifact retention, when the latest harvest is stale, and on any per-item

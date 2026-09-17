@@ -5,7 +5,7 @@
 import {
   isCountedRecord,
   REPORT_ARTIFACT_RETENTION_DAYS,
-  UPLOADING_CONCLUSIONS,
+  VERDICT_CONCLUSIONS,
 } from './flaky-history.mjs';
 
 const FLAKY_DIGEST_SCHEMA_VERSION = 1;
@@ -55,17 +55,17 @@ function pairExecutions(run, artifacts) {
     else unpaired.push(execution);
   }
   for (const execution of unpaired) {
-    const artifact = UPLOADING_CONCLUSIONS.has(execution.conclusion)
-      ? take((candidate) => candidate.name === execution.artifact && candidate.state !== 'read')
-      : null;
+    const artifact = take(
+      (candidate) => candidate.name === execution.artifact && candidate.state !== 'read'
+    );
     pairs.push({ execution, artifact });
   }
   return { pairs, unmatchedArtifacts };
 }
 
 function gapReason({ execution, artifact }, pairs) {
-  if (!UPLOADING_CONCLUSIONS.has(execution.conclusion)) return `job-${execution.conclusion}`;
   if (!artifact) {
+    if (!VERDICT_CONCLUSIONS.has(execution.conclusion)) return `job-${execution.conclusion}`;
     // A run keeps one artifact per name, so a later attempt holding it replaced this upload —
     // whether or not that surviving artifact could be read.
     const replaced = pairs.some(
@@ -314,7 +314,7 @@ export function renderDigestMarkdown(digest) {
     for (const entry of digest.ranking) {
       lines.push(
         `| ${entry.events} | ${entry.trunkEvents} | ${entry.branchEvents} | ${entry.lastSeen.slice(0, 10)} | ${escapeCell(
-          `${entry.project} › ${entry.title}`
+          entry.title
         )} | ${entry.occurrences.map(occurrenceLink).join('<br>')} |`
       );
     }
