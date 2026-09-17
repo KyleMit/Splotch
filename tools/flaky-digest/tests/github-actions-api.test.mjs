@@ -31,19 +31,20 @@ const artifacts = (count, createdAt) =>
   Array.from({ length: count }, (_, index) => ({ id: index, created_at: createdAt }));
 
 describe('createGithubActionsApi', () => {
-  it('pages the artifact list until a page holds nothing created since the cutoff', async () => {
+  it('pages the artifact list past loosely ordered pages until one predates the slack margin', async () => {
     const pages = {
       1: artifacts(100, '2026-09-16T00:00:00Z'),
       2: [...artifacts(60, '2026-09-10T00:00:00Z'), ...artifacts(40, '2026-09-01T00:00:00Z')],
-      3: artifacts(100, '2026-09-01T00:00:00Z'),
-      4: artifacts(100, '2026-08-01T00:00:00Z'),
+      3: [...artifacts(99, '2026-09-08T12:00:00Z'), ...artifacts(1, '2026-09-09T06:00:00Z')],
+      4: artifacts(100, '2026-09-07T00:00:00Z'),
+      5: artifacts(100, '2026-08-01T00:00:00Z'),
     };
     const { api, requests } = apiWith((url) =>
       response({ artifacts: pages[url.searchParams.get('page')] })
     );
     const listed = await api.listArtifacts(new Date('2026-09-09T00:00:00Z'));
-    expect(listed).toHaveLength(160);
-    expect(requests.map(({ url }) => url.searchParams.get('page'))).toEqual(['1', '2', '3']);
+    expect(listed).toHaveLength(161);
+    expect(requests.map(({ url }) => url.searchParams.get('page'))).toEqual(['1', '2', '3', '4']);
     expect(requests[0].init.headers.authorization).toBe('Bearer t');
   });
 

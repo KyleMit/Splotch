@@ -7,6 +7,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const API_ORIGIN = 'https://api.github.com';
+const HOUR_MS = 60 * 60 * 1000;
+
+// How far the artifact list's id order was observed to stray from creation order is a few hours; a
+// day of margin costs one or two extra pages per harvest.
+const ARTIFACT_ORDER_SLACK_HOURS = 24;
 const PAGE_SIZE = 100;
 
 // Requests held back from artifact downloads so the listings of the next harvest step, and the
@@ -86,14 +91,19 @@ export function createGithubActionsApi({ repo, token, fetchImpl = fetch }) {
       return jobs;
     },
 
-    /** Newest first; stops at the first page holding nothing created since `since`. */
+    /**
+     * Every artifact created since `since`. The list is ordered by id, which only roughly follows
+     * creation time, so paging stops at the first page created entirely before the slack margin.
+     */
     async listArtifacts(since) {
       const artifacts = [];
       const cutoff = since.toISOString();
+      const stopBefore = new Date(
+        since.getTime() - ARTIFACT_ORDER_SLACK_HOURS * HOUR_MS
+      ).toISOString();
       for await (const page of pages(`/repos/${repo}/actions/artifacts`, 'artifacts')) {
-        const recent = page.filter((artifact) => artifact.created_at >= cutoff);
-        artifacts.push(...recent);
-        if (recent.length === 0) break;
+        artifacts.push(...page.filter((artifact) => artifact.created_at >= cutoff));
+        if (page.every((artifact) => artifact.created_at < stopBefore)) break;
       }
       return artifacts;
     },
