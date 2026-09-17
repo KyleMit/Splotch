@@ -18,6 +18,7 @@
   import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
   import { layoutState } from '$lib/state/layout.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
+  import { saveFailureState } from '$lib/state/saveFailure.svelte';
   import { visibleActionButtonCount } from '$lib/actionButtonLayout';
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
   import '$lib/components/deferredIcons';
@@ -62,8 +63,9 @@
   // and never competes with the very first finger-on-screen moment. It also
   // stands down while a generation waits in the corner: both live in the same
   // place, and of the two only the chip is the way back to a picture already
-  // paid for (ADR-0116). An install prompt is re-offerable after sustained use,
-  // and Settings carries the same action.
+  // paid for (ADR-0116). It also waits out a save-failure banner, which is about a
+  // picture that has not been kept yet. An install prompt is re-offerable after
+  // sustained use, and Settings carries the same action.
   const shareLocation = $derived(
     layoutState.viewportWidth > 0 &&
       layoutState.viewportWidth < TABLET_MIN_SIDE_PX &&
@@ -79,6 +81,7 @@
       promptStage !== null &&
       installState.mode !== 'none' &&
       !aiGenerationState.minimized &&
+      saveFailureState.outcome === null &&
       canvasState.strokeCount >= SETTLED_IN_STROKES
   );
 

@@ -38,6 +38,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ColoringPacksPlugin.class);
         registerPlugin(SystemBackPlugin.class);
         registerPlugin(PhotoLibraryPlugin.class);
+        registerPlugin(AppSettingsPlugin.class);
         super.onCreate(savedInstanceState);
         updateWebViewBackground();
         drawUnderDisplayCutout();

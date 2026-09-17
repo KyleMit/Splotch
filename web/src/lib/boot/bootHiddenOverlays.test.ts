@@ -26,6 +26,7 @@ const overlays = vi.hoisted(() => ({
   AiWaitingPolaroid: () => {},
   AiImageResult: () => {},
   InstallBanner: () => {},
+  SaveFailureBanner: () => {},
   SettingsModal: () => {},
 }));
 
@@ -69,6 +70,7 @@ describe('mountBootHiddenOverlays', () => {
       'aiWaiting',
       'aiResult',
       'installBanner',
+      'saveFailureBanner',
       'settings',
     ];
     for (const key of expected) {

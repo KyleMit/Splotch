@@ -12,6 +12,7 @@ describe('autoSaveFooter', () => {
 
   it('falls back to the Download button when the save failed', () => {
     expect(autoSaveFooter({ status: 'failed' })).toEqual({ kind: 'downloadButton' });
+    expect(autoSaveFooter({ status: 'denied' })).toEqual({ kind: 'downloadButton' });
   });
 
   it('names where the picture actually went', () => {

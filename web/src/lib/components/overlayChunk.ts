@@ -1,5 +1,5 @@
-// The overlays that are always invisible at boot (state-driven dialogs and the
-// earned install banner), grouped into one lazy chunk. The
+// The overlays that are always invisible at boot (state-driven dialogs, the
+// earned install banner, and the save-failure banner), grouped into one lazy chunk. The
 // mountBootHiddenOverlays() pump in lib/boot/bootHiddenOverlays.ts imports this
 // module off the first-load long task. A requested overlay loads and mounts
 // ahead of the background queue; otherwise their subtrees become resident one
@@ -15,3 +15,4 @@ export { default as AiImagePrompt } from './AiImagePrompt.svelte';
 export { default as AiImageResult } from './AiImageResult.svelte';
 export { default as AiWaitingPolaroid } from './AiWaitingPolaroid.svelte';
 export { default as InstallBanner } from './InstallBanner.svelte';
+export { default as SaveFailureBanner } from './SaveFailureBanner.svelte';

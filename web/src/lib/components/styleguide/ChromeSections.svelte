@@ -87,6 +87,12 @@
       zone: 'banner',
     },
     {
+      name: 'Save Failure Banner',
+      file: 'SaveFailureBanner.svelte',
+      blurb: 'Top-of-canvas notice telling the grown-up a picture was not saved, with Try again.',
+      zone: 'topBanner',
+    },
+    {
       name: 'Pointer Halos',
       file: 'PointerHalos.svelte',
       blurb: 'Touch-feedback rings under fingers while drawing.',

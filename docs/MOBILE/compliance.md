@@ -52,8 +52,9 @@ this app's shape.
 > Kids Category should not include third-party analytics or third-party advertising."
 
 **Impact.** Splotch declares Kids Category, 5 & Under. Every outbound link (OpenAI key page, OpenAI
-terms, GitHub, hosted feedback form, `/privacy` links) and the BYOK area are inside this rule's
-blast radius; so is any analytics or ads SDK, of which the app ships none.
+terms, GitHub, hosted feedback form, `/privacy` links, the Save Failure Banner's Open Settings) and
+the BYOK area are inside this rule's blast radius; so is any analytics or ads SDK, of which the app
+ships none.
 
 **Decisions.** ADR-0094 established operation-boundary gates — never a gate on Settings as a whole —
 with per-feature `always`/`session`/`never` policies. Store builds arm every gate to `always` at

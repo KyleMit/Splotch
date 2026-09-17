@@ -12,6 +12,7 @@ export function autoSaveFooter(autoSave: AiAutoSave | null): AutoSaveFooter {
   switch (autoSave.status) {
     case 'saving':
       return null;
+    case 'denied':
     case 'failed':
       return { kind: 'downloadButton' };
     case 'photos':

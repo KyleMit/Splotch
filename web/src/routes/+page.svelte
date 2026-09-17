@@ -29,6 +29,7 @@
   } from '$lib/state/ui.svelte';
   import { parentalGateState } from '$lib/state/parentalGate.svelte';
   import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
+  import { saveFailureState } from '$lib/state/saveFailure.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
   import { captureAiAccessTokenFromUrl } from '$lib/state/aiAccessToken';
@@ -126,6 +127,7 @@
     [() => aiPromptModal.open, 'aiPrompt'],
     [() => aiGenerationState.phase.kind !== 'closed', 'aiResult'],
     [() => settingsModal.open, 'settings'],
+    [() => saveFailureState.outcome !== null, 'saveFailureBanner'],
   ];
 
   function demandOpenOverlays(controller: BootHiddenOverlays) {
