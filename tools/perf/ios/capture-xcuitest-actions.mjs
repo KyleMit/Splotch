@@ -84,6 +84,15 @@ const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 // A capped walk back through history: enough to empty a sweep's own strokes,
 // never an unbounded loop against a button that refuses to disable.
 const MAX_UNDO_EXHAUST_TAPS = 12;
+// The waiting print's ready cue, by animation name: the wiggle that settles the
+// print and the badge that pops on it. The spinner is deliberately absent — it
+// loops forever while the picture is still being made, so it can never finish.
+const AI_READY_CUE_ANIMATIONS = ['polaroidWiggle', 'badgePop'];
+// polaroidWiggle is 150ms + 2 x 2.6s; this is that with room for a slow device.
+const AI_READY_CUE_TIMEOUT_MS = 9_000;
+// How long to wait for the cue to exist at all before releasing a build that
+// does not play one (a reduced-motion device, or a product that drops it).
+const AI_READY_CUE_GRACE_MS = 1_000;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
 const ALL_ACTIONS = new Set(FULL_ACTION_GROUPS);
 
@@ -1016,8 +1025,54 @@ async function measureAiWaitingBadge(execute) {
     `document.querySelector('.polaroid-badge') !== null`,
     'the AI waiting print to show its badge'
   );
-  await sleep(ANIMATED_ACTION_SETTLE_MS);
+  // The ready cue is the longest in the app — polaroidWiggle runs 2.6s twice
+  // after a 150ms delay, and the badge pops for 560ms — and #1870 is asking
+  // precisely whether a cue that now runs longer costs more per frame. A fixed
+  // settle would stop the sample a second in and score none of it, so the window
+  // closes when the cue's own animations do. The spinner is excluded by name: it
+  // loops forever while the picture is still being made.
+  await execute(`
+    const cueNames = ${JSON.stringify(AI_READY_CUE_ANIMATIONS)};
+    const deadline = performance.now() + ${AI_READY_CUE_TIMEOUT_MS};
+    const cuesNow = () =>
+      (document.querySelector('.ai-waiting-polaroid')?.getAnimations?.({ subtree: true }) ?? [])
+        .filter(
+          (animation) =>
+            typeof animation.animationName === 'string' && cueNames.includes(animation.animationName)
+        );
+    window.__perfAiCueSettled = false;
+    window.__perfAiCueSeen = 0;
+    // Re-queried rather than snapshotted: the badge's animation does not exist
+    // yet in the turn the badge appears, and a one-shot read settles instantly
+    // on an empty list — which scored 124 frames of a cue that runs for five
+    // seconds. A cue that never appears still releases, at the grace deadline.
+    void (async () => {
+      const grace = performance.now() + ${AI_READY_CUE_GRACE_MS};
+      for (;;) {
+        const cues = cuesNow();
+        window.__perfAiCueSeen = Math.max(window.__perfAiCueSeen, cues.length);
+        if (cues.length > 0) {
+          await Promise.allSettled(cues.map((animation) => animation.finished));
+          if (cuesNow().length === 0) break;
+        } else if (window.__perfAiCueSeen > 0 || performance.now() > grace) {
+          break;
+        }
+        if (performance.now() > deadline) break;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      window.__perfAiCueSettled = true;
+    })();
+    return true;
+  `);
+  await waitForReady(
+    execute,
+    `window.__perfAiCueSettled === true`,
+    'the AI ready cue to finish',
+    AI_READY_CUE_TIMEOUT_MS
+  );
+  await sleep(ACTION_SETTLE_MS);
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
+  await execute(`delete window.__perfAiCueSettled; delete window.__perfAiCueSeen; return true;`);
   return { ...sample, activation: 'driver' };
 }
 

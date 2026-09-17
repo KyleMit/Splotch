@@ -1194,6 +1194,28 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     expect(badge).toContain('.polaroid-badge');
   });
 
+  it('scores the AI ready cue to its end instead of a fixed settle', () => {
+    const badge = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf('async function measureAiWaitingBadge'),
+      IPAD_ACTIONS.indexOf('// Undo at the end of history answers')
+    );
+
+    // polaroidWiggle runs 150ms + 2 x 2.6s, so a 1.1s settle scored about a
+    // quarter of it and no late-frame regression could ever fail this coverage.
+    expect(badge).toContain('AI_READY_CUE_ANIMATIONS');
+    expect(badge).toContain('__perfAiCueSettled');
+    expect(badge).toContain('AI_READY_CUE_TIMEOUT_MS');
+    // Re-queried, not snapshotted: the badge animation does not exist in the
+    // turn the badge appears, and a one-shot read settles on an empty list.
+    expect(badge).toContain('cuesNow()');
+    expect(badge).toContain('__perfAiCueSeen');
+    // The spinner loops forever while the picture is made; waiting on it hangs.
+    expect(IPAD_ACTIONS).toContain(
+      "const AI_READY_CUE_ANIMATIONS = ['polaroidWiggle', 'badgePop']"
+    );
+    expect(badge).not.toContain('polaroidSpin');
+  });
+
   it('taps undo at the end of history for the unavailable cue, with a capped walk back', () => {
     const start = IPAD_ACTIONS.indexOf("if (actions.has('unavailable'))");
     const end = IPAD_ACTIONS.indexOf("if (actions.has('clear'))", start);
