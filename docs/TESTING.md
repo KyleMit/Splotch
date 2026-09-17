@@ -443,6 +443,14 @@ Write specs that can't race in the first place:
   in the page when the next phase depends on compositor observation. Keep that pacing local until a
   second real caller earns a narrowly named helper; do not introduce a generic `nextFrame` or
   `waitForStable` abstraction.
+* **Leave an element by moving the real mouse, never by dispatching a boundary event.** A synthetic
+  `pointerleave` runs the app's handler but leaves the browser's hover target where the cursor is.
+  Any later hover recompute — an overlay under the parked cursor unmounting, such as a flyout
+  closing on the click that chose from it — then sends a trusted `pointerenter` back to the element,
+  on whichever frame the removal paints. The eraser-bubble spec in `flows-palette-brush.spec.ts`
+  lost that race 3 in 60 single-worker runs (7 in 40 with event logging slowing the frame): the
+  flyout closed, the synthetic leave hid the bubble, and the recompute re-entered the canvas a frame
+  later. Hover a stable control instead (`locator.hover()`), which moves the hit-test target itself.
 * **A control's UI state commits a tick before the imperative engine adopts it, so wait on the
   engine.** The tool buttons update `aria-pressed` reactively, but the engine enters that mode
   through a Svelte `$effect` (`setMagicMode` in `DrawingCanvas`), so `aria-pressed=true` does not

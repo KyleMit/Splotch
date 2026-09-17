@@ -114,7 +114,8 @@ paths:
   the engine's dropped-pointer threshold — a hand-rolled run of far-apart `mouse.move`s gets read as
   a lifted finger and paints a stub of the stroke; make a mocked endpoint control resolve only after
   its awaited `route.fulfill()` completes; pace compositor-dependent synthetic gesture phases with
-  rendered frames, not a fixed sleep; do not invent generic `waitForStable`, route-controller, or
-  `nextFrame` abstractions without multiple real callers; and verify a fix with `--repeat-each=10`,
-  never in isolation. Full checklist with examples: the `testing` skill, "Writing flake-resistant
-  specs."
+  rendered frames, not a fixed sleep; leave an element by hovering a real control, never by
+  dispatching a synthetic `pointerleave`, which leaves the browser's hover target in place; do not
+  invent generic `waitForStable`, route-controller, or `nextFrame` abstractions without multiple
+  real callers; and verify a fix with `--repeat-each=10`, never in isolation. Full checklist with
+  examples: the `testing` skill, "Writing flake-resistant specs."

@@ -364,16 +364,16 @@ test('the eraser bubble tracks the pointer and hides on leave or brush switch', 
   const bubble = page.locator('.eraser-bubble');
   const canvas = page.locator('#drawingCanvas');
 
-  // pointerleave doesn't bubble, so dispatch it straight at the canvas rather
-  // than relying on a real mouse move landing outside its box (the
-  // surrounding chrome varies with viewport size). This also gives the test a
-  // known starting state: picking the eraser can close the flyout right under
-  // the cursor, exposing the canvas beneath it and legitimately showing the
-  // bubble before any deliberate move.
-  const leaveCanvas = () =>
-    canvas.evaluate((el) =>
-      el.dispatchEvent(new PointerEvent('pointerleave', { cancelable: true }))
-    );
+  // Leave with a real mouse move, never a synthetic pointerleave: dispatching
+  // the event leaves the browser's own hover target on the canvas. Picking the
+  // eraser closes the flyout under a parked cursor, and the hover recompute
+  // after that removal sends the exposed canvas a trusted pointerenter on a
+  // later frame — which, landing after a synthetic leave, rightly shows the
+  // bubble again. Moving onto a control changes the hit-test target itself, so
+  // no later recompute can re-enter the canvas. The undo button is openDrawer's
+  // own open marker and only aria-disabled, so it takes the hover wherever the
+  // viewport places it.
+  const leaveCanvas = () => page.locator('#undoButton').hover();
   await leaveCanvas();
   await expect(bubble).toHaveCount(0);
 
