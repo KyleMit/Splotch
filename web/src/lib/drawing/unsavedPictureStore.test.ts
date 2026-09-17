@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { HeldPictures } from './unsavedPictureStore';
+import type { HeldPicture } from './unsavedPictureStore';
 
 const mocks = vi.hoisted(() => ({
   flag: false,
@@ -24,12 +24,14 @@ vi.mock('$lib/storage', () => ({
 
 import { createUnsavedPictureStore } from './unsavedPictureStore';
 
-const held: HeldPictures = {
-  outcome: 'denied',
-  pictures: [
-    { blob: new Blob(['picture'], { type: 'image/png' }), baseName: 'splotch', signature: 'abc' },
-  ],
-};
+const held: HeldPicture[] = [
+  {
+    blob: new Blob(['picture'], { type: 'image/png' }),
+    baseName: 'splotch',
+    outcome: 'denied',
+    signature: 'abc',
+  },
+];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -53,14 +55,11 @@ describe('createUnsavedPictureStore', () => {
     mocks.get.mockResolvedValue(stored);
 
     expect(mocks.flag).toBe(true);
-    expect(stored.pictures[0].bytes).toBeInstanceOf(ArrayBuffer);
+    expect(stored[0].bytes).toBeInstanceOf(ArrayBuffer);
     const restored = await store.read();
-    expect(restored).toMatchObject({
-      outcome: 'denied',
-      pictures: [{ baseName: 'splotch', signature: 'abc' }],
-    });
-    await expect(restored?.pictures[0].blob.text()).resolves.toBe('picture');
-    expect(restored?.pictures[0].blob.type).toBe('image/png');
+    expect(restored).toMatchObject([{ baseName: 'splotch', outcome: 'denied', signature: 'abc' }]);
+    await expect(restored?.[0].blob.text()).resolves.toBe('picture');
+    expect(restored?.[0].blob.type).toBe('image/png');
   });
 
   it('clears the flag before deleting an emptied record', async () => {
@@ -68,7 +67,7 @@ describe('createUnsavedPictureStore', () => {
     mocks.flag = true;
     mocks.delete.mockImplementation(async () => expect(mocks.flag).toBe(false));
 
-    await store.write({ outcome: 'failed', pictures: [] });
+    await store.write([]);
 
     expect(mocks.delete).toHaveBeenCalledOnce();
   });

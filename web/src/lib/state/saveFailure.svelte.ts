@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
-import type { SaveResult, UnsavedStatus } from '$lib/saveNaming';
+import { onDurableRestore } from '$lib/storage';
+import { isUnsaved, type SaveResult, type UnsavedStatus } from '$lib/saveNaming';
 import {
   createUnsavedPictureStore,
   type HeldPicture,
@@ -63,11 +64,19 @@ export function createSaveFailure({
   savePicture = savePictureOnDemand,
   pictureStore = createUnsavedPictureStore(),
 }: SaveFailureDependencies = {}): SaveFailureState {
-  const s = $state<{ outcome: UnsavedStatus | null; retrying: boolean }>({
-    outcome: null,
+  // `uncapturedOutcome` is a failure that left no picture to hold (an export that produced nothing),
+  // which still owes the parent a banner. Held pictures each keep their own outcome, so a denied one
+  // keeps Open Settings on offer however many generic failures are reported after it.
+  const s = $state<{ uncapturedOutcome: UnsavedStatus | null; retrying: boolean }>({
+    uncapturedOutcome: null,
     retrying: false,
   });
   let pictures = $state.raw<HeldPicture[]>([]);
+
+  function outcome(): UnsavedStatus | null {
+    if (pictures.some((picture) => picture.outcome === 'denied')) return 'denied';
+    return pictures.length > 0 ? 'failed' : s.uncapturedOutcome;
+  }
   // Bumped by a dismissal so a report, retry, or restore that settles afterwards cannot bring the
   // banner back.
   let generation = 0;
@@ -83,9 +92,7 @@ export function createSaveFailure({
   }
 
   function persist() {
-    void enqueue(() =>
-      pictureStore.write(s.outcome && pictures.length > 0 ? { outcome: s.outcome, pictures } : null)
-    );
+    void enqueue(() => pictureStore.write(pictures.length > 0 ? pictures : null));
   }
 
   function withPicture(held: HeldPicture[], picture: HeldPicture): HeldPicture[] {
@@ -96,7 +103,7 @@ export function createSaveFailure({
 
   return {
     get outcome() {
-      return s.outcome;
+      return outcome();
     },
     get pictureCount() {
       return pictures.length;
@@ -109,9 +116,12 @@ export function createSaveFailure({
       const reportGeneration = generation;
       const signature = picture ? await pictureSignature(picture.blob) : null;
       if (reportGeneration !== generation) return;
-      if (picture) pictures = withPicture(pictures, { ...picture, signature });
-      s.outcome = outcome;
-      persist();
+      if (picture) {
+        pictures = withPicture(pictures, { ...picture, outcome, signature });
+        persist();
+      } else {
+        s.uncapturedOutcome = outcome;
+      }
       demandOverlay('saveFailureBanner');
     },
 
@@ -120,34 +130,26 @@ export function createSaveFailure({
       const retryGeneration = generation;
       const attempted = pictures;
       const stillUnsaved: HeldPicture[] = [];
-      let outcome: UnsavedStatus = 'failed';
       s.retrying = true;
       try {
         for (const picture of attempted) {
           const result = await savePicture(picture);
           if (retryGeneration !== generation) return;
-          if (result.status === 'denied' || result.status === 'failed') {
-            stillUnsaved.push(picture);
-            if (result.status === 'denied') outcome = 'denied';
-          }
+          if (isUnsaved(result)) stillUnsaved.push({ ...picture, outcome: result.status });
         }
       } finally {
         if (retryGeneration === generation) s.retrying = false;
       }
       const reportedDuringRetry = pictures.filter((picture) => !attempted.includes(picture));
       pictures = [...stillUnsaved, ...reportedDuringRetry];
-      if (pictures.length === 0) {
-        s.outcome = null;
-      } else if (stillUnsaved.length > 0) {
-        s.outcome = outcome;
-      }
+      s.uncapturedOutcome = null;
       persist();
     },
 
     dismissSaveFailure() {
       generation += 1;
       pictures = [];
-      s.outcome = null;
+      s.uncapturedOutcome = null;
       s.retrying = false;
       persist();
     },
@@ -155,9 +157,8 @@ export function createSaveFailure({
     async restoreUnsavedPictures() {
       const restoreGeneration = generation;
       const held = await enqueue(() => pictureStore.read());
-      if (!held || held.pictures.length === 0 || restoreGeneration !== generation) return;
-      pictures = pictures.reduce(withPicture, held.pictures);
-      s.outcome ??= held.outcome;
+      if (!held || held.length === 0 || restoreGeneration !== generation) return;
+      pictures = pictures.reduce(withPicture, held.slice(-UNSAVED_PICTURE_LIMIT));
       persist();
       demandOverlay('saveFailureBanner');
     },
@@ -168,4 +169,10 @@ export const saveFailureState = createSaveFailure();
 
 export const { reportSaveFailure, retryUnsavedPictures, dismissSaveFailure } = saveFailureState;
 
-if (browser) void saveFailureState.restoreUnsavedPictures();
+// The flag that gates the IndexedDB read lives in localStorage, which a native WebView can evict
+// while its Capacitor Preferences mirror keeps it; hydration then restores the flag, so the restore
+// runs again. Pictures already held are deduplicated by content.
+if (browser) {
+  void saveFailureState.restoreUnsavedPictures();
+  onDurableRestore(() => void saveFailureState.restoreUnsavedPictures());
+}

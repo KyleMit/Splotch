@@ -12,17 +12,13 @@ import { STORAGE_KEYS, readBool, removeKey, writeBool } from '$lib/storage';
 export interface HeldPicture {
   blob: Blob;
   baseName: string;
+  outcome: UnsavedStatus;
   signature: string | null;
 }
 
-export interface HeldPictures {
-  outcome: UnsavedStatus;
-  pictures: HeldPicture[];
-}
-
 export interface UnsavedPictureStore {
-  read(): Promise<HeldPictures | null>;
-  write(held: HeldPictures | null): Promise<void>;
+  read(): Promise<HeldPicture[] | null>;
+  write(held: HeldPicture[] | null): Promise<void>;
 }
 
 const DB_NAME = 'splotch-unsaved-pictures';
@@ -33,44 +29,32 @@ interface StoredPicture {
   bytes: ArrayBuffer;
   type: string;
   baseName: string;
-  signature: string | null;
-}
-
-interface StoredPictures {
   outcome: UnsavedStatus;
-  pictures: StoredPicture[];
+  signature: string | null;
 }
 
 interface UnsavedPictureDb extends DBSchema {
   held: {
     key: string;
-    value: StoredPictures;
+    value: StoredPicture[];
   };
 }
 
-async function toStored({ outcome, pictures }: HeldPictures): Promise<StoredPictures> {
-  return {
-    outcome,
-    pictures: await Promise.all(
-      pictures.map(async ({ blob, baseName, signature }) => ({
-        bytes: await blob.arrayBuffer(),
-        type: blob.type,
-        baseName,
-        signature,
-      }))
-    ),
-  };
+function toStored(held: HeldPicture[]): Promise<StoredPicture[]> {
+  return Promise.all(
+    held.map(async ({ blob, ...picture }) => ({
+      ...picture,
+      bytes: await blob.arrayBuffer(),
+      type: blob.type,
+    }))
+  );
 }
 
-function fromStored({ outcome, pictures }: StoredPictures): HeldPictures {
-  return {
-    outcome,
-    pictures: pictures.map(({ bytes, type, baseName, signature }) => ({
-      blob: new Blob([bytes], { type }),
-      baseName,
-      signature,
-    })),
-  };
+function fromStored(stored: StoredPicture[]): HeldPicture[] {
+  return stored.map(({ bytes, type, ...picture }) => ({
+    ...picture,
+    blob: new Blob([bytes], { type }),
+  }));
 }
 
 export function createUnsavedPictureStore(): UnsavedPictureStore {
@@ -88,7 +72,7 @@ export function createUnsavedPictureStore(): UnsavedPictureStore {
     },
     async write(held) {
       try {
-        if (held && held.pictures.length > 0) {
+        if (held && held.length > 0) {
           await store.put(HELD_KEY, await toStored(held));
           writeBool(STORAGE_KEYS.unsavedPicturesHeld, true);
         } else {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SaveResult } from '$lib/saveNaming';
-import type { HeldPictures, UnsavedPictureStore } from '$lib/drawing/unsavedPictureStore';
+import type { HeldPicture, UnsavedPictureStore } from '$lib/drawing/unsavedPictureStore';
 import {
   createSaveFailure,
   UNSAVED_PICTURE_LIMIT,
@@ -16,14 +16,14 @@ function picture(bytes: string, baseName = 'splotch'): UnsavedPicture {
 }
 
 interface MemoryStore extends UnsavedPictureStore {
-  held: HeldPictures | null;
+  held: HeldPicture[] | null;
 }
 
-function memoryStore(initial: HeldPictures | null = null) {
+function memoryStore(initial: HeldPicture[] | null = null) {
   const store: MemoryStore & { read: ReturnType<typeof vi.fn<MemoryStore['read']>> } = {
     held: initial,
     read: vi.fn<MemoryStore['read']>(async () => store.held),
-    write: vi.fn(async (held: HeldPictures | null) => {
+    write: vi.fn(async (held: HeldPicture[] | null) => {
       store.held = held;
     }),
   };
@@ -84,6 +84,45 @@ describe('reportSaveFailure', () => {
 
     expect(save).toHaveBeenCalledTimes(UNSAVED_PICTURE_LIMIT);
     expect(save.mock.calls.map(([saved]) => saved.baseName)).not.toContain('name-0');
+  });
+});
+
+describe('the banner outcome', () => {
+  it.each([
+    ['denied then failed', ['denied', 'failed']],
+    ['failed then denied', ['failed', 'denied']],
+  ] as const)(
+    'keeps Open Settings on offer while any held picture was denied (%s)',
+    async (_order, outcomes) => {
+      const failure = failureWith(saverReturning());
+
+      await failure.reportSaveFailure(outcomes[0], picture('first'));
+      await failure.reportSaveFailure(outcomes[1], picture('second'));
+
+      expect(failure.pictureCount).toBe(2);
+      expect(failure.outcome).toBe('denied');
+    }
+  );
+
+  it('drops the permission copy once only generic failures remain', async () => {
+    const save = saverReturning({ status: 'photos' }, { status: 'failed' });
+    const failure = failureWith(save);
+    await failure.reportSaveFailure('denied', picture('denied'));
+    await failure.reportSaveFailure('failed', picture('failed'));
+
+    await failure.retryUnsavedPictures();
+
+    expect(failure.pictureCount).toBe(1);
+    expect(failure.outcome).toBe('failed');
+  });
+
+  it('does not let an uncaptured failure hide a held denial', async () => {
+    const failure = failureWith(saverReturning());
+    await failure.reportSaveFailure('denied', picture('denied'));
+
+    await failure.reportSaveFailure('failed', null);
+
+    expect(failure.outcome).toBe('denied');
   });
 });
 
@@ -200,7 +239,7 @@ describe('unsaved pictures across a relaunch', () => {
 
     await failure.reportSaveFailure('denied', held);
     await vi.waitFor(() =>
-      expect(store.held).toMatchObject({ outcome: 'denied', pictures: [{ blob: held.blob }] })
+      expect(store.held).toMatchObject([{ blob: held.blob, outcome: 'denied' }])
     );
 
     await failure.retryUnsavedPictures();
@@ -209,10 +248,7 @@ describe('unsaved pictures across a relaunch', () => {
 
   it('restores the banner with the pictures a terminated session left behind', async () => {
     const earlier = picture('drawn before Settings');
-    const store = memoryStore({
-      outcome: 'denied',
-      pictures: [{ ...earlier, signature: 'earlier' }],
-    });
+    const store = memoryStore([{ ...earlier, outcome: 'denied', signature: 'earlier' }]);
     const save = saverReturning({ status: 'photos' });
     const failure = failureWith(save, store);
 
@@ -228,18 +264,19 @@ describe('unsaved pictures across a relaunch', () => {
   });
 
   it('keeps both the restored pictures and one reported while the store was being read', async () => {
-    const read = Promise.withResolvers<HeldPictures | null>();
+    const read = Promise.withResolvers<HeldPicture[] | null>();
     const store = memoryStore();
     store.read.mockReturnValueOnce(read.promise);
     const failure = failureWith(saverReturning(), store);
 
     const restore = failure.restoreUnsavedPictures();
     const report = failure.reportSaveFailure('failed', picture('new'));
-    read.resolve({ outcome: 'denied', pictures: [{ ...picture('old'), signature: 'old' }] });
+    read.resolve([{ ...picture('old'), outcome: 'denied', signature: 'old' }]);
     await Promise.all([restore, report]);
 
     expect(failure.pictureCount).toBe(2);
-    await vi.waitFor(() => expect(store.held?.pictures).toHaveLength(2));
+    await vi.waitFor(() => expect(store.held).toHaveLength(2));
+    expect(failure.outcome).toBe('denied');
   });
 
   it('forgets the stored pictures on dismissal', async () => {

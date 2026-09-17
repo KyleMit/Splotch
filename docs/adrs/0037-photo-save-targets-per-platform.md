@@ -201,8 +201,11 @@ parent who grants access in Settings comes back to a fresh launch. Held pictures
 in IndexedDB (`drawing/unsavedPictureStore.ts`), stored as an `ArrayBuffer` plus MIME type rather
 than the `Blob`: on the iOS simulator a `Blob` read back from IndexedDB after the relaunch did not
 save, while the bytes did. A localStorage flag records that pictures are held, so a boot with
-nothing to retry never opens that database, the same pattern as the web save folder above. At boot
-the banner comes back with the stored outcome and pictures, and Try again saves them.
+nothing to retry never opens that database, the same pattern as the web save folder above. At boot,
+and again after native durable-storage hydration restores a flag the WebView evicted, the banner
+comes back with the stored pictures, and Try again saves them. Each held picture keeps its own
+outcome, and the banner reads `denied` while any of them was denied, so a later generic failure
+cannot take Open Settings away.
 
 **Open Settings is native-only and gated.** For `denied`, the banner adds Open Settings, which calls
 the app-local `AppSettings` plugin (`ACTION_APPLICATION_DETAILS_SETTINGS` on Android,
