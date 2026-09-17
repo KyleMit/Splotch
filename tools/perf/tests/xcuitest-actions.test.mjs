@@ -41,6 +41,7 @@ import {
   unclassifiedDeviceWarning,
   validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
+  isAiReadyCueAnimation,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { DEVICE_CLASSES } from '../lib/campaign-plan.mjs';
 import {
@@ -1192,6 +1193,31 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     expect(stub).toContain('__perfAiRelease');
     expect(badge).toContain('window.__perfAiRelease = true');
     expect(badge).toContain('.polaroid-badge');
+  });
+
+  it('recognises the cue under the scoped name a built bundle actually runs', () => {
+    // Svelte scopes component keyframes: the running animation is
+    // `svelte-<hash>-polaroidWiggle` in a build and the bare name only in source.
+    // Matching the bare name alone recognised nothing, the wait fell through its
+    // grace window, and the sample was truncated with the source scan still green.
+    expect(isAiReadyCueAnimation('svelte-10ut6t1-polaroidWiggle')).toBe(true);
+    expect(isAiReadyCueAnimation('svelte-10ut6t1-badgePop')).toBe(true);
+    expect(isAiReadyCueAnimation('polaroidWiggle')).toBe(true);
+    // The spinner loops forever while the picture is being made; waiting on it hangs.
+    expect(isAiReadyCueAnimation('svelte-10ut6t1-polaroidSpin')).toBe(false);
+    expect(isAiReadyCueAnimation('polaroidSpin')).toBe(false);
+    // A different cue that merely ends in the same letters is not this one.
+    expect(isAiReadyCueAnimation('notpolaroidWiggle')).toBe(false);
+    expect(isAiReadyCueAnimation(undefined)).toBe(false);
+  });
+
+  it('runs the same match in the page as the exported matcher', () => {
+    const badge = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf('async function measureAiWaitingBadge'),
+      IPAD_ACTIONS.indexOf('// Undo at the end of history answers')
+    );
+
+    expect(badge).toContain("name.endsWith('-' + cue)");
   });
 
   it('scores the AI ready cue to its end instead of a fixed settle', () => {

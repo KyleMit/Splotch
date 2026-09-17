@@ -90,6 +90,15 @@ const MAX_UNDO_EXHAUST_TAPS = 12;
 const AI_READY_CUE_ANIMATIONS = ['polaroidWiggle', 'badgePop'];
 // polaroidWiggle is 150ms + 2 x 2.6s; this is that with room for a slow device.
 const AI_READY_CUE_TIMEOUT_MS = 9_000;
+// Svelte scopes component keyframes, so the running animation is named
+// `svelte-<hash>-polaroidWiggle` in a built bundle and `polaroidWiggle` only in
+// source. Matching the source name alone recognised nothing, the wait fell
+// through its grace window, and the sample was truncated exactly as before —
+// with a source-scanning test still passing (issue #1870 review, round two).
+export function isAiReadyCueAnimation(name, cueNames = AI_READY_CUE_ANIMATIONS) {
+  if (typeof name !== 'string') return false;
+  return cueNames.some((cue) => name === cue || name.endsWith(`-${cue}`));
+}
 // How long to wait for the cue to exist at all before releasing a build that
 // does not play one (a reduced-motion device, or a product that drops it).
 const AI_READY_CUE_GRACE_MS = 1_000;
@@ -1034,12 +1043,11 @@ async function measureAiWaitingBadge(execute) {
   await execute(`
     const cueNames = ${JSON.stringify(AI_READY_CUE_ANIMATIONS)};
     const deadline = performance.now() + ${AI_READY_CUE_TIMEOUT_MS};
+    const isCue = (name) =>
+      typeof name === 'string' && cueNames.some((cue) => name === cue || name.endsWith('-' + cue));
     const cuesNow = () =>
       (document.querySelector('.ai-waiting-polaroid')?.getAnimations?.({ subtree: true }) ?? [])
-        .filter(
-          (animation) =>
-            typeof animation.animationName === 'string' && cueNames.includes(animation.animationName)
-        );
+        .filter((animation) => isCue(animation.animationName));
     window.__perfAiCueSettled = false;
     window.__perfAiCueSeen = 0;
     // Re-queried rather than snapshotted: the badge's animation does not exist
