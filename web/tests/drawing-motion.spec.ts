@@ -124,6 +124,57 @@ test('undo retires ink immediately beneath a shrinking overlay and drawing cance
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
 });
 
+test('the undo ghost holds its first keyframe until the frame that painted it has landed', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await drawCommittedStroke(page, [
+    { x: 250, y: 200 },
+    { x: 440, y: 240 },
+  ]);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+  const stateWhenCreated = await page
+    .locator('#undoButton')
+    .evaluate((button: HTMLButtonElement) => {
+      button.click();
+      return (
+        document
+          .querySelector('.undo-ink-motion')
+          ?.getAnimations()
+          .map((a) => a.playState) ?? []
+      );
+    });
+  expect(stateWhenCreated).toEqual(['paused']);
+
+  const overlay = page.locator('.undo-ink-motion');
+  await expect(overlay).toHaveClass(/undo-ink-running/);
+  await expect(overlay).toHaveCount(0);
+});
+
+test('a second undo before the first ghost has faded still runs and cleans up', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await drawCommittedStroke(page, [
+    { x: 250, y: 200 },
+    { x: 440, y: 240 },
+  ]);
+  await drawCommittedStroke(page, [
+    { x: 260, y: 320 },
+    { x: 450, y: 360 },
+  ]);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+  await page.locator('#undoButton').click();
+  await page.locator('#undoButton').click();
+
+  const overlay = page.locator('.undo-ink-motion');
+  await expect(overlay).toHaveClass(/undo-ink-running/);
+  await expect(overlay).toHaveCount(0);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(0);
+});
+
 test('crayon undo ghost carries only the pixels the undone stroke owned', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
