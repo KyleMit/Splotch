@@ -1,0 +1,64 @@
+# Harvests the flaky.json records from the Tests workflow's Playwright report artifacts into a
+# rolling history and publishes the ranked digest (tools/flaky-digest/README.md).
+#
+# Report artifacts expire after 7 days, so a digest that only read what was still live would
+# silently sample a shrinking window. Each run instead downloads the previous run's history
+# artifact, reads the report artifacts it has not read yet, and uploads the rolled-forward history
+# again. The schedule is what keeps that chain ahead of expiry: a missed run only delays reading,
+# and anything that does expire unread is reported as a gap, never as a clean run.
+#
+# The cadence is also a rate-limit budget. GITHUB_TOKEN allows 1,000 API requests an hour and every
+# report zip is one; running every three hours keeps a busy stretch's backlog within one run's
+# budget, and the harvester stops short of the limit and leaves the rest for the next run.
+name: Flaky digest
+
+on:
+  schedule:
+    - cron: '41 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      fresh:
+        description: Start a new history instead of continuing the latest one
+        type: boolean
+        default: false
+
+permissions:
+  actions: read
+  contents: read
+
+# The history is a chain: two harvests starting from the same artifact would each upload a branch
+# of it, and the later upload would drop whatever the earlier one read.
+concurrency:
+  group: flaky-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    name: Flaky digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+        with:
+          cache: 'false'
+          install: 'false'
+
+      - name: Harvest and rank
+        run: node tools/flaky-digest/gen-flaky-digest.mjs --out flaky-digest $([ "$FRESH" = true ] && echo --fresh)
+        env:
+          FRESH: ${{ inputs.fresh }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload history and digest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          # FLAKY_HISTORY_ARTIFACT_NAME in tools/flaky-digest/lib/flaky-history.mjs, which the next
+          # run looks up by this name. Drift-guarded by tools/flaky-digest/tests/flaky-digest-workflow.test.mjs.
+          name: flaky-digest-history
+          path: flaky-digest/
+          if-no-files-found: error
+          # Only how long the chain survives the schedule stopping: every run re-uploads the whole
+          # history, which keeps HISTORY_RETENTION_DAYS of runs regardless of this value.
+          retention-days: 30
