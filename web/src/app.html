@@ -83,6 +83,25 @@
     <script>
       (function () {
         var el = document.documentElement;
+
+        // A full document load cannot hydrate SvelteKit from one of the
+        // shallow history entries used for Back-managed dialogs and drawings.
+        // Retire those entries before the router starts; an in-app navigation
+        // never reruns this script, so its live stack remains restorable.
+        // The state keys mirror webBackHandler.ts and SvelteKit's history
+        // contract; app.html.test.ts guards the bundle-boundary duplication.
+        var pageState = history.state && history.state['sveltekit:states'];
+        var backState = pageState && pageState.splotchBackNavigation;
+        if (
+          backState &&
+          typeof backState.guard === 'boolean' &&
+          Number.isInteger(backState.dialogs) &&
+          backState.dialogs >= 0
+        ) {
+          var backDepth = Number(backState.guard) + backState.dialogs;
+          if (backDepth > 0) history.go(-backDepth);
+        }
+
         try {
           var on = function (key, def) {
             var raw = localStorage.getItem(key);

@@ -35,6 +35,7 @@
 // the opening tap's own trailing synthesized click (which would activate
 // whatever content painted under the finger — issue #308).
 import { untrack } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launchGuard';
 import type { Origin } from '$lib/state/modal.svelte';
 
@@ -60,6 +61,12 @@ export type ModalDismissal = 'dismissed' | 'refused';
 interface OpenModal {
   node: HTMLDialogElement;
   requestDismiss: () => ModalDismissal;
+  closing: boolean;
+}
+
+interface ModalStackObserver {
+  opened: (node: HTMLDialogElement) => void;
+  closing: (node: HTMLDialogElement) => void;
 }
 
 // The top layer is already the app's modal stack — showModal() order is paint
@@ -68,6 +75,13 @@ interface OpenModal {
 // showModal() here and leaves on close, so this mirrors the top layer exactly.
 // Module-level on purpose: a document has one top layer.
 const openModals: OpenModal[] = [];
+const modalStackObservers = new SvelteSet<ModalStackObserver>();
+
+export function observeModalStack(observer: ModalStackObserver): () => void {
+  modalStackObservers.add(observer);
+  for (const entry of openModals) observer.opened(entry.node);
+  return () => modalStackObservers.delete(observer);
+}
 
 /**
  * Ask the topmost open modal to dismiss itself the way a backdrop tap would:
@@ -82,6 +96,13 @@ export function dismissTopModal(): ModalDismissal | null {
 function forgetOpenModal(node: HTMLDialogElement) {
   const index = openModals.findIndex((entry) => entry.node === node);
   if (index !== -1) openModals.splice(index, 1);
+}
+
+function noticeModalClosing(node: HTMLDialogElement) {
+  const entry = openModals.find((candidate) => candidate.node === node);
+  if (!entry || entry.closing) return;
+  entry.closing = true;
+  for (const observer of modalStackObservers) observer.closing(node);
 }
 
 export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> {
@@ -244,6 +265,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
       return;
     }
     node.style.removeProperty('animation');
+    noticeModalClosing(node);
     forgetOpenModal(node);
     // A closed dialog has no backdrop to protect; drop the zone so it can't
     // bleed into whatever modal opens next.
@@ -273,9 +295,14 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
         untrack(() => o.onOpen?.());
         node.showModal();
         forgetOpenModal(node);
-        openModals.push({ node, requestDismiss });
+        openModals.push({ node, requestDismiss, closing: false });
+        for (const observer of modalStackObservers) observer.opened(node);
+      } else {
+        const entry = openModals.find((candidate) => candidate.node === node);
+        if (entry) entry.closing = false;
       }
     } else if (node.open) {
+      noticeModalClosing(node);
       return closeAfterContentRetirementPaint(node, getOptions);
     }
   });

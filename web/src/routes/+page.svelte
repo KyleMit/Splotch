@@ -50,7 +50,7 @@
     installColoringPackDownloads,
     type ColoringPackDownloads,
   } from '$lib/boot/coloringPacks';
-  import { installSystemBack } from '$lib/boot/systemBack';
+  import { installSystemBack, syncBackNavigationCanvas } from '$lib/boot/systemBack';
   import { installOverlayDemand } from '$lib/state/overlayDemand';
 
   $effect(() => {
@@ -59,6 +59,8 @@
       settingsState.forceLandscapeOrientation
     );
   });
+
+  $effect(() => syncBackNavigationCanvas(canvasState.canvasEmpty));
 
   // Own the drawing route's app-surface locks (ADR-0076): no scroll, selection,
   // zoom, or iOS callout. Every other route is a normal document; the drawing

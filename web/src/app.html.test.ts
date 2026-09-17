@@ -50,6 +50,10 @@ function sourceFile(path: string): string {
 }
 
 const html = sourceFile('./app.html');
+const webBackHandlerSource = sourceFile('./lib/boot/webBackHandler.ts');
+const svelteKitConstantsSource = sourceFile(
+  '../../node_modules/@sveltejs/kit/src/runtime/client/constants.js'
+);
 
 const bootScript = (() => {
   const match = html.match(/<script>([\s\S]*?)<\/script>/);
@@ -59,6 +63,18 @@ const bootScript = (() => {
 
 const settingsSource = sourceFile('./lib/state/settings.svelte.ts');
 const registryKeys = new Set(Object.values(STORAGE_KEYS));
+
+it('keeps the pre-hydration Back state key aligned with the web handler', () => {
+  const match = webBackHandlerSource.match(/WEB_BACK_PAGE_STATE_KEY\s*=\s*['"]([^'"]+)['"]/u);
+  expect(match, 'webBackHandler exports its page-state key').not.toBeNull();
+  expect(bootScript).toContain(`pageState.${match![1]}`);
+});
+
+it("reads page state from SvelteKit's current history envelope", () => {
+  const match = svelteKitConstantsSource.match(/STATES_KEY\s*=\s*['"]([^'"]+)['"]/u);
+  expect(match, 'SvelteKit exports its history page-state key').not.toBeNull();
+  expect(bootScript).toContain(`history.state['${match![1]}']`);
+});
 
 // BOOL_SETTINGS entries are `propName: [STORAGE_KEYS.someKey, default]`; re-key
 // them by the key's string literal, which is the only handle the boot script has.
