@@ -75,9 +75,9 @@ describe('legacyColorCalls', () => {
     ['rgba(0, 0, 0, 0.2)', ['rgba(0, 0, 0, 0.2)']],
     ['rgb(0 0 0 / 20%)', []],
     ['rgba(0 0 0 / 20%)', ['rgba(0 0 0 / 20%)']],
-    ['0 4px 12px rgb(var(--brand-rgb), 0.3)', ['rgb(var(--brand-rgb), 0.3)']],
-    ['rgb(var(--brand-rgb) / 30%)', []],
-    ['rgb(var(--brand-rgb, var(--fallback, 0 0 0)) / 30%)', []],
+    ['0 4px 12px rgb(var(--x), 0.3)', ['rgb(var(--x), 0.3)']],
+    ['rgb(var(--x) / 30%)', []],
+    ['rgb(var(--x, var(--fallback, 0 0 0)) / 30%)', []],
     ['hsl(0, 0%, 0%)', ['hsl(0, 0%, 0%)']],
     ['RGBA(0 0 0 / 20%)', ['RGBA(0 0 0 / 20%)']],
     ['Rgb(0, 0, 0)', ['Rgb(0, 0, 0)']],
@@ -106,9 +106,5 @@ describe('colour notation', () => {
 
   it.each(values)('%s uses the modern rgb() form', (_key, value) => {
     expect(legacyColorCalls(value)).toEqual([]);
-  });
-
-  it('space-separates the brand channel triplet so it composes as rgb(var(--brand-rgb) / NN%)', () => {
-    expect(brand.brandRgb).toMatch(/^\d{1,3} \d{1,3} \d{1,3}$/);
   });
 });

@@ -15,7 +15,7 @@ describe('colorContrast parses both rgb() notations', () => {
     expect(contrast).toBe(colorContrast(legacy, '#fff', '#fff'));
   });
 
-  it.each(['rgb(100% 0% 0%)', 'rgb(0 0)', 'rgb(0 0 0 0 0)', 'rgb(var(--brand-rgb))'])(
+  it.each(['rgb(100% 0% 0%)', 'rgb(0 0)', 'rgb(0 0 0 0 0)', 'rgb(var(--x))'])(
     'rejects the unsupported form %s',
     (color) => {
       expect(colorLuminance(color)).toBeNull();

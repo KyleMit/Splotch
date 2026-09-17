@@ -69,17 +69,6 @@
           usage: brandUsage.onBrand,
           ink: pickChipInk([brand.onBrand], themes.light.appBg),
         },
-        // --brand-rgb is a channel triplet: a bare var() in `background` is
-        // invalid CSS and computes as transparent (design.spec.ts asserts every
-        // chip paints), so the fill recomposes it through rgb().
-        {
-          varName: '--brand-rgb',
-          fill: 'rgb(var(--brand-rgb))',
-          light: brand.brandRgb,
-          dark: brand.brandRgb,
-          usage: brandUsage.brandRgb,
-          ink: pickChipInk([`rgb(${brand.brandRgb})`], themes.light.appBg),
-        },
         {
           varName: '--clear-gradient-rest',
           fill: 'var(--clear-gradient-rest)',

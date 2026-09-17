@@ -38,13 +38,10 @@ describe('pickChipInk clears AA on the unthemed brand fills', () => {
     expect(gradientStops.length).toBeGreaterThan(1);
   });
 
-  it.each([[brand.brand], [`rgb(${brand.brandRgb})`], [brand.onBrand], gradientStops])(
-    '%j',
-    (...fills) => {
-      const ink = pickChipInk(fills, ground);
-      for (const fill of fills) {
-        expect(chipInkContrast(ink, fill, ground)).toBeGreaterThanOrEqual(AA_MIN_CONTRAST);
-      }
+  it.each([[brand.brand], [brand.onBrand], gradientStops])('%j', (...fills) => {
+    const ink = pickChipInk(fills, ground);
+    for (const fill of fills) {
+      expect(chipInkContrast(ink, fill, ground)).toBeGreaterThanOrEqual(AA_MIN_CONTRAST);
     }
-  );
+  });
 });

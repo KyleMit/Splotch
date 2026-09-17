@@ -398,7 +398,6 @@
     color: var(--on-brand);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
-    box-shadow: 0 4px 12px rgb(var(--brand-rgb) / 40%);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
     transition:
       transform var(--duration-fast) ease,
