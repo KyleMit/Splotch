@@ -1,15 +1,7 @@
 import type { PluginListenerHandle } from '@capacitor/core';
-import { dismissTopModal } from '$lib/actions/modalDialog.svelte';
-import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
 import { canvasState } from '$lib/state/canvas.svelte';
 import { leaveApp, leaveConfirmModal, loadSystemBackPlugin } from '$lib/state/leaveConfirm';
-import { parentalGateState } from '$lib/state/parentalGate.svelte';
-import {
-  aiPromptModal,
-  coloringBookModal,
-  colorPickerModal,
-  settingsModal,
-} from '$lib/state/ui.svelte';
+import { respondToDialogBack } from './dialogBack';
 
 export { default as LeaveConfirm } from '$lib/components/LeaveConfirm.svelte';
 
@@ -23,26 +15,9 @@ export { default as LeaveConfirm } from '$lib/components/LeaveConfirm.svelte';
  */
 export type SystemBackResponse = 'closed-dialog' | 'kept-dialog' | 'waited' | 'left' | 'confirming';
 
-// Every page-level modal flag. A dialog mounts from the lazy overlay chunk after its flag
-// flips, so for a moment a requested dialog is not yet in the top layer that
-// dismissTopModal() reads; Back in that moment must not leave or stack a second dialog.
-function dialogRequested(): boolean {
-  return (
-    settingsModal.open ||
-    colorPickerModal.open ||
-    coloringBookModal.open ||
-    aiPromptModal.open ||
-    parentalGateState.open ||
-    (aiGenerationState.phase.kind !== 'closed' && !aiGenerationState.minimized) ||
-    leaveConfirmModal.open
-  );
-}
-
 export function respondToSystemBack(): SystemBackResponse {
-  const dismissal = dismissTopModal();
-  if (dismissal === 'dismissed') return 'closed-dialog';
-  if (dismissal === 'refused') return 'kept-dialog';
-  if (dialogRequested()) return 'waited';
+  const dialogResponse = respondToDialogBack();
+  if (dialogResponse !== 'no-dialog') return dialogResponse;
   if (canvasState.canvasEmpty) {
     leaveApp().catch((err) => console.error('SystemBack.moveToBackground failed', err));
     return 'left';

@@ -1,5 +1,12 @@
-import { expect, test, type Page } from '@playwright/test';
-import { draw, firstOpaquePixel, gotoApp, openSettingsModal, PICKER_GREEN } from './helpers';
+import { devices, expect, test, type Page } from '@playwright/test';
+import {
+  draw,
+  drawCommittedStroke,
+  firstOpaquePixel,
+  gotoApp,
+  openSettingsModal,
+  PICKER_GREEN,
+} from './helpers';
 import { ENGINE_SMOKE_TAG } from './tags';
 
 // Cross-engine critical-path smoke. ENGINE_SMOKE_TAG routes this spec to the
@@ -96,6 +103,49 @@ test.describe('Cross-engine critical-path smoke', { tag: ENGINE_SMOKE_TAG }, () 
     await expect(modal.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
     await modal.getByRole('button', { name: 'Close' }).click();
     await expect(modal).not.toBeVisible();
+  });
+
+  test('touch or standalone Back closes Settings, consumes one drawing guard, then navigates', async ({
+    browser,
+    browserName,
+  }) => {
+    const context = await browser.newContext(
+      browserName === 'webkit' ? devices['iPad Pro 11'] : undefined
+    );
+    if (browserName !== 'webkit') {
+      await context.addInitScript(() => {
+        const realMatchMedia = window.matchMedia.bind(window);
+        window.matchMedia = (query) => {
+          const result = realMatchMedia(query);
+          if (query === '(display-mode: standalone)') {
+            Object.defineProperty(result, 'matches', { value: true });
+          }
+          return result;
+        };
+      });
+    }
+    const page = await context.newPage();
+    try {
+      await page.goto('/privacy');
+      await gotoApp(page);
+      await drawCommittedStroke(page, [
+        { x: 90, y: 120 },
+        { x: 260, y: 190 },
+      ]);
+      const modal = await openSettingsModal(page);
+
+      await page.goBack();
+      await expect(modal).not.toBeVisible();
+      await expect(page).toHaveURL(/\/$/);
+
+      await page.goBack();
+      await expect(page).toHaveURL(/\/$/);
+
+      await page.goBack();
+      await expect(page).toHaveURL(/\/privacy$/);
+    } finally {
+      await context.close();
+    }
   });
 
   test('the Color Picker dialog opens and commits a color', async ({ page }) => {

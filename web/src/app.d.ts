@@ -7,6 +7,14 @@ declare global {
       message: string;
     }
 
+    interface PageState {
+      splotchBackNavigation?: {
+        session: string;
+        guard: boolean;
+        dialogs: number;
+      };
+    }
+
     // The Netlify adapter exposes the function invocation context here.
     // `waitUntil` keeps the function alive past the response for background
     // work (see generate-image's usage write); both are optional because

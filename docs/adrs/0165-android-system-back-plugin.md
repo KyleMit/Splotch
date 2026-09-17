@@ -1,6 +1,7 @@
 # ADR-0165: Android System Back Goes Through a Local `SystemBack` Plugin
 
-**Status:** Active **Date:** 2026-09
+**Status:** Active (web boundary amended by
+[ADR-0168](0168-browser-back-dialogs-and-drawing-guard.md)) **Date:** 2026-09
 
 ## Context
 
@@ -19,7 +20,8 @@ The behavior, decided with the product owner:
 3. If nothing is open and the canvas has ink, Back asks first. Confirming leaves; cancelling, or
    Back again, stays.
 
-iOS has no system Back, and the web keeps the browser's own history Back. Neither may change.
+iOS has no system Back, and this native decision left browser history unchanged. ADR-0168 later adds
+a separate history-backed web policy while keeping this Android path and native iOS unchanged.
 
 Two ways to reach Back from the web layer were weighed:
 
@@ -103,8 +105,9 @@ closes.
 * \+ Back closes dialogs on Android with the same focus return as their own close, and a toddler
   mashing Back cannot leave a drawing.
 * \+ Android 7–11 keep the drawing when Back leaves, which the platform default did not.
-* \+ No iOS change, no new npm dependency, and nothing in the web bundle: the web export contains
-  none of the plugin, handler, or dialog code.
+* \+ This native path adds no iOS or npm dependency. The web export contains none of the Android
+  plugin, native handler, or Leave Splotch dialog code; ADR-0168's separate web handler does not
+  enter Capacitor builds.
 * \+ The top-layer mirror in `modalDialog` is available to any future caller that needs the topmost
   dialog.
 * − Back on a multi-level dialog (the phone Settings hub and its sections) closes the whole dialog,
