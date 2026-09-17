@@ -104,17 +104,23 @@ describe('the rendered report', () => {
 
   // The denominator is the tell. Counting a mode whose control failed is how "the
   // worst cases cluster on the Android emulator" became a reading of the product.
+  // The ranking reads release-gate rows only (ADR-0156), so its denominator is the
+  // scoreable physical-device modes; the synthetic gate-mode control failure lives
+  // in performance-matrix-sections.test.mjs.
   it('leaves unscoreable modes out of the cross-mode failure ranking', () => {
-    const actionModes = published.targets.flatMap((target) =>
-      target.modes.filter((mode) => mode.actions)
-    );
-    const scoreableModes = actionModes.filter((mode) => mode.actions.scoreable === true);
+    const gateActionModes = published.targets
+      .filter((target) => target.deviceKind === 'physical')
+      .flatMap((target) => target.modes.filter((mode) => mode.actions));
+    const scoreableGateModes = gateActionModes.filter((mode) => mode.actions.scoreable === true);
+    const allScoreableModes = published.targets
+      .flatMap((target) => target.modes)
+      .filter((mode) => mode.actions?.scoreable === true);
     const denominators = [...report.matchAll(/(\d+) of (\d+) modes failed/g)].map((match) =>
       Number(match[2])
     );
 
     expect(denominators.length).toBeGreaterThan(0);
-    expect(denominators).not.toContain(actionModes.length);
-    expect(denominators).toContain(scoreableModes.length);
+    expect(Math.max(...denominators)).toBe(scoreableGateModes.length);
+    expect(denominators).not.toContain(allScoreableModes.length);
   });
 });
