@@ -178,7 +178,7 @@ export const zIndex = {
   // past zBanner would change nothing, because zPanel caps the whole subtree.
   // The banner hides while the drawer is open so the flyout remains reachable.
   zFlyout: 901,
-  zBanner: 950, // InstallBanner, inside the bottom dock
+  zBanner: 950, // InstallBanner inside the bottom dock; SaveFailureBanner atop the canvas
   zClearAcceptZone: 999, // below the button it rings, so the button stays on top
   zClearButton: 1000,
   // Pre-existing tie with zClearButton: both are fixed, and which one paints on

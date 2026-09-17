@@ -46,6 +46,9 @@ export const STORAGE_KEYS = {
   // removal instead of restoring the copy it left behind (storage.ts).
   pendingDurableRemovals: 'splotch-pending-durable-removals',
   saveFolderChosen: 'splotch-save-folder-chosen',
+  // Records that unsaved pictures wait in IndexedDB (unsavedPictureStore.ts), so a boot with
+  // nothing to retry never opens that database.
+  unsavedPicturesHeld: 'splotch-unsaved-pictures-held',
   parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',
   parentalGateImageReportMode: 'splotch-parental-gate-image-report-mode',
   parentalGateExternalLinksMode: 'splotch-parental-gate-external-links-mode',

@@ -1,4 +1,10 @@
+import { browser } from '$app/environment';
 import type { SaveResult, UnsavedStatus } from '$lib/saveNaming';
+import {
+  createUnsavedPictureStore,
+  type HeldPicture,
+  type UnsavedPictureStore,
+} from '$lib/drawing/unsavedPictureStore';
 import { demandOverlay } from './overlayDemand';
 
 // A picture whose save did not land, held as the exact bytes that were exported at the time. Retry
@@ -9,8 +15,8 @@ export interface UnsavedPicture {
   baseName: string;
 }
 
-// Each held picture is a full-resolution image in memory, and a toddler can tap the camera again
-// and again while the permission stays denied. The oldest is released first.
+// Each held picture is a full-resolution image kept in memory and on disk, and a toddler can tap
+// the camera again and again while the permission stays denied. The oldest is released first.
 export const UNSAVED_PICTURE_LIMIT = 8;
 
 export type SavePicture = (picture: UnsavedPicture) => Promise<SaveResult>;
@@ -22,10 +28,7 @@ export interface SaveFailureState {
   reportSaveFailure(outcome: UnsavedStatus, picture: UnsavedPicture | null): Promise<void>;
   retryUnsavedPictures(): Promise<void>;
   dismissSaveFailure(): void;
-}
-
-interface HeldPicture extends UnsavedPicture {
-  signature: string | null;
+  restoreUnsavedPictures(): Promise<void>;
 }
 
 async function pictureSignature(blob: Blob): Promise<string | null> {
@@ -49,23 +52,46 @@ const savePictureOnDemand: SavePicture = async ({ blob, baseName }) => {
   }
 };
 
-// `savePicture` is a test seam: production always takes the on-demand save pipeline.
-export function createSaveFailure(
-  savePicture: SavePicture = savePictureOnDemand
-): SaveFailureState {
+interface SaveFailureDependencies {
+  savePicture?: SavePicture;
+  pictureStore?: UnsavedPictureStore;
+}
+
+// Both dependencies are test seams: production always takes the on-demand save pipeline and the
+// IndexedDB-backed store.
+export function createSaveFailure({
+  savePicture = savePictureOnDemand,
+  pictureStore = createUnsavedPictureStore(),
+}: SaveFailureDependencies = {}): SaveFailureState {
   const s = $state<{ outcome: UnsavedStatus | null; retrying: boolean }>({
     outcome: null,
     retrying: false,
   });
   let pictures = $state.raw<HeldPicture[]>([]);
-  // Bumped by a dismissal so a report or retry that settles afterwards cannot bring the banner back.
+  // Bumped by a dismissal so a report, retry, or restore that settles afterwards cannot bring the
+  // banner back.
   let generation = 0;
+  // Intentionally untracked: one queue for every read and write of the stored pictures. Each write
+  // takes the state as it is when its turn comes, and a restore's read runs before any write queued
+  // behind it, so a failure reported during boot cannot overwrite the pictures being restored.
+  let storeQueue: Promise<unknown> = Promise.resolve();
 
-  function hold(picture: HeldPicture) {
+  function enqueue<T>(operation: () => Promise<T>): Promise<T> {
+    const queued = storeQueue.then(operation);
+    storeQueue = queued.catch(() => undefined);
+    return queued;
+  }
+
+  function persist() {
+    void enqueue(() =>
+      pictureStore.write(s.outcome && pictures.length > 0 ? { outcome: s.outcome, pictures } : null)
+    );
+  }
+
+  function withPicture(held: HeldPicture[], picture: HeldPicture): HeldPicture[] {
     const duplicate =
-      picture.signature !== null && pictures.some((held) => held.signature === picture.signature);
-    if (duplicate) return;
-    pictures = [...pictures, picture].slice(-UNSAVED_PICTURE_LIMIT);
+      picture.signature !== null && held.some((other) => other.signature === picture.signature);
+    return duplicate ? held : [...held, picture].slice(-UNSAVED_PICTURE_LIMIT);
   }
 
   return {
@@ -83,8 +109,9 @@ export function createSaveFailure(
       const reportGeneration = generation;
       const signature = picture ? await pictureSignature(picture.blob) : null;
       if (reportGeneration !== generation) return;
-      if (picture) hold({ ...picture, signature });
+      if (picture) pictures = withPicture(pictures, { ...picture, signature });
       s.outcome = outcome;
+      persist();
       demandOverlay('saveFailureBanner');
     },
 
@@ -114,6 +141,7 @@ export function createSaveFailure(
       } else if (stillUnsaved.length > 0) {
         s.outcome = outcome;
       }
+      persist();
     },
 
     dismissSaveFailure() {
@@ -121,6 +149,17 @@ export function createSaveFailure(
       pictures = [];
       s.outcome = null;
       s.retrying = false;
+      persist();
+    },
+
+    async restoreUnsavedPictures() {
+      const restoreGeneration = generation;
+      const held = await enqueue(() => pictureStore.read());
+      if (!held || held.pictures.length === 0 || restoreGeneration !== generation) return;
+      pictures = pictures.reduce(withPicture, held.pictures);
+      s.outcome ??= held.outcome;
+      persist();
+      demandOverlay('saveFailureBanner');
     },
   };
 }
@@ -128,3 +167,5 @@ export function createSaveFailure(
 export const saveFailureState = createSaveFailure();
 
 export const { reportSaveFailure, retryUnsavedPictures, dismissSaveFailure } = saveFailureState;
+
+if (browser) void saveFailureState.restoreUnsavedPictures();

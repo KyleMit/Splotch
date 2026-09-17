@@ -29,6 +29,7 @@
   } from '$lib/state/ui.svelte';
   import { parentalGateState } from '$lib/state/parentalGate.svelte';
   import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
+  import { saveFailureState } from '$lib/state/saveFailure.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
   import { captureAiAccessTokenFromUrl } from '$lib/state/aiAccessToken';
@@ -98,7 +99,6 @@
   // background pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
   let InstallBanner = $state<Component | null>(null);
-  let SaveFailureBanner = $state<Component | null>(null);
   let SettingsModal = $state<Component | null>(null);
   let hiddenOverlays = $state<BootHiddenOverlays | null>(null);
   let coloringPackDownloads = $state<ColoringPackDownloads | null>(null);
@@ -106,10 +106,6 @@
   function mountHiddenOverlay(key: BootHiddenOverlayKey, overlay: Component) {
     if (key === 'installBanner') {
       InstallBanner = overlay;
-      return;
-    }
-    if (key === 'saveFailureBanner') {
-      SaveFailureBanner = overlay;
       return;
     }
     if (key === 'settings') {
@@ -131,6 +127,7 @@
     [() => aiPromptModal.open, 'aiPrompt'],
     [() => aiGenerationState.phase.kind !== 'closed', 'aiResult'],
     [() => settingsModal.open, 'settings'],
+    [() => saveFailureState.outcome !== null, 'saveFailureBanner'],
   ];
 
   function demandOpenOverlays(controller: BootHiddenOverlays) {
@@ -205,9 +202,6 @@
 <ClearButton />
 <div class="bottom-dock">
   <ActionsPanel bind:openFlyout />
-  {#if SaveFailureBanner}
-    <SaveFailureBanner />
-  {/if}
   {#if InstallBanner}
     <InstallBanner />
   {/if}

@@ -9,6 +9,7 @@
     | 'corners'
     | 'notch'
     | 'banner'
+    | 'topBanner'
     | 'halos'
     | 'dial'
     | 'polaroid'
@@ -70,6 +71,11 @@
     ],
     notch: ['left:0;top:0;right:0;height:6px;background:var(--brand-solid)'],
     banner: [`left:24px;right:24px;bottom:5px;height:9px;border-radius:999px;${hi}`],
+    topBanner: [
+      paletteBar,
+      'right:0;top:10px;width:8px;height:9px;border-radius:50% 0 0 50%;background:var(--clear-gradient-rest)',
+      `left:18px;right:14px;top:10px;height:14px;border-radius:3px;${hi}`,
+    ],
     halos: [halo(30, 20), halo(52, 32)],
     dial: [
       'left:36px;top:20px;width:24px;height:24px;border-radius:50%;border:3px solid var(--brand);border-top-color:var(--control-track);background:var(--surface)',

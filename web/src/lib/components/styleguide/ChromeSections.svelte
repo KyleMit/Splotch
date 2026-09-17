@@ -89,8 +89,8 @@
     {
       name: 'Save Failure Banner',
       file: 'SaveFailureBanner.svelte',
-      blurb: 'Bottom-center notice telling the grown-up a picture was not saved, with Try again.',
-      zone: 'banner',
+      blurb: 'Top-of-canvas notice telling the grown-up a picture was not saved, with Try again.',
+      zone: 'topBanner',
     },
     {
       name: 'Pointer Halos',

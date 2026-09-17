@@ -204,6 +204,9 @@ reports `denied`, so it never offers Settings.
 
 **Placement.** The banner is a boot-hidden overlay (ADR-0049) demanded by the first report, so its
 code stays off the startup path. It is not a dialog, so it adds no browser history layer (ADR-0168).
-It lives in the bottom dock and follows the Install Banner's rules there: it hides while the Actions
-drawer is open and while an AI generation is minimized. The Install Banner steps aside while it
-shows, because an unsaved picture outranks an install prompt that can be offered again later.
+It sits at the top of the canvas, clear of the palette and the Clear Button, rather than in the
+bottom dock beside the Install Banner: the actions drawer is open by default on a phone and fills
+that part of the screen, and the Install Banner's rule of hiding while the drawer is open would hide
+this banner from the parent it is for. It waits while an AI generation is minimized, because the
+waiting polaroid owns that corner. The Install Banner stands aside while it shows, because an
+unsaved picture outranks an install prompt that can be offered again later.

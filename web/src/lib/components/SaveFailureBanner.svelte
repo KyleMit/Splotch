@@ -9,10 +9,8 @@
     dismissSaveFailure,
   } from '$lib/state/saveFailure.svelte';
   import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
-  import { settingsState } from '$lib/state/settings.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
-  import { visibleActionButtonCount } from '$lib/actionButtonLayout';
   import { getPlatform } from '$lib/platform';
   import { saveFailureCopy } from '$lib/drawing/saveFailureCopy';
   import '$lib/components/deferredIcons';
@@ -27,8 +25,8 @@
   const copy = $derived(outcome && saveFailureCopy(outcome, pictureCount, platform));
   // Only a native save can be refused for a permission, so only native has a Settings page to offer.
   const offerSettings = $derived(__IS_CAPACITOR__ && outcome === 'denied' && platform !== 'web');
-  // The drawer and a minimized generation own the dock the way they do for the install banner.
-  const controlsOpen = $derived(settingsState.drawerOpen && visibleActionButtonCount() > 0);
+  // A minimized generation's waiting polaroid owns the top of the canvas, and is the way back to a
+  // picture already paid for (ADR-0116); the banner waits for it.
   const visible = $derived(outcome !== null && !aiGenerationState.minimized);
 
   async function openAppSettings() {
@@ -55,9 +53,8 @@
   <div
     class="save-failure-banner"
     role="status"
-    hidden={controlsOpen}
-    in:fly={{ y: BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut }}
-    out:fly={{ y: BANNER_FLY_Y, duration: BANNER_EXIT_MS }}
+    in:fly={{ y: -BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut }}
+    out:fly={{ y: -BANNER_FLY_Y, duration: BANNER_EXIT_MS }}
   >
     <div class="save-failure-main">
       <span class="save-failure-mascot" aria-hidden="true">
@@ -98,13 +95,20 @@
 {/if}
 
 <style>
+  /* Pinned to the top of the canvas rather than the bottom dock the Install Banner uses: the
+     actions drawer, open by default on a phone, fills the dock's side of the screen, and hiding
+     the banner behind it would hide it from the parent it is for. The right inset clears the
+     Clear Button's 70px tab where it hangs off that edge. */
   .save-failure-banner {
-    position: relative;
+    --save-failure-clear-button-reserve: 78px;
+
+    position: fixed;
+    top: calc(var(--space-4) + var(--safe-area-top));
+    left: calc(var(--palette-landscape-width) + var(--space-4) + var(--safe-area-left));
+    right: calc(var(--save-failure-clear-button-reserve) + var(--safe-area-right));
     z-index: var(--z-banner);
-    pointer-events: auto;
-    width: 100%;
     max-width: 420px;
-    min-width: 0;
+    margin-inline: auto;
     box-sizing: border-box;
     padding: var(--space-4);
     background: var(--surface);
@@ -112,6 +116,13 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--float-shadow);
     font-family: inherit;
+  }
+
+  @media (orientation: portrait) {
+    .save-failure-banner {
+      top: calc(var(--palette-portrait-height) + var(--space-4) + var(--safe-area-top));
+      left: calc(var(--space-4) + var(--safe-area-left));
+    }
   }
 
   .save-failure-main {
