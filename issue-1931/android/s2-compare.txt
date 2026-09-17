@@ -1,0 +1,6 @@
+pack files before: 518  after: 444
+kept byte-identical with original mtime (not re-downloaded): 443
+new or rewritten since snapshot: 1
+    dinosaur/trex-wide.light.webp
+removed since snapshot: 74
+    book vehicles: 74 files

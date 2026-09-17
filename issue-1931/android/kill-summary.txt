@@ -1,0 +1,16 @@
+kill@1.4s | killed: top=1.6.0-full,jobs trusted=0 newNsFiles=0 legacyFiles=525 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.6s | killed: top=1.6.0-full,jobs trusted=0 newNsFiles=0 legacyFiles=525 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.72s | killed: top=1.6.0-full,full,jobs trusted=1 newNsFiles=114 legacyFiles=412 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.76s | killed: top=1.6.0-full,full,jobs trusted=1 newNsFiles=149 legacyFiles=377 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.78s | killed: top=1.6.0-full,full,jobs trusted=1 newNsFiles=104 legacyFiles=422 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.8s | killed: top=1.6.0-full,full,jobs trusted=1 newNsFiles=112 legacyFiles=414 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.80s | killed: top=1.6.0-full,jobs trusted=0 newNsFiles=0 legacyFiles=525 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.82s | killed: top=1.6.0-full,full,jobs trusted=2 newNsFiles=153 legacyFiles=374 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.84s | killed: top=1.6.0-full,full,jobs trusted=0 newNsFiles=2 legacyFiles=523 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.86s | killed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.88s | killed: top=1.6.0-full,full,jobs trusted=3 newNsFiles=299 legacyFiles=229 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.90s | killed: top=1.6.0-full,full,jobs trusted=0 newNsFiles=40 legacyFiles=485 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.92s | killed: top=1.6.0-full,full,jobs trusted=6 newNsFiles=455 legacyFiles=76 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.94s | killed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@1.96s | killed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten
+kill@2.0s | killed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | resumed: top=full,jobs trusted=7 newNsFiles=525 legacyFiles=0 violations=0 | 518 kept, 0 rewritten

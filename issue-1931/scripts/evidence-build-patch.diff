@@ -1,0 +1,42 @@
+diff --git a/android/app/src/main/AndroidManifest.xml b/android/app/src/main/AndroidManifest.xml
+index 0005d4d8b..a4df9892d 100644
+--- a/android/app/src/main/AndroidManifest.xml
++++ b/android/app/src/main/AndroidManifest.xml
+@@ -4,7 +4,7 @@
+          photo gallery; secure-storage secrets are Keystore-bound and cannot
+          restore onto another device) and the AI access token must not be
+          copied into cloud backups. No child data leaves the device via backup. -->
+-    <application
++    <application android:usesCleartextTraffic="true"
+         android:allowBackup="false"
+         android:icon="@mipmap/ic_launcher"
+         android:label="@string/app_name"
+diff --git a/ios/App/App/Info.plist b/ios/App/App/Info.plist
+index e10573270..e0127c0b8 100644
+--- a/ios/App/App/Info.plist
++++ b/ios/App/App/Info.plist
+@@ -26,6 +26,11 @@
+ 	<false/>
+ 	<key>LSRequiresIPhoneOS</key>
+ 	<true/>
++	<key>NSAppTransportSecurity</key>
++	<dict>
++		<key>NSAllowsArbitraryLoads</key>
++		<true/>
++	</dict>
+ 	<key>NSPhotoLibraryAddUsageDescription</key>
+ 	<string>Splotch saves your child's drawing to your photo library.</string>
+ 	<key>UILaunchStoryboardName</key>
+diff --git a/web/securityPolicy.ts b/web/securityPolicy.ts
+index aa052355c..4e02bae3f 100644
+--- a/web/securityPolicy.ts
++++ b/web/securityPolicy.ts
+@@ -37,7 +37,7 @@ export type ContentSecurityPolicyDirectives = Readonly<
+   Partial<Record<ContentSecurityPolicyDirective, readonly string[]>>
+ >;
+ 
+-export const NATIVE_API_ORIGIN = SITE_ORIGIN;
++export const NATIVE_API_ORIGIN = 'http://127.0.0.1:18931'; // EVIDENCE BUILD ONLY
+ 
+ // app.html is shared by prerendered and SSR pages, so its synchronous pre-paint
+ // stamp cannot use SvelteKit's SSR-only nonce placeholder. securityPolicy.test.ts

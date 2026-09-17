@@ -1,0 +1,16 @@
+{
+  "label": "ios-s4-resumed",
+  "topLevel": [
+    "full",
+    "jobs"
+  ],
+  "books": {
+    "full/creatures": "trusted 74/74 files=75",
+    "full/dinosaur": "trusted 74/74 files=75",
+    "full/nature": "trusted 74/74 files=75",
+    "full/objects": "trusted 74/74 files=75",
+    "full/shapes": "trusted 74/74 files=75",
+    "full/space": "trusted 74/74 files=75"
+  },
+  "violations": []
+}

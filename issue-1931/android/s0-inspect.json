@@ -1,0 +1,17 @@
+{
+  "label": "android-s0-old-build",
+  "topLevel": [
+    "1.6.0-full",
+    "jobs"
+  ],
+  "books": {
+    "1.6.0-full/creatures": "other:creatures 74/74 files=75",
+    "1.6.0-full/dinosaur": "other:dinosaur 74/74 files=75",
+    "1.6.0-full/nature": "other:nature 74/74 files=75",
+    "1.6.0-full/objects": "other:objects 74/74 files=75",
+    "1.6.0-full/shapes": "other:shapes 74/74 files=75",
+    "1.6.0-full/space": "other:space 74/74 files=75",
+    "1.6.0-full/vehicles": "other:vehicles 74/74 files=75"
+  },
+  "violations": []
+}

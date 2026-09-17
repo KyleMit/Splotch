@@ -1,0 +1,5 @@
+pack files before: 518  after: 518
+kept byte-identical with original mtime (not re-downloaded): 518
+new or rewritten since snapshot: 0
+removed since snapshot: 0
+pack files after: 518; same inode as before (moved, not rewritten): 518; different/new inode: 0
