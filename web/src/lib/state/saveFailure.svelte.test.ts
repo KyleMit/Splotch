@@ -104,6 +104,46 @@ describe('the banner outcome', () => {
     }
   );
 
+  it.each([
+    ['failed then denied', ['failed', 'denied']],
+    ['denied then failed', ['denied', 'failed']],
+  ] as const)(
+    'keeps a denial reported for identical bytes held once (%s)',
+    async (_order, outcomes) => {
+      const failure = failureWith(saverReturning());
+
+      await failure.reportSaveFailure(outcomes[0], picture('same drawing'));
+      await failure.reportSaveFailure(outcomes[1], picture('same drawing'));
+
+      expect(failure.pictureCount).toBe(1);
+      expect(failure.outcome).toBe('denied');
+    }
+  );
+
+  it('keeps a picture-less failure reported while a retry was running', async () => {
+    const pending = Promise.withResolvers<SaveResult>();
+    const failure = failureWith(vi.fn<SavePicture>(() => pending.promise));
+    await failure.reportSaveFailure('failed', picture('held'));
+
+    const retry = failure.retryUnsavedPictures();
+    await failure.reportSaveFailure('failed', null);
+    pending.resolve({ status: 'photos' });
+    await retry;
+
+    expect(failure.pictureCount).toBe(0);
+    expect(failure.outcome).toBe('failed');
+  });
+
+  it('clears a picture-less failure seen before the retry once the retry saves everything', async () => {
+    const failure = failureWith(saverReturning({ status: 'photos' }));
+    await failure.reportSaveFailure('failed', null);
+    await failure.reportSaveFailure('failed', picture('held'));
+
+    await failure.retryUnsavedPictures();
+
+    expect(failure.outcome).toBeNull();
+  });
+
   it('drops the permission copy once only generic failures remain', async () => {
     const save = saverReturning({ status: 'photos' }, { status: 'failed' });
     const failure = failureWith(save);
@@ -287,6 +327,28 @@ describe('unsaved pictures across a relaunch', () => {
     failure.dismissSaveFailure();
 
     await vi.waitFor(() => expect(store.held).toBeNull());
+  });
+
+  it('restores once, even for pictures with no content signature', async () => {
+    const store = memoryStore([{ ...picture('unhashed'), outcome: 'denied', signature: null }]);
+    const failure = failureWith(saverReturning(), store);
+
+    await Promise.all([failure.restoreUnsavedPictures(), failure.restoreUnsavedPictures()]);
+    await failure.restoreUnsavedPictures();
+
+    expect(failure.pictureCount).toBe(1);
+    expect(store.read).toHaveBeenCalledOnce();
+  });
+
+  it('tries again later when an earlier restore found nothing', async () => {
+    const store = memoryStore();
+    const failure = failureWith(saverReturning(), store);
+    await failure.restoreUnsavedPictures();
+
+    store.held = [{ ...picture('back after hydration'), outcome: 'failed', signature: 'x' }];
+    await failure.restoreUnsavedPictures();
+
+    expect(failure.pictureCount).toBe(1);
   });
 
   it('restores nothing when the store is empty', async () => {

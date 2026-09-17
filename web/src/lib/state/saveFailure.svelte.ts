@@ -80,6 +80,13 @@ export function createSaveFailure({
   // Bumped by a dismissal so a report, retry, or restore that settles afterwards cannot bring the
   // banner back.
   let generation = 0;
+  // Bumped by each picture-less report, so a retry clears only the one it saw when it started.
+  let uncapturedVersion = 0;
+  // Intentionally untracked: stored pictures are restored into memory once, however many times boot
+  // and durable hydration ask, because a picture whose signature could not be computed has no
+  // content identity to deduplicate a second restore against.
+  let restoration: Promise<void> | null = null;
+  let restored = false;
   // Intentionally untracked: one queue for every read and write of the stored pictures. Each write
   // takes the state as it is when its turn comes, and a restore's read runs before any write queued
   // behind it, so a failure reported during boot cannot overwrite the pictures being restored.
@@ -95,10 +102,17 @@ export function createSaveFailure({
     void enqueue(() => pictureStore.write(pictures.length > 0 ? pictures : null));
   }
 
+  function sameContent(a: HeldPicture, b: HeldPicture): boolean {
+    return a.signature !== null && a.signature === b.signature;
+  }
+
+  // Identical bytes are held once, but a denial reported for either copy is kept, so Open Settings
+  // stays on offer whichever order the outcomes arrive in.
   function withPicture(held: HeldPicture[], picture: HeldPicture): HeldPicture[] {
-    const duplicate =
-      picture.signature !== null && held.some((other) => other.signature === picture.signature);
-    return duplicate ? held : [...held, picture].slice(-UNSAVED_PICTURE_LIMIT);
+    const index = held.findIndex((other) => sameContent(other, picture));
+    if (index === -1) return [...held, picture].slice(-UNSAVED_PICTURE_LIMIT);
+    if (picture.outcome !== 'denied' || held[index].outcome === 'denied') return held;
+    return held.map((other, i) => (i === index ? { ...other, outcome: 'denied' } : other));
   }
 
   return {
@@ -120,6 +134,7 @@ export function createSaveFailure({
         pictures = withPicture(pictures, { ...picture, outcome, signature });
         persist();
       } else {
+        uncapturedVersion += 1;
         s.uncapturedOutcome = outcome;
       }
       demandOverlay('saveFailureBanner');
@@ -128,21 +143,27 @@ export function createSaveFailure({
     async retryUnsavedPictures() {
       if (s.retrying || pictures.length === 0) return;
       const retryGeneration = generation;
+      const retryUncapturedVersion = uncapturedVersion;
       const attempted = pictures;
       const stillUnsaved: HeldPicture[] = [];
+      const saved: HeldPicture[] = [];
       s.retrying = true;
       try {
         for (const picture of attempted) {
           const result = await savePicture(picture);
           if (retryGeneration !== generation) return;
           if (isUnsaved(result)) stillUnsaved.push({ ...picture, outcome: result.status });
+          else saved.push(picture);
         }
       } finally {
         if (retryGeneration === generation) s.retrying = false;
       }
-      const reportedDuringRetry = pictures.filter((picture) => !attempted.includes(picture));
-      pictures = [...stillUnsaved, ...reportedDuringRetry];
-      s.uncapturedOutcome = null;
+      const reportedDuringRetry = pictures.filter(
+        (picture) =>
+          !attempted.includes(picture) && !saved.some((other) => sameContent(other, picture))
+      );
+      pictures = [...stillUnsaved, ...reportedDuringRetry].reduce(withPicture, []);
+      if (uncapturedVersion === retryUncapturedVersion) s.uncapturedOutcome = null;
       persist();
     },
 
@@ -154,13 +175,20 @@ export function createSaveFailure({
       persist();
     },
 
-    async restoreUnsavedPictures() {
-      const restoreGeneration = generation;
-      const held = await enqueue(() => pictureStore.read());
-      if (!held || held.length === 0 || restoreGeneration !== generation) return;
-      pictures = pictures.reduce(withPicture, held.slice(-UNSAVED_PICTURE_LIMIT));
-      persist();
-      demandOverlay('saveFailureBanner');
+    restoreUnsavedPictures() {
+      if (restored) return Promise.resolve();
+      restoration ??= (async () => {
+        const restoreGeneration = generation;
+        const held = await enqueue(() => pictureStore.read());
+        restoration = null;
+        if (!held || held.length === 0) return;
+        restored = true;
+        if (restoreGeneration !== generation) return;
+        pictures = pictures.reduce(withPicture, held.slice(-UNSAVED_PICTURE_LIMIT));
+        persist();
+        demandOverlay('saveFailureBanner');
+      })();
+      return restoration;
     },
   };
 }
@@ -171,7 +199,7 @@ export const { reportSaveFailure, retryUnsavedPictures, dismissSaveFailure } = s
 
 // The flag that gates the IndexedDB read lives in localStorage, which a native WebView can evict
 // while its Capacitor Preferences mirror keeps it; hydration then restores the flag, so the restore
-// runs again. Pictures already held are deduplicated by content.
+// runs again; once a restore has found pictures, later calls do nothing.
 if (browser) {
   void saveFailureState.restoreUnsavedPictures();
   onDurableRestore(() => void saveFailureState.restoreUnsavedPictures());
