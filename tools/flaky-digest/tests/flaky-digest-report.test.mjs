@@ -179,6 +179,43 @@ describe('buildDigest', () => {
     });
   });
 
+  it('counts an attempt replaced by an upload that could not be read as replaced', () => {
+    const history = historyWith(
+      [
+        run('1', {
+          executions: [
+            {
+              artifact: 'playwright-report-shard-1',
+              attempt: 1,
+              conclusion: 'failure',
+              completedAt: ago(9),
+            },
+            {
+              artifact: 'playwright-report-shard-1',
+              attempt: 2,
+              conclusion: 'success',
+              completedAt: ago(8),
+            },
+          ],
+        }),
+      ],
+      [
+        {
+          id: 's',
+          runId: '1',
+          name: 'playwright-report-shard-1',
+          createdAt: ago(8),
+          state: 'unsupported-schema',
+          schemaVersion: 2,
+        },
+      ]
+    );
+    expect(digestOf(history).coverage.gapCounts).toEqual({
+      'unsupported-schema-2': 1,
+      'replaced-by-later-attempt': 1,
+    });
+  });
+
   it('only accounts runs created inside the window', () => {
     const history = historyWith(
       [run('old', { createdAt: ago(24 * 8) }), run('new')],

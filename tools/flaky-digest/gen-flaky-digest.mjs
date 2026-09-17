@@ -14,6 +14,7 @@ import {
   FLAKY_HISTORY_ARTIFACT_NAME,
   FLAKY_HISTORY_FILENAME,
   harvest,
+  HISTORY_RETENTION_DAYS,
   parseHistory,
 } from './lib/flaky-history.mjs';
 import { createGithubActionsApi } from './lib/github-actions-api.mjs';
@@ -50,7 +51,10 @@ function readOptions(argv) {
     })
   );
   const days = Number(values.days);
-  if (!Number.isInteger(days) || days < 1) throw new Error(`--days must be a positive integer`);
+  if (!Number.isInteger(days) || days < 1 || days > HISTORY_RETENTION_DAYS) {
+    // A longer window would include time the history has already pruned.
+    throw new Error(`--days must be an integer from 1 to ${HISTORY_RETENTION_DAYS}`);
+  }
   if (values.history && values.fresh) throw new Error('--history and --fresh are exclusive');
   if (values.history && !existsSync(values.history)) {
     throw new Error(`--history ${values.history} does not exist`);

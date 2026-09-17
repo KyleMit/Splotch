@@ -46,7 +46,8 @@ function fakeApi({ runs = [], jobs = {}, artifacts = [], files = {}, budget = In
     hasBudgetForDownload: () => downloads < budget,
     listWorkflowRuns: async () => runs,
     listJobs: async (runId) => jobs[runId] ?? [],
-    listArtifacts: async () => artifacts,
+    listRunArtifacts: async (runId) =>
+      artifacts.filter((artifact) => String(artifact.workflow_run.id) === String(runId)),
     readArtifactFile: async (id) => {
       downloads += 1;
       const file = files[id];
@@ -206,24 +207,29 @@ describe('harvest', () => {
     expect(summary.errors.at(-1)).toMatch(/^rate-limit budget reached: [12] artifacts left/);
   });
 
-  it('keeps runs whose job list hit the rate limit, for the next harvest to fetch', async () => {
+  it('keeps runs whose listings hit the rate limit, for the next harvest to fetch', async () => {
     const limited = Object.assign(new Error('limit'), { rateLimited: true });
-    const api = fakeApi({
-      runs: [run(1)],
-      artifacts: [artifact(10, 1, 'playwright-report-shard-1')],
-    });
+    const reportArtifacts = [artifact(10, 1, 'playwright-report-shard-1')];
+    const api = fakeApi({ runs: [run(1)], artifacts: reportArtifacts });
     api.listJobs = async () => {
       throw limited;
     };
-    api.hasBudgetForDownload = () => false;
     const history = createHistory();
     const summary = await harvest(api, history, NOW);
     expect(history.runs['1'].executions).toBeNull();
-    expect(history.artifacts['10'].state).toBe('pending');
-    expect(summary.errors[0]).toMatch(/^rate limit reached listing jobs/);
+    expect(history.artifacts).toEqual({});
+    expect(summary.errors[0]).toBe(
+      'rate limit reached listing runs: 1 runs left for the next harvest'
+    );
 
-    await harvest(fakeApi({ runs: [run(1)], jobs: { 1: [job('Tests (1/8)', 1)] } }), history, NOW);
+    await harvest(
+      fakeApi({ runs: [run(1)], jobs: { 1: [job('Tests (1/8)', 1)] }, artifacts: reportArtifacts }),
+      history,
+      NOW
+    );
     expect(history.runs['1'].executions).toHaveLength(1);
+    // The fake holds no file for it, so the read finds no record.
+    expect(history.artifacts['10'].state).toBe('no-record');
   });
 
   it('marks an artifact that expired before it was read', async () => {

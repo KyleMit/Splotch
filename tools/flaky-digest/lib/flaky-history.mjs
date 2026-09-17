@@ -17,7 +17,7 @@ export const FLAKY_HISTORY_ARTIFACT_NAME = 'flaky-digest-history';
 
 // How far back the history keeps runs. Independent of how long any one history artifact is
 // retained: every harvest re-uploads the whole rolled-forward history.
-const HISTORY_RETENTION_DAYS = 90;
+export const HISTORY_RETENTION_DAYS = 90;
 
 // The report artifacts' own retention, matched against test.yml by flaky-digest-workflow.test.mjs.
 export const REPORT_ARTIFACT_RETENTION_DAYS = 7;
@@ -152,6 +152,33 @@ async function forEachConcurrently(items, step, canContinue = () => true) {
   return queue.length;
 }
 
+function recordRunArtifacts(history, runId, artifacts) {
+  let added = 0;
+  for (const artifact of artifacts) {
+    if (!REPORT_ARTIFACT_PATTERN.test(artifact.name)) continue;
+    const id = String(artifact.id);
+    const known = history.artifacts[id];
+    if (!known) added += 1;
+    history.artifacts[id] = {
+      ...known,
+      id,
+      name: artifact.name,
+      runId,
+      createdAt: artifact.created_at,
+      expiresAt: artifact.expires_at,
+      state: known?.state ?? (artifact.expired ? 'expired-unread' : 'pending'),
+    };
+  }
+  return added;
+}
+
+/**
+ * Lists the Tests runs since `since` and, for each completed run not already settled at its current
+ * attempt, its report jobs and its artifacts. Artifacts are listed per run rather than from the
+ * repository-wide list, whose id order does not reliably follow creation time. A rate limit stops
+ * the fetching: the rest keep `executions: null`, surface as jobs-unavailable, and are fetched by
+ * the next harvest.
+ */
 async function refreshRuns(api, history, since, errors) {
   const runs = await api.listWorkflowRuns(TESTS_WORKFLOW_FILE, since);
   const unsettled = runs.filter((run) => {
@@ -179,53 +206,31 @@ async function refreshRuns(api, history, since, errors) {
     history.runs[entry.id] = entry;
     if (run.status === 'completed') completed.push(entry);
   }
-  // A rate-limited job list stops the rest: their runs keep `executions: null`, surface as
-  // jobs-unavailable, and are fetched again by the next harvest.
   let limited = false;
+  let artifactsAdded = 0;
   await forEachConcurrently(
     completed,
     async (entry) => {
       try {
-        entry.executions = reportExecutions(await api.listJobs(entry.id));
+        const [jobs, artifacts] = await Promise.all([
+          api.listJobs(entry.id),
+          api.listRunArtifacts(entry.id),
+        ]);
+        artifactsAdded += recordRunArtifacts(history, entry.id, artifacts);
+        entry.executions = reportExecutions(jobs);
       } catch (error) {
         if (error?.fatal) throw error;
         if (error?.rateLimited) limited = true;
-        else errors.push(`run ${entry.id}: jobs unavailable: ${error.message}`);
+        else errors.push(`run ${entry.id}: jobs or artifacts unavailable: ${error.message}`);
       }
     },
     () => !limited
   );
   if (limited) {
     const unfetched = completed.filter((entry) => !entry.executions).length;
-    errors.push(`rate limit reached listing jobs: ${unfetched} runs left for the next harvest`);
+    errors.push(`rate limit reached listing runs: ${unfetched} runs left for the next harvest`);
   }
-  return runs.length;
-}
-
-async function refreshArtifacts(api, history, since) {
-  const listed = await api.listArtifacts(since);
-  let added = 0;
-  for (const artifact of listed) {
-    if (!REPORT_ARTIFACT_PATTERN.test(artifact.name)) continue;
-    const runId = String(artifact.workflow_run?.id ?? '');
-    if (!history.runs[runId]) continue;
-    const id = String(artifact.id);
-    const known = history.artifacts[id];
-    if (known && known.state !== 'pending' && known.state !== 'unreadable') {
-      continue;
-    }
-    history.artifacts[id] = {
-      ...known,
-      id,
-      name: artifact.name,
-      runId,
-      createdAt: artifact.created_at,
-      expiresAt: artifact.expires_at,
-      state: artifact.expired ? 'expired-unread' : (known?.state ?? 'pending'),
-    };
-    if (!known) added += 1;
-  }
-  return added;
+  return { runsListed: runs.length, artifactsAdded };
 }
 
 async function readArtifact(api, artifact, errors) {
@@ -296,8 +301,7 @@ function pruneHistory(history, now) {
 export async function harvest(api, history, now) {
   const since = listSince(history, now);
   const errors = [];
-  const runsListed = await refreshRuns(api, history, since, errors);
-  const artifactsAdded = await refreshArtifacts(api, history, since);
+  const { runsListed, artifactsAdded } = await refreshRuns(api, history, since, errors);
   const artifactsRead = await readPendingArtifacts(api, history, now, errors);
   pruneHistory(history, now);
   const summary = {

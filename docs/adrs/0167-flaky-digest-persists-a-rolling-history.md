@@ -25,11 +25,11 @@ Three shapes were weighed:
 
 Take the third shape. `.github/workflows/flaky-digest.yml` runs every three hours with
 `actions: read`. `tools/flaky-digest/gen-flaky-digest.mjs` downloads the newest
-`flaky-digest-history` artifact, relists the Tests runs and report artifacts in the report retention
-window, reads the unread report artifacts soonest-expiring first until the Actions rate limit
-reaches `RATE_LIMIT_RESERVE_REQUESTS`, and writes `flaky-history.json` plus the digest. The workflow
-uploads all three and appends the Markdown digest to its job summary. `tools/flaky-digest/README.md`
-is the operating reference.
+`flaky-digest-history` artifact, relists the Tests runs in the report retention window with each new
+or re-run run's jobs and artifacts, reads the unread report artifacts soonest-expiring first until
+the Actions rate limit reaches `RATE_LIMIT_RESERVE_REQUESTS`, and writes `flaky-history.json` plus
+the digest. The workflow uploads all three and appends the Markdown digest to its job summary.
+`tools/flaky-digest/README.md` is the operating reference.
 
 Invariants a change must keep:
 

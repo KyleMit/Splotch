@@ -63,12 +63,14 @@ function pairExecutions(run, artifacts) {
   return { pairs, unmatchedArtifacts };
 }
 
-function gapReason({ execution, artifact }, artifacts) {
+function gapReason({ execution, artifact }, pairs) {
   if (!UPLOADING_CONCLUSIONS.has(execution.conclusion)) return `job-${execution.conclusion}`;
   if (!artifact) {
-    const replaced = artifacts.some(
-      (candidate) =>
-        candidate.name === execution.artifact && candidate.record?.run?.attempt > execution.attempt
+    // A run keeps one artifact per name, so a later attempt holding it replaced this upload —
+    // whether or not that surviving artifact could be read.
+    const replaced = pairs.some(
+      (pair) =>
+        pair.artifact?.name === execution.artifact && pair.execution.attempt > execution.attempt
     );
     return replaced ? 'replaced-by-later-attempt' : 'no-artifact';
   }
@@ -151,7 +153,7 @@ function accountRun(context, run, artifacts) {
   }
   const { pairs, unmatchedArtifacts } = pairExecutions(run, artifacts);
   for (const pair of pairs) {
-    const reason = gapReason(pair, artifacts);
+    const reason = gapReason(pair, pairs);
     const date = pair.execution.completedAt ?? pair.artifact?.createdAt ?? run.createdAt;
     if (reason) {
       addGap(context, run, reason, {

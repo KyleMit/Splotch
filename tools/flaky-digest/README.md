@@ -18,7 +18,7 @@ npm run gen:flaky-digest
 | `--out <dir>`         | `test-results/flaky-digest` | Where the three output files go                                             |
 | `--history <file>`    | —                           | Continue this local `flaky-history.json` instead of the CI history artifact |
 | `--fresh`             | off                         | Start an empty history                                                      |
-| `--days <n>`          | `7`                         | Ranking window                                                              |
+| `--days <n>`          | `7`                         | Ranking window, at most `HISTORY_RETENTION_DAYS`                            |
 | `--repo <owner/name>` | `KyleMit/Splotch`           | Repository to read                                                          |
 
 Auth comes from `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token`. The token needs read access
@@ -93,11 +93,11 @@ error from the latest harvest.
 
 ## Failure behavior
 
-* Per-item failures (one download, one job list) and a rate limit reached while listing jobs or
-  downloading are recorded in the history and the digest, and the run still succeeds, so what was
-  read is persisted.
-* A rejected token, or a rate limit exhausted while listing runs or artifacts, is fatal. The
-  workflow then uploads nothing, and the previous history artifact stays the newest.
+* Per-item failures (one download, one run's job or artifact list) and a rate limit reached while
+  listing a run's jobs and artifacts or downloading are recorded in the history and the digest, and
+  the run still succeeds, so what was read is persisted.
+* A rejected token, or a rate limit exhausted while listing the Tests runs, is fatal. The workflow
+  then uploads nothing, and the previous history artifact stays the newest.
 * A history with an unknown `schemaVersion` is fatal rather than restarted, since restarting would
   discard records whose artifacts have expired.
 * With no history artifact at all, the run fails and asks for `--fresh` (the workflow's `fresh`
