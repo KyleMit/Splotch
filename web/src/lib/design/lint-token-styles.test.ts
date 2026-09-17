@@ -13,7 +13,132 @@ import {
   countRawHexCss,
   countRawZIndex,
   countRawZIndexCss,
+  countUnpinnedGlobalSelectors,
 } from '../../../../tools/tokens/lint-token-styles.mjs';
+
+describe('countUnpinnedGlobalSelectors', () => {
+  it('allows a scoped compound to the left of :global()', () => {
+    expect(countUnpinnedGlobalSelectors('<style>.a :global(.b) { color: red; }</style>')).toBe(0);
+  });
+
+  it('allows a scoped compound to the right of :global()', () => {
+    expect(
+      countUnpinnedGlobalSelectors(
+        '<style>:global(html[data-drawer-open]) .actions-drawer { color: red; }</style>'
+      )
+    ).toBe(0);
+  });
+
+  it('counts a selector made entirely from :global()', () => {
+    expect(
+      countUnpinnedGlobalSelectors('<style>:global(.gate-mascot) { color: red; }</style>')
+    ).toBe(1);
+  });
+
+  it('counts only the unpinned member of a comma list', () => {
+    const source = `<style>
+  .card :global(.icon),
+  :global(.loose-icon) { color: red; }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(1);
+  });
+
+  it('handles nested functional selectors inside :global()', () => {
+    expect(
+      countUnpinnedGlobalSelectors(
+        '<style>:global(:where(.row):not([hidden])) { color: red; }</style>'
+      )
+    ).toBe(1);
+  });
+
+  it.each([
+    ':global(.a):hover',
+    ':global(.a)::before',
+    ':global(.a):not(.b)',
+    ':global(.a) :global(.b):focus-visible',
+  ])('counts a pseudo suffix on a global compound: %s', (selector) => {
+    expect(countUnpinnedGlobalSelectors(`<style>${selector} { color: red; }</style>`)).toBe(1);
+  });
+
+  it('counts the inline argumentless global form unless an earlier compound pins it', () => {
+    const source = `<style>
+  :global .loose {
+    color: red;
+    .nested { color: red; }
+  }
+  .shell :global .pinned {
+    color: red;
+    .nested { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(2);
+  });
+
+  it('counts global compounds joined only by combinators', () => {
+    expect(
+      countUnpinnedGlobalSelectors(
+        '<style>:global(.panel) > :global(.panel-icon) { color: red; }</style>'
+      )
+    ).toBe(1);
+  });
+
+  it('counts unpinned selectors nested inside an at-rule', () => {
+    const source = `<style>
+  @media (orientation: landscape) {
+    :global(.wide-icon) { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(1);
+  });
+
+  it('treats a root global block as unpinned', () => {
+    const source = `<style>
+  :global {
+    .first,
+    .second:not(.hidden) { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(2);
+  });
+
+  it('allows a global block nested under a scoped selector', () => {
+    const source = `<style>
+  .shell {
+    :global {
+      .child { color: red; }
+    }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(0);
+  });
+
+  it('tracks nesting selectors inherited from an unpinned global parent', () => {
+    const source = `<style>
+  :global(.parent) {
+    & :global(.global-child) { color: red; }
+    &.global-suffix { color: red; }
+    & .scoped-child { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(3);
+  });
+
+  it('counts only the unpinned member beside a scoped global-block selector', () => {
+    const source = `<style>
+  :global(.loose),
+  .shell :global {
+    .child { color: red; }
+  }
+</style>`;
+    expect(countUnpinnedGlobalSelectors(source)).toBe(1);
+  });
+
+  it('allows a local compound after a global one to pin the selector', () => {
+    expect(countUnpinnedGlobalSelectors('<style>:global(.parent) * { color: red; }</style>')).toBe(
+      0
+    );
+  });
+});
 
 describe('countRawHex', () => {
   it('counts hex colors only inside <style> blocks', () => {

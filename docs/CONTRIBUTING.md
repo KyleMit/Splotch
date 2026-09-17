@@ -223,9 +223,12 @@ directly (`setColor`, `clearCanvas`, etc.).
 **No comments on obvious code.** Add a comment only when the *why* is non-obvious — a hidden
 constraint, a workaround, a subtle invariant. Don't describe what the code does; the names do that.
 
-**Scoped styles.** Component styles go in the component's `<style>` block. Avoid global CSS except
-for genuine cross-component tokens. Use `:global()` sparingly and only when a class is set
-imperatively (e.g. via `classList`).
+**Scoped styles.** Component styles go in the component's `<style>` block. Use `:global()` only for
+a class forwarded into a child component, cross-component state on `html[data-*]` or a sibling's
+data attributes, elements rendered inside `{@html}`, or a class set imperatively via `classList`.
+Pin every new global seam with a scoped compound (`.picker :global(.picker-option-icon)`,
+`:global(html[data-drawer-open]) .actions-drawer`); an entirely unpinned selector such as
+`:global(.gate-mascot)` is forbidden because it relies on a globally unique class name.
 
 **No framework overhead in `platform/index.ts`.** The platform detection module reads the Capacitor
 global directly rather than importing `@capacitor/core`, so it evaluates safely during SSR without

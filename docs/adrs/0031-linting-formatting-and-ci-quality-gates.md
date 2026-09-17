@@ -4,7 +4,8 @@
 to dprint — ADR-0057; hand-authored configuration brought into Prettier scope; amended 2026-08:
 dependency audit raised from critical to high; amended 2026-09: the silently-followed conventions
 ratified as rules — issue 1529; stylelint adopted for CSS and Svelte `<style>` blocks — issue 1859;
-five auto-fixable notation rules adopted through one isolated reformat — issue 1861)
+five auto-fixable notation rules adopted through one isolated reformat — issue 1861; unpinned
+`:global()` selectors ratcheted — issue 1938)
 
 ## Context
 
@@ -123,6 +124,15 @@ choices:
   scoping syntax rather than an unknown pseudo-class, and teaching the rule the framework's
   vocabulary is what this config already does for genuine idioms. At zero afterwards, it catches
   `:focus-visable` across every component — the single highest-value rule in the set.
+
+  **`:global()` shape stays in the token ratchet, not stylelint** (amended 2026-09, issue 1938).
+  Svelte's syntax is legitimate when a scoped compound pins a forwarded class, cross-component
+  state, `{@html}` content, or an imperative class to its component; only a selector whose every
+  compound is global has the leak-prone shape. The repository already has a non-zero per-file
+  baseline for that shape, so `npm run lint:tokens` applies the same fail-above-and-below ratchet as
+  raw hex and font-size values. A stylelint disallow-list would either reject the sanctioned seams
+  or need per-file overrides that silently exempt new selectors, contrary to this ADR's measured
+  rule-adoption policy.
 
 * **Rejected CSS rule candidates — measured, do not re-litigate without new evidence.**
   `stylelint-config-standard` v40 enables 82 rules; 22 of them fired at the 2026-09 evaluation, and

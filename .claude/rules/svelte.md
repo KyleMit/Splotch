@@ -64,8 +64,12 @@ paths:
   defensive lazy-init calls — hoist that work to `pointerdown`/init and verify with
   `npm run perf:*`. Bind only element refs something actually reads, and never into `$state` unless
   something reacts to them.
-* Styles are scoped in the component's `<style>` block. No global CSS except genuine cross-component
-  tokens; `:global()` only when a class is set imperatively (e.g. via `classList`).
+* Styles are scoped in the component's `<style>` block. Use `:global()` only for a class forwarded
+  into a child component, cross-component state on `html[data-*]` or a sibling's data attributes,
+  elements rendered inside `{@html}`, or a class set imperatively via `classList`. Pin every new
+  global seam with a scoped compound (`.picker :global(.picker-option-icon)`,
+  `:global(html[data-drawer-open]) .actions-drawer`); an entirely unpinned selector such as
+  `:global(.gate-mascot)` is forbidden because it relies on a globally unique class name.
 * A value repeated 3+ times in a component's `<style>` (a duration, gradient, transition list)
   becomes a local custom property on the block's root selector (see `--drawer-transition` in
   `ActionsPanel.svelte`). Never `!important` to beat a sibling rule — fix specificity or ordering.
