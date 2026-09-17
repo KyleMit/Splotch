@@ -1,0 +1,43 @@
+{
+  "bundleId": "art.splotch.app",
+  "kind": "crayon",
+  "log": [
+    {
+      "event": "clear",
+      "hostMs": 1789677057600
+    },
+    {
+      "event": "yellow-draw",
+      "hostMs": 1789677064350
+    },
+    {
+      "event": "blue-draw",
+      "hostMs": 1789677070808
+    },
+    {
+      "event": "record-start-request",
+      "hostMs": 1789677078281
+    },
+    {
+      "event": "record-started",
+      "hostMs": 1789677078389
+    },
+    {
+      "event": "video",
+      "startedAtDeviceEpoch": 1789677078.153767,
+      "uuid": "B3892DBF-5B63-48AC-A725-F04476C32554"
+    },
+    {
+      "event": "undo-tap",
+      "hostMs": 1789677079590
+    },
+    {
+      "event": "undo-tapped",
+      "hostMs": 1789677080155
+    },
+    {
+      "event": "record-stop",
+      "hostMs": 1789677081957
+    }
+  ]
+}

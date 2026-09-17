@@ -1,0 +1,31 @@
+{
+  "bundleId": "art.splotch.app",
+  "mode": "cancel-mid",
+  "log": [
+    {
+      "event": "record-start",
+      "hostMs": 1789676420034
+    },
+    {
+      "event": "video",
+      "startedAtDeviceEpoch": 1789676419.9315438,
+      "uuid": "A4618466-6232-49EA-BA46-90B5A67F6382"
+    },
+    {
+      "event": "undo-tap",
+      "hostMs": 1789676422507
+    },
+    {
+      "event": "draw-start",
+      "hostMs": 1789676422943
+    },
+    {
+      "event": "drawn",
+      "hostMs": 1789676425250
+    },
+    {
+      "event": "record-stop",
+      "hostMs": 1789676427752
+    }
+  ]
+}
