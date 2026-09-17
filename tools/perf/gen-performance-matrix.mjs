@@ -1800,11 +1800,13 @@ function actionHeatmap(matrix) {
   <details class="action-key"><summary>Action-number key</summary><ol>${legend}</ol></details>`;
 }
 
+// ADR-0156: only release-gate rows can leave a remainder, so a tripwire or
+// advisory red must not lift an action toward the top of the list. A mode whose
+// control failed is left out entirely rather than counted as a failing mode.
+// Counting it is how "the worst cases cluster on the Android emulator" became a
+// reading of the product rather than of the emulator.
 function rankedActionFailures(matrix) {
-  // A mode whose control failed is left out entirely rather than counted as a
-  // failing mode. Counting it is how "the worst cases cluster on the Android
-  // emulator" became a reading of the product rather than of the emulator.
-  const captured = modeRows(matrix).filter(
+  const captured = modeRows({ ...matrix, targets: targetsInRole(matrix, RELEASE_GATE) }).filter(
     (target) => target.actions && target.actions.scoreable !== false
   );
   const labels = comparableActionLabels(captured);
@@ -2936,8 +2938,9 @@ function renderReport(matrix) {
     ? ` ${preservedTargetCount} of ${matrix.targets.length} targets are marked “Earlier capture”: their results are preserved from an earlier campaign, not re-measured here — Commit provenance lists their source commits.`
     : '';
   const ranked = rankedActionFailures(matrix);
+  const gateTargetCount = targetsInRole(matrix, RELEASE_GATE).length;
   const rankedCard = ranked
-    ? `<section class="rank-card"><h3>Actions failing in the most modes</h3><p class="rank-scope">Counted across all scoreable modes — the row filters above do not change this list.</p><ol class="rank-list">${ranked}</ol></section>`
+    ? `<section class="rank-card"><h3>Actions failing in the most modes</h3><p class="rank-scope">Counted across the scoreable modes of the ${gateTargetCount} release-gate rows — Mac tripwire and simulator/emulator advisory rows, and the row filters above, do not change this list.</p><ol class="rank-list">${ranked}</ol></section>`
     : '';
   const body = `${header}
 ${modeToolbar(rows.length)}

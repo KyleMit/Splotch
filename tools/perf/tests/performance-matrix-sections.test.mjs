@@ -264,3 +264,68 @@ describe('uncalibrated cells on a release-gate row', () => {
     );
   });
 });
+
+// ADR-0156 decisions 2 and 3: a tripwire or advisory red is never a remainder, so
+// no amount of it may reorder or populate the cross-mode failure ranking.
+describe('the failure ranking card', () => {
+  const rankCard = (matrix) =>
+    renderReport(matrix).match(/<section class="rank-card">[\s\S]*?<\/section>/)?.[0];
+  const denominators = (card) =>
+    [...card.matchAll(/(\d+) of (\d+) modes failed/g)].map(([, , measured]) => Number(measured));
+  const everyActionFailingIn = (role) => {
+    const matrix = published();
+    for (const target of matrix.targets.filter((candidate) => targetRole(candidate) === role)) {
+      for (const mode of target.modes.filter((candidate) => candidate.actions)) {
+        mode.actions.scoreable = true;
+        mode.actions.results = mode.actions.results.map((result) => ({
+          ...result,
+          passed: false,
+          postActionFrames: { ...result.postActionFrames, max: 10_000 },
+        }));
+      }
+    }
+    return matrix;
+  };
+  const scoreableGateActionModes = (matrix) =>
+    matrix.targets
+      .filter((target) => targetRole(target) === 'release-gate')
+      .flatMap((target) => target.modes)
+      .filter((mode) => mode.actions && mode.actions.scoreable !== false).length;
+
+  it.each(['regression-tripwire', 'advisory'])(
+    'ignores %s rows even when every action on them fails',
+    (role) => {
+      expect(rankCard(everyActionFailingIn(role))).toBe(rankCard(published()));
+    }
+  );
+
+  it('reorders when release-gate rows fail, so the rows it reads are the gate rows', () => {
+    const matrix = everyActionFailingIn('release-gate');
+    const card = rankCard(matrix);
+    const gateModes = scoreableGateActionModes(matrix);
+
+    expect(card).not.toBe(rankCard(published()));
+    expect(card).toContain(`${gateModes} of ${gateModes} modes failed`);
+  });
+
+  it('counts only scoreable release-gate modes and says so in its scope note', () => {
+    const matrix = published();
+    const card = rankCard(matrix);
+    const gateTargets = matrix.targets.filter((target) => targetRole(target) === 'release-gate');
+
+    expect(card).toContain(
+      `Counted across the scoreable modes of the ${gateTargets.length} release-gate rows — Mac tripwire and simulator/emulator advisory rows, and the row filters above, do not change this list.`
+    );
+    expect(Math.max(...denominators(card))).toBe(scoreableGateActionModes(matrix));
+  });
+
+  it('leaves a release-gate mode whose control failed out of the count', () => {
+    const matrix = published();
+    const gateMode = matrix.targets.find((target) => target.id === 'android-device-web').modes[0];
+    gateMode.actions.scoreable = false;
+
+    expect(Math.max(...denominators(rankCard(matrix)))).toBe(
+      scoreableGateActionModes(published()) - 1
+    );
+  });
+});
