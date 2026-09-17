@@ -1171,7 +1171,7 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     // The measured activation is the product's own minimize control, because the
     // print only exists while the run is minimized.
     expect(block).toContain('.ai-keep-drawing button');
-    expect(block).toContain('.ai-waiting-polaroid')
+    expect(block).toContain('.ai-waiting-polaroid');
     // A build without the dev harness records the gap instead of failing the sweep.
     expect(block).toContain('notApplicable.set');
     // The stub must always come back off, or every later action runs on a mocked fetch.
