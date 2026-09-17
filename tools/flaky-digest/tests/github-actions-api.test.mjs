@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -95,6 +95,7 @@ describe('createGithubActionsApi', () => {
       1: readFileSync(join(dir, 'with.zip')),
       2: readFileSync(join(dir, 'without.zip')),
     };
+    rmSync(dir, { recursive: true, force: true });
     const { api } = apiWith((url) => response(zips[url.pathname.split('/').at(-2)]));
 
     expect(await api.readArtifactFile(1, 'flaky.json')).toBe('{"schemaVersion":1}');
