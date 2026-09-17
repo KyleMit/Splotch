@@ -33,3 +33,12 @@ In the kill summaries, `newNsFiles` and `legacyFiles` include each book's marker
 `android/server-m2-resume.log` also holds a second request at 22:27:54. It came from the removal
 setup that followed, which restored the pre-`m2` layout under the `m2` build and so legitimately
 fetched the changed file again. The resume snapshot (`android/s4-*`) was taken at 22:27:15.
+
+## After the round-one review fix (8d954dfa065a452b25339b0b3c164b0c1599b2dd)
+
+`android/after-review-fix/` repeats the Android `m2` update and the kill-during-download run on a
+fresh install of the evidence build rebuilt with the fix: a stopped worker cannot publish, each
+publish withdraws the marker, and the commit hashes the whole book. Update: 1 request, 443 kept,
+`vehicles` deleted, 0 violations. Kill at 16 KB of 53 KB: `dinosaur` unmarked, 73/74 valid plus
+`.part`. Relaunch: 1 more request (2 in total, the first being the killed transfer), 6 books
+trusted, 0 violations.
