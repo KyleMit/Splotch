@@ -291,6 +291,7 @@ function pruneHistory(history, now) {
   for (const [id, artifact] of Object.entries(history.artifacts)) {
     if (!history.runs[artifact.runId]) delete history.artifacts[id];
   }
+  history.harvests = history.harvests.filter((harvest) => harvest.at >= cutoff);
 }
 
 /**

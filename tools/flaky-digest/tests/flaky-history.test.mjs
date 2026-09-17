@@ -287,9 +287,11 @@ describe('harvest', () => {
     const history = createHistory();
     history.runs.old = { id: 'old', createdAt: ago(24 * 91) };
     history.artifacts['5'] = { id: '5', runId: 'old', state: 'read' };
+    history.harvests.push({ at: ago(24 * 91) }, { at: ago(24 * 2) });
     await harvest(fakeApi({}), history, NOW);
     expect(history.runs).toEqual({});
     expect(history.artifacts).toEqual({});
+    expect(history.harvests.map(({ at }) => at)).toEqual([ago(24 * 2), NOW.toISOString()]);
   });
 
   it('lists back to the previous harvest when it is older than artifact retention', async () => {
