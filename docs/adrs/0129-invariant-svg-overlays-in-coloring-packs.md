@@ -55,10 +55,11 @@ re-runnable-audit model.
 
 Coloring-pack manifest format 3 admits SVG only at the two overlay suffixes. An SVG has the same
 logical path, download path, byte length, and SHA-256 digest in `compact` and `full`; it has no
-responsive derivative. Raster files keep ADR-0103's existing mapping. Pack cache namespaces remain
+responsive derivative. Raster files keep ADR-0103's existing mapping. Pack cache namespaces remained
 version-and-resolution scoped because the installed marker already fingerprints every selected file,
 including its bytes and digest; vector invariance does not introduce a separate migration or cache
-authority.
+authority. ADR-0103's 2026-09 amendments later dropped the version from both the web and native
+namespaces and made that marker the only version check.
 
 The pen and chalk campaigns each passed a paid dense-landscape gate on Fairy wide before the
 remaining pages were processed in book-sized batches. The final 13 chalk traces used Train wide as a

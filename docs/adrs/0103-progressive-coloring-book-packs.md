@@ -3,7 +3,8 @@
 **Status:** Active — implements issue #200; amended 2026-08-08 for screen-sized pack variants and
 2026-08-09 for issue #880's Coloring Book feature gate; amended 2026-09 so web packs survive
 deploys, and again 2026-09 so a web device's first downloads wait for engagement and the open picker
-holds its books; and amends [ADR-0022](0022-pwa-service-worker-strategy.md),
+holds its books, and again 2026-09 so native packs survive app updates; and amends
+[ADR-0022](0022-pwa-service-worker-strategy.md),
 [ADR-0042](0042-static-media-cache-invalidation.md), and
 [ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md). **Date:** 2026-08
 
@@ -228,8 +229,8 @@ wipe every book.
 Removal from Parent Settings deletes every pack cache, whatever layout wrote it. Rolling the deploy
 back to a build from before this amendment strands the resolution-named cache: that build removes
 only version-scoped caches, so storage doubles and the service worker can serve the stranded bytes
-for a changed file until a later build's scan sweeps it. Native storage is unchanged: its version is
-the store release version (ADR-0030), so it is cleared only when a new app build is installed.
+for a changed file until a later build's scan sweeps it. Native storage kept its version scope at
+the time; the native amendment below ports this design to Android and iOS.
 
 ## Amendment (2026-09): Web Downloads Wait for Engagement, and the Open Picker Holds Its Books
 
@@ -324,3 +325,80 @@ Considered and rejected:
   `coloringPacks.cacheFamilyPrefix.test.ts` guards the copy and `startup-bundle.spec.ts` keeps
   `cacheKeys.ts` off the startup path. The "no downloaded books" answer that Settings reads loads
   the pack state lazily.
+
+## Amendment (2026-09): Native Packs Survive App Updates
+
+### Context
+
+Android stored books under `noBackupFilesDir/coloring/<app version>-<resolution>/<book>` and iOS
+under the same layout in Application Support. Each platform's `status` call deleted every other
+folder, and iOS also deleted the folder of a pending job from an older app version. So every store
+update deleted every downloaded book, then downloaded all of them again: 16.1 MiB compact or 21.9
+MiB full for the current seven books (issue #1931). Until that finished, only Farm was available,
+and a child who opened the updated app offline had only Farm. Native downloads are unmetered by
+default, but a parent who allowed mobile data paid for the whole catalog again over cellular.
+
+### Decision
+
+Native storage uses the web amendment's design. The folder is named only by resolution
+(`coloring/<resolution>/<book>`). A book's `.installed` marker holds `coloringPackMarkerValue()` for
+that book, which lists every file's path, byte length, and SHA-256. The TypeScript store computes
+the value and passes it over the bridge, so web and native trust a marker by the same definition. A
+scan trusts a marker only when its contents equal the current manifest's value, so an update that
+changes no pack file costs no transfer and no hashing.
+
+`status` now receives every downloadable book with its files and marker, and reconciles storage
+before it answers. For each book, in this order:
+
+1. A marker that matches is trusted. Files the book no longer lists are deleted.
+2. A marker that does not match is deleted before any file it vouched for is changed.
+3. Every listed file is hashed. A file that matches stays. A file that does not match is deleted and
+   replaced by a matching copy from any other folder under the root: the version-scoped folders from
+   before this amendment, or the other resolution. A copy moves by rename, and a copy that does not
+   match is deleted.
+4. The book gets a marker only when every file matches. An interrupted scan therefore leaves an
+   unmarked book, and the next scan finishes it.
+
+After all books, the scan deletes book folders the manifest no longer lists, marker first, and then
+deletes every other folder under the root except `jobs`. A failure on one book, such as a full disk,
+leaves that book unmarked instead of failing the scan, because a scan that throws hides every
+installed book.
+
+The installers withdraw a book's marker before they write any of its files, skip files that already
+match, and write the marker only after every file has the manifest's length. Android's WorkManager
+job and iOS's pending job now name the resolution and carry the marker. A job written before this
+amendment has neither, so it is discarded, and the next scan adopts the files it wrote. On Android
+the worker keeps running after the WebView that started it is gone. So the scan, each file's
+publish, the marker check, and the commit all hold one process-wide lock, and the network transfer
+stays outside it. The scan also runs on a dedicated executor, because Capacitor runs every plugin's
+calls on one shared thread, and the first scan after the update hashes the whole catalog. It skips
+`.part` files, which belong to a transfer that may still be streaming. On iOS the scan runs on the
+download coordinator's serial queue, which the `URLSession` delegate also uses, so no lock is
+needed.
+
+Removal is `remove()` with no arguments on both stores. Native removal cancels background work and
+deletes everything under the coloring root, whatever layout or resolution wrote it. On iOS the root
+itself stays, because it carries the backup exclusion.
+
+Considered and rejected:
+
+* Computing the marker natively on each platform. That needs no bridge payload, but it would add two
+  more definitions of which bytes a marker vouches for, and they could drift from the web's.
+* Passing only a digest of each book's marker to `status`. That shortens the bridge message, but the
+  scan still needs each book's file list to verify and adopt files.
+* Trusting the old marker when its folder moved. The old marker holds only the book id, so it says
+  nothing about whether the new manifest's bytes match.
+
+### Consequences
+
+* **+** An update that changes no pack file keeps every book with zero downloads. A changed file
+  downloads alone, and a book the manifest drops is deleted.
+* **+** An app killed during migration or during a changed file's download never leaves a marker
+  over a missing or wrong file. The evidence from an Android emulator and an iOS simulator is in the
+  pull request for issue #1931.
+* **-** The first launch after this update hashes every downloaded file once, up to 21.9 MiB. A
+  later launch that finds a book unmarked, such as one still downloading, hashes that book's present
+  files again.
+* **-** `status` sends every book's file list and marker over the bridge on each scan. Native
+  plugins have no JVM or Swift unit harness, so their behavior is verified on an emulator and a
+  simulator rather than in CI.

@@ -47,8 +47,10 @@ Turning it off cancels active background work without deleting completed packs. 
 receive 1,152 px fills; larger or denser screens receive the canonical tier. Both native pack
 variants retain canonical 400 px cover thumbnails, canonical SVG overlays, and 400 px selector
 rasters. The web-only 240 px selector candidates are omitted. Android WorkManager stores the
-selected bytes under `noBackupFilesDir`; iOS background `URLSession` stores them in Application
-Support with backup exclusion. The picker exposes a book only after its install marker is written.
+selected bytes under `noBackupFilesDir/coloring/<resolution>`; iOS background `URLSession` stores
+them under the same layout in Application Support, with backup exclusion. The picker exposes a book
+only after its install marker is written. Storage is not scoped by app version, so an app update
+keeps every book whose files did not change and downloads only the files that did (ADR-0103).
 
 ### Storage
 
