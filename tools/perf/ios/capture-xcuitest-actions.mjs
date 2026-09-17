@@ -1007,6 +1007,7 @@ async function removeAiGenerationStub(execute) {
     delete window.__perfAiOriginalFetch;
     delete window.__perfAiRelease;
     delete window.__perfAiSeenUrls;
+    delete window.__perfAiRunError;
     return true;
   `);
 }
@@ -1020,7 +1021,10 @@ async function removeAiGenerationStub(execute) {
 async function startAiRun(execute) {
   await execute(`
     window.__perfAiSeenUrls = [];
-    Promise.resolve(window.__aiGenerate({ style: 'Magical' })).catch(() => {});
+    window.__perfAiRunError = null;
+    Promise.resolve(window.__aiGenerate({ style: 'Magical' })).catch((error) => {
+      window.__perfAiRunError = String((error && (error.message || error)) || error).slice(0, 200);
+    });
     return true;
   `);
   try {
@@ -1030,7 +1034,10 @@ async function startAiRun(execute) {
       'the AI run to offer "Keep drawing while you wait"',
       AI_RUN_READY_TIMEOUT_MS
     );
-  } catch {
+  } catch (error) {
+    // Only "the waiting state never arrived" is an unreachable cue; a broken
+    // script or selector must still fail the sweep (issue 1296's rule).
+    rethrowIfBroken(error);
     return { offered: false, state: await aiRunState(execute) };
   }
   await sleep(ACTION_SETTLE_MS);
@@ -1051,6 +1058,7 @@ async function aiRunState(execute) {
       failedUi: text('.ai-result-error') !== null,
       message: text('.ai-result-error'),
       requests: (window.__perfAiSeenUrls || []).length,
+      runError: window.__perfAiRunError || null,
     };
   `);
 }
