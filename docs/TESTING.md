@@ -366,8 +366,12 @@ annotations nor job summaries can be searched across runs, so the same reporter 
 run — clean or not — as `playwright-report/flaky.json` inside the job's uploaded report artifact:
 each retried pass with its project and spec file, plus the run id, attempt, commit, branch (the real
 head branch on a pull request, not the `<n>/merge` ref), shard, run status, and test count, so
-masked flakes can be summed over a week of jobs instead of scraped from thirty log archives. Write
-specs that can't race in the first place:
+masked flakes can be summed over a week of jobs instead of scraped from thirty log archives. The
+scheduled `Flaky digest` workflow does that summing: it carries those records forward in a history
+artifact past the reports' 7-day expiry and ranks masked flakes per test, with `main` and PR-branch
+counts kept apart and every report job it could not read listed as a gap rather than a clean run.
+Read its job summary, or run `npm run gen:flaky-digest` locally (`tools/flaky-digest/README.md`).
+Write specs that can't race in the first place:
 
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
   (Settings, ADR-0049) can drop the first click before their handler is attached, so a bare
