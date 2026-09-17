@@ -185,8 +185,45 @@ describe('harvest', () => {
     expect(history.artifacts['11'].state).toBe('read');
     expect(history.artifacts['10'].state).toBe('pending');
     expect(summary.errors).toEqual([
-      'rate-limit budget exhausted: 1 artifacts left for the next harvest',
+      'rate-limit budget reached: 1 artifacts left for the next harvest',
     ]);
+  });
+
+  it('stops downloading on a download rate limit and keeps the artifact pending', async () => {
+    const limited = Object.assign(new Error('download limit'), { rateLimited: true });
+    const api = fakeApi({
+      runs: [run(1)],
+      jobs: { 1: [job('Tests (1/8)', 1), job('Tests (2/8)', 1)] },
+      artifacts: [
+        artifact(10, 1, 'playwright-report-shard-1', { expires_at: later(5) }),
+        artifact(11, 1, 'playwright-report-shard-2', { expires_at: later(10) }),
+      ],
+      files: { 10: limited, 11: record() },
+    });
+    const history = createHistory();
+    const summary = await harvest(api, history, NOW);
+    expect(history.artifacts['10'].state).toBe('pending');
+    expect(summary.errors.at(-1)).toMatch(/^rate-limit budget reached: [12] artifacts left/);
+  });
+
+  it('keeps runs whose job list hit the rate limit, for the next harvest to fetch', async () => {
+    const limited = Object.assign(new Error('limit'), { rateLimited: true });
+    const api = fakeApi({
+      runs: [run(1)],
+      artifacts: [artifact(10, 1, 'playwright-report-shard-1')],
+    });
+    api.listJobs = async () => {
+      throw limited;
+    };
+    api.hasBudgetForDownload = () => false;
+    const history = createHistory();
+    const summary = await harvest(api, history, NOW);
+    expect(history.runs['1'].executions).toBeNull();
+    expect(history.artifacts['10'].state).toBe('pending');
+    expect(summary.errors[0]).toMatch(/^rate limit reached listing jobs/);
+
+    await harvest(fakeApi({ runs: [run(1)], jobs: { 1: [job('Tests (1/8)', 1)] } }), history, NOW);
+    expect(history.runs['1'].executions).toHaveLength(1);
   });
 
   it('marks an artifact that expired before it was read', async () => {

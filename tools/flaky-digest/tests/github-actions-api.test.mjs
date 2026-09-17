@@ -57,26 +57,56 @@ describe('createGithubActionsApi', () => {
     expect(requests[0].url.searchParams.get('created')).toBe('>=2026-09-09T00:00:00.000Z');
   });
 
-  it('holds back a reserve of requests from downloads', async () => {
-    const { api } = apiWith(() =>
-      response({ jobs: [] }, { remaining: RATE_LIMIT_RESERVE_REQUESTS + 1 })
+  it('stops at a rate-limited download without failing the harvest', async () => {
+    const { api } = apiWith((url) =>
+      url.pathname.endsWith('/zip')
+        ? response({}, { status: 403, remaining: 0 })
+        : response({ jobs: [] }, { remaining: 4000 })
     );
-    expect(api.hasBudgetForDownload()).toBe(true);
     await api.listJobs(1);
     expect(api.hasBudgetForDownload()).toBe(true);
-
-    const { api: drained } = apiWith(() =>
-      response({ jobs: [] }, { remaining: RATE_LIMIT_RESERVE_REQUESTS })
-    );
-    await drained.listJobs(1);
-    expect(drained.hasBudgetForDownload()).toBe(false);
+    const error = await api.readArtifactFile(1, 'flaky.json').catch((caught) => caught);
+    expect(error).toMatchObject({ rateLimited: true });
+    expect(error.fatal).toBeUndefined();
+    expect(api.hasBudgetForDownload()).toBe(false);
   });
 
-  it('treats a rejected token and an exhausted rate limit as fatal, other errors as per item', async () => {
+  it('counts listings against the same budget as downloads', async () => {
+    const { api } = apiWith(() =>
+      response({ jobs: [] }, { remaining: RATE_LIMIT_RESERVE_REQUESTS })
+    );
+    await api.listJobs(1);
+    expect(api.hasBudgetForDownload()).toBe(false);
+  });
+
+  it('holds back a reserve of downloads', async () => {
+    const redirect = (remaining) =>
+      new Response(null, {
+        status: 302,
+        headers: {
+          location: 'https://storage.test/zip',
+          'x-ratelimit-remaining': String(remaining),
+        },
+      });
+    let remaining = RATE_LIMIT_RESERVE_REQUESTS + 1;
+    const { api, requests } = apiWith((url) =>
+      url.hostname === 'storage.test' ? response(Buffer.from('not a zip')) : redirect(remaining)
+    );
+    await api.readArtifactFile(1, 'flaky.json').catch(() => {});
+    expect(api.hasBudgetForDownload()).toBe(true);
+    remaining = RATE_LIMIT_RESERVE_REQUESTS;
+    await api.readArtifactFile(1, 'flaky.json').catch(() => {});
+    expect(api.hasBudgetForDownload()).toBe(false);
+    const storage = requests.find(({ url }) => url.hostname === 'storage.test');
+    expect(storage.init?.headers?.authorization).toBeUndefined();
+    expect(requests[0].init.redirect).toBe('manual');
+  });
+
+  it('treats a rejected token as fatal, an exhausted rate limit as rate-limited, other errors as per item', async () => {
     const statusApi = (status, remaining) => apiWith(() => response({}, { status, remaining })).api;
     await expect(statusApi(401, 900).listJobs(1)).rejects.toMatchObject({ fatal: true });
-    await expect(statusApi(403, 0).listJobs(1)).rejects.toMatchObject({ fatal: true });
-    await expect(statusApi(429, 10).listJobs(1)).rejects.toMatchObject({ fatal: true });
+    await expect(statusApi(403, 0).listJobs(1)).rejects.toMatchObject({ rateLimited: true });
+    await expect(statusApi(429, 10).listJobs(1)).rejects.toMatchObject({ rateLimited: true });
     const notFound = await statusApi(404, 900)
       .listJobs(1)
       .catch((error) => error);

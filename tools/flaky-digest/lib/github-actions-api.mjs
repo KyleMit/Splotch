@@ -14,9 +14,10 @@ const HOUR_MS = 60 * 60 * 1000;
 const ARTIFACT_ORDER_SLACK_HOURS = 24;
 const PAGE_SIZE = 100;
 
-// Requests held back from artifact downloads so the listings of the next harvest step, and the
-// history lookup of the next scheduled run inside the same rate-limit hour, still fit. A workflow's
-// GITHUB_TOKEN gets 1,000 requests an hour per repository.
+// Requests held back from artifact downloads, so the next scheduled run inside the same rate-limit
+// hour can still list runs and download the history it continues. Every /actions endpoint and every
+// artifact zip draws on one bucket (a workflow's GITHUB_TOKEN gets 1,000 an hour), and /rate_limit
+// does not report it: observed at 5,000 remaining there while /actions answered 403 with 0.
 export const RATE_LIMIT_RESERVE_REQUESTS = 60;
 
 // `unzip` exits 11 when the archive holds no member matching the requested name.
@@ -29,29 +30,38 @@ function fatalError(message) {
   return Object.assign(new Error(message), { fatal: true });
 }
 
+function rateLimitedError(path) {
+  return Object.assign(new Error(`GitHub rate limit exhausted at ${path}`), { rateLimited: true });
+}
+
+function isRateLimited(response, remaining) {
+  return response.status === 429 || (response.status === 403 && remaining === 0);
+}
+
+function readRemaining(response, previous) {
+  const header = response.headers.get('x-ratelimit-remaining');
+  return header === null ? previous : Number(header);
+}
+
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
 export function createGithubActionsApi({ repo, token, fetchImpl = fetch }) {
   let remaining = Infinity;
-
-  async function request(path) {
-    const response = await fetchImpl(`${API_ORIGIN}${path}`, {
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${token}`,
-        'x-github-api-version': '2022-11-28',
-      },
-    });
-    const header = response.headers.get('x-ratelimit-remaining');
-    if (header !== null) remaining = Number(header);
-    if (response.status === 401) throw fatalError(`GitHub rejected the token (401) for ${path}`);
-    if (response.status === 429 || (response.status === 403 && remaining === 0)) {
-      throw fatalError(`GitHub rate limit exhausted at ${path}`);
-    }
-    if (!response.ok) throw new Error(`GitHub ${response.status} for ${path}`);
-    return response;
-  }
+  const headers = {
+    accept: 'application/vnd.github+json',
+    authorization: `Bearer ${token}`,
+    'x-github-api-version': '2022-11-28',
+  };
 
   async function json(path) {
-    return (await request(path)).json();
+    const response = await fetchImpl(`${API_ORIGIN}${path}`, { headers });
+    remaining = readRemaining(response, remaining);
+    if (response.status === 401) throw fatalError(`GitHub rejected the token (401) for ${path}`);
+    if (isRateLimited(response, remaining)) {
+      throw rateLimitedError(path);
+    }
+    if (!response.ok) throw new Error(`GitHub ${response.status} for ${path}`);
+    return response.json();
   }
 
   async function* pages(path, key) {
@@ -63,8 +73,21 @@ export function createGithubActionsApi({ repo, token, fetchImpl = fetch }) {
     }
   }
 
+  // The redirect is taken by hand: the rate-limit headers are on GitHub's redirect, not on the storage
+  // response it points to, so a followed redirect would leave every download uncounted. The signed
+  // storage URL also needs no token.
   async function downloadZip(artifactId) {
-    const response = await request(`/repos/${repo}/actions/artifacts/${artifactId}/zip`);
+    const path = `/repos/${repo}/actions/artifacts/${artifactId}/zip`;
+    let response = await fetchImpl(`${API_ORIGIN}${path}`, { headers, redirect: 'manual' });
+    remaining = readRemaining(response, remaining);
+    if (response.status === 401) throw fatalError(`GitHub rejected the token (401) for ${path}`);
+    if (isRateLimited(response, remaining)) {
+      throw rateLimitedError(path);
+    }
+    if (REDIRECT_STATUSES.has(response.status)) {
+      response = await fetchImpl(response.headers.get('location'));
+    }
+    if (!response.ok) throw new Error(`GitHub ${response.status} for ${path}`);
     return Buffer.from(await response.arrayBuffer());
   }
 

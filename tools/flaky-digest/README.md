@@ -59,8 +59,12 @@ re-read the live window on each run:
 * Committing the history to the repository was rejected: it needs a write token in a scheduled job
   and turns a CI digest into commits on `main`.
 
-The harvester stops downloading when the remaining rate limit falls to `RATE_LIMIT_RESERVE_REQUESTS`
-and leaves the rest pending for the next run, soonest-expiring first.
+The harvester stops downloading when the remaining rate limit falls to
+`RATE_LIMIT_RESERVE_REQUESTS`, or at the first rate-limited download, saves what it read, and leaves
+the rest pending for the next run, soonest-expiring first. The budget it watches is the one every
+`/actions` endpoint and artifact zip draws on, read from those responses' headers;
+`gh api rate_limit` does not report it, so a local run can exhaust it while that endpoint still
+shows the full allowance.
 
 ## What is and is not a sample
 
@@ -89,10 +93,11 @@ error from the latest harvest.
 
 ## Failure behavior
 
-* Per-item failures (one download, one job list) are recorded in the history and the digest, and the
-  run still succeeds, so what was read is persisted.
-* A rejected token or an exhausted rate limit is fatal. The workflow then uploads nothing, and the
-  previous history artifact stays the newest.
+* Per-item failures (one download, one job list) and a rate limit reached while listing jobs or
+  downloading are recorded in the history and the digest, and the run still succeeds, so what was
+  read is persisted.
+* A rejected token, or a rate limit exhausted while listing runs or artifacts, is fatal. The
+  workflow then uploads nothing, and the previous history artifact stays the newest.
 * A history with an unknown `schemaVersion` is fatal rather than restarted, since restarting would
   discard records whose artifacts have expired.
 * With no history artifact at all, the run fails and asks for `--fresh` (the workflow's `fresh`

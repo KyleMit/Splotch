@@ -162,7 +162,8 @@ async function refreshRuns(api, history, since, errors) {
       known.executions
     );
   });
-  await forEachConcurrently(unsettled, async (run) => {
+  const completed = [];
+  for (const run of unsettled) {
     const entry = {
       id: String(run.id),
       event: run.event,
@@ -175,16 +176,29 @@ async function refreshRuns(api, history, since, errors) {
       url: run.html_url,
       executions: null,
     };
-    if (run.status === 'completed') {
+    history.runs[entry.id] = entry;
+    if (run.status === 'completed') completed.push(entry);
+  }
+  // A rate-limited job list stops the rest: their runs keep `executions: null`, surface as
+  // jobs-unavailable, and are fetched again by the next harvest.
+  let limited = false;
+  await forEachConcurrently(
+    completed,
+    async (entry) => {
       try {
-        entry.executions = reportExecutions(await api.listJobs(run.id));
+        entry.executions = reportExecutions(await api.listJobs(entry.id));
       } catch (error) {
         if (error?.fatal) throw error;
-        errors.push(`run ${run.id}: jobs unavailable: ${error.message}`);
+        if (error?.rateLimited) limited = true;
+        else errors.push(`run ${entry.id}: jobs unavailable: ${error.message}`);
       }
-    }
-    history.runs[entry.id] = entry;
-  });
+    },
+    () => !limited
+  );
+  if (limited) {
+    const unfetched = completed.filter((entry) => !entry.executions).length;
+    errors.push(`rate limit reached listing jobs: ${unfetched} runs left for the next harvest`);
+  }
   return runs.length;
 }
 
@@ -221,15 +235,16 @@ async function readArtifact(api, artifact, errors) {
     );
     delete artifact.error;
     Object.assign(artifact, outcome);
-    return true;
+    return 'read';
   } catch (error) {
     if (error?.fatal) throw error;
+    if (error?.rateLimited) return 'rate-limited';
     artifact.state = 'unreadable';
     artifact.error = error.message;
     errors.push(
       `artifact ${artifact.id} (${artifact.name}, run ${artifact.runId}): ${error.message}`
     );
-    return false;
+    return 'unreadable';
   }
 }
 
@@ -247,15 +262,18 @@ async function readPendingArtifacts(api, history, now, errors) {
     .filter((artifact) => artifact.state !== 'expired-unread')
     .sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
   let read = 0;
+  let limited = 0;
   const left = await forEachConcurrently(
     queue,
     async (artifact) => {
-      if (await readArtifact(api, artifact, errors)) read += 1;
+      const outcome = await readArtifact(api, artifact, errors);
+      if (outcome === 'read') read += 1;
+      if (outcome === 'rate-limited') limited += 1;
     },
-    api.hasBudgetForDownload
+    () => limited === 0 && api.hasBudgetForDownload()
   );
-  if (left > 0) {
-    errors.push(`rate-limit budget exhausted: ${left} artifacts left for the next harvest`);
+  if (left + limited > 0) {
+    errors.push(`rate-limit budget reached: ${left + limited} artifacts left for the next harvest`);
   }
   return read;
 }

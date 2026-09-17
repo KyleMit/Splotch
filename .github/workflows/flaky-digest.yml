@@ -7,9 +7,10 @@
 # again. The schedule is what keeps that chain ahead of expiry: a missed run only delays reading,
 # and anything that does expire unread is reported as a gap, never as a clean run.
 #
-# The cadence is also a rate-limit budget. GITHUB_TOKEN allows 1,000 API requests an hour and every
-# report zip is one; running every three hours keeps a busy stretch's backlog within one run's
-# budget, and the harvester stops short of the limit and leaves the rest for the next run.
+# The cadence is also a rate-limit budget. Every Actions API call and every report zip draws on
+# GITHUB_TOKEN's 1,000 requests an hour; running every three hours keeps a busy stretch's backlog
+# within a few runs, and the harvester stops short of the limit, saves what it read, and leaves the
+# rest for the next run.
 name: Flaky digest
 
 on:

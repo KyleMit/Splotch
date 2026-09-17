@@ -12,9 +12,10 @@ beat that expiry, or it silently samples a shrinking window and reports the miss
 Three shapes were weighed:
 
 * **Re-read the live window on every run.** Simplest, and needs no state. Rejected for its request
-  cost: a workflow's `GITHUB_TOKEN` allows 1,000 API requests an hour, each report zip is one
-  request, and one measured week held 381 Tests runs and 3,735 shard records. A full re-read cannot
-  fit one run's budget, and a local run with a personal token spends most of an hour's allowance.
+  cost: a workflow's `GITHUB_TOKEN` allows 1,000 Actions API requests an hour, each report zip is
+  one request, and one measured week held 381 Tests runs and 3,735 shard records. A full re-read
+  cannot fit one run's budget, and a local run with a personal token spends most of an hour's
+  allowance.
 * **Commit the history to the repository.** Durable and diffable, but it needs a write token in a
   scheduled job and turns a CI digest into a stream of commits on `main`.
 * **Carry the history forward as an artifact on a schedule.** Each run starts from the previous
@@ -25,10 +26,10 @@ Three shapes were weighed:
 Take the third shape. `.github/workflows/flaky-digest.yml` runs every three hours with
 `actions: read`. `tools/flaky-digest/gen-flaky-digest.mjs` downloads the newest
 `flaky-digest-history` artifact, relists the Tests runs and report artifacts in the report retention
-window, reads the unread report artifacts soonest-expiring first until the rate limit reaches
-`RATE_LIMIT_RESERVE_REQUESTS`, and writes `flaky-history.json` plus the digest. The workflow uploads
-all three and appends the Markdown digest to its job summary. `tools/flaky-digest/README.md` is the
-operating reference.
+window, reads the unread report artifacts soonest-expiring first until the Actions rate limit
+reaches `RATE_LIMIT_RESERVE_REQUESTS`, and writes `flaky-history.json` plus the digest. The workflow
+uploads all three and appends the Markdown digest to its job summary. `tools/flaky-digest/README.md`
+is the operating reference.
 
 Invariants a change must keep:
 
