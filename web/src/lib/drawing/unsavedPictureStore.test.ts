@@ -26,7 +26,9 @@ import { createUnsavedPictureStore } from './unsavedPictureStore';
 
 const held: HeldPictures = {
   outcome: 'denied',
-  pictures: [{ blob: new Blob(['picture']), baseName: 'splotch', signature: 'abc' }],
+  pictures: [
+    { blob: new Blob(['picture'], { type: 'image/png' }), baseName: 'splotch', signature: 'abc' },
+  ],
 };
 
 beforeEach(() => {
@@ -42,15 +44,23 @@ describe('createUnsavedPictureStore', () => {
     expect(mocks.get).not.toHaveBeenCalled();
   });
 
-  it('records the flag only after the pictures are stored, and reads them back', async () => {
+  it('records the flag only after the pictures are stored, and reads the same bytes back', async () => {
     const store = createUnsavedPictureStore();
     mocks.put.mockImplementation(async () => expect(mocks.flag).toBe(false));
 
     await store.write(held);
-    mocks.get.mockResolvedValue(held);
+    const [, stored] = mocks.put.mock.calls[0];
+    mocks.get.mockResolvedValue(stored);
 
     expect(mocks.flag).toBe(true);
-    await expect(store.read()).resolves.toBe(held);
+    expect(stored.pictures[0].bytes).toBeInstanceOf(ArrayBuffer);
+    const restored = await store.read();
+    expect(restored).toMatchObject({
+      outcome: 'denied',
+      pictures: [{ baseName: 'splotch', signature: 'abc' }],
+    });
+    await expect(restored?.pictures[0].blob.text()).resolves.toBe('picture');
+    expect(restored?.pictures[0].blob.type).toBe('image/png');
   });
 
   it('clears the flag before deleting an emptied record', async () => {

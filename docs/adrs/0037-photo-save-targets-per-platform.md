@@ -196,6 +196,14 @@ while a permission stays denied. A capture that produced no picture raises the b
 again. Retry is user-initiated, so a web folder save may re-confirm its permission. A dismissal
 releases every held picture and outranks any report or retry that settles afterwards.
 
+**Held pictures survive a relaunch.** iOS terminates an app whose Photos access changes, so the
+parent who grants access in Settings comes back to a fresh launch. Held pictures therefore persist
+in IndexedDB (`drawing/unsavedPictureStore.ts`), stored as an `ArrayBuffer` plus MIME type rather
+than the `Blob`: on the iOS simulator a `Blob` read back from IndexedDB after the relaunch did not
+save, while the bytes did. A localStorage flag records that pictures are held, so a boot with
+nothing to retry never opens that database, the same pattern as the web save folder above. At boot
+the banner comes back with the stored outcome and pictures, and Try again saves them.
+
 **Open Settings is native-only and gated.** For `denied`, the banner adds Open Settings, which calls
 the app-local `AppSettings` plugin (`ACTION_APPLICATION_DETAILS_SETTINGS` on Android,
 `UIApplication.openSettingsURLString` on iOS). Settings is outside the app, so the action goes

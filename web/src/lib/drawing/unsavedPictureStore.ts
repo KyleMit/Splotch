@@ -6,7 +6,8 @@ import { STORAGE_KEYS, readBool, removeKey, writeBool } from '$lib/storage';
 // The pictures the save-failure banner holds outlive the page. Granting the permission a save
 // needs happens in the device Settings, and iOS terminates an app whose Photos access changes
 // there, so pictures kept only in memory would be gone exactly when the parent comes back to
-// retry them. A Blob is structured-cloneable, so IndexedDB stores the bytes as they are.
+// retry them. The bytes are stored as an ArrayBuffer rather than the Blob itself: WKWebView returned
+// a stored Blob after a relaunch that the save could not read.
 
 export interface HeldPicture {
   blob: Blob;
@@ -28,10 +29,47 @@ const DB_NAME = 'splotch-unsaved-pictures';
 const STORE = 'held';
 const HELD_KEY = 'pictures';
 
+interface StoredPicture {
+  bytes: ArrayBuffer;
+  type: string;
+  baseName: string;
+  signature: string | null;
+}
+
+interface StoredPictures {
+  outcome: UnsavedStatus;
+  pictures: StoredPicture[];
+}
+
 interface UnsavedPictureDb extends DBSchema {
   held: {
     key: string;
-    value: HeldPictures;
+    value: StoredPictures;
+  };
+}
+
+async function toStored({ outcome, pictures }: HeldPictures): Promise<StoredPictures> {
+  return {
+    outcome,
+    pictures: await Promise.all(
+      pictures.map(async ({ blob, baseName, signature }) => ({
+        bytes: await blob.arrayBuffer(),
+        type: blob.type,
+        baseName,
+        signature,
+      }))
+    ),
+  };
+}
+
+function fromStored({ outcome, pictures }: StoredPictures): HeldPictures {
+  return {
+    outcome,
+    pictures: pictures.map(({ bytes, type, baseName, signature }) => ({
+      blob: new Blob([bytes], { type }),
+      baseName,
+      signature,
+    })),
   };
 }
 
@@ -41,7 +79,8 @@ export function createUnsavedPictureStore(): UnsavedPictureStore {
     async read() {
       if (!readBool(STORAGE_KEYS.unsavedPicturesHeld, false)) return null;
       try {
-        return (await store.get(HELD_KEY)) ?? null;
+        const stored = await store.get(HELD_KEY);
+        return stored ? fromStored(stored) : null;
       } catch (err) {
         console.error('Reading unsaved pictures failed:', err);
         return null;
@@ -50,7 +89,7 @@ export function createUnsavedPictureStore(): UnsavedPictureStore {
     async write(held) {
       try {
         if (held && held.pictures.length > 0) {
-          await store.put(HELD_KEY, held);
+          await store.put(HELD_KEY, await toStored(held));
           writeBool(STORAGE_KEYS.unsavedPicturesHeld, true);
         } else {
           removeKey(STORAGE_KEYS.unsavedPicturesHeld);
