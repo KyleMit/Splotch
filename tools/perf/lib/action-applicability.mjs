@@ -14,7 +14,9 @@ export const FULL_ACTION_GROUPS = [
   'theme',
   'coloring',
   'screenshot',
+  'ai-waiting',
   'undo',
+  'unavailable',
   'clear',
   'rotation',
 ];
