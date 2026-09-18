@@ -3,7 +3,6 @@
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const FRAME_MS = 1000 / 60;
 const ACTION_FRAME_MAX_GATE_MS = 33.5;
 const args = process.argv.slice(2);
 const jsonOut = args.find((a) => a.startsWith('--json='))?.slice(7);
@@ -24,17 +23,23 @@ const pct = (xs, q) => {
 };
 const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
 
-function framesIn(stamps, from, to) {
-  const edges = [from, ...stamps.filter((t) => t > from && t < to), to];
+// Every complete rAF-to-rAF interval that overlaps [from, to]. A window edge is
+// never a frame edge: an interval that began before `from` (the frame an undo
+// call lands in) counts whole, so synchronous work at the edge stays inside.
+function framesIn(stamps, from, to, frameMs) {
   const gaps = [];
-  for (let i = 1; i < edges.length; i++) gaps.push({ start: edges[i - 1], end: edges[i], ms: edges[i] - edges[i - 1] });
+  for (let i = 1; i < stamps.length; i++) {
+    const start = stamps[i - 1];
+    const end = stamps[i];
+    if (end > from && start < to) gaps.push({ start, end, ms: end - start });
+  }
   const worst = gaps.reduce((a, g) => (g.ms > a.ms ? g : a), { ms: 0 });
   return {
     spanMs: to - from,
     maxGapMs: worst.ms,
     worst,
     over33: gaps.filter((g) => g.ms > ACTION_FRAME_MAX_GATE_MS).length,
-    excessMs: gaps.reduce((a, g) => a + Math.max(0, g.ms - FRAME_MS), 0),
+    excessMs: gaps.reduce((a, g) => a + Math.max(0, g.ms - frameMs), 0),
   };
 }
 
@@ -57,6 +62,12 @@ function summarize(file) {
   if (r.error) return { label: run.label, error: r.error };
   const p = r.phases;
   const m = r.measures;
+  // The observed refresh interval: the median gap of the idle tail.
+  const tail = r.stamps.filter((t) => t > p.undoEnd && t < p.end);
+  const frameMs = pct(
+    tail.slice(1).map((t, i) => t - tail[i]),
+    0.5
+  );
   const phaseBounds = {
     draw: [0, p.drawEnd],
     present: [p.drawEnd, p.presented],
@@ -66,9 +77,11 @@ function summarize(file) {
   };
   const phases = {};
   for (const [k, [a, b]] of Object.entries(phaseBounds)) {
-    const f = framesIn(r.stamps, a, b);
+    const f = framesIn(r.stamps, a, b, frameMs);
     const ms = measuresIn(m, a, b);
-    const inWorst = m.filter(([, s, d]) => s < f.worst.end && s + d > f.worst.start).map(([n, , d]) => `${n}:${r1(d)}`);
+    const inWorst = m
+      .filter(([, s, d]) => s < f.worst.end && s + d > f.worst.start)
+      .map(([n, , d]) => `${n}:${r1(d)}`);
     phases[k] = {
       spanMs: r1(f.spanMs),
       maxGapMs: r1(f.maxGapMs),
@@ -76,19 +89,25 @@ function summarize(file) {
       excessMs: r1(f.excessMs),
       worstFrameMeasures: inWorst.slice(0, 6),
       engine: Object.fromEntries(
-        Object.entries(ms).map(([n, e]) => [n, { n: e.n, total: r1(e.total), max: r1(e.max), p95: r1(pct(e.all, 0.95)) }])
+        Object.entries(ms).map(([n, e]) => [
+          n,
+          { n: e.n, total: r1(e.total), max: r1(e.max), p95: r1(pct(e.all, 0.95)) },
+        ])
       ),
     };
   }
   const commits = m.filter(([n]) => n === 'engine.commit').map(([, , d]) => d);
   const undoFrames = r.undos.map((u) => u.toFrameMs);
-  const whole = framesIn(r.stamps, 0, p.end);
-  const undoWindows = r.undos.map((u) => framesIn(r.stamps, u.at, u.windowEnd ?? u.at + u.toFrameMs).maxGapMs);
+  const whole = framesIn(r.stamps, 0, p.end, frameMs);
+  const undoWindows = r.undos.map(
+    (u) => framesIn(r.stamps, u.at, u.windowEnd ?? u.at + u.toFrameMs, frameMs).maxGapMs
+  );
   return {
     label: run.label,
     arm: r.arm,
     mode: r.mode,
     entry: r.entry,
+    frameMs: r1(frameMs),
     viewport: `${r.viewport.W}x${r.viewport.H}@${r.viewport.dpr} ${r.viewport.orientation}`,
     ua: r.ua.match(/Version\/[\d.]+/)?.[0],
     drawMs: r1(p.drawEnd),
@@ -134,6 +153,8 @@ for (const s of rows) {
     const eng = Object.entries(ph.engine)
       .map(([n, e]) => `${n.replace('engine.', '')} ${e.n}×/${e.total}/max${e.max}`)
       .join(' · ');
-    console.log(`   ${k.padEnd(8)} span=${ph.spanMs} maxGap=${ph.maxGapMs} >33=${ph.over33} excess=${ph.excessMs} [${ph.worstFrameMeasures.join(' ')}]  ${eng}`);
+    console.log(
+      `   ${k.padEnd(8)} span=${ph.spanMs} maxGap=${ph.maxGapMs} >33=${ph.over33} excess=${ph.excessMs} [${ph.worstFrameMeasures.join(' ')}]  ${eng}`
+    );
   }
 }

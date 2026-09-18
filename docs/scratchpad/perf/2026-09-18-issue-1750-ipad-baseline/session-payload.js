@@ -14,6 +14,23 @@
   const BRUSH = cfg.brush ?? 'crayon';
   const UNDO_GAP_MS = cfg.undoGapMs ?? 0;
   const GHOST = cfg.ghost ?? 'on';
+  // Verification only: hashing reads the canvases back, which perturbs timing.
+  const PIXEL_CHECK = cfg.pixelCheck === true;
+  const fnv = (bytes, h = 0x811c9dc5) => {
+    for (let i = 0; i < bytes.length; i++) h = Math.imul(h ^ bytes[i], 0x01000193) >>> 0;
+    return h;
+  };
+  const hashCanvas = (c) =>
+    c && c.width && c.height
+      ? fnv(c.getContext('2d').getImageData(0, 0, c.width, c.height).data)
+      : null;
+  const tileHash = () =>
+    [...document.querySelectorAll('.canvas-wrapper canvas:not(.undo-ink-motion)')]
+      .reduce(
+        (h, c) => fnv(new Uint8Array(new Uint32Array([hashCanvas(c) ?? 0]).buffer), h),
+        0x811c9dc5
+      )
+      .toString(16);
   const SETTLE_CAP_MS = 180000;
   const TAIL_MS = 4000;
   const PACED = { STROKES: 30, POINTS: 240, MOVES_PER_FRAME: 2, GAP_MS: 300 };
@@ -130,6 +147,7 @@
     const settled = performance.now();
     await new Promise((r) => setTimeout(r, TAIL_MS));
     const historyBeforeUndo = E.getUndoDebug();
+    const tilesBeforeUndo = PIXEL_CHECK ? tileHash() : null;
     window.__sessionProgress = 'undo';
     const undoStart = performance.now();
     const undos = [];
@@ -146,8 +164,22 @@
       await frame();
       const toFrameMs = +(performance.now() - a).toFixed(2);
       const ghosts = document.querySelectorAll('.undo-ink-motion').length;
-      if (UNDO_GAP_MS > 0) await new Promise((r) => setTimeout(r, Math.max(0, UNDO_GAP_MS - toFrameMs)));
-      undos.push({ at: rel(a), callMs: +(b - a).toFixed(2), toFrameMs, ghosts, windowEnd: rel(performance.now()) });
+      const pixels = PIXEL_CHECK
+        ? {
+            ghost: hashCanvas(document.querySelector('.undo-ink-motion'))?.toString(16) ?? null,
+            tiles: tileHash(),
+          }
+        : undefined;
+      if (UNDO_GAP_MS > 0)
+        await new Promise((r) => setTimeout(r, Math.max(0, UNDO_GAP_MS - toFrameMs)));
+      undos.push({
+        at: rel(a),
+        callMs: +(b - a).toFixed(2),
+        toFrameMs,
+        ghosts,
+        pixels,
+        windowEnd: rel(performance.now()),
+      });
     }
     const undoEnd = performance.now();
     window.__sessionProgress = 'tail';
@@ -186,6 +218,7 @@
       strokeWindows,
       undos,
       historyBeforeUndo,
+      tilesBeforeUndo,
       historyAfterUndo,
       nonTransparentAfterUndo: E.nonTransparentCount(),
       measures,
