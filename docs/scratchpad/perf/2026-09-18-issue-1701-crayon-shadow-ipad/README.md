@@ -29,9 +29,11 @@ names, ids, or raw event rows. The payloads and runner here are the scripts that
 
 ## The issue's comparable burst passes, and misses the cost
 
-The CI gate's `crayon-scribbles` scenario, reproduced exactly: crayon mode on, then 22
+The CI gate's `crayon-scribbles` scenario, adapted to the physical viewport: crayon mode on, then 22
 back-and-forth scribbles of 1,200 points each in one synchronous task, so one drain covers every
-dirty tile. On the device, one warm-up and three scored repeats:
+dirty tile. CI resizes to a fixed 1024×1366; this run used Safari's real 1024×1227 portrait
+viewport, which shifts the scribble coordinates and tile sizes (still twenty 512×490–491 tiles). On
+the device, one warm-up and three scored repeats:
 
 | Run      | Burst task | Folds after the burst | `engine.crayonShadow` | Frame containing it |
 | -------- | ---------: | --------------------- | --------------------: | ------------------: |
@@ -63,9 +65,9 @@ The main drain's frame held nothing but `engine.crayonShadow`. The drains at fin
 that refresh live tiles, measured 0–1 ms on both arms.
 
 One treatment run's paint max was 53 ms, just over ADR-0085's 50 ms line. Its worst in-contact frame
-(55 ms) carried 1 ms of `engine.draw` and nothing else. No fold ran during any capture, so the
-in-contact code path is identical on the two arms. Main's own runs reached 49 ms, and an interleaved
-extra pair read 49/28 ms (main) against 27/28 ms (treatment).
+(55 ms) carried 1 ms of `engine.draw` and nothing else. No fold ran before the last lift in any
+capture, so the in-contact code path is identical on the two arms. Main's own runs reached 49 ms,
+and an interleaved extra pair read 49/28 ms (main) against 27/28 ms (treatment).
 
 ## Why: the fold stales history-base shadows
 
