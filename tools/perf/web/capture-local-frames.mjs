@@ -261,6 +261,13 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     }
 
     const report = await page.evaluate(() => window.__probe.finish());
+    // The tool choice is persisted, so a pick that never reached the engine
+    // leaves a capture of a different cell under this brush's label.
+    if (report.meta?.committedBrush !== brush) {
+      throw new Error(
+        `The page committed ${report.meta?.committedBrush ?? 'nothing'}, not ${brush}.`
+      );
+    }
     const counts = await page.evaluate(() => window.__probe.counts());
     report.frames = await page.evaluate((n) => window.__probe.frames(0, n), counts.frames);
     report.events = await page.evaluate((n) => window.__probe.events(0, n), counts.events);

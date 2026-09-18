@@ -106,6 +106,7 @@
     magic: '#magicBrushButton',
     eraser: '#eraserButton',
   };
+  const BRUSH_MENU_TRIGGER = '#brushButton';
 
   // Each phase names the paper state it needs and what it suppresses. Order
   // minimizes paper switching for the human: blank first, then everything that
@@ -455,11 +456,14 @@
     );
   };
 
-  // The Brush Menu is a hidden `<div>`, not a modal, so its buttons are in the DOM
-  // whether or not the flyout is open — one click on the brush is enough. Opening
-  // the flyout first is not just unnecessary: it leaves the panel in a state where
-  // the next tap closes the flyout instead of reaching the coloring-book button,
-  // which stalled the whole setup.
+  // The Brush Menu mounts its options only while it is open, and a pick closes
+  // it again, so an option missing from the DOM is reached through the menu's
+  // trigger. With a single optional brush there is no menu at all: the trigger
+  // (no aria-expanded) toggles that brush against the pen, so clicking it when
+  // the brush is already held would switch away. The tool choice is persisted
+  // and the engine commits it through an effect, so the pick is proven by the
+  // committed mode, not by the click — a capture otherwise measures whichever
+  // brush the previous one left selected.
   const driveBrush = window.__probeBrush ?? null;
   async function selectBrush(brush) {
     const target = BRUSH_BUTTONS[brush];
@@ -469,7 +473,28 @@
       );
       return;
     }
-    if (!clickSelector(target)) console.error(`No ${target} — cannot select a brush unattended.`);
+    const holdsBrush = () => window.__committedBrushMode?.() === brush;
+    const trigger = document.querySelector(BRUSH_MENU_TRIGGER);
+    if (!holdsBrush()) {
+      if (document.querySelector(target)) {
+        clickSelector(target);
+      } else if (trigger?.hasAttribute('aria-expanded')) {
+        trigger.click();
+        await waitForCondition(() => document.querySelector(target));
+        if (!clickSelector(target))
+          console.error(`No ${target} — cannot select a brush unattended.`);
+      } else if (trigger) {
+        trigger.click();
+      } else {
+        console.error(`No ${BRUSH_MENU_TRIGGER} — cannot select a brush unattended.`);
+      }
+    }
+    const committed = await waitForCondition(holdsBrush);
+    if (!committed) {
+      console.error(
+        `The engine committed ${window.__committedBrushMode?.() ?? 'nothing'}, not ${brush}.`
+      );
+    }
     await settle(UI_SETTLE_MS);
   }
 
@@ -859,6 +884,7 @@
         driveHz,
         drivePointerType: driveCycle ? drivePointerType : null,
         brush: driveBrush,
+        committedBrush: window.__committedBrushMode?.() ?? null,
         // The reported "goes black on a coloring page, then snaps back" is what
         // an UNBLENDED line-art plate looks like: dark mode inverts the art to
         // white-on-black and `screen` is what makes that black disappear. Which
