@@ -1577,6 +1577,7 @@ describe('bundledPageProblem', () => {
 // executed against a stand-in document so each branch is exercised as the
 // page would run it.
 describe('brushPickScript', () => {
+  const MENU_MOUNT_DELAY_MS = 30;
   const runPick = async (brush, { committed, mounted = [], menu = true }) => {
     const { brushPickScript } = await import('../android/capture-bundled-frames.mjs');
     const clicks = [];
@@ -1584,14 +1585,18 @@ describe('brushPickScript', () => {
     const element = (id) => ({
       click: () => {
         clicks.push(id);
+        // Svelte mounts the opened menu on a later tick, not inside the click,
+        // so the script's wait for the option is what this branch exercises.
         if (id === 'brushButton' && menu) {
-          for (const option of [
-            'penBrushButton',
-            'crayonBrushButton',
-            'magicBrushButton',
-            'eraserButton',
-          ])
-            mountedIds.add(option);
+          setTimeout(() => {
+            for (const option of [
+              'penBrushButton',
+              'crayonBrushButton',
+              'magicBrushButton',
+              'eraserButton',
+            ])
+              mountedIds.add(option);
+          }, MENU_MOUNT_DELAY_MS);
         }
       },
       hasAttribute: (name) => id === 'brushButton' && name === 'aria-expanded' && menu,
