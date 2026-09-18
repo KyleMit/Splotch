@@ -66,6 +66,7 @@ import {
 import {
   ALREADY_VALID,
   BLANK_OUTPUT,
+  BLOCKED_COVERAGE,
   COMPLETE,
   ERASER_FILL_FAILED,
   EXHAUSTED,
@@ -165,6 +166,21 @@ export function cellInspection(cell, { runtime, refreshRegime, captureRuntime = 
   });
 }
 
+// Absent on every artifact that predates blocked coverage, and on every drawing
+// capture: both read as none. A present list must be well formed — a malformed
+// one is an invalid artifact, not consent to bank it.
+export function recordedBlockedCoverage(artifact) {
+  const blocked = artifact?.actionPlan?.blocked;
+  if (blocked === undefined) return [];
+  if (
+    !Array.isArray(blocked) ||
+    blocked.some((entry) => typeof entry?.label !== 'string' || !entry.label.trim())
+  ) {
+    throw new Error('actionPlan.blocked must be a list of labelled entries');
+  }
+  return blocked;
+}
+
 export function inspectArtifact(
   path,
   runtime,
@@ -186,6 +202,25 @@ export function inspectArtifact(
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
+  // Right after identity, ahead of every quality check: an action capture that
+  // could not obtain a required action is missing coverage, and no gate, regime,
+  // or fidelity verdict about the actions it DID measure can stand in for the
+  // one it did not. Deliberately not `passed === false` — campaign action cells
+  // run --report-only, and a red gate is valid evidence the ledger must bank.
+  let blockedCoverage;
+  try {
+    blockedCoverage = recordedBlockedCoverage(artifact);
+  } catch (error) {
+    rethrowIfBroken(error);
+    return { ok: false, status: FAILED };
+  }
+  if (blockedCoverage.length > 0) {
+    return {
+      ok: false,
+      status: BLOCKED_COVERAGE,
+      blocked: blockedCoverage.map(({ label }) => label),
+    };
+  }
   // The required-verdict check comes BEFORE re-derivation (the PR 1368 review's
   // boundary finding): a fidelity-reporting runner always writes the block, so
   // an artifact without one is stale or foreign — healthy-looking input stats

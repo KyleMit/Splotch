@@ -139,6 +139,7 @@ export function stableActionPlan(recorded, next) {
     notApplicable: [...plan.notApplicable].sort((left, right) =>
       left.label.localeCompare(right.label)
     ),
+    blocked: [...(plan.blocked ?? [])].sort((left, right) => left.label.localeCompare(right.label)),
   });
   if (JSON.stringify(canonical(recorded)) !== JSON.stringify(canonical(next))) {
     const recordedApplicable = new Set(recorded.applicableLabels);
@@ -1059,6 +1060,13 @@ async function aiRunState(execute) {
       message: text('.ai-result-error'),
       requests: (window.__perfAiSeenUrls || []).length,
       runError: window.__perfAiRunError || null,
+      // The usual answer when a device fails a flow the desktop passes: the
+      // device dials a LAN IP, which is not a trustworthy origin, so
+      // secure-context-only APIs are missing from the same build.
+      secureContext: window.isSecureContext === true,
+      randomUUID: typeof crypto.randomUUID,
+      subtleCrypto: typeof crypto.subtle,
+      origin: location.origin,
     };
   `);
 }
@@ -1182,6 +1190,32 @@ async function openColoringPageForClear(execute) {
   );
 }
 
+// Every runActionSweep caller finalizes its verdict through these two, so
+// blocked coverage fails a capture on every target rather than only on the one
+// whose runner happened to remember it. The rival review of the change that
+// introduced blocked coverage found the desktop and Android runners still
+// passing it — and Android serves an http LAN origin by default, the very
+// insecure-origin condition that blocks the AI cue (issue #1870).
+export function actionCaptureVerdict({ failures, actionPlan }) {
+  const blockedCoverage = actionPlan?.blocked ?? [];
+  return { blockedCoverage, passed: failures.length === 0 && blockedCoverage.length === 0 };
+}
+
+export function reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly }) {
+  if (blockedCoverage.length) {
+    console.log('\nBLOCKED coverage — required actions this capture could not measure');
+    console.table(blockedCoverage.map(({ label, reason }) => ({ action: label, reason })));
+  }
+  if ((failures.length || blockedCoverage.length) && !reportOnly) {
+    const reasons = [
+      failures.length && `Action frame gates failed: ${failures.map((s) => s.label).join(', ')}`,
+      blockedCoverage.length &&
+        `Blocked coverage: ${blockedCoverage.map(({ label }) => label).join(', ')}`,
+    ].filter(Boolean);
+    throw new Error(reasons.join('; '));
+  }
+}
+
 export async function runActionSweep({
   client,
   sessionId,
@@ -1193,6 +1227,12 @@ export async function runActionSweep({
   const samples = [];
   const applicableLabels = new Set();
   const notApplicable = new Map();
+  // Not the same thing as notApplicable, and the distinction is the point: a
+  // not-applicable action is one this target mode's plan never offers, while a
+  // BLOCKED action is required coverage the run could not obtain. Blocked
+  // coverage fails the capture, so a sweep that could not reach a cue can never
+  // be read as a green campaign (issue #1870).
+  const blocked = new Map();
   const record = async (promise) => {
     const sample = await promise;
     applicableLabels.add(sample.label);
@@ -1805,8 +1845,8 @@ export async function runActionSweep({
     const seamAvailable = await execute(`return typeof window.__aiGenerate === 'function';`);
     if (!seamAvailable) {
       const reason = 'the dev harness seam __aiGenerate is not exposed by this build (ADR-0109)';
-      notApplicable.set('show AI waiting print', reason);
-      notApplicable.set('finish AI waiting print', reason);
+      blocked.set('show AI waiting print', reason);
+      blocked.set('finish AI waiting print', reason);
     } else {
       await installAiGenerationStub(execute);
       try {
@@ -1818,8 +1858,8 @@ export async function runActionSweep({
           const reason =
             `the AI run failed before the waiting print appeared ` +
             `(${JSON.stringify(run.state)})`;
-          notApplicable.set('show AI waiting print', reason);
-          notApplicable.set('finish AI waiting print', reason);
+          blocked.set('show AI waiting print', reason);
+          blocked.set('finish AI waiting print', reason);
         } else {
           await record(
             measureClick({
@@ -1996,6 +2036,7 @@ export async function runActionSweep({
       actionGroups: [...actions],
       applicableLabels: [...applicableLabels],
       notApplicable: [...notApplicable].map(([label, reason]) => ({ label, reason })),
+      blocked: [...blocked].map(([label, reason]) => ({ label, reason })),
       context: {
         orientation: originalOrientation,
         settingsShell: settingsInScope
@@ -2300,6 +2341,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       rotationFirstFrameNa(runtime, label)
     );
     const failures = actionFailures(summaries);
+    const { blockedCoverage, passed } = actionCaptureVerdict({ failures, actionPlan });
     const output =
       flag('output') ??
       join(profilePath('ipad-actions', flag('label', 'full-suite')), 'actions.json');
@@ -2338,17 +2380,17 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       // re-summarizers read them from here, so a capture carries its own
       // calibration and historical captures without the field stay on base gates.
       gateAllowances,
-      passed: failures.length === 0,
+      // Blocked coverage counts against the capture exactly as a breached gate
+      // does: an action the run could not obtain is missing evidence, and a
+      // capture that reports `passed` while missing it would let a campaign read
+      // as complete (issue #1870).
+      passed,
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
     console.log('\nDiscrete action response');
     console.table(actionRows(summaries));
     console.log(`\nWrote ${output}`);
-    if (failures.length && !has('report-only')) {
-      throw new Error(
-        `Action frame gates failed: ${failures.map((summary) => summary.label).join(', ')}`
-      );
-    }
+    reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly: has('report-only') });
     return artifact;
   } finally {
     process.off('SIGINT', onSigint);

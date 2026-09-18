@@ -9,6 +9,7 @@ import {
 } from '../lib/campaign-plan.mjs';
 import {
   BLANK_OUTPUT,
+  BLOCKED_COVERAGE,
   ERASER_FILL_FAILED,
   COMPLETE,
   FAILED,
@@ -102,6 +103,56 @@ describe('inspectArtifact', () => {
     expect(inspectArtifact(silent, 'web', { verdictRequired: true })).toMatchObject({
       ok: false,
       status: UNSCOREABLE,
+    });
+  });
+
+  // Issue #1870: campaign action cells run --report-only, so a capture that
+  // could not obtain a required action still exits 0 and writes a parseable
+  // artifact. Acceptance has to read the plan itself, or the ledger banks the
+  // missing coverage as COMPLETE — the rival review reproduced exactly that.
+  describe('blocked action coverage', () => {
+    const actionCapture = (plan, passed) => ({
+      ...scoreable,
+      passed,
+      actionPlan: {
+        schemaVersion: 1,
+        actionGroups: ['ai-waiting'],
+        applicableLabels: [],
+        notApplicable: [],
+        context: { orientation: 'PORTRAIT', settingsShell: null },
+        ...plan,
+      },
+    });
+
+    it('refuses an action capture that recorded blocked coverage, naming it', () => {
+      const blocked = artifactAt(
+        actionCapture(
+          { blocked: [{ label: 'show AI waiting print', reason: 'insecure origin' }] },
+          false
+        )
+      );
+
+      expect(inspectArtifact(blocked, 'web')).toMatchObject({
+        ok: false,
+        status: BLOCKED_COVERAGE,
+        blocked: ['show AI waiting print'],
+      });
+    });
+
+    it('still banks a red gate, which is valid evidence rather than missing evidence', () => {
+      const redGate = artifactAt(actionCapture({ blocked: [] }, false));
+
+      expect(inspectArtifact(redGate, 'web')).toMatchObject({ ok: true, status: COMPLETE });
+    });
+
+    it('reads a plan recorded before the field existed as blocking nothing', () => {
+      expect(inspectArtifact(artifactAt(actionCapture({}, true)), 'web').ok).toBe(true);
+    });
+
+    it('refuses a malformed blocked list as an invalid artifact', () => {
+      const malformed = artifactAt(actionCapture({ blocked: 'show AI waiting print' }, false));
+
+      expect(inspectArtifact(malformed, 'web')).toMatchObject({ ok: false, status: FAILED });
     });
   });
 

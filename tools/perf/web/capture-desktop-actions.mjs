@@ -13,6 +13,8 @@ import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
   profilingUrl,
+  actionCaptureVerdict,
+  reportActionCaptureVerdict,
   runActionSweep,
   selectedActions,
   stableActionPlan,
@@ -231,6 +233,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       rotationFirstFrameNa(DESKTOP_CAPTURE_RUNTIME, label, engineName)
     );
     const failures = actionFailures(summaries);
+    const { blockedCoverage, passed } = actionCaptureVerdict({ failures, actionPlan });
     const output =
       flag('output') ??
       join(profilePath('desktop-actions', engineName, flag('label', 'full-suite')), 'actions.json');
@@ -248,17 +251,13 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       repeats,
       samples,
       summaries,
-      passed: failures.length === 0,
+      passed,
     });
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
     console.log('\nDesktop discrete action response');
     console.table(actionRows(summaries));
     console.log(`\nWrote ${output}`);
-    if (failures.length && !has('report-only')) {
-      throw new Error(
-        `Action frame gates failed: ${failures.map((summary) => summary.label).join(', ')}`
-      );
-    }
+    reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly: has('report-only') });
     return artifact;
   } finally {
     await browser?.close();

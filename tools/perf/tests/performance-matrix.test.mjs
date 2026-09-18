@@ -431,6 +431,107 @@ describe('deployment matrix report', () => {
     expect(html).toContain('<b>5</b> actions measured');
   });
 
+  // Issue #1870: a required cue the capture could not reach is BLOCKED, which
+  // must never render as N/A by design nor drop out of the matrix — the rival
+  // review reproduced exactly that before normalization learned the field.
+  it('keeps blocked coverage as its own coordinate, never N/A, and never drops it', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-blocked-'));
+    temporaryDirectories.push(manifestDirectory);
+    const repeated = (label) =>
+      Array.from({ length: 4 }, (_, index) => ({
+        ...actionSample(label, index === 0),
+        postActionFrameGapsMs: [1],
+      }));
+    const source = writeActionCapture(manifestDirectory, 'blocked-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [...repeated('idle frame control'), ...repeated('expand action drawer')],
+      actionPlan: {
+        ...fullActionPlan({
+          orientation: 'PORTRAIT',
+          settingsShell: 'sectioned',
+          applicableLabels: ['idle frame control', 'expand action drawer'],
+        }),
+        blocked: [
+          {
+            label: 'show AI waiting print',
+            reason: 'the AI run failed before the waiting print appeared',
+          },
+        ],
+      },
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const mode = matrix.targets[0].modes[0];
+
+    expect(mode.actions.actionPlan.blocked).toEqual([
+      {
+        label: 'show AI waiting print',
+        reason: 'the AI run failed before the waiting print appeared',
+      },
+    ]);
+    expect(matrix.actionLabels).toContain('show AI waiting print');
+    expect(
+      mode.actionCoordinates.find((candidate) => candidate.label === 'show AI waiting print')
+    ).toEqual({
+      label: 'show AI waiting print',
+      state: 'blocked',
+      reason: 'blocked coverage: the AI run failed before the waiting print appeared',
+    });
+
+    const html = renderReport(matrix);
+    expect(html).toContain('BLOCKED: blocked coverage: the AI run failed before');
+    expect(html).not.toContain('N/A: blocked coverage');
+
+    // Every aggregate has to show it too (review round two): a reader of the
+    // overview, the heatmap, the masthead, or the Markdown must not see green.
+    expect(html).toContain('1/1 · 1 blocked');
+    expect(html).toContain('blocked: show AI waiting print');
+    expect(html).not.toMatch(/class="mx-cell num pass"[^>]*>1\/1 · 1 blocked/);
+    expect(html).toContain('<span class="chip"><b>1</b> action measured</span>');
+    expect(html).toContain('<b>1</b> blocked, 1 never measured');
+
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain('1 / 1 · 1 blocked');
+    expect(markdown).toContain('show AI waiting print (blocked)');
+  });
+
+  it('reads a plan recorded before blocked coverage existed as having none', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-legacy-plan-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'legacy-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: Array.from({ length: 4 }, (_, index) => ({
+        ...actionSample('idle frame control', index === 0),
+        postActionFrameGapsMs: [1],
+      })),
+      actionPlan: fullActionPlan({
+        orientation: 'PORTRAIT',
+        settingsShell: 'sectioned',
+        applicableLabels: ['idle frame control'],
+      }),
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+
+    expect(matrix.targets[0].modes[0].actions.actionPlan.blocked).toEqual([]);
+  });
+
   it('applies an agreeing focused capture only to its measured labels', () => {
     const baseline = {
       kind: 'full',
