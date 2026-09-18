@@ -762,8 +762,7 @@ function normalizeActionPlan(plan, source) {
     ) ||
     new Set(blocked.map(({ label }) => label)).size !== blocked.length ||
     blocked.some(
-      ({ label }) =>
-        labels.includes(label) || notApplicable.some((entry) => entry.label === label)
+      ({ label }) => labels.includes(label) || notApplicable.some((entry) => entry.label === label)
     ) ||
     !validOrientation ||
     !validSettingsShell
