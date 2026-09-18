@@ -9,6 +9,7 @@ import {
   type EngineViewState,
 } from './paperView';
 import { COLORING_OVERLAY_ID } from './overlay';
+import { isIosDevice } from '$lib/platform';
 import { prefersReducedMotion } from '$lib/platform/reducedMotion';
 
 // How far the undo ghost drifts toward the undo button as it fades, as a
@@ -40,7 +41,13 @@ function canvasOf(width: number, height: number) {
 
 // `paint` lays the visible live tiles onto a target under its current transform;
 // both ghosts read their pixels from it rather than replaying history.
-export function createInkMotion(paint: (target: CanvasRenderingContext2D) => void) {
+// `settlesTileReads` says whether this browser should resolve a tile-read
+// ghost's reads before the undo restore writes those tiles (see settleTileReads);
+// only tests pass anything but the default.
+export function createInkMotion(
+  paint: (target: CanvasRenderingContext2D) => void,
+  settlesTileReads: () => boolean = isIosDevice
+) {
   let overlay: HTMLDivElement | null = null;
   let pendingSubtract: CanvasRenderingContext2D | null = null;
 
@@ -87,8 +94,22 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     paint(target);
     target.globalCompositeOperation = 'destination-in';
     target.drawImage(mask, bounds.left, bounds.top);
+    if (settlesTileReads()) settleTileReads(target);
     mask.width = 0;
     pendingSubtract = target;
+  }
+
+  // The undo restore writes the very tiles the ghost has just read. Left
+  // pending, WebKit resolves those reads at presentation after the write, and
+  // on a physical iPad that frame overran the action-frame gate on a quarter of
+  // crayon undos. Reading one pixel back resolves them now, before the write,
+  // for a few milliseconds of undo time; the ghost's pixels are unchanged.
+  // Android Chrome is the reason this is not unconditional: there the same
+  // readback is a synchronous GPU round trip that made the first undo block for
+  // over a second and every later one slower.
+  // Evidence: docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/.
+  function settleTileReads(target: CanvasRenderingContext2D) {
+    target.getImageData(0, 0, 1, 1);
   }
 
   // A crayon or magic ghost is the undone ink as it stands on the live tiles.
@@ -124,9 +145,11 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
   // whose pixels are rasterized during that first frame — 70 ms for a
   // paper-width crayon stroke on an iPad — while a CSS animation's clock starts
   // at the frame it was created in either way, so the fade was already a quarter
-  // over by the time any of it reached the screen (issue #1775). The first
-  // callback runs at the top of the painting frame, before its pixels exist; the
-  // frame after it begins only once they do.
+  // over by the time any of it reached the screen (issue #1775). Where
+  // settleTileReads runs, that raster is paid inside undo instead, and the pause
+  // still covers every browser that defers it. The first callback runs at the
+  // top of the painting frame, before its pixels exist; the frame after it
+  // begins only once they do.
   function runWhenPainted(image: HTMLCanvasElement) {
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {

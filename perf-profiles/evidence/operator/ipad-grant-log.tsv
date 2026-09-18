@@ -59,3 +59,6 @@ timestamp	device	outcome	detail
 2026-09-18T16:25:00.081Z	device-003f826c172a	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
 2026-09-18T16:25:17.938Z	device-003f826c172a	blocked	Unknown device or simulator UDID: '<hardware UDID redacted>'
 2026-09-18T16:26:14.291Z	device-003f826c172a	ok	a WebDriverAgent session started (direct xcodebuild launch outside the preflight; Appium real-device discovery was stale), then a Safari session rotated the device to PORTRAIT
+2026-09-18T18:36:55.002Z	device-003f826c172a	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
+2026-09-18T18:37:22.761Z	device-003f826c172a	blocked	Unknown device or simulator UDID: '<hardware UDID redacted>'
+2026-09-18T18:38:40.175Z	device-003f826c172a	ok	a WebDriverAgent session started (direct xcodebuild launch outside the preflight; Appium real-device discovery was stale); Safari then took an app session for the issue 1750 captures
