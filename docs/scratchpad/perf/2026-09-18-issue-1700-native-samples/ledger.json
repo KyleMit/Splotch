@@ -1,0 +1,3379 @@
+{
+ "method": "count_frames.py in the note's Reproducing section: per sample file, for the WebContent main thread ('main') and the GPU process's 'RemoteRenderingBackend work queue' ('rrb'), the thread's sample total and, per frame, the largest count on any call-tree line naming that frame (a per-file lower bound; separate paths reaching the same frame are not summed). Table figures are sums over the files listed.",
+ "redaction": "None applied. sample(1) writes user directories as /Users/USER and /Users/* itself; the committed .txt.gz files decompress to bytes whose sha256 matches their ledger entry.",
+ "hosts": {
+  "runner": {
+   "source": "webkit-native-samples artifact of https://github.com/KyleMit/Splotch/actions/runs/35298666234 (7-day retention), product 50a1f046a33cead04fc6e91d8aa64aeaf775c92e, workflow 5ce4ba2953f5bef2e394686f2fc8b715eb3d8dd1",
+   "host": "Apple M1 (Virtual), 3 CPUs, 7 GiB",
+   "webkit": "Playwright WebKit 26.6",
+   "crayonDrawWindow": {
+    "fromEpochS": 1789697915,
+    "toEpochS": 1789698033,
+    "basis": "gate.log lines prefixed with date +%s: '\u25b6 22 crayon \u2026' at 1789697914.333, the first settle poll at 1789698036.907; a file is in the window when its epoch-second name prefix lies in [from, to]"
+   },
+   "files": {
+    "1789697884-11-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "c6111d70c234c3aab4f3065c5e25b6a1b22b364011084b2763fcd2c6a4be81a6",
+     "main": {
+      "samples": 1944,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1859,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697884-11-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "1545715364cfebf55e3bd27940139dcc8402835281dd00ca4f260ba872f1268c",
+     "main": {
+      "samples": 1882,
+      "drawImage": 521,
+      "ensureBackend": 29,
+      "shareableBitmapCopy": 137,
+      "ioSurfaceClientLock": 70,
+      "ioSurfaceCreateImage": 24,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697887-12-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "c3d151290a2919841247ad70d32a0f1f7a2a3087e3b7e95e6f6379e603d98489",
+     "main": {
+      "samples": 1909,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1812,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697887-12-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "27baf650b321409babe08132f487d82502d66f5718b77b3247121f5c0e8cb9e9",
+     "main": {
+      "samples": 7525,
+      "drawImage": 1758,
+      "ensureBackend": 195,
+      "shareableBitmapCopy": 559,
+      "ioSurfaceClientLock": 267,
+      "ioSurfaceCreateImage": 109,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697890-13-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "6e9fb637020de7dd9df2e8565104bf57f5ade01f68f4fe61499239e7a0d012e8",
+     "main": {
+      "samples": 2033,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1933,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697890-13-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "ca2fb1868ea11fc739e836ecd7d24dcc27164cc44b458e175724d91318547415",
+     "main": {
+      "samples": 1681,
+      "drawImage": 447,
+      "ensureBackend": 28,
+      "shareableBitmapCopy": 139,
+      "ioSurfaceClientLock": 69,
+      "ioSurfaceCreateImage": 27,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697894-14-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "e82c73c74e629bfa1e36473645026adb581149f546632688974daed638670533",
+     "main": {
+      "samples": 2215,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2114,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697894-14-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "707f8c1135943abb901b42e75c7af318f6f783ec8ca8aa7fd9fc990752081f6d",
+     "main": {
+      "samples": 1796,
+      "drawImage": 485,
+      "ensureBackend": 6,
+      "shareableBitmapCopy": 135,
+      "ioSurfaceClientLock": 65,
+      "ioSurfaceCreateImage": 28,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697898-15-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "1f23d916e52e9b3183653ddf147164fcb6d50d266e43c7c01c8c36f3ebcddf1b",
+     "main": {
+      "samples": 1946,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1846,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697898-15-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "1ed15d74dd739ba7dd48b1d5da6740fc0757f07c8cc91cb99ac035a95344bc84",
+     "main": {
+      "samples": 3735,
+      "drawImage": 1019,
+      "ensureBackend": 10,
+      "shareableBitmapCopy": 276,
+      "ioSurfaceClientLock": 139,
+      "ioSurfaceCreateImage": 49,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697901-16-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "b750ab1cb80f8c96e1a1deed62710ed6fb17289bafc03e969dfadf362a658464",
+     "main": {
+      "samples": 2385,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2282,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697901-16-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "ec2470247c009b81bfcc93d0ab2e21a5281a443ec6db810b48591b3a10cc4496",
+     "main": {
+      "samples": 2073,
+      "drawImage": 572,
+      "ensureBackend": 7,
+      "shareableBitmapCopy": 156,
+      "ioSurfaceClientLock": 72,
+      "ioSurfaceCreateImage": 18,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697904-17-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "ad87c821616c2d1273a37316586a6d928535de0ddedeb661ec3c8dbce119ff6f",
+     "main": {
+      "samples": 1937,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1842,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697904-17-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "44c56b9532db589985d9bc9960430e32ecbc3e5763e75b1c1076f531331d89e8",
+     "main": {
+      "samples": 1868,
+      "drawImage": 525,
+      "ensureBackend": 6,
+      "shareableBitmapCopy": 140,
+      "ioSurfaceClientLock": 65,
+      "ioSurfaceCreateImage": 28,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697908-18-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "da2a0b8299d055dd79c2e4c4a3830f83f2595acea0f743f1012a7d9f0f04197d",
+     "main": {
+      "samples": 1904,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1819,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697908-18-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "e93d57961002566b6ab02711213297ac9ddc0608f9b07460aeeabbd576b8513a",
+     "main": {
+      "samples": 1580,
+      "drawImage": 416,
+      "ensureBackend": 6,
+      "shareableBitmapCopy": 137,
+      "ioSurfaceClientLock": 68,
+      "ioSurfaceCreateImage": 8,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697911-19-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "004a2f5a211ae6fbfdb78bd0be7ea9aafcfac5034f92eb2f096dab1e7a2367c8",
+     "main": {
+      "samples": 1919,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1823,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697911-19-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "2d14c114c060da7bb420271d78d6496dbf0865d0058657c50f5d1593121dee1c",
+     "main": {
+      "samples": 1609,
+      "drawImage": 446,
+      "ensureBackend": 23,
+      "shareableBitmapCopy": 145,
+      "ioSurfaceClientLock": 72,
+      "ioSurfaceCreateImage": 24,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789697915-20-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "309a27af43918d5ed393b7b774e20a43d3e9f72d967af8268190f3c8996391f1",
+     "main": {
+      "samples": 1872,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1783,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697915-20-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "2ef725fc213502b8929785a17a6bdf5da63b11909bd7266cd149e16b0d42ce16",
+     "main": {
+      "samples": 1619,
+      "drawImage": 455,
+      "ensureBackend": 14,
+      "shareableBitmapCopy": 139,
+      "ioSurfaceClientLock": 69,
+      "ioSurfaceCreateImage": 21,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697918-21-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "d817f362b47a37e175605d0e27ace3158e1331ec5537b234b565810eb2b6678c",
+     "main": {
+      "samples": 1822,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1707,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697918-21-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "620fda850eca470fb95f5833608e4ea9901443044a5217ca995e18cec489dfa8",
+     "main": {
+      "samples": 1619,
+      "drawImage": 457,
+      "ensureBackend": 6,
+      "shareableBitmapCopy": 135,
+      "ioSurfaceClientLock": 101,
+      "ioSurfaceCreateImage": 26,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697922-22-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "3b5e15ab83f79de8c1965936e56130ed089359a311b21f70c77bd22a0264a26e",
+     "main": {
+      "samples": 2014,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1902,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697922-22-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "663bf313a9f0bd8755e3093eec2ad495b15e423e2ea3b7677a043b2d3f1c7a94",
+     "inCrayonDrawWindow": true
+    },
+    "1789697925-23-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "6e0e8ca5ebed4f74b91eedbefeca95c900fe0906b8c9f8ef07acd22275495d0b",
+     "main": {
+      "samples": 1870,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1775,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 8
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697925-23-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "7e5a8d45250df07193c01ec000ddcaf222cb8d74c2880854d3d3efa2168892a4",
+     "main": {
+      "samples": 1725,
+      "drawImage": 1138,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 676,
+      "ioSurfaceClientLock": 469,
+      "ioSurfaceCreateImage": 7,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697929-24-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "fb7ba85edf0b6b09c7e78d76a1f7575277cb917d764ec67bd70227ddf94133a0",
+     "main": {
+      "samples": 1797,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1713,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697929-24-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "f3670fed54e5ecfe94a254022ae644f7a8a1077cfd9bb6147bc6066c7cada8bf",
+     "main": {
+      "samples": 1707,
+      "drawImage": 1479,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 907,
+      "ioSurfaceClientLock": 673,
+      "ioSurfaceCreateImage": 9,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697932-25-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "428df20074336ac08d9ba3603035b1c66a6d63f86f85387496a449079e162508",
+     "main": {
+      "samples": 1821,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1711,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 10
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697932-25-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "454c3bcdfac8310775e3f696e9892e4a67322c76afb7ff4a7daa7536ace29267",
+     "main": {
+      "samples": 1719,
+      "drawImage": 1472,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 889,
+      "ioSurfaceClientLock": 679,
+      "ioSurfaceCreateImage": 4,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697935-26-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "4d8fd3b0cf90be447bd3ae195090413c5f38065c7289c2fe9df47e1e86070501",
+     "main": {
+      "samples": 2007,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1919,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697935-26-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "d27f7a82f0b984a0b1cff11e002dcbfaa02ab27c3ae476790219344203eb909f",
+     "main": {
+      "samples": 6438,
+      "drawImage": 4236,
+      "ensureBackend": 13,
+      "shareableBitmapCopy": 2657,
+      "ioSurfaceClientLock": 1975,
+      "ioSurfaceCreateImage": 22,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697939-27-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "6f904a7843477efe6d7fa01233e58197ae3472edad43f82558096c3022df964b",
+     "main": {
+      "samples": 3715,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 3465,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 14
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697939-27-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "921c7bc10252bc5d4c991a5d86a3289f570d4dfbe42469d73718a054656fdc95",
+     "main": {
+      "samples": 1860,
+      "drawImage": 1553,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 874,
+      "ioSurfaceClientLock": 588,
+      "ioSurfaceCreateImage": 4,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697942-28-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "0a515afc745a1411c3040e1e53c8110927b2ff788ae0dd834105db2b35d3e9df",
+     "main": {
+      "samples": 1997,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1889,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697942-28-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "9a2c67d14e5b6bd2ce4ef85c8affa28530101a09a49dc676658157728680056d",
+     "main": {
+      "samples": 1843,
+      "drawImage": 1183,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 716,
+      "ioSurfaceClientLock": 550,
+      "ioSurfaceCreateImage": 7,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697946-29-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "7117b13ad74ddab5a088e34d0f3e9018753b198b683f5638c4c7072fc15ae6b7",
+     "main": {
+      "samples": 2189,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2042,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697946-29-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "6345b35c3cea84aa628730a1385f6bea1a02a9219e0b3e412b02249302120ff1",
+     "inCrayonDrawWindow": true
+    },
+    "1789697949-30-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "14a9e0e8bf5f3eaa03388109e9c11ff594916aa0ee15073d6472d54b35bc0048",
+     "main": {
+      "samples": 1950,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1817,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697949-30-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "8f88661d2b1f6e0211a5d6b2908ab5ded596aa59d8dc4bad891c5706de7d97f2",
+     "main": {
+      "samples": 1851,
+      "drawImage": 1444,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 866,
+      "ioSurfaceClientLock": 663,
+      "ioSurfaceCreateImage": 11,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697953-31-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "e89e28a7d17957dedd95edfdd3e52b289409e477d51fc7d3f59584391a056058",
+     "main": {
+      "samples": 5255,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 4874,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 14
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697953-31-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "f73a8049ded603a5730d28d25174e73e299de77e276d86894d3d9a9693b21512",
+     "main": {
+      "samples": 1875,
+      "drawImage": 1478,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 834,
+      "ioSurfaceClientLock": 646,
+      "ioSurfaceCreateImage": 10,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697956-32-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "9545fe746dbef10d89720a3eb790802597c6a9d7b01f7f8699b62030a83e87a4",
+     "main": {
+      "samples": 2834,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2650,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 12
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697956-32-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "ae01546f52f5b2b67beb6e3043b173f98c22bc748193e75bd733653be6c3a699",
+     "main": {
+      "samples": 1921,
+      "drawImage": 1494,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 894,
+      "ioSurfaceClientLock": 708,
+      "ioSurfaceCreateImage": 8,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697959-33-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "f20f0abd7df65998df35c1b5cb666ecc56a654ce06aa4a1e965f306bfacad9dc",
+     "main": {
+      "samples": 1971,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1821,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697959-33-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "4229f93274d78366aaf5a523f7bd5146a43bf74dd21b9255c5a3b0e8cd674754",
+     "main": {
+      "samples": 1854,
+      "drawImage": 1537,
+      "ensureBackend": 2,
+      "shareableBitmapCopy": 932,
+      "ioSurfaceClientLock": 749,
+      "ioSurfaceCreateImage": 7,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697963-34-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "c295bdab1de89cc1db8aabff5f898db97009096c81d926abe63bbcaea021f45b",
+     "main": {
+      "samples": 2097,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1968,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 9
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697963-34-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "775d0a664696bb296d95e389cb66c2b898f32e7ab1660c6801478b9f72d6710a",
+     "main": {
+      "samples": 1935,
+      "drawImage": 1529,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 858,
+      "ioSurfaceClientLock": 631,
+      "ioSurfaceCreateImage": 7,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697966-35-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "03d0fab93c1c8e36e25b376be972c339d5ec88032c58b16d7982c9d039f20978",
+     "main": {
+      "samples": 2044,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1900,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 9
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697966-35-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "af546bd51ea4f7c9f4addb50613191f6f5f9f193eb5838c1c54abc250015fa9d",
+     "main": {
+      "samples": 1966,
+      "drawImage": 1014,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 594,
+      "ioSurfaceClientLock": 442,
+      "ioSurfaceCreateImage": 12,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697969-36-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "d22db0d4c36d69396bf8ffa95fe0b156468faa2590285ce3fd4a80a8880c78fb",
+     "main": {
+      "samples": 2021,
+      "drawImage": 1276,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 785,
+      "ioSurfaceClientLock": 615,
+      "ioSurfaceCreateImage": 7,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697970-36-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "1c5a7322a43c675b562864dff28d2f707d17aa2859a9b0a80ec28c6533f7a22e",
+     "main": {
+      "samples": 2008,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1854,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697973-37-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "0f8ae0f2e41084502260c8e97993003bec98bf3c236133b5e27b1058327fead1",
+     "main": {
+      "samples": 2011,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1869,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 10
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697973-37-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "80eb64b8fd7ca86464c38378ca518268fa9c19c5bbbee052d36babfda06ef847",
+     "inCrayonDrawWindow": true
+    },
+    "1789697976-38-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "98f4dd4d5df81b09a823d53abe59e0aad9d31a2424854aacecb5f5eb570f69b3",
+     "main": {
+      "samples": 2128,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1992,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697976-38-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "98cba7627f06ac0ee56328e7331617fbc9ebf01279ea326f4908b478d14457bc",
+     "main": {
+      "samples": 2017,
+      "drawImage": 1679,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1104,
+      "ioSurfaceClientLock": 882,
+      "ioSurfaceCreateImage": 10,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697980-39-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "827e5012be24cca992bc8c7a2ba5d24abb32dd8d9e2f070afddc7a33a1c17750",
+     "main": {
+      "samples": 2152,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2007,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 7
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697980-39-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "3e1bc238901c2eb4a51e9d1b05318d6247efe7052e6b15fa536e581f511f392e",
+     "inCrayonDrawWindow": true
+    },
+    "1789697983-40-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "8d7bad76927052086efe0e32cfa8df6292b24c23f266683306e1c3a17bd9371a",
+     "main": {
+      "samples": 2500,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2327,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697983-40-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "6e8e4411fc7c68db4b678db8cb81c72a8ee39f94836e094c609254f6b2a65d9b",
+     "main": {
+      "samples": 2431,
+      "drawImage": 2082,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1309,
+      "ioSurfaceClientLock": 1052,
+      "ioSurfaceCreateImage": 6,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697987-41-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "ec804a366b263c2a29d38327d09c466e9073d3f49becd1f9aa6edd9f4ba5b9ca",
+     "main": {
+      "samples": 2266,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2118,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697987-41-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "22c8ed345c6db08aa9d6f13ec9f8f70dafe436214a5a0faddace4ca93d0ad315",
+     "main": {
+      "samples": 2224,
+      "drawImage": 1802,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1180,
+      "ioSurfaceClientLock": 938,
+      "ioSurfaceCreateImage": 11,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697990-42-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "15def65a98fde05f4025f73eae3a5839c2bc72596c05a904029e26bd3b3c6a86",
+     "main": {
+      "samples": 2030,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1923,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697990-42-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "29b9b5f973f96d9be63768379cf63eb08fd220452bc66ac9ac11b8b1be2e0944",
+     "main": {
+      "samples": 1945,
+      "drawImage": 1626,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1100,
+      "ioSurfaceClientLock": 901,
+      "ioSurfaceCreateImage": 6,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697993-43-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "515fbcceb5ca47f18826857236a9c2137976ad55a35a5fed2ea19de3dcbd87cc",
+     "main": {
+      "samples": 2240,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2114,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 7
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697993-43-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "ede8d61d589e8928bee1f8a2c9b4646ebba74967f2e4aee1711e41e4e2b0b4c5",
+     "main": {
+      "samples": 2140,
+      "drawImage": 1797,
+      "ensureBackend": 3,
+      "shareableBitmapCopy": 1239,
+      "ioSurfaceClientLock": 1039,
+      "ioSurfaceCreateImage": 6,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697997-44-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "57d55d996870e337c0d57f9b884fca9a88e88316ead4c91682c19759a1b97642",
+     "main": {
+      "samples": 2255,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2092,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 10
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789697997-44-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "68f8981c9d3b145cbbe5b489047f191a0dba842590370986a0624a57480b71de",
+     "main": {
+      "samples": 2507,
+      "drawImage": 2119,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1343,
+      "ioSurfaceClientLock": 1079,
+      "ioSurfaceCreateImage": 12,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698000-45-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "f169d3ea007c48f2db75b8be5fbcf6ea17a58531ae06766156c4fb2e7e213638",
+     "main": {
+      "samples": 2227,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2063,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698000-45-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "17c8becf8b6d6ab2fbb2beb3f6fc4fb0c5d76992ab527a3b967af15c4b564485",
+     "main": {
+      "samples": 2147,
+      "drawImage": 1796,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1117,
+      "ioSurfaceClientLock": 880,
+      "ioSurfaceCreateImage": 6,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698003-46-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "ff65df73f081bdc07ba2aea93ceea7f365a034a52ef83d66e41538e76ab7a405",
+     "main": {
+      "samples": 2238,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2111,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 7
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698003-46-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "9ef157f8d80e25c874428301b14c46d8945737b3f7ff3f04e22c6663884fc989",
+     "main": {
+      "samples": 2170,
+      "drawImage": 1651,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1102,
+      "ioSurfaceClientLock": 932,
+      "ioSurfaceCreateImage": 9,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698007-47-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "4368e8b2432e2adb47e9c84a04a640e3883b09441642f86f56d320945c375877",
+     "main": {
+      "samples": 2178,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2018,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698007-47-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "0ab7854aa287a664c0677ada116613c373b958ba05a9924722b9bfa5bd2ca0bb",
+     "main": {
+      "samples": 2064,
+      "drawImage": 1681,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1112,
+      "ioSurfaceClientLock": 944,
+      "ioSurfaceCreateImage": 5,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698010-48-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "ed0dc6e06164135557178b7b5212f0268313b562f5ac67ce8d679bfc88706a73",
+     "main": {
+      "samples": 2117,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1976,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 7
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698010-48-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "823d45927534540072a405f31c5acc64a8848bedf57cbfa6f8fa88776a4fdd64",
+     "main": {
+      "samples": 2098,
+      "drawImage": 1428,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 989,
+      "ioSurfaceClientLock": 824,
+      "ioSurfaceCreateImage": 2,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698014-49-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "c7d7de566f4f389a7617feb8fe67407c06984a5a7394b0940c89a3ea43532385",
+     "main": {
+      "samples": 2029,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1906,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698014-49-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "ab8088209abe29c426e4b86d207a8f860202bfe10c1a7bb14cedb69e24fd253e",
+     "main": {
+      "samples": 1993,
+      "drawImage": 1625,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1086,
+      "ioSurfaceClientLock": 941,
+      "ioSurfaceCreateImage": 3,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698017-50-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "634c441180296e0fb2d1bc0df0490f931fabd632d4ba85bea4b912abf2f89a40",
+     "main": {
+      "samples": 2115,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1978,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698017-50-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "b5ba5aec1cc7a19842c5ad04d742e6b3aaeaca6626f45c141f5c85386b1c1468",
+     "main": {
+      "samples": 2044,
+      "drawImage": 1692,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1134,
+      "ioSurfaceClientLock": 970,
+      "ioSurfaceCreateImage": 7,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698020-51-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "61dd4c3dea6de2e0b2a0aab79fcc25b062a085360dfe86887d63ca066bcb4728",
+     "main": {
+      "samples": 2206,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2063,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 8
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698020-51-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "343aa59261a696a28544ca484a35e0fed0d718dd0067dd3d71eab260267c77eb",
+     "main": {
+      "samples": 2042,
+      "drawImage": 1703,
+      "ensureBackend": 3,
+      "shareableBitmapCopy": 1141,
+      "ioSurfaceClientLock": 968,
+      "ioSurfaceCreateImage": 12,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698024-52-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "7901c8e29c028ba37a2f29ec9f7f2a3864931a0a43136a8a6b183942e70e0f8d",
+     "main": {
+      "samples": 2059,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1912,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698024-52-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "1a7f540e4130a2cfc1106880e9897b191d52e4b620745d9e7a6c2426e607e07a",
+     "main": {
+      "samples": 2019,
+      "drawImage": 1690,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1136,
+      "ioSurfaceClientLock": 956,
+      "ioSurfaceCreateImage": 6,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698027-53-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "404b35498d7033ddc36cf3efecfd8bd247855fc31adb99a3edfb09013035b35c",
+     "main": {
+      "samples": 1997,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1878,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698027-53-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "63dfa15fc1727d0f77d9cffab8b24069c49356efada0e23fbb2e6ca703c1a5a2",
+     "main": {
+      "samples": 3188,
+      "drawImage": 2703,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1790,
+      "ioSurfaceClientLock": 1539,
+      "ioSurfaceCreateImage": 16,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698031-54-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "73d9741f9f598ff207d348fb5cc8b4ed41afadd55ea21172de692b4e8685ce02",
+     "main": {
+      "samples": 1927,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1824,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": true
+    },
+    "1789698031-54-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "69c4976c8c5100a86046554d8683db2a4f24fc553e853ad79a7ab298de6a5653",
+     "inCrayonDrawWindow": true
+    },
+    "1789698034-55-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "7fd64db454504f3ea768552283b326245bf268270c0cd19644e392b7cb44d600",
+     "main": {
+      "samples": 1965,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1768,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698034-55-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "9d84bee45d410cd98440d71e0acb9825b7f52f899ff3ce5af8d5d6e82a7bb5cb",
+     "inCrayonDrawWindow": false
+    },
+    "1789698038-56-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "b1fbb63912a4d6682e292de3ef54fa54e13335c6fc96afb4b76b132fc04f0d1c",
+     "main": {
+      "samples": 1605,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1573,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698038-56-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "c5cd8030f9e44bceb412bd8b768b804deb2c6956b62a5eee16a82c40de38b0df",
+     "main": {
+      "samples": 1589,
+      "drawImage": 715,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 627,
+      "ioSurfaceClientLock": 607,
+      "ioSurfaceCreateImage": 1,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698041-57-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "eca439b9630d3640851302267602244a83779570cc55ac614a598315681bf1ad",
+     "main": {
+      "samples": 1627,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1577,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698041-57-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "c7e7b407b12075ea57984cb03533bb306b496d2bd7df1fe74f4d5c3e75304421",
+     "main": {
+      "samples": 1614,
+      "drawImage": 1468,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1242,
+      "ioSurfaceClientLock": 1183,
+      "ioSurfaceCreateImage": 1,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698045-58-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "7f529ee9ecbcaf60d362664692b818158b0353e95dacf26bb200e5be25127c85",
+     "main": {
+      "samples": 1168,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1143,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698045-58-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "069f89fba91fd02ecf75b4410a7123c22c62230e094add5ece1e4381e48cba27",
+     "main": {
+      "samples": 1189,
+      "drawImage": 659,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 563,
+      "ioSurfaceClientLock": 532,
+      "ioSurfaceCreateImage": 1,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698048-59-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "12e1d6ded1d6097125a9e12a5bfb298e94ff5d43f898f7463d925c242adc925c",
+     "main": {
+      "samples": 1968,
+      "drawImage": 1705,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1390,
+      "ioSurfaceClientLock": 1296,
+      "ioSurfaceCreateImage": 5,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698049-59-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "63ce26f159b328934974fd4e3fb56ff82562f83a3ead94759e870fb154cf6055",
+     "main": {
+      "samples": 2039,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1965,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698052-60-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "becaff1c442a47f18335567d2a262120d219095b1c1168b654266f9167288495",
+     "main": {
+      "samples": 1874,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1792,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698052-60-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "56df8678dd6e620a1251b576545eaafd6b4b69ae1e6962e00f856736a669d48f",
+     "inCrayonDrawWindow": false
+    },
+    "1789698056-61-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "583dd045aaba9cfa75d4efab9a5e7a4a2bc099ec5be37cc4f67b4d7dd6775e5c",
+     "main": {
+      "samples": 2037,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1985,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698056-61-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "c9d785614e4ee18950c6775ec709d8877fa713dad362489e501e80d7fb8ea4a2",
+     "main": {
+      "samples": 1947,
+      "drawImage": 50,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 29,
+      "ioSurfaceClientLock": 26,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698059-62-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "8a9140477b54d1d958ab08b2e3396385800a963e26f6ef03a91d69e7088f65d3",
+     "main": {
+      "samples": 1700,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1584,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698059-62-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "4fdef2293f8edf9280ac5e27300b7c337bc5c4d64cc2f70c60bb4297624e45b9",
+     "main": {
+      "samples": 1640,
+      "drawImage": 662,
+      "ensureBackend": 9,
+      "shareableBitmapCopy": 421,
+      "ioSurfaceClientLock": 343,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698063-63-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "93d247df4c874336be758305b1798fbd07b54674cacce9b8a75872884873ccaf",
+     "main": {
+      "samples": 2143,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2137,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698063-63-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "8e468f865932dc28eecead0880f1bf38c56287bdb07b95922cb59ca1ef07bd4f",
+     "main": {
+      "samples": 2057,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698066-64-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "2944724453991123aa760f37b9c63fc5089225de821bb6b498f42c5b1da432f9",
+     "main": {
+      "samples": 2080,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2060,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698066-64-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "174f10c33f0b7057d4dc6728296364b548716bb27e68f92efb2c05203f32dec4",
+     "main": {
+      "samples": 2073,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698070-65-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "48e0910f2da1e56829d658e9a245f984c36b9b09a6740e7abcf8d5b88222bd1d",
+     "main": {
+      "samples": 2149,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2143,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698070-65-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "31b1a60b36692b2a003da9a994801c6a9fb33031601bd8a279c0cd7fc59c8baf",
+     "main": {
+      "samples": 2134,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698073-66-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "ca15d194f66181ad5a5d1a4095f165ec14451b5a052cc7c99396db697c444d5e",
+     "main": {
+      "samples": 2246,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2237,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698073-66-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "c592b5f4c5e5dce08ef5a25d8d47786ccdaedbfac446d5cbfacd063a457e1393",
+     "main": {
+      "samples": 2242,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698076-67-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "1b04b5f1057aceeb310f559e94ac685d43bf04582fa56f1cced3e8f3a9a8c446",
+     "main": {
+      "samples": 2304,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2299,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698076-67-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "05042dc2f662675602bb486a1e1e6c6ec7edf926e2874f3a582f4cf28045e0e9",
+     "main": {
+      "samples": 2288,
+      "drawImage": 13,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 7,
+      "ioSurfaceClientLock": 1,
+      "ioSurfaceCreateImage": 1,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698080-68-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "b763524aee3c6c863ad62edf70d0f8540c11dee8848af8b43d5461cc3384176c",
+     "main": {
+      "samples": 1871,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1772,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698080-68-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "e9a9e6ddcadadabc3c4c980e9fe540ed14f012abc51da6b2b70b6c39831d7461",
+     "main": {
+      "samples": 1809,
+      "drawImage": 278,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 191,
+      "ioSurfaceClientLock": 165,
+      "ioSurfaceCreateImage": 2,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698083-69-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "6ef1fbe6ec5457ef9f95e9f6675e5decba257add17d4520db76618155144fd73",
+     "main": {
+      "samples": 2025,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1897,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 7
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698083-69-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "c1bd51ac0cbb1d0a1b2c75159d1fde2a64996e9250d1e7ee099d0e99a26824f5",
+     "main": {
+      "samples": 1951,
+      "drawImage": 353,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 251,
+      "ioSurfaceClientLock": 228,
+      "ioSurfaceCreateImage": 1,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698087-70-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "7f1c9c0d5c111b09bf2ac183e42916e579d6e2ba50897bb8084cbe0e36104acc",
+     "main": {
+      "samples": 2146,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1996,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698087-70-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "562fcf0666ce63cbad338e5019c8561905a84683600f6203d9a5478af6357b0a",
+     "main": {
+      "samples": 1946,
+      "drawImage": 1250,
+      "ensureBackend": 2,
+      "shareableBitmapCopy": 846,
+      "ioSurfaceClientLock": 714,
+      "ioSurfaceCreateImage": 10,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698090-71-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "7a27c27790d645b65069f1abda1723a77e9add5bc332e37968e667144ee6f088",
+     "main": {
+      "samples": 2160,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2016,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698090-71-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "6e2c9fd246ceda074f0b031c110e33e01a9117b1755b13a1e77cad355190b293",
+     "main": {
+      "samples": 2028,
+      "drawImage": 1506,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1009,
+      "ioSurfaceClientLock": 840,
+      "ioSurfaceCreateImage": 2,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698094-72-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "0e17cf92dbc193b37b7671186407369fb7c1cc2e1e89b18ee29268f7e96e031b",
+     "main": {
+      "samples": 2023,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1877,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698094-72-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "7c031835cdb3d5421a75787a2da16c96510f0417696c509a8a603d194a7ca016",
+     "main": {
+      "samples": 1962,
+      "drawImage": 1590,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1081,
+      "ioSurfaceClientLock": 886,
+      "ioSurfaceCreateImage": 8,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698097-73-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "434208cb038fe2fb3c53fa9e2ba14cd9cbc9ec08b152ef40cadc9cabd54aa48f",
+     "main": {
+      "samples": 2554,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2381,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 12
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698097-73-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "eaea9d63baa4ab77806a0c5468a5a45e817dada2f24f875e685666689e298c6c",
+     "main": {
+      "samples": 1980,
+      "drawImage": 1432,
+      "ensureBackend": 2,
+      "shareableBitmapCopy": 979,
+      "ioSurfaceClientLock": 836,
+      "ioSurfaceCreateImage": 9,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698101-74-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "70d531ed55871395c3de9409cd1d526511cfbb7083e08b8bbb228f6e873055ad",
+     "main": {
+      "samples": 2145,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2005,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698101-74-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "1a66bc0162d4014c7cb714be4cf48015c1ee4f8c134518c33f0ca576de872c5b",
+     "main": {
+      "samples": 2031,
+      "drawImage": 1663,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1111,
+      "ioSurfaceClientLock": 909,
+      "ioSurfaceCreateImage": 13,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698104-75-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "752eab130e581b71f9ae08082e0ad0458feda853ed97b025a949f4f89cc946d3",
+     "main": {
+      "samples": 2162,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2015,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698104-75-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "fba34ebfe80307756243acadaf3377f8d2f83bbc0e66c2051b0d0f8d718cf829",
+     "main": {
+      "samples": 2072,
+      "drawImage": 1701,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1176,
+      "ioSurfaceClientLock": 970,
+      "ioSurfaceCreateImage": 8,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698108-76-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "7c96f3b752c2401c2fa5a5c574cb2ea168f261c89bdf199579f3d13e3a72c632",
+     "main": {
+      "samples": 2173,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2057,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698108-76-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "34417381cff9f0de41dc839bcf0a701f57dd8233703edfa9db6f97617249a21d",
+     "main": {
+      "samples": 3769,
+      "drawImage": 3110,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 2101,
+      "ioSurfaceClientLock": 1776,
+      "ioSurfaceCreateImage": 12,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698111-77-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "bed29d3b91872eb71711bbd4ce128f2d88b016ca09bc20ce33d8945cb16533a4",
+     "main": {
+      "samples": 1890,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1787,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698111-77-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "8f14d7038515980518a23b29f503acf5952658f0dacb11de3c7a47fbfedf53d9",
+     "main": {
+      "samples": 2085,
+      "drawImage": 1751,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1214,
+      "ioSurfaceClientLock": 1048,
+      "ioSurfaceCreateImage": 8,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698115-78-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "1f3b64ea502a704fddbdc8333f0a1cf12acb76703faaf4bea7a8d125ea127b84",
+     "main": {
+      "samples": 1747,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1653,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698115-78-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "79a39a549ed1bb410d59f30307877e1dafe10706deff55e94ab7e9a9befa0137",
+     "main": {
+      "samples": 1729,
+      "drawImage": 1459,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1015,
+      "ioSurfaceClientLock": 859,
+      "ioSurfaceCreateImage": 4,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698118-79-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "6adb4bbf457ebb2ea19e509e3cffba4f64bafd8c752dc0ecbe6da60677a9aba6",
+     "main": {
+      "samples": 2005,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1868,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698118-79-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "1e641e513d7dc53c9eebbd3b7cdf51d2dfa9b271f081eaf2222ab707740ad63f",
+     "inCrayonDrawWindow": false
+    },
+    "1789698121-80-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "af31e5ef39e4163279d7b9eb0355300f5f2b3896e2eeabb7d8e2377a285da1de",
+     "main": {
+      "samples": 2136,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1968,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698121-80-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "f5f0fc06a16c0d30c588849f36fee21b46f03b633842ed4cffe8713dc98a27d8",
+     "main": {
+      "samples": 2101,
+      "drawImage": 1760,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1278,
+      "ioSurfaceClientLock": 1124,
+      "ioSurfaceCreateImage": 4,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698125-81-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "517e094819db87f981407ea6f427e0007c699c1e4a8ab214688acfa88056a452",
+     "main": {
+      "samples": 2046,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1894,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698125-81-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "f78607b24799409a1548c3a63ec78bda1ce9e28f4e93e07147c23b2270613d27",
+     "main": {
+      "samples": 1988,
+      "drawImage": 1666,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1117,
+      "ioSurfaceClientLock": 852,
+      "ioSurfaceCreateImage": 8,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698128-82-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "dcb157222e0bbb3e0f6f070b8efde904dd99bc07ec08e8d8b8a0b480ca2a686b",
+     "main": {
+      "samples": 1926,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1794,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698128-82-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "5cb77ddf00e7b1bb71acabfeb6ef03b313b1a752cc228fc19d475cd88f843dac",
+     "main": {
+      "samples": 1886,
+      "drawImage": 1552,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1031,
+      "ioSurfaceClientLock": 775,
+      "ioSurfaceCreateImage": 4,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698132-83-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "3798aeab95ea70b6ef6ece45404df00a5bd7db802a6446840f6054ce5e22ea39",
+     "main": {
+      "samples": 1890,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1742,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698132-83-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "99490485c51c4fbb11b0721b01c2ba96c6418ba0f116a87c8ec985119e3d3259",
+     "main": {
+      "samples": 1842,
+      "drawImage": 1539,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1000,
+      "ioSurfaceClientLock": 840,
+      "ioSurfaceCreateImage": 3,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698135-84-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "145defd2c93cf30878acdce168b1c59fa44ca14162b8dc29d70c90404ec116b1",
+     "main": {
+      "samples": 1717,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1611,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698135-84-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "87fb95d4492db00ca68cac255f66749a196a3ddb3460c8ec8cb8ac9efc026de0",
+     "inCrayonDrawWindow": false
+    },
+    "1789698139-85-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "15b0c16a54edb8fa3ba5a2a5b7c0d7879f665df4f9885468d410e53732d5d91e",
+     "main": {
+      "samples": 1769,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1669,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 4
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698139-85-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "601483cda1832b5780458747278450d0ab0666fa597ed5b23ad49491ddf3c519",
+     "main": {
+      "samples": 1718,
+      "drawImage": 1216,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 799,
+      "ioSurfaceClientLock": 655,
+      "ioSurfaceCreateImage": 6,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698142-86-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "f863c1963c9540d193cd55186f8f149ae4ecd4f54b1301064386fc5f820844cb",
+     "main": {
+      "samples": 1916,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1777,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698142-86-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "d4887a3e6486972292be1ec86cac8e9564f82a4b765de835232fd9f224d67074",
+     "inCrayonDrawWindow": false
+    },
+    "1789698145-87-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "b279f165bd315645883458fdbab2c93a1a700823fcf0b5b11e9d9b986ca5d992",
+     "main": {
+      "samples": 2039,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1914,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 6
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698145-87-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "99585ad1868be65b62639d843823547cc46b688e3b43dbbac87377da75ea4640",
+     "main": {
+      "samples": 1809,
+      "drawImage": 1520,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 972,
+      "ioSurfaceClientLock": 819,
+      "ioSurfaceCreateImage": 14,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698149-88-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "3d4fe27ab9ef8ec445cd14d46024ce3ed33954e2f2412fc6484a941f619d7a12",
+     "main": {
+      "samples": 2037,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1899,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698149-88-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "2e2b16ce8fc062a0c6a7d50a9826225b988a4c2c31ee1a53fabd7f27446d9e39",
+     "main": {
+      "samples": 1985,
+      "drawImage": 1661,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1129,
+      "ioSurfaceClientLock": 987,
+      "ioSurfaceCreateImage": 5,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698152-89-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "fcf671e87df2cd0218534e64191741ac11ba0a703ece17fa46f3f2638f0101c5",
+     "main": {
+      "samples": 1829,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1702,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698152-89-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "3485588b03cf4ed8e01f33e7e65d94a2b56bf940a0728ccae642ee47c8a38a63",
+     "main": {
+      "samples": 1807,
+      "drawImage": 1514,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1023,
+      "ioSurfaceClientLock": 863,
+      "ioSurfaceCreateImage": 7,
+      "caCgQueueFlush": 1
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698156-90-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "39c1e0eb65c8ed6a9afe9b90e81efbeae3d144abdece75091ab6d7d5c0aa4aa7",
+     "main": {
+      "samples": 2067,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1919,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 8
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698156-90-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "9a89978514c0e884c3706d213ebd095ea0327bd19084fad055364f46fe0c244c",
+     "main": {
+      "samples": 2020,
+      "drawImage": 1658,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1118,
+      "ioSurfaceClientLock": 965,
+      "ioSurfaceCreateImage": 5,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698159-91-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "e94b7153eb9262baa41a8e5381f8bb30a0b83559512162b0ec8e528988dff9f8",
+     "main": {
+      "samples": 2116,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1955,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698159-91-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "2f8050166914eca2a9caa224d991e88464e0888c39cfa2a4c4326b5dc8abfc9e",
+     "inCrayonDrawWindow": false
+    },
+    "1789698162-92-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "e96fff91d99b12fbba19adfbc8c1eabfee5436e888bdf555361e7cc96d69a9f1",
+     "main": {
+      "samples": 2014,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1859,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 5
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698162-92-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "2d4fb817f3e341d0d2aacbbd3a62a2b7723d976b8f8d9df6a61ee44a545e8b5d",
+     "main": {
+      "samples": 1966,
+      "drawImage": 1642,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 1108,
+      "ioSurfaceClientLock": 920,
+      "ioSurfaceCreateImage": 12,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698166-93-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "2170a1b12dcc2837b87de1f9d473f49819a2581265539d168876c6313da82fe2",
+     "main": {
+      "samples": 2207,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2087,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 3
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698166-93-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "dcfc83983c672a60595a75cb1d7690b79310453aeafae078a8ccc3583f3b21aa",
+     "main": {
+      "samples": 2201,
+      "drawImage": 659,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 411,
+      "ioSurfaceClientLock": 354,
+      "ioSurfaceCreateImage": 2,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698169-94-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "0b5f9af4675553ca3123cdfe0efb4b8a2473bdde4ce487987e99e7742828e5f3",
+     "main": {
+      "samples": 2114,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2035,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 2
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698169-94-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "d356a00d298186b4de39cbd25d17d69a876e1bb9aeba9693db2a3007742bbee0",
+     "main": {
+      "samples": 2140,
+      "drawImage": 880,
+      "ensureBackend": 1,
+      "shareableBitmapCopy": 586,
+      "ioSurfaceClientLock": 507,
+      "ioSurfaceCreateImage": 2,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698173-95-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "a6a8f136edb6c756b4a3d49f1915edf5e4973dcb0889c51560703dd93711396b",
+     "main": {
+      "samples": 2191,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2051,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 9
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698173-95-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "ab149333a60fdf1b856aaa62061fa80a05ddf71711fbf759cc6dd40ee38b002d",
+     "main": {
+      "samples": 1915,
+      "drawImage": 1631,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 1099,
+      "ioSurfaceClientLock": 949,
+      "ioSurfaceCreateImage": 4,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698176-96-com.apple.WebKit.GPU.Development-4184.txt": {
+     "sha256": "07cd0ff399c98fa37920628defa8bfd3e5c9c71f1b3bd810239cef32d97c1c5f",
+     "main": {
+      "samples": 542,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 516,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "inCrayonDrawWindow": false
+    },
+    "1789698176-96-com.apple.WebKit.WebContent.Development-4183.txt": {
+     "sha256": "f048f938bac9b6b079cf54678e4a8a360c795c5fd9073c27a220cb3594b1400c",
+     "inCrayonDrawWindow": false
+    }
+   }
+  },
+  "local": {
+   "source": "developer Mac, not retained beyond the representative files",
+   "host": "Apple M5",
+   "webkit": "Playwright WebKit 26.6 (r2359)",
+   "product": "50a1f046a33cead04fc6e91d8aa64aeaf775c92e",
+   "window": "The whole crayon-scribbles run (initial and confirmation passes, draw, commit, settle and undo); the local log carried no timestamps, so draw-only placement is not possible",
+   "files": {
+    "1789697625-1-Playwright-59038.txt": {
+     "sha256": "24787977d01497720a516bf2c5b3615a573af2c9cd14f3e54122c24d2407f20d",
+     "main": {
+      "samples": 2419,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697625-1-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "a7208813cc9a346c630d418ead4f422f2ad6cbfb79693382a9ce9a7a22c93e3d",
+     "main": {
+      "samples": 2340,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2339,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 2175,
+      "caCgQueueFlush": 2167
+     }
+    },
+    "1789697625-1-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "f62bcb928552de12d789b9a14ee821b2d8b99e306da9c2cf48dfc2c5b4b3b5f5",
+     "main": {
+      "samples": 2394,
+      "drawImage": 1165,
+      "ensureBackend": 1164,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697628-2-Playwright-59038.txt": {
+     "sha256": "61fcd5553e10babdaf408977ce17f29b199624ee176c0e6113a5566fba6ed518",
+     "main": {
+      "samples": 2419,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697628-2-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "0816f90ebf8a59e61ee1cac0f88e89af55ecf2d542d55b5ee2f37562902d94e9",
+     "main": {
+      "samples": 2343,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2342,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 2169,
+      "caCgQueueFlush": 2162
+     }
+    },
+    "1789697628-2-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "56118050695eefa89c2ee75dafda1bf6b1af4957fc1c9e178bb7d2c53d5d10ab",
+     "main": {
+      "samples": 2393,
+      "drawImage": 1163,
+      "ensureBackend": 1163,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697631-3-Playwright-59038.txt": {
+     "sha256": "a3501666e980cfa4d8cf7edccf1495ea6b6db7b579143415d439b94fc6b2d3b6",
+     "main": {
+      "samples": 2419,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697631-3-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "7b9224b2e45452b5801fe337e0d78479c24bfc6bcced479dbf748edc1b83eb50",
+     "main": {
+      "samples": 2357,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2357,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 2223,
+      "caCgQueueFlush": 2216
+     }
+    },
+    "1789697631-3-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "9d757527bea4dd6348ff01807c8e36d86beb5371f144d651fac3db94f70d744f",
+     "main": {
+      "samples": 2420,
+      "drawImage": 2378,
+      "ensureBackend": 2377,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697635-4-Playwright-59038.txt": {
+     "sha256": "3a05caedf7b0458c6c7babdf1cd85e978a00b670079497b732ed7949b5f8a2e0",
+     "main": {
+      "samples": 2398,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697635-4-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "975a903c3d75e2d0df7c2a92354a610016357cc21aca3a1fa5b31b2cc4544d30",
+     "main": {
+      "samples": 2336,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2320,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 1905,
+      "caCgQueueFlush": 1900
+     }
+    },
+    "1789697635-4-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "7fcf22c73e4da8b908139bc0c494b76b13bca2e487ad4a263a71429ea770e863",
+     "main": {
+      "samples": 2396,
+      "drawImage": 1734,
+      "ensureBackend": 1734,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697638-5-Playwright-59038.txt": {
+     "sha256": "a534e131b0ec43391f5dbaccf03b28ae2fd0af6f372ef68f1309bff3bfbdb931",
+     "main": {
+      "samples": 2372,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697638-5-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "cd2120a8362062219d0b1810c55bded59b2b98123af69fb751f76ba905a6a043",
+     "main": {
+      "samples": 2345,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2344,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 715,
+      "caCgQueueFlush": 714
+     }
+    },
+    "1789697638-5-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "54523b91171602a1825ec8d588a7785eba43b6f7187ab75780a9bfecb9da1325",
+     "main": {
+      "samples": 2367,
+      "drawImage": 357,
+      "ensureBackend": 357,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697641-6-Playwright-59038.txt": {
+     "sha256": "167fe9b39115860e46026afa4b524141f4509f0e7a5c5b8953225498e8a6930b",
+     "main": {
+      "samples": 2388,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697641-6-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "6e93994105cfd09f5d771e2b0882f42f0bd4260f07b6960ef194c1d9d3591e92",
+     "main": {
+      "samples": 2356,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2351,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 1,
+      "ioSurfaceCreateImage": 1080,
+      "caCgQueueFlush": 1075
+     }
+    },
+    "1789697641-6-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "e9a247ea9a6b6b211ef6737529101e40c89af4ac797ed28a63ecb24509e9d386",
+     "main": {
+      "samples": 2388,
+      "drawImage": 407,
+      "ensureBackend": 407,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697644-7-Playwright-59038.txt": {
+     "sha256": "7836017044c8a32dff66d8b48c7bd6e12937f4de9bc489fb2a7b592055846b6b",
+     "main": {
+      "samples": 2408,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697644-7-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "1e159ed1fcb48c38d063fee3577e5c66858b312592032a4cb03a63a9f9bf2e8f",
+     "main": {
+      "samples": 2332,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2332,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 2222,
+      "caCgQueueFlush": 2213
+     }
+    },
+    "1789697644-7-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "aeca9d9450dd4180dd9207cd809fc61936b5f160afffe05115b7b21dc5856e9f",
+     "main": {
+      "samples": 2409,
+      "drawImage": 1727,
+      "ensureBackend": 1727,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697648-8-Playwright-59038.txt": {
+     "sha256": "3331f2c8d14956416ecce7d98dbf3ee808663ecc360f5ee72db8bb215b1dc334",
+     "main": {
+      "samples": 2409,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697648-8-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "959f0204eb650ecccce9fc00f62e627135d3b344e8a8c84348427feffd815a37",
+     "main": {
+      "samples": 2340,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2340,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 2207,
+      "caCgQueueFlush": 2201
+     }
+    },
+    "1789697648-8-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "0e4f63099c4c27ddbe16fde542db943ac9cdfa3e7e3361d2cc1b983da0ecf6d7",
+     "main": {
+      "samples": 2411,
+      "drawImage": 2068,
+      "ensureBackend": 2064,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697651-9-Playwright-59038.txt": {
+     "sha256": "0b28a6e71bff5780281fad2b3b71b1da4ec771fabd03a02adb6f3815ff4bb43f",
+     "main": {
+      "samples": 2396,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697651-9-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "88b3084547c59acf1f9e105b6714864007f74a8ff2360d1bf1fc067d9761b786",
+     "main": {
+      "samples": 2361,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 2351,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 1374,
+      "caCgQueueFlush": 1371
+     }
+    },
+    "1789697651-9-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "d6acb831a49be3cd81bfee3b80e635d22c5b1d94ededf4f480bfd05059c881b2",
+     "main": {
+      "samples": 2387,
+      "drawImage": 986,
+      "ensureBackend": 986,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697654-10-Playwright-59038.txt": {
+     "sha256": "f9c9a353dcc7bf4d3522bf2e284c5fa20f877570a868453a53883cb95808dc3c",
+     "main": {
+      "samples": 1772,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    },
+    "1789697654-10-com.apple.WebKit.GPU.Development-59042.txt": {
+     "sha256": "9963a358bcd2ed8cfdba8d45923c91589d3541eb0a1c39817310a8e91b755aea",
+     "main": {
+      "samples": 1795,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     },
+     "rrb": {
+      "samples": 1788,
+      "drawImage": 0,
+      "ensureBackend": 0,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 338,
+      "caCgQueueFlush": 337
+     }
+    },
+    "1789697654-10-com.apple.WebKit.WebContent.Development-59053.txt": {
+     "sha256": "a5fa9fc2b30adb353430ec13484d88710a6fb7667ea62128591cb86fca79b0d7",
+     "main": {
+      "samples": 1787,
+      "drawImage": 284,
+      "ensureBackend": 284,
+      "shareableBitmapCopy": 0,
+      "ioSurfaceClientLock": 0,
+      "ioSurfaceCreateImage": 0,
+      "caCgQueueFlush": 0
+     }
+    }
+   }
+  }
+ }
+}

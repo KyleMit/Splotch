@@ -1,0 +1,4537 @@
+{
+ "source": "webkit-undo-fast-diagnostics and webkit-undo-fast-retry-diagnostics artifacts of every push-to-main Tests run still retained on 2026-09-18 (200 runs listed; artifacts from 2026-09-11 onward survived)",
+ "scenario": "crayon-scribbles",
+ "fields": {
+  "firstPollRoundTripMs": "Node-side wall time of the first settle poll: settleHistory's trace[0].atMs, whose clock starts only after the draw evaluate has returned to Node. Catches a stall in front of the first poll, NOT one inside the draw evaluate's own return.",
+  "firstPollFrames": "The page's rAF stamps between drawEnd (page clock, the end of the synchronous strokes) and the first poll's read: count, firstMs/lastMs relative to drawEnd, and maxGapMs between consecutive stamps. A stall on either side of the evaluate's IPC return shows here as a late firstMs or a large maxGapMs (the 2026-09-06 run whose poll read 42 ms had stamps 55 -> 6,253 ms).",
+  "crayonShadowMs": "Every engine.crayonShadow measure in the settle trace."
+ },
+ "rows": [
+  {
+   "run": 34554733605,
+   "job": "first",
+   "startedAt": "2026-09-11T02:29:51.381Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 33598,
+   "commitP95Ms": 2277,
+   "commitMaxMs": 2459,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 6,
+    "lastMs": 6,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    0,
+    0
+   ],
+   "settleElapsedMs": 4742,
+   "settled": true,
+   "firstPollRoundTripMs": 3
+  },
+  {
+   "run": 34554733605,
+   "job": "retry",
+   "startedAt": "2026-09-11T02:34:25.893Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 37084,
+   "commitP95Ms": 2425,
+   "commitMaxMs": 2452,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 7,
+    "lastMs": 7,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    0,
+    0
+   ],
+   "settleElapsedMs": 5990,
+   "settled": true,
+   "firstPollRoundTripMs": 3
+  },
+  {
+   "run": 34555783660,
+   "job": "first",
+   "startedAt": "2026-09-11T02:45:53.756Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 65722,
+   "commitP95Ms": 27,
+   "commitMaxMs": 29,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 69,
+    "lastMs": 69,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    20,
+    10
+   ],
+   "settleElapsedMs": 8726,
+   "settled": true,
+   "firstPollRoundTripMs": 162
+  },
+  {
+   "run": 34555820007,
+   "job": "first",
+   "startedAt": "2026-09-11T02:53:06.388Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 31195,
+   "commitP95Ms": 2217,
+   "commitMaxMs": 2511,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 8,
+    "lastMs": 8,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    0,
+    0,
+    0
+   ],
+   "settleElapsedMs": 4523,
+   "settled": true,
+   "firstPollRoundTripMs": 3
+  },
+  {
+   "run": 34555783660,
+   "job": "retry",
+   "startedAt": "2026-09-11T02:57:59.585Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 96775,
+   "commitP95Ms": 48,
+   "commitMaxMs": 59,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 77,
+    "lastMs": 77,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    44,
+    18
+   ],
+   "settleElapsedMs": 11317,
+   "settled": true,
+   "firstPollRoundTripMs": 263
+  },
+  {
+   "run": 34555820007,
+   "job": "retry",
+   "startedAt": "2026-09-11T03:08:17.645Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 89553,
+   "commitP95Ms": 43,
+   "commitMaxMs": 61,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 57,
+    "lastMs": 302,
+    "maxGapMs": 245
+   },
+   "crayonShadowMs": [
+    24,
+    22,
+    5
+   ],
+   "settleElapsedMs": 9835,
+   "settled": true,
+   "firstPollRoundTripMs": 39
+  },
+  {
+   "run": 34582699249,
+   "job": "first",
+   "startedAt": "2026-09-11T09:10:36.648Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 99623,
+   "commitP95Ms": 44,
+   "commitMaxMs": 84,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 54,
+    "lastMs": 54,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    21,
+    6,
+    9
+   ],
+   "settleElapsedMs": 10456,
+   "settled": true,
+   "firstPollRoundTripMs": 204
+  },
+  {
+   "run": 34582699249,
+   "job": "retry",
+   "startedAt": "2026-09-11T09:20:20.745Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 118233,
+   "commitP95Ms": 67,
+   "commitMaxMs": 126,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 77,
+    "lastMs": 77,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    38,
+    47,
+    9
+   ],
+   "settleElapsedMs": 14049,
+   "settled": true,
+   "firstPollRoundTripMs": 331
+  },
+  {
+   "run": 34583516324,
+   "job": "first",
+   "startedAt": "2026-09-11T09:31:08.798Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 69046,
+   "commitP95Ms": 38,
+   "commitMaxMs": 103,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 63,
+    "lastMs": 63,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    46,
+    21,
+    9
+   ],
+   "settleElapsedMs": 9564,
+   "settled": true,
+   "firstPollRoundTripMs": 165
+  },
+  {
+   "run": 34583516324,
+   "job": "retry",
+   "startedAt": "2026-09-11T09:38:18.623Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 118718,
+   "commitP95Ms": 55,
+   "commitMaxMs": 93,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 69,
+    "lastMs": 69,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    31,
+    13
+   ],
+   "settleElapsedMs": 12137,
+   "settled": true,
+   "firstPollRoundTripMs": 333
+  },
+  {
+   "run": 34585199740,
+   "job": "first",
+   "startedAt": "2026-09-11T09:49:07.762Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 121740,
+   "commitP95Ms": 66,
+   "commitMaxMs": 70,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 53,
+    "lastMs": 386,
+    "maxGapMs": 333
+   },
+   "crayonShadowMs": [
+    23,
+    14,
+    11
+   ],
+   "settleElapsedMs": 11266,
+   "settled": true,
+   "firstPollRoundTripMs": 29
+  },
+  {
+   "run": 34585199740,
+   "job": "retry",
+   "startedAt": "2026-09-11T09:57:49.876Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 61815,
+   "commitP95Ms": 4967,
+   "commitMaxMs": 6764,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 21,
+    "lastMs": 21,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    0,
+    0
+   ],
+   "settleElapsedMs": 7113,
+   "settled": true,
+   "firstPollRoundTripMs": 3
+  },
+  {
+   "run": 34588049642,
+   "job": "first",
+   "startedAt": "2026-09-11T10:14:01.017Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 97588,
+   "commitP95Ms": 55,
+   "commitMaxMs": 68,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 52,
+    "lastMs": 368,
+    "maxGapMs": 316
+   },
+   "crayonShadowMs": [
+    25,
+    25,
+    11
+   ],
+   "settleElapsedMs": 11696,
+   "settled": true,
+   "firstPollRoundTripMs": 25
+  },
+  {
+   "run": 34588049642,
+   "job": "retry",
+   "startedAt": "2026-09-11T10:23:57.868Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 105703,
+   "commitP95Ms": 70,
+   "commitMaxMs": 73,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 73,
+    "lastMs": 395,
+    "maxGapMs": 322
+   },
+   "crayonShadowMs": [
+    32,
+    94,
+    14
+   ],
+   "settleElapsedMs": 15423,
+   "settled": true,
+   "firstPollRoundTripMs": 53
+  },
+  {
+   "run": 34589631742,
+   "job": "first",
+   "startedAt": "2026-09-11T10:34:39.562Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 68909,
+   "commitP95Ms": 30,
+   "commitMaxMs": 46,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 47,
+    "lastMs": 47,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    17,
+    9
+   ],
+   "settleElapsedMs": 9089,
+   "settled": true,
+   "firstPollRoundTripMs": 156
+  },
+  {
+   "run": 34589631742,
+   "job": "retry",
+   "startedAt": "2026-09-11T10:43:32.011Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 103056,
+   "commitP95Ms": 41,
+   "commitMaxMs": 46,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 78,
+    "lastMs": 78,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    59,
+    12
+   ],
+   "settleElapsedMs": 12909,
+   "settled": true,
+   "firstPollRoundTripMs": 211
+  },
+  {
+   "run": 34591060885,
+   "job": "first",
+   "startedAt": "2026-09-11T10:52:42.567Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 113272,
+   "commitP95Ms": 76,
+   "commitMaxMs": 78,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 83,
+    "lastMs": 83,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    30,
+    27,
+    2
+   ],
+   "settleElapsedMs": 10079,
+   "settled": true,
+   "firstPollRoundTripMs": 176
+  },
+  {
+   "run": 34591778688,
+   "job": "first",
+   "startedAt": "2026-09-11T11:02:15.899Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 72222,
+   "commitP95Ms": 36,
+   "commitMaxMs": 41,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 63,
+    "lastMs": 63,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    34,
+    13,
+    12
+   ],
+   "settleElapsedMs": 13865,
+   "settled": true,
+   "firstPollRoundTripMs": 281
+  },
+  {
+   "run": 34591060885,
+   "job": "retry",
+   "startedAt": "2026-09-11T11:10:02.450Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 41777,
+   "commitP95Ms": 3155,
+   "commitMaxMs": 3397,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 7,
+    "lastMs": 7,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    1,
+    0
+   ],
+   "settleElapsedMs": 5066,
+   "settled": true,
+   "firstPollRoundTripMs": 2
+  },
+  {
+   "run": 34591778688,
+   "job": "retry",
+   "startedAt": "2026-09-11T11:15:17.129Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64769,
+   "commitP95Ms": 27,
+   "commitMaxMs": 31,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 51,
+    "lastMs": 51,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    17,
+    4,
+    9
+   ],
+   "settleElapsedMs": 8923,
+   "settled": true,
+   "firstPollRoundTripMs": 134
+  },
+  {
+   "run": 34611125264,
+   "job": "first",
+   "startedAt": "2026-09-11T14:38:17.742Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 114979,
+   "commitP95Ms": 52,
+   "commitMaxMs": 103,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 77,
+    "lastMs": 349,
+    "maxGapMs": 272
+   },
+   "crayonShadowMs": [
+    34,
+    39,
+    18
+   ],
+   "settleElapsedMs": 13127,
+   "settled": true,
+   "firstPollRoundTripMs": 39
+  },
+  {
+   "run": 34611125264,
+   "job": "retry",
+   "startedAt": "2026-09-11T14:48:54.333Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 99411,
+   "commitP95Ms": 46,
+   "commitMaxMs": 49,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 67,
+    "lastMs": 67,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    37,
+    13
+   ],
+   "settleElapsedMs": 12723,
+   "settled": true,
+   "firstPollRoundTripMs": 231
+  },
+  {
+   "run": 34613408289,
+   "job": "first",
+   "startedAt": "2026-09-11T15:01:24.564Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 107528,
+   "commitP95Ms": 48,
+   "commitMaxMs": 78,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 105,
+    "lastMs": 105,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    49,
+    48,
+    17
+   ],
+   "settleElapsedMs": 15872,
+   "settled": true,
+   "firstPollRoundTripMs": 338
+  },
+  {
+   "run": 34613408289,
+   "job": "retry",
+   "startedAt": "2026-09-11T15:12:42.952Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 99031,
+   "commitP95Ms": 40,
+   "commitMaxMs": 46,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 72,
+    "lastMs": 307,
+    "maxGapMs": 235
+   },
+   "crayonShadowMs": [
+    19,
+    29,
+    12
+   ],
+   "settleElapsedMs": 12358,
+   "settled": true,
+   "firstPollRoundTripMs": 36
+  },
+  {
+   "run": 34617783749,
+   "job": "first",
+   "startedAt": "2026-09-11T15:45:11.219Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 122195,
+   "commitP95Ms": 54,
+   "commitMaxMs": 69,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 56,
+    "lastMs": 56,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    30,
+    4,
+    13
+   ],
+   "settleElapsedMs": 10982,
+   "settled": true,
+   "firstPollRoundTripMs": 282
+  },
+  {
+   "run": 34617783749,
+   "job": "retry",
+   "startedAt": "2026-09-11T15:56:33.017Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 131180,
+   "commitP95Ms": 92,
+   "commitMaxMs": 115,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 54,
+    "lastMs": 438,
+    "maxGapMs": 384
+   },
+   "crayonShadowMs": [
+    28,
+    51,
+    12
+   ],
+   "settleElapsedMs": 14917,
+   "settled": true,
+   "firstPollRoundTripMs": 54
+  },
+  {
+   "run": 34619846189,
+   "job": "first",
+   "startedAt": "2026-09-11T16:08:10.349Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 117295,
+   "commitP95Ms": 43,
+   "commitMaxMs": 47,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 51,
+    "lastMs": 548,
+    "maxGapMs": 497
+   },
+   "crayonShadowMs": [
+    40,
+    29,
+    4
+   ],
+   "settleElapsedMs": 14476,
+   "settled": true,
+   "firstPollRoundTripMs": 49
+  },
+  {
+   "run": 34619846189,
+   "job": "retry",
+   "startedAt": "2026-09-11T16:16:01.678Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 130119,
+   "commitP95Ms": 94,
+   "commitMaxMs": 119,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 99,
+    "lastMs": 99,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    26,
+    50,
+    11
+   ],
+   "settleElapsedMs": 14009,
+   "settled": true,
+   "firstPollRoundTripMs": 455
+  },
+  {
+   "run": 34627967816,
+   "job": "first",
+   "startedAt": "2026-09-11T17:30:59.568Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 87241,
+   "commitP95Ms": 39,
+   "commitMaxMs": 41,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 47,
+    "lastMs": 47,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    18,
+    25,
+    22
+   ],
+   "settleElapsedMs": 15778,
+   "settled": true,
+   "firstPollRoundTripMs": 251
+  },
+  {
+   "run": 34627967816,
+   "job": "retry",
+   "startedAt": "2026-09-11T17:38:03.403Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 114863,
+   "commitP95Ms": 55,
+   "commitMaxMs": 56,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 69,
+    "lastMs": 634,
+    "maxGapMs": 565
+   },
+   "crayonShadowMs": [
+    51,
+    6,
+    11
+   ],
+   "settleElapsedMs": 14299,
+   "settled": true,
+   "firstPollRoundTripMs": 58
+  },
+  {
+   "run": 34632783961,
+   "job": "first",
+   "startedAt": "2026-09-11T18:23:11.651Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 102407,
+   "commitP95Ms": 52,
+   "commitMaxMs": 111,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 101,
+    "lastMs": 101,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    21,
+    68,
+    4
+   ],
+   "settleElapsedMs": 23615,
+   "settled": true,
+   "firstPollRoundTripMs": 318
+  },
+  {
+   "run": 34632783961,
+   "job": "retry",
+   "startedAt": "2026-09-11T18:30:32.180Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 87855,
+   "commitP95Ms": 40,
+   "commitMaxMs": 47,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 44,
+    "lastMs": 349,
+    "maxGapMs": 305
+   },
+   "crayonShadowMs": [
+    30,
+    32,
+    10
+   ],
+   "settleElapsedMs": 12242,
+   "settled": true,
+   "firstPollRoundTripMs": 35
+  },
+  {
+   "run": 34637690172,
+   "job": "first",
+   "startedAt": "2026-09-11T19:15:27.153Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 95083,
+   "commitP95Ms": 40,
+   "commitMaxMs": 122,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 103,
+    "lastMs": 103,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    41,
+    27,
+    9
+   ],
+   "settleElapsedMs": 10783,
+   "settled": true,
+   "firstPollRoundTripMs": 258
+  },
+  {
+   "run": 34637690172,
+   "job": "retry",
+   "startedAt": "2026-09-11T19:22:22.041Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 108391,
+   "commitP95Ms": 79,
+   "commitMaxMs": 95,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 76,
+    "lastMs": 76,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    35,
+    54,
+    10
+   ],
+   "settleElapsedMs": 13340,
+   "settled": true,
+   "firstPollRoundTripMs": 252
+  },
+  {
+   "run": 34646312885,
+   "job": "first",
+   "startedAt": "2026-09-11T20:52:15.299Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 123777,
+   "commitP95Ms": 61,
+   "commitMaxMs": 85,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 78,
+    "lastMs": 78,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    20,
+    12
+   ],
+   "settleElapsedMs": 11616,
+   "settled": true,
+   "firstPollRoundTripMs": 329
+  },
+  {
+   "run": 34646312885,
+   "job": "retry",
+   "startedAt": "2026-09-11T20:59:43.164Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 86721,
+   "commitP95Ms": 36,
+   "commitMaxMs": 37,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 15,
+    "lastMs": 220,
+    "maxGapMs": 205
+   },
+   "crayonShadowMs": [
+    23,
+    28,
+    12
+   ],
+   "settleElapsedMs": 11229,
+   "settled": true,
+   "firstPollRoundTripMs": 39
+  },
+  {
+   "run": 34658257634,
+   "job": "first",
+   "startedAt": "2026-09-11T23:31:23.634Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 104964,
+   "commitP95Ms": 51,
+   "commitMaxMs": 53,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 45,
+    "lastMs": 289,
+    "maxGapMs": 244
+   },
+   "crayonShadowMs": [
+    41,
+    39,
+    14
+   ],
+   "settleElapsedMs": 11882,
+   "settled": true,
+   "firstPollRoundTripMs": 48
+  },
+  {
+   "run": 34658257634,
+   "job": "retry",
+   "startedAt": "2026-09-11T23:37:57.891Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 101200,
+   "commitP95Ms": 48,
+   "commitMaxMs": 82,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 59,
+    "lastMs": 320,
+    "maxGapMs": 261
+   },
+   "crayonShadowMs": [
+    38,
+    34,
+    15
+   ],
+   "settleElapsedMs": 11328,
+   "settled": true,
+   "firstPollRoundTripMs": 48
+  },
+  {
+   "run": 34667333603,
+   "job": "first",
+   "startedAt": "2026-09-12T02:21:04.043Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 117057,
+   "commitP95Ms": 67,
+   "commitMaxMs": 107,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 85,
+    "lastMs": 85,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    47,
+    33,
+    17
+   ],
+   "settleElapsedMs": 15771,
+   "settled": true,
+   "firstPollRoundTripMs": 548
+  },
+  {
+   "run": 34667333603,
+   "job": "retry",
+   "startedAt": "2026-09-12T02:28:01.891Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 63215,
+   "commitP95Ms": 30,
+   "commitMaxMs": 32,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 27,
+    "lastMs": 27,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    20,
+    10
+   ],
+   "settleElapsedMs": 8678,
+   "settled": true,
+   "firstPollRoundTripMs": 192
+  },
+  {
+   "run": 34669162334,
+   "job": "first",
+   "startedAt": "2026-09-12T03:01:05.862Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 54480,
+   "commitP95Ms": 26,
+   "commitMaxMs": 30,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 13,
+    "lastMs": 13,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    20,
+    15,
+    8
+   ],
+   "settleElapsedMs": 8265,
+   "settled": true,
+   "firstPollRoundTripMs": 123
+  },
+  {
+   "run": 34669162334,
+   "job": "retry",
+   "startedAt": "2026-09-12T03:05:39.440Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 91927,
+   "commitP95Ms": 41,
+   "commitMaxMs": 51,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 53,
+    "lastMs": 53,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    22,
+    11
+   ],
+   "settleElapsedMs": 10283,
+   "settled": true,
+   "firstPollRoundTripMs": 241
+  },
+  {
+   "run": 34669574970,
+   "job": "first",
+   "startedAt": "2026-09-12T03:13:26.927Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 139559,
+   "commitP95Ms": 56,
+   "commitMaxMs": 96,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 95,
+    "lastMs": 399,
+    "maxGapMs": 304
+   },
+   "crayonShadowMs": [
+    30,
+    20,
+    5
+   ],
+   "settleElapsedMs": 12818,
+   "settled": true,
+   "firstPollRoundTripMs": 48
+  },
+  {
+   "run": 34670002536,
+   "job": "first",
+   "startedAt": "2026-09-12T03:20:45.555Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64041,
+   "commitP95Ms": 26,
+   "commitMaxMs": 27,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 59,
+    "lastMs": 59,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    21,
+    32,
+    10
+   ],
+   "settleElapsedMs": 9685,
+   "settled": true,
+   "firstPollRoundTripMs": 137
+  },
+  {
+   "run": 34669574970,
+   "job": "retry",
+   "startedAt": "2026-09-12T03:25:41.970Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 49030,
+   "commitP95Ms": 22,
+   "commitMaxMs": 22,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 13,
+    "lastMs": 13,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    9,
+    19,
+    7
+   ],
+   "settleElapsedMs": 7205,
+   "settled": true,
+   "firstPollRoundTripMs": 118
+  },
+  {
+   "run": 34670002536,
+   "job": "retry",
+   "startedAt": "2026-09-12T03:29:23.057Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 116803,
+   "commitP95Ms": 55,
+   "commitMaxMs": 78,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 101,
+    "lastMs": 101,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    37,
+    10,
+    16
+   ],
+   "settleElapsedMs": 14248,
+   "settled": true,
+   "firstPollRoundTripMs": 407
+  },
+  {
+   "run": 34670963644,
+   "job": "first",
+   "startedAt": "2026-09-12T03:41:23.315Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 114729,
+   "commitP95Ms": 70,
+   "commitMaxMs": 109,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 53,
+    "lastMs": 53,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    37,
+    16
+   ],
+   "settleElapsedMs": 13464,
+   "settled": true,
+   "firstPollRoundTripMs": 384
+  },
+  {
+   "run": 34670963644,
+   "job": "retry",
+   "startedAt": "2026-09-12T03:48:07.768Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 65881,
+   "commitP95Ms": 32,
+   "commitMaxMs": 33,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 58,
+    "lastMs": 58,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    22,
+    19,
+    10
+   ],
+   "settleElapsedMs": 8873,
+   "settled": true,
+   "firstPollRoundTripMs": 133
+  },
+  {
+   "run": 34671286507,
+   "job": "first",
+   "startedAt": "2026-09-12T03:52:56.417Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 66133,
+   "commitP95Ms": 32,
+   "commitMaxMs": 41,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 72,
+    "lastMs": 72,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    21,
+    4
+   ],
+   "settleElapsedMs": 8582,
+   "settled": true,
+   "firstPollRoundTripMs": 199
+  },
+  {
+   "run": 34671286507,
+   "job": "retry",
+   "startedAt": "2026-09-12T03:57:53.536Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 94054,
+   "commitP95Ms": 63,
+   "commitMaxMs": 73,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 77,
+    "lastMs": 77,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    30,
+    51,
+    26
+   ],
+   "settleElapsedMs": 18585,
+   "settled": true,
+   "firstPollRoundTripMs": 283
+  },
+  {
+   "run": 34672399330,
+   "job": "first",
+   "startedAt": "2026-09-12T04:14:01.671Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 93364,
+   "commitP95Ms": 45,
+   "commitMaxMs": 48,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 56,
+    "lastMs": 56,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    23,
+    13
+   ],
+   "settleElapsedMs": 10868,
+   "settled": true,
+   "firstPollRoundTripMs": 246
+  },
+  {
+   "run": 34672399330,
+   "job": "retry",
+   "startedAt": "2026-09-12T04:20:31.443Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 118995,
+   "commitP95Ms": 51,
+   "commitMaxMs": 93,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 48,
+    "lastMs": 48,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    16,
+    41,
+    15
+   ],
+   "settleElapsedMs": 14775,
+   "settled": true,
+   "firstPollRoundTripMs": 271
+  },
+  {
+   "run": 34672924880,
+   "job": "first",
+   "startedAt": "2026-09-12T04:27:32.968Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 102807,
+   "commitP95Ms": 58,
+   "commitMaxMs": 61,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 35,
+    "lastMs": 35,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    18,
+    24,
+    12
+   ],
+   "settleElapsedMs": 10385,
+   "settled": true,
+   "firstPollRoundTripMs": 169
+  },
+  {
+   "run": 34672924880,
+   "job": "retry",
+   "startedAt": "2026-09-12T04:34:36.463Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 137313,
+   "commitP95Ms": 62,
+   "commitMaxMs": 75,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 132,
+    "lastMs": 132,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    70,
+    38,
+    21
+   ],
+   "settleElapsedMs": 19138,
+   "settled": true,
+   "firstPollRoundTripMs": 568
+  },
+  {
+   "run": 34673468367,
+   "job": "first",
+   "startedAt": "2026-09-12T04:42:42.844Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 119093,
+   "commitP95Ms": 56,
+   "commitMaxMs": 73,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 73,
+    "lastMs": 73,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    45,
+    12
+   ],
+   "settleElapsedMs": 12722,
+   "settled": true,
+   "firstPollRoundTripMs": 365
+  },
+  {
+   "run": 34673468367,
+   "job": "retry",
+   "startedAt": "2026-09-12T04:49:23.677Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 78961,
+   "commitP95Ms": 37,
+   "commitMaxMs": 41,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 87,
+    "lastMs": 87,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    29,
+    28,
+    9
+   ],
+   "settleElapsedMs": 10551,
+   "settled": true,
+   "firstPollRoundTripMs": 184
+  },
+  {
+   "run": 34674733720,
+   "job": "first",
+   "startedAt": "2026-09-12T05:07:52.764Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 56218,
+   "commitP95Ms": 26,
+   "commitMaxMs": 27,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 53,
+    "lastMs": 53,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    24,
+    8
+   ],
+   "settleElapsedMs": 8136,
+   "settled": true,
+   "firstPollRoundTripMs": 178
+  },
+  {
+   "run": 34674733720,
+   "job": "retry",
+   "startedAt": "2026-09-12T05:13:53.439Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 105384,
+   "commitP95Ms": 61,
+   "commitMaxMs": 88,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 70,
+    "lastMs": 305,
+    "maxGapMs": 235
+   },
+   "crayonShadowMs": [
+    30,
+    21,
+    10
+   ],
+   "settleElapsedMs": 11918,
+   "settled": true,
+   "firstPollRoundTripMs": 43
+  },
+  {
+   "run": 34683026047,
+   "job": "first",
+   "startedAt": "2026-09-12T08:22:20.112Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 99989,
+   "commitP95Ms": 47,
+   "commitMaxMs": 56,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 60,
+    "lastMs": 60,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    51,
+    35,
+    13
+   ],
+   "settleElapsedMs": 13983,
+   "settled": true,
+   "firstPollRoundTripMs": 355
+  },
+  {
+   "run": 34683026047,
+   "job": "retry",
+   "startedAt": "2026-09-12T08:29:08.486Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 80398,
+   "commitP95Ms": 35,
+   "commitMaxMs": 54,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 40,
+    "lastMs": 40,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    27,
+    16
+   ],
+   "settleElapsedMs": 12764,
+   "settled": true,
+   "firstPollRoundTripMs": 167
+  },
+  {
+   "run": 34683611790,
+   "job": "first",
+   "startedAt": "2026-09-12T08:35:40.042Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 65628,
+   "commitP95Ms": 27,
+   "commitMaxMs": 27,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 63,
+    "lastMs": 63,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    33,
+    19,
+    8
+   ],
+   "settleElapsedMs": 8997,
+   "settled": true,
+   "firstPollRoundTripMs": 162
+  },
+  {
+   "run": 34683611790,
+   "job": "retry",
+   "startedAt": "2026-09-12T08:40:41.588Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64595,
+   "commitP95Ms": 31,
+   "commitMaxMs": 35,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 61,
+    "lastMs": 61,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    8,
+    7
+   ],
+   "settleElapsedMs": 9266,
+   "settled": true,
+   "firstPollRoundTripMs": 175
+  },
+  {
+   "run": 34684421445,
+   "job": "first",
+   "startedAt": "2026-09-12T08:54:38.754Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 71543,
+   "commitP95Ms": 28,
+   "commitMaxMs": 49,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 77,
+    "lastMs": 77,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    34,
+    18,
+    20
+   ],
+   "settleElapsedMs": 10057,
+   "settled": true,
+   "firstPollRoundTripMs": 191
+  },
+  {
+   "run": 34684421445,
+   "job": "retry",
+   "startedAt": "2026-09-12T08:59:59.651Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 88343,
+   "commitP95Ms": 53,
+   "commitMaxMs": 54,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 52,
+    "lastMs": 52,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    22,
+    38,
+    28
+   ],
+   "settleElapsedMs": 14913,
+   "settled": true,
+   "firstPollRoundTripMs": 224
+  },
+  {
+   "run": 34684989947,
+   "job": "first",
+   "startedAt": "2026-09-12T09:08:05.144Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64099,
+   "commitP95Ms": 34,
+   "commitMaxMs": 45,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 50,
+    "lastMs": 50,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    21,
+    4
+   ],
+   "settleElapsedMs": 8885,
+   "settled": true,
+   "firstPollRoundTripMs": 151
+  },
+  {
+   "run": 34685116023,
+   "job": "first",
+   "startedAt": "2026-09-12T09:13:02.083Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 82613,
+   "commitP95Ms": 36,
+   "commitMaxMs": 40,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 20,
+    "lastMs": 20,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    18,
+    24,
+    6
+   ],
+   "settleElapsedMs": 10989,
+   "settled": true,
+   "firstPollRoundTripMs": 195
+  },
+  {
+   "run": 34684989947,
+   "job": "retry",
+   "startedAt": "2026-09-12T09:18:36.429Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 85956,
+   "commitP95Ms": 44,
+   "commitMaxMs": 80,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 52,
+    "lastMs": 277,
+    "maxGapMs": 225
+   },
+   "crayonShadowMs": [
+    25,
+    26,
+    10
+   ],
+   "settleElapsedMs": 9591,
+   "settled": true,
+   "firstPollRoundTripMs": 56
+  },
+  {
+   "run": 34685116023,
+   "job": "retry",
+   "startedAt": "2026-09-12T09:23:55.692Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 127085,
+   "commitP95Ms": 49,
+   "commitMaxMs": 81,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 80,
+    "lastMs": 80,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    27,
+    15
+   ],
+   "settleElapsedMs": 12566,
+   "settled": true,
+   "firstPollRoundTripMs": 314
+  },
+  {
+   "run": 34685863464,
+   "job": "first",
+   "startedAt": "2026-09-12T09:31:27.720Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 130795,
+   "commitP95Ms": 68,
+   "commitMaxMs": 82,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 60,
+    "lastMs": 60,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    36,
+    12
+   ],
+   "settleElapsedMs": 14904,
+   "settled": true,
+   "firstPollRoundTripMs": 330
+  },
+  {
+   "run": 34685863464,
+   "job": "retry",
+   "startedAt": "2026-09-12T09:38:56.998Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 76768,
+   "commitP95Ms": 35,
+   "commitMaxMs": 42,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 60,
+    "lastMs": 60,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    13,
+    10
+   ],
+   "settleElapsedMs": 9634,
+   "settled": true,
+   "firstPollRoundTripMs": 179
+  },
+  {
+   "run": 34688864013,
+   "job": "first",
+   "startedAt": "2026-09-12T10:37:24.344Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 106568,
+   "commitP95Ms": 57,
+   "commitMaxMs": 61,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 79,
+    "lastMs": 79,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    42,
+    17,
+    2
+   ],
+   "settleElapsedMs": 12536,
+   "settled": true,
+   "firstPollRoundTripMs": 306
+  },
+  {
+   "run": 34688864013,
+   "job": "retry",
+   "startedAt": "2026-09-12T10:43:53.798Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 56555,
+   "commitP95Ms": 32,
+   "commitMaxMs": 34,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 40,
+    "lastMs": 40,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    18,
+    22,
+    3
+   ],
+   "settleElapsedMs": 7954,
+   "settled": true,
+   "firstPollRoundTripMs": 107
+  },
+  {
+   "run": 34689845755,
+   "job": "first",
+   "startedAt": "2026-09-12T11:00:24.377Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 72767,
+   "commitP95Ms": 35,
+   "commitMaxMs": 37,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 35,
+    "lastMs": 35,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    18,
+    9
+   ],
+   "settleElapsedMs": 9351,
+   "settled": true,
+   "firstPollRoundTripMs": 115
+  },
+  {
+   "run": 34689847582,
+   "job": "first",
+   "startedAt": "2026-09-12T11:06:34.216Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 107081,
+   "commitP95Ms": 50,
+   "commitMaxMs": 56,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 75,
+    "lastMs": 75,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    32,
+    12,
+    12
+   ],
+   "settleElapsedMs": 11004,
+   "settled": true,
+   "firstPollRoundTripMs": 226
+  },
+  {
+   "run": 34689850300,
+   "job": "first",
+   "startedAt": "2026-09-12T11:12:42.909Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 69574,
+   "commitP95Ms": 29,
+   "commitMaxMs": 30,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 24,
+    "lastMs": 24,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    30,
+    15
+   ],
+   "settleElapsedMs": 12141,
+   "settled": true,
+   "firstPollRoundTripMs": 185
+  },
+  {
+   "run": 34689845755,
+   "job": "retry",
+   "startedAt": "2026-09-12T11:19:41.543Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 98202,
+   "commitP95Ms": 55,
+   "commitMaxMs": 70,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 87,
+    "lastMs": 87,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    34,
+    9,
+    35
+   ],
+   "settleElapsedMs": 20120,
+   "settled": true,
+   "firstPollRoundTripMs": 334
+  },
+  {
+   "run": 34690332648,
+   "job": "first",
+   "startedAt": "2026-09-12T11:26:39.990Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 91150,
+   "commitP95Ms": 52,
+   "commitMaxMs": 54,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 68,
+    "lastMs": 68,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    9,
+    15
+   ],
+   "settleElapsedMs": 10663,
+   "settled": true,
+   "firstPollRoundTripMs": 189
+  },
+  {
+   "run": 34689847582,
+   "job": "retry",
+   "startedAt": "2026-09-12T11:32:35.100Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 74032,
+   "commitP95Ms": 58,
+   "commitMaxMs": 73,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 57,
+    "lastMs": 276,
+    "maxGapMs": 219
+   },
+   "crayonShadowMs": [
+    42,
+    8,
+    9
+   ],
+   "settleElapsedMs": 8624,
+   "settled": true,
+   "firstPollRoundTripMs": 50
+  },
+  {
+   "run": 34689850300,
+   "job": "retry",
+   "startedAt": "2026-09-12T11:38:11.379Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 86145,
+   "commitP95Ms": 49,
+   "commitMaxMs": 51,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 85,
+    "lastMs": 85,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    39,
+    41,
+    12
+   ],
+   "settleElapsedMs": 10845,
+   "settled": true,
+   "firstPollRoundTripMs": 217
+  },
+  {
+   "run": 34690332648,
+   "job": "retry",
+   "startedAt": "2026-09-12T11:44:39.136Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 79206,
+   "commitP95Ms": 38,
+   "commitMaxMs": 41,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 65,
+    "lastMs": 65,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    22,
+    41,
+    8
+   ],
+   "settleElapsedMs": 10056,
+   "settled": true,
+   "firstPollRoundTripMs": 162
+  },
+  {
+   "run": 34692711384,
+   "job": "first",
+   "startedAt": "2026-09-12T12:06:51.670Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 128764,
+   "commitP95Ms": 55,
+   "commitMaxMs": 56,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 76,
+    "lastMs": 76,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    26,
+    30,
+    15
+   ],
+   "settleElapsedMs": 13780,
+   "settled": true,
+   "firstPollRoundTripMs": 285
+  },
+  {
+   "run": 34697768907,
+   "job": "first",
+   "startedAt": "2026-09-12T13:56:48.423Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64468,
+   "commitP95Ms": 32,
+   "commitMaxMs": 35,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 50,
+    "lastMs": 50,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    10,
+    7
+   ],
+   "settleElapsedMs": 8296,
+   "settled": true,
+   "firstPollRoundTripMs": 143
+  },
+  {
+   "run": 34704814052,
+   "job": "first",
+   "startedAt": "2026-09-12T16:19:26.724Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 55853,
+   "commitP95Ms": 24,
+   "commitMaxMs": 29,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 25,
+    "lastMs": 25,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    19,
+    2
+   ],
+   "settleElapsedMs": 8057,
+   "settled": true,
+   "firstPollRoundTripMs": 220
+  },
+  {
+   "run": 34706155965,
+   "job": "first",
+   "startedAt": "2026-09-12T16:45:45.072Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64407,
+   "commitP95Ms": 35,
+   "commitMaxMs": 38,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 63,
+    "lastMs": 63,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    22,
+    16,
+    7
+   ],
+   "settleElapsedMs": 8374,
+   "settled": true,
+   "firstPollRoundTripMs": 149
+  },
+  {
+   "run": 34706781684,
+   "job": "first",
+   "startedAt": "2026-09-12T16:59:06.008Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 96130,
+   "commitP95Ms": 54,
+   "commitMaxMs": 61,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 84,
+    "lastMs": 84,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    32,
+    21,
+    10
+   ],
+   "settleElapsedMs": 9516,
+   "settled": true,
+   "firstPollRoundTripMs": 380
+  },
+  {
+   "run": 34707127023,
+   "job": "first",
+   "startedAt": "2026-09-12T17:06:02.772Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 101480,
+   "commitP95Ms": 48,
+   "commitMaxMs": 48,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 66,
+    "lastMs": 66,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    48,
+    16,
+    8
+   ],
+   "settleElapsedMs": 12324,
+   "settled": true,
+   "firstPollRoundTripMs": 314
+  },
+  {
+   "run": 34707861718,
+   "job": "first",
+   "startedAt": "2026-09-12T17:20:08.518Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64251,
+   "commitP95Ms": 27,
+   "commitMaxMs": 31,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 33,
+    "lastMs": 33,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    16,
+    21,
+    3
+   ],
+   "settleElapsedMs": 8702,
+   "settled": true,
+   "firstPollRoundTripMs": 177
+  },
+  {
+   "run": 34708412132,
+   "job": "first",
+   "startedAt": "2026-09-12T17:31:20.615Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 86703,
+   "commitP95Ms": 38,
+   "commitMaxMs": 49,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 49,
+    "lastMs": 49,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    16,
+    10,
+    32
+   ],
+   "settleElapsedMs": 18775,
+   "settled": true,
+   "firstPollRoundTripMs": 184
+  },
+  {
+   "run": 34709279671,
+   "job": "first",
+   "startedAt": "2026-09-12T17:48:49.770Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64437,
+   "commitP95Ms": 32,
+   "commitMaxMs": 48,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 56,
+    "lastMs": 56,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    19,
+    8
+   ],
+   "settleElapsedMs": 9523,
+   "settled": true,
+   "firstPollRoundTripMs": 148
+  },
+  {
+   "run": 34711783565,
+   "job": "first",
+   "startedAt": "2026-09-12T18:40:06.399Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 139258,
+   "commitP95Ms": 71,
+   "commitMaxMs": 71,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 126,
+    "lastMs": 126,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    26,
+    23,
+    20
+   ],
+   "settleElapsedMs": 17910,
+   "settled": true,
+   "firstPollRoundTripMs": 723
+  },
+  {
+   "run": 34712266315,
+   "job": "first",
+   "startedAt": "2026-09-12T18:48:50.043Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64776,
+   "commitP95Ms": 32,
+   "commitMaxMs": 40,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 20,
+    "lastMs": 20,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    18,
+    21,
+    9
+   ],
+   "settleElapsedMs": 8746,
+   "settled": true,
+   "firstPollRoundTripMs": 139
+  },
+  {
+   "run": 34713433376,
+   "job": "first",
+   "startedAt": "2026-09-12T19:12:35.693Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 63368,
+   "commitP95Ms": 36,
+   "commitMaxMs": 41,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 21,
+    "lastMs": 21,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    29,
+    22,
+    6
+   ],
+   "settleElapsedMs": 8878,
+   "settled": true,
+   "firstPollRoundTripMs": 150
+  },
+  {
+   "run": 34714693499,
+   "job": "first",
+   "startedAt": "2026-09-12T19:38:21.202Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 65258,
+   "commitP95Ms": 32,
+   "commitMaxMs": 42,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 53,
+    "lastMs": 53,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    23,
+    8
+   ],
+   "settleElapsedMs": 8936,
+   "settled": true,
+   "firstPollRoundTripMs": 159
+  },
+  {
+   "run": 34715522132,
+   "job": "first",
+   "startedAt": "2026-09-12T19:55:53.290Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 67836,
+   "commitP95Ms": 30,
+   "commitMaxMs": 31,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 82,
+    "lastMs": 82,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    26,
+    4,
+    7
+   ],
+   "settleElapsedMs": 8351,
+   "settled": true,
+   "firstPollRoundTripMs": 187
+  },
+  {
+   "run": 34732142538,
+   "job": "first",
+   "startedAt": "2026-09-13T02:06:18.085Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 66102,
+   "commitP95Ms": 28,
+   "commitMaxMs": 34,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 56,
+    "lastMs": 56,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    24,
+    12
+   ],
+   "settleElapsedMs": 9685,
+   "settled": true,
+   "firstPollRoundTripMs": 181
+  },
+  {
+   "run": 34732621052,
+   "job": "first",
+   "startedAt": "2026-09-13T02:17:13.067Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 88638,
+   "commitP95Ms": 53,
+   "commitMaxMs": 77,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 87,
+    "lastMs": 87,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    26,
+    29,
+    14
+   ],
+   "settleElapsedMs": 14339,
+   "settled": true,
+   "firstPollRoundTripMs": 304
+  },
+  {
+   "run": 34733615348,
+   "job": "first",
+   "startedAt": "2026-09-13T02:41:31.205Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 62943,
+   "commitP95Ms": 25,
+   "commitMaxMs": 26,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 55,
+    "lastMs": 55,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    17,
+    2
+   ],
+   "settleElapsedMs": 8852,
+   "settled": true,
+   "firstPollRoundTripMs": 138
+  },
+  {
+   "run": 34755869999,
+   "job": "first",
+   "startedAt": "2026-09-13T12:01:09.582Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 93687,
+   "commitP95Ms": 46,
+   "commitMaxMs": 88,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 83,
+    "lastMs": 83,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    57,
+    18,
+    14
+   ],
+   "settleElapsedMs": 13001,
+   "settled": true,
+   "firstPollRoundTripMs": 465
+  },
+  {
+   "run": 34758291112,
+   "job": "first",
+   "startedAt": "2026-09-13T12:55:17.581Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 106226,
+   "commitP95Ms": 63,
+   "commitMaxMs": 93,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 51,
+    "lastMs": 310,
+    "maxGapMs": 259
+   },
+   "crayonShadowMs": [
+    27,
+    14,
+    12
+   ],
+   "settleElapsedMs": 11354,
+   "settled": true,
+   "firstPollRoundTripMs": 53
+  },
+  {
+   "run": 34759262836,
+   "job": "first",
+   "startedAt": "2026-09-13T13:15:41.901Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 109941,
+   "commitP95Ms": 62,
+   "commitMaxMs": 78,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 79,
+    "lastMs": 79,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    37,
+    32,
+    17
+   ],
+   "settleElapsedMs": 14062,
+   "settled": true,
+   "firstPollRoundTripMs": 416
+  },
+  {
+   "run": 34761333755,
+   "job": "first",
+   "startedAt": "2026-09-13T14:00:12.969Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 83411,
+   "commitP95Ms": 41,
+   "commitMaxMs": 66,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 68,
+    "lastMs": 68,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    32,
+    32,
+    16
+   ],
+   "settleElapsedMs": 11889,
+   "settled": true,
+   "firstPollRoundTripMs": 233
+  },
+  {
+   "run": 34769641555,
+   "job": "first",
+   "startedAt": "2026-09-13T16:48:45.698Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 69030,
+   "commitP95Ms": 35,
+   "commitMaxMs": 50,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 51,
+    "lastMs": 51,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    13,
+    18,
+    2
+   ],
+   "settleElapsedMs": 8699,
+   "settled": true,
+   "firstPollRoundTripMs": 154
+  },
+  {
+   "run": 34769756147,
+   "job": "first",
+   "startedAt": "2026-09-13T16:54:48.446Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 92200,
+   "commitP95Ms": 39,
+   "commitMaxMs": 42,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 69,
+    "lastMs": 69,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    21,
+    11
+   ],
+   "settleElapsedMs": 9787,
+   "settled": true,
+   "firstPollRoundTripMs": 160
+  },
+  {
+   "run": 34779111308,
+   "job": "first",
+   "startedAt": "2026-09-13T19:55:56.262Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 77014,
+   "commitP95Ms": 34,
+   "commitMaxMs": 45,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 77,
+    "lastMs": 77,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    20,
+    33,
+    11
+   ],
+   "settleElapsedMs": 14734,
+   "settled": true,
+   "firstPollRoundTripMs": 240
+  },
+  {
+   "run": 34779259807,
+   "job": "first",
+   "startedAt": "2026-09-13T20:02:04.320Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 102562,
+   "commitP95Ms": 54,
+   "commitMaxMs": 57,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 83,
+    "lastMs": 83,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    34,
+    113,
+    4
+   ],
+   "settleElapsedMs": 18494,
+   "settled": true,
+   "firstPollRoundTripMs": 441
+  },
+  {
+   "run": 34781964269,
+   "job": "first",
+   "startedAt": "2026-09-13T20:50:58.231Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 72839,
+   "commitP95Ms": 32,
+   "commitMaxMs": 35,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 43,
+    "lastMs": 43,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    20,
+    3
+   ],
+   "settleElapsedMs": 9527,
+   "settled": true,
+   "firstPollRoundTripMs": 178
+  },
+  {
+   "run": 34784350990,
+   "job": "first",
+   "startedAt": "2026-09-13T21:38:42.778Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 103381,
+   "commitP95Ms": 53,
+   "commitMaxMs": 59,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 66,
+    "lastMs": 66,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    32,
+    29
+   ],
+   "settleElapsedMs": 13415,
+   "settled": true,
+   "firstPollRoundTripMs": 247
+  },
+  {
+   "run": 34786139806,
+   "job": "first",
+   "startedAt": "2026-09-13T22:14:52.704Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 74872,
+   "commitP95Ms": 34,
+   "commitMaxMs": 44,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 26,
+    "lastMs": 26,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    26,
+    16,
+    8
+   ],
+   "settleElapsedMs": 9242,
+   "settled": true,
+   "firstPollRoundTripMs": 159
+  },
+  {
+   "run": 34786624576,
+   "job": "first",
+   "startedAt": "2026-09-13T22:24:16.565Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 69835,
+   "commitP95Ms": 33,
+   "commitMaxMs": 35,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 19,
+    "lastMs": 19,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    19,
+    17,
+    10
+   ],
+   "settleElapsedMs": 10135,
+   "settled": true,
+   "firstPollRoundTripMs": 146
+  },
+  {
+   "run": 34788481001,
+   "job": "first",
+   "startedAt": "2026-09-13T23:03:15.987Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 92665,
+   "commitP95Ms": 38,
+   "commitMaxMs": 43,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 57,
+    "lastMs": 57,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    48,
+    42,
+    12
+   ],
+   "settleElapsedMs": 9780,
+   "settled": true,
+   "firstPollRoundTripMs": 188
+  },
+  {
+   "run": 34788560004,
+   "job": "first",
+   "startedAt": "2026-09-13T23:08:49.775Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 79862,
+   "commitP95Ms": 37,
+   "commitMaxMs": 54,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 88,
+    "lastMs": 88,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    39,
+    57,
+    8
+   ],
+   "settleElapsedMs": 14598,
+   "settled": true,
+   "firstPollRoundTripMs": 254
+  },
+  {
+   "run": 34793072189,
+   "job": "first",
+   "startedAt": "2026-09-14T00:35:26.089Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 104962,
+   "commitP95Ms": 46,
+   "commitMaxMs": 69,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 67,
+    "lastMs": 67,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    34,
+    24,
+    3
+   ],
+   "settleElapsedMs": 10419,
+   "settled": true,
+   "firstPollRoundTripMs": 293
+  },
+  {
+   "run": 34795996197,
+   "job": "first",
+   "startedAt": "2026-09-14T01:29:03.870Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 62189,
+   "commitP95Ms": 26,
+   "commitMaxMs": 26,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 45,
+    "lastMs": 45,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    36,
+    18,
+    3
+   ],
+   "settleElapsedMs": 8672,
+   "settled": true,
+   "firstPollRoundTripMs": 165
+  },
+  {
+   "run": 34838721329,
+   "job": "first",
+   "startedAt": "2026-09-14T11:33:47.207Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 65255,
+   "commitP95Ms": 26,
+   "commitMaxMs": 33,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 71,
+    "lastMs": 71,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    22,
+    9
+   ],
+   "settleElapsedMs": 8668,
+   "settled": true,
+   "firstPollRoundTripMs": 133
+  },
+  {
+   "run": 34841359592,
+   "job": "first",
+   "startedAt": "2026-09-14T12:04:57.634Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 111118,
+   "commitP95Ms": 52,
+   "commitMaxMs": 69,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 82,
+    "lastMs": 82,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    63,
+    19
+   ],
+   "settleElapsedMs": 23366,
+   "settled": true,
+   "firstPollRoundTripMs": 452
+  },
+  {
+   "run": 34844454856,
+   "job": "first",
+   "startedAt": "2026-09-14T12:38:49.024Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 57463,
+   "commitP95Ms": 3890,
+   "commitMaxMs": 4076,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 8,
+    "lastMs": 8,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    0,
+    0
+   ],
+   "settleElapsedMs": 7030,
+   "settled": true,
+   "firstPollRoundTripMs": 3
+  },
+  {
+   "run": 34846381759,
+   "job": "first",
+   "startedAt": "2026-09-14T12:59:49.822Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 117383,
+   "commitP95Ms": 46,
+   "commitMaxMs": 51,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 73,
+    "lastMs": 73,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    40,
+    13
+   ],
+   "settleElapsedMs": 13147,
+   "settled": true,
+   "firstPollRoundTripMs": 442
+  },
+  {
+   "run": 34852008452,
+   "job": "first",
+   "startedAt": "2026-09-14T13:54:23.422Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 120200,
+   "commitP95Ms": 50,
+   "commitMaxMs": 74,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 89,
+    "lastMs": 89,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    28,
+    28,
+    5
+   ],
+   "settleElapsedMs": 11434,
+   "settled": true,
+   "firstPollRoundTripMs": 248
+  },
+  {
+   "run": 34866016472,
+   "job": "first",
+   "startedAt": "2026-09-14T16:03:45.358Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 125065,
+   "commitP95Ms": 47,
+   "commitMaxMs": 49,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 48,
+    "lastMs": 383,
+    "maxGapMs": 335
+   },
+   "crayonShadowMs": [
+    18,
+    49,
+    16
+   ],
+   "settleElapsedMs": 11987,
+   "settled": true,
+   "firstPollRoundTripMs": 28
+  },
+  {
+   "run": 34867197062,
+   "job": "first",
+   "startedAt": "2026-09-14T16:14:35.698Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 123231,
+   "commitP95Ms": 72,
+   "commitMaxMs": 87,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 65,
+    "lastMs": 392,
+    "maxGapMs": 327
+   },
+   "crayonShadowMs": [
+    20,
+    26,
+    12
+   ],
+   "settleElapsedMs": 13636,
+   "settled": true,
+   "firstPollRoundTripMs": 26
+  },
+  {
+   "run": 34873485427,
+   "job": "first",
+   "startedAt": "2026-09-14T17:16:02.425Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 123040,
+   "commitP95Ms": 114,
+   "commitMaxMs": 173,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 65,
+    "lastMs": 65,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    29,
+    28,
+    19
+   ],
+   "settleElapsedMs": 13963,
+   "settled": true,
+   "firstPollRoundTripMs": 292
+  },
+  {
+   "run": 34873569384,
+   "job": "first",
+   "startedAt": "2026-09-14T17:23:28.177Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 99811,
+   "commitP95Ms": 44,
+   "commitMaxMs": 48,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 57,
+    "lastMs": 343,
+    "maxGapMs": 286
+   },
+   "crayonShadowMs": [
+    25,
+    20,
+    10
+   ],
+   "settleElapsedMs": 10765,
+   "settled": true,
+   "firstPollRoundTripMs": 39
+  },
+  {
+   "run": 34873835730,
+   "job": "first",
+   "startedAt": "2026-09-14T17:29:46.563Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 107032,
+   "commitP95Ms": 75,
+   "commitMaxMs": 79,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 78,
+    "lastMs": 78,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    19,
+    16,
+    16
+   ],
+   "settleElapsedMs": 11405,
+   "settled": true,
+   "firstPollRoundTripMs": 278
+  },
+  {
+   "run": 34873894715,
+   "job": "first",
+   "startedAt": "2026-09-14T17:36:00.950Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 88344,
+   "commitP95Ms": 48,
+   "commitMaxMs": 89,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 80,
+    "lastMs": 80,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    26,
+    17
+   ],
+   "settleElapsedMs": 12879,
+   "settled": true,
+   "firstPollRoundTripMs": 368
+  },
+  {
+   "run": 34874915205,
+   "job": "first",
+   "startedAt": "2026-09-14T17:41:59.674Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 63314,
+   "commitP95Ms": 31,
+   "commitMaxMs": 35,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 23,
+    "lastMs": 170,
+    "maxGapMs": 147
+   },
+   "crayonShadowMs": [
+    22,
+    26,
+    9
+   ],
+   "settleElapsedMs": 8882,
+   "settled": true,
+   "firstPollRoundTripMs": 21
+  },
+  {
+   "run": 34877138973,
+   "job": "first",
+   "startedAt": "2026-09-14T17:52:05.561Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 125892,
+   "commitP95Ms": 57,
+   "commitMaxMs": 60,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 64,
+    "lastMs": 64,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    51,
+    46,
+    19
+   ],
+   "settleElapsedMs": 15740,
+   "settled": true,
+   "firstPollRoundTripMs": 431
+  },
+  {
+   "run": 34878916104,
+   "job": "first",
+   "startedAt": "2026-09-14T18:09:31.538Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 102593,
+   "commitP95Ms": 51,
+   "commitMaxMs": 52,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 51,
+    "lastMs": 51,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    7,
+    8
+   ],
+   "settleElapsedMs": 12256,
+   "settled": true,
+   "firstPollRoundTripMs": 249
+  },
+  {
+   "run": 34879013498,
+   "job": "first",
+   "startedAt": "2026-09-14T18:16:38.420Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 100512,
+   "commitP95Ms": 51,
+   "commitMaxMs": 54,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 76,
+    "lastMs": 76,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    32,
+    39,
+    13
+   ],
+   "settleElapsedMs": 12454,
+   "settled": true,
+   "firstPollRoundTripMs": 222
+  },
+  {
+   "run": 34879682395,
+   "job": "first",
+   "startedAt": "2026-09-14T18:23:48.461Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 120429,
+   "commitP95Ms": 47,
+   "commitMaxMs": 49,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 29,
+    "lastMs": 390,
+    "maxGapMs": 361
+   },
+   "crayonShadowMs": [
+    29,
+    29,
+    12
+   ],
+   "settleElapsedMs": 12747,
+   "settled": true,
+   "firstPollRoundTripMs": 38
+  },
+  {
+   "run": 34880539077,
+   "job": "first",
+   "startedAt": "2026-09-14T18:30:53.906Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 71815,
+   "commitP95Ms": 30,
+   "commitMaxMs": 32,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 29,
+    "lastMs": 29,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    15,
+    22,
+    11
+   ],
+   "settleElapsedMs": 9509,
+   "settled": true,
+   "firstPollRoundTripMs": 183
+  },
+  {
+   "run": 34880694335,
+   "job": "first",
+   "startedAt": "2026-09-14T18:36:21.053Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 119339,
+   "commitP95Ms": 58,
+   "commitMaxMs": 107,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 99,
+    "lastMs": 99,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    50,
+    38,
+    7
+   ],
+   "settleElapsedMs": 13367,
+   "settled": true,
+   "firstPollRoundTripMs": 338
+  },
+  {
+   "run": 34881829230,
+   "job": "first",
+   "startedAt": "2026-09-14T18:43:48.348Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 112111,
+   "commitP95Ms": 43,
+   "commitMaxMs": 53,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 84,
+    "lastMs": 84,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    34,
+    16
+   ],
+   "settleElapsedMs": 13632,
+   "settled": true,
+   "firstPollRoundTripMs": 313
+  },
+  {
+   "run": 34891084589,
+   "job": "first",
+   "startedAt": "2026-09-14T20:10:00.880Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 105316,
+   "commitP95Ms": 62,
+   "commitMaxMs": 102,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 70,
+    "lastMs": 70,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    30,
+    48,
+    15
+   ],
+   "settleElapsedMs": 11794,
+   "settled": true,
+   "firstPollRoundTripMs": 11
+  },
+  {
+   "run": 34905447021,
+   "job": "first",
+   "startedAt": "2026-09-14T22:44:06.623Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 118464,
+   "commitP95Ms": 48,
+   "commitMaxMs": 48,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 82,
+    "lastMs": 82,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    35,
+    38,
+    13
+   ],
+   "settleElapsedMs": 13801,
+   "settled": true,
+   "firstPollRoundTripMs": 266
+  },
+  {
+   "run": 34905656464,
+   "job": "first",
+   "startedAt": "2026-09-14T22:51:44.925Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 163644,
+   "commitP95Ms": 94,
+   "commitMaxMs": 179,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 55,
+    "lastMs": 55,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    34,
+    17,
+    14
+   ],
+   "settleElapsedMs": 16902,
+   "settled": true,
+   "firstPollRoundTripMs": 406
+  },
+  {
+   "run": 34909007158,
+   "job": "first",
+   "startedAt": "2026-09-14T23:29:36.736Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64049,
+   "commitP95Ms": 28,
+   "commitMaxMs": 29,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 28,
+    "lastMs": 28,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    17,
+    6
+   ],
+   "settleElapsedMs": 8310,
+   "settled": true,
+   "firstPollRoundTripMs": 165
+  },
+  {
+   "run": 34909323211,
+   "job": "first",
+   "startedAt": "2026-09-14T23:34:25.554Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 114178,
+   "commitP95Ms": 68,
+   "commitMaxMs": 69,
+   "firstPollFrames": {
+    "count": 3,
+    "firstMs": 68,
+    "lastMs": 460,
+    "maxGapMs": 360
+   },
+   "crayonShadowMs": [
+    24,
+    30,
+    12
+   ],
+   "settleElapsedMs": 12166,
+   "settled": true,
+   "firstPollRoundTripMs": 13
+  },
+  {
+   "run": 34910244254,
+   "job": "first",
+   "startedAt": "2026-09-14T23:46:11.483Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 60856,
+   "commitP95Ms": 31,
+   "commitMaxMs": 34,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 27,
+    "lastMs": 27,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    24,
+    6
+   ],
+   "settleElapsedMs": 7788,
+   "settled": true,
+   "firstPollRoundTripMs": 100
+  },
+  {
+   "run": 34910735614,
+   "job": "first",
+   "startedAt": "2026-09-14T23:53:01.141Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 113953,
+   "commitP95Ms": 56,
+   "commitMaxMs": 57,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 85,
+    "lastMs": 85,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    31,
+    2
+   ],
+   "settleElapsedMs": 13693,
+   "settled": true,
+   "firstPollRoundTripMs": 368
+  },
+  {
+   "run": 34912086987,
+   "job": "first",
+   "startedAt": "2026-09-15T00:11:58.548Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 89516,
+   "commitP95Ms": 49,
+   "commitMaxMs": 53,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 60,
+    "lastMs": 60,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    19,
+    13,
+    45
+   ],
+   "settleElapsedMs": 16783,
+   "settled": true,
+   "firstPollRoundTripMs": 305
+  },
+  {
+   "run": 34912543317,
+   "job": "first",
+   "startedAt": "2026-09-15T00:18:17.732Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 121667,
+   "commitP95Ms": 49,
+   "commitMaxMs": 50,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 39,
+    "lastMs": 39,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    16,
+    24,
+    18
+   ],
+   "settleElapsedMs": 12180,
+   "settled": true,
+   "firstPollRoundTripMs": 186
+  },
+  {
+   "run": 34913217725,
+   "job": "first",
+   "startedAt": "2026-09-15T00:29:16.399Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 111195,
+   "commitP95Ms": 54,
+   "commitMaxMs": 84,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 75,
+    "lastMs": 75,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    17,
+    8
+   ],
+   "settleElapsedMs": 11481,
+   "settled": true,
+   "firstPollRoundTripMs": 323
+  },
+  {
+   "run": 34913454006,
+   "job": "first",
+   "startedAt": "2026-09-15T00:35:24.874Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 66831,
+   "commitP95Ms": 31,
+   "commitMaxMs": 32,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 71,
+    "lastMs": 71,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    20,
+    21,
+    10
+   ],
+   "settleElapsedMs": 9231,
+   "settled": true,
+   "firstPollRoundTripMs": 154
+  },
+  {
+   "run": 34917048066,
+   "job": "first",
+   "startedAt": "2026-09-15T01:24:29.178Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 67988,
+   "commitP95Ms": 33,
+   "commitMaxMs": 67,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 70,
+    "lastMs": 70,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    16,
+    9
+   ],
+   "settleElapsedMs": 10278,
+   "settled": true,
+   "firstPollRoundTripMs": 185
+  },
+  {
+   "run": 34917156863,
+   "job": "first",
+   "startedAt": "2026-09-15T01:29:35.665Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 65897,
+   "commitP95Ms": 30,
+   "commitMaxMs": 42,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 49,
+    "lastMs": 235,
+    "maxGapMs": 186
+   },
+   "crayonShadowMs": [
+    26,
+    10,
+    7
+   ],
+   "settleElapsedMs": 9433,
+   "settled": true,
+   "firstPollRoundTripMs": 35
+  },
+  {
+   "run": 34917656886,
+   "job": "first",
+   "startedAt": "2026-09-15T01:34:38.140Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 82628,
+   "commitP95Ms": 35,
+   "commitMaxMs": 37,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 41,
+    "lastMs": 41,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    18,
+    20,
+    10
+   ],
+   "settleElapsedMs": 9929,
+   "settled": true,
+   "firstPollRoundTripMs": 165
+  },
+  {
+   "run": 34918674037,
+   "job": "first",
+   "startedAt": "2026-09-15T01:49:01.040Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 62313,
+   "commitP95Ms": 26,
+   "commitMaxMs": 27,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 50,
+    "lastMs": 50,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    21,
+    21,
+    7
+   ],
+   "settleElapsedMs": 8331,
+   "settled": true,
+   "firstPollRoundTripMs": 155
+  },
+  {
+   "run": 34918918650,
+   "job": "first",
+   "startedAt": "2026-09-15T01:53:49.124Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 63599,
+   "commitP95Ms": 27,
+   "commitMaxMs": 30,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 17,
+    "lastMs": 17,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    21,
+    16,
+    8
+   ],
+   "settleElapsedMs": 7975,
+   "settled": true,
+   "firstPollRoundTripMs": 134
+  },
+  {
+   "run": 34919746975,
+   "job": "first",
+   "startedAt": "2026-09-15T02:05:50.643Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 66709,
+   "commitP95Ms": 29,
+   "commitMaxMs": 41,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 62,
+    "lastMs": 62,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    21,
+    7
+   ],
+   "settleElapsedMs": 9316,
+   "settled": true,
+   "firstPollRoundTripMs": 140
+  },
+  {
+   "run": 34920150142,
+   "job": "first",
+   "startedAt": "2026-09-15T02:11:36.658Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 74331,
+   "commitP95Ms": 39,
+   "commitMaxMs": 58,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 72,
+    "lastMs": 72,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    22,
+    2
+   ],
+   "settleElapsedMs": 9753,
+   "settled": true,
+   "firstPollRoundTripMs": 181
+  },
+  {
+   "run": 34920622804,
+   "job": "first",
+   "startedAt": "2026-09-15T02:18:56.166Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 55565,
+   "commitP95Ms": 23,
+   "commitMaxMs": 28,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 51,
+    "lastMs": 51,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    16,
+    18,
+    3
+   ],
+   "settleElapsedMs": 7879,
+   "settled": true,
+   "firstPollRoundTripMs": 101
+  },
+  {
+   "run": 34946006721,
+   "job": "first",
+   "startedAt": "2026-09-15T08:17:45.052Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 109676,
+   "commitP95Ms": 53,
+   "commitMaxMs": 62,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 91,
+    "lastMs": 91,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    28,
+    30,
+    11
+   ],
+   "settleElapsedMs": 12505,
+   "settled": true,
+   "firstPollRoundTripMs": 345
+  },
+  {
+   "run": 34947052128,
+   "job": "first",
+   "startedAt": "2026-09-15T08:29:35.226Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 114167,
+   "commitP95Ms": 54,
+   "commitMaxMs": 58,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 47,
+    "lastMs": 47,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    28,
+    30,
+    10
+   ],
+   "settleElapsedMs": 12196,
+   "settled": true,
+   "firstPollRoundTripMs": 389
+  },
+  {
+   "run": 34947102449,
+   "job": "first",
+   "startedAt": "2026-09-15T08:36:47.120Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 104804,
+   "commitP95Ms": 99,
+   "commitMaxMs": 102,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 70,
+    "lastMs": 70,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    21,
+    33,
+    4
+   ],
+   "settleElapsedMs": 13740,
+   "settled": true,
+   "firstPollRoundTripMs": 280
+  },
+  {
+   "run": 34947965328,
+   "job": "first",
+   "startedAt": "2026-09-15T08:43:16.225Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 82404,
+   "commitP95Ms": 38,
+   "commitMaxMs": 47,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 64,
+    "lastMs": 64,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    21,
+    10
+   ],
+   "settleElapsedMs": 10072,
+   "settled": true,
+   "firstPollRoundTripMs": 211
+  },
+  {
+   "run": 34949505691,
+   "job": "first",
+   "startedAt": "2026-09-15T08:55:30.196Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 68763,
+   "commitP95Ms": 31,
+   "commitMaxMs": 37,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 69,
+    "lastMs": 69,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    28,
+    31,
+    13
+   ],
+   "settleElapsedMs": 8775,
+   "settled": true,
+   "firstPollRoundTripMs": 164
+  },
+  {
+   "run": 34951619820,
+   "job": "first",
+   "startedAt": "2026-09-15T09:17:35.018Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 100223,
+   "commitP95Ms": 43,
+   "commitMaxMs": 45,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 85,
+    "lastMs": 85,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    17,
+    44,
+    6
+   ],
+   "settleElapsedMs": 13007,
+   "settled": true,
+   "firstPollRoundTripMs": 253
+  },
+  {
+   "run": 34960599236,
+   "job": "first",
+   "startedAt": "2026-09-15T10:58:12.106Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 103464,
+   "commitP95Ms": 50,
+   "commitMaxMs": 54,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 74,
+    "lastMs": 74,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    36,
+    32,
+    2
+   ],
+   "settleElapsedMs": 11112,
+   "settled": true,
+   "firstPollRoundTripMs": 338
+  },
+  {
+   "run": 34972600330,
+   "job": "first",
+   "startedAt": "2026-09-15T13:05:25.792Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 112361,
+   "commitP95Ms": 81,
+   "commitMaxMs": 164,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 80,
+    "lastMs": 674,
+    "maxGapMs": 594
+   },
+   "crayonShadowMs": [
+    61,
+    30,
+    16
+   ],
+   "settleElapsedMs": 13890,
+   "settled": true,
+   "firstPollRoundTripMs": 109
+  },
+  {
+   "run": 34977648493,
+   "job": "first",
+   "startedAt": "2026-09-15T13:51:59.494Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 56632,
+   "commitP95Ms": 31,
+   "commitMaxMs": 31,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 50,
+    "lastMs": 50,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    18,
+    6
+   ],
+   "settleElapsedMs": 7887,
+   "settled": true,
+   "firstPollRoundTripMs": 134
+  },
+  {
+   "run": 34980350405,
+   "job": "first",
+   "startedAt": "2026-09-15T14:16:43.613Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 101312,
+   "commitP95Ms": 46,
+   "commitMaxMs": 52,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 112,
+    "lastMs": 112,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    35,
+    34,
+    11
+   ],
+   "settleElapsedMs": 14987,
+   "settled": true,
+   "firstPollRoundTripMs": 462
+  },
+  {
+   "run": 34984036424,
+   "job": "first",
+   "startedAt": "2026-09-15T14:49:22.625Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 100956,
+   "commitP95Ms": 43,
+   "commitMaxMs": 44,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 85,
+    "lastMs": 85,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    20,
+    26,
+    12
+   ],
+   "settleElapsedMs": 12853,
+   "settled": true,
+   "firstPollRoundTripMs": 366
+  },
+  {
+   "run": 34987668956,
+   "job": "first",
+   "startedAt": "2026-09-15T15:21:27.269Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 112436,
+   "commitP95Ms": 61,
+   "commitMaxMs": 81,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 68,
+    "lastMs": 68,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    42,
+    11,
+    16
+   ],
+   "settleElapsedMs": 12792,
+   "settled": true,
+   "firstPollRoundTripMs": 383
+  },
+  {
+   "run": 35001209795,
+   "job": "first",
+   "startedAt": "2026-09-15T17:27:24.626Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 92074,
+   "commitP95Ms": 48,
+   "commitMaxMs": 57,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 81,
+    "lastMs": 81,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    8,
+    10
+   ],
+   "settleElapsedMs": 9539,
+   "settled": true,
+   "firstPollRoundTripMs": 301
+  },
+  {
+   "run": 35003083574,
+   "job": "first",
+   "startedAt": "2026-09-15T17:45:17.157Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 113838,
+   "commitP95Ms": 45,
+   "commitMaxMs": 58,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 79,
+    "lastMs": 79,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    19,
+    13
+   ],
+   "settleElapsedMs": 12943,
+   "settled": true,
+   "firstPollRoundTripMs": 428
+  },
+  {
+   "run": 35006420081,
+   "job": "first",
+   "startedAt": "2026-09-15T18:17:58.923Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 98249,
+   "commitP95Ms": 54,
+   "commitMaxMs": 134,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 65,
+    "lastMs": 65,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    22,
+    25,
+    19
+   ],
+   "settleElapsedMs": 12963,
+   "settled": true,
+   "firstPollRoundTripMs": 224
+  },
+  {
+   "run": 35012373743,
+   "job": "first",
+   "startedAt": "2026-09-15T19:14:58.759Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 66279,
+   "commitP95Ms": 35,
+   "commitMaxMs": 36,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 26,
+    "lastMs": 26,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    17,
+    4,
+    11
+   ],
+   "settleElapsedMs": 9048,
+   "settled": true,
+   "firstPollRoundTripMs": 217
+  },
+  {
+   "run": 35016740426,
+   "job": "first",
+   "startedAt": "2026-09-15T20:00:23.989Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 114322,
+   "commitP95Ms": 59,
+   "commitMaxMs": 72,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 84,
+    "lastMs": 84,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    43,
+    12
+   ],
+   "settleElapsedMs": 13401,
+   "settled": true,
+   "firstPollRoundTripMs": 325
+  },
+  {
+   "run": 35045249440,
+   "job": "first",
+   "startedAt": "2026-09-16T01:45:40.707Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 59861,
+   "commitP95Ms": 27,
+   "commitMaxMs": 28,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 52,
+    "lastMs": 52,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    23,
+    10
+   ],
+   "settleElapsedMs": 8705,
+   "settled": true,
+   "firstPollRoundTripMs": 154
+  },
+  {
+   "run": 35045264268,
+   "job": "first",
+   "startedAt": "2026-09-16T01:51:14.527Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 124235,
+   "commitP95Ms": 55,
+   "commitMaxMs": 57,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 96,
+    "lastMs": 96,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    22,
+    31,
+    13
+   ],
+   "settleElapsedMs": 13891,
+   "settled": true,
+   "firstPollRoundTripMs": 358
+  },
+  {
+   "run": 35045285004,
+   "job": "first",
+   "startedAt": "2026-09-16T01:58:35.574Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 112370,
+   "commitP95Ms": 112,
+   "commitMaxMs": 149,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 49,
+    "lastMs": 649,
+    "maxGapMs": 600
+   },
+   "crayonShadowMs": [
+    36,
+    24,
+    10
+   ],
+   "settleElapsedMs": 18571,
+   "settled": true,
+   "firstPollRoundTripMs": 32
+  },
+  {
+   "run": 35095842149,
+   "job": "first",
+   "startedAt": "2026-09-16T12:28:23.693Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 111785,
+   "commitP95Ms": 48,
+   "commitMaxMs": 84,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 44,
+    "lastMs": 44,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    27,
+    57,
+    15
+   ],
+   "settleElapsedMs": 17095,
+   "settled": true,
+   "firstPollRoundTripMs": 315
+  },
+  {
+   "run": 35120275854,
+   "job": "first",
+   "startedAt": "2026-09-16T16:12:38.847Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 65348,
+   "commitP95Ms": 27,
+   "commitMaxMs": 41,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 59,
+    "lastMs": 59,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    15,
+    4
+   ],
+   "settleElapsedMs": 7988,
+   "settled": true,
+   "firstPollRoundTripMs": 172
+  },
+  {
+   "run": 35122284248,
+   "job": "first",
+   "startedAt": "2026-09-16T16:31:23.148Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 110512,
+   "commitP95Ms": 48,
+   "commitMaxMs": 79,
+   "firstPollFrames": {
+    "count": 2,
+    "firstMs": 68,
+    "lastMs": 486,
+    "maxGapMs": 418
+   },
+   "crayonShadowMs": [
+    53,
+    36,
+    10
+   ],
+   "settleElapsedMs": 13865,
+   "settled": true,
+   "firstPollRoundTripMs": 62
+  },
+  {
+   "run": 35125180143,
+   "job": "first",
+   "startedAt": "2026-09-16T16:59:31.771Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 116596,
+   "commitP95Ms": 45,
+   "commitMaxMs": 54,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 71,
+    "lastMs": 71,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    46,
+    37,
+    13
+   ],
+   "settleElapsedMs": 12798,
+   "settled": true,
+   "firstPollRoundTripMs": 347
+  },
+  {
+   "run": 35127510063,
+   "job": "first",
+   "startedAt": "2026-09-16T17:21:51.357Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 135403,
+   "commitP95Ms": 60,
+   "commitMaxMs": 69,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 128,
+    "lastMs": 128,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    41,
+    38,
+    3
+   ],
+   "settleElapsedMs": 17799,
+   "settled": true,
+   "firstPollRoundTripMs": 519
+  },
+  {
+   "run": 35131870903,
+   "job": "first",
+   "startedAt": "2026-09-16T18:03:45.616Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 91749,
+   "commitP95Ms": 42,
+   "commitMaxMs": 43,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 78,
+    "lastMs": 78,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    44,
+    27,
+    16
+   ],
+   "settleElapsedMs": 10569,
+   "settled": true,
+   "firstPollRoundTripMs": 239
+  },
+  {
+   "run": 35137959790,
+   "job": "first",
+   "startedAt": "2026-09-16T19:02:34.755Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 95515,
+   "commitP95Ms": 49,
+   "commitMaxMs": 51,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 83,
+    "lastMs": 83,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    37,
+    33,
+    3
+   ],
+   "settleElapsedMs": 13566,
+   "settled": true,
+   "firstPollRoundTripMs": 266
+  },
+  {
+   "run": 35140208298,
+   "job": "first",
+   "startedAt": "2026-09-16T19:24:47.137Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 114317,
+   "commitP95Ms": 79,
+   "commitMaxMs": 136,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 75,
+    "lastMs": 75,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    48,
+    24,
+    17
+   ],
+   "settleElapsedMs": 12634,
+   "settled": true,
+   "firstPollRoundTripMs": 362
+  },
+  {
+   "run": 35141922403,
+   "job": "first",
+   "startedAt": "2026-09-16T19:41:18.179Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 104870,
+   "commitP95Ms": 55,
+   "commitMaxMs": 94,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 106,
+    "lastMs": 106,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    21,
+    37,
+    24
+   ],
+   "settleElapsedMs": 15279,
+   "settled": true,
+   "firstPollRoundTripMs": 357
+  },
+  {
+   "run": 35143088866,
+   "job": "first",
+   "startedAt": "2026-09-16T19:54:15.848Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 71511,
+   "commitP95Ms": 62,
+   "commitMaxMs": 64,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 38,
+    "lastMs": 38,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    14,
+    23,
+    14
+   ],
+   "settleElapsedMs": 11074,
+   "settled": true,
+   "firstPollRoundTripMs": 155
+  },
+  {
+   "run": 35143508420,
+   "job": "first",
+   "startedAt": "2026-09-16T20:00:10.598Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 107779,
+   "commitP95Ms": 58,
+   "commitMaxMs": 145,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 86,
+    "lastMs": 86,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    32,
+    9
+   ],
+   "settleElapsedMs": 14308,
+   "settled": true,
+   "firstPollRoundTripMs": 347
+  },
+  {
+   "run": 35143587605,
+   "job": "first",
+   "startedAt": "2026-09-16T20:07:05.222Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 93732,
+   "commitP95Ms": 73,
+   "commitMaxMs": 98,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 82,
+    "lastMs": 82,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    38,
+    29,
+    13
+   ],
+   "settleElapsedMs": 16260,
+   "settled": true,
+   "firstPollRoundTripMs": 381
+  },
+  {
+   "run": 35145593582,
+   "job": "first",
+   "startedAt": "2026-09-16T20:18:31.457Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 129033,
+   "commitP95Ms": 60,
+   "commitMaxMs": 62,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 70,
+    "lastMs": 70,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    70,
+    8
+   ],
+   "settleElapsedMs": 13934,
+   "settled": true,
+   "firstPollRoundTripMs": 384
+  },
+  {
+   "run": 35146677289,
+   "job": "first",
+   "startedAt": "2026-09-16T20:28:57.155Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 95103,
+   "commitP95Ms": 53,
+   "commitMaxMs": 80,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 66,
+    "lastMs": 66,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    20,
+    36,
+    12
+   ],
+   "settleElapsedMs": 12891,
+   "settled": true,
+   "firstPollRoundTripMs": 243
+  },
+  {
+   "run": 35174136836,
+   "job": "first",
+   "startedAt": "2026-09-17T02:23:15.360Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 57429,
+   "commitP95Ms": 24,
+   "commitMaxMs": 28,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 52,
+    "lastMs": 52,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    14,
+    22
+   ],
+   "settleElapsedMs": 8155,
+   "settled": true,
+   "firstPollRoundTripMs": 136
+  },
+  {
+   "run": 35176840493,
+   "job": "first",
+   "startedAt": "2026-09-17T03:06:45.318Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 101791,
+   "commitP95Ms": 67,
+   "commitMaxMs": 80,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 82,
+    "lastMs": 82,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    46,
+    12
+   ],
+   "settleElapsedMs": 12533,
+   "settled": true,
+   "firstPollRoundTripMs": 274
+  },
+  {
+   "run": 35177350918,
+   "job": "first",
+   "startedAt": "2026-09-17T03:14:48.788Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 64955,
+   "commitP95Ms": 28,
+   "commitMaxMs": 28,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 71,
+    "lastMs": 71,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    18,
+    2
+   ],
+   "settleElapsedMs": 8547,
+   "settled": true,
+   "firstPollRoundTripMs": 187
+  },
+  {
+   "run": 35209412743,
+   "job": "first",
+   "startedAt": "2026-09-17T10:15:21.977Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 55817,
+   "commitP95Ms": 27,
+   "commitMaxMs": 39,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 44,
+    "lastMs": 44,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    25,
+    18,
+    7
+   ],
+   "settleElapsedMs": 7849,
+   "settled": true,
+   "firstPollRoundTripMs": 142
+  },
+  {
+   "run": 35212102129,
+   "job": "first",
+   "startedAt": "2026-09-17T10:46:58.702Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 122025,
+   "commitP95Ms": 68,
+   "commitMaxMs": 90,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 88,
+    "lastMs": 88,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    28,
+    30,
+    19
+   ],
+   "settleElapsedMs": 14485,
+   "settled": true,
+   "firstPollRoundTripMs": 317
+  },
+  {
+   "run": 35232330811,
+   "job": "first",
+   "startedAt": "2026-09-17T14:16:47.766Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 67491,
+   "commitP95Ms": 31,
+   "commitMaxMs": 37,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 70,
+    "lastMs": 70,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    22,
+    22,
+    9
+   ],
+   "settleElapsedMs": 8687,
+   "settled": true,
+   "firstPollRoundTripMs": 136
+  },
+  {
+   "run": 35233749426,
+   "job": "first",
+   "startedAt": "2026-09-17T14:29:19.798Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 60297,
+   "commitP95Ms": 26,
+   "commitMaxMs": 29,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 45,
+    "lastMs": 45,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    24,
+    7,
+    9
+   ],
+   "settleElapsedMs": 8097,
+   "settled": true,
+   "firstPollRoundTripMs": 152
+  },
+  {
+   "run": 35243553758,
+   "job": "first",
+   "startedAt": "2026-09-17T15:59:14.577Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 118754,
+   "commitP95Ms": 75,
+   "commitMaxMs": 90,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 67,
+    "lastMs": 67,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    22,
+    31,
+    13
+   ],
+   "settleElapsedMs": 11371,
+   "settled": true,
+   "firstPollRoundTripMs": 259
+  },
+  {
+   "run": 35267617871,
+   "job": "first",
+   "startedAt": "2026-09-17T19:56:10.755Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 90591,
+   "commitP95Ms": 41,
+   "commitMaxMs": 43,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 74,
+    "lastMs": 74,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    31,
+    22,
+    2
+   ],
+   "settleElapsedMs": 9817,
+   "settled": true,
+   "firstPollRoundTripMs": 198
+  },
+  {
+   "run": 35285422291,
+   "job": "first",
+   "startedAt": "2026-09-17T23:09:40.045Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 67343,
+   "commitP95Ms": 32,
+   "commitMaxMs": 33,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 67,
+    "lastMs": 67,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    20,
+    18,
+    3
+   ],
+   "settleElapsedMs": 9811,
+   "settled": true,
+   "firstPollRoundTripMs": 150
+  },
+  {
+   "run": 35294752837,
+   "job": "first",
+   "startedAt": "2026-09-18T01:19:37.195Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 89249,
+   "commitP95Ms": 47,
+   "commitMaxMs": 54,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 85,
+    "lastMs": 85,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    17,
+    23,
+    9
+   ],
+   "settleElapsedMs": 9898,
+   "settled": true,
+   "firstPollRoundTripMs": 245
+  },
+  {
+   "run": 35296359274,
+   "job": "first",
+   "startedAt": "2026-09-18T01:43:16.554Z",
+   "webkit": "26.6",
+   "drawHarnessWallMs": 79277,
+   "commitP95Ms": 32,
+   "commitMaxMs": 40,
+   "firstPollFrames": {
+    "count": 1,
+    "firstMs": 63,
+    "lastMs": 63,
+    "maxGapMs": 0
+   },
+   "crayonShadowMs": [
+    23,
+    21,
+    10
+   ],
+   "settleElapsedMs": 9325,
+   "settled": true,
+   "firstPollRoundTripMs": 151
+  }
+ ]
+}
