@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
+import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   androidContentOffset,
@@ -1568,5 +1569,84 @@ describe('bundledPageProblem', () => {
     expect(bundledPageProblem('about:blank')).toMatch(/not the bundled/);
     // A different configured scheme flows through the origin parameter.
     expect(bundledPageProblem('capacitor://localhost/', 'capacitor://localhost')).toBeNull();
+  });
+});
+
+// The Brush Menu mounts its options only while open (478c88ba8), and with a
+// single optional brush the trigger toggles that brush directly. The script is
+// executed against a stand-in document so each branch is exercised as the
+// page would run it.
+describe('brushPickScript', () => {
+  const MENU_MOUNT_DELAY_MS = 30;
+  const runPick = async (brush, { committed, mounted = [], menu = true }) => {
+    const { brushPickScript } = await import('../android/capture-bundled-frames.mjs');
+    const clicks = [];
+    const mountedIds = new Set(mounted);
+    const element = (id) => ({
+      click: () => {
+        clicks.push(id);
+        // Svelte mounts the opened menu on a later tick, not inside the click,
+        // so the script's wait for the option is what this branch exercises.
+        if (id === 'brushButton' && menu) {
+          setTimeout(() => {
+            for (const option of [
+              'penBrushButton',
+              'crayonBrushButton',
+              'magicBrushButton',
+              'eraserButton',
+            ])
+              mountedIds.add(option);
+          }, MENU_MOUNT_DELAY_MS);
+        }
+      },
+      hasAttribute: (name) => id === 'brushButton' && name === 'aria-expanded' && menu,
+    });
+    const document = {
+      querySelector: (selector) => {
+        const id = selector.replace(/^#/, '');
+        return id === 'brushButton' || mountedIds.has(id) ? element(id) : null;
+      },
+    };
+    const window = { __committedBrushMode: () => committed };
+    const path = await runInNewContext(brushPickScript(brush), {
+      window,
+      document,
+      performance,
+      setTimeout,
+    });
+    return { path, clicks };
+  };
+
+  it('leaves a held brush alone', async () => {
+    expect(await runPick('crayon', { committed: 'crayon', menu: false })).toEqual({
+      path: 'held',
+      clicks: [],
+    });
+  });
+
+  it('clicks a mounted option directly', async () => {
+    expect(await runPick('magic', { committed: 'pen', mounted: ['magicBrushButton'] })).toEqual({
+      path: 'option',
+      clicks: ['magicBrushButton'],
+    });
+  });
+
+  it('opens the menu for an unmounted option, eraser included', async () => {
+    expect(await runPick('eraser', { committed: 'crayon' })).toEqual({
+      path: 'menu',
+      clicks: ['brushButton', 'eraserButton'],
+    });
+  });
+
+  it('clicks the single-brush toggle once when the trigger is not a menu', async () => {
+    expect(await runPick('crayon', { committed: 'pen', menu: false })).toEqual({
+      path: 'toggle',
+      clicks: ['brushButton'],
+    });
+  });
+
+  it('rejects a brush the menu does not offer', async () => {
+    const { brushPickScript } = await import('../android/capture-bundled-frames.mjs');
+    expect(() => brushPickScript('marker')).toThrow('--brush must be one of');
   });
 });
