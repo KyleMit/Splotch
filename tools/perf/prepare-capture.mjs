@@ -37,6 +37,8 @@ import {
   probeHostReuse,
   resolvePort,
   summarize,
+  ANDROID_LOCK_CHECK,
+  androidVerificationSkipReason,
 } from './lib/capture-readiness.mjs';
 import { describeGrantHistory, recordGrantAttempt } from './lib/grant-log.mjs';
 import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
@@ -92,7 +94,7 @@ function androidChecks({ fix }) {
 
   const { actions, blockers } = androidWakeActions({ screenOn, stayOn, locked });
   for (const blocker of blockers) {
-    checks.push({ name: 'android lock', status: 'blocked', detail: blocker });
+    checks.push({ name: ANDROID_LOCK_CHECK, status: 'blocked', detail: blocker });
   }
 
   if (actions.length === 0) {
@@ -712,7 +714,11 @@ if (isMain(import.meta.url)) {
     const report = await prepareCapture(argv);
     // Android first: it is the cheaper of the two verifications, so a bad
     // input path surfaces before a minute is spent building WebDriverAgent.
-    if (argv.includes('--verify-android-input') && report.androidSerial) {
+    const androidSkip = androidVerificationSkipReason(report.checks);
+    if (argv.includes('--verify-android-input') && report.androidSerial && androidSkip) {
+      console.log(`✗ ${'android input'.padEnd(22)} not attempted — ${androidSkip}`);
+      process.exitCode = 1;
+    } else if (argv.includes('--verify-android-input') && report.androidSerial) {
       console.log('\nverifying Android input against the floor control…');
       const input = await verifyAndroidInput({
         serial: report.androidSerial,

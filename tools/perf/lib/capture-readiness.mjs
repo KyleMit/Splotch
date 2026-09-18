@@ -404,6 +404,19 @@ export function classifyLaunchProbe({
   return { status: 'blocked', detail: message.slice(0, 200) || 'the probe failed with no message' };
 }
 
+export const ANDROID_LOCK_CHECK = 'android lock';
+
+// A locked phone never loads the input verification's page, and that
+// verification exits the whole preflight when no report arrives — taking the
+// iPad's launch check, which runs after it, down with it. The host-side checks
+// already know the lock, so the verification is not attempted and says why.
+export function androidVerificationSkipReason(checks) {
+  const lock = checks.find(
+    (check) => check.name === ANDROID_LOCK_CHECK && check.status === 'blocked'
+  );
+  return lock ? lock.detail : null;
+}
+
 export function summarize(checks) {
   const blockers = checks.filter((check) => check.status === 'blocked');
   return {

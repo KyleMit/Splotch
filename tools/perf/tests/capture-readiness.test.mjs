@@ -15,6 +15,8 @@ import {
   probeHostReuse,
   resolvePort,
   summarize,
+  ANDROID_LOCK_CHECK,
+  androidVerificationSkipReason,
   pageFollowedRotation,
   safariWindowProblem,
   classifyAppiumLog,
@@ -446,6 +448,29 @@ describe('summarize', () => {
     const blocked = summarize([{ name: 'tunnel', status: 'blocked', detail: 'not running' }]);
     expect(blocked.ready).toBe(false);
     expect(blocked.blockers).toEqual(['tunnel: not running']);
+  });
+});
+
+describe('androidVerificationSkipReason', () => {
+  const lockDetail = 'the device is locked — unlock it by hand; a PIN cannot be automated';
+
+  it('names the lock when the host-side checks found the phone locked', () => {
+    expect(
+      androidVerificationSkipReason([
+        { name: 'android device', status: 'ok', detail: 'serial' },
+        { name: ANDROID_LOCK_CHECK, status: 'blocked', detail: lockDetail },
+        { name: 'ios device', status: 'ok', detail: 'udid' },
+      ])
+    ).toBe(lockDetail);
+  });
+
+  it('lets the verification run when nothing reported a lock', () => {
+    expect(
+      androidVerificationSkipReason([
+        { name: 'android device', status: 'ok', detail: 'serial' },
+        { name: 'port preview', status: 'blocked', detail: 'held' },
+      ])
+    ).toBeNull();
   });
 });
 
