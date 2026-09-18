@@ -6,7 +6,8 @@ production drawing route; amended by
 [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for idle tile composition, and amended
 by [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotation presentation and lazy
 crayon surfaces; surface-budget evidence amended 2026-08-01; ADR-0086's twenty-step large-sweep
-contract amended 2026-08. **Date:** 2026-07
+contract amended 2026-08; the deferred crayon shadow drain amended 2026-09 (issue 1701). **Date:**
+2026-07
 
 ## Context
 
@@ -702,3 +703,38 @@ Hidden crayon preview surfaces are allocated lazily per touched tile instead of 
 every blank paper. Undo-to-empty first paints the ink tiles hidden, waits two animation frames, and
 then re-adopts the viewport. The combination measured 24 ms for undo-to-empty and 30 ms for the
 first five-tile crayon stroke. ADR-0089 contains the isolation table and reconstruction protocol.
+
+## Amendment (issue 1701, 2026-09): the deferred crayon shadow drain covers live tiles only
+
+The restamp pipeline (ADR-0147) refreshes a stale crayon under shadow two frames after the staling
+event, in one task, so the whole-tile read lands off the interaction frames. Issue 1701 asked
+whether that drain should be divided across frames like the fold loop above, after a macOS runner
+measured it at 2–3 s.
+
+On a physical 12.9-inch iPad Pro (iPadOS and Safari 26.5), the drains that refresh **live** tiles
+are frame-scale: 0–1 ms at every finger-lift under trusted touch, and 0 ms after the CI gate's
+all-tiles 22-scribble burst. The drain that was not frame-scale is one the question had not
+considered. `foldOldestCommand` replays a crayon command onto the offscreen history base, each pass
+flush there queued that base tile for the drain, and two frames after every crayon fold the drain
+read the folded base tiles back in one task. That froze one frame for 612–780 ms in five of five
+trusted-touch captures, and 194–916 ms after three separate folds in a paced multi-fold run. The
+gate, agreed before capture, was `ACTION_FRAME_MAX_GATE_MS` (33.5 ms) confirmed in two of three
+repeats.
+
+**Decision.** Only on-screen tiles enter the deferred drain. A target joins it by registering
+through `setCrayonBufferForTarget`, which every live tile adoption calls and no offscreen target
+does. An offscreen target (history base, export) keeps the synchronous pass-open read as its only
+refresh, and the next fold opens its pass there. The drain is **not** chunked across frames: the
+live-tile drain it would divide is already frame-scale on the device, and dividing the base-tile
+drain would have spread an unnecessary read over more frames instead of removing it.
+
+Measured against unchanged main in the same session, interleaved: the post-fold frame disappeared in
+five of five trusted-touch captures (worst frame after the last lift 19–32 ms, against 612–780 ms)
+and in four of four paced runs, with fold durations unchanged (2–19 ms against 2–22 ms), so the read
+did not move into the next fold. Drawing gates and lift drains were unchanged. The evidence and the
+reason the CI gate's synchronous burst hid this (its 13 s post-burst stall absorbed the fold cost
+before the drain ran) are in
+[`docs/scratchpad/perf/2026-09-18-issue-1701-crayon-shadow-ipad/`](../scratchpad/perf/2026-09-18-issue-1701-crayon-shadow-ipad/README.md).
+
+**To re-attempt** dividing the drain, first show a live-tile drain that is not frame-scale on the
+physical iPad under trusted input. A synchronous `/dev/engine` burst cannot show it either way.
