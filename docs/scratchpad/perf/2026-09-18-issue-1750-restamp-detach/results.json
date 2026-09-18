@@ -3,14 +3,17 @@
  "host": "developer Mac, Apple M5, macOS 26 (Darwin 25.6.0); served by this checkout's vite preview on 127.0.0.1:4173; no capture or build running concurrently",
  "driver": {
   "path": "docs/scratchpad/perf/2026-09-18-issue-1750-restamp-detach/ab-crayon-deposition.mjs",
-  "note": "webkit runs used the driver before the engine argument and version field were added; the measured code path is unchanged"
+  "note": "webkit-initial and webkit-confirmation ran an earlier revision without the session sampler (same draw, commit and undo code path); webkit-instrumented and chromium ran the committed file"
  },
  "workload": "22 crayon back-and-forth scribbles (1,200 ops each, run-undo-scenarios geometry), one synchronous page.evaluate, 1024x1366 @2, then undo to empty with the gate harness frame-waiting loop",
  "fields": {
   "pageDrawMs": "performance.now() around the synchronous strokeSync loop",
   "drawToSecondRafMs": "from the same start to the second requestAnimationFrame callback after it (a presentation opportunity, not proof of displayed pixels)",
   "commitP95Ms": "P95 of engine.commit over the 22 commits",
-  "undoLoopMs": "page time for the undo loop including its per-step frame waits"
+  "undoLoopMs": "page time for the undo loop including its per-step frame waits",
+  "sessionMs": "draw start to the second rAF after the undo loop, including the fixed 3 s settle window",
+  "sessionFrames.blockedMs": "sum over every rAF gap in the session of (gap - 16.7 ms), i.e. main-thread time beyond one 60 Hz frame",
+  "settle": "the fixed 3 s idle window between presentation and undo: engine.* measures that started in it and its frame gaps"
  },
  "runs": {
   "webkit-initial": {
@@ -816,6 +819,749 @@
       }
      },
      "undoLoopMs": 414.39999997615814,
+     "undoSteps": 20,
+     "debugAfterUndo": {
+      "strokeRevision": 22,
+      "snapshots": 0,
+      "liveRasters": 0,
+      "rasterBytes": 0,
+      "blobBytes": 0,
+      "baseRasters": 20,
+      "baseRasterBytes": 22380544,
+      "historyLength": 0,
+      "patchBytes": 0,
+      "pendingCommands": 0
+     }
+    }
+   ]
+  },
+  "webkit-instrumented": {
+   "browser": "Playwright WebKit 26.6",
+   "order": "ABBA x2",
+   "driver": "current committed driver: continuous rAF sampler over the whole session, settle-window and undo-window measures and frame gaps, sessionMs to two rAFs after the undo loop",
+   "results": [
+    {
+     "arm": "restamp",
+     "pageDrawMs": 8370,
+     "drawToSecondRafMs": 8767,
+     "commitP95Ms": 586,
+     "measures": {
+      "engine.draw": {
+       "count": 22,
+       "total": 1607,
+       "max": 550
+      },
+      "engine.commit": {
+       "count": 22,
+       "total": 6343,
+       "max": 589
+      },
+      "engine.undoPatchCapture": {
+       "count": 124,
+       "total": 1,
+       "max": 1
+      },
+      "engine.undoPatchCrop": {
+       "count": 21,
+       "total": 6339,
+       "max": 589
+      },
+      "engine.crayonShadow": {
+       "count": 1,
+       "total": 0,
+       "max": 0
+      }
+     },
+     "undoLoopMs": 783,
+     "sessionMs": 12583,
+     "settle": {
+      "ms": 3000,
+      "measures": {
+       "engine.crayonShadow": {
+        "count": 2,
+        "total": 0,
+        "max": 0
+       },
+       "engine.fold": {
+        "count": 1,
+        "total": 496,
+        "max": 496
+       }
+      },
+      "frames": {
+       "count": 153,
+       "maxGapMs": 499,
+       "blockedMs": 529.6666666666675
+      }
+     },
+     "undoWindow": {
+      "measures": {
+       "engine.undoInkMotion": {
+        "count": 40,
+        "total": 481,
+        "max": 467
+       },
+       "engine.undo": {
+        "count": 20,
+        "total": 482,
+        "max": 467
+       },
+       "engine.crayonShadow": {
+        "count": 10,
+        "total": 0,
+        "max": 0
+       },
+       "engine.fold": {
+        "count": 1,
+        "total": 8,
+        "max": 8
+       }
+      },
+      "frames": {
+       "count": 23,
+       "maxGapMs": 472,
+       "blockedMs": 473.3333333333332
+      }
+     },
+     "sessionFrames": {
+      "count": 177,
+      "maxGapMs": 8765,
+      "blockedMs": 9751.333333333398
+     },
+     "undoSteps": 20,
+     "debugAfterUndo": {
+      "strokeRevision": 22,
+      "snapshots": 0,
+      "liveRasters": 0,
+      "rasterBytes": 0,
+      "blobBytes": 0,
+      "baseRasters": 20,
+      "baseRasterBytes": 22380544,
+      "historyLength": 0,
+      "patchBytes": 0,
+      "pendingCommands": 0
+     }
+    },
+    {
+     "arm": "glaze-direct",
+     "pageDrawMs": 5060,
+     "drawToSecondRafMs": 5567,
+     "commitP95Ms": 400,
+     "measures": {
+      "engine.draw": {
+       "count": 22,
+       "total": 95,
+       "max": 7
+      },
+      "engine.commit": {
+       "count": 22,
+       "total": 4912,
+       "max": 420
+      },
+      "engine.undoPatchCapture": {
+       "count": 124,
+       "total": 0,
+       "max": 0
+      },
+      "engine.undoPatchCrop": {
+       "count": 21,
+       "total": 4912,
+       "max": 420
+      }
+     },
+     "undoLoopMs": 335,
+     "sessionMs": 8933,
+     "settle": {
+      "ms": 3000,
+      "measures": {
+       "engine.fold": {
+        "count": 2,
+        "total": 14,
+        "max": 8
+       }
+      },
+      "frames": {
+       "count": 181,
+       "maxGapMs": 21,
+       "blockedMs": 61.666666666666345
+      }
+     },
+     "undoWindow": {
+      "measures": {
+       "engine.undo": {
+        "count": 20,
+        "total": 22,
+        "max": 3
+       },
+       "engine.undoInkMotion": {
+        "count": 40,
+        "total": 20,
+        "max": 2
+       }
+      },
+      "frames": {
+       "count": 22,
+       "maxGapMs": 19,
+       "blockedMs": 10.333333333333318
+      }
+     },
+     "sessionFrames": {
+      "count": 205,
+      "maxGapMs": 5564,
+      "blockedMs": 5620.666666666629
+     },
+     "undoSteps": 20,
+     "debugAfterUndo": {
+      "strokeRevision": 22,
+      "snapshots": 0,
+      "liveRasters": 0,
+      "rasterBytes": 0,
+      "blobBytes": 0,
+      "baseRasters": 20,
+      "baseRasterBytes": 22380544,
+      "historyLength": 0,
+      "patchBytes": 0,
+      "pendingCommands": 0
+     }
+    },
+    {
+     "arm": "glaze-direct",
+     "pageDrawMs": 5410,
+     "drawToSecondRafMs": 6167,
+     "commitP95Ms": 445,
+     "measures": {
+      "engine.draw": {
+       "count": 22,
+       "total": 97,
+       "max": 5
+      },
+      "engine.commit": {
+       "count": 22,
+       "total": 5255,
+       "max": 449
+      },
+      "engine.undoPatchCapture": {
+       "count": 124,
+       "total": 0,
+       "max": 0
+      },
+      "engine.undoPatchCrop": {
+       "count": 21,
+       "total": 5254,
+       "max": 449
+      }
+     },
+     "undoLoopMs": 332,
+     "sessionMs": 9532,
+     "settle": {
+      "ms": 3000,
+      "measures": {
+       "engine.fold": {
+        "count": 2,
+        "total": 11,
+        "max": 8
+       }
+      },
+      "frames": {
+       "count": 181,
+       "maxGapMs": 20,
+       "blockedMs": 60.66666666666636
+      }
+     },
+     "undoWindow": {
+      "measures": {
+       "engine.undoInkMotion": {
+        "count": 40,
+        "total": 19,
+        "max": 2
+       },
+       "engine.undo": {
+        "count": 20,
+        "total": 23,
+        "max": 2
+       }
+      },
+      "frames": {
+       "count": 23,
+       "maxGapMs": 19,
+       "blockedMs": 9.333333333333318
+      }
+     },
+     "sessionFrames": {
+      "count": 205,
+      "maxGapMs": 6158,
+      "blockedMs": 6211.333333333296
+     },
+     "undoSteps": 20,
+     "debugAfterUndo": {
+      "strokeRevision": 22,
+      "snapshots": 0,
+      "liveRasters": 0,
+      "rasterBytes": 0,
+      "blobBytes": 0,
+      "baseRasters": 20,
+      "baseRasterBytes": 22380544,
+      "historyLength": 0,
+      "patchBytes": 0,
+      "pendingCommands": 0
+     }
+    },
+    {
+     "arm": "restamp",
+     "pageDrawMs": 8370,
+     "drawToSecondRafMs": 8766,
+     "commitP95Ms": 587,
+     "measures": {
+      "engine.draw": {
+       "count": 22,
+       "total": 1613,
+       "max": 557
+      },
+      "engine.commit": {
+       "count": 22,
+       "total": 6347,
+       "max": 589
+      },
+      "engine.undoPatchCapture": {
+       "count": 124,
+       "total": 2,
+       "max": 1
+      },
+      "engine.undoPatchCrop": {
+       "count": 21,
+       "total": 6347,
+       "max": 589
+      },
+      "engine.crayonShadow": {
+       "count": 1,
+       "total": 0,
+       "max": 0
+      }
+     },
+     "undoLoopMs": 751,
+     "sessionMs": 12549,
+     "settle": {
+      "ms": 3000,
+      "measures": {
+       "engine.crayonShadow": {
+        "count": 2,
+        "total": 0,
+        "max": 0
+       },
+       "engine.fold": {
+        "count": 1,
+        "total": 504,
+        "max": 504
+       }
+      },
+      "frames": {
+       "count": 152,
+       "maxGapMs": 509,
+       "blockedMs": 542.0000000000018
+      }
+     },
+     "undoWindow": {
+      "measures": {
+       "engine.undoInkMotion": {
+        "count": 40,
+        "total": 450,
+        "max": 434
+       },
+       "engine.undo": {
+        "count": 20,
+        "total": 451,
+        "max": 434
+       },
+       "engine.crayonShadow": {
+        "count": 10,
+        "total": 0,
+        "max": 0
+       },
+       "engine.fold": {
+        "count": 1,
+        "total": 7,
+        "max": 7
+       }
+      },
+      "frames": {
+       "count": 23,
+       "maxGapMs": 439,
+       "blockedMs": 431.33333333333314
+      }
+     },
+     "sessionFrames": {
+      "count": 175,
+      "maxGapMs": 8762,
+      "blockedMs": 9718.666666666732
+     },
+     "undoSteps": 20,
+     "debugAfterUndo": {
+      "strokeRevision": 22,
+      "snapshots": 0,
+      "liveRasters": 0,
+      "rasterBytes": 0,
+      "blobBytes": 0,
+      "baseRasters": 20,
+      "baseRasterBytes": 22380544,
+      "historyLength": 0,
+      "patchBytes": 0,
+      "pendingCommands": 0
+     }
+    },
+    {
+     "arm": "restamp",
+     "pageDrawMs": 8303,
+     "drawToSecondRafMs": 8700,
+     "commitP95Ms": 580,
+     "measures": {
+      "engine.draw": {
+       "count": 22,
+       "total": 1610,
+       "max": 548
+      },
+      "engine.commit": {
+       "count": 22,
+       "total": 6286,
+       "max": 587
+      },
+      "engine.undoPatchCapture": {
+       "count": 124,
+       "total": 2,
+       "max": 2
+      },
+      "engine.undoPatchCrop": {
+       "count": 21,
+       "total": 6286,
+       "max": 587
+      },
+      "engine.crayonShadow": {
+       "count": 1,
+       "total": 0,
+       "max": 0
+      }
+     },
+     "undoLoopMs": 733,
+     "sessionMs": 12466,
+     "settle": {
+      "ms": 3000,
+      "measures": {
+       "engine.crayonShadow": {
+        "count": 2,
+        "total": 0,
+        "max": 0
+       },
+       "engine.fold": {
+        "count": 1,
+        "total": 473,
+        "max": 473
+       }
+      },
+      "frames": {
+       "count": 154,
+       "maxGapMs": 478,
+       "blockedMs": 508.9999999999989
+      }
+     },
+     "undoWindow": {
+      "measures": {
+       "engine.undoInkMotion": {
+        "count": 40,
+        "total": 431,
+        "max": 417
+       },
+       "engine.undo": {
+        "count": 20,
+        "total": 432,
+        "max": 417
+       },
+       "engine.crayonShadow": {
+        "count": 10,
+        "total": 1,
+        "max": 1
+       },
+       "engine.fold": {
+        "count": 1,
+        "total": 9,
+        "max": 9
+       }
+      },
+      "frames": {
+       "count": 22,
+       "maxGapMs": 421,
+       "blockedMs": 415.99999999999983
+      }
+     },
+     "sessionFrames": {
+      "count": 179,
+      "maxGapMs": 8694,
+      "blockedMs": 9603.000000000065
+     },
+     "undoSteps": 20,
+     "debugAfterUndo": {
+      "strokeRevision": 22,
+      "snapshots": 0,
+      "liveRasters": 0,
+      "rasterBytes": 0,
+      "blobBytes": 0,
+      "baseRasters": 20,
+      "baseRasterBytes": 22380544,
+      "historyLength": 0,
+      "patchBytes": 0,
+      "pendingCommands": 0
+     }
+    },
+    {
+     "arm": "glaze-direct",
+     "pageDrawMs": 5022,
+     "drawToSecondRafMs": 5535,
+     "commitP95Ms": 400,
+     "measures": {
+      "engine.draw": {
+       "count": 22,
+       "total": 94,
+       "max": 6
+      },
+      "engine.commit": {
+       "count": 22,
+       "total": 4878,
+       "max": 416
+      },
+      "engine.undoPatchCapture": {
+       "count": 124,
+       "total": 1,
+       "max": 1
+      },
+      "engine.undoPatchCrop": {
+       "count": 21,
+       "total": 4873,
+       "max": 416
+      }
+     },
+     "undoLoopMs": 317,
+     "sessionMs": 8885,
+     "settle": {
+      "ms": 3002,
+      "measures": {
+       "engine.fold": {
+        "count": 2,
+        "total": 14,
+        "max": 8
+       }
+      },
+      "frames": {
+       "count": 180,
+       "maxGapMs": 21,
+       "blockedMs": 68.99999999999966
+      }
+     },
+     "undoWindow": {
+      "measures": {
+       "engine.undoInkMotion": {
+        "count": 40,
+        "total": 18,
+        "max": 3
+       },
+       "engine.undo": {
+        "count": 20,
+        "total": 21,
+        "max": 3
+       }
+      },
+      "frames": {
+       "count": 22,
+       "maxGapMs": 19,
+       "blockedMs": 12.999999999999986
+      }
+     },
+     "sessionFrames": {
+      "count": 204,
+      "maxGapMs": 5520,
+      "blockedMs": 5589.333333333294
+     },
+     "undoSteps": 20,
+     "debugAfterUndo": {
+      "strokeRevision": 22,
+      "snapshots": 0,
+      "liveRasters": 0,
+      "rasterBytes": 0,
+      "blobBytes": 0,
+      "baseRasters": 20,
+      "baseRasterBytes": 22380544,
+      "historyLength": 0,
+      "patchBytes": 0,
+      "pendingCommands": 0
+     }
+    },
+    {
+     "arm": "glaze-direct",
+     "pageDrawMs": 5417,
+     "drawToSecondRafMs": 5934,
+     "commitP95Ms": 446,
+     "measures": {
+      "engine.draw": {
+       "count": 22,
+       "total": 97,
+       "max": 6
+      },
+      "engine.commit": {
+       "count": 22,
+       "total": 5263,
+       "max": 463
+      },
+      "engine.undoPatchCapture": {
+       "count": 124,
+       "total": 1,
+       "max": 1
+      },
+      "engine.undoPatchCrop": {
+       "count": 21,
+       "total": 5262,
+       "max": 463
+      }
+     },
+     "undoLoopMs": 332,
+     "sessionMs": 9301,
+     "settle": {
+      "ms": 3000,
+      "measures": {
+       "engine.fold": {
+        "count": 2,
+        "total": 14,
+        "max": 8
+       }
+      },
+      "frames": {
+       "count": 181,
+       "maxGapMs": 18,
+       "blockedMs": 55.333333333333016
+      }
+     },
+     "undoWindow": {
+      "measures": {
+       "engine.undoInkMotion": {
+        "count": 40,
+        "total": 21,
+        "max": 2
+       },
+       "engine.undo": {
+        "count": 20,
+        "total": 26,
+        "max": 3
+       }
+      },
+      "frames": {
+       "count": 23,
+       "maxGapMs": 19,
+       "blockedMs": 10.999999999999986
+      }
+     },
+     "sessionFrames": {
+      "count": 205,
+      "maxGapMs": 5927,
+      "blockedMs": 5976.666666666628
+     },
+     "undoSteps": 20,
+     "debugAfterUndo": {
+      "strokeRevision": 22,
+      "snapshots": 0,
+      "liveRasters": 0,
+      "rasterBytes": 0,
+      "blobBytes": 0,
+      "baseRasters": 20,
+      "baseRasterBytes": 22380544,
+      "historyLength": 0,
+      "patchBytes": 0,
+      "pendingCommands": 0
+     }
+    },
+    {
+     "arm": "restamp",
+     "pageDrawMs": 8301,
+     "drawToSecondRafMs": 8700,
+     "commitP95Ms": 582,
+     "measures": {
+      "engine.draw": {
+       "count": 22,
+       "total": 1593,
+       "max": 522
+      },
+      "engine.commit": {
+       "count": 22,
+       "total": 6302,
+       "max": 584
+      },
+      "engine.undoPatchCapture": {
+       "count": 124,
+       "total": 1,
+       "max": 1
+      },
+      "engine.undoPatchCrop": {
+       "count": 21,
+       "total": 6301,
+       "max": 584
+      },
+      "engine.crayonShadow": {
+       "count": 1,
+       "total": 0,
+       "max": 0
+      }
+     },
+     "undoLoopMs": 750,
+     "sessionMs": 12483,
+     "settle": {
+      "ms": 3000,
+      "measures": {
+       "engine.crayonShadow": {
+        "count": 2,
+        "total": 0,
+        "max": 0
+       },
+       "engine.fold": {
+        "count": 1,
+        "total": 499,
+        "max": 499
+       }
+      },
+      "frames": {
+       "count": 152,
+       "maxGapMs": 502,
+       "blockedMs": 536.666666666668
+      }
+     },
+     "undoWindow": {
+      "measures": {
+       "engine.undoInkMotion": {
+        "count": 40,
+        "total": 455,
+        "max": 437
+       },
+       "engine.undo": {
+        "count": 20,
+        "total": 456,
+        "max": 437
+       },
+       "engine.crayonShadow": {
+        "count": 10,
+        "total": 0,
+        "max": 0
+       },
+       "engine.fold": {
+        "count": 1,
+        "total": 9,
+        "max": 9
+       }
+      },
+      "frames": {
+       "count": 23,
+       "maxGapMs": 442,
+       "blockedMs": 432.33333333333314
+      }
+     },
+     "sessionFrames": {
+      "count": 176,
+      "maxGapMs": 8694,
+      "blockedMs": 9646.333333333396
+     },
      "undoSteps": 20,
      "debugAfterUndo": {
       "strokeRevision": 22,
