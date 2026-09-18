@@ -54,16 +54,20 @@ capture or build running concurrently. Every run is in [`results.json`](results.
 
 The instrumented WebKit 26.6 runs (ABBA ×2, four per arm):
 
-| Arm          | Draw to 2nd rAF | Commit P95 | Settle: largest frame gap (`engine.fold`) | Undo loop / largest gap |    Whole session | Main thread blocked in session |
-| ------------ | --------------: | ---------: | ----------------------------------------: | ----------------------: | ---------------: | -----------------------------: |
-| restamp      |  8,700–8,767 ms | 580–587 ms |                   478–509 ms (473–504 ms) |    733–783 / 421–472 ms | 12,466–12,583 ms |                 9,603–9,751 ms |
-| glaze-direct |  5,535–6,167 ms | 400–446 ms |                       18–21 ms (11–14 ms) |         317–335 / 19 ms |   8,885–9,532 ms |                 5,589–6,211 ms |
+| Arm          | Draw to 2nd rAF | Commit P95 | Settle: largest frame gap (`engine.fold`) | Undo loop / largest gap |    Whole session | rAF-gap excess over 16.7 ms |
+| ------------ | --------------: | ---------: | ----------------------------------------: | ----------------------: | ---------------: | --------------------------: |
+| restamp      |  8,700–8,767 ms | 580–587 ms |                   478–509 ms (473–504 ms) |    733–783 / 421–472 ms | 12,466–12,583 ms |              9,603–9,751 ms |
+| glaze-direct |  5,535–6,167 ms | 400–446 ms |                       18–21 ms (11–14 ms) |         317–335 / 19 ms |   8,885–9,532 ms |              5,589–6,211 ms |
 
 "Whole session" runs from draw start to the second rAF after the undo loop, including the 3 s idle
-window. "Main thread blocked" sums every rAF gap's excess over one 60 Hz frame across that session.
-The two earlier WebKit sets used a driver revision without the session sampler (A/B ×3, then ABBA
-×2). They measured the same draw, commit, and undo fields in the same ranges: restamp 8,703–8,760 ms
-and glaze-direct 5,620–5,974 ms to the second rAF.
+window. "rAF-gap excess" sums `max(0, gap − 16.7 ms)` over every rAF gap in the session. It is a
+literal gap sum, not main-thread blocked time. WebKit's ~1 ms clock quantization adds a few tens of
+milliseconds over a smooth multi-second stretch, and a missing callback does not by itself say the
+page's main thread was the one delayed. It is useful here only for comparing the two arms. The
+largest-gap columns are the stronger evidence. The Chromium runs and the two earlier WebKit sets
+used a driver revision without the session sampler. The earlier WebKit sets (A/B ×3, then ABBA ×2)
+measured the same draw, commit, and undo fields in the same ranges: restamp 8,703–8,760 ms and
+glaze-direct 5,620–5,974 ms to the second rAF.
 
 Chromium 153 (headless, ABBA ×1) showed the same direction and a larger ratio. Restamp took
 3,006–3,076 ms to the second rAF and glaze-direct took 487–490 ms. Commit P95 was about 1 ms in

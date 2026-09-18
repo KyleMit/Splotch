@@ -65,13 +65,13 @@ for (const arm of ARMS) {
         const inside = stamps.filter((t) => t >= from && t <= to);
         const edges = [from, ...inside, to];
         let maxGap = 0;
-        let blocked = 0;
+        let excess = 0;
         for (let i = 1; i < edges.length; i++) {
           const gap = edges[i] - edges[i - 1];
           maxGap = Math.max(maxGap, gap);
-          blocked += Math.max(0, gap - 1000 / 60);
+          excess += Math.max(0, gap - 1000 / 60);
         }
-        return { count: inside.length, maxGapMs: maxGap, blockedMs: blocked };
+        return { count: inside.length, maxGapMs: maxGap, gapExcessOver60HzMs: excess };
       };
       const measuresIn = (from, to) => {
         const out = {};
@@ -152,7 +152,7 @@ for (const arm of ARMS) {
       undoLoopMs: Math.round(r.undoLoopMs),
       undoSteps: r.undoSteps,
       sessionMs: Math.round(r.sessionMs),
-      sessionBlockedMs: Math.round(r.sessionFrames.blockedMs),
+      sessionGapExcessMs: Math.round(r.sessionFrames.gapExcessOver60HzMs),
       settleMaxGapMs: Math.round(r.settle.frames.maxGapMs),
       settleMeasures: Object.fromEntries(
         Object.entries(r.settle.measures).map(([k, v]) => [k, Math.round(v.total)])

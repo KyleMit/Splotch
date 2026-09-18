@@ -3,7 +3,7 @@
  "host": "developer Mac, Apple M5, macOS 26 (Darwin 25.6.0); served by this checkout's vite preview on 127.0.0.1:4173; no capture or build running concurrently",
  "driver": {
   "path": "docs/scratchpad/perf/2026-09-18-issue-1750-restamp-detach/ab-crayon-deposition.mjs",
-  "note": "webkit-initial and webkit-confirmation ran an earlier revision without the session sampler (same draw, commit and undo code path); webkit-instrumented and chromium ran the committed file"
+  "note": "webkit-initial, webkit-confirmation and chromium ran an earlier revision without the session sampler (same draw, commit and undo code path; their rows have no sessionMs/settle/undoWindow/sessionFrames); webkit-instrumented ran the committed file"
  },
  "workload": "22 crayon back-and-forth scribbles (1,200 ops each, run-undo-scenarios geometry), one synchronous page.evaluate, 1024x1366 @2, then undo to empty with the gate harness frame-waiting loop",
  "fields": {
@@ -12,8 +12,8 @@
   "commitP95Ms": "P95 of engine.commit over the 22 commits",
   "undoLoopMs": "page time for the undo loop including its per-step frame waits",
   "sessionMs": "draw start to the second rAF after the undo loop, including the fixed 3 s settle window",
-  "sessionFrames.blockedMs": "sum over every rAF gap in the session of (gap - 16.7 ms), i.e. main-thread time beyond one 60 Hz frame",
-  "settle": "the fixed 3 s idle window between presentation and undo: engine.* measures that started in it and its frame gaps"
+  "settle": "the fixed 3 s idle window between presentation and undo: engine.* measures that started in it and its frame gaps",
+  "sessionFrames.gapExcessOver60HzMs": "sum over every rAF gap in the session of max(0, gap - 16.667 ms). A literal rAF-gap excess, not main-thread blocked time: WebKit quantizes performance.now() to ~1 ms, so ordinary 17 ms frames each add ~0.33 ms (tens of ms over seconds), and a missing rAF callback does not by itself attribute the delay to the main thread"
  },
  "runs": {
   "webkit-initial": {
@@ -891,7 +891,7 @@
       "frames": {
        "count": 153,
        "maxGapMs": 499,
-       "blockedMs": 529.6666666666675
+       "gapExcessOver60HzMs": 529.6666666666675
       }
      },
      "undoWindow": {
@@ -920,13 +920,13 @@
       "frames": {
        "count": 23,
        "maxGapMs": 472,
-       "blockedMs": 473.3333333333332
+       "gapExcessOver60HzMs": 473.3333333333332
       }
      },
      "sessionFrames": {
       "count": 177,
       "maxGapMs": 8765,
-      "blockedMs": 9751.333333333398
+      "gapExcessOver60HzMs": 9751.333333333398
      },
      "undoSteps": 20,
      "debugAfterUndo": {
@@ -983,7 +983,7 @@
       "frames": {
        "count": 181,
        "maxGapMs": 21,
-       "blockedMs": 61.666666666666345
+       "gapExcessOver60HzMs": 61.666666666666345
       }
      },
      "undoWindow": {
@@ -1002,13 +1002,13 @@
       "frames": {
        "count": 22,
        "maxGapMs": 19,
-       "blockedMs": 10.333333333333318
+       "gapExcessOver60HzMs": 10.333333333333318
       }
      },
      "sessionFrames": {
       "count": 205,
       "maxGapMs": 5564,
-      "blockedMs": 5620.666666666629
+      "gapExcessOver60HzMs": 5620.666666666629
      },
      "undoSteps": 20,
      "debugAfterUndo": {
@@ -1065,7 +1065,7 @@
       "frames": {
        "count": 181,
        "maxGapMs": 20,
-       "blockedMs": 60.66666666666636
+       "gapExcessOver60HzMs": 60.66666666666636
       }
      },
      "undoWindow": {
@@ -1084,13 +1084,13 @@
       "frames": {
        "count": 23,
        "maxGapMs": 19,
-       "blockedMs": 9.333333333333318
+       "gapExcessOver60HzMs": 9.333333333333318
       }
      },
      "sessionFrames": {
       "count": 205,
       "maxGapMs": 6158,
-      "blockedMs": 6211.333333333296
+      "gapExcessOver60HzMs": 6211.333333333296
      },
      "undoSteps": 20,
      "debugAfterUndo": {
@@ -1157,7 +1157,7 @@
       "frames": {
        "count": 152,
        "maxGapMs": 509,
-       "blockedMs": 542.0000000000018
+       "gapExcessOver60HzMs": 542.0000000000018
       }
      },
      "undoWindow": {
@@ -1186,13 +1186,13 @@
       "frames": {
        "count": 23,
        "maxGapMs": 439,
-       "blockedMs": 431.33333333333314
+       "gapExcessOver60HzMs": 431.33333333333314
       }
      },
      "sessionFrames": {
       "count": 175,
       "maxGapMs": 8762,
-      "blockedMs": 9718.666666666732
+      "gapExcessOver60HzMs": 9718.666666666732
      },
      "undoSteps": 20,
      "debugAfterUndo": {
@@ -1259,7 +1259,7 @@
       "frames": {
        "count": 154,
        "maxGapMs": 478,
-       "blockedMs": 508.9999999999989
+       "gapExcessOver60HzMs": 508.9999999999989
       }
      },
      "undoWindow": {
@@ -1288,13 +1288,13 @@
       "frames": {
        "count": 22,
        "maxGapMs": 421,
-       "blockedMs": 415.99999999999983
+       "gapExcessOver60HzMs": 415.99999999999983
       }
      },
      "sessionFrames": {
       "count": 179,
       "maxGapMs": 8694,
-      "blockedMs": 9603.000000000065
+      "gapExcessOver60HzMs": 9603.000000000065
      },
      "undoSteps": 20,
      "debugAfterUndo": {
@@ -1351,7 +1351,7 @@
       "frames": {
        "count": 180,
        "maxGapMs": 21,
-       "blockedMs": 68.99999999999966
+       "gapExcessOver60HzMs": 68.99999999999966
       }
      },
      "undoWindow": {
@@ -1370,13 +1370,13 @@
       "frames": {
        "count": 22,
        "maxGapMs": 19,
-       "blockedMs": 12.999999999999986
+       "gapExcessOver60HzMs": 12.999999999999986
       }
      },
      "sessionFrames": {
       "count": 204,
       "maxGapMs": 5520,
-      "blockedMs": 5589.333333333294
+      "gapExcessOver60HzMs": 5589.333333333294
      },
      "undoSteps": 20,
      "debugAfterUndo": {
@@ -1433,7 +1433,7 @@
       "frames": {
        "count": 181,
        "maxGapMs": 18,
-       "blockedMs": 55.333333333333016
+       "gapExcessOver60HzMs": 55.333333333333016
       }
      },
      "undoWindow": {
@@ -1452,13 +1452,13 @@
       "frames": {
        "count": 23,
        "maxGapMs": 19,
-       "blockedMs": 10.999999999999986
+       "gapExcessOver60HzMs": 10.999999999999986
       }
      },
      "sessionFrames": {
       "count": 205,
       "maxGapMs": 5927,
-      "blockedMs": 5976.666666666628
+      "gapExcessOver60HzMs": 5976.666666666628
      },
      "undoSteps": 20,
      "debugAfterUndo": {
@@ -1525,7 +1525,7 @@
       "frames": {
        "count": 152,
        "maxGapMs": 502,
-       "blockedMs": 536.666666666668
+       "gapExcessOver60HzMs": 536.666666666668
       }
      },
      "undoWindow": {
@@ -1554,13 +1554,13 @@
       "frames": {
        "count": 23,
        "maxGapMs": 442,
-       "blockedMs": 432.33333333333314
+       "gapExcessOver60HzMs": 432.33333333333314
       }
      },
      "sessionFrames": {
       "count": 176,
       "maxGapMs": 8694,
-      "blockedMs": 9646.333333333396
+      "gapExcessOver60HzMs": 9646.333333333396
      },
      "undoSteps": 20,
      "debugAfterUndo": {
