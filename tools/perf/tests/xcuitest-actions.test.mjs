@@ -1173,8 +1173,11 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     // print only exists while the run is minimized.
     expect(block).toContain('.ai-keep-drawing button');
     expect(block).toContain('.ai-waiting-polaroid');
-    // A build without the dev harness records the gap instead of failing the sweep.
-    expect(block).toContain('notApplicable.set');
+    // A cue the run cannot reach is BLOCKED coverage, not a platform that does
+    // not offer the action: notApplicable would let missing evidence read as a
+    // deliberate N/A and keep the capture green (issue #1870).
+    expect(block).toContain('blocked.set');
+    expect(block).not.toContain('notApplicable.set');
     // The stub must always come back off, or every later action runs on a mocked fetch.
     expect(block).toContain('finally');
     expect(block).toContain('removeAiGenerationStub');
@@ -1218,6 +1221,34 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     );
 
     expect(badge).toContain("name.endsWith('-' + cue)");
+  });
+
+  it('fails the capture when required coverage is blocked, and says which', () => {
+    const artifact = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf('const blockedCoverage ='),
+      IPAD_ACTIONS.indexOf('} finally {', IPAD_ACTIONS.indexOf('const blockedCoverage ='))
+    );
+
+    // `passed` and the exit status both have to account for it, or a campaign
+    // reads as complete while a required cue was never measured.
+    expect(artifact).toContain('passed: failures.length === 0 && blockedCoverage.length === 0');
+    expect(artifact).toContain('Blocked coverage:');
+    expect(artifact).toContain('BLOCKED coverage');
+    // Still overridable the same way a red gate is, and no other way.
+    expect(artifact).toContain("!has('report-only')");
+  });
+
+  it('carries blocked coverage in the recorded plan, separately from N/A', () => {
+    const plan = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf('    actionPlan: {'),
+      IPAD_ACTIONS.indexOf('export async function runIpadActions')
+    );
+
+    expect(plan).toContain('notApplicable: [...notApplicable]');
+    expect(plan).toContain('blocked: [...blocked]');
+    // The drift check across scored repeats has to see it too, or a cue that
+    // becomes blocked halfway through a capture passes unnoticed.
+    expect(IPAD_ACTIONS).toContain('blocked: [...(plan.blocked ?? [])]');
   });
 
   it('scores the AI ready cue to its end instead of a fixed settle', () => {
