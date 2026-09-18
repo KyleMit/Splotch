@@ -78,6 +78,15 @@ export const ERASER_FILL_FAILED = 'eraser-fill-failed';
 // recorded field are accepted; they cannot prove either way.
 export const BLANK_OUTPUT = 'blank-output';
 
+// An action capture that recorded BLOCKED coverage: a required action the run
+// could not obtain (issue #1870 — the AI waiting print on a device served over an
+// insecure LAN origin). Its `passed` may be false for a red gate too, and a red
+// gate is valid evidence that the ledger banks; blocked coverage is missing
+// evidence, so it is refused by name instead. Spends attempts like a fidelity
+// failure: the cause can be transient, and a structural one exhausts into a
+// named P1 rather than a cell marked complete with its cue absent.
+export const BLOCKED_COVERAGE = 'blocked-coverage';
+
 // The operator kept a cell banked under another instrument, deliberately, via
 // --accept-instrument-change. Not an attempt and not a completion — the row
 // exists so the acceptance is on record beside the mixture it accepted, and so
@@ -154,7 +163,8 @@ export function attemptsFor(rows, cellId) {
         row.status?.startsWith(WRONG_GESTURE_REPEATS) ||
         row.status?.startsWith(WRONG_GESTURE_PLAN) ||
         row.status?.startsWith(ERASER_FILL_FAILED) ||
-        row.status?.startsWith(BLANK_OUTPUT))
+        row.status?.startsWith(BLANK_OUTPUT) ||
+        row.status?.startsWith(BLOCKED_COVERAGE))
   ).length;
 }
 

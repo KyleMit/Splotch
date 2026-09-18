@@ -1625,14 +1625,18 @@ function actionsOverviewCell(label, mode) {
     return tipCell('mx-cell num unscoreable', 'no control', title);
   }
   const failedLabels = comparable.filter((result) => !result.passed).map((result) => result.label);
-  const heat =
+  const blocked = blockedActionLabels(mode.actions);
+  const gateHeat =
     failedLabels.length === 0
       ? 'pass'
       : failedLabels.length / comparable.length <= OVERVIEW_ACTIONS_WARN_SHARE
         ? 'warn'
         : 'hot';
-  const title = `${label} · ${score} actions passing${failedLabels.length ? ` · failing: ${failedLabels.join('; ')}` : ''}`;
-  return tipCell(`mx-cell num ${heat}`, score, title);
+  // Missing coverage is never green, however clean the measured actions are.
+  const heat = blocked.length && gateHeat === 'pass' ? 'warn' : gateHeat;
+  const shown = `${score}${blockedScoreSuffix(mode.actions)}`;
+  const title = `${label} · ${score} actions passing${failedLabels.length ? ` · failing: ${failedLabels.join('; ')}` : ''}${blocked.length ? ` · blocked: ${blocked.join('; ')}` : ''}`;
+  return tipCell(`mx-cell num ${heat}`, shown, title);
 }
 
 const OVERVIEW_COLUMNS = ['Pen', 'Crayon', 'Magic', 'Eraser', 'Undo', 'Actions'];
@@ -1707,6 +1711,23 @@ function heatClass(ratio) {
   if (ratio <= 1) return 'pass';
   if (ratio <= 1.5) return 'warn';
   return 'hot';
+}
+
+// Required actions a capture recorded as BLOCKED (issue #1870). They have no
+// result, so every aggregate built from `results` alone would count a mode as
+// fully passing while one of its required cues was never measured — the review
+// of that change found the overview, the heatmap score, the Markdown table and
+// the masthead all doing exactly that. Every aggregate reads this beside the
+// comparable results.
+function blockedActionLabels(actions) {
+  return (actions?.actionPlan?.blocked ?? [])
+    .map(({ label }) => label)
+    .filter((label) => !ACTION_CONTROL_LABELS.has(label));
+}
+
+function blockedScoreSuffix(actions) {
+  const count = blockedActionLabels(actions).length;
+  return count ? ` · ${count} blocked` : '';
 }
 
 function comparableActionResults(actions) {
@@ -1810,7 +1831,7 @@ function actionHeatmap(matrix) {
         const score = !mode.actions
           ? '—'
           : mode.actions.scoreable !== false
-            ? `${passingCount}/${comparableResults.length}`
+            ? `${passingCount}/${comparableResults.length}${blockedScoreSuffix(mode.actions)}`
             : 'no control';
         return `<div class="heat-row" ${attrs}><div class="heat-label"><span>${esc(displayMode(mode))}</span><b>${score}</b></div><div class="heat-cells">${cells}</div></div>`;
       })
@@ -2067,7 +2088,8 @@ function renderMarkdown(matrix) {
     const unconfirmed = comparable
       .filter((result) => result.passed && result.postActionFrames?.maxUnconfirmed === true)
       .map((result) => `${result.label} (max ${fmt(result.postActionFrames.max)} ms unconfirmed)`);
-    const failureCell = [...failures, ...unconfirmed];
+    const blocked = blockedActionLabels(target.actions).map((label) => `${label} (blocked)`);
+    const failureCell = [...failures, ...blocked, ...unconfirmed];
     // When every comparable first frame is declared N/A the aggregate is a
     // declared non-measurement, not an absent one — render it apart from the
     // "—" that means "not measured".
@@ -2075,7 +2097,7 @@ function renderMarkdown(matrix) {
       comparable.length > 0 && comparable.every((result) => result.firstFrame?.na === true);
     return [
       label,
-      `${comparable.filter((result) => result.passed).length} / ${comparable.length}`,
+      `${comparable.filter((result) => result.passed).length} / ${comparable.length}${blockedScoreSuffix(target.actions)}`,
       `${target.actions.finalProductCommitActionCount} / ${comparable.length}`,
       allFirstFramesNa ? 'N/A' : fmt(target.actions.worst.firstFrameP95),
       fmt(target.actions.worst.readyP95),
@@ -2949,9 +2971,20 @@ function renderReport(matrix) {
     target.modes.some((mode) => mode.status === 'captured')
   ).length;
   const capturedModeCount = rows.filter((row) => row.status === 'captured').length;
-  const actionCount = (matrix.actionLabels ?? comparableActionLabels(rows)).length;
+  // A label discovered only from a plan's blocked list was never measured
+  // anywhere, so it must not be counted as one (issue #1870). Everything else
+  // keeps the count's existing meaning.
+  const blockedLabels = new Set(rows.flatMap((row) => blockedActionLabels(row.actions)));
+  const measuredSomewhere = new Set(comparableActionLabels(rows));
+  const neverMeasured = new Set(
+    [...blockedLabels].filter((label) => !measuredSomewhere.has(label))
+  );
+  const actionCount = (matrix.actionLabels ?? comparableActionLabels(rows)).filter(
+    (label) => !neverMeasured.has(label)
+  ).length;
+  const blockedOnly = neverMeasured.size;
   const limitations = [...(matrix.limitations ?? []), ...preservedEvidenceNotes(matrix)];
-  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> action${actionCount === 1 ? '' : 's'} measured</span>`;
+  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> action${actionCount === 1 ? '' : 's'} measured</span>${blockedLabels.size ? `<span class="chip warn"><b>${blockedLabels.size}</b> blocked${blockedOnly ? `, ${blockedOnly} never measured` : ''}</span>` : ''}`;
   const header = masthead({
     title: 'Deployment-target performance matrix',
     tagline:

@@ -489,6 +489,18 @@ describe('deployment matrix report', () => {
     const html = renderReport(matrix);
     expect(html).toContain('BLOCKED: blocked coverage: the AI run failed before');
     expect(html).not.toContain('N/A: blocked coverage');
+
+    // Every aggregate has to show it too (review round two): a reader of the
+    // overview, the heatmap, the masthead, or the Markdown must not see green.
+    expect(html).toContain('1/1 · 1 blocked');
+    expect(html).toContain('blocked: show AI waiting print');
+    expect(html).not.toMatch(/class="mx-cell num pass"[^>]*>1\/1 · 1 blocked/);
+    expect(html).toContain('<span class="chip"><b>1</b> action measured</span>');
+    expect(html).toContain('<b>1</b> blocked, 1 never measured');
+
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain('1 / 1 · 1 blocked');
+    expect(markdown).toContain('show AI waiting print (blocked)');
   });
 
   it('reads a plan recorded before blocked coverage existed as having none', () => {
