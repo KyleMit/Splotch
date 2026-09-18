@@ -106,6 +106,7 @@
     magic: '#magicBrushButton',
     eraser: '#eraserButton',
   };
+  const BRUSH_MENU_TRIGGER = '#brushButton';
 
   // Each phase names the paper state it needs and what it suppresses. Order
   // minimizes paper switching for the human: blank first, then everything that
@@ -455,11 +456,11 @@
     );
   };
 
-  // The Brush Menu is a hidden `<div>`, not a modal, so its buttons are in the DOM
-  // whether or not the flyout is open — one click on the brush is enough. Opening
-  // the flyout first is not just unnecessary: it leaves the panel in a state where
-  // the next tap closes the flyout instead of reaching the coloring-book button,
-  // which stalled the whole setup.
+  // The Brush Menu mounts its options only while it is open, and a pick closes
+  // it again, so an option missing from the DOM is reached through the menu's
+  // trigger. The tool choice is persisted and the engine commits it through an
+  // effect, so the pick is proven by the committed mode, not by the click — a
+  // capture otherwise measures whichever brush the previous one left selected.
   const driveBrush = window.__probeBrush ?? null;
   async function selectBrush(brush) {
     const target = BRUSH_BUTTONS[brush];
@@ -469,7 +470,16 @@
       );
       return;
     }
+    if (!document.querySelector(target) && clickSelector(BRUSH_MENU_TRIGGER)) {
+      await waitForCondition(() => document.querySelector(target));
+    }
     if (!clickSelector(target)) console.error(`No ${target} — cannot select a brush unattended.`);
+    const committed = await waitForCondition(() => window.__committedBrushMode?.() === brush);
+    if (!committed) {
+      console.error(
+        `The engine committed ${window.__committedBrushMode?.() ?? 'nothing'}, not ${brush}.`
+      );
+    }
     await settle(UI_SETTLE_MS);
   }
 
@@ -859,6 +869,7 @@
         driveHz,
         drivePointerType: driveCycle ? drivePointerType : null,
         brush: driveBrush,
+        committedBrush: window.__committedBrushMode?.() ?? null,
         // The reported "goes black on a coloring page, then snaps back" is what
         // an UNBLENDED line-art plate looks like: dark mode inverts the art to
         // white-on-black and `screen` is what makes that black disappear. Which

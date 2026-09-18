@@ -1523,6 +1523,7 @@ describe('probe selectors still match the app', () => {
     ['.brush-ring', () => component('PointerHalos.svelte'), 'class="brush-ring"'],
     ['.eraser-bubble', () => component('PointerHalos.svelte'), 'class="eraser-bubble"'],
     ['#coloringBookButton', () => component('ActionsPanel.svelte'), 'id="coloringBookButton"'],
+    ['#brushButton', () => component('BrushControl.svelte'), 'id="brushButton"'],
     [
       '[aria-label^="Clear active coloring page:"]',
       () => component('ActivePageChip.svelte'),
