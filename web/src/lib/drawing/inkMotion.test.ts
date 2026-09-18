@@ -95,12 +95,16 @@ describe('undo ghost tile reads', () => {
   });
   afterEach(() => recorder.restore());
 
-  const undoGhost = (command: StrokeGroupCommand) =>
-    createInkMotion((target) => target.drawImage(tile, 0, 0)).undo(canvas, command, view, 1, null);
+  const crayonCommand: StrokeGroupCommand = { wasEmpty: false, ops: [{ ...penDot, crayon: true }] };
+  const undoGhost = (command: StrokeGroupCommand, settles: boolean) =>
+    createInkMotion(
+      (target) => target.drawImage(tile, 0, 0),
+      () => settles
+    ).undo(canvas, command, view, 1, null);
   const readBacks = () => recorder.calls.filter((call) => call.name === 'getImageData');
 
-  it('settles a tile-read ghost after its mask and before the undo restore runs', () => {
-    undoGhost({ wasEmpty: false, ops: [{ ...penDot, crayon: true }] });
+  it('settles a tile-read ghost after its mask, before undo goes on to the restore', () => {
+    undoGhost(crayonCommand, true);
 
     const masked = recorder.calls.findIndex(
       (call) => call.name === 'drawImage' && call.composite === 'destination-in'
@@ -111,8 +115,15 @@ describe('undo ghost tile reads', () => {
     expect(recorder.calls[settled].canvas).toBe(recorder.calls[masked].canvas);
   });
 
+  it('leaves the reads pending where the browser is not asked to settle them', () => {
+    undoGhost(crayonCommand, false);
+
+    expect(recorder.calls.some((call) => call.composite === 'destination-in')).toBe(true);
+    expect(readBacks()).toHaveLength(0);
+  });
+
   it('leaves a replayed pen ghost unread, since it never reads the tiles', () => {
-    undoGhost({ wasEmpty: false, ops: [penDot] });
+    undoGhost({ wasEmpty: false, ops: [penDot] }, true);
 
     expect(recorder.calls.some((call) => call.name === 'drawImage')).toBe(false);
     expect(readBacks()).toHaveLength(0);
