@@ -87,8 +87,19 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     paint(target);
     target.globalCompositeOperation = 'destination-in';
     target.drawImage(mask, bounds.left, bounds.top);
+    settleTileReads(target);
     mask.width = 0;
     pendingSubtract = target;
+  }
+
+  // The undo restore writes the very tiles the ghost has just read. Left
+  // pending, WebKit resolves those reads at presentation after the write, and
+  // on a physical iPad that frame overran the action-frame gate on a quarter of
+  // crayon undos. Reading one pixel back resolves them now, before the write,
+  // for a few milliseconds of undo time; the ghost's pixels are unchanged.
+  // Evidence: docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/.
+  function settleTileReads(target: CanvasRenderingContext2D) {
+    target.getImageData(0, 0, 1, 1);
   }
 
   // A crayon or magic ghost is the undone ink as it stands on the live tiles.
