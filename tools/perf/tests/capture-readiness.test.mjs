@@ -469,16 +469,21 @@ describe('androidVerificationBlockers', () => {
           { name: 'android lock', status: 'blocked', detail: 'the device is locked' },
           { name: 'android chrome', status: 'blocked', detail: 'Chrome is not installed' },
         ],
-        portChecks: [portCheck('floorControl'), portCheck('androidCdp')],
+        portChecks: [portCheck('floorControl')],
       })
     ).toEqual(['android lock: the device is locked', 'android chrome: Chrome is not installed']);
   });
 
-  it('counts a blocked port only when an Android verification binds it', () => {
+  it('counts a blocked port only when an Android verification cannot run without it', () => {
     expect(
       androidVerificationBlockers({
         androidChecks: [ok('android device')],
-        portChecks: [portCheck('preview', 'blocked'), portCheck('floorControl', 'blocked')],
+        portChecks: [
+          portCheck('preview', 'blocked'),
+          // The input verification's tab guard falls back when the CDP forward cannot bind.
+          portCheck('androidCdp', 'blocked'),
+          portCheck('floorControl', 'blocked'),
+        ],
       })
     ).toEqual(['port floorControl: held']);
   });
@@ -487,7 +492,7 @@ describe('androidVerificationBlockers', () => {
     expect(
       androidVerificationBlockers({
         androidChecks: [ok('android device'), ok('android chrome')],
-        portChecks: [portCheck('preview', 'blocked'), portCheck('androidCdp')],
+        portChecks: [portCheck('preview', 'blocked'), portCheck('floorControl')],
       })
     ).toEqual([]);
   });
