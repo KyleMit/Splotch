@@ -87,12 +87,13 @@ app-container plist off with `devicectl` (ADR-0151).
 These see what the page cannot: whether a frame was actually presented, and whether the app was slow
 or merely descheduled. **Android gives up far more than iOS does.**
 
-| Instrument                     | Platform                  | Answers                                                                   | Blind to                                                                                      |
-| ------------------------------ | ------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `dumpsys gfxinfo … framestats` | Android                   | Per-frame stage timings from vsync to present                             | Browser targets — Chrome composites outside the instrumented pipeline and reports zero frames |
-| Perfetto                       | Android                   | The whole device: GPU, SurfaceFlinger, scheduler, other processes         | Page-internal work                                                                            |
-| CDP `Tracing`                  | Android, desktop Chromium | Renderer work — script, style, layout, paint, raster                      | Anything outside the renderer; **has no iPad counterpart**                                    |
-| `xctrace` / Instruments        | iOS                       | Frame lifetimes and hitches, correlated to the probe through `timeOrigin` | Page-internal attribution                                                                     |
+| Instrument                          | Platform                                        | Answers                                                                                                                            | Blind to                                                                                                                                                                                                                                                                   |
+| ----------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dumpsys gfxinfo … framestats`      | Android                                         | Per-frame stage timings from vsync to present                                                                                      | Browser targets — Chrome composites outside the instrumented pipeline and reports zero frames                                                                                                                                                                              |
+| Perfetto                            | Android                                         | The whole device: GPU, SurfaceFlinger, scheduler, other processes                                                                  | Page-internal work                                                                                                                                                                                                                                                         |
+| CDP `Tracing`                       | Android, desktop Chromium                       | Renderer work — script, style, layout, paint, raster                                                                               | Anything outside the renderer; **has no iPad counterpart**                                                                                                                                                                                                                 |
+| `xctrace` / Instruments             | iOS                                             | Frame lifetimes and hitches, correlated to the probe through `timeOrigin`                                                          | Page-internal attribution                                                                                                                                                                                                                                                  |
+| `sample(1)` on the WebKit processes | macOS desktop WebKit (local and `macos-latest`) | Which native stack the web-content main thread and the GPU process sit in — e.g. a canvas copy waiting on accelerated CoreGraphics | Which JS call made the wait (JIT frames are unnamed); a statistical sample cannot pair one call with one native stack. The command is macOS-only; on the physical iPad the native sampler is `xctrace` Time Profiler with `--all-processes` (see `PROFILING-CAMPAIGNS.md`) |
 
 Do not assume an instrument is free. The technique for checking is cheap and transfers: capture the
 same gesture untraced, lightly traced, and fully traced, then score all three with the app's own
@@ -255,6 +256,12 @@ independently of both the app and Chrome.
 
 **Perfetto.** The on-device system tracer. `sched` is the category that pays for itself: whether the
 app was slow or descheduled has no answer from inside the app.
+
+**`sample`.** macOS's statistical process sampler. Run against Playwright WebKit's
+`com.apple.WebKit.WebContent` and `com.apple.WebKit.GPU` processes in short windows during a
+scenario, it names the native task a page-side measure cannot — the method, parser, and a worked
+attribution are in `docs/scratchpad/perf/2026-09-18-issue-1700-post-burst-stall-attribution.md`. On
+a GitHub macOS runner it needs `sudo`; locally it attaches as the same user.
 
 **`xcrun devicectl`.** Xcode's CoreDevice CLI. Launches the app deterministically rather than
 trusting whatever is foregrounded, and copies files out of the app data container. It prints a
