@@ -458,9 +458,12 @@
 
   // The Brush Menu mounts its options only while it is open, and a pick closes
   // it again, so an option missing from the DOM is reached through the menu's
-  // trigger. The tool choice is persisted and the engine commits it through an
-  // effect, so the pick is proven by the committed mode, not by the click — a
-  // capture otherwise measures whichever brush the previous one left selected.
+  // trigger. With a single optional brush there is no menu at all: the trigger
+  // (no aria-expanded) toggles that brush against the pen, so clicking it when
+  // the brush is already held would switch away. The tool choice is persisted
+  // and the engine commits it through an effect, so the pick is proven by the
+  // committed mode, not by the click — a capture otherwise measures whichever
+  // brush the previous one left selected.
   const driveBrush = window.__probeBrush ?? null;
   async function selectBrush(brush) {
     const target = BRUSH_BUTTONS[brush];
@@ -470,11 +473,23 @@
       );
       return;
     }
-    if (!document.querySelector(target) && clickSelector(BRUSH_MENU_TRIGGER)) {
-      await waitForCondition(() => document.querySelector(target));
+    const holdsBrush = () => window.__committedBrushMode?.() === brush;
+    const trigger = document.querySelector(BRUSH_MENU_TRIGGER);
+    if (!holdsBrush()) {
+      if (document.querySelector(target)) {
+        clickSelector(target);
+      } else if (trigger?.hasAttribute('aria-expanded')) {
+        trigger.click();
+        await waitForCondition(() => document.querySelector(target));
+        if (!clickSelector(target))
+          console.error(`No ${target} — cannot select a brush unattended.`);
+      } else if (trigger) {
+        trigger.click();
+      } else {
+        console.error(`No ${BRUSH_MENU_TRIGGER} — cannot select a brush unattended.`);
+      }
     }
-    if (!clickSelector(target)) console.error(`No ${target} — cannot select a brush unattended.`);
-    const committed = await waitForCondition(() => window.__committedBrushMode?.() === brush);
+    const committed = await waitForCondition(holdsBrush);
     if (!committed) {
       console.error(
         `The engine committed ${window.__committedBrushMode?.() ?? 'nothing'}, not ${brush}.`
