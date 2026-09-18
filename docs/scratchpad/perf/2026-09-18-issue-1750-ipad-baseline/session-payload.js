@@ -185,6 +185,8 @@
     window.__sessionProgress = 'tail';
     await new Promise((r) => setTimeout(r, TAIL_MS));
     const end = performance.now();
+    // One stamp past the end, so the interval that crosses it can be scored.
+    await frame();
     sampling = false;
     const historyAfterUndo = E.getUndoDebug();
     const measures = performance
@@ -222,7 +224,8 @@
       historyAfterUndo,
       nonTransparentAfterUndo: E.nonTransparentCount(),
       measures,
-      stamps: stamps.filter((t) => t >= t0).map(rel),
+      // Keep the last stamp before t0, so the interval the session opens in is whole.
+      stamps: stamps.slice(Math.max(0, stamps.findIndex((t) => t >= t0) - 1)).map(rel),
     };
     window.__sessionProgress = 'done';
   } catch (e) {

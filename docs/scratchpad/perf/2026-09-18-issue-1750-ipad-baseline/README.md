@@ -32,7 +32,11 @@ or raw event rows. The payload, runners, and analyzer that produced it sit besid
   * Android uses a 24 px margin instead of 160 px, so its scribbles are not 40 px wide.
 * **Frames.** `analyze.mjs` scores complete rAF-to-rAF intervals. A window takes every interval that
   overlaps it, so the frame an undo call lands in counts in full, including the synchronous work
-  before and after the call.
+  before and after the call. These captures kept no stamp before the session start or after its end,
+  so an interval closed by one of those edges is flagged as a lower bound. The burst's own
+  synchronous draw is one such interval. `session-payload.js` now keeps one stamp on each side for
+  future captures. Late excess counts only intervals longer than 1.5 × the observed cadence, so a
+  normal 8–9 ms beat at 120 Hz is never charged.
 * **Builds.** Every build is an `npm run perf:build` served over the LAN. Each run recorded the
   entry chunk that its page actually loaded.
   * Main: 7a2365631aba6078f94038235d661add6e2e42cb, served as `start.DY5Ge2nJ.js`.
@@ -144,25 +148,28 @@ is recorded here, not rounded away.
 
 ## Pixels
 
-Setting `pixelCheck` hashes every live-tile canvas before the first undo, then hashes the ghost
-canvas and every tile at the first frame after each undo. The same input ran on main and on the
-shipped fix, served by the iPad. The hashing reads the canvases back, so these runs are for
-verification only and carry no timing.
+Setting `pixelCheck` hashes every live-tile canvas before the first undo. After each undo it hashes
+the ghost canvas and every tile at the first frame. Main and the shipped fix got identical input,
+and the iPad served both. The hashes are verification-only because reading the canvases back
+perturbs timing.
 
-* **Restamp, the pipeline iPad Safari ships.** All 20 ghost hashes and all 20 tile hashes match
-  between main and the fix, and so does the tile state before the first undo. The pixels are
-  byte-identical.
-* **Glaze-direct, the native pipeline.** Its drawing varies from run to run on both builds, before
-  any code this PR touches has run:
-  * Main's pre-undo tile state was one value on three runs and a different value on one run.
-  * The fix's pre-undo state was one value on two runs and a third value on one run.
-  * Comparing runs that begin undo from the same state: fix-2 matches main-3 on all 20 ghosts and
-    all 20 tiles.
-  * Fix-1 matches fix-2 (same build, same starting state) on every ghost, but its tiles diverge from
-    undo 10 onward. It diverges from main-3 at the same undo.
+**Restamp, the pipeline iPad Safari ships.** Main and the fix produce the same pre-undo state and
+the same 20 ghost hashes and 20 tile hashes. They are byte-identical.
 
-  That within-build variance predates this PR. It is recorded as a finding and does not count
-  against the fix.
+**Glaze-direct, the native pipeline, varies from run to run on both builds.** The varying state is
+fixed before any code this PR touches runs. There are 17 runs (10 main, 7 fix) and four distinct
+pre-undo tile states. The comparable pairs are runs of one arm that begin undo from the same state:
+
+| Pair kind | Pairs | All 20 ghosts identical | Tiles identical through undo 9 | Tiles identical through undo 20 |
+| --------- | ----: | ----------------------: | -----------------------------: | ------------------------------: |
+| main–main |    10 |                      10 |                             10 |                               7 |
+| main–fix  |    14 |                      14 |                             14 |                               8 |
+| fix–fix   |     7 |                       7 |                              7 |                               3 |
+
+The ghost is the only output the settle could touch, and it is identical in every pair. Tile
+divergence always begins at undo 10. It appears between two main runs from the same starting state
+(`main-glaze-direct-10` against main runs 1, 2 and 4). The restore variance therefore predates this
+PR. Its mechanism is not attributed here.
 
 ## Not settled here
 
@@ -170,7 +177,8 @@ verification only and carry no timing.
   crayon undo on Android Chrome still paid a 733–750 ms interval across undos 2 and 3. The pen
   control paid nothing over the gate. The iOS gate leaves this untouched, and nothing here
   attributes it.
-* **Glaze-direct deposition and restore vary from run to run on the iPad.** See Pixels.
+* **Glaze-direct deposition and restore vary from run to run on the iPad**, on main as well as with
+  the fix. See Pixels. Nothing here attributes the mechanism.
 * **iPad native (WKWebView) was not captured.** The installed-app route is blocked on this host. The
   glaze-direct arm on iPad Safari stands in for native's pipeline under the same engine, but it is
   not a native measurement.
