@@ -42,6 +42,8 @@ import {
   validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
   isAiReadyCueAnimation,
+  actionCaptureVerdict,
+  reportActionCaptureVerdict,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { DEVICE_CLASSES } from '../lib/campaign-plan.mjs';
 import {
@@ -1224,18 +1226,39 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
   });
 
   it('fails the capture when required coverage is blocked, and says which', () => {
-    const artifact = IPAD_ACTIONS.slice(
-      IPAD_ACTIONS.indexOf('const blockedCoverage ='),
-      IPAD_ACTIONS.indexOf('} finally {', IPAD_ACTIONS.indexOf('const blockedCoverage ='))
-    );
+    const blocked = [{ label: 'show AI waiting print', reason: 'insecure origin' }];
+    const verdict = actionCaptureVerdict({ failures: [], actionPlan: { blocked } });
 
-    // `passed` and the exit status both have to account for it, or a campaign
-    // reads as complete while a required cue was never measured.
-    expect(artifact).toContain('passed: failures.length === 0 && blockedCoverage.length === 0');
-    expect(artifact).toContain('Blocked coverage:');
-    expect(artifact).toContain('BLOCKED coverage');
-    // Still overridable the same way a red gate is, and no other way.
-    expect(artifact).toContain("!has('report-only')");
+    // No gate failed, and the capture still cannot pass: the evidence is missing.
+    expect(verdict).toEqual({ blockedCoverage: blocked, passed: false });
+    expect(() =>
+      reportActionCaptureVerdict({ failures: [], blockedCoverage: blocked, reportOnly: false })
+    ).toThrow('Blocked coverage: show AI waiting print');
+    // Overridable exactly the way a red gate is, and only that way.
+    expect(() =>
+      reportActionCaptureVerdict({ failures: [], blockedCoverage: blocked, reportOnly: true })
+    ).not.toThrow();
+  });
+
+  it('passes a clean capture, and a plan recorded before blocked existed', () => {
+    expect(actionCaptureVerdict({ failures: [], actionPlan: { blocked: [] } }).passed).toBe(true);
+    expect(actionCaptureVerdict({ failures: [], actionPlan: {} })).toEqual({
+      blockedCoverage: [],
+      passed: true,
+    });
+    expect(() =>
+      reportActionCaptureVerdict({ failures: [], blockedCoverage: [], reportOnly: false })
+    ).not.toThrow();
+  });
+
+  it('names both a failed gate and blocked coverage when a capture has both', () => {
+    expect(() =>
+      reportActionCaptureVerdict({
+        failures: [{ label: 'clear drawing' }],
+        blockedCoverage: [{ label: 'show AI waiting print', reason: 'x' }],
+        reportOnly: false,
+      })
+    ).toThrow('Action frame gates failed: clear drawing; Blocked coverage: show AI waiting print');
   });
 
   it('carries blocked coverage in the recorded plan, separately from N/A', () => {
@@ -1322,6 +1345,19 @@ describe('runActionSweep callers', () => {
     expect(source).toContain('notApplicable.set(COLORING_SCROLL_ACTION_LABEL');
     expect(source).toContain('await record(scroll.sample)');
     expect(source).not.toContain('samples.push(scroll.sample)');
+  });
+
+  // Issue #1870 review: blocked coverage was enforced by the iOS runner alone,
+  // while the desktop and Android runners — Android on an insecure LAN origin by
+  // default — still wrote `passed` from gate failures and exited zero.
+  it('finalizes every caller through the shared verdict, so blocked coverage fails each', () => {
+    for (const relative of CALLERS) {
+      const source = readFileSync(join(ROOT, relative), 'utf8');
+      expect(source, relative).toContain('actionCaptureVerdict({ failures, actionPlan })');
+      expect(source, relative).toContain('reportActionCaptureVerdict({');
+      // The pre-fix artifact field, which let blocked coverage write `passed: true`.
+      expect(source, relative).not.toMatch(/passed: failures\.length === 0,/);
+    }
   });
 
   it('reads the sweep through its result shape in each caller', () => {

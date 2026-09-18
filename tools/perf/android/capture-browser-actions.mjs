@@ -16,6 +16,8 @@ import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
 import {
   profilingUrl,
+  actionCaptureVerdict,
+  reportActionCaptureVerdict,
   runActionSweep,
   selectedActions,
   stableActionPlan,
@@ -418,6 +420,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
 
     const summaries = summarizeActions(samples, expectedLabels);
     const failures = actionFailures(summaries);
+    const { blockedCoverage, passed } = actionCaptureVerdict({ failures, actionPlan });
     mkdirSync(dirname(output), { recursive: true });
     const artifact = {
       device: {
@@ -442,7 +445,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       samples,
       frameStampEpoch: frameStampEpochOf(samples),
       summaries,
-      passed: failures.length === 0,
+      passed,
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
     if (traceEvents) {
@@ -451,11 +454,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     console.log('\nAndroid Chrome discrete action response');
     console.table(actionRows(summaries));
     console.log(`\nWrote ${output}`);
-    if (failures.length && !has('report-only')) {
-      throw new Error(
-        `Action frame gates failed: ${failures.map((summary) => summary.label).join(', ')}`
-      );
-    }
+    reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly: has('report-only') });
     return artifact;
   } finally {
     if (traceActive && cdp) await stopTrace(cdp).catch(() => null);

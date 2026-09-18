@@ -731,6 +731,11 @@ function normalizeActionPlan(plan, source) {
   const actionGroups = plan.actionGroups;
   const labels = plan.applicableLabels;
   const notApplicable = plan.notApplicable;
+  // Optional, and absent from every artifact that predates it (issue #1870):
+  // required coverage the capture could not obtain. Kept apart from
+  // notApplicable because the two must never render alike — N/A is by design,
+  // blocked is missing evidence.
+  const blocked = plan.blocked ?? [];
   const validOrientation = ['PORTRAIT', 'LANDSCAPE'].includes(plan.context?.orientation);
   const validSettingsShell = [null, 'compact', 'sectioned'].includes(plan.context?.settingsShell);
   if (
@@ -747,6 +752,19 @@ function normalizeActionPlan(plan, source) {
     ) ||
     new Set(notApplicable.map(({ label }) => label)).size !== notApplicable.length ||
     notApplicable.some(({ label }) => labels.includes(label)) ||
+    !Array.isArray(blocked) ||
+    blocked.some(
+      (entry) =>
+        typeof entry?.label !== 'string' ||
+        !entry.label.trim() ||
+        typeof entry.reason !== 'string' ||
+        !entry.reason.trim()
+    ) ||
+    new Set(blocked.map(({ label }) => label)).size !== blocked.length ||
+    blocked.some(
+      ({ label }) =>
+        labels.includes(label) || notApplicable.some((entry) => entry.label === label)
+    ) ||
     !validOrientation ||
     !validSettingsShell
   ) {
@@ -759,6 +777,7 @@ function normalizeActionPlan(plan, source) {
     actionGroups: [...actionGroups],
     applicableLabels: [...labels],
     notApplicable: notApplicable.map(({ label, reason }) => ({ label, reason })),
+    blocked: blocked.map(({ label, reason }) => ({ label, reason })),
     context: {
       orientation: plan.context.orientation,
       settingsShell: plan.context.settingsShell,
@@ -1287,6 +1306,7 @@ function matrixActionLabels(targets) {
           ...(mode.actions?.results.map(({ label }) => label) ?? []),
           ...(mode.actions?.actionPlan?.applicableLabels ?? []),
           ...(mode.actions?.actionPlan?.notApplicable.map(({ label }) => label) ?? []),
+          ...(mode.actions?.actionPlan?.blocked?.map(({ label }) => label) ?? []),
         ])
       )
     ),
@@ -1307,6 +1327,10 @@ function actionCoordinates(mode, labels) {
             reason: `idle frame control ${mode.actions.controlEvidence ?? 'absent'}`,
           }
         : { label, state: 'measured' };
+    }
+    const blockedEntry = mode.actions?.actionPlan?.blocked?.find((entry) => entry.label === label);
+    if (blockedEntry) {
+      return { label, state: 'blocked', reason: `blocked coverage: ${blockedEntry.reason}` };
     }
     if (applicable && !applicable.has(label)) {
       return {
@@ -1724,7 +1748,13 @@ function actionModeCells(mode, label, labels, gates, targetId) {
       if (!result) {
         const coordinate = coordinatesByLabel.get(actionLabel);
         const notApplicable = coordinate?.state === 'not-applicable';
-        const state = notApplicable ? 'N/A' : 'missing';
+        // Blocked renders as the gap it is: a missing cell with the reason, so it
+        // reads as work outstanding rather than as a check that does not apply.
+        const state = notApplicable
+          ? 'N/A'
+          : coordinate?.state === 'blocked'
+            ? 'BLOCKED'
+            : 'missing';
         const tooltip = `${index + 1}. ${actionLabel} · ${label} · ${state}: ${coordinate?.reason ?? 'no normalized coordinate'}`;
         const cellClass = notApplicable ? 'not-applicable' : 'missing';
         return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;

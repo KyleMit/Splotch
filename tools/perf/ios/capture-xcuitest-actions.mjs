@@ -1190,6 +1190,32 @@ async function openColoringPageForClear(execute) {
   );
 }
 
+// Every runActionSweep caller finalizes its verdict through these two, so
+// blocked coverage fails a capture on every target rather than only on the one
+// whose runner happened to remember it. The rival review of the change that
+// introduced blocked coverage found the desktop and Android runners still
+// passing it — and Android serves an http LAN origin by default, the very
+// insecure-origin condition that blocks the AI cue (issue #1870).
+export function actionCaptureVerdict({ failures, actionPlan }) {
+  const blockedCoverage = actionPlan?.blocked ?? [];
+  return { blockedCoverage, passed: failures.length === 0 && blockedCoverage.length === 0 };
+}
+
+export function reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly }) {
+  if (blockedCoverage.length) {
+    console.log('\nBLOCKED coverage — required actions this capture could not measure');
+    console.table(blockedCoverage.map(({ label, reason }) => ({ action: label, reason })));
+  }
+  if ((failures.length || blockedCoverage.length) && !reportOnly) {
+    const reasons = [
+      failures.length && `Action frame gates failed: ${failures.map((s) => s.label).join(', ')}`,
+      blockedCoverage.length &&
+        `Blocked coverage: ${blockedCoverage.map(({ label }) => label).join(', ')}`,
+    ].filter(Boolean);
+    throw new Error(reasons.join('; '));
+  }
+}
+
 export async function runActionSweep({
   client,
   sessionId,
@@ -2315,7 +2341,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       rotationFirstFrameNa(runtime, label)
     );
     const failures = actionFailures(summaries);
-    const blockedCoverage = actionPlan?.blocked ?? [];
+    const { blockedCoverage, passed } = actionCaptureVerdict({ failures, actionPlan });
     const output =
       flag('output') ??
       join(profilePath('ipad-actions', flag('label', 'full-suite')), 'actions.json');
@@ -2358,24 +2384,13 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       // does: an action the run could not obtain is missing evidence, and a
       // capture that reports `passed` while missing it would let a campaign read
       // as complete (issue #1870).
-      passed: failures.length === 0 && blockedCoverage.length === 0,
+      passed,
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
     console.log('\nDiscrete action response');
     console.table(actionRows(summaries));
-    if (blockedCoverage.length) {
-      console.log('\nBLOCKED coverage — required actions this capture could not measure');
-      console.table(blockedCoverage.map(({ label, reason }) => ({ action: label, reason })));
-    }
     console.log(`\nWrote ${output}`);
-    if ((failures.length || blockedCoverage.length) && !has('report-only')) {
-      const reasons = [
-        failures.length && `Action frame gates failed: ${failures.map((s) => s.label).join(', ')}`,
-        blockedCoverage.length &&
-          `Blocked coverage: ${blockedCoverage.map(({ label }) => label).join(', ')}`,
-      ].filter(Boolean);
-      throw new Error(reasons.join('; '));
-    }
+    reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly: has('report-only') });
     return artifact;
   } finally {
     process.off('SIGINT', onSigint);
