@@ -1,0 +1,6142 @@
+[
+ {
+  "order": 1,
+  "arm": "restamp",
+  "capture": {
+   "label": "1750-restamp-1",
+   "device": {
+    "name": "webkit (local)",
+    "os": "darwin"
+   },
+   "appUrl": "http://127.0.0.1:4173/",
+   "mode": "synthetic:mixed:crayon",
+   "brush": "crayon",
+   "engine": "webkit",
+   "viewport": {
+    "width": 1366,
+    "height": 915,
+    "deviceScaleFactor": 2
+   },
+   "headless": true,
+   "theme": "light",
+   "hostQuiet": {
+    "load1Start": 2.2,
+    "load1End": 2.98,
+    "cores": 10,
+    "thresholdPerCore": 0.5,
+    "quietAtCaptureThreshold": true
+   },
+   "undo": {
+    "count": 5,
+    "engine": {
+     "p50": 1,
+     "p95": 1,
+     "p99": 1,
+     "max": 1
+    },
+    "nextFrame": {
+     "p50": 9,
+     "p95": 14,
+     "p99": 14,
+     "max": 14
+    },
+    "passed": true
+   },
+   "meta": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "dpr": 2,
+    "viewport": {
+     "w": 1366,
+     "h": 915
+    },
+    "brush": "crayon",
+    "committedBrush": "crayon",
+    "drive": "mixed",
+    "driveHz": 0,
+    "contactTargetMs": 10000
+   },
+   "consoleErrors": [],
+   "phases": [
+    {
+     "key": "blank",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10001,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.21,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 11,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 10,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 114,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 35,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 10,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.09,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10000,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.13,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 16,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 16,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 70,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 53,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 16,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-nudge",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10014,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.19,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 98,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 52,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 602,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.12,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-blend",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10007,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.2,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 116,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.96,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-halos",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10010,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.19,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 108,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 69,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.04,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-bare",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10003,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 85,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 65,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-again",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10001,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.13,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 69,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.09,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-hidden",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10005,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.14,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 75,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 61,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.07,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-transparent",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10014,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.22,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 116,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 59,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.02,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    }
+   ]
+  }
+ },
+ {
+  "order": 2,
+  "arm": "glaze-direct",
+  "capture": {
+   "label": "1750-glaze-2",
+   "device": {
+    "name": "webkit (local)",
+    "os": "darwin"
+   },
+   "appUrl": "http://127.0.0.1:4183/",
+   "mode": "synthetic:mixed:crayon",
+   "brush": "crayon",
+   "engine": "webkit",
+   "viewport": {
+    "width": 1366,
+    "height": 915,
+    "deviceScaleFactor": 2
+   },
+   "headless": true,
+   "theme": "light",
+   "hostQuiet": {
+    "load1Start": 2.98,
+    "load1End": 2.49,
+    "cores": 10,
+    "thresholdPerCore": 0.5,
+    "quietAtCaptureThreshold": true
+   },
+   "undo": {
+    "count": 5,
+    "engine": {
+     "p50": 1,
+     "p95": 1,
+     "p99": 1,
+     "max": 1
+    },
+    "nextFrame": {
+     "p50": 9,
+     "p95": 13,
+     "p99": 13,
+     "max": 13
+    },
+    "passed": true
+   },
+   "meta": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "dpr": 2,
+    "viewport": {
+     "w": 1366,
+     "h": 915
+    },
+    "brush": "crayon",
+    "committedBrush": "crayon",
+    "drive": "mixed",
+    "driveHz": 0,
+    "contactTargetMs": 10000
+   },
+   "consoleErrors": [],
+   "phases": [
+    {
+     "key": "blank",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10001,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.12,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 11,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 64,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 35,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 10,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.09,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10011,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 16,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 89,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 52,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 16,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.03,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-nudge",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10012,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.2,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 114,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 52,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.03,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-blend",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10009,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.16,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 89,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.05,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-halos",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10017,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.12,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 61,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 68,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 602,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.1,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-bare",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10010,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.12,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 61,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 66,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.04,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-again",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10009,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.11,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 57,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.95,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-hidden",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10012,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 602,
+        "totalMs": 99,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 63,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 0,
+        "maxMs": 0
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 602,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.13,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-transparent",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10005,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.16,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 86,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.07,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    }
+   ]
+  }
+ },
+ {
+  "order": 3,
+  "arm": "glaze-direct",
+  "capture": {
+   "label": "1750-glaze-3",
+   "device": {
+    "name": "webkit (local)",
+    "os": "darwin"
+   },
+   "appUrl": "http://127.0.0.1:4183/",
+   "mode": "synthetic:mixed:crayon",
+   "brush": "crayon",
+   "engine": "webkit",
+   "viewport": {
+    "width": 1366,
+    "height": 915,
+    "deviceScaleFactor": 2
+   },
+   "headless": true,
+   "theme": "light",
+   "hostQuiet": {
+    "load1Start": 2.49,
+    "load1End": 2.31,
+    "cores": 10,
+    "thresholdPerCore": 0.5,
+    "quietAtCaptureThreshold": true
+   },
+   "undo": {
+    "count": 5,
+    "engine": {
+     "p50": 1,
+     "p95": 1,
+     "p99": 1,
+     "max": 1
+    },
+    "nextFrame": {
+     "p50": 10,
+     "p95": 12,
+     "p99": 12,
+     "max": 12
+    },
+    "passed": true
+   },
+   "meta": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "dpr": 2,
+    "viewport": {
+     "w": 1366,
+     "h": 915
+    },
+    "brush": "crayon",
+    "committedBrush": "crayon",
+    "drive": "mixed",
+    "driveHz": 0,
+    "contactTargetMs": 10000
+   },
+   "consoleErrors": [],
+   "phases": [
+    {
+     "key": "blank",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10006,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.16,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 11,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 92,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 35,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 10,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.06,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10004,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.18,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 16,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 105,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 53,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 16,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.98,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-nudge",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10001,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.16,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 84,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 52,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.09,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-blend",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10010,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.16,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 83,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.04,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-halos",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10005,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.09,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 45,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 68,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.07,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-bare",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10006,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.13,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 64,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 65,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.06,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-again",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10005,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 91,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.97,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-hidden",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10013,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.19,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 98,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 62,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 17,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.02,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-transparent",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10006,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.12,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 67,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.96,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    }
+   ]
+  }
+ },
+ {
+  "order": 4,
+  "arm": "restamp",
+  "capture": {
+   "label": "1750-restamp-4",
+   "device": {
+    "name": "webkit (local)",
+    "os": "darwin"
+   },
+   "appUrl": "http://127.0.0.1:4173/",
+   "mode": "synthetic:mixed:crayon",
+   "brush": "crayon",
+   "engine": "webkit",
+   "viewport": {
+    "width": 1366,
+    "height": 915,
+    "deviceScaleFactor": 2
+   },
+   "headless": true,
+   "theme": "light",
+   "hostQuiet": {
+    "load1Start": 2.31,
+    "load1End": 1.83,
+    "cores": 10,
+    "thresholdPerCore": 0.5,
+    "quietAtCaptureThreshold": true
+   },
+   "undo": {
+    "count": 5,
+    "engine": {
+     "p50": 1,
+     "p95": 8,
+     "p99": 8,
+     "max": 8
+    },
+    "nextFrame": {
+     "p50": 10,
+     "p95": 18,
+     "p99": 18,
+     "max": 18
+    },
+    "passed": true
+   },
+   "meta": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "dpr": 2,
+    "viewport": {
+     "w": 1366,
+     "h": 915
+    },
+    "brush": "crayon",
+    "committedBrush": "crayon",
+    "drive": "mixed",
+    "driveHz": 0,
+    "contactTargetMs": 10000
+   },
+   "consoleErrors": [],
+   "phases": [
+    {
+     "key": "blank",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10002,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.21,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 10,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 10,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 123,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 35,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 9,
+        "totalMs": 0,
+        "maxMs": 0
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.99,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10008,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.11,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 16,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 16,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 599,
+        "totalMs": 55,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 52,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 16,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.95,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-nudge",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10013,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.16,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 602,
+        "totalMs": 88,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 53,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 602,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.12,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-blend",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10009,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.24,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 125,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.05,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-halos",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10006,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.18,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 102,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 68,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.96,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-bare",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10003,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 92,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 66,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 17,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-again",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10005,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.1,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 47,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.07,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-hidden",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10001,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.14,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 76,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 61,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.99,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-transparent",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10010,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.2,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 108,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.04,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    }
+   ]
+  }
+ },
+ {
+  "order": 5,
+  "arm": "restamp",
+  "capture": {
+   "label": "1750-restamp-5",
+   "device": {
+    "name": "webkit (local)",
+    "os": "darwin"
+   },
+   "appUrl": "http://127.0.0.1:4173/",
+   "mode": "synthetic:mixed:crayon",
+   "brush": "crayon",
+   "engine": "webkit",
+   "viewport": {
+    "width": 1366,
+    "height": 915,
+    "deviceScaleFactor": 2
+   },
+   "headless": true,
+   "theme": "light",
+   "hostQuiet": {
+    "load1Start": 1.83,
+    "load1End": 2.68,
+    "cores": 10,
+    "thresholdPerCore": 0.5,
+    "quietAtCaptureThreshold": true
+   },
+   "undo": {
+    "count": 5,
+    "engine": {
+     "p50": 1,
+     "p95": 1,
+     "p99": 1,
+     "max": 1
+    },
+    "nextFrame": {
+     "p50": 10,
+     "p95": 14,
+     "p99": 14,
+     "max": 14
+    },
+    "passed": true
+   },
+   "meta": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "dpr": 2,
+    "viewport": {
+     "w": 1366,
+     "h": 915
+    },
+    "brush": "crayon",
+    "committedBrush": "crayon",
+    "drive": "mixed",
+    "driveHz": 0,
+    "contactTargetMs": 10000
+   },
+   "consoleErrors": [],
+   "phases": [
+    {
+     "key": "blank",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10003,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.19,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 10,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 10,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 106,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 36,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 9,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.98,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10009,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.1,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 16,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 53,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 54,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 0,
+        "maxMs": 0
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.05,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-nudge",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10006,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 8,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 90,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 52,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.06,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-blend",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10000,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.2,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 112,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.1,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-halos",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10003,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.2,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 108,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 68,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-bare",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10016,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.15,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 602,
+        "totalMs": 85,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 66,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 17,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 602,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.1,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-again",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10007,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.11,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 54,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.96,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-hidden",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10003,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.12,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 67,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 62,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-transparent",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10010,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.2,
+      "msPerLateFrame": 0,
+      "lateFrames": 1,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 7,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 100,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 59,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.04,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    }
+   ]
+  }
+ },
+ {
+  "order": 6,
+  "arm": "glaze-direct",
+  "capture": {
+   "label": "1750-glaze-6",
+   "device": {
+    "name": "webkit (local)",
+    "os": "darwin"
+   },
+   "appUrl": "http://127.0.0.1:4183/",
+   "mode": "synthetic:mixed:crayon",
+   "brush": "crayon",
+   "engine": "webkit",
+   "viewport": {
+    "width": 1366,
+    "height": 915,
+    "deviceScaleFactor": 2
+   },
+   "headless": true,
+   "theme": "light",
+   "hostQuiet": {
+    "load1Start": 2.68,
+    "load1End": 2.43,
+    "cores": 10,
+    "thresholdPerCore": 0.5,
+    "quietAtCaptureThreshold": true
+   },
+   "undo": {
+    "count": 5,
+    "engine": {
+     "p50": 1,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "nextFrame": {
+     "p50": 9,
+     "p95": 10,
+     "p99": 10,
+     "max": 10
+    },
+    "passed": true
+   },
+   "meta": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "dpr": 2,
+    "viewport": {
+     "w": 1366,
+     "h": 915
+    },
+    "brush": "crayon",
+    "committedBrush": "crayon",
+    "drive": "mixed",
+    "driveHz": 0,
+    "contactTargetMs": 10000
+   },
+   "consoleErrors": [],
+   "phases": [
+    {
+     "key": "blank",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10000,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 10,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 96,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 35,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 9,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.1,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10004,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 16,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 97,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 53,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 16,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-nudge",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10007,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.11,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 61,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 53,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.06,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-blend",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10003,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.13,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 69,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 17,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-halos",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10008,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.1,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 48,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 69,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 17,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.05,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-bare",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10002,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.15,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 80,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 65,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.99,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-again",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10010,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.19,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 599,
+        "totalMs": 105,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.94,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-hidden",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10015,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.16,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 88,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 62,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.01,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-transparent",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10000,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.14,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 75,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.1,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    }
+   ]
+  }
+ },
+ {
+  "order": 7,
+  "arm": "glaze-direct",
+  "capture": {
+   "label": "1750-glaze-7",
+   "device": {
+    "name": "webkit (local)",
+    "os": "darwin"
+   },
+   "appUrl": "http://127.0.0.1:4183/",
+   "mode": "synthetic:mixed:crayon",
+   "brush": "crayon",
+   "engine": "webkit",
+   "viewport": {
+    "width": 1366,
+    "height": 915,
+    "deviceScaleFactor": 2
+   },
+   "headless": true,
+   "theme": "light",
+   "hostQuiet": {
+    "load1Start": 2.43,
+    "load1End": 3.35,
+    "cores": 10,
+    "thresholdPerCore": 0.5,
+    "quietAtCaptureThreshold": true
+   },
+   "undo": {
+    "count": 5,
+    "engine": {
+     "p50": 1,
+     "p95": 1,
+     "p99": 1,
+     "max": 1
+    },
+    "nextFrame": {
+     "p50": 10,
+     "p95": 11,
+     "p99": 11,
+     "max": 11
+    },
+    "passed": true
+   },
+   "meta": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "dpr": 2,
+    "viewport": {
+     "w": 1366,
+     "h": 915
+    },
+    "brush": "crayon",
+    "committedBrush": "crayon",
+    "drive": "mixed",
+    "driveHz": 0,
+    "contactTargetMs": 10000
+   },
+   "consoleErrors": [],
+   "phases": [
+    {
+     "key": "blank",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10004,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.09,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 10,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 50,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 35,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 9,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.98,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10007,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.1,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 53,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 53,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 17,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.06,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-nudge",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10009,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 94,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 53,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 0,
+        "maxMs": 0
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.05,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-blend",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10000,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.19,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 105,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.1,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-halos",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10001,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.17,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 5,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 91,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 68,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.09,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-bare",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10001,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.13,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 69,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 65,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.09,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-again",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10005,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.08,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 44,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.07,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-hidden",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10003,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.09,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 46,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 62,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-transparent",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10011,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.14,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 76,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 59,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.03,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    }
+   ]
+  }
+ },
+ {
+  "order": 8,
+  "arm": "restamp",
+  "capture": {
+   "label": "1750-restamp-8",
+   "device": {
+    "name": "webkit (local)",
+    "os": "darwin"
+   },
+   "appUrl": "http://127.0.0.1:4173/",
+   "mode": "synthetic:mixed:crayon",
+   "brush": "crayon",
+   "engine": "webkit",
+   "viewport": {
+    "width": 1366,
+    "height": 915,
+    "deviceScaleFactor": 2
+   },
+   "headless": true,
+   "theme": "light",
+   "hostQuiet": {
+    "load1Start": 3.35,
+    "load1End": 2.53,
+    "cores": 10,
+    "thresholdPerCore": 0.5,
+    "quietAtCaptureThreshold": true
+   },
+   "undo": {
+    "count": 5,
+    "engine": {
+     "p50": 1,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "nextFrame": {
+     "p50": 10,
+     "p95": 11,
+     "p99": 11,
+     "max": 11
+    },
+    "passed": true
+   },
+   "meta": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "dpr": 2,
+    "viewport": {
+     "w": 1366,
+     "h": 915
+    },
+    "brush": "crayon",
+    "committedBrush": "crayon",
+    "drive": "mixed",
+    "driveHz": 0,
+    "contactTargetMs": 10000
+   },
+   "consoleErrors": [],
+   "phases": [
+    {
+     "key": "blank",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10003,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.26,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 10,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 10,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 153,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 36,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 9,
+        "totalMs": 0,
+        "maxMs": 0
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 12,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10017,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.15,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 4,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 16,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 78,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 53,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-nudge",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10007,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.13,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 75,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 52,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 0,
+        "maxMs": 0
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.96,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-blend",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10018,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.19,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 602,
+        "totalMs": 100,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 602,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.09,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-no-halos",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10008,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.21,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 600,
+        "totalMs": 121,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 70,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 600,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.95,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 20
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-bare",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10009,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.21,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 115,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 66,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 0,
+        "maxMs": 0
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.05,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-again",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10008,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.18,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 95,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 57,
+        "totalMs": 6,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.05,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-hidden",
+     "pacing": {
+      "frames": 600,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 20,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10004,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.11,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 18,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 0,
+        "maxMs": 0
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 60,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 63,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 18,
+        "totalMs": 2,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 19
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 60.08,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    },
+    {
+     "key": "page-halos-transparent",
+     "pacing": {
+      "frames": 601,
+      "p50": 17,
+      "p95": 19,
+      "p99": 19,
+      "max": 19,
+      "budgetMs": 16.67,
+      "lateThresholdMs": 25.01,
+      "lateShare": 0,
+      "stallShare": 0,
+      "elapsedMs": 10018,
+      "lostMs": 0,
+      "lostFrameTimeShare": 0
+     },
+     "engine": {
+      "msPerFrame": 0.14,
+      "msPerLateFrame": 0,
+      "lateFrames": 0,
+      "byName": {
+       "engine.commit": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.crayonShadow": {
+        "count": 18,
+        "totalMs": 1,
+        "maxMs": 1
+       },
+       "engine.draw": {
+        "count": 601,
+        "totalMs": 75,
+        "maxMs": 1
+       },
+       "engine.undoPatchCapture": {
+        "count": 58,
+        "totalMs": 3,
+        "maxMs": 1
+       },
+       "engine.undoPatchCrop": {
+        "count": 17,
+        "totalMs": 3,
+        "maxMs": 1
+       }
+      }
+     },
+     "paintLatencyMs": {
+      "p50": 0,
+      "p95": 18,
+      "p99": 18,
+      "max": 18
+     },
+     "input": {
+      "moves": 601,
+      "movesPerFrame": 1,
+      "movesPerSecond": 59.99,
+      "kinds": "touch",
+      "coalescedPerMove": 0,
+      "coalescedSpanMs": {},
+      "pressure": {
+       "p50": 0.5,
+       "p95": 0.5,
+       "max": 0.5
+      },
+      "contactWidth": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "contactHeight": {
+       "p50": 30,
+       "p95": 30,
+       "max": 30
+      },
+      "moveGapP95Ms": 19,
+      "moveGapMaxMs": 19
+     },
+     "verdict": "clean"
+    }
+   ]
+  }
+ }
+]

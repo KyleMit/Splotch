@@ -1,4 +1,4 @@
-# Issue 1750 — the web crayon's per-op blits, WebKit copy-on-write detaches, and a glaze-direct A/B
+# Issue 1750 — the web crayon's per-op blits, WebKit copy-on-write detaches, and a glaze-direct A/B at burst and finger pacing
 
 This note is desktop evidence for issue 1750. No physical device was usable: the iPad's XCTest
 automation grant had expired and the phone was locked. The note offers a **candidate mechanism** for
@@ -77,6 +77,37 @@ Within the measured session, glaze-direct lowers every phase. Its cost does not 
 window or the undo loop, where its frame gaps are the smallest recorded, and both arms retain 20
 undo steps. What lies outside the session is not measured: GPU completion after the last rAF, and
 displayed pixels.
+
+## At finger pacing on the same desktop
+
+The burst prices per-op rendering cost. It does not show whether that cost costs frames when ops
+arrive one or two per frame, which is how a finger delivers them. The same comparison was therefore
+repeated with `perf:web:frames`. That tool runs the real app at `/` in Playwright WebKit 26.6, at
+iPad Pro geometry (1366×915 at DPR 2), with rAF-paced synthetic input. It uses `--brush=crayon`,
+nine 10 s probe phases, then five undos.
+
+* **Restamp arm:** this checkout's unchanged build (product
+  50a1f046a33cead04fc6e91d8aa64aeaf775c92e).
+* **Glaze-direct arm:** 08784ad89878e5fa1682a1f3a440cd30db4b83bb with the single line
+  `configureCrayonDeposition(__IS_CAPACITOR__ ? 'glaze-direct' : 'restamp', …)` →
+  `configureCrayonDeposition('glaze-direct', …)` in `web/src/lib/drawing/engine.ts`. `web/src` is
+  otherwise identical, and the build was served from a separate worktree.
+
+Both arms ran the same probe revision (a5963a018000e652d76471f44bbfd4220a1b1228, the first commit of
+the brush-selection fix; without it, no crayon is ever selected). The order was ABBA ×2, and every
+run recorded `committedBrush: "crayon"`, no console errors, and a quiet host. The per-run phase
+summaries are in [`real-pacing.json`](real-pacing.json).
+
+| Arm          | Runs | Lost frame time, every phase | Frame p95 | Engine ms per frame | `engine.crayonShadow` max | Undo next-frame p95 |
+| ------------ | ---: | ---------------------------: | --------: | ------------------: | ------------------------: | ------------------: |
+| restamp      |    4 |                           0% |     19 ms |           0.16–0.18 |                      1 ms |            11–18 ms |
+| glaze-direct |    4 |                           0% |     19 ms |           0.13–0.15 |    (no drain in pipeline) |            10–13 ms |
+
+At finger pacing on this host, neither pipeline loses a frame. glaze-direct's engine time per frame
+is lower, but both are about 1% of a 60 Hz frame. **The burst's gap does not become lost frames on a
+fast desktop.** Whether it does on the iPad's GPU is exactly what the device screening below must
+answer. It is also one real-pacing data point for issue 1701: under rAF-paced crayon input, every
+restamp shadow drain here took at most 1 ms.
 
 ## What this does not establish
 
