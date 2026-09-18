@@ -37,6 +37,7 @@ import {
   probeHostReuse,
   resolvePort,
   summarize,
+  androidVerificationBlockers,
 } from './lib/capture-readiness.mjs';
 import { describeGrantHistory, recordGrantAttempt } from './lib/grant-log.mjs';
 import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
@@ -274,6 +275,7 @@ async function portChecks() {
     decisions[role] = decision;
     checks.push({
       name: `port ${role}`,
+      role,
       status: decision.action === 'blocked' ? 'blocked' : 'ok',
       detail: `${decision.port} — ${decision.action} (${decision.reason})`,
     });
@@ -689,6 +691,10 @@ export async function prepareCapture(argv = process.argv.slice(2)) {
     iosUdid: ios.udid,
     ports: ports.resolved,
     portDecisions: ports.decisions,
+    androidVerificationBlockers: androidVerificationBlockers({
+      androidChecks: usbProblem ? deviceChecks : android.checks,
+      portChecks: ports.checks,
+    }),
   };
 
   if (argv.includes('--json')) {
@@ -712,7 +718,11 @@ if (isMain(import.meta.url)) {
     const report = await prepareCapture(argv);
     // Android first: it is the cheaper of the two verifications, so a bad
     // input path surfaces before a minute is spent building WebDriverAgent.
-    if (argv.includes('--verify-android-input') && report.androidSerial) {
+    const androidBlockers = report.androidVerificationBlockers;
+    if (argv.includes('--verify-android-input') && report.androidSerial && androidBlockers.length) {
+      console.log(`✗ ${'android input'.padEnd(22)} not attempted — ${androidBlockers.join('; ')}`);
+      process.exitCode = 1;
+    } else if (argv.includes('--verify-android-input') && report.androidSerial) {
       console.log('\nverifying Android input against the floor control…');
       const input = await verifyAndroidInput({
         serial: report.androidSerial,

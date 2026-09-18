@@ -404,6 +404,25 @@ export function classifyLaunchProbe({
   return { status: 'blocked', detail: message.slice(0, 200) || 'the probe failed with no message' };
 }
 
+// The host ports the Android verifications cannot run without. The CDP forward
+// is not one: the input verification's tab guard logs that it was skipped and
+// carries on when that forward cannot bind.
+export const ANDROID_VERIFICATION_PORT_ROLES = ['floorControl'];
+
+// The Android input verification exits the whole preflight when its page never
+// reports — a locked phone, missing Chrome, or no floor-control port — taking the
+// iPad's launch check, which runs after it, down with it. Every one of those
+// causes is already a blocked host-side check, so the verification is not
+// attempted while any of them stands, and says which.
+export function androidVerificationBlockers({ androidChecks, portChecks }) {
+  return [
+    ...androidChecks,
+    ...portChecks.filter((check) => ANDROID_VERIFICATION_PORT_ROLES.includes(check.role)),
+  ]
+    .filter((check) => check.status === 'blocked')
+    .map((check) => `${check.name}: ${check.detail}`);
+}
+
 export function summarize(checks) {
   const blockers = checks.filter((check) => check.status === 'blocked');
   return {
