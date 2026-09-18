@@ -11,6 +11,8 @@ import {
   repaintTiledRenderer,
   renderTiledOp,
   resizeTiledRenderer,
+  TILE_HISTORY_FOLD_IDLE_MS,
+  tiledHistoryDebug,
   undoTiledCommand,
 } from './tiledRenderer';
 import { installTiledRendererTestHarness, rendererElements } from './tiledRendererTestHarness';
@@ -58,6 +60,63 @@ describe('crayon under-shadow refresh scheduling', () => {
     // the default so one test's probe cannot leak into the next.
     configureCrayonDeposition('restamp');
     vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('a fold never queues history-base tiles for the deferred drain', () => {
+    // The idle fold replays a crayon command onto the offscreen history base,
+    // and each pass flush there stales that base tile's shadow. Draining it
+    // two frames later read every folded base tile back in one task — a
+    // single frame of hundreds of milliseconds on a physical iPad (issue
+    // 1701). Only live tiles may enter the drain.
+    vi.useFakeTimers();
+    const readSources = trackDrawImageSources();
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const drainFrames = () => {
+      while (frames.length) frames.shift()!(0);
+    };
+    const initialBaseRasters = tiledHistoryDebug().baseRasters ?? 0;
+    for (let index = 0; index < 21; index++) {
+      const dot: StrokeOp = {
+        kind: 'dot',
+        x: 50,
+        y: 50,
+        radius: 5,
+        color: '#ff0000',
+        erase: false,
+        crayon: true,
+        seed: index + 1,
+      };
+      const crayonFlush: StrokeOp = { kind: 'crayonFlush' };
+      beginTiledCommand(index === 0);
+      renderTiledOp(dot);
+      recordTiledOp(dot);
+      renderTiledOp(crayonFlush);
+      recordTiledOp(crayonFlush);
+      commitTiledCommand();
+      drainFrames();
+    }
+    const liveTiles = new Set<unknown>(host.querySelectorAll('[data-live-tile]'));
+
+    vi.advanceTimersByTime(TILE_HISTORY_FOLD_IDLE_MS);
+    expect(tiledHistoryDebug().baseRasters).toBeGreaterThan(initialBaseRasters);
+    const readsBeforeDrain = readSources.length;
+    drainFrames();
+
+    expect(readSources.slice(readsBeforeDrain).filter((source) => !liveTiles.has(source))).toEqual(
+      []
+    );
   });
 
   it('a drain that lands mid-stroke re-arms instead of dropping', () => {
