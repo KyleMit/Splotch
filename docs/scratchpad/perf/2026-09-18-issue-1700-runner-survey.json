@@ -1,7 +1,11 @@
 {
  "source": "webkit-undo-fast-diagnostics and webkit-undo-fast-retry-diagnostics artifacts of every push-to-main Tests run still retained on 2026-09-18 (200 runs listed; artifacts from 2026-09-11 onward survived)",
  "scenario": "crayon-scribbles",
- "fields": "firstPollAtMs = page-clock delay from the end of the synchronous draw evaluate to the first settle poll returning (the interval issue 1700 measured at 4,601-9,673 ms)",
+ "fields": {
+  "firstPollRoundTripMs": "Node-side wall time of the first settle poll: settleHistory's trace[0].atMs, whose clock starts only after the draw evaluate has returned to Node. Catches a stall in front of the first poll, NOT one inside the draw evaluate's own return.",
+  "firstPollFrames": "The page's rAF stamps between drawEnd (page clock, the end of the synchronous strokes) and the first poll's read: count, firstMs/lastMs relative to drawEnd, and maxGapMs between consecutive stamps. A stall on either side of the evaluate's IPC return shows here as a late firstMs or a large maxGapMs (the 2026-09-06 run whose poll read 42 ms had stamps 55 -> 6,253 ms).",
+  "crayonShadowMs": "Every engine.crayonShadow measure in the settle trace."
+ },
  "rows": [
   {
    "run": 34554733605,
@@ -11,8 +15,6 @@
    "drawHarnessWallMs": 33598,
    "commitP95Ms": 2277,
    "commitMaxMs": 2459,
-   "firstPollAtMs": 3,
-   "firstPollReadMs": 3,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 6,
@@ -24,7 +26,8 @@
     0
    ],
    "settleElapsedMs": 4742,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 3
   },
   {
    "run": 34554733605,
@@ -34,8 +37,6 @@
    "drawHarnessWallMs": 37084,
    "commitP95Ms": 2425,
    "commitMaxMs": 2452,
-   "firstPollAtMs": 3,
-   "firstPollReadMs": 3,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 7,
@@ -47,7 +48,8 @@
     0
    ],
    "settleElapsedMs": 5990,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 3
   },
   {
    "run": 34555783660,
@@ -57,8 +59,6 @@
    "drawHarnessWallMs": 65722,
    "commitP95Ms": 27,
    "commitMaxMs": 29,
-   "firstPollAtMs": 162,
-   "firstPollReadMs": 162,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 69,
@@ -71,7 +71,8 @@
     10
    ],
    "settleElapsedMs": 8726,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 162
   },
   {
    "run": 34555820007,
@@ -81,8 +82,6 @@
    "drawHarnessWallMs": 31195,
    "commitP95Ms": 2217,
    "commitMaxMs": 2511,
-   "firstPollAtMs": 3,
-   "firstPollReadMs": 3,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 8,
@@ -95,7 +94,8 @@
     0
    ],
    "settleElapsedMs": 4523,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 3
   },
   {
    "run": 34555783660,
@@ -105,8 +105,6 @@
    "drawHarnessWallMs": 96775,
    "commitP95Ms": 48,
    "commitMaxMs": 59,
-   "firstPollAtMs": 263,
-   "firstPollReadMs": 263,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 77,
@@ -119,7 +117,8 @@
     18
    ],
    "settleElapsedMs": 11317,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 263
   },
   {
    "run": 34555820007,
@@ -129,8 +128,6 @@
    "drawHarnessWallMs": 89553,
    "commitP95Ms": 43,
    "commitMaxMs": 61,
-   "firstPollAtMs": 39,
-   "firstPollReadMs": 39,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 57,
@@ -143,7 +140,8 @@
     5
    ],
    "settleElapsedMs": 9835,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 39
   },
   {
    "run": 34582699249,
@@ -153,8 +151,6 @@
    "drawHarnessWallMs": 99623,
    "commitP95Ms": 44,
    "commitMaxMs": 84,
-   "firstPollAtMs": 204,
-   "firstPollReadMs": 204,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 54,
@@ -167,7 +163,8 @@
     9
    ],
    "settleElapsedMs": 10456,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 204
   },
   {
    "run": 34582699249,
@@ -177,8 +174,6 @@
    "drawHarnessWallMs": 118233,
    "commitP95Ms": 67,
    "commitMaxMs": 126,
-   "firstPollAtMs": 331,
-   "firstPollReadMs": 331,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 77,
@@ -191,7 +186,8 @@
     9
    ],
    "settleElapsedMs": 14049,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 331
   },
   {
    "run": 34583516324,
@@ -201,8 +197,6 @@
    "drawHarnessWallMs": 69046,
    "commitP95Ms": 38,
    "commitMaxMs": 103,
-   "firstPollAtMs": 165,
-   "firstPollReadMs": 165,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 63,
@@ -215,7 +209,8 @@
     9
    ],
    "settleElapsedMs": 9564,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 165
   },
   {
    "run": 34583516324,
@@ -225,8 +220,6 @@
    "drawHarnessWallMs": 118718,
    "commitP95Ms": 55,
    "commitMaxMs": 93,
-   "firstPollAtMs": 333,
-   "firstPollReadMs": 333,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 69,
@@ -239,7 +232,8 @@
     13
    ],
    "settleElapsedMs": 12137,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 333
   },
   {
    "run": 34585199740,
@@ -249,8 +243,6 @@
    "drawHarnessWallMs": 121740,
    "commitP95Ms": 66,
    "commitMaxMs": 70,
-   "firstPollAtMs": 29,
-   "firstPollReadMs": 29,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 53,
@@ -263,7 +255,8 @@
     11
    ],
    "settleElapsedMs": 11266,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 29
   },
   {
    "run": 34585199740,
@@ -273,8 +266,6 @@
    "drawHarnessWallMs": 61815,
    "commitP95Ms": 4967,
    "commitMaxMs": 6764,
-   "firstPollAtMs": 3,
-   "firstPollReadMs": 3,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 21,
@@ -286,7 +277,8 @@
     0
    ],
    "settleElapsedMs": 7113,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 3
   },
   {
    "run": 34588049642,
@@ -296,8 +288,6 @@
    "drawHarnessWallMs": 97588,
    "commitP95Ms": 55,
    "commitMaxMs": 68,
-   "firstPollAtMs": 25,
-   "firstPollReadMs": 25,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 52,
@@ -310,7 +300,8 @@
     11
    ],
    "settleElapsedMs": 11696,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 25
   },
   {
    "run": 34588049642,
@@ -320,8 +311,6 @@
    "drawHarnessWallMs": 105703,
    "commitP95Ms": 70,
    "commitMaxMs": 73,
-   "firstPollAtMs": 53,
-   "firstPollReadMs": 53,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 73,
@@ -334,7 +323,8 @@
     14
    ],
    "settleElapsedMs": 15423,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 53
   },
   {
    "run": 34589631742,
@@ -344,8 +334,6 @@
    "drawHarnessWallMs": 68909,
    "commitP95Ms": 30,
    "commitMaxMs": 46,
-   "firstPollAtMs": 156,
-   "firstPollReadMs": 156,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 47,
@@ -358,7 +346,8 @@
     9
    ],
    "settleElapsedMs": 9089,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 156
   },
   {
    "run": 34589631742,
@@ -368,8 +357,6 @@
    "drawHarnessWallMs": 103056,
    "commitP95Ms": 41,
    "commitMaxMs": 46,
-   "firstPollAtMs": 211,
-   "firstPollReadMs": 211,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 78,
@@ -382,7 +369,8 @@
     12
    ],
    "settleElapsedMs": 12909,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 211
   },
   {
    "run": 34591060885,
@@ -392,8 +380,6 @@
    "drawHarnessWallMs": 113272,
    "commitP95Ms": 76,
    "commitMaxMs": 78,
-   "firstPollAtMs": 176,
-   "firstPollReadMs": 176,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 83,
@@ -406,7 +392,8 @@
     2
    ],
    "settleElapsedMs": 10079,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 176
   },
   {
    "run": 34591778688,
@@ -416,8 +403,6 @@
    "drawHarnessWallMs": 72222,
    "commitP95Ms": 36,
    "commitMaxMs": 41,
-   "firstPollAtMs": 281,
-   "firstPollReadMs": 281,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 63,
@@ -430,7 +415,8 @@
     12
    ],
    "settleElapsedMs": 13865,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 281
   },
   {
    "run": 34591060885,
@@ -440,8 +426,6 @@
    "drawHarnessWallMs": 41777,
    "commitP95Ms": 3155,
    "commitMaxMs": 3397,
-   "firstPollAtMs": 2,
-   "firstPollReadMs": 2,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 7,
@@ -453,7 +437,8 @@
     0
    ],
    "settleElapsedMs": 5066,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 2
   },
   {
    "run": 34591778688,
@@ -463,8 +448,6 @@
    "drawHarnessWallMs": 64769,
    "commitP95Ms": 27,
    "commitMaxMs": 31,
-   "firstPollAtMs": 134,
-   "firstPollReadMs": 134,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 51,
@@ -477,7 +460,8 @@
     9
    ],
    "settleElapsedMs": 8923,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 134
   },
   {
    "run": 34611125264,
@@ -487,8 +471,6 @@
    "drawHarnessWallMs": 114979,
    "commitP95Ms": 52,
    "commitMaxMs": 103,
-   "firstPollAtMs": 39,
-   "firstPollReadMs": 39,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 77,
@@ -501,7 +483,8 @@
     18
    ],
    "settleElapsedMs": 13127,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 39
   },
   {
    "run": 34611125264,
@@ -511,8 +494,6 @@
    "drawHarnessWallMs": 99411,
    "commitP95Ms": 46,
    "commitMaxMs": 49,
-   "firstPollAtMs": 231,
-   "firstPollReadMs": 231,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 67,
@@ -525,7 +506,8 @@
     13
    ],
    "settleElapsedMs": 12723,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 231
   },
   {
    "run": 34613408289,
@@ -535,8 +517,6 @@
    "drawHarnessWallMs": 107528,
    "commitP95Ms": 48,
    "commitMaxMs": 78,
-   "firstPollAtMs": 338,
-   "firstPollReadMs": 338,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 105,
@@ -549,7 +529,8 @@
     17
    ],
    "settleElapsedMs": 15872,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 338
   },
   {
    "run": 34613408289,
@@ -559,8 +540,6 @@
    "drawHarnessWallMs": 99031,
    "commitP95Ms": 40,
    "commitMaxMs": 46,
-   "firstPollAtMs": 36,
-   "firstPollReadMs": 36,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 72,
@@ -573,7 +552,8 @@
     12
    ],
    "settleElapsedMs": 12358,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 36
   },
   {
    "run": 34617783749,
@@ -583,8 +563,6 @@
    "drawHarnessWallMs": 122195,
    "commitP95Ms": 54,
    "commitMaxMs": 69,
-   "firstPollAtMs": 282,
-   "firstPollReadMs": 282,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 56,
@@ -597,7 +575,8 @@
     13
    ],
    "settleElapsedMs": 10982,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 282
   },
   {
    "run": 34617783749,
@@ -607,8 +586,6 @@
    "drawHarnessWallMs": 131180,
    "commitP95Ms": 92,
    "commitMaxMs": 115,
-   "firstPollAtMs": 54,
-   "firstPollReadMs": 54,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 54,
@@ -621,7 +598,8 @@
     12
    ],
    "settleElapsedMs": 14917,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 54
   },
   {
    "run": 34619846189,
@@ -631,8 +609,6 @@
    "drawHarnessWallMs": 117295,
    "commitP95Ms": 43,
    "commitMaxMs": 47,
-   "firstPollAtMs": 49,
-   "firstPollReadMs": 49,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 51,
@@ -645,7 +621,8 @@
     4
    ],
    "settleElapsedMs": 14476,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 49
   },
   {
    "run": 34619846189,
@@ -655,8 +632,6 @@
    "drawHarnessWallMs": 130119,
    "commitP95Ms": 94,
    "commitMaxMs": 119,
-   "firstPollAtMs": 455,
-   "firstPollReadMs": 455,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 99,
@@ -669,7 +644,8 @@
     11
    ],
    "settleElapsedMs": 14009,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 455
   },
   {
    "run": 34627967816,
@@ -679,8 +655,6 @@
    "drawHarnessWallMs": 87241,
    "commitP95Ms": 39,
    "commitMaxMs": 41,
-   "firstPollAtMs": 251,
-   "firstPollReadMs": 251,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 47,
@@ -693,7 +667,8 @@
     22
    ],
    "settleElapsedMs": 15778,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 251
   },
   {
    "run": 34627967816,
@@ -703,8 +678,6 @@
    "drawHarnessWallMs": 114863,
    "commitP95Ms": 55,
    "commitMaxMs": 56,
-   "firstPollAtMs": 58,
-   "firstPollReadMs": 58,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 69,
@@ -717,7 +690,8 @@
     11
    ],
    "settleElapsedMs": 14299,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 58
   },
   {
    "run": 34632783961,
@@ -727,8 +701,6 @@
    "drawHarnessWallMs": 102407,
    "commitP95Ms": 52,
    "commitMaxMs": 111,
-   "firstPollAtMs": 318,
-   "firstPollReadMs": 318,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 101,
@@ -741,7 +713,8 @@
     4
    ],
    "settleElapsedMs": 23615,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 318
   },
   {
    "run": 34632783961,
@@ -751,8 +724,6 @@
    "drawHarnessWallMs": 87855,
    "commitP95Ms": 40,
    "commitMaxMs": 47,
-   "firstPollAtMs": 35,
-   "firstPollReadMs": 35,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 44,
@@ -765,7 +736,8 @@
     10
    ],
    "settleElapsedMs": 12242,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 35
   },
   {
    "run": 34637690172,
@@ -775,8 +747,6 @@
    "drawHarnessWallMs": 95083,
    "commitP95Ms": 40,
    "commitMaxMs": 122,
-   "firstPollAtMs": 258,
-   "firstPollReadMs": 258,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 103,
@@ -789,7 +759,8 @@
     9
    ],
    "settleElapsedMs": 10783,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 258
   },
   {
    "run": 34637690172,
@@ -799,8 +770,6 @@
    "drawHarnessWallMs": 108391,
    "commitP95Ms": 79,
    "commitMaxMs": 95,
-   "firstPollAtMs": 252,
-   "firstPollReadMs": 252,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 76,
@@ -813,7 +782,8 @@
     10
    ],
    "settleElapsedMs": 13340,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 252
   },
   {
    "run": 34646312885,
@@ -823,8 +793,6 @@
    "drawHarnessWallMs": 123777,
    "commitP95Ms": 61,
    "commitMaxMs": 85,
-   "firstPollAtMs": 329,
-   "firstPollReadMs": 328,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 78,
@@ -837,7 +805,8 @@
     12
    ],
    "settleElapsedMs": 11616,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 329
   },
   {
    "run": 34646312885,
@@ -847,8 +816,6 @@
    "drawHarnessWallMs": 86721,
    "commitP95Ms": 36,
    "commitMaxMs": 37,
-   "firstPollAtMs": 39,
-   "firstPollReadMs": 39,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 15,
@@ -861,7 +828,8 @@
     12
    ],
    "settleElapsedMs": 11229,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 39
   },
   {
    "run": 34658257634,
@@ -871,8 +839,6 @@
    "drawHarnessWallMs": 104964,
    "commitP95Ms": 51,
    "commitMaxMs": 53,
-   "firstPollAtMs": 48,
-   "firstPollReadMs": 48,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 45,
@@ -885,7 +851,8 @@
     14
    ],
    "settleElapsedMs": 11882,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 48
   },
   {
    "run": 34658257634,
@@ -895,8 +862,6 @@
    "drawHarnessWallMs": 101200,
    "commitP95Ms": 48,
    "commitMaxMs": 82,
-   "firstPollAtMs": 48,
-   "firstPollReadMs": 48,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 59,
@@ -909,7 +874,8 @@
     15
    ],
    "settleElapsedMs": 11328,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 48
   },
   {
    "run": 34667333603,
@@ -919,8 +885,6 @@
    "drawHarnessWallMs": 117057,
    "commitP95Ms": 67,
    "commitMaxMs": 107,
-   "firstPollAtMs": 548,
-   "firstPollReadMs": 548,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 85,
@@ -933,7 +897,8 @@
     17
    ],
    "settleElapsedMs": 15771,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 548
   },
   {
    "run": 34667333603,
@@ -943,8 +908,6 @@
    "drawHarnessWallMs": 63215,
    "commitP95Ms": 30,
    "commitMaxMs": 32,
-   "firstPollAtMs": 192,
-   "firstPollReadMs": 192,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 27,
@@ -957,7 +920,8 @@
     10
    ],
    "settleElapsedMs": 8678,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 192
   },
   {
    "run": 34669162334,
@@ -967,8 +931,6 @@
    "drawHarnessWallMs": 54480,
    "commitP95Ms": 26,
    "commitMaxMs": 30,
-   "firstPollAtMs": 123,
-   "firstPollReadMs": 123,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 13,
@@ -981,7 +943,8 @@
     8
    ],
    "settleElapsedMs": 8265,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 123
   },
   {
    "run": 34669162334,
@@ -991,8 +954,6 @@
    "drawHarnessWallMs": 91927,
    "commitP95Ms": 41,
    "commitMaxMs": 51,
-   "firstPollAtMs": 241,
-   "firstPollReadMs": 241,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 53,
@@ -1005,7 +966,8 @@
     11
    ],
    "settleElapsedMs": 10283,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 241
   },
   {
    "run": 34669574970,
@@ -1015,8 +977,6 @@
    "drawHarnessWallMs": 139559,
    "commitP95Ms": 56,
    "commitMaxMs": 96,
-   "firstPollAtMs": 48,
-   "firstPollReadMs": 48,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 95,
@@ -1029,7 +989,8 @@
     5
    ],
    "settleElapsedMs": 12818,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 48
   },
   {
    "run": 34670002536,
@@ -1039,8 +1000,6 @@
    "drawHarnessWallMs": 64041,
    "commitP95Ms": 26,
    "commitMaxMs": 27,
-   "firstPollAtMs": 137,
-   "firstPollReadMs": 137,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 59,
@@ -1053,7 +1012,8 @@
     10
    ],
    "settleElapsedMs": 9685,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 137
   },
   {
    "run": 34669574970,
@@ -1063,8 +1023,6 @@
    "drawHarnessWallMs": 49030,
    "commitP95Ms": 22,
    "commitMaxMs": 22,
-   "firstPollAtMs": 118,
-   "firstPollReadMs": 118,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 13,
@@ -1077,7 +1035,8 @@
     7
    ],
    "settleElapsedMs": 7205,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 118
   },
   {
    "run": 34670002536,
@@ -1087,8 +1046,6 @@
    "drawHarnessWallMs": 116803,
    "commitP95Ms": 55,
    "commitMaxMs": 78,
-   "firstPollAtMs": 407,
-   "firstPollReadMs": 407,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 101,
@@ -1101,7 +1058,8 @@
     16
    ],
    "settleElapsedMs": 14248,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 407
   },
   {
    "run": 34670963644,
@@ -1111,8 +1069,6 @@
    "drawHarnessWallMs": 114729,
    "commitP95Ms": 70,
    "commitMaxMs": 109,
-   "firstPollAtMs": 384,
-   "firstPollReadMs": 384,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 53,
@@ -1125,7 +1081,8 @@
     16
    ],
    "settleElapsedMs": 13464,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 384
   },
   {
    "run": 34670963644,
@@ -1135,8 +1092,6 @@
    "drawHarnessWallMs": 65881,
    "commitP95Ms": 32,
    "commitMaxMs": 33,
-   "firstPollAtMs": 133,
-   "firstPollReadMs": 133,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 58,
@@ -1149,7 +1104,8 @@
     10
    ],
    "settleElapsedMs": 8873,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 133
   },
   {
    "run": 34671286507,
@@ -1159,8 +1115,6 @@
    "drawHarnessWallMs": 66133,
    "commitP95Ms": 32,
    "commitMaxMs": 41,
-   "firstPollAtMs": 199,
-   "firstPollReadMs": 199,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 72,
@@ -1173,7 +1127,8 @@
     4
    ],
    "settleElapsedMs": 8582,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 199
   },
   {
    "run": 34671286507,
@@ -1183,8 +1138,6 @@
    "drawHarnessWallMs": 94054,
    "commitP95Ms": 63,
    "commitMaxMs": 73,
-   "firstPollAtMs": 283,
-   "firstPollReadMs": 283,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 77,
@@ -1197,7 +1150,8 @@
     26
    ],
    "settleElapsedMs": 18585,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 283
   },
   {
    "run": 34672399330,
@@ -1207,8 +1161,6 @@
    "drawHarnessWallMs": 93364,
    "commitP95Ms": 45,
    "commitMaxMs": 48,
-   "firstPollAtMs": 246,
-   "firstPollReadMs": 246,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 56,
@@ -1221,7 +1173,8 @@
     13
    ],
    "settleElapsedMs": 10868,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 246
   },
   {
    "run": 34672399330,
@@ -1231,8 +1184,6 @@
    "drawHarnessWallMs": 118995,
    "commitP95Ms": 51,
    "commitMaxMs": 93,
-   "firstPollAtMs": 271,
-   "firstPollReadMs": 271,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 48,
@@ -1245,7 +1196,8 @@
     15
    ],
    "settleElapsedMs": 14775,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 271
   },
   {
    "run": 34672924880,
@@ -1255,8 +1207,6 @@
    "drawHarnessWallMs": 102807,
    "commitP95Ms": 58,
    "commitMaxMs": 61,
-   "firstPollAtMs": 169,
-   "firstPollReadMs": 169,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 35,
@@ -1269,7 +1219,8 @@
     12
    ],
    "settleElapsedMs": 10385,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 169
   },
   {
    "run": 34672924880,
@@ -1279,8 +1230,6 @@
    "drawHarnessWallMs": 137313,
    "commitP95Ms": 62,
    "commitMaxMs": 75,
-   "firstPollAtMs": 568,
-   "firstPollReadMs": 568,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 132,
@@ -1293,7 +1242,8 @@
     21
    ],
    "settleElapsedMs": 19138,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 568
   },
   {
    "run": 34673468367,
@@ -1303,8 +1253,6 @@
    "drawHarnessWallMs": 119093,
    "commitP95Ms": 56,
    "commitMaxMs": 73,
-   "firstPollAtMs": 365,
-   "firstPollReadMs": 365,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 73,
@@ -1317,7 +1265,8 @@
     12
    ],
    "settleElapsedMs": 12722,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 365
   },
   {
    "run": 34673468367,
@@ -1327,8 +1276,6 @@
    "drawHarnessWallMs": 78961,
    "commitP95Ms": 37,
    "commitMaxMs": 41,
-   "firstPollAtMs": 184,
-   "firstPollReadMs": 184,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 87,
@@ -1341,7 +1288,8 @@
     9
    ],
    "settleElapsedMs": 10551,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 184
   },
   {
    "run": 34674733720,
@@ -1351,8 +1299,6 @@
    "drawHarnessWallMs": 56218,
    "commitP95Ms": 26,
    "commitMaxMs": 27,
-   "firstPollAtMs": 178,
-   "firstPollReadMs": 178,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 53,
@@ -1365,7 +1311,8 @@
     8
    ],
    "settleElapsedMs": 8136,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 178
   },
   {
    "run": 34674733720,
@@ -1375,8 +1322,6 @@
    "drawHarnessWallMs": 105384,
    "commitP95Ms": 61,
    "commitMaxMs": 88,
-   "firstPollAtMs": 43,
-   "firstPollReadMs": 43,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 70,
@@ -1389,7 +1334,8 @@
     10
    ],
    "settleElapsedMs": 11918,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 43
   },
   {
    "run": 34683026047,
@@ -1399,8 +1345,6 @@
    "drawHarnessWallMs": 99989,
    "commitP95Ms": 47,
    "commitMaxMs": 56,
-   "firstPollAtMs": 355,
-   "firstPollReadMs": 355,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 60,
@@ -1413,7 +1357,8 @@
     13
    ],
    "settleElapsedMs": 13983,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 355
   },
   {
    "run": 34683026047,
@@ -1423,8 +1368,6 @@
    "drawHarnessWallMs": 80398,
    "commitP95Ms": 35,
    "commitMaxMs": 54,
-   "firstPollAtMs": 167,
-   "firstPollReadMs": 167,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 40,
@@ -1437,7 +1380,8 @@
     16
    ],
    "settleElapsedMs": 12764,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 167
   },
   {
    "run": 34683611790,
@@ -1447,8 +1391,6 @@
    "drawHarnessWallMs": 65628,
    "commitP95Ms": 27,
    "commitMaxMs": 27,
-   "firstPollAtMs": 162,
-   "firstPollReadMs": 162,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 63,
@@ -1461,7 +1403,8 @@
     8
    ],
    "settleElapsedMs": 8997,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 162
   },
   {
    "run": 34683611790,
@@ -1471,8 +1414,6 @@
    "drawHarnessWallMs": 64595,
    "commitP95Ms": 31,
    "commitMaxMs": 35,
-   "firstPollAtMs": 175,
-   "firstPollReadMs": 175,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 61,
@@ -1485,7 +1426,8 @@
     7
    ],
    "settleElapsedMs": 9266,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 175
   },
   {
    "run": 34684421445,
@@ -1495,8 +1437,6 @@
    "drawHarnessWallMs": 71543,
    "commitP95Ms": 28,
    "commitMaxMs": 49,
-   "firstPollAtMs": 191,
-   "firstPollReadMs": 191,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 77,
@@ -1509,7 +1449,8 @@
     20
    ],
    "settleElapsedMs": 10057,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 191
   },
   {
    "run": 34684421445,
@@ -1519,8 +1460,6 @@
    "drawHarnessWallMs": 88343,
    "commitP95Ms": 53,
    "commitMaxMs": 54,
-   "firstPollAtMs": 224,
-   "firstPollReadMs": 224,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 52,
@@ -1533,7 +1472,8 @@
     28
    ],
    "settleElapsedMs": 14913,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 224
   },
   {
    "run": 34684989947,
@@ -1543,8 +1483,6 @@
    "drawHarnessWallMs": 64099,
    "commitP95Ms": 34,
    "commitMaxMs": 45,
-   "firstPollAtMs": 151,
-   "firstPollReadMs": 151,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 50,
@@ -1557,7 +1495,8 @@
     4
    ],
    "settleElapsedMs": 8885,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 151
   },
   {
    "run": 34685116023,
@@ -1567,8 +1506,6 @@
    "drawHarnessWallMs": 82613,
    "commitP95Ms": 36,
    "commitMaxMs": 40,
-   "firstPollAtMs": 195,
-   "firstPollReadMs": 195,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 20,
@@ -1581,7 +1518,8 @@
     6
    ],
    "settleElapsedMs": 10989,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 195
   },
   {
    "run": 34684989947,
@@ -1591,8 +1529,6 @@
    "drawHarnessWallMs": 85956,
    "commitP95Ms": 44,
    "commitMaxMs": 80,
-   "firstPollAtMs": 56,
-   "firstPollReadMs": 56,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 52,
@@ -1605,7 +1541,8 @@
     10
    ],
    "settleElapsedMs": 9591,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 56
   },
   {
    "run": 34685116023,
@@ -1615,8 +1552,6 @@
    "drawHarnessWallMs": 127085,
    "commitP95Ms": 49,
    "commitMaxMs": 81,
-   "firstPollAtMs": 314,
-   "firstPollReadMs": 314,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 80,
@@ -1629,7 +1564,8 @@
     15
    ],
    "settleElapsedMs": 12566,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 314
   },
   {
    "run": 34685863464,
@@ -1639,8 +1575,6 @@
    "drawHarnessWallMs": 130795,
    "commitP95Ms": 68,
    "commitMaxMs": 82,
-   "firstPollAtMs": 330,
-   "firstPollReadMs": 330,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 60,
@@ -1653,7 +1587,8 @@
     12
    ],
    "settleElapsedMs": 14904,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 330
   },
   {
    "run": 34685863464,
@@ -1663,8 +1598,6 @@
    "drawHarnessWallMs": 76768,
    "commitP95Ms": 35,
    "commitMaxMs": 42,
-   "firstPollAtMs": 179,
-   "firstPollReadMs": 179,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 60,
@@ -1677,7 +1610,8 @@
     10
    ],
    "settleElapsedMs": 9634,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 179
   },
   {
    "run": 34688864013,
@@ -1687,8 +1621,6 @@
    "drawHarnessWallMs": 106568,
    "commitP95Ms": 57,
    "commitMaxMs": 61,
-   "firstPollAtMs": 306,
-   "firstPollReadMs": 306,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 79,
@@ -1701,7 +1633,8 @@
     2
    ],
    "settleElapsedMs": 12536,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 306
   },
   {
    "run": 34688864013,
@@ -1711,8 +1644,6 @@
    "drawHarnessWallMs": 56555,
    "commitP95Ms": 32,
    "commitMaxMs": 34,
-   "firstPollAtMs": 107,
-   "firstPollReadMs": 107,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 40,
@@ -1725,7 +1656,8 @@
     3
    ],
    "settleElapsedMs": 7954,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 107
   },
   {
    "run": 34689845755,
@@ -1735,8 +1667,6 @@
    "drawHarnessWallMs": 72767,
    "commitP95Ms": 35,
    "commitMaxMs": 37,
-   "firstPollAtMs": 115,
-   "firstPollReadMs": 115,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 35,
@@ -1749,7 +1679,8 @@
     9
    ],
    "settleElapsedMs": 9351,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 115
   },
   {
    "run": 34689847582,
@@ -1759,8 +1690,6 @@
    "drawHarnessWallMs": 107081,
    "commitP95Ms": 50,
    "commitMaxMs": 56,
-   "firstPollAtMs": 226,
-   "firstPollReadMs": 226,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 75,
@@ -1773,7 +1702,8 @@
     12
    ],
    "settleElapsedMs": 11004,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 226
   },
   {
    "run": 34689850300,
@@ -1783,8 +1713,6 @@
    "drawHarnessWallMs": 69574,
    "commitP95Ms": 29,
    "commitMaxMs": 30,
-   "firstPollAtMs": 185,
-   "firstPollReadMs": 185,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 24,
@@ -1797,7 +1725,8 @@
     15
    ],
    "settleElapsedMs": 12141,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 185
   },
   {
    "run": 34689845755,
@@ -1807,8 +1736,6 @@
    "drawHarnessWallMs": 98202,
    "commitP95Ms": 55,
    "commitMaxMs": 70,
-   "firstPollAtMs": 334,
-   "firstPollReadMs": 334,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 87,
@@ -1821,7 +1748,8 @@
     35
    ],
    "settleElapsedMs": 20120,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 334
   },
   {
    "run": 34690332648,
@@ -1831,8 +1759,6 @@
    "drawHarnessWallMs": 91150,
    "commitP95Ms": 52,
    "commitMaxMs": 54,
-   "firstPollAtMs": 189,
-   "firstPollReadMs": 189,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 68,
@@ -1845,7 +1771,8 @@
     15
    ],
    "settleElapsedMs": 10663,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 189
   },
   {
    "run": 34689847582,
@@ -1855,8 +1782,6 @@
    "drawHarnessWallMs": 74032,
    "commitP95Ms": 58,
    "commitMaxMs": 73,
-   "firstPollAtMs": 50,
-   "firstPollReadMs": 50,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 57,
@@ -1869,7 +1794,8 @@
     9
    ],
    "settleElapsedMs": 8624,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 50
   },
   {
    "run": 34689850300,
@@ -1879,8 +1805,6 @@
    "drawHarnessWallMs": 86145,
    "commitP95Ms": 49,
    "commitMaxMs": 51,
-   "firstPollAtMs": 217,
-   "firstPollReadMs": 217,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 85,
@@ -1893,7 +1817,8 @@
     12
    ],
    "settleElapsedMs": 10845,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 217
   },
   {
    "run": 34690332648,
@@ -1903,8 +1828,6 @@
    "drawHarnessWallMs": 79206,
    "commitP95Ms": 38,
    "commitMaxMs": 41,
-   "firstPollAtMs": 162,
-   "firstPollReadMs": 162,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 65,
@@ -1917,7 +1840,8 @@
     8
    ],
    "settleElapsedMs": 10056,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 162
   },
   {
    "run": 34692711384,
@@ -1927,8 +1851,6 @@
    "drawHarnessWallMs": 128764,
    "commitP95Ms": 55,
    "commitMaxMs": 56,
-   "firstPollAtMs": 285,
-   "firstPollReadMs": 285,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 76,
@@ -1941,7 +1863,8 @@
     15
    ],
    "settleElapsedMs": 13780,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 285
   },
   {
    "run": 34697768907,
@@ -1951,8 +1874,6 @@
    "drawHarnessWallMs": 64468,
    "commitP95Ms": 32,
    "commitMaxMs": 35,
-   "firstPollAtMs": 143,
-   "firstPollReadMs": 143,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 50,
@@ -1965,7 +1886,8 @@
     7
    ],
    "settleElapsedMs": 8296,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 143
   },
   {
    "run": 34704814052,
@@ -1975,8 +1897,6 @@
    "drawHarnessWallMs": 55853,
    "commitP95Ms": 24,
    "commitMaxMs": 29,
-   "firstPollAtMs": 220,
-   "firstPollReadMs": 220,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 25,
@@ -1989,7 +1909,8 @@
     2
    ],
    "settleElapsedMs": 8057,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 220
   },
   {
    "run": 34706155965,
@@ -1999,8 +1920,6 @@
    "drawHarnessWallMs": 64407,
    "commitP95Ms": 35,
    "commitMaxMs": 38,
-   "firstPollAtMs": 149,
-   "firstPollReadMs": 149,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 63,
@@ -2013,7 +1932,8 @@
     7
    ],
    "settleElapsedMs": 8374,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 149
   },
   {
    "run": 34706781684,
@@ -2023,8 +1943,6 @@
    "drawHarnessWallMs": 96130,
    "commitP95Ms": 54,
    "commitMaxMs": 61,
-   "firstPollAtMs": 380,
-   "firstPollReadMs": 380,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 84,
@@ -2037,7 +1955,8 @@
     10
    ],
    "settleElapsedMs": 9516,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 380
   },
   {
    "run": 34707127023,
@@ -2047,8 +1966,6 @@
    "drawHarnessWallMs": 101480,
    "commitP95Ms": 48,
    "commitMaxMs": 48,
-   "firstPollAtMs": 314,
-   "firstPollReadMs": 314,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 66,
@@ -2061,7 +1978,8 @@
     8
    ],
    "settleElapsedMs": 12324,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 314
   },
   {
    "run": 34707861718,
@@ -2071,8 +1989,6 @@
    "drawHarnessWallMs": 64251,
    "commitP95Ms": 27,
    "commitMaxMs": 31,
-   "firstPollAtMs": 177,
-   "firstPollReadMs": 177,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 33,
@@ -2085,7 +2001,8 @@
     3
    ],
    "settleElapsedMs": 8702,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 177
   },
   {
    "run": 34708412132,
@@ -2095,8 +2012,6 @@
    "drawHarnessWallMs": 86703,
    "commitP95Ms": 38,
    "commitMaxMs": 49,
-   "firstPollAtMs": 184,
-   "firstPollReadMs": 184,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 49,
@@ -2109,7 +2024,8 @@
     32
    ],
    "settleElapsedMs": 18775,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 184
   },
   {
    "run": 34709279671,
@@ -2119,8 +2035,6 @@
    "drawHarnessWallMs": 64437,
    "commitP95Ms": 32,
    "commitMaxMs": 48,
-   "firstPollAtMs": 148,
-   "firstPollReadMs": 148,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 56,
@@ -2133,7 +2047,8 @@
     8
    ],
    "settleElapsedMs": 9523,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 148
   },
   {
    "run": 34711783565,
@@ -2143,8 +2058,6 @@
    "drawHarnessWallMs": 139258,
    "commitP95Ms": 71,
    "commitMaxMs": 71,
-   "firstPollAtMs": 723,
-   "firstPollReadMs": 723,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 126,
@@ -2157,7 +2070,8 @@
     20
    ],
    "settleElapsedMs": 17910,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 723
   },
   {
    "run": 34712266315,
@@ -2167,8 +2081,6 @@
    "drawHarnessWallMs": 64776,
    "commitP95Ms": 32,
    "commitMaxMs": 40,
-   "firstPollAtMs": 139,
-   "firstPollReadMs": 139,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 20,
@@ -2181,7 +2093,8 @@
     9
    ],
    "settleElapsedMs": 8746,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 139
   },
   {
    "run": 34713433376,
@@ -2191,8 +2104,6 @@
    "drawHarnessWallMs": 63368,
    "commitP95Ms": 36,
    "commitMaxMs": 41,
-   "firstPollAtMs": 150,
-   "firstPollReadMs": 150,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 21,
@@ -2205,7 +2116,8 @@
     6
    ],
    "settleElapsedMs": 8878,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 150
   },
   {
    "run": 34714693499,
@@ -2215,8 +2127,6 @@
    "drawHarnessWallMs": 65258,
    "commitP95Ms": 32,
    "commitMaxMs": 42,
-   "firstPollAtMs": 159,
-   "firstPollReadMs": 159,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 53,
@@ -2229,7 +2139,8 @@
     8
    ],
    "settleElapsedMs": 8936,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 159
   },
   {
    "run": 34715522132,
@@ -2239,8 +2150,6 @@
    "drawHarnessWallMs": 67836,
    "commitP95Ms": 30,
    "commitMaxMs": 31,
-   "firstPollAtMs": 187,
-   "firstPollReadMs": 187,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 82,
@@ -2253,7 +2162,8 @@
     7
    ],
    "settleElapsedMs": 8351,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 187
   },
   {
    "run": 34732142538,
@@ -2263,8 +2173,6 @@
    "drawHarnessWallMs": 66102,
    "commitP95Ms": 28,
    "commitMaxMs": 34,
-   "firstPollAtMs": 181,
-   "firstPollReadMs": 181,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 56,
@@ -2277,7 +2185,8 @@
     12
    ],
    "settleElapsedMs": 9685,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 181
   },
   {
    "run": 34732621052,
@@ -2287,8 +2196,6 @@
    "drawHarnessWallMs": 88638,
    "commitP95Ms": 53,
    "commitMaxMs": 77,
-   "firstPollAtMs": 304,
-   "firstPollReadMs": 304,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 87,
@@ -2301,7 +2208,8 @@
     14
    ],
    "settleElapsedMs": 14339,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 304
   },
   {
    "run": 34733615348,
@@ -2311,8 +2219,6 @@
    "drawHarnessWallMs": 62943,
    "commitP95Ms": 25,
    "commitMaxMs": 26,
-   "firstPollAtMs": 138,
-   "firstPollReadMs": 138,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 55,
@@ -2325,7 +2231,8 @@
     2
    ],
    "settleElapsedMs": 8852,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 138
   },
   {
    "run": 34755869999,
@@ -2335,8 +2242,6 @@
    "drawHarnessWallMs": 93687,
    "commitP95Ms": 46,
    "commitMaxMs": 88,
-   "firstPollAtMs": 465,
-   "firstPollReadMs": 465,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 83,
@@ -2349,7 +2254,8 @@
     14
    ],
    "settleElapsedMs": 13001,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 465
   },
   {
    "run": 34758291112,
@@ -2359,8 +2265,6 @@
    "drawHarnessWallMs": 106226,
    "commitP95Ms": 63,
    "commitMaxMs": 93,
-   "firstPollAtMs": 53,
-   "firstPollReadMs": 53,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 51,
@@ -2373,7 +2277,8 @@
     12
    ],
    "settleElapsedMs": 11354,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 53
   },
   {
    "run": 34759262836,
@@ -2383,8 +2288,6 @@
    "drawHarnessWallMs": 109941,
    "commitP95Ms": 62,
    "commitMaxMs": 78,
-   "firstPollAtMs": 416,
-   "firstPollReadMs": 416,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 79,
@@ -2397,7 +2300,8 @@
     17
    ],
    "settleElapsedMs": 14062,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 416
   },
   {
    "run": 34761333755,
@@ -2407,8 +2311,6 @@
    "drawHarnessWallMs": 83411,
    "commitP95Ms": 41,
    "commitMaxMs": 66,
-   "firstPollAtMs": 233,
-   "firstPollReadMs": 233,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 68,
@@ -2421,7 +2323,8 @@
     16
    ],
    "settleElapsedMs": 11889,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 233
   },
   {
    "run": 34769641555,
@@ -2431,8 +2334,6 @@
    "drawHarnessWallMs": 69030,
    "commitP95Ms": 35,
    "commitMaxMs": 50,
-   "firstPollAtMs": 154,
-   "firstPollReadMs": 154,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 51,
@@ -2445,7 +2346,8 @@
     2
    ],
    "settleElapsedMs": 8699,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 154
   },
   {
    "run": 34769756147,
@@ -2455,8 +2357,6 @@
    "drawHarnessWallMs": 92200,
    "commitP95Ms": 39,
    "commitMaxMs": 42,
-   "firstPollAtMs": 160,
-   "firstPollReadMs": 160,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 69,
@@ -2469,7 +2369,8 @@
     11
    ],
    "settleElapsedMs": 9787,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 160
   },
   {
    "run": 34779111308,
@@ -2479,8 +2380,6 @@
    "drawHarnessWallMs": 77014,
    "commitP95Ms": 34,
    "commitMaxMs": 45,
-   "firstPollAtMs": 240,
-   "firstPollReadMs": 240,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 77,
@@ -2493,7 +2392,8 @@
     11
    ],
    "settleElapsedMs": 14734,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 240
   },
   {
    "run": 34779259807,
@@ -2503,8 +2403,6 @@
    "drawHarnessWallMs": 102562,
    "commitP95Ms": 54,
    "commitMaxMs": 57,
-   "firstPollAtMs": 441,
-   "firstPollReadMs": 441,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 83,
@@ -2517,7 +2415,8 @@
     4
    ],
    "settleElapsedMs": 18494,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 441
   },
   {
    "run": 34781964269,
@@ -2527,8 +2426,6 @@
    "drawHarnessWallMs": 72839,
    "commitP95Ms": 32,
    "commitMaxMs": 35,
-   "firstPollAtMs": 178,
-   "firstPollReadMs": 178,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 43,
@@ -2541,7 +2438,8 @@
     3
    ],
    "settleElapsedMs": 9527,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 178
   },
   {
    "run": 34784350990,
@@ -2551,8 +2449,6 @@
    "drawHarnessWallMs": 103381,
    "commitP95Ms": 53,
    "commitMaxMs": 59,
-   "firstPollAtMs": 247,
-   "firstPollReadMs": 247,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 66,
@@ -2565,7 +2461,8 @@
     29
    ],
    "settleElapsedMs": 13415,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 247
   },
   {
    "run": 34786139806,
@@ -2575,8 +2472,6 @@
    "drawHarnessWallMs": 74872,
    "commitP95Ms": 34,
    "commitMaxMs": 44,
-   "firstPollAtMs": 159,
-   "firstPollReadMs": 159,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 26,
@@ -2589,7 +2484,8 @@
     8
    ],
    "settleElapsedMs": 9242,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 159
   },
   {
    "run": 34786624576,
@@ -2599,8 +2495,6 @@
    "drawHarnessWallMs": 69835,
    "commitP95Ms": 33,
    "commitMaxMs": 35,
-   "firstPollAtMs": 146,
-   "firstPollReadMs": 146,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 19,
@@ -2613,7 +2507,8 @@
     10
    ],
    "settleElapsedMs": 10135,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 146
   },
   {
    "run": 34788481001,
@@ -2623,8 +2518,6 @@
    "drawHarnessWallMs": 92665,
    "commitP95Ms": 38,
    "commitMaxMs": 43,
-   "firstPollAtMs": 188,
-   "firstPollReadMs": 188,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 57,
@@ -2637,7 +2530,8 @@
     12
    ],
    "settleElapsedMs": 9780,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 188
   },
   {
    "run": 34788560004,
@@ -2647,8 +2541,6 @@
    "drawHarnessWallMs": 79862,
    "commitP95Ms": 37,
    "commitMaxMs": 54,
-   "firstPollAtMs": 254,
-   "firstPollReadMs": 254,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 88,
@@ -2661,7 +2553,8 @@
     8
    ],
    "settleElapsedMs": 14598,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 254
   },
   {
    "run": 34793072189,
@@ -2671,8 +2564,6 @@
    "drawHarnessWallMs": 104962,
    "commitP95Ms": 46,
    "commitMaxMs": 69,
-   "firstPollAtMs": 293,
-   "firstPollReadMs": 293,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 67,
@@ -2685,7 +2576,8 @@
     3
    ],
    "settleElapsedMs": 10419,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 293
   },
   {
    "run": 34795996197,
@@ -2695,8 +2587,6 @@
    "drawHarnessWallMs": 62189,
    "commitP95Ms": 26,
    "commitMaxMs": 26,
-   "firstPollAtMs": 165,
-   "firstPollReadMs": 165,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 45,
@@ -2709,7 +2599,8 @@
     3
    ],
    "settleElapsedMs": 8672,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 165
   },
   {
    "run": 34838721329,
@@ -2719,8 +2610,6 @@
    "drawHarnessWallMs": 65255,
    "commitP95Ms": 26,
    "commitMaxMs": 33,
-   "firstPollAtMs": 133,
-   "firstPollReadMs": 133,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 71,
@@ -2733,7 +2622,8 @@
     9
    ],
    "settleElapsedMs": 8668,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 133
   },
   {
    "run": 34841359592,
@@ -2743,8 +2633,6 @@
    "drawHarnessWallMs": 111118,
    "commitP95Ms": 52,
    "commitMaxMs": 69,
-   "firstPollAtMs": 452,
-   "firstPollReadMs": 448,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 82,
@@ -2757,7 +2645,8 @@
     19
    ],
    "settleElapsedMs": 23366,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 452
   },
   {
    "run": 34844454856,
@@ -2767,8 +2656,6 @@
    "drawHarnessWallMs": 57463,
    "commitP95Ms": 3890,
    "commitMaxMs": 4076,
-   "firstPollAtMs": 3,
-   "firstPollReadMs": 3,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 8,
@@ -2780,7 +2667,8 @@
     0
    ],
    "settleElapsedMs": 7030,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 3
   },
   {
    "run": 34846381759,
@@ -2790,8 +2678,6 @@
    "drawHarnessWallMs": 117383,
    "commitP95Ms": 46,
    "commitMaxMs": 51,
-   "firstPollAtMs": 442,
-   "firstPollReadMs": 442,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 73,
@@ -2804,7 +2690,8 @@
     13
    ],
    "settleElapsedMs": 13147,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 442
   },
   {
    "run": 34852008452,
@@ -2814,8 +2701,6 @@
    "drawHarnessWallMs": 120200,
    "commitP95Ms": 50,
    "commitMaxMs": 74,
-   "firstPollAtMs": 248,
-   "firstPollReadMs": 248,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 89,
@@ -2828,7 +2713,8 @@
     5
    ],
    "settleElapsedMs": 11434,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 248
   },
   {
    "run": 34866016472,
@@ -2838,8 +2724,6 @@
    "drawHarnessWallMs": 125065,
    "commitP95Ms": 47,
    "commitMaxMs": 49,
-   "firstPollAtMs": 28,
-   "firstPollReadMs": 28,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 48,
@@ -2852,7 +2736,8 @@
     16
    ],
    "settleElapsedMs": 11987,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 28
   },
   {
    "run": 34867197062,
@@ -2862,8 +2747,6 @@
    "drawHarnessWallMs": 123231,
    "commitP95Ms": 72,
    "commitMaxMs": 87,
-   "firstPollAtMs": 26,
-   "firstPollReadMs": 26,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 65,
@@ -2876,7 +2759,8 @@
     12
    ],
    "settleElapsedMs": 13636,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 26
   },
   {
    "run": 34873485427,
@@ -2886,8 +2770,6 @@
    "drawHarnessWallMs": 123040,
    "commitP95Ms": 114,
    "commitMaxMs": 173,
-   "firstPollAtMs": 292,
-   "firstPollReadMs": 292,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 65,
@@ -2900,7 +2782,8 @@
     19
    ],
    "settleElapsedMs": 13963,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 292
   },
   {
    "run": 34873569384,
@@ -2910,8 +2793,6 @@
    "drawHarnessWallMs": 99811,
    "commitP95Ms": 44,
    "commitMaxMs": 48,
-   "firstPollAtMs": 39,
-   "firstPollReadMs": 39,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 57,
@@ -2924,7 +2805,8 @@
     10
    ],
    "settleElapsedMs": 10765,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 39
   },
   {
    "run": 34873835730,
@@ -2934,8 +2816,6 @@
    "drawHarnessWallMs": 107032,
    "commitP95Ms": 75,
    "commitMaxMs": 79,
-   "firstPollAtMs": 278,
-   "firstPollReadMs": 278,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 78,
@@ -2948,7 +2828,8 @@
     16
    ],
    "settleElapsedMs": 11405,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 278
   },
   {
    "run": 34873894715,
@@ -2958,8 +2839,6 @@
    "drawHarnessWallMs": 88344,
    "commitP95Ms": 48,
    "commitMaxMs": 89,
-   "firstPollAtMs": 368,
-   "firstPollReadMs": 368,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 80,
@@ -2972,7 +2851,8 @@
     17
    ],
    "settleElapsedMs": 12879,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 368
   },
   {
    "run": 34874915205,
@@ -2982,8 +2862,6 @@
    "drawHarnessWallMs": 63314,
    "commitP95Ms": 31,
    "commitMaxMs": 35,
-   "firstPollAtMs": 21,
-   "firstPollReadMs": 21,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 23,
@@ -2996,7 +2874,8 @@
     9
    ],
    "settleElapsedMs": 8882,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 21
   },
   {
    "run": 34877138973,
@@ -3006,8 +2885,6 @@
    "drawHarnessWallMs": 125892,
    "commitP95Ms": 57,
    "commitMaxMs": 60,
-   "firstPollAtMs": 431,
-   "firstPollReadMs": 431,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 64,
@@ -3020,7 +2897,8 @@
     19
    ],
    "settleElapsedMs": 15740,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 431
   },
   {
    "run": 34878916104,
@@ -3030,8 +2908,6 @@
    "drawHarnessWallMs": 102593,
    "commitP95Ms": 51,
    "commitMaxMs": 52,
-   "firstPollAtMs": 249,
-   "firstPollReadMs": 249,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 51,
@@ -3044,7 +2920,8 @@
     8
    ],
    "settleElapsedMs": 12256,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 249
   },
   {
    "run": 34879013498,
@@ -3054,8 +2931,6 @@
    "drawHarnessWallMs": 100512,
    "commitP95Ms": 51,
    "commitMaxMs": 54,
-   "firstPollAtMs": 222,
-   "firstPollReadMs": 222,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 76,
@@ -3068,7 +2943,8 @@
     13
    ],
    "settleElapsedMs": 12454,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 222
   },
   {
    "run": 34879682395,
@@ -3078,8 +2954,6 @@
    "drawHarnessWallMs": 120429,
    "commitP95Ms": 47,
    "commitMaxMs": 49,
-   "firstPollAtMs": 38,
-   "firstPollReadMs": 38,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 29,
@@ -3092,7 +2966,8 @@
     12
    ],
    "settleElapsedMs": 12747,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 38
   },
   {
    "run": 34880539077,
@@ -3102,8 +2977,6 @@
    "drawHarnessWallMs": 71815,
    "commitP95Ms": 30,
    "commitMaxMs": 32,
-   "firstPollAtMs": 183,
-   "firstPollReadMs": 183,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 29,
@@ -3116,7 +2989,8 @@
     11
    ],
    "settleElapsedMs": 9509,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 183
   },
   {
    "run": 34880694335,
@@ -3126,8 +3000,6 @@
    "drawHarnessWallMs": 119339,
    "commitP95Ms": 58,
    "commitMaxMs": 107,
-   "firstPollAtMs": 338,
-   "firstPollReadMs": 338,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 99,
@@ -3140,7 +3012,8 @@
     7
    ],
    "settleElapsedMs": 13367,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 338
   },
   {
    "run": 34881829230,
@@ -3150,8 +3023,6 @@
    "drawHarnessWallMs": 112111,
    "commitP95Ms": 43,
    "commitMaxMs": 53,
-   "firstPollAtMs": 313,
-   "firstPollReadMs": 313,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 84,
@@ -3164,7 +3035,8 @@
     16
    ],
    "settleElapsedMs": 13632,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 313
   },
   {
    "run": 34891084589,
@@ -3174,8 +3046,6 @@
    "drawHarnessWallMs": 105316,
    "commitP95Ms": 62,
    "commitMaxMs": 102,
-   "firstPollAtMs": 11,
-   "firstPollReadMs": 11,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 70,
@@ -3188,7 +3058,8 @@
     15
    ],
    "settleElapsedMs": 11794,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 11
   },
   {
    "run": 34905447021,
@@ -3198,8 +3069,6 @@
    "drawHarnessWallMs": 118464,
    "commitP95Ms": 48,
    "commitMaxMs": 48,
-   "firstPollAtMs": 266,
-   "firstPollReadMs": 266,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 82,
@@ -3212,7 +3081,8 @@
     13
    ],
    "settleElapsedMs": 13801,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 266
   },
   {
    "run": 34905656464,
@@ -3222,8 +3092,6 @@
    "drawHarnessWallMs": 163644,
    "commitP95Ms": 94,
    "commitMaxMs": 179,
-   "firstPollAtMs": 406,
-   "firstPollReadMs": 406,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 55,
@@ -3236,7 +3104,8 @@
     14
    ],
    "settleElapsedMs": 16902,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 406
   },
   {
    "run": 34909007158,
@@ -3246,8 +3115,6 @@
    "drawHarnessWallMs": 64049,
    "commitP95Ms": 28,
    "commitMaxMs": 29,
-   "firstPollAtMs": 165,
-   "firstPollReadMs": 165,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 28,
@@ -3260,7 +3127,8 @@
     6
    ],
    "settleElapsedMs": 8310,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 165
   },
   {
    "run": 34909323211,
@@ -3270,8 +3138,6 @@
    "drawHarnessWallMs": 114178,
    "commitP95Ms": 68,
    "commitMaxMs": 69,
-   "firstPollAtMs": 13,
-   "firstPollReadMs": 13,
    "firstPollFrames": {
     "count": 3,
     "firstMs": 68,
@@ -3284,7 +3150,8 @@
     12
    ],
    "settleElapsedMs": 12166,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 13
   },
   {
    "run": 34910244254,
@@ -3294,8 +3161,6 @@
    "drawHarnessWallMs": 60856,
    "commitP95Ms": 31,
    "commitMaxMs": 34,
-   "firstPollAtMs": 100,
-   "firstPollReadMs": 100,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 27,
@@ -3308,7 +3173,8 @@
     6
    ],
    "settleElapsedMs": 7788,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 100
   },
   {
    "run": 34910735614,
@@ -3318,8 +3184,6 @@
    "drawHarnessWallMs": 113953,
    "commitP95Ms": 56,
    "commitMaxMs": 57,
-   "firstPollAtMs": 368,
-   "firstPollReadMs": 368,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 85,
@@ -3332,7 +3196,8 @@
     2
    ],
    "settleElapsedMs": 13693,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 368
   },
   {
    "run": 34912086987,
@@ -3342,8 +3207,6 @@
    "drawHarnessWallMs": 89516,
    "commitP95Ms": 49,
    "commitMaxMs": 53,
-   "firstPollAtMs": 305,
-   "firstPollReadMs": 305,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 60,
@@ -3356,7 +3219,8 @@
     45
    ],
    "settleElapsedMs": 16783,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 305
   },
   {
    "run": 34912543317,
@@ -3366,8 +3230,6 @@
    "drawHarnessWallMs": 121667,
    "commitP95Ms": 49,
    "commitMaxMs": 50,
-   "firstPollAtMs": 186,
-   "firstPollReadMs": 186,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 39,
@@ -3380,7 +3242,8 @@
     18
    ],
    "settleElapsedMs": 12180,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 186
   },
   {
    "run": 34913217725,
@@ -3390,8 +3253,6 @@
    "drawHarnessWallMs": 111195,
    "commitP95Ms": 54,
    "commitMaxMs": 84,
-   "firstPollAtMs": 323,
-   "firstPollReadMs": 323,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 75,
@@ -3404,7 +3265,8 @@
     8
    ],
    "settleElapsedMs": 11481,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 323
   },
   {
    "run": 34913454006,
@@ -3414,8 +3276,6 @@
    "drawHarnessWallMs": 66831,
    "commitP95Ms": 31,
    "commitMaxMs": 32,
-   "firstPollAtMs": 154,
-   "firstPollReadMs": 154,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 71,
@@ -3428,7 +3288,8 @@
     10
    ],
    "settleElapsedMs": 9231,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 154
   },
   {
    "run": 34917048066,
@@ -3438,8 +3299,6 @@
    "drawHarnessWallMs": 67988,
    "commitP95Ms": 33,
    "commitMaxMs": 67,
-   "firstPollAtMs": 185,
-   "firstPollReadMs": 185,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 70,
@@ -3452,7 +3311,8 @@
     9
    ],
    "settleElapsedMs": 10278,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 185
   },
   {
    "run": 34917156863,
@@ -3462,8 +3322,6 @@
    "drawHarnessWallMs": 65897,
    "commitP95Ms": 30,
    "commitMaxMs": 42,
-   "firstPollAtMs": 35,
-   "firstPollReadMs": 35,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 49,
@@ -3476,7 +3334,8 @@
     7
    ],
    "settleElapsedMs": 9433,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 35
   },
   {
    "run": 34917656886,
@@ -3486,8 +3345,6 @@
    "drawHarnessWallMs": 82628,
    "commitP95Ms": 35,
    "commitMaxMs": 37,
-   "firstPollAtMs": 165,
-   "firstPollReadMs": 165,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 41,
@@ -3500,7 +3357,8 @@
     10
    ],
    "settleElapsedMs": 9929,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 165
   },
   {
    "run": 34918674037,
@@ -3510,8 +3368,6 @@
    "drawHarnessWallMs": 62313,
    "commitP95Ms": 26,
    "commitMaxMs": 27,
-   "firstPollAtMs": 155,
-   "firstPollReadMs": 155,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 50,
@@ -3524,7 +3380,8 @@
     7
    ],
    "settleElapsedMs": 8331,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 155
   },
   {
    "run": 34918918650,
@@ -3534,8 +3391,6 @@
    "drawHarnessWallMs": 63599,
    "commitP95Ms": 27,
    "commitMaxMs": 30,
-   "firstPollAtMs": 134,
-   "firstPollReadMs": 134,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 17,
@@ -3548,7 +3403,8 @@
     8
    ],
    "settleElapsedMs": 7975,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 134
   },
   {
    "run": 34919746975,
@@ -3558,8 +3414,6 @@
    "drawHarnessWallMs": 66709,
    "commitP95Ms": 29,
    "commitMaxMs": 41,
-   "firstPollAtMs": 140,
-   "firstPollReadMs": 140,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 62,
@@ -3572,7 +3426,8 @@
     7
    ],
    "settleElapsedMs": 9316,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 140
   },
   {
    "run": 34920150142,
@@ -3582,8 +3437,6 @@
    "drawHarnessWallMs": 74331,
    "commitP95Ms": 39,
    "commitMaxMs": 58,
-   "firstPollAtMs": 181,
-   "firstPollReadMs": 181,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 72,
@@ -3596,7 +3449,8 @@
     2
    ],
    "settleElapsedMs": 9753,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 181
   },
   {
    "run": 34920622804,
@@ -3606,8 +3460,6 @@
    "drawHarnessWallMs": 55565,
    "commitP95Ms": 23,
    "commitMaxMs": 28,
-   "firstPollAtMs": 101,
-   "firstPollReadMs": 101,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 51,
@@ -3620,7 +3472,8 @@
     3
    ],
    "settleElapsedMs": 7879,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 101
   },
   {
    "run": 34946006721,
@@ -3630,8 +3483,6 @@
    "drawHarnessWallMs": 109676,
    "commitP95Ms": 53,
    "commitMaxMs": 62,
-   "firstPollAtMs": 345,
-   "firstPollReadMs": 345,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 91,
@@ -3644,7 +3495,8 @@
     11
    ],
    "settleElapsedMs": 12505,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 345
   },
   {
    "run": 34947052128,
@@ -3654,8 +3506,6 @@
    "drawHarnessWallMs": 114167,
    "commitP95Ms": 54,
    "commitMaxMs": 58,
-   "firstPollAtMs": 389,
-   "firstPollReadMs": 389,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 47,
@@ -3668,7 +3518,8 @@
     10
    ],
    "settleElapsedMs": 12196,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 389
   },
   {
    "run": 34947102449,
@@ -3678,8 +3529,6 @@
    "drawHarnessWallMs": 104804,
    "commitP95Ms": 99,
    "commitMaxMs": 102,
-   "firstPollAtMs": 280,
-   "firstPollReadMs": 280,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 70,
@@ -3692,7 +3541,8 @@
     4
    ],
    "settleElapsedMs": 13740,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 280
   },
   {
    "run": 34947965328,
@@ -3702,8 +3552,6 @@
    "drawHarnessWallMs": 82404,
    "commitP95Ms": 38,
    "commitMaxMs": 47,
-   "firstPollAtMs": 211,
-   "firstPollReadMs": 211,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 64,
@@ -3716,7 +3564,8 @@
     10
    ],
    "settleElapsedMs": 10072,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 211
   },
   {
    "run": 34949505691,
@@ -3726,8 +3575,6 @@
    "drawHarnessWallMs": 68763,
    "commitP95Ms": 31,
    "commitMaxMs": 37,
-   "firstPollAtMs": 164,
-   "firstPollReadMs": 164,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 69,
@@ -3740,7 +3587,8 @@
     13
    ],
    "settleElapsedMs": 8775,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 164
   },
   {
    "run": 34951619820,
@@ -3750,8 +3598,6 @@
    "drawHarnessWallMs": 100223,
    "commitP95Ms": 43,
    "commitMaxMs": 45,
-   "firstPollAtMs": 253,
-   "firstPollReadMs": 253,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 85,
@@ -3764,7 +3610,8 @@
     6
    ],
    "settleElapsedMs": 13007,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 253
   },
   {
    "run": 34960599236,
@@ -3774,8 +3621,6 @@
    "drawHarnessWallMs": 103464,
    "commitP95Ms": 50,
    "commitMaxMs": 54,
-   "firstPollAtMs": 338,
-   "firstPollReadMs": 338,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 74,
@@ -3788,7 +3633,8 @@
     2
    ],
    "settleElapsedMs": 11112,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 338
   },
   {
    "run": 34972600330,
@@ -3798,8 +3644,6 @@
    "drawHarnessWallMs": 112361,
    "commitP95Ms": 81,
    "commitMaxMs": 164,
-   "firstPollAtMs": 109,
-   "firstPollReadMs": 109,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 80,
@@ -3812,7 +3656,8 @@
     16
    ],
    "settleElapsedMs": 13890,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 109
   },
   {
    "run": 34977648493,
@@ -3822,8 +3667,6 @@
    "drawHarnessWallMs": 56632,
    "commitP95Ms": 31,
    "commitMaxMs": 31,
-   "firstPollAtMs": 134,
-   "firstPollReadMs": 134,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 50,
@@ -3836,7 +3679,8 @@
     6
    ],
    "settleElapsedMs": 7887,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 134
   },
   {
    "run": 34980350405,
@@ -3846,8 +3690,6 @@
    "drawHarnessWallMs": 101312,
    "commitP95Ms": 46,
    "commitMaxMs": 52,
-   "firstPollAtMs": 462,
-   "firstPollReadMs": 462,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 112,
@@ -3860,7 +3702,8 @@
     11
    ],
    "settleElapsedMs": 14987,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 462
   },
   {
    "run": 34984036424,
@@ -3870,8 +3713,6 @@
    "drawHarnessWallMs": 100956,
    "commitP95Ms": 43,
    "commitMaxMs": 44,
-   "firstPollAtMs": 366,
-   "firstPollReadMs": 366,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 85,
@@ -3884,7 +3725,8 @@
     12
    ],
    "settleElapsedMs": 12853,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 366
   },
   {
    "run": 34987668956,
@@ -3894,8 +3736,6 @@
    "drawHarnessWallMs": 112436,
    "commitP95Ms": 61,
    "commitMaxMs": 81,
-   "firstPollAtMs": 383,
-   "firstPollReadMs": 383,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 68,
@@ -3908,7 +3748,8 @@
     16
    ],
    "settleElapsedMs": 12792,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 383
   },
   {
    "run": 35001209795,
@@ -3918,8 +3759,6 @@
    "drawHarnessWallMs": 92074,
    "commitP95Ms": 48,
    "commitMaxMs": 57,
-   "firstPollAtMs": 301,
-   "firstPollReadMs": 301,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 81,
@@ -3932,7 +3771,8 @@
     10
    ],
    "settleElapsedMs": 9539,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 301
   },
   {
    "run": 35003083574,
@@ -3942,8 +3782,6 @@
    "drawHarnessWallMs": 113838,
    "commitP95Ms": 45,
    "commitMaxMs": 58,
-   "firstPollAtMs": 428,
-   "firstPollReadMs": 428,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 79,
@@ -3956,7 +3794,8 @@
     13
    ],
    "settleElapsedMs": 12943,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 428
   },
   {
    "run": 35006420081,
@@ -3966,8 +3805,6 @@
    "drawHarnessWallMs": 98249,
    "commitP95Ms": 54,
    "commitMaxMs": 134,
-   "firstPollAtMs": 224,
-   "firstPollReadMs": 224,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 65,
@@ -3980,7 +3817,8 @@
     19
    ],
    "settleElapsedMs": 12963,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 224
   },
   {
    "run": 35012373743,
@@ -3990,8 +3828,6 @@
    "drawHarnessWallMs": 66279,
    "commitP95Ms": 35,
    "commitMaxMs": 36,
-   "firstPollAtMs": 217,
-   "firstPollReadMs": 217,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 26,
@@ -4004,7 +3840,8 @@
     11
    ],
    "settleElapsedMs": 9048,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 217
   },
   {
    "run": 35016740426,
@@ -4014,8 +3851,6 @@
    "drawHarnessWallMs": 114322,
    "commitP95Ms": 59,
    "commitMaxMs": 72,
-   "firstPollAtMs": 325,
-   "firstPollReadMs": 325,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 84,
@@ -4028,7 +3863,8 @@
     12
    ],
    "settleElapsedMs": 13401,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 325
   },
   {
    "run": 35045249440,
@@ -4038,8 +3874,6 @@
    "drawHarnessWallMs": 59861,
    "commitP95Ms": 27,
    "commitMaxMs": 28,
-   "firstPollAtMs": 154,
-   "firstPollReadMs": 154,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 52,
@@ -4052,7 +3886,8 @@
     10
    ],
    "settleElapsedMs": 8705,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 154
   },
   {
    "run": 35045264268,
@@ -4062,8 +3897,6 @@
    "drawHarnessWallMs": 124235,
    "commitP95Ms": 55,
    "commitMaxMs": 57,
-   "firstPollAtMs": 358,
-   "firstPollReadMs": 358,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 96,
@@ -4076,7 +3909,8 @@
     13
    ],
    "settleElapsedMs": 13891,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 358
   },
   {
    "run": 35045285004,
@@ -4086,8 +3920,6 @@
    "drawHarnessWallMs": 112370,
    "commitP95Ms": 112,
    "commitMaxMs": 149,
-   "firstPollAtMs": 32,
-   "firstPollReadMs": 32,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 49,
@@ -4100,7 +3932,8 @@
     10
    ],
    "settleElapsedMs": 18571,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 32
   },
   {
    "run": 35095842149,
@@ -4110,8 +3943,6 @@
    "drawHarnessWallMs": 111785,
    "commitP95Ms": 48,
    "commitMaxMs": 84,
-   "firstPollAtMs": 315,
-   "firstPollReadMs": 315,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 44,
@@ -4124,7 +3955,8 @@
     15
    ],
    "settleElapsedMs": 17095,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 315
   },
   {
    "run": 35120275854,
@@ -4134,8 +3966,6 @@
    "drawHarnessWallMs": 65348,
    "commitP95Ms": 27,
    "commitMaxMs": 41,
-   "firstPollAtMs": 172,
-   "firstPollReadMs": 172,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 59,
@@ -4148,7 +3978,8 @@
     4
    ],
    "settleElapsedMs": 7988,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 172
   },
   {
    "run": 35122284248,
@@ -4158,8 +3989,6 @@
    "drawHarnessWallMs": 110512,
    "commitP95Ms": 48,
    "commitMaxMs": 79,
-   "firstPollAtMs": 62,
-   "firstPollReadMs": 62,
    "firstPollFrames": {
     "count": 2,
     "firstMs": 68,
@@ -4172,7 +4001,8 @@
     10
    ],
    "settleElapsedMs": 13865,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 62
   },
   {
    "run": 35125180143,
@@ -4182,8 +4012,6 @@
    "drawHarnessWallMs": 116596,
    "commitP95Ms": 45,
    "commitMaxMs": 54,
-   "firstPollAtMs": 347,
-   "firstPollReadMs": 347,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 71,
@@ -4196,7 +4024,8 @@
     13
    ],
    "settleElapsedMs": 12798,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 347
   },
   {
    "run": 35127510063,
@@ -4206,8 +4035,6 @@
    "drawHarnessWallMs": 135403,
    "commitP95Ms": 60,
    "commitMaxMs": 69,
-   "firstPollAtMs": 519,
-   "firstPollReadMs": 518,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 128,
@@ -4220,7 +4047,8 @@
     3
    ],
    "settleElapsedMs": 17799,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 519
   },
   {
    "run": 35131870903,
@@ -4230,8 +4058,6 @@
    "drawHarnessWallMs": 91749,
    "commitP95Ms": 42,
    "commitMaxMs": 43,
-   "firstPollAtMs": 239,
-   "firstPollReadMs": 239,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 78,
@@ -4244,7 +4070,8 @@
     16
    ],
    "settleElapsedMs": 10569,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 239
   },
   {
    "run": 35137959790,
@@ -4254,8 +4081,6 @@
    "drawHarnessWallMs": 95515,
    "commitP95Ms": 49,
    "commitMaxMs": 51,
-   "firstPollAtMs": 266,
-   "firstPollReadMs": 266,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 83,
@@ -4268,7 +4093,8 @@
     3
    ],
    "settleElapsedMs": 13566,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 266
   },
   {
    "run": 35140208298,
@@ -4278,8 +4104,6 @@
    "drawHarnessWallMs": 114317,
    "commitP95Ms": 79,
    "commitMaxMs": 136,
-   "firstPollAtMs": 362,
-   "firstPollReadMs": 362,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 75,
@@ -4292,7 +4116,8 @@
     17
    ],
    "settleElapsedMs": 12634,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 362
   },
   {
    "run": 35141922403,
@@ -4302,8 +4127,6 @@
    "drawHarnessWallMs": 104870,
    "commitP95Ms": 55,
    "commitMaxMs": 94,
-   "firstPollAtMs": 357,
-   "firstPollReadMs": 357,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 106,
@@ -4316,7 +4139,8 @@
     24
    ],
    "settleElapsedMs": 15279,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 357
   },
   {
    "run": 35143088866,
@@ -4326,8 +4150,6 @@
    "drawHarnessWallMs": 71511,
    "commitP95Ms": 62,
    "commitMaxMs": 64,
-   "firstPollAtMs": 155,
-   "firstPollReadMs": 155,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 38,
@@ -4340,7 +4162,8 @@
     14
    ],
    "settleElapsedMs": 11074,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 155
   },
   {
    "run": 35143508420,
@@ -4350,8 +4173,6 @@
    "drawHarnessWallMs": 107779,
    "commitP95Ms": 58,
    "commitMaxMs": 145,
-   "firstPollAtMs": 347,
-   "firstPollReadMs": 347,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 86,
@@ -4364,7 +4185,8 @@
     9
    ],
    "settleElapsedMs": 14308,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 347
   },
   {
    "run": 35143587605,
@@ -4374,8 +4196,6 @@
    "drawHarnessWallMs": 93732,
    "commitP95Ms": 73,
    "commitMaxMs": 98,
-   "firstPollAtMs": 381,
-   "firstPollReadMs": 381,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 82,
@@ -4388,7 +4208,8 @@
     13
    ],
    "settleElapsedMs": 16260,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 381
   },
   {
    "run": 35145593582,
@@ -4398,8 +4219,6 @@
    "drawHarnessWallMs": 129033,
    "commitP95Ms": 60,
    "commitMaxMs": 62,
-   "firstPollAtMs": 384,
-   "firstPollReadMs": 384,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 70,
@@ -4412,7 +4231,8 @@
     8
    ],
    "settleElapsedMs": 13934,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 384
   },
   {
    "run": 35146677289,
@@ -4422,8 +4242,6 @@
    "drawHarnessWallMs": 95103,
    "commitP95Ms": 53,
    "commitMaxMs": 80,
-   "firstPollAtMs": 243,
-   "firstPollReadMs": 243,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 66,
@@ -4436,7 +4254,8 @@
     12
    ],
    "settleElapsedMs": 12891,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 243
   },
   {
    "run": 35174136836,
@@ -4446,8 +4265,6 @@
    "drawHarnessWallMs": 57429,
    "commitP95Ms": 24,
    "commitMaxMs": 28,
-   "firstPollAtMs": 136,
-   "firstPollReadMs": 136,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 52,
@@ -4460,7 +4277,8 @@
     22
    ],
    "settleElapsedMs": 8155,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 136
   },
   {
    "run": 35176840493,
@@ -4470,8 +4288,6 @@
    "drawHarnessWallMs": 101791,
    "commitP95Ms": 67,
    "commitMaxMs": 80,
-   "firstPollAtMs": 274,
-   "firstPollReadMs": 274,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 82,
@@ -4484,7 +4300,8 @@
     12
    ],
    "settleElapsedMs": 12533,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 274
   },
   {
    "run": 35177350918,
@@ -4494,8 +4311,6 @@
    "drawHarnessWallMs": 64955,
    "commitP95Ms": 28,
    "commitMaxMs": 28,
-   "firstPollAtMs": 187,
-   "firstPollReadMs": 187,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 71,
@@ -4508,7 +4323,8 @@
     2
    ],
    "settleElapsedMs": 8547,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 187
   },
   {
    "run": 35209412743,
@@ -4518,8 +4334,6 @@
    "drawHarnessWallMs": 55817,
    "commitP95Ms": 27,
    "commitMaxMs": 39,
-   "firstPollAtMs": 142,
-   "firstPollReadMs": 142,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 44,
@@ -4532,7 +4346,8 @@
     7
    ],
    "settleElapsedMs": 7849,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 142
   },
   {
    "run": 35212102129,
@@ -4542,8 +4357,6 @@
    "drawHarnessWallMs": 122025,
    "commitP95Ms": 68,
    "commitMaxMs": 90,
-   "firstPollAtMs": 317,
-   "firstPollReadMs": 317,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 88,
@@ -4556,7 +4369,8 @@
     19
    ],
    "settleElapsedMs": 14485,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 317
   },
   {
    "run": 35232330811,
@@ -4566,8 +4380,6 @@
    "drawHarnessWallMs": 67491,
    "commitP95Ms": 31,
    "commitMaxMs": 37,
-   "firstPollAtMs": 136,
-   "firstPollReadMs": 136,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 70,
@@ -4580,7 +4392,8 @@
     9
    ],
    "settleElapsedMs": 8687,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 136
   },
   {
    "run": 35233749426,
@@ -4590,8 +4403,6 @@
    "drawHarnessWallMs": 60297,
    "commitP95Ms": 26,
    "commitMaxMs": 29,
-   "firstPollAtMs": 152,
-   "firstPollReadMs": 152,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 45,
@@ -4604,7 +4415,8 @@
     9
    ],
    "settleElapsedMs": 8097,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 152
   },
   {
    "run": 35243553758,
@@ -4614,8 +4426,6 @@
    "drawHarnessWallMs": 118754,
    "commitP95Ms": 75,
    "commitMaxMs": 90,
-   "firstPollAtMs": 259,
-   "firstPollReadMs": 259,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 67,
@@ -4628,7 +4438,8 @@
     13
    ],
    "settleElapsedMs": 11371,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 259
   },
   {
    "run": 35267617871,
@@ -4638,8 +4449,6 @@
    "drawHarnessWallMs": 90591,
    "commitP95Ms": 41,
    "commitMaxMs": 43,
-   "firstPollAtMs": 198,
-   "firstPollReadMs": 198,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 74,
@@ -4652,7 +4461,8 @@
     2
    ],
    "settleElapsedMs": 9817,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 198
   },
   {
    "run": 35285422291,
@@ -4662,8 +4472,6 @@
    "drawHarnessWallMs": 67343,
    "commitP95Ms": 32,
    "commitMaxMs": 33,
-   "firstPollAtMs": 150,
-   "firstPollReadMs": 150,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 67,
@@ -4676,7 +4484,8 @@
     3
    ],
    "settleElapsedMs": 9811,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 150
   },
   {
    "run": 35294752837,
@@ -4686,8 +4495,6 @@
    "drawHarnessWallMs": 89249,
    "commitP95Ms": 47,
    "commitMaxMs": 54,
-   "firstPollAtMs": 245,
-   "firstPollReadMs": 245,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 85,
@@ -4700,7 +4507,8 @@
     9
    ],
    "settleElapsedMs": 9898,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 245
   },
   {
    "run": 35296359274,
@@ -4710,8 +4518,6 @@
    "drawHarnessWallMs": 79277,
    "commitP95Ms": 32,
    "commitMaxMs": 40,
-   "firstPollAtMs": 151,
-   "firstPollReadMs": 151,
    "firstPollFrames": {
     "count": 1,
     "firstMs": 63,
@@ -4724,7 +4530,8 @@
     10
    ],
    "settleElapsedMs": 9325,
-   "settled": true
+   "settled": true,
+   "firstPollRoundTripMs": 151
   }
  ]
 }

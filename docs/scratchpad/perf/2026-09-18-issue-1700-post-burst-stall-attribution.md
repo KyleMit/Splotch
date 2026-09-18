@@ -1,8 +1,9 @@
-# Issue 1700 — what the post-crayon-burst stall is, and whether it still happens
+# Issue 1700 — whether the post-crayon-burst stall still happens, and a candidate mechanism
 
-Runner-side attribution for issue 1700. No physical device was available for this pass (the iPad's
-XCTest automation grant had expired and the phone was locked), so the issue's "shown not to occur on
-the physical iPad" half is **not** answered here.
+Runner-side evidence for issue 1700. It names a candidate mechanism, not the stall's task. No
+physical device was available for this pass (the iPad's XCTest automation grant had expired and the
+phone was locked), so the issue's "shown not to occur on the physical iPad" half is **not** answered
+here.
 
 ## Question
 
@@ -18,17 +19,27 @@ Every push-to-main `Tests` run whose `webkit-undo-fast-diagnostics` or
 `webkit-undo-fast-retry-diagnostics` artifact still existed on 2026-09-18 was read. That was 197
 `crayon-scribbles` samples from 2026-09-11T02:29Z to 2026-09-18T01:43Z, all on Playwright WebKit
 26.6 and all on product trees after PR 1733. The rows are in
-[`2026-09-18-issue-1700-runner-survey.json`](2026-09-18-issue-1700-runner-survey.json).
-`firstPollAtMs` is the interval the 2026-09-06 note measured: from the end of the synchronous draw
-evaluate to the first settle poll's return.
+[`2026-09-18-issue-1700-runner-survey.json`](2026-09-18-issue-1700-runner-survey.json). Two fields
+cover the two sides of the draw evaluate's IPC return, which is where the 2026-09-06 note found the
+stall on different runs:
 
-| Runner mode                                     | Samples | `firstPollAtMs` max | `engine.crayonShadow` max |
-| ----------------------------------------------- | ------: | ------------------: | ------------------------: |
-| Draw-charged (crayon commit P95 ≤ 500 ms)       |     191 |              723 ms |                    113 ms |
-| Commit-charged (crayon commit P95 2.2–4.9 s)    |       6 |                3 ms |                      1 ms |
-| 2026-09-06 runs this issue quotes (WebKit 26.5) |       5 |      4,601–9,673 ms |            2,070–3,263 ms |
+* `firstPollRoundTripMs` is the Node-side wall time of the first settle poll. `settleHistory` starts
+  its clock only after the draw evaluate has returned, so this catches a stall in front of the first
+  poll (the 4,601–9,673 ms readings) and nothing earlier.
+* `firstPollFrames` is the page's rAF stamps from `drawEnd` (page clock) to that poll's read. A
+  stall inside the evaluate's own return shows here as a late first stamp or a large gap between
+  stamps — the 2026-09-06 run whose poll read 42 ms had stamps at 55 and 6,253 ms.
 
-The median `firstPollAtMs` over the 197 samples is 188 ms. No sample reproduces the stall in either
+| Runner mode                                    | Samples | First-poll round trip, max | Largest post-burst frame gap | `engine.crayonShadow`, max |
+| ---------------------------------------------- | ------: | -------------------------: | ---------------------------: | -------------------------: |
+| Draw-charged (crayon commit P95 ≤ 500 ms)      |     191 |                     723 ms |                       600 ms |                     113 ms |
+| Commit-charged (crayon commit P95 2.2–4.9 s)   |       6 |                       3 ms |                        21 ms |                       1 ms |
+| 2026-09-06 runs the issue quotes (WebKit 26.5) |       5 |             4,601–9,673 ms |           6,198 ms (one run) |             2,070–3,263 ms |
+
+"Largest post-burst frame gap" is the larger of the first stamp's delay after `drawEnd` and the
+largest gap between stamps (draw-charged maxima 132 ms and 600 ms respectively; commit-charged runs
+had at most one stamp, at 21 ms). The two modes split cleanly: no sample's commit P95 lies between
+114 ms and 2,217 ms. No sample reproduces the stall on either side of the IPC boundary, in either
 mode that the issue's latest comment distinguishes.
 
 **What this does not establish.** The 2026-09-06 artifacts had expired before this survey. The
@@ -101,17 +112,17 @@ first flushes accelerated CoreGraphics's deferred queue (`CA::CG::IOSurfaceDrawa
 that queue. In this mode, the undo crop at commit is the first copy after a stroke, as the 1717
 investigation found through API probes.
 
-### What this names, and what it does not
+### The candidate mechanism, and what it does not establish
 
-In both modes, the named task is **WebKit waiting for accelerated CoreGraphics to finish rendering
-deferred canvas drawing before it can copy a canvas's pixels**. Only the process where the wait
-happens and the first operation that forces the wait differ. A post-burst stall with no JS on the
-stack fits the same mechanism. In that case, deferred drawing would still be queued when the draw
-evaluate returns, and the first rendering update to need the canvas pixels would pay for it. That
-explanation fits the 2026-09-06 shape: an intermediate draw (37–65 s) plus a post-burst task that
-the rAF sampler sees as one frame. However, no current run reproduces the stall. **The stall itself
-has therefore not been sampled.** The claim is an inference from the named mechanism, not an
-observation of the stall.
+In both modes, the samples show the same wait: **WebKit waiting for accelerated CoreGraphics to
+finish rendering deferred canvas drawing before it can copy a canvas's pixels**. Only the process
+where the wait happens and the first operation that forces the wait differ. A post-burst stall with
+no JS on the stack fits the same mechanism. In that case, deferred drawing would still be queued
+when the draw evaluate returns, and the first rendering update to need the canvas pixels would pay
+for it. That explanation fits the 2026-09-06 shape: an intermediate draw (37–65 s) plus a post-burst
+task that the rAF sampler sees as one frame. However, no current run reproduces the stall. **The
+stall itself has therefore not been sampled.** The claim is an inference from the named mechanism,
+not an observation of the stall.
 
 The same mechanism is the proposed explanation for the draw/commit trade reported in issue 1750. It
 likely also explains the 2–3 s `engine.crayonShadow` drains that issue 1701 quotes from the same
@@ -124,9 +135,9 @@ either cost after the burst.
   burst. That capture must show that a matching gap does not occur on the iPad. This pass could not
   produce it.
 * **The stall itself.** If the stall recurs (the WebKit version in `webkit-undo-fast-diagnostics`
-  changes, or `firstPollAtMs` exceeds ~1.5 s again), rerun the sampler below on that runner. The
-  prediction to test: the web-content main thread sits in a rendering update, waiting on the same
-  IOSurface or GPU-process flush.
+  changes, or either the first-poll round trip or the largest post-burst frame gap exceeds ~1.5 s
+  again), rerun the sampler below on that runner. The prediction to test: the web-content main
+  thread sits in a rendering update, waiting on the same IOSurface or GPU-process flush.
 
 ## Reproducing
 
@@ -146,8 +157,63 @@ done
 ```
 
 Locally, `sudo` is unnecessary: `sample` can attach to Playwright's WebKit processes as the same
-user. Two representative samples from each host are committed, gzipped, with the home directory
-replaced by `~`, under
-[`perf-profiles/evidence/2026-09-18-issue-1700-native-samples/`](../../../perf-profiles/evidence/2026-09-18-issue-1700-native-samples/).
-The full runner set (173 files, 57 MB) is the `webkit-native-samples` artifact of run 35298666234,
-retained for 7 days.
+user.
+
+Every count in the two sample tables is a sum over a per-file ledger,
+[`2026-09-18-issue-1700-native-samples/ledger.json`](2026-09-18-issue-1700-native-samples/ledger.json).
+The ledger records each raw file's SHA-256, its host, whether it falls in the runner's crayon draw
+window and how that window was placed, and per-thread counts from this parser:
+
+```python
+import hashlib, json, re, sys
+
+FRAMES = {
+    'drawImage': 'jsCanvasRenderingContext2DPrototypeFunction_drawImage',
+    'ensureBackend': 'RemoteImageBufferProxy::ensureBackend',
+    'shareableBitmapCopy': 'ShareableBitmap::createFromImagePixels',
+    'ioSurfaceClientLock': 'IOSurfaceClientLock',
+    'ioSurfaceCreateImage': 'IOSurface::createImage',
+    'caCgQueueFlush': 'CA::CG::Queue::flush',
+}
+THREAD = re.compile(r'^\s{4}(\d+)\s+(Thread_\S+.*)')
+LINE = re.compile(r'^[\s+!:|]*(\d+)\s+(.*)')
+
+def threads(text):
+    lines = text.split('\n'); out = []; i = 0
+    while i < len(lines):
+        m = THREAD.match(lines[i])
+        if not m: i += 1; continue
+        j = i + 1; body = []
+        while j < len(lines) and lines[j].strip() and not THREAD.match(lines[j]):
+            body.append(lines[j]); j += 1
+        out.append((m.group(2), int(m.group(1)), body)); i = j
+    return out
+
+# Largest count on any call-tree line naming the frame: a lower bound on the
+# thread's samples under that frame (separate paths are not summed).
+def heaviest(body, frame):
+    return max([int(m.group(1)) for m in map(LINE.match, body) if m and frame in m.group(2)] or [0])
+
+def count_file(path):
+    raw = open(path, 'rb').read()
+    row = {'sha256': hashlib.sha256(raw).hexdigest()}
+    for name, total, body in threads(raw.decode('utf-8', 'replace')):
+        key = 'main' if 'com.apple.main-thread' in name else \
+            'rrb' if 'RemoteRenderingBackend work queue' in name else None
+        if key:
+            row[key] = {'samples': total, **{k: heaviest(body, f) for k, f in FRAMES.items()}}
+    return row
+
+print(json.dumps({p.rsplit('/', 1)[-1]: count_file(p) for p in sys.argv[1:]}, indent=1))
+```
+
+The local table sums all 30 local files. That run's log carried no timestamps, so those files cover
+the whole scenario: initial and confirmation passes, draw, commit, settle, and undo. The runner
+table sums the 70 files inside the crayon draw window.
+
+Two representative raw samples per host are committed beside the ledger, gzipped. They are
+unmodified: `sample(1)` itself writes user directories as `/Users/USER` and `/Users/*`, and each
+decompresses to the SHA-256 its ledger entry records. The full runner set (173 files, 57 MB) is the
+`webkit-native-samples` artifact of run 35298666234, retained for 7 days; after that, the ledger is
+the audit trail for the counts, and the committed files show the stack shapes. The remaining 26
+local files were not retained.
