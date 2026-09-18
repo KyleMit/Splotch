@@ -84,6 +84,9 @@ const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 // A capped walk back through history: enough to empty a sweep's own strokes,
 // never an unbounded loop against a button that refuses to disable.
 const MAX_UNDO_EXHAUST_TAPS = 12;
+// A closed stroke-width menu is UNMOUNTED, not hidden (since 478c88ba8), so
+// "closed" is the trigger collapsing and the menu element being gone.
+export const STROKE_WIDTH_MENU_CLOSED = `document.querySelector('#strokeWidthButton')?.getAttribute('aria-expanded') === 'false' && document.querySelector('.stroke-width-menu') === null`;
 // The waiting print's ready cue, by animation name: the wiggle that settles the
 // print and the badge that pops on it. The spinner is deliberately absent — it
 // loops forever while the picture is still being made, so it can never finish.
@@ -1216,6 +1219,36 @@ export function reportActionCaptureVerdict({ failures, blockedCoverage, reportOn
   }
 }
 
+// The menu closing is the product's visible answer to a pick, but a tap that
+// missed the option closes it too, so closing alone proves nothing about the
+// width. The product's own menu is the proof: reopened, it marks the active
+// size. Unmeasured, and it leaves the menu closed and the new size active,
+// exactly as the pick itself did, for whatever group runs next.
+// Exported for its behavioural test; the sweep is its only production caller.
+export async function verifyStrokeWidthPicked(execute, pickedSize) {
+  await clickSetupElement(execute, '#strokeWidthButton');
+  await waitForReady(
+    execute,
+    `document.querySelector('#strokeWidthButton')?.getAttribute('aria-expanded') === 'true' && document.querySelector('.stroke-width-menu button[aria-pressed="true"]') !== null`,
+    'the stroke-width menu to reopen for verification'
+  );
+  const active = await execute(
+    `return document.querySelector('.stroke-width-menu button[aria-pressed="true"]')?.getAttribute('aria-label') ?? null;`
+  );
+  await clickSetupElement(execute, '#strokeWidthButton');
+  await waitForReady(
+    execute,
+    STROKE_WIDTH_MENU_CLOSED,
+    'the stroke-width menu to close after verification'
+  );
+  await sleep(ACTION_SETTLE_MS);
+  if (active !== pickedSize) {
+    throw new Error(
+      `The stroke width did not change: the sweep tapped ${pickedSize}, and the menu now marks ${active ?? 'no size'} as active`
+    );
+  }
+}
+
 export async function runActionSweep({
   client,
   sessionId,
@@ -1462,16 +1495,26 @@ export async function runActionSweep({
         ready: `document.querySelector('#strokeWidthButton')?.getAttribute('aria-expanded') === 'true'`,
       })
     );
+    // The picked size is named before the tap so the proof afterwards is about
+    // THIS pick. Picking closes the menu, and since 478c88ba8 a closed menu is
+    // unmounted rather than hidden, so the old readiness — a pressed option
+    // inside the menu AND the menu closed — could never be true again: the tap
+    // landed and changed the width, and the sweep timed out on every engine.
+    const pickedSize = await execute(
+      `return document.querySelector('.stroke-width-menu button[aria-pressed="false"]')?.getAttribute('aria-label') ?? null;`
+    );
+    if (!pickedSize) throw new Error('The stroke-width menu offered no size to change to');
     await record(
       measureClick({
         client,
         sessionId,
         execute,
         label: 'change stroke width',
-        selector: '.stroke-width-menu button[aria-pressed="false"]',
-        ready: `document.querySelector('.stroke-width-menu button[aria-pressed="true"]') !== null && document.querySelector('#strokeWidthButton')?.getAttribute('aria-expanded') === 'false'`,
+        selector: `.stroke-width-menu button[aria-label=${JSON.stringify(pickedSize)}]`,
+        ready: STROKE_WIDTH_MENU_CLOSED,
       })
     );
+    await verifyStrokeWidthPicked(execute, pickedSize);
   }
 
   const settingsInScope =

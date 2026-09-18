@@ -44,6 +44,8 @@ import {
   isAiReadyCueAnimation,
   actionCaptureVerdict,
   reportActionCaptureVerdict,
+  STROKE_WIDTH_MENU_CLOSED,
+  verifyStrokeWidthPicked,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { DEVICE_CLASSES } from '../lib/campaign-plan.mjs';
 import {
@@ -1318,6 +1320,58 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     expect(coloring).toBeGreaterThan(blank);
     // Rotation asserts an empty canvas right after, so the page goes back.
     expect(block).toContain('closeColoringPage');
+  });
+});
+
+// The product's stroke-width contract since 478c88ba8: picking a size closes
+// the menu, and a closed menu is UNMOUNTED. This fake holds exactly that, so the
+// sweep's scripts run against the behaviour rather than against their own text.
+function strokeWidthMenuPage({ activeLabel }) {
+  const state = { open: false, activeLabel };
+  const trigger = {
+    getAttribute: (name) => (name === 'aria-expanded' ? String(state.open) : null),
+    click: () => {
+      state.open = !state.open;
+    },
+  };
+  const pressed = { getAttribute: (name) => (name === 'aria-label' ? state.activeLabel : null) };
+  const document = {
+    querySelector: (selector) => {
+      if (selector === '#strokeWidthButton') return trigger;
+      if (selector === '.stroke-width-menu') return state.open ? {} : null;
+      if (selector === '.stroke-width-menu button[aria-pressed="true"]')
+        return state.open ? pressed : null;
+      throw new Error(`unexpected selector ${selector}`);
+    },
+  };
+  const execute = async (script) =>
+    new Function('document', 'performance', script)(document, { now: () => 1 });
+  return { state, execute };
+}
+
+describe('the stroke-width pick (issue #1870)', () => {
+  it('shows why the old readiness could never be met once a pick closes the menu', async () => {
+    const page = strokeWidthMenuPage({ activeLabel: 'Size 1' });
+    const oldReadiness = `document.querySelector('.stroke-width-menu button[aria-pressed="true"]') !== null && document.querySelector('#strokeWidthButton')?.getAttribute('aria-expanded') === 'false'`;
+
+    // The state right after a successful pick: menu closed, and so unmounted.
+    expect(await page.execute(`return (${oldReadiness});`)).toBe(false);
+    expect(await page.execute(`return (${STROKE_WIDTH_MENU_CLOSED});`)).toBe(true);
+  });
+
+  it('accepts a pick the reopened menu confirms, and leaves the menu closed', async () => {
+    const page = strokeWidthMenuPage({ activeLabel: 'Size 1' });
+
+    await expect(verifyStrokeWidthPicked(page.execute, 'Size 1')).resolves.toBeUndefined();
+    expect(page.state.open).toBe(false);
+  });
+
+  it('fails a tap that closed the menu without changing the width', async () => {
+    const page = strokeWidthMenuPage({ activeLabel: 'Size 3' });
+
+    await expect(verifyStrokeWidthPicked(page.execute, 'Size 1')).rejects.toThrow(
+      'the sweep tapped Size 1, and the menu now marks Size 3 as active'
+    );
   });
 });
 
