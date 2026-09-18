@@ -44,6 +44,9 @@ const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js')
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const DEFAULT_CDP_FORWARD_PORT = 9226;
 const PAGE_READY_TIMEOUT_MS = 60_000;
+const BRUSH_COMMIT_TIMEOUT_MS = 10_000;
+const BRUSH_OPTION_MOUNT_TIMEOUT_MS = 10_000;
+const BRUSH_OPTION_POLL_MS = 100;
 const SOCKET_TIMEOUT_MS = 25_000;
 const SETTLE_MS = { appStop: 1_500, rotation: 2_500, page: 6_000 };
 const AFTER_GESTURE_SETTLE_MS = 500;
@@ -107,6 +110,36 @@ async function attachToBundledPage(serial, forwardPort) {
   return { browser, page };
 }
 
+// The Brush Menu mounts its options only while it is open, and a pick closes it
+// again; with a single optional brush there is no menu, and the trigger (no
+// aria-expanded) toggles that brush against the pen, so clicking it when the
+// brush is already held would switch away. Mirrors the real-screen probe's
+// selectBrush, which this page-evaluated path cannot import. The caller proves
+// the pick by the committed mode, not by the click.
+export function brushPickScript(brush) {
+  const option = JSON.stringify(BRUSH_BUTTON_BY_MODE[brush]);
+  if (option === undefined) throw new Error(`--brush must be one of ${Object.keys(BRUSH_BUTTON_BY_MODE).join(', ')}`);
+  return `(async () => {
+    if (window.__committedBrushMode?.() === ${JSON.stringify(brush)}) return 'held';
+    const trigger = document.querySelector('#brushButton');
+    if (document.querySelector(${option})) {
+      document.querySelector(${option}).click();
+      return 'option';
+    }
+    if (trigger?.hasAttribute('aria-expanded')) {
+      trigger.click();
+      const deadline = performance.now() + ${BRUSH_OPTION_MOUNT_TIMEOUT_MS};
+      while (!document.querySelector(${option}) && performance.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, ${BRUSH_OPTION_POLL_MS}));
+      }
+      document.querySelector(${option})?.click();
+      return 'menu';
+    }
+    trigger?.click();
+    return trigger ? 'toggle' : 'no-trigger';
+  })()`;
+}
+
 export async function captureBundledFrames({
   serial = argFlag('device-serial'),
   brush = argFlag('brush', 'pen'),
@@ -164,16 +197,15 @@ export async function captureBundledFrames({
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     await ensureCampaignTheme(execute, requestedTheme);
     const observedTheme = await readResolvedTheme(execute);
-    await execute(
-      `document.querySelector(${JSON.stringify(BRUSH_BUTTON_BY_MODE[brush] ?? '#penBrushButton')})?.click(); return true;`
-    );
+    await page.evaluate(brushPickScript(brush));
     const committed = await pollFor(
-      async () => page.evaluate(() => window.__committedBrushMode?.()),
-      10_000,
+      async () => (await page.evaluate(() => window.__committedBrushMode?.())) === brush,
+      BRUSH_COMMIT_TIMEOUT_MS,
       { intervalMs: 250 }
     );
-    if (brush !== 'eraser' && committed !== brush) {
-      throw new Error(`the page committed ${committed ?? 'nothing'}, not ${brush}`);
+    if (!committed) {
+      const mode = await page.evaluate(() => window.__committedBrushMode?.());
+      throw new Error(`the page committed ${mode ?? 'nothing'}, not ${brush}`);
     }
 
     await page.evaluate(
