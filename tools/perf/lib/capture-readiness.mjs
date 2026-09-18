@@ -404,17 +404,21 @@ export function classifyLaunchProbe({
   return { status: 'blocked', detail: message.slice(0, 200) || 'the probe failed with no message' };
 }
 
-export const ANDROID_LOCK_CHECK = 'android lock';
+// The host ports the Android input and rotation verifications bind.
+export const ANDROID_VERIFICATION_PORT_ROLES = ['floorControl', 'androidCdp'];
 
-// A locked phone never loads the input verification's page, and that
-// verification exits the whole preflight when no report arrives — taking the
-// iPad's launch check, which runs after it, down with it. The host-side checks
-// already know the lock, so the verification is not attempted and says why.
-export function androidVerificationSkipReason(checks) {
-  const lock = checks.find(
-    (check) => check.name === ANDROID_LOCK_CHECK && check.status === 'blocked'
-  );
-  return lock ? lock.detail : null;
+// The Android input verification exits the whole preflight when its page never
+// reports — a locked phone, missing Chrome, or an unbindable port — taking the
+// iPad's launch check, which runs after it, down with it. Every one of those
+// causes is already a blocked host-side check, so the verification is not
+// attempted while any of them stands, and says which.
+export function androidVerificationBlockers({ androidChecks, portChecks }) {
+  return [
+    ...androidChecks,
+    ...portChecks.filter((check) => ANDROID_VERIFICATION_PORT_ROLES.includes(check.role)),
+  ]
+    .filter((check) => check.status === 'blocked')
+    .map((check) => `${check.name}: ${check.detail}`);
 }
 
 export function summarize(checks) {

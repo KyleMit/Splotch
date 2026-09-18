@@ -15,8 +15,9 @@ import {
   probeHostReuse,
   resolvePort,
   summarize,
-  ANDROID_LOCK_CHECK,
-  androidVerificationSkipReason,
+  ANDROID_VERIFICATION_PORT_ROLES,
+  androidVerificationBlockers,
+  PORT_ROLES,
   pageFollowedRotation,
   safariWindowProblem,
   classifyAppiumLog,
@@ -451,26 +452,48 @@ describe('summarize', () => {
   });
 });
 
-describe('androidVerificationSkipReason', () => {
-  const lockDetail = 'the device is locked — unlock it by hand; a PIN cannot be automated';
-
-  it('names the lock when the host-side checks found the phone locked', () => {
-    expect(
-      androidVerificationSkipReason([
-        { name: 'android device', status: 'ok', detail: 'serial' },
-        { name: ANDROID_LOCK_CHECK, status: 'blocked', detail: lockDetail },
-        { name: 'ios device', status: 'ok', detail: 'udid' },
-      ])
-    ).toBe(lockDetail);
+describe('androidVerificationBlockers', () => {
+  const ok = (name) => ({ name, status: 'ok', detail: 'fine' });
+  const portCheck = (role, status = 'ok') => ({
+    name: `port ${role}`,
+    role,
+    status,
+    detail: status === 'ok' ? '4177 — start (free)' : 'held',
   });
 
-  it('lets the verification run when nothing reported a lock', () => {
+  it('lists every blocked Android check, lock and missing Chrome alike', () => {
     expect(
-      androidVerificationSkipReason([
-        { name: 'android device', status: 'ok', detail: 'serial' },
-        { name: 'port preview', status: 'blocked', detail: 'held' },
-      ])
-    ).toBeNull();
+      androidVerificationBlockers({
+        androidChecks: [
+          ok('android device'),
+          { name: 'android lock', status: 'blocked', detail: 'the device is locked' },
+          { name: 'android chrome', status: 'blocked', detail: 'Chrome is not installed' },
+        ],
+        portChecks: [portCheck('floorControl'), portCheck('androidCdp')],
+      })
+    ).toEqual(['android lock: the device is locked', 'android chrome: Chrome is not installed']);
+  });
+
+  it('counts a blocked port only when an Android verification binds it', () => {
+    expect(
+      androidVerificationBlockers({
+        androidChecks: [ok('android device')],
+        portChecks: [portCheck('preview', 'blocked'), portCheck('floorControl', 'blocked')],
+      })
+    ).toEqual(['port floorControl: held']);
+  });
+
+  it('lets the verification run when nothing it needs is blocked', () => {
+    expect(
+      androidVerificationBlockers({
+        androidChecks: [ok('android device'), ok('android chrome')],
+        portChecks: [portCheck('preview', 'blocked'), portCheck('androidCdp')],
+      })
+    ).toEqual([]);
+  });
+
+  it('names roles the port table actually declares', () => {
+    for (const role of ANDROID_VERIFICATION_PORT_ROLES) expect(PORT_ROLES).toHaveProperty(role);
   });
 });
 

@@ -37,8 +37,7 @@ import {
   probeHostReuse,
   resolvePort,
   summarize,
-  ANDROID_LOCK_CHECK,
-  androidVerificationSkipReason,
+  androidVerificationBlockers,
 } from './lib/capture-readiness.mjs';
 import { describeGrantHistory, recordGrantAttempt } from './lib/grant-log.mjs';
 import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
@@ -94,7 +93,7 @@ function androidChecks({ fix }) {
 
   const { actions, blockers } = androidWakeActions({ screenOn, stayOn, locked });
   for (const blocker of blockers) {
-    checks.push({ name: ANDROID_LOCK_CHECK, status: 'blocked', detail: blocker });
+    checks.push({ name: 'android lock', status: 'blocked', detail: blocker });
   }
 
   if (actions.length === 0) {
@@ -276,6 +275,7 @@ async function portChecks() {
     decisions[role] = decision;
     checks.push({
       name: `port ${role}`,
+      role,
       status: decision.action === 'blocked' ? 'blocked' : 'ok',
       detail: `${decision.port} — ${decision.action} (${decision.reason})`,
     });
@@ -691,6 +691,10 @@ export async function prepareCapture(argv = process.argv.slice(2)) {
     iosUdid: ios.udid,
     ports: ports.resolved,
     portDecisions: ports.decisions,
+    androidVerificationBlockers: androidVerificationBlockers({
+      androidChecks: usbProblem ? deviceChecks : android.checks,
+      portChecks: ports.checks,
+    }),
   };
 
   if (argv.includes('--json')) {
@@ -714,9 +718,9 @@ if (isMain(import.meta.url)) {
     const report = await prepareCapture(argv);
     // Android first: it is the cheaper of the two verifications, so a bad
     // input path surfaces before a minute is spent building WebDriverAgent.
-    const androidSkip = androidVerificationSkipReason(report.checks);
-    if (argv.includes('--verify-android-input') && report.androidSerial && androidSkip) {
-      console.log(`✗ ${'android input'.padEnd(22)} not attempted — ${androidSkip}`);
+    const androidBlockers = report.androidVerificationBlockers;
+    if (argv.includes('--verify-android-input') && report.androidSerial && androidBlockers.length) {
+      console.log(`✗ ${'android input'.padEnd(22)} not attempted — ${androidBlockers.join('; ')}`);
       process.exitCode = 1;
     } else if (argv.includes('--verify-android-input') && report.androidSerial) {
       console.log('\nverifying Android input against the floor control…');
