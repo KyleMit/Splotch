@@ -257,6 +257,10 @@ interface CrayonPassBuffer {
 // self-cleans per key — a fresh target/mount gets a fresh entry, and the old
 // key+value are GC'd once the old context is unreachable. Nothing to null out.
 const bufferByTarget = new WeakMap<CanvasRenderingContext2D, CrayonPassBuffer>();
+// The on-screen tiles — the only targets whose shadow the deferred drain
+// refreshes (see markShadowStale). Registered through setCrayonBufferForTarget,
+// which every live tile adoption calls and no offscreen target does.
+const liveTileTargets = new WeakSet<CanvasRenderingContext2D>();
 
 // 'planes' mode registers the tile's paired preview canvases as the pass
 // buffer and its mirror; 'restamp' mode keeps the planes hidden all session
@@ -269,6 +273,7 @@ export function setCrayonBufferForTarget(
   buffer: CanvasRenderingContext2D,
   mirror: CanvasRenderingContext2D
 ) {
+  liveTileTargets.add(target);
   buffer.canvas.hidden = true;
   mirror.canvas.hidden = true;
   if (depositionMode !== 'planes') return;
@@ -342,10 +347,14 @@ function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingCont
 // patch restore, or a repaint's tile clear. Every staling site routes through
 // markShadowStale, which guarantees a scheduled drain — a pass opening before
 // the drain pays one synchronous read as the fallback. Only the restamp
-// pipeline feeds or reads this set.
+// pipeline feeds or reads this set, and only for live tiles: an offscreen
+// target (the history base the idle fold paints, an export) opens its passes
+// inside that same offscreen work, so it keeps the synchronous fallback.
+// Draining history-base tiles two frames after a fold froze a physical iPad
+// for hundreds of milliseconds in one frame (ADR-0085, issue 1701).
 
 function markShadowStale(target: CanvasRenderingContext2D) {
-  if (depositionMode !== 'restamp') return;
+  if (depositionMode !== 'restamp' || !liveTileTargets.has(target)) return;
   pendingShadowRefresh.add(target);
   scheduleShadowDrain();
 }
