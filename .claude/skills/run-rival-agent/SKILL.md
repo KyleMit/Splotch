@@ -24,9 +24,15 @@ npm run --silent rival:health
 ```
 
 It verifies the Codex CLI is installed and that `~/.codex/auth.json` holds a ChatGPT plan login
-rather than an API key. If it fails, stop and ask the user to run `codex login` — never work around
-it by calling `codex` directly, and never set `OPENAI_API_KEY` to get past it. See
-[permissions.md](references/permissions.md) for what the launch pins and why.
+rather than an API key. It reads the file, not the account: a login whose refresh token has since
+been rotated away still passes, and surfaces on the first review as a launcher error that starts
+"Codex could not refresh its stored ChatGPT login" and names the remedy. Whichever check fails, stop
+and relay it — never work around it by calling `codex` directly, and never set `OPENAI_API_KEY` to
+get past it. On a developer machine the remedy is `codex login`. In a Claude Code on the web session
+nobody can run that: the login and the model are seeded from the environment's `CODEX_AUTH_JSON` and
+`CODEX_MODEL` by a SessionStart hook whose status line is in your context, so ask the user to
+re-seed with `npm run rival:seed` on their machine (`docs/CLOUD/Claude.md`, "Codex reviews on the
+ChatGPT plan"). See [permissions.md](references/permissions.md) for what the launch pins and why.
 
 ## Launch the rival in the background
 
@@ -141,7 +147,8 @@ by earlier rounds. A question (`--question-file`) is always a fresh, unrecorded 
 
 `--cwd <dir>` (defaults to the current directory; must be inside a git worktree), `--model <slug>`
 (defaults to the top-level `model` in `~/.codex/config.toml`, the one key the launcher reads back
-after ignoring the rest), and `--effort low|medium|high` (defaults to `high`).
+after ignoring the rest; a cloud session's file is written from `CODEX_MODEL` at SessionStart), and
+`--effort low|medium|high` (defaults to `high`).
 
 ## How the rival executes
 

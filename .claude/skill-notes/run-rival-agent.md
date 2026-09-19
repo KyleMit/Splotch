@@ -27,6 +27,62 @@ every precedence layer, an override does not. Any further precedence layer found
 fixed the same way. `CODEX_ACCESS_TOKEN` is on the strip list because, measured on 0.149.1, Codex
 ignores the stored ChatGPT login entirely when it is set and bearer-authenticates against the API.
 
+## Cloud sessions: a seeded plan login
+
+A Claude Code on the web session starts with no Codex CLI and no login, on a disk that is discarded
+when the VM is reclaimed. Three ways of getting a login there were weighed on 2026-09-02:
+
+* **Device-code auth works** — `codex login --device-auth` reached `auth.openai.com` through the
+  TLS-intercepting egress proxy (Codex trusts the proxy CA via the preset `SSL_CERT_FILE`) and
+  printed a real code. Rejected as the primary path only because it is a login per fresh VM: the
+  user has to enter a code every time the container is reclaimed, and the account's device-code
+  toggle is off by default.
+* **An API key is permanent and rejected.** `OPENAI_API_KEY` is already in the environment for the
+  image endpoint, and Codex accepts it non-interactively, but it bills metered credits, and the
+  billing guard exists to refuse exactly that. Relaxing the guard for cloud would reverse the
+  skill's premise for the one place where reviews would run unattended.
+* **A seeded `auth.json`** is what shipped: `tools/seed-codex-auth.mjs` writes it from the
+  `CODEX_AUTH_JSON` environment variable at SessionStart, only when no file exists, after running
+  the seed through `assertSubscriptionAuth` plus a refresh-token check. The setup script installs
+  the CLI but never touches the login, because the environment snapshot must not hold a credential.
+  Base64 is the documented paste form because the dialog takes `.env` lines and a raw JSON value's
+  quotes are at the mercy of its parser. `npm run rival:seed` produces the value on the laptop
+  through the same encoder the hook decodes, signing in under `~/.codex-cloud` so the seed never
+  shares a chain with the working login.
+
+The model rides the same hook. `--ignore-user-config` leaves the launcher one place to find a model,
+the top-level `model` of `config.toml`, and a fresh VM has none; the hook writes that file from
+`CODEX_MODEL` when it is absent. Bundling the model into the seed envelope was rejected so the seed
+stays exactly what `codex login` wrote and the guard validates; a second, non-secret variable is the
+cheaper shape, and `rival:seed` prints the laptop's configured slug to paste beside it.
+
+The seed's shelf life is set by refresh-token rotation, not expiry. Codex refreshes a bundle whose
+`last_refresh` is older than about eight days and rotates the refresh token as it does; the rotated
+file lands on the VM's disk and nothing writes it back into the dialog, so the first session to
+refresh retires the seed for every later VM. The hook warns from day six. The seed must come from a
+dedicated login: rotation retires the previous token in the same chain, so a copy of the user's
+working `auth.json` would log the laptop out at the first cloud refresh, while independent logins on
+one account coexist. Weekly re-seeding was chosen over the restore-run-write-back pattern OpenAI
+documents for ephemeral CI runners, which needs a store the sandbox can reach (a private gist or
+branch through the GitHub proxy, Netlify Blobs); none was worth building before a cloud review has
+run end to end (issue #2095, open question 1).
+
+The retired-seed failure was measured, not inferred: with a fake `auth.json` carrying an expired
+access token and a refresh token the auth server never issued, `codex login status` and
+`rival:health` both passed — both read only the file — and `codex exec` exited 1 within a second
+with "Your access token could not be refreshed because your refresh token was already used." The
+Codex vendor adapter recognizes that wording, the shared launcher skips the resume retry for it, and
+the launch CLI prints the remedy for the platform it runs on. A liveness probe in the health check
+was considered and rejected: the only honest probe is a real request, which either spends plan usage
+or rotates the token itself.
+
+The eight-day refresh interval comes from OpenAI's documentation, not from a measured cloud run; the
+first re-seed will show whether the warning leads the rotation by enough. Whether a 401 ever
+triggers a refresh earlier than that — an idle seed whose access token expired before its eighth day
+— is the case that would shorten the shelf life below what the note above claims. A full cloud
+launch (worktree, broker loop, post) is also still unrun; the Linux `/tmp` spool exposure in
+`tools/rival-agent/NOTES.md` becomes live the day it does.
+
 ## What `--ignore-user-config` costs
 
 It is the only pin that leaves the user's MCP servers behind (a `-c mcp_servers=…` override merges
