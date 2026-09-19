@@ -1,0 +1,28 @@
+connection at load {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false}
+state at load {"catalog":["farm","dinosaur","creatures","nature","objects","shapes","space","vehicles"],"missing":["objects","shapes","space","vehicles"]}
+[console.info] Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+state after clear+reload {"catalog":["farm","dinosaur","creatures","nature","objects","shapes","space","vehicles"],"missing":["dinosaur","creatures","nature","objects","shapes","space","vehicles"]}
+5s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+10s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+15s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+20s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+26s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+31s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+36s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+41s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+46s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+51s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+56s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+61s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+67s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+72s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+77s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+82s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+87s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+92s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+97s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+102s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+108s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+113s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+118s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible
+123s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false} visibility visible

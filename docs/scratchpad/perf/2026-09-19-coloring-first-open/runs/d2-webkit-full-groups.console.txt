@@ -1,0 +1,52 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54824/ --engine=webkit --actions=idle,palette,color-picker,brushes,stroke-width,settings,coloring,screenshot,ai-waiting,undo,unavailable,clear --output=perf-profiles/coloring-coverage-r1/d2-webkit-full-groups/actions.json
+
+Coloring books prepared in 116309 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 1/4
+Coloring books prepared in 3989 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 2/4
+Coloring books prepared in 3988 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 3/4
+Coloring books prepared in 3991 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 4/4
+
+Desktop discrete action response
+┌─────────┬────────────────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬──────────┬─────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                             │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max │ raw max │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼────────────────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼──────────┼─────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'idle frame control'               │ '3/4' │ '4/4'      │ 14        │ undefined      │ undefined      │ 18       │ 18       │ 20      │ '72/897'          │ 18         │ 0               │ 'PASS'  │
+│ 1       │ 'change ink color'                 │ '3/4' │ '4/4'      │ 15        │ 3              │ 3              │ 18       │ 18       │ 18      │ '114/114'         │ 18         │ 0               │ 'PASS'  │
+│ 2       │ 'open custom color picker'         │ '3/4' │ '4/4'      │ 13        │ 6              │ 15             │ 18       │ 25       │ 25      │ '136/197'         │ 18         │ 0               │ 'PASS'  │
+│ 3       │ 'select custom color'              │ '3/4' │ '4/4'      │ 15        │ 147            │ 149            │ 18       │ 19       │ 19      │ '72/221'          │ 18         │ 0               │ 'PASS'  │
+│ 4       │ 'open brush menu'                  │ '3/4' │ '4/4'      │ 12        │ 3              │ 5              │ 18       │ 18       │ 18      │ '96/114'          │ 18         │ 0               │ 'PASS'  │
+│ 5       │ 'select crayon brush'              │ '3/4' │ '4/4'      │ 16        │ 2              │ 2              │ 18       │ 18       │ 18      │ '94/114'          │ 18         │ 0               │ 'PASS'  │
+│ 6       │ 'select Magic brush'               │ '3/4' │ '4/4'      │ 10        │ 4              │ 4              │ 18       │ 18       │ 18      │ '94/114'          │ 18         │ 0               │ 'PASS'  │
+│ 7       │ 'select eraser'                    │ '3/4' │ '4/4'      │ 12        │ 4              │ 4              │ 18       │ 19       │ 19      │ '92/114'          │ 18         │ 0               │ 'PASS'  │
+│ 8       │ 'select pen brush'                 │ '3/4' │ '4/4'      │ 13        │ 3              │ 3              │ 18       │ 18       │ 18      │ '94/114'          │ 18         │ 0               │ 'PASS'  │
+│ 9       │ 'open stroke-width menu'           │ '3/4' │ '4/4'      │ 14        │ 2              │ 3              │ 18       │ 18       │ 18      │ '107/114'         │ 18         │ 0               │ 'PASS'  │
+│ 10      │ 'change stroke width'              │ '3/4' │ '4/4'      │ 13        │ 2              │ 2              │ 18       │ 18       │ 18      │ '29/114'          │ 18         │ 0               │ 'PASS'  │
+│ 11      │ 'open Settings'                    │ '3/4' │ '4/4'      │ 27        │ 22             │ 27             │ 18       │ 23       │ 23      │ '132/197'         │ 18         │ 0               │ 'PASS'  │
+│ 12      │ 'close Settings'                   │ '3/4' │ '4/4'      │ 11        │ 55             │ 58             │ 18       │ 18       │ 18      │ '118/205'         │ 18         │ 0               │ 'PASS'  │
+│ 13      │ 'first open of coloring books'     │ '3/4' │ '4/4'      │ 14        │ 11             │ 13             │ 18       │ 18       │ 18      │ '122/198'         │ 18         │ 0               │ 'PASS'  │
+│ 14      │ 'reopen coloring books'            │ '3/4' │ '4/4'      │ 14        │ 7              │ 15             │ 18       │ 18       │ 18      │ '95/196'          │ 18         │ 0               │ 'PASS'  │
+│ 15      │ 'open coloring book'               │ '3/4' │ '4/4'      │ 9         │ 5              │ 10             │ 18       │ 18       │ 18      │ '47/196'          │ 18         │ 0               │ 'PASS'  │
+│ 16      │ 'scroll coloring pages'            │ '3/4' │ '4/4'      │ 17        │ 1              │ 1              │ 18       │ 18       │ 18      │ '47/114'          │ 18         │ 0               │ 'PASS'  │
+│ 17      │ 'select coloring page'             │ '3/4' │ '4/4'      │ 14        │ 108            │ 109            │ 18       │ 18       │ 18      │ '23/215'          │ 18         │ 0               │ 'PASS'  │
+│ 18      │ 'clear coloring page'              │ '3/4' │ '4/4'      │ 16        │ 112            │ 112            │ 17       │ 18       │ 18      │ '20/212'          │ 17         │ 0               │ 'PASS'  │
+│ 19      │ 'save screenshot'                  │ '3/4' │ '4/4'      │ 10        │ 107            │ 159            │ 18       │ 18       │ 18      │ '371/561'         │ 18         │ 0               │ 'PASS'  │
+│ 20      │ 'show AI waiting print'            │ '3/4' │ '4/4'      │ 14        │ 3              │ 4              │ 18       │ 18       │ 18      │ '195/195'         │ 18         │ 0               │ 'PASS'  │
+│ 21      │ 'finish AI waiting print'          │ '3/4' │ '4/4'      │ 11        │ 56             │ 57             │ 18       │ 22       │ 22      │ '984/1093'        │ 18         │ 0               │ 'PASS'  │
+│ 22      │ 'undo latest stroke'               │ '3/4' │ '4/4'      │ 12        │ 2              │ 3              │ 18       │ 18       │ 18      │ '97/195'          │ 18         │ 0               │ 'PASS'  │
+│ 23      │ 'tap unavailable undo'             │ '3/4' │ '4/4'      │ 15        │ 2              │ 3              │ 18       │ 19       │ 19      │ '129/196'         │ 18         │ 0               │ 'PASS'  │
+│ 24      │ 'clear drawing'                    │ '3/4' │ '4/4'      │ 22        │ 541            │ 550            │ 18       │ 26       │ 26      │ '208/292'         │ 18         │ 0               │ 'PASS'  │
+│ 25      │ 'clear drawing on a coloring page' │ '3/4' │ '4/4'      │ 15        │ 524            │ 533            │ 18       │ 23       │ 23      │ '206/289'         │ 18         │ 0               │ 'PASS'  │
+└─────────┴────────────────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴──────────┴─────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-coverage-r1/d2-webkit-full-groups/actions.json
+exit=0
+Sat Sep 19 17:42:34 EDT 2026

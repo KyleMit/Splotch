@@ -66,3 +66,5 @@ timestamp	device	outcome	detail
 2026-09-19T16:31:28.142Z	device-003f826c172a	blocked	Unknown device or simulator UDID: '<hardware UDID redacted>'
 2026-09-19T16:33:59.000Z	device-003f826c172a	blocked	Timed out while enabling automation mode (direct xcodebuild launch outside the preflight; Appium real-device discovery empty because the root tunnel registry listed zero tunnels)
 2026-09-19T16:37:50.000Z	device-003f826c172a	ok	a WebDriverAgent session started (direct xcodebuild relaunch loop, after the owner entered the passcode at the iPad); Safari then took an Appium session via appium:webDriverAgentUrl for the device-web-secure-origin-r2 captures
+2026-09-19T21:44:39.991Z	device-003f826c172a	blocked	Unknown device or simulator UDID: '<hardware UDID redacted>'
+2026-09-19T22:07:05.000Z	device-003f826c172a	ok	a WebDriverAgent session started (direct xcodebuild relaunch loop, first attempt, no passcode prompt); Safari and the native app then took Appium sessions via appium:webDriverAgentUrl for the coloring-coverage-r1 captures

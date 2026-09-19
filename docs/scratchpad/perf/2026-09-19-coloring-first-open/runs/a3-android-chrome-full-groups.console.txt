@@ -1,0 +1,53 @@
+
+> splotch@1.6.0 perf:android:browser:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/android/capture-browser-actions.mjs --url=http://localhost:54824/ --no-serve --device-id=<android-phone> --cdp-port=9224 --orientation=PORTRAIT --actions=idle,palette,color-picker,brushes,stroke-width,settings,coloring,screenshot,ai-waiting,undo,unavailable,clear --output=perf-profiles/coloring-coverage-r1/a3-android-chrome-full-groups/actions.json
+
+guest uptime at capture start: 1151681.35 seconds
+Serving already: http://localhost:54824/
+Coloring books prepared in 24800 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Android web action sweep 1/4
+Coloring books prepared in 4074 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Android web action sweep 2/4
+Coloring books prepared in 4072 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Android web action sweep 3/4
+Coloring books prepared in 4089 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Android web action sweep 4/4
+
+Android Chrome discrete action response
+┌─────────┬────────────────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬────────────────────┬────────────────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                             │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max           │ raw max            │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼────────────────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼────────────────────┼────────────────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'idle frame control'               │ '3/4' │ '4/4'      │ 14        │ undefined      │ undefined      │ 16.8     │ 16.800000000000182 │ 16.80000000000109  │ '117/899'         │ 17.7       │ 0               │ 'PASS'  │
+│ 1       │ 'change ink color'                 │ '3/4' │ '4/4'      │ 7.4       │ 26.9           │ 28.5           │ 16.8     │ 18.399999999999636 │ 18.399999999999636 │ '119/119'         │ 19.3       │ 0               │ 'PASS'  │
+│ 2       │ 'open custom color picker'         │ '3/4' │ '4/4'      │ 26.1      │ 25.7           │ 32.6           │ 16.7     │ 16.799999999999272 │ 16.80000000000109  │ '96/199'          │ 18.6       │ 0               │ 'PASS'  │
+│ 3       │ 'select custom color'              │ '3/4' │ '4/4'      │ 10.5      │ 151.9          │ 162.4          │ 16.8     │ 16.80000000000109  │ 16.80000000000109  │ '71/223'          │ 20         │ 1               │ 'PASS'  │
+│ 4       │ 'open brush menu'                  │ '3/4' │ '4/4'      │ 6.3       │ 29.4           │ 33.2           │ 16.8     │ 17.100000000000364 │ 17.100000000000364 │ '99/121'          │ 17.6       │ 0               │ 'PASS'  │
+│ 5       │ 'select crayon brush'              │ '3/4' │ '4/4'      │ 4.9       │ 18.1           │ 18.2           │ 16.8     │ 16.80000000000109  │ 16.80000000000109  │ '96/120'          │ 18         │ 0               │ 'PASS'  │
+│ 6       │ 'select Magic brush'               │ '3/4' │ '4/4'      │ 3.3       │ 25.7           │ 30.2           │ 16.8     │ 17.19999999999891  │ 17.19999999999891  │ '96/120'          │ 18.7       │ 1               │ 'PASS'  │
+│ 7       │ 'select eraser'                    │ '3/4' │ '4/4'      │ 2         │ 25.4           │ 27.9           │ 16.8     │ 33.29999999999927  │ 33.29999999999927  │ '95/119'          │ 18.2       │ 1               │ 'PASS'  │
+│ 8       │ 'select pen brush'                 │ '3/4' │ '4/4'      │ 2.8       │ 24.5           │ 27.2           │ 16.8     │ 33.29999999999927  │ 33.29999999999927  │ '96/119'          │ 18.7       │ 1               │ 'PASS'  │
+│ 9       │ 'open stroke-width menu'           │ '3/4' │ '4/4'      │ 3.9       │ 26             │ 28.5           │ 16.8     │ 16.80000000000291  │ 16.80000000000291  │ '108/120'         │ 17.6       │ 0               │ 'PASS'  │
+│ 10      │ 'change stroke width'              │ '3/4' │ '4/4'      │ 12.7      │ 14.1           │ 15.2           │ 16.8     │ 16.799999999999272 │ 16.80000000000291  │ '12/116'          │ 19.4       │ 0               │ 'PASS'  │
+│ 11      │ 'open Settings'                    │ '3/4' │ '4/4'      │ 14.4      │ 56.5           │ 60.7           │ 16.8     │ 33.400000000001455 │ 33.400000000001455 │ '102/203'         │ 19         │ 0               │ 'PASS'  │
+│ 12      │ 'close Settings'                   │ '3/4' │ '4/4'      │ 5.1       │ 95.2           │ 117            │ 16.7     │ 17                 │ 17                 │ '45/214'          │ 19.1       │ 0               │ 'PASS'  │
+│ 13      │ 'first open of coloring books'     │ '3/4' │ '4/4'      │ 15.1      │ 40.9           │ 44.5           │ 16.8     │ 33.400000000001455 │ 33.400000000001455 │ '100/199'         │ 17.4       │ 0               │ 'PASS'  │
+│ 14      │ 'reopen coloring books'            │ '3/4' │ '4/4'      │ 30.3      │ 28.7           │ 30.8           │ 16.7     │ 16.900000000001455 │ 16.900000000001455 │ '98/200'          │ 17.4       │ 0               │ 'PASS'  │
+│ 15      │ 'open coloring book'               │ '3/4' │ '4/4'      │ 9         │ 38.4           │ 39.9           │ 16.7     │ 16.700000000000728 │ 16.80000000000291  │ '12/204'          │ 17.4       │ 0               │ 'PASS'  │
+│ 16      │ 'scroll coloring pages'            │ '3/4' │ '4/4'      │ 5.3       │ 651.3          │ 651.3          │ 16.8     │ 16.80000000000291  │ 16.900000000001455 │ '58/234'          │ 26.8       │ 0               │ 'PASS'  │
+│ 17      │ 'select coloring page'             │ '3/4' │ '4/4'      │ 15.3      │ 63.9           │ 101.5          │ 16.8     │ 16.799999999999272 │ 16.80000000000291  │ '21/209'          │ 18.5       │ 0               │ 'PASS'  │
+│ 18      │ 'clear coloring page'              │ '3/4' │ '4/4'      │ 12.2      │ 81.8           │ 88.5           │ 16.7     │ 16.700000000004366 │ 16.80000000000291  │ '21/210'          │ 18         │ 0               │ 'PASS'  │
+│ 19      │ 'save screenshot'                  │ '3/4' │ '4/4'      │ 10.8      │ 138.2          │ 145.5          │ 16.8     │ 16.80000000000291  │ 16.80000000000291  │ '359/562'         │ 18.4       │ 0               │ 'PASS'  │
+│ 20      │ 'show AI waiting print'            │ '3/4' │ '4/4'      │ 24.2      │ 67.3           │ 68.1           │ 16.8     │ 33.400000000001455 │ 33.400000000001455 │ '205/205'         │ 17.4       │ 0               │ 'PASS'  │
+│ 21      │ 'finish AI waiting print'          │ '3/4' │ '4/4'      │ 7.7       │ 56.7           │ 80.6           │ 16.8     │ 17.099999999998545 │ 17.099999999998545 │ '984/1094'        │ 18.2       │ 0               │ 'PASS'  │
+│ 22      │ 'undo latest stroke'               │ '3/4' │ '4/4'      │ 6.2       │ 33             │ 36.9           │ 16.8     │ 16.89999999999418  │ 16.89999999999418  │ '100/202'         │ 17.8       │ 0               │ 'PASS'  │
+│ 23      │ 'tap unavailable undo'             │ '3/4' │ '4/4'      │ 8.4       │ 17.3           │ 18.1           │ 16.7     │ 16.89999999999418  │ 16.89999999999418  │ '105/200'         │ 17.3       │ 0               │ 'PASS'  │
+│ 24      │ 'clear drawing'                    │ '3/4' │ '4/4'      │ 11.8      │ 1493.3         │ 1559.3         │ 16.8     │ 33.400000000001455 │ 33.400000000001455 │ '380/465'         │ 38.8       │ 50              │ 'PASS'  │
+│ 25      │ 'clear drawing on a coloring page' │ '3/4' │ '4/4'      │ 11.8      │ 1457.9         │ 1461.6         │ 16.8     │ 33.40000000000873  │ 33.40000000000873  │ '367/454'         │ 38.7       │ 49              │ 'PASS'  │
+└─────────┴────────────────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴────────────────────┴────────────────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-coverage-r1/a3-android-chrome-full-groups/actions.json
+exit=0
