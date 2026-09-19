@@ -732,7 +732,9 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
       'coloring pages to scroll'
     );
   } catch (error) {
-    const state = await unscrolledColoringDialogState(execute, selector).catch(() => null);
+    const state = await unscrolledColoringDialogState(execute, selector).catch((stateError) => ({
+      stateReadError: String(stateError),
+    }));
     throw new Error(`${error.message}\nScroll state: ${JSON.stringify({ ...state, touchGesture })}`, {
       cause: error,
     });
