@@ -70,6 +70,23 @@ export const COLORING_BOOK_INSTALL_STATE_EXPRESSION = `(async () => {
   }
 })()`;
 
+// The product installs each pack file after an untimed requestIdleCallback, and
+// Chrome on Android grants idle periods from its frame scheduler: on the rig
+// phone a waiting page that draws nothing installed one book off the picker's
+// own animation frames and then stopped for the whole install bound, while the
+// same page completed the catalog in about 20 s once anything requested frames
+// (docs/scratchpad/perf/2026-09-19-coloring-first-open). A child's session
+// produces frames by drawing; a harness that only waits does not. The pump runs
+// in the preparation document alone, which is discarded before any measurement.
+const INSTALL_FRAME_PUMP_FLAG = '__coloringInstallFramePump';
+export const START_INSTALL_FRAME_PUMP_SCRIPT = `
+  window.${INSTALL_FRAME_PUMP_FLAG} = true;
+  const pump = () => { if (window.${INSTALL_FRAME_PUMP_FLAG}) requestAnimationFrame(pump); };
+  requestAnimationFrame(pump);
+  return true;
+`;
+export const STOP_INSTALL_FRAME_PUMP_SCRIPT = `window.${INSTALL_FRAME_PUMP_FLAG} = false; return true;`;
+
 export function installStateReadTimeoutMessage(timeoutMs) {
   return `Timed out after ${timeoutMs / 1000} s reading which coloring books are installed`;
 }
@@ -124,14 +141,20 @@ export async function prepareColoringBooks({
   if (state.missing.length > 0) {
     await openPicker();
     await closePicker();
-    const installed = await pollUntil(
-      async () => {
-        state = await readInstallState(executePromise, readTimeoutMs);
-        return state.missing.length === 0;
-      },
-      installTimeoutMs,
-      INSTALL_POLL_MS
-    );
+    await execute(START_INSTALL_FRAME_PUMP_SCRIPT);
+    let installed;
+    try {
+      installed = await pollUntil(
+        async () => {
+          state = await readInstallState(executePromise, readTimeoutMs);
+          return state.missing.length === 0;
+        },
+        installTimeoutMs,
+        INSTALL_POLL_MS
+      );
+    } finally {
+      await execute(STOP_INSTALL_FRAME_PUMP_SCRIPT);
+    }
     if (!installed) throw new Error(installTimeoutMessage(state, installTimeoutMs));
   }
 

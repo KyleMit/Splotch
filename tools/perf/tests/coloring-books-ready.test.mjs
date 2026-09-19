@@ -14,6 +14,8 @@ import {
   COLORING_PACK_CACHE_FAMILY_PREFIX,
   COLORING_PACK_MANIFEST_PATH_TEMPLATE,
   COLORING_PACK_MARKER_PREFIX,
+  START_INSTALL_FRAME_PUMP_SCRIPT,
+  STOP_INSTALL_FRAME_PUMP_SCRIPT,
   VERSION_JSON_PATH,
   assertPickerNeverOpened,
   firstOpenListedMessage,
@@ -55,6 +57,8 @@ function fakeTarget({ installStates, listedCounts }) {
         listedIndex += 1;
         return listed;
       }
+      if (script === START_INSTALL_FRAME_PUMP_SCRIPT) return calls.push('start frame pump');
+      if (script === STOP_INSTALL_FRAME_PUMP_SCRIPT) return calls.push('stop frame pump');
       throw new Error(`Unexpected script: ${script}`);
     },
     openPicker: async () => calls.push('open picker'),
@@ -83,12 +87,32 @@ describe('prepareColoringBooks', () => {
       'read install state',
       'open picker',
       'close picker',
+      'start frame pump',
       'read install state',
       'read install state',
+      'stop frame pump',
       'open picker',
       'count book choices',
       'close picker',
     ]);
+  });
+
+  it('stops the frame pump when the install never finishes, and starts none for a prepared context', async () => {
+    const stalled = fakeTarget({
+      installStates: [{ catalog: CATALOG, missing: ['dinosaur'] }],
+      listedCounts: [],
+    });
+    await expect(prepareColoringBooks({ ...stalled, installTimeoutMs: 30 })).rejects.toThrow(
+      'missing dinosaur'
+    );
+    expect(stalled.calls.at(-1)).toBe('stop frame pump');
+
+    const prepared = fakeTarget({
+      installStates: [{ catalog: CATALOG, missing: [] }],
+      listedCounts: [3],
+    });
+    await prepareColoringBooks(prepared);
+    expect(prepared.calls).not.toContain('start frame pump');
   });
 
   it('waits for a prepared context to publish the books its storage already holds', async () => {
