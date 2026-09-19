@@ -42,7 +42,11 @@ name resolved. The tunnel was stopped and returned Cloudflare's 530. `cloudflare
 
 * **Installed:** profile "Splotch capture rig CA (constrained, 2026-09)", with full trust enabled.
   * `CA:TRUE, pathlen:0`.
-  * Critical name constraints permit only the Mac's `.local` name and its `/32` LAN address.
+  * Critical name constraints permit the Mac's `.local` name (and, as any DNS constraint does, its
+    subdomains) and its `/32` LAN address. The iPad refused an `example.com` leaf. On the Mac only
+    (the PR's first rival round), a root with the same constraint lines also refused an unrelated
+    IPv4 and an IPv6 leaf. The live root was made before `make-ca` existed, with the same constraint
+    lines.
   * P-256 key; expires 2028-09-18.
   * The key is only in the Mac's local rig directory, never in the repository.
 * **Replaced:** a 30-day root from earlier in this session, with the same constraints. The owner

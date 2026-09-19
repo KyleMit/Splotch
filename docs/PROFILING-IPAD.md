@@ -423,9 +423,12 @@ certificate that the iPad trusts, **name-constrained** to this Mac, in front of 
 Two facts shape it:
 
 * **Name constraints limit a trusted root; the leaf's names do not.** The root carries a critical
-  constraint that permits only this Mac's `.local` name and one `/32` address, with `pathlen:0`.
-  iPadOS 26.5 enforces it: Safari refuses a leaf from this root that also names `example.com`. The
-  2026-09-19 evidence is in `docs/scratchpad/perf/2026-09-19-ipad-secure-origin-ca/`.
+  constraint with `pathlen:0`. It permits this Mac's `.local` name and one `/32` address. A DNS
+  constraint also admits subdomains of that name (`x.<mac>.local`), and X.509 has no exact-host
+  form. A name type the constraint omits is unconstrained, so without `--ip` the root explicitly
+  excludes every IPv4 and IPv6 address. iPadOS 26.5 enforces the constraint: Safari refuses a leaf
+  from this root that also names `example.com`. The 2026-09-19 evidence is in
+  `docs/scratchpad/perf/2026-09-19-ipad-secure-origin-ca/`.
 * **`perf:serve` is not a static server.** It is SvelteKit's `vite preview` with the dev harness on.
   It answers server routes, and `/dev/store-frames/identity` returns this checkout's absolute path.
   The HTTPS front forwards only `GET`/`HEAD` for `/`, `/_app/*` and files in `web/build`. It refuses
@@ -439,11 +442,13 @@ npm run perf:ios:secure-origin -- make-ca --host=$(scutil --get LocalHostName).l
   --ip=$(ipconfig getifaddr en0)
 ```
 
-It writes `ca.key`/`ca.pem`, a server `leaf`, and a `constraint-probe` leaf. It then checks them
-with the macOS trust engine: the leaf must pass and the probe must fail, or it refuses. The root
-lasts 730 days. Apple caps a TLS server certificate at 825 days even under a root you installed, so
-the leaf ends a day before the root. It prints the profile path and the root's SHA-256 fingerprint.
-`--ip` is optional: without it, only the `.local` name works, which survives a DHCP change.
+It writes `ca.key`/`ca.pem`, a server `leaf`, a `constraint-probe` leaf (the permitted names plus
+`example.com`), and an `address-probe` leaf (a TEST-NET address). It then checks them with the macOS
+trust engine: the leaf must pass and both probes must fail, or it refuses. The root lasts 730 days.
+Apple caps a TLS server certificate at 825 days even under a root you installed, so the leaf ends a
+day before the root. It prints the profile path and the root's SHA-256 fingerprint. `--ip` is
+optional: without it, only the `.local` name works, which survives a DHCP change, and every address
+is excluded.
 
 **Install it — ⟨Mac⟩ + ⟨iPad⟩.**
 
