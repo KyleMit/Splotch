@@ -13,7 +13,7 @@ import { isAndroidBrowser, isNative } from '$lib/platform';
 // before the work queues raster, because creating one waits for whatever the
 // channel already holds. Measured in Android Chrome only, so the native
 // WebView and every other browser keep the unflushed path.
-// Evidence: docs/scratchpad/perf/2026-09-18-issue-2072-android-fold-flush/.
+// ADR-0169; evidence in docs/scratchpad/perf/2026-09-18-issue-2072-android-fold-flush/.
 export function createCanvasRasterFlush() {
   let flushContext: WebGLRenderingContext | null | undefined;
 
