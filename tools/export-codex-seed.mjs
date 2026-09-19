@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -12,7 +12,7 @@ import {
   SUBSCRIPTION_CREDENTIALS_STORE,
 } from '../.claude/skills/run-rival-agent/scripts/codex-subscription-auth.mjs';
 import { readConfiguredModel } from '../.claude/skills/run-rival-agent/scripts/launch-codex.mjs';
-import { assertSeed, CODEX_TOKEN_REFRESH_INTERVAL_DAYS, encodeSeed } from './seed-codex-auth.mjs';
+import { accessTokenExpiryMs, assertSeed, encodeSeed } from './seed-codex-auth.mjs';
 
 // A login of its own, never the working ~/.codex one: refresh rotation retires the previous token
 // in the same chain, so a shared file would log the laptop out at the cloud's first refresh.
@@ -35,21 +35,35 @@ export function selectClipboardCommand(platform, isAvailable) {
 
 // The cloud hook writes config.toml from CODEX_MODEL, so the laptop's own configured model is the
 // value to paste beside the seed; without one the cloud launcher needs --model on every run.
-export function describeModelToPaste(configToml) {
+export function describeModelToPaste(configToml, configPath = CONFIG_PATH) {
   const model = readConfiguredModel(configToml);
   return model
-    ? `Set ${MODEL_ENVIRONMENT_KEY}=${model} beside it (your ~/.codex/config.toml model) unless the cloud should use another slug.`
+    ? `Set ${MODEL_ENVIRONMENT_KEY}=${model} beside it (the model in ${configPath}) unless the cloud should use another slug.`
     : `Also set ${MODEL_ENVIRONMENT_KEY} to the model slug the cloud rival should use; without it every cloud launch needs --model.`;
+}
+
+// What retires the seed is the first cloud review after its access token expires, which refreshes
+// and rotates the refresh token; the exporter says when that is so the user knows the horizon.
+export function describeSeedLifetime(auth) {
+  const expiryMs = accessTokenExpiryMs(auth);
+  const horizon =
+    expiryMs === undefined
+      ? 'its access token carries no readable expiry, so Codex refreshes on its own age fallback'
+      : `its access token expires at ${new Date(expiryMs).toISOString()}`;
+  return `The seed lasts until the first cloud review after ${horizon}: that review refreshes and rotates the refresh token, retiring the seed for every later session. Run this again then (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").`;
 }
 
 function commandExists(command) {
   return spawnSync('which', [command], { stdio: 'ignore' }).status === 0;
 }
 
-function login(env) {
-  const result = spawnSync('codex', buildLoginArgs(), {
+// Codex refuses a CODEX_HOME that does not exist (it reads the directory's metadata before doing
+// anything else), so the dedicated home is created, owner-only, before the login that fills it.
+export function login({ env, home = CLOUD_CODEX_HOME, mkdir = mkdirSync, spawn = spawnSync }) {
+  mkdir(home, { recursive: true, mode: 0o700 });
+  const result = spawn('codex', buildLoginArgs(), {
     stdio: 'inherit',
-    env: { ...env, CODEX_HOME: CLOUD_CODEX_HOME },
+    env: { ...env, CODEX_HOME: home },
   });
   if (result.error) throw new Error(`codex is not on PATH: ${result.error.message}`);
   if (result.status !== 0) throw new Error(`codex login exited ${result.status ?? result.signal}`);
@@ -81,7 +95,7 @@ function readOptional(path) {
 function main() {
   const { env, stripped } = stripApiBillingEnvironment();
   for (const key of stripped) process.stderr.write(`ignoring ${key} for the plan login\n`);
-  login(env);
+  login({ env });
   const auth = JSON.parse(readFileSync(join(CLOUD_CODEX_HOME, 'auth.json'), 'utf8'));
   assertSeed(auth);
   const seed = encodeSeed(auth);
@@ -90,7 +104,7 @@ function main() {
       `${SEED_ENVIRONMENT_KEY} seed (${seed.length} chars) ${deliver(seed)}.`,
       `Paste it as the value of ${SEED_ENVIRONMENT_KEY} in the Claude cloud environment dialog at https://claude.ai/code (edit the environment → Environment variables). It applies from the next session and does not rebuild the snapshot.`,
       describeModelToPaste(readOptional(CONFIG_PATH)),
-      `Refresh rotation retires the seed after about ${CODEX_TOKEN_REFRESH_INTERVAL_DAYS} days; run this again then (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").`,
+      describeSeedLifetime(auth),
       '',
     ].join('\n')
   );
