@@ -1,14 +1,15 @@
-// The eraser needs ink to remove, or its cell measures erasing blank paper. Both
+// The eraser needs ink to remove, or its cell measures erasing blank paper. The
 // capture transports give it that ink by painting the live tiles directly, and
-// both previously trusted the paint (issue 1302): nothing checked that the fill
+// they previously trusted the paint (issue 1302): nothing checked that the fill
 // produced opaque pixels, and a fill that silently did nothing left a capture
 // that passed fidelity, passed the drawing gate, and recorded a plausible number.
 //
-// This module is the single source for the fill so the two injectors — the
-// split-capture page bootstrap, which composes it into its generated script, and
-// the Appium screen runner, which sends it through `execute` — cannot drift.
-// It exports the function's SOURCE rather than the function because both
-// consumers run it inside a page, not in this process.
+// This module is the single source for the fill so the injectors — the
+// split-capture page bootstrap, which composes it into its generated script, the
+// Appium screen runner, which sends it through `execute`, and the bundled
+// Android CLI, which evaluates it over CDP — cannot drift. It exports the
+// function's SOURCE rather than the function because every consumer runs it
+// inside a page, not in this process.
 
 export const ERASER_FILL_COLOR = '#7c4dff';
 // How long a page may take to finish realizing its tile backings before the
@@ -49,9 +50,11 @@ export const ERASER_REFILL_IDLE_FRAMES = 2;
 // restores full ink between passes and keeps the eraser's geometry identical
 // to every other brush's fixed plan.
 //
-// Both automated transports dispatch one authored gesture pass at a time. The
-// Appium runner executes this fill while it owns the page context; the split
-// transport requests it through a nonce-bound host/page handshake. Each path
+// Every automated transport dispatches one authored gesture pass at a time. The
+// Appium runner and the bundled Android CLI execute this fill while they own the
+// page context; the split transport requests it through a nonce-bound host/page
+// handshake. The bundled CLI adds the full-lattice census below around every
+// pass and refuses the capture outright on a failure. Each path
 // proves the preceding pass delivered a new trusted canvas lift, verifies the
 // fill, waits ERASER_REFILL_IDLE_FRAMES, and only then dispatches the next pass.
 // The last pass deliberately does not refill because there is no later erasing
@@ -117,5 +120,47 @@ export function eraserFillFunctionSource() {
       if (!opaque) transparentTiles.push(index);
     });
     return { tiles: tiles.length, backings, transparentTiles };
+  }`;
+}
+
+// Point samples of every live tile's backing on an ERASER_CENSUS_GRID square
+// lattice. Smoothing is off, so each sample is one real backing pixel rather
+// than an average, and a fully opaque census means ink under every lattice
+// point — which, at this density, is ink wherever the fixed gesture can put
+// the eraser. The eraser pass is then proven by samples that went transparent.
+// Reads go through the same 1x1-scratch pattern's larger sibling (a
+// willReadFrequently scratch, never getImageData on a live tile), and every
+// census runs between contacts. Hidden tiles are sampled like visible ones:
+// their DOM rect is empty, but their backing is what the eraser works on.
+export const ERASER_CENSUS_GRID = 64;
+// Below this alpha a sample counts as erased rather than antialiased edge.
+const ERASED_ALPHA_BELOW = 128;
+
+export function eraserInkCensusFunctionSource() {
+  return `function eraserInkCensus() {
+    const tiles = [...document.querySelectorAll('canvas[data-live-tile]')];
+    if (!tiles.length) return { error: 'no live tiles to sample' };
+    const grid = ${ERASER_CENSUS_GRID};
+    const scratch = document.createElement('canvas');
+    scratch.width = grid;
+    scratch.height = grid;
+    const context = scratch.getContext('2d', { willReadFrequently: true });
+    context.imageSmoothingEnabled = false;
+    return {
+      tiles: tiles.map((canvas) => {
+        const backing = canvas.width + 'x' + canvas.height;
+        if (!canvas.width || !canvas.height) return { backing, samples: 0, opaque: 0, erased: 0 };
+        context.clearRect(0, 0, grid, grid);
+        context.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, grid, grid);
+        const data = context.getImageData(0, 0, grid, grid).data;
+        let opaque = 0;
+        let erased = 0;
+        for (let index = 3; index < data.length; index += 4) {
+          if (data[index] === 255) opaque += 1;
+          else if (data[index] < ${ERASED_ALPHA_BELOW}) erased += 1;
+        }
+        return { backing, samples: grid * grid, opaque, erased };
+      }),
+    };
   }`;
 }

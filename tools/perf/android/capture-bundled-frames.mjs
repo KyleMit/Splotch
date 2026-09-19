@@ -32,7 +32,11 @@ import {
   swipeArgs,
 } from '../split-capture/lib/android-input.mjs';
 import { runtimeUaProblem } from '../split-capture/capture-hand-input.mjs';
-import { BRUSH_BUTTON_BY_MODE, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import {
+  BRUSH_BUTTON_BY_MODE,
+  STROKES_PER_GESTURE_REPEAT,
+  trustedGestureActions,
+} from '../ios/capture-xcuitest-screen.mjs';
 import { probeConfigScript } from '../ios/capture-webkit-frames.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
@@ -46,7 +50,18 @@ import {
   releaseNativeRotationLock,
   restoreNativeRotationLock,
 } from '../lib/campaign-state.mjs';
-import { GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
+import {
+  GESTURE_REPEATS,
+  anomalousEraserRefills,
+  eraserRefillShortfall,
+  gesturePlanFor,
+} from '../lib/campaign-plan.mjs';
+import {
+  ERASER_FILL_BACKING_TIMEOUT_MS,
+  ERASER_REFILL_IDLE_FRAMES,
+  eraserFillFunctionSource,
+  eraserInkCensusFunctionSource,
+} from '../lib/eraser-fill.mjs';
 
 const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 const PROBE_CONTACT_BUDGET_MS = 60_000;
@@ -66,6 +81,25 @@ const HAND_COUNTDOWN_SECONDS = 5;
 // phone, so this only bounds a device that is not going to turn.
 const ROTATION_FOLLOW_TIMEOUT_MS = 10_000;
 const ROTATION_FOLLOW_POLL_MS = 250;
+// The product's persisted eraser size key. Tools cannot import storageKeys.ts
+// (the Vitest tools tier has no SvelteKit tsconfig to transform it), so the
+// value is restated here and android-bundled-eraser.test.mjs drift-guards it
+// against web/src/lib/storageKeys.ts.
+export const ERASER_WIDTH_STORAGE_KEY = 'splotch-eraser-width-size';
+const ERASER_FILL_POLL_MS = 100;
+// How long a pass's strokes may take to settle in the page's event table after
+// the final `input swipe` returns; the swipe call itself blocks until it ends.
+const PASS_LIFTS_TIMEOUT_MS = 3_000;
+const PASS_LIFTS_POLL_MS = 100;
+// The probe's events row layout (real-screen-probe.js): type, onCanvas, and
+// trusted columns, and the type codes for down, up, and cancel.
+const EVENT_TYPE = 2;
+const EVENT_ON_CANVAS = 6;
+const EVENT_TRUSTED = 8;
+const POINTER_DOWN = 0;
+const POINTER_UP = 2;
+const POINTER_CANCEL = 3;
+
 // How often an interrupted capture notices the signal while it waits — a
 // 20 s hand window must not hold the rig unrestored until it ends.
 const INTERRUPT_POLL_MS = 250;
@@ -253,6 +287,251 @@ export async function establishRequestedOrientation({
   return { launched, settled, lockReleased: Boolean(initialLock?.lockedOrientation) };
 }
 
+// Floor on the share of census samples one eraser pass must clear. By path
+// length times width, the fixed gesture at the smallest eraser level (4 px
+// nominal) sweeps roughly 3% of a portrait canvas; a blank-paper or
+// non-erasing pass clears none. The floor sits well under the first and far
+// above the second.
+export const ERASER_PASS_MIN_ERASED_FRACTION = 0.005;
+
+const indexed = (census) => (census?.tiles ?? []).map((tile, index) => ({ index, ...tile }));
+const total = (census, key) => indexed(census).reduce((sum, tile) => sum + tile[key], 0);
+
+export function censusSummary(census) {
+  return {
+    at: census?.at ?? null,
+    tiles: census?.tiles?.length ?? 0,
+    samples: total(census, 'samples'),
+    opaque: total(census, 'opaque'),
+    erased: total(census, 'erased'),
+    backings: indexed(census).map((tile) => tile.backing),
+  };
+}
+
+export function inkPreparedProblem(census, pass) {
+  if (!census || census.error) {
+    return `before pass ${pass}, the ink census failed: ${census?.error ?? 'no result'}`;
+  }
+  if (!census.tiles?.length) return `before pass ${pass}, the ink census found no live tiles`;
+  const thin = indexed(census).filter((tile) => tile.samples === 0 || tile.opaque !== tile.samples);
+  if (!thin.length) return null;
+  return (
+    `before pass ${pass}, the paper is not fully inked where the eraser will travel: ` +
+    thin.map((tile) => `tile ${tile.index} ${tile.opaque}/${tile.samples} opaque`).join(', ')
+  );
+}
+
+export function erasurePassProblem(before, after, pass) {
+  if (!after || after.error) {
+    return `after pass ${pass}, the ink census failed: ${after?.error ?? 'no result'}`;
+  }
+  const beforeTiles = indexed(before);
+  const afterTiles = indexed(after);
+  if (afterTiles.length !== beforeTiles.length) {
+    return `pass ${pass} changed the live tile count ${beforeTiles.length} -> ${afterTiles.length}`;
+  }
+  const resized = afterTiles.filter((tile) => tile.backing !== beforeTiles[tile.index].backing);
+  if (resized.length) {
+    return (
+      `pass ${pass} changed tile backings (` +
+      resized.map((tile) => `tile ${tile.index} ${beforeTiles[tile.index].backing} -> ${tile.backing}`).join(', ') +
+      '), which is a resize, not an erase'
+    );
+  }
+  const wiped = afterTiles.filter((tile) => tile.opaque === 0);
+  if (wiped.length) {
+    return (
+      `pass ${pass} left tiles ${wiped.map((tile) => tile.index).join(', ')} with no ink at all, ` +
+      'which is a clear, not an erase along the gesture'
+    );
+  }
+  const erased = total(after, 'erased');
+  const samples = total(after, 'samples');
+  if (erased / samples < ERASER_PASS_MIN_ERASED_FRACTION) {
+    return (
+      `pass ${pass} erased ${erased} of ${samples} census samples, under the ` +
+      `${ERASER_PASS_MIN_ERASED_FRACTION * 100}% floor, so the stroke removed no measurable ink`
+    );
+  }
+  return null;
+}
+
+// The share of a pass's planned strokes that must reach the page. On the rig
+// phone in portrait, a swipe that starts at one screen point (the centre,
+// where two of the plan's sixteen segments begin) delivers no pointer events
+// at all, for every brush alike (see the 2026-09-19 eraser evidence package),
+// so 14 of 16 arrive. The floor tolerates exactly that gap and refuses a
+// third lost stroke: below it the pass is not the workload its plan names,
+// however much ink it happened to remove.
+export const MIN_DELIVERED_STROKE_SHARE = 0.85;
+
+// Every stroke that reached the page must also have ended — as many trusted
+// canvas lifts as downs, and no cancel — before the census reads the result
+// or the refill paints over it.
+export function passLiftProblem(lifts, plannedStrokes, pass) {
+  if (lifts.cancels) return `pass ${pass} saw ${lifts.cancels} trusted canvas pointercancel(s)`;
+  if (lifts.downs !== lifts.ups) {
+    return (
+      `pass ${pass} ended with a stroke still in contact: ` +
+      `${lifts.downs} pointerdowns, ${lifts.ups} pointerups`
+    );
+  }
+  if (lifts.ups < plannedStrokes * MIN_DELIVERED_STROKE_SHARE) {
+    return (
+      `pass ${pass} delivered ${lifts.ups} of ${plannedStrokes} planned strokes to the page, ` +
+      `under the ${MIN_DELIVERED_STROKE_SHARE * 100}% floor`
+    );
+  }
+  return null;
+}
+
+export function strokeDelivery(events, geometry, repeats) {
+  const planned =
+    androidGestureInstructions(trustedGestureActions(geometry.canvas, 1, 0), {
+      densityScale: geometry.dpr,
+    }).filter((instruction) => instruction.kind === 'swipe').length * repeats;
+  const delivered = events.filter(
+    (row) =>
+      row[EVENT_TYPE] === POINTER_DOWN && row[EVENT_ON_CANVAS] === 1 && row[EVENT_TRUSTED] === 1
+  ).length;
+  return { planned, delivered };
+}
+
+// Each readback reports the page-time interval it ran in, so an artifact can
+// show it fell between strokes rather than inside a scored contact.
+const evaluateInPage = (page, source, call) =>
+  page.evaluate(
+    `(() => {\n${source}\nconst startedAt = performance.now();\nconst result = ${call};\nreturn { ...result, at: [startedAt, performance.now()] };\n})()`
+  );
+const fillEraserInk = (page, verifyOnly = false) =>
+  evaluateInPage(page, eraserFillFunctionSource(), `fillEraserInk(${verifyOnly})`);
+const inkCensus = (page) => evaluateInPage(page, eraserInkCensusFunctionSource(), 'eraserInkCensus()');
+const idleFrames = (page) =>
+  page.evaluate(
+    (count) =>
+      new Promise((resolve) => {
+        let remaining = count;
+        const tick = () => {
+          remaining -= 1;
+          if (remaining <= 0) resolve(true);
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    ERASER_REFILL_IDLE_FRAMES
+  );
+
+// The shared fill, verified rather than trusted (issue 1302), exactly as the
+// Appium runner applies it: wait out deferred tile-backing realization, prove
+// the paint opaque, then check again WITHOUT painting after a settle so a wipe
+// inside that window is recorded (`repairedAfterSettle`) instead of hidden.
+async function prepareEraserInk(page, fence) {
+  const fillVerified = async () => {
+    const deadline = Date.now() + ERASER_FILL_BACKING_TIMEOUT_MS;
+    let fill = await fillEraserInk(page);
+    while ((fill?.pending || fill?.transparentTiles?.length) && Date.now() < deadline) {
+      await fence.wait(ERASER_FILL_POLL_MS);
+      fill = await fillEraserInk(page);
+    }
+    if (fill?.pending) {
+      throw new Error(`live tile backings never realized for the eraser fill: ${fill.pending.join(', ')}`);
+    }
+    if (!fill || fill.transparentTiles?.length) {
+      throw new Error(`the eraser fill left tiles transparent: ${JSON.stringify(fill)}`);
+    }
+    return fill;
+  };
+  const fill = await fillVerified();
+  await fence.wait(AFTER_GESTURE_SETTLE_MS);
+  const afterSettle = await fillEraserInk(page, true);
+  if (afterSettle?.pending || afterSettle?.transparentTiles?.length) {
+    return { ...(await fillVerified()), repairedAfterSettle: true, settleWipe: afterSettle };
+  }
+  return fill;
+}
+
+async function passLifts(page, fromEvent) {
+  const counts = await page.evaluate(() => window.__probe.counts());
+  const rows = await page.evaluate(
+    ([from, count]) => window.__probe.events(from, count),
+    [fromEvent, counts.events - fromEvent]
+  );
+  const trustedOnCanvas = rows.filter(
+    (row) => row[EVENT_ON_CANVAS] === 1 && row[EVENT_TRUSTED] === 1
+  );
+  const count = (type) => trustedOnCanvas.filter((row) => row[EVENT_TYPE] === type).length;
+  return { downs: count(POINTER_DOWN), ups: count(POINTER_UP), cancels: count(POINTER_CANCEL) };
+}
+
+// One authored pass at a time, each bracketed by proof (issue 2065's device
+// validation found this CLI erasing blank paper under a `refilled` label):
+// before the pass, a full-lattice census proves ink under the whole canvas;
+// after it, the page must have received every planned stroke as a trusted
+// down/up pair with nothing still in contact, and the census must show the
+// stroke removed ink without resizing or clearing a tile. Every readback, the
+// refill, and the idle frames that separate them from the next contact run
+// between passes, outside the in-contact frames the drawing gate scores.
+export async function driveEraserPasses({ page, fence, repeats, canvas, dpr, dispatchSwipe }) {
+  const instructions = androidGestureInstructions(trustedGestureActions(canvas, 1, 0), {
+    densityScale: dpr,
+  });
+  const strokes = instructions.filter((instruction) => instruction.kind === 'swipe').length;
+  const passes = [];
+  const refills = [];
+  let trustedCanvasPointerUps = 0;
+  for (let pass = 1; pass <= repeats; pass += 1) {
+    const before = await inkCensus(page);
+    const unprepared = inkPreparedProblem(before, pass);
+    if (unprepared) throw new Error(unprepared);
+    await idleFrames(page);
+    const fromEvent = (await page.evaluate(() => window.__probe.counts())).events;
+    for (const instruction of instructions) {
+      fence.checkpoint();
+      if (instruction.kind === 'pause') await fence.wait(instruction.durationMs);
+      else dispatchSwipe(instruction);
+    }
+    // Settled means every down has its up and the counts held for one poll.
+    const deadline = Date.now() + PASS_LIFTS_TIMEOUT_MS;
+    let previous = null;
+    let lifts = await passLifts(page, fromEvent);
+    while (
+      (lifts.downs !== lifts.ups || JSON.stringify(lifts) !== JSON.stringify(previous)) &&
+      Date.now() < deadline
+    ) {
+      await fence.wait(PASS_LIFTS_POLL_MS);
+      previous = lifts;
+      lifts = await passLifts(page, fromEvent);
+    }
+    const liftProblem = passLiftProblem(lifts, strokes, pass);
+    if (liftProblem) throw new Error(liftProblem);
+    trustedCanvasPointerUps += lifts.ups;
+    const after = await inkCensus(page);
+    const erasure = erasurePassProblem(before, after, pass);
+    if (erasure) throw new Error(erasure);
+    passes.push({
+      pass,
+      plannedStrokes: strokes,
+      lifts,
+      before: censusSummary(before),
+      after: censusSummary(after),
+    });
+    if (pass === repeats) break;
+    const fill = await fillEraserInk(page);
+    const refill = {
+      afterStroke: pass * STROKES_PER_GESTURE_REPEAT,
+      pending: Boolean(fill?.pending),
+      transparentTiles: fill?.transparentTiles ?? [],
+      trustedCanvasPointerUps,
+      at: fill?.at ?? null,
+    };
+    refills.push(refill);
+    if (refill.pending || refill.transparentTiles.length) {
+      throw new Error(`the eraser refill after pass ${pass} failed: ${JSON.stringify(fill)}`);
+    }
+  }
+  return { passes, refills };
+}
+
 // The Brush Menu mounts its options only while it is open, and a pick closes it
 // again; with a single optional brush there is no menu, and the trigger (no
 // aria-expanded) toggles that brush against the pen, so clicking it when the
@@ -297,6 +576,14 @@ export async function captureBundledFrames({
 } = {}) {
   if (!serial) throw new Error('--device-serial= is required');
   if (!['adb', 'hand'].includes(input)) throw new Error('--input must be adb or hand');
+  if (!Number.isSafeInteger(repeats) || repeats < 1) {
+    throw new Error('--gesture-repeats must be a positive integer');
+  }
+  // A hand capture has no pass boundaries to refill between and no planned
+  // path to prove, so an eraser cell there would measure blank paper.
+  if (brush === 'eraser' && input === 'hand') {
+    throw new Error('--brush=eraser needs --input=adb: a hand capture cannot be fed verified ink');
+  }
   const runLabel = label ?? `bundled-android-${brush}-${orientation.toLowerCase()}-${requestedTheme}`;
   const hostLoadStart = sampleHostLoad();
 
@@ -401,6 +688,12 @@ export async function captureBundledFrames({
       throw new Error(`the page committed ${mode ?? 'nothing'}, not ${brush}`);
     }
 
+    const eraserFill = brush === 'eraser' ? await prepareEraserInk(page, fence) : null;
+    const eraserWidthSetting =
+      brush === 'eraser'
+        ? await page.evaluate((key) => localStorage.getItem(key), ERASER_WIDTH_STORAGE_KEY)
+        : null;
+
     fence.checkpoint();
     const beforeContact = await readGeometry();
     const preContactProblem = orientationProblem(orientation, beforeContact);
@@ -415,7 +708,18 @@ export async function captureBundledFrames({
     );
     if (!installed) throw new Error('the probe did not install in the bundled page');
 
-    if (input === 'adb') {
+    let eraser = null;
+    if (input === 'adb' && brush === 'eraser') {
+      console.log(`canvas ${JSON.stringify(beforeContact.canvas)} scale ${beforeContact.dpr}`);
+      eraser = await driveEraserPasses({
+        page,
+        fence,
+        repeats,
+        canvas: beforeContact.canvas,
+        dpr: beforeContact.dpr,
+        dispatchSwipe: (instruction) => exec(serial, swipeArgs(instruction)),
+      });
+    } else if (input === 'adb') {
       console.log(`canvas ${JSON.stringify(beforeContact.canvas)} scale ${beforeContact.dpr}`);
       const instructions = androidGestureInstructions(
         trustedGestureActions(beforeContact.canvas, repeats, 0),
@@ -461,6 +765,7 @@ export async function captureBundledFrames({
       geometryChangesProblem(geometryChanges) ?? geometryDriftProblem(beforeContact, afterContact);
     if (geometryProblem) throw new Error(geometryProblem);
 
+    const strokes = input === 'adb' ? strokeDelivery(report.events, beforeContact, repeats) : null;
     const summaries = summarizeRun(report);
     const runtime = captureRuntime('android', true);
     const fidelity = inputFidelity(summaries.phases?.[0]?.input ?? {}, runtime);
@@ -482,6 +787,17 @@ export async function captureBundledFrames({
       observedTheme,
       gestureRepeats: input === 'adb' ? repeats : null,
       gesturePlan: input === 'adb' ? gesturePlanFor(brush) : null,
+      // What the plan sent versus what reached the page as trusted canvas
+      // strokes; see MIN_DELIVERED_STROKE_SHARE for the portrait delivery gap.
+      strokes,
+      // The verified evidence behind that plan for an eraser cell: the initial
+      // fill, one refill per pass boundary (the shape the campaign readers
+      // check), and each pass's before/after ink census and stroke lifts.
+      eraserFill,
+      eraserRefills: eraser?.refills ?? null,
+      eraserPasses: eraser?.passes ?? null,
+      // The persisted eraser size level as stored; null is the product default.
+      eraserWidthSetting,
       handCapture: input === 'hand',
       ...(input === 'hand' ? { runtime, reading: null, drawSeconds: seconds } : {}),
       nativeApp: true,
@@ -499,6 +815,22 @@ export async function captureBundledFrames({
       summaries,
       report,
     };
+
+    const anomalous = anomalousEraserRefills(measured);
+    if (anomalous?.length) throw new Error(`anomalous eraser refills: ${JSON.stringify(anomalous)}`);
+    const shortfall = eraserRefillShortfall(measured, repeats);
+    if (shortfall) throw new Error(`eraser refill shortfall: ${JSON.stringify(shortfall)}`);
+    if (brush === 'eraser' && eraser?.passes?.length !== repeats) {
+      throw new Error(`the eraser capture proved ${eraser?.passes?.length ?? 0} of ${repeats} passes`);
+    }
+    if (eraser) {
+      for (const pass of eraser.passes) {
+        console.log(
+          `eraser pass ${pass.pass}: ${pass.lifts.ups}/${pass.plannedStrokes} strokes, ` +
+            `erased ${pass.after.erased}/${pass.after.samples} census samples`
+        );
+      }
+    }
 
     console.log(
       `\nObserved ${measured.observedOrientation} ${beforeContact.viewport.width}x${beforeContact.viewport.height}` +

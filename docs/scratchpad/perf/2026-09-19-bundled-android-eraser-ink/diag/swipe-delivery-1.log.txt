@@ -1,0 +1,7 @@
+seg2 as planned []
+seg2 alone again []
+seg6 as planned []
+same start, short []
+nearby start 520 [["pointerdown",173,339,"drawingCanvas"],["pointerup",248,482,"drawingCanvas"]]
+seg2 reversed [["pointerdown",248,482,"drawingCanvas"],["pointerup",180,339,"drawingCanvas"]]
+seg1 control [["pointerdown",112,245,"drawingCanvas"],["pointerup",180,339,"drawingCanvas"]]

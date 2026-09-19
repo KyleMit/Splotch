@@ -1,0 +1,5 @@
+canvas {"x":0,"y":108,"width":360,"height":672} scale 3
+Error: pass 1 expected 16 trusted canvas strokes, saw 14 pointerdowns and 14 pointerups
+    at driveEraserPasses (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:465:28)
+    at async measure (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:672:16)
+    at async captureBundledFrames (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:570:16)

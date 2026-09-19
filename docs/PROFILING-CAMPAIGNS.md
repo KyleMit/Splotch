@@ -332,26 +332,34 @@ one authored pass at a time, then refills and verifies the tiles before it allow
 Appium runner does that while it owns the page context; split capture uses a nonce-bound host/page
 request and acknowledgement. Both prove the preceding pass delivered a new trusted canvas lift and
 wait two rAFs after the refill, so synchronous harness paint is outside the next in-contact window.
-Do not restore the capture-phase `pointerup` recorder: native injectors can queue the next down
-while that listener blocks, and their raw pointer-up streams do not equal authored strokes. Moving
-the strokes instead was measured and retired because even the optimal placement schedule saturates a
-landscape phone canvas by pass 5. The setup fill is verified rather than trusted (issue 1302), each
-refill re-verifies, and the artifact records all of it (`eraserFill`, `eraserRefills`, and
-`gesturePlan`: `fixed-geometry-refilled` for the eraser, `fixed-geometry` otherwise; absent means
-unrefilled fixed-geometry). The boundary is enforced for any plan an artifact RECORDS: campaign
-acceptance refuses a banked cell whose recorded plan disagrees with the contract
-(`wrong-gesture-plan`, checked after the repeat count for the same most-fundamental-rejection-first
-reason), and the matrix refuses both a recorded plan that disagrees with a repeat-driven target's
-contract and two runs recording different plans in one cell. The refill record itself is consumed
-too (issue 1355): an anomalous entry — pending, transparent tiles, an error, no new trusted canvas
-lift, or any shape the reader does not recognize — refuses the capture (`eraser-fill-failed`,
-checked after the plan so the most fundamental rejection is named first), as does a clean record
-shorter than the contract implies (repeats − 1 entries), and the matrix refuses to fold either case.
-An artifact predating the field is a known quantity — unrefilled — and is accepted anyway, by the
-standing decision that banked pre-fix evidence stays foldable until the campaign-end recapture
-supersedes it. The enforcement therefore does not cover the absent-plan case: do not compare an
-eraser number across that boundary, and treat the matrix's pre-refill eraser column as superseded
-once the recapture lands.
+The bundled Android CLI (`perf:android:bundled:frames`) owns its page over CDP like the Appium
+runner, and it checks more (2026-09-19; before that it never filled at all while still recording
+`fixed-geometry-refilled`).
+
+* **Before each pass,** a point census of every live tile backing must be fully opaque.
+* **After each pass,** every delivered stroke must have lifted, and the census must show a
+  measurable share erased with no tile resized or cleared.
+* **On any failure,** the capture refuses to write an artifact. Do not restore the capture-phase
+  `pointerup` recorder: native injectors can queue the next down while that listener blocks, and
+  their raw pointer-up streams do not equal authored strokes. Moving the strokes instead was
+  measured and retired because even the optimal placement schedule saturates a landscape phone
+  canvas by pass 5. The setup fill is verified rather than trusted (issue 1302), each refill
+  re-verifies, and the artifact records all of it (`eraserFill`, `eraserRefills`, and `gesturePlan`:
+  `fixed-geometry-refilled` for the eraser, `fixed-geometry` otherwise; absent means unrefilled
+  fixed-geometry). The boundary is enforced for any plan an artifact RECORDS: campaign acceptance
+  refuses a banked cell whose recorded plan disagrees with the contract (`wrong-gesture-plan`,
+  checked after the repeat count for the same most-fundamental-rejection-first reason), and the
+  matrix refuses both a recorded plan that disagrees with a repeat-driven target's contract and two
+  runs recording different plans in one cell. The refill record itself is consumed too (issue 1355):
+  an anomalous entry — pending, transparent tiles, an error, no new trusted canvas lift, or any
+  shape the reader does not recognize — refuses the capture (`eraser-fill-failed`, checked after the
+  plan so the most fundamental rejection is named first), as does a clean record shorter than the
+  contract implies (repeats − 1 entries), and the matrix refuses to fold either case. An artifact
+  predating the field is a known quantity — unrefilled — and is accepted anyway, by the standing
+  decision that banked pre-fix evidence stays foldable until the campaign-end recapture supersedes
+  it. The enforcement therefore does not cover the absent-plan case: do not compare an eraser number
+  across that boundary, and treat the matrix's pre-refill eraser column as superseded once the
+  recapture lands.
 
 **A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
 First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and
