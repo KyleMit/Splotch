@@ -18,6 +18,11 @@ const COLORING_BOOKS_LISTED_TIMEOUT_MS = 30_000;
 const LISTED_POLL_MS = 250;
 
 export const BOOK_CHOICE_SELECTOR = '#coloring-book-dialog button[aria-label$="coloring book"]';
+// The picker dialog is always in the document, and renders a book or page tile
+// only for the books an open has held (createColoringPickerBooks.holdForOpen),
+// which then stay rendered behind the closed dialog. So tiles in a closed
+// picker are the trace of an earlier open in the same document.
+const PICKER_TILE_SELECTOR = '#coloring-book-dialog .coloring-tile';
 
 // A stalled version or manifest response must fail the read, not hang the
 // capture: the page aborts its own fetches at the first bound, and the harness
@@ -136,9 +141,7 @@ export async function prepareColoringBooks({
   const listsEveryBook = await pollUntil(
     async () => {
       await openPicker();
-      listed = await execute(
-        `return document.querySelectorAll(${JSON.stringify(BOOK_CHOICE_SELECTOR)}).length;`
-      );
+      listed = await listedBookChoices(execute);
       await closePicker();
       return listed === expected;
     },
@@ -147,4 +150,60 @@ export async function prepareColoringBooks({
   );
   if (!listsEveryBook) throw new Error(listedTimeoutMessage(listed, expected, listedTimeoutMs));
   return listed;
+}
+
+export function pickerAlreadyRenderedMessage(tiles) {
+  return `The coloring picker already holds ${tiles} rendered tiles, so it has opened in this document and its next open is not a first open`;
+}
+
+export function firstOpenListedMessage(listed, prepared) {
+  return `The first coloring picker open listed ${listed} book choices and preparation listed ${prepared}: the installed-book scan had not published them to this document before the measured open`;
+}
+
+export function installedBooksLostMessage(state) {
+  return state === null
+    ? 'The fresh document reports no web pack storage after preparation found some'
+    : `The fresh document lost coloring books that preparation installed: missing ${state.missing.join(', ')}`;
+}
+
+// The control on the first-open measurement: fails when anything earlier in
+// this document, setup included, has opened the picker.
+export async function assertPickerNeverOpened(execute) {
+  const tiles = await execute(
+    `return document.querySelectorAll(${JSON.stringify(PICKER_TILE_SELECTOR)}).length;`
+  );
+  if (tiles > 0) throw new Error(pickerAlreadyRenderedMessage(tiles));
+}
+
+export async function listedBookChoices(execute) {
+  return execute(
+    `return document.querySelectorAll(${JSON.stringify(BOOK_CHOICE_SELECTOR)}).length;`
+  );
+}
+
+// Preparation has to open the picker, and the sweep owes a first open. So the
+// books settle in one document and the sweep runs in the next: the installed
+// set persists in Cache Storage, and nothing in the sweep's document has
+// touched the picker. `loadDocument` navigates to a new document and waits for
+// the app; `prepare` is prepareColoringBooks bound to the runner's transports.
+// A target without web pack storage never opens the picker to prepare, so its
+// first document is already the sweep's.
+export async function loadSweepDocumentWithColoringBooks({
+  loadDocument,
+  prepare,
+  executePromise,
+  // Test seam: production callers take the bound from the constant.
+  readTimeoutMs = INSTALL_STATE_READ_TIMEOUT_MS,
+}) {
+  await loadDocument();
+  const startedAt = Date.now();
+  const listedColoringBooks = await prepare();
+  if (listedColoringBooks === null) {
+    return { listedColoringBooks, preparationMs: null, documentLoads: 1 };
+  }
+  const preparationMs = Date.now() - startedAt;
+  await loadDocument();
+  const state = await readInstallState(executePromise, readTimeoutMs);
+  if (state === null || state.missing.length > 0) throw new Error(installedBooksLostMessage(state));
+  return { listedColoringBooks, preparationMs, documentLoads: 2 };
 }

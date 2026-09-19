@@ -17,6 +17,8 @@ import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
 import {
   profilingUrl,
   actionCaptureVerdict,
+  loadActionSweepDocument,
+  logColoringPreparation,
   reportActionCaptureVerdict,
   runActionSweep,
   selectedActions,
@@ -405,15 +407,26 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     let actionPlan = null;
     const samples = [];
     const expectedLabels = new Set();
+    const coloringPreparation = [];
     let baselineTheme;
     if (has('trace')) {
       traceEvents = await startTrace(cdp);
       traceActive = true;
     }
 
+    const executePromise = (expression) => page.evaluate(expression);
     for (let repeat = 1; repeat <= repeats; repeat++) {
-      await page.goto(profilingUrl(base, repeat), { waitUntil: 'load' });
-      await waitForCanvas(page);
+      const sweepDocument = await loadActionSweepDocument({
+        actions,
+        execute,
+        executePromise,
+        loadDocument: async () => {
+          await page.goto(profilingUrl(base, repeat), { waitUntil: 'load' });
+          await waitForCanvas(page);
+        },
+      });
+      coloringPreparation.push({ repeat, ...sweepDocument });
+      logColoringPreparation(sweepDocument);
       await ensureCampaignTheme(execute, requestedTheme);
       baselineTheme = await readResolvedTheme(execute);
       await page.evaluate(readFileSync(ACTION_PROBE_FILE, 'utf8'));
@@ -423,10 +436,10 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         client,
         sessionId: SESSION_ID,
         execute,
-        executePromise: (expression) => page.evaluate(expression),
         actions,
         originalOrientation,
         baselineTheme,
+        listedColoringBooks: sweepDocument.listedColoringBooks,
       });
       settingsShell = sweep.settingsShell;
       actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
@@ -472,6 +485,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       theme: baselineTheme,
       settingsShell,
       actionPlan,
+      coloringPreparation,
       samples,
       frameStampEpoch: frameStampEpochOf(samples),
       summaries,

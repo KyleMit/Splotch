@@ -15,6 +15,8 @@ import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
   profilingUrl,
   actionCaptureVerdict,
+  loadActionSweepDocument,
+  logColoringPreparation,
   reportActionCaptureVerdict,
   runActionSweep,
   selectedActions,
@@ -96,6 +98,7 @@ export function desktopActionsArtifact({
   theme,
   settingsShell,
   actionPlan,
+  coloringPreparation,
   actions,
   repeats,
   samples,
@@ -119,6 +122,7 @@ export function desktopActionsArtifact({
     theme,
     settingsShell,
     actionPlan,
+    coloringPreparation,
     actions,
     repeats,
     samples,
@@ -202,19 +206,29 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     let actionPlan = null;
     const samples = [];
     const expectedLabels = new Set();
+    const coloringPreparation = [];
     let baselineTheme;
 
+    const executePromise = (expression) => page.evaluate(expression);
     for (let repeat = 1; repeat <= repeats; repeat++) {
-      const loadedUrl = profilingUrl(base, repeat);
-      await page.goto(loadedUrl, { waitUntil: 'load' });
-      await page.waitForFunction(
-        () => {
-          const canvas = document.querySelector('#drawingCanvas');
-          return !!canvas && canvas.width > 0;
+      const sweepDocument = await loadActionSweepDocument({
+        actions,
+        execute,
+        executePromise,
+        loadDocument: async () => {
+          await page.goto(profilingUrl(base, repeat), { waitUntil: 'load' });
+          await page.waitForFunction(
+            () => {
+              const canvas = document.querySelector('#drawingCanvas');
+              return !!canvas && canvas.width > 0;
+            },
+            undefined,
+            { timeout: READY_TIMEOUT_MS }
+          );
         },
-        undefined,
-        { timeout: READY_TIMEOUT_MS }
-      );
+      });
+      coloringPreparation.push({ repeat, ...sweepDocument });
+      logColoringPreparation(sweepDocument);
       await ensureCampaignTheme(execute, requestedTheme);
       baselineTheme = await readResolvedTheme(execute);
       await page.evaluate(readFileSync(ACTION_PROBE_FILE, 'utf8'));
@@ -224,10 +238,10 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         client,
         sessionId: SESSION_ID,
         execute,
-        executePromise: (expression) => page.evaluate(expression),
         actions,
         originalOrientation,
         baselineTheme,
+        listedColoringBooks: sweepDocument.listedColoringBooks,
       });
       settingsShell = sweep.settingsShell;
       actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
@@ -261,6 +275,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       theme: baselineTheme,
       settingsShell,
       actionPlan,
+      coloringPreparation,
       actions: [...actions],
       repeats,
       samples,
