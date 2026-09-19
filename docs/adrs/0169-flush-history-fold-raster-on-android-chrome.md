@@ -45,16 +45,22 @@ Each fold runs inside `withCanvasRasterFlush` (`web/src/lib/drawing/canvasRaster
 The flush is neither a readback nor a wait. WebGL is used only as a flush primitive here. Nothing is
 drawn with it, so this does not reopen ADR-0153's rejected WebGL crayon renderer.
 
-It applies only to Android web Chrome: `isAndroidBrowser()` and not
-`__IS_CAPACITOR__ && isNative()`. That is the one runtime where it was measured. The native WebView
-cannot run the measuring workload (`/dev` is excluded from native bundles). iOS keeps its own
-undo-ghost settle (`inkMotion.ts`), and desktop keeps the unflushed path.
+It applies only to Android browsers on the Chromium engine: `isAndroidChromium()` (a `Chrome/` UA
+token, which Firefox lacks) and not `__IS_CAPACITOR__ && isNative()`. The deferral belongs to
+Chromium's GPU channel, and the fix was measured in Android Chrome. Other Chromium browsers, such as
+Samsung Internet, share the mechanism but were not measured. The native WebView cannot run the
+measuring workload (`/dev` is excluded from native bundles). iOS keeps its own undo-ghost settle
+(`inkMotion.ts`), and desktop keeps the unflushed path.
+
+A context lost after an earlier fold is replaced on the next fold with a fresh canvas, because a
+lost context never flushes and its canvas only returns it. A browser that refuses WebGL outright is
+not asked again.
 
 ## Consequences
 
 * \+ On the device, the longest undo-phase interval fell from a median of 1,400 ms to 25.7 ms, over
   5 fresh runs against 5 of main. Whole-session late-frame cost fell by 1.29 s. Pixels and retained
-  history were byte-identical.
+  history were identical by the payload's 32-bit FNV hashes of every tile and ghost.
 * \+ The action after a folding pause now waits for at most one fold's raster, not every fold of the
   pause.
 * − The GPU work now overlaps the idle frame after each fold. The worst idle frame grew by about one

@@ -35,15 +35,15 @@ No file holds a device id or a LAN address.
 * **Builds.** Every build is an `npm run perf:build` served by `vite preview` over the LAN. Each run
   records the entry chunk its page loaded.
 
-  | Arm                     | Commit                                   | Entry               | Runs                               |
-  | ----------------------- | ---------------------------------------- | ------------------- | ---------------------------------- |
-  | main, first build       | 4bc6ef57b69a32a1558400f0697bb492b01778dd | `start.Cp_dNZ9s.js` | `main`, `diag-flush`, `trace-runs` |
-  | main, control worktree  | 4bc6ef57b69a32a1558400f0697bb492b01778dd | `start.Dlk4xmG4.js` | every `ctl` run                    |
-  | treatment, first commit | a833c5cd314cc3409e93a7a29b2fcaa1405ff29a | `start.BKX4NbVq.js` | `screen`, `confirm`                |
-  | treatment, final head   | 8cc8468f634c659e9c4bbe286f9e01338d8fc484 | `start.C4OBZ2hJ.js` | `brush-*`, `pixels-*`, `memory`    |
+  | Arm                      | Commit                                   | Entry               | Runs                               |
+  | ------------------------ | ---------------------------------------- | ------------------- | ---------------------------------- |
+  | main, first build        | 4bc6ef57b69a32a1558400f0697bb492b01778dd | `start.Cp_dNZ9s.js` | `main`, `diag-flush`, `trace-runs` |
+  | main, control worktree   | 4bc6ef57b69a32a1558400f0697bb492b01778dd | `start.Dlk4xmG4.js` | every `ctl` run                    |
+  | treatment, first commit  | a833c5cd314cc3409e93a7a29b2fcaa1405ff29a | `start.BKX4NbVq.js` | `screen`, `confirm`                |
+  | treatment, second commit | 8cc8468f634c659e9c4bbe286f9e01338d8fc484 | `start.C4OBZ2hJ.js` | `brush-*`, `pixels-*`, `memory`    |
 
   The two main builds come from one commit in two checkouts, and their entry hashes differ. The
-  final head differs from the first treatment commit only in excluding the native WebView and in
+  second commit differs from the first treatment commit only in excluding the native WebView and in
   test structure. Web Chrome runs the same code in both.
 * **Host.** Captures ran one at a time, with no builds or suites running. The phone kept the Chrome
   tabs that earlier sessions left open. The `screen` set also ran beside five finished tabs left by
@@ -110,10 +110,14 @@ before the fold's first raster call, because creating one waits for whatever the
 holds. After the fold, it issues one `clear` and one `flush`. The flush is not a readback and does
 not wait for the GPU. The GPU runs each fold's raster while the page is still idle.
 
-Only Android web Chrome takes this path: `isAndroidBrowser()`, and not
-`__IS_CAPACITOR__ && isNative()`. The native WebView could not run this workload, because `/dev` is
-excluded from native bundles. iOS and desktop keep their current code, and the iOS undo-ghost settle
-is untouched.
+Only Android browsers on the Chromium engine take this path: `isAndroidChromium()`, and not
+`__IS_CAPACITOR__ && isNative()`. Only Chrome was measured. The native WebView could not run this
+workload, because `/dev` is excluded from native bundles. Firefox, iOS, and desktop keep their
+current code, and the iOS undo-ghost settle is untouched. A context lost after a fold is replaced on
+the next fold.
+
+The Chromium gate and the lost-context replacement landed after every run below, in response to
+review. On Android Chrome, with a live context, the code runs the same path as the measured builds.
 
 ## Confirmation (fresh runs, 5 against 5, ABBA blocks)
 
@@ -137,7 +141,7 @@ settle excess in total. The whole-session late-frame cost falls by 1.29 s. At it
 that lands right after a fold waits for that one fold's raster. Before, it waited for every fold of
 the pause.
 
-## Other brush paths (final head against main, 2 against 2, ABBA)
+## Other brush paths (second commit against main, 2 against 2, ABBA)
 
 | Path                                      | Undo-phase max, main → treatment | Idle settle max     | Session late excess | Commit p95 / fold max            |
 | ----------------------------------------- | -------------------------------- | ------------------- | ------------------- | -------------------------------- |
@@ -151,7 +155,9 @@ beyond one extra idle frame during a fold.
 ## Pixels and memory
 
 The `pixels-*` runs set `pixelCheck`, which reads canvases back and perturbs timing, so they are
-never scored for performance. `compare-pixels.mjs` found main and the final head identical on both
+never scored for performance. The payload reduces each canvas, and then the whole tile set, to a
+32-bit FNV hash, so this is hash identity: it rules out any practical difference but is not a
+bytewise comparison. `compare-pixels.mjs` found main and the second commit hash-identical on both
 paths:
 
 * restamp crayon: the same pre-undo tiles, all 20 ghost hashes, and all 20 tile hashes;
@@ -163,7 +169,7 @@ Retained history is identical in every run: 20 snapshots, 20 history-base raster
 raster bytes. The one added allocation is a single WebGL context per page. It has a 1×1 default
 framebuffer with no alpha, depth, stencil, or antialiasing.
 
-The `memory` set ran 2 main and 2 final-head sessions in ABBA order (`memory-run.sh`). It sampled
+The `memory` set ran 2 main and 2 second-commit sessions in ABBA order (`memory-run.sh`). It sampled
 Chrome's GPU process with `dumpsys meminfo` every 5 s (`memory/*.txt`):
 
 | Arm       | Peak total PSS | Peak GL mtrack | Longest undo-phase interval |
