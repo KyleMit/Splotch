@@ -33,13 +33,13 @@ The input names the queue and, optionally, a deadline:
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
 branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
 merge each PR through `ship-issue`'s autonomous gate, comment on queued issues and their epic, and
-ship two kinds of unqueued **free-form unit**: a revert PR for a campaign merge that turned `main`
-red (step 4), and a gate-repair PR for a check proven broken on its own base (step 3). It does
-**not** authorize bypassing branch protection, weakening a test or gate to get green, force-pushing
-a shared branch, closing an issue except through `Fixes` on merge, filing new issues, or touching
-work outside the queue and those two exceptions. Carry this block verbatim into every unit's
-instructions: an unattended unit must never have to infer its authority, and a runner that sees
-"never merge" anywhere in its instructions will refuse the merge.
+ship two kinds of unqueued **free-form unit**: a trunk-repair PR that fixes `main` forward after it
+turns red during the campaign (step 4), and a gate-repair PR for a check proven broken on its own
+base (step 3). It does **not** authorize bypassing branch protection, weakening a test or gate to
+get green, force-pushing a shared branch, closing an issue except through `Fixes` on merge, filing
+new issues, or touching work outside the queue and those two exceptions. Carry this block verbatim
+into every unit's instructions: an unattended unit must never have to infer its authority, and a
+runner that sees "never merge" anywhere in its instructions will refuse the merge.
 
 ## 1. Preflight — before the user leaves
 
@@ -93,13 +93,13 @@ For each unit, finish every step before starting the next:
    preflight. For `backlog`, this is where you pick: the newest open issue without `in-progress`,
    `wont-do`, or a `needs-*` label, which you have not already quarantined in this campaign.
 3. **Ship it.** Run `ship-issue <n> mode=autonomous` — or, for a free-form unit (a performance
-   cluster, a revert, a gate repair), `ship-issue mode=autonomous` with the unit's written spec in
-   place of an issue number — with the authorization block, the assigned port, and the issues other
-   sessions are working on (so the unit stays off their files). When the runner supports subagents,
-   give each unit a **fresh implementer subagent** with only that context, and resume the same
-   subagent for that unit's own repairs. A long campaign run inline compacts its context repeatedly
-   and loses what the early units learned; a fresh context per unit carries only what the unit
-   needs.
+   cluster, a trunk repair, a gate repair), `ship-issue mode=autonomous` with the unit's written
+   spec in place of an issue number — with the authorization block, the assigned port, and the
+   issues other sessions are working on (so the unit stays off their files). When the runner
+   supports subagents, give each unit a **fresh implementer subagent** with only that context, and
+   resume the same subagent for that unit's own repairs. A long campaign run inline compacts its
+   context repeatedly and loses what the early units learned; a fresh context per unit carries only
+   what the unit needs.
 4. **Verify from live state, never from the unit's report.** The PR reads merged; its merge commit
    is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); the post-merge jobs on
    that SHA registered and finished green; and, for an issue unit, the issue is closed and
@@ -168,13 +168,26 @@ retry, a substituted review withdraws the merge authority (`ship-issue` step 4).
 `ship-issue`'s default mode: each unit ends as an open, mergeable PR branched from `main`, and the
 morning report lists them for the user to merge.
 
-## 4. When `main` goes red after a campaign merge
+## 4. When `main` goes red during the campaign — roll forward
 
-Stop taking new units. If the failure reproduces on the campaign's merge commit and not on its
-parent, open a revert PR and put it through the same loop, rival review and merge gate included. A
-revert is the smallest reversible fix; a forward fix is a new unit that needs its own issue. Resume
-the queue once `main` is green again. A red `main` the campaign did not cause is a queue-wide
-blocker.
+Never revert a campaign merge. The red may be a flaky test the merge only surfaced rather than a
+defect it introduced, and a revert would throw away reviewed work to hide it. Instead:
+
+1. **Pause the queue.** Start no new unit; a red `main` fails every later unit's merge gate anyway.
+2. **Find the red.** Read the failing job's logs on the merge SHA, then compare that SHA with its
+   parent under the same command and runner, rerunning or interleaving when timing or randomness is
+   involved. Classify it: a defect the merge introduced, a flaky test or gate, or an infrastructure
+   failure. One green rerun is diagnostic evidence, not a fix.
+3. **Fix it forward** as a free-form trunk-repair unit through the same loop — fresh branch from
+   `origin/main`, rival review, the merge gate. A product defect gets the fix and a regression test;
+   a flaky test gets its cause repaired with a negative control that still fails for the defect the
+   test exists to catch, never a skip, a retry wrapper, or a loosened assertion. An infrastructure
+   failure gets one rerun and, if it persists, becomes a queue-wide blocker.
+4. **Resume** once the post-merge jobs on the repair's merge SHA finish green, and record the red,
+   its classification, and the repair PR in the ledger and the morning report.
+
+A trunk repair that exhausts the unit budget in step 3 is a queue-wide blocker: `main` stays red, so
+write the morning report and stop.
 
 ## 5. Stop and report
 

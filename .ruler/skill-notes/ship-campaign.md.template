@@ -88,8 +88,10 @@ gate, we just have to accept the best version").
 
 ## Open questions
 
-* The revert authority in step 4 is new and unexercised: no campaign has yet turned `main` red and
-  reverted its own merge unattended.
+* The trunk-repair authority in step 4 is new and unexercised. The first draft reverted a campaign
+  merge that turned `main` red; the user chose roll-forward instead (2026-09-19), because the red is
+  often a flaky test the merge surfaced rather than a defect it introduced, and a revert discards
+  reviewed work without fixing anything.
 * A handler-less orchestrated review alias remains in `run-rival-agent`; this skill does not use
   it, because each unit's review runs through `drive-pr-to-mergeable` with a live handler.
 * Running several campaign sessions on one epic in parallel is the orchestrator pattern (epic
