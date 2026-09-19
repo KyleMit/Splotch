@@ -29,7 +29,7 @@ test('Accessibility drills into the linked sections from the phone hub', async (
   await page.getByRole('button', { name: 'Back' }).click();
   await openHubSection(page, 'accessibility', '#accessibilitySoundLink');
   await page.locator('#accessibilitySoundLink').click();
-  await expect(page.getByRole('heading', { name: 'Sound' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sound', exact: true })).toBeVisible();
   await expect(page.locator('#soundToggle')).toBeVisible();
 });
 
