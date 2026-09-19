@@ -1,0 +1,91 @@
+## tr-ctl trace-hist
+bin(s rel gap start)  renderer-RasterCHROMIUM  gpu-DoRasterCHROMIUM  renderer-Snapshot
+  -19      633        0      904
+  -18        0      637        0
+  -17      688        0     1026
+  -16      687        0     1033
+  -14      689        0     1026
+  -13      574        0      863
+  -12       31        0       33
+  -11      613        0      904
+   -9      605        0      896
+   -8      680        0     1018
+   -6      679        0     1025
+   -5      681        0     1018
+   -1       13       25       49
+    0        9     3827       45
+    1       21     2118       57
+    2       42       27      114
+    3       13       28       49
+    4       13       13       49
+{ CrRendererMain: 6671 }
+## tr-ctl trace-folds
+issue burst @0.00s n=633 | GPU flushes in next 1.4s: 36, busy 198 ms, first exec +1080 ms
+issue burst @1.57s n=688 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @3.14s n=687 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @4.72s n=689 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @6.29s n=605 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @7.86s n=613 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @9.42s n=605 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @10.99s n=680 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @12.57s n=679 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @14.13s n=681 | GPU flushes in next 1.4s: 0, busy 0 ms, first exec +- ms
+issue burst @18.31s n=13 | GPU flushes in next 1.4s: 33, busy 1551 ms, first exec +20 ms
+issue burst @19.01s n=9 | GPU flushes in next 1.4s: 25, busy 864 ms, first exec +35 ms
+issue burst @19.92s n=21 | GPU flushes in next 1.4s: 13, busy 33 ms, first exec +10 ms
+issue burst @20.62s n=21 | GPU flushes in next 1.4s: 10, busy 40 ms, first exec +16 ms
+issue burst @21.32s n=21 | GPU flushes in next 1.4s: 10, busy 36 ms, first exec +17 ms
+issue burst @22.02s n=13 | GPU flushes in next 1.4s: 10, busy 34 ms, first exec +16 ms
+issue burst @22.72s n=13 | GPU flushes in next 1.4s: 5, busy 18 ms, first exec +15 ms
+{
+  'ThreadPoolForegroundWorker GpuChannel::Flush': 80,
+  'Compositor GpuChannel::Flush': 132,
+  'Compositor GpuChannelHost::VerifyFlush': 5
+}
+## tr-trt trace-hist
+bin(s rel gap start)  renderer-RasterCHROMIUM  gpu-DoRasterCHROMIUM  renderer-Snapshot
+    0      633      629      904
+    1      688      680     1026
+    3      687      687     1033
+    4      689      688     1026
+    5        0        1        0
+    6      605      613      896
+    7      613      137      904
+    8        0      476        0
+    9      605      605      896
+   11      680      672     1018
+   12      679      679     1025
+   14      681      681     1018
+   18       13       29       49
+   19       34       34      106
+   20       21       21       57
+   21       34       34      106
+   22       13       13       49
+{ CrRendererMain: 6675 }
+## tr-trt trace-folds
+issue burst @0.00s n=633 | GPU flushes in next 1.4s: 32, busy 181 ms, first exec +60 ms
+issue burst @1.56s n=688 | GPU flushes in next 1.4s: 9, busy 188 ms, first exec +70 ms
+issue burst @3.13s n=687 | GPU flushes in next 1.4s: 9, busy 191 ms, first exec +69 ms
+issue burst @4.70s n=689 | GPU flushes in next 1.4s: 9, busy 191 ms, first exec +73 ms
+issue burst @6.27s n=605 | GPU flushes in next 1.4s: 1, busy 173 ms, first exec +69 ms
+issue burst @7.84s n=613 | GPU flushes in next 1.4s: 9, busy 174 ms, first exec +69 ms
+issue burst @9.41s n=605 | GPU flushes in next 1.4s: 1, busy 169 ms, first exec +68 ms
+issue burst @10.98s n=680 | GPU flushes in next 1.4s: 1, busy 190 ms, first exec +70 ms
+issue burst @12.55s n=679 | GPU flushes in next 1.4s: 1, busy 190 ms, first exec +68 ms
+issue burst @14.12s n=681 | GPU flushes in next 1.4s: 1, busy 198 ms, first exec +73 ms
+issue burst @18.30s n=13 | GPU flushes in next 1.4s: 11, busy 46 ms, first exec +21 ms
+issue burst @19.00s n=13 | GPU flushes in next 1.4s: 10, busy 41 ms, first exec +16 ms
+issue burst @19.70s n=21 | GPU flushes in next 1.4s: 10, busy 47 ms, first exec +15 ms
+issue burst @20.40s n=21 | GPU flushes in next 1.4s: 10, busy 51 ms, first exec +16 ms
+issue burst @21.10s n=21 | GPU flushes in next 1.4s: 10, busy 42 ms, first exec +15 ms
+issue burst @21.80s n=13 | GPU flushes in next 1.4s: 10, busy 33 ms, first exec +16 ms
+issue burst @22.50s n=13 | GPU flushes in next 1.4s: 5, busy 15 ms, first exec +14 ms
+{
+  'CrRendererMain CommandBufferProxyImpl::Flush': 16,
+  'CrRendererMain GpuChannel::Flush': 174,
+  'ThreadPoolForegroundWorker GpuChannel::Flush': 8,
+  'Compositor GpuChannel::Flush': 72,
+  'Compositor GpuChannelHost::VerifyFlush': 6
+}
+924bdd4ee3423ffc8e97fe5d6329afd1e4dbb3fcaced93383e08944ecd9637a0  tr-ctl.trace.json
+a949a109885f0b9c8d61e746c864ce1b2aa573668ca341172af5bf2a847dedc2  tr-trt.trace.json

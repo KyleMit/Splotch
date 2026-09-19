@@ -94,9 +94,35 @@ Four things about this table are worth knowing before drawing a conclusion from 
 
 * **`FrameInterval` tells you the refresh rate the frame was produced against**, and on this phone
   it reads `8336482` ns — 8.34 ms, i.e. 120 Hz. That matters more here than anywhere else in the
-  toolchain: Chrome raises the display to 120 Hz *only while touch is arriving*, so a capture whose
-  input cadence is too low silently falls back to 60 and every frame gets measured against the wrong
-  beat. Read `FrameInterval` before believing any per-frame number.
+  toolchain, because on this phone the rate has followed touch. A capture whose input cadence was
+  too low fell back to 60, and every frame got measured against the wrong beat. Read `FrameInterval`
+  before believing any per-frame number. It covers frames the Android view system produced, which
+  means the native app. A page in Chrome needs its own rAF cadence read instead, as the next case
+  shows.
+
+  **The panel's rate is not the page's rate.** One case was measured on this phone with Chrome 153.
+  The workload was the in-page, no-touch `/dev/engine` session of issue 2072.
+
+  * `dumpsys display` reported `renderFrameRate 120` throughout, but the page's
+    `requestAnimationFrame` ran at 16.7 ms (60 Hz).
+  * Pinning `peak_refresh_rate` and `min_refresh_rate` to 120 did not change the page's rate.
+  * A real `adb shell input swipe` raised the page to 120 Hz only while the finger was down. It fell
+    back to 60 Hz within about a second of lift-off.
+  * Single taps, including Undo taps, were not tested.
+
+  So read the page's own rAF cadence in the phase you are scoring. A panel reporting 120 Hz, pinned
+  or not, does not show that the phase ran at 120 Hz. This is one device, one Chrome version, and
+  one workload. It does not say how other Chrome builds behave, or what a tap does.
+
+  rAF intervals are the renderer's scheduled frame times. GPU-process task durations in a CDP trace
+  are wall time of those tasks. Neither is a direct measurement of presentation latency.
+
+  The probes and the reviewed result are in
+  [`scratchpad/perf/2026-09-19-issue-2072-120hz-check/`](scratchpad/perf/2026-09-19-issue-2072-120hz-check/README.md)
+  and
+  [issue 2072's comment](https://github.com/KyleMit/Splotch/issues/2072#issuecomment-5741857656).
+  The 120 Hz confirmation that issue wanted is unresolved; a pin-free 60 Hz replication confirmed
+  the fix.
 * **`InputEventId` is 0 on frames not attributed to an input event**, including ones the WebView
   drew in response to touch. Do not use it to select in-contact frames; use the probe's own contact
   window.
