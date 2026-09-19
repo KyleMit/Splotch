@@ -16,8 +16,8 @@ const root = (page: Page) => page.locator('html');
 // full motion first is what makes the reduced values mean something.
 async function globalCues(page: Page) {
   return page.evaluate(() => {
-    const probe = (tag: string, className: string, open = false) => {
-      const el = document.createElement(tag);
+    const probe = (element: string, className: string, open = false) => {
+      const el = document.createElement(element);
       el.className = className;
       if (open) el.setAttribute('open', '');
       document.body.appendChild(el);
