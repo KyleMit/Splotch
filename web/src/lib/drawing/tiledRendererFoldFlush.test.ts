@@ -9,9 +9,9 @@ import {
   recordTiledOp,
   renderTiledOp,
   resizeTiledRenderer,
-  TILE_HISTORY_FOLD_IDLE_MS,
   tiledHistoryDebug,
 } from './tiledRenderer';
+import { TILE_HISTORY_FOLD_IDLE_MS } from './tiledHistoryLimits';
 import { installTiledRendererTestHarness, rendererElements } from './tiledRendererTestHarness';
 import { MAX_UNDO_DEPTH } from './undoHistory';
 

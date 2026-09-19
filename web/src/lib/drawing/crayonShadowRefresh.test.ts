@@ -11,10 +11,10 @@ import {
   repaintTiledRenderer,
   renderTiledOp,
   resizeTiledRenderer,
-  TILE_HISTORY_FOLD_IDLE_MS,
   tiledHistoryDebug,
   undoTiledCommand,
 } from './tiledRenderer';
+import { TILE_HISTORY_FOLD_IDLE_MS } from './tiledHistoryLimits';
 import { installTiledRendererTestHarness, rendererElements } from './tiledRendererTestHarness';
 import { configureCrayonDeposition } from './crayonPassBuffer';
 
