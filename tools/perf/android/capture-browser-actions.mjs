@@ -445,7 +445,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         uptimeSeconds: deviceUptimeSeconds,
       },
       appUrl: base,
-      servedBuild,
+      ...servedBuild,
       transport: 'android-chrome-cdp',
       uiActivation: 'trusted-cdp-touch',
       refreshRatePin: {
