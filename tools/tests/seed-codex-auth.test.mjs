@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   accessTokenExpiryMs,
   CODEX_ACCESS_TOKEN_REFRESH_WINDOW_MINUTES,
@@ -62,14 +65,17 @@ function run({
     now,
     readFile: (path) => existing[path],
     writeFile: (path, contents, { replace }) => writes.push({ path, contents, replace }),
+    removeFile: (path) => writes.push({ path, removed: true }),
     codexInstalled: () => installed,
   });
   return { result, writes };
 }
 
+// The sidecar is dropped before the credential lands and recreated exclusively after it.
 const seedWrites = (auth, replace) => [
+  { path: IDENTITY_PATH, removed: true },
   { path: AUTH_PATH, contents: JSON.stringify(auth), replace },
-  { path: IDENTITY_PATH, contents: seedIdentity(auth), replace },
+  { path: IDENTITY_PATH, contents: seedIdentity(auth), replace: false },
 ];
 
 describe('cloud Codex login seed', () => {
@@ -223,10 +229,82 @@ describe('cloud Codex model seed', () => {
     expect(unset.result.model.status).toBe('unset');
     expect(unset.result.message).toContain(MODEL_ENVIRONMENT_KEY);
     expect(unset.result.message).toContain('--model');
-    expect(unset.writes.map((write) => write.path)).toEqual([AUTH_PATH, IDENTITY_PATH]);
+    expect(unset.writes.filter((write) => !write.removed).map((write) => write.path)).toEqual([
+      AUTH_PATH,
+      IDENTITY_PATH,
+    ]);
 
     const flag = run({ seed: encodeSeed(planAuth()), model: '--yolo' });
     expect(flag.result.model.status).toBe('invalid');
-    expect(flag.writes.map((write) => write.path)).toEqual([AUTH_PATH, IDENTITY_PATH]);
+    expect(flag.writes.filter((write) => !write.removed).map((write) => write.path)).toEqual([
+      AUTH_PATH,
+      IDENTITY_PATH,
+    ]);
+  });
+});
+
+// On a real filesystem, with the hook's own read, write, and remove: the credential and its sidecar
+// have independent lifetimes, and a sidecar left behind by a deleted credential must neither block
+// the next seed nor survive to misidentify it.
+describe('cloud Codex seed on disk', () => {
+  const roots = [];
+  afterEach(() => {
+    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  });
+
+  function home() {
+    const root = mkdtempSync(join(tmpdir(), 'codex-seed-disk-'));
+    roots.push(root);
+    const authPath = join(root, 'codex', 'auth.json');
+    return {
+      authPath,
+      identityPath: `${authPath}.seed-id`,
+      configPath: join(root, 'codex', 'config.toml'),
+    };
+  }
+
+  function start(paths, seed) {
+    return seedCodexAuth({
+      ...paths,
+      env: {
+        CLAUDE_CODE_REMOTE: 'true',
+        [SEED_ENVIRONMENT_KEY]: seed,
+        [MODEL_ENVIRONMENT_KEY]: 'gpt-5.6-sol',
+      },
+      now: NOW,
+      codexInstalled: () => true,
+    });
+  }
+
+  it('recreates a deleted credential over a leftover sidecar, then preserves its refresh', () => {
+    const paths = home();
+    const a = planAuth();
+    const b = { ...planAuth(), tokens: { access_token: 'b', refresh_token: 'b' } };
+
+    expect(start(paths, encodeSeed(a)).status).toBe('seeded');
+    unlinkSync(paths.authPath);
+    expect(existsSync(paths.identityPath)).toBe(true);
+
+    expect(start(paths, encodeSeed(b)).status).toBe('seeded');
+    expect(JSON.parse(readFileSync(paths.authPath, 'utf8'))).toEqual(b);
+    expect(readFileSync(paths.identityPath, 'utf8').trim()).toBe(seedIdentity(b));
+
+    const refreshed = { ...b, tokens: { access_token: 'b2', refresh_token: 'b2' } };
+    writeFileSync(paths.authPath, JSON.stringify(refreshed));
+    expect(start(paths, encodeSeed(b))).toMatchObject({ status: 'present' });
+    expect(JSON.parse(readFileSync(paths.authPath, 'utf8'))).toEqual(refreshed);
+  });
+
+  it('replaces a changed seed in place and keeps a foreign credential', () => {
+    const paths = home();
+    const a = planAuth();
+    const b = { ...planAuth(), tokens: { access_token: 'b', refresh_token: 'b' } };
+    expect(start(paths, encodeSeed(a)).status).toBe('seeded');
+    expect(start(paths, encodeSeed(b)).status).toBe('replaced');
+    expect(JSON.parse(readFileSync(paths.authPath, 'utf8'))).toEqual(b);
+
+    unlinkSync(paths.identityPath);
+    expect(start(paths, encodeSeed(a))).toMatchObject({ status: 'present' });
+    expect(JSON.parse(readFileSync(paths.authPath, 'utf8'))).toEqual(b);
   });
 });

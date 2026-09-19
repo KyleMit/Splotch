@@ -81,7 +81,11 @@ remedy repaired nothing (reproduced in review: seed A, then fresh value B, and t
 `present`). The hook now writes a sidecar recording which seed wrote the file: the same seed leaves
 the file alone, a different seed replaces it, and a file without a sidecar — one the hook never
 wrote — is left alone with a status line saying so. Deleting the file is the documented way to hand
-one of those back to the hook.
+one of those back to the hook. The two files have independent lifetimes (a second review round
+reproduced a deleted credential colliding with its leftover sidecar), so the sidecar is removed
+before the credential is written and recreated exclusively after it: any failure in between leaves
+no sidecar, which reads as a foreign file and is kept, never a stale identity that would later roll
+a refreshed credential back to its seed.
 
 The unusable-login failure was measured in the 2026-09-02 cloud session (issue #2095's probe table,
 codex-cli 0.152.1), not by this package's own runs: with a fake `auth.json` carrying an expired

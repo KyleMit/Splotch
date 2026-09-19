@@ -2,7 +2,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import {
   assertSubscriptionAuth,
@@ -99,16 +99,22 @@ function decodeAndValidate(seed) {
   return auth;
 }
 
-function writeSeed({ auth, authPath, identityPath, writeFile, replace }) {
+// The credential and its sidecar have independent lifetimes, so the sidecar is dropped before the
+// credential is written and recreated exclusively after it: a leftover sidecar cannot block a fresh
+// credential, and a failure anywhere in between leaves no sidecar at all, which the next start
+// reads as a file the hook did not write and keeps — never a stale identity that would later roll
+// a refreshed credential back to its seed.
+function writeSeed({ auth, authPath, identityPath, writeFile, removeFile, replace }) {
+  removeFile(identityPath);
   writeFile(authPath, JSON.stringify(auth), { replace });
-  writeFile(identityPath, seedIdentity(auth), { replace });
+  writeFile(identityPath, seedIdentity(auth), { replace: false });
 }
 
 // A file on disk normally wins: Codex refreshes it in place, and the seed that wrote it is the
 // older credential by definition. The exception is a seed the user deliberately replaced — the
 // remedy for a retired login — which the identity sidecar distinguishes from the same seed
 // arriving again. A file the hook did not write is never touched.
-function seedAuth({ env, authPath, identityPath, now, readFile, writeFile }) {
+function seedAuth({ env, authPath, identityPath, now, readFile, writeFile, removeFile }) {
   const seed = env[SEED_ENVIRONMENT_KEY];
   const existing = readFile(authPath);
   if (existing !== undefined && !seed) return { status: 'present' };
@@ -136,13 +142,13 @@ function seedAuth({ env, authPath, identityPath, now, readFile, writeFile }) {
       };
     }
     if (recorded === seedIdentity(auth)) return { status: 'present' };
-    writeSeed({ auth, authPath, identityPath, writeFile, replace: true });
+    writeSeed({ auth, authPath, identityPath, writeFile, removeFile, replace: true });
     return {
       status: 'replaced',
       message: `Codex login replaced from a new ${SEED_ENVIRONMENT_KEY} value; the file the previous seed wrote is discarded.${lifetimeNote(auth, now)}`,
     };
   }
-  writeSeed({ auth, authPath, identityPath, writeFile, replace: false });
+  writeSeed({ auth, authPath, identityPath, writeFile, removeFile, replace: false });
   return {
     status: 'seeded',
     message: `Codex login seeded from ${SEED_ENVIRONMENT_KEY} into ${authPath} for run-rival-agent.${lifetimeNote(auth, now)}`,
@@ -176,6 +182,7 @@ export function seedCodexAuth({
   now = Date.now(),
   readFile = defaultReadFile,
   writeFile = defaultWriteFile,
+  removeFile = defaultRemoveFile,
   codexInstalled = defaultCodexInstalled,
 } = {}) {
   if (env.CLAUDE_CODE_REMOTE !== 'true') return { status: 'local' };
@@ -186,7 +193,7 @@ export function seedCodexAuth({
         'Codex CLI is not installed: the environment snapshot predates .claude/cloud/setup.sh installing it. Re-save the setup script in the environment dialog to rebuild the snapshot; run-rival-agent is unavailable until then.',
     };
   }
-  const auth = seedAuth({ env, authPath, identityPath, now, readFile, writeFile });
+  const auth = seedAuth({ env, authPath, identityPath, now, readFile, writeFile, removeFile });
   const model = seedModel({ env, configPath, readFile, writeFile });
   const message = [auth.message, model.message].filter(Boolean).join(' ');
   return { status: auth.status, auth, model, ...(message ? { message } : {}) };
@@ -210,6 +217,14 @@ function defaultWriteFile(path, contents, { replace }) {
     mode: 0o600,
     flag: replace ? 'w' : 'wx',
   });
+}
+
+function defaultRemoveFile(path) {
+  try {
+    unlinkSync(path);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
 }
 
 function defaultCodexInstalled() {
