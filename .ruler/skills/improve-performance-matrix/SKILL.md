@@ -8,14 +8,14 @@ description: Drive Splotch's deployment-target performance matrix from current e
 Run a fresh evidence-led campaign against the authoritative deployment-target matrix. The campaign
 ends only when every current, scoreable cell on a **release-gate row** is green or carries a
 recorded, evidence-backed disposition, unless the user sends a control message that explicitly
-requests a merge-ready stopping point. ADR-0156 defines the rows: the physical iPad (web and native)
-and the physical Android phone (web and native) are the release gate; Mac rows are a regression
-tripwire; simulator and emulator rows are advisory and never count toward completion. ADR-0160
-defines the disposition: an ADR-recorded measured allowance or documented floor that names the
-cell's measured basis, its trace attribution, and the condition that reopens it. A red cell with one
-is **explained** and counts toward completion; the campaign's remainder is the **unexplained** reds.
-A disposition is a release-gate policy change the owner records, never something a campaign grants
-itself to finish.
+requests a stopping point (**wrap up** or **stop at mergeable**, below). ADR-0156 defines the rows:
+the physical iPad (web and native) and the physical Android phone (web and native) are the release
+gate; Mac rows are a regression tripwire; simulator and emulator rows are advisory and never count
+toward completion. ADR-0160 defines the disposition: an ADR-recorded measured allowance or
+documented floor that names the cell's measured basis, its trace attribution, and the condition that
+reopens it. A red cell with one is **explained** and counts toward completion; the campaign's
+remainder is the **unexplained** reds. A disposition is a release-gate policy change the owner
+records, never something a campaign grants itself to finish.
 
 This is the improvement sibling of `capture-performance-matrix`: that skill owns comparable capture
 mechanics and matrix refreshes; this skill owns inventory, causal attribution, product optimization,
@@ -346,11 +346,15 @@ Treat these as steering inside the active campaign, not as replacements for the 
   and leave the PR as a draft with its evidence when it cannot pass. Then report both the merged
   scope and the freshly counted campaign remainder; do not claim the overall matrix is complete when
   cells remain. Wrap up never resumes the campaign.
+* **stop at mergeable** — everything wrap up does except the merge: drive the in-flight cluster's PR
+  to a shippable verdict and leave it open for the user, reporting it as the next merge. Use it
+  whenever the user asks to make work mergeable, ready, or reviewable without asking to land it —
+  merging is irreversible, so it is never inferred from a request to prepare.
 
 A casual progress question such as “what is running?”, “where are we?”, or “how much is left?” is a
-**status** message. Phrases such as “finish what is in flight,” “stop after the next complete PR,”
-or “make this mergeable” are **wrap up** messages unless the user explicitly asks to continue to
-zero.
+**status** message. Phrases such as “finish what is in flight” or “stop after the next complete PR”
+are **wrap up** messages, and “make this mergeable” or “get it ready for me” are **stop at
+mergeable** messages, unless the user explicitly asks to continue to zero.
 
 ## Optional Goal mode
 
@@ -362,9 +366,10 @@ campaign. Create one objective for zero current, scoreable, unexplained red cell
 release-gate rows (ADR-0156, ADR-0160) and omit a token budget unless the user supplies one. Goal
 mode is useful for automatic continuation and for keeping the terminal condition visible across long
 tool runs. It is a poor fit for an ordinary campaign that may receive `pause` or `wrap up`: it
-supports completion or genuine blocking, not a merge-ready pause, permits only one active goal, and
-does not replace external checkpoints. Never mark the goal complete for an improvement, a green
-cluster, or a wrap-up that leaves current, scoreable, unexplained reds on a release-gate row.
+supports completion or genuine blocking, not a wrap-up or stop-at-mergeable pause, permits only one
+active goal, and does not replace external checkpoints. Never mark the goal complete for an
+improvement, a green cluster, or a wrap-up that leaves current, scoreable, unexplained reds on a
+release-gate row.
 
 ## Completion gate
 
