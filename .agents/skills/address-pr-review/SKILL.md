@@ -87,11 +87,11 @@ stack.
 
 One scoped exception, keyed on the scoping of the invocation rather than on who invokes: when the
 invocation **explicitly restricts this skill to a single PR that is the current tip with nothing
-above it** — as `implement-issue-stack`'s per-issue review rounds do, addressing each PR before the
-next one stacks on top — the default applies: fixes commit onto that PR's own branch, since no rule
-forbids commits at the tip and the feedback is scoped to that layer. A bare request that merely
-*names* the tip PR is not that scoping: inside an active stack it still gets the whole-campaign
-sweep and the feedback PR above.
+above it** — as a stack's per-layer review rounds do, addressing each PR before the next one stacks
+on top — the default applies: fixes commit onto that PR's own branch, since no rule forbids commits
+at the tip and the feedback is scoped to that layer. A bare request that merely *names* the tip PR
+is not that scoping: inside an active stack it still gets the whole-campaign sweep and the feedback
+PR above.
 
 Everything else in this skill applies unchanged. Replies still go **on the original thread, on
 whichever PR of the campaign carries it**, naming the pushed commit in the feedback PR, and threads

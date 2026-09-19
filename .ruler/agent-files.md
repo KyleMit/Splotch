@@ -21,7 +21,6 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   `burn-down-audits` has independent Claude and Codex packages; `run-rival-agent` has one package
   per provider, each launching the *other* vendor's local CLI (the Claude package runs Codex, the
   Codex package runs Claude), so that one skill name works from either runner;
-  `implement-issue-stack` has only a Codex package because it orchestrates Codex-native subagents;
   `analyze-session-transcripts` has independent provider packages because Claude Code and Codex
   persist different transcript formats. Edit registered packages and notes directly, never through
   `.ruler/`, and never create an undeclared provider by copying one.

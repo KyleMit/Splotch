@@ -90,24 +90,24 @@ These augment the built-in PR flows rather than replacing them.
 
 | Skill                     | Use when you are…                                                                                                                        |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `create-stacked-prs`      | **Sequencing** a multi-issue campaign into a chain of stacked PRs                                                                        |
+| `create-stacked-prs`      | **Sequencing** dependent changes into a chain of stacked PRs, when the user asks for one                                                 |
 | `pr-screenshots`          | **Opening** a PR that touches UI — screenshot/before-after/gif conventions                                                               |
 | `create-pr-review-prompt` | **Handing off** this session's PRs to an independent reviewer — builds the prompt                                                        |
 | `leave-pr-review`         | **Authoring** a review — local checkout, empirical verification, posts by default                                                        |
 | `address-pr-review`       | **Receiving** a review — triage every comment, fix or rebut, reply and resolve                                                           |
 | `drive-pr-to-mergeable`   | **Driving** one open PR to mergeable — rival review, address, two-round bound, CI to green, verdict; never merges                        |
 | `ship-issue`              | **Shipping** one issue or task end to end — implement, PR, rival review, address, drive to mergeable; merges too under `mode=autonomous` |
-| `implement-issue-stack`   | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-rival-agent`                                                  |
+| `ship-campaign`           | **Campaigning** through a queue of issues unattended — each shipped and merged via `ship-issue` before the next starts from fresh `main` |
 | `triage-dependabot-prs`   | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest                                                       |
 
-`create-stacked-prs` comes first in that table for a reason: it decides the *shape* of the campaign
-before any single PR exists, and every later skill in the group has to respect that shape. Its one
-rule — no new commit on a PR once another PR sits above it — is why `address-pr-review` carries a
-stacked-campaign mode: inside an active stack it sweeps the feedback from the whole chain and lands
-every fix in a single feedback PR at the tip, reused across review rounds, instead of committing
-onto the reviewed branch. Read `create-stacked-prs` first anyway — it defines the shape that mode
-preserves. `implement-issue-stack` is the unattended Codex orchestrator for the same shape; this one
-is the by-hand procedure, in either agent.
+`create-stacked-prs` decides the *shape* of a chain before any single PR exists, and every later
+skill in the group respects that shape while a chain is open. Stacks are opt-in: a multi-issue
+campaign merges as it goes (`ship-campaign`), so reach for a stack only when the user asks for
+dependent changes to land together. Its one rule — no new commit on a PR once another PR sits above
+it — is why `address-pr-review` carries a stacked-campaign mode: inside an active stack it sweeps
+the feedback from the whole chain and lands every fix in a single feedback PR at the tip, reused
+across review rounds, instead of committing onto the reviewed branch. Read `create-stacked-prs`
+first anyway — it defines the shape that mode preserves.
 
 `create-pr-review-prompt` sits between authoring and review: at the end of a session it enumerates
 every PR produced (the whole chain, in a stack), adds the session's own doubts as extra focus areas,
@@ -124,19 +124,25 @@ chased into a third round — then drives CI to green, reconciles conflicts, and
 shippable-or-leftovers verdict. It never opens a PR, never merges, and never files an issue: it
 drafts the follow-ups for the user. Every skill that opens PRs reaches it by name and states only
 its own overrides — `create-stacked-prs` runs it on each layer while that layer is the tip,
-`burn-down-backlog` and `fix-audits` run it with no overrides, `improve-performance-matrix` makes
-round two unconditional — so reviewer independence and the CI-failure policy read the same
-everywhere: the rival is the reviewer (a same-runner subagent only as a named, weaker fallback), and
-a failure the PR did not introduce is named in the thread and drafted, never absorbed or filed.
+`ship-issue` and `fix-audits` run it with no overrides, `improve-performance-matrix` makes round two
+unconditional — so reviewer independence and the CI-failure policy read the same everywhere: the
+rival is the reviewer (a same-runner subagent only as a named, weaker fallback), and a failure the
+PR did not introduce is named in the thread and drafted, never absorbed or filed.
 
 `ship-issue` is the single-unit pipeline through this whole group: it takes one issue number or a
 free-form task, implements it, opens the PR, and hands it to `drive-pr-to-mergeable`. Both modes
 take the PR all the way to **mergeable**. Invoked as `mode=autonomous` it also **merges** the PR,
 but only behind a full gate — a real rival review that posted, every required check green on the
 merged head, every thread resolved, nothing unpushed — and a downgraded reviewer withdraws that
-authority rather than lowering the bar. Reach for `implement-issue-stack` instead when several
-ordered issues ship as a chain, and `burn-down-backlog` when the question is *which* issue to pick
-up rather than how to ship a chosen one.
+authority rather than lowering the bar.
+
+`ship-campaign` is `ship-issue mode=autonomous` in a loop, for a queue — an explicit list, an epic's
+children (via `enumerate-sub-issues`), or `backlog`, the newest unclaimed issues picked one at a
+time. Every unit merges before the next branches from the new `main`, so the rival reviews each
+change as it lands instead of a premise compounding through a stack. What it adds is the campaign's
+own discipline: a preflight run while the user is still present, quarantining a stuck unit instead
+of stalling the queue, never ending the turn to ask, and a morning report verified against GitHub.
+`profile=performance` wraps `improve-performance-matrix`'s causal-cluster unit.
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
@@ -199,7 +205,6 @@ its own decisions under `tools/asset-gen/docs/`.
 
 | Skill                         | Use for                                                                           |
 | ----------------------------- | --------------------------------------------------------------------------------- |
-| `burn-down-backlog`           | Claim the newest unclaimed open issue (`in-progress` label) and ship it reviewed  |
 | `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them    |
 | `reconcile-with-main`         | Merge current `main` into a long-running branch and hunt the *semantic* conflicts |
 | `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin`    |
@@ -231,8 +236,8 @@ when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are g
 `.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
 `tools/ruler/lib/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
 implementations, as do `analyze-session-transcripts` and `run-rival-agent` (each package launching
-the other vendor); `implement-issue-stack` is Codex-only. When editing one, change only the declared
-provider; never copy one implementation into an undeclared provider tree.
+the other vendor). When editing one, change only the declared provider; never copy one
+implementation into an undeclared provider tree.
 
 **When you add, rename, or delete a skill, update this guide in the same change**, then run
 `npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group

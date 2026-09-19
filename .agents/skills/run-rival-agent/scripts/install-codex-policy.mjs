@@ -11,6 +11,9 @@ const CONFIG_PATH = join(CODEX_DIRECTORY, 'config.toml');
 const RULES_PATH = join(CODEX_DIRECTORY, 'rules/default.rules');
 const START_MARKER = '# BEGIN SPLOTCH RUN CLAUDE';
 const END_MARKER = '# END SPLOTCH RUN CLAUDE';
+// The block the retired implement-issue-stack installer wrote. This block owns its GitHub and push
+// rules, so an upgrade removes the old one rather than leaving two sources for `gh`.
+const LEGACY_ISSUE_STACK_BLOCK = /# BEGIN SPLOTCH ISSUE STACK[\s\S]*?# END SPLOTCH ISSUE STACK\n?/g;
 
 export const CODEX_POLICY_PATHS = { config: CONFIG_PATH, rules: RULES_PATH };
 
@@ -37,7 +40,7 @@ prefix_rule(
 prefix_rule(
     pattern = ["${ESCALATED_WRAPPERS.reviewPublish}"],
     decision = "prompt",
-    justification = "The orchestrated PR-review alias implement-issue-stack invokes: launch, auto-decline, post.",
+    justification = "The handler-less orchestrated PR-review alias: launch, auto-decline, post.",
 )
 prefix_rule(
     pattern = ["${ESCALATED_WRAPPERS.health}"],
@@ -46,6 +49,14 @@ prefix_rule(
 )
 prefix_rule(pattern = ["claude"], decision = "forbidden", justification = "Use the fixed rival-agent wrappers instead of a raw Claude invocation.")
 prefix_rule(pattern = ["/Users/kylemit/.local/bin/claude"], decision = "forbidden", justification = "Use the fixed rival-agent wrappers instead of a raw Claude invocation.")
+prefix_rule(
+    pattern = ["gh"],
+    decision = "prompt",
+    justification = "Authenticated GitHub CLI operations require macOS Keychain access outside the Codex sandbox.",
+)
+prefix_rule(pattern = ["gh", "auth", "logout"], decision = "forbidden", justification = "Durable GitHub authentication may not be removed by an agent session.")
+prefix_rule(pattern = ["gh", "repo", "delete"], decision = "forbidden", justification = "Repository deletion requires direct human action.")
+prefix_rule(pattern = ["git", "push"], decision = "prompt", justification = "Codex Auto-review must evaluate every remote Git push.")
 ${END_MARKER}`;
 
 export function upsertTopLevelToml(content, key, value) {
@@ -61,7 +72,10 @@ export function upsertTopLevelToml(content, key, value) {
 
 export function replaceManagedRules(content) {
   const pattern = new RegExp(`${START_MARKER}[\\s\\S]*?${END_MARKER}\\n?`, 'g');
-  const withoutManagedBlock = content.replace(pattern, '').trimEnd();
+  const withoutManagedBlock = content
+    .replace(LEGACY_ISSUE_STACK_BLOCK, '')
+    .replace(pattern, '')
+    .trimEnd();
   return `${withoutManagedBlock}${withoutManagedBlock ? '\n\n' : ''}${POLICY_RULES}\n`;
 }
 

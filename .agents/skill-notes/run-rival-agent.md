@@ -64,7 +64,7 @@ interactive session.
 
 ## The orchestrated alias
 
-`implement-issue-stack` invokes `~/.local/libexec/splotch-claude-review-publish.mjs --pr <n>` by
+An unattended orchestrator invokes `~/.local/libexec/splotch-claude-review-publish.mjs --pr <n>` by
 fixed path and expects one command to review and post. A pairing needs a handler to serve the
 broker, and an unattended orchestrator is not one. The alias therefore launches the rival, declines
 every request it makes with one fixed reason, waits for it to finish, and posts. That review is what
@@ -79,6 +79,12 @@ locally and the alias keeps declining only the escalations. The installed copy u
 `~/.local/libexec` is stale until the owner runs `npm run run-claude:install` from the canonical
 checkout; nothing else can run that installer. Giving the orchestrator a real handler is the step
 after that and is out of scope here.
+
+Its only in-repo caller was `implement-issue-stack`, retired when campaigns moved to
+`ship-campaign`'s merge-as-you-go loop, which reviews through `drive-pr-to-mergeable` with a live
+handler. The alias and its shim stay installed for a handler-less orchestrator; removing them means
+a manifest bump and a user-run reinstall, so it is a deliberate follow-up rather than part of that
+retirement.
 
 ## What was deleted and why
 

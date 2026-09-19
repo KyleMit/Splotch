@@ -20,14 +20,12 @@ AGENTS.md              linguist-generated=true
 # `.ruler/` source. Registered in `tools/ruler/lib/direct-provider-skills.mjs`.
 .claude/skills/burn-down-audits/**             linguist-generated=false
 .agents/skills/burn-down-audits/**             linguist-generated=false
-.agents/skills/implement-issue-stack/**        linguist-generated=false
 .claude/skills/run-rival-agent/**              linguist-generated=false
 .agents/skills/run-rival-agent/**              linguist-generated=false
 .claude/skills/analyze-session-transcripts/**  linguist-generated=false
 .agents/skills/analyze-session-transcripts/**  linguist-generated=false
 .claude/skill-notes/burn-down-audits.md              linguist-generated=false
 .agents/skill-notes/burn-down-audits.md              linguist-generated=false
-.agents/skill-notes/implement-issue-stack.md         linguist-generated=false
 .claude/skill-notes/run-rival-agent.md               linguist-generated=false
 .agents/skill-notes/run-rival-agent.md               linguist-generated=false
 .claude/skill-notes/analyze-session-transcripts.md   linguist-generated=false

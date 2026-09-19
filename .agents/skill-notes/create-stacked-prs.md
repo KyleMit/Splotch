@@ -105,12 +105,19 @@ keeping because none of them errors — they all produce a runbook that reads fi
 The pattern across all four: a claim generalized from one successful run on one repository, stated
 without the precondition that made it true.
 
+## Opt-in, not the campaign default
+
+Stacks were the default shape for multi-issue campaigns until `ship-campaign` replaced it with
+merge-as-you-go (see that skill's note for the evidence). With an adversarial rival review on every
+PR, merging each unit before the next begins catches a wrong premise where it was introduced; a
+stack defers that and lets it compound. This skill remains for a chain the user explicitly asks for
+— genuinely dependent changes that must land together.
+
 ## Open questions
 
 * Whether `gh stack` beyond 0.1.0 preserves `link`'s numeric ambiguity, the `--base` flag, and
-  `unstack`. `implement-issue-stack` pins 0.1.0 and treats another version as a global blocker; this
-  skill does not pin, because a human-driven run can adapt. If a version bump changes behavior, both
-  need updating.
+  `unstack`. This skill does not pin a version, because a human-driven run can adapt; the retired
+  unattended `implement-issue-stack` pinned 0.1.0 for the opposite reason.
 * Unsigned commits from a GitHub-side `--rebase` are flagged but not decided. This repo has no
   signing requirement today, so it stays a "check whether it matters" rather than a prohibition.
 * No stack has yet been landed here with `main` ahead of the fork point. The skill routes that case

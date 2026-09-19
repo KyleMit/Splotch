@@ -8,11 +8,15 @@ command in Codex, and restart Codex so its config and rules reload. The installe
 * copies the vendor-neutral core from `tools/rival-agent/` and this package's launcher, health
   probe, publisher alias, and billing guard into `~/.local/libexec/splotch-rival-agent/`, repointing
   the package files' core imports at their new siblings, and writes a manifest hashing every file;
-* writes the two fixed shims `implement-issue-stack` invokes,
+* writes the two fixed shims an unattended orchestrator invokes,
   `~/.local/libexec/splotch-claude-review-publish.mjs` and
   `~/.local/libexec/splotch-claude-health.mjs`, and removes the files earlier installers wrote;
 * allows only the launcher, the poster, the publisher alias, and the health probe at Codex's
-  approval boundary while forbidding raw Claude entry points.
+  approval boundary while forbidding raw Claude entry points;
+* sends `gh` and `git push` to the approval boundary (the Keychain-backed `gh` login cannot run in
+  the sandbox), forbids `gh auth logout` and `gh repo delete`, and leaves `gh pr merge` promptable
+  so a run holding merge authority — `ship-issue mode=autonomous`, `ship-campaign` — can use it. The
+  block the retired `implement-issue-stack` installer wrote is removed on upgrade.
 
 The launcher and health probe hash every installed file against the manifest before launching the
 rival; the publisher alias inherits that check through the launcher. The standalone poster relies on
@@ -97,8 +101,7 @@ declines every broker request with one fixed reason, waits for the rival to fini
 the sandboxed shell the rival verifies its claims itself, so the alias's reviews are empirical; the
 installed copy under `~/.local/libexec` carries that only after `npm run run-claude:install` is run
 again from the canonical checkout. It keeps the fixed path, the `--pr`/`--end-session` contract, the
-one-`COMMENT`-review rule, the hidden marker, and the three-round budget that
-`implement-issue-stack` relies on.
+one-`COMMENT`-review rule, the hidden marker, and the three-round budget an orchestrator relies on.
 
 The prefix rules are not a complete remote security perimeter. Repository protections and narrowly
 scoped credentials remain the hard remote guarantees; Auto-review evaluates operations that reach

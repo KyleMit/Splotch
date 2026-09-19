@@ -17,7 +17,7 @@ export const MANIFEST_VERSION = 5;
 
 // One directory holds the whole trusted install: the vendor-neutral core copied verbatim and the
 // Codex-side package files with their core imports repointed at their new siblings. The two fixed
-// paths implement-issue-stack invokes stay where they were as shims onto that directory.
+// paths an unattended orchestrator invokes stay where they were as shims onto that directory.
 export const INSTALL_ROOT = join(homedir(), '.local/libexec/splotch-rival-agent');
 export const INSTALL_SHIMS = Object.freeze({
   reviewPublish: join(homedir(), '.local/libexec/splotch-claude-review-publish.mjs'),

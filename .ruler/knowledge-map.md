@@ -11,8 +11,8 @@ support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/
 from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
 `burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
 `analyze-session-transcripts` with format-specific implementations and `run-rival-agent`, whose two
-packages each launch the *other* vendor's CLI; Codex-only `implement-issue-stack` lives only under
-`.agents/`. See `tools/ruler/lib/direct-provider-skills.mjs` for the authoritative registry.
+packages each launch the *other* vendor's CLI. See `tools/ruler/lib/direct-provider-skills.mjs` for
+the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                                                                                                    |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

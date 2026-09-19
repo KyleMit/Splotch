@@ -1,6 +1,6 @@
 ---
 name: drive-pr-to-mergeable
-description: Take one open pull request from opened to mergeable — build the reviewer prompt, get an independent rival-agent review, address every thread, repeat that round at most once more, drive CI to green, reconcile conflicts, and return a shippable-or-leftovers verdict. Never merges. Use whenever an open PR needs the repo's standard independent-review and CI loop, standalone or as the current tip of a stack; the skills that open PRs (ship-issue, burn-down-backlog, fix-audits, create-stacked-prs, improve-performance-matrix) delegate here rather than restating the loop.
+description: Take one open pull request from opened to mergeable — build the reviewer prompt, get an independent rival-agent review, address every thread, repeat that round at most once more, drive CI to green, reconcile conflicts, and return a shippable-or-leftovers verdict. Never merges. Use whenever an open PR needs the repo's standard independent-review and CI loop, standalone or as the current tip of a stack; the skills that open PRs (ship-issue, fix-audits, create-stacked-prs, improve-performance-matrix) delegate here rather than restating the loop.
 ---
 
 # Drive a PR to mergeable
@@ -15,10 +15,10 @@ deltas — which reviewer budget it wants, what its PR bodies must carry, where 
 instead of restating the steps below.
 
 **Preconditions.** The PR is open, its head is pushed, and its body is already complete (the caller
-wrote it — `ship-issue`'s full summary, `burn-down-backlog`'s rich body, or the evidence body a perf
-campaign requires). **Not in scope:** opening the PR, merging it, closing anything, or filing
-issues. The caller owns every one of those, and a merge in particular is authorized only by the
-caller's own invocation (`ship-issue`'s `mode=autonomous`) — nothing here confers it.
+wrote it — `ship-issue`'s full summary or the evidence body a perf campaign requires). **Not in
+scope:** opening the PR, merging it, closing anything, or filing issues. The caller owns every one
+of those, and a merge in particular is authorized only by the caller's own invocation
+(`ship-issue`'s `mode=autonomous`) — nothing here confers it.
 
 ## Where the fixes commit
 

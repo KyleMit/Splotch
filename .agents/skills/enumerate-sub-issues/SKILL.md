@@ -52,7 +52,7 @@ implementing" rule). Then classify each child into exactly one bucket:
 Dependency edges first (a child blocked on another child), then the repo's `priority:*` labels, then
 cheap-and-unblocked before risky — the same ordering `create-stacked-prs` gives a stack. State the
 order as a recommendation with one line of why per item; acting on it is the user's call or the next
-skill's job (`burn-down-backlog` claims one issue, `create-stacked-prs` ships several).
+skill's job (`ship-issue` ships one issue, `ship-campaign` ships the queue).
 
 ## Completion condition
 

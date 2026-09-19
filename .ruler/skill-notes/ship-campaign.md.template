@@ -1,0 +1,96 @@
+# ship-campaign — design notes
+
+## Why the skill exists
+
+Between 2026-08-27 and 2026-09-18 the user ran roughly 45 multi-issue campaigns across Claude Code
+and Codex, each opened with a hand-written prompt of several thousand characters. The prompts kept
+restating the same ingredients: start from a fresh `origin/main`, take the child list from the
+sub-issues API, an explicit authorization block, `ship-issue mode=autonomous` per issue, quarantine
+after two failed cycles, "nothing may wait on Kyle", a stop margin, and a morning report that
+names the product-facing impact. This skill is those ingredients, so that the next campaign's
+prompt is one line.
+
+It replaced two skills. `implement-issue-stack` (Codex-only) shipped an ordered issue list as an
+unmerged stacked chain; `burn-down-backlog` shipped the newest unclaimed issue, one per session.
+The first became the list source, the second the `backlog` source. `create-stacked-prs` survives as
+the explicit opt-in for a chain the user asks for.
+
+## Why merge-as-you-go instead of stacks
+
+The campaigns that finished were the merge-as-you-go ones: epics #1847, #1891, #1926, and #2020 all
+closed, each unit reviewed by the rival and merged before the next branched from the new `main`.
+The stacked campaigns carried a recurring class of failure that the shape itself produced:
+
+* Review deferred to the end. One Codex run opened all its PRs at the end and ran no rival review
+  until asked; the user's correction was "I'd like to review as we go along, not all at the end".
+* Fix-ups landing on lower layers, against the stack's own no-commits-below rule.
+* A stack only partly registered with GitHub (four of nine PRs linked).
+* Rebases the auto-mode classifier denied, leaving `*-rebased` branches for the user to push.
+* A mistaken causal premise compounding through the layers above it before any review saw it.
+
+With an adversarial reviewer on every PR, the stack's one advantage — batching review of related
+changes — stopped paying for these costs. Merging each unit also makes every later unit's base the
+real trunk, so CI on a unit proves the unit, not the chain beneath it.
+
+## What was salvaged from implement-issue-stack
+
+* **Preflight the whole queue before any mutation**, with the global-versus-issue-local split: an
+  issue-local blocker quarantines one unit; a blocker that invalidates every later unit stops the
+  queue.
+* **Causality before budget.** PR #729's run quarantined issue #709 after two WebKit failures that
+  reproduced on the exact base under system-wide renderer slowdown. The evidence belonged to the
+  gate. The rule is to compare the head against its exact base first, and repair a broken gate as
+  its own unit with a negative control, rather than blaming the product change.
+* **A fresh implementer per issue, resumed for that issue's own repairs.** Codex campaigns compacted
+  context ten to fifteen times a night when run inline.
+* **Autonomous decisions recorded in the PR**, and a final table verified against GitHub.
+
+Dropped: the stack mechanics (`gh stack` pinning, `last_good_base`, unstack-on-quarantine) and the
+`.issue-stack/run.json` checkpoint. With every unit merged, GitHub's PR, issue, and label state is
+enough to resume from, so the ledger is a view re-derived on resume rather than a second source of
+truth that can drift from it. Its Codex GitHub and push approval rules moved into the
+`run-rival-agent` installer, which removes the old managed block on upgrade.
+
+## Why the preflight has to run with the user present
+
+The overnight failures that cost the most were all discoverable at bedtime:
+
+* 2026-09-11: a Codex campaign stalled from 03:21 to 08:47 because the Claude rival bridge was not
+  installed.
+* The machine-global Codex rule forbidding `gh pr merge` stranded PRs in the epic #2020 run until
+  PR #2026 removed it.
+* 2026-09-18: neither capture device was usable all night — the iPad's UI-automation grant had
+  expired and the phone was PIN-locked — and the run produced seven PRs with no product change.
+
+A check that could have run at 22:00 but ran at 03:00 is the most expensive kind of failure an
+unattended run has.
+
+## Never end the turn to ask
+
+2026-09-12: a Claude campaign stopped at 05:06 with "Two things for you" and sat idle until the
+user answered at 08:08. Parking the question in the ledger and continuing costs nothing when the
+answer turns out not to matter, and costs one unit of rework when it does.
+
+## Control messages
+
+On 2026-08-29 a Codex goal auto-resumed the campaign after "wrap up at the next finished cell"
+("wrap up doesn't mean resume current campaign"). The definitions in the skill follow
+`improve-performance-matrix`'s, with wrap up stated as a stop.
+
+## Performance campaigns
+
+The best performance results of the period came from sessions where the user was at the devices,
+with a control capture in the same session. Unattended performance nights produced harness and
+evidence PRs instead (2026-09-01, 2026-09-06, 2026-09-18), hence the device-loss rule and the
+product/harness/evidence split in the ledger. The eight-hour cap on one gate is the user's standing
+call from the 2026-09-16 orchestrator session ("if we have more than 8 hours of running the same
+gate, we just have to accept the best version").
+
+## Open questions
+
+* The revert authority in step 4 is new and unexercised: no campaign has yet turned `main` red and
+  reverted its own merge unattended.
+* A handler-less orchestrated review alias remains in `run-rival-agent`; this skill does not use
+  it, because each unit's review runs through `drive-pr-to-mergeable` with a live handler.
+* Running several campaign sessions on one epic in parallel is the orchestrator pattern (epic
+  #1926), deliberately left to a separate skill that hands out prompts rather than implementing.

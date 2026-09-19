@@ -90,7 +90,7 @@ agent just do?" vs "what is waiting on Kyle?". When several apply, the scarcest 
 
 | Label              | Meaning                                                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `in-progress`      | Claimed by a `burn-down-backlog` session actively working it; excluded from that skill's future pickup until the issue closes            |
+| `in-progress`      | Claimed by a `ship-issue` or `ship-campaign` session actively working it; excluded from future pickup until the issue closes             |
 | `reviewed`         | Review pass complete; automation moves the issue to Project status `ToDo`                                                                |
 | `needs-triage`     | Valid audit finding whose fix approach is unclear — a human confirms direction before `fix-audits` implements it (filed by `vet-audits`) |
 | `needs-scoping`    | Rough spec — investigate and firm up (often an ADR) before significant work                                                              |

@@ -64,11 +64,10 @@ directly:
   concept without imposing a shared parser or runbook. `run-rival-agent` has one package per
   provider, each launching the *other* vendor's local CLI: the Codex package launches a fresh local
   Claude Code process through fixed permission-reviewed wrappers, and the Claude package launches a
-  read-only Codex process (see the 2026-09 amendment below). `implement-issue-stack` exists only in
-  `.agents/skills/implement-issue-stack/`: it orchestrates Codex-native implementers and consumes
-  the Codex package of `run-rival-agent` for independent adversarial review; a Claude package would
-  misrepresent the workflow. The registry declares exactly which providers exist; changing one never
-  implies creating or syncing another provider.
+  read-only Codex process (see the 2026-09 amendment below). A registered skill may also exist for
+  one provider only (the Codex-only `implement-issue-stack` did, until it was retired in favor of
+  the shared `ship-campaign`). The registry declares exactly which providers exist; changing one
+  never implies creating or syncing another provider.
 * **Config:** `.ruler/ruler.toml` — `default_agents = ["claude", "codex"]`, gitignore/MCP/backup all
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
 * **Skill design notes:** shared notes in `.ruler/skill-notes/` are mirrored to both agents. A

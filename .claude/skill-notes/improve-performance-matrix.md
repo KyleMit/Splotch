@@ -78,3 +78,16 @@ divergence — the 2026-09-04 lesson above is why this campaign pays for the sec
 else does. The "stop adding layers and report the blocker" rule for an unavailable reviewer is now
 the core's own rule that a substituted review unlocks no next layer, so it is no longer restated
 here.
+
+## Merge as you go, not a stack
+
+Until 2026-09-18 the campaign delivered clusters as a stacked chain that stayed unmerged until the
+user landed it. The stacks produced the failures the sections above record — review deferred across
+a whole chain, fix-ups on lower layers, a stack only partly registered with GitHub, rebases the
+auto-mode classifier denied — and a merge-ready claim that rested on per-PR CI rather than the
+chain. With a rival review on every PR, each cluster now merges under `ship-issue` step 5's gate
+before the next cluster branches from the updated `main`, so a later experiment always measures
+against a trunk that contains the earlier fix. The live ledger moved from the stack-tip PR body,
+which had to be copied forward at every layer, to one edited comment on the tracking issue.
+Unattended runs go through `ship-campaign profile=performance`, whose design note records the
+cross-campaign evidence for the switch.

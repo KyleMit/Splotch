@@ -246,10 +246,10 @@ in `.ruler/skill-forks/<runner>/`. Don't edit generated files — edit their `.r
 `npm run ruler:apply`, and commit the output; CI fails on drift (`npm run ruler:check`).
 
 The direct-maintained exceptions are registered in `tools/ruler/lib/direct-provider-skills.mjs`
-(`burn-down-audits`, `analyze-session-transcripts`, `run-rival-agent`, and the Codex-only
-`implement-issue-stack`). Each registered Claude package and note lives under `.claude/`, each Codex
-package and note under `.agents/`. They are independent provider implementations: edit only the
-registered provider packages directly and never synchronize one from the other.
+(`burn-down-audits`, `analyze-session-transcripts`, and `run-rival-agent`). Each registered Claude
+package and note lives under `.claude/`, each Codex package and note under `.agents/`. They are
+independent provider implementations: edit only the registered provider packages directly and never
+synchronize one from the other.
 
 Claude Code's `Read(//tmp/**)` permission intentionally uses an absolute-path double slash so
 sessions can read scratch files under `/tmp`. Do not change it to `Read(/tmp/**)`: that syntax is

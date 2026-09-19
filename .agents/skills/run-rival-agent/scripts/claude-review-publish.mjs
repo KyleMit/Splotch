@@ -11,7 +11,7 @@ import {
   writeReply,
 } from '../../../../tools/rival-agent/spool.mjs';
 
-// The fixed path implement-issue-stack invokes. An orchestrated review has no native handler
+// The fixed path an unattended orchestrator invokes. An orchestrated review has no native handler
 // serving the broker, so every request the rival makes is declined with this reason and the review
 // is what the rival can establish by reading alone.
 export const ORCHESTRATED_DECLINE_REASON =
