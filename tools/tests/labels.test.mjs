@@ -7,14 +7,32 @@ import { describe, expect, it } from 'vitest';
 // the synced taxonomy (this once shipped bare `bug`/`enhancement` labels).
 const repoRoot = join(import.meta.dirname, '..', '..');
 const templateDir = join(repoRoot, '.github', 'ISSUE_TEMPLATE');
+const labelsYaml = readFileSync(join(repoRoot, '.github', 'labels.yml'), 'utf8');
+
+// GitHub's label API rejects a longer description with "description is too
+// long (maximum is 100 characters)", and the Label Sync workflow's labeler
+// fails the whole run on the first rejection.
+const MAX_LABEL_DESCRIPTION_CHARS = 100;
 
 const definedLabels = new Set(
-  [
-    ...readFileSync(join(repoRoot, '.github', 'labels.yml'), 'utf8').matchAll(
-      /^- name:\s*['"]?([^'"\n]+?)['"]?\s*$/gm
-    ),
-  ].map((m) => m[1])
+  [...labelsYaml.matchAll(/^- name:\s*['"]?([^'"\n]+?)['"]?\s*$/gm)].map((m) => m[1])
 );
+
+function unquoteYamlScalar(raw) {
+  if (raw.startsWith("'")) return raw.slice(1, -1).replaceAll("''", "'");
+  if (raw.startsWith('"')) return JSON.parse(raw);
+  return raw;
+}
+
+function labelDescriptions() {
+  return labelsYaml
+    .split(/^- /m)
+    .slice(1)
+    .map((entry) => ({
+      name: unquoteYamlScalar(entry.match(/^name:\s*(.+?)\s*$/m)[1]),
+      description: unquoteYamlScalar(entry.match(/^\s+description:\s*(.+?)\s*$/m)[1]),
+    }));
+}
 
 function parseLabels(text) {
   const lines = text.split('\n');
@@ -59,4 +77,18 @@ describe('issue template labels', () => {
       }
     });
   }
+});
+
+describe('label descriptions', () => {
+  it('parses a description for every defined label', () => {
+    expect(labelDescriptions().map(({ name }) => name)).toEqual([...definedLabels]);
+  });
+
+  it(`stay within GitHub's ${MAX_LABEL_DESCRIPTION_CHARS}-character cap`, () => {
+    const tooLong = labelDescriptions()
+      .map(({ name, description }) => ({ name, length: [...description].length }))
+      .filter(({ length }) => length > MAX_LABEL_DESCRIPTION_CHARS)
+      .map(({ name, length }) => `${name} (${length})`);
+    expect(tooLong, `descriptions over ${MAX_LABEL_DESCRIPTION_CHARS} characters`).toEqual([]);
+  });
 });
