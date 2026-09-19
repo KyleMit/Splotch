@@ -309,7 +309,7 @@
     "rival:status": "Summarize a rival session: pending requests, done or failed; append --session <dir>",
     "rival:post": "Post a finished rival session's findings to a PR as one COMMENT review with a hidden marker; append --pr <n> --session <dir>",
     "rival:bench": "Run the seeded-defect bench: one fresh rival round per seed, sandbox mode, and repetition on the corpus under tools/rival-agent/bench/seeds, the bench serving the broker; --validate proves every seed first. Manual, spends plan usage, never in CI",
-    "rival:seed": "Laptop-side: sign in to Codex under a dedicated ~/.codex-cloud login and copy the CODEX_AUTH_JSON seed for the Claude cloud environment dialog to the clipboard, so cloud sessions can run the Codex rival on the ChatGPT plan; repeat roughly weekly as refresh rotation retires it",
+    "rival:seed": "Laptop-side: sign in to Codex under a dedicated ~/.codex-cloud login and copy the CODEX_AUTH_JSON seed for the Claude cloud environment dialog to the clipboard, so cloud sessions can run the Codex rival on the ChatGPT plan; repeat once a cloud review has refreshed and rotated the previous seed",
     "gen:rival-acceptance": "Generate a nonce-bearing manual real-agent communication question under the temp root; never runs in CI",
     "stack:push:rebased": "Publish an intentional gh stack rebase, refusing to push when it changed the content of any PR another open PR is based on",
     "test": "Coverage-gated app unit + asset-pipeline + store-drawing + repo-script unit (Vitest) + E2E (Playwright) — what CI runs on every push",

@@ -24,7 +24,8 @@ USAGE_GRANT_ID_SECRET=                           # HMAC key for opaque managed-c
 # Codex ChatGPT-plan login for run-rival-agent: the value `npm run rival:seed` copies to the
 # clipboard (base64 of an auth.json from a DEDICATED login under ~/.codex-cloud, never your working
 # ~/.codex one) — see docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan", for the
-# refresh-rotation shelf life. Re-paste roughly weekly.
+# refresh-rotation shelf life. Re-paste after the first cloud review past the token expiry the
+# script prints; a changed value replaces the file the previous seed wrote.
 CODEX_AUTH_JSON=
 # Non-secret — the model slug the cloud rival runs; tools/seed-codex-auth.mjs writes it into
 # ~/.codex/config.toml at SessionStart because `rival:launch` ignores every other config. Without it

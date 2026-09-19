@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  accessTokenExpiryMs,
+  CODEX_ACCESS_TOKEN_REFRESH_WINDOW_MINUTES,
   CODEX_TOKEN_REFRESH_INTERVAL_DAYS,
   decodeSeed,
   encodeSeed,
   modelConfigToml,
   SEED_WARNING_AGE_DAYS,
   seedCodexAuth,
+  seedIdentity,
 } from '../seed-codex-auth.mjs';
 import {
   MODEL_ENVIRONMENT_KEY,
@@ -16,20 +19,27 @@ import { readConfiguredModel } from '../../.claude/skills/run-rival-agent/script
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = Date.parse('2026-09-02T12:00:00Z');
 const AUTH_PATH = '/home/agent/.codex/auth.json';
+const IDENTITY_PATH = '/home/agent/.codex/auth.json.seed-id';
 const CONFIG_PATH = '/home/agent/.codex/config.toml';
 
-function planAuth(ageDays = 1) {
+// An opaque access token reads as "no expiry", which is what makes the age fallback the live rule.
+function planAuth(ageDays = 1, accessToken = 'access') {
   return {
     auth_mode: 'chatgpt',
-    tokens: { access_token: 'access', refresh_token: 'refresh' },
+    tokens: { access_token: accessToken, refresh_token: 'refresh' },
     last_refresh: new Date(NOW - ageDays * DAY_MS).toISOString(),
   };
+}
+
+function jwt(expMs) {
+  return `h.${Buffer.from(JSON.stringify({ exp: expMs / 1000 })).toString('base64url')}.s`;
 }
 
 function run({
   seed,
   model,
   existingAuth,
+  existingIdentity,
   existingConfig,
   remote = true,
   installed = true,
@@ -39,18 +49,28 @@ function run({
   const env = { ...(remote ? { CLAUDE_CODE_REMOTE: 'true' } : {}) };
   if (seed !== undefined) env[SEED_ENVIRONMENT_KEY] = seed;
   if (model !== undefined) env[MODEL_ENVIRONMENT_KEY] = model;
-  const existing = { [AUTH_PATH]: existingAuth, [CONFIG_PATH]: existingConfig };
+  const existing = {
+    [AUTH_PATH]: existingAuth,
+    [IDENTITY_PATH]: existingIdentity,
+    [CONFIG_PATH]: existingConfig,
+  };
   const result = seedCodexAuth({
     env,
     authPath: AUTH_PATH,
+    identityPath: IDENTITY_PATH,
     configPath: CONFIG_PATH,
     now,
     readFile: (path) => existing[path],
-    writeFile: (path, contents) => writes.push({ path, contents }),
+    writeFile: (path, contents, { replace }) => writes.push({ path, contents, replace }),
     codexInstalled: () => installed,
   });
   return { result, writes };
 }
+
+const seedWrites = (auth, replace) => [
+  { path: AUTH_PATH, contents: JSON.stringify(auth), replace },
+  { path: IDENTITY_PATH, contents: seedIdentity(auth), replace },
+];
 
 describe('cloud Codex login seed', () => {
   it('accepts the seed as base64 or raw JSON, and round-trips its own encoder', () => {
@@ -66,25 +86,59 @@ describe('cloud Codex login seed', () => {
     expect(writes).toEqual([]);
   });
 
-  it('writes a valid seed to the auth path and says so', () => {
+  it('writes a valid seed and its identity to the auth path and says so', () => {
     const { result, writes } = run({ seed: encodeSeed(planAuth()), existingConfig: 'model = "x"' });
     expect(result.status).toBe('seeded');
-    expect(writes).toEqual([{ path: AUTH_PATH, contents: JSON.stringify(planAuth()) }]);
+    expect(writes).toEqual(seedWrites(planAuth(), false));
     expect(result.message).toContain(AUTH_PATH);
     expect(result.message).not.toContain('rotates');
   });
 
-  // Codex refreshes in place; the seed is the older credential by definition.
-  it('never overwrites a login or a config already on disk', () => {
+  // Codex refreshes in place; a file the same seed wrote is newer than the seed by definition.
+  it('keeps a login the same seed already wrote, and a config already on disk', () => {
     const { result, writes } = run({
       seed: encodeSeed(planAuth()),
       model: 'gpt-5.6-sol',
-      existingAuth: '{"auth_mode":"chatgpt"}',
+      existingAuth: '{"auth_mode":"chatgpt","tokens":{"access_token":"refreshed"}}',
+      existingIdentity: `${seedIdentity(planAuth())}\n`,
       existingConfig: 'model = "other"\n',
     });
     expect(result.status).toBe('present');
     expect(result.model.status).toBe('present');
     expect(result.message).toBeUndefined();
+    expect(writes).toEqual([]);
+  });
+
+  it('keeps a login without a seed, whatever is on disk', () => {
+    const { result, writes } = run({ existingAuth: '{}', existingConfig: 'model = "x"' });
+    expect(result).toMatchObject({ status: 'present' });
+    expect(result.message).toBeUndefined();
+    expect(writes).toEqual([]);
+  });
+
+  // The remedy for a login retired elsewhere is a new seed; a resumed VM still holding the file the
+  // old seed wrote must take it, or re-pasting repairs nothing.
+  it('replaces a login the previous seed wrote when the seed value changes', () => {
+    const next = { ...planAuth(), tokens: { access_token: 'next', refresh_token: 'next' } };
+    const { result, writes } = run({
+      seed: encodeSeed(next),
+      existingAuth: JSON.stringify(planAuth()),
+      existingIdentity: seedIdentity(planAuth()),
+      existingConfig: 'model = "x"',
+    });
+    expect(result.status).toBe('replaced');
+    expect(writes).toEqual(seedWrites(next, true));
+    expect(result.message).toContain('replaced');
+  });
+
+  it('leaves a login it did not write and says why the seed went unapplied', () => {
+    const { result, writes } = run({
+      seed: encodeSeed(planAuth()),
+      existingAuth: '{"auth_mode":"chatgpt"}',
+      existingConfig: 'model = "x"',
+    });
+    expect(result.status).toBe('present');
+    expect(result.message).toContain('not written by this hook');
     expect(writes).toEqual([]);
   });
 
@@ -111,12 +165,34 @@ describe('cloud Codex login seed', () => {
     expect(run({ seed: 'not json, not base64 json' }).result.status).toBe('invalid');
   });
 
-  it('warns before the refresh interval retires the seed', () => {
+  // Codex refreshes, and rotates, once the access token's JWT expiry is within its window; the
+  // last_refresh age is only its fallback for a token with no readable expiry.
+  it('reads the access token expiry as the seed lifetime', () => {
+    expect(accessTokenExpiryMs(planAuth(1, jwt(NOW + DAY_MS)))).toBe(NOW + DAY_MS);
+    expect(accessTokenExpiryMs(planAuth())).toBeUndefined();
+    expect(accessTokenExpiryMs({ tokens: { access_token: 'a.notbase64json.c' } })).toBeUndefined();
+
+    const live = run({ seed: encodeSeed(planAuth(1, jwt(NOW + DAY_MS))) });
+    expect(live.result.status).toBe('seeded');
+    expect(live.result.message).toContain(`expires at ${new Date(NOW + DAY_MS).toISOString()}`);
+    expect(live.result.message).not.toContain('re-seed');
+
+    const windowMs = CODEX_ACCESS_TOKEN_REFRESH_WINDOW_MINUTES * 60 * 1000;
+    for (const expMs of [NOW - DAY_MS, NOW + windowMs]) {
+      const expired = run({ seed: encodeSeed(planAuth(1, jwt(expMs))) });
+      expect(expired.result.status).toBe('seeded');
+      expect(expired.result.message).toContain(`expired at ${new Date(expMs).toISOString()}`);
+      expect(expired.result.message).toContain('re-seed');
+    }
+  });
+
+  it('falls back to the last_refresh age when the token carries no expiry', () => {
     expect(SEED_WARNING_AGE_DAYS).toBeLessThan(CODEX_TOKEN_REFRESH_INTERVAL_DAYS);
     const fresh = run({ seed: encodeSeed(planAuth(SEED_WARNING_AGE_DAYS - 1)) });
     expect(fresh.result.message).not.toContain('rotates');
     const aging = run({ seed: encodeSeed(planAuth(SEED_WARNING_AGE_DAYS)) });
     expect(aging.result.status).toBe('seeded');
+    expect(aging.result.message).toContain('no readable expiry');
     expect(aging.result.message).toContain(`${SEED_WARNING_AGE_DAYS} days old`);
     expect(aging.result.message).toContain('re-seed');
   });
@@ -136,7 +212,7 @@ describe('cloud Codex model seed', () => {
     const { result, writes } = run({ seed: encodeSeed(planAuth()), model: 'gpt-5.6-sol' });
     expect(result.model).toMatchObject({ status: 'written', model: 'gpt-5.6-sol' });
     const config = writes.find((write) => write.path === CONFIG_PATH);
-    expect(config.contents).toBe(modelConfigToml('gpt-5.6-sol'));
+    expect(config).toMatchObject({ contents: modelConfigToml('gpt-5.6-sol'), replace: false });
     expect(readConfiguredModel(config.contents)).toBe('gpt-5.6-sol');
     expect(result.message).toContain('gpt-5.6-sol');
   });
@@ -147,10 +223,10 @@ describe('cloud Codex model seed', () => {
     expect(unset.result.model.status).toBe('unset');
     expect(unset.result.message).toContain(MODEL_ENVIRONMENT_KEY);
     expect(unset.result.message).toContain('--model');
-    expect(unset.writes.map((write) => write.path)).toEqual([AUTH_PATH]);
+    expect(unset.writes.map((write) => write.path)).toEqual([AUTH_PATH, IDENTITY_PATH]);
 
     const flag = run({ seed: encodeSeed(planAuth()), model: '--yolo' });
     expect(flag.result.model.status).toBe('invalid');
-    expect(flag.writes.map((write) => write.path)).toEqual([AUTH_PATH]);
+    expect(flag.writes.map((write) => write.path)).toEqual([AUTH_PATH, IDENTITY_PATH]);
   });
 });
