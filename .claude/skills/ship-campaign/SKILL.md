@@ -102,16 +102,19 @@ For each unit, finish every step before starting the next:
    needs.
 4. **Verify from live state, never from the unit's report.** The PR reads merged; its merge commit
    is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); the post-merge jobs on
-   that SHA registered and finished green; and, for an issue unit, the issue is closed with
-   `in-progress` and the campaign's assignee gone. A free-form unit has no issue to check; its PR
-   body carries the spec, and the ledger records it. Copy every SHA from command output. A report
-   and the API disagreeing is itself a finding for the morning report.
+   that SHA registered and finished green; and, for an issue unit, the issue is closed and
+   `in-progress` is gone. `ship-issue` assigns the issue when it claims it and does not unassign it,
+   so remove that assignee here and re-read the issue to confirm. A free-form unit has no issue to
+   check; its PR body carries the spec, and the ledger records it. Copy every SHA from command
+   output. A report and the API disagreeing is itself a finding for the morning report.
 5. **Update the ledger** and continue.
 
 **A unit that stops before opening a PR is skipped.** `ship-issue` stops without a PR when the work
-is far larger than it read or needs a product decision. Verify its rollback from live state — the
-issue has no `in-progress` label or campaign assignee, and carries a comment naming the blocker —
-then record the unit as skipped, with the blocker and the question it raises, and continue.
+is far larger than it read or needs a product decision. For an issue unit, verify its rollback from
+live state — no `in-progress` label and a comment naming the blocker — then remove the assignee
+`ship-issue` added and re-read the issue to confirm. A free-form unit has no issue: record its spec
+and blocker in the ledger, and on the tracking issue when the unit has one. Either way, record the
+unit as skipped, with the blocker and the question it raises, and continue.
 
 Never end the turn to ask a question. The user is not there, and a campaign that stops to ask sits
 idle until morning. Park the question in the ledger, apply the unit's quarantine or skip rule, and
@@ -133,16 +136,17 @@ unit:
 A unit that exhausts either budget, or still carries a valid blocking rival finding after round two,
 is **quarantined**:
 
-* Replace `Fixes #<n>` with `Refs #<n>` in the PR, convert it to draft, and add a postmortem to the
-  PR body: head and base SHAs, the failing commands or CI links, what was tried, the rival's open
-  findings, and the concrete next step. Confirm the PR's `closingIssuesReferences` is empty — a
-  closing keyword left in a commit message, or even a negated one, still links the issue for
-  closure.
-* Comment on the issue with the PR link and a one-paragraph summary, then release the claim: remove
-  `in-progress` and the assignee the campaign added, and re-read the issue to confirm both are gone.
-  A leftover label or assignee strands the issue from every future pickup, including the preflight
-  of the next campaign.
-* Record it in the ledger and continue with the next unit.
+* **Every unit:** convert the PR to draft and add a postmortem to its body — head and base SHAs, the
+  failing commands or CI links, what was tried, the rival's open findings, and the concrete next
+  step. Record it in the ledger and continue with the next unit.
+* **An issue unit, also:** replace `Fixes #<n>` with `Refs #<n>` and confirm the PR's
+  `closingIssuesReferences` is empty — a closing keyword left in a commit message, or even a negated
+  one, still links the issue for closure. Comment on the issue with the PR link and a one-paragraph
+  summary, then release the claim: remove `in-progress` and the assignee `ship-issue` added, and
+  re-read the issue to confirm both are gone. A leftover label or assignee strands the issue from
+  every future pickup, including the preflight of the next campaign.
+* **A free-form unit, also:** post the postmortem's summary to the tracking issue when the unit has
+  one. There is no issue lifecycle to unwind.
 
 **Establish causality before blaming the unit.** Before spending a repair attempt or quarantining,
 compare the failing head with its exact base under the same command and runner. The failure belongs
