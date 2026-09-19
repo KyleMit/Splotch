@@ -24,6 +24,7 @@ import {
 } from '../ios/capture-xcuitest-actions.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
+import { servedBuildBinding } from '../lib/profile-preview.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
 import {
   ensureCampaignTheme,
@@ -241,12 +242,20 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         'trace',
         'report-only',
         'no-serve',
+        'allow-foreign-build',
         'theme',
       ],
     },
     argv
   );
   const base = resolveDeviceUrl(flag('url'), port, APP_PATH);
+  // The override is only for a build another worktree serves at --url; with
+  // the preview this runner spawns itself it would also switch off the
+  // native-export and stale-build guards.
+  const allowForeignBuild = has('allow-foreign-build');
+  if (allowForeignBuild && !flag('url')) {
+    fail('--allow-foreign-build needs --url= naming the externally served build it allows');
+  }
   const deviceId = resolveAndroidDevice(flag('device-id'));
   const cdpPort = positiveInteger(flag('cdp-port', String(DEFAULT_CDP_PORT)), 'cdp-port');
   const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
@@ -292,6 +301,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   };
   let observedRefreshRateHz;
   let server;
+  let servedBuild;
   let browser;
   let cdp;
   let target;
@@ -320,7 +330,12 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         `refresh-rate pin not confirmed: requested ${PINNED_REFRESH_RATE_HZ}, display reports ${observedRefreshRateHz ?? 'unknown'} — the artifact records what was observed`
       );
     }
-    server = await ensurePreviewServer(base, port, !has('no-serve'));
+    // A historical comparison serves another commit's build from its own
+    // worktree; the flag is how a caller says that build is foreign on purpose.
+    server = await ensurePreviewServer(base, port, !has('no-serve'), { allowForeignBuild });
+    // Binds the artifact to the bytes measured; a foreign build keeps its
+    // entry and digest and records no product commit.
+    servedBuild = await servedBuildBinding(base, { verifiedAgainstCheckout: !allowForeignBuild });
     adb(deviceId, [
       'shell',
       'am',
@@ -430,6 +445,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         uptimeSeconds: deviceUptimeSeconds,
       },
       appUrl: base,
+      ...servedBuild,
       transport: 'android-chrome-cdp',
       uiActivation: 'trusted-cdp-touch',
       refreshRatePin: {
