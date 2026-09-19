@@ -62,29 +62,29 @@ deletes that conversation's transcript and sidecar under `~/.claude/projects/` �
 ledger holds, which only ever holds ids this launcher issued, so it can never reach a human's
 interactive session.
 
-## The orchestrated alias
+## The orchestrated alias (removed)
 
-An unattended orchestrator invokes `~/.local/libexec/splotch-claude-review-publish.mjs --pr <n>` by
-fixed path and expects one command to review and post. A pairing needs a handler to serve the
-broker, and an unattended orchestrator is not one. The alias therefore launches the rival, declines
-every request it makes with one fixed reason, waits for it to finish, and posts. That review is what
-the rival can establish by reading alone; its unverified list says what it wanted to run. It keeps
-the fixed path, the `--pr`/`--end-session` contract, the one-`COMMENT`-review rule, the hidden
-marker, and the three-round budget the orchestrator relies on.
+`~/.local/libexec/splotch-claude-review-publish.mjs --pr <n>` was one fixed command that reviewed
+and posted with no handler: it launched the rival, declined every broker request with one fixed
+reason, waited for it to finish, and posted one marked `COMMENT` review. It existed because an
+unattended orchestrator cannot serve the broker, and it had replaced the Auto-mode publisher, which
+gave Claude its full tool set in the disposable worktree and let it post its own review — the second
+policy engine the pairing exists to remove.
 
-This replaced the Auto-mode publisher, which gave Claude its full tool set in the disposable
-worktree and let it post its own review — the second policy engine the pairing exists to remove.
-With the sandboxed shell the alias gained empirical reviews for free: the rival runs its tests
-locally and the alias keeps declining only the escalations. The installed copy under
-`~/.local/libexec` is stale until the owner runs `npm run run-claude:install` from the canonical
-checkout; nothing else can run that installer. Giving the orchestrator a real handler is the step
-after that and is out of scope here.
+Its only caller was `implement-issue-stack`. Campaigns now run through `ship-campaign` →
+`ship-issue` → `drive-pr-to-mergeable`, which reviews with a live handler and posts through
+`post-review.mjs`, and `orchestrate-sessions` only hands out prompts, so its worker sessions take
+that same path. Issue #2077 weighed keeping the alias for a future hands-off Codex runner against
+the repo's no-speculative-surface rule and removed it: an escalated entry point with posting
+authority and no caller is trust-boundary surface, not a free option. A hands-off runner that comes
+back gets a real handler rather than this alias; the publish boundary it would need
+(`postFromSession` and its pre-publish guard) is still the core's.
 
-Its only in-repo caller was `implement-issue-stack`, retired when campaigns moved to
-`ship-campaign`'s merge-as-you-go loop, which reviews through `drive-pr-to-mergeable` with a live
-handler. The alias and its shim stay installed for a handler-less orchestrator; removing them means
-a manifest bump and a user-run reinstall, so the decision is tracked in issue #2077 rather than
-folded into that retirement.
+The removal dropped the script, its shim, its exec-policy rule and policy case, and its tests, and
+bumped the manifest. The installer deletes the old shim through `STALE_PATHS`, but only the owner
+can run it: until `npm run run-claude:install` runs from the canonical checkout and Codex restarts,
+the machine keeps the old shim and the old prompt rule, and `npm run run-claude:policy:check`
+reports the install as stale.
 
 ## What was deleted and why
 

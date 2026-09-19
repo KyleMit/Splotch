@@ -156,8 +156,9 @@ Alternatives rejected:
 The Claude-handler package uses the vendor-neutral `rival:*` npm namespace. The Codex-handler
 package keeps `run-claude:*` only for installing and checking the host-trusted package because those
 commands specifically manage the Claude launcher. The trusted core lives under
-`~/.local/libexec/splotch-rival-agent/`; the fixed `splotch-claude-review-publish.mjs` and
-`splotch-claude-health.mjs` shims remain for existing orchestrator callers. Codex's exec-policy
+`~/.local/libexec/splotch-rival-agent/`; the fixed `splotch-claude-health.mjs` shim remains at its
+original path. (The handler-less `splotch-claude-review-publish.mjs` shim also remained until its
+only caller, `implement-issue-stack`, was retired; issue #2077 removed it.) Codex's exec-policy
 patterns follow those installed entry points, so this amendment deliberately moves the trust
 boundary rather than preserving the old wrapper paths.
 

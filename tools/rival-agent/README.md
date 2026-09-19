@@ -92,11 +92,10 @@ review and never posts twice for one range.
 
 ## Sensitive findings and safe manual recovery
 
-Both the standalone poster and the fixed orchestrated publisher call the same pre-publish guard. It
-checks the rendered review body (including off-diff findings and unverified commands), inline
-comment bodies and inline paths before the POST. A match fails closed: no review is created, the
-original session files are untouched, and diagnostics name only the field and detection category.
-Clean reviews publish unchanged.
+The standalone poster runs a pre-publish guard. It checks the rendered review body (including
+off-diff findings and unverified commands), inline comment bodies and inline paths before the POST.
+A match fails closed: no review is created, the original session files are untouched, and
+diagnostics name only the field and detection category. Clean reviews publish unchanged.
 
 The guard recognizes modern physical iOS UDIDs and the Samsung serial shape used by the repository's
 canonical device guard. Generic identifiers (including 16-digit hexadecimal Android identifiers and
@@ -127,8 +126,6 @@ To recover a blocked review:
    `--sanitized-findings <absolute-path-to-copy>`. Codex uses the installed
    `/Users/kylemit/.local/libexec/splotch-rival-agent/post-review.mjs` wrapper; the Claude handler
    uses `node tools/rival-agent/post-review.mjs`. Keep the normal `--pr` and `--session` arguments.
-   This also recovers a blocked orchestrated run: use the session path printed in its progress log,
-   rather than launching another reviewer round.
 4. The copy is schema-checked, checked for unchanged finding anchors/severities, scanned again and
    explicitly marked as sanitized. Base/head OIDs and the hidden attribution marker still come from
    the original session; moved ranges remain blocked. Verify the posted review and its inline

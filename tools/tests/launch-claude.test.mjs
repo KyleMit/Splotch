@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -20,11 +19,6 @@ import {
   MANIFEST_NAME,
   verifyInstalledBytes,
 } from '../../.agents/skills/run-rival-agent/scripts/claude-health.mjs';
-import {
-  declinePending,
-  ORCHESTRATED_DECLINE_REASON,
-  parseReviewerArgs,
-} from '../../.agents/skills/run-rival-agent/scripts/claude-review-publish.mjs';
 import {
   ESCALATED_WRAPPERS,
   POLICY_RULES,
@@ -48,17 +42,13 @@ import {
   PACKAGE_FILES,
   rewriteCoreImports,
   shimSource,
+  STALE_PATHS,
 } from '../../.agents/skills/run-rival-agent/scripts/install-run-claude.mjs';
 import {
   assertClaudePlanAuthentication,
   assertNoApiBillingEnvironment,
 } from '../../.agents/skills/run-rival-agent/scripts/splotch-claude-subscription-auth.mjs';
-import {
-  appendRequest,
-  createSessionDirectory,
-  PENDING_REQUEST_TIMEOUT_MS,
-  readReply,
-} from '../rival-agent/spool.mjs';
+import { PENDING_REQUEST_TIMEOUT_MS } from '../rival-agent/spool.mjs';
 import { FINDINGS_SCHEMA_PATH } from '../rival-agent/validate-findings.mjs';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
@@ -271,33 +261,7 @@ describe('Claude rival command construction', () => {
   });
 });
 
-describe('orchestrated publisher alias', () => {
-  it('accepts only a fixed positive PR and its bounded cleanup action', () => {
-    expect(parseReviewerArgs(['--pr', '42'])).toEqual({ prNumber: 42, endSession: false });
-    expect(parseReviewerArgs(['--pr', '42', '--end-session'])).toEqual({
-      prNumber: 42,
-      endSession: true,
-    });
-    expect(() => parseReviewerArgs(['--pr', '0'])).toThrow('positive-integer');
-    expect(() => parseReviewerArgs(['--pr', '42', '--model', 'sonnet'])).toThrow();
-    expect(() => parseReviewerArgs(['42'])).toThrow();
-  });
-
-  it('declines every pending request with the fixed reason', () => {
-    const root = mkdtempSync(join(tmpdir(), 'rival-alias-'));
-    try {
-      const session = createSessionDirectory(randomUUID(), root);
-      appendRequest(session, { command: 'npm test', why: 'x' });
-      appendRequest(session, { command: 'npm run check', why: 'y' });
-      expect(declinePending(session)).toBe(2);
-      expect(readReply(session, 1)).toMatchObject({ declined: ORCHESTRATED_DECLINE_REASON });
-      expect(readReply(session, 2)).toMatchObject({ declined: ORCHESTRATED_DECLINE_REASON });
-      expect(declinePending(session)).toBe(0);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
+describe('review-mode contracts', () => {
   it('keeps the review-mode contracts the posted reviews and their responders rely on', () => {
     const leaveReview = readFileSync(
       join(repositoryRoot, '.ruler/skills/leave-pr-review/SKILL.md'),
@@ -350,6 +314,13 @@ describe('trusted installation', () => {
     );
   });
 
+  it('retires the handler-less publisher alias from the package and from existing installs', () => {
+    const retiredShim = join(EXPECTED_HOME, '.local/libexec/splotch-claude-review-publish.mjs');
+    expect(STALE_PATHS.map(canonicalHome)).toContain(retiredShim);
+    expect(Object.values(INSTALL_SHIMS).map(canonicalHome)).not.toContain(retiredShim);
+    expect(PACKAGE_FILES).not.toContain('claude-review-publish.mjs');
+  });
+
   it('verifies every installed byte against the manifest and says what drifted', () => {
     const root = mkdtempSync(join(tmpdir(), 'rival-manifest-'));
     try {
@@ -380,7 +351,6 @@ describe('trusted installation', () => {
     const root = mkdtempSync(join(tmpdir(), 'rival-install-check-'));
     try {
       const shims = {
-        reviewPublish: join(root, 'shim-publish.mjs'),
         health: join(root, 'shim-health.mjs'),
       };
       expect(() =>
@@ -420,7 +390,6 @@ describe('Codex policy', () => {
       canonicalHome(ESCALATED_WRAPPERS.health),
       canonicalHome(ESCALATED_WRAPPERS.launch),
       canonicalHome(ESCALATED_WRAPPERS.post),
-      canonicalHome(ESCALATED_WRAPPERS.reviewPublish),
       `node ${canonicalHome(join(INSTALL_ROOT, 'broker.mjs'))} next --session <dir>`,
       'splotch-rival-review',
     ]) {
@@ -452,9 +421,7 @@ describe('Codex policy', () => {
     expect(canonicalHome(ESCALATED_WRAPPERS.launch)).toBe(
       canonicalHome(join(INSTALL_ROOT, 'launch-claude.mjs'))
     );
-    expect(canonicalHome(ESCALATED_WRAPPERS.reviewPublish)).toBe(
-      canonicalHome(INSTALL_SHIMS.reviewPublish)
-    );
+    expect(canonicalHome(ESCALATED_WRAPPERS.health)).toBe(canonicalHome(INSTALL_SHIMS.health));
     const forbidden = [
       ...POLICY_RULES.matchAll(/pattern = \["([^"\]]*claude)"\], decision = "forbidden"/g),
     ].map((match) => match[1]);
@@ -467,7 +434,7 @@ describe('Codex policy', () => {
     const twice = replaceManagedRules(once);
     expect(twice).toBe(once);
     expect(once).toContain('launch-claude.mjs');
-    expect(once).toContain('splotch-claude-review-publish.mjs');
+    expect(once).toContain('splotch-claude-health.mjs');
     expect(once).toContain('pattern = ["npm"]');
     expect(() => validateManagedRules(once)).not.toThrow();
     expect(() => validateManagedRules(existing)).toThrow(/missing or stale/);

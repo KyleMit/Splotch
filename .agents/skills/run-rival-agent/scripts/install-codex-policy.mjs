@@ -22,7 +22,6 @@ export const CODEX_POLICY_PATHS = { config: CONFIG_PATH, rules: RULES_PATH };
 export const ESCALATED_WRAPPERS = Object.freeze({
   launch: join(INSTALL_ROOT, 'launch-claude.mjs'),
   post: join(INSTALL_ROOT, 'post-review.mjs'),
-  reviewPublish: INSTALL_SHIMS.reviewPublish,
   health: INSTALL_SHIMS.health,
 });
 
@@ -36,11 +35,6 @@ prefix_rule(
     pattern = ["${ESCALATED_WRAPPERS.post}"],
     decision = "prompt",
     justification = "Post a finished rival session's findings to one validated Splotch PR as a COMMENT review through gh.",
-)
-prefix_rule(
-    pattern = ["${ESCALATED_WRAPPERS.reviewPublish}"],
-    decision = "prompt",
-    justification = "The handler-less orchestrated PR-review alias: launch, auto-decline, post.",
 )
 prefix_rule(
     pattern = ["${ESCALATED_WRAPPERS.health}"],
