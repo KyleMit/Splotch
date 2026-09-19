@@ -154,19 +154,6 @@ rather than meeting the code cold. Three rounds is the budget; `--fresh` starts 
 /Users/kylemit/.local/libexec/splotch-rival-agent/launch-claude.mjs --end-session --pr <n>
 ```
 
-## The orchestrated alias
-
-An unattended orchestrator with no handler to serve the broker invokes a fixed publisher instead:
-
-```sh
-/Users/kylemit/.local/libexec/splotch-claude-review-publish.mjs --pr <number>
-```
-
-It launches the rival, declines every request it makes with a fixed reason, and posts the result.
-The rival still runs its tests and repros in its own sandbox, so that review is empirical; its
-unverified list says only what needed the handler. `--end-session` on the same path ends the PR's
-conversation.
-
 ## Options
 
 `--cwd <dir>` (defaults to the current directory; must be inside a git worktree),

@@ -13,14 +13,13 @@ const coreDirectory = join(repositoryRoot, 'tools/rival-agent');
 // Exported so the drift guard can normalize homedir()-based paths on noncanonical hosts.
 export const EXPECTED_HOME = '/Users/kylemit';
 const EXPECTED_REPOSITORY_ROOT = '/Users/kylemit/Code/Splotch';
-export const MANIFEST_VERSION = 5;
+export const MANIFEST_VERSION = 6;
 
 // One directory holds the whole trusted install: the vendor-neutral core copied verbatim and the
-// Codex-side package files with their core imports repointed at their new siblings. The two fixed
-// paths an unattended orchestrator invokes stay where they were as shims onto that directory.
+// Codex-side package files with their core imports repointed at their new siblings. The health
+// probe keeps its fixed path outside that directory as a shim onto it.
 export const INSTALL_ROOT = join(homedir(), '.local/libexec/splotch-rival-agent');
 export const INSTALL_SHIMS = Object.freeze({
-  reviewPublish: join(homedir(), '.local/libexec/splotch-claude-review-publish.mjs'),
   health: join(homedir(), '.local/libexec/splotch-claude-health.mjs'),
 });
 export const CORE_FILES = Object.freeze([
@@ -41,7 +40,6 @@ export const CORE_FILES = Object.freeze([
 export const PACKAGE_FILES = Object.freeze([
   'launch-claude.mjs',
   'claude-health.mjs',
-  'claude-review-publish.mjs',
   'splotch-claude-subscription-auth.mjs',
 ]);
 export const EXECUTABLE_FILES = Object.freeze([
@@ -49,11 +47,9 @@ export const EXECUTABLE_FILES = Object.freeze([
   'post-review.mjs',
   'launch-claude.mjs',
   'claude-health.mjs',
-  'claude-review-publish.mjs',
 ]);
 const CORE_IMPORT_PREFIX = "'../../../../tools/rival-agent/";
 const SHIM_SOURCES = Object.freeze({
-  reviewPublish: 'claude-review-publish.mjs',
   health: 'claude-health.mjs',
 });
 // Files earlier installers wrote and nothing reads any more.
@@ -62,6 +58,7 @@ export const STALE_PATHS = Object.freeze([
   join(homedir(), '.local/libexec/splotch-claude-stream.mjs'),
   join(homedir(), '.local/libexec/splotch-claude-subscription-auth.mjs'),
   join(homedir(), '.local/libexec/splotch-claude-review-health.mjs'),
+  join(homedir(), '.local/libexec/splotch-claude-review-publish.mjs'),
   join(homedir(), '.config/splotch-run-claude/settings.json'),
   join(homedir(), '.config/splotch-run-claude/runner-boundary.md'),
   join(homedir(), '.config/splotch-run-claude/reviewer-rubric.md'),

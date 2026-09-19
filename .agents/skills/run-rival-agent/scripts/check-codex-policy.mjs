@@ -33,7 +33,6 @@ export const POLICY_CASES = [
     command: [ESCALATED_WRAPPERS.post, '--pr', '1', '--session', '/private/tmp/s'],
     expected: 'prompt',
   },
-  { command: [ESCALATED_WRAPPERS.reviewPublish, '--pr', '1'], expected: 'prompt' },
   { command: [ESCALATED_WRAPPERS.health], expected: 'prompt' },
   { command: ['gh', 'pr', 'merge', '1'], expected: 'prompt' },
   { command: ['git', 'push', 'origin', 'codex/policy-check'], expected: 'prompt' },

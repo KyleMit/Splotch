@@ -6,23 +6,21 @@ command in Codex, and restart Codex so its config and rules reload. The installe
 * sets `approval_policy = "on-request"`, `approvals_reviewer = "auto_review"`, and
   `sandbox_mode = "workspace-write"` in `~/.codex/config.toml`;
 * copies the vendor-neutral core from `tools/rival-agent/` and this package's launcher, health
-  probe, publisher alias, and billing guard into `~/.local/libexec/splotch-rival-agent/`, repointing
-  the package files' core imports at their new siblings, and writes a manifest hashing every file;
-* writes the two fixed shims an unattended orchestrator invokes,
-  `~/.local/libexec/splotch-claude-review-publish.mjs` and
-  `~/.local/libexec/splotch-claude-health.mjs`, and removes the files earlier installers wrote;
-* allows only the launcher, the poster, the publisher alias, and the health probe at Codex's
-  approval boundary while forbidding raw Claude entry points;
+  probe, and billing guard into `~/.local/libexec/splotch-rival-agent/`, repointing the package
+  files' core imports at their new siblings, and writes a manifest hashing every file;
+* writes the fixed health-probe shim, `~/.local/libexec/splotch-claude-health.mjs`, and removes the
+  files earlier installers wrote, the retired `splotch-claude-review-publish.mjs` alias among them;
+* allows only the launcher, the poster, and the health probe at Codex's approval boundary while
+  forbidding raw Claude entry points;
 * sends `gh` and `git push` to the approval boundary (the Keychain-backed `gh` login cannot run in
   the sandbox), forbids `gh auth logout` and `gh repo delete`, and leaves `gh pr merge` promptable
   so a run holding merge authority — `ship-issue mode=autonomous`, `ship-campaign` — can use it. The
   block the retired `implement-issue-stack` installer wrote is removed on upgrade.
 
 The launcher and health probe hash every installed file against the manifest before launching the
-rival; the publisher alias inherits that check through the launcher. The standalone poster relies on
-the launcher having verified the session's installed package. In the checkout there is no manifest
-and nothing to verify — the checkout is the source. The reviewed worktree is untrusted material, and
-the installed wrappers import nothing from it.
+rival. The standalone poster relies on the launcher having verified the session's installed package.
+In the checkout there is no manifest and nothing to verify — the checkout is the source. The
+reviewed worktree is untrusted material, and the installed wrappers import nothing from it.
 
 ## What the rival can do
 
@@ -88,20 +86,13 @@ billing. `CLAUDE_CODE_OAUTH_TOKEN` remains allowed because it is a Claude plan t
 normally authenticates through the Keychain. The health probe additionally requires
 `claude auth status` to report a logged-in, non-API-key session.
 
-## Rounds and the alias
+## Rounds
 
 A review is keyed to the checkout plus the PR number, the commit, or the branch, and the Claude
 session id is recorded owner-only under `~/.config/splotch-rival-agent/ledger/`. Three rounds is the
 budget. `--end-session` deletes the conversation's transcript and sidecar directory under
 `~/.claude/projects/` — only for an id the ledger holds, which only ever holds ids this launcher
 issued — and removes the record.
-
-The orchestrated alias `splotch-claude-review-publish.mjs --pr <n>` runs without a handler: it
-declines every broker request with one fixed reason, waits for the rival to finish, and posts. With
-the sandboxed shell the rival verifies its claims itself, so the alias's reviews are empirical; the
-installed copy under `~/.local/libexec` carries that only after `npm run run-claude:install` is run
-again from the canonical checkout. It keeps the fixed path, the `--pr`/`--end-session` contract, the
-one-`COMMENT`-review rule, the hidden marker, and the three-round budget an orchestrator relies on.
 
 The prefix rules are not a complete remote security perimeter. Repository protections and narrowly
 scoped credentials remain the hard remote guarantees; Auto-review evaluates operations that reach
