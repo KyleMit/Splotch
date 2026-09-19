@@ -3,7 +3,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import {
   assertSubscriptionBilling,
+  CODEX_MODEL_SLUG_PATTERN,
   CONFIG_PATH,
+  MODEL_ENVIRONMENT_KEY,
+  SEED_ENVIRONMENT_KEY,
   SUBSCRIPTION_BASE_URL,
   SUBSCRIPTION_CREDENTIALS_STORE,
   SUBSCRIPTION_MODEL_PROVIDER,
@@ -11,7 +14,7 @@ import {
 import { BROKER_SERVER_PATH, isEntryPoint } from '../../../../tools/rival-agent/broker-server.mjs';
 import { runLaunchCli } from '../../../../tools/rival-agent/launch.mjs';
 import { PENDING_REQUEST_TIMEOUT_MS } from '../../../../tools/rival-agent/spool.mjs';
-import { codexReducer } from '../../../../tools/rival-agent/stream.mjs';
+import { codexReducer, STREAM_FAILURE } from '../../../../tools/rival-agent/stream.mjs';
 import { FINDINGS_SCHEMA_PATH } from '../../../../tools/rival-agent/validate-findings.mjs';
 
 export { BROKER_SERVER_PATH };
@@ -40,9 +43,6 @@ export const ISOLATION_FEATURES = Object.freeze([
   'multi_agent',
   'image_generation',
 ]);
-// Codex model slugs are free-form and change between releases, so the launcher validates only
-// that the value cannot be mistaken for a flag rather than pinning a set that would go stale.
-const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const TOP_LEVEL_MODEL = /^[ \t]*model[ \t]*=[ \t]*["']([^"']*)["']/m;
 const FIRST_TABLE_HEADER = /^[ \t]*\[/m;
 
@@ -53,13 +53,42 @@ export function readConfiguredModel(configToml) {
   return TOP_LEVEL_MODEL.exec(preamble)?.[1];
 }
 
-export function resolveCodexModel(requested, configToml) {
+export function resolveCodexModel(requested, configToml, env = process.env) {
   const model = requested ?? readConfiguredModel(configToml);
   if (!model) {
-    throw new Error('no model: pass --model or set a top-level model in ~/.codex/config.toml');
+    const cloudRemedy =
+      env.CLAUDE_CODE_REMOTE === 'true'
+        ? ` (a cloud session writes that file from ${MODEL_ENVIRONMENT_KEY} at SessionStart; set it in the environment dialog)`
+        : '';
+    throw new Error(
+      `no model: pass --model or set a top-level model in ~/.codex/config.toml${cloudRemedy}`
+    );
   }
-  if (!MODEL_PATTERN.test(model)) throw new Error(`unsupported model: ${model}`);
+  if (!CODEX_MODEL_SLUG_PATTERN.test(model)) throw new Error(`unsupported model: ${model}`);
   return model;
+}
+
+// Codex's own wording for a stored login it can no longer refresh: the REFRESH_TOKEN_*_MESSAGE
+// family in codex-rs/login/src/auth/manager.rs at the pinned version covers an expired, reused, or
+// revoked refresh token, an account signed out elsewhere, and a generic failure, all on this prefix.
+// `codex login status` is offline and reports the file as healthy, so this is where a dead login
+// first becomes visible; the causes share one remedy, so the matcher is as broad as the family.
+const LOGIN_FAILURE_PATTERN = /access token could not be refreshed/i;
+
+export function isCodexLoginFailure(error) {
+  return error?.code === STREAM_FAILURE.exited && LOGIN_FAILURE_PATTERN.test(error.message ?? '');
+}
+
+// The remedy differs by where the launcher runs: a developer machine signs in again, a Claude Code
+// on the web session has no browser and takes its login from the seeded environment variable. The
+// cause is not claimed beyond what Codex said — a seed refreshed and rotated on another VM is the
+// expected one in cloud, not the only one.
+export function describeCodexLoginFailure(error, env = process.env) {
+  const remedy =
+    env.CLAUDE_CODE_REMOTE === 'true'
+      ? `This is a Claude Code on the web session, where the usual cause is a seed that another VM has since refreshed and rotated. Re-seed it: run \`npm run rival:seed\` on your machine and paste the value as ${SEED_ENVIRONMENT_KEY} in the cloud environment; the SessionStart hook replaces the stale file at the next session start (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").`
+      : 'Run `codex login` to sign in again.';
+  return `Codex can no longer use its stored ChatGPT login (its refresh token has expired, been reused, been revoked, or the account signed out elsewhere). ${remedy}\n${error.message}`;
 }
 
 // Inline TOML for the one server the rival may see. JSON string escaping is valid TOML basic-string
@@ -144,6 +173,8 @@ export const codexVendor = Object.freeze({
     );
   },
   buildArgs: buildCodexArgs,
+  isLoginFailure: isCodexLoginFailure,
+  describeLoginFailure: describeCodexLoginFailure,
 });
 
 if (isEntryPoint(import.meta.url)) runLaunchCli(process.argv.slice(2), codexVendor);

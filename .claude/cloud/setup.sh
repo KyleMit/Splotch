@@ -59,6 +59,27 @@ if ! command -v chisel >/dev/null 2>&1; then
     || warn "chisel install skipped — check github release-asset egress"
 fi
 
+# Codex CLI for the run-rival-agent skill. Its linux-x64 binary ships as an npm optional
+# dependency, so the install reaches only registry.npmjs.org. The install is all this script does
+# for Codex: the login is seeded per session by tools/seed-codex-auth.mjs from the
+# CODEX_AUTH_JSON environment variable, because the snapshot must never hold a credential
+# (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").
+# `command -v` alone would accept the npm wrapper with its optional platform binary missing, or an
+# older CLI, and skip the repair on every rebuild; the pin is what counts, before and after. The
+# executable must exit 0 and report exactly the pin: a substring match would take 0.155.10 for
+# 0.155.1, and `[[ ]]` alone would discard a failing exit that still printed something.
+CODEX_VERSION=0.155.1
+codex_at_pin() {
+  local reported
+  reported="$(codex --version 2>/dev/null)" || return 1
+  [[ "$reported" == "codex-cli ${CODEX_VERSION}" ]]
+}
+if ! codex_at_pin; then
+  npm install --global "@openai/codex@${CODEX_VERSION}" && codex_at_pin \
+    && echo "codex ${CODEX_VERSION} installed" \
+    || warn "codex ${CODEX_VERSION} is not runnable after the install — run-rival-agent is unavailable until the snapshot rebuilds with it"
+fi
+
 # Optional per-environment extras. SPLOTCH_CLOUD_PROFILE is a comma-separated list set in the
 # environment dialog, so one committed setup script serves several environments and the default
 # box stays lean — the android profile alone adds ~5 GB and several minutes to the snapshot build.

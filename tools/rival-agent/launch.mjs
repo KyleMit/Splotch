@@ -129,9 +129,9 @@ export function rivalEnvironment(env, { session }) {
 }
 
 // Only the rival refusing the run is worth a second attempt; every other failure is either the
-// user's decision or a condition a retry would repeat.
-export function isRetryableResumeFailure(error) {
-  return error?.code === STREAM_FAILURE.exited;
+// user's decision or a condition a retry would repeat — a vendor-recognized retired login included.
+export function isRetryableResumeFailure(error, vendor) {
+  return error?.code === STREAM_FAILURE.exited && !vendor?.isLoginFailure?.(error);
 }
 
 function resolveRepoRoot(cwd) {
@@ -184,8 +184,10 @@ function finish(session, state, logPath, extra) {
 // A vendor adapter supplies what differs between the two rivals: `rival`, `command`, `prepare()`
 // (the billing guard; returns the child env), `resolveModel(requested)`, `buildArgs(...)`,
 // `reducer`, `toolBoundary` (what the rival's own sandboxed shell can and cannot do, in the
-// vendor's words), `newSessionId()` (a wrapper-issued id for CLIs that take one up front), and
-// `endSession(record)`. Everything else in a round is the same on both sides.
+// vendor's words), `newSessionId()` (a wrapper-issued id for CLIs that take one up front),
+// `endSession(record)`, and the optional pair `isLoginFailure(error)` / `describeLoginFailure(error)`
+// for a CLI whose stored login can die between runs in wording only that vendor knows. Everything
+// else in a round is the same on both sides.
 export async function launch(
   options,
   vendor,
@@ -291,7 +293,7 @@ export async function launch(
     } catch (error) {
       // The rival's own session store can prune a recorded conversation — that is worth one fresh
       // attempt. A cancelled run, a stalled run, and a lost audit log are not.
-      if (!plan.resume || !isRetryableResumeFailure(error)) throw error;
+      if (!plan.resume || !isRetryableResumeFailure(error, vendor)) throw error;
       onProgress(`resume failed (${error.message.split('\n')[0]}); starting fresh`);
       removeLedgerRecord(recordPath);
       plan = planRound(undefined);
@@ -331,7 +333,10 @@ export function runLaunchCli(argv, vendor) {
   return launch(parseLaunchArgs(argv), vendor)
     .then((result) => process.stdout.write(`${JSON.stringify(result, null, 2)}\n`))
     .catch((error) => {
-      process.stderr.write(`${error.message}\n`);
+      const message = vendor.isLoginFailure?.(error)
+        ? vendor.describeLoginFailure(error)
+        : error.message;
+      process.stderr.write(`${message}\n`);
       process.exitCode = 1;
     });
 }

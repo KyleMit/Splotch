@@ -11,6 +11,8 @@
 splotch-tunnel-kyle.fly.dev                     # phone-preview reverse tunnel (ADR-0021)
 cdn.playwright.dev                              # E2E browser download
 playwright.download.prss.microsoft.com          # E2E browser download
+chatgpt.com                                     # Codex plan usage endpoint (run-rival-agent); Full network access needs no entry
+auth.openai.com                                 # Codex token refresh (run-rival-agent)
 
 [env]
 # Secrets — set the values in the dialog, NEVER commit them.
@@ -19,6 +21,16 @@ OPENAI_API_KEY=                                  # /api/generate-image model cal
 ADMIN_ACCESS_TOKEN=                              # /admin console + /api/admin/* auth
 ALLOWED_TOKENS_LIST=                             # seed access codes
 USAGE_GRANT_ID_SECRET=                           # HMAC key for opaque managed-code usage ids
+# Codex ChatGPT-plan login for run-rival-agent: the value `npm run rival:seed` copies to the
+# clipboard (base64 of an auth.json from a DEDICATED login under ~/.codex-cloud, never your working
+# ~/.codex one) — see docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan", for the
+# refresh-rotation shelf life. Re-paste after the first cloud review past the token expiry the
+# script prints; a changed value replaces the file the previous seed wrote.
+CODEX_AUTH_JSON=
+# Non-secret — the model slug the cloud rival runs; tools/seed-codex-auth.mjs writes it into
+# ~/.codex/config.toml at SessionStart because `rival:launch` ignores every other config. Without it
+# each cloud launch needs --model. `npm run rival:seed` prints your laptop's configured slug.
+CODEX_MODEL=
 # Non-secret — safe to pin here. Lets plain `npm run dev` accept the tunnel host (vite
 # allowedHosts). `npm run dev:tunnel` injects this itself, so it's optional if you only
 # ever preview via that script.
