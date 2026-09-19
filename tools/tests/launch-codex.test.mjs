@@ -4,6 +4,8 @@ import {
   BROKER_SERVER_PATH,
   buildCodexArgs,
   codexVendor,
+  describeCodexLoginFailure,
+  isCodexLoginFailure,
   ISOLATION_FEATURES,
   readConfiguredModel,
   resolveCodexModel,
@@ -19,6 +21,7 @@ import {
 } from '../../.claude/skills/run-rival-agent/scripts/codex-subscription-auth.mjs';
 import { assertSubscriptionLogin } from '../../.claude/skills/run-rival-agent/scripts/codex-health.mjs';
 import { PENDING_REQUEST_TIMEOUT_MS } from '../rival-agent/spool.mjs';
+import { STREAM_FAILURE } from '../rival-agent/stream.mjs';
 import { FINDINGS_SCHEMA_PATH } from '../rival-agent/validate-findings.mjs';
 
 const PLAN_AUTH = { auth_mode: 'chatgpt', tokens: { access_token: 'token' } };
@@ -71,6 +74,10 @@ describe('Codex rival model selection', () => {
     expect(resolveCodexModel(undefined, 'model = "other"\n')).toBe('other');
     expect(() => resolveCodexModel('--yolo', '')).toThrow(/model/);
     expect(() => resolveCodexModel(undefined, '')).toThrow(/no model/);
+    expect(() => resolveCodexModel(undefined, '', {})).not.toThrow(/CODEX_MODEL/);
+    expect(() => resolveCodexModel(undefined, '', { CLAUDE_CODE_REMOTE: 'true' })).toThrow(
+      /CODEX_MODEL/
+    );
   });
 });
 
@@ -171,5 +178,51 @@ describe('Codex rival command construction', () => {
     expect(typeof codexVendor.prepare).toBe('function');
     expect(typeof codexVendor.resolveModel).toBe('function');
     expect(codexVendor.buildArgs).toBe(buildCodexArgs);
+    expect(codexVendor.isLoginFailure).toBe(isCodexLoginFailure);
+    expect(codexVendor.describeLoginFailure).toBe(describeCodexLoginFailure);
+  });
+});
+
+// Measured in the 2026-09-02 cloud session on codex-cli 0.152.1 with a fake auth.json whose refresh
+// token the auth server had never issued: Codex exits 1 with the "already used" wording, while
+// `codex login status` and the health check stay green because both read only the file. The other
+// fixtures are the sibling messages from the pinned version's REFRESH_TOKEN_*_MESSAGE family; a
+// retry would spend nothing on any of them but would also fix nothing.
+describe('Codex rival unusable login', () => {
+  const UPSTREAM_REFRESH_FAILURES = [
+    'Your access token could not be refreshed because your refresh token has expired. Please log out and sign in again.',
+    'Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.',
+    'Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again.',
+    'Your access token could not be refreshed. Please log out and sign in again.',
+    'Your access token could not be refreshed because you have since logged out or signed in to another account. Please sign in again.',
+  ];
+  const exited = (message) =>
+    Object.assign(
+      new Error(`codex exited 1 after "thread.started". Log: /tmp/x.jsonl\nERROR: ${message}`),
+      { code: STREAM_FAILURE.exited }
+    );
+  const reused = exited(UPSTREAM_REFRESH_FAILURES[1]);
+
+  it('recognizes every message of the family, only on an exit', () => {
+    for (const message of UPSTREAM_REFRESH_FAILURES) {
+      expect(isCodexLoginFailure(exited(message))).toBe(true);
+    }
+    expect(isCodexLoginFailure({ code: STREAM_FAILURE.exited, message: 'exited 2' })).toBe(false);
+    expect(
+      isCodexLoginFailure({ code: STREAM_FAILURE.stalled, message: UPSTREAM_REFRESH_FAILURES[1] })
+    ).toBe(false);
+  });
+
+  it('names the remedy for the platform without claiming a cause Codex did not', () => {
+    const cloud = describeCodexLoginFailure(reused, { CLAUDE_CODE_REMOTE: 'true' });
+    expect(cloud).toContain('rival:seed');
+    expect(cloud).toContain('CODEX_AUTH_JSON');
+    expect(cloud).not.toContain('`codex login`');
+    expect(cloud).toMatch(/usual cause/);
+    const revoked = describeCodexLoginFailure(exited(UPSTREAM_REFRESH_FAILURES[2]), {});
+    expect(revoked).toContain('`codex login`');
+    expect(revoked).not.toContain('CODEX_AUTH_JSON');
+    expect(revoked).not.toMatch(/retired by refresh rotation/);
+    expect(revoked).toContain(UPSTREAM_REFRESH_FAILURES[2]);
   });
 });
