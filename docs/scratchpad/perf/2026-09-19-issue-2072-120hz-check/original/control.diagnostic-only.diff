@@ -1,0 +1,13 @@
+diff --git a/web/src/lib/drawing/tiledRenderer.ts b/web/src/lib/drawing/tiledRenderer.ts
+index 06895a8af..20944c95c 100644
+--- a/web/src/lib/drawing/tiledRenderer.ts
++++ b/web/src/lib/drawing/tiledRenderer.ts
+@@ -358,7 +358,7 @@ export function scheduleTiledHistoryFold() {
+   historyFoldTimer = setTimeout(() => {
+     historyFoldTimer = null;
+     if (host?.hasActivePointers() || history.length <= undoableCommands) return;
+-    withCanvasRasterFlush(foldOldestCommand);
++    foldOldestCommand();
+     scheduleTiledHistoryFold();
+   }, TILE_HISTORY_FOLD_IDLE_MS);
+ }

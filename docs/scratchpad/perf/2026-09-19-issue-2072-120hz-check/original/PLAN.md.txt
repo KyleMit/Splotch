@@ -1,0 +1,179 @@
+# Issue 2072 confirmation at 120 Hz — pre-registered plan
+
+Written 2026-09-19 before any scored capture. Nothing below changes after the first scored run.
+
+## Question
+
+On current main, does PR 2074's history-fold raster flush still remove the first-undo stall on
+Android Chrome web when the panel runs at its default 120 Hz, and what does it cost the idle frames
+that contain a fold? The original 5×5 confirmation ran under a leaked 60 Hz refresh pin.
+
+## Arms (one session, same phone, same Chrome, same harness)
+
+* **Treatment (`trt`)**: origin/main 73b77dfbcd4a3f0d414d86928cbdeb3fd349bcd4, unmodified, `npm run perf:build`.
+* **Control (`ctl`)**: the same commit with one line changed in `web/src/lib/drawing/tiledRenderer.ts`:
+  `withCanvasRasterFlush(foldOldestCommand);` → `foldOldestCommand();` (`control.diff`). The flush
+  module becomes unreferenced, so no WebGL context is ever created — the pre-fix behaviour on
+  current code. Diagnostic only; never committed or shipped. No `web/src` file changed between the
+  fix merge a8ff7916 and 73b77dfb, so the control equals the pre-fix fold path on today's code.
+* Each arm is served by its own `vite preview` (explicit ports) from its own worktree; every run
+  records the entry chunk its page loaded, and each run must match its arm's built entry.
+
+## Harness (unchanged from the evidence package at main)
+
+* Driver `run-session-android.mjs`, payload `session-payload.js` (1750 package), scorer `score.mjs`
+  — used unmodified from main (SHA-256s in `harness.sha256`).
+* `/dev/engine`, arm `restamp`, mode `paced`, config `{"undoGapMs":700,"margin":24}`: 30 paced crayon
+  scribbles (240 points, 2 moves per rAF, 300 ms apart), settle until history folding is quiet, +4 s,
+  20 undos 700 ms apart, 4 s tail.
+* **Cadence note.** Stroke delivery is frame-driven (2 moves per rAF), so at 120 Hz each stroke takes
+  about half the wall time it took at 60 Hz. Geometry and point count are unchanged. The old 60 Hz
+  runs are therefore NOT controls here; arms are compared only within this session.
+
+## Order (fixed, balanced)
+
+`ctl trt trt ctl ctl trt trt ctl ctl trt` — labels `c1 t1 t2 c2 c3 t3 t4 c4 c5 t5`.
+Each run is a fresh page load (new Chrome tab opened by the driver, closed at the end).
+
+## Pre-run checks (every run, recorded)
+
+`peak_refresh_rate` and `min_refresh_rate` null; `renderFrameRate` 120; phone awake; no stale
+`/dev/engine` tab left by a previous run; host idle apart from the driver (no builds/tests).
+
+## Validity (technical invalidity — the only grounds for replacement)
+
+A run is technically invalid if any of these hold:
+
+1. The driver or page errors, times out, or returns no result.
+2. The served entry differs from that arm's built entry.
+3. Viewport differs from the first valid run (expected portrait, DPR 3) or orientation is not PORTRAIT.
+4. **Cadence**: the tail's median rAF interval (score.mjs `cadenceMs`) is outside 7.8–8.9 ms, or the
+   median interval of the draw, settle, or undo phase is outside 7.8–8.9 ms. A pre-run
+   `renderFrameRate` other than 120 or a non-null pin also invalidates.
+
+Workload-correctness checks (30 strokes, history 20 with 20 snapshots, 20 undos, identical final ink
+across all runs) are **findings**, not technical invalidity: a failure there is reported as a
+correctness result and is not replaced.
+
+**Replacement.** At most one replacement per arm, run immediately after the planned sequence ends
+(order: ctl replacement first, then trt). The invalid original is kept in the evidence with its reason.
+A slow valid run is never replaceable. If a second run in one arm is invalid, sampling stops and the
+unit is reported inconclusive/blocked with the specific cause.
+
+**Stopping.** 10 planned runs (+ at most 2 replacements). No further sampling for significance.
+If two consecutive runs fail the cadence rule, stop: 120 Hz could not be held through this route;
+report the blocker and do not score the remainder as confirmation.
+
+## Metrics (per run; one run = one experimental unit, frames never pooled)
+
+Primary:
+* Worst complete rAF interval in the undo phase (`undoPhaseMaxMs`).
+* Worst rAF interval in the settle/idle-fold phase (`settle.maxMs`) — the trade-off metric.
+
+Secondary (all from `score.mjs`, unchanged): undo windows over `ACTION_FRAME_MAX_GATE_MS` = 33.5 ms,
+per-undo window worsts (undo 1's window = first-undo presentation), undo-1 `toFrameMs` from the raw
+result, settle late excess, draw late excess, whole-session late excess, `engine.commit` p95,
+`engine.fold` max and count, `engine.undo` JS sum, strokes, history depth/snapshots, undo count, ink.
+
+Cadence-explicit additions (reported beside, never replacing, the unchanged metrics):
+* Median interval per phase and the tail cadence.
+* Each primary max also expressed in beats (max ÷ cadence).
+* `LATE_INTERVAL_MS` = 25 ms is kept. At 120 Hz a three-beat interval is exactly 25.0 ms, so the
+  unchanged late-excess metrics sit on a boundary and ignore two-beat misses. A sensitivity variant,
+  `excess>1.5beat` = Σ(interval − cadence) over intervals > 1.5 × cadence, is reported per phase,
+  labelled as a sensitivity analysis, not a gate.
+* Gate note: 33.5 ms fails iff work W > 33.3 ms at both 60 and 120 Hz (ADR-0143), so the action gate
+  is unchanged and cadence-neutral for detection. The issue's acceptance bound (≤ 100 ms undo-phase
+  max in every treatment run) is unchanged.
+
+## Analysis (existing method)
+
+Per metric: every run value, medians and ranges per arm, treatment − control median difference with
+the seeded bootstrap 95% CI, and the exact two-sided permutation p (5 vs 5 → minimum 2/252 = 0.0079).
+Implemented by `score.mjs` plus `phase-cadence.mjs` for the cadence additions.
+
+## Decision rules
+
+* **Confirmed benefit**: every valid treatment run has undo-phase max ≤ 100 ms, and treatment <
+  control on undo-phase max with the permutation p at its minimum attainable value for the valid n.
+* **Trade-off characterized** when all 10 valid runs report settle max and settle excess. It is
+  called **material** (needs an explicit disposition, not a silent pass) if any of:
+  any treatment settle interval > 100 ms; treatment − control settle-max median > 50 ms;
+  or a draw- or undo-phase metric regresses with p at its minimum attainable value.
+* **Regression found**: a treatment undo-phase max > 100 ms in a valid run, or a correctness mismatch
+  in treatment only.
+* **Inconclusive**: benefit or trade-off cannot be decided by the rules above with the valid runs.
+
+## Instrument limits
+
+rAF stamps are the BeginFrame (vsync-scheduled) times the renderer hands to callbacks, not
+presentation times; a GPU backlog shows only when it back-pressures BeginFrames (as it did in the
+original stall). No trace, pixel readback, or memory sampling runs during scored runs. After the
+scored set, if time allows, ONE unscored traced run per arm (`run-traced.mjs`) may be taken for
+direct GPU/presentation evidence; tracing stretches the stall, so it is never scored.
+
+## Amendments from the Codex method review (made before any scored capture; these supersede the sections above where they conflict)
+
+Review: `rival-method-findings.json` (0 blocking findings; the points below adopted).
+
+1. **Phase attribution.** `score.mjs` counts an interval that overlaps a phase boundary in both
+   phases; its metrics are kept unchanged and labelled overlapping-window. The trade-off decision uses
+   `phase-cadence.mjs`'s **settle interior** max (intervals wholly inside [presented, undoStart]); the
+   interval crossing into the undo phase is reported separately (`boundaryIntoUndoMs`), and the worst
+   interior interval is placed relative to the nearest `engine.fold` start.
+2. **Raw values for decisions.** The 100 ms rule and the cadence band use unrounded values.
+3. **Validity narrowed to independently established setup failures.** Technical invalidity (the only
+   replaceable class) is now only: pre-run pin non-null or `renderFrameRate` ≠ 120; served entry ≠
+   the arm's built entry; viewport/orientation ≠ the first run's; or a driver/CDP/host failure before
+   the payload is injected (no page, no connection). A page error after injection, a timeout, or any
+   workload-induced cadence change is an **outcome**: retained, not replaced, and it blocks a
+   "confirmed" verdict if it occurs in treatment. Phase-median cadence is reported, not used to
+   invalidate. Tail cadence outside 7.8–8.9 ms is recorded as cadence drift and kept; two consecutive
+   runs with drifted tail cadence stop the session (120 Hz not held — report as blocker).
+4. **Decision rules tightened.** Confirmation requires five valid runs in each arm. A workload
+   correctness failure (strokes ≠ 30, history ≠ 20/20, undos ≠ 20, 10 folds not all before undo,
+   settle loop hitting its cap, ink count differing between runs) in either arm blocks the
+   performance conclusion and is reported as a correctness finding; one in treatment prevents a
+   successful verdict. Benefit, trade-off, and correctness are reported as separate verdicts.
+   "Regression" metrics are exactly: `undoPhaseMaxMs`, `undoWindowsOverGate`, `draw.lateExcessMs`,
+   `commitP95Ms`, `foldMaxMs`, `undoJsSumMs`; a regression is treatment worse than control with
+   complete separation (every treatment run worse than every control run). Sensitivity metrics are
+   never decision inputs. The material-trade-off thresholds are operational flags; not tripping them
+   does not demonstrate equivalence.
+5. **Run manifest.** Labels are `c1-ctl … t5-trt`; scoring is passed an explicit manifest of included
+   files with inclusion reasons, never a directory holding excluded originals. `phase-cadence.mjs`
+   is hashed into `harness.sha256` before capture.
+6. **Statistics wording.** Order stays fixed (not randomized), so the permutation p (difference of
+   means) is descriptive/conditional on exchangeability; the operational criterion for "confirmed"
+   benefit is complete separation plus the ≤ 100 ms bound. The bootstrap CI is of the median difference.
+7. **Workload.** "Identical ink" means equal non-transparent pixel counts, not pixel identity.
+
+## Amendment B — 120 Hz blocker found in pre-capture probes (before any scored run)
+
+`cadence-probe.log` (unscored, idle `/dev/engine`, 5–20 s of rAF per probe):
+
+| Probe | Panel `renderFrameRate` | Pins | Page rAF |
+| --- | --- | --- | --- |
+| trt / ctl, device default | 120 | unset | 16.7 ms median (60 Hz), p05 16.6 |
+| trt / ctl, `peak`=`min`=120 | 120 | 120 | 16.7 ms median (60 Hz) |
+| trt, pins 120, real `adb input swipe` late in window | 120 | 120 | 120 frames/s only while the finger is down |
+| trt, pins 120, 1.5 s swipe then 14 s idle | 120 | 120 | 60 → 84 → 120 → 66 → 60 per second: back to 60 Hz within ~1 s of lift |
+
+There's no Android frame-rate override for Chrome (`mFrameRateOverrides=[]`, `FrameRateOverrides=none`).
+Chrome throttles the page's main frame to 60 Hz unless real touch is arriving, whatever the panel does. The
+in-page driver delivers no touch, so **stable 120 Hz page cadence cannot be established through this
+harness on this phone**. That is the reported blocker. The pins were deleted again after the probes.
+The phone was also lying sideways with auto-rotate on, so the page loaded landscape (699×274). Portrait is
+held for this unit with `accelerometer_rotation=0`, `user_rotation=0`, restored at the end.
+
+The 120 Hz confirmation is therefore **blocked**, not scored. In its place, the same pre-registered protocol
+runs as a **pin-free replication on current main** at the cadence Chrome actually delivers without touch.
+Nothing else in the protocol changes:
+
+* Pins unset (device default), panel reports 120, portrait lock as above.
+* The cadence band in Amendment 3 becomes **16.2–17.2 ms** (Chrome's no-touch rAF on this phone). A tail
+  cadence of 8.3 ms would also be recorded as drift.
+* It is labelled everywhere as the 60 Hz-rAF replication at device-default display settings. It is NOT a
+  120 Hz confirmation. It answers two narrower questions: whether the original evidence depended on the
+  leaked pin, and what the idle-fold trade-off costs under the only cadence an idle fold gets in Chrome on
+  this phone.

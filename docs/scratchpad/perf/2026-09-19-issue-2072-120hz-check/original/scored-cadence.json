@@ -1,0 +1,672 @@
+[
+ {
+  "label": "c1-ctl",
+  "arm": "ctl",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BWCvNp7k.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 25,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 4171
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 58.3,
+    "maxBeats": 3.49,
+    "excessOver1p5BeatMs": 257.8,
+    "over1p5Beat": 10,
+    "frames": 1144
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 1424.5,
+    "maxBeats": 85.3,
+    "excessOver1p5BeatMs": 1407.8,
+    "over1p5Beat": 1,
+    "frames": 760
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 58.30000000000291,
+   "maxBeats": 3.49,
+   "worstStartsAfterFoldStartMs": -2.4,
+   "nearestFoldDurationMs": 56.6,
+   "boundaryIntoUndoMs": 16.7
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 1424.5,
+   "toFrameMs": 15.1,
+   "callMs": 13.9
+  },
+  "wallFromInjectMs": 111833,
+  "drawWallMs": 69695.2,
+  "settleWallMs": 19301.4
+ },
+ {
+  "label": "c2-ctl",
+  "arm": "ctl",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BWCvNp7k.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 25.1,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 16.8,
+    "over1p5Beat": 2,
+    "frames": 4171
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 41.7,
+    "maxBeats": 2.5,
+    "excessOver1p5BeatMs": 208,
+    "over1p5Beat": 10,
+    "frames": 1147
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 1408.3,
+    "maxBeats": 84.33,
+    "excessOver1p5BeatMs": 1391.6,
+    "over1p5Beat": 1,
+    "frames": 761
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 41.70000000001164,
+   "maxBeats": 2.5,
+   "worstStartsAfterFoldStartMs": 10.6,
+   "nearestFoldDurationMs": 57.5,
+   "boundaryIntoUndoMs": 16.6
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 1408.3,
+   "toFrameMs": 11.4,
+   "callMs": 11
+  },
+  "wallFromInjectMs": 111822,
+  "drawWallMs": 69670.6,
+  "settleWallMs": 19313.1
+ },
+ {
+  "label": "c3-ctl",
+  "arm": "ctl",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BWCvNp7k.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 25.1,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 25.2,
+    "over1p5Beat": 3,
+    "frames": 4171
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 58.4,
+    "maxBeats": 3.5,
+    "excessOver1p5BeatMs": 266.3,
+    "over1p5Beat": 10,
+    "frames": 1144
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 1416.9,
+    "maxBeats": 84.84,
+    "excessOver1p5BeatMs": 1408.6,
+    "over1p5Beat": 2,
+    "frames": 760
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 58.39999999999418,
+   "maxBeats": 3.5,
+   "worstStartsAfterFoldStartMs": -2.1,
+   "nearestFoldDurationMs": 58.3,
+   "boundaryIntoUndoMs": 16.7
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 1416.9,
+   "toFrameMs": 13,
+   "callMs": 12.4
+  },
+  "wallFromInjectMs": 111863,
+  "drawWallMs": 69723,
+  "settleWallMs": 19324.6
+ },
+ {
+  "label": "c4-ctl",
+  "arm": "ctl",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BWCvNp7k.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 25.1,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 33.6,
+    "over1p5Beat": 4,
+    "frames": 4170
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 58.4,
+    "maxBeats": 3.5,
+    "excessOver1p5BeatMs": 258,
+    "over1p5Beat": 10,
+    "frames": 1144
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 1424.5,
+    "maxBeats": 85.3,
+    "excessOver1p5BeatMs": 1407.8,
+    "over1p5Beat": 1,
+    "frames": 760
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 58.40000000000873,
+   "maxBeats": 3.5,
+   "worstStartsAfterFoldStartMs": -2.3,
+   "nearestFoldDurationMs": 56.8,
+   "boundaryIntoUndoMs": 16.7
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 1424.5,
+   "toFrameMs": 11.6,
+   "callMs": 10.9
+  },
+  "wallFromInjectMs": 111871,
+  "drawWallMs": 69738.9,
+  "settleWallMs": 19311.3
+ },
+ {
+  "label": "c5-ctl",
+  "arm": "ctl",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BWCvNp7k.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 33.2,
+    "maxBeats": 1.99,
+    "excessOver1p5BeatMs": 66.9,
+    "over1p5Beat": 7,
+    "frames": 4171
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 58.3,
+    "maxBeats": 3.49,
+    "excessOver1p5BeatMs": 233,
+    "over1p5Beat": 10,
+    "frames": 1146
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 1424.8,
+    "maxBeats": 85.32,
+    "excessOver1p5BeatMs": 1408.1,
+    "over1p5Beat": 1,
+    "frames": 761
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 58.30000000000291,
+   "maxBeats": 3.49,
+   "worstStartsAfterFoldStartMs": -1.9,
+   "nearestFoldDurationMs": 57.3,
+   "boundaryIntoUndoMs": 16.7
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 1424.8,
+   "toFrameMs": 13.6,
+   "callMs": 10.7
+  },
+  "wallFromInjectMs": 111911,
+  "drawWallMs": 69760.5,
+  "settleWallMs": 19316.2
+ },
+ {
+  "label": "t1-trt",
+  "arm": "trt",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BE2GeFJm.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 25.1,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 33.6,
+    "over1p5Beat": 4,
+    "frames": 4171
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 91.6,
+    "maxBeats": 5.49,
+    "excessOver1p5BeatMs": 290.8,
+    "over1p5Beat": 10,
+    "frames": 1146
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 25,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 840
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 91.60000000000582,
+   "maxBeats": 5.49,
+   "worstStartsAfterFoldStartMs": -39.3,
+   "nearestFoldDurationMs": 56.5,
+   "boundaryIntoUndoMs": 16.6
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 17.4,
+   "toFrameMs": 12.4,
+   "callMs": 11.7
+  },
+  "wallFromInjectMs": 111901,
+  "drawWallMs": 69757.6,
+  "settleWallMs": 19372.6
+ },
+ {
+  "label": "t2-trt",
+  "arm": "trt",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BE2GeFJm.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 33.3,
+    "maxBeats": 1.99,
+    "excessOver1p5BeatMs": 58.6,
+    "over1p5Beat": 6,
+    "frames": 4170
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 74.9,
+    "maxBeats": 4.49,
+    "excessOver1p5BeatMs": 299.6,
+    "over1p5Beat": 10,
+    "frames": 1144
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 25,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 839
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 74.89999999999418,
+   "maxBeats": 4.49,
+   "worstStartsAfterFoldStartMs": -25.8,
+   "nearestFoldDurationMs": 50.2,
+   "boundaryIntoUndoMs": 16.7
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 25,
+   "toFrameMs": 12.6,
+   "callMs": 12
+  },
+  "wallFromInjectMs": 111802,
+  "drawWallMs": 69699.8,
+  "settleWallMs": 19351
+ },
+ {
+  "label": "t3-trt",
+  "arm": "trt",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BE2GeFJm.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.6,
+  "cadenceUnroundedMs": 16.60000000000582,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 25.1,
+    "maxBeats": 1.51,
+    "excessOver1p5BeatMs": 193.5,
+    "over1p5Beat": 23,
+    "frames": 4170
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 91.6,
+    "maxBeats": 5.52,
+    "excessOver1p5BeatMs": 292.3,
+    "over1p5Beat": 11,
+    "frames": 1144
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 22.7,
+    "maxBeats": 1.37,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 841
+   },
+   "tail": {
+    "medianMs": 16.6,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 91.60000000000582,
+   "maxBeats": 5.52,
+   "worstStartsAfterFoldStartMs": -42.2,
+   "nearestFoldDurationMs": 48.5,
+   "boundaryIntoUndoMs": 16.6
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 18.2,
+   "toFrameMs": 9.7,
+   "callMs": 9.3
+  },
+  "wallFromInjectMs": 111811,
+  "drawWallMs": 69720.9,
+  "settleWallMs": 19348
+ },
+ {
+  "label": "t4-trt",
+  "arm": "trt",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BE2GeFJm.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 25.1,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 25.2,
+    "over1p5Beat": 3,
+    "frames": 4171
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 75,
+    "maxBeats": 4.49,
+    "excessOver1p5BeatMs": 258.1,
+    "over1p5Beat": 10,
+    "frames": 1147
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 22.7,
+    "maxBeats": 1.36,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 840
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 75,
+   "maxBeats": 4.49,
+   "worstStartsAfterFoldStartMs": -27.6,
+   "nearestFoldDurationMs": 53.3,
+   "boundaryIntoUndoMs": 16.7
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 20,
+   "toFrameMs": 11.6,
+   "callMs": 10.4
+  },
+  "wallFromInjectMs": 111776,
+  "drawWallMs": 69666.7,
+  "settleWallMs": 19355.6
+ },
+ {
+  "label": "t5-trt",
+  "arm": "trt",
+  "refreshHzBeforeRun": "120.00001",
+  "entry": "start.BE2GeFJm.js",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+  "viewport": "360x643@3 PORTRAIT",
+  "cadenceMs": 16.7,
+  "cadenceUnroundedMs": 16.69999999999709,
+  "tailCadenceInBand": true,
+  "phaseMediansInBand": {
+   "draw": true,
+   "settle": true,
+   "undo": true
+  },
+  "phases": {
+   "draw": {
+    "medianMs": 16.7,
+    "maxMs": 25.1,
+    "maxBeats": 1.5,
+    "excessOver1p5BeatMs": 25.2,
+    "over1p5Beat": 3,
+    "frames": 4171
+   },
+   "settle": {
+    "medianMs": 16.7,
+    "maxMs": 83.3,
+    "maxBeats": 4.99,
+    "excessOver1p5BeatMs": 299.7,
+    "over1p5Beat": 10,
+    "frames": 1144
+   },
+   "undo": {
+    "medianMs": 16.7,
+    "maxMs": 23.1,
+    "maxBeats": 1.38,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 840
+   },
+   "tail": {
+    "medianMs": 16.7,
+    "maxMs": 16.8,
+    "maxBeats": 1.01,
+    "excessOver1p5BeatMs": 0,
+    "over1p5Beat": 0,
+    "frames": 241
+   }
+  },
+  "settleInterior": {
+   "maxMs": 83.30000000000291,
+   "maxBeats": 4.99,
+   "worstStartsAfterFoldStartMs": -30.3,
+   "nearestFoldDurationMs": 53.2,
+   "boundaryIntoUndoMs": 16.8
+  },
+  "foldsBeforeUndo": 10,
+  "settleExitedBeforeCap": true,
+  "undo1": {
+   "windowWorstMs": 23.1,
+   "toFrameMs": 12.2,
+   "callMs": 11.6
+  },
+  "wallFromInjectMs": 111792,
+  "drawWallMs": 69690.6,
+  "settleWallMs": 19351
+ }
+]
