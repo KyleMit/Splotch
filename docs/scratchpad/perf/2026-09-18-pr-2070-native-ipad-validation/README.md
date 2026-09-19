@@ -201,8 +201,10 @@ To capture again on a device:
 
 ## Changes from the scripts as run
 
-Three edits were made after capture. None changes a captured value:
+Four edits were made after capture. None changes a captured value:
 
+* `native-run-session.mjs` now attaches the inspector to `IOS_UDID` and verifies it. As run, it took
+  the relay's first device; only the one iPad was attached, so the captures are unaffected.
 * `native-run-session.mjs` and the two series scripts now take the device, the build directory, and
   the harness checkout from the environment. They previously held local paths.
 * `score-confirm.py` prints its correctness tuple sorted, so the output is deterministic.

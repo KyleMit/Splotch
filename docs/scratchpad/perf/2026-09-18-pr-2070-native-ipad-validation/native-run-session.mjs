@@ -73,7 +73,11 @@ const launchedAt = Date.now();
 await sleep(4000);
 
 lib.requireInspectorProxy();
-const { device, stopProxy } = await lib.connectDevice();
+const { device, stopProxy } = await lib.connectDevice(UDID);
+if (device.deviceId !== UDID) {
+  stopProxy();
+  throw new Error("the inspector relay attached to a different device than IOS_UDID");
+}
 const con = lib.createDeviceConsole();
 const findPage = async () => {
   for (let i = 0; i < 30; i++) {
