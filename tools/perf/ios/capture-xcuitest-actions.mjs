@@ -65,10 +65,10 @@ const DEFAULT_NATIVE_WEBVIEW_CLASS = 'XCUIElementTypeWebView';
 const MIN_WEBVIEW_WINDOW_AREA_FRACTION = 0.5;
 const READY_TIMEOUT_MS = 30_000;
 const POLL_MS = 50;
-// How long the custom-color hexagon may keep moving after the picker reports
-// open, before the sweep declares the fly-in stuck. The animation itself is a
-// few hundred ms; ten seconds is a hang, not a slow frame.
-const PICKER_SETTLE_TIMEOUT_MS = 10_000;
+// How long a tap target may keep moving after its surface reports open, before
+// the sweep declares the fly-in stuck. The animations themselves are a few
+// hundred ms; ten seconds is a hang, not a slow frame.
+const TARGET_SETTLE_TIMEOUT_MS = 10_000;
 const SCRIPT_TIMEOUT_MS = 45_000;
 const ACTION_SETTLE_MS = 650;
 const ANIMATED_ACTION_SETTLE_MS = 1_100;
@@ -461,6 +461,31 @@ async function waitForReady(execute, expression, hint, timeoutMs = READY_TIMEOUT
   );
   if (!readyAt) throw new Error(`Timed out waiting for ${hint}`);
   return readyAt;
+}
+
+// A fly-in moves its tap targets between coordinate resolution and the tap,
+// and a fast transport (CDP touch) lands while they are still moving. Tap only
+// once the target's rect holds still across consecutive polls.
+async function waitForTargetToHoldStill(execute, selector, failure) {
+  const stable = await pollUntil(
+    () =>
+      execute(
+        `const el = document.querySelector(${JSON.stringify(selector)});
+         if (!el) return false;
+         const r = el.getBoundingClientRect();
+         const key = [r.x, r.y, r.width, r.height].map((v) => Math.round(v * 10)).join(',');
+         const probes = (window.__targetRectProbes ??= {});
+         const prev = probes[${JSON.stringify(selector)}];
+         probes[${JSON.stringify(selector)}] = key;
+         return prev === key && r.width > 0;`
+      ).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
+    TARGET_SETTLE_TIMEOUT_MS,
+    POLL_MS
+  );
+  if (!stable) throw new Error(failure);
 }
 
 async function clickWebElement(client, sessionId, selector) {
@@ -1397,24 +1422,11 @@ export async function runActionSweep({
     const preRingedSwatch = await execute(
       `return [...document.querySelectorAll('.color-swatch')].findIndex((s) => (s.getAttribute('style') || '').includes('box-shadow'));`
     );
-    const rectStable = await pollUntil(
-      () =>
-        execute(
-          `const el = document.querySelector(${JSON.stringify(hexSelector)});
-           if (!el) return false;
-           const r = el.getBoundingClientRect();
-           const key = [r.x, r.y, r.width, r.height].map((v) => Math.round(v * 10)).join(',');
-           const prev = window.__pickerRectProbe;
-           window.__pickerRectProbe = key;
-           return prev === key && r.width > 0;`
-        ).catch((error) => {
-          rethrowIfBroken(error);
-          return false;
-        }),
-      PICKER_SETTLE_TIMEOUT_MS,
-      POLL_MS
+    await waitForTargetToHoldStill(
+      execute,
+      hexSelector,
+      'the custom color grid never settled after the picker opened'
     );
-    if (!rectStable) throw new Error('the custom color grid never settled after the picker opened');
     await record(
       measureClick({
         client,
@@ -1471,6 +1483,13 @@ export async function runActionSweep({
           execute,
           `document.querySelector('#brushButton')?.getAttribute('aria-expanded') === 'true'`,
           'brush menu to reopen'
+        );
+        // The options fly in after the menu reports open; over CDP touch a pen
+        // pick measured mid-flight landed on the crayon option (issue #1870).
+        await waitForTargetToHoldStill(
+          execute,
+          selection.selector,
+          `the ${selection.label} target never settled after the brush menu reopened`
         );
       }
       await record(
