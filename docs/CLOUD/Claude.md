@@ -284,6 +284,10 @@ needed on every fresh VM. Instead:
   `CODEX_VERSION`) and lives in the environment snapshot. Its binary ships as an npm optional
   dependency, so the install needs only `registry.npmjs.org`. An environment whose snapshot predates
   that step has no `codex` until the setup script is re-saved in the dialog; the hook below says so.
+  Pasting the variables does not rebuild the snapshot. For the session at hand, run the script's
+  `npm install --global "@openai/codex@<CODEX_VERSION>"` line by hand and then
+  `node tools/seed-codex-auth.mjs`, which is the hook itself; it seeds exactly as it would have at
+  start-up.
 * **The login is seeded per session** by `tools/seed-codex-auth.mjs`, a SessionStart hook registered
   in `.claude/settings.json`. When no `$CODEX_HOME/auth.json` exists yet it writes one from the
   `CODEX_AUTH_JSON` environment variable, after checking that it is a ChatGPT login with a refresh
@@ -291,7 +295,10 @@ needed on every fresh VM. Instead:
   records which seed value wrote the file: the same seed arriving again leaves the file alone,
   because Codex refreshes it in place; a **different** seed replaces it, which is how a re-paste
   repairs a resumed VM holding a retired login; a file the hook did not write is never touched, and
-  the status line says so. The snapshot never holds the credential.
+  the status line says so. The snapshot never holds the credential. To confirm the variable arrived,
+  test it with `[ -n "${CODEX_AUTH_JSON:-}" ]`; a command that prints the value, or even its length,
+  is denied by the auto-mode classifier as credential materialization, and so is reading `auth.json`
+  back.
 * **The model is seeded the same way.** `rival:launch` passes `--ignore-user-config` and then reads
   the model from one place, a top-level `model` in `~/.codex/config.toml`, which a fresh VM lacks.
   The hook writes that file from `CODEX_MODEL` when none exists; without the variable every cloud
@@ -343,12 +350,52 @@ which the hook applies at the next session start. Do not run `codex login` from 
 (device-code auth does work there, but it is a login per VM and needs the account's device-code
 toggle), and never fall back to an API key: the guard rejects it, and it bills metered credits.
 
-### What is still unproven in cloud
+### What has run in cloud, and what has not
 
 The seed path, the sandbox, and the failure wording were measured on 2026-09-02 (codex-cli 0.152.1;
-the issue records each probe). A full `rival:launch` from a cloud session — disposable-worktree
-creation and install, the broker loop, and a posted review — has not yet run here. On Linux the
-spool root under `/tmp` stays writable to the sandboxed rival, the integrity exposure
+the issue records each probe). On 2026-09-19 a commit-scope `rival:launch` ran end to end from a
+cloud session whose login the hook had seeded (codex-cli 0.155.1): the disposable worktree with its
+dependencies, the rival running the tool tests inside its own sandbox, a validated findings
+document, and the worktree removed afterwards, in about two minutes and with no broker request. That
+run did not refresh the login file, so the rotation cadence is still unmeasured.
+
+The PR scope and `rival:post` have not run here and cannot yet: the launcher's PR lookup and the
+poster both go through the `gh` CLI (`readPullRequest` and `defaultGh` in
+`tools/rival-agent/post-review.mjs`), which the cloud VM does not have, so `--pr <n>` fails before
+any worktree or Codex process starts, with `spawnSync gh ENOENT`. Installing the CLI from the setup
+script is a candidate remedy, not a measured one: the REST API answered from the VM and the session
+carries `GH_TOKEN`, but the `github.com` release page answered 403 through the proxy, and neither
+`gh pr view` nor the poster's review listing and creation has been exercised with that token. The
+follow-up is to find an install source the VM can reach and prove those calls before calling the PR
+path available.
+
+Until then, review the range GitHub records for the PR and carry the findings onto it yourself. Read
+the PR's base branch and its base and head OIDs through the GitHub MCP tools first: `--base`
+resolves from the local checkout (its HEAD and the merge-base with the named branch) while `--pr`
+uses GitHub's recorded OIDs, so the two agree only when the local branch is at the PR head and the
+named base is the PR's actual base, which a stacked PR or a base that moved breaks. Launch with
+`--base <that branch>` and check that the launcher's reported range matches the PR's OIDs before
+posting. Then build the marker with `buildMarker` from `post-review.mjs` (the session's `rival`,
+`base`, and `head` plus a fresh UUID), pass it to `buildReviewRequest` with the session's
+`findings.json` and `packet/diff.patch` — `buildReviewRequest` accepts the marker and never creates
+one, and an unmarked payload still passes `assertSafeReview` — run `assertSafeReview` on the result,
+and post it as one COMMENT review on that head through the GitHub MCP tools. A review relayed
+without the `<!-- splotch-rival-review:` marker falls out of the worklist `address-pr-review` builds
+in autonomous mode unless the handler adds its findings by hand. Both rounds of review on PR #2100
+landed this way on 2026-09-19, and each served one broker request, so the broker loop is proven in
+cloud; the `--pr` scope and the poster's own transport are what remain unrun.
+
+Expect the rival to escalate its own test runs. Inside its sandbox on this VM, every synchronous
+Node child spawn (`spawnSync`, `execFileSync`) comes back with `error.code === 'EPERM'` even though
+the child ran to completion with exit 0 and full output; asynchronous `spawn` is unaffected.
+Measured on 2026-09-19 with `codex sandbox node -e …` against `true`, `rg`, `git`, and `node`. Any
+helper that treats `result.error` as failure, such as the `git()` wrapper in
+`tools/rival-agent/worktree.mjs` and the tests that build temporary repositories, therefore fails in
+the sandbox, and the rival sends that command through the broker. Serve it: the same command run by
+the handler passes, and a request for the rival-agent tests is routine, not a sign the tests are
+broken.
+
+On Linux the spool root under `/tmp` stays writable to the sandboxed rival, the integrity exposure
 `tools/rival-agent/NOTES.md` accepted "if Linux ever matters"; a cloud session is where it now does.
 
 ## Previewing the dev server on a phone

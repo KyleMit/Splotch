@@ -207,6 +207,7 @@ describe('cloud Codex login seed', () => {
     const { result, writes } = run({ seed: encodeSeed(planAuth()), installed: false });
     expect(result.status).toBe('uninstalled');
     expect(result.message).toContain('setup.sh');
+    expect(result.message).toContain('node tools/seed-codex-auth.mjs');
     expect(writes).toEqual([]);
   });
 });

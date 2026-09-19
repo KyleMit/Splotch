@@ -7,6 +7,8 @@ import { parseFindings } from '../validate-findings.mjs';
 import {
   buildMarker,
   buildReviewRequest,
+  defaultGh,
+  GH_MISSING_MESSAGE,
   matchingMarkedReviews,
   parseDiffAnchors,
   parsePostArgs,
@@ -193,6 +195,20 @@ function fakeGh({ head = HEAD, base = BASE, reviews = [], state = 'OPEN', pageSi
   };
   return { gh, calls, reviews };
 }
+
+describe('gh transport', () => {
+  it('names the missing CLI and the hand relay instead of a bare ENOENT', () => {
+    const emptyPath = mkdtempSync(join(tmpdir(), 'no-gh-'));
+    const previous = process.env.PATH;
+    process.env.PATH = emptyPath;
+    try {
+      expect(() => defaultGh(['--version'])).toThrow(GH_MISSING_MESSAGE);
+    } finally {
+      process.env.PATH = previous;
+      rmSync(emptyPath, { recursive: true, force: true });
+    }
+  });
+});
 
 describe('posting', () => {
   const options = {

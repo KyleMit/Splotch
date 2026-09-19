@@ -99,8 +99,11 @@ the shared launcher skips the resume retry for the family, and the launch CLI pr
 the platform it runs on. A liveness probe in the health check was considered and rejected: the only
 honest probe is a real request, which either spends plan usage or rotates the token itself.
 
-A full cloud launch (worktree, broker loop, post) is still unrun; the Linux `/tmp` spool exposure in
-`tools/rival-agent/NOTES.md` becomes live the day it does.
+A commit-scope cloud launch ran on 2026-09-19 (`docs/CLOUD/Claude.md`, "What has run in cloud, and
+what has not"): the session spool under Linux `/tmp` was created and the sandboxed rival ran inside
+it, so the `/tmp` spool exposure in `tools/rival-agent/NOTES.md` has been live since that day, and a
+branch-scope round the same day served one broker request. The `--pr` scope and the poster's own
+transport are what remain unrun in cloud; both need the `gh` CLI the VM lacks.
 
 ## What `--ignore-user-config` costs
 
