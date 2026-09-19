@@ -110,7 +110,9 @@ prompt works in Claude and Codex. Fill the following rules block with concrete v
 Authorization: You may create branches/worktrees, push, open PRs, post rival reviews, manage these
 issues' claims, and merge through the shipping workflow's autonomous gate. You may preserve scoped
 findings in these existing issue/PR discussions and maintained docs/skills. Do not file new issues,
-bypass protection, weaken checks, or expand scope. [Replace with any narrower recorded authority.]
+bypass protection, weaken checks, or expand scope. <Rewrite this entire paragraph to match narrower
+authority. For no-merge scope, delete the merge grant, replace claim management with authority to
+claim the issue, and explicitly require retaining that live claim for the user's merge handoff.>
 
 Campaign/batch: <ID, plan location and prompt revision>. Work <ordered issue URLs and done-when>.
 External review: <the user's already-granted scope and destination, or no private data sharing>.
@@ -126,8 +128,9 @@ sensitive values redacted. Do not generalize an old refusal to an untried action
 Start each issue from freshly fetched origin/main in a clean worktree. One issue per PR; merge and
 verify it before starting the next. <For no-merge scope, remove merge preflight and this merge-before-
 next requirement; end this assignment at a review-complete open PR.> Any new regression test must
-fail against pre-change code for the intended reason (negative control); report the commands/results. For non-code work, state the
-appropriate behavioral or document validation instead of manufacturing a red test.
+fail against pre-change code for the intended reason (negative control); report the commands/results.
+For non-code work, state the appropriate behavioral or document validation instead of manufacturing
+a red test.
 
 After merge, verify issue closure, explicitly remove in-progress, and re-read to confirm. If still
 open, retain the claim and report it; do not close it by hand. Verify applicable checks registered
