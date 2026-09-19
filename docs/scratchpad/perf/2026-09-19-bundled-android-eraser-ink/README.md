@@ -13,8 +13,9 @@ not be a validity failure, and nothing here compares timings.
 
 * **Reproduced on main.** Run `b0` requested the eraser for 2 passes. The app relaunches on blank
   paper, because ink does not survive the CLI's force-stop. The artifact recorded
-  `fixed-geometry-refilled` with no `eraserFill` or `eraserRefills` field. A readback after the run,
-  in the session terminal (not packaged), found 0 inked samples.
+  `fixed-geometry-refilled` with no `eraserFill` or `eraserRefills` field. A readback after the run
+  (`diag/read-ink.mjs`) found 0 inked samples. That readback is operator-observed and preserved in
+  `terminal/session-terminal.jsonl`.
 * **Fixed.** An eraser capture now works like this:
   * **Setup.** After the eraser is committed, it applies the shared verified fill
     (`tools/perf/lib/eraser-fill.mjs`). It re-checks the fill without painting after a 500 ms
@@ -67,9 +68,11 @@ portrait. The three `diag/*.diagnostic-only.diff` files are the negative-control
 applied, run once, and reverted with `git checkout`. **They must never be applied to production
 source.**
 
-The first `b1`–`b3` runs used the same logic but did not yet record readback intervals. They were
-re-run to give the timing proof below, and the originals are not packaged. Their erased counts
-matched these runs pass for pass to within 0.7% (`b1` pass 2: 6,509 against 6,555).
+The first `b1`–`b3` runs used the same logic but did not yet record readback intervals, so they were
+re-run to give the timing proof below. They are now packaged under `runs/superseded/` and
+`controls/superseded/`. Their erased counts match the re-runs pass for pass to within 0.83%, which
+`check.mjs` machine-checks. The worst is `b2` pass 2: 6,569 against 6,515. An earlier revision of
+this README said "within 0.7%" from the operator's reading of `b1` alone, and that was wrong.
 
 ## Outside the scored window
 
@@ -107,7 +110,8 @@ screen centre.
   point, but deliver normally when started 20 px to the side or run in reverse.
 * Landscape never starts a swipe there and delivers 16 of 16.
 * An accessibility navigation-bar overlay service is installed on the phone, but its windows are
-  zero-width. The cause is unexplained.
+  zero-width (operator-observed; the `dumpsys` listing was not packaged because it names unrelated
+  apps). The cause is unexplained.
 
 The capture therefore **records** delivery (`strokes`, and each pass's `lifts`) and requires 85% of
 each pass's planned strokes (`MIN_DELIVERED_STROKE_SHARE`), not all 16. Requiring all 16 failed
@@ -147,9 +151,22 @@ device: 14 of 16 strokes per pass, accepted.
 ## Reproduce
 
 `node docs/scratchpad/perf/2026-09-19-bundled-android-eraser-ink/check.mjs` verifies each file
-against `MANIFEST.json` and re-derives every claim above from the packaged bytes. It uses the
-capture's own floor constant and the campaign readers' refill validators. `package.mjs` rebuilt this
-directory from the session's local capture directory.
+against `MANIFEST.json` and labels every claim it covers.
+
+* **Machine-checked:** re-derived from the packaged artifacts and logs.
+* **Operator-observed:** the exit codes, the `ls` of each negative run's `--output` path, the adb
+  reads, and `b0`'s post-run ink readback. These were printed only to the session terminal. They
+  were recovered verbatim, with the device serial and local paths redacted, from that Claude Code
+  session's transcript into `terminal/session-terminal.jsonl`, using `diag/extract-terminal.mjs`.
+  Each record keeps the harness timestamps of when the command was sent and when its output
+  returned.
+* **Unsupported, listed without being asserted:**
+  * The overlay-window observation behind the delivery-gap paragraph. Its `dumpsys` output names
+    unrelated installed apps, so it was deliberately not packaged.
+  * Exit status or missing files inferred from a log alone. A log without a `Wrote` line is not, on
+    its own, evidence of either. It uses the capture's own floor constant and the campaign readers'
+    refill validators. `package.mjs` rebuilt this directory from the session's local capture
+    directory.
 
 On a device with a debug perf build installed, run:
 

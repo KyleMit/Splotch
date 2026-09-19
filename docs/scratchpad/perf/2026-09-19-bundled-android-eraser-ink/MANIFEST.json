@@ -126,6 +126,62 @@
     "transform": "copy"
   },
   {
+    "path": "terminal/session-terminal.jsonl",
+    "sha256": "036a9deeefbfcb7ab5db37a7a188b767162021314946f64addd829ca3c84d106",
+    "original": "perf-profiles/bundled/units-2026-09-19/terminal/eraser-terminal.jsonl",
+    "originalSha256": "036a9deeefbfcb7ab5db37a7a188b767162021314946f64addd829ca3c84d106",
+    "transform": "copy"
+  },
+  {
+    "path": "diag/extract-terminal.mjs",
+    "sha256": "c9f8ba29d6b27502ac5868dfb88aa8c6738d75b45bf95c0f6bd07e9765305812",
+    "original": "perf-profiles/bundled/units-2026-09-19/diag/extract-terminal.mjs",
+    "originalSha256": "c9f8ba29d6b27502ac5868dfb88aa8c6738d75b45bf95c0f6bd07e9765305812",
+    "transform": "copy"
+  },
+  {
+    "path": "runs/superseded/b1-portrait-eraser-2pass.json.gz",
+    "sha256": "119b99ce3d7230523f5e71d07d60f5494dee6123930b94c23d102fb7bac70a40",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/superseded-no-intervals/b1-portrait-eraser-2pass.json",
+    "originalSha256": "7f7b6291deec607845a456c86a143baeeba5139821ad7b2dd4d407ce8954ce0e",
+    "transform": "gzip"
+  },
+  {
+    "path": "controls/superseded/b1-portrait-eraser-2pass.log.txt",
+    "sha256": "752f13939fa80613adc72c50632930d43506fa0712cf30cc453c2c10f9f6433b",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/superseded-no-intervals/b1-portrait-eraser-2pass.log",
+    "originalSha256": "752f13939fa80613adc72c50632930d43506fa0712cf30cc453c2c10f9f6433b",
+    "transform": "sanitize"
+  },
+  {
+    "path": "runs/superseded/b2-portrait-eraser-full-cell.json.gz",
+    "sha256": "dc4bd9a7459784f308916fe39aa5318b9646246146171807b8e4930b473d6a25",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/superseded-no-intervals/b2-portrait-eraser-full-cell.json",
+    "originalSha256": "8b5d07e7698718d8cc67948a2de7efa04c6e478ed927bef5bf31f5705fc60ad7",
+    "transform": "gzip"
+  },
+  {
+    "path": "controls/superseded/b2-portrait-eraser-full-cell.log.txt",
+    "sha256": "87bafbe648c164326008f41316a605e30387cf8e8f68caa3faf5c18dc4e2d744",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/superseded-no-intervals/b2-portrait-eraser-full-cell.log",
+    "originalSha256": "87bafbe648c164326008f41316a605e30387cf8e8f68caa3faf5c18dc4e2d744",
+    "transform": "sanitize"
+  },
+  {
+    "path": "runs/superseded/b3-landscape-eraser-2pass.json.gz",
+    "sha256": "0f0beeaa30c0430345f38a0d8d10f7b3d2f3ee1fe9a212be28a21b051b5df2da",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/superseded-no-intervals/b3-landscape-eraser-2pass.json",
+    "originalSha256": "1f2a60985d4b6b8df39ebc4dbea36c164b3e7a838c727a7c7156f08cf35d8866",
+    "transform": "gzip"
+  },
+  {
+    "path": "controls/superseded/b3-landscape-eraser-2pass.log.txt",
+    "sha256": "427a55cca313f9c003f50f27e693167f42f723c95ab443d5f09c2e4bb10e4e94",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/superseded-no-intervals/b3-landscape-eraser-2pass.log",
+    "originalSha256": "427a55cca313f9c003f50f27e693167f42f723c95ab443d5f09c2e4bb10e4e94",
+    "transform": "sanitize"
+  },
+  {
     "path": "diag/read-ink.mjs",
     "sha256": "9d13a9cbda3fcfe82de10ab046a8a349c9291ecc41e160e285d0b24222182a57",
     "original": "perf-profiles/bundled/units-2026-09-19/diag/read-ink.mjs",

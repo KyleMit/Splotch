@@ -55,18 +55,18 @@ failed loudly (`a2-attempt1`). That run is kept here as a real mismatch negative
 
 ## Controls
 
-| Run           | Request                                                                                               | Result                                                                                                                                                                                         | Artifact | Afterwards                                  |
-| ------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------- |
-| `a0`          | LANDSCAPE, main before the fix                                                                        | **Mismatch reproduced.** Labelled LANDSCAPE, measured 360x780                                                                                                                                  | written  | adb restored                                |
-| `a1`          | PORTRAIT                                                                                              | Observed PORTRAIT 360x780. The lock was not touched. Fidelity PASS                                                                                                                             | written  | lock on, portrait; adb `1`/`0`              |
-| `a2`          | LANDSCAPE                                                                                             | Launched portrait. The lock was released and the rotation re-asserted, giving an observed LANDSCAPE of 780x360 (canvas 747x360 at x=33). Geometry was unchanged through contact. Fidelity PASS | written  | lock restored to portrait; adb `1`/`0`      |
-| `a2-attempt1` | LANDSCAPE, fix without the re-assert                                                                  | Lock released, page stayed portrait. **Failed loudly**, exit 1                                                                                                                                 | none     | lock restored; adb `1`/`0`                  |
-| `n1`          | LANDSCAPE, forced mismatch (diagnostic)                                                               | The re-assert was disabled by `diag/n1-forced-mismatch.diagnostic-only.diff`. **Failed loudly**, exit 1                                                                                        | none     | lock restored; adb `1`/`0`                  |
-| `n2`          | LANDSCAPE, `--theme=bogus`                                                                            | The page reached landscape (lock released), then the theme step threw. Exit 1                                                                                                                  | none     | lock restored; adb `1`/`0`; no forward left |
-| `n3`          | LANDSCAPE, 4 repeats, SIGINT mid-gesture, before the fence                                            | Interrupted during the swipes. Exit 130                                                                                                                                                        | none     | lock restored; adb `1`/`0`; no forward left |
-| `n3b`         | LANDSCAPE, 4 repeats, SIGINT mid-gesture, with the interrupt fence                                    | Interrupted during the swipes; the capture stopped at its next step, then cleanup ran. Exit 130                                                                                                | none     | lock restored; adb `1`/`0`; no forward left |
-| `n4`          | LANDSCAPE, SIGINT 12 s after start, with the interrupt fence                                          | Interrupted before contact (no `canvas` line), which is the orientation-setup window. Exit 130 after 6 s. The log cannot show whether the signal landed inside the lock release itself         | none     | lock restored; adb `1`/`0`; no forward left |
-| `n5`          | LANDSCAPE, `--input=hand --seconds=300`, SIGINT 3 s into the drawing window, with interruptible waits | Exit 130 came 2.1 s after the signal, including the lock restore through Settings (before this change the review reproduced a wait for the whole window)                                       | none     | lock restored; adb `1`/`0`; no forward left |
+| Run           | Request                                                                                               | Result                                                                                                                                                                                                                    | Artifact | Afterwards                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------- |
+| `a0`          | LANDSCAPE, main before the fix                                                                        | **Mismatch reproduced.** Labelled LANDSCAPE, measured 360x780                                                                                                                                                             | written  | adb restored                                |
+| `a1`          | PORTRAIT                                                                                              | Observed PORTRAIT 360x780. The lock was not touched. Fidelity PASS                                                                                                                                                        | written  | lock on, portrait; adb `1`/`0`              |
+| `a2`          | LANDSCAPE                                                                                             | Launched portrait. The lock was released and the rotation re-asserted, giving an observed LANDSCAPE of 780x360 (canvas 747x360 at x=33). Geometry was unchanged through contact. Fidelity PASS                            | written  | lock restored to portrait; adb `1`/`0`      |
+| `a2-attempt1` | LANDSCAPE, fix without the re-assert                                                                  | Lock released, page stayed portrait. **Failed loudly**, exit 1                                                                                                                                                            | none     | lock restored; adb `1`/`0`                  |
+| `n1`          | LANDSCAPE, forced mismatch (diagnostic)                                                               | The re-assert was disabled by `diag/n1-forced-mismatch.diagnostic-only.diff`. **Failed loudly**, exit 1                                                                                                                   | none     | lock restored; adb `1`/`0`                  |
+| `n2`          | LANDSCAPE, `--theme=bogus`                                                                            | The page reached landscape (lock released), then the theme step threw. Exit 1                                                                                                                                             | none     | lock restored; adb `1`/`0`; no forward left |
+| `n3`          | LANDSCAPE, 4 repeats, SIGINT mid-gesture, before the fence                                            | Interrupted during the swipes. Exit 130                                                                                                                                                                                   | none     | lock restored; adb `1`/`0`; no forward left |
+| `n3b`         | LANDSCAPE, 4 repeats, SIGINT mid-gesture, with the interrupt fence                                    | Interrupted during the swipes; the capture stopped at its next step, then cleanup ran. Exit 130                                                                                                                           | none     | lock restored; adb `1`/`0`; no forward left |
+| `n4`          | LANDSCAPE, SIGINT 12 s after start, with the interrupt fence                                          | Interrupted before contact (no `canvas` line), which is the orientation-setup window. Exit 130 after 6 s. The log cannot show whether the signal landed inside the lock release itself                                    | none     | lock restored; adb `1`/`0`; no forward left |
+| `n5`          | LANDSCAPE, `--input=hand --seconds=300`, SIGINT 3 s into the drawing window, with interruptible waits | Exit 130; the operator wrapper printed 2.1 s from signal to exit, including the lock restore through Settings (operator-observed, not re-derivable). Before this change the review reproduced a wait for the whole window | none     | lock restored; adb `1`/`0`; no forward left |
 
 Run `n3` used the first signal handler, which ran cleanup concurrently with the capture. The PR 2083
 review showed that handler could restore the lock before an in-flight unlock landed. The fix is the
@@ -75,10 +75,31 @@ interrupt fence, and `n3b` and `n4` exercised it. Round 2 of the review found th
 checks the fence every 250 ms, and `n5` exercised that. "No forward left" means `adb forward --list`
 printed no `tcp` entry; its output is a single blank line.
 
-The exit codes and the absence of a negative run's artifact were observed in the session terminal
-(`ls` of the requested `--output` path). The logs record the error text but not the exit code.
-"Afterwards" is the adb `settings get` read in that terminal plus the `controls/*-lock-after.json`
-read of the Settings controls.
+### What supports each claim
+
+`check.mjs` labels every claim it covers with one of three tiers.
+
+* **Machine-checked.** Re-derived from the packaged artifacts, logs, and
+  `controls/*-lock-after.json` reads: the reproduction, orientation and geometry, lock release and
+  restore records, error text, and the fence messages.
+* **Operator-observed.** Exit codes, the `ls` of each negative run's `--output` path, the adb
+  `settings get` reads, and the forward-list reads were printed only to the session terminal. The
+  capture logs do not contain them. They were recovered verbatim from that Claude Code session's
+  transcript into `terminal/session-terminal.jsonl`.
+  * Redactions: the device serial, the checkout path, the home directory, and temp paths.
+  * Each record keeps the harness timestamps of when the command was sent and when its output
+    returned.
+  * `diag/extract-terminal.mjs` is the extractor. `check.mjs` confirms each observation is present
+    in the record for the named run, which proves it was printed, not that it was independently
+    true.
+* **Unsupported, and listed by `check.mjs` without being asserted:**
+  * **n5's 2.1 s.** The operator wrapper computed the signal-to-exit interval from Python wall-clock
+    reads and printed it once. No independent timestamps were kept, and the record's own timestamps
+    span the whole command, so 2.1 s cannot be re-derived.
+  * **n4's release window.** Whether n4's signal landed inside the lock-release call itself is
+    unproven; see its row.
+  * **Missing `Wrote` lines.** A log without a `Wrote` line is not, on its own, evidence of exit
+    status or of a missing file.
 
 **The diagnostic diff is for the negative control only.** It must never be applied to production
 source.
@@ -115,8 +136,9 @@ source.
 ## Reproduce
 
 `node docs/scratchpad/perf/2026-09-19-bundled-android-orientation/check.mjs` verifies each file
-against `MANIFEST.json` and re-derives every claim above from the packaged bytes. `package.mjs`
-rebuilt this directory from the session's local capture directory.
+against `MANIFEST.json`, re-derives the machine-checked claims, confirms each operator observation
+in the recovered terminal record, and lists the unsupported items; see "What supports each claim".
+`package.mjs` rebuilt this directory from the session's local capture directory.
 
 To repeat the device controls, install a debug perf build (`npm run perf:build:cap`, then
 `:app:assembleDebug`), then run:

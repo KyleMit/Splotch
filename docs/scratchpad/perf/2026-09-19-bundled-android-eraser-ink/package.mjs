@@ -33,6 +33,14 @@ const FILES = [
   ['unit-b/nb1-blank-preparation.diagnostic-only.diff', 'diag/nb1-blank-preparation.diagnostic-only.diff', 'copy'],
   ['unit-b/nb2-failed-refill.diagnostic-only.diff', 'diag/nb2-failed-refill.diagnostic-only.diff', 'copy'],
   ['unit-b/nb3-stroke-removes-no-ink.diagnostic-only.diff', 'diag/nb3-stroke-removes-no-ink.diagnostic-only.diff', 'copy'],
+  ['terminal/eraser-terminal.jsonl', 'terminal/session-terminal.jsonl', 'copy'],
+  ['diag/extract-terminal.mjs', 'diag/extract-terminal.mjs', 'copy'],
+  ...['b1-portrait-eraser-2pass', 'b2-portrait-eraser-full-cell', 'b3-landscape-eraser-2pass'].flatMap(
+    (name) => [
+      [`unit-b/superseded-no-intervals/${name}.json`, `runs/superseded/${name}.json.gz`, 'gzip'],
+      [`unit-b/superseded-no-intervals/${name}.log`, `controls/superseded/${name}.log.txt`, 'sanitize'],
+    ]
+  ),
   ['diag/read-ink.mjs', 'diag/read-ink.mjs', 'copy'],
   ['diag/swipe-delivery.mjs', 'diag/swipe-delivery.mjs', 'copy'],
   ['diag/swipe-delivery-1.log', 'diag/swipe-delivery-1.log.txt', 'sanitize'],

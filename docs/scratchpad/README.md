@@ -39,6 +39,17 @@ in the shared chrome, and register it in the index registry
   `.prettierignore` so nothing reformats those bytes. Add the line when you add such a tree.
   Hand-authored files here — a probe harness, a helper script — are maintained source and stay in
   Prettier's scope. Notes are Markdown, which dprint owns like the rest of the repo (ADR-0057).
+* **Check that every packaged file is actually tracked.** The root `.gitignore` ignores any
+  directory named `logs` and any `*.log` file, anywhere, including inside an evidence package, and
+  `git add` omits them without an error. Name such directories something else (`controls/`, with
+  `*.log.txt` files). Before committing, run
+  `git ls-files --others --ignored --exclude-standard <package>` (it must print nothing), and
+  confirm that every `MANIFEST` entry appears in `git ls-files <package>`. After merging, repeat
+  that comparison against `origin/main` and not the working tree.
+* Say what supports each claim. A figure that was only printed to a terminal is an operator
+  observation. Preserve that output (redacted) or narrow the claim. A checker that confirms the text
+  was printed does not prove it true, and a log with no `Wrote` line does not prove the exit status
+  or that no file was written.
 * A page carried in from somewhere else keeps its look but not its old navigation: repoint or strip
   links that resolved against the tree it came from, or they dead-end from the new location.
 * Nothing here is a backlog. A durable TODO is a GitHub issue (`docs/ISSUE-WORKFLOW.md`); a decision

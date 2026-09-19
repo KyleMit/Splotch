@@ -37,6 +37,8 @@ const FILES = [
   ['unit-a/n2-lock-after.json', 'controls/n2-lock-after.json', 'copy'],
   ['unit-a/n3-lock-after.json', 'controls/n3-lock-after.json', 'copy'],
   ['unit-a/n1-forced-mismatch.diag.patch', 'diag/n1-forced-mismatch.diagnostic-only.diff', 'copy'],
+  ['terminal/orientation-terminal.jsonl', 'terminal/session-terminal.jsonl', 'copy'],
+  ['diag/extract-terminal.mjs', 'diag/extract-terminal.mjs', 'copy'],
   ['diag/read-lock.mjs', 'diag/read-lock.mjs', 'copy'],
   ['diag/read-ink.mjs', 'diag/read-ink.mjs', 'copy'],
   ['diag/unlock-experiment.mjs', 'diag/unlock-experiment.mjs', 'copy'],

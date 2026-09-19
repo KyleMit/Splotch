@@ -1,6 +1,12 @@
-// Re-derives every claim in README.md from the packaged files alone, and
-// verifies each file against MANIFEST.json. Refill records are judged by the
-// campaign readers' own validators. Exits non-zero on any mismatch.
+// Checks README.md's claims in three tiers, and says which tier each is in:
+//   machine-checked — re-derived from the packaged artifacts and logs (refill
+//     records judged by the campaign readers' own validators);
+//   operator-observed — present verbatim in terminal/session-terminal.jsonl,
+//     the recovered, redacted Bash output of the capture session. This proves
+//     the text was printed, not that the printed value was independently true;
+//   unsupported — stated in the README but not preserved; listed, never asserted.
+// Also verifies each file against MANIFEST.json. Exits non-zero when a
+// machine-checked assertion or an operator record is missing.
 //   node docs/scratchpad/perf/2026-09-19-bundled-android-eraser-ink/check.mjs
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -19,9 +25,22 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const failures = [];
 const check = (claim, ok) => {
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${claim}`);
+  console.log(`${ok ? 'ok  ' : 'FAIL'} machine-checked: ${claim}`);
   if (!ok) failures.push(claim);
 };
+const terminal = readFileSync(join(HERE, 'terminal', 'session-terminal.jsonl'), 'utf8')
+  .trim()
+  .split('\n')
+  .map((line) => JSON.parse(line));
+const observed = (claim, run, pattern) => {
+  const ok = terminal.some((record) => record.command.includes(run) && pattern.test(record.output));
+  console.log(`${ok ? 'ok  ' : 'FAIL'} operator-observed: ${claim}`);
+  if (!ok) failures.push(claim);
+};
+const UNSUPPORTED = [
+  'the accessibility navigation-bar overlay and its zero-width windows: seen in a dumpsys window listing that also names unrelated installed apps, so that output was deliberately not packaged',
+  'exit status and filesystem state beyond what the terminal record printed: a log without a "Wrote" line is not by itself evidence of either',
+];
 
 for (const entry of JSON.parse(readFileSync(join(HERE, 'MANIFEST.json'), 'utf8'))) {
   const sha = createHash('sha256').update(readFileSync(join(HERE, entry.path))).digest('hex');
@@ -159,7 +178,7 @@ for (const [log, pattern] of [
   ['nb3-stroke-removes-no-ink', /pass 1 erased 0 of 81920 census samples, under the 0.5% floor/],
 ]) {
   check(`${log}: refused with the expected reason`, pattern.test(text(`controls/${log}.log.txt`)));
-  check(`${log}: wrote no artifact`, !/^Wrote /m.test(text(`controls/${log}.log.txt`)));
+  check(`${log}: log contains no "Wrote" line`, !/^Wrote /m.test(text(`controls/${log}.log.txt`)));
 }
 
 const delivery = text('diag/swipe-delivery-1.log.txt');
@@ -171,8 +190,43 @@ check(
     /^seg2 reversed \[\["pointerdown"/m.test(delivery)
 );
 
+const superseded = (name) =>
+  JSON.parse(gunzipSync(readFileSync(join(HERE, 'runs', 'superseded', `${name}.json.gz`))));
+const passErasures = (a) => a.eraserPasses.map((pass) => pass.after.erased);
+const worstRelativeGap = Math.max(
+  ...['b1-portrait-eraser-2pass', 'b2-portrait-eraser-full-cell', 'b3-landscape-eraser-2pass'].flatMap(
+    (name) => {
+      const before = passErasures(superseded(name));
+      const after = passErasures(run(name));
+      return before.map((value, index) => Math.abs(value - after[index]) / after[index]);
+    }
+  )
+);
+check(
+  `superseded b1–b3 runs (no readback intervals) erased within 0.83% of the re-runs, pass for pass (worst ${(worstRelativeGap * 100).toFixed(2)}%)`,
+  worstRelativeGap <= 0.0083
+);
+check(
+  'superseded runs record no readback intervals, which is why they were re-run',
+  superseded('b1-portrait-eraser-2pass').eraserPasses.every((pass) => pass.before.at === undefined)
+);
+
+observed('b0: a readback after the main run found the eraser committed and 0 inked samples', 'b-repro-portrait-eraser', /"committed":"eraser"[^\n]*"inkedSamples":0/);
+observed('b1-attempt1 exited 1', 'b1-portrait-eraser-2pass', /saw 14 pointerdowns and 14 pointerups[\s\S]*exit 1/);
+observed('b2, b3, b4 each exited 0', 'b2-portrait-eraser-full-cell', /b2-portrait-eraser-full-cell exit 0[\s\S]*b3-landscape-eraser-2pass exit 0[\s\S]*b4-portrait-pen exit 0/);
+for (const neg of ['nb1-blank-preparation', 'nb2-failed-refill', 'nb3-stroke-removes-no-ink']) {
+  observed(`${neg} exited 1 and ls found no artifact`, 'nb1-blank-preparation', new RegExp(`${neg} exit 1[\\s\\S]*${neg}\\.json: No such file or directory`));
+}
+observed('after the negatives, adb read back 1/0', 'nb1-blank-preparation', /accelerometer_rotation=1\s+user_rotation=0/);
+observed('b1, b2, b3 re-runs each exited 0, and the lock was on, portrait, afterwards', 'superseded-no-intervals', /b1-portrait-eraser-2pass exit 0[\s\S]*b2-portrait-eraser-full-cell exit 0[\s\S]*b3-landscape-eraser-2pass exit 0[\s\S]*accelerometer_rotation=1\s+user_rotation=0[\s\S]*"lockRotation":\{"checked":"true"/);
+observed('b5 exited 0', 'b5-final-portrait', /^exit 0$/m);
+
+console.log('\nunsupported (not preserved; stated only as limits):');
+for (const claim of UNSUPPORTED) console.log(`  - ${claim}`);
 if (failures.length) {
-  console.error(`\n${failures.length} claim(s) failed`);
+  console.error(`\n${failures.length} check(s) failed`);
   process.exit(1);
 }
-console.log('\nall claims reproduce');
+console.log(
+  '\nall machine-checked assertions pass and every operator observation is present in the recovered terminal record; the unsupported items above are not claimed'
+);
