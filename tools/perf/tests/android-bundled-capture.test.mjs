@@ -98,18 +98,24 @@ describe('establishing the requested orientation', () => {
     expect(result).toMatchObject({ settled: portrait, lockReleased: false });
   });
 
-  it('releases the app lock when it holds the page away from the request', async () => {
-    let released = false;
+  it('releases the app lock, then re-asserts the rotation the display must follow', async () => {
+    const calls = [];
+    let turned = false;
     const result = await establishRequestedOrientation({
       orientation: 'LANDSCAPE',
-      readGeometry: async () => (released ? landscape : portrait),
+      readGeometry: async () => (turned ? landscape : portrait),
       releaseLock: async () => {
-        released = true;
+        calls.push('release');
         return { lockedOrientation: 'portrait' };
+      },
+      reassertRotation: async () => {
+        calls.push('reassert');
+        turned = calls[0] === 'release';
       },
       wait: noWait,
     });
 
+    expect(calls).toEqual(['release', 'reassert']);
     expect(result).toEqual({ launched: portrait, settled: landscape, lockReleased: true });
   });
 
@@ -119,6 +125,7 @@ describe('establishing the requested orientation', () => {
         orientation: 'LANDSCAPE',
         readGeometry: async () => portrait,
         releaseLock: async () => ({ lockedOrientation: 'portrait' }),
+        reassertRotation: async () => {},
         wait: noWait,
         followTimeoutMs: 0,
       })
@@ -133,6 +140,7 @@ describe('establishing the requested orientation', () => {
         orientation: 'LANDSCAPE',
         readGeometry: async () => portrait,
         releaseLock: async () => PLATFORM_OWNS_ROTATION,
+        reassertRotation: async () => {},
         wait: noWait,
         followTimeoutMs: 0,
       })
@@ -148,6 +156,7 @@ describe('establishing the requested orientation', () => {
         released = true;
         return { lockedOrientation: null };
       },
+      reassertRotation: async () => {},
       wait: noWait,
     });
 

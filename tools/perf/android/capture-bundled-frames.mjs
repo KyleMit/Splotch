@@ -27,6 +27,7 @@ import { pollFor } from '../split-capture/lib/poll.mjs';
 import {
   androidGestureInstructions,
   androidNativeLaunchSteps,
+  androidRotationCommands,
   androidRotationRestoreCommands,
   swipeArgs,
 } from '../split-capture/lib/android-input.mjs';
@@ -204,13 +205,19 @@ export function geometryChangesProblem(changes) {
 // runner does for the iPad: the capture has already asserted `user_rotation`,
 // and when the page did not follow, the app's own rotation lock is released
 // through Settings (the product path, not a preference write) so the Activity
-// can. The lock is released only when it is in the way, and `onLockState` hands
-// the caller the prior state before anything changes so cleanup can restore it
+// can. The lock is released only when it is in the way; the caller captures
+// the prior lock state before anything changes so cleanup can restore it
 // exactly. What the page reports afterwards is the only acceptance.
+//
+// Releasing the lock does not by itself turn the display. Measured on the rig
+// phone (SM-G990U1, Android 16): with `user_rotation=1` asserted, the unlocked
+// Activity stayed at ROTATION_0 for 3 s, and turned only once `user_rotation`
+// was written again — the same value is enough. Hence `reassertRotation`.
 export async function establishRequestedOrientation({
   orientation,
   readGeometry,
   releaseLock,
+  reassertRotation,
   wait = sleep,
   followTimeoutMs = ROTATION_FOLLOW_TIMEOUT_MS,
   pollMs = ROTATION_FOLLOW_POLL_MS,
@@ -221,6 +228,7 @@ export async function establishRequestedOrientation({
     return { launched, settled: launched, lockReleased: false };
   }
   const initialLock = await releaseLock();
+  await reassertRotation();
   const deadline = Date.now() + followTimeoutMs;
   while (
     observedOrientation(await readGeometry()) !== orientation &&
@@ -374,6 +382,9 @@ export async function captureBundledFrames({
             if (initial?.lockedOrientation) state.lockToRestore = initial;
           },
         }),
+      reassertRotation: () => {
+        for (const command of androidRotationCommands(orientation)) exec(serial, command);
+      },
     });
     await ensureCampaignTheme(execute, requestedTheme);
     const observedTheme = await readResolvedTheme(execute);
