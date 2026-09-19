@@ -205,8 +205,12 @@ These are observed single executions, not guarantees across runners.
   existing discussion. It explicitly prohibited executing that new adapter investigation or
   duplicating the complete numerical evidence package.
 * **Sufficient:** the evaluator accepted the existing evidence package, maintained lesson and
-  accepted rejected-experiment disposition. It selected A complete and dispatched B; it requested
-  no further publication, experiments or PR for A.
+  accepted rejected-experiment disposition. It selected A complete and prepared B's prompt; it
+  requested no further publication, experiments or PR for A. Automatic approval review rejected
+  writing its synthetic fixture artifacts, so it returned proposed plan/response contents in chat.
+  The decision was evaluated; durable-plan persistence was not exercised for this case. Its drafted
+  “I updated” response must not be mistaken for a successful write. In actual use, the skill's
+  write-failure blocker prevents dispatch until the plan is saved.
 
 To repeat, provide a fresh reader only the skill and one fixture row plus the common inputs above;
 ask it to update an isolated simulated plan and produce the user-facing next response. Do not give
