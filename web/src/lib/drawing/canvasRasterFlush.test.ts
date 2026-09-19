@@ -92,6 +92,39 @@ describe('createCanvasRasterFlush', () => {
     ]);
   });
 
+  it('keeps retrying when a replacement after a loss is refused', () => {
+    const contexts: ReturnType<typeof fakeWebGl>[] = [];
+    let available = true;
+    getContext.mockImplementation((kind: string) => {
+      events.push(`create:${kind}`);
+      if (!available) return null;
+      const context = fakeWebGl(events);
+      contexts.push(context);
+      return context as unknown as RenderingContext;
+    });
+    const withCanvasRasterFlush = createCanvasRasterFlush();
+
+    withCanvasRasterFlush(() => events.push('work'));
+    contexts[0].loseContext();
+    available = false;
+    withCanvasRasterFlush(() => events.push('work'));
+    available = true;
+    withCanvasRasterFlush(() => events.push('work'));
+
+    expect(events).toEqual([
+      'create:webgl',
+      'work',
+      'clear',
+      'flush',
+      'create:webgl',
+      'work',
+      'create:webgl',
+      'work',
+      'clear',
+      'flush',
+    ]);
+  });
+
   it('does not ask again after WebGL is refused', () => {
     getContext.mockImplementation(() => null);
     const withCanvasRasterFlush = createCanvasRasterFlush();

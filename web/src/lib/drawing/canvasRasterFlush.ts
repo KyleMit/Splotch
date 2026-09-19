@@ -16,7 +16,9 @@ import { isAndroidChromium, isNative } from '$lib/platform';
 // platform keep the unflushed path.
 // ADR-0169; evidence in docs/scratchpad/perf/2026-09-18-issue-2072-android-fold-flush/.
 export function createCanvasRasterFlush() {
-  let flushContext: WebGLRenderingContext | null | undefined;
+  let flushContext: WebGLRenderingContext | null = null;
+  let hadContext = false;
+  let refused = false;
 
   function createFlushContext() {
     const canvas = document.createElement('canvas');
@@ -32,12 +34,16 @@ export function createCanvasRasterFlush() {
   }
 
   // A lost context never flushes again, and its canvas only ever hands back
-  // the same lost context, so a later fold replaces both. A browser that
-  // refused WebGL outright (null) is not asked again.
+  // the same lost context, so a later fold replaces both. Only a page that
+  // never got a context treats a refusal as final; after a loss, a failed
+  // replacement is tried again on the next fold, since the loss may be a GPU
+  // reset still in progress.
   function channelFlushContext() {
-    if (flushContext === undefined || flushContext?.isContextLost()) {
-      flushContext = createFlushContext();
-    }
+    if (flushContext && !flushContext.isContextLost()) return flushContext;
+    if (refused) return null;
+    flushContext = createFlushContext();
+    if (flushContext) hadContext = true;
+    else refused = !hadContext;
     return flushContext && !flushContext.isContextLost() ? flushContext : null;
   }
 
