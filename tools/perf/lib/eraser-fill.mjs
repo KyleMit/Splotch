@@ -134,7 +134,7 @@ export function eraserFillFunctionSource() {
 // their DOM rect is empty, but their backing is what the eraser works on.
 export const ERASER_CENSUS_GRID = 64;
 // Below this alpha a sample counts as erased rather than antialiased edge.
-export const ERASED_ALPHA_BELOW = 128;
+const ERASED_ALPHA_BELOW = 128;
 
 export function eraserInkCensusFunctionSource() {
   return `function eraserInkCensus() {
