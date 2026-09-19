@@ -1,0 +1,13 @@
+GET     /                                            200
+HEAD    /                                            200
+GET     /_app/immutable/entry/start.Czt61OiU.js      200
+GET     /api/generate-image                          403
+POST    /api/generate-image                          403
+GET     /admin                                       403
+GET     /dev/store-frames/identity                   403
+GET     /dev/store-frames/assets/x                   403
+POST    /                                            403
+PUT     /                                            403
+DELETE  /                                            403
+OPTIONS /                                            403
+GET     /nonexistent                                 403

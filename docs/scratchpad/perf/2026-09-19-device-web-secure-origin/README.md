@@ -11,10 +11,10 @@ requests. PR 2059 diagnosed this, and blocks both cues on both web device target
 
 ## Outcome
 
-| Target                  | Result                                                                                                                                                                                                                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Physical Android Chrome | **Ready.** Using `adb reverse` with `http://localhost:<port>`, the page is a secure context with both crypto APIs. Both AI actions ran 4 of 4 repeats with every generate request answered by the in-page stub                      |
-| Physical iPad Safari    | **Not ready. Needs an owner decision.** There is no local route: iOS has no reverse forward, and a LAN address is not trustworthy. See the approval packet below. The iPad also still has the owner actions it had before this unit |
+| Target                  | Result                                                                                                                                                                                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Physical Android Chrome | **Ready.** Using `adb reverse` with `http://localhost:<port>`, the page is a secure context with both crypto APIs. Both AI actions ran 4 of 4 repeats with every generate request answered by the in-page stub                                                                                      |
+| Physical iPad Safari    | **Not ready in this unit.** There was no local route: iOS has no reverse forward, and a LAN address is not trustworthy. `device-web-secure-origin-r2` made it ready with a name-constrained local root; see [`../2026-09-19-ipad-secure-origin-ca/`](../2026-09-19-ipad-secure-origin-ca/README.md) |
 
 ## The Android route
 
@@ -86,12 +86,19 @@ The runs use two builds:
 The entries differ because the build embeds its commit, not because the product source changed. The
 empty source diff is operator-observed; it can be re-derived with the `git diff` above.
 
-## Why a paid request cannot happen
+## What the mock does and does not establish
 
 * The stub answers `/api/generate-image` inside the page, and `aiRun.urls` shows it was the only
-  request.
-* Any other fetch passes through to `vite preview`, which serves no `/api` functions.
-* No AI key exists on the rig.
+  intercepted request in each recorded run. That is the evidence that these capture runs issued no
+  real generation request; it is not a network audit of everything the page or preview served.
+* **Correction:** an earlier version of this section said `vite preview` "serves no `/api`
+  functions" and that "no AI key exists on the rig". Neither was established. `perf:serve` runs
+  SvelteKit's `vite preview` with `PUBLIC_ENABLE_DEV_HARNESS=true`, which loads the server manifest
+  and answers server routes, dev handlers included: `/dev/store-frames/identity` returns the host
+  checkout's absolute path, and `/dev/store-frames/assets/…` reads an allowlist of local files. No
+  host credential was inspected and no endpoint was called, so whether a server route could reach a
+  paid capability is unknown. The in-page stub protects the capture's own calls, not other visitors
+  to the preview.
 
 ## Rejected routes (not repeated)
 
@@ -103,60 +110,26 @@ empty source diff is operator-observed; it can be re-derived with the `git diff`
 * **A Netlify deploy preview:** production builds strip the `__aiGenerate` seam and the profiling
   marks, so it cannot serve the instrumented build without a deploy configuration change.
 
-## iPad Safari: approval packet (NOT applied)
+## iPad Safari: approval packet (superseded)
 
-The iPad needs an HTTPS origin whose certificate chain it already trusts, or can be made to trust.
-Either route below changes a security boundary, so neither was applied. The owner chooses one, or
-neither.
+The owner chose between the two routes this packet proposed, and `device-web-secure-origin-r2` tried
+both. Its result, the route kept, and the trust change on the iPad are in
+[`../2026-09-19-ipad-secure-origin-ca/`](../2026-09-19-ipad-secure-origin-ca/README.md).
 
-**Option 1, recommended: a public quick tunnel with a publicly trusted certificate.**
+The packet made several statements this unit never established. They are withdrawn:
 
-* **What changes.**
-  * Install `cloudflared` on the Mac. It is not installed; `brew install cloudflared`.
-  * For the capture session only, run `cloudflared tunnel --url http://localhost:<port>`.
-  * This gives a random `https://<words>.trycloudflare.com` URL with a publicly trusted certificate.
-  * The iPad trust store is untouched.
-* **Exposure.**
-  * The instrumented static preview becomes reachable from the internet at an unguessable URL while
-    the tunnel runs. It is a static build with the dev-harness seams enabled; there are no `/api`
-    functions, keys, or secrets.
-  * Traffic, including the unreleased build, passes through Cloudflare.
-  * Asset loads gain internet latency. Frame measurement is on-device and unaffected, but page-load
-    timing is not comparable to LAN captures.
-* **Owner steps:** approve the install and the use of a public tunnel for capture sessions. No
-  device steps.
-* **Rollback:** stop the process, which ends the URL at once, then `brew uninstall cloudflared`.
-* **Harness impact:** none expected. The iPad actions runner takes `--url=<https tunnel>`, and the
-  served-build check fetches the same URL from the host. This is unverified until tried.
-
-**Option 2: a local CA trusted by the iPad.**
-
-* **What changes.**
-  * Generate a CA on the Mac. Constrain it by name to the Mac's LAN address and `.local` hostname,
-    and keep its key only in `~/.splotch-rig/`.
-  * Issue a leaf certificate for that address.
-  * Put a TLS front on the preview. PR 2059's front exists as a pattern, but the harness needs
-    serving support, which is a bounded harness change.
-* **Owner steps on the iPad:**
-  1. Transfer the CA profile.
-  2. Settings → General → VPN & Device Management → install it.
-  3. Settings → General → About → Certificate Trust Settings → enable full trust.
-* **Exposure:**
-  * A trust anchor stays on the iPad until it is removed. If the key leaked, anyone holding it could
-    impersonate the constrained names to that iPad.
-  * The LAN address can change.
-* **Rollback:** remove the profile under VPN & Device Management, and delete the CA key on the Mac.
-
-**Needed in either case (existing owner actions, unchanged by this unit):**
-
-* **Grant.** The XCTest automation grant has expired. A human must be at the iPad during
-  `npm run perf:preflight -- --verify-ios-launch` to enter the passcode.
-* **Device discovery.** The preflight reused Appium on 4723, whose real-device discovery is stale
-  (`Unknown device or simulator UDID`). Either restart the root RemoteXPC tunnel (a password dialog
-  at the Mac), or pass the fresh Appium that the local rig notes record as passing discovery.
-
-After approval, the next worker runs `--actions=ai-waiting` on iPad Safari at the approved HTTPS
-URL. It must require the same `aiRun` evidence and keep a LAN-http negative control.
+* **"A static build … there are no `/api` functions, keys, or secrets."** Wrong. The preview is not
+  static-only; see "What the mock does and does not establish" above. Tunnelling `perf:serve`
+  directly would have published its dev handlers, so r2 put a method and path allowlist in front of
+  it before exposing anything.
+* **"Frame measurement is on-device and unaffected" by tunnel latency.** Not measured here. A route
+  can change what has finished loading when a capture starts, so readiness has to be verified rather
+  than assumed.
+* **"Constrain it by name to the Mac's LAN address and `.local` hostname."** Proposed, not
+  demonstrated. A leaf certificate's names do not limit what a trusted root can sign; only a name
+  constraint on the root does, and only if the device enforces it. r2 tested that on the iPad.
+* **"The XCTest automation grant has expired."** The preflight failed at Appium's device discovery
+  before any launch, so it could not tell. The only evidence was the grant log's age warning.
 
 ## Reproduce
 
