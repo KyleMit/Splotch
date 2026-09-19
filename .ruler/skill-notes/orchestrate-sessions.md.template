@@ -220,6 +220,12 @@ issues, perform merges, or launch worker sessions.
 
 ## Remaining limits
 
+The first independent Claude review found a conflict between the narrower-authority rule and the
+template's unconditional autonomous workflow line. The correction selects the shipping mode before
+filling the template: no-merge work uses default `ship-issue` and retains the live claim, with merge
+and cleanup handed to the user; planning-only work does not dispatch. Merely replacing the opening
+authorization paragraph left contradictory operational commands later in the prompt.
+
 The plan is a maintained record, not a transactional scheduler. Explicit reservations and live
 claims reduce collisions but cannot atomically lock human-relayed workers. Missing permissions,
 inaccessible evidence, or unknown report delivery stay explicit blockers. Skill invocation cannot

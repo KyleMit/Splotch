@@ -24,6 +24,14 @@ prompt to a worker authorizes that worker's scoped execution. Honor any narrower
 (including planning only or no merge) in the plan and prompt; do not silently restore autonomy. Do
 not create issues, close an epic, or operate on unrelated work without existing authorization.
 
+Choose the workflow from that authority before filling the template. With merge authority, use
+`ship-issue mode=autonomous` or an explicitly scoped `ship-campaign`. With a no-merge limit, use
+plain `ship-issue` (default mode) for one issue at a time: the done-when is a reviewed, green,
+mergeable open PR. Omit merge preflight, merge/closure/claim-removal commands and the requirement to
+merge before the next unit; retain the live claim and record merge/cleanup as the user's handoff.
+Never invoke `ship-campaign` under that limit. Planning-only requests produce a plan and decisions,
+not an executable worker prompt or dispatch.
+
 External-review data sharing is a separate boundary: carry only the user's existing authorization
 for the necessary private source/diffs, destination provider and review rounds. This skill does not
 grant that permission. If the worker's required rival review lacks it, resolve that specific
@@ -106,22 +114,27 @@ bypass protection, weaken checks, or expand scope. [Replace with any narrower re
 
 Campaign/batch: <ID, plan location and prompt revision>. Work <ordered issue URLs and done-when>.
 External review: <the user's already-granted scope and destination, or no private data sharing>.
-Use ship-issue mode=autonomous for one issue, or ship-campaign for this explicit batch; honor its
-authority and stop conditions. <For a preservation/investigation follow-up, replace this line with
-the specific task and remove unnecessary shipping/merge authority.>
+Workflow: <merge authorized: ship-issue mode=autonomous for one issue, or ship-campaign for the
+explicit batch; no merge: plain ship-issue/default mode for one issue, ending with an open PR;
+preservation/investigation: the specific bounded task without unnecessary shipping authority>.
+Apply only that workflow's authorized actions and stop conditions.
 
 Read each issue body AND all comments before implementation; recheck claims and changed premises.
 Before implementation, prove the named workflow's current review/auth/merge preflight; use the
 installed rival bridge. If blocked, report the exact attempted command and current refusal, with
 sensitive values redacted. Do not generalize an old refusal to an untried action or route around it.
 Start each issue from freshly fetched origin/main in a clean worktree. One issue per PR; merge and
-verify it before starting the next. Any new regression test must fail against pre-change code for
-the intended reason (negative control); report the commands/results. For non-code work, state the
+verify it before starting the next. <For no-merge scope, remove merge preflight and this merge-before-
+next requirement; end this assignment at a review-complete open PR.> Any new regression test must
+fail against pre-change code for the intended reason (negative control); report the commands/results. For non-code work, state the
 appropriate behavioral or document validation instead of manufacturing a red test.
 
 After merge, verify issue closure, explicitly remove in-progress, and re-read to confirm. If still
 open, retain the claim and report it; do not close it by hand. Verify applicable checks registered
 AND completed on the exact head/merge SHA; an early successful checks --watch is insufficient.
+<For no-merge scope, replace the preceding paragraph with: Verify applicable pre-merge checks on
+the exact PR head, retain the issue's live claim, and report the open PR and user's post-merge
+cleanup obligations. Do not merge, close the issue, or remove its claim.>
 
 Parallel reservations: <issue numbers and files to avoid, or none>. Playwright port: <port>, with
 SPLOTCH_E2E_PORT and --workers=1; on collision pick an unused port and report it. Stop only processes
