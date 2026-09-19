@@ -76,14 +76,6 @@ export function sectionHeading(id: SectionId): string {
   return meta.title ?? meta.label;
 }
 
-export function sectionLabel(id: SectionId): string {
-  return SECTION_BY_ID[id].label;
-}
-
-export function sectionIcon(id: SectionId): IconName {
-  return SECTION_BY_ID[id].icon;
-}
-
 // Reveal timing for every conditional block a settings section itself owns. The
 // exception is the shared feedback field set, ReportFields: it is also hosted by
 // /feedback, outside Settings, so its nested device reveals name their own

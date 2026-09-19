@@ -9,13 +9,7 @@ import {
   setToolDrawerEnabled,
   setUndoButton,
 } from '$lib/state/settings.svelte';
-import {
-  SECTIONS,
-  sectionContentStamp,
-  sectionIcon,
-  sectionLabel,
-  sectionSubtitle,
-} from './sections';
+import { SECTIONS, sectionContentStamp, sectionSubtitle } from './sections';
 
 describe('SECTIONS', () => {
   // `as const satisfies` derives SectionId from this list and rejects an id
@@ -40,12 +34,6 @@ describe('SECTIONS', () => {
     const ids = SECTIONS.map((section) => section.id);
     expect(ids.indexOf('accessibility')).toBe(ids.indexOf('controls') + 1);
     expect(ids.indexOf('coloring')).toBe(ids.indexOf('accessibility') + 1);
-  });
-
-  it('names the sections a cross-link points at by their own icon and label', () => {
-    expect(sectionLabel('controls')).toBe('Tool Drawer');
-    expect(sectionIcon('controls')).toBe('controls');
-    expect(sectionLabel('sound')).toBe('Sound');
   });
 });
 

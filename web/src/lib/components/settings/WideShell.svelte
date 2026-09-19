@@ -20,11 +20,9 @@
     landingSection: SectionId;
     /** Advances on each open transition, as the dialog action reports it to SettingsModal. */
     openGeneration: number;
-    /** Advances on each deep-link landing, including one onto the section already landed on. */
-    landingGeneration: number;
   }
 
-  let { landingSection, openGeneration, landingGeneration }: Props = $props();
+  let { landingSection, openGeneration }: Props = $props();
 
   // The sidebar is a table of contents over the continuous pane: this is the
   // section the reading position currently sits in, an indicator rather than a
@@ -323,39 +321,28 @@
   // Only the open *transition* may drop it — a deep-link landing while already
   // open must never blank the visible pane — which is why this keys on the
   // dialog action's open count rather than on the landing section.
-  //
-  // The Parent Center lock is reset on the same edge, for the mirror reason:
-  // a landing while open (a section's cross-link) is navigation inside one
-  // visit, and the challenge solved on that visit still stands. Landing on
-  // Parent Center itself is only ever requested by a solved challenge (the
-  // gate's own way into the policy editor), so that open arrives already
-  // unlocked — asking again for the section the solve was spent on would make
-  // the solve worthless. Every other open re-locks. The landing is read
-  // untracked so a later landing cannot re-run this reset.
   $effect(() => {
     void openGeneration;
-    if (!settingsModal.open) return;
-    presentedCount = 0;
-    parentCenterUnlocked = untrack(() => landingSection) === 'parentCenter';
+    if (settingsModal.open) presentedCount = 0;
   });
 
   // The dialog is closed, never unmounted, so both the nav and the pane keep the
   // offsets the parent left them at — which would reopen with the landing
   // section highlighted while the pane still shows wherever they stopped
   // reading. A deep-linked section scrolls into place instead of swapping in.
-  // Re-runs on each open and on each landing while open — counted rather than
-  // compared, so a cross-link back to the section last landed on still scrolls.
+  // Re-runs on each open and on each landing change while open.
   $effect(() => {
-    void landingGeneration;
     if (!settingsModal.open) {
       pendingJump = null;
       smoothJumpTarget = null;
       return;
     }
     const landing = landingSection;
-    // A solved challenge can also land here while the dialog is already open;
-    // the open-edge effect above owns re-locking, so this only ever unlocks.
-    if (landing === 'parentCenter') parentCenterUnlocked = true;
+    // Landing on Parent Center is only ever requested by a solved challenge (the
+    // gate's own way into the policy editor), so that landing arrives already
+    // unlocked — asking again for the section the solve was spent on would make
+    // the solve worthless. Every other landing re-locks.
+    parentCenterUnlocked = landing === 'parentCenter';
     // Bookkeeping, deliberately untracked: the reveal check inside reads the
     // gate policy and the unlock just written above, and neither should re-run
     // the landing.

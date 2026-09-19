@@ -1,13 +1,11 @@
 import { createModal, type Origin } from './modal.svelte';
 
-// The Settings sections another surface can deep-link into — from outside
-// Settings (the AI button, a solved Grown-Ups Only challenge) and from one
-// section's cross-link to another (Accessibility). Deliberately a literal union
-// rather than the `SectionId` it must agree with: this module is on the startup
-// path and settings/sections.ts pulls the coloring-pack and free-generation
-// stores in behind it. SettingsModal assigns this straight into its
-// `SectionId`-typed view, so the compiler holds the agreement there.
-export type RequestedSettingsSection = 'ai' | 'parentCenter' | 'controls' | 'sound';
+// The Settings sections another surface can deep-link into. Deliberately a
+// literal union rather than the `SectionId` it must agree with: this module is on
+// the startup path and settings/sections.ts pulls the coloring-pack and
+// free-generation stores in behind it. SettingsModal assigns this straight into
+// its `SectionId`-typed view, so the compiler holds the agreement there.
+type RequestedSettingsSection = 'ai' | 'parentCenter';
 
 export interface UiState {
   // True while the parent is dragging the button-size slider. Settings

@@ -425,13 +425,10 @@ media queries + the head-script stamp in `app.html`).
       hidden" subtitle counts. The camera button's own visibility lives in **Saving** instead,
       leading that section above Auto-Save on Delete.
     * **Accessibility Section** - the one section a parent finds by name when their child needs
-      something different. It holds the accommodations themselves, each with one sentence on who it
-      helps, and **Section Link Rows** (`settings/SectionLinkRow.svelte`) that open the controls
-      other sections own rather than copy them — Drawing Tools in Tool Drawer, Sound — through the
-      same `requestSettingsSection` deep link the AI button and the parental gate use, so a link
-      drills in on the phone and scrolls the wide Pane. The **Button Size** slider is the exception:
-      it is rendered here as well as in Tool Drawer (`settings/ButtonSizeSetting.svelte`, one stored
-      scale behind both), since bigger buttons are the accommodation for small or unsteady hands.
+      something different: each accommodation with one sentence on who it helps. Today that is the
+      **Button Size** slider, rendered here as well as in Tool Drawer
+      (`settings/ButtonSizeSetting.svelte`, one stored scale behind both), since bigger buttons are
+      the accommodation for small or unsteady hands.
       * **Appearance Control** - Light / Dark / System segmented control at the top of the
         **Appearance** section. Dark mode themes the chrome (app background, palette bar, modals,
         Install Banner), the paper (a near-black warm tone under the same low-alpha texture), and

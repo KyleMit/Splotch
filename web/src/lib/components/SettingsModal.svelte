@@ -52,15 +52,9 @@
   // Counts opens for the wide shell, which re-stages its pane on each one.
   let openGeneration = $state(0);
 
-  // Counts landings for the wide shell, whose pane scrolls to the landing
-  // section: a request for the section already landed on (a cross-link tapped
-  // again after scrolling away) changes nothing else it could react to.
-  let landingGeneration = $state(0);
-
   function landOn(section: SectionId) {
     markSectionSeen(section);
     view = section;
-    landingGeneration += 1;
     clearRequestedSettingsSection();
   }
 
@@ -181,7 +175,7 @@
       <div class="settings-header">
         <DialogHeader onclose={settingsModal.hide} closeFeedback><h2>Settings</h2></DialogHeader>
       </div>
-      <WideShell landingSection={activeSection} {openGeneration} {landingGeneration} />
+      <WideShell landingSection={activeSection} {openGeneration} />
     {:else if view === 'hub'}
       <!-- Phone: top-level hub list. -->
       <div class="settings-header">
