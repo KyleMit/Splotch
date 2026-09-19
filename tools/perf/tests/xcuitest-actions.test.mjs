@@ -788,7 +788,11 @@ describe('desktop action options', () => {
     const first = {
       schemaVersion: 1,
       actionGroups: ['coloring'],
-      applicableLabels: ['first open of coloring books', 'open coloring book', 'select coloring page'],
+      applicableLabels: [
+        'first open of coloring books',
+        'open coloring book',
+        'select coloring page',
+      ],
       notApplicable: [],
       context: { orientation: 'LANDSCAPE', settingsShell: null, listedColoringBooks: 3 },
     };
