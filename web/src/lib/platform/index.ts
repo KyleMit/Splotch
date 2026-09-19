@@ -53,6 +53,12 @@ export function isAndroidBrowser(): boolean {
   return browser && /android/i.test(navigator.userAgent || '');
 }
 
+/** An Android browser on the Chromium engine: Chrome, and the browsers and
+ *  WebViews built on it, which all carry a `Chrome/` token. Firefox does not. */
+export function isAndroidChromium(): boolean {
+  return isAndroidBrowser() && /\bChrome\/\d/.test(navigator.userAgent || '');
+}
+
 // Best-effort friendly OS name from a user-agent string. Pure display sugar — on
 // the web the raw UA is sent alongside it, so a miss here loses nothing.
 export function osLabelFromUserAgent(ua: string): string {

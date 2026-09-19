@@ -4,17 +4,19 @@ import { createCanvasRasterFlush } from './canvasRasterFlush';
 
 const platform = vi.hoisted(() => ({ android: true, native: false }));
 vi.mock('$lib/platform', () => ({
-  isAndroidBrowser: () => platform.android,
+  isAndroidChromium: () => platform.android,
   isNative: () => platform.native,
 }));
 
 function fakeWebGl(events: string[], lost = false) {
+  const state = { lost };
   return {
     COLOR_BUFFER_BIT: 0x4000,
-    isContextLost: () => lost,
+    loseContext: () => (state.lost = true),
+    isContextLost: () => state.lost,
     clear: () => events.push('clear'),
     flush: () => events.push('flush'),
-  } as unknown as WebGLRenderingContext;
+  } as unknown as WebGLRenderingContext & { loseContext: () => void };
 }
 
 describe('createCanvasRasterFlush', () => {
@@ -53,7 +55,7 @@ describe('createCanvasRasterFlush', () => {
     expect(events.filter((event) => event === 'flush')).toHaveLength(2);
   });
 
-  it('only runs the work outside Android Chrome', () => {
+  it('only runs the work outside Android Chromium', () => {
     platform.android = false;
     createCanvasRasterFlush()(() => events.push('work'));
 
@@ -62,6 +64,42 @@ describe('createCanvasRasterFlush', () => {
     createCanvasRasterFlush()(() => events.push('work'));
 
     expect(events).toEqual(['work', 'work']);
+  });
+
+  it('replaces a context lost after an earlier fold', () => {
+    const contexts: ReturnType<typeof fakeWebGl>[] = [];
+    getContext.mockImplementation((kind: string) => {
+      events.push(`create:${kind}`);
+      const context = fakeWebGl(events);
+      contexts.push(context);
+      return context as unknown as RenderingContext;
+    });
+    const withCanvasRasterFlush = createCanvasRasterFlush();
+
+    withCanvasRasterFlush(() => events.push('work'));
+    contexts[0].loseContext();
+    withCanvasRasterFlush(() => events.push('work'));
+
+    expect(events).toEqual([
+      'create:webgl',
+      'work',
+      'clear',
+      'flush',
+      'create:webgl',
+      'work',
+      'clear',
+      'flush',
+    ]);
+  });
+
+  it('does not ask again after WebGL is refused', () => {
+    getContext.mockImplementation(() => null);
+    const withCanvasRasterFlush = createCanvasRasterFlush();
+
+    withCanvasRasterFlush(() => events.push('work'));
+    withCanvasRasterFlush(() => events.push('work'));
+
+    expect(getContext).toHaveBeenCalledTimes(1);
   });
 
   it('still runs the work when WebGL is unavailable or lost', () => {

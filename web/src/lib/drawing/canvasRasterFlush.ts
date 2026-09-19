@@ -1,4 +1,4 @@
-import { isAndroidBrowser, isNative } from '$lib/platform';
+import { isAndroidChromium, isNative } from '$lib/platform';
 
 // Chromium queues a 2D canvas's raster for the GPU process but sends it only
 // when something flushes the renderer's GPU channel, which in practice means
@@ -11,30 +11,38 @@ import { isAndroidBrowser, isNative } from '$lib/platform';
 // channel, so each fold's raster runs while the page is still idle. The flush
 // is not a readback and does not wait for the GPU. The context is created
 // before the work queues raster, because creating one waits for whatever the
-// channel already holds. Measured in Android Chrome only, so the native
-// WebView and every other browser keep the unflushed path.
+// channel already holds. The deferral is Chromium's, and it was measured in
+// Android Chrome, so the native WebView (unmeasured) and every other engine and
+// platform keep the unflushed path.
 // ADR-0169; evidence in docs/scratchpad/perf/2026-09-18-issue-2072-android-fold-flush/.
 export function createCanvasRasterFlush() {
   let flushContext: WebGLRenderingContext | null | undefined;
 
+  function createFlushContext() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas.getContext('webgl', {
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      powerPreference: 'low-power',
+    });
+  }
+
+  // A lost context never flushes again, and its canvas only ever hands back
+  // the same lost context, so a later fold replaces both. A browser that
+  // refused WebGL outright (null) is not asked again.
   function channelFlushContext() {
-    if (flushContext === undefined) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1;
-      canvas.height = 1;
-      flushContext = canvas.getContext('webgl', {
-        alpha: false,
-        antialias: false,
-        depth: false,
-        stencil: false,
-        powerPreference: 'low-power',
-      });
+    if (flushContext === undefined || flushContext?.isContextLost()) {
+      flushContext = createFlushContext();
     }
     return flushContext && !flushContext.isContextLost() ? flushContext : null;
   }
 
   return function withCanvasRasterFlush(work: () => void) {
-    const flushes = !(__IS_CAPACITOR__ && isNative()) && isAndroidBrowser();
+    const flushes = !(__IS_CAPACITOR__ && isNative()) && isAndroidChromium();
     const context = flushes ? channelFlushContext() : null;
     work();
     if (!context) return;
