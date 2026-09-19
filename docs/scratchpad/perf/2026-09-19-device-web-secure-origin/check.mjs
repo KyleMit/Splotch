@@ -35,11 +35,18 @@ const log = (name) => readFileSync(join(HERE, 'controls', `${name}.log.txt`), 'u
 const AI_LABELS = ['show AI waiting print', 'finish AI waiting print'];
 
 const a1 = run('a1-android-localhost-evidence');
-check('a1: served over adb reverse at http://localhost:54784, main-equivalent product at 607f66453c4e', a1.appUrl === 'http://localhost:54784/' && a1.productCommit === '607f66453c4e95a4f8b17acb574c6004a80d32ed' && a1.buildEntry === '/_app/immutable/entry/start.Bkpsy1Ao.js');
+check('a1: page URL http://localhost:54784/ (the adb reverse itself is operator-observed), build 607f66453c4e', a1.appUrl === 'http://localhost:54784/' && a1.productCommit === '607f66453c4e95a4f8b17acb574c6004a80d32ed' && a1.buildEntry === '/_app/immutable/entry/start.Bkpsy1Ao.js');
 check('a1: capture passed with no blocked coverage', a1.passed === true && a1.actionPlan?.blocked?.length === 0);
+// Four repeats means repeat ids 1-4 with exactly repeat 1 as the warmup.
+const coversRepeats = (artifact, label) => {
+  const samples = artifact.samples.filter((sample) => sample.label === label);
+  return (
+    samples.map((sample) => sample.repeat).join(',') === '1,2,3,4' &&
+    samples.map((sample) => sample.warmup).join(',') === 'true,false,false,false'
+  );
+};
 for (const label of AI_LABELS) {
-  const samples = a1.samples.filter((sample) => sample.label === label);
-  check(`a1: ${label} ran all 4 repeats (1 warmup + 3 scored)`, samples.length === 4);
+  check(`a1: ${label} ran repeats 1-4, repeat 1 the warmup and 2-4 scored`, coversRepeats(a1, label));
 }
 const evidence = a1.samples.filter((sample) => sample.label === 'finish AI waiting print').map((sample) => sample.aiRun);
 check('a1: every finish sample carries aiRun evidence the capture accepts', evidence.length === 4 && evidence.every((state) => aiRunEvidenceProblem(state) === null));
@@ -48,11 +55,28 @@ check('a1: every run made exactly one request, the generate call the in-page stu
 check('a1: the wrapper-appended exit line in the log reads 0', /^exit 0$/m.test(log('a1-android-localhost-evidence')));
 
 const a0 = run('a0-android-localhost-main-harness');
-check('a0: main 100f7495 harness, same route, both AI actions passed with no blocked coverage (no aiRun field: that harness did not record it)', a0.productCommit === '100f749572b7285ee2525b1467ec9e99755f600f' && a0.appUrl === 'http://localhost:54784/' && a0.passed === true && a0.actionPlan?.blocked?.length === 0 && a0.samples.every((sample) => sample.aiRun === undefined));
+check(
+  'a0: main 100f7495 harness and build on the same route, passed with no blocked coverage',
+  a0.productCommit === '100f749572b7285ee2525b1467ec9e99755f600f' &&
+    a0.buildEntry === '/_app/immutable/entry/start.CtxMDpz5.js' &&
+    a0.appUrl === 'http://localhost:54784/' &&
+    a0.passed === true &&
+    a0.actionPlan?.blocked?.length === 0
+);
+for (const label of AI_LABELS) {
+  check(`a0: ${label} ran repeats 1-4, repeat 1 the warmup`, coversRepeats(a0, label));
+}
+check('a0: that harness recorded no aiRun, which is why this change exists', a0.samples.every((sample) => sample.aiRun === undefined));
 
 const n1 = run('n1-android-lan-negative');
 const blocked = JSON.stringify(n1.actionPlan?.blocked ?? []);
-check('n1: the same build over the LAN address blocked both AI actions', AI_LABELS.every((label) => blocked.includes(label)) && n1.passed === false);
+check(
+  'n1: the same build as a1 (commit and entry), reached at the LAN address on the same port',
+  n1.productCommit === a1.productCommit &&
+    n1.buildEntry === a1.buildEntry &&
+    n1.appUrl === 'http://<lan>:54784/'
+);
+check('n1: the LAN run blocked both AI actions and recorded no samples', AI_LABELS.every((label) => blocked.includes(label)) && n1.passed === false && n1.samples.length === 0);
 check('n1: and recorded why: not a secure context, no crypto APIs, zero requests', /\\"secureContext\\":false/.test(blocked) && /\\"randomUUID\\":\\"undefined\\"/.test(blocked) && /\\"requests\\":0/.test(blocked));
 check('n1: the log names both blocked labels and its wrapper-appended exit line reads 1', /Blocked coverage: show AI waiting print, finish AI waiting print[\s\S]*^exit 1$/m.test(log('n1-android-lan-negative')));
 
