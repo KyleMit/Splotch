@@ -1,5 +1,6 @@
 import { crayonBufferIsDirty, crayonDepositsOnTiles } from './crayonPassBuffer';
 import { crayonOpShowsTile, resetCrayonStateForClear } from './crayonPassBuffer';
+import { withCanvasRasterFlush } from './canvasRasterFlush';
 import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { PERF_MARKS } from './perf';
@@ -358,7 +359,7 @@ export function scheduleTiledHistoryFold() {
   historyFoldTimer = setTimeout(() => {
     historyFoldTimer = null;
     if (host?.hasActivePointers() || history.length <= undoableCommands) return;
-    foldOldestCommand();
+    withCanvasRasterFlush(foldOldestCommand);
     scheduleTiledHistoryFold();
   }, TILE_HISTORY_FOLD_IDLE_MS);
 }
