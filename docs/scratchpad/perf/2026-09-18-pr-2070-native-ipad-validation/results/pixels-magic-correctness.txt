@@ -1,0 +1,44 @@
+## Pixel identity (crayon, pixelCheck runs)
+01-control: entry=start.C4bxo72t.js tilesBeforeUndo=951af899 ghostHashesPresent=20/20
+02-treatment: entry=start.Coc95Aql.js tilesBeforeUndo=951af899 ghostHashesPresent=20/20
+03-treatment: entry=start.Coc95Aql.js tilesBeforeUndo=951af899 ghostHashesPresent=20/20
+04-control: entry=start.C4bxo72t.js tilesBeforeUndo=951af899 ghostHashesPresent=20/20
+01-control vs 02-treatment: sameStart=True ghosts 20/20 tiles 20/20
+01-control vs 03-treatment: sameStart=True ghosts 20/20 tiles 20/20
+01-control vs 04-control: sameStart=True ghosts 20/20 tiles 20/20
+02-treatment vs 03-treatment: sameStart=True ghosts 20/20 tiles 20/20
+02-treatment vs 04-control: sameStart=True ghosts 20/20 tiles 20/20
+03-treatment vs 04-control: sameStart=True ghosts 20/20 tiles 20/20
+
+## Magic brush (bounded structural check; gradient is Math.random-picked)
+01-control: brush=magic entry=start.C4bxo72t.js tilesBeforeUndo=557db523 ghostsSeen=20/20 depth=20->0 ink=1390596 ghostElementsAfterTail=0
+02-treatment: brush=magic entry=start.Coc95Aql.js tilesBeforeUndo=8916261e ghostsSeen=20/20 depth=20->0 ink=1390596 ghostElementsAfterTail=0
+
+## Correctness and memory, every run
+smoke/smoke-control-1: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+initial/01-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+initial/02-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+initial/04-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+initial/05-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+initial/06-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+initial/07-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+initial/08-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+initial/09-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b1-s1-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b1-s2-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b1-warm-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b2-s1-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b2-s2-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b2-warm-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b3-s1-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b3-s2-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b3-warm-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b4-s1-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b4-s2-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+confirmation/b4-warm-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+pixels/01-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+pixels/02-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+pixels/03-treatment: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+pixels/04-control: crayon undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=19937664 liveBackingBytes=19937664 leak=0 ink=1116310 vp=1366x1004@2 LANDSCAPE
+magic/01-control: magic undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=39875328 liveBackingBytes=19937664 leak=0 ink=1390596 vp=1366x1004@2 LANDSCAPE
+magic/02-treatment: magic undos=20 ghosts=20 depth=20->0 rasterBytes=29705848 baseRasterBytes=39875328 liveBackingBytes=19937664 leak=0 ink=1390596 vp=1366x1004@2 LANDSCAPE

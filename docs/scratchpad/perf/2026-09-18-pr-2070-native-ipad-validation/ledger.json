@@ -1,0 +1,288 @@
+{
+ "note": "Every capture attempt of the PR 2070 native validation session, in execution order within each series. Timestamps are UTC from the host at result collection. installedBefore = a devicectl install of that arm immediately preceded the run.",
+ "series": [
+  {
+   "series": "smoke",
+   "purpose": "harness smoke test before the initial series; control was already installed; not scored",
+   "runs": [
+    {
+     "label": "smoke-control-1",
+     "arm": "control",
+     "at": "2026-09-18T22:35:00.908Z",
+     "installedBefore": null,
+     "scored": false,
+     "artifact": "raw/smoke/smoke-control-1.json.gz",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "series": "initial",
+   "purpose": "interleaved T C C T T C C T plus a replacement C for the failed 03; scored by criteria 1-5 as first written",
+   "runs": [
+    {
+     "label": "01-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T22:37:27.093Z",
+     "installedBefore": true,
+     "scored": true,
+     "artifact": "raw/initial/01-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "02-control",
+     "arm": "control",
+     "at": "2026-09-18T22:39:34.386Z",
+     "installedBefore": true,
+     "scored": true,
+     "artifact": "raw/initial/02-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "03-control",
+     "arm": "control",
+     "at": null,
+     "installedBefore": false,
+     "scored": false,
+     "artifact": null,
+     "status": "failed",
+     "failure": "The inspector relay stopped announcing the app page during result polling (\"The page never announced an inspector target\" x39), then \"no result before the timeout\" after 10 min. No artifact was written. The iPad was unlocked and the app process alive afterwards. The run was replaced by 09-control, appended to the end of the series."
+    },
+    {
+     "label": "04-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T22:52:06.135Z",
+     "installedBefore": true,
+     "scored": true,
+     "artifact": "raw/initial/04-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "05-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T22:54:12.460Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/initial/05-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "06-control",
+     "arm": "control",
+     "at": "2026-09-18T22:56:19.801Z",
+     "installedBefore": true,
+     "scored": true,
+     "artifact": "raw/initial/06-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "07-control",
+     "arm": "control",
+     "at": "2026-09-18T22:58:26.116Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/initial/07-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "08-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:00:34.481Z",
+     "installedBefore": true,
+     "scored": true,
+     "artifact": "raw/initial/08-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "09-control",
+     "arm": "control",
+     "at": "2026-09-18T23:02:45.053Z",
+     "installedBefore": true,
+     "scored": true,
+     "artifact": "raw/initial/09-control.json.gz",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "series": "pixels",
+   "purpose": "pixelCheck verification (hashing perturbs timing, so never used for performance)",
+   "runs": [
+    {
+     "label": "01-control",
+     "arm": "control",
+     "at": "2026-09-18T23:06:32.290Z",
+     "installedBefore": false,
+     "scored": false,
+     "artifact": "raw/pixels/01-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "02-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:08:44.962Z",
+     "installedBefore": true,
+     "scored": false,
+     "artifact": "raw/pixels/02-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "03-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:10:56.648Z",
+     "installedBefore": false,
+     "scored": false,
+     "artifact": "raw/pixels/03-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "04-control",
+     "arm": "control",
+     "at": "2026-09-18T23:13:10.079Z",
+     "installedBefore": true,
+     "scored": false,
+     "artifact": "raw/pixels/04-control.json.gz",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "series": "magic",
+   "purpose": "bounded magic-brush structural check with pixelCheck",
+   "runs": [
+    {
+     "label": "01-control",
+     "arm": "control",
+     "at": "2026-09-18T23:15:35.922Z",
+     "installedBefore": false,
+     "scored": false,
+     "artifact": "raw/magic/01-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "02-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:17:48.520Z",
+     "installedBefore": true,
+     "scored": false,
+     "artifact": "raw/magic/02-treatment.json.gz",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "series": "confirmation",
+   "purpose": "pre-registered after rival round 1: blocks C T T C, each a forced reinstall, one unscored warmup, then two scored runs",
+   "runs": [
+    {
+     "label": "b1-warm-control",
+     "arm": "control",
+     "at": "2026-09-18T23:30:28.238Z",
+     "installedBefore": true,
+     "scored": false,
+     "artifact": "raw/confirmation/b1-warm-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b1-s1-control",
+     "arm": "control",
+     "at": "2026-09-18T23:32:34.511Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/confirmation/b1-s1-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b1-s2-control",
+     "arm": "control",
+     "at": "2026-09-18T23:34:39.808Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/confirmation/b1-s2-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b2-warm-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:36:47.956Z",
+     "installedBefore": true,
+     "scored": false,
+     "artifact": "raw/confirmation/b2-warm-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b2-s1-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:38:54.258Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/confirmation/b2-s1-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b2-s2-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:40:59.503Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/confirmation/b2-s2-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b3-warm-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:43:07.547Z",
+     "installedBefore": true,
+     "scored": false,
+     "artifact": "raw/confirmation/b3-warm-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b3-s1-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:45:13.853Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/confirmation/b3-s1-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b3-s2-treatment",
+     "arm": "treatment",
+     "at": "2026-09-18T23:47:20.160Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/confirmation/b3-s2-treatment.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b4-warm-control",
+     "arm": "control",
+     "at": "2026-09-18T23:49:27.329Z",
+     "installedBefore": true,
+     "scored": false,
+     "artifact": "raw/confirmation/b4-warm-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b4-s1-control",
+     "arm": "control",
+     "at": "2026-09-18T23:51:33.641Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/confirmation/b4-s1-control.json.gz",
+     "status": "ok"
+    },
+    {
+     "label": "b4-s2-control",
+     "arm": "control",
+     "at": "2026-09-18T23:53:39.915Z",
+     "installedBefore": false,
+     "scored": true,
+     "artifact": "raw/confirmation/b4-s2-control.json.gz",
+     "status": "ok"
+    }
+   ]
+  }
+ ]
+}

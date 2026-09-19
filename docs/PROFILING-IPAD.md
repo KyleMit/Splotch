@@ -731,6 +731,35 @@ There's no `window.__engine` here, so op counts aren't controlled — you're rea
 off organic input. The harness-gated bundled capture does expose its narrower read-only drawing and
 report seams; release builds compile them out.
 
+### Scripted in-page capture of the bundled app
+
+Use this path to run an in-page payload inside the installed app without Appium, a probe host,
+`server.url`, or an App Transport Security exception. A standard signed Debug install is enough. The
+PR 2070 native validation used it on iPadOS 26.5; its runner and payload are in
+[`scratchpad/perf/2026-09-18-pr-2070-native-ipad-validation/`](scratchpad/perf/2026-09-18-pr-2070-native-ipad-validation/README.md).
+
+1. **⟨Mac⟩** Build each variant separately. In a clean worktree at the commit, run
+   `npm run perf:build:cap`. Then, in `ios/App`, run
+   `xcodebuild -project App.xcodeproj -scheme App -configuration Debug -destination id=<UDID> -derivedDataPath <dir> -allowProvisioningUpdates build`.
+   Before installing, check that `<dir>/Build/Products/Debug-iphoneos/App.app/capacitor.config.json`
+   has no `server.url`.
+2. **⟨Mac⟩** Install and start a fresh process:
+   `xcrun devicectl device install app --device <UDID> <App.app>`, then
+   `xcrun devicectl device process launch --device <UDID> --terminate-existing art.splotch.app`.
+   Installing over the same bundle id keeps the app's data container.
+3. **⟨Mac⟩** Attach with `tools/perf/lib/webkit-inspector.mjs` through `ios_webkit_debug_proxy`.
+   Capacitor makes a Debug build's WKWebView inspectable, and the page is listed as
+   `capacitor://localhost`. The `perf:build:cap` seams (`__drawingDebug`, `__committedBrushMode`,
+   and the `engine.*` marks) are available; `window.__engine` is not.
+4. **⟨Mac⟩** Before trusting a run, read the entry chunk the page actually loaded. Every variant
+   ships under the same bundle id, so the installed app does not identify the build.
+
+**A denial of one operation is not a denial of native installs.** A LAN capture changes transport
+security: it points `server.url` at an `http://` address and adds `NSAllowsArbitraryLoads`. That
+change can be refused while this signed, bundled install is allowed. Before recording that native
+builds cannot be installed on a host, try this exact install and report the denial it produces, if
+any.
+
 ---
 
 ## Reading the results
