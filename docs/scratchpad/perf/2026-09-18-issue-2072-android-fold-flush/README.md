@@ -41,6 +41,7 @@ No file holds a device id or a LAN address.
   | main, control worktree   | 4bc6ef57b69a32a1558400f0697bb492b01778dd | `start.Dlk4xmG4.js` | every `ctl` run                    |
   | treatment, first commit  | a833c5cd314cc3409e93a7a29b2fcaa1405ff29a | `start.BKX4NbVq.js` | `screen`, `confirm`                |
   | treatment, second commit | 8cc8468f634c659e9c4bbe286f9e01338d8fc484 | `start.C4OBZ2hJ.js` | `brush-*`, `pixels-*`, `memory`    |
+  | treatment, review fixes  | a1867bf21c73a7065cc8d489eb28ffc563b65ada | `start.DDRgfmNd.js` | `head-verify`                      |
 
   The two main builds come from one commit in two checkouts, and their entry hashes differ. The
   second commit differs from the first treatment commit only in excluding the native WebView and in
@@ -116,8 +117,10 @@ workload, because `/dev` is excluded from native bundles. Firefox, iOS, and desk
 current code, and the iOS undo-ghost settle is untouched. A context lost after a fold is replaced on
 the next fold.
 
-The Chromium gate and the lost-context replacement landed after every run below, in response to
-review. On Android Chrome, with a live context, the code runs the same path as the measured builds.
+The Chromium gate and the lost-context replacement landed in response to review, after the
+confirmation. A build of that code (`head-verify`, 2 against 2, ABBA) read 17.0–23.6 ms against
+main's 1,405–1,433 ms, with session late excess of 416 ms against 1,782–1,810 ms. Later commits
+change only this package.
 
 ## Confirmation (fresh runs, 5 against 5, ABBA blocks)
 
