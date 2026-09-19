@@ -65,10 +65,14 @@ fi
 # CODEX_AUTH_JSON environment variable, because the snapshot must never hold a credential
 # (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").
 # `command -v` alone would accept the npm wrapper with its optional platform binary missing, or an
-# older CLI, and skip the repair on every rebuild; the pin is what counts, before and after.
+# older CLI, and skip the repair on every rebuild; the pin is what counts, before and after. The
+# executable must exit 0 and report exactly the pin: a substring match would take 0.155.10 for
+# 0.155.1, and `[[ ]]` alone would discard a failing exit that still printed something.
 CODEX_VERSION=0.155.1
 codex_at_pin() {
-  [[ "$(codex --version 2>/dev/null)" == *"${CODEX_VERSION}"* ]]
+  local reported
+  reported="$(codex --version 2>/dev/null)" || return 1
+  [[ "$reported" == "codex-cli ${CODEX_VERSION}" ]]
 }
 if ! codex_at_pin; then
   npm install --global "@openai/codex@${CODEX_VERSION}" && codex_at_pin \

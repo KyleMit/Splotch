@@ -23,6 +23,17 @@ function writeExecutable(path, body) {
 
 const codexVersion = /^CODEX_VERSION=(\S+)$/m.exec(readFileSync(setupPath, 'utf8'))?.[1];
 
+// What `codex --version` can look like on PATH before the setup script runs. Only `pinned` may
+// skip the install: `near` is a longer version that contains the pin as a substring, and `failing`
+// prints the pin but exits nonzero, the way the npm wrapper does with its platform binary missing.
+const CODEX_EXECUTABLES = {
+  pinned: `printf 'codex-cli ${codexVersion}\\n'`,
+  broken: `exit 1`,
+  stale: `printf 'codex-cli 0.1.0\\n'`,
+  near: `printf 'codex-cli ${codexVersion}0\\n'`,
+  failing: `printf 'codex-cli ${codexVersion}\\n'; exit 1`,
+};
+
 function runSetup(failures, { cwd = repoRoot, projectDir, codex } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'splotch-claude-setup-'));
   roots.push(root);
@@ -83,17 +94,15 @@ fi
 if [[ "\${FAIL_CODEX:-0}" != 0 ]]; then
   exit "$FAIL_CODEX"
 fi
-if [[ "\${CODEX_INSTALL_RESULT:-ok}" == broken ]]; then
-  printf '#!/bin/bash\\nexit 1\\n' > "$STUB_BIN/codex"
-else
-  printf '#!/bin/bash\\nprintf "codex-cli %s\\\\n"\\n' "${codexVersion}" > "$STUB_BIN/codex"
-fi
+case "\${CODEX_INSTALL_RESULT:-pinned}" in
+  broken) body='exit 1' ;;
+  near) body="printf 'codex-cli ${codexVersion}0\\\\n'" ;;
+  *) body="printf 'codex-cli ${codexVersion}\\\\n'" ;;
+esac
+printf '#!/bin/bash\\n%s\\n' "$body" > "$STUB_BIN/codex"
 /bin/chmod +x "$STUB_BIN/codex"`
   );
-  if (codex === 'broken') writeExecutable(join(bin, 'codex'), `exit 1`);
-  if (codex === 'stale') writeExecutable(join(bin, 'codex'), `printf 'codex-cli 0.1.0\\n'`);
-  if (codex === 'pinned')
-    writeExecutable(join(bin, 'codex'), `printf 'codex-cli ${codexVersion}\\n'`);
+  if (codex) writeExecutable(join(bin, 'codex'), CODEX_EXECUTABLES[codex]);
   writeExecutable(join(bin, 'chmod'), `exit 0`);
 
   const result = spawnSync('/bin/bash', [fixtureSetupPath], {
@@ -104,7 +113,7 @@ fi
       PATH: bin,
       STUB_BIN: bin,
       NPM_CALLS: npmCalls,
-      CODEX_INSTALL_RESULT: failures.codexInstallResult ?? 'ok',
+      CODEX_INSTALL_RESULT: failures.codexInstallResult ?? 'pinned',
       ...(projectDir ? { CLAUDE_PROJECT_DIR: projectDir } : {}),
       FAIL_COREPACK: String(failures.corepack ?? 0),
       FAIL_PLAYWRIGHT: String(failures.playwright ?? 0),
@@ -179,6 +188,8 @@ describe('Claude cloud setup warnings', () => {
   it.each([
     ['broken', 'broken'],
     ['stale', 'stale'],
+    ['near-matching', 'near'],
+    ['failing-but-printing', 'failing'],
   ])('repairs a %s Codex executable through the pinned install', (_label, codex) => {
     const result = runSetup({}, { codex });
 
@@ -191,6 +202,7 @@ describe('Claude cloud setup warnings', () => {
   it.each([
     ['the install fails', { codex: 1 }],
     ['the installed executable does not run', { codexInstallResult: 'broken' }],
+    ['the installed executable is not exactly the pin', { codexInstallResult: 'near' }],
   ])(
     'keeps the Codex install non-fatal and names the skill it costs when %s',
     (_label, failures) => {
