@@ -13,6 +13,18 @@ files() { for l in "$@"; do printf '%s ' "$T/$l.json"; done; }
 same() { if cmp -s "$1" "$2"; then echo "MATCH  $3"; else echo "DIFFER $3"; diff "$1" "$2" | head -20; fail=1; fi; }
 fail=0
 
+# Every file the manifest lists must be committed and byte-identical.
+node -e '
+const { createHash } = require("node:crypto"); const { readFileSync, existsSync } = require("node:fs");
+const dir = process.argv[1]; let bad = 0;
+for (const m of JSON.parse(readFileSync(dir + "/MANIFEST.json", "utf8"))) {
+  const f = dir + "/" + m.file;
+  if (!existsSync(f)) { console.log("MISSING " + m.file); bad++; continue; }
+  if (createHash("sha256").update(readFileSync(f)).digest("hex") !== m.sha256) { console.log("HASH   " + m.file); bad++; }
+}
+console.log(bad ? "DIFFER manifest" : "MATCH  manifest (every listed file present with its recorded SHA-256)"); process.exit(bad ? 1 : 0);
+' "$P" || fail=1
+
 node "$H/score.mjs" $(files "${ORDER[@]}") --json="$T/scored-summary.json" > "$T/score.txt"
 same "$T/scored-summary.json" "$P/original/scored-summary.json" 'score.mjs summary (per-run rows and arm comparison)'
 node "$P/original/phase-cadence.mjs" $(files "${BY_ARM[@]}") --json="$T/scored-cadence.json" > /dev/null

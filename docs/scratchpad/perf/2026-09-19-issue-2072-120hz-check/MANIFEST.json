@@ -112,10 +112,24 @@
   "transform": "verbatim"
  },
  {
-  "file": "original/cadence-probe.log",
+  "file": "original/cadence-probe.log.txt",
   "sha256": "23811cc14fb0ebcc9c177cab936169e1d6f9885a1d30b0d30ad7fa986b3ffa4f",
   "source": "cadence-probe.log",
   "sourceSha256": "23811cc14fb0ebcc9c177cab936169e1d6f9885a1d30b0d30ad7fa986b3ffa4f",
+  "transform": "verbatim"
+ },
+ {
+  "file": "original/prechecks.log.txt",
+  "sha256": "302fcbb2b8e9c4ab886c44d05a99d8cd4accdd2cfcd9bc2038578b64dae745f7",
+  "source": "scored/prechecks.log",
+  "sourceSha256": "302fcbb2b8e9c4ab886c44d05a99d8cd4accdd2cfcd9bc2038578b64dae745f7",
+  "transform": "verbatim"
+ },
+ {
+  "file": "original/driver.log.txt",
+  "sha256": "92be5c07ac1363165aa083947788339c758a428ddb7a7f06ce4f6d7e6547540d",
+  "source": "scored/driver.log",
+  "sourceSha256": "92be5c07ac1363165aa083947788339c758a428ddb7a7f06ce4f6d7e6547540d",
   "transform": "verbatim"
  },
  {
@@ -179,20 +193,6 @@
   "sha256": "ab3efd1da68e331b1668930c6998e4a206a9c613f11bc0a8c1103625342bf9e4",
   "source": "raw.sha256",
   "sourceSha256": "ab3efd1da68e331b1668930c6998e4a206a9c613f11bc0a8c1103625342bf9e4",
-  "transform": "verbatim"
- },
- {
-  "file": "original/prechecks.log",
-  "sha256": "302fcbb2b8e9c4ab886c44d05a99d8cd4accdd2cfcd9bc2038578b64dae745f7",
-  "source": "scored/prechecks.log",
-  "sourceSha256": "302fcbb2b8e9c4ab886c44d05a99d8cd4accdd2cfcd9bc2038578b64dae745f7",
-  "transform": "verbatim"
- },
- {
-  "file": "original/driver.log",
-  "sha256": "92be5c07ac1363165aa083947788339c758a428ddb7a7f06ce4f6d7e6547540d",
-  "source": "scored/driver.log",
-  "sourceSha256": "92be5c07ac1363165aa083947788339c758a428ddb7a7f06ce4f6d7e6547540d",
   "transform": "verbatim"
  },
  {

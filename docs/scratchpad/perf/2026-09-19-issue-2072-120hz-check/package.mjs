@@ -73,10 +73,10 @@ for (const label of ['tr-ctl', 'tr-trt']) traceExtract(label);
 verbatim('original/control.diagnostic-only.diff', 'control.diff');
 // Kept as .txt so the Markdown formatter never rewrites the frozen plan's hashed bytes.
 verbatim('original/PLAN.md.txt', 'PLAN.md');
-for (const f of ['cadence-probe.log', 'run-set-scored.out', 'phase-cadence.mjs', 'export-compact.mjs',
+// `.log` is gitignored repo-wide, so the logs are packaged under a `.txt` suffix.
+for (const f of ['cadence-probe.log', 'scored/prechecks.log', 'scored/driver.log']) verbatim(`original/${f.split('/').at(-1)}.txt`, f);
+for (const f of ['run-set-scored.out', 'phase-cadence.mjs', 'export-compact.mjs',
   'reproduce.mjs', 'compact.json', 'scored-summary.json', 'scored-cadence.json', 'harness.sha256', 'raw.sha256']) verbatim(`original/${f}`, f);
-verbatim('original/prechecks.log', 'scored/prechecks.log');
-verbatim('original/driver.log', 'scored/driver.log');
 verbatim('original/trace-analysis.txt', 'traced/trace-analysis.txt');
 for (const f of ['cadence-probe.mjs', 'run-set.sh', 'rival-method-findings.json', 'rival-evidence-findings.json',
   'rival-evidence2-findings.json', 'rival-evidence3-findings.json']) scrubbed(`original/${f}`, f);

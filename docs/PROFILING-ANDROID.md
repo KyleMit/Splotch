@@ -94,9 +94,11 @@ Four things about this table are worth knowing before drawing a conclusion from 
 
 * **`FrameInterval` tells you the refresh rate the frame was produced against**, and on this phone
   it reads `8336482` ns — 8.34 ms, i.e. 120 Hz. That matters more here than anywhere else in the
-  toolchain: Chrome produces frames at 120 Hz *only while touch is arriving*, so a capture whose
-  input cadence is too low silently falls back to 60 and every frame gets measured against the wrong
-  beat. Read `FrameInterval` before believing any per-frame number.
+  toolchain, because on this phone the rate has followed touch. A capture whose input cadence was
+  too low fell back to 60, and every frame got measured against the wrong beat. Read `FrameInterval`
+  before believing any per-frame number. It covers frames the Android view system produced, which
+  means the native app. A page in Chrome needs its own rAF cadence read instead, as the next case
+  shows.
 
   **The panel's rate is not the page's rate.** One case was measured on this phone with Chrome 153.
   The workload was the in-page, no-touch `/dev/engine` session of issue 2072.
