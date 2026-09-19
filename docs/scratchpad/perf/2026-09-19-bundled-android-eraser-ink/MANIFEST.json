@@ -127,16 +127,16 @@
   },
   {
     "path": "terminal/session-terminal.jsonl",
-    "sha256": "036a9deeefbfcb7ab5db37a7a188b767162021314946f64addd829ca3c84d106",
+    "sha256": "a301f2ce8842d2f09c576674e30dcabd7df1d6fb3aacd8edf08e7b11229aa62f",
     "original": "perf-profiles/bundled/units-2026-09-19/terminal/eraser-terminal.jsonl",
-    "originalSha256": "036a9deeefbfcb7ab5db37a7a188b767162021314946f64addd829ca3c84d106",
+    "originalSha256": "a301f2ce8842d2f09c576674e30dcabd7df1d6fb3aacd8edf08e7b11229aa62f",
     "transform": "copy"
   },
   {
     "path": "diag/extract-terminal.mjs",
-    "sha256": "c9f8ba29d6b27502ac5868dfb88aa8c6738d75b45bf95c0f6bd07e9765305812",
+    "sha256": "3bea229664846271dc91e53fdc474087dc7aea251c0b46d6a0d563a8b6089f2b",
     "original": "perf-profiles/bundled/units-2026-09-19/diag/extract-terminal.mjs",
-    "originalSha256": "c9f8ba29d6b27502ac5868dfb88aa8c6738d75b45bf95c0f6bd07e9765305812",
+    "originalSha256": "3bea229664846271dc91e53fdc474087dc7aea251c0b46d6a0d563a8b6089f2b",
     "transform": "copy"
   },
   {

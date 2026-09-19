@@ -30,6 +30,8 @@ const observed = (claim, run, pattern) => {
   if (!ok) failures.push(claim);
 };
 const UNSUPPORTED = [
+  'n3b: no forward left. Its printed count of 1 is what one blank line gives, but the raw read came after n4, so n3b alone was never raw-read',
+  'the installed APK stayed unchanged for the whole session: the session-end re-read printed local service details and is kept only in the local rig notes',
   'n4: whether the signal landed inside the lock-release call itself (the log shows only that contact never began)',
   'n5: the 2.1 s signal-to-exit interval was measured by the operator wrapper (Python wall clock) and printed once; no independent timestamps were kept, so it cannot be re-derived',
   'exit status and filesystem state beyond what the terminal record printed: a log without a "Wrote" line is not by itself evidence of either',
@@ -149,9 +151,26 @@ observed('n2: adb forward --list printed no forward afterwards', 'n2-failure-aft
 for (const run of ['n3b-sigint-mid-gesture', 'n4-sigint-during-release']) {
   observed(`${run} exited 130 and ls found no artifact`, 'run_sig', new RegExp(`${run} exit 130[^\\n]*\\n\\s*ls: [^\\n]*${run}\\.json: No such file`));
 }
-observed('n3b/n4: the "forwards: 1" count was a blank line; a raw read showed a single newline and 0 tcp entries', 'od -c', /0000000\s+\\n[\s\S]*---\s+0/);
+for (const run of ['n3b-sigint-mid-gesture', 'n4-sigint-during-release']) {
+  observed(
+    `${run}: the wrapper printed "forwards: 1", a line count of adb forward --list`,
+    'run_sig',
+    new RegExp(`${run} exit 130[^\\n]*\\n(?:[^\\n]*\\n){3}\\s*forwards: 1\\n`)
+  );
+}
+observed(
+  'a separate raw adb forward --list read after n4 printed one newline and 0 tcp entries',
+  'od -c',
+  /0000000\s+\\n\s+0000001\s+---\s+0\s*$/
+);
 observed('n5 exited 130, the wrapper printed 2.1 s, ls found no artifact, adb 1/0, 0 tcp forwards, lock back', 'n5-sigint-hand-window', /exit 130; exit came 2\.1 s after the signal[\s\S]*n5-sigint-hand-window\.json: No such file[\s\S]*accelerometer_rotation=1\s+user_rotation=0\s+tcp forwards: 0[\s\S]*"checked":"true"/);
 check('every lock-after file matches LOCK_BACK', ['a1', 'a2', 'n1', 'n2', 'n3', 'n3b', 'n4', 'n5'].every((name) => LOCK_BACK.test(text(`controls/${name}-lock-after.json`))));
+
+observed(
+  'the installed APK and the saved a8ff7916 perf APK had the same sha256 before the runs',
+  'shasum -a 256',
+  /installed e5e2d0ed217fe8b76ae434c5a1e42e285ce785801bb5f05a56fed6fe14e35320\s+saved\s+e5e2d0ed217fe8b76ae434c5a1e42e285ce785801bb5f05a56fed6fe14e35320/
+);
 
 console.log('\nunsupported (not preserved; stated only as limits):');
 for (const claim of UNSUPPORTED) console.log(`  - ${claim}`);

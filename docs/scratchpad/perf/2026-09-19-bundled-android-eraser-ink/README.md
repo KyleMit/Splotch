@@ -38,14 +38,14 @@ not be a validity failure, and nothing here compares timings.
 
 ## Identities
 
-| Item               | Value                                                                                                                                                                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Installed product  | perf debug APK of main a8ff7916ea9395ed50534e9da9b22d489e256e86, sha256 `e5e2d0ed217fe8b76ae434c5a1e42e285ce785801bb5f05a56fed6fe14e35320`, verified on the device before the session. No product source changed between it and the harness bases below |
-| Harness, before    | main 20d26b9ca86f37e3936959743c0bf83d0b5d6cbe (run `b0`)                                                                                                                                                                                                |
-| Harness, fix       | branch `claude/bundled-eraser-verified-ink` on main bd2f0e00c590beef80a0c9efbb9196704806735c, which already carries the orientation repair (PR 2083). The PR records the merged SHA                                                                     |
-| Device and runtime | Samsung SM-G990U1, Android 16, Android System WebView 151.0.7922.199, DPR 3. Live tiles are 20 backings of 180x268 or 180x269 in portrait                                                                                                               |
-| Cadence            | panel `renderFrameRate 120`, with no refresh pins set                                                                                                                                                                                                   |
-| Workload           | the fixed trusted-gesture plan (10 authored strokes, which become 16 `input swipe` calls per pass); eraser at the product default size (`eraserWidthSetting: null`); light theme. Repeats: 2, or the campaign's 10 for the full cell                    |
+| Item               | Value                                                                                                                                                                                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Installed product  | perf debug APK of main a8ff7916ea9395ed50534e9da9b22d489e256e86, sha256 `e5e2d0ed217fe8b76ae434c5a1e42e285ce785801bb5f05a56fed6fe14e35320`, verified on the device before the runs (operator-observed, `terminal/`). No product source changed between it and the harness bases below |
+| Harness, before    | main 20d26b9ca86f37e3936959743c0bf83d0b5d6cbe (run `b0`)                                                                                                                                                                                                                              |
+| Harness, fix       | branch `claude/bundled-eraser-verified-ink` on main bd2f0e00c590beef80a0c9efbb9196704806735c, which already carries the orientation repair (PR 2083). The PR records the merged SHA                                                                                                   |
+| Device and runtime | Samsung SM-G990U1, Android 16, Android System WebView 151.0.7922.199, DPR 3. Live tiles are 20 backings of 180x268 or 180x269 in portrait                                                                                                                                             |
+| Cadence            | panel `renderFrameRate 120`, with no refresh pins set                                                                                                                                                                                                                                 |
+| Workload           | the fixed trusted-gesture plan (10 authored strokes, which become 16 `input swipe` calls per pass); eraser at the product default size (`eraserWidthSetting: null`); light theme. Repeats: 2, or the campaign's 10 for the full cell                                                  |
 
 ## Controls
 
@@ -161,6 +161,8 @@ against `MANIFEST.json` and labels every claim it covers.
   Each record keeps the harness timestamps of when the command was sent and when its output
   returned.
 * **Unsupported, listed without being asserted:**
+  * That the installed APK stayed unchanged for the whole session. The session-end re-read is kept
+    only in the local rig notes, because it also printed local service details.
   * The overlay-window observation behind the delivery-gap paragraph. Its `dumpsys` output names
     unrelated installed apps, so it was deliberately not packaged.
   * Exit status or missing files inferred from a log alone. A log without a `Wrote` line is not, on

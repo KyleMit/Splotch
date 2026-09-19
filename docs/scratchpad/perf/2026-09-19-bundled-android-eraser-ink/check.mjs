@@ -38,6 +38,7 @@ const observed = (claim, run, pattern) => {
   if (!ok) failures.push(claim);
 };
 const UNSUPPORTED = [
+  'the installed APK stayed unchanged for the whole session: the session-end re-read printed local service details and is kept only in the local rig notes',
   'the accessibility navigation-bar overlay and its zero-width windows: seen in a dumpsys window listing that also names unrelated installed apps, so that output was deliberately not packaged',
   'exit status and filesystem state beyond what the terminal record printed: a log without a "Wrote" line is not by itself evidence of either',
 ];
@@ -220,6 +221,12 @@ for (const neg of ['nb1-blank-preparation', 'nb2-failed-refill', 'nb3-stroke-rem
 observed('after the negatives, adb read back 1/0', 'nb1-blank-preparation', /accelerometer_rotation=1\s+user_rotation=0/);
 observed('b1, b2, b3 re-runs each exited 0, and the lock was on, portrait, afterwards', 'superseded-no-intervals', /b1-portrait-eraser-2pass exit 0[\s\S]*b2-portrait-eraser-full-cell exit 0[\s\S]*b3-landscape-eraser-2pass exit 0[\s\S]*accelerometer_rotation=1\s+user_rotation=0[\s\S]*"lockRotation":\{"checked":"true"/);
 observed('b5 exited 0', 'b5-final-portrait', /^exit 0$/m);
+
+observed(
+  'the installed APK and the saved a8ff7916 perf APK had the same sha256 before the runs',
+  'shasum -a 256',
+  /installed e5e2d0ed217fe8b76ae434c5a1e42e285ce785801bb5f05a56fed6fe14e35320\s+saved\s+e5e2d0ed217fe8b76ae434c5a1e42e285ce785801bb5f05a56fed6fe14e35320/
+);
 
 console.log('\nunsupported (not preserved; stated only as limits):');
 for (const claim of UNSUPPORTED) console.log(`  - ${claim}`);

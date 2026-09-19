@@ -19,7 +19,7 @@ for (const line of readFileSync(transcript, 'utf8').split('\n').filter(Boolean))
     if (c.type === 'tool_result' && uses.has(c.tool_use_id)) {
       const u = uses.get(c.tool_use_id);
       if (!needles.some((n) => u.command.includes(n))) continue;
-      const ran = ['perf:android:bundled:frames', 'capture-bundled-frames.mjs --device', 'read-ink.mjs $S', 'unlock-experiment', 'swipe-delivery.mjs $S', 'od -c'];
+      const ran = ['perf:android:bundled:frames', 'capture-bundled-frames.mjs --device', 'read-ink.mjs $S', 'unlock-experiment', 'swipe-delivery.mjs $S', 'od -c', 'shasum -a 256'];
       if (!ran.some((r) => u.command.includes(r)) || u.command.includes('package.mjs')) continue;
       if (/^cat > \/private|extract-terminal|check\.mjs <<|rival-pr|leftovers/.test(u.command)) continue;
       const text = Array.isArray(c.content) ? c.content.map((x) => x.text ?? '').join('') : String(c.content);
