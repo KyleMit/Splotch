@@ -413,6 +413,94 @@ For a hosted real-device endpoint, pass a credentialed `--appium-url=`,
 `--capabilities-file=/path/outside/repo/provider.json`, and a preview URL the device can reach. ADR
 0090 defines the tiered local/CI workflow and provider evaluation criteria.
 
+#### A trusted HTTPS origin for iPad Safari (the AI-waiting actions)
+
+A LAN `http://` page is not a secure context, so `crypto.randomUUID` is missing. The two
+`ai-waiting` actions then fail before their first request and are reported as **blocked**. iOS has
+no `adb reverse`, so the Android `http://localhost` route does not exist here. The route is a root
+certificate that the iPad trusts, **name-constrained** to this Mac, in front of the preview.
+
+Two facts shape it:
+
+* **Name constraints limit a trusted root; the leaf's names do not.** The root carries a critical
+  constraint with `pathlen:0`. It permits this Mac's `.local` name and one `/32` address. A DNS
+  constraint also admits subdomains of that name (`x.<mac>.local`), and X.509 has no exact-host
+  form. A name type the constraint omits is unconstrained, so without `--ip` the root explicitly
+  excludes every IPv4 and IPv6 address. iPadOS 26.5 enforces the constraint: Safari refuses a leaf
+  from this root that also names `example.com`. The 2026-09-19 evidence is in
+  `docs/scratchpad/perf/2026-09-19-ipad-secure-origin-ca/`.
+* **`perf:serve` is not a static server.** It is SvelteKit's `vite preview` with the dev harness on.
+  It answers server routes, and `/dev/store-frames/identity` returns this checkout's absolute path.
+  The HTTPS front forwards only `GET`/`HEAD` for `/`, `/_app/*` and files in `web/build`. It refuses
+  `/api`, `/admin`, `/dev`, every other method, and every other path.
+
+**Create the root — once, about every two years — ⟨Mac⟩.** The key never leaves
+`~/.splotch-rig/secure-origin-ca/`, and nothing under it is ever committed:
+
+```sh
+npm run perf:ios:secure-origin -- make-ca --host=$(scutil --get LocalHostName).local \
+  --ip=$(ipconfig getifaddr en0)
+```
+
+It writes `ca.key`/`ca.pem`, a server `leaf`, a `constraint-probe` leaf (the permitted names plus
+`example.com`), and an `address-probe` leaf (a TEST-NET address). It then checks them with the macOS
+trust engine: the leaf must pass and both probes must fail, or it refuses. The root lasts 730 days.
+Apple caps a TLS server certificate at 825 days even under a root you installed, so the leaf ends a
+day before the root. It prints the profile path and the root's SHA-256 fingerprint. `--ip` is
+optional: without it, only the `.local` name works, which survives a DHCP change, and every address
+is excluded.
+
+**Install it — ⟨Mac⟩ + ⟨iPad⟩.**
+
+1. **⟨Mac⟩** Finder → Go → Go to Folder… → `~/.splotch-rig/secure-origin-ca/public`. Right-click the
+   `.crt` → Share → AirDrop → the iPad.
+2. **⟨iPad⟩** Tap Close on "Profile Downloaded".
+3. **⟨iPad⟩** Settings → General → VPN & Device Management → **Splotch capture rig CA (constrained,
+   …)** → More Details. Compare the SHA-256 fingerprint with the one `make-ca` printed. Then Install
+   → passcode → Install → Done. "Not Verified" is expected for a private root.
+4. **⟨iPad⟩** Settings → General → About → **Certificate Trust Settings** → turn the root on →
+   Continue. Installing the profile alone does not make Safari trust it.
+
+**Serve and verify — ⟨Mac⟩.** Start the preview, then two fronts: the leaf, and the constraint probe
+as a negative control:
+
+```sh
+npm run perf:serve --ignore-scripts -- --port=<preview>
+npm run perf:ios:secure-origin -- serve --listen=0.0.0.0:<tls> --upstream=<preview>
+npm run perf:ios:secure-origin -- serve --listen=0.0.0.0:<probe> --upstream=<preview> \
+  --leaf=constraint-probe
+```
+
+On the iPad, `https://<mac>.local:<tls>/` must load Splotch, and `https://<mac>.local:<probe>/` must
+show "This Connection Is Not Private". If the probe loads, the device is not enforcing the
+constraint: remove the profile at once and do not capture.
+
+**Capture — ⟨Mac⟩.** The host's served-build check fetches the same URL, so give Node the root:
+
+```sh
+NODE_EXTRA_CA_CERTS=~/.splotch-rig/secure-origin-ca/ca.pem \
+  npm run perf:ios:xcuitest:actions --ignore-scripts -- --url=https://<mac>.local:<tls>/ \
+  --no-serve --device-id=<UDID> --device-class=tablet --actions=ai-waiting
+```
+
+Every `finish AI waiting print` sample must carry `aiRun` with `secureContext: true`. Keep a
+negative control: the same build at `--url=http://<lan>:<preview>/` must report both actions
+blocked.
+
+When Appium's discovery reports `Unknown device or simulator UDID` because the root RemoteXPC
+tunnel's registry is empty, launch WebDriverAgent directly: `xcodebuild test-without-building` plus
+`iproxy -u <UDID> <wda>:8100`. Then pass `--capabilities-file=` with the usual capabilities plus
+`"appium:webDriverAgentUrl": "http://127.0.0.1:<wda>"`. Appium skips device discovery when that
+capability is set. Keep that file outside the repo; it holds the UDID.
+
+**Remove it — ⟨iPad⟩ + ⟨Mac⟩.** **⟨iPad⟩** Settings → General → VPN & Device Management → the
+profile → Remove Profile. **⟨Mac⟩** Delete `~/.splotch-rig/secure-origin-ca/`. Remove the root
+before creating a new one; `make-ca` refuses to overwrite an existing key.
+
+A public Cloudflare quick tunnel through the same front, with `serve --http` on `127.0.0.1`, also
+worked. It was rejected as the default: it is public while it runs, it depends on the internet, and
+page loads were several times slower. See the evidence package.
+
 ### The phase sweep
 
 `blank` → `page` → `page-no-nudge` → `page-no-blend` → `page-no-halos` → `page-bare` → `page-again`.

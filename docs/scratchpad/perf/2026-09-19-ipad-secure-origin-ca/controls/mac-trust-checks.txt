@@ -1,0 +1,21 @@
+17:18:52 ca2 anchor, leaf-in for <rig-mac>.local: ...certificate verification successful.
+17:18:52 ca2 anchor, leaf-in for <lan>: ...certificate verification successful.
+17:18:52 ca2 anchor, leaf-mixed for <lan>: Cert Verify Result: CSSMERR_TP_INVALID_CERTIFICATE
+17:18:52 ca2 anchor, leaf-out-dns for example.com: Cert Verify Result: CSSMERR_TP_INVALID_CERTIFICATE
+control (r2 v1 session): the example.com leaf profile signed by an UNCONSTRAINED throwaway root verified successfully; the constrained root refused it
+subject=CN=Splotch capture rig CA (constrained, 2026-09), O=Splotch local capture
+notBefore=Sep 19 17:05:23 2026 GMT
+notAfter=Sep 18 17:05:23 2028 GMT
+X509v3 Basic Constraints: critical
+    CA:TRUE, pathlen:0
+X509v3 Key Usage: critical
+    Certificate Sign, CRL Sign
+X509v3 Name Constraints: critical
+    Permitted:
+      DNS:<rig-mac>.local
+      IP:<lan>/255.255.255.255
+notAfter=Sep 17 17:05:23 2028 GMT
+X509v3 Subject Alternative Name: 
+    DNS:<rig-mac>.local, IP Address:<lan>
+X509v3 Subject Alternative Name: 
+    DNS:example.com, IP Address:<lan>

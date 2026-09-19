@@ -1,0 +1,33 @@
+
+> splotch@1.6.0 perf:ios:xcuitest:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-actions.mjs --url=http://<lan>:54784/ --no-serve --capabilities-file=<home>/.splotch-rig/ipad-caps-r2.json --appium-url=http://127.0.0.1:4727 --device-class=tablet --actions=ai-waiting --output=perf-profiles/secure-origin-r2/ipad-lan-http-negative.json
+
+Serving already: http://<lan>:54784/
+
+Action sweep 1/4
+
+Action sweep 2/4
+
+Action sweep 3/4
+
+Action sweep 4/4
+
+Discrete action response
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+Wrote perf-profiles/secure-origin-r2/ipad-lan-http-negative.json
+
+BLOCKED coverage — required actions this capture could not measure
+┌─────────┬───────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ action                    │ reason                                                                                                                                                                                                                                                                                                                                                    │
+├─────────┼───────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'show AI waiting print'   │ `the AI run failed before the waiting print appeared ({"failedUi":true,"message":"Hmm, that didn't work Let's give it one more go.   Try again   Report this problem The err","requests":0,"urls":[],"generateCalls":0,"runError":null,"secureContext":false,"randomUUID":"undefined","subtleCrypto":"undefined","origin":"http://<lan>:54784"})` │
+│ 1       │ 'finish AI waiting print' │ `the AI run failed before the waiting print appeared ({"failedUi":true,"message":"Hmm, that didn't work Let's give it one more go.   Try again   Report this problem The err","requests":0,"urls":[],"generateCalls":0,"runError":null,"secureContext":false,"randomUUID":"undefined","subtleCrypto":"undefined","origin":"http://<lan>:54784"})` │
+└─────────┴───────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+Error: Blocked coverage: show AI waiting print, finish AI waiting print
+    at reportActionCaptureVerdict (file://<checkout>/tools/perf/ios/capture-xcuitest-actions.mjs:1269:11)
+    at runIpadActions (file://<checkout>/tools/perf/ios/capture-xcuitest-actions.mjs:2491:5)
+exit 1

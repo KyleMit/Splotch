@@ -62,3 +62,7 @@ timestamp	device	outcome	detail
 2026-09-18T18:36:55.002Z	device-003f826c172a	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
 2026-09-18T18:37:22.761Z	device-003f826c172a	blocked	Unknown device or simulator UDID: '<hardware UDID redacted>'
 2026-09-18T18:38:40.175Z	device-003f826c172a	ok	a WebDriverAgent session started (direct xcodebuild launch outside the preflight; Appium real-device discovery was stale); Safari then took an app session for the issue 1750 captures
+2026-09-19T16:30:35.257Z	device-003f826c172a	blocked	Unknown device or simulator UDID: '<hardware UDID redacted>'
+2026-09-19T16:31:28.142Z	device-003f826c172a	blocked	Unknown device or simulator UDID: '<hardware UDID redacted>'
+2026-09-19T16:33:59.000Z	device-003f826c172a	blocked	Timed out while enabling automation mode (direct xcodebuild launch outside the preflight; Appium real-device discovery empty because the root tunnel registry listed zero tunnels)
+2026-09-19T16:37:50.000Z	device-003f826c172a	ok	a WebDriverAgent session started (direct xcodebuild relaunch loop, after the owner entered the passcode at the iPad); Safari then took an Appium session via appium:webDriverAgentUrl for the device-web-secure-origin-r2 captures

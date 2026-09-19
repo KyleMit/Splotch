@@ -1,0 +1,32 @@
+
+> splotch@1.6.0 perf:preflight
+> node tools/perf/prepare-capture.mjs --wake-android --verify-android-input --verify-ios-launch --appium-url=http://127.0.0.1:4725
+
+✓ android device         [redacted]
+✓ android stays awake    screen on, stay-awake set
+✓ android chrome         installed
+✓ ios device             [redacted] (hardware UDID — not the devicectl CoreDevice UUID)
+✓ ios remotexpc tunnel   already running for this device — reused, no approval needed
+✓ ios signing config     ios/local.xcconfig
+✓ port preview           4193 — start (4173 is foreign (pid [local], cwd <home>/Code/Splotch/.claude/worktrees/ping-e4f58d/web))
+✓ port probe             4185 — start (4175: foreign holder (pid [local], cwd <home>/Code/Splotch/.claude/worktrees/bridge-cse_01GKgoz718WCQsoojTgwQDyn))
+✓ port appium            4723 — reuse (Appium 3.6.0; session discovery is disabled so idleness is unprovable — pass an explicit wdaLocalPort)
+✓ port wda               8110 — start (8100 is taken (pid [local]))
+✓ port androidCdp        9224 — start (free)
+✓ port inspector         9221 — start (free)
+✓ port floorControl      4177 — start (free)
+
+Ready to capture.
+
+verifying Android input against the floor control…
+✓ android input          1.02 moves/frame (122 contact moves/s), at or above the trusted-input density floor
+                         observed: pressure p50 1 · no contact geometry reported
+
+verifying the device and page both rotate…
+✓ android rotation       page followed the device through landscape and portrait
+
+probing a real WebDriverAgent launch and a rotation (this builds WDA and takes a minute)…
+  If the automation grant has expired, the iPad will show "Enter iPad Passcode for XCTest" DURING this minute and nowhere else — watch the device.
+  Grant log: last successful launch 22h ago; shortest observed grant lifetime under 7h.
+✗ ios launch             Unknown device or simulator UDID: '[redacted]'
+exit 1
