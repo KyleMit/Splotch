@@ -1,0 +1,11 @@
+      Tests  3 failed | 13 passed (16)
+     × gives the desktop capture a browser profile that keeps pack storage across reloads 6ms
+     × records the listed book count in the plan context the stable-plan check compares 2ms
+     × settles them before the first measured action of a sweep 3ms
+ FAIL  perf/tests/coloring-books-ready.test.mjs > where the sweeps settle the installed books > gives the desktop capture a browser profile that keeps pack storage across reloads
+ FAIL  perf/tests/coloring-books-ready.test.mjs > where the sweeps settle the installed books > records the listed book count in the plan context the stable-plan check compares
+ FAIL  perf/tests/coloring-books-ready.test.mjs > where the sweeps settle the installed books > settles them before the first measured action of a sweep
+AssertionError: expected 'import { chromium, firefox, webkit } …' to contain 'engine.launchPersistentContext(profil…'
+AssertionError: expected 'import { existsSync, mkdirSync, readF…' to match /context: \{[^}]*listedColoringBooks,…/s
+AssertionError: expected -1 to be greater than 53242
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯

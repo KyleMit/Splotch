@@ -783,6 +783,22 @@ describe('desktop action options', () => {
       })
     ).toThrow('applicable action plan changed between scored repeats: ~close Settings');
   });
+
+  it('refuses a coloring picker that lists a different number of books between repeats', () => {
+    const first = {
+      schemaVersion: 1,
+      actionGroups: ['coloring'],
+      applicableLabels: ['open coloring books', 'open coloring book', 'select coloring page'],
+      notApplicable: [],
+      context: { orientation: 'LANDSCAPE', settingsShell: null, listedColoringBooks: 3 },
+    };
+    expect(() =>
+      stableActionPlan(first, {
+        ...first,
+        context: { ...first.context, listedColoringBooks: 5 },
+      })
+    ).toThrow('context, action groups, or recorded reasons changed');
+  });
 });
 
 describe('trusted action setup', () => {

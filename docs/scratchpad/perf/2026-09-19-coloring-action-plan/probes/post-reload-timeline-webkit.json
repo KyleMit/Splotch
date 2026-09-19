@@ -1,0 +1,142 @@
+{
+  "base": "http://127.0.0.1:54804/",
+  "engine": "webkit",
+  "freshFirstOpen": {
+    "books": 0,
+    "pages": 6
+  },
+  "freshTimeline": [
+    {
+      "sinceMs": 4,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 2,
+      "markers": [],
+      "heldLocks": [],
+      "pendingLocks": []
+    },
+    {
+      "sinceMs": 16148,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 76,
+      "markers": [
+        "dinosaur"
+      ],
+      "heldLocks": [],
+      "pendingLocks": []
+    },
+    {
+      "sinceMs": 20686,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 96,
+      "markers": [
+        "dinosaur"
+      ],
+      "heldLocks": [
+        "splotch-coloring-packs"
+      ],
+      "pendingLocks": []
+    },
+    {
+      "sinceMs": 21191,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 99,
+      "markers": [
+        "dinosaur"
+      ],
+      "heldLocks": [],
+      "pendingLocks": []
+    },
+    {
+      "sinceMs": 32312,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 151,
+      "markers": [
+        "dinosaur",
+        "creatures"
+      ],
+      "heldLocks": [],
+      "pendingLocks": []
+    },
+    {
+      "sinceMs": 40400,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 188,
+      "markers": [
+        "dinosaur",
+        "creatures"
+      ],
+      "heldLocks": [],
+      "pendingLocks": [],
+      "final": true
+    }
+  ],
+  "reloadTimeline": [
+    {
+      "sinceMs": 12,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 0,
+      "markers": [],
+      "heldLocks": [],
+      "pendingLocks": []
+    },
+    {
+      "sinceMs": 100280,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 0,
+      "markers": [],
+      "heldLocks": [],
+      "pendingLocks": [],
+      "final": true
+    }
+  ],
+  "reloadPickerAfterWatch": {
+    "books": 0,
+    "pages": 6
+  },
+  "reloadTimelineAfterPickerOpen": [
+    {
+      "sinceMs": 1,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 0,
+      "markers": [],
+      "heldLocks": [],
+      "pendingLocks": []
+    },
+    {
+      "sinceMs": 40314,
+      "caches": [
+        "coloring-packs-v2-full"
+      ],
+      "entries": 0,
+      "markers": [],
+      "heldLocks": [],
+      "pendingLocks": [],
+      "final": true
+    }
+  ],
+  "reloadPickerAtEnd": {
+    "books": 0,
+    "pages": 6
+  },
+  "console": [
+    "Coloring-pack download paused Error: Coloring pack changed while installing: dinosaur"
+  ]
+}
