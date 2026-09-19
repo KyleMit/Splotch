@@ -1,0 +1,51 @@
+[
+  {
+    "path": "runs/a0-android-localhost-main-harness.json.gz",
+    "sha256": "3efaed66a7c2d44c5f6f6a6f6b02a9bbb383564add3b9984448b7e41f9493edc",
+    "original": "perf-profiles/secure-origin-r1/android-chrome-ai-waiting-main-harness.json",
+    "originalSha256": "5cfb5af7006799558ac95f7091421eaa4e5fa647647b65525b5a780e3b2b0c9f",
+    "transform": "redact+gzip"
+  },
+  {
+    "path": "runs/a1-android-localhost-evidence.json.gz",
+    "sha256": "b607b5ecdca16ab08e7bbd0dc05567ce40e94134228b87b2acc0abeccd709b77",
+    "original": "perf-profiles/secure-origin-r1/android-chrome-ai-waiting-evidence.json",
+    "originalSha256": "5982f360993f0c2d488405aa6f15b5008bb0e28bbbd0d4cd212b26e81bedd669",
+    "transform": "redact+gzip"
+  },
+  {
+    "path": "runs/n1-android-lan-negative.json.gz",
+    "sha256": "83f66e2ce358cb45e7843a001b18ffaa55b68dbc11aae2a8d94774c30c237f88",
+    "original": "perf-profiles/secure-origin-r1/android-chrome-ai-waiting-lan-negative.json",
+    "originalSha256": "d84435c6279552410bfcc321592621ab4dee55fafae83120995da1b0954a1d94",
+    "transform": "redact+gzip"
+  },
+  {
+    "path": "controls/a0-android-localhost-main-harness.log.txt",
+    "sha256": "7bdf98a685443ee6368e443dabb889530dd257ccc0328f4a38ad20237702a37e",
+    "original": "perf-profiles/secure-origin-r1/android-chrome-ai-waiting-main-harness.log",
+    "originalSha256": "7bdf98a685443ee6368e443dabb889530dd257ccc0328f4a38ad20237702a37e",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/a1-android-localhost-evidence.log.txt",
+    "sha256": "9fa10a844b7a45def4b3f631accae8f3c6f20298e7431a4c648a1dd1c81f773f",
+    "original": "perf-profiles/secure-origin-r1/android-chrome-ai-waiting-evidence.log",
+    "originalSha256": "9fa10a844b7a45def4b3f631accae8f3c6f20298e7431a4c648a1dd1c81f773f",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/n1-android-lan-negative.log.txt",
+    "sha256": "c4e77313ad6831fffab25b863374d0854a29b40a73a50911eba66bb497e689d6",
+    "original": "perf-profiles/secure-origin-r1/android-chrome-ai-waiting-lan-negative.log",
+    "originalSha256": "c4e77313ad6831fffab25b863374d0854a29b40a73a50911eba66bb497e689d6",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/preflight.log.txt",
+    "sha256": "e350d2a12654398f6a85284db9fa415e2e706bebac5d5669147d3a5b1f27d083",
+    "original": "perf-profiles/secure-origin-r1/preflight.log",
+    "originalSha256": "b7be5789c417fb5256fdb709d65181e6fe4b2116d0c73cb2df7cd4dd0769b668",
+    "transform": "redact"
+  }
+]

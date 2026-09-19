@@ -57,6 +57,14 @@ concurrent cleanup, because an unlock still in flight could land after the lock 
 Instead the capture stops at its next step, cleanup runs, and the process exits with the signal's
 code. A second signal exits at once without restoring. kill -9 leaks all of it.
 
+**The AI waiting print needs a secure context.** Served to the phone at a LAN `http://` address, the
+page lacks `crypto.randomUUID` and `crypto.subtle`, and both AI actions are blocked coverage. Serve
+the preview to Chrome as `http://localhost:<port>` through `adb reverse tcp:<port> tcp:<port>`
+instead; a localhost origin is trustworthy, and no certificate is involved. The finish sample's
+`aiRun` record then proves the secure context, the crypto APIs, and that the in-page stub answered
+every generate request. The capture fails without that proof. Commands and evidence are in
+`docs/scratchpad/perf/2026-09-19-device-web-secure-origin/`.
+
 Android-specific discovery and transport stay here. Shared device-session, action-scoring, trace,
 and artifact behavior belongs in `../lib/`; the injected action payload belongs in `../probes/`. The
 behavior-preserving issue #975 manifest leaves the shared action plan in

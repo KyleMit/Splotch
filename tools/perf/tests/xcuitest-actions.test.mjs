@@ -46,6 +46,7 @@ import {
   reportActionCaptureVerdict,
   STROKE_WIDTH_MENU_CLOSED,
   verifyStrokeWidthPicked,
+  aiRunEvidenceProblem,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { DEVICE_CLASSES } from '../lib/campaign-plan.mjs';
 import {
@@ -1185,6 +1186,71 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     // The stub must always come back off, or every later action runs on a mocked fetch.
     expect(block).toContain('finally');
     expect(block).toContain('removeAiGenerationStub');
+  });
+
+  describe('AI run evidence', () => {
+    const secureMockedRun = {
+      failedUi: false,
+      message: null,
+      requests: 2,
+      urls: ['/api/verify-key', '/api/generate-image'],
+      generateCalls: 1,
+      runError: null,
+      secureContext: true,
+      randomUUID: 'function',
+      subtleCrypto: 'object',
+      origin: 'http://localhost:54784',
+    };
+
+    it('accepts a secure-context run whose generate request the stub answered', () => {
+      expect(aiRunEvidenceProblem(secureMockedRun)).toBeNull();
+    });
+
+    it.each([
+      [
+        'a LAN http:// page (issue #1870)',
+        {
+          secureContext: false,
+          randomUUID: 'undefined',
+          subtleCrypto: 'undefined',
+          origin: 'http://192.0.2.10:4173',
+        },
+        /not a secure context \(http:\/\/192\.0\.2\.10:4173\)/,
+      ],
+      ['a missing randomUUID', { randomUUID: 'undefined' }, /crypto\.randomUUID was undefined/],
+      ['a missing SubtleCrypto', { subtleCrypto: 'undefined' }, /crypto\.subtle was undefined/],
+      [
+        'a print no mocked generate request produced',
+        { generateCalls: 0, urls: [] },
+        /no generate request reached the in-page stub/,
+      ],
+      ['a run error', { runError: 'TypeError: boom' }, /reported TypeError: boom/],
+      ['the error face', { failedUi: true, message: 'Oops' }, /error face \(Oops\)/],
+    ])('refuses %s', (_name, override, expected) => {
+      expect(aiRunEvidenceProblem({ ...secureMockedRun, ...override })).toMatch(expected);
+    });
+
+    it('refuses a missing state rather than treating it as consent', () => {
+      expect(aiRunEvidenceProblem(null)).toMatch(/no AI run state/);
+    });
+
+    it('reads the evidence before the stub comes off and records it on the badge sample', () => {
+      const start = IPAD_ACTIONS.indexOf("if (actions.has('ai-waiting'))");
+      const block = IPAD_ACTIONS.slice(
+        start,
+        IPAD_ACTIONS.indexOf("if (actions.has('undo'))", start)
+      );
+      const badge = block.indexOf('measureAiWaitingBadge(execute)');
+      const read = block.indexOf('aiRunState(execute)', badge);
+      const refused = block.indexOf('aiRunEvidenceProblem(aiRun)', read);
+      const recorded = block.indexOf('{ ...badge, aiRun }', refused);
+
+      expect(badge).toBeGreaterThan(-1);
+      expect(read).toBeGreaterThan(badge);
+      expect(refused).toBeGreaterThan(read);
+      expect(recorded).toBeGreaterThan(refused);
+      expect(block.indexOf('removeAiGenerationStub', recorded)).toBeGreaterThan(recorded);
+    });
   });
 
   it('separates the waiting cue from the badge by holding the mocked response', () => {
