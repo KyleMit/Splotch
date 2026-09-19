@@ -27,10 +27,13 @@ orientation before contact and neither resized nor rotated during it. The artifa
 `observedOrientation`, `pageGeometry` (the launched, pre-contact, and post-contact viewport, canvas
 rect, DPR, and `screen.orientation.type`), `rotationLock`, and a per-step `cleanup` result.
 
-Cleanup runs from `finally` and on SIGINT/SIGTERM. It restores the app lock while CDP is still
+Cleanup runs from one place, the `finally` block. It restores the app lock while CDP is still
 attached, then removes the forward and restores the adb rotation settings, each step independently.
 A failed step exits non-zero after writing the artifact. The artifact is written only after cleanup,
-so it cannot claim a restoration that has not happened. kill -9 still leaks all of it.
+so it cannot claim a restoration that has not happened. SIGINT/SIGTERM does not start a second,
+concurrent cleanup, because an unlock still in flight could land after the lock was restored.
+Instead the capture stops at its next step, cleanup runs, and the process exits with the signal's
+code. A second signal exits at once without restoring. kill -9 leaks all of it.
 
 Android-specific discovery and transport stay here. Shared device-session, action-scoring, trace,
 and artifact behavior belongs in `../lib/`; the injected action payload belongs in `../probes/`. The

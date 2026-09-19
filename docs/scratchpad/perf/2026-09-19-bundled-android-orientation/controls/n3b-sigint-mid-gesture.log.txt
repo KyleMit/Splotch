@@ -1,0 +1,2 @@
+canvas {"x":33,"y":0,"width":747,"height":360} scale 3
+interrupted: stopping at the next step, then restoring the rig (signal again to skip)

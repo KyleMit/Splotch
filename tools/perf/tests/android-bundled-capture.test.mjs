@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PLATFORM_OWNS_ROTATION } from '../lib/campaign-state.mjs';
 import {
+  createInterruptFence,
   establishRequestedOrientation,
   geometryChangesProblem,
   geometryDriftProblem,
@@ -219,5 +220,37 @@ describe('capture cleanup', () => {
       'rotation restore (accelerometer_rotation 1)',
       'rotation restore (user_rotation 0)',
     ]);
+  });
+});
+
+describe('interrupt fence', () => {
+  it('defers the first signal to the next checkpoint and exits only after cleanup', () => {
+    const exit = vi.fn();
+    const fence = createInterruptFence({ exit, warn: () => {} });
+
+    expect(() => fence.checkpoint()).not.toThrow();
+    fence.onSignal(130);
+    expect(exit).not.toHaveBeenCalled();
+    expect(() => fence.checkpoint()).toThrow(/interrupted/);
+
+    fence.exitIfInterrupted();
+    expect(exit).toHaveBeenCalledWith(130);
+  });
+
+  it('lets a second signal exit at once', () => {
+    const exit = vi.fn();
+    const fence = createInterruptFence({ exit, warn: () => {} });
+
+    fence.onSignal(130);
+    fence.onSignal(143);
+
+    expect(exit).toHaveBeenCalledWith(143);
+  });
+
+  it('does not exit an uninterrupted run', () => {
+    const exit = vi.fn();
+    createInterruptFence({ exit, warn: () => {} }).exitIfInterrupted();
+
+    expect(exit).not.toHaveBeenCalled();
   });
 });

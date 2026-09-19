@@ -63,6 +63,34 @@
     "transform": "sanitize"
   },
   {
+    "path": "controls/n3b-sigint-mid-gesture.log.txt",
+    "sha256": "bb1d4102f33d45fd7ad2e8efd9e6a4dddc7559681c12c16575590ff23545cb13",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-a/n3b-sigint-mid-gesture.log",
+    "originalSha256": "bb1d4102f33d45fd7ad2e8efd9e6a4dddc7559681c12c16575590ff23545cb13",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/n4-sigint-during-release.log.txt",
+    "sha256": "a51b8c89c6f155f2422587e96698d68bc2eed1b60f0858fef41b4f97720f0aab",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-a/n4-sigint-during-release.log",
+    "originalSha256": "a51b8c89c6f155f2422587e96698d68bc2eed1b60f0858fef41b4f97720f0aab",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/n3b-lock-after.json",
+    "sha256": "97e39174add0ccec7254f3ec38de851ca2f4255ec33a955f741135f0db11157c",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-a/n3b-sigint-mid-gesture-lock-after.json",
+    "originalSha256": "97e39174add0ccec7254f3ec38de851ca2f4255ec33a955f741135f0db11157c",
+    "transform": "copy"
+  },
+  {
+    "path": "controls/n4-lock-after.json",
+    "sha256": "97e39174add0ccec7254f3ec38de851ca2f4255ec33a955f741135f0db11157c",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-a/n4-sigint-during-release-lock-after.json",
+    "originalSha256": "97e39174add0ccec7254f3ec38de851ca2f4255ec33a955f741135f0db11157c",
+    "transform": "copy"
+  },
+  {
     "path": "controls/a1-lock-after.json",
     "sha256": "97e39174add0ccec7254f3ec38de851ca2f4255ec33a955f741135f0db11157c",
     "original": "perf-profiles/bundled/units-2026-09-19/unit-a/a1-lock-after.json",

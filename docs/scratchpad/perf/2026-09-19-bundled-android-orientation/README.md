@@ -28,11 +28,17 @@ captures here are controls, not matrix cells.
 ### Why the capture writes `user_rotation` again
 
 Releasing the lock does not by itself turn the display. On this phone, with `user_rotation=1`
-asserted, the unlocked Activity stayed at `ROTATION_0` for 3 s. It turned only when `user_rotation`
-was written again, and writing the same value was enough. Both experiments are in `diag/`
-(`unlock-experiment-1.log.txt` and `unlock-experiment-2-same-value.log.txt`). The first device run
-of the fix lacked that step and failed loudly (`a2-attempt1`). That run is kept here as a real
-mismatch negative.
+asserted, the unlocked Activity stayed in portrait:
+
+* through the harness's whole 10 s follow timeout plus its 2.5 s settle, in `a2-attempt1` and `n1`;
+* across four reads spanning about 1.5 s in each experiment. The experiment scripts label those
+  reads `+0/+500/+1500/+3000`, but their loop waits 500 ms between reads, so those labels overstate
+  the elapsed time. The PR 2083 review caught this; the scripts and logs are kept as they ran.
+
+It turned only when `user_rotation` was written again, and writing the same value was enough. Both
+experiments are in `diag/` (`unlock-experiment-1.log.txt` and
+`unlock-experiment-2-same-value.log.txt`). The first device run of the fix lacked that step and
+failed loudly (`a2-attempt1`). That run is kept here as a real mismatch negative.
 
 ## Identities
 
@@ -49,15 +55,22 @@ mismatch negative.
 
 ## Controls
 
-| Run           | Request                                  | Result                                                                                                                                                                                         | Artifact | Afterwards                                  |
-| ------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------- |
-| `a0`          | LANDSCAPE, main before the fix           | **Mismatch reproduced.** Labelled LANDSCAPE, measured 360x780                                                                                                                                  | written  | adb restored                                |
-| `a1`          | PORTRAIT                                 | Observed PORTRAIT 360x780. The lock was not touched. Fidelity PASS                                                                                                                             | written  | lock on, portrait; adb `1`/`0`              |
-| `a2`          | LANDSCAPE                                | Launched portrait. The lock was released and the rotation re-asserted, giving an observed LANDSCAPE of 780x360 (canvas 747x360 at x=33). Geometry was unchanged through contact. Fidelity PASS | written  | lock restored to portrait; adb `1`/`0`      |
-| `a2-attempt1` | LANDSCAPE, fix without the re-assert     | Lock released, page stayed portrait. **Failed loudly**, exit 1                                                                                                                                 | none     | lock restored; adb `1`/`0`                  |
-| `n1`          | LANDSCAPE, forced mismatch (diagnostic)  | The re-assert was disabled by `diag/n1-forced-mismatch.diagnostic-only.diff`. **Failed loudly**, exit 1                                                                                        | none     | lock restored; adb `1`/`0`                  |
-| `n2`          | LANDSCAPE, `--theme=bogus`               | The page reached landscape (lock released), then the theme step threw. Exit 1                                                                                                                  | none     | lock restored; adb `1`/`0`; no forward left |
-| `n3`          | LANDSCAPE, 4 repeats, SIGINT mid-gesture | Interrupted during the swipes. Exit 130                                                                                                                                                        | none     | lock restored; adb `1`/`0`; no forward left |
+| Run           | Request                                                            | Result                                                                                                                                                                                         | Artifact | Afterwards                                  |
+| ------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------- |
+| `a0`          | LANDSCAPE, main before the fix                                     | **Mismatch reproduced.** Labelled LANDSCAPE, measured 360x780                                                                                                                                  | written  | adb restored                                |
+| `a1`          | PORTRAIT                                                           | Observed PORTRAIT 360x780. The lock was not touched. Fidelity PASS                                                                                                                             | written  | lock on, portrait; adb `1`/`0`              |
+| `a2`          | LANDSCAPE                                                          | Launched portrait. The lock was released and the rotation re-asserted, giving an observed LANDSCAPE of 780x360 (canvas 747x360 at x=33). Geometry was unchanged through contact. Fidelity PASS | written  | lock restored to portrait; adb `1`/`0`      |
+| `a2-attempt1` | LANDSCAPE, fix without the re-assert                               | Lock released, page stayed portrait. **Failed loudly**, exit 1                                                                                                                                 | none     | lock restored; adb `1`/`0`                  |
+| `n1`          | LANDSCAPE, forced mismatch (diagnostic)                            | The re-assert was disabled by `diag/n1-forced-mismatch.diagnostic-only.diff`. **Failed loudly**, exit 1                                                                                        | none     | lock restored; adb `1`/`0`                  |
+| `n2`          | LANDSCAPE, `--theme=bogus`                                         | The page reached landscape (lock released), then the theme step threw. Exit 1                                                                                                                  | none     | lock restored; adb `1`/`0`; no forward left |
+| `n3`          | LANDSCAPE, 4 repeats, SIGINT mid-gesture, before the fence         | Interrupted during the swipes. Exit 130                                                                                                                                                        | none     | lock restored; adb `1`/`0`; no forward left |
+| `n3b`         | LANDSCAPE, 4 repeats, SIGINT mid-gesture, with the interrupt fence | Interrupted during the swipes; the capture stopped at its next step, then cleanup ran. Exit 130                                                                                                | none     | lock restored; adb `1`/`0`; no forward left |
+| `n4`          | LANDSCAPE, SIGINT 12 s after start, with the interrupt fence       | Interrupted before contact (no `canvas` line), which is the orientation-setup window. Exit 130 after 6 s. The log cannot show whether the signal landed inside the lock release itself         | none     | lock restored; adb `1`/`0`; no forward left |
+
+Run `n3` used the first signal handler, which ran cleanup concurrently with the capture. The PR 2083
+review showed that handler could restore the lock before an in-flight unlock landed. The fix is the
+interrupt fence, and `n3b` and `n4` exercised it. "No forward left" means `adb forward --list`
+printed no `tcp` entry; its output is a single blank line.
 
 The exit codes and the absence of a negative run's artifact were observed in the session terminal
 (`ls` of the requested `--output` path). The logs record the error text but not the exit code.

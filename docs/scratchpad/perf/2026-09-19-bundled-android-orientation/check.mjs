@@ -66,7 +66,7 @@ for (const [name, artifact] of [
   check(`${name}: trusted-input fidelity passed`, artifact.fidelity.passed === true);
 }
 
-for (const name of ['a1', 'a2-attempt1', 'a2', 'n1', 'n2', 'n3']) {
+for (const name of ['a1', 'a2-attempt1', 'a2', 'n1', 'n2', 'n3', 'n3b', 'n4']) {
   const state = lock(name);
   check(
     `${name}: afterwards the app lock is back on, portrait`,
@@ -90,12 +90,25 @@ check(
   /Timed out waiting for bogus campaign theme/.test(text('controls/n2-failure-after-release.log.txt'))
 );
 check(
-  'unlock experiments: page stayed portrait after unlock and turned only after a user_rotation write',
+  'unlock experiments: page stayed portrait across four post-unlock reads (~1.5 s; labels overstate) and turned only after a user_rotation write',
   [text('diag/unlock-experiment-1.log.txt'), text('diag/unlock-experiment-2-same-value.log.txt')].every(
     (log) =>
       /after-unlock\+3000 \[360,780,"portrait-primary"\]/.test(log) &&
       /after-(reassert|same-value-put) \[780,360,"landscape-primary"\]/.test(log)
   )
+);
+
+for (const name of ['n3b-sigint-mid-gesture', 'n4-sigint-during-release']) {
+  check(
+    `${name}: the fence deferred the signal to the next step`,
+    /interrupted: stopping at the next step, then restoring the rig/.test(
+      text(`controls/${name}.log.txt`)
+    )
+  );
+}
+check(
+  'n4 was interrupted before contact',
+  !/^canvas /m.test(text('controls/n4-sigint-during-release.log.txt'))
 );
 
 if (failures.length) {

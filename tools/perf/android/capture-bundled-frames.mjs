@@ -211,8 +211,9 @@ export function geometryChangesProblem(changes) {
 //
 // Releasing the lock does not by itself turn the display. Measured on the rig
 // phone (SM-G990U1, Android 16): with `user_rotation=1` asserted, the unlocked
-// Activity stayed at ROTATION_0 for 3 s, and turned only once `user_rotation`
-// was written again — the same value is enough. Hence `reassertRotation`.
+// Activity stayed at ROTATION_0 through this function's whole follow timeout,
+// and turned only once `user_rotation` was written again — the same value is
+// enough. Hence `reassertRotation`.
 export async function establishRequestedOrientation({
   orientation,
   readGeometry,
@@ -310,27 +311,21 @@ export async function captureBundledFrames({
     ])
   );
   const state = { browser: null, execute: null, forwarded: false, lockToRestore: null };
-  let cleanupPromise = null;
-  const cleanup = () => {
-    cleanupPromise ??= restoreCaptureState({ serial, forwardPort, previousRotation, state });
-    return cleanupPromise;
-  };
-  const onSignal = (exitCode) => {
-    void cleanup().finally(() => process.exit(exitCode));
-  };
-  const onSigint = () => onSignal(130);
-  const onSigterm = () => onSignal(143);
-  process.once('SIGINT', onSigint);
-  process.once('SIGTERM', onSigterm);
+  const fence = createInterruptFence();
+  const onSigint = () => fence.onSignal(130);
+  const onSigterm = () => fence.onSignal(143);
+  process.on('SIGINT', onSigint);
+  process.on('SIGTERM', onSigterm);
 
   let artifact;
   try {
     artifact = await measure();
   } finally {
-    const restored = await cleanup();
+    const restored = await restoreCaptureState({ serial, forwardPort, previousRotation, state });
     process.off('SIGINT', onSigint);
     process.off('SIGTERM', onSigterm);
     if (artifact) artifact.cleanup = restored;
+    fence.exitIfInterrupted();
   }
   const failedCleanup = artifact.cleanup.filter((step) => !step.ok);
   if (failedCleanup.length) {
@@ -347,9 +342,11 @@ export async function captureBundledFrames({
 
   async function measure() {
     for (const step of androidNativeLaunchSteps(orientation)) {
+      fence.checkpoint();
       exec(serial, step.args);
       if (step.settle) await sleep(SETTLE_MS[step.settle]);
     }
+    fence.checkpoint();
     state.forwarded = true;
     const attached = await attachToBundledPage(serial, forwardPort);
     state.browser = attached.browser;
@@ -369,6 +366,7 @@ export async function captureBundledFrames({
 
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     state.execute = execute;
+    fence.checkpoint();
     const readGeometry = () => page.evaluate(PAGE_GEOMETRY_SCRIPT);
     // Orientation first: releasing the lock opens Settings and rotates the
     // Activity, and everything after this — theme, brush, the probe, the
@@ -386,6 +384,7 @@ export async function captureBundledFrames({
         for (const command of androidRotationCommands(orientation)) exec(serial, command);
       },
     });
+    fence.checkpoint();
     await ensureCampaignTheme(execute, requestedTheme);
     const observedTheme = await readResolvedTheme(execute);
     await page.evaluate(brushPickScript(brush));
@@ -399,6 +398,7 @@ export async function captureBundledFrames({
       throw new Error(`the page committed ${mode ?? 'nothing'}, not ${brush}`);
     }
 
+    fence.checkpoint();
     const beforeContact = await readGeometry();
     const preContactProblem = orientationProblem(orientation, beforeContact);
     if (preContactProblem) throw new Error(`before contact, ${preContactProblem}`);
@@ -419,6 +419,7 @@ export async function captureBundledFrames({
         { densityScale: beforeContact.dpr }
       );
       for (const instruction of instructions) {
+        fence.checkpoint();
         if (instruction.kind === 'pause') await sleep(instruction.durationMs);
         else exec(serial, swipeArgs(instruction));
       }
@@ -432,6 +433,7 @@ export async function captureBundledFrames({
       await sleep(seconds * 1_000);
       console.log('  window closed');
     }
+    fence.checkpoint();
     await sleep(AFTER_GESTURE_SETTLE_MS);
 
     const report = await page.evaluate(() => window.__probe.finish());
@@ -512,6 +514,34 @@ export async function captureBundledFrames({
     }
     return measured;
   }
+}
+
+// A signal must not run cleanup alongside the capture: an unlock already in
+// flight would land after the lock was restored and leave the app unlocked (the
+// PR 2083 review reproduced exactly that). So the first signal only marks the
+// run interrupted; the capture stops at its next checkpoint, the one cleanup
+// path in `finally` restores the rig, and only then does the process exit with
+// the signal's code. A second signal exits at once, leaking what cleanup would
+// have restored, for an operator who would rather have the terminal back.
+export function createInterruptFence({ exit = (code) => process.exit(code), warn = console.warn } = {}) {
+  let interruptedWith = null;
+  return {
+    onSignal(exitCode) {
+      if (interruptedWith !== null) {
+        warn('second signal: exiting without restoring the rig');
+        exit(exitCode);
+        return;
+      }
+      interruptedWith = exitCode;
+      warn('interrupted: stopping at the next step, then restoring the rig (signal again to skip)');
+    },
+    checkpoint() {
+      if (interruptedWith !== null) throw new Error('interrupted before the capture finished');
+    },
+    exitIfInterrupted() {
+      if (interruptedWith !== null) exit(interruptedWith);
+    },
+  };
 }
 
 // Each step runs whatever the others do, and reports its own outcome so the
