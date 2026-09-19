@@ -26,7 +26,7 @@ npm run --silent rival:health
 It verifies the Codex CLI is installed and that `~/.codex/auth.json` holds a ChatGPT plan login
 rather than an API key. It reads the file, not the account: a login whose refresh token has since
 been rotated away still passes, and surfaces on the first review as a launcher error that starts
-"Codex could not refresh its stored ChatGPT login" and names the remedy. Whichever check fails, stop
+"Codex can no longer use its stored ChatGPT login" and names the remedy. Whichever check fails, stop
 and relay it — never work around it by calling `codex` directly, and never set `OPENAI_API_KEY` to
 get past it. On a developer machine the remedy is `codex login`. In a Claude Code on the web session
 nobody can run that: the login and the model are seeded from the environment's `CODEX_AUTH_JSON` and

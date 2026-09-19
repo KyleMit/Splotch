@@ -68,25 +68,27 @@ export function resolveCodexModel(requested, configToml, env = process.env) {
   return model;
 }
 
-// Codex's own wording when its stored refresh token has been rotated elsewhere — the certain fate
-// of a cloud seed once any VM has refreshed it. `codex login status` is offline and reports the file
-// as healthy, so this is where a retired login first becomes visible. Measured on codex-cli 0.152.1
-// against a fake auth.json whose refresh token the auth server had never issued.
-const LOGIN_FAILURE_PATTERN =
-  /could not be refreshed|refresh token was already used|log out and sign in again/i;
+// Codex's own wording for a stored login it can no longer refresh: the REFRESH_TOKEN_*_MESSAGE
+// family in codex-rs/login/src/auth/manager.rs at the pinned version covers an expired, reused, or
+// revoked refresh token, an account signed out elsewhere, and a generic failure, all on this prefix.
+// `codex login status` is offline and reports the file as healthy, so this is where a dead login
+// first becomes visible; the causes share one remedy, so the matcher is as broad as the family.
+const LOGIN_FAILURE_PATTERN = /access token could not be refreshed/i;
 
 export function isCodexLoginFailure(error) {
   return error?.code === STREAM_FAILURE.exited && LOGIN_FAILURE_PATTERN.test(error.message ?? '');
 }
 
 // The remedy differs by where the launcher runs: a developer machine signs in again, a Claude Code
-// on the web session has no browser and takes its login from the seeded environment variable.
+// on the web session has no browser and takes its login from the seeded environment variable. The
+// cause is not claimed beyond what Codex said — a seed refreshed and rotated on another VM is the
+// expected one in cloud, not the only one.
 export function describeCodexLoginFailure(error, env = process.env) {
   const remedy =
     env.CLAUDE_CODE_REMOTE === 'true'
-      ? `This is a Claude Code on the web session, so the seeded login has been retired by refresh rotation. Re-seed it: run \`npm run rival:seed\` on your machine and paste the value as ${SEED_ENVIRONMENT_KEY} in the cloud environment (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").`
+      ? `This is a Claude Code on the web session, where the usual cause is a seed that another VM has since refreshed and rotated. Re-seed it: run \`npm run rival:seed\` on your machine and paste the value as ${SEED_ENVIRONMENT_KEY} in the cloud environment; the SessionStart hook replaces the stale file at the next session start (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").`
       : 'Run `codex login` to sign in again.';
-  return `Codex could not refresh its stored ChatGPT login. ${remedy}\n${error.message}`;
+  return `Codex can no longer use its stored ChatGPT login (its refresh token has expired, been reused, been revoked, or the account signed out elsewhere). ${remedy}\n${error.message}`;
 }
 
 // Inline TOML for the one server the rival may see. JSON string escaping is valid TOML basic-string
