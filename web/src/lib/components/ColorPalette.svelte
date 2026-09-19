@@ -278,11 +278,9 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .color-swatch:global(.releasing),
-    .color-swatch.ring-animate:not(.gradient-swatch)::after {
-      animation: none;
-    }
+  :global(:root[data-reduce-motion]) .color-swatch:global(.releasing),
+  :global(:root[data-reduce-motion]) .color-swatch.ring-animate:not(.gradient-swatch)::after {
+    animation: none;
   }
 
   /* The custom-color swatch is a honeycomb of palette-color dots (echoing the

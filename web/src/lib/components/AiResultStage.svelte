@@ -216,10 +216,8 @@
     max-height: var(--stage-budget-h);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .ai-stage {
-      transition: none;
-    }
+  :global(:root[data-reduce-motion]) .ai-stage {
+    transition: none;
   }
 
   /* Before the URL exists — and while its image is still decoding — use a box

@@ -323,10 +323,8 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .row-actions,
-    :global(.expand-btn .expand-icon) {
-      transition: none;
-    }
+  :global(:root[data-reduce-motion]) .row-actions,
+  :global(:root[data-reduce-motion]) :global(.expand-btn .expand-icon) {
+    transition: none;
   }
 </style>

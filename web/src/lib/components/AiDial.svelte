@@ -126,9 +126,7 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .dial.waiting {
-      animation: none;
-    }
+  :global(:root[data-reduce-motion]) .dial.waiting {
+    animation: none;
   }
 </style>

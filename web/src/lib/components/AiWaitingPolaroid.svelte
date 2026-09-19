@@ -299,14 +299,12 @@
   /* A toddler app that moves things unprompted has to honour this one. The
      spinner slows rather than stopping: it is the only sign left that anything
      is still happening. */
-  @media (prefers-reduced-motion: reduce) {
-    .ai-waiting-polaroid,
-    .ai-waiting-polaroid.ready,
-    :global(.polaroid-badge) {
-      animation: none;
-    }
-    .polaroid-spinner {
-      animation-duration: 2.4s;
-    }
+  :global(:root[data-reduce-motion]) .ai-waiting-polaroid,
+  :global(:root[data-reduce-motion]) .ai-waiting-polaroid.ready,
+  :global(:root[data-reduce-motion]) :global(.polaroid-badge) {
+    animation: none;
+  }
+  :global(:root[data-reduce-motion]) .polaroid-spinner {
+    animation-duration: 2.4s;
   }
 </style>

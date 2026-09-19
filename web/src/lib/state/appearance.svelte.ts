@@ -11,36 +11,59 @@
 // reads resolvedTheme(), repaints the theme-color meta, and syncs the selected
 // Black swatch's ink, so both an OS switch (systemDark) and an explicit setting
 // change (settingsState.theme) update them from one reactive path.
+//
+// Reduced motion rides the same shape: one prefers-reduced-motion subscription
+// feeds `systemReduceMotion`, resolveReducedMotion() turns preference + OS into
+// the effective answer, and the effect stamps it on <html> for CSS and for
+// prefersReducedMotion() to read.
 import { untrack } from 'svelte';
 import { settingsState, type SettingsState } from './settings.svelte';
 import { colorsState, type ColorsState } from './colors.svelte';
 import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
+import {
+  applyReducedMotion,
+  REDUCED_MOTION_QUERY,
+  resolveReducedMotion,
+} from '../platform/reducedMotion';
 
 export interface AppearanceState {
   resolvedTheme(): ResolvedTheme;
   setResolvedTheme(wanted: ResolvedTheme): void;
-  // Subscribes to the OS preference and roots the effect that keeps the
-  // theme-color meta and the Black swatch's ink on the resolved theme.
+  reducedMotion(): boolean;
+  setReducedMotion(wanted: boolean): void;
+  // Subscribes to the OS preferences and roots the effects that keep the
+  // theme-color meta and the Black swatch's ink on the resolved theme, and the
+  // reduce-motion attribute on the effective answer.
   install(): void;
   dispose(): void;
 }
 
 export function createAppearance(settings: SettingsState, colors: ColorsState): AppearanceState {
-  const appearance = $state({ systemDark: false });
+  const appearance = $state({ systemDark: false, systemReduceMotion: false });
 
   let systemQuery: MediaQueryList | null = null;
+  let motionQuery: MediaQueryList | null = null;
   let stopEffects: (() => void) | null = null;
 
   const onSystemChange = (e: MediaQueryListEvent) => {
     appearance.systemDark = e.matches;
   };
 
+  const onSystemMotionChange = (e: MediaQueryListEvent) => {
+    appearance.systemReduceMotion = e.matches;
+  };
+
   function resolvedTheme(): ResolvedTheme {
     return resolveTheme(settings.theme, appearance.systemDark);
   }
 
+  function reducedMotion(): boolean {
+    return resolveReducedMotion(settings.reduceMotion, appearance.systemReduceMotion);
+  }
+
   return {
     resolvedTheme,
+    reducedMotion,
     // A quick toggle (no three-way UI to name 'system' explicitly) can only
     // request an appearance, not a preference — so it writes back the LOOSEST
     // preference that still resolves to the requested appearance: 'system' when
@@ -57,13 +80,24 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
         resolveTheme('system', appearance.systemDark) === wanted ? 'system' : wanted
       );
     },
+    // The switch can only request an answer, not a preference, so it follows
+    // setResolvedTheme's rule: 'system' when the OS already gives that answer,
+    // otherwise an explicit pin — which is how a reduce-motion OS gets 'full'.
+    setReducedMotion(wanted) {
+      const explicit = wanted ? 'reduce' : 'full';
+      settings.setReduceMotion(appearance.systemReduceMotion === wanted ? 'system' : explicit);
+    },
     install() {
       if (systemQuery) return;
       // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
       systemQuery = matchMedia('(prefers-color-scheme: dark)');
       appearance.systemDark = systemQuery.matches;
       systemQuery.addEventListener('change', onSystemChange);
+      motionQuery = matchMedia(REDUCED_MOTION_QUERY);
+      appearance.systemReduceMotion = motionQuery.matches;
+      motionQuery.addEventListener('change', onSystemMotionChange);
       stopEffects = $effect.root(() => {
+        $effect(() => applyReducedMotion(reducedMotion()));
         $effect(() => {
           const theme = resolvedTheme();
           updateThemeColorMeta(theme);
@@ -76,6 +110,8 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
     dispose() {
       systemQuery?.removeEventListener('change', onSystemChange);
       systemQuery = null;
+      motionQuery?.removeEventListener('change', onSystemMotionChange);
+      motionQuery = null;
       stopEffects?.();
       stopEffects = null;
     },
@@ -84,7 +120,7 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
 
 export const appearanceState = createAppearance(settingsState, colorsState);
 
-export const { resolvedTheme, setResolvedTheme } = appearanceState;
+export const { resolvedTheme, setResolvedTheme, reducedMotion, setReducedMotion } = appearanceState;
 
 // Installed at module load (not from a component) so the resolved theme is live
 // before the first component renders. Client-only: matchMedia and the meta are

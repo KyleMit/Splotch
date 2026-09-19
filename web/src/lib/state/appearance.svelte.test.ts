@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { tick } from 'svelte';
 import { themes } from '$lib/design/tokens';
 import { THEME_COLORS } from '../theme';
+import { REDUCE_MOTION_ATTRIBUTE, REDUCED_MOTION_QUERY } from '../platform/reducedMotion';
 import * as themeModule from '../theme';
 import { createAppearance, type AppearanceState } from './appearance.svelte';
 import { createColors } from './colors.svelte';
@@ -29,12 +30,25 @@ const query = vi.hoisted(() => ({
   removeEventListener: vi.fn(),
 }));
 
+// The prefers-reduced-motion query, kept apart so an OS theme switch and an OS
+// motion switch can be emitted independently.
+const motionQuery = vi.hoisted(() => ({
+  matches: false,
+  handlers: [] as ChangeHandler[],
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+}));
+
 function installMatchMedia() {
-  query.matches = false;
-  query.handlers = [];
-  query.addEventListener = vi.fn((_type: string, cb: ChangeHandler) => query.handlers.push(cb));
-  query.removeEventListener = vi.fn();
-  const factory = vi.fn((_query: string) => query);
+  for (const list of [query, motionQuery]) {
+    list.matches = false;
+    list.handlers = [];
+    list.addEventListener = vi.fn((_type: string, cb: ChangeHandler) => list.handlers.push(cb));
+    list.removeEventListener = vi.fn();
+  }
+  const factory = vi.fn((wanted: string) =>
+    wanted === REDUCED_MOTION_QUERY ? motionQuery : query
+  );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   window.matchMedia = factory as any;
   return factory;
@@ -43,6 +57,15 @@ function installMatchMedia() {
 function emitSystemChange(matches: boolean) {
   query.matches = matches;
   query.handlers.forEach((cb) => cb({ matches }));
+}
+
+function emitSystemMotionChange(matches: boolean) {
+  motionQuery.matches = matches;
+  motionQuery.handlers.forEach((cb) => cb({ matches }));
+}
+
+function motionAttributeStamped() {
+  return document.documentElement.hasAttribute(REDUCE_MOTION_ATTRIBUTE);
 }
 
 let installed: AppearanceState | null = null;
@@ -73,6 +96,7 @@ beforeEach(() => {
 afterEach(() => {
   installed?.dispose();
   installed = null;
+  document.documentElement.removeAttribute(REDUCE_MOTION_ATTRIBUTE);
   vi.restoreAllMocks();
 });
 
@@ -209,4 +233,84 @@ describe('setResolvedTheme', () => {
 
     expect(settings.theme).toBe('system');
   });
+});
+
+describe('reduced motion', () => {
+  it('opens exactly one prefers-reduced-motion subscription per install', async () => {
+    const matchMedia = installMatchMedia();
+    const { appearance } = await freshAppearance();
+    appearance.install();
+
+    expect(matchMedia.mock.calls.filter(([q]) => q === REDUCED_MOTION_QUERY)).toHaveLength(1);
+    expect(motionQuery.addEventListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('seeds the OS answer at install and stamps it before any event', async () => {
+    installMatchMedia();
+    motionQuery.matches = true;
+    const { appearance } = await freshAppearance();
+
+    expect(appearance.reducedMotion()).toBe(true);
+    expect(motionAttributeStamped()).toBe(true);
+  });
+
+  it('one OS change updates BOTH reducedMotion() and the attribute in system mode', async () => {
+    installMatchMedia();
+    const { appearance } = await freshAppearance();
+    expect(motionAttributeStamped()).toBe(false);
+
+    emitSystemMotionChange(true);
+    await tick();
+    expect(appearance.reducedMotion()).toBe(true);
+    expect(motionAttributeStamped()).toBe(true);
+
+    emitSystemMotionChange(false);
+    await tick();
+    expect(motionAttributeStamped()).toBe(false);
+  });
+
+  it('an explicit preference overrides the OS in both directions', async () => {
+    installMatchMedia();
+    const { settings, appearance } = await freshAppearance();
+
+    settings.setReduceMotion('reduce');
+    await tick();
+    expect(motionAttributeStamped()).toBe(true);
+
+    settings.setReduceMotion('full');
+    emitSystemMotionChange(true);
+    await tick();
+    expect(appearance.reducedMotion()).toBe(false);
+    expect(motionAttributeStamped()).toBe(false);
+  });
+
+  it('stops following the OS once disposed', async () => {
+    installMatchMedia();
+    const { appearance } = await freshAppearance();
+    appearance.dispose();
+
+    expect(motionQuery.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+});
+
+describe('setReducedMotion', () => {
+  it.each([
+    { os: false, wanted: true, stored: 'reduce' },
+    { os: false, wanted: false, stored: 'system' },
+    { os: true, wanted: true, stored: 'system' },
+    { os: true, wanted: false, stored: 'full' },
+  ] as const)(
+    'with the OS at $os, requesting $wanted stores $stored',
+    async ({ os, wanted, stored }) => {
+      installMatchMedia();
+      motionQuery.matches = os;
+      const { settings, appearance } = await freshAppearance();
+
+      appearance.setReducedMotion(wanted);
+      await tick();
+
+      expect(settings.reduceMotion).toBe(stored);
+      expect(appearance.reducedMotion()).toBe(wanted);
+    }
+  );
 });

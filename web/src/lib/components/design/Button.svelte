@@ -95,10 +95,8 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .ring {
-      animation: none;
-    }
+  :global(:root[data-reduce-motion]) .ring {
+    animation: none;
   }
 
   /* 14px of vertical padding, not a --space step: it is what carries a 16px

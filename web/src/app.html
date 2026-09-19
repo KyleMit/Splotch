@@ -67,6 +67,13 @@
            • data-theme — present only when the parent explicitly chose light or dark
              (default: system, where the prefers-color-scheme CSS drives the theme
              with no attribute at all). Mirrors lib/theme.ts.
+           • data-reduce-motion — present when motion is reduced: the stored
+             preference is 'reduce', or it is 'system' (the default) and the OS asks
+             for reduced motion; 'full' overrides the OS. Every reduced-motion CSS
+             treatment keys off this attribute, never off the media query, so it is
+             restamped here whenever the OS preference changes — on the routes that
+             import state/appearance.svelte.ts that module stamps the same answer.
+             Mirrors lib/platform/reducedMotion.ts.
          The keys, defaults, and the scale clamp mirror settings.svelte.ts
          (ACTION_BUTTON_SCALE_*, BOOL_SETTINGS); app.html.test.ts fails on divergence.
 
@@ -178,6 +185,20 @@
         }
         var explicitTheme = theme === 'light' || theme === 'dark';
         if (explicitTheme) el.setAttribute('data-theme', theme);
+
+        var motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        var stampReduceMotion = function () {
+          var motion;
+          try {
+            motion = localStorage.getItem('splotch-reduce-motion');
+          } catch (e) {
+            /* unavailable storage leaves the OS preference in control */
+          }
+          var reduced = motion === 'reduce' || (motion !== 'full' && motionQuery.matches);
+          el.toggleAttribute('data-reduce-motion', reduced);
+        };
+        stampReduceMotion();
+        motionQuery.addEventListener('change', stampReduceMotion);
 
         var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
         var themeColorMeta = document.querySelector('meta[name="theme-color"]');

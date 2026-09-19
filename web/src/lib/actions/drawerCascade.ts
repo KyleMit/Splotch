@@ -1,12 +1,6 @@
-import { REDUCED_MOTION_QUERY } from '$lib/platform/reducedMotion';
+import { prefersReducedMotion, watchReducedMotion } from '$lib/platform/reducedMotion';
 
 export function drawerCascade(node: HTMLElement, opening: boolean) {
-  // Its own list rather than the shared probe: this is the one caller that
-  // reacts to the preference flipping mid-session.
-  const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY);
-  function cancelReducedMotion() {
-    if (reducedMotion.matches) node.classList.remove('opening');
-  }
   function finish(event: AnimationEvent) {
     if (event.animationName !== 'btn-cascade') return;
     const running = node
@@ -20,16 +14,20 @@ export function drawerCascade(node: HTMLElement, opening: boolean) {
     if (!running) node.classList.remove('opening');
   }
   function update(value: boolean) {
-    node.classList.toggle('opening', value && !reducedMotion.matches);
+    node.classList.toggle('opening', value && !prefersReducedMotion());
   }
   update(opening);
   node.addEventListener('animationend', finish);
-  reducedMotion.addEventListener('change', cancelReducedMotion);
+  // The one caller that reacts to the answer flipping mid-session: the reduced
+  // treatment cancels the cascade, so its animationend never clears the class.
+  const stopWatching = watchReducedMotion((reduced) => {
+    if (reduced) node.classList.remove('opening');
+  });
   return {
     update,
     destroy() {
       node.removeEventListener('animationend', finish);
-      reducedMotion.removeEventListener('change', cancelReducedMotion);
+      stopWatching();
     },
   };
 }
