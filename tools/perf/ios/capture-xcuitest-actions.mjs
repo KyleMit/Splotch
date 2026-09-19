@@ -33,6 +33,7 @@ import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-ses
 import { entryModulePath, loadedPageEntryProblem } from '../lib/profile-preview.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
+import { BOOK_CHOICE_SELECTOR, prepareColoringBooks } from '../lib/coloring-books-ready.mjs';
 import {
   PLATFORM_OWNS_ROTATION,
   SETTINGS_SECTION_ROWS,
@@ -374,6 +375,25 @@ export function coloringSelectionSteps(hasBookChoice) {
     activation: 'webdriver',
   });
   return steps;
+}
+
+async function openColoringPickerForSetup(execute) {
+  await clickSetupElement(execute, '#coloringBookButton');
+  await waitForReady(
+    execute,
+    `document.querySelector('#coloring-book-dialog')?.open === true`,
+    'coloring books to open for setup'
+  );
+}
+
+async function closeColoringPickerForSetup(execute) {
+  await closeDialogs(execute);
+  await waitForReady(
+    execute,
+    `document.querySelector('#coloring-book-dialog')?.open !== true`,
+    'coloring books to close after setup'
+  );
+  await sleep(ANIMATED_ACTION_SETTLE_MS);
 }
 
 async function showColoringBookChoices(execute) {
@@ -1365,6 +1385,16 @@ export async function runActionSweep({
     });
   };
 
+  // Before the first measured action, so no sweep measures anything while
+  // the books it releases are still downloading.
+  const listedColoringBooks = actions.has('coloring')
+    ? await prepareColoringBooks({
+        execute,
+        openPicker: () => openColoringPickerForSetup(execute),
+        closePicker: () => closeColoringPickerForSetup(execute),
+      })
+    : null;
+
   if (actions.has('idle')) {
     await record(measureIdle(execute));
   }
@@ -1844,8 +1874,13 @@ export async function runActionSweep({
     );
     await showColoringBookChoices(execute);
     const hasBookChoice = await execute(
-      `return document.querySelector('#coloring-book-dialog button[aria-label$="coloring book"]') !== null;`
+      `return document.querySelector(${JSON.stringify(BOOK_CHOICE_SELECTOR)}) !== null;`
     );
+    if (listedColoringBooks && !hasBookChoice) {
+      throw new Error(
+        `The coloring picker listed ${listedColoringBooks} books during setup and offers no book choice to the measured open`
+      );
+    }
     for (const step of coloringSelectionSteps(hasBookChoice)) {
       if (step.label === 'select coloring page') {
         const scroll = await measureColoringPageScroll(client, sessionId, execute);
@@ -2142,6 +2177,7 @@ export async function runActionSweep({
             ? 'compact'
             : 'sectioned'
           : null,
+        listedColoringBooks,
       },
     },
   };
