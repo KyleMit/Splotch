@@ -64,11 +64,16 @@ fi
 # for Codex: the login is seeded per session by tools/seed-codex-auth.mjs from the
 # CODEX_AUTH_JSON environment variable, because the snapshot must never hold a credential
 # (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").
+# `command -v` alone would accept the npm wrapper with its optional platform binary missing, or an
+# older CLI, and skip the repair on every rebuild; the pin is what counts, before and after.
 CODEX_VERSION=0.155.1
-if ! command -v codex >/dev/null 2>&1; then
-  npm install --global "@openai/codex@${CODEX_VERSION}" \
+codex_at_pin() {
+  [[ "$(codex --version 2>/dev/null)" == *"${CODEX_VERSION}"* ]]
+}
+if ! codex_at_pin; then
+  npm install --global "@openai/codex@${CODEX_VERSION}" && codex_at_pin \
     && echo "codex ${CODEX_VERSION} installed" \
-    || warn "codex install skipped — run-rival-agent is unavailable until the snapshot rebuilds with it"
+    || warn "codex ${CODEX_VERSION} is not runnable after the install — run-rival-agent is unavailable until the snapshot rebuilds with it"
 fi
 
 # Optional per-environment extras. SPLOTCH_CLOUD_PROFILE is a comma-separated list set in the
