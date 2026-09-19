@@ -13,20 +13,16 @@
     help="Bigger buttons help small or unsteady hands"
   />
 
-  <div class="setting">
-    <SectionLinkRow
-      section="controls"
-      label="Drawing Tools"
-      id="accessibilityDrawingToolsLink"
-      help="Fewer tools in the drawer gives them less to sort through"
-    />
-  </div>
+  <SectionLinkRow
+    section="controls"
+    label="Drawing Tools"
+    id="accessibilityDrawingToolsLink"
+    help="Fewer tools in the drawer gives them less to sort through"
+  />
 
-  <div class="setting">
-    <SectionLinkRow
-      section="sound"
-      id="accessibilitySoundLink"
-      help="Softer or silent sounds help kids who find noise too much"
-    />
-  </div>
+  <SectionLinkRow
+    section="sound"
+    id="accessibilitySoundLink"
+    help="Softer or silent sounds help kids who find noise too much"
+  />
 </section>

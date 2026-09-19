@@ -26,42 +26,53 @@
   const target = $derived(label === sectionLabel(section) ? null : sectionLabel(section));
 </script>
 
+<!-- The help line sits inside the button so the whole card is the tap target;
+     the accessible name is pinned to the label, and the help stays a
+     description rather than joining the name. -->
 <button
   type="button"
-  class="section-link"
+  class="setting section-link"
   {id}
+  aria-labelledby="{id}-label"
   aria-describedby="{id}-help"
   onclick={() => uiState.requestSettingsSection(section)}
 >
-  <span class="section-link-info">
-    <SectionIcon icon={sectionIcon(section)} class="setting-icon" />
-    <span class="section-link-label">{label}</span>
+  <span class="section-link-row">
+    <span class="section-link-info">
+      <SectionIcon icon={sectionIcon(section)} class="setting-icon" />
+      <span class="section-link-label" id="{id}-label">{label}</span>
+    </span>
+    <span class="section-link-target">
+      {#if target}<span>{target}</span>{/if}
+      <Icon name="chevron-right" class="section-link-chevron" />
+    </span>
   </span>
-  <span class="section-link-target">
-    {#if target}<span>{target}</span>{/if}
-    <Icon name="chevron-right" class="section-link-chevron" />
-  </span>
+  <span id="{id}-help" class="section-link-help">{help}</span>
 </button>
-<p id="{id}-help" class="section-link-help">{help}</p>
 
 <style>
-  /* The same row anatomy as ToggleRow — icon column, label, trailing control —
-     so a link sits flush with the toggles around it; the whole row is the
-     target rather than the chevron alone. */
+  /* The card itself is the button: it wears the shell's `.setting` chrome (the
+     shell styles that class on any element) and the same row anatomy as
+     ToggleRow — icon column, label, trailing control — so a link sits flush
+     with the toggles around it, and every point of the card, help line
+     included, is the tap target. */
   .section-link {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-3);
+    display: block;
     width: 100%;
-    padding: 0;
+    min-height: 44px;
     border: none;
-    background: none;
     font-family: inherit;
     text-align: left;
     color: inherit;
     cursor: pointer;
     touch-action: manipulation;
+  }
+
+  .section-link-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
   }
 
   .section-link-info {
@@ -95,6 +106,7 @@
   /* Mirrors ToggleRow's help line: --text-soft is pinned to hold 4.5:1 for
      this small text on --surface-2. */
   .section-link-help {
+    display: block;
     margin: 6px 0 0 var(--setting-indent);
     font-size: var(--font-size-sm);
     color: var(--text-soft);
