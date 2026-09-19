@@ -362,15 +362,21 @@ carries `GH_TOKEN`, but the `github.com` release page answered 403 through the p
 follow-up is to find an install source the VM can reach and prove those calls before calling the PR
 path available.
 
-Until then, review the PR's branch with `--base main` (its head and merge-base are the PR's own
-OIDs, so the range is identical) and carry the findings onto the PR yourself: build the review
-payload with `buildReviewRequest` from `post-review.mjs` against the session's `findings.json` and
-`packet/diff.patch`, run `assertSafeReview` on it, and post it as one COMMENT review through the
-GitHub MCP tools. A review relayed any other way lacks the `<!-- splotch-rival-review:` marker that
-`address-pr-review` keys on in autonomous mode, and its findings fall out of that skill's worklist
-unless the handler adds them by hand. The round-one review of PR #2100 landed this way on
-2026-09-19, and that round also served one broker request, so the broker loop is proven in cloud;
-the `--pr` scope and the poster's own transport are what remain unrun.
+Until then, review the range GitHub records for the PR and carry the findings onto it yourself. Read
+the PR's base branch and its base and head OIDs through the GitHub MCP tools first: `--base`
+resolves from the local checkout (its HEAD and the merge-base with the named branch) while `--pr`
+uses GitHub's recorded OIDs, so the two agree only when the local branch is at the PR head and the
+named base is the PR's actual base, which a stacked PR or a base that moved breaks. Launch with
+`--base <that branch>` and check that the launcher's reported range matches the PR's OIDs before
+posting. Then build the marker with `buildMarker` from `post-review.mjs` (the session's `rival`,
+`base`, and `head` plus a fresh UUID), pass it to `buildReviewRequest` with the session's
+`findings.json` and `packet/diff.patch` — `buildReviewRequest` accepts the marker and never creates
+one, and an unmarked payload still passes `assertSafeReview` — run `assertSafeReview` on the result,
+and post it as one COMMENT review on that head through the GitHub MCP tools. A review relayed
+without the `<!-- splotch-rival-review:` marker falls out of the worklist `address-pr-review` builds
+in autonomous mode unless the handler adds its findings by hand. Both rounds of review on PR #2100
+landed this way on 2026-09-19, and each served one broker request, so the broker loop is proven in
+cloud; the `--pr` scope and the poster's own transport are what remain unrun.
 
 On Linux the spool root under `/tmp` stays writable to the sandboxed rival, the integrity exposure
 `tools/rival-agent/NOTES.md` accepted "if Linux ever matters"; a cloud session is where it now does.
