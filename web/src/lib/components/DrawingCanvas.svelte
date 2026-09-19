@@ -26,8 +26,7 @@
     overlayUrl,
     coloringBookState,
     themedOverlayUrl as currentThemedOverlayUrl,
-    colorSheetUrl,
-    nightSheetUrl,
+    fillSheetUrl,
   } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { pageCompositionKey } from '$lib/state/books';
@@ -235,8 +234,7 @@
       return;
     }
     const theme = resolvedTheme();
-    const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
-    setColorSheet(nightUrl ?? colorSheetUrl());
+    setColorSheet(fillSheetUrl(theme));
     const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
     const otherUrl = currentThemedOverlayUrl(theme, other);
     if (!otherUrl) return;

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { booksForPlatform, pageColorImage } from '$lib/state/books';
+import { booksForPlatform, pageFillImage } from '$lib/state/books';
 import { clearOverlay, coloringBookState, setOverlayPage } from '$lib/state/coloringBook.svelte';
 import { applyColoringPageWithMagicUndo } from './coloringAppearance';
 import { prepareMagicSheetRecode } from './engine';
@@ -31,7 +31,18 @@ describe('coloring appearance', () => {
     applyColoringPageWithMagicUndo(page, 'landscape', 'light');
 
     expect(prepareMagicSheetRecode).toHaveBeenCalledWith(
-      pageColorImage(page, 'landscape'),
+      pageFillImage(page, 'landscape', 'light'),
+      expect.any(Function)
+    );
+  });
+
+  it('targets the night sheet when the page is applied in dark', () => {
+    const page = booksForPlatform('web')[0].pages[1];
+
+    applyColoringPageWithMagicUndo(page, 'landscape', 'dark');
+
+    expect(prepareMagicSheetRecode).toHaveBeenCalledWith(
+      page.nightImages.landscape,
       expect.any(Function)
     );
   });

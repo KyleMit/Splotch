@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createColoringBook, type ColoringBookState } from './coloringBook.svelte';
-import { BOOKS, bookAssetPaths, pageNightImage } from './books';
+import { BOOKS, bookAssetPaths } from './books';
 
 const page = BOOKS[0].pages[0];
 const spaceBook = BOOKS.find((b) => b.id === 'space')!;
@@ -48,28 +48,28 @@ describe('coloring book state', () => {
   it('setOverlayPage tracks the line art and the colored fill together', () => {
     book.setOverlayPage(page, 'landscape');
     expect(book.overlayUrl()).toBe(page.images.landscape);
-    expect(book.colorSheetUrl()).toBe(page.colorImages.landscape);
+    expect(book.fillSheetUrl('light')).toBe(page.colorImages.landscape);
     expect(book.overlayPage?.id).toBe(page.id);
   });
 
   it('updates every asset accessor when only the orientation changes', () => {
     book.setOverlayPage(spacePage, 'landscape');
     expect(book.overlayUrl()).toBe(spacePage.images.landscape);
-    expect(book.colorSheetUrl()).toBe(spacePage.colorImages.landscape);
-    expect(book.nightSheetUrl()).toBe(spacePage.nightImages.landscape);
+    expect(book.fillSheetUrl('light')).toBe(spacePage.colorImages.landscape);
+    expect(book.fillSheetUrl('dark')).toBe(spacePage.nightImages.landscape);
 
     book.setOverlayOrientation('portrait');
     expect(book.overlayUrl()).toBe(spacePage.images.portrait);
-    expect(book.colorSheetUrl()).toBe(spacePage.colorImages.portrait);
-    expect(book.nightSheetUrl()).toBe(spacePage.nightImages.portrait);
+    expect(book.fillSheetUrl('light')).toBe(spacePage.colorImages.portrait);
+    expect(book.fillSheetUrl('dark')).toBe(spacePage.nightImages.portrait);
   });
 
-  it('clearOverlay drops the line art, color sheet, and night sheet', () => {
+  it('clearOverlay drops the line art and the fill sheet for either theme', () => {
     book.setOverlayPage(spacePage, 'portrait');
     book.clearOverlay();
     expect(book.overlayUrl()).toBeNull();
-    expect(book.colorSheetUrl()).toBeNull();
-    expect(book.nightSheetUrl()).toBeNull();
+    expect(book.fillSheetUrl('light')).toBeNull();
+    expect(book.fillSheetUrl('dark')).toBeNull();
     expect(book.overlayPage).toBeNull();
   });
 
@@ -82,25 +82,24 @@ describe('coloring book state', () => {
     );
   });
 
-  it('tracks the night fill for each orientation that has one', () => {
+  it('tracks the night fill in dark for each orientation that has one', () => {
     // Space ships night fills for both orientations (ADR-0052 direction B),
     // derived from the line-art path.
     book.setOverlayPage(spacePage, 'portrait');
-    expect(book.nightSheetUrl()).toBe(spacePage.nightImages.portrait);
-    expect(book.nightSheetUrl()).toBe(
+    expect(book.fillSheetUrl('dark')).toBe(spacePage.nightImages.portrait);
+    expect(book.fillSheetUrl('dark')).toBe(
       spacePage.images.portrait.replace('.overlay.svg', '.night.webp')
     );
     book.setOverlayOrientation('landscape');
-    expect(book.nightSheetUrl()).toBe(spacePage.nightImages.landscape);
-    expect(book.nightSheetUrl()).toBe(
+    expect(book.fillSheetUrl('dark')).toBe(spacePage.nightImages.landscape);
+    expect(book.fillSheetUrl('dark')).toBe(
       spacePage.images.landscape.replace('.overlay.svg', '.night.webp')
     );
   });
 
-  it('pages without a night fill track a null night sheet', () => {
+  it('pages without a night fill fall back to the light fill in dark', () => {
     book.setOverlayPage(pageWithoutNight, 'portrait');
-    expect(book.nightSheetUrl()).toBeNull();
-    expect(pageNightImage(pageWithoutNight, 'portrait')).toBeNull();
+    expect(book.fillSheetUrl('dark')).toBe(pageWithoutNight.colorImages.portrait);
   });
 
   it('picks matching full-resolution art for the resolved theme', () => {

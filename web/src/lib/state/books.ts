@@ -259,14 +259,14 @@ export function pageCompositionKey(url: string): string {
   return url.replace(PAGE_ASSET_SUFFIX_PATTERN, '');
 }
 
-export function pageColorImage(page: ColoringPage, orientation: BookOrientation): string {
-  return resolveColoringAssetUrl(page.colorImages[orientation]);
-}
-
-/** Night fill path for the orientation, or null when none is generated yet. */
-export function pageNightImage(page: ColoringPage, orientation: BookOrientation): string | null {
-  const path = page.nightImages[orientation];
-  return path ? resolveColoringAssetUrl(path) : null;
+/** Dark falls back to the light fill where no night fill is generated (ADR-0052). */
+export function pageFillImage(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): string {
+  const nightPath = theme === 'dark' ? page.nightImages[orientation] : undefined;
+  return resolveColoringAssetUrl(nightPath ?? page.colorImages[orientation]);
 }
 
 function pageOverlayAssetPath(
