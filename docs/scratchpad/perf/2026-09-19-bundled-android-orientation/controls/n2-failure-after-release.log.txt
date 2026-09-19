@@ -1,0 +1,5 @@
+Error: Timed out waiting for bogus campaign theme
+    at waitForUi (file://<checkout>/tools/perf/lib/campaign-state.mjs:112:21)
+    at async ensureCampaignTheme (file://<checkout>/tools/perf/lib/campaign-state.mjs:185:5)
+    at async measure (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:389:5)
+    at async captureBundledFrames (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:328:16)

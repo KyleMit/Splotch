@@ -338,12 +338,17 @@ async function setLockedOrientation(execute, desired) {
   return setSectionedLockedOrientation(execute, desired);
 }
 
-export async function releaseNativeRotationLock(execute) {
+// `onInitial` receives the prior lock state BEFORE anything is changed, because
+// the resolved value only arrives after Settings closes: a close that fails
+// after the unlock would otherwise leave the caller with an unlocked app and no
+// record of what to restore.
+export async function releaseNativeRotationLock(execute, { onInitial } = {}) {
   const compact = await openAppearanceSettings(execute, 'rotation setup');
   try {
     const initial = compact
       ? await readCompactLockedOrientation(execute)
       : await readSectionedLockedOrientation(execute);
+    onInitial?.(initial);
     if (initial !== PLATFORM_OWNS_ROTATION) {
       await setLockedOrientation(execute, null);
     }
