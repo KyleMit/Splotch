@@ -566,7 +566,7 @@ async function readTable(execute, accessor, total) {
   return rows;
 }
 
-async function executePagePromise(executeAsync, expression) {
+export async function executePagePromise(executeAsync, expression) {
   const result = await executeAsync(`
     const done = arguments[arguments.length - 1];
     Promise.resolve()

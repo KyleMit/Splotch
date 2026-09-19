@@ -1,5 +1,6 @@
 import { chromium, firefox, webkit } from '@playwright/test';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
   MIN_GATED_SAMPLES,
@@ -32,6 +33,7 @@ import {
 } from '../lib/campaign-state.mjs';
 
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
+const PROFILE_DIR_PREFIX = 'splotch-desktop-actions-';
 // The runtime this transport is judged as (tools/perf/lib/input-fidelity.mjs
 // vocabulary, and the mac-* targets' declared `captureRuntime`). One runtime
 // spans all three engines; rotation first-frame applicability additionally
@@ -176,12 +178,23 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     await waitForUrl(base, READY_TIMEOUT_MS);
     await assertServedBuildIsFresh(base, { allowForeignBuild: has('allow-foreign-build') });
   }
-  let browser;
+  // A capture reloads the app once per sweep, and an ephemeral WebKit context
+  // does not carry Cache Storage across that reload the way a browser profile
+  // does: with no service worker yet it empties every cache and then fails each
+  // later pack install, and with one it keeps them, so which coloring picker a
+  // sweep met depended on the groups that ran before it. A throwaway profile
+  // gives every sweep a real browser's storage; it starts as empty as the
+  // context it replaces.
+  const profileDir = mkdtempSync(join(tmpdir(), PROFILE_DIR_PREFIX));
+  let context;
 
   try {
-    browser = await engine.launch(browserLaunchOptions(engineName, headless));
-    const context = await browser.newContext({ viewport, deviceScaleFactor });
-    const page = await context.newPage();
+    context = await engine.launchPersistentContext(profileDir, {
+      ...browserLaunchOptions(engineName, headless),
+      viewport,
+      deviceScaleFactor,
+    });
+    const page = context.pages()[0] ?? (await context.newPage());
     const client = new PlaywrightWebDriver(page, { useWheelForScroll: true });
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     const originalOrientation = await client.orientation();
@@ -211,6 +224,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         client,
         sessionId: SESSION_ID,
         execute,
+        executePromise: (expression) => page.evaluate(expression),
         actions,
         originalOrientation,
         baselineTheme,
@@ -260,7 +274,8 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly: has('report-only') });
     return artifact;
   } finally {
-    await browser?.close();
+    await context?.close();
+    rmSync(profileDir, { recursive: true, force: true });
     stop();
   }
 }

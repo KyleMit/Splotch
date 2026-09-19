@@ -1,0 +1,181 @@
+{
+  "base": "http://127.0.0.1:54804/",
+  "phases": {
+    "freshIdleBeforeAnyInput": [
+      {
+        "t": 103,
+        "caches": [],
+        "entries": 0,
+        "markers": []
+      },
+      {
+        "t": 3106,
+        "caches": [],
+        "entries": 0,
+        "markers": []
+      },
+      {
+        "t": 6110,
+        "caches": [],
+        "entries": 0,
+        "markers": []
+      },
+      {
+        "t": 9115,
+        "caches": [],
+        "entries": 0,
+        "markers": []
+      },
+      {
+        "t": 12118,
+        "caches": [],
+        "entries": 0,
+        "markers": []
+      }
+    ],
+    "firstPickerOpen": {
+      "before": {
+        "t": 15120,
+        "caches": [],
+        "entries": 0,
+        "markers": []
+      },
+      "view": {
+        "open": true,
+        "bookButtons": 0,
+        "pageButtons": 6,
+        "backButton": false
+      }
+    },
+    "afterEngagementTimeline": [
+      {
+        "sinceEngagementMs": 2,
+        "t": 16304,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 2,
+        "markers": []
+      },
+      {
+        "sinceEngagementMs": 16118,
+        "t": 32420,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 75,
+        "markers": [
+          "dinosaur"
+        ]
+      },
+      {
+        "sinceEngagementMs": 32259,
+        "t": 48561,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 151,
+        "markers": [
+          "dinosaur",
+          "creatures"
+        ]
+      },
+      {
+        "sinceEngagementMs": 48403,
+        "t": 64706,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 226,
+        "markers": [
+          "dinosaur",
+          "creatures",
+          "nature"
+        ]
+      },
+      {
+        "sinceEngagementMs": 64582,
+        "t": 80883,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 302,
+        "markers": [
+          "dinosaur",
+          "creatures",
+          "nature",
+          "objects"
+        ]
+      },
+      {
+        "sinceEngagementMs": 80263,
+        "t": 96565,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 375,
+        "markers": [
+          "dinosaur",
+          "creatures",
+          "nature",
+          "objects",
+          "shapes"
+        ]
+      }
+    ],
+    "samePageReopen": {
+      "state": {
+        "t": 106670,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 421,
+        "markers": [
+          "dinosaur",
+          "creatures",
+          "nature",
+          "objects",
+          "shapes"
+        ]
+      },
+      "view": {
+        "open": true,
+        "bookButtons": 6,
+        "pageButtons": 0,
+        "backButton": false
+      }
+    },
+    "reloadAfterSettle500": {
+      "state": {
+        "t": 581,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 0,
+        "markers": []
+      },
+      "view": {
+        "open": true,
+        "bookButtons": 0,
+        "pageButtons": 6,
+        "backButton": false
+      }
+    },
+    "reloadAfter5s": {
+      "state": {
+        "t": 6734,
+        "caches": [
+          "coloring-packs-v2-full"
+        ],
+        "entries": 0,
+        "markers": []
+      },
+      "view": {
+        "open": true,
+        "bookButtons": 0,
+        "pageButtons": 6,
+        "backButton": false
+      }
+    }
+  }
+}

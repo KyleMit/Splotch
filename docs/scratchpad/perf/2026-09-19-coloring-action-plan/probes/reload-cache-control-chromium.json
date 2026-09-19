@@ -1,0 +1,15 @@
+{
+  "engine": "chromium",
+  "beforeReload": {
+    "control-not-a-pack": 1
+  },
+  "atCommit": {
+    "control-not-a-pack": 1
+  },
+  "after5s": {
+    "control-not-a-pack": 1
+  },
+  "secondTabSameContext": {
+    "control-not-a-pack": 1
+  }
+}

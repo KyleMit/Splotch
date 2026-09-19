@@ -1,0 +1,24 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54804/ --actions=coloring --output=perf-profiles/coloring-state-r1/repro-main-fresh/actions.json
+
+
+Desktop action sweep 1/4
+
+Desktop action sweep 2/4
+
+Desktop action sweep 3/4
+
+Desktop action sweep 4/4
+
+Desktop discrete action response
+┌─────────┬─────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬──────────┬─────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                  │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max │ raw max │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼─────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼──────────┼─────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'open coloring books'   │ '3/4' │ '4/4'      │ 7         │ 7              │ 7              │ 19       │ 19       │ 19      │ '109/198'         │ 19         │ 0               │ 'PASS'  │
+│ 1       │ 'scroll coloring pages' │ '3/4' │ '4/4'      │ 15        │ 1              │ 1              │ 19       │ 19       │ 19      │ '47/116'          │ 19         │ 0               │ 'PASS'  │
+│ 2       │ 'select coloring page'  │ '3/4' │ '4/4'      │ 9         │ 108            │ 110            │ 19       │ 19       │ 19      │ '34/213'          │ 19         │ 0               │ 'PASS'  │
+│ 3       │ 'clear coloring page'   │ '3/4' │ '4/4'      │ 12        │ 107            │ 108            │ 18       │ 19       │ 19      │ '33/215'          │ 18         │ 0               │ 'PASS'  │
+└─────────┴─────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴──────────┴─────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-state-r1/repro-main-fresh/actions.json

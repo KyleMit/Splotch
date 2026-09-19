@@ -1,0 +1,45 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54804/ --engine=webkit --actions=idle,palette,color-picker,brushes,stroke-width,settings,coloring,screenshot,ai-waiting,undo,unavailable,clear --output=perf-profiles/coloring-state-r1/r2-webkit-full/actions.json
+
+
+Desktop action sweep 1/4
+
+Desktop action sweep 2/4
+
+Desktop action sweep 3/4
+
+Desktop action sweep 4/4
+
+Desktop discrete action response
+┌─────────┬────────────────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬──────────┬─────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                             │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max │ raw max │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼────────────────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼──────────┼─────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'idle frame control'               │ '3/4' │ '4/4'      │ 15        │ undefined      │ undefined      │ 19       │ 19       │ 19      │ '72/899'          │ 19         │ 0               │ 'PASS'  │
+│ 1       │ 'change ink color'                 │ '3/4' │ '4/4'      │ 17        │ 3              │ 3              │ 19       │ 19       │ 19      │ '115/115'         │ 19         │ 0               │ 'PASS'  │
+│ 2       │ 'open custom color picker'         │ '3/4' │ '4/4'      │ 14        │ 9              │ 11             │ 19       │ 24       │ 24      │ '136/196'         │ 19         │ 0               │ 'PASS'  │
+│ 3       │ 'select custom color'              │ '3/4' │ '4/4'      │ 17        │ 145            │ 145            │ 19       │ 19       │ 19      │ '72/220'          │ 19         │ 0               │ 'PASS'  │
+│ 4       │ 'open brush menu'                  │ '3/4' │ '4/4'      │ 11        │ 3              │ 3              │ 19       │ 19       │ 19      │ '99/114'          │ 19         │ 0               │ 'PASS'  │
+│ 5       │ 'select crayon brush'              │ '3/4' │ '4/4'      │ 16        │ 2              │ 2              │ 19       │ 19       │ 19      │ '105/114'         │ 19         │ 0               │ 'PASS'  │
+│ 6       │ 'select Magic brush'               │ '3/4' │ '4/4'      │ 11        │ 2              │ 2              │ 19       │ 19       │ 19      │ '101/114'         │ 19         │ 0               │ 'PASS'  │
+│ 7       │ 'select eraser'                    │ '3/4' │ '4/4'      │ 13        │ 2              │ 3              │ 19       │ 19       │ 19      │ '96/114'          │ 19         │ 0               │ 'PASS'  │
+│ 8       │ 'select pen brush'                 │ '3/4' │ '4/4'      │ 14        │ 2              │ 2              │ 19       │ 19       │ 19      │ '100/114'         │ 19         │ 0               │ 'PASS'  │
+│ 9       │ 'open stroke-width menu'           │ '3/4' │ '4/4'      │ 14        │ 3              │ 3              │ 19       │ 19       │ 19      │ '105/114'         │ 19         │ 0               │ 'PASS'  │
+│ 10      │ 'change stroke width'              │ '3/4' │ '4/4'      │ 14        │ 2              │ 2              │ 19       │ 19       │ 19      │ '32/114'          │ 19         │ 0               │ 'PASS'  │
+│ 11      │ 'open Settings'                    │ '3/4' │ '4/4'      │ 15        │ 14             │ 15             │ 19       │ 29       │ 29      │ '123/198'         │ 19         │ 0               │ 'PASS'  │
+│ 12      │ 'close Settings'                   │ '3/4' │ '4/4'      │ 12        │ 54             │ 54             │ 19       │ 19       │ 19      │ '118/204'         │ 19         │ 0               │ 'PASS'  │
+│ 13      │ 'open coloring books'              │ '3/4' │ '4/4'      │ 12        │ 11             │ 16             │ 19       │ 20       │ 20      │ '120/198'         │ 19         │ 0               │ 'PASS'  │
+│ 14      │ 'open coloring book'               │ '3/4' │ '4/4'      │ 13        │ 5              │ 5              │ 19       │ 19       │ 19      │ '83/196'          │ 19         │ 0               │ 'PASS'  │
+│ 15      │ 'scroll coloring pages'            │ '3/4' │ '4/4'      │ 16        │ 1              │ 1              │ 19       │ 19       │ 19      │ '50/115'          │ 19         │ 0               │ 'PASS'  │
+│ 16      │ 'select coloring page'             │ '3/4' │ '4/4'      │ 13        │ 109            │ 109            │ 19       │ 19       │ 19      │ '21/215'          │ 19         │ 0               │ 'PASS'  │
+│ 17      │ 'clear coloring page'              │ '3/4' │ '4/4'      │ 16        │ 110            │ 113            │ 19       │ 19       │ 19      │ '19/213'          │ 19         │ 0               │ 'PASS'  │
+│ 18      │ 'save screenshot'                  │ '3/4' │ '4/4'      │ 10        │ 107            │ 107            │ 19       │ 19       │ 19      │ '371/556'         │ 19         │ 0               │ 'PASS'  │
+│ 19      │ 'show AI waiting print'            │ '3/4' │ '4/4'      │ 14        │ 2              │ 3              │ 19       │ 19       │ 19      │ '195/195'         │ 19         │ 0               │ 'PASS'  │
+│ 20      │ 'finish AI waiting print'          │ '3/4' │ '4/4'      │ 12        │ 54             │ 56             │ 19       │ 20       │ 20      │ '980/1090'        │ 19         │ 0               │ 'PASS'  │
+│ 21      │ 'undo latest stroke'               │ '3/4' │ '4/4'      │ 11        │ 3              │ 3              │ 19       │ 19       │ 19      │ '97/197'          │ 19         │ 0               │ 'PASS'  │
+│ 22      │ 'tap unavailable undo'             │ '3/4' │ '4/4'      │ 16        │ 1              │ 1              │ 19       │ 19       │ 19      │ '130/196'         │ 19         │ 0               │ 'PASS'  │
+│ 23      │ 'clear drawing'                    │ '3/4' │ '4/4'      │ 25        │ 549            │ 551            │ 19       │ 20       │ 20      │ '209/294'         │ 19         │ 0               │ 'PASS'  │
+│ 24      │ 'clear drawing on a coloring page' │ '3/4' │ '4/4'      │ 16        │ 540            │ 542            │ 19       │ 26       │ 26      │ '207/291'         │ 19         │ 0               │ 'PASS'  │
+└─────────┴────────────────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴──────────┴─────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-state-r1/r2-webkit-full/actions.json
