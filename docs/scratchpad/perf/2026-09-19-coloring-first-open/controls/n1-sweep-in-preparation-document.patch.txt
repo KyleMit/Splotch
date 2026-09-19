@@ -1,0 +1,13 @@
+diff --git a/tools/perf/lib/coloring-books-ready.mjs b/tools/perf/lib/coloring-books-ready.mjs
+index b59f1bb1e..6c564e29f 100644
+--- a/tools/perf/lib/coloring-books-ready.mjs
++++ b/tools/perf/lib/coloring-books-ready.mjs
+@@ -202,7 +202,7 @@ export async function loadSweepDocumentWithColoringBooks({
+     return { listedColoringBooks, preparationMs: null, documentLoads: 1 };
+   }
+   const preparationMs = Date.now() - startedAt;
+-  await loadDocument();
++  // NEGATIVE CONTROL ONLY (never committed): sweep in the preparation document.
+   const state = await readInstallState(executePromise, readTimeoutMs);
+   if (state === null || state.missing.length > 0) throw new Error(installedBooksLostMessage(state));
+   return { listedColoringBooks, preparationMs, documentLoads: 2 };

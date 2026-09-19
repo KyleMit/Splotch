@@ -14,12 +14,24 @@ import {
   COLORING_PACK_CACHE_FAMILY_PREFIX,
   COLORING_PACK_MANIFEST_PATH_TEMPLATE,
   COLORING_PACK_MARKER_PREFIX,
+  START_INSTALL_FRAME_PUMP_SCRIPT,
+  STOP_INSTALL_FRAME_PUMP_SCRIPT,
   VERSION_JSON_PATH,
+  assertPickerNeverOpened,
+  firstOpenListedMessage,
   installStateReadTimeoutMessage,
   installTimeoutMessage,
+  installedBooksLostMessage,
   listedTimeoutMessage,
+  loadSweepDocumentWithColoringBooks,
+  pickerAlreadyRenderedMessage,
   prepareColoringBooks,
 } from '../lib/coloring-books-ready.mjs';
+import {
+  COLORING_FIRST_OPEN_ACTION_LABEL,
+  COLORING_REOPEN_ACTION_LABEL,
+  retiredActionLabelProblem,
+} from '../lib/action-applicability.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const read = (...parts) => readFileSync(join(repoRoot, ...parts), 'utf8');
@@ -45,6 +57,8 @@ function fakeTarget({ installStates, listedCounts }) {
         listedIndex += 1;
         return listed;
       }
+      if (script === START_INSTALL_FRAME_PUMP_SCRIPT) return calls.push('start frame pump');
+      if (script === STOP_INSTALL_FRAME_PUMP_SCRIPT) return calls.push('stop frame pump');
       throw new Error(`Unexpected script: ${script}`);
     },
     openPicker: async () => calls.push('open picker'),
@@ -73,12 +87,32 @@ describe('prepareColoringBooks', () => {
       'read install state',
       'open picker',
       'close picker',
+      'start frame pump',
       'read install state',
       'read install state',
+      'stop frame pump',
       'open picker',
       'count book choices',
       'close picker',
     ]);
+  });
+
+  it('stops the frame pump when the install never finishes, and starts none for a prepared context', async () => {
+    const stalled = fakeTarget({
+      installStates: [{ catalog: CATALOG, missing: ['dinosaur'] }],
+      listedCounts: [],
+    });
+    await expect(prepareColoringBooks({ ...stalled, installTimeoutMs: 30 })).rejects.toThrow(
+      'missing dinosaur'
+    );
+    expect(stalled.calls.at(-1)).toBe('stop frame pump');
+
+    const prepared = fakeTarget({
+      installStates: [{ catalog: CATALOG, missing: [] }],
+      listedCounts: [3],
+    });
+    await prepareColoringBooks(prepared);
+    expect(prepared.calls).not.toContain('start frame pump');
   });
 
   it('waits for a prepared context to publish the books its storage already holds', async () => {
@@ -261,16 +295,16 @@ describe('the transport that carries the install state', () => {
     ).rejects.toThrow('/version.json answered 404');
   });
 
-  it('is what each runner passes to the sweep', () => {
+  it('is what each runner hands the preparation that reads the install state', () => {
     expect(read('tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs')).toContain(
-      'executePromise: (expression) => executePagePromise(executeAsync, expression),'
+      'const executePromise = (expression) => executePagePromise(executeAsync, expression);'
     );
     for (const runner of [
       ['tools', 'perf', 'web', 'capture-desktop-actions.mjs'],
       ['tools', 'perf', 'android', 'capture-browser-actions.mjs'],
     ]) {
       expect(read(...runner)).toContain(
-        'executePromise: (expression) => page.evaluate(expression),'
+        'const executePromise = (expression) => page.evaluate(expression);'
       );
     }
   });
@@ -306,12 +340,50 @@ describe('where the sweeps settle the installed books', () => {
   const sweep = read('tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs');
   const desktop = read('tools', 'perf', 'web', 'capture-desktop-actions.mjs');
 
-  it('settles them before the first measured action of a sweep', () => {
-    const sweepStart = sweep.indexOf('export async function runActionSweep');
-    const prepare = sweep.indexOf('await prepareColoringBooks(', sweepStart);
-    const firstMeasured = sweep.indexOf('await record(', sweepStart);
-    expect(prepare).toBeGreaterThan(sweepStart);
-    expect(prepare).toBeLessThan(firstMeasured);
+  const sweepBody = sweep.slice(sweep.indexOf('export async function runActionSweep'));
+  const runners = [
+    sweep.slice(sweep.indexOf('export async function runIpadActions')),
+    desktop,
+    read('tools', 'perf', 'android', 'capture-browser-actions.mjs'),
+  ];
+
+  it('never opens the picker for setup inside the sweep that owes a first open', () => {
+    expect(sweepBody).not.toContain('prepareColoringBooks(');
+    expect(sweepBody).not.toContain('openColoringPickerForSetup(');
+  });
+
+  it('settles them in a document each runner loads before the one it sweeps', () => {
+    for (const runner of runners) {
+      const load = runner.indexOf('await loadActionSweepDocument({');
+      const run = runner.indexOf('await runActionSweep({');
+      expect(load).toBeGreaterThan(-1);
+      expect(load).toBeLessThan(run);
+      expect(runner).toContain('listedColoringBooks: sweepDocument.listedColoringBooks,');
+      expect(runner).toContain('coloringPreparation.push({ repeat, ...sweepDocument });');
+    }
+  });
+
+  it('checks the picker never opened, then measures the first open before the reopen', () => {
+    const control = sweepBody.indexOf('await assertPickerNeverOpened(execute);');
+    const firstOpen = sweepBody.indexOf(
+      'await measureColoringPickerOpen(COLORING_FIRST_OPEN_ACTION_LABEL);'
+    );
+    const listedCheck = sweepBody.indexOf('firstOpenListedMessage(');
+    const reopen = sweepBody.indexOf(
+      'await measureColoringPickerOpen(COLORING_REOPEN_ACTION_LABEL);'
+    );
+    expect(control).toBeGreaterThan(-1);
+    expect(control).toBeLessThan(firstOpen);
+    expect(firstOpen).toBeLessThan(listedCheck);
+    expect(listedCheck).toBeLessThan(reopen);
+    expect(sweepBody.slice(firstOpen, reopen)).toContain(
+      'await closeColoringPickerForSetup(execute);'
+    );
+  });
+
+  it('measures nothing under the label that never said which open it was', () => {
+    expect(sweep).not.toContain("label: 'open coloring books'");
+    expect(sweepBody).toContain('retiredActionLabelProblem(sample.label)');
   });
 
   it('records the listed book count in the plan context the stable-plan check compares', () => {
@@ -322,5 +394,94 @@ describe('where the sweeps settle the installed books', () => {
     expect(desktop).toContain('engine.launchPersistentContext(profileDir,');
     expect(desktop).not.toContain('browser.newContext(');
     expect(desktop).toContain('rmSync(profileDir, { recursive: true, force: true })');
+  });
+});
+
+describe('loadSweepDocumentWithColoringBooks', () => {
+  const installed = { catalog: CATALOG, missing: [] };
+
+  function fakeRunner({ listed, freshDocumentState = installed }) {
+    const calls = [];
+    return {
+      calls,
+      loadDocument: async () => calls.push('load document'),
+      prepare: async () => {
+        calls.push('prepare');
+        return listed;
+      },
+      executePromise: async (expression) => {
+        expect(expression).toBe(COLORING_BOOK_INSTALL_STATE_EXPRESSION);
+        calls.push('read install state');
+        return freshDocumentState;
+      },
+    };
+  }
+
+  it('prepares in one document and hands the sweep the next, with its books still installed', async () => {
+    const { calls, ...runner } = fakeRunner({ listed: 3 });
+    const result = await loadSweepDocumentWithColoringBooks(runner);
+    expect(calls).toEqual(['load document', 'prepare', 'load document', 'read install state']);
+    expect(result).toMatchObject({ listedColoringBooks: 3, documentLoads: 2 });
+    expect(result.preparationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('keeps the one document of a target whose preparation never opens the picker', async () => {
+    const { calls, ...runner } = fakeRunner({ listed: null });
+    await expect(loadSweepDocumentWithColoringBooks(runner)).resolves.toEqual({
+      listedColoringBooks: null,
+      preparationMs: null,
+      documentLoads: 1,
+    });
+    expect(calls).toEqual(['load document', 'prepare']);
+  });
+
+  it('fails by name when the fresh document lost the prepared books', async () => {
+    const lost = { catalog: CATALOG, missing: ['dinosaur'] };
+    await expect(
+      loadSweepDocumentWithColoringBooks(fakeRunner({ listed: 3, freshDocumentState: lost }))
+    ).rejects.toThrow(installedBooksLostMessage(lost));
+    await expect(
+      loadSweepDocumentWithColoringBooks(fakeRunner({ listed: 3, freshDocumentState: null }))
+    ).rejects.toThrow(installedBooksLostMessage(null));
+  });
+});
+
+describe('the control on the first-open measurement', () => {
+  it('passes a document whose picker has rendered no tile', async () => {
+    await expect(assertPickerNeverOpened(async () => 0)).resolves.toBeUndefined();
+  });
+
+  it('refuses a document whose setup already opened the picker', async () => {
+    await expect(assertPickerNeverOpened(async () => 8)).rejects.toThrow(
+      pickerAlreadyRenderedMessage(8)
+    );
+  });
+
+  it('counts the tiles the product renders for a held open', () => {
+    const picker = read('web', 'src', 'lib', 'components', 'ColoringBook.svelte');
+    expect(picker).toContain('id="coloring-book-dialog"');
+    expect(picker.match(/class="coloring-tile[ "]/g)).toHaveLength(2);
+    expect(picker).toContain('{#each books as book (book.id)}');
+    expect(read('web', 'src', 'lib', 'state', 'coloringPicker.svelte.ts')).toContain(
+      'const shown = $derived(installed.filter((book) => shownBookIds.includes(book.id)));'
+    );
+  });
+
+  it('names both counts when the first open lists fewer books than preparation did', () => {
+    expect(firstOpenListedMessage(1, 8)).toContain('listed 1 book choices');
+    expect(firstOpenListedMessage(1, 8)).toContain('preparation listed 8');
+  });
+});
+
+describe('the two coloring picker opens', () => {
+  it('carry distinct labels, neither of them the retired one', () => {
+    expect(COLORING_FIRST_OPEN_ACTION_LABEL).not.toBe(COLORING_REOPEN_ACTION_LABEL);
+    for (const label of [COLORING_FIRST_OPEN_ACTION_LABEL, COLORING_REOPEN_ACTION_LABEL]) {
+      expect(retiredActionLabelProblem(label)).toBeNull();
+    }
+  });
+
+  it('refuses the label that never said which open it measured', () => {
+    expect(retiredActionLabelProblem('open coloring books')).toContain('is retired');
   });
 });

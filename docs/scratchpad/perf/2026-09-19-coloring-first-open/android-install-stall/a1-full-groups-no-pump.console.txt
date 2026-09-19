@@ -1,0 +1,11 @@
+
+> splotch@1.6.0 perf:android:browser:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/android/capture-browser-actions.mjs --url=http://localhost:54824/ --no-serve --device-id=<android-phone> --cdp-port=9224 --orientation=PORTRAIT --actions=idle,palette,color-picker,brushes,stroke-width,settings,coloring,screenshot,ai-waiting,undo,unavailable,clear --output=perf-profiles/coloring-coverage-r1/a1-android-chrome-full-groups/actions.json
+
+guest uptime at capture start: 1150707.27 seconds
+Serving already: http://localhost:54824/
+Error: Timed out after 240 s waiting for coloring books to install: 1 of 7 extra books installed, missing creatures, nature, objects, shapes, space, vehicles
+    at prepareColoringBooks (file://<checkout>/tools/perf/lib/coloring-books-ready.mjs:135:27)
+    at async loadSweepDocumentWithColoringBooks (file://<checkout>/tools/perf/lib/coloring-books-ready.mjs:200:31)
+    at async runAndroidWebActions (file://<checkout>/tools/perf/android/capture-browser-actions.mjs:419:29)
+exit=1

@@ -1,0 +1,45 @@
+// LOCAL diagnostic probe (coloring-coverage-r1): why does the pack install crawl on the phone?
+import { execFileSync } from 'node:child_process';
+import { chromium } from 'playwright';
+import { COLORING_BOOK_INSTALL_STATE_EXPRESSION } from '../../tools/perf/lib/coloring-books-ready.mjs';
+const adb = (...args) => execFileSync(process.env.ADB, ['-s', process.env.SERIAL, ...args], { encoding: 'utf8' });
+const url = `http://localhost:54824/?perf-actions=probe-${Date.now()}`;
+adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', url, 'com.android.chrome');
+adb('forward', 'tcp:9224', 'localabstract:chrome_devtools_remote');
+await new Promise((r) => setTimeout(r, 4000));
+const browser = await chromium.connectOverCDP('http://127.0.0.1:9224');
+const page = browser.contexts()[0].pages().find((p) => p.url() === url);
+if (!page) throw new Error('no page');
+page.on('console', (m) => { if (m.type() !== 'log') console.log(`[console.${m.type()}]`, m.text().slice(0, 300)); });
+page.on('requestfailed', (r) => console.log('[requestfailed]', r.url().slice(-80), r.failure()?.errorText));
+await page.bringToFront();
+await page.waitForSelector('#drawingCanvas');
+const net = () => page.evaluate(() => { const c = navigator.connection; return c ? { type: c.type, effectiveType: c.effectiveType, downlink: c.downlink, rtt: c.rtt, saveData: c.saveData } : null; });
+console.log('connection at load', JSON.stringify(await net()));
+console.log('state at load', JSON.stringify(await page.evaluate(COLORING_BOOK_INSTALL_STATE_EXPRESSION)));
+// Reproduce the capture's conditions: empty every cache as the runner does, load a fresh document, engage through the picker.
+await page.evaluate(async () => { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); for (const k of await caches.keys()) await caches.delete(k); });
+await page.goto(`http://localhost:54824/?perf-actions=probe2-${Date.now()}`, { waitUntil: 'load' });
+await page.waitForSelector('#drawingCanvas');
+await new Promise((r) => setTimeout(r, 1500));
+console.log('state after clear+reload', JSON.stringify(await page.evaluate(COLORING_BOOK_INSTALL_STATE_EXPRESSION)));
+await page.evaluate(() => document.querySelector('#coloringBookButton').click());
+await page.waitForFunction(() => document.querySelector('#coloring-book-dialog')?.open === true);
+await page.evaluate(() => document.querySelector('#coloring-book-dialog').close());
+const t0 = Date.now();
+for (let i = 0; i < 5; i++) {
+  await new Promise((r) => setTimeout(r, 5000));
+  const state = await page.evaluate(COLORING_BOOK_INSTALL_STATE_EXPRESSION);
+  console.log(`${Math.round((Date.now() - t0) / 1000)}s missing=${state.missing.length}`, JSON.stringify(await net()), 'visibility', await page.evaluate(() => document.visibilityState));
+  console.log('  locks', JSON.stringify(await page.evaluate(() => navigator.locks.query())), 'pending fetches', await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => e.name.includes('/coloring/') && e.responseEnd === 0).length), 'coloring resources', await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => e.name.includes('/coloring/')).length));
+  console.log('  idle probe', JSON.stringify(await page.evaluate(() => new Promise((resolve) => {
+    const t = performance.now();
+    let frames = 0; const count = () => { frames += 1; if (performance.now() - t < 3000) requestAnimationFrame(count); }; requestAnimationFrame(count);
+    const timer = setTimeout(() => resolve({ idleCallback: 'never fired in 3000 ms', frames, animations: document.getAnimations().map((a) => a.animationName ?? a.constructor.name).slice(0, 8) }), 3000);
+    requestIdleCallback((deadline) => { clearTimeout(timer); resolve({ idleCallbackMs: Math.round(performance.now() - t), didTimeout: deadline.didTimeout, animations: document.getAnimations().map((a) => a.animationName ?? a.constructor.name).slice(0, 8) }); });
+  }))));
+  if (state.missing.length === 0) break;
+}
+await page.close();
+await browser.close();
+adb('forward', '--remove', 'tcp:9224');

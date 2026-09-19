@@ -34,7 +34,13 @@ import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-ses
 import { entryModulePath, loadedPageEntryProblem } from '../lib/profile-preview.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
-import { BOOK_CHOICE_SELECTOR, prepareColoringBooks } from '../lib/coloring-books-ready.mjs';
+import {
+  assertPickerNeverOpened,
+  firstOpenListedMessage,
+  listedBookChoices,
+  loadSweepDocumentWithColoringBooks,
+  prepareColoringBooks,
+} from '../lib/coloring-books-ready.mjs';
 import {
   PLATFORM_OWNS_ROTATION,
   SETTINGS_SECTION_ROWS,
@@ -50,9 +56,12 @@ import {
   themeRoundTripPlan,
 } from '../lib/campaign-state.mjs';
 import {
+  COLORING_FIRST_OPEN_ACTION_LABEL,
+  COLORING_REOPEN_ACTION_LABEL,
   COLORING_SCROLL_ACTION_LABEL,
   FULL_ACTION_GROUPS,
   compactSettingsActionLabel,
+  retiredActionLabelProblem,
 } from '../lib/action-applicability.mjs';
 
 const APP_PATH = '/';
@@ -404,6 +413,34 @@ async function closeColoringPickerForSetup(execute) {
     'coloring books to close after setup'
   );
   await sleep(ANIMATED_ACTION_SETTLE_MS);
+}
+
+// The runner-facing half of the first-open contract: a sweep that includes
+// `coloring` settles its books in a preparation document and hands the sweep a
+// document the picker has never opened in.
+export async function loadActionSweepDocument({ actions, execute, executePromise, loadDocument }) {
+  if (!actions.has('coloring')) {
+    await loadDocument();
+    return { listedColoringBooks: null, preparationMs: null, documentLoads: 1 };
+  }
+  return loadSweepDocumentWithColoringBooks({
+    loadDocument,
+    executePromise,
+    prepare: () =>
+      prepareColoringBooks({
+        execute,
+        executePromise,
+        openPicker: () => openColoringPickerForSetup(execute),
+        closePicker: () => closeColoringPickerForSetup(execute),
+      }),
+  });
+}
+
+export function logColoringPreparation({ listedColoringBooks, preparationMs, documentLoads }) {
+  if (preparationMs === null) return;
+  console.log(
+    `Coloring books prepared in ${preparationMs} ms: ${listedColoringBooks} listed; the sweep runs in document ${documentLoads} of this repeat`
+  );
 }
 
 async function showColoringBookChoices(execute) {
@@ -1378,10 +1415,10 @@ export async function runActionSweep({
   client,
   sessionId,
   execute,
-  executePromise,
   actions,
   originalOrientation,
   baselineTheme = 'dark',
+  listedColoringBooks = null,
 }) {
   const samples = [];
   const applicableLabels = new Set();
@@ -1394,6 +1431,8 @@ export async function runActionSweep({
   const blocked = new Map();
   const record = async (promise) => {
     const sample = await promise;
+    const retired = retiredActionLabelProblem(sample.label);
+    if (retired) throw new Error(retired);
     applicableLabels.add(sample.label);
     samples.push(sample);
   };
@@ -1439,17 +1478,6 @@ export async function runActionSweep({
       originalStateHint: `${label} original state`,
     });
   };
-
-  // Before the first measured action, so no sweep measures anything while
-  // the books it releases are still downloading.
-  const listedColoringBooks = actions.has('coloring')
-    ? await prepareColoringBooks({
-        execute,
-        executePromise,
-        openPicker: () => openColoringPickerForSetup(execute),
-        closePicker: () => closeColoringPickerForSetup(execute),
-      })
-    : null;
 
   if (actions.has('idle')) {
     await record(measureIdle(execute));
@@ -1917,26 +1945,29 @@ export async function runActionSweep({
   }
 
   if (actions.has('coloring')) {
-    await record(
-      measureClick({
-        client,
-        sessionId,
-        execute,
-        label: 'open coloring books',
-        selector: '#coloringBookButton',
-        ready: `document.querySelector('#coloring-book-dialog')?.open === true`,
-        settleMs: ANIMATED_ACTION_SETTLE_MS,
-      })
-    );
-    await showColoringBookChoices(execute);
-    const hasBookChoice = await execute(
-      `return document.querySelector(${JSON.stringify(BOOK_CHOICE_SELECTOR)}) !== null;`
-    );
-    if (listedColoringBooks && !hasBookChoice) {
-      throw new Error(
-        `The coloring picker listed ${listedColoringBooks} books during setup and offers no book choice to the measured open`
+    const measureColoringPickerOpen = (label) =>
+      record(
+        measureClick({
+          client,
+          sessionId,
+          execute,
+          label,
+          selector: '#coloringBookButton',
+          ready: `document.querySelector('#coloring-book-dialog')?.open === true`,
+          settleMs: ANIMATED_ACTION_SETTLE_MS,
+        })
       );
+    await assertPickerNeverOpened(execute);
+    await measureColoringPickerOpen(COLORING_FIRST_OPEN_ACTION_LABEL);
+    await showColoringBookChoices(execute);
+    const firstOpenListed = await listedBookChoices(execute);
+    if (listedColoringBooks !== null && firstOpenListed !== listedColoringBooks) {
+      throw new Error(firstOpenListedMessage(firstOpenListed, listedColoringBooks));
     }
+    await closeColoringPickerForSetup(execute);
+    await measureColoringPickerOpen(COLORING_REOPEN_ACTION_LABEL);
+    await showColoringBookChoices(execute);
+    const hasBookChoice = (await listedBookChoices(execute)) > 0;
     for (const step of coloringSelectionSteps(hasBookChoice)) {
       if (step.label === 'select coloring page') {
         const scroll = await measureColoringPageScroll(client, sessionId, execute);
@@ -2456,8 +2487,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     const expectedLabels = new Set();
     const pageEntries = new Set();
     const serviceWorkerRegistrations = new Set();
+    const coloringPreparation = [];
     let baselineTheme;
-    for (let repeat = 1; repeat <= repeats; repeat++) {
+    const executePromise = (expression) => executePagePromise(executeAsync, expression);
+    const loadDocument = async (repeat) => {
       const loadedUrl = profilingUrl(appUrl, repeat);
       if (nativeApp) {
         await execute(`location.replace(${JSON.stringify(loadedUrl)}); return true;`).catch(
@@ -2490,6 +2523,16 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       serviceWorkerRegistrations.add(
         await blockServiceWorkerRegistrationForMeasurement(execute)
       );
+    };
+    for (let repeat = 1; repeat <= repeats; repeat++) {
+      const sweepDocument = await loadActionSweepDocument({
+        actions,
+        execute,
+        executePromise,
+        loadDocument: () => loadDocument(repeat),
+      });
+      coloringPreparation.push({ repeat, ...sweepDocument });
+      logColoringPreparation(sweepDocument);
       await ensureCampaignTheme(execute, requestedTheme);
       baselineTheme = await readResolvedTheme(execute);
       await installActionProbe(execute);
@@ -2499,10 +2542,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         client,
         sessionId,
         execute,
-        executePromise: (expression) => executePagePromise(executeAsync, expression),
         actions,
         originalOrientation,
         baselineTheme,
+        listedColoringBooks: sweepDocument.listedColoringBooks,
       });
       settingsShell = sweep.settingsShell;
       actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
@@ -2560,6 +2603,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       theme: baselineTheme,
       pageEntries: [...pageEntries],
       serviceWorkerRegistration: [...serviceWorkerRegistrations],
+      coloringPreparation,
       // A landscape phone measures CompactShell's quick toggles instead of the
       // section list, so the label set differs by shell rather than by regression.
       settingsShell,
