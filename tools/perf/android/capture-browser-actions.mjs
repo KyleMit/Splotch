@@ -241,6 +241,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         'trace',
         'report-only',
         'no-serve',
+        'allow-foreign-build',
         'theme',
       ],
     },
@@ -320,7 +321,11 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         `refresh-rate pin not confirmed: requested ${PINNED_REFRESH_RATE_HZ}, display reports ${observedRefreshRateHz ?? 'unknown'} — the artifact records what was observed`
       );
     }
-    server = await ensurePreviewServer(base, port, !has('no-serve'));
+    // A historical comparison serves another commit's build from its own
+    // worktree; the flag is how a caller says that build is foreign on purpose.
+    server = await ensurePreviewServer(base, port, !has('no-serve'), {
+      allowForeignBuild: has('allow-foreign-build'),
+    });
     adb(deviceId, [
       'shell',
       'am',
