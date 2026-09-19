@@ -83,6 +83,24 @@ describe('coloring scroll dispatch and provenance', () => {
     }
   );
 
+  it('starts the native swipe off the dialog centre column, where a centre-line overlay gets touches dropped', async () => {
+    const { client, execute } = scrollFixture('native');
+    const pending = measureColoringPageScroll(client, 'session', execute);
+    await vi.runAllTimersAsync();
+    await pending;
+
+    const [, , { actions }] = client.request.mock.calls.find(([, path]) =>
+      path.endsWith('/actions')
+    );
+    const dialogCentreX = 180;
+    const swipeXs = actions[0].actions
+      .filter((step) => step.type === 'pointerMove')
+      .map((step) => step.x);
+    expect(swipeXs).toHaveLength(2);
+    for (const x of swipeXs) expect(Math.abs(x - dialogCentreX)).toBeGreaterThanOrEqual(2);
+    expect(new Set(swipeXs).size).toBe(1);
+  });
+
   it('names what the page received when an accepted native gesture moves nothing', async () => {
     const { client, execute, probe } = scrollFixture('native', { gestureScrolls: false });
     const undelivered = { eventType: 'uncaptured', trusted: null, armedEvents: [] };

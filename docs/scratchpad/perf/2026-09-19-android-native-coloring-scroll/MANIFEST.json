@@ -1,0 +1,52 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "24821f78d12e00cbba01a7fed7b42e92bb4b7d132562430a53934ab4e33a48ee"
+    },
+    {
+      "path": "check.mjs",
+      "sha256": "1d288f2daa214aaa84e7464a76987e21ba41ddcb098c0724d7217bd38b69c2a2"
+    },
+    {
+      "path": "control-centre/logcat-untrusted-touch.txt",
+      "sha256": "3cb047ddd346ff1f9a7430af9dc16d36ed6238577fe421a1d1fa58a097d4864f"
+    },
+    {
+      "path": "control-centre/overlay-windows.txt",
+      "sha256": "636ffffaa200ae83540b41f50a10d339ce7529c075a096961dee87ab874cafc8"
+    },
+    {
+      "path": "control-centre/run.log.txt",
+      "sha256": "1f48fbe9a1dda948fb3ece45a5515187f2c202548ac391c9b07a46c11a044b4e"
+    },
+    {
+      "path": "reduce-actions.jq",
+      "sha256": "e42b33cb70df8c8d12610f2aab73be2d30b6ff514a98a88daff6bb96f27bb720"
+    },
+    {
+      "path": "retained-log/analysis-output.txt",
+      "sha256": "f69ca2565d3690408c723945cc6948d48bb689d0a5c02debe4675155816390e9"
+    },
+    {
+      "path": "retained-log/analyze-appium-log.sh",
+      "sha256": "31d65e43477f866bde92636d66bc59355fb395f538f960518323afb2b7cb3af6"
+    },
+    {
+      "path": "treatment-coloring/actions.reduced.json",
+      "sha256": "9588f2cfce14f699ba87a0c776f122efb3223b0642672794a56cc090642d68d7"
+    },
+    {
+      "path": "treatment-coloring/run.log.txt",
+      "sha256": "d42a95ef497726ceb5deced79011df1943ac649a5decda455cedb33398881c69"
+    },
+    {
+      "path": "treatment-full-groups/actions.reduced.json",
+      "sha256": "ff904bdbe6915ce497ce3e7d56809accabcbcbcbdbc35f298affacc6686de761"
+    },
+    {
+      "path": "treatment-full-groups/run.log.txt",
+      "sha256": "91be61dcc8a52608a85d787669c0fecfbe6ab63e90659cad9460097989d091b5"
+    }
+  ]
+}

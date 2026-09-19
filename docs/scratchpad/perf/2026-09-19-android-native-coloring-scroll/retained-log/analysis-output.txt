@@ -1,0 +1,18 @@
+## dialog swipe outcome per session (gesture 540,1667 -> 540,772)
+S1 L3905 SCROLLED nullPolls=0 "armedEvents":[{"atFromArmMs":1507.8999999761581,"hit":"DIV","trusted":true,"type":"pointerdown","x":180,"y":555.6666870117188}],"canvasMutations":[],"eventType":"pointerdown","firstActionFrame":{"actualGapMs":17.19999998807907,"endFromActionMs":8.700000023840
+S1 L10518 SCROLLED nullPolls=0 "armedEvents":[{"atFromArmMs":1472.699999988079,"hit":"DIV","trusted":true,"type":"pointerdown","x":180,"y":555.6666870117188}],"canvasMutations":[],"eventType":"pointerdown","firstActionFrame":{"actualGapMs":15.699999988079071,"endFromActionMs":15.30000003576
+S1 L17147 SCROLLED nullPolls=0 "armedEvents":[{"atFromArmMs":1493.0999999642372,"hit":"DIV","trusted":true,"type":"pointerdown","x":180,"y":555.6666870117188}],"canvasMutations":[],"eventType":"pointerdown","firstActionFrame":{"actualGapMs":10.299999952316284,"endFromActionMs":10.6999999880
+S1 L23768 SCROLLED nullPolls=0 "armedEvents":[{"atFromArmMs":1494.800000011921,"hit":"DIV","trusted":true,"type":"pointerdown","x":180,"y":555.6666870117188}],"canvasMutations":[],"eventType":"pointerdown","firstActionFrame":{"actualGapMs":12.5,"endFromActionMs":10.800000023838948,"gapMs":1
+S2 L30797 TIMEOUT nullPolls=425
+S3 L38218 TIMEOUT nullPolls=425
+S4 L45583 TIMEOUT nullPolls=421
+S5 L52940 TIMEOUT nullPolls=420
+## open-coloring-book record per sweep: first-tile tap, scroll-cue mutation, dialog mutation
+S1 tap ,"x":101,"y":343 cue:YES dialog-mutated:no
+S1 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S1 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S1 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S2 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S3 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S4 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S5 tap ,"x":101,"y":343 cue:YES dialog-mutated:no

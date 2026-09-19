@@ -1,0 +1,6 @@
+# From `adb shell dumpsys input` at 16:35 EDT, reduced to the accessibility service's windows over the app.
+# The full window listing names the owner's other apps and stays local.
+nu.nav.bar  frame=[540,99][541,2340]  alpha=0.799805  inputConfig=NOT_FOCUSABLE | NOT_TOUCHABLE   (not a trusted overlay)
+nu.nav.bar  frame=[540,99][541,2340]  alpha=0.799805  inputConfig=NOT_FOCUSABLE | NOT_TOUCHABLE   (not a trusted overlay)
+mMaximumObscuringOpacityForTouch: 0.800000
+art.splotch.app/art.splotch.app.MainActivity  frame=[0,0][1080,2340]

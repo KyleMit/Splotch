@@ -1,0 +1,25 @@
+
+> splotch@1.6.0 perf:ios:xcuitest:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-actions.mjs --appium-url=http://127.0.0.1:4725 --native-app --native-webview-class=android.webkit.WebView --capabilities-file=~/.splotch-rig/evidence/1870/android-native/caps.json --device-id=<android-phone> --actions=coloring --output=perf-profiles/coloring-android-r1/p2/actions.json --label=coloring-android-r1-p2
+
+
+Action sweep 1/4
+
+Action sweep 2/4
+
+Action sweep 3/4
+
+Action sweep 4/4
+
+Discrete action response
+┌─────────┬─────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬────────────────────┬────────────────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                  │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max           │ raw max            │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼─────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼────────────────────┼────────────────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'open coloring books'   │ '3/4' │ '4/4'      │ 5.3       │ 310.3          │ 312.1          │ 8.4      │ 16.800000000000182 │ 16.800000000000182 │ '198/509'         │ 10.1       │ 0               │ 'PASS'  │
+│ 1       │ 'open coloring book'    │ '3/4' │ '4/4'      │ 8.3       │ 41.8           │ 44.3           │ 16.6     │ 16.699999999999818 │ 16.699999999999818 │ '24/410'          │ 16.8       │ 0               │ 'PASS'  │
+│ 2       │ 'scroll coloring pages' │ '3/4' │ '4/4'      │ 6         │ 739.5          │ 757.5          │ 8.4      │ 8.400000000000546  │ 8.5                │ '102/504'         │ 11.2       │ 0               │ 'PASS'  │
+│ 3       │ 'select coloring page'  │ '3/4' │ '4/4'      │ 7.3       │ 78.6           │ 85.5           │ 8.4      │ 25                 │ 25                 │ '73/425'          │ 9.2        │ 0               │ 'PASS'  │
+│ 4       │ 'clear coloring page'   │ '3/4' │ '4/4'      │ 4.1       │ 320.5          │ 330.5          │ 8.4      │ 8.699999999998909  │ 8.699999999998909  │ '22/516'          │ 11.1       │ 0               │ 'PASS'  │
+└─────────┴─────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴────────────────────┴────────────────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-android-r1/p2/actions.json
