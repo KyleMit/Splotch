@@ -77,8 +77,8 @@ importers:
         specifier: ^4.13.0
         version: 4.13.0(playwright-core@1.63.0)
       '@capacitor/android':
-        specifier: ^8.5.1
-        version: 8.5.1(@capacitor/core@8.5.2)
+        specifier: ^8.5.2
+        version: 8.5.2(@capacitor/core@8.5.2)
       '@capacitor/assets':
         specifier: ^3.0.5
         version: 3.0.5(@types/node@22.20.1)(supports-color@10.2.2)(typescript@6.0.3)
@@ -718,8 +718,8 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capacitor/android@8.5.1':
-    resolution: {integrity: sha512-o8fUIPDSEASeXHHrDz26WU7OlyiRb+QqtI9KFdnLS1jUL77o5iGrvegibaZX8rWpiCyDJ6jlUhhhHlfeq3ou9A==}
+  '@capacitor/android@8.5.2':
+    resolution: {integrity: sha512-rtiaz78egCcS+vs29wkWCL3C+RhazKMSygXcjutwWP8NmO6r5UBxOvGf3Wjz5+ahobyQ723tn9gCePwRwcNDZQ==}
     peerDependencies:
       '@capacitor/core': ^8.5.0
 
@@ -5181,6 +5181,9 @@ packages:
   third-party-web@0.29.2:
     resolution: {integrity: sha512-fegtha91tq2DHphyoiBXVHjVi2YG9zFaRnboT9C28tO1en9Y3wJsfspuy40F+u5wl3hHVbw7cnd1b67kEGHb8g==}
 
+  third-party-web@0.30.0:
+    resolution: {integrity: sha512-p+PfyL5U0ediGzvwPzMSdD9MnC8rHW6nWJJVLIQvqN7RsSqfaZ+7n4c9GILqH36EYR0eXB9CzAeCRnKFr/9uJg==}
+
   through2@2.0.5:
     resolution: {integrity: sha512-/mrRod8xqpA+IHSLyGCQ2s8SPHiCDEeQJSep1jqLYeEUClOFG2Qsh+4FU6G9VeqpZnGW/Su8LQGc4YKni5rYSQ==}
 
@@ -5795,7 +5798,7 @@ snapshots:
 
   '@aparajita/capacitor-secure-storage@8.0.0':
     dependencies:
-      '@capacitor/android': 8.5.1(@capacitor/core@8.5.2)
+      '@capacitor/android': 8.5.2(@capacitor/core@8.5.2)
       '@capacitor/app': 8.1.0(@capacitor/core@8.5.2)
       '@capacitor/core': 8.5.2
       '@capacitor/ios': 8.5.1(@capacitor/core@8.5.2)
@@ -6493,7 +6496,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.5.2
 
-  '@capacitor/android@8.5.1(@capacitor/core@8.5.2)':
+  '@capacitor/android@8.5.2(@capacitor/core@8.5.2)':
     dependencies:
       '@capacitor/core': 8.5.2
 
@@ -7439,7 +7442,7 @@ snapshots:
   '@paulirish/trace_engine@0.0.65':
     dependencies:
       legacy-javascript: 0.0.1
-      third-party-web: 0.29.2
+      third-party-web: 0.30.0
 
   '@playwright/test@1.63.0':
     dependencies:
@@ -11073,6 +11076,8 @@ snapshots:
   text-extensions@1.9.0: {}
 
   third-party-web@0.29.2: {}
+
+  third-party-web@0.30.0: {}
 
   through2@2.0.5:
     dependencies:
