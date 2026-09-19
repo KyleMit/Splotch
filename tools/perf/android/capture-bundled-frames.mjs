@@ -22,7 +22,7 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
-import { ROOT, argFlag, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import { ROOT, argFlag, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { pollFor } from '../split-capture/lib/poll.mjs';
 import {
   androidGestureInstructions,
@@ -37,7 +37,14 @@ import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import { LOST_FRAME_TIME_SHARE_GATE, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
-import { ensureCampaignTheme, readResolvedTheme } from '../lib/campaign-state.mjs';
+import {
+  PLATFORM_OWNS_ROTATION,
+  ensureCampaignTheme,
+  parseCampaignOrientation,
+  readResolvedTheme,
+  releaseNativeRotationLock,
+  restoreNativeRotationLock,
+} from '../lib/campaign-state.mjs';
 import { GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
 
 const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
@@ -53,6 +60,11 @@ const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
 const HAND_DEFAULT_SECONDS = 20;
 const HAND_COUNTDOWN_SECONDS = 5;
+// How long the Activity may take to follow `user_rotation` once the app's own
+// rotation lock is released; a rotation lands in well under a second on the rig
+// phone, so this only bounds a device that is not going to turn.
+const ROTATION_FOLLOW_TIMEOUT_MS = 10_000;
+const ROTATION_FOLLOW_POLL_MS = 250;
 
 // The identity the channel exists to prove: the attached target's URL comes
 // from the DEBUGGER, not from anything the page reports, and a bundled
@@ -71,10 +83,13 @@ export function bundledPageProblem(url, origin = BUNDLED_ORIGIN) {
   return `attached page is ${url}, not the bundled Capacitor origin (${origin})`;
 }
 
+// Throws rather than calling fail(): fail() exits the process on the spot,
+// which skips the cleanup that puts the device's rotation and the app's
+// rotation lock back.
 function exec(serial, args) {
   const result = spawnSync('adb', ['-s', serial, ...args], { encoding: 'utf8' });
   if (result.status !== 0) {
-    fail(`adb ${args.join(' ')} failed: ${(result.stderr || result.stdout || '').trim()}`);
+    throw new Error(`adb ${args.join(' ')} failed: ${(result.stderr || result.stdout || '').trim()}`);
   }
   return (result.stdout || '').trim();
 }
@@ -108,6 +123,122 @@ async function attachToBundledPage(serial, forwardPort) {
     throw new Error(`no bundled Capacitor page over CDP (targets: ${seen})`);
   }
   return { browser, page };
+}
+
+// Everything the orientation verdict and the artifact need, read by the PAGE in
+// one evaluation. The requested orientation and a successful `adb settings put`
+// prove nothing on their own: the app's rotation lock (on by default) holds the
+// Activity at its own orientation through any `user_rotation`, and a LANDSCAPE
+// cell measured at 360x780 portrait passed every other check (issue 2065's
+// device validation).
+export const PAGE_GEOMETRY_SCRIPT = `(() => {
+  const rect = document.querySelector('#drawingCanvas')?.getBoundingClientRect();
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    canvas: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
+    dpr: devicePixelRatio,
+    screenOrientation: screen.orientation?.type ?? null,
+  };
+})()`;
+
+// A rotation mid-capture can leave the endpoints matching, so the page records
+// every layout change between the pre-contact snapshot and the readback.
+const GEOMETRY_WATCH_SCRIPT = `(() => {
+  const changes = [];
+  const note = (kind) =>
+    changes.push({ kind, at: performance.now(), width: innerWidth, height: innerHeight });
+  addEventListener('resize', () => note('resize'));
+  screen.orientation?.addEventListener('change', () => note('orientation'));
+  window.__bundledGeometryChanges = changes;
+  return true;
+})()`;
+
+const isPositive = (value) => Number.isFinite(value) && value > 0;
+
+export function observedOrientation(geometry) {
+  const { width, height } = geometry?.viewport ?? {};
+  if (!isPositive(width) || !isPositive(height) || width === height) return null;
+  return width > height ? 'LANDSCAPE' : 'PORTRAIT';
+}
+
+export function orientationProblem(requested, geometry) {
+  const observed = observedOrientation(geometry);
+  if (!observed) {
+    return `the page reported no usable viewport (${JSON.stringify(geometry?.viewport ?? null)}), so it cannot prove its orientation`;
+  }
+  const canvas = geometry.canvas;
+  if (!canvas || !isPositive(canvas.width) || !isPositive(canvas.height)) {
+    return 'the page reported no sized #drawingCanvas';
+  }
+  if (observed !== requested) {
+    const { width, height } = geometry.viewport;
+    return `the page is ${observed} at ${width}x${height}, not the requested ${requested}`;
+  }
+  return null;
+}
+
+export function geometryDriftProblem(before, after) {
+  const pairs = [
+    ['viewport width', before?.viewport?.width, after?.viewport?.width],
+    ['viewport height', before?.viewport?.height, after?.viewport?.height],
+    ['canvas x', before?.canvas?.x, after?.canvas?.x],
+    ['canvas y', before?.canvas?.y, after?.canvas?.y],
+    ['canvas width', before?.canvas?.width, after?.canvas?.width],
+    ['canvas height', before?.canvas?.height, after?.canvas?.height],
+    ['devicePixelRatio', before?.dpr, after?.dpr],
+  ];
+  const changed = pairs.filter(([, from, to]) => !Number.isFinite(from) || from !== to);
+  if (!changed.length) return null;
+  return `the page geometry changed during the capture (${changed
+    .map(([name, from, to]) => `${name} ${from} -> ${to}`)
+    .join(', ')})`;
+}
+
+export function geometryChangesProblem(changes) {
+  if (!Array.isArray(changes)) return 'the page lost its geometry-change record';
+  if (!changes.length) return null;
+  return `the page resized or rotated ${changes.length} time(s) during the capture: ${JSON.stringify(changes)}`;
+}
+
+// Brings the page to the requested orientation the way the Appium actions
+// runner does for the iPad: the capture has already asserted `user_rotation`,
+// and when the page did not follow, the app's own rotation lock is released
+// through Settings (the product path, not a preference write) so the Activity
+// can. The lock is released only when it is in the way, and `onLockState` hands
+// the caller the prior state before anything changes so cleanup can restore it
+// exactly. What the page reports afterwards is the only acceptance.
+export async function establishRequestedOrientation({
+  orientation,
+  readGeometry,
+  releaseLock,
+  wait = sleep,
+  followTimeoutMs = ROTATION_FOLLOW_TIMEOUT_MS,
+  pollMs = ROTATION_FOLLOW_POLL_MS,
+  settleMs = SETTLE_MS.rotation,
+}) {
+  const launched = await readGeometry();
+  if (!orientationProblem(orientation, launched)) {
+    return { launched, settled: launched, lockReleased: false };
+  }
+  const initialLock = await releaseLock();
+  const deadline = Date.now() + followTimeoutMs;
+  while (
+    observedOrientation(await readGeometry()) !== orientation &&
+    Date.now() < deadline
+  ) {
+    await wait(pollMs);
+  }
+  await wait(settleMs);
+  const settled = await readGeometry();
+  const problem = orientationProblem(orientation, settled);
+  if (problem) {
+    const lock =
+      initialLock === PLATFORM_OWNS_ROTATION
+        ? 'the platform owns rotation, so there was no app lock to release'
+        : `after releasing the app's rotation lock (${JSON.stringify(initialLock)})`;
+    throw new Error(`${problem} — ${lock}`);
+  }
+  return { launched, settled, lockReleased: Boolean(initialLock?.lockedOrientation) };
 }
 
 // The Brush Menu mounts its options only while it is open, and a pick closes it
@@ -144,7 +275,7 @@ export async function captureBundledFrames({
   serial = argFlag('device-serial'),
   brush = argFlag('brush', 'pen'),
   repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
-  orientation = argFlag('orientation', 'PORTRAIT'),
+  orientation = parseCampaignOrientation(argFlag('orientation')) ?? 'PORTRAIT',
   requestedTheme = argFlag('theme', 'light'),
   input = argFlag('input', 'adb'),
   seconds = Number(argFlag('seconds', HAND_DEFAULT_SECONDS)),
@@ -152,34 +283,68 @@ export async function captureBundledFrames({
   label = argFlag('label'),
   output = argFlag('output'),
 } = {}) {
-  if (!serial) fail('--device-serial= is required');
-  if (!['adb', 'hand'].includes(input)) fail('--input must be adb or hand');
+  if (!serial) throw new Error('--device-serial= is required');
+  if (!['adb', 'hand'].includes(input)) throw new Error('--input must be adb or hand');
   const runLabel = label ?? `bundled-android-${brush}-${orientation.toLowerCase()}-${requestedTheme}`;
   const hostLoadStart = sampleHostLoad();
 
   // The rotation state to put back is whatever was there BEFORE this run
-  // wrote its own — read first, restore in the OUTER finally: a socket
-  // timeout, a CDP connect failure, or a not-bundled refusal after the
-  // rotation write must still restore it, and each cleanup runs
-  // independently so one failure cannot strand the others (the PR 1385
-  // review — a stale forward or locked rotation contaminates the shared
-  // rig's next capture).
+  // wrote its own — read first, restore in cleanup: a socket timeout, a CDP
+  // connect failure, or a not-bundled refusal after the rotation write must
+  // still restore it, and each cleanup step runs independently so one failure
+  // cannot strand the others (the PR 1385 review — a stale forward or locked
+  // rotation contaminates the shared rig's next capture). The app's own
+  // rotation lock is restored first, while the page is still attached.
   const previousRotation = Object.fromEntries(
     ['accelerometer_rotation', 'user_rotation'].map((key) => [
       key,
       exec(serial, ['shell', 'settings', 'get', 'system', key]),
     ])
   );
-  let browser = null;
-  let forwarded = false;
+  const state = { browser: null, execute: null, forwarded: false, lockToRestore: null };
+  let cleanupPromise = null;
+  const cleanup = () => {
+    cleanupPromise ??= restoreCaptureState({ serial, forwardPort, previousRotation, state });
+    return cleanupPromise;
+  };
+  const onSignal = (exitCode) => {
+    void cleanup().finally(() => process.exit(exitCode));
+  };
+  const onSigint = () => onSignal(130);
+  const onSigterm = () => onSignal(143);
+  process.once('SIGINT', onSigint);
+  process.once('SIGTERM', onSigterm);
+
+  let artifact;
   try {
+    artifact = await measure();
+  } finally {
+    const restored = await cleanup();
+    process.off('SIGINT', onSigint);
+    process.off('SIGTERM', onSigterm);
+    if (artifact) artifact.cleanup = restored;
+  }
+  const failedCleanup = artifact.cleanup.filter((step) => !step.ok);
+  if (failedCleanup.length) {
+    console.warn(
+      `cleanup did not complete: ${JSON.stringify(failedCleanup)} — the rig may measure the next cell in the wrong state`
+    );
+    process.exitCode = 1;
+  }
+  const out = output ?? join('perf-profiles', 'bundled', `${runLabel}-real-screen.json`);
+  mkdirSync(join(ROOT, dirname(out)), { recursive: true });
+  writeFileSync(join(ROOT, out), JSON.stringify(artifact, null, 2));
+  console.log(`Wrote ${out}`);
+  return artifact;
+
+  async function measure() {
     for (const step of androidNativeLaunchSteps(orientation)) {
       exec(serial, step.args);
       if (step.settle) await sleep(SETTLE_MS[step.settle]);
     }
-    forwarded = true;
+    state.forwarded = true;
     const attached = await attachToBundledPage(serial, forwardPort);
-    browser = attached.browser;
+    state.browser = attached.browser;
     const page = attached.page;
     const pageUrl = page.url();
     const identityProblem = bundledPageProblem(pageUrl);
@@ -195,6 +360,21 @@ export async function captureBundledFrames({
     if (uaProblem) throw new Error(uaProblem);
 
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
+    state.execute = execute;
+    const readGeometry = () => page.evaluate(PAGE_GEOMETRY_SCRIPT);
+    // Orientation first: releasing the lock opens Settings and rotates the
+    // Activity, and everything after this — theme, brush, the probe, the
+    // gesture coordinates — has to happen in the geometry that gets measured.
+    const rotation = await establishRequestedOrientation({
+      orientation,
+      readGeometry,
+      releaseLock: () =>
+        releaseNativeRotationLock(execute, {
+          onInitial: (initial) => {
+            if (initial?.lockedOrientation) state.lockToRestore = initial;
+          },
+        }),
+    });
     await ensureCampaignTheme(execute, requestedTheme);
     const observedTheme = await readResolvedTheme(execute);
     await page.evaluate(brushPickScript(brush));
@@ -208,6 +388,11 @@ export async function captureBundledFrames({
       throw new Error(`the page committed ${mode ?? 'nothing'}, not ${brush}`);
     }
 
+    const beforeContact = await readGeometry();
+    const preContactProblem = orientationProblem(orientation, beforeContact);
+    if (preContactProblem) throw new Error(`before contact, ${preContactProblem}`);
+    await page.evaluate(GEOMETRY_WATCH_SCRIPT);
+
     await page.evaluate(
       probeConfigScript({ phases: 'blank', contactMs: PROBE_CONTACT_BUDGET_MS, hud: false })
     );
@@ -217,17 +402,10 @@ export async function captureBundledFrames({
     if (!installed) throw new Error('the probe did not install in the bundled page');
 
     if (input === 'adb') {
-      const geometry = await page.evaluate(() => {
-        const rect = document.querySelector('#drawingCanvas').getBoundingClientRect();
-        return {
-          bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-          dpr: window.devicePixelRatio,
-        };
-      });
-      console.log(`canvas ${JSON.stringify(geometry.bounds)} scale ${geometry.dpr}`);
+      console.log(`canvas ${JSON.stringify(beforeContact.canvas)} scale ${beforeContact.dpr}`);
       const instructions = androidGestureInstructions(
-        trustedGestureActions(geometry.bounds, repeats, 0),
-        { densityScale: geometry.dpr }
+        trustedGestureActions(beforeContact.canvas, repeats, 0),
+        { densityScale: beforeContact.dpr }
       );
       for (const instruction of instructions) {
         if (instruction.kind === 'pause') await sleep(instruction.durationMs);
@@ -259,15 +437,31 @@ export async function captureBundledFrames({
       report[accessor] = rows;
     }
 
+    // Refused rather than recorded: a capture whose page turned or resized is
+    // not a measurement of the orientation it would be filed under.
+    const afterContact = await readGeometry();
+    const geometryChanges = await page.evaluate(() => window.__bundledGeometryChanges ?? null);
+    const geometryProblem =
+      geometryChangesProblem(geometryChanges) ?? geometryDriftProblem(beforeContact, afterContact);
+    if (geometryProblem) throw new Error(geometryProblem);
+
     const summaries = summarizeRun(report);
     const runtime = captureRuntime('android', true);
     const fidelity = inputFidelity(summaries.phases?.[0]?.input ?? {}, runtime);
     const drawing = scoreDrawingRun(summaries.phases, LOST_FRAME_TIME_SHARE_GATE);
-    const artifact = {
+    const measured = {
       label: runLabel,
       platform: 'android',
       brush,
       orientation,
+      // What the page measured, not what was requested — the capture refuses
+      // to reach this point unless the two agree.
+      observedOrientation: observedOrientation(beforeContact),
+      pageGeometry: { launched: rotation.launched, beforeContact, afterContact },
+      rotationLock: {
+        released: rotation.lockReleased,
+        initial: state.lockToRestore,
+      },
       theme: requestedTheme,
       observedTheme,
       gestureRepeats: input === 'adb' ? repeats : null,
@@ -289,12 +483,13 @@ export async function captureBundledFrames({
       summaries,
       report,
     };
-    const out = output ?? join('perf-profiles', 'bundled', `${runLabel}-real-screen.json`);
-    mkdirSync(join(ROOT, dirname(out)), { recursive: true });
-    writeFileSync(join(ROOT, out), JSON.stringify(artifact, null, 2));
 
     console.log(
-      `\nFidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} (${fidelity.runtime}) · ` +
+      `\nObserved ${measured.observedOrientation} ${beforeContact.viewport.width}x${beforeContact.viewport.height}` +
+        (rotation.lockReleased ? ' (app rotation lock released for the capture)' : '')
+    );
+    console.log(
+      `Fidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} (${fidelity.runtime}) · ` +
         JSON.stringify(fidelity.checks)
     );
     if (!fidelity.passed) console.log(`  not passing: ${describeFidelityFailures(fidelity)}`);
@@ -304,27 +499,48 @@ export async function captureBundledFrames({
           `paint max ${phase.paint.max}ms · ${phase.passed ? 'PASS' : 'FAIL'}`
       );
     }
-    console.log(`Wrote ${out}`);
-    return artifact;
-  } finally {
-    if (browser) {
-      await browser.close().catch((error) => console.warn(`CDP close failed: ${error.message}`));
-    }
-    if (forwarded) {
-      try {
-        exec(serial, ['forward', '--remove', `tcp:${forwardPort}`]);
-      } catch (error) {
-        console.warn(`forward removal failed: ${error.message}`);
-      }
-    }
-    for (const command of androidRotationRestoreCommands(previousRotation)) {
-      try {
-        exec(serial, command);
-      } catch (error) {
-        console.warn(`rotation restore failed: ${error.message}`);
-      }
-    }
+    return measured;
   }
+}
+
+// Each step runs whatever the others do, and reports its own outcome so the
+// artifact can say whether the rig was put back rather than assume it. `adb`
+// is injectable only so tests can drive the ordering and isolation without a
+// device.
+export async function restoreCaptureState({
+  serial,
+  forwardPort,
+  previousRotation,
+  state,
+  adb = exec,
+}) {
+  const steps = [];
+  const attempt = async (step, action) => {
+    try {
+      await action();
+      steps.push({ step, ok: true });
+    } catch (error) {
+      console.warn(`${step} failed: ${error.message}`);
+      steps.push({ step, ok: false, error: error.message });
+    }
+  };
+  if (state.lockToRestore) {
+    await attempt('app rotation lock restore', () =>
+      restoreNativeRotationLock(state.execute, state.lockToRestore)
+    );
+  }
+  if (state.browser) await attempt('CDP close', () => state.browser.close());
+  if (state.forwarded) {
+    await attempt('forward removal', () =>
+      adb(serial, ['forward', '--remove', `tcp:${forwardPort}`])
+    );
+  }
+  for (const command of androidRotationRestoreCommands(previousRotation)) {
+    await attempt(`rotation restore (${command.slice(-2).join(' ')})`, () =>
+      adb(serial, command)
+    );
+  }
+  return steps;
 }
 
 if (isMain(import.meta.url)) runMain(captureBundledFrames);

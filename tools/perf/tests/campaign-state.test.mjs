@@ -126,6 +126,23 @@ describe('performance campaign state', () => {
         2
       );
     });
+
+    it('hands the prior lock to the caller before a failed close can swallow it', async () => {
+      const { execute: stubbed, state } = settingsStub({ locked: true, orientation: 'portrait' });
+      const execute = async (script) => {
+        if (script.includes('Close') && script.includes('target.click()')) {
+          throw new Error('close failed');
+        }
+        return stubbed(script);
+      };
+      let seen;
+
+      await expect(
+        releaseNativeRotationLock(execute, { onInitial: (initial) => (seen = initial) })
+      ).rejects.toThrow(/close failed/);
+      expect(state.locked).toBe(false);
+      expect(seen).toEqual({ lockedOrientation: 'portrait' });
+    });
   });
 });
 describe('opening Settings', () => {
