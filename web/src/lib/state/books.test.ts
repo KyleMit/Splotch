@@ -9,7 +9,7 @@ import {
   coloringBookGridLayout,
   coverThumb,
   coverThumbImageSource,
-  pageColorImage,
+  pageFillImage,
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
@@ -75,6 +75,31 @@ describe('pageOverlayImage', () => {
     expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.overlay.svg');
     expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe(
       '/coloring/farm/cat-tall.dark.overlay.svg'
+    );
+  });
+});
+
+describe('pageFillImage', () => {
+  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
+
+  it('uses the color fill in light', () => {
+    expect(pageFillImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.light.webp');
+  });
+
+  it('uses the night fill in dark when the orientation has one', () => {
+    expect(pageFillImage(cat, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.night.webp');
+  });
+
+  it('falls back to the color fill in dark when the orientation has no night fill', () => {
+    const catWithoutPortraitNight = {
+      ...cat,
+      nightImages: { landscape: cat.nightImages.landscape },
+    };
+    expect(pageFillImage(catWithoutPortraitNight, 'portrait', 'dark')).toBe(
+      '/coloring/farm/cat-tall.light.webp'
+    );
+    expect(pageFillImage(catWithoutPortraitNight, 'landscape', 'dark')).toBe(
+      cat.nightImages.landscape
     );
   });
 });
@@ -296,8 +321,8 @@ describe('bookAssetPaths', () => {
     for (const page of farm.pages) {
       expect(paths).toContain(pageImage(page, 'portrait'));
       expect(paths).toContain(pageImage(page, 'landscape'));
-      expect(paths).toContain(pageColorImage(page, 'portrait'));
-      expect(paths).toContain(pageColorImage(page, 'landscape'));
+      expect(paths).toContain(pageFillImage(page, 'portrait', 'light'));
+      expect(paths).toContain(pageFillImage(page, 'landscape', 'light'));
     }
   });
 

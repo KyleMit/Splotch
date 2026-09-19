@@ -104,11 +104,11 @@ the duplication is the accepted cost; keep the blocks in sync.
   transparent white presentation overlay, and the night-fill reveals already baked into the replayed
   strokes.
 * **Catalog.** `books.ts` carries a `nightImages: Partial<Record<orientation, url>>` per page (only
-  the orientations that have a generated fill) with a `pageNightImage()` helper;
-  `coloringBook.svelte.ts` stores only the selected page and orientation, deriving the transparent
-  presentation, outline, chalk, light-fill, and night-fill URLs through accessors.
-  `bookAssetPaths()` lists the shipped night fills and presentation overlays so `check-assets`
-  validates them (fills and overlays have no picker thumbnails).
+  the orientations that have a generated fill) with a theme-aware `pageFillImage()` accessor that
+  owns the light-fill fallback; `coloringBook.svelte.ts` stores only the selected page and
+  orientation, deriving the transparent presentation, outline, chalk, light-fill, and night-fill
+  URLs through accessors. `bookAssetPaths()` lists the shipped night fills and presentation overlays
+  so `check-assets` validates them (fills and overlays have no picker thumbnails).
 * **Prominence of the float cards in dark mode.** The action buttons' warm drop shadow vanishes on
   dark paper, so `--float-border` (a faint light hairline) + `--float-shadow` (originally with a
   stronger flyout variant, since folded into the one lift by
