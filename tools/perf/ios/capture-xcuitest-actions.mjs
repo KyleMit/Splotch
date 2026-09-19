@@ -81,6 +81,14 @@ const TRUSTED_STROKE_MS = 650;
 const CLEAR_DRAG_MS = 450;
 const COLORING_SCROLL_MS = 450;
 const COLORING_SCROLL_DISTANCE_PX = 400;
+// The picker is centred, so its centre column is the screen's. Android drops a
+// touch that starts under untrusted overlay windows whose combined opacity
+// passes the platform's obscuring limit, and a one-pixel centre-line overlay
+// (a navigation-gesture accessibility service draws one) makes the exact
+// centre column the one place a native swipe can be refused outright. The
+// offset stays inside the gutter between the two phone tile columns, so the
+// swipe still begins where the centred swipe did.
+const COLORING_SCROLL_OFF_CENTRE_PX = 8;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 // A capped walk back through history: enough to empty a sweep's own strokes,
@@ -694,7 +702,7 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
       execute,
       selector
     );
-    const x = Math.round(bounds.x + bounds.width / 2);
+    const x = Math.round(bounds.x + bounds.width / 2) + COLORING_SCROLL_OFF_CENTRE_PX;
     const startY = Math.round(bounds.y + bounds.height * 0.75);
     const endY = Math.round(bounds.y + bounds.height * 0.3);
     touchGesture = { x, startY, endY };

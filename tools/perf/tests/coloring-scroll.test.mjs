@@ -60,7 +60,7 @@ describe('coloring scroll dispatch and provenance', () => {
       const result = await pending;
 
       expect(client.scrollTouchGesture.mock.calls).toEqual(
-        transport === 'cdp' ? [[{ x: 180, startY: 470, endY: 200, durationMs: 450 }]] : []
+        transport === 'cdp' ? [[{ x: 188, startY: 470, endY: 200, durationMs: 450 }]] : []
       );
       expect(client.scrollElementWithWheel).toHaveBeenCalledTimes(transport === 'wheel' ? 1 : 0);
       const nativeActions = client.request.mock.calls.filter(([, path]) =>
@@ -103,7 +103,7 @@ describe('coloring scroll dispatch and provenance', () => {
         overflowY: 'auto',
       },
       openDialogs: ['coloring-book-dialog'],
-      touchGesture: { x: 180, startY: 470, endY: 200 },
+      touchGesture: { x: 188, startY: 470, endY: 200 },
     });
     expect(client.request.mock.calls.filter(([, path]) => path.endsWith('/actions'))).toHaveLength(
       1
