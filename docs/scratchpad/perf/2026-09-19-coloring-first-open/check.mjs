@@ -3,9 +3,42 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gunzipSync } from 'node:zlib';
+
+import {
+  rotationFirstFrameNa,
+  summarizeActions,
+} from '../../../../tools/perf/lib/action-stats.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const read = (path) => readFileSync(join(root, path), 'utf8');
+// Restores the sample shape the scorer reads from the reduction's row form.
+const readRun = (name) => {
+  const run = JSON.parse(gunzipSync(readFileSync(join(root, `runs/${name}.actions.reduced.json.gz`))));
+  for (const sample of run.samples) {
+    sample.postActionFrames = sample.postActionFrameRows.map((row) =>
+      Object.fromEntries(sample.postActionFrameColumns.map((column, index) => [column, row[index]]))
+    );
+    sample.postActionFrameGapsMs = sample.postActionFrames.map((frame) => frame.gapMs);
+    sample.activities = sample.activityAtFromActionMs.map((atFromActionMs) => ({ atFromActionMs }));
+    sample.canvasMutations = sample.canvasMutationAtFromActionMs.map((atFromActionMs) => ({
+      atFromActionMs,
+    }));
+  }
+  return run;
+};
+const SCORED_FIGURES = (summary) =>
+  JSON.stringify([
+    summary.label,
+    summary.passed,
+    summary.count,
+    summary.totalCount,
+    summary.activation,
+    summary.firstFrame,
+    summary.ready,
+    { ...summary.frames },
+    summary.frameSamples,
+  ]);
 const failures = [];
 const check = (claim, ok) => {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${claim}`);
@@ -30,7 +63,19 @@ const RUNS = [
 ];
 
 for (const [name, expected] of RUNS) {
-  const run = JSON.parse(read(`runs/${name}.actions.reduced.json`));
+  const run = readRun(name);
+  const recomputed = summarizeActions(run.samples, [], run.gateAllowances ?? {}, (label) =>
+    rotationFirstFrameNa(run.captureRuntime, label, run.engine ?? null)
+  );
+  check(
+    `${name}: every stored summary (verdict, counts, activation, first frame, ready, scored and raw frame gaps) is what the repo's scorer recomputes from the packaged samples`,
+    recomputed.length === run.summaries.length &&
+      run.summaries.every(
+        (stored) =>
+          SCORED_FIGURES(stored) ===
+          SCORED_FIGURES(recomputed.find((summary) => summary.label === stored.label) ?? {})
+      )
+  );
   const log = read(`runs/${name}.console.txt`);
   check(`${name}: the capture command exited 0 and the artifact passed`, /^exit=0$/m.test(log) && run.passed === true);
   check(`${name}: ${expected.labels} applicable actions, none blocked or not applicable`, run.actionPlan.applicableLabels.length === expected.labels && run.actionPlan.blocked.length === 0 && run.actionPlan.notApplicable.length === 0);
@@ -56,7 +101,7 @@ for (const [name, expected] of RUNS) {
   }
 }
 
-const chromium = JSON.parse(read('runs/d1-chromium-coloring.actions.reduced.json'));
+const chromium = readRun('d1-chromium-coloring');
 const ready = (label) => chromium.samples.filter((sample) => sample.label === label).map((sample) => sample.readyMs);
 check('d1: on desktop Chromium every first open became ready later than every reopen (2.0 to 3.3 ms against 1.1 to 1.3 ms)', Math.min(...ready(FIRST)) > Math.max(...ready(REOPEN)));
 
@@ -70,7 +115,14 @@ for (const stalled of ['a1-full-groups-no-pump', 'a2-coloring-poll-5s-no-pump'])
   check(`${stalled}: without frames the phone installed one book and hit the 240 s bound by name`, /Timed out after 240 s waiting for coloring books to install: 1 of 7 extra books installed, missing creatures, nature, objects, shapes, space, vehicles/.test(read(`android-install-stall/${stalled}.console.txt`)));
 }
 const still = read('android-install-stall/a0d-android-install-probe-locks.console.txt');
-check('a0d: the stalled page held no lock and no pending fetch, on an allowed connection', (still.match(/missing=6 .*"type":"wifi","effectiveType":"4g".*"saveData":false/g) ?? []).length >= 5 && (still.match(/locks \{"held":\[\],"pending":\[\]\} pending fetches 0/g) ?? []).length >= 5);
+const completedColoringResources = [...still.matchAll(/coloring resources (\d+)/g)].map((match) => Number(match[1]));
+check(
+  'a0d: on an allowed connection the stalled page held no Web Lock, and its completed coloring fetches grew by exactly the probe\'s own manifest read per poll',
+  (still.match(/missing=6 .*"type":"wifi","effectiveType":"4g".*"saveData":false/g) ?? []).length >= 5 &&
+    (still.match(/locks \{"held":\[\],"pending":\[\]\}/g) ?? []).length >= 5 &&
+    completedColoringResources.length >= 5 &&
+    completedColoringResources.every((count, index) => index === 0 || count === completedColoringResources[index - 1] + 1)
+);
 const framed = read('android-install-stall/a0e-android-install-probe-idle.console.txt');
 check('a0e: the same page finished the catalog within 21 s once the probe requested frames', /^21s missing=0 /m.test(framed) && /^5s missing=6 /m.test(framed));
 

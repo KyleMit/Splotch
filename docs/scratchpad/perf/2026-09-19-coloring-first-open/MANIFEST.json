@@ -46,43 +46,43 @@
     },
     {
       "path": "reduce-actions.jq",
-      "sha256": "b6de5053ad898a127eee63099f5f95effd62a1f8ceefe3a7b64224de49368242"
+      "sha256": "63cae781ce0f3b12788214495c74239a79615d18175b32ecb1a9dc42bf616f81"
     },
     {
-      "path": "runs/a3-android-chrome-full-groups.actions.reduced.json",
-      "sha256": "d5185b6937cd99ca98b7000e9b6445fe7ec0350e513c4927643e75f4b6cfed04"
+      "path": "runs/a3-android-chrome-full-groups.actions.reduced.json.gz",
+      "sha256": "1ce37c6c2da7576c4928925ef1225eecbe6e9d0ccfda82c047d7ff8b41e0324c"
     },
     {
       "path": "runs/a3-android-chrome-full-groups.console.txt",
       "sha256": "484836e1ab7c6b421d3c2fa26f07c67b21e5fc489630b570f41ec83c15e5fb23"
     },
     {
-      "path": "runs/d1-chromium-coloring.actions.reduced.json",
-      "sha256": "009158347e5369a783f7a64369f3ab0cca0376229132fe668789842f1d8660db"
+      "path": "runs/d1-chromium-coloring.actions.reduced.json.gz",
+      "sha256": "ca3f1f7c64f66f35181294823e17d1ffb46fc5ef7b466f6571d1e58817bf4498"
     },
     {
       "path": "runs/d1-chromium-coloring.console.txt",
       "sha256": "2cc4c9ca7147fb58ae5bedb56dc130262c378b6d7d53576bbfa0a7cef5e84c50"
     },
     {
-      "path": "runs/d2-webkit-full-groups.actions.reduced.json",
-      "sha256": "f96655d76ffc6aecde89c9f5922eba6268b897fdf45c254b865a44f032cc25c0"
+      "path": "runs/d2-webkit-full-groups.actions.reduced.json.gz",
+      "sha256": "10827baf76f9606c76479efcc427a7a2f796c773ea22919010512772c07d7a9d"
     },
     {
       "path": "runs/d2-webkit-full-groups.console.txt",
       "sha256": "f063178c6182c20bd84f5b38e3f19471f5618f2859cab5c65a314ed17b5223f1"
     },
     {
-      "path": "runs/i1-ipad-safari-full-groups.actions.reduced.json",
-      "sha256": "a90d18d1454d72dfaf92b4c8251087e2b4e7ebda7513dbde3b4d1397da79adfe"
+      "path": "runs/i1-ipad-safari-full-groups.actions.reduced.json.gz",
+      "sha256": "5e368c53dad846a464830748c4ef2b889363809e381620b6d7aaf33ded4740a3"
     },
     {
       "path": "runs/i1-ipad-safari-full-groups.console.txt",
       "sha256": "6850b51fd8ee9b6b6ca7d710c98449452afb0ef1784742f8f1235a47a2c019fd"
     },
     {
-      "path": "runs/i2-ipad-native-full-groups.actions.reduced.json",
-      "sha256": "a70b14537894d4e24ad8e490da7f0cd6cb45204e4fbb1f962182a19490c7447b"
+      "path": "runs/i2-ipad-native-full-groups.actions.reduced.json.gz",
+      "sha256": "10d66f6474cb3573fef88d03e40e9b81118a4c0cb9d6eefd4a17c55c7b2ff530"
     },
     {
       "path": "runs/i2-ipad-native-full-groups.console.txt",

@@ -76,7 +76,11 @@ The first two phone captures (`android-install-stall/a1-*`, `a2-*`) failed by na
 bound with 1 of 7 extra books installed. Probes on the same page (`a0c` to `a0e`) show:
 
 * the connection was allowed (`wifi`, `4g`, no Save-Data), a 185 KB fetch over `adb reverse` took 13
-  ms, no lock was held, no fetch was pending and nothing was logged;
+  ms, no Web Lock was held or pending, nothing was logged, and the page's count of **completed**
+  coloring fetches grew only by the probe's own manifest read per poll. The probes'
+  `pending fetches 0` column proves nothing and is not relied on: Resource Timing does not list an
+  in-flight request (the PR's first review reproduced that), so a stalled fetch is **not ruled
+  out**;
 * slowing the harness's poll from 0.5 s to 5 s changed nothing (`a2`);
 * once the probe requested animation frames, the same page finished the catalog in 21 s (`a0e`).
 
@@ -97,8 +101,11 @@ drafted leftover on the PR.
 * **Unsupported:** any performance conclusion; any statement about historical artifacts' opens; the
   cause of the Android stall beyond the two observations above.
 
-`runs/*.actions.reduced.json` keep every scored timing per sample (first frame, ready, each
-post-action frame gap) and the source artifact's SHA-256, so each summary can be recomputed;
-`reduce-actions.jq` is the reduction. Raw artifacts, unsanitized consoles, the Appium and
-WebDriverAgent logs and the probe script stay local with the rig because they name the devices.
-`package.mjs` rewrites `MANIFEST.json`.
+`runs/*.actions.reduced.json.gz` keep, per sample, every input the repo's scorer reads (each
+post-action frame's gap, end time and visual-effect flag, activity, canvas-mutation and measure
+times, first frame, ready, activation) plus the capture's gate allowances and the source artifact's
+SHA-256. `check.mjs` recomputes every summary with `tools/perf/lib/action-stats.mjs` and compares it
+with the stored one; `reduce-actions.jq` is the reduction. The informational `frameStamps` figure is
+not recomputable from the package, because the actual-clock stamps stay local. Raw artifacts,
+unsanitized consoles, the Appium and WebDriverAgent logs and the probe script stay local with the
+rig because they name the devices. `package.mjs` rewrites `MANIFEST.json`.
