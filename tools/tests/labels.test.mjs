@@ -19,12 +19,13 @@ const definedLabels = new Set(
 );
 
 // Deliberately stricter than YAML: every field must be a single-line scalar at
-// the entry's own indent, so a block scalar (`description: >-`) or a wrapped
-// plain scalar fails here instead of being measured by its first line.
+// the entry's own indent, with no tag, anchor, or other indicator in front, so
+// a block scalar (`description: >-`, `!!str >-`) or a wrapped plain scalar
+// fails here instead of being measured by its first line.
 function unquoteYamlScalar(raw, key) {
   if (/^'(?:[^']|'')*'$/.test(raw)) return raw.slice(1, -1).replaceAll("''", "'");
   if (/^"(?:[^"\\]|\\.)*"$/.test(raw)) return JSON.parse(raw);
-  if (/^['"|>]/.test(raw))
+  if (/^[!&*|>%@`'"[{]/.test(raw))
     throw new Error(`labels.yml ${key} must be a single-line scalar: ${raw}`);
   return raw;
 }
@@ -36,7 +37,7 @@ function parseLabelEntries(yamlText) {
     .map((entry) => {
       const fields = {};
       for (const line of entry.split('\n')) {
-        if (line.trim() === '' || /^\s*#/.test(line)) continue;
+        if (line.trim() === '' || /^(?: {2})?#/.test(line)) continue;
         const field = line.match(/^(?: {2})?([a-z]+): (.+?)\s*$/);
         if (!field) throw new Error(`labels.yml line is not a single-line field: ${line}`);
         fields[field[1]] = unquoteYamlScalar(field[2], field[1]);
@@ -104,6 +105,10 @@ describe('label descriptions', () => {
     const wrappedPlain = `- name: 'x'\n  description: short\n    ${'x'.repeat(101)}\n`;
     expect(() => parseLabelEntries(blockScalar)).toThrow(/single-line/);
     expect(() => parseLabelEntries(wrappedPlain)).toThrow(/single-line/);
+    for (const prefix of ['!!str', '&d']) {
+      const hiddenBody = `- name: 'x'\n  description: ${prefix} >-\n    #${'x'.repeat(100)}\n`;
+      expect(() => parseLabelEntries(hiddenBody), prefix).toThrow(/single-line/);
+    }
   });
 
   it(`stay within GitHub's ${MAX_LABEL_DESCRIPTION_CHARS}-character cap`, () => {
