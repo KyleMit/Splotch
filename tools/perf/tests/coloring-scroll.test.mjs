@@ -2,9 +2,10 @@ import { runInNewContext } from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { measureColoringPageScroll } from '../ios/capture-xcuitest-actions.mjs';
 
-function scrollFixture(transport) {
+function scrollFixture(transport, { gestureScrolls = true } = {}) {
   const bounds = { x: 0, y: 20, width: 360, height: 600 };
   const dialog = {
+    id: 'coloring-book-dialog',
     open: true,
     scrollHeight: 1200,
     clientHeight: 600,
@@ -15,7 +16,8 @@ function scrollFixture(transport) {
   const probe = { begin: vi.fn(), finish: vi.fn(() => sample) };
   const execute = async (script) =>
     runInNewContext(`(() => { ${script} })()`, {
-      document: { querySelector: () => dialog },
+      document: { querySelector: () => dialog, querySelectorAll: () => [dialog] },
+      getComputedStyle: () => ({ overflowY: 'auto' }),
       window: { __actionProbe: probe },
       performance: { now: () => 100 },
       innerWidth: 360,
@@ -25,7 +27,7 @@ function scrollFixture(transport) {
       visualViewport: { offsetLeft: 0, offsetTop: 0 },
     });
   const scroll = async () => {
-    dialog.scrollTop = 270;
+    if (gestureScrolls) dialog.scrollTop = 270;
   };
   const client = {
     cdp: transport === 'native' ? undefined : {},
@@ -80,6 +82,33 @@ describe('coloring scroll dispatch and provenance', () => {
       expect(dialog.scrollTop).toBe(0);
     }
   );
+
+  it('names what the page received when an accepted native gesture moves nothing', async () => {
+    const { client, execute, probe } = scrollFixture('native', { gestureScrolls: false });
+    const undelivered = { eventType: 'uncaptured', trusted: null, armedEvents: [] };
+    probe.finish.mockReturnValue(undelivered);
+    const settled = measureColoringPageScroll(client, 'session', execute).catch((error) => error);
+    await vi.runAllTimersAsync();
+    const error = await settled;
+
+    const [timeout, state] = error.message.split('\nScroll state: ');
+    expect(timeout).toBe('Timed out waiting for coloring pages to scroll');
+    expect(JSON.parse(state)).toEqual({
+      probe: undelivered,
+      dialog: {
+        open: true,
+        scrollTop: 0,
+        scrollHeight: 1200,
+        clientHeight: 600,
+        overflowY: 'auto',
+      },
+      openDialogs: ['coloring-book-dialog'],
+      touchGesture: { x: 180, startY: 470, endY: 200 },
+    });
+    expect(client.request.mock.calls.filter(([, path]) => path.endsWith('/actions'))).toHaveLength(
+      1
+    );
+  });
 
   it('does not finish a sample when Chrome rejects the gesture', async () => {
     const { client, execute, probe } = scrollFixture('cdp');

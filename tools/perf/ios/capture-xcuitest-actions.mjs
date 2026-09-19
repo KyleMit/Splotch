@@ -626,6 +626,35 @@ async function measureClick({
   return { ...sample, activation: activationMode };
 }
 
+// A scroll timeout alone cannot say whether the gesture never arrived or arrived
+// and moved nothing. The armed probe's record separates them: eventType
+// 'uncaptured' means no pointerdown reached the dialog, while a trusted captured
+// event beside an unmoved scrollTop means the page received the touch and did
+// not scroll.
+function unscrolledColoringDialogState(execute, selector) {
+  return execute(`
+    const dialog = document.querySelector(${JSON.stringify(selector)});
+    let probe = null;
+    try { probe = window.__actionProbe?.finish(); } catch (probeError) { probe = { error: String(probeError) }; }
+    return {
+      probe: probe && {
+        armedEvents: probe.armedEvents,
+        eventType: probe.eventType,
+        trusted: probe.trusted,
+        error: probe.error
+      },
+      dialog: dialog ? {
+        open: dialog.open,
+        scrollTop: dialog.scrollTop,
+        scrollHeight: dialog.scrollHeight,
+        clientHeight: dialog.clientHeight,
+        overflowY: getComputedStyle(dialog).overflowY
+      } : null,
+      openDialogs: [...document.querySelectorAll('dialog[open]')].map((open) => open.id)
+    };
+  `);
+}
+
 // Exported to exercise dispatch and captured provenance together without a physical device.
 export async function measureColoringPageScroll(client, sessionId, execute) {
   const selector = '#coloring-book-dialog';
@@ -649,6 +678,7 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
   const transport = coloringScrollTransport(client);
   const useWheel = transport.activation === 'trusted-wheel';
   let scrollDelivery = null;
+  let touchGesture = null;
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(COLORING_SCROLL_ACTION_LABEL)}, ${JSON.stringify(selector)}, ${JSON.stringify(
@@ -667,6 +697,7 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
     const x = Math.round(bounds.x + bounds.width / 2);
     const startY = Math.round(bounds.y + bounds.height * 0.75);
     const endY = Math.round(bounds.y + bounds.height * 0.3);
+    touchGesture = { x, startY, endY };
     if (client.cdp) {
       await client.scrollTouchGesture({ x, startY, endY, durationMs: COLORING_SCROLL_MS });
       scrollDelivery = 'cdp-synthesized-scroll';
@@ -685,11 +716,19 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
       ]);
     }
   }
-  const readyAt = await waitForReady(
-    execute,
-    `document.querySelector(${JSON.stringify(selector)})?.scrollTop > 0`,
-    'coloring pages to scroll'
-  );
+  let readyAt;
+  try {
+    readyAt = await waitForReady(
+      execute,
+      `document.querySelector(${JSON.stringify(selector)})?.scrollTop > 0`,
+      'coloring pages to scroll'
+    );
+  } catch (error) {
+    const state = await unscrolledColoringDialogState(execute, selector).catch(() => null);
+    throw new Error(`${error.message}\nScroll state: ${JSON.stringify({ ...state, touchGesture })}`, {
+      cause: error,
+    });
+  }
   await sleep(ACTION_SETTLE_MS);
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
   await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);
