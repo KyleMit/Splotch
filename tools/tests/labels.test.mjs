@@ -18,20 +18,31 @@ const definedLabels = new Set(
   [...labelsYaml.matchAll(/^- name:\s*['"]?([^'"\n]+?)['"]?\s*$/gm)].map((m) => m[1])
 );
 
-function unquoteYamlScalar(raw) {
-  if (raw.startsWith("'")) return raw.slice(1, -1).replaceAll("''", "'");
-  if (raw.startsWith('"')) return JSON.parse(raw);
+// Deliberately stricter than YAML: every field must be a single-line scalar at
+// the entry's own indent, so a block scalar (`description: >-`) or a wrapped
+// plain scalar fails here instead of being measured by its first line.
+function unquoteYamlScalar(raw, key) {
+  if (/^'(?:[^']|'')*'$/.test(raw)) return raw.slice(1, -1).replaceAll("''", "'");
+  if (/^"(?:[^"\\]|\\.)*"$/.test(raw)) return JSON.parse(raw);
+  if (/^['"|>]/.test(raw))
+    throw new Error(`labels.yml ${key} must be a single-line scalar: ${raw}`);
   return raw;
 }
 
-function labelDescriptions() {
-  return labelsYaml
+function parseLabelEntries(yamlText) {
+  return yamlText
     .split(/^- /m)
     .slice(1)
-    .map((entry) => ({
-      name: unquoteYamlScalar(entry.match(/^name:\s*(.+?)\s*$/m)[1]),
-      description: unquoteYamlScalar(entry.match(/^\s+description:\s*(.+?)\s*$/m)[1]),
-    }));
+    .map((entry) => {
+      const fields = {};
+      for (const line of entry.split('\n')) {
+        if (line.trim() === '' || /^\s*#/.test(line)) continue;
+        const field = line.match(/^(?: {2})?([a-z]+): (.+?)\s*$/);
+        if (!field) throw new Error(`labels.yml line is not a single-line field: ${line}`);
+        fields[field[1]] = unquoteYamlScalar(field[2], field[1]);
+      }
+      return fields;
+    });
 }
 
 function parseLabels(text) {
@@ -81,11 +92,22 @@ describe('issue template labels', () => {
 
 describe('label descriptions', () => {
   it('parses a description for every defined label', () => {
-    expect(labelDescriptions().map(({ name }) => name)).toEqual([...definedLabels]);
+    const entries = parseLabelEntries(labelsYaml);
+    expect(entries.map(({ name }) => name)).toEqual([...definedLabels]);
+    for (const { name, description } of entries) {
+      expect(typeof description, `label "${name}" description`).toBe('string');
+    }
+  });
+
+  it('rejects a multi-line description instead of measuring its first line', () => {
+    const blockScalar = `- name: 'x'\n  description: >-\n    ${'x'.repeat(101)}\n`;
+    const wrappedPlain = `- name: 'x'\n  description: short\n    ${'x'.repeat(101)}\n`;
+    expect(() => parseLabelEntries(blockScalar)).toThrow(/single-line/);
+    expect(() => parseLabelEntries(wrappedPlain)).toThrow(/single-line/);
   });
 
   it(`stay within GitHub's ${MAX_LABEL_DESCRIPTION_CHARS}-character cap`, () => {
-    const tooLong = labelDescriptions()
+    const tooLong = parseLabelEntries(labelsYaml)
       .map(({ name, description }) => ({ name, length: [...description].length }))
       .filter(({ length }) => length > MAX_LABEL_DESCRIPTION_CHARS)
       .map(({ name, length }) => `${name} (${length})`);
