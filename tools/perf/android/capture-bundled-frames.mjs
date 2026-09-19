@@ -66,6 +66,9 @@ const HAND_COUNTDOWN_SECONDS = 5;
 // phone, so this only bounds a device that is not going to turn.
 const ROTATION_FOLLOW_TIMEOUT_MS = 10_000;
 const ROTATION_FOLLOW_POLL_MS = 250;
+// How often an interrupted capture notices the signal while it waits — a
+// 20 s hand window must not hold the rig unrestored until it ends.
+const INTERRUPT_POLL_MS = 250;
 
 // The identity the channel exists to prove: the attached target's URL comes
 // from the DEBUGGER, not from anything the page reports, and a bundled
@@ -344,7 +347,7 @@ export async function captureBundledFrames({
     for (const step of androidNativeLaunchSteps(orientation)) {
       fence.checkpoint();
       exec(serial, step.args);
-      if (step.settle) await sleep(SETTLE_MS[step.settle]);
+      if (step.settle) await fence.wait(SETTLE_MS[step.settle]);
     }
     fence.checkpoint();
     state.forwarded = true;
@@ -420,21 +423,21 @@ export async function captureBundledFrames({
       );
       for (const instruction of instructions) {
         fence.checkpoint();
-        if (instruction.kind === 'pause') await sleep(instruction.durationMs);
+        if (instruction.kind === 'pause') await fence.wait(instruction.durationMs);
         else exec(serial, swipeArgs(instruction));
       }
     } else {
       console.log(`\nDraw ${brush} strokes on the device for ~${seconds}s.`);
       for (let tick = HAND_COUNTDOWN_SECONDS; tick > 0; tick -= 1) {
         console.log(`  starting in ${tick}…`);
-        await sleep(1_000);
+        await fence.wait(1_000);
       }
       console.log('  GO — drawing window open');
-      await sleep(seconds * 1_000);
+      await fence.wait(seconds * 1_000);
       console.log('  window closed');
     }
     fence.checkpoint();
-    await sleep(AFTER_GESTURE_SETTLE_MS);
+    await fence.wait(AFTER_GESTURE_SETTLE_MS);
 
     const report = await page.evaluate(() => window.__probe.finish());
     const counts = await page.evaluate(() => window.__probe.counts());
@@ -523,8 +526,19 @@ export async function captureBundledFrames({
 // path in `finally` restores the rig, and only then does the process exit with
 // the signal's code. A second signal exits at once, leaking what cleanup would
 // have restored, for an operator who would rather have the terminal back.
-export function createInterruptFence({ exit = (code) => process.exit(code), warn = console.warn } = {}) {
+// Every wait inside the capture goes through `wait`, which checks the fence
+// between bounded slices, so no timer outlives an interrupt by more than one
+// slice.
+export function createInterruptFence({
+  exit = (code) => process.exit(code),
+  warn = console.warn,
+  pause = sleep,
+  sliceMs = INTERRUPT_POLL_MS,
+} = {}) {
   let interruptedWith = null;
+  const checkpoint = () => {
+    if (interruptedWith !== null) throw new Error('interrupted before the capture finished');
+  };
   return {
     onSignal(exitCode) {
       if (interruptedWith !== null) {
@@ -535,8 +549,16 @@ export function createInterruptFence({ exit = (code) => process.exit(code), warn
       interruptedWith = exitCode;
       warn('interrupted: stopping at the next step, then restoring the rig (signal again to skip)');
     },
-    checkpoint() {
-      if (interruptedWith !== null) throw new Error('interrupted before the capture finished');
+    checkpoint,
+    async wait(ms) {
+      let remaining = ms;
+      checkpoint();
+      while (remaining > 0) {
+        const slice = Math.min(sliceMs, remaining);
+        await pause(slice);
+        remaining -= slice;
+        checkpoint();
+      }
     },
     exitIfInterrupted() {
       if (interruptedWith !== null) exit(interruptedWith);

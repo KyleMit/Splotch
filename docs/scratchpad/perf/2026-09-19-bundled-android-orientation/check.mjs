@@ -66,7 +66,7 @@ for (const [name, artifact] of [
   check(`${name}: trusted-input fidelity passed`, artifact.fidelity.passed === true);
 }
 
-for (const name of ['a1', 'a2-attempt1', 'a2', 'n1', 'n2', 'n3', 'n3b', 'n4']) {
+for (const name of ['a1', 'a2-attempt1', 'a2', 'n1', 'n2', 'n3', 'n3b', 'n4', 'n5']) {
   const state = lock(name);
   check(
     `${name}: afterwards the app lock is back on, portrait`,
@@ -98,7 +98,7 @@ check(
   )
 );
 
-for (const name of ['n3b-sigint-mid-gesture', 'n4-sigint-during-release']) {
+for (const name of ['n3b-sigint-mid-gesture', 'n4-sigint-during-release', 'n5-sigint-hand-window']) {
   check(
     `${name}: the fence deferred the signal to the next step`,
     /interrupted: stopping at the next step, then restoring the rig/.test(

@@ -91,6 +91,20 @@
     "transform": "copy"
   },
   {
+    "path": "controls/n5-sigint-hand-window.log.txt",
+    "sha256": "9354ad5ca20cd40a4bc2e60d3012ee6d1caab974bf91fc3aebf00ee4e4e574c7",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-a/n5-sigint-hand-window.log",
+    "originalSha256": "9354ad5ca20cd40a4bc2e60d3012ee6d1caab974bf91fc3aebf00ee4e4e574c7",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/n5-lock-after.json",
+    "sha256": "97e39174add0ccec7254f3ec38de851ca2f4255ec33a955f741135f0db11157c",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-a/n5-sigint-hand-window-lock-after.json",
+    "originalSha256": "97e39174add0ccec7254f3ec38de851ca2f4255ec33a955f741135f0db11157c",
+    "transform": "copy"
+  },
+  {
     "path": "controls/a1-lock-after.json",
     "sha256": "97e39174add0ccec7254f3ec38de851ca2f4255ec33a955f741135f0db11157c",
     "original": "perf-profiles/bundled/units-2026-09-19/unit-a/a1-lock-after.json",

@@ -28,6 +28,8 @@ const FILES = [
   ['unit-a/n4-sigint-during-release.log', 'controls/n4-sigint-during-release.log.txt', 'sanitize'],
   ['unit-a/n3b-sigint-mid-gesture-lock-after.json', 'controls/n3b-lock-after.json', 'copy'],
   ['unit-a/n4-sigint-during-release-lock-after.json', 'controls/n4-lock-after.json', 'copy'],
+  ['unit-a/n5-sigint-hand-window.log', 'controls/n5-sigint-hand-window.log.txt', 'sanitize'],
+  ['unit-a/n5-sigint-hand-window-lock-after.json', 'controls/n5-lock-after.json', 'copy'],
   ['unit-a/a1-lock-after.json', 'controls/a1-lock-after.json', 'copy'],
   ['unit-a/a2-attempt1-lock-after.json', 'controls/a2-attempt1-lock-after.json', 'copy'],
   ['unit-a/a2-lock-after.json', 'controls/a2-lock-after.json', 'copy'],

@@ -247,6 +247,37 @@ describe('interrupt fence', () => {
     expect(exit).toHaveBeenCalledWith(143);
   });
 
+  it('breaks a long wait within one slice of the signal', async () => {
+    let slept = 0;
+    const fence = createInterruptFence({
+      exit: () => {},
+      warn: () => {},
+      sliceMs: 250,
+      pause: async (ms) => {
+        slept += ms;
+        if (slept === 500) fence.onSignal(130);
+      },
+    });
+
+    await expect(fence.wait(300_000)).rejects.toThrow(/interrupted/);
+    expect(slept).toBe(500);
+  });
+
+  it('completes an uninterrupted wait in full', async () => {
+    let slept = 0;
+    const fence = createInterruptFence({
+      exit: () => {},
+      warn: () => {},
+      sliceMs: 250,
+      pause: async (ms) => {
+        slept += ms;
+      },
+    });
+
+    await fence.wait(1_100);
+    expect(slept).toBe(1_100);
+  });
+
   it('does not exit an uninterrupted run', () => {
     const exit = vi.fn();
     createInterruptFence({ exit, warn: () => {} }).exitIfInterrupted();
