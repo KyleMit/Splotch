@@ -60,7 +60,7 @@ describe('coloring scroll dispatch and provenance', () => {
       const result = await pending;
 
       expect(client.scrollTouchGesture.mock.calls).toEqual(
-        transport === 'cdp' ? [[{ x: 188, startY: 470, endY: 200, durationMs: 450 }]] : []
+        transport === 'cdp' ? [[{ x: 180, startY: 470, endY: 200, durationMs: 450 }]] : []
       );
       expect(client.scrollElementWithWheel).toHaveBeenCalledTimes(transport === 'wheel' ? 1 : 0);
       const nativeActions = client.request.mock.calls.filter(([, path]) =>
@@ -83,7 +83,7 @@ describe('coloring scroll dispatch and provenance', () => {
     }
   );
 
-  it('starts the native swipe off the dialog centre column, where a centre-line overlay gets touches dropped', async () => {
+  it('starts the native swipe off the dialog centre column but inside the phone gutter', async () => {
     const { client, execute } = scrollFixture('native');
     const pending = measureColoringPageScroll(client, 'session', execute);
     await vi.runAllTimersAsync();
@@ -97,7 +97,11 @@ describe('coloring scroll dispatch and provenance', () => {
       .filter((step) => step.type === 'pointerMove')
       .map((step) => step.x);
     expect(swipeXs).toHaveLength(2);
-    for (const x of swipeXs) expect(Math.abs(x - dialogCentreX)).toBeGreaterThanOrEqual(2);
+    const phoneGutterHalfWidth = 4;
+    for (const x of swipeXs) {
+      expect(Math.abs(x - dialogCentreX)).toBeGreaterThanOrEqual(2);
+      expect(Math.abs(x - dialogCentreX)).toBeLessThan(phoneGutterHalfWidth);
+    }
     expect(new Set(swipeXs).size).toBe(1);
   });
 
@@ -121,7 +125,7 @@ describe('coloring scroll dispatch and provenance', () => {
         overflowY: 'auto',
       },
       openDialogs: ['coloring-book-dialog'],
-      touchGesture: { x: 188, startY: 470, endY: 200 },
+      touchGesture: { x: 182, startY: 470, endY: 200 },
     });
     expect(client.request.mock.calls.filter(([, path]) => path.endsWith('/actions'))).toHaveLength(
       1

@@ -16,3 +16,11 @@ awk '/Session created with session id/ {sess++}
 armed && /status 200: \{"value":\{"actionAt"/ { cue=($0 ~ /scroll-cue/)?"cue:YES":"cue:no"; dlg=($0 ~ /"targets":\[[^]]*dialog#coloring-book-dialog/)?"dialog-mutated:YES":"dialog-mutated:no";
  match($0, /"type":"pointerup","x":[0-9.]+,"y":[0-9.]+/); print "S" sess " tap " substr($0,RSTART+18,RLENGTH-18) " " cue " " dlg; armed=0 }' "$F"
 rm -f "$F"
+F=$(mktemp); sed -E 's/\x1b\[[0-9;]*m//g' "$1" > "$F"
+echo '## per dialog swipe: full gesture, WebView rect, dialog CSS geometry, driver response'
+awk '/Session created with session id/ {sess++}
+/status 200: \{"sessionId".*"value":\{"height":[0-9]+,"width":[0-9]+,"x":[0-9]+,"y":[0-9]+\}\}/ { match($0, /"value":\{[^}]*\}/); rect=substr($0,RSTART+8,RLENGTH-8) }
+/status 200: \{"value":\{"canvas":/ { match($0, /"canvas":\{[^}]*\}/); canvas=substr($0,RSTART+9,RLENGTH-9); match($0, /"viewport":\{[^}]*\}/); vp=substr($0,RSTART+11,RLENGTH-11) }
+/--> POST/ && /\/actions / && /"x":540,"y":1667/ { match($0, /"actions":\[\{"type":"pointerMove".*\]\}\]\}/); g=substr($0,RSTART,RLENGTH); gsub(/"type":|"origin":"viewport",|"button":0|[{}"\[\]]/,"",g); pend=1; next }
+pend && /<-- POST .*\/actions / { n=split($0,a," "); print "S" sess " gesture=" g " webview=" rect " dialog=" canvas " viewport=" vp " response=" a[n-4]; pend=0 }' "$F"
+rm -f "$F"

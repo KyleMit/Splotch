@@ -7,6 +7,7 @@ S2 L30797 TIMEOUT nullPolls=425
 S3 L38218 TIMEOUT nullPolls=425
 S4 L45583 TIMEOUT nullPolls=421
 S5 L52940 TIMEOUT nullPolls=420
+S13 L160013 TIMEOUT nullPolls=407
 ## open-coloring-book record per sweep: first-tile tap, scroll-cue mutation, dialog mutation
 S1 tap ,"x":101,"y":343 cue:YES dialog-mutated:no
 S1 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
@@ -16,3 +17,26 @@ S2 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
 S3 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
 S4 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
 S5 tap ,"x":101,"y":343 cue:YES dialog-mutated:no
+S13 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S14 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S14 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S14 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S14 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S15 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S15 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S15 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S15 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S16 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S16 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S16 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+S16 tap ,"x":101,"y":234 cue:no dialog-mutated:YES
+## per dialog swipe: full gesture, WebView rect, dialog CSS geometry, driver response
+S1 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
+S1 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
+S1 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
+S1 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
+S2 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
+S3 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
+S4 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
+S5 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
+S13 gesture=actions:pointerMove,duration:0,x:540,y:1667,pointerDown,,pointerMove,duration:450,x:540,y:772,pointerUp, webview={"height":2340,"width":1080,"x":0,"y":0} dialog={"height":663,"width":324,"x":18,"y":58.5} viewport={"height":780,"width":360} response=200
