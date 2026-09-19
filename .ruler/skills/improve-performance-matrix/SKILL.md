@@ -1,6 +1,6 @@
 ---
 name: improve-performance-matrix
-description: Drive Splotch's deployment-target performance matrix from current evidence to zero unexplained scoreable red cells on the release-gate rows through product improvements and faithful recaptures, keeping harness work subordinate to and immediately useful for a named product experiment. Ships causal product clusters as reviewed, merge-ready stacked PRs with a green tip. Use for sustained performance improvement; use capture-performance-matrix for capture-only snapshots or validation.
+description: Drive Splotch's deployment-target performance matrix from current evidence to zero unexplained scoreable red cells on the release-gate rows through product improvements and faithful recaptures, keeping harness work subordinate to and immediately useful for a named product experiment. Ships each causal product cluster as its own reviewed PR, merged before the next cluster begins; an unattended run goes through ship-campaign profile=performance. Use for sustained performance improvement; use capture-performance-matrix for capture-only snapshots or validation.
 ---
 
 # Improve performance matrix
@@ -8,37 +8,40 @@ description: Drive Splotch's deployment-target performance matrix from current e
 Run a fresh evidence-led campaign against the authoritative deployment-target matrix. The campaign
 ends only when every current, scoreable cell on a **release-gate row** is green or carries a
 recorded, evidence-backed disposition, unless the user sends a control message that explicitly
-requests a merge-ready stopping point. ADR-0156 defines the rows: the physical iPad (web and native)
-and the physical Android phone (web and native) are the release gate; Mac rows are a regression
-tripwire; simulator and emulator rows are advisory and never count toward completion. ADR-0160
-defines the disposition: an ADR-recorded measured allowance or documented floor that names the
-cell's measured basis, its trace attribution, and the condition that reopens it. A red cell with one
-is **explained** and counts toward completion; the campaign's remainder is the **unexplained** reds.
-A disposition is a release-gate policy change the owner records, never something a campaign grants
-itself to finish.
+requests a stopping point (**wrap up** or **stop at mergeable**, below). ADR-0156 defines the rows:
+the physical iPad (web and native) and the physical Android phone (web and native) are the release
+gate; Mac rows are a regression tripwire; simulator and emulator rows are advisory and never count
+toward completion. ADR-0160 defines the disposition: an ADR-recorded measured allowance or
+documented floor that names the cell's measured basis, its trace attribution, and the condition that
+reopens it. A red cell with one is **explained** and counts toward completion; the campaign's
+remainder is the **unexplained** reds. A disposition is a release-gate policy change the owner
+records, never something a campaign grants itself to finish.
 
 This is the improvement sibling of `capture-performance-matrix`: that skill owns comparable capture
 mechanics and matrix refreshes; this skill owns inventory, causal attribution, product optimization,
-capture-path repair or faithful recapture, stacked delivery, review, and campaign control.
+capture-path repair or faithful recapture, merge-as-you-go delivery, review, and campaign control.
+For an unattended run, `ship-campaign profile=performance` supplies the preflight, the ledger, the
+quarantine rules, and the morning report around the cluster loop this skill defines.
 
 An explicit user request to run this improvement campaign authorizes its normal in-repository
-branches, commits, pushes, draft PRs, stack links, and `start-capture-session` device reservation.
-Merely loading the skill for planning or reference does not. Neither form authorizes merging.
+branches, commits, pushes, PRs, rival reviews, `start-capture-session` device reservation, and
+merging each cluster's PR through `ship-issue`'s autonomous merge gate. Merely loading the skill for
+planning or reference authorizes none of it.
 
-## The campaign advances one reviewed PR at a time
+## The campaign advances one merged PR at a time
 
 The scheduling loop is:
 
 ```text
-bounded product pass → verify → commit → open/link PR → rival round 1 → address → rival round 2 → address → green CI → next pass
+bounded product pass → verify → commit → open PR → rival round 1 → address → rival round 2 → address → green CI → merge → next pass from fresh main
 ```
 
-Opening and reviewing the PR are part of completing the product pass, not end-of-campaign shipping.
-Do not begin another accepted treatment, put a child PR above the current one, or accumulate more
-product commits while either required rival round or CI is outstanding. This ordering lets an early
-finding remain in the PR that introduced it; postponing review until several layers exist forces an
-ordinary local correction into a sweep-up PR at the stack tip and lets a mistaken premise compound
-through later experiments.
+Opening, reviewing, and merging the PR are part of completing the product pass, not end-of-campaign
+shipping. Do not begin another accepted treatment or accumulate more product commits while either
+required rival round, CI, or the merge is outstanding. Every pass branches from the `main` that
+already contains the previous cluster, so an early finding is fixed in the PR that introduced it and
+a mistaken premise cannot compound through later experiments. A stack of unmerged clusters is used
+only when the user asks for one (`create-stacked-prs`).
 
 ## Product work is the deliverable
 
@@ -90,24 +93,23 @@ campaign prompt, PR body, report, or memory.
 1. Preserve unrelated local work. Do not stash, delete, clean, commit, or absorb it. If the working
    tree is not clean, stop and tell the user rather than carrying their changes onto a campaign
    branch.
-2. Inspect open performance PRs and stacks before creating anything. If an unfinished campaign
-   already owns the matrix work, verify its branch, PR, and checkpoint state and resume it instead
-   of duplicating it. Otherwise fetch the trunk, verify prior campaign PRs are merged, switch to and
-   fast-forward the trunk, then create a fresh campaign branch.
-3. Treat the PR stack as the campaign's working structure, not an end-of-campaign packaging step.
-   Open the first draft PR as soon as its first coherent commit is pushed. For every later accepted
-   cluster, branch from the current stack tip, push and open its next draft PR immediately, and link
-   the expanded chain. Complete both rival rounds, address their findings, and get the current PR's
-   CI green before starting another cluster. Never accumulate multiple accepted clusters on one
-   campaign branch for later decomposition; rejected or inconclusive experiments stay local and are
-   backed out. The campaign invocation already authorizes these draft PRs and stack links, so do not
-   wait for a later request to create them.
-4. Keep the current stack-tip PR body as the live campaign ledger, copying the ledger forward
-   whenever the stack grows; older PR bodies remain scoped snapshots. Record the baseline inventory,
-   shipped clusters, current cluster, remaining work, exact product commits, raw artifact
-   provenance, correctness evidence, and matrix status.
-5. Read the `profiling`, `capture-performance-matrix`, `testing`, and `create-stacked-prs` skills.
-   Read `mobile` before any iOS, Android, or Capacitor work.
+2. Inspect open performance PRs before creating anything. If an unfinished campaign PR already owns
+   the matrix work, verify its branch, PR, and checkpoint state and finish it instead of duplicating
+   it. Otherwise fetch the trunk, verify prior campaign PRs are merged, and branch the first cluster
+   from a fresh `origin/main`.
+3. One accepted cluster is one PR. Open it as a draft as soon as its first coherent commit is
+   pushed, complete both rival rounds, address their findings, get its CI green, and merge it before
+   starting the next cluster from the updated `main`. Never accumulate multiple accepted clusters on
+   one branch for later decomposition; rejected or inconclusive experiments stay local and are
+   backed out. The campaign invocation already authorizes these PRs and merges, so do not wait for a
+   later request to create them.
+4. Keep the live campaign ledger as a single comment on the performance tracking issue, edited in
+   place (the `ship-campaign` ledger; a scratch file only when no tracking issue exists). Record the
+   baseline inventory, merged clusters, current cluster, remaining work, exact product commits, raw
+   artifact provenance, correctness evidence, and matrix status. Each cluster's PR body carries that
+   cluster's own evidence.
+5. Read the `profiling`, `capture-performance-matrix`, and `testing` skills. Read `mobile` before
+   any iOS, Android, or Capacitor work.
 6. Locate the authoritative matrix inputs, source manifest, and generator from the current
    repository rather than carrying paths or output names forward from an older campaign. Discover
    generator-owned JSON, Markdown, and HTML outputs from the generator or directory instructions.
@@ -281,18 +283,19 @@ For each cluster:
     a failure rather than a report (ADR-0159). Validate every generator-owned output and prove
     JSON/Markdown/HTML agreement where present.
 12. Commit and push each causally coherent verified product improvement separately, update raw
-    evidence and remaining status in the current stack-tip PR body, and proceed only from a clean
-    tree. A directly useful harness change may precede it in the same cluster, but never substitutes
-    for the product outcome it exists to support.
+    evidence and remaining status in the campaign ledger, and proceed only from a clean tree. A
+    directly useful harness change may precede it in the same cluster, but never substitutes for the
+    product outcome it exists to support.
 
-## Stack and review discipline
+## Review and merge discipline
 
-Deliver causally distinct product clusters as sequential PRs under `create-stacked-prs`, and put
-each newly opened PR through `drive-pr-to-mergeable` while it is the stack tip; another layer starts
-only on a shippable (or shippable-once-readied) verdict, and a not-shippable one stops the stack and
-reports the blocker. Those two skills own the stack shape, the no-commits-below invariant, the
-feedback-PR fallback, the reviewer, the CI loop, and the verdict; this campaign adds only the
-following.
+Deliver each causally distinct product cluster as its own PR from a fresh `main`, and put it through
+`drive-pr-to-mergeable`. On a shippable verdict, merge it under the all-or-nothing gate `ship-issue`
+step 5 defines — live re-verification of the head, a rival review that actually posted, every
+applicable check green, the merge commit copied from command output — and confirm the merge on
+`origin/main` before the next cluster begins. A not-shippable verdict stops new clusters and reports
+the blocker; under `ship-campaign` it quarantines the cluster instead. `drive-pr-to-mergeable` owns
+the reviewer, the CI loop, and the verdict; this campaign adds only the following.
 
 Do not create a standalone harness-improvement cluster unless the user explicitly asks for one; an
 incidental repair stays subordinate to the product cluster it unblocks. Every PR body includes:
@@ -310,17 +313,18 @@ performance changes can preserve behavior and still encode a mistaken causal the
 landing after round two reports — whether prompted by that round, a human comment, or CI — earns one
 more resumed verification round inside the rival's three-round budget; if that round finds another
 material issue, address it and use `--fresh` for one final pass; if the fresh pass finds another,
-stop adding layers and report the repeated-review blocker rather than extending the loop.
+stop starting clusters and report the repeated-review blocker rather than extending the loop.
 
-Do not merge unless the user separately authorizes merging. A campaign completion or wrap-up request
-authorizes making the stack merge-ready, not landing it.
+A substituted, same-runner reviewer withdraws the merge authority, as in `ship-issue`: the cluster
+finishes as an open, mergeable PR for the user, and the next cluster waits for it rather than
+stacking on it.
 
 ## Control messages
 
 Treat these as steering inside the active campaign, not as replacements for the campaign objective.
 
 * **status** — report the overall campaign status in commentary, including the freshly established
-  baseline; product clusters and PRs already shipped or merge-ready; product, harness-repair, and
+  baseline; product clusters and PRs already merged; product, harness-repair, and
   capture/evidence-only commits as separate lists; the product experiment each harness repair
   served; the exact current in-flight cluster, phase, branch/PR, and latest evidence; remaining
   current red, stale, incomparable, unavailable, and blocked cells; current runner/device blockers;
@@ -330,39 +334,42 @@ Treat these as steering inside the active campaign, not as replacements for the 
   Continue the in-flight campaign after answering.
 * **pause** — stop selecting new clusters, finish or safely back out the current experiment, leave
   the current branch and PR evidence coherent, push a recoverable checkpoint, and report the exact
-  resume point. Do not present a paused partial cluster as merge-ready.
-* **resume / continue** — verify live matrix, branch, stack, artifact, device, and CI state before
+  resume point. Do not merge or present a paused partial cluster as mergeable.
+* **resume / continue** — verify live matrix, branch, PR, artifact, device, and CI state before
   resuming the recorded cluster. Do not assume the previous process, port, build, or capture remains
   valid.
 * **wrap up** — stop selecting new clusters, but completely finish the current in-flight cluster as
   shippable work: resolve attribution, land or back out the experiment, run focused correctness and
   exact performance validation, complete affected-mode recapture when needed, fold only faithful
   evidence, regenerate authoritative outputs, commit and push, update the live campaign ledger,
-  complete review and feedback, move every delivered PR out of draft, confirm the stack tip is
-  green, and explain any surviving lower-PR red by naming the PR that carries its fix. Confirm every
-  delivered PR is ready to merge. Put additional findings in the current stack-tip PR when coherent
-  or in a new feedback/findings PR stacked from the tip. Never amend a lower PR. Then report both
-  the merge-ready delivered scope and the freshly counted campaign remainder; do not claim the
-  overall matrix is complete when cells remain.
+  complete review and feedback, drive CI green, and merge it through the gate above — or back it out
+  and leave the PR as a draft with its evidence when it cannot pass. Then report both the merged
+  scope and the freshly counted campaign remainder; do not claim the overall matrix is complete when
+  cells remain. Wrap up never resumes the campaign.
+* **stop at mergeable** — everything wrap up does except the merge: drive the in-flight cluster's PR
+  to a shippable verdict and leave it open for the user, reporting it as the next merge. Use it
+  whenever the user asks to make work mergeable, ready, or reviewable without asking to land it —
+  merging is irreversible, so it is never inferred from a request to prepare.
 
 A casual progress question such as “what is running?”, “where are we?”, or “how much is left?” is a
-**status** message. Phrases such as “finish what is in flight,” “stop after the next complete PR,”
-or “make this mergeable” are **wrap up** messages unless the user explicitly asks to continue to
-zero.
+**status** message. Phrases such as “finish what is in flight” or “stop after the next complete PR”
+are **wrap up** messages, and “make this mergeable” or “get it ready for me” are **stop at
+mergeable** messages, unless the user explicitly asks to continue to zero.
 
 ## Optional Goal mode
 
 The workflow must not depend on provider-specific goal tracking. The matrix, raw artifacts, git
-history, live PR stack, and campaign ledger remain the durable source of truth.
+history, merged PRs, and campaign ledger remain the durable source of truth.
 
 When Goal mode is available, use it only if the user explicitly requests Goal mode for this
 campaign. Create one objective for zero current, scoreable, unexplained red cells on the
 release-gate rows (ADR-0156, ADR-0160) and omit a token budget unless the user supplies one. Goal
 mode is useful for automatic continuation and for keeping the terminal condition visible across long
 tool runs. It is a poor fit for an ordinary campaign that may receive `pause` or `wrap up`: it
-supports completion or genuine blocking, not a merge-ready pause, permits only one active goal, and
-does not replace external checkpoints. Never mark the goal complete for an improvement, a green
-cluster, or a wrap-up that leaves current, scoreable, unexplained reds on a release-gate row.
+supports completion or genuine blocking, not a wrap-up or stop-at-mergeable pause, permits only one
+active goal, and does not replace external checkpoints. Never mark the goal complete for an
+improvement, a green cluster, or a wrap-up that leaves current, scoreable, unexplained reds on a
+release-gate row.
 
 ## Completion gate
 
@@ -390,11 +397,11 @@ Complete the full campaign only when:
 * correctness, accessibility, visual behavior, native/web parity, persistence, rotation, undo, and
   export fidelity remain intact;
 * every authoritative generated output agrees;
-* every campaign PR is pushed, reviewed, linked into the stack, out of draft, and ready, with the
-  stack tip green and any surviving red on a lower PR explained by the PR carrying its fix;
+* every campaign PR is reviewed and merged with its merge commit verified on `origin/main`, or
+  explicitly left open or quarantined with the reason, and `main` CI is green after the last merge;
 * every review comment is answered and resolved;
-* the stack-tip PR summarizes the baseline clusters, root causes, fixes, before/after evidence,
-  capture provenance, product commits, and final matrix status;
+* the campaign ledger summarizes the baseline clusters, root causes, fixes, before/after evidence,
+  capture provenance, product commits, merged PRs, and final matrix status;
 * `self-heal` has applied durable campaign and harness lessons in the homes future runs will read —
   and any newly earned capture-path mechanism (a way a capture produces a plausible wrong number or
   a plausible absence) lands in `docs/PROFILING-CAMPAIGNS.md` specifically, the catalogue every
@@ -404,11 +411,11 @@ Complete the full campaign only when:
 
 **Every completion or merge-ready claim rests on its authoritative check, re-run after the last
 change the claim covers — never on a proxy.** Name the check beside the claim: matrix state cites
-the freshly regenerated outputs, stack linkage cites the chain verification, "CI green" cites the
-run for the exact head SHA, "rig left as found" cites the current holder, not the port. A claim
-whose own verification failed — or ran before the last change — is withdrawn, not softened. The
-2026-08 corpus has five completion claims resting on proxies (a stack membership asserted 23 s after
-its own check failed; a nine-PR stack called merge-ready on per-PR CI alone), every one with the
+the freshly regenerated outputs, a merge cites its commit on `origin/main`, "CI green" cites the run
+for the exact head SHA, "rig left as found" cites the current holder, not the port. A claim whose
+own verification failed — or ran before the last change — is withdrawn, not softened. The 2026-08
+corpus has five completion claims resting on proxies (a stack membership asserted 23 s after its own
+check failed; a nine-PR stack called merge-ready on per-PR CI alone), every one with the
 authoritative check available and cheaper than the retraction.
 
 Ask the user only for genuinely human-only device interaction, missing authorization, or a choice

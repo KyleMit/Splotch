@@ -156,7 +156,7 @@ rather than meeting the code cold. Three rounds is the budget; `--fresh` starts 
 
 ## The orchestrated alias
 
-`implement-issue-stack` invokes a fixed publisher and cannot serve a broker loop:
+An unattended orchestrator with no handler to serve the broker invokes a fixed publisher instead:
 
 ```sh
 /Users/kylemit/.local/libexec/splotch-claude-review-publish.mjs --pr <number>

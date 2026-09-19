@@ -224,7 +224,7 @@ anything else is read from the launcher.
 | Billing guard     | `auth_mode: "chatgpt"` in `~/.codex/auth.json`, API-key env stripped, provider and base URL pinned on the command line | API-billing env refused (`ANTHROPIC_API_KEY`, Bedrock, Vertex, Foundry); `claude auth status` must report a plan login                                                                         |
 | Isolation pins    | `--ignore-user-config`, `approval_policy="never"`, `--disable apps hooks browser_use …`                                | `--restricted`, `--strict-mcp-config`, `--no-chrome`, `--permission-mode dontAsk`                                                                                                              |
 | Known vendor gaps | `codex sandbox` refuses `-C` without `--permission-profile`; the process cwd is the root instead                       | `--safe-mode` drops `--mcp-config`; the sonnet probe once refused a credential-reading command on its own judgement                                                                            |
-| Orchestrated use  | None; a Claude session is always the handler                                                                           | `splotch-claude-review-publish.mjs` declines every request; `implement-issue-stack` calls it by fixed path                                                                                     |
+| Orchestrated use  | None; a Claude session is always the handler                                                                           | `splotch-claude-review-publish.mjs` declines every request; an unattended orchestrator calls it by fixed path                                                                                  |
 
 ## Unvalidated
 

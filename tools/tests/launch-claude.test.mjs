@@ -297,6 +297,28 @@ describe('orchestrated publisher alias', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('keeps the review-mode contracts the posted reviews and their responders rely on', () => {
+    const leaveReview = readFileSync(
+      join(repositoryRoot, '.ruler/skills/leave-pr-review/SKILL.md'),
+      'utf8'
+    );
+    const addressReview = readFileSync(
+      join(repositoryRoot, '.ruler/skills/address-pr-review/SKILL.md'),
+      'utf8'
+    );
+    expect(leaveReview).toContain('mode=post-comments');
+    expect(leaveReview).toMatch(/Posting is the default/);
+    expect(leaveReview).toMatch(/means exactly this\s+default/);
+    expect(leaveReview).toContain('`git diff <base-oid>...<head-oid>`');
+    expect(leaveReview).not.toContain('git diff origin/main...HEAD');
+    expect(addressReview).toContain('mode=autonomous');
+    expect(addressReview).toContain('The default remains interactive');
+    expect(addressReview).toContain('<!-- splotch-rival-review:');
+    expect(addressReview).toMatch(
+      /Include the marked review body\s+itself and every inline comment/
+    );
+  });
 });
 
 describe('trusted installation', () => {
@@ -449,6 +471,31 @@ describe('Codex policy', () => {
     expect(once).toContain('pattern = ["npm"]');
     expect(() => validateManagedRules(once)).not.toThrow();
     expect(() => validateManagedRules(existing)).toThrow(/missing or stale/);
+  });
+
+  it('owns the GitHub and push rules and removes the retired issue-stack block', () => {
+    const legacy = [
+      'prefix_rule(pattern = ["npm"], decision = "allow")',
+      '',
+      '# BEGIN SPLOTCH ISSUE STACK',
+      'prefix_rule(pattern = ["gh"], decision = "prompt")',
+      'prefix_rule(pattern = ["gh", "pr", "merge"], decision = "forbidden")',
+      '# END SPLOTCH ISSUE STACK',
+      'prefix_rule(pattern = ["ls"], decision = "allow")',
+      '',
+    ].join('\n');
+    const upgraded = replaceManagedRules(legacy);
+    expect(upgraded).not.toContain('SPLOTCH ISSUE STACK');
+    expect(upgraded).not.toMatch(/"merge"/);
+    expect(upgraded).toContain('pattern = ["gh"]');
+    expect(upgraded).toContain('pattern = ["git", "push"]');
+    expect(upgraded).toContain('pattern = ["npm"]');
+    expect(upgraded).toContain('pattern = ["ls"]');
+    expect(replaceManagedRules(upgraded)).toBe(upgraded);
+    expect(POLICY_CASES).toContainEqual({
+      command: ['gh', 'pr', 'merge', '1'],
+      expected: 'prompt',
+    });
   });
 
   it('requires the three Codex approval settings exactly once at top level', () => {

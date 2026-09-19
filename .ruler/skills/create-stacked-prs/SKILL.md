@@ -1,12 +1,15 @@
 ---
 name: create-stacked-prs
-description: Ship a multi-issue campaign as a stack of sequential pull requests — each PR based on the branch below it — then link the chain into a GitHub stack, judge CI at the tip, and merge the whole chain as one unit when asked. Use when several related issues or a multi-part change ship together, when asked to open stacked or sequential PRs, or when an existing chain of open PRs needs linking, verifying, or merging.
+description: Ship dependent changes as a stack of sequential pull requests — each PR based on the branch below it — then link the chain into a GitHub stack, judge CI at the tip, and merge the whole chain as one unit when asked. Opt-in; a multi-issue campaign merges as it goes through ship-campaign instead. Use when the user asks for stacked or sequential PRs, when a multi-part change must land together, or when an existing chain of open PRs needs linking, verifying, or merging.
 ---
 
 # Create stacked PRs
 
-A campaign that touches several issues ships as a **stack**: each PR branches off the previous PR's
-head and targets that branch as its base. Only the bottom of the stack targets `main`.
+A **stack** is a chain of dependent PRs: each PR branches off the previous PR's head and targets
+that branch as its base. Only the bottom of the stack targets `main`. It is opt-in, for when the
+user asks for one or a multi-part change must land together; a campaign of several issues merges
+each one before starting the next (`ship-campaign`), which keeps every review on a change whose base
+is the real trunk.
 
 ```text
 PR A  ->  main
@@ -110,8 +113,8 @@ Branches follow the repo convention — `claude/issue-<NN>-<slug>`. When falling
 `*`, or quotes is mangled by shell expansion, and the failure arrives after you have written the
 whole thing (a native tool takes the body as a parameter and has no such hazard). Follow the
 `pr-screenshots` skill for any PR that touches something visible in the UI, and give each PR the
-rich body the `burn-down-backlog` skill describes — summary, why, what changed, approach, testing,
-follow-ups — plus its position in the stack.
+full summary `ship-issue` step 3 describes — what changed and why, the notable edits, the approach
+and alternatives, the commands run, and caveats — plus its position in the stack.
 
 Verify the chain after creating each PR — read every open PR's head and base branch, natively or
 with the CLI. A wrong base is easy to miss and expensive later:
@@ -339,6 +342,5 @@ the trunk by then.
 * A force-push that rewrites every branch does **not** break the stack association.
 * Merge queues split a group larger than its configured maximum across consecutive groups. `main`
   here has no merge queue, so stack size is unconstrained in practice.
-* Codex has an unattended orchestrator for this shape — `implement-issue-stack` drives an ordered
-  issue list into reviewed, green stacked PRs on its own. This skill is the procedure for doing it
-  by hand, in either agent.
+* A stack is opt-in. An unattended multi-issue campaign merges each unit before the next begins
+  (`ship-campaign`); use this skill when the user asks for a chain of dependent PRs.

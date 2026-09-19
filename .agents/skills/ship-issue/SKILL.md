@@ -58,14 +58,14 @@ Two intake paths. Both end with a written done-when you can verify against.
     two sessions silently do the same work twice.
   * **Is the tree clean?** Stop if it is not — never fold the user's uncommitted work into this run.
 * **Then claim it**: apply the `in-progress` label and assign yourself, still before writing any
-  code. This is what keeps a parallel session (or a `burn-down-backlog` run) off the same issue, so
-  it happens now rather than at PR time.
+  code. This is what keeps a parallel session (or a `ship-campaign backlog` run) off the same issue,
+  so it happens now rather than at PR time.
 
   Claiming **after** the stop conditions is the whole point of the ordering. A claim applied first
-  and then abandoned leaves `in-progress` on an issue nobody is working, and `burn-down-backlog`
-  filters that label out of its pickups — so one aborted run would strand the issue from every
-  future automated pickup, with nothing to announce it. Any blocker found *later*, once the claim is
-  real, still gets the rollback in step 2.
+  and then abandoned leaves `in-progress` on an issue nobody is working, and `ship-campaign` filters
+  that label out of its pickups — so one aborted run would strand the issue from every future
+  automated pickup, with nothing to announce it. Any blocker found *later*, once the claim is real,
+  still gets the rollback in step 2.
 
 **A free-form task:** there is no issue to read or claim. Restate the task as a done-when spec in
 one or two sentences and carry it into the PR body as the "why" — a PR that closes no issue must
@@ -82,10 +82,9 @@ where the wrong pick ships the wrong software — is a blocked unit in either mo
 
 * **Branch** from the latest `origin/main`, naming it `<runner-prefix>/issue-<NN>-<slug>` — or
   `<runner-prefix>/<task-slug>` for a free-form task. The prefix is the **active runner's** own
-  convention, not a fixed string: `claude/` from Claude Code, `codex/` from Codex (which
-  `implement-issue-stack` already uses). Take it from the branches the current runner has created in
-  this repo rather than assuming, so the branch is attributed to the agent that actually made it.
-  Push it early with `git push -u origin <branch>`.
+  convention, not a fixed string: `claude/` from Claude Code, `codex/` from Codex. Take it from the
+  branches the current runner has created in this repo rather than assuming, so the branch is
+  attributed to the agent that actually made it. Push it early with `git push -u origin <branch>`.
 * **Consult the area's skill rather than guessing** — `architecture` to place code, `design` for
   anything with a style or a user-facing string, `api` for endpoints, `mobile` for native, `testing`
   for tests. Reading the skill costs less than a review round spent on a convention you invented.

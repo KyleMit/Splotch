@@ -287,15 +287,6 @@ describe('withPreservedDirectProviderPaths', () => {
     );
   });
 
-  it('preserves only the providers declared for a direct skill', () => {
-    expect(DIRECT_PROVIDER_SKILLS).toContainEqual({
-      name: 'implement-issue-stack',
-      providers: ['codex'],
-    });
-    expect(directNoteNames('codex')).toContain('implement-issue-stack.md');
-    expect(directNoteNames('claude')).not.toContain('implement-issue-stack.md');
-  });
-
   it('preserves both providers for the two-sided rival launcher', () => {
     expect(DIRECT_PROVIDER_SKILLS).toContainEqual({
       name: 'run-rival-agent',
@@ -306,9 +297,9 @@ describe('withPreservedDirectProviderPaths', () => {
     }
   });
 
-  it('rejects a competing shared source for the Codex-only direct skill', () => {
+  it('rejects a competing shared source for a direct skill', () => {
     const root = makeRoot();
-    const source = join(root, '.ruler', 'skills', 'implement-issue-stack');
+    const source = join(root, '.ruler', 'skills', 'run-rival-agent');
     mkdirSync(source, { recursive: true });
 
     expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
@@ -316,9 +307,9 @@ describe('withPreservedDirectProviderPaths', () => {
     );
   });
 
-  it('rejects an undeclared Claude fork for the Codex-only direct skill', () => {
+  it('rejects a managed fork for a direct skill', () => {
     const root = makeRoot();
-    const source = join(root, '.ruler', 'skill-forks', 'claude', 'skills', 'implement-issue-stack');
+    const source = join(root, '.ruler', 'skill-forks', 'claude', 'skills', 'run-rival-agent');
     mkdirSync(source, { recursive: true });
 
     expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
