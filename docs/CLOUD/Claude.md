@@ -354,12 +354,26 @@ run did not refresh the login file, so the rotation cadence is still unmeasured.
 
 The PR scope and `rival:post` have not run here and cannot yet: the launcher's PR lookup and the
 poster both go through the `gh` CLI (`readPullRequest` and `defaultGh` in
-`tools/rival-agent/post-review.mjs`), which the cloud VM does not have, so `--pr <n>` fails at once
-with `spawnSync gh ENOENT`. The GitHub API answers from the VM and the session carries `GH_TOKEN`,
-so installing the CLI in the setup script is the open follow-up; until then, review a commit or
-branch scope and relay the findings by hand. On Linux the spool root under `/tmp` stays writable to
-the sandboxed rival, the integrity exposure `tools/rival-agent/NOTES.md` accepted "if Linux ever
-matters"; a cloud session is where it now does.
+`tools/rival-agent/post-review.mjs`), which the cloud VM does not have, so `--pr <n>` fails before
+any worktree or Codex process starts, with `spawnSync gh ENOENT`. Installing the CLI from the setup
+script is a candidate remedy, not a measured one: the REST API answered from the VM and the session
+carries `GH_TOKEN`, but the `github.com` release page answered 403 through the proxy, and neither
+`gh pr view` nor the poster's review listing and creation has been exercised with that token. The
+follow-up is to find an install source the VM can reach and prove those calls before calling the PR
+path available.
+
+Until then, review the PR's branch with `--base main` (its head and merge-base are the PR's own
+OIDs, so the range is identical) and carry the findings onto the PR yourself: build the review
+payload with `buildReviewRequest` from `post-review.mjs` against the session's `findings.json` and
+`packet/diff.patch`, run `assertSafeReview` on it, and post it as one COMMENT review through the
+GitHub MCP tools. A review relayed any other way lacks the `<!-- splotch-rival-review:` marker that
+`address-pr-review` keys on in autonomous mode, and its findings fall out of that skill's worklist
+unless the handler adds them by hand. The round-one review of PR #2100 landed this way on
+2026-09-19, and that round also served one broker request, so the broker loop is proven in cloud;
+the `--pr` scope and the poster's own transport are what remain unrun.
+
+On Linux the spool root under `/tmp` stays writable to the sandboxed rival, the integrity exposure
+`tools/rival-agent/NOTES.md` accepted "if Linux ever matters"; a cloud session is where it now does.
 
 ## Previewing the dev server on a phone
 
