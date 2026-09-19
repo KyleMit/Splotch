@@ -1,0 +1,135 @@
+[
+  {
+    "path": "runs/b0-repro-main-portrait-eraser.json.gz",
+    "sha256": "a659e240d7ac8419c518f7ce390c20ac0a831a05ca5a4a7cc86202a2d17a35db",
+    "original": "perf-profiles/bundled/units-2026-09-19/repro/b-repro-portrait-eraser.json",
+    "originalSha256": "cfae064b3a81201a8e6f6ef8da2986737890ea040d2dbe24f914918ad402b357",
+    "transform": "gzip"
+  },
+  {
+    "path": "runs/b1-portrait-eraser-2pass.json.gz",
+    "sha256": "01c90b743b6c6f11add6cf6bd154b73b49498843f5a475b647dc9bcb54f0bb8a",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b1-portrait-eraser-2pass.json",
+    "originalSha256": "87b117adf16371e7c401a064b287a9c8bfce7234e2d9fa901dddd9801ca94299",
+    "transform": "gzip"
+  },
+  {
+    "path": "runs/b2-portrait-eraser-full-cell.json.gz",
+    "sha256": "7b5f24620cdd371b7cad29e1a16bed26619defa0539c38a4f8f364f2c199f0b7",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b2-portrait-eraser-full-cell.json",
+    "originalSha256": "92a2f05b8da9f838f42ef1067ba0c83f34c9e1bd5c86c5f3e113e1b6df7ba87e",
+    "transform": "gzip"
+  },
+  {
+    "path": "runs/b3-landscape-eraser-2pass.json.gz",
+    "sha256": "c880f715892e08df5f9bb917cc826aebf2cfed97cd10d3f6723801e12292c4f7",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b3-landscape-eraser-2pass.json",
+    "originalSha256": "ba3dd2acf1e5382518cdf4c8ce97e54b324cce08e16ce4bca84eaaccc0e2c688",
+    "transform": "gzip"
+  },
+  {
+    "path": "runs/b4-portrait-pen.json.gz",
+    "sha256": "ca6e0595a8d097157d4794d7ea73206fd6025f65e00bdbff0b40ec8033494e57",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b4-portrait-pen.json",
+    "originalSha256": "02380c90ebb38b8cbed35de7d905b048576edff268acf5ee1217785c30c1228f",
+    "transform": "gzip"
+  },
+  {
+    "path": "controls/b1-attempt1-required-16-strokes.log.txt",
+    "sha256": "9d5c34c9a77040f62a23c0cac6e4de77efbb41ed82f798e931405cee12a561c8",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b1-attempt1-required-16-strokes.log",
+    "originalSha256": "9d5c34c9a77040f62a23c0cac6e4de77efbb41ed82f798e931405cee12a561c8",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/b1-portrait-eraser-2pass.log.txt",
+    "sha256": "2fb0bf9a2868746d98e0244262826447b6f3c5b0cf1b42e41b683fa888e23bab",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b1-portrait-eraser-2pass.log",
+    "originalSha256": "2fb0bf9a2868746d98e0244262826447b6f3c5b0cf1b42e41b683fa888e23bab",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/b2-portrait-eraser-full-cell.log.txt",
+    "sha256": "cd0b245428ba7a72042c7ef0899ccfc985a7fbd2b1c7a64fd32457ca4ff24f4f",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b2-portrait-eraser-full-cell.log",
+    "originalSha256": "cd0b245428ba7a72042c7ef0899ccfc985a7fbd2b1c7a64fd32457ca4ff24f4f",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/b3-landscape-eraser-2pass.log.txt",
+    "sha256": "dd8ff5cf806505cdefcc3f533e61ee43616c94d5e92187b4091b71c905c68b5c",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b3-landscape-eraser-2pass.log",
+    "originalSha256": "dd8ff5cf806505cdefcc3f533e61ee43616c94d5e92187b4091b71c905c68b5c",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/b4-portrait-pen.log.txt",
+    "sha256": "b38b0ddd26b23c2be76221c1394625b3ba00456adac6ed36b61e669225455065",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b4-portrait-pen.log",
+    "originalSha256": "b38b0ddd26b23c2be76221c1394625b3ba00456adac6ed36b61e669225455065",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/nb1-blank-preparation.log.txt",
+    "sha256": "8c7dd45a36028af07a478416dcf6737ab4a5f6087cbe95f3f72359bef97bddb0",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/nb1-blank-preparation.log",
+    "originalSha256": "8c7dd45a36028af07a478416dcf6737ab4a5f6087cbe95f3f72359bef97bddb0",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/nb2-failed-refill.log.txt",
+    "sha256": "ecf18468bf5fad3b1152572c2373ff25411f3d02bed67ab72ecdcc315a3373e6",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/nb2-failed-refill.log",
+    "originalSha256": "ecf18468bf5fad3b1152572c2373ff25411f3d02bed67ab72ecdcc315a3373e6",
+    "transform": "sanitize"
+  },
+  {
+    "path": "controls/nb3-stroke-removes-no-ink.log.txt",
+    "sha256": "6c2edc8dd08bf23cb0024fd5d04c2ab361dbdc6d67057131d191b1f9a524deec",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/nb3-stroke-removes-no-ink.log",
+    "originalSha256": "6c2edc8dd08bf23cb0024fd5d04c2ab361dbdc6d67057131d191b1f9a524deec",
+    "transform": "sanitize"
+  },
+  {
+    "path": "diag/nb1-blank-preparation.diagnostic-only.diff",
+    "sha256": "5c1a9f962a4d85b5e0efb83c9ef4b4d6ecca9ea17758620b99644632cff9ce9f",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/nb1-blank-preparation.diagnostic-only.diff",
+    "originalSha256": "5c1a9f962a4d85b5e0efb83c9ef4b4d6ecca9ea17758620b99644632cff9ce9f",
+    "transform": "copy"
+  },
+  {
+    "path": "diag/nb2-failed-refill.diagnostic-only.diff",
+    "sha256": "48552f92560920bf9a00b6975892b5ea2e6916553646c0878d2588e65ea28d00",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/nb2-failed-refill.diagnostic-only.diff",
+    "originalSha256": "48552f92560920bf9a00b6975892b5ea2e6916553646c0878d2588e65ea28d00",
+    "transform": "copy"
+  },
+  {
+    "path": "diag/nb3-stroke-removes-no-ink.diagnostic-only.diff",
+    "sha256": "d2bed4ab19f54be343547c58eb3cbe5020259f241eed2fb1a869572181269ec2",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/nb3-stroke-removes-no-ink.diagnostic-only.diff",
+    "originalSha256": "d2bed4ab19f54be343547c58eb3cbe5020259f241eed2fb1a869572181269ec2",
+    "transform": "copy"
+  },
+  {
+    "path": "diag/read-ink.mjs",
+    "sha256": "9d13a9cbda3fcfe82de10ab046a8a349c9291ecc41e160e285d0b24222182a57",
+    "original": "perf-profiles/bundled/units-2026-09-19/diag/read-ink.mjs",
+    "originalSha256": "9d13a9cbda3fcfe82de10ab046a8a349c9291ecc41e160e285d0b24222182a57",
+    "transform": "copy"
+  },
+  {
+    "path": "diag/swipe-delivery.mjs",
+    "sha256": "8dcb6554f9dc4440befc4f63a5d479cd31835564d7b129ecdc4dd6970d9b9ab9",
+    "original": "perf-profiles/bundled/units-2026-09-19/diag/swipe-delivery.mjs",
+    "originalSha256": "8dcb6554f9dc4440befc4f63a5d479cd31835564d7b129ecdc4dd6970d9b9ab9",
+    "transform": "copy"
+  },
+  {
+    "path": "diag/swipe-delivery-1.log.txt",
+    "sha256": "8d32d8896237a9640a3271b406bf902e3308ce414e51611e2be8500bf3c84e83",
+    "original": "perf-profiles/bundled/units-2026-09-19/diag/swipe-delivery-1.log",
+    "originalSha256": "8d32d8896237a9640a3271b406bf902e3308ce414e51611e2be8500bf3c84e83",
+    "transform": "sanitize"
+  }
+]

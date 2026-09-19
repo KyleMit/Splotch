@@ -1,0 +1,8 @@
+canvas {"x":0,"y":108,"width":360,"height":672} scale 3
+eraser pass 1: 14/16 strokes, erased 6537/81920 census samples
+eraser pass 2: 14/16 strokes, erased 6555/81920 census samples
+
+Observed PORTRAIT 360x780
+Fidelity: PASS (android-capacitor-webview) · {"trustedTouch":true,"cadence":true}
+  blank: lost 0.00% · paint max 8.3ms · PASS
+Wrote perf-profiles/bundled/units-2026-09-19/unit-b/b1-portrait-eraser-2pass.json

@@ -183,12 +183,14 @@ describe('driving eraser passes', () => {
         pending: false,
         transparentTiles: [],
         trustedCanvasPointerUps: 16,
+        at: null,
       },
       {
         afterStroke: 2 * STROKES_PER_GESTURE_REPEAT,
         pending: false,
         transparentTiles: [],
         trustedCanvasPointerUps: 32,
+        at: null,
       },
     ]);
   });

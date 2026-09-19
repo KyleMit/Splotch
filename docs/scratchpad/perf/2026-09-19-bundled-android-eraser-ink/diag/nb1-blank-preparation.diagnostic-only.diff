@@ -1,0 +1,14 @@
+diff --git a/tools/perf/android/capture-bundled-frames.mjs b/tools/perf/android/capture-bundled-frames.mjs
+index 76ab0ae7b..3c05e42a1 100644
+--- a/tools/perf/android/capture-bundled-frames.mjs
++++ b/tools/perf/android/capture-bundled-frames.mjs
+@@ -673,7 +673,8 @@ export async function captureBundledFrames({
+       throw new Error(`the page committed ${mode ?? 'nothing'}, not ${brush}`);
+     }
+ 
+-    const eraserFill = brush === 'eraser' ? await prepareEraserInk(page, fence) : null;
++    // DIAGNOSTIC NEGATIVE CONTROL ONLY, never commit: skip the ink preparation.
++    const eraserFill = null;
+     const eraserWidthSetting =
+       brush === 'eraser'
+         ? await page.evaluate((key) => localStorage.getItem(key), ERASER_WIDTH_STORAGE_KEY)

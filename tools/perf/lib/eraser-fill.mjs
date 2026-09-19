@@ -1,14 +1,15 @@
-// The eraser needs ink to remove, or its cell measures erasing blank paper. Both
+// The eraser needs ink to remove, or its cell measures erasing blank paper. The
 // capture transports give it that ink by painting the live tiles directly, and
-// both previously trusted the paint (issue 1302): nothing checked that the fill
+// they previously trusted the paint (issue 1302): nothing checked that the fill
 // produced opaque pixels, and a fill that silently did nothing left a capture
 // that passed fidelity, passed the drawing gate, and recorded a plausible number.
 //
-// This module is the single source for the fill so the two injectors — the
-// split-capture page bootstrap, which composes it into its generated script, and
-// the Appium screen runner, which sends it through `execute` — cannot drift.
-// It exports the function's SOURCE rather than the function because both
-// consumers run it inside a page, not in this process.
+// This module is the single source for the fill so the injectors — the
+// split-capture page bootstrap, which composes it into its generated script, the
+// Appium screen runner, which sends it through `execute`, and the bundled
+// Android CLI, which evaluates it over CDP — cannot drift. It exports the
+// function's SOURCE rather than the function because every consumer runs it
+// inside a page, not in this process.
 
 export const ERASER_FILL_COLOR = '#7c4dff';
 // How long a page may take to finish realizing its tile backings before the
@@ -49,9 +50,11 @@ export const ERASER_REFILL_IDLE_FRAMES = 2;
 // restores full ink between passes and keeps the eraser's geometry identical
 // to every other brush's fixed plan.
 //
-// Both automated transports dispatch one authored gesture pass at a time. The
-// Appium runner executes this fill while it owns the page context; the split
-// transport requests it through a nonce-bound host/page handshake. Each path
+// Every automated transport dispatches one authored gesture pass at a time. The
+// Appium runner and the bundled Android CLI execute this fill while they own the
+// page context; the split transport requests it through a nonce-bound host/page
+// handshake. The bundled CLI adds the full-lattice census below around every
+// pass and refuses the capture outright on a failure. Each path
 // proves the preceding pass delivered a new trusted canvas lift, verifies the
 // fill, waits ERASER_REFILL_IDLE_FRAMES, and only then dispatches the next pass.
 // The last pass deliberately does not refill because there is no later erasing

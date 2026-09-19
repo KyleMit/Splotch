@@ -1,0 +1,14 @@
+diff --git a/tools/perf/android/capture-bundled-frames.mjs b/tools/perf/android/capture-bundled-frames.mjs
+index 76ab0ae7b..c68f45e51 100644
+--- a/tools/perf/android/capture-bundled-frames.mjs
++++ b/tools/perf/android/capture-bundled-frames.mjs
+@@ -502,7 +502,8 @@ export async function driveEraserPasses({ page, fence, repeats, canvas, dpr, dis
+       after: censusSummary(after),
+     });
+     if (pass === repeats) break;
+-    const fill = await fillEraserInk(page);
++    // DIAGNOSTIC NEGATIVE CONTROL ONLY, never commit: the refill paints nothing.
++    const fill = await fillEraserInk(page, true);
+     const refill = {
+       afterStroke: pass * STROKES_PER_GESTURE_REPEAT,
+       pending: Boolean(fill?.pending),

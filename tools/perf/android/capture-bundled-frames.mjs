@@ -292,13 +292,14 @@ export async function establishRequestedOrientation({
 // nominal) sweeps roughly 3% of a portrait canvas; a blank-paper or
 // non-erasing pass clears none. The floor sits well under the first and far
 // above the second.
-const ERASER_PASS_MIN_ERASED_FRACTION = 0.005;
+export const ERASER_PASS_MIN_ERASED_FRACTION = 0.005;
 
 const indexed = (census) => (census?.tiles ?? []).map((tile, index) => ({ index, ...tile }));
 const total = (census, key) => indexed(census).reduce((sum, tile) => sum + tile[key], 0);
 
 export function censusSummary(census) {
   return {
+    at: census?.at ?? null,
     tiles: census?.tiles?.length ?? 0,
     samples: total(census, 'samples'),
     opaque: total(census, 'opaque'),
@@ -387,8 +388,12 @@ export function strokeDelivery(events, geometry, repeats) {
   return { planned, delivered };
 }
 
+// Each readback reports the page-time interval it ran in, so an artifact can
+// show it fell between strokes rather than inside a scored contact.
 const evaluateInPage = (page, source, call) =>
-  page.evaluate(`(() => {\n${source}\nreturn ${call};\n})()`);
+  page.evaluate(
+    `(() => {\n${source}\nconst startedAt = performance.now();\nconst result = ${call};\nreturn { ...result, at: [startedAt, performance.now()] };\n})()`
+  );
 const fillEraserInk = (page, verifyOnly = false) =>
   evaluateInPage(page, eraserFillFunctionSource(), `fillEraserInk(${verifyOnly})`);
 const inkCensus = (page) => evaluateInPage(page, eraserInkCensusFunctionSource(), 'eraserInkCensus()');
@@ -508,6 +513,7 @@ export async function driveEraserPasses({ page, fence, repeats, canvas, dpr, dis
       pending: Boolean(fill?.pending),
       transparentTiles: fill?.transparentTiles ?? [],
       trustedCanvasPointerUps,
+      at: fill?.at ?? null,
     };
     refills.push(refill);
     if (refill.pending || refill.transparentTiles.length) {

@@ -27,6 +27,27 @@ orientation before contact and neither resized nor rotated during it. The artifa
 `observedOrientation`, `pageGeometry` (the launched, pre-contact, and post-contact viewport, canvas
 rect, DPR, and `screen.orientation.type`), `rotationLock`, and a per-step `cleanup` result.
 
+An eraser capture (`--brush=eraser`, adb input only) erases verified ink, not blank paper.
+
+* **Setup.** After the eraser is committed, the capture applies the shared verified fill
+  (`../lib/eraser-fill.mjs`) and re-checks it after a settle.
+* **Each pass.** Passes run one at a time, with checks between contacts:
+  * **Before the pass,** a point census on a 64x64 lattice over every live tile backing must be
+    fully opaque. It samples hidden tiles too, because their backing is what the eraser works on.
+  * **After the pass,** every stroke the page received must have lifted, with no cancel. The census
+    must show at least 0.5% of samples erased, with no tile backing resized and no tile left with no
+    ink.
+  * **Between passes,** the verified refill runs, then two idle frames before the next contact.
+* **Failures.** Blank preparation, a failed refill, a pass that erased nothing, or a stroke left
+  down refuses the capture.
+* **Artifact.** It records `eraserFill`, `eraserRefills` (the shape the campaign readers check),
+  `eraserPasses` (each pass's census and lifts), and `eraserWidthSetting`.
+
+Every adb capture also records `strokes: { planned, delivered }`. On the rig phone in portrait, two
+of the plan's sixteen swipes per pass start at the screen centre, a point where `input swipe`
+delivers no pointer events to the page. The cause is unexplained, and it affects every brush alike.
+So delivery is recorded rather than required.
+
 Cleanup runs from one place, the `finally` block. It restores the app lock while CDP is still
 attached, then removes the forward and restores the adb rotation settings, each step independently.
 A failed step exits non-zero after writing the artifact. The artifact is written only after cleanup,
