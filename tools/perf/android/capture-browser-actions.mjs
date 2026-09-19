@@ -292,13 +292,26 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   const originalRefreshRates = REFRESH_RATE_SETTINGS.map((name) =>
     adb(deviceId, ['shell', 'settings', 'get', 'system', name])
   );
-  const restoreRefreshRate = () => {
+  const restoreDeviceSettings = () => {
+    adb(deviceId, ['shell', 'settings', 'put', 'system', 'user_rotation', originalRotation], {
+      allowFailure: true,
+    });
+    adb(
+      deviceId,
+      ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', originalAutoRotation],
+      { allowFailure: true }
+    );
     REFRESH_RATE_SETTINGS.forEach((name, index) => {
       adb(deviceId, refreshRateRestoreArgs(name, originalRefreshRates[index]), {
         allowFailure: true,
       });
     });
   };
+  // fail() calls process.exit, which skips the finally below: an unserved URL
+  // or a stale build left the panel pinned at 60Hz, and every later drawing
+  // cell on the phone then failed as off-refresh-regime. adb here is
+  // spawnSync, so the exit listener can restore on that path too.
+  process.once('exit', restoreDeviceSettings);
   let observedRefreshRateHz;
   let server;
   let servedBuild;
@@ -479,15 +492,8 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     await browser?.close().catch(() => null);
     if (target) await closeTarget(endpoint, target.id);
     adb(deviceId, ['forward', '--remove', `tcp:${cdpPort}`], { allowFailure: true });
-    adb(deviceId, ['shell', 'settings', 'put', 'system', 'user_rotation', originalRotation], {
-      allowFailure: true,
-    });
-    adb(
-      deviceId,
-      ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', originalAutoRotation],
-      { allowFailure: true }
-    );
-    restoreRefreshRate();
+    process.removeListener('exit', restoreDeviceSettings);
+    restoreDeviceSettings();
     server?.stop();
   }
 }
