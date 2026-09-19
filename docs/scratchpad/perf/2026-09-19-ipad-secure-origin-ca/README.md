@@ -8,13 +8,13 @@ result: the frame gate verdict below is reported, not interpreted.
 
 ## Outcome
 
-| Check                                      | Result                                                                                                                                                                                                                      |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trusted origin                             | **Ready.** A local root, name-constrained to the capture Mac, installed and trusted on the iPad. The instrumented build loads at `https://<rig-mac>.local:54785/` as a secure context with both crypto APIs                 |
-| Constraint enforced on the iPad            | **Yes.** Safari refuses a leaf from the same root that names `example.com` beside the permitted address. It also refuses a leaf from the replaced 30-day root                                                               |
-| Both AI actions, one warmup + three scored | **Yes.** Every `finish AI waiting print` run carries `aiRun`: secure context, `randomUUID`, `SubtleCrypto`, origin `https://<rig-mac>.local:54785`, and exactly one request, the stubbed generate call. No blocked coverage |
-| Same-build insecure negative               | **Refused.** Over `http://<lan>:54784/`, both actions are blocked (`secureContext: false`, zero requests) and the capture fails                                                                                             |
-| Frame gates (reported, not attributed)     | `finish AI waiting print` passes. `show AI waiting print` **fails** on a confirmed max breach: 40 ms in 2 of 3 scored repeats (post-action P95 9 ms)                                                                        |
+| Check                                      | Result                                                                                                                                                                                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Trusted origin                             | **Ready.** A local root, name-constrained to the capture Mac, installed and trusted on the iPad. The instrumented build loads at `https://<rig-mac>.local:54785/` as a secure context with both crypto APIs                                            |
+| Constraint enforced on the iPad            | **Yes.** Safari refuses a leaf from the same root that names `example.com` beside the permitted address. It also refuses a leaf from the replaced 30-day root                                                                                          |
+| Both AI actions, one warmup + three scored | **Yes.** Every `finish AI waiting print` run carries `aiRun`: secure context, `randomUUID`, `SubtleCrypto`, origin `https://<rig-mac>.local:54785`, and exactly one request, the stubbed generate call. No blocked coverage                            |
+| Same-build insecure negative               | **Refused.** Over `http://<lan>:54784/`, both actions are blocked (`secureContext: false`, zero requests) and the capture fails                                                                                                                        |
+| Frame gates (reported, not attributed)     | `finish AI waiting print` passes. `show AI waiting print` **fails** on a confirmed max breach. The scored repeats' worst post-action frames are 40, 30 and 38 ms, so 2 of 3 exceed 33.5 ms (the warmup's 48 ms is not scored). Post-action P95 is 9 ms |
 
 The gate failure is the first iPad Safari number for this cue, which was blocked before. It has no
 before/after or route comparison, so nothing here says whether the product, the route, or anything
@@ -73,7 +73,10 @@ using `npm run perf:ios:secure-origin`.
 `node docs/scratchpad/perf/2026-09-19-ipad-secure-origin-ca/check.mjs` verifies every file against
 `MANIFEST.json`, scans each for identifiers, the LAN address, the Mac's name and tunnel hostnames,
 and re-derives every claim above marked as machine-checked. `package.mjs` rebuilt the directory from
-the gitignored capture directory by redaction only.
+the gitignored capture directory by redaction only. `negative-controls.mjs` proves the content
+checks can fail. It alters one run at a time in a scratch copy and refreshes that run's manifest
+hash; a wrong `n1` URL, an empty `n1` entry list, and a lowered raw frame maximum each fail their
+own check.
 
 * `runs/c1-ipad-ca-ai-waiting.json.gz`: the capture over the CA route.
 * `runs/n1-ipad-lan-http-negative.json.gz`: the same build over LAN http.
@@ -111,6 +114,9 @@ no product file differed. The capture's served-build check ran against this chec
 
 ## Effort
 
-Session `bd03add8-2e41-59ea-99f2-b2c0d3130c09`, 16:28–17:30 UTC wall clock, including about 20
-minutes waiting on owner decisions and device steps. Charged on top of r1's 36 minutes and the
-unrecorded PR 2059 effort.
+Session `bd03add8-2e41-59ea-99f2-b2c0d3130c09`. This package was written partway through the unit:
+the interval it first gave (16:28–17:30 UTC) stopped before review, CI and merge. The final
+accounting, which runs to 17:53 UTC and separates owner, review and CI waits from active time, is in
+[issue 1870's closeout](https://github.com/KyleMit/Splotch/issues/1870#issuecomment-5744094444). A
+follow-up corrected this package's checker (`negative-controls.mjs`); its time is recorded on the
+same issue.

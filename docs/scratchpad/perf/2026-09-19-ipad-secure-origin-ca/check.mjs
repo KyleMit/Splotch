@@ -104,11 +104,22 @@ check(
   'c1: finish AI waiting print passed its frame gates',
   summary('finish AI waiting print').passed === true
 );
+// Re-derived from the raw per-repeat frame gaps, not taken from the summary.
+const GATE_MAX_MS = 33.5;
+const showScored = c1.samples.filter(
+  (sample) => sample.label === 'show AI waiting print' && !sample.warmup
+);
+const scoredMaxima = showScored.map((sample) => Math.max(...sample.postActionFrameGapsMs));
+const breaches = scoredMaxima.filter((max) => max > GATE_MAX_MS).length;
 check(
-  'c1: show AI waiting print FAILED its frame gates on a confirmed max breach (40 ms in 2 of 3 scored repeats)',
+  `c1: show AI waiting print scored-repeat maxima are ${scoredMaxima.join(', ')} ms; ${breaches} of ${scoredMaxima.length} exceed ${GATE_MAX_MS} ms`,
+  scoredMaxima.join(',') === '40,30,38' && breaches === 2
+);
+check(
+  'c1: the summary agrees with the raw samples, and the action FAILED on that confirmed max breach',
   summary('show AI waiting print').passed === false &&
-    summary('show AI waiting print').frames.max === 40 &&
-    summary('show AI waiting print').frames.maxBreachSamples === 2 &&
+    summary('show AI waiting print').frames.max === Math.max(...scoredMaxima) &&
+    summary('show AI waiting print').frames.maxBreachSamples === breaches &&
     c1.passed === false
 );
 check(
@@ -120,11 +131,27 @@ check(
 
 const n1 = run('n1-ipad-lan-http-negative');
 const blocked = JSON.stringify(n1.actionPlan?.blocked ?? []);
+const LAN_ORIGIN = 'http://<lan>:54784';
 check(
-  'n1: the same build over LAN http blocks both AI actions and fails the capture',
-  n1.passed === false &&
-    AI_LABELS.every((label) => n1.actionPlan.blocked.some((entry) => entry.label === label)) &&
+  `n1: the capture loaded ${LAN_ORIGIN}/ and the same build entry ${ENTRY}`,
+  n1.appUrl === `${LAN_ORIGIN}/` &&
+    n1.pageEntries.length > 0 &&
     n1.pageEntries.every((entry) => entry === ENTRY)
+);
+check(
+  'n1: both AI actions are blocked, no sample was scored, and the capture failed',
+  n1.passed === false &&
+    n1.samples.length === 0 &&
+    n1.actionPlan.blocked.length === AI_LABELS.length &&
+    AI_LABELS.every((label) => n1.actionPlan.blocked.some((entry) => entry.label === label))
+);
+check(
+  `n1: each block names the error face at ${LAN_ORIGIN}`,
+  n1.actionPlan.blocked.every(
+    (entry) =>
+      entry.reason.includes('"failedUi":true') &&
+      entry.reason.includes(`"origin":"${LAN_ORIGIN}"`)
+  )
 );
 check(
   'n1: and recorded why: not a secure context, no crypto APIs, zero requests',
