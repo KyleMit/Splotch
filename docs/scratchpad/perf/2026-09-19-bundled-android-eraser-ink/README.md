@@ -22,9 +22,9 @@ not be a validity failure, and nothing here compares timings.
   * **Before each pass,** a point census on a 64x64 lattice over every live tile backing must be
     fully opaque. Smoothing is off, so every sample is one backing pixel. Hidden tiles are sampled
     too, because their DOM rect is empty but their backing is what the eraser works on.
-  * **After each pass,** every delivered stroke must have lifted, with no cancel. The census must
-    show at least 0.5% of samples erased (alpha below 128), with no tile backing resized and no tile
-    left with no ink.
+  * **After each pass,** at least 85% of the planned strokes must have reached the page, and every
+    delivered stroke must have lifted, with no cancel. The census must show at least 0.5% of samples
+    erased (alpha below 128), with no tile backing resized and no tile left with no ink.
   * **Between passes,** the verified refill runs, then two idle rAFs before the next contact.
   * **Failure** refuses the capture: no artifact is written.
 * **The artifact records the workload.** It holds `eraserFill`; `eraserRefills` (repeats − 1
@@ -48,17 +48,18 @@ not be a validity failure, and nothing here compares timings.
 
 ## Controls
 
-| Run           | Request                                          | Result                                                                                                                           | Artifact |
-| ------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `b0`          | eraser, 2 passes, main before the fix            | **Blank-paper eraser reproduced.** The artifact says `fixed-geometry-refilled` with no fill or refill evidence                   | written  |
-| `b1-attempt1` | eraser, 2 passes, fix requiring all 16 strokes   | Refused: only 14 of 16 strokes reached the page (see the delivery gap below)                                                     | none     |
-| `b1`          | eraser PORTRAIT, 2 passes                        | Both passes were fully inked before and erased 6,537 and 6,555 of 81,920 samples (8.0%). 1 healthy refill                        | written  |
-| `b2`          | eraser PORTRAIT, the full 10-pass cell           | All 10 passes were fully inked before and erased 6,515–6,549 samples each. 9 healthy refills at `afterStroke` 10–90              | written  |
-| `b3`          | eraser LANDSCAPE, 2 passes                       | The app lock was released (PR 2083). Observed 780x360; erased 8,678 and 8,682 samples (10.6%); 32 of 32 strokes delivered        | written  |
-| `b4`          | pen PORTRAIT, 1 pass                             | An ordinary ink-brush capture works. It has no eraser fields and a `fixed-geometry` plan, and records 14 of 16 strokes delivered | written  |
-| `nb1`         | eraser, the fill skipped (diagnostic)            | **Blank preparation refused:** `before pass 1, the paper is not fully inked … tile 0 0/4096 opaque …`                            | none     |
-| `nb2`         | eraser, the refill paints nothing (diagnostic)   | **Failed refill refused:** `the eraser refill after pass 1 failed … "transparentTiles":[4,10,11,14,15]`                          | none     |
-| `nb3`         | eraser, the pass drawn with the pen (diagnostic) | **A stroke removing no ink refused:** `pass 1 erased 0 of 81920 census samples, under the 0.5% floor`                            | none     |
+| Run           | Request                                                           | Result                                                                                                                           | Artifact |
+| ------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `b0`          | eraser, 2 passes, main before the fix                             | **Blank-paper eraser reproduced.** The artifact says `fixed-geometry-refilled` with no fill or refill evidence                   | written  |
+| `b1-attempt1` | eraser, 2 passes, fix requiring all 16 strokes                    | Refused: only 14 of 16 strokes reached the page (see the delivery gap below)                                                     | none     |
+| `b1`          | eraser PORTRAIT, 2 passes                                         | Both passes were fully inked before and erased 6,537 and 6,555 of 81,920 samples (8.0%). 1 healthy refill                        | written  |
+| `b2`          | eraser PORTRAIT, the full 10-pass cell                            | All 10 passes were fully inked before and erased 6,515–6,549 samples each. 9 healthy refills at `afterStroke` 10–90              | written  |
+| `b3`          | eraser LANDSCAPE, 2 passes                                        | The app lock was released (PR 2083). Observed 780x360; erased 8,678 and 8,682 samples (10.6%); 32 of 32 strokes delivered        | written  |
+| `b4`          | pen PORTRAIT, 1 pass                                              | An ordinary ink-brush capture works. It has no eraser fields and a `fixed-geometry` plan, and records 14 of 16 strokes delivered | written  |
+| `b5`          | eraser PORTRAIT, 2 passes, final code with the 85% delivery floor | 14/16 strokes per pass, accepted; erased 6,505 and 6,539 samples                                                                 | written  |
+| `nb1`         | eraser, the fill skipped (diagnostic)                             | **Blank preparation refused:** `before pass 1, the paper is not fully inked … tile 0 0/4096 opaque …`                            | none     |
+| `nb2`         | eraser, the refill paints nothing (diagnostic)                    | **Failed refill refused:** `the eraser refill after pass 1 failed … "transparentTiles":[4,10,11,14,15]`                          | none     |
+| `nb3`         | eraser, the pass drawn with the pen (diagnostic)                  | **A stroke removing no ink refused:** `pass 1 erased 0 of 81920 census samples, under the 0.5% floor`                            | none     |
 
 Every positive also passed trusted-input fidelity and the drawing gate. Its cleanup steps all
 succeeded, and the rig read back `accelerometer_rotation=1`/`user_rotation=0` with the app lock on,
@@ -108,10 +109,13 @@ screen centre.
 * An accessibility navigation-bar overlay service is installed on the phone, but its windows are
   zero-width. The cause is unexplained.
 
-The capture therefore **records** delivery (`strokes`, and each pass's `lifts`) instead of requiring
-all 16 strokes. Requiring them failed `b1-attempt1`, and it would make every portrait eraser cell
-uncapturable while pen cells with the same gap passed. Whether each pass erased ink is the census's
-question.
+The capture therefore **records** delivery (`strokes`, and each pass's `lifts`) and requires 85% of
+each pass's planned strokes (`MIN_DELIVERED_STROKE_SHARE`), not all 16. Requiring all 16 failed
+`b1-attempt1`, and it would make every portrait eraser cell uncapturable while pen cells with the
+same gap passed. With no floor at all, which was the first review round's finding, a pass that
+delivered 1 of 16 strokes but erased enough ink would have been accepted. The floor tolerates
+exactly the evidenced 14 of 16 and refuses a third lost stroke. Run `b5` is the final code on the
+device: 14 of 16 strokes per pass, accepted.
 
 ## Previously affected evidence
 

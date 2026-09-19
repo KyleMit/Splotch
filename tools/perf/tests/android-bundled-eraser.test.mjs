@@ -58,14 +58,23 @@ describe('eraser ink verdicts', () => {
   });
 
   it('requires every delivered stroke to have ended, with no cancel', () => {
-    expect(passLiftProblem({ downs: 16, ups: 16, cancels: 0 }, 1)).toBeNull();
-    expect(passLiftProblem({ downs: 14, ups: 14, cancels: 0 }, 1)).toBeNull();
-    expect(passLiftProblem({ downs: 16, ups: 15, cancels: 0 }, 1)).toMatch(
+    expect(passLiftProblem({ downs: 16, ups: 16, cancels: 0 }, 16, 1)).toBeNull();
+    expect(passLiftProblem({ downs: 16, ups: 15, cancels: 0 }, 16, 1)).toMatch(
       /stroke still in contact: 16 pointerdowns, 15 pointerups/
     );
-    expect(passLiftProblem({ downs: 16, ups: 16, cancels: 1 }, 1)).toMatch(/pointercancel/);
-    expect(passLiftProblem({ downs: 0, ups: 0, cancels: 0 }, 1)).toMatch(
-      /delivered no trusted canvas stroke/
+    expect(passLiftProblem({ downs: 16, ups: 16, cancels: 1 }, 16, 1)).toMatch(/pointercancel/);
+  });
+
+  it('tolerates the evidenced portrait gap and refuses a pass that lost more', () => {
+    expect(passLiftProblem({ downs: 14, ups: 14, cancels: 0 }, 16, 1)).toBeNull();
+    expect(passLiftProblem({ downs: 13, ups: 13, cancels: 0 }, 16, 2)).toMatch(
+      /pass 2 delivered 13 of 16 planned strokes to the page, under the 85% floor/
+    );
+    expect(passLiftProblem({ downs: 1, ups: 1, cancels: 0 }, 16, 1)).toMatch(
+      /delivered 1 of 16 planned strokes/
+    );
+    expect(passLiftProblem({ downs: 0, ups: 0, cancels: 0 }, 16, 1)).toMatch(
+      /delivered 0 of 16 planned strokes/
     );
   });
 });
@@ -108,9 +117,15 @@ function fakeDevice(faults = {}) {
       throw new Error(`unexpected script ${script.slice(0, 60)}`);
     },
   };
+  let swipesThisPass = 0;
   const dispatchSwipe = () => {
-    if (log.at(-1) !== 'swipes') log.push('swipes');
+    if (log.at(-1) !== 'swipes') {
+      log.push('swipes');
+      swipesThisPass = 0;
+    }
+    swipesThisPass += 1;
     if (faults.noInput) return;
+    if (faults.deliversOneStroke && swipesThisPass > 1) return;
     // trusted (8) on-canvas (6) down (type 0) then up (type 2)
     state.events.push([0, 0, 0, 1, 1, 0, 1, 0, 1], [0, 0, 2, 1, 0, 0, 1, 0, 1]);
     if (!faults.erasesNothing && state.inked) state.erasedThisPass += 60;
@@ -221,9 +236,15 @@ describe('driving eraser passes', () => {
     );
   });
 
+  it('refuses a pass that erased enough ink but lost most of its strokes', async () => {
+    await expect(drive(fakeDevice({ deliversOneStroke: true }))).rejects.toThrow(
+      /pass 1 delivered 1 of 16 planned strokes to the page/
+    );
+  });
+
   it('refuses a pass whose strokes never reached the canvas', async () => {
     await expect(drive(fakeDevice({ noInput: true }))).rejects.toThrow(
-      /pass 1 delivered no trusted canvas stroke to the page/
+      /pass 1 delivered 0 of 16 planned strokes to the page/
     );
   });
 });

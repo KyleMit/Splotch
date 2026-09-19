@@ -7,7 +7,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
-import { ERASER_PASS_MIN_ERASED_FRACTION } from '../../../../tools/perf/android/capture-bundled-frames.mjs';
+import {
+  ERASER_PASS_MIN_ERASED_FRACTION,
+  MIN_DELIVERED_STROKE_SHARE,
+} from '../../../../tools/perf/android/capture-bundled-frames.mjs';
 import {
   anomalousEraserRefills,
   eraserRefillShortfall,
@@ -42,6 +45,7 @@ for (const [name, repeats, orientation] of [
   ['b1-portrait-eraser-2pass', 2, 'PORTRAIT'],
   ['b2-portrait-eraser-full-cell', 10, 'PORTRAIT'],
   ['b3-landscape-eraser-2pass', 2, 'LANDSCAPE'],
+  ['b5-final-portrait-eraser-2pass', 2, 'PORTRAIT'],
 ]) {
   const a = run(name);
   check(
@@ -70,9 +74,12 @@ for (const [name, repeats, orientation] of [
     )
   );
   check(
-    `${name}: every pass's delivered strokes all lifted, with no cancel`,
+    `${name}: every pass's delivered strokes all lifted, with no cancel, at or above the delivery floor`,
     a.eraserPasses.every(
-      (pass) => pass.lifts.downs > 0 && pass.lifts.downs === pass.lifts.ups && !pass.lifts.cancels
+      (pass) =>
+        pass.lifts.downs === pass.lifts.ups &&
+        !pass.lifts.cancels &&
+        pass.lifts.ups >= pass.plannedStrokes * MIN_DELIVERED_STROKE_SHARE
     )
   );
   check(

@@ -20,6 +20,8 @@ const FILES = [
   ['unit-b/b2-portrait-eraser-full-cell.json', 'runs/b2-portrait-eraser-full-cell.json.gz', 'gzip'],
   ['unit-b/b3-landscape-eraser-2pass.json', 'runs/b3-landscape-eraser-2pass.json.gz', 'gzip'],
   ['unit-b/b4-portrait-pen.json', 'runs/b4-portrait-pen.json.gz', 'gzip'],
+  ['unit-b/b5-final-portrait-eraser-2pass.json', 'runs/b5-final-portrait-eraser-2pass.json.gz', 'gzip'],
+  ['unit-b/b5-final-portrait-eraser-2pass.log', 'controls/b5-final-portrait-eraser-2pass.log.txt', 'sanitize'],
   ['unit-b/b1-attempt1-required-16-strokes.log', 'controls/b1-attempt1-required-16-strokes.log.txt', 'sanitize'],
   ['unit-b/b1-portrait-eraser-2pass.log', 'controls/b1-portrait-eraser-2pass.log.txt', 'sanitize'],
   ['unit-b/b2-portrait-eraser-full-cell.log', 'controls/b2-portrait-eraser-full-cell.log.txt', 'sanitize'],

@@ -35,6 +35,20 @@
     "transform": "gzip"
   },
   {
+    "path": "runs/b5-final-portrait-eraser-2pass.json.gz",
+    "sha256": "3ecd19fa15fe0dab7d519456dd3a2078a747de499dd770780077672d2cd2a8c0",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b5-final-portrait-eraser-2pass.json",
+    "originalSha256": "17b9585a78027bf88ecd7acafa53e05f8112b035ec4c6103741be70da6c94b8f",
+    "transform": "gzip"
+  },
+  {
+    "path": "controls/b5-final-portrait-eraser-2pass.log.txt",
+    "sha256": "6425f1f1e88126d73df2cfeb5615e8e2bef7f173544590e820c13f1ec0ae2416",
+    "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b5-final-portrait-eraser-2pass.log",
+    "originalSha256": "6425f1f1e88126d73df2cfeb5615e8e2bef7f173544590e820c13f1ec0ae2416",
+    "transform": "sanitize"
+  },
+  {
     "path": "controls/b1-attempt1-required-16-strokes.log.txt",
     "sha256": "9d5c34c9a77040f62a23c0cac6e4de77efbb41ed82f798e931405cee12a561c8",
     "original": "perf-profiles/bundled/units-2026-09-19/unit-b/b1-attempt1-required-16-strokes.log",

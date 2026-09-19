@@ -356,21 +356,30 @@ export function erasurePassProblem(before, after, pass) {
   return null;
 }
 
-// Every stroke that reached the page must have ended — as many trusted
+// The share of a pass's planned strokes that must reach the page. On the rig
+// phone in portrait, a swipe that starts at one screen point (the centre,
+// where two of the plan's sixteen segments begin) delivers no pointer events
+// at all, for every brush alike (see the 2026-09-19 eraser evidence package),
+// so 14 of 16 arrive. The floor tolerates exactly that gap and refuses a
+// third lost stroke: below it the pass is not the workload its plan names,
+// however much ink it happened to remove.
+export const MIN_DELIVERED_STROKE_SHARE = 0.85;
+
+// Every stroke that reached the page must also have ended — as many trusted
 // canvas lifts as downs, and no cancel — before the census reads the result
-// or the refill paints over it. Delivery is RECORDED, not required to match
-// the plan: on the rig phone in portrait, a swipe that starts at one screen
-// point (the centre, where two of the plan's sixteen segments begin) delivers
-// no pointer events to the page at all, for every brush alike (see the
-// 2026-09-19 eraser evidence package). Whether each pass removed ink is the
-// census's question.
-export function passLiftProblem(lifts, pass) {
+// or the refill paints over it.
+export function passLiftProblem(lifts, plannedStrokes, pass) {
   if (lifts.cancels) return `pass ${pass} saw ${lifts.cancels} trusted canvas pointercancel(s)`;
-  if (lifts.downs === 0) return `pass ${pass} delivered no trusted canvas stroke to the page`;
   if (lifts.downs !== lifts.ups) {
     return (
       `pass ${pass} ended with a stroke still in contact: ` +
       `${lifts.downs} pointerdowns, ${lifts.ups} pointerups`
+    );
+  }
+  if (lifts.ups < plannedStrokes * MIN_DELIVERED_STROKE_SHARE) {
+    return (
+      `pass ${pass} delivered ${lifts.ups} of ${plannedStrokes} planned strokes to the page, ` +
+      `under the ${MIN_DELIVERED_STROKE_SHARE * 100}% floor`
     );
   }
   return null;
@@ -493,7 +502,7 @@ export async function driveEraserPasses({ page, fence, repeats, canvas, dpr, dis
       previous = lifts;
       lifts = await passLifts(page, fromEvent);
     }
-    const liftProblem = passLiftProblem(lifts, pass);
+    const liftProblem = passLiftProblem(lifts, strokes, pass);
     if (liftProblem) throw new Error(liftProblem);
     trustedCanvasPointerUps += lifts.ups;
     const after = await inkCensus(page);
@@ -779,7 +788,7 @@ export async function captureBundledFrames({
       gestureRepeats: input === 'adb' ? repeats : null,
       gesturePlan: input === 'adb' ? gesturePlanFor(brush) : null,
       // What the plan sent versus what reached the page as trusted canvas
-      // strokes; see passLiftProblem for the portrait delivery gap.
+      // strokes; see MIN_DELIVERED_STROKE_SHARE for the portrait delivery gap.
       strokes,
       // The verified evidence behind that plan for an eraser cell: the initial
       // fill, one refill per pass boundary (the shape the campaign readers
