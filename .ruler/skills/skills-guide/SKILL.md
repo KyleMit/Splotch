@@ -98,6 +98,7 @@ These augment the built-in PR flows rather than replacing them.
 | `drive-pr-to-mergeable`   | **Driving** one open PR to mergeable — rival review, address, two-round bound, CI to green, verdict; never merges                        |
 | `ship-issue`              | **Shipping** one issue or task end to end — implement, PR, rival review, address, drive to mergeable; merges too under `mode=autonomous` |
 | `ship-campaign`           | **Campaigning** through a queue of issues unattended — each shipped and merged via `ship-issue` before the next starts from fresh `main` |
+| `orchestrate-sessions`    | **Coordinating** human-relayed worker sessions — batch work, emit prompts, verify reports and evidence preservation before advancing     |
 | `triage-dependabot-prs`   | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest                                                       |
 
 `create-stacked-prs` decides the *shape* of a chain before any single PR exists, and every later
@@ -143,6 +144,13 @@ change as it lands instead of a premise compounding through a stack. What it add
 own discipline: a preflight run while the user is still present, quarantining a stuck unit instead
 of stalling the queue, never ending the turn to ask, and a morning report verified against GitHub.
 `profile=performance` wraps `improve-performance-matrix`'s causal-cluster unit.
+
+`orchestrate-sessions` is the attended counterpart: it maintains a durable plan and gives the user
+one prompt at a time to carry to separate Claude or Codex workers. Workers use `ship-issue` or
+`ship-campaign`; the orchestrator verifies their pasted reports against GitHub and the underlying
+preserved evidence before choosing a follow-up for that worker or the next batch. It never
+implements or launches workers itself, and a merged PR does not discharge an outstanding
+preservation obligation.
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
