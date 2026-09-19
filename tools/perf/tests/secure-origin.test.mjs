@@ -72,6 +72,15 @@ describe('frontDecision on encoded paths', () => {
     );
   });
 
+  it.each(['/%FF', '/%c3', '/_app/%e2%82'])(
+    'refuses the non-ASCII escape %s, which may not decode as UTF-8',
+    (pathname) => {
+      expect(frontDecision({ method: 'GET', pathname, isBuildFile: noBuildFiles })).toBe(
+        'deny:encoded'
+      );
+    }
+  );
+
   it('refuses a malformed escape instead of throwing', () => {
     expect(frontDecision({ method: 'GET', pathname: '/%zz', isBuildFile: noBuildFiles })).toBe(
       'deny:encoded'
@@ -157,7 +166,12 @@ describe('createFrontHandler against a live upstream', () => {
       res.writeHead(200).end('ok');
     });
     const upstreamPort = await listen(upstream);
-    front = createServer(createFrontHandler({ upstream: upstreamPort, isBuildFile: noBuildFiles }));
+    front = createServer(
+      createFrontHandler({
+        upstream: upstreamPort,
+        isBuildFile: (path) => decodeURIComponent(path) === '/build-file',
+      })
+    );
     frontPort = await listen(front);
   });
   afterAll(() => {
@@ -167,6 +181,7 @@ describe('createFrontHandler against a live upstream', () => {
 
   it('answers a malformed escape without dying, then keeps serving', async () => {
     expect(await send(frontPort, '/%')).toBe(403);
+    expect(await send(frontPort, '/%FF')).toBe(403);
     expect(await send(frontPort, '/')).toBe(200);
   });
 

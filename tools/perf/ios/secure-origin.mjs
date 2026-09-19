@@ -29,7 +29,9 @@ const FORWARDED_METHODS = new Set(['GET', 'HEAD']);
 // judged here and the path the upstream decodes could name different routes.
 // No file the page loads needs one.
 const ENCODED_SEPARATOR = /%(2f|5c|2e|25)/i;
-const MALFORMED_ESCAPE = /%(?![0-9a-f]{2})/i;
+// Only an ASCII escape (%00-%7F) always decodes; anything else may be invalid
+// UTF-8, which makes decodeURIComponent throw. No build file needs one.
+const UNDECODABLE_ESCAPE = /%(?![0-7][0-9a-f])/i;
 // A leaf that names the constrained address AND a name outside the constraint.
 // A device that enforces the root's name constraint must refuse it.
 const CONSTRAINT_PROBE_OUTSIDE_NAME = 'DNS:example.com';
@@ -39,7 +41,7 @@ const OUTSIDE_ADDRESS = '203.0.113.10';
 export function frontDecision({ method, pathname, isBuildFile }) {
   if (!FORWARDED_METHODS.has(method)) return 'deny:method';
   if (ENCODED_SEPARATOR.test(pathname)) return 'deny:encoded';
-  if (MALFORMED_ESCAPE.test(pathname)) return 'deny:encoded';
+  if (UNDECODABLE_ESCAPE.test(pathname)) return 'deny:encoded';
   const path = normalize(pathname);
   if (DENIED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
     return 'deny:prefix';
