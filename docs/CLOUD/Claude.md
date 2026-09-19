@@ -15,10 +15,11 @@ The constraint that matters here is **networking**:
 
 * **Outbound only, through an allowlist proxy.** The container can reach allowlisted hosts (npm,
   GitHub, the package registries — the **Trusted** default) and nothing else. Off-list hosts fail
-  with `Host not in allowlist: <host>`. The policy is per environment and the dialog is the only
-  record of it: on 2026-09-19 the default environment answered `curl https://example.com` with
-  `200`, which is **Full** access, so the allowlist notes below apply only to an environment set to
-  Trusted or Custom. Probe before assuming either.
+  with `Host not in allowlist: <host>` — when the environment is set to Trusted or Custom. The
+  policy is per environment and the dialog is the only record of it: on 2026-09-19 the default
+  environment answered `curl https://example.com` with `200`, which is consistent with **Full**
+  access (a Custom allowlist naming that host would answer the same), so the allowlist notes below
+  may not apply to it. Check the dialog before assuming either.
 * **No inbound port forwarding.** There is no built-in way to expose a local port to a public URL.
   The container shares no network with your phone or laptop, so the LAN (`dev:host`) and USB
   (`adb:reverse`) flows in the mobile guide do **not** apply in a cloud session.
@@ -286,8 +287,11 @@ needed on every fresh VM. Instead:
 * **The login is seeded per session** by `tools/seed-codex-auth.mjs`, a SessionStart hook registered
   in `.claude/settings.json`. When no `$CODEX_HOME/auth.json` exists yet it writes one from the
   `CODEX_AUTH_JSON` environment variable, after checking that it is a ChatGPT login with a refresh
-  token, and prints one status line into the session's context. A file already on disk is never
-  overwritten, because Codex refreshes it in place. The snapshot never holds the credential.
+  token, and prints one status line into the session's context. A sidecar (`auth.json.seed-id`)
+  records which seed value wrote the file: the same seed arriving again leaves the file alone,
+  because Codex refreshes it in place; a **different** seed replaces it, which is how a re-paste
+  repairs a resumed VM holding a retired login; a file the hook did not write is never touched, and
+  the status line says so. The snapshot never holds the credential.
 * **The model is seeded the same way.** `rival:launch` passes `--ignore-user-config` and then reads
   the model from one place, a top-level `model` in `~/.codex/config.toml`, which a fresh VM lacks.
   The hook writes that file from `CODEX_MODEL` when none exists; without the variable every cloud
@@ -303,10 +307,11 @@ npm run rival:seed
 
 It signs in to Codex under a **dedicated** `~/.codex-cloud` login, validates it through the billing
 guard, copies the base64 seed to the clipboard without printing it, and prints the `CODEX_MODEL`
-value to set beside it (your laptop's configured model). Paste both into the environment dialog;
-they take effect on the next session and do not rebuild the snapshot. If the environment's network
-access is Trusted or Custom rather than Full, also allow `chatgpt.com` and `auth.openai.com` —
-`.claude/cloud/environment.example` carries both entries.
+value to set beside it (your laptop's configured model) and the date the seed's access token
+expires. Paste both into the environment dialog; they take effect on the next session and do not
+rebuild the snapshot. If the environment's network access is Trusted or Custom rather than Full,
+also allow `chatgpt.com` and `auth.openai.com` — `.claude/cloud/environment.example` carries both
+entries.
 
 Dedicated means a separate `CODEX_HOME`, never a copy of the working `~/.codex/auth.json`. OAuth
 refresh rotates the refresh token and retires the previous one **within the same chain**: two
@@ -315,22 +320,28 @@ on one account coexist indefinitely. Plan rate limits are shared across all of t
 
 ### Shelf life
 
-Codex refreshes a bundle whose `last_refresh` is older than about eight days (or on a 401), and the
-refresh rotates the token on the cloud VM's disk, which nothing writes back into the dialog. The
-first session that refreshes therefore retires the seed for every later VM: expect to re-seed
-roughly weekly, and the hook's status line warns from day six. Two VMs seeded from the same value
-collide only if both refresh, which is that same moment. Extending past the ceiling means giving
+The seed's lifetime is set by refresh rotation, not by a calendar. At the pinned CLI version, Codex
+refreshes the bundle once the access token's JWT expiry is within five minutes, and only falls back
+to "`last_refresh` older than eight days" for a token whose expiry it cannot read
+(`should_refresh_proactively` in `codex-rs/login/src/auth/manager.rs`). Every refresh rotates the
+refresh token on the cloud VM's disk, and nothing writes that file back into the dialog, so the
+**first review after the access token expires** retires the seed for every later VM. How long an
+access token lives has not been measured here; the hook and `rival:seed` both print the expiry they
+read, and a seed whose token has already expired is flagged at seed time. Two VMs seeded from the
+same value collide only if both refresh, which is that same moment. Extending past this means giving
 sessions a store they can restore the file from and write it back to — the pattern OpenAI documents
 for ephemeral CI runners at <https://learn.chatgpt.com/docs/auth/ci-cd-auth>; the dialog has no API
-to receive a refreshed file. Weekly re-seeding was chosen over building that store (issue #2095).
+to receive a refreshed file. Manual re-seeding was chosen over building that store until a cloud
+review has run end to end and the real cadence is known (issue #2095).
 
 A retired seed is invisible before the first run: `codex login status`, `rival:health`, and the seed
 hook all read only the file. Codex reports it on the first review as an exit whose stderr says the
-refresh token was already used; the launcher recognizes that wording, skips its resume retry, and
-prints the remedy: re-run `npm run rival:seed` and paste the new value. Do not run `codex login`
-from the sandbox (device-code auth does work there, but it is a login per VM and needs the account's
-device-code toggle), and never fall back to an API key: the guard rejects it, and it bills metered
-credits.
+access token could not be refreshed (the same family of messages covers an expired, reused, or
+revoked refresh token and an account signed out elsewhere); the launcher recognizes that family,
+skips its resume retry, and prints the remedy: re-run `npm run rival:seed` and paste the new value,
+which the hook applies at the next session start. Do not run `codex login` from the sandbox
+(device-code auth does work there, but it is a login per VM and needs the account's device-code
+toggle), and never fall back to an API key: the guard rejects it, and it bills metered credits.
 
 ### What is still unproven in cloud
 

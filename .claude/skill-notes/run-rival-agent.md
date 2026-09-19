@@ -56,31 +56,46 @@ the top-level `model` of `config.toml`, and a fresh VM has none; the hook writes
 stays exactly what `codex login` wrote and the guard validates; a second, non-secret variable is the
 cheaper shape, and `rival:seed` prints the laptop's configured slug to paste beside it.
 
-The seed's shelf life is set by refresh-token rotation, not expiry. Codex refreshes a bundle whose
-`last_refresh` is older than about eight days and rotates the refresh token as it does; the rotated
-file lands on the VM's disk and nothing writes it back into the dialog, so the first session to
-refresh retires the seed for every later VM. The hook warns from day six. The seed must come from a
-dedicated login: rotation retires the previous token in the same chain, so a copy of the user's
-working `auth.json` would log the laptop out at the first cloud refresh, while independent logins on
-one account coexist. Weekly re-seeding was chosen over the restore-run-write-back pattern OpenAI
-documents for ephemeral CI runners, which needs a store the sandbox can reach (a private gist or
-branch through the GitHub proxy, Netlify Blobs); none was worth building before a cloud review has
-run end to end (issue #2095, open question 1).
+The seed's shelf life is set by refresh-token rotation. The first draft of this package warned off
+an eight-day `last_refresh` age, taken from OpenAI's documentation; the pinned CLI's source
+(`should_refresh_proactively`, codex-rs/login/src/auth/manager.rs) showed that rule to be only the
+fallback for a token with no readable expiry — the live rule refreshes once the access token's JWT
+`exp` is within five minutes, which a review of the PR reproduced with a synthetic seed whose token
+had expired a day earlier and whose `last_refresh` was fresh: the hook reported a clean seed and no
+warning. The hook now reads `exp` itself, prints the expiry, and flags an already-expired token at
+seed time, keeping the age rule as the same fallback Codex uses. The rotated file lands on the VM's
+disk and nothing writes it back into the dialog, so the first review past that expiry retires the
+seed for every later VM; how long an access token lives has not been measured, so no cadence is
+promised. The seed must come from a dedicated login: rotation retires the previous token in the same
+chain, so a copy of the user's working `auth.json` would log the laptop out at the first cloud
+refresh, while independent logins on one account coexist. Manual re-seeding was chosen over the
+restore-run-write-back pattern OpenAI documents for ephemeral CI runners, which needs a store the
+sandbox can reach (a private gist or branch through the GitHub proxy, Netlify Blobs); none was worth
+building before a cloud review has run end to end and the cadence is known (issue #2095, open
+question 1).
 
-The retired-seed failure was measured, not inferred: with a fake `auth.json` carrying an expired
+The never-overwrite rule needed one exception. The first draft kept any file on disk, on the grounds
+that Codex refreshes it in place and the seed is older by definition — true until the user re-pastes
+a new seed, at which point a resumed VM still holding the retired file kept it and the documented
+remedy repaired nothing (reproduced in review: seed A, then fresh value B, and the hook reported
+`present`). The hook now writes a sidecar recording which seed wrote the file: the same seed leaves
+the file alone, a different seed replaces it, and a file without a sidecar — one the hook never
+wrote — is left alone with a status line saying so. Deleting the file is the documented way to hand
+one of those back to the hook.
+
+The unusable-login failure was measured in the 2026-09-02 cloud session (issue #2095's probe table,
+codex-cli 0.152.1), not by this package's own runs: with a fake `auth.json` carrying an expired
 access token and a refresh token the auth server never issued, `codex login status` and
 `rival:health` both passed — both read only the file — and `codex exec` exited 1 within a second
 with "Your access token could not be refreshed because your refresh token was already used." The
-Codex vendor adapter recognizes that wording, the shared launcher skips the resume retry for it, and
-the launch CLI prints the remedy for the platform it runs on. A liveness probe in the health check
-was considered and rejected: the only honest probe is a real request, which either spends plan usage
-or rotates the token itself.
+pinned version's source shows that sentence is one of five sharing the "could not be refreshed"
+prefix (expired, reused, revoked, generic, account signed out elsewhere), so the Codex vendor
+adapter matches the prefix and says the login is unusable rather than naming rotation as the cause;
+the shared launcher skips the resume retry for the family, and the launch CLI prints the remedy for
+the platform it runs on. A liveness probe in the health check was considered and rejected: the only
+honest probe is a real request, which either spends plan usage or rotates the token itself.
 
-The eight-day refresh interval comes from OpenAI's documentation, not from a measured cloud run; the
-first re-seed will show whether the warning leads the rotation by enough. Whether a 401 ever
-triggers a refresh earlier than that — an idle seed whose access token expired before its eighth day
-— is the case that would shorten the shelf life below what the note above claims. A full cloud
-launch (worktree, broker loop, post) is also still unrun; the Linux `/tmp` spool exposure in
+A full cloud launch (worktree, broker loop, post) is still unrun; the Linux `/tmp` spool exposure in
 `tools/rival-agent/NOTES.md` becomes live the day it does.
 
 ## What `--ignore-user-config` costs
