@@ -1,0 +1,11 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54804/ --actions=idle,palette,color-picker,brushes,stroke-width,settings,coloring,screenshot,ai-waiting,undo,unavailable,clear --output=perf-profiles/coloring-state-r1/repro-main-fresh-full/actions.json
+
+
+Desktop action sweep 1/4
+
+Desktop action sweep 2/4
+Error: The applicable action plan changed between scored repeats: +open coloring book
+    at stableActionPlan (file://<checkout>/tools/perf/ios/capture-xcuitest-actions.mjs:172:11)
+    at runDesktopActions (file://<checkout>/tools/perf/web/capture-desktop-actions.mjs:219:20)
