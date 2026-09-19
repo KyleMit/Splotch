@@ -81,6 +81,15 @@ const TRUSTED_STROKE_MS = 650;
 const CLEAR_DRAG_MS = 450;
 const COLORING_SCROLL_MS = 450;
 const COLORING_SCROLL_DISTANCE_PX = 400;
+// The picker is centred, so its centre column is the screen's. Android drops a
+// native touch that starts under untrusted overlay windows whose combined
+// opacity passes the platform's obscuring limit, and a one-pixel centre-line
+// overlay (a navigation-gesture accessibility service draws one) makes the
+// exact centre column the one place an injected swipe can be refused outright.
+// Only the native-touch route passes through that check, so only it is moved.
+// The offset is in CSS pixels and scaled to the route's native units, which
+// keeps it inside the narrowest picker gutter (--space-2) on every device.
+const COLORING_SCROLL_OFF_CENTRE_CSS_PX = 2;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 // A capped walk back through history: enough to empty a sweep's own strokes,
@@ -626,6 +635,35 @@ async function measureClick({
   return { ...sample, activation: activationMode };
 }
 
+// A scroll timeout alone cannot say whether the gesture never arrived or arrived
+// and moved nothing. The armed probe's record separates them: eventType
+// 'uncaptured' means no pointerdown reached the dialog, while a trusted captured
+// event beside an unmoved scrollTop means the page received the touch and did
+// not scroll.
+function unscrolledColoringDialogState(execute, selector) {
+  return execute(`
+    const dialog = document.querySelector(${JSON.stringify(selector)});
+    let probe = null;
+    try { probe = window.__actionProbe?.finish(); } catch (probeError) { probe = { error: String(probeError) }; }
+    return {
+      probe: probe && {
+        armedEvents: probe.armedEvents,
+        eventType: probe.eventType,
+        trusted: probe.trusted,
+        error: probe.error
+      },
+      dialog: dialog ? {
+        open: dialog.open,
+        scrollTop: dialog.scrollTop,
+        scrollHeight: dialog.scrollHeight,
+        clientHeight: dialog.clientHeight,
+        overflowY: getComputedStyle(dialog).overflowY
+      } : null,
+      openDialogs: [...document.querySelectorAll('dialog[open]')].map((open) => open.id)
+    };
+  `);
+}
+
 // Exported to exercise dispatch and captured provenance together without a physical device.
 export async function measureColoringPageScroll(client, sessionId, execute) {
   const selector = '#coloring-book-dialog';
@@ -633,7 +671,8 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
     const dialog = document.querySelector(${JSON.stringify(selector)});
     return {
       dialogOpen: !!dialog?.open,
-      scrollable: !!dialog?.open && dialog.scrollHeight > dialog.clientHeight
+      scrollable: !!dialog?.open && dialog.scrollHeight > dialog.clientHeight,
+      cssWidth: dialog?.getBoundingClientRect().width
     };
   `);
   if (!scrollability.dialogOpen) {
@@ -649,6 +688,7 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
   const transport = coloringScrollTransport(client);
   const useWheel = transport.activation === 'trusted-wheel';
   let scrollDelivery = null;
+  let touchGesture = null;
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(COLORING_SCROLL_ACTION_LABEL)}, ${JSON.stringify(selector)}, ${JSON.stringify(
@@ -664,9 +704,12 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
       execute,
       selector
     );
-    const x = Math.round(bounds.x + bounds.width / 2);
+    const nativeUnitsPerCssPx = bounds.width / scrollability.cssWidth;
+    const offCentre = client.cdp ? 0 : COLORING_SCROLL_OFF_CENTRE_CSS_PX * nativeUnitsPerCssPx;
+    const x = Math.round(bounds.x + bounds.width / 2 + offCentre);
     const startY = Math.round(bounds.y + bounds.height * 0.75);
     const endY = Math.round(bounds.y + bounds.height * 0.3);
+    touchGesture = { x, startY, endY };
     if (client.cdp) {
       await client.scrollTouchGesture({ x, startY, endY, durationMs: COLORING_SCROLL_MS });
       scrollDelivery = 'cdp-synthesized-scroll';
@@ -685,11 +728,21 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
       ]);
     }
   }
-  const readyAt = await waitForReady(
-    execute,
-    `document.querySelector(${JSON.stringify(selector)})?.scrollTop > 0`,
-    'coloring pages to scroll'
-  );
+  let readyAt;
+  try {
+    readyAt = await waitForReady(
+      execute,
+      `document.querySelector(${JSON.stringify(selector)})?.scrollTop > 0`,
+      'coloring pages to scroll'
+    );
+  } catch (error) {
+    const state = await unscrolledColoringDialogState(execute, selector).catch((stateError) => ({
+      stateReadError: String(stateError),
+    }));
+    throw new Error(`${error.message}\nScroll state: ${JSON.stringify({ ...state, touchGesture })}`, {
+      cause: error,
+    });
+  }
   await sleep(ACTION_SETTLE_MS);
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
   await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);

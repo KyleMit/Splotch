@@ -1,0 +1,21 @@
+09-19 16:33:05.731 W/InputDispatcher( 1593): Untrusted touch due to occlusion by nu.nav.bar/10334 (obscuring opacity = 0.96, maximum allowed = 0.80)
+09-19 16:33:05.731 D/InputDispatcher( 1593): Stack of obscuring windows during untrusted touch (540.0, 1075.0):
+09-19 16:33:05.731 W/InputDispatcher( 1593): Dropping untrusted touch event due to nu.nav.bar/10334
+09-19 16:33:08.207 W/InputDispatcher( 1593): Untrusted touch due to occlusion by nu.nav.bar/10334 (obscuring opacity = 0.96, maximum allowed = 0.80)
+09-19 16:33:08.207 D/InputDispatcher( 1593): Stack of obscuring windows during untrusted touch (540.0, 1065.0):
+09-19 16:33:08.207 W/InputDispatcher( 1593): Dropping untrusted touch event due to nu.nav.bar/10334
+09-19 16:33:14.038 W/InputDispatcher( 1593): Untrusted touch due to occlusion by nu.nav.bar/10334 (obscuring opacity = 0.96, maximum allowed = 0.80)
+09-19 16:33:14.038 D/InputDispatcher( 1593): Stack of obscuring windows during untrusted touch (540.0, 1075.0):
+09-19 16:33:14.038 W/InputDispatcher( 1593): Dropping untrusted touch event due to nu.nav.bar/10334
+09-19 16:33:16.517 W/InputDispatcher( 1593): Untrusted touch due to occlusion by nu.nav.bar/10334 (obscuring opacity = 0.96, maximum allowed = 0.80)
+09-19 16:33:16.517 D/InputDispatcher( 1593): Stack of obscuring windows during untrusted touch (540.0, 1065.0):
+09-19 16:33:16.518 W/InputDispatcher( 1593): Dropping untrusted touch event due to nu.nav.bar/10334
+09-19 16:33:22.326 W/InputDispatcher( 1593): Untrusted touch due to occlusion by nu.nav.bar/10334 (obscuring opacity = 0.96, maximum allowed = 0.80)
+09-19 16:33:22.326 D/InputDispatcher( 1593): Stack of obscuring windows during untrusted touch (540.0, 1075.0):
+09-19 16:33:22.326 W/InputDispatcher( 1593): Dropping untrusted touch event due to nu.nav.bar/10334
+09-19 16:33:24.797 W/InputDispatcher( 1593): Untrusted touch due to occlusion by nu.nav.bar/10334 (obscuring opacity = 0.96, maximum allowed = 0.80)
+09-19 16:33:24.797 D/InputDispatcher( 1593): Stack of obscuring windows during untrusted touch (540.0, 1065.0):
+09-19 16:33:24.797 W/InputDispatcher( 1593): Dropping untrusted touch event due to nu.nav.bar/10334
+09-19 16:34:27.484 W/InputDispatcher( 1593): Untrusted touch due to occlusion by nu.nav.bar/10334 (obscuring opacity = 0.96, maximum allowed = 0.80)
+09-19 16:34:27.484 D/InputDispatcher( 1593): Stack of obscuring windows during untrusted touch (540.0, 1667.0):
+09-19 16:34:27.484 W/InputDispatcher( 1593): Dropping untrusted touch event due to nu.nav.bar/10334

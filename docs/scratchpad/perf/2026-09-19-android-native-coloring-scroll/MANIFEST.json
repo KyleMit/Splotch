@@ -1,0 +1,76 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "4fd36fd92af1e0b2eb44b8d17acd33aabe24e34ddcc2e95d9fc9efadd8363488"
+    },
+    {
+      "path": "check.mjs",
+      "sha256": "269c431e191a31ef4dbecaa206f06f7701e6b81096540669daf04f1235ea6b30"
+    },
+    {
+      "path": "control-centre/logcat-untrusted-touch.txt",
+      "sha256": "3cb047ddd346ff1f9a7430af9dc16d36ed6238577fe421a1d1fa58a097d4864f"
+    },
+    {
+      "path": "control-centre/overlay-windows.txt",
+      "sha256": "636ffffaa200ae83540b41f50a10d339ce7529c075a096961dee87ab874cafc8"
+    },
+    {
+      "path": "control-centre/run.log.txt",
+      "sha256": "1f48fbe9a1dda948fb3ece45a5515187f2c202548ac391c9b07a46c11a044b4e"
+    },
+    {
+      "path": "final-coloring/actions.reduced.json",
+      "sha256": "5180436efcfe8b4f4869ed0e18f6a2ce435f694762e57be59209a8ff2264064d"
+    },
+    {
+      "path": "final-coloring/logcat-untrusted-touch.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "final-coloring/run.log.txt",
+      "sha256": "96eee4a4897e223b3a472a30f03ecdc481ab5cf6e656fddf1de74523cc9beee4"
+    },
+    {
+      "path": "final-full-groups/actions.reduced.json",
+      "sha256": "83fd8691cbe269c281e8f154336ce58446a5a76f6d0a986efcb57b36b86232bb"
+    },
+    {
+      "path": "final-full-groups/logcat-untrusted-touch.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "final-full-groups/run.log.txt",
+      "sha256": "2a35ad81ba99c7f525e3f6e7a797bf72f198f8a4bbc258290376c3e1ade1b3d8"
+    },
+    {
+      "path": "first-offset-coloring/actions.reduced.json",
+      "sha256": "9588f2cfce14f699ba87a0c776f122efb3223b0642672794a56cc090642d68d7"
+    },
+    {
+      "path": "first-offset-coloring/run.log.txt",
+      "sha256": "d42a95ef497726ceb5deced79011df1943ac649a5decda455cedb33398881c69"
+    },
+    {
+      "path": "first-offset-full-groups/actions.reduced.json",
+      "sha256": "ff904bdbe6915ce497ce3e7d56809accabcbcbcbdbc35f298affacc6686de761"
+    },
+    {
+      "path": "first-offset-full-groups/run.log.txt",
+      "sha256": "91be61dcc8a52608a85d787669c0fecfbe6ab63e90659cad9460097989d091b5"
+    },
+    {
+      "path": "reduce-actions.jq",
+      "sha256": "e42b33cb70df8c8d12610f2aab73be2d30b6ff514a98a88daff6bb96f27bb720"
+    },
+    {
+      "path": "retained-log/analysis-output.txt",
+      "sha256": "c3a41081e445cbe61fc9d48b1e9c2542309985f667f8265b9d91ec30aae1e084"
+    },
+    {
+      "path": "retained-log/analyze-appium-log.sh",
+      "sha256": "da23d1693f8b8d881bc21860d728f9d3b9a1bda69db5c9fba103d1c1105a142a"
+    }
+  ]
+}
