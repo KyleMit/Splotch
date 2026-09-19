@@ -20,9 +20,11 @@
     landingSection: SectionId;
     /** Advances on each open transition, as the dialog action reports it to SettingsModal. */
     openGeneration: number;
+    /** Advances on each deep-link landing, including one onto the section already landed on. */
+    landingGeneration: number;
   }
 
-  let { landingSection, openGeneration }: Props = $props();
+  let { landingSection, openGeneration, landingGeneration }: Props = $props();
 
   // The sidebar is a table of contents over the continuous pane: this is the
   // section the reading position currently sits in, an indicator rather than a
@@ -330,8 +332,10 @@
   // offsets the parent left them at — which would reopen with the landing
   // section highlighted while the pane still shows wherever they stopped
   // reading. A deep-linked section scrolls into place instead of swapping in.
-  // Re-runs on each open and on each landing change while open.
+  // Re-runs on each open and on each landing while open — counted rather than
+  // compared, so a cross-link back to the section last landed on still scrolls.
   $effect(() => {
+    void landingGeneration;
     if (!settingsModal.open) {
       pendingJump = null;
       smoothJumpTarget = null;

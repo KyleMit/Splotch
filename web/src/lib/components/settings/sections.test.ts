@@ -9,7 +9,13 @@ import {
   setToolDrawerEnabled,
   setUndoButton,
 } from '$lib/state/settings.svelte';
-import { SECTIONS, sectionContentStamp, sectionSubtitle } from './sections';
+import {
+  SECTIONS,
+  sectionContentStamp,
+  sectionIcon,
+  sectionLabel,
+  sectionSubtitle,
+} from './sections';
 
 describe('SECTIONS', () => {
   // `as const satisfies` derives SectionId from this list and rejects an id
@@ -26,6 +32,26 @@ describe('SECTIONS', () => {
 
   it("uses the app version as What's New's content stamp", () => {
     expect(sectionContentStamp('whatsnew')).toBe(APP_VERSION);
+  });
+
+  // Set once per child rather than per session: below the drawer a parent keeps
+  // tuning, above the feature sections.
+  it('files Accessibility between Tool Drawer and Coloring', () => {
+    const ids = SECTIONS.map((section) => section.id);
+    expect(ids.indexOf('accessibility')).toBe(ids.indexOf('controls') + 1);
+    expect(ids.indexOf('coloring')).toBe(ids.indexOf('accessibility') + 1);
+  });
+
+  it('names the sections a cross-link points at by their own icon and label', () => {
+    expect(sectionLabel('controls')).toBe('Tool Drawer');
+    expect(sectionIcon('controls')).toBe('controls');
+    expect(sectionLabel('sound')).toBe('Sound');
+  });
+});
+
+describe('Accessibility section subtitle', () => {
+  it('says who the section helps', () => {
+    expect(sectionSubtitle('accessibility')).toBe('Make it easier to see and tap');
   });
 });
 

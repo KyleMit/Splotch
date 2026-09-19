@@ -40,8 +40,10 @@ const sources = import.meta.glob<string>(
 
 // Files that name deferred icons without rendering anything: the per-icon-part
 // token map keys CSS custom properties by icon name, and the icon that paints
-// them imports the registry itself.
-const NON_RENDERING_REFERENCES = new Set(['../design/iconTokens.ts']);
+// them imports the registry itself; the deep-link union names Settings section
+// ids, two of which coincide with their section icons, from the startup path
+// that must not carry the registry.
+const NON_RENDERING_REFERENCES = new Set(['../design/iconTokens.ts', '../state/ui.svelte.ts']);
 
 // Both the side-effect form (`import '$lib/components/deferredIcons'`) and a
 // named import count; either evaluates the module before the importer's body.
