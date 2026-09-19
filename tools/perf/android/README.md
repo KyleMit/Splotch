@@ -16,6 +16,22 @@ an unserved URL, kill -9) leaks the pin; the recovery — and why a leaked pin f
 cells as off-refresh-regime — is in `docs/PROFILING-CAMPAIGNS.md` under "Capture state that survives
 between runs".
 
+`perf:android:bundled:frames` (`capture-bundled-frames.mjs`) measures drawing in the installed debug
+app's own bundled page over the WebView DevTools socket. The request is not the measurement,
+especially for orientation. The app's rotation lock (on by default) holds the Activity against the
+adb `user_rotation` the capture writes. So after launch the capture reads the page's viewport. When
+it disagrees with `--orientation`, the capture releases the lock through Settings and writes
+`user_rotation` again, because on the rig phone an unlocked Activity does not turn until that
+setting is rewritten. It then refuses to write an artifact unless the page measured the requested
+orientation before contact and neither resized nor rotated during it. The artifact records
+`observedOrientation`, `pageGeometry` (the launched, pre-contact, and post-contact viewport, canvas
+rect, DPR, and `screen.orientation.type`), `rotationLock`, and a per-step `cleanup` result.
+
+Cleanup runs from `finally` and on SIGINT/SIGTERM. It restores the app lock while CDP is still
+attached, then removes the forward and restores the adb rotation settings, each step independently.
+A failed step exits non-zero after writing the artifact. The artifact is written only after cleanup,
+so it cannot claim a restoration that has not happened. kill -9 still leaks all of it.
+
 Android-specific discovery and transport stay here. Shared device-session, action-scoring, trace,
 and artifact behavior belongs in `../lib/`; the injected action payload belongs in `../probes/`. The
 behavior-preserving issue #975 manifest leaves the shared action plan in
