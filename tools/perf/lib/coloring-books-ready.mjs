@@ -19,14 +19,25 @@ const LISTED_POLL_MS = 250;
 
 export const BOOK_CHOICE_SELECTOR = '#coloring-book-dialog button[aria-label$="coloring book"]';
 
-// Null where the target keeps no web pack storage to read: a native shell
-// installs through its own store, and an engine without Cache Storage cannot
-// hold web packs at all.
-export const COLORING_BOOK_INSTALL_STATE_SCRIPT = `
-  return (async () => {
-    if (typeof caches === 'undefined' || globalThis.Capacitor?.isNativePlatform?.()) return null;
+// A stalled version or manifest response must fail the read, not hang the
+// capture: the page aborts its own fetches at the first bound, and the harness
+// stops waiting on the transport at the second, which also covers the Cache
+// Storage reads no signal can abort.
+const INSTALL_STATE_FETCH_TIMEOUT_MS = 15_000;
+const INSTALL_STATE_READ_TIMEOUT_MS = 20_000;
+
+// A page expression that evaluates to a Promise, so it needs a transport that
+// awaits one: Appium's execute/sync atoms serialize a returned Promise as {}.
+// Resolves null where the target keeps no web pack storage to read: a native
+// shell installs through its own store, and an engine without Cache Storage
+// cannot hold web packs at all.
+export const COLORING_BOOK_INSTALL_STATE_EXPRESSION = `(async () => {
+  if (typeof caches === 'undefined' || globalThis.Capacitor?.isNativePlatform?.()) return null;
+  const abort = new AbortController();
+  const fetchDeadline = setTimeout(() => abort.abort(), ${INSTALL_STATE_FETCH_TIMEOUT_MS});
+  try {
     const json = async (path) => {
-      const response = await fetch(path, { cache: 'no-store' });
+      const response = await fetch(path, { cache: 'no-store', signal: abort.signal });
       if (!response.ok) throw new Error(path + ' answered ' + response.status);
       return response.json();
     };
@@ -49,8 +60,29 @@ export const COLORING_BOOK_INSTALL_STATE_SCRIPT = `
       catalog,
       missing: catalog.filter((id) => id !== manifest.starterBookId && !marked.has(id)),
     };
-  })();
-`;
+  } finally {
+    clearTimeout(fetchDeadline);
+  }
+})()`;
+
+export function installStateReadTimeoutMessage(timeoutMs) {
+  return `Timed out after ${timeoutMs / 1000} s reading which coloring books are installed`;
+}
+
+async function readInstallState(executePromise, timeoutMs) {
+  let deadline;
+  const expired = new Promise((_, reject) => {
+    deadline = setTimeout(
+      () => reject(new Error(installStateReadTimeoutMessage(timeoutMs))),
+      timeoutMs
+    );
+  });
+  try {
+    return await Promise.race([executePromise(COLORING_BOOK_INSTALL_STATE_EXPRESSION), expired]);
+  } finally {
+    clearTimeout(deadline);
+  }
+}
 
 export function installTimeoutMessage(state, timeoutMs) {
   const extras = state.catalog.length - 1;
@@ -69,16 +101,19 @@ export function listedTimeoutMessage(listed, expected, timeoutMs) {
 // happens to offer. Settle the installed set first: engage the way the picker's
 // opening tap does, wait for every catalog book, then confirm through the
 // picker itself that the product lists them all. Returns the listed book count,
-// or null where the target has no web pack storage.
+// or null where the target has no web pack storage. `execute` runs a synchronous
+// script body; `executePromise` evaluates an expression and awaits its Promise.
 export async function prepareColoringBooks({
   execute,
+  executePromise,
   openPicker,
   closePicker,
-  // Test seams: production callers take both bounds from the constants.
+  // Test seams: production callers take every bound from the constants.
   installTimeoutMs = COLORING_BOOKS_INSTALL_TIMEOUT_MS,
   listedTimeoutMs = COLORING_BOOKS_LISTED_TIMEOUT_MS,
+  readTimeoutMs = INSTALL_STATE_READ_TIMEOUT_MS,
 }) {
-  let state = await execute(COLORING_BOOK_INSTALL_STATE_SCRIPT);
+  let state = await readInstallState(executePromise, readTimeoutMs);
   if (state === null) return null;
 
   if (state.missing.length > 0) {
@@ -86,7 +121,7 @@ export async function prepareColoringBooks({
     await closePicker();
     const installed = await pollUntil(
       async () => {
-        state = await execute(COLORING_BOOK_INSTALL_STATE_SCRIPT);
+        state = await readInstallState(executePromise, readTimeoutMs);
         return state.missing.length === 0;
       },
       installTimeoutMs,

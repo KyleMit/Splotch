@@ -423,6 +423,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         client,
         sessionId: SESSION_ID,
         execute,
+        executePromise: (expression) => page.evaluate(expression),
         actions,
         originalOrientation,
         baselineTheme,

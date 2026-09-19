@@ -25,6 +25,7 @@ import {
   blockServiceWorkerRegistrationForMeasurement,
   clearDeviceWebCache,
   createWebDriverClient,
+  executePagePromise,
   nativeCanvasBounds,
   selectWebContext,
   switchToWebContext,
@@ -1324,6 +1325,7 @@ export async function runActionSweep({
   client,
   sessionId,
   execute,
+  executePromise,
   actions,
   originalOrientation,
   baselineTheme = 'dark',
@@ -1390,6 +1392,7 @@ export async function runActionSweep({
   const listedColoringBooks = actions.has('coloring')
     ? await prepareColoringBooks({
         execute,
+        executePromise,
         openPicker: () => openColoringPickerForSetup(execute),
         closePicker: () => closeColoringPickerForSetup(execute),
       })
@@ -2443,6 +2446,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         client,
         sessionId,
         execute,
+        executePromise: (expression) => executePagePromise(executeAsync, expression),
         actions,
         originalOrientation,
         baselineTheme,

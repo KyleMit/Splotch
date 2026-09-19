@@ -224,6 +224,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         client,
         sessionId: SESSION_ID,
         execute,
+        executePromise: (expression) => page.evaluate(expression),
         actions,
         originalOrientation,
         baselineTheme,
