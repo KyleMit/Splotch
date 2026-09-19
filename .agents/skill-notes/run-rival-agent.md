@@ -83,8 +83,8 @@ after that and is out of scope here.
 Its only in-repo caller was `implement-issue-stack`, retired when campaigns moved to
 `ship-campaign`'s merge-as-you-go loop, which reviews through `drive-pr-to-mergeable` with a live
 handler. The alias and its shim stay installed for a handler-less orchestrator; removing them means
-a manifest bump and a user-run reinstall, so it is a deliberate follow-up rather than part of that
-retirement.
+a manifest bump and a user-run reinstall, so the decision is tracked in issue #2077 rather than
+folded into that retirement.
 
 ## What was deleted and why
 
