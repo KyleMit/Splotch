@@ -154,6 +154,20 @@
     "transform": "copy"
   },
   {
+    "path": "terminal/session-terminal.jsonl",
+    "sha256": "ef61e8128c5ee0e9cb8ed5b3a63b5880afc17909f08fdb3969c9ddeaa85fce68",
+    "original": "perf-profiles/bundled/units-2026-09-19/terminal/orientation-terminal.jsonl",
+    "originalSha256": "ef61e8128c5ee0e9cb8ed5b3a63b5880afc17909f08fdb3969c9ddeaa85fce68",
+    "transform": "copy"
+  },
+  {
+    "path": "diag/extract-terminal.mjs",
+    "sha256": "3bea229664846271dc91e53fdc474087dc7aea251c0b46d6a0d563a8b6089f2b",
+    "original": "perf-profiles/bundled/units-2026-09-19/diag/extract-terminal.mjs",
+    "originalSha256": "3bea229664846271dc91e53fdc474087dc7aea251c0b46d6a0d563a8b6089f2b",
+    "transform": "copy"
+  },
+  {
     "path": "diag/read-lock.mjs",
     "sha256": "febb0af24a7249e5093e135c28ecb39c8435f315097f2d70cef315f9734807bd",
     "original": "perf-profiles/bundled/units-2026-09-19/diag/read-lock.mjs",
