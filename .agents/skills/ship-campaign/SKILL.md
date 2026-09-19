@@ -33,12 +33,13 @@ The input names the queue and, optionally, a deadline:
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
 branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
 merge each PR through `ship-issue`'s autonomous gate, comment on queued issues and their epic, and
-open a revert PR for a campaign merge that turned `main` red (step 4). It does **not** authorize
-bypassing branch protection, weakening a test or gate to get green, force-pushing a shared branch,
-closing an issue except through `Fixes` on merge, filing new issues, or touching work outside the
-queue. Carry this block verbatim into every unit's instructions: an unattended unit must never have
-to infer its authority, and a runner that sees "never merge" anywhere in its instructions will
-refuse the merge.
+ship two kinds of unqueued **free-form unit**: a revert PR for a campaign merge that turned `main`
+red (step 4), and a gate-repair PR for a check proven broken on its own base (step 3). It does
+**not** authorize bypassing branch protection, weakening a test or gate to get green, force-pushing
+a shared branch, closing an issue except through `Fixes` on merge, filing new issues, or touching
+work outside the queue and those two exceptions. Carry this block verbatim into every unit's
+instructions: an unattended unit must never have to infer its authority, and a runner that sees
+"never merge" anywhere in its instructions will refuse the merge.
 
 ## 1. Preflight — before the user leaves
 
@@ -91,18 +92,26 @@ For each unit, finish every step before starting the next:
 2. **Re-check the unit.** It is still open and unclaimed — another session may have taken it since
    preflight. For `backlog`, this is where you pick: the newest open issue without `in-progress`,
    `wont-do`, or a `needs-*` label, which you have not already quarantined in this campaign.
-3. **Ship it.** Run `ship-issue <n> mode=autonomous` with the authorization block, the assigned
-   port, and the issues other sessions are working on (so the unit stays off their files). When the
-   runner supports subagents, give each unit a **fresh implementer subagent** with only that
-   context, and resume the same subagent for that unit's own repairs. A long campaign run inline
-   compacts its context repeatedly and loses what the early units learned; a fresh context per unit
-   carries only what the unit needs.
+3. **Ship it.** Run `ship-issue <n> mode=autonomous` — or, for a free-form unit (a performance
+   cluster, a revert, a gate repair), `ship-issue mode=autonomous` with the unit's written spec in
+   place of an issue number — with the authorization block, the assigned port, and the issues other
+   sessions are working on (so the unit stays off their files). When the runner supports subagents,
+   give each unit a **fresh implementer subagent** with only that context, and resume the same
+   subagent for that unit's own repairs. A long campaign run inline compacts its context repeatedly
+   and loses what the early units learned; a fresh context per unit carries only what the unit
+   needs.
 4. **Verify from live state, never from the unit's report.** The PR reads merged; its merge commit
-   is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); the issue is closed and
-   `in-progress` is gone; the post-merge jobs on that SHA registered and finished green. Copy every
-   SHA from command output. A report and the API disagreeing is itself a finding for the morning
-   report.
+   is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); the post-merge jobs on
+   that SHA registered and finished green; and, for an issue unit, the issue is closed with
+   `in-progress` and the campaign's assignee gone. A free-form unit has no issue to check; its PR
+   body carries the spec, and the ledger records it. Copy every SHA from command output. A report
+   and the API disagreeing is itself a finding for the morning report.
 5. **Update the ledger** and continue.
+
+**A unit that stops before opening a PR is skipped.** `ship-issue` stops without a PR when the work
+is far larger than it read or needs a product decision. Verify its rollback from live state — the
+issue has no `in-progress` label or campaign assignee, and carries a comment naming the blocker —
+then record the unit as skipped, with the blocker and the question it raises, and continue.
 
 Never end the turn to ask a question. The user is not there, and a campaign that stops to ask sits
 idle until morning. Park the question in the ledger, apply the unit's quarantine or skip rule, and
@@ -110,26 +119,41 @@ continue with the next unit.
 
 ## 3. When a unit fails — quarantine it, don't stall
 
-`ship-issue` bounds each unit: two rival review rounds, and CI failures the PR caused are fixed. A
-unit that still cannot pass its gate is **quarantined**:
+`ship-issue` bounds review at two rival rounds but iterates on a CI failure the PR caused until it
+is green, which an unattended run cannot afford unbounded. The campaign adds its own budget per
+unit:
+
+* **Two product repair attempts** for CI failures the unit caused — a change to the unit's code in
+  response to a failure whose causality (below) is established. Polling, one rerun of a cancelled or
+  infrastructure-failed job, and the head-versus-base diagnosis do not count.
+* **Forty-five minutes of waiting per head** for the expected checks to register and finish. At the
+  deadline, inspect the runs: retry a cancelled or infrastructure run once, treat GitHub being
+  unavailable as queue-wide, and classify anything else by causality.
+
+A unit that exhausts either budget, or still carries a valid blocking rival finding after round two,
+is **quarantined**:
 
 * Replace `Fixes #<n>` with `Refs #<n>` in the PR, convert it to draft, and add a postmortem to the
   PR body: head and base SHAs, the failing commands or CI links, what was tried, the rival's open
   findings, and the concrete next step. Confirm the PR's `closingIssuesReferences` is empty — a
   closing keyword left in a commit message, or even a negated one, still links the issue for
   closure.
-* Comment on the issue with the PR link and a one-paragraph summary, and remove `in-progress` so the
-  issue is not stranded from every future pickup.
+* Comment on the issue with the PR link and a one-paragraph summary, then release the claim: remove
+  `in-progress` and the assignee the campaign added, and re-read the issue to confirm both are gone.
+  A leftover label or assignee strands the issue from every future pickup, including the preflight
+  of the next campaign.
 * Record it in the ledger and continue with the next unit.
 
 **Establish causality before blaming the unit.** Before spending a repair attempt or quarantining,
 compare the failing head with its exact base under the same command and runner. The failure belongs
 to the gate, not the unit, when the base fails the same way, the head and base distributions are
 indistinguishable, or the diff cannot run on the failing path. One green rerun is diagnostic
-evidence, not a fix. A broken gate threatens every later unit, so it becomes the next unit: repair
-it on its own PR through the same loop, with a negative control that still fails for the defect the
-gate exists to catch, then retry the unit it blocked. Never quarantine a unit for a flake, a
-cancelled job, or an outage.
+evidence, not a fix, and gate failures spend no repair attempt. A broken gate threatens every later
+unit, so repairing it becomes the next unit — a free-form gate-repair unit under the authority
+block, through the same loop, with a negative control that still fails for the defect the gate
+exists to catch — and the blocked unit retries afterward. The exception covers only a check proven
+broken on its own base; anything wider is a queue-wide blocker. Never quarantine a unit for a flake,
+a cancelled job, or an outage.
 
 **Queue-wide blockers stop the queue:** lost GitHub authentication, GitHub unavailable after retry,
 a gate that cannot be repaired safely, or `main` red for a reason no campaign merge caused. Write
@@ -183,8 +207,10 @@ it. Then run `self-heal` on the campaign's friction.
 
 `improve-performance-matrix` owns what a performance unit is: one causal product cluster, proven
 with faithful A/B evidence on the release-gate rows, under its evidence and physical-device rules.
-This skill supplies the queue, the merge-as-you-go loop, and the ledger around it. Three rules are
-added for unattended performance work:
+This skill supplies the queue, the merge-as-you-go loop, and the ledger around it. Each cluster is a
+free-form unit: its spec is the cluster's hypothesis and target cells, it has no issue to claim or
+close, and the performance tracking issue carries the ledger. Three rules are added for unattended
+performance work:
 
 * **The device preflight is mandatory**, with the user present, including the control capture.
 * **Device loss ends device work.** When the rig drops and the documented non-human recovery does
