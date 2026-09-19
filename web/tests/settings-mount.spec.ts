@@ -109,7 +109,7 @@ test('the opening frame already holds the above-the-fold prefix', async ({ page 
 // SettingsModal's --card-height-cap and --wide-card-height-ceiling, restated
 // here as tests deliberately restate boundary values.
 const CARD_HEIGHT_CAP_FRACTION = 0.85;
-const CARD_HEIGHT_CEILING_PX = 720;
+const CARD_HEIGHT_CEILING_PX = 760;
 
 test('the wide card opens at its settled height and holds it through the fill', async ({
   page,

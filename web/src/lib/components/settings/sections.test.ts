@@ -27,6 +27,20 @@ describe('SECTIONS', () => {
   it("uses the app version as What's New's content stamp", () => {
     expect(sectionContentStamp('whatsnew')).toBe(APP_VERSION);
   });
+
+  // Set once per child rather than per session: below the drawer a parent keeps
+  // tuning, above the feature sections.
+  it('files Accessibility between Tool Drawer and Coloring', () => {
+    const ids = SECTIONS.map((section) => section.id);
+    expect(ids.indexOf('accessibility')).toBe(ids.indexOf('controls') + 1);
+    expect(ids.indexOf('coloring')).toBe(ids.indexOf('accessibility') + 1);
+  });
+});
+
+describe('Accessibility section subtitle', () => {
+  it('says who the section helps', () => {
+    expect(sectionSubtitle('accessibility')).toBe('Make it easier to see and tap');
+  });
 });
 
 describe('sound section subtitle', () => {

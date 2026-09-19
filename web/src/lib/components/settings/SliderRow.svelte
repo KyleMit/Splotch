@@ -7,7 +7,8 @@
   // wires the label to the slider via aria-labelledby, so the two can't drift
   // apart. With an `icon`, the name renders in the larger standalone-setting
   // typeface; without one it stays in the muted sub-setting style used when the
-  // row sits indented under its own toggle.
+  // row sits indented under its own toggle. `help` is the calm sentence under
+  // the track, wired to the slider through aria-describedby.
   interface Props {
     id: string;
     label: string;
@@ -17,11 +18,12 @@
     snap?: number;
     valueText?: string;
     icon?: CommonIconName;
+    help?: string;
     onInput: (value: number) => void;
     onActiveChange?: (active: boolean) => void;
   }
 
-  let { id, label, value, min, max, snap, valueText, icon, onInput, onActiveChange }: Props =
+  let { id, label, value, min, max, snap, valueText, icon, help, onInput, onActiveChange }: Props =
     $props();
 
   const displayedValueText = $derived(valueText ?? `${value}%`);
@@ -46,9 +48,13 @@
     {snap}
     labelId={id}
     valueText={displayedValueText}
+    describedBy={help ? `${id}-help` : undefined}
     {onInput}
     {onActiveChange}
   />
+  {#if help}
+    <p id="{id}-help" class="slider-help">{help}</p>
+  {/if}
 </div>
 
 <style>
@@ -68,6 +74,15 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     color: var(--text-soft);
+  }
+
+  /* --text-soft is pinned to hold 4.5:1 for this small help text on --surface
+     (the /design axe scan enforces it). */
+  .slider-help {
+    margin: 8px 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-soft);
+    line-height: 1.4;
   }
 
   .slider-label-name {

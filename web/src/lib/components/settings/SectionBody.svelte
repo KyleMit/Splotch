@@ -5,6 +5,7 @@
   import SavingSection from './SavingSection.svelte';
   import ColoringSection from './ColoringSection.svelte';
   import ControlsSection from './ControlsSection.svelte';
+  import AccessibilitySection from './AccessibilitySection.svelte';
   import AiKeyManager from './AiKeyManager.svelte';
   import ParentCenterSection from './ParentCenterSection.svelte';
   import SetupInstructions from './SetupInstructions.svelte';
@@ -30,6 +31,7 @@
     saving: SavingSection,
     coloring: ColoringSection,
     controls: ControlsSection,
+    accessibility: AccessibilitySection,
     ai: AiKeyManager,
     parentCenter: ParentCenterSection,
     setup: SetupInstructions,

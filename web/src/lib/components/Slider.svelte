@@ -11,6 +11,8 @@
     max?: number;
     // id of the label element that names this slider (aria-labelledby).
     labelId: string;
+    // id of the help line describing this slider (aria-describedby).
+    describedBy?: string;
     // Human-readable value for aria-valuetext (e.g. "50%").
     valueText: string;
     // Optional magnetic detent: while dragging, values within a small band of
@@ -33,6 +35,7 @@
     min = 0,
     max = 100,
     labelId,
+    describedBy,
     valueText,
     snap,
     onInput,
@@ -156,6 +159,7 @@
   role="slider"
   tabindex="0"
   aria-labelledby={labelId}
+  aria-describedby={describedBy}
   aria-valuemin={min}
   aria-valuemax={max}
   aria-valuenow={value}

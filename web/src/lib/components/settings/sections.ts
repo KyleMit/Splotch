@@ -19,6 +19,9 @@ export const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: 'appearance', contentStamp: '1' },
   { id: 'sound', label: 'Sound', icon: 'sound', contentStamp: '2' },
   { id: 'controls', label: 'Tool Drawer', icon: 'controls', contentStamp: '1' },
+  // Set once per child rather than per session, so it sits below the drawer
+  // a parent keeps tuning and above the feature sections.
+  { id: 'accessibility', label: 'Accessibility', icon: 'accessibility', contentStamp: '1' },
   { id: 'coloring', label: 'Coloring', icon: 'shapes', contentStamp: '1' },
   { id: 'ai', label: 'AI Art', icon: 'wand-stars', contentStamp: '2' },
   { id: 'saving', label: 'Saving', icon: 'save-picture', contentStamp: '1' },
@@ -126,6 +129,8 @@ export function sectionSubtitle(id: SectionId): string {
       if (!hidden) return ALL_TOOLS_SHOWING;
       return `${hidden} ${hidden === 1 ? 'tool' : 'tools'} hidden`;
     }
+    case 'accessibility':
+      return 'Make it easier to see and tap';
     case 'ai': {
       if (!settingsState.aiImageEnabled) return 'Turned off';
       const kind = aiCredentialKind();
