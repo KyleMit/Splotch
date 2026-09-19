@@ -998,6 +998,10 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   return { ...sample, activation: 'native-system' };
 }
 
+// Enough of the stub's URL log to show what the run fetched without letting a
+// chatty page bloat every artifact.
+const AI_RUN_RECORDED_URLS = 20;
+
 // The AI waiting print is reached through the __aiGenerate dev seam (ADR-0109)
 // with the generate endpoint answered inside the page, so the cue runs on every
 // target without a network round trip, a key, or the parental gate. The mocked
@@ -1076,6 +1080,24 @@ async function startAiRun(execute) {
   return offered ? { offered: true } : { offered: false, state: await aiRunState(execute) };
 }
 
+// A completed waiting print proves the UI ran, not how. Its artifact has to show
+// the page was a secure context with the crypto APIs the free-generation path
+// calls, and that every generate request it made was answered by the in-page
+// stub, never the network (issue #1870: a LAN http:// page has neither API).
+// Pure so the refusal can be tested without a device.
+export function aiRunEvidenceProblem(state) {
+  if (!state || typeof state !== 'object') return 'the page returned no AI run state';
+  if (state.secureContext !== true) return `the page was not a secure context (${state.origin})`;
+  if (state.randomUUID !== 'function') return `crypto.randomUUID was ${state.randomUUID}`;
+  if (state.subtleCrypto !== 'object') return `crypto.subtle was ${state.subtleCrypto}`;
+  if (state.runError) return `the run reported ${state.runError}`;
+  if (state.failedUi) return `the dialog showed its error face (${state.message})`;
+  if (!(state.generateCalls >= 1)) {
+    return 'no generate request reached the in-page stub, so the print was not the mocked run';
+  }
+  return null;
+}
+
 async function aiRunState(execute) {
   return execute(`
     const q = (selector) => document.querySelector(selector);
@@ -1087,6 +1109,10 @@ async function aiRunState(execute) {
       failedUi: text('.ai-result-error') !== null,
       message: text('.ai-result-error'),
       requests: (window.__perfAiSeenUrls || []).length,
+      urls: (window.__perfAiSeenUrls || []).slice(0, ${AI_RUN_RECORDED_URLS}),
+      generateCalls: (window.__perfAiSeenUrls || []).filter((url) =>
+        url.includes('/api/generate-image')
+      ).length,
       runError: window.__perfAiRunError || null,
       // The usual answer when a device fails a flow the desktop passes: the
       // device dials a LAN IP, which is not a trustworthy origin, so
@@ -1937,7 +1963,17 @@ export async function runActionSweep({
               activation: 'webdriver',
             })
           );
-          await record(await measureAiWaitingBadge(execute));
+          const badge = await measureAiWaitingBadge(execute);
+          // Read while the stub is still installed: removing it deletes the
+          // record of which URLs it answered.
+          const aiRun = await aiRunState(execute);
+          const evidenceProblem = aiRunEvidenceProblem(aiRun);
+          if (evidenceProblem) {
+            throw new Error(
+              `the AI waiting print completed without proof it was the mocked run on a secure origin: ${evidenceProblem}`
+            );
+          }
+          await record(Promise.resolve({ ...badge, aiRun }));
         }
       } finally {
         await removeAiGenerationStub(execute);
