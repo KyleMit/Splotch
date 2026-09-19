@@ -150,6 +150,9 @@ for (const [name, engine, groupCount] of [
   ['p1-postfix-webkit-coloring', 'webkit', 1],
   ['p2-postfix-webkit-full-groups', 'webkit', 12],
   ['p3-postfix-chromium-coloring', 'chromium', 1],
+  ['q1-final-webkit-full-groups', 'webkit', 12],
+  ['q2-final-webkit-coloring', 'webkit', 1],
+  ['q3-final-chromium-coloring', 'chromium', 1],
 ]) {
   const artifact = run(name);
   check(

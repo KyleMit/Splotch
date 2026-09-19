@@ -1,0 +1,25 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54804/ --engine=webkit --actions=coloring --output=perf-profiles/coloring-state-r1/r2-webkit-coloring/actions.json
+
+
+Desktop action sweep 1/4
+
+Desktop action sweep 2/4
+
+Desktop action sweep 3/4
+
+Desktop action sweep 4/4
+
+Desktop discrete action response
+┌─────────┬─────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬──────────┬─────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                  │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max │ raw max │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼─────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼──────────┼─────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'open coloring books'   │ '3/4' │ '4/4'      │ 15        │ 4              │ 5              │ 19       │ 19       │ 19      │ '108/195'         │ 19         │ 0               │ 'PASS'  │
+│ 1       │ 'open coloring book'    │ '3/4' │ '4/4'      │ 10        │ 3              │ 4              │ 19       │ 19       │ 19      │ '58/195'          │ 19         │ 0               │ 'PASS'  │
+│ 2       │ 'scroll coloring pages' │ '3/4' │ '4/4'      │ 18        │ 1              │ 1              │ 19       │ 19       │ 19      │ '47/114'          │ 19         │ 0               │ 'PASS'  │
+│ 3       │ 'select coloring page'  │ '3/4' │ '4/4'      │ 13        │ 108            │ 108            │ 19       │ 19       │ 19      │ '33/213'          │ 19         │ 0               │ 'PASS'  │
+│ 4       │ 'clear coloring page'   │ '3/4' │ '4/4'      │ 15        │ 108            │ 108            │ 19       │ 19       │ 19      │ '33/213'          │ 19         │ 0               │ 'PASS'  │
+└─────────┴─────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴──────────┴─────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-state-r1/r2-webkit-coloring/actions.json

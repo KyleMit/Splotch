@@ -32,6 +32,18 @@
     "sha256": "263083de729bcba712fb0501f116ab3b5f0d6a37eb7a01fc88c93958bfd0ca42"
   },
   {
+    "path": "controls/q1-final-webkit-full-groups.console.txt",
+    "sha256": "cba924c03c054ade10f3ad8441bb89bce014c335a61a9a634d74591b957928f6"
+  },
+  {
+    "path": "controls/q2-final-webkit-coloring.console.txt",
+    "sha256": "c52221f1d79368d2c10b1a95393543897998a7b24f765524a375e4c7f484e890"
+  },
+  {
+    "path": "controls/q3-final-chromium-coloring.console.txt",
+    "sha256": "ff74a516ba98445236a4446c0bb6575b1cad464cecff6deeff9c386429789844"
+  },
+  {
     "path": "probes/pack-timeline-main.json",
     "sha256": "59a9c50fe0024a6b49bbf3041a81a21a1552918cbcd8cf147d03b72136ad95be"
   },
@@ -86,5 +98,17 @@
   {
     "path": "runs/p3-postfix-chromium-coloring.json.gz",
     "sha256": "28a19f5844c8d2a542c83f69a4cd68a515707c25b8bb07674eceaf21cbcbd0e0"
+  },
+  {
+    "path": "runs/q1-final-webkit-full-groups.json.gz",
+    "sha256": "e88c4cb1f9b12c5f75af2f519d3988b2b7d4518c4bd8702f4af7d772b70afd8b"
+  },
+  {
+    "path": "runs/q2-final-webkit-coloring.json.gz",
+    "sha256": "f0eb1677dba071e5897ec598b32ccbe1b4c82adf6ec70c8152e624f3b87e2ff6"
+  },
+  {
+    "path": "runs/q3-final-chromium-coloring.json.gz",
+    "sha256": "05c993cdebd5c8409e0f81f153b04a9e36539a2f7ec13ae04c05bdc74174330e"
   }
 ]

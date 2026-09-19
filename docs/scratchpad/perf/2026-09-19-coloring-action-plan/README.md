@@ -61,7 +61,11 @@ then more books) while downloads ran under the other measured actions.
   s) and fail with the missing books or both counts named. The listed count is recorded as
   `actionPlan.context.listedColoringBooks`, so the unchanged stable-plan check now also refuses a
   book count that differs between repeats. A target without web pack storage (a native shell) is
-  left as it was.
+  left as it was. The install state is a page Promise, so it travels over a transport that awaits
+  one (`page.evaluate`, or Appium's `/execute/async` through `executePagePromise`), and every read
+  has its own deadline: the page aborts its fetches at 15 s and the harness stops waiting at 20 s.
+  Both came from the rival review of PR 2099, which reproduced the iPad route returning `{}` over
+  `/execute/sync` and a stalled fetch outliving both waits.
 * **`tools/perf/web/capture-desktop-actions.mjs`.** The capture runs in a throwaway browser profile
   instead of an ephemeral context, so storage carries across the per-sweep reloads as it does in a
   real browser. The profile starts empty and is deleted afterwards.
@@ -86,10 +90,13 @@ the instrumented build.
 | p1 | post-fix                                                       | WebKit, `coloring`                            | passed; fresh context in sweep 1, prepared in 2 to 4; 8 books listed in every sweep |
 | p2 | post-fix                                                       | WebKit, the 12 campaign groups (f1's command) | passed, 25 actions, 8 books listed in every sweep                                   |
 | p3 | post-fix                                                       | Chromium, `coloring`                          | passed, 8 books listed in every sweep                                               |
+| q1 | final (after review round one)                                 | WebKit, the 12 campaign groups (f1's command) | passed, 25 actions, 8 books listed in every sweep                                   |
+| q2 | final                                                          | WebKit, `coloring`                            | passed, 8 books listed in every sweep                                               |
+| q3 | final                                                          | Chromium, `coloring`                          | passed, 8 books listed in every sweep                                               |
 
-In p1 to p3 every sweep ran the real picker: open the book grid, open a book, scroll its pages with
-a trusted wheel, select a page, clear it. `check.mjs` asserts each of the five actions has repeats 1
-to 4 with repeat 1 the warmup.
+In p1 to p3 and q1 to q3 every sweep ran the real picker: open the book grid, open a book, scroll
+its pages with a trusted wheel, select a page, clear it. `check.mjs` asserts each of the five
+actions has repeats 1 to 4 with repeat 1 the warmup.
 
 `controls/n1-new-tests-against-prefix-harness.txt`: with the sweep and the desktop runner reverted
 to main, the new test file fails exactly its three placement tests (no settle before the first
@@ -103,14 +110,28 @@ desktop and are not a historical comparison for issue 1870.
 * Product: main e9ab82308731cb4927e04afb326c1c961cf5e72f, `perf:build`, provenance file clean, app
   version 1.6.791, entry `start.zye73Geg.js`. **Operator-observed**: the desktop artifact records no
   product commit, so this rests on the build log and the provenance file read in the session.
-* Harness: f0 to f2 ran main's harness. p1 to p3 ran the working tree that became this package's
-  commit; the readiness module and both runners were not edited between those runs and the commit.
-  **Operator-observed.**
+* Harness: f0 to f2 ran main's harness. p1 to p3 ran the working tree that became commit
+  13f2d06839d5f5b6e131a5a8cfa8edd8ae7e0aad (the first post-fix harness). q1 to q3 ran the working
+  tree that became the review-fix commit after it, with the promise transport and the bounded reads.
+  The harness files were not edited between each set of runs and its commit. **Operator-observed.**
 * The probes ran importing `playwright`; the packaged copies import the same classes from
   `@playwright/test`, which the repo's lint rule requires, and were re-run once in that form.
 * The stack-trace paths in f1 and f2 had the local checkout prefix replaced with `<checkout>`.
 
 ## Not supported by this package
+
+* **No device target was recaptured.** The shared sweep now runs the readiness step on iPad Safari,
+  Android Chrome and both native shells as well. Only desktop WebKit and Chromium ran it for real.
+  The iPad route is covered by a model of Appium's two execute transports in
+  `tools/perf/tests/coloring-books-ready.test.mjs`, not by a device. The iPad runner also clears the
+  device web cache and blocks service-worker registration for measurement, so how long its install
+  wait takes is unknown.
+* **The measured `open coloring books` is now always a warm open.** Setup opens the picker at least
+  twice before the first measured action, so the lazy dialog chunk and the cover images are already
+  loaded. Before this change the measured open was the first open after each reload. These captures
+  cannot speak to cold-open cost.
+* The service worker's role is consistent with the evidence (f2's `sw` flag, and both no-worker
+  probes losing storage) and was not isolated by toggling the worker alone.
 
 * The first ephemeral-context attempt's console was not kept. Its failure text above is
   operator-observed; `probes/post-reload-timeline-webkit.json` is the packaged evidence for it.
