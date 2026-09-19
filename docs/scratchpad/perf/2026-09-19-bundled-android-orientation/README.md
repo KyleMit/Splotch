@@ -61,8 +61,8 @@ mismatch negative.
 
 The exit codes and the absence of a negative run's artifact were observed in the session terminal
 (`ls` of the requested `--output` path). The logs record the error text but not the exit code.
-"Afterwards" is the adb `settings get` read in that terminal plus the `controls/*-lock-after.json` read
-of the Settings controls.
+"Afterwards" is the adb `settings get` read in that terminal plus the `controls/*-lock-after.json`
+read of the Settings controls.
 
 **The diagnostic diff is for the negative control only.** It must never be applied to production
 source.
