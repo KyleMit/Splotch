@@ -21,7 +21,7 @@ const POST_BURST_STALL_ALLOWANCE_MS = 10_000;
 
 describe('history settle deadline', () => {
   const harness = read('tools', 'perf', 'web', 'run-undo-scenarios.mjs');
-  const renderer = read('web', 'src', 'lib', 'drawing', 'tiledRenderer.ts');
+  const renderer = read('web', 'src', 'lib', 'drawing', 'tiledHistoryLimits.ts');
   // The harness carries its own copy of the depth cap and derives every
   // scenario's stroke count from it, so the guard reads both as the harness
   // wrote them rather than recomputing them from the product constant — the

@@ -1,0 +1,4534 @@
+{
+ "main": {
+  "runs": [
+   {
+    "label": "m1",
+    "arm": "m1",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1400.5,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1401,
+     1401,
+     34,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 50.1,
+     "over25": 1,
+     "lateExcessMs": 33.4
+    },
+    "settle": {
+     "maxMs": 66.8,
+     "over25": 10,
+     "lateExcessMs": 367
+    },
+    "undo": {
+     "maxMs": 1400.5,
+     "over25": 3,
+     "lateExcessMs": 1412.8
+    },
+    "sessionLateExcessMs": 1813.2,
+    "commitP95Ms": 6.6,
+    "foldMaxMs": 72.9,
+    "foldCount": 10,
+    "undoJsMaxMs": 14.3,
+    "undoJsSumMs": 131.8,
+    "drawJsSumMs": 5844.2
+   },
+   {
+    "label": "m2",
+    "arm": "m2",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1383.6,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1384,
+     1384,
+     19,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 382.9
+    },
+    "undo": {
+     "maxMs": 1383.6,
+     "over25": 2,
+     "lateExcessMs": 1383.4
+    },
+    "sessionLateExcessMs": 1766.3,
+    "commitP95Ms": 3.4,
+    "foldMaxMs": 72.1,
+    "foldCount": 10,
+    "undoJsMaxMs": 12.2,
+    "undoJsSumMs": 132.9,
+    "drawJsSumMs": 5752.3
+   },
+   {
+    "label": "m3",
+    "arm": "m3",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1433.4,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1433,
+     1433,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 383.2
+    },
+    "undo": {
+     "maxMs": 1433.4,
+     "over25": 1,
+     "lateExcessMs": 1416.7
+    },
+    "sessionLateExcessMs": 1816.5,
+    "commitP95Ms": 3.2,
+    "foldMaxMs": 72.1,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.5,
+    "undoJsSumMs": 129.8,
+    "drawJsSumMs": 5789.2
+   }
+  ],
+  "comparison": {}
+ },
+ "screen": {
+  "runs": [
+   {
+    "label": "s-ctl-1",
+    "arm": "1",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1567.2,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1567,
+     1567,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 383.1
+    },
+    "undo": {
+     "maxMs": 1567.2,
+     "over25": 1,
+     "lateExcessMs": 1550.5
+    },
+    "sessionLateExcessMs": 1950.2,
+    "commitP95Ms": 4.2,
+    "foldMaxMs": 73.3,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.6,
+    "undoJsSumMs": 131.3,
+    "drawJsSumMs": 5733.9
+   },
+   {
+    "label": "s-ctl-2",
+    "arm": "2",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1565.8,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1566,
+     1566,
+     26,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 382.9
+    },
+    "undo": {
+     "maxMs": 1565.8,
+     "over25": 3,
+     "lateExcessMs": 1574.9
+    },
+    "sessionLateExcessMs": 1974.4,
+    "commitP95Ms": 3.4,
+    "foldMaxMs": 72.5,
+    "foldCount": 10,
+    "undoJsMaxMs": 12,
+    "undoJsSumMs": 127.7,
+    "drawJsSumMs": 5576.1
+   },
+   {
+    "label": "s-trt-1",
+    "arm": "1",
+    "entry": "start.BKX4NbVq.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 33.3,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     20,
+     17,
+     17,
+     17,
+     17,
+     17,
+     33,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.1,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 100,
+     "over25": 10,
+     "lateExcessMs": 399.6
+    },
+    "undo": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "sessionLateExcessMs": 416.2,
+    "commitP95Ms": 3.2,
+    "foldMaxMs": 73.2,
+    "foldCount": 10,
+    "undoJsMaxMs": 8.5,
+    "undoJsSumMs": 134.6,
+    "drawJsSumMs": 5623.8
+   },
+   {
+    "label": "s-trt-2",
+    "arm": "2",
+    "entry": "start.BKX4NbVq.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 33.2,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     33,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 83.4,
+     "over25": 10,
+     "lateExcessMs": 400
+    },
+    "undo": {
+     "maxMs": 33.2,
+     "over25": 2,
+     "lateExcessMs": 26
+    },
+    "sessionLateExcessMs": 426,
+    "commitP95Ms": 3.3,
+    "foldMaxMs": 72.9,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.6,
+    "undoJsSumMs": 131.8,
+    "drawJsSumMs": 5543
+   }
+  ],
+  "comparison": {}
+ },
+ "confirm": {
+  "runs": [
+   {
+    "label": "c1-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1452.8,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1453,
+     1453,
+     18,
+     17,
+     17,
+     33,
+     33,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.5,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 50.1,
+     "over25": 10,
+     "lateExcessMs": 333.1
+    },
+    "undo": {
+     "maxMs": 1452.8,
+     "over25": 2,
+     "lateExcessMs": 1452.7
+    },
+    "sessionLateExcessMs": 1785.8,
+    "commitP95Ms": 4.5,
+    "foldMaxMs": 72.5,
+    "foldCount": 10,
+    "undoJsMaxMs": 10.8,
+    "undoJsSumMs": 129.6,
+    "drawJsSumMs": 5632.2
+   },
+   {
+    "label": "c10-trt",
+    "arm": "trt",
+    "entry": "start.BKX4NbVq.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 26.1,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     26,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 83.4,
+     "over25": 10,
+     "lateExcessMs": 399.6
+    },
+    "undo": {
+     "maxMs": 26.1,
+     "over25": 1,
+     "lateExcessMs": 9.4
+    },
+    "sessionLateExcessMs": 409,
+    "commitP95Ms": 3,
+    "foldMaxMs": 73.6,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.2,
+    "undoJsSumMs": 136.5,
+    "drawJsSumMs": 5713.3
+   },
+   {
+    "label": "c2-trt",
+    "arm": "trt",
+    "entry": "start.BKX4NbVq.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 18.8,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     19,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.1,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 100,
+     "over25": 10,
+     "lateExcessMs": 383
+    },
+    "undo": {
+     "maxMs": 18.8,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 383,
+    "commitP95Ms": 3.4,
+    "foldMaxMs": 71.9,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.1,
+    "undoJsSumMs": 138.9,
+    "drawJsSumMs": 5642.6
+   },
+   {
+    "label": "c3-trt",
+    "arm": "trt",
+    "entry": "start.BKX4NbVq.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 21.1,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     21,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 83.3,
+     "over25": 10,
+     "lateExcessMs": 399.5
+    },
+    "undo": {
+     "maxMs": 21.1,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 399.5,
+    "commitP95Ms": 3.4,
+    "foldMaxMs": 73.7,
+    "foldCount": 10,
+    "undoJsMaxMs": 10.6,
+    "undoJsSumMs": 134.1,
+    "drawJsSumMs": 5869
+   },
+   {
+    "label": "c4-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1400.4,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1400,
+     1400,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 50,
+     "over25": 10,
+     "lateExcessMs": 316.1
+    },
+    "undo": {
+     "maxMs": 1400.4,
+     "over25": 2,
+     "lateExcessMs": 1400.3
+    },
+    "sessionLateExcessMs": 1699.8,
+    "commitP95Ms": 4.2,
+    "foldMaxMs": 72.5,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.6,
+    "undoJsSumMs": 126.3,
+    "drawJsSumMs": 5692.9
+   },
+   {
+    "label": "c5-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1283.7,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1284,
+     1284,
+     17,
+     17,
+     17,
+     17,
+     33,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.6,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 400.1
+    },
+    "undo": {
+     "maxMs": 1283.7,
+     "over25": 2,
+     "lateExcessMs": 1283.7
+    },
+    "sessionLateExcessMs": 1683.8,
+    "commitP95Ms": 3.5,
+    "foldMaxMs": 74.1,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.2,
+    "undoJsSumMs": 133.8,
+    "drawJsSumMs": 5876.5
+   },
+   {
+    "label": "c6-trt",
+    "arm": "trt",
+    "entry": "start.BKX4NbVq.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 25.7,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     26,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 83.3,
+     "over25": 10,
+     "lateExcessMs": 399.9
+    },
+    "undo": {
+     "maxMs": 25.7,
+     "over25": 1,
+     "lateExcessMs": 9
+    },
+    "sessionLateExcessMs": 408.9,
+    "commitP95Ms": 3.1,
+    "foldMaxMs": 78.6,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.1,
+    "undoJsSumMs": 135.4,
+    "drawJsSumMs": 5723.3
+   },
+   {
+    "label": "c7-trt",
+    "arm": "trt",
+    "entry": "start.BKX4NbVq.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 30,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     30,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 83.4,
+     "over25": 10,
+     "lateExcessMs": 432.9
+    },
+    "undo": {
+     "maxMs": 30,
+     "over25": 1,
+     "lateExcessMs": 13.3
+    },
+    "sessionLateExcessMs": 446.2,
+    "commitP95Ms": 3.5,
+    "foldMaxMs": 72,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.3,
+    "undoJsSumMs": 136.3,
+    "drawJsSumMs": 5692.8
+   },
+   {
+    "label": "c8-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1417,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1417,
+     1417,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.1,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 366.3
+    },
+    "undo": {
+     "maxMs": 1417,
+     "over25": 2,
+     "lateExcessMs": 1416.9
+    },
+    "sessionLateExcessMs": 1783.2,
+    "commitP95Ms": 3,
+    "foldMaxMs": 72.3,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.7,
+    "undoJsSumMs": 131.2,
+    "drawJsSumMs": 5838.5
+   },
+   {
+    "label": "c9-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1249.7,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1250,
+     1250,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 382.8
+    },
+    "undo": {
+     "maxMs": 1249.7,
+     "over25": 1,
+     "lateExcessMs": 1233
+    },
+    "sessionLateExcessMs": 1615.8,
+    "commitP95Ms": 3.1,
+    "foldMaxMs": 73.4,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.1,
+    "undoJsSumMs": 136.6,
+    "drawJsSumMs": 5771.5
+   }
+  ],
+  "comparison": {
+   "undoPhaseMaxMs": {
+    "control": {
+     "n": 5,
+     "median": 1400.4,
+     "min": 1249.7,
+     "max": 1452.8
+    },
+    "treatment": {
+     "n": 5,
+     "median": 25.7,
+     "min": 18.8,
+     "max": 30
+    },
+    "medianDifference": -1374.7,
+    "medianDifferenceCi95": [
+     -1427.1,
+     -1224
+    ],
+    "permutation": {
+     "p": 0.007936507936507936,
+     "permutations": 252
+    }
+   },
+   "undoWindowsOverGate": {
+    "control": {
+     "n": 5,
+     "median": 2,
+     "min": 2,
+     "max": 2
+    },
+    "treatment": {
+     "n": 5,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -2,
+    "medianDifferenceCi95": [
+     -2,
+     -2
+    ],
+    "permutation": {
+     "p": 0.007936507936507936,
+     "permutations": 252
+    }
+   },
+   "undo.lateExcessMs": {
+    "control": {
+     "n": 5,
+     "median": 1400.3,
+     "min": 1233,
+     "max": 1452.7
+    },
+    "treatment": {
+     "n": 5,
+     "median": 9,
+     "min": 0,
+     "max": 13.3
+    },
+    "medianDifference": -1391.3,
+    "medianDifferenceCi95": [
+     -1443.7,
+     -1224
+    ],
+    "permutation": {
+     "p": 0.007936507936507936,
+     "permutations": 252
+    }
+   },
+   "settle.maxMs": {
+    "control": {
+     "n": 5,
+     "median": 66.7,
+     "min": 50,
+     "max": 66.7
+    },
+    "treatment": {
+     "n": 5,
+     "median": 83.4,
+     "min": 83.3,
+     "max": 100
+    },
+    "medianDifference": 16.7,
+    "medianDifferenceCi95": [
+     16.6,
+     33.4
+    ],
+    "permutation": {
+     "p": 0.007936507936507936,
+     "permutations": 252
+    }
+   },
+   "settle.lateExcessMs": {
+    "control": {
+     "n": 5,
+     "median": 366.3,
+     "min": 316.1,
+     "max": 400.1
+    },
+    "treatment": {
+     "n": 5,
+     "median": 399.6,
+     "min": 383,
+     "max": 432.9
+    },
+    "medianDifference": 33.3,
+    "medianDifferenceCi95": [
+     -0.5,
+     83.8
+    ],
+    "permutation": {
+     "p": 0.06349206349206349,
+     "permutations": 252
+    }
+   },
+   "draw.lateExcessMs": {
+    "control": {
+     "n": 5,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "treatment": {
+     "n": 5,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": 0,
+    "medianDifferenceCi95": [
+     0,
+     0
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 252
+    }
+   },
+   "sessionLateExcessMs": {
+    "control": {
+     "n": 5,
+     "median": 1699.8,
+     "min": 1615.8,
+     "max": 1785.8
+    },
+    "treatment": {
+     "n": 5,
+     "median": 408.9,
+     "min": 383,
+     "max": 446.2
+    },
+    "medianDifference": -1290.9,
+    "medianDifferenceCi95": [
+     -1386.3,
+     -1206.9
+    ],
+    "permutation": {
+     "p": 0.007936507936507936,
+     "permutations": 252
+    }
+   },
+   "commitP95Ms": {
+    "control": {
+     "n": 5,
+     "median": 3.5,
+     "min": 3,
+     "max": 4.5
+    },
+    "treatment": {
+     "n": 5,
+     "median": 3.4,
+     "min": 3,
+     "max": 3.5
+    },
+    "medianDifference": -0.1,
+    "medianDifferenceCi95": [
+     -1.2,
+     0.4
+    ],
+    "permutation": {
+     "p": 0.3253968253968254,
+     "permutations": 252
+    }
+   },
+   "foldMaxMs": {
+    "control": {
+     "n": 5,
+     "median": 72.5,
+     "min": 72.3,
+     "max": 74.1
+    },
+    "treatment": {
+     "n": 5,
+     "median": 73.6,
+     "min": 71.9,
+     "max": 78.6
+    },
+    "medianDifference": 1.1,
+    "medianDifferenceCi95": [
+     -1.5,
+     6.1
+    ],
+    "permutation": {
+     "p": 0.6349206349206349,
+     "permutations": 252
+    }
+   },
+   "undoJsSumMs": {
+    "control": {
+     "n": 5,
+     "median": 131.2,
+     "min": 126.3,
+     "max": 136.6
+    },
+    "treatment": {
+     "n": 5,
+     "median": 136.3,
+     "min": 134.1,
+     "max": 138.9
+    },
+    "medianDifference": 5.1,
+    "medianDifferenceCi95": [
+     -0.3,
+     10
+    ],
+    "permutation": {
+     "p": 0.05555555555555555,
+     "permutations": 252
+    }
+   }
+  }
+ },
+ "brush-pen": {
+  "runs": [
+   {
+    "label": "c1-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "pen",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8050448,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 401358,
+    "undoPhaseMaxMs": 50,
+    "undoWindowsOverGate": 1,
+    "undoWindowWorstMs": [
+     50,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 16.8,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "undo": {
+     "maxMs": 50,
+     "over25": 1,
+     "lateExcessMs": 33.3
+    },
+    "sessionLateExcessMs": 33.3,
+    "commitP95Ms": 4.3,
+    "foldMaxMs": 17.1,
+    "foldCount": 10,
+    "undoJsMaxMs": 6.4,
+    "undoJsSumMs": 58.6,
+    "drawJsSumMs": 1202.8
+   },
+   {
+    "label": "c2-trt",
+    "arm": "trt",
+    "entry": "start.C4OBZ2hJ.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "pen",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8050448,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 401358,
+    "undoPhaseMaxMs": 17.2,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 33.4,
+     "over25": 2,
+     "lateExcessMs": 33.3
+    },
+    "undo": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 33.3,
+    "commitP95Ms": 4,
+    "foldMaxMs": 18.3,
+    "foldCount": 10,
+    "undoJsMaxMs": 6.8,
+    "undoJsSumMs": 57.6,
+    "drawJsSumMs": 1142.7
+   },
+   {
+    "label": "c3-trt",
+    "arm": "trt",
+    "entry": "start.C4OBZ2hJ.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "pen",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8050448,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 401358,
+    "undoPhaseMaxMs": 17.7,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     18,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "undo": {
+     "maxMs": 17.7,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 16.6,
+    "commitP95Ms": 3.7,
+    "foldMaxMs": 21.4,
+    "foldCount": 10,
+    "undoJsMaxMs": 7,
+    "undoJsSumMs": 59.4,
+    "drawJsSumMs": 1145.4
+   },
+   {
+    "label": "c4-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "pen",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8050448,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 401358,
+    "undoPhaseMaxMs": 17.1,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 16.8,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "undo": {
+     "maxMs": 17.1,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 0,
+    "commitP95Ms": 3.5,
+    "foldMaxMs": 22.1,
+    "foldCount": 10,
+    "undoJsMaxMs": 6.9,
+    "undoJsSumMs": 57.7,
+    "drawJsSumMs": 1130.8
+   }
+  ],
+  "comparison": {
+   "undoPhaseMaxMs": {
+    "control": {
+     "n": 2,
+     "median": 33.6,
+     "min": 17.1,
+     "max": 50
+    },
+    "treatment": {
+     "n": 2,
+     "median": 17.5,
+     "min": 17.2,
+     "max": 17.7
+    },
+    "medianDifference": -16.1,
+    "medianDifferenceCi95": [
+     -32.8,
+     0.6
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "undoWindowsOverGate": {
+    "control": {
+     "n": 2,
+     "median": 0.5,
+     "min": 0,
+     "max": 1
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -0.5,
+    "medianDifferenceCi95": [
+     -1,
+     0
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "undo.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 16.7,
+     "min": 0,
+     "max": 33.3
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -16.6,
+    "medianDifferenceCi95": [
+     -33.3,
+     0
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "settle.maxMs": {
+    "control": {
+     "n": 2,
+     "median": 16.8,
+     "min": 16.8,
+     "max": 16.8
+    },
+    "treatment": {
+     "n": 2,
+     "median": 33.3,
+     "min": 33.3,
+     "max": 33.4
+    },
+    "medianDifference": 16.5,
+    "medianDifferenceCi95": [
+     16.5,
+     16.6
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "settle.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "treatment": {
+     "n": 2,
+     "median": 25,
+     "min": 16.6,
+     "max": 33.3
+    },
+    "medianDifference": 25,
+    "medianDifferenceCi95": [
+     16.6,
+     33.3
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "draw.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": 0,
+    "medianDifferenceCi95": [
+     0,
+     0
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "sessionLateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 16.7,
+     "min": 0,
+     "max": 33.3
+    },
+    "treatment": {
+     "n": 2,
+     "median": 25,
+     "min": 16.6,
+     "max": 33.3
+    },
+    "medianDifference": 8.3,
+    "medianDifferenceCi95": [
+     -16.7,
+     33.3
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "commitP95Ms": {
+    "control": {
+     "n": 2,
+     "median": 3.9,
+     "min": 3.5,
+     "max": 4.3
+    },
+    "treatment": {
+     "n": 2,
+     "median": 3.9,
+     "min": 3.7,
+     "max": 4
+    },
+    "medianDifference": 0,
+    "medianDifferenceCi95": [
+     -0.6,
+     0.5
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "foldMaxMs": {
+    "control": {
+     "n": 2,
+     "median": 19.6,
+     "min": 17.1,
+     "max": 22.1
+    },
+    "treatment": {
+     "n": 2,
+     "median": 19.9,
+     "min": 18.3,
+     "max": 21.4
+    },
+    "medianDifference": 0.3,
+    "medianDifferenceCi95": [
+     -3.8,
+     4.3
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "undoJsSumMs": {
+    "control": {
+     "n": 2,
+     "median": 58.2,
+     "min": 57.7,
+     "max": 58.6
+    },
+    "treatment": {
+     "n": 2,
+     "median": 58.5,
+     "min": 57.6,
+     "max": 59.4
+    },
+    "medianDifference": 0.3,
+    "medianDifferenceCi95": [
+     -1,
+     1.7
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   }
+  }
+ },
+ "brush-glaze": {
+  "runs": [
+   {
+    "label": "c1-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "glaze-direct",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 331797,
+    "undoPhaseMaxMs": 249.9,
+    "undoWindowsOverGate": 1,
+    "undoWindowWorstMs": [
+     250,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 66.7,
+     "over25": 3,
+     "lateExcessMs": 83.8
+    },
+    "settle": {
+     "maxMs": 16.8,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "undo": {
+     "maxMs": 249.9,
+     "over25": 1,
+     "lateExcessMs": 233.2
+    },
+    "sessionLateExcessMs": 317,
+    "commitP95Ms": 3.7,
+    "foldMaxMs": 31.5,
+    "foldCount": 10,
+    "undoJsMaxMs": 12.7,
+    "undoJsSumMs": 135.6,
+    "drawJsSumMs": 2144.1
+   },
+   {
+    "label": "c2-trt",
+    "arm": "trt",
+    "entry": "start.C4OBZ2hJ.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "glaze-direct",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 331797,
+    "undoPhaseMaxMs": 33.3,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     33,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 1,
+     "lateExcessMs": 50
+    },
+    "undo": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "sessionLateExcessMs": 66.6,
+    "commitP95Ms": 3.4,
+    "foldMaxMs": 37.3,
+    "foldCount": 10,
+    "undoJsMaxMs": 12.5,
+    "undoJsSumMs": 133.5,
+    "drawJsSumMs": 2197.1
+   },
+   {
+    "label": "c3-trt",
+    "arm": "trt",
+    "entry": "start.C4OBZ2hJ.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "glaze-direct",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 331797,
+    "undoPhaseMaxMs": 33.4,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     33,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 49.9,
+     "over25": 1,
+     "lateExcessMs": 33.2
+    },
+    "undo": {
+     "maxMs": 33.4,
+     "over25": 1,
+     "lateExcessMs": 16.7
+    },
+    "sessionLateExcessMs": 49.9,
+    "commitP95Ms": 3.4,
+    "foldMaxMs": 33.1,
+    "foldCount": 10,
+    "undoJsMaxMs": 12.1,
+    "undoJsSumMs": 135.9,
+    "drawJsSumMs": 2171.1
+   },
+   {
+    "label": "c4-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "glaze-direct",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 331797,
+    "undoPhaseMaxMs": 250.1,
+    "undoWindowsOverGate": 1,
+    "undoWindowWorstMs": [
+     250,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     33,
+     17,
+     17,
+     17,
+     17,
+     17,
+     33,
+     33,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 16.8,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "undo": {
+     "maxMs": 250.1,
+     "over25": 4,
+     "lateExcessMs": 283.4
+    },
+    "sessionLateExcessMs": 283.4,
+    "commitP95Ms": 4.7,
+    "foldMaxMs": 32.2,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.7,
+    "undoJsSumMs": 138.2,
+    "drawJsSumMs": 2133.2
+   }
+  ],
+  "comparison": {
+   "undoPhaseMaxMs": {
+    "control": {
+     "n": 2,
+     "median": 250,
+     "min": 249.9,
+     "max": 250.1
+    },
+    "treatment": {
+     "n": 2,
+     "median": 33.3,
+     "min": 33.3,
+     "max": 33.4
+    },
+    "medianDifference": -216.6,
+    "medianDifferenceCi95": [
+     -216.8,
+     -216.5
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "undoWindowsOverGate": {
+    "control": {
+     "n": 2,
+     "median": 1,
+     "min": 1,
+     "max": 1
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -1,
+    "medianDifferenceCi95": [
+     -1,
+     -1
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "undo.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 258.3,
+     "min": 233.2,
+     "max": 283.4
+    },
+    "treatment": {
+     "n": 2,
+     "median": 16.7,
+     "min": 16.6,
+     "max": 16.7
+    },
+    "medianDifference": -241.6,
+    "medianDifferenceCi95": [
+     -266.8,
+     -216.5
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "settle.maxMs": {
+    "control": {
+     "n": 2,
+     "median": 16.8,
+     "min": 16.8,
+     "max": 16.8
+    },
+    "treatment": {
+     "n": 2,
+     "median": 58.3,
+     "min": 49.9,
+     "max": 66.7
+    },
+    "medianDifference": 41.5,
+    "medianDifferenceCi95": [
+     33.1,
+     49.9
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "settle.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "treatment": {
+     "n": 2,
+     "median": 41.6,
+     "min": 33.2,
+     "max": 50
+    },
+    "medianDifference": 41.6,
+    "medianDifferenceCi95": [
+     33.2,
+     50
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "draw.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 41.9,
+     "min": 0,
+     "max": 83.8
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -41.9,
+    "medianDifferenceCi95": [
+     -83.8,
+     0
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "sessionLateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 300.2,
+     "min": 283.4,
+     "max": 317
+    },
+    "treatment": {
+     "n": 2,
+     "median": 58.3,
+     "min": 49.9,
+     "max": 66.6
+    },
+    "medianDifference": -241.9,
+    "medianDifferenceCi95": [
+     -267.1,
+     -216.8
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "commitP95Ms": {
+    "control": {
+     "n": 2,
+     "median": 4.2,
+     "min": 3.7,
+     "max": 4.7
+    },
+    "treatment": {
+     "n": 2,
+     "median": 3.4,
+     "min": 3.4,
+     "max": 3.4
+    },
+    "medianDifference": -0.8,
+    "medianDifferenceCi95": [
+     -1.3,
+     -0.3
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "foldMaxMs": {
+    "control": {
+     "n": 2,
+     "median": 31.9,
+     "min": 31.5,
+     "max": 32.2
+    },
+    "treatment": {
+     "n": 2,
+     "median": 35.2,
+     "min": 33.1,
+     "max": 37.3
+    },
+    "medianDifference": 3.4,
+    "medianDifferenceCi95": [
+     0.9,
+     5.8
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "undoJsSumMs": {
+    "control": {
+     "n": 2,
+     "median": 136.9,
+     "min": 135.6,
+     "max": 138.2
+    },
+    "treatment": {
+     "n": 2,
+     "median": 134.7,
+     "min": 133.5,
+     "max": 135.9
+    },
+    "medianDifference": -2.2,
+    "medianDifferenceCi95": [
+     -4.7,
+     0.3
+    ],
+    "permutation": {
+     "p": 0.6666666666666666,
+     "permutations": 6
+    }
+   }
+  }
+ },
+ "pixels-crayon": {
+  "runs": [
+   {
+    "label": "c1-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1616.8,
+    "undoWindowsOverGate": 20,
+    "undoWindowWorstMs": [
+     1617,
+     83,
+     100,
+     117,
+     133,
+     117,
+     100,
+     100,
+     100,
+     150,
+     117,
+     67,
+     83,
+     83,
+     183,
+     183,
+     200,
+     183,
+     150,
+     150
+    ],
+    "draw": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "settle": {
+     "maxMs": 1616.8,
+     "over25": 11,
+     "lateExcessMs": 1966.3
+    },
+    "undo": {
+     "maxMs": 1616.8,
+     "over25": 20,
+     "lateExcessMs": 3633
+    },
+    "sessionLateExcessMs": 4015.8,
+    "commitP95Ms": 3.5,
+    "foldMaxMs": 71.9,
+    "foldCount": 10,
+    "undoJsMaxMs": 10.4,
+    "undoJsSumMs": 164.9,
+    "drawJsSumMs": 5657.6
+   },
+   {
+    "label": "c2-trt",
+    "arm": "trt",
+    "entry": "start.C4OBZ2hJ.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 233.4,
+    "undoWindowsOverGate": 20,
+    "undoWindowWorstMs": [
+     233,
+     83,
+     100,
+     83,
+     100,
+     100,
+     83,
+     133,
+     133,
+     133,
+     133,
+     100,
+     100,
+     100,
+     167,
+     167,
+     167,
+     183,
+     150,
+     150
+    ],
+    "draw": {
+     "maxMs": 17.6,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 233.4,
+     "over25": 11,
+     "lateExcessMs": 583.2
+    },
+    "undo": {
+     "maxMs": 233.4,
+     "over25": 20,
+     "lateExcessMs": 2215.7
+    },
+    "sessionLateExcessMs": 2582.2,
+    "commitP95Ms": 3.4,
+    "foldMaxMs": 70.7,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.2,
+    "undoJsSumMs": 165.7,
+    "drawJsSumMs": 5696.9
+   }
+  ],
+  "comparison": {
+   "undoPhaseMaxMs": {
+    "control": {
+     "n": 1,
+     "median": 1616.8,
+     "min": 1616.8,
+     "max": 1616.8
+    },
+    "treatment": {
+     "n": 1,
+     "median": 233.4,
+     "min": 233.4,
+     "max": 233.4
+    },
+    "medianDifference": -1383.4,
+    "medianDifferenceCi95": [
+     -1383.4,
+     -1383.4
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "undoWindowsOverGate": {
+    "control": {
+     "n": 1,
+     "median": 20,
+     "min": 20,
+     "max": 20
+    },
+    "treatment": {
+     "n": 1,
+     "median": 20,
+     "min": 20,
+     "max": 20
+    },
+    "medianDifference": 0,
+    "medianDifferenceCi95": [
+     0,
+     0
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "undo.lateExcessMs": {
+    "control": {
+     "n": 1,
+     "median": 3633,
+     "min": 3633,
+     "max": 3633
+    },
+    "treatment": {
+     "n": 1,
+     "median": 2215.7,
+     "min": 2215.7,
+     "max": 2215.7
+    },
+    "medianDifference": -1417.3,
+    "medianDifferenceCi95": [
+     -1417.3,
+     -1417.3
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "settle.maxMs": {
+    "control": {
+     "n": 1,
+     "median": 1616.8,
+     "min": 1616.8,
+     "max": 1616.8
+    },
+    "treatment": {
+     "n": 1,
+     "median": 233.4,
+     "min": 233.4,
+     "max": 233.4
+    },
+    "medianDifference": -1383.4,
+    "medianDifferenceCi95": [
+     -1383.4,
+     -1383.4
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "settle.lateExcessMs": {
+    "control": {
+     "n": 1,
+     "median": 1966.3,
+     "min": 1966.3,
+     "max": 1966.3
+    },
+    "treatment": {
+     "n": 1,
+     "median": 583.2,
+     "min": 583.2,
+     "max": 583.2
+    },
+    "medianDifference": -1383.1,
+    "medianDifferenceCi95": [
+     -1383.1,
+     -1383.1
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "draw.lateExcessMs": {
+    "control": {
+     "n": 1,
+     "median": 16.6,
+     "min": 16.6,
+     "max": 16.6
+    },
+    "treatment": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -16.6,
+    "medianDifferenceCi95": [
+     -16.6,
+     -16.6
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "sessionLateExcessMs": {
+    "control": {
+     "n": 1,
+     "median": 4015.8,
+     "min": 4015.8,
+     "max": 4015.8
+    },
+    "treatment": {
+     "n": 1,
+     "median": 2582.2,
+     "min": 2582.2,
+     "max": 2582.2
+    },
+    "medianDifference": -1433.6,
+    "medianDifferenceCi95": [
+     -1433.6,
+     -1433.6
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "commitP95Ms": {
+    "control": {
+     "n": 1,
+     "median": 3.5,
+     "min": 3.5,
+     "max": 3.5
+    },
+    "treatment": {
+     "n": 1,
+     "median": 3.4,
+     "min": 3.4,
+     "max": 3.4
+    },
+    "medianDifference": -0.1,
+    "medianDifferenceCi95": [
+     -0.1,
+     -0.1
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "foldMaxMs": {
+    "control": {
+     "n": 1,
+     "median": 71.9,
+     "min": 71.9,
+     "max": 71.9
+    },
+    "treatment": {
+     "n": 1,
+     "median": 70.7,
+     "min": 70.7,
+     "max": 70.7
+    },
+    "medianDifference": -1.2,
+    "medianDifferenceCi95": [
+     -1.2,
+     -1.2
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "undoJsSumMs": {
+    "control": {
+     "n": 1,
+     "median": 164.9,
+     "min": 164.9,
+     "max": 164.9
+    },
+    "treatment": {
+     "n": 1,
+     "median": 165.7,
+     "min": 165.7,
+     "max": 165.7
+    },
+    "medianDifference": 0.8,
+    "medianDifferenceCi95": [
+     0.8,
+     0.8
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   }
+  }
+ },
+ "pixels-pen": {
+  "runs": [
+   {
+    "label": "c1-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "pen",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8050448,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 401358,
+    "undoPhaseMaxMs": 249.4,
+    "undoWindowsOverGate": 20,
+    "undoWindowWorstMs": [
+     249,
+     83,
+     100,
+     117,
+     117,
+     100,
+     83,
+     83,
+     117,
+     117,
+     117,
+     100,
+     83,
+     83,
+     117,
+     133,
+     167,
+     167,
+     150,
+     150
+    ],
+    "draw": {
+     "maxMs": 17.5,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 249.4,
+     "over25": 1,
+     "lateExcessMs": 232.7
+    },
+    "undo": {
+     "maxMs": 249.4,
+     "over25": 21,
+     "lateExcessMs": 2042.3
+    },
+    "sessionLateExcessMs": 2042.3,
+    "commitP95Ms": 4.2,
+    "foldMaxMs": 24.2,
+    "foldCount": 10,
+    "undoJsMaxMs": 9.2,
+    "undoJsSumMs": 109.6,
+    "drawJsSumMs": 1144.9
+   },
+   {
+    "label": "c2-trt",
+    "arm": "trt",
+    "entry": "start.C4OBZ2hJ.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "pen",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8050448,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 401358,
+    "undoPhaseMaxMs": 251.1,
+    "undoWindowsOverGate": 20,
+    "undoWindowWorstMs": [
+     251,
+     83,
+     117,
+     117,
+     117,
+     100,
+     100,
+     83,
+     100,
+     50,
+     133,
+     117,
+     100,
+     83,
+     117,
+     150,
+     150,
+     150,
+     133,
+     117
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 251.1,
+     "over25": 2,
+     "lateExcessMs": 251
+    },
+    "undo": {
+     "maxMs": 251.1,
+     "over25": 21,
+     "lateExcessMs": 2013.6
+    },
+    "sessionLateExcessMs": 2030.2,
+    "commitP95Ms": 3.5,
+    "foldMaxMs": 11.3,
+    "foldCount": 10,
+    "undoJsMaxMs": 7.5,
+    "undoJsSumMs": 106.7,
+    "drawJsSumMs": 1129.6
+   }
+  ],
+  "comparison": {
+   "undoPhaseMaxMs": {
+    "control": {
+     "n": 1,
+     "median": 249.4,
+     "min": 249.4,
+     "max": 249.4
+    },
+    "treatment": {
+     "n": 1,
+     "median": 251.1,
+     "min": 251.1,
+     "max": 251.1
+    },
+    "medianDifference": 1.7,
+    "medianDifferenceCi95": [
+     1.7,
+     1.7
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "undoWindowsOverGate": {
+    "control": {
+     "n": 1,
+     "median": 20,
+     "min": 20,
+     "max": 20
+    },
+    "treatment": {
+     "n": 1,
+     "median": 20,
+     "min": 20,
+     "max": 20
+    },
+    "medianDifference": 0,
+    "medianDifferenceCi95": [
+     0,
+     0
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "undo.lateExcessMs": {
+    "control": {
+     "n": 1,
+     "median": 2042.3,
+     "min": 2042.3,
+     "max": 2042.3
+    },
+    "treatment": {
+     "n": 1,
+     "median": 2013.6,
+     "min": 2013.6,
+     "max": 2013.6
+    },
+    "medianDifference": -28.7,
+    "medianDifferenceCi95": [
+     -28.7,
+     -28.7
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "settle.maxMs": {
+    "control": {
+     "n": 1,
+     "median": 249.4,
+     "min": 249.4,
+     "max": 249.4
+    },
+    "treatment": {
+     "n": 1,
+     "median": 251.1,
+     "min": 251.1,
+     "max": 251.1
+    },
+    "medianDifference": 1.7,
+    "medianDifferenceCi95": [
+     1.7,
+     1.7
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "settle.lateExcessMs": {
+    "control": {
+     "n": 1,
+     "median": 232.7,
+     "min": 232.7,
+     "max": 232.7
+    },
+    "treatment": {
+     "n": 1,
+     "median": 251,
+     "min": 251,
+     "max": 251
+    },
+    "medianDifference": 18.3,
+    "medianDifferenceCi95": [
+     18.3,
+     18.3
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "draw.lateExcessMs": {
+    "control": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "treatment": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": 0,
+    "medianDifferenceCi95": [
+     0,
+     0
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "sessionLateExcessMs": {
+    "control": {
+     "n": 1,
+     "median": 2042.3,
+     "min": 2042.3,
+     "max": 2042.3
+    },
+    "treatment": {
+     "n": 1,
+     "median": 2030.2,
+     "min": 2030.2,
+     "max": 2030.2
+    },
+    "medianDifference": -12.1,
+    "medianDifferenceCi95": [
+     -12.1,
+     -12.1
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "commitP95Ms": {
+    "control": {
+     "n": 1,
+     "median": 4.2,
+     "min": 4.2,
+     "max": 4.2
+    },
+    "treatment": {
+     "n": 1,
+     "median": 3.5,
+     "min": 3.5,
+     "max": 3.5
+    },
+    "medianDifference": -0.7,
+    "medianDifferenceCi95": [
+     -0.7,
+     -0.7
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "foldMaxMs": {
+    "control": {
+     "n": 1,
+     "median": 24.2,
+     "min": 24.2,
+     "max": 24.2
+    },
+    "treatment": {
+     "n": 1,
+     "median": 11.3,
+     "min": 11.3,
+     "max": 11.3
+    },
+    "medianDifference": -12.9,
+    "medianDifferenceCi95": [
+     -12.9,
+     -12.9
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   },
+   "undoJsSumMs": {
+    "control": {
+     "n": 1,
+     "median": 109.6,
+     "min": 109.6,
+     "max": 109.6
+    },
+    "treatment": {
+     "n": 1,
+     "median": 106.7,
+     "min": 106.7,
+     "max": 106.7
+    },
+    "medianDifference": -2.9,
+    "medianDifferenceCi95": [
+     -2.9,
+     -2.9
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 2
+    }
+   }
+  }
+ },
+ "memory": {
+  "runs": [
+   {
+    "label": "m1-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1416.7,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1417,
+     1417,
+     20,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 16.9,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 332.7
+    },
+    "undo": {
+     "maxMs": 1416.7,
+     "over25": 1,
+     "lateExcessMs": 1400
+    },
+    "sessionLateExcessMs": 1732.7,
+    "commitP95Ms": 3.1,
+    "foldMaxMs": 72.4,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.6,
+    "undoJsSumMs": 127.8,
+    "drawJsSumMs": 5520.2
+   },
+   {
+    "label": "m2-trt",
+    "arm": "trt",
+    "entry": "start.C4OBZ2hJ.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 17,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.8,
+     "over25": 10,
+     "lateExcessMs": 383.2
+    },
+    "undo": {
+     "maxMs": 17,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 383.2,
+    "commitP95Ms": 3.3,
+    "foldMaxMs": 71.8,
+    "foldCount": 10,
+    "undoJsMaxMs": 12,
+    "undoJsSumMs": 134.7,
+    "drawJsSumMs": 5630.8
+   },
+   {
+    "label": "m3-trt",
+    "arm": "trt",
+    "entry": "start.C4OBZ2hJ.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 17.1,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 383
+    },
+    "undo": {
+     "maxMs": 17.1,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 399.6,
+    "commitP95Ms": 5,
+    "foldMaxMs": 76,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.1,
+    "undoJsSumMs": 137.3,
+    "drawJsSumMs": 5701.6
+   },
+   {
+    "label": "m4-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1433,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1433,
+     1433,
+     32,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.6,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 349.7
+    },
+    "undo": {
+     "maxMs": 1433,
+     "over25": 2,
+     "lateExcessMs": 1431.9
+    },
+    "sessionLateExcessMs": 1781.6,
+    "commitP95Ms": 3.7,
+    "foldMaxMs": 72.2,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.6,
+    "undoJsSumMs": 124.4,
+    "drawJsSumMs": 5623.6
+   }
+  ],
+  "comparison": {
+   "undoPhaseMaxMs": {
+    "control": {
+     "n": 2,
+     "median": 1424.9,
+     "min": 1416.7,
+     "max": 1433
+    },
+    "treatment": {
+     "n": 2,
+     "median": 17.1,
+     "min": 17,
+     "max": 17.1
+    },
+    "medianDifference": -1407.8,
+    "medianDifferenceCi95": [
+     -1416,
+     -1399.6
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "undoWindowsOverGate": {
+    "control": {
+     "n": 2,
+     "median": 2,
+     "min": 2,
+     "max": 2
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -2,
+    "medianDifferenceCi95": [
+     -2,
+     -2
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "undo.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 1416,
+     "min": 1400,
+     "max": 1431.9
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -1415.9,
+    "medianDifferenceCi95": [
+     -1431.9,
+     -1400
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "settle.maxMs": {
+    "control": {
+     "n": 2,
+     "median": 66.7,
+     "min": 66.7,
+     "max": 66.7
+    },
+    "treatment": {
+     "n": 2,
+     "median": 66.8,
+     "min": 66.7,
+     "max": 66.8
+    },
+    "medianDifference": 0,
+    "medianDifferenceCi95": [
+     0,
+     0.1
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "settle.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 341.2,
+     "min": 332.7,
+     "max": 349.7
+    },
+    "treatment": {
+     "n": 2,
+     "median": 383.1,
+     "min": 383,
+     "max": 383.2
+    },
+    "medianDifference": 41.9,
+    "medianDifferenceCi95": [
+     33.3,
+     50.5
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "draw.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "treatment": {
+     "n": 2,
+     "median": 8.3,
+     "min": 0,
+     "max": 16.6
+    },
+    "medianDifference": 8.3,
+    "medianDifferenceCi95": [
+     0,
+     16.6
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "sessionLateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 1757.2,
+     "min": 1732.7,
+     "max": 1781.6
+    },
+    "treatment": {
+     "n": 2,
+     "median": 391.4,
+     "min": 383.2,
+     "max": 399.6
+    },
+    "medianDifference": -1365.7,
+    "medianDifferenceCi95": [
+     -1398.4,
+     -1333.1
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "commitP95Ms": {
+    "control": {
+     "n": 2,
+     "median": 3.4,
+     "min": 3.1,
+     "max": 3.7
+    },
+    "treatment": {
+     "n": 2,
+     "median": 4.2,
+     "min": 3.3,
+     "max": 5
+    },
+    "medianDifference": 0.8,
+    "medianDifferenceCi95": [
+     -0.4,
+     1.9
+    ],
+    "permutation": {
+     "p": 0.6666666666666666,
+     "permutations": 6
+    }
+   },
+   "foldMaxMs": {
+    "control": {
+     "n": 2,
+     "median": 72.3,
+     "min": 72.2,
+     "max": 72.4
+    },
+    "treatment": {
+     "n": 2,
+     "median": 73.9,
+     "min": 71.8,
+     "max": 76
+    },
+    "medianDifference": 1.6,
+    "medianDifferenceCi95": [
+     -0.6,
+     3.8
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "undoJsSumMs": {
+    "control": {
+     "n": 2,
+     "median": 126.1,
+     "min": 124.4,
+     "max": 127.8
+    },
+    "treatment": {
+     "n": 2,
+     "median": 136,
+     "min": 134.7,
+     "max": 137.3
+    },
+    "medianDifference": 9.9,
+    "medianDifferenceCi95": [
+     6.9,
+     12.9
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   }
+  }
+ },
+ "head-verify": {
+  "runs": [
+   {
+    "label": "c1-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1405.4,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1405,
+     1405,
+     28,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 383
+    },
+    "undo": {
+     "maxMs": 1405.4,
+     "over25": 4,
+     "lateExcessMs": 1427.2
+    },
+    "sessionLateExcessMs": 1810.2,
+    "commitP95Ms": 3,
+    "foldMaxMs": 72.5,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.1,
+    "undoJsSumMs": 125.7,
+    "drawJsSumMs": 5555.9
+   },
+   {
+    "label": "c2-trt",
+    "arm": "trt",
+    "entry": "start.DDRgfmNd.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 23.6,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     24,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.4,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 99.9,
+     "over25": 10,
+     "lateExcessMs": 415.9
+    },
+    "undo": {
+     "maxMs": 23.6,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 415.9,
+    "commitP95Ms": 3.5,
+    "foldMaxMs": 73.4,
+    "foldCount": 10,
+    "undoJsMaxMs": 12.6,
+    "undoJsSumMs": 139.5,
+    "drawJsSumMs": 5713.9
+   },
+   {
+    "label": "c3-trt",
+    "arm": "trt",
+    "entry": "start.DDRgfmNd.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 17,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 33.3,
+     "over25": 1,
+     "lateExcessMs": 16.6
+    },
+    "settle": {
+     "maxMs": 83.3,
+     "over25": 10,
+     "lateExcessMs": 399.6
+    },
+    "undo": {
+     "maxMs": 17,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 416.2,
+    "commitP95Ms": 3.7,
+    "foldMaxMs": 71.6,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.4,
+    "undoJsSumMs": 136.6,
+    "drawJsSumMs": 5620.2
+   },
+   {
+    "label": "c4-ctl",
+    "arm": "ctl",
+    "entry": "start.Dlk4xmG4.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1433.1,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1433,
+     1433,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.9,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 366
+    },
+    "undo": {
+     "maxMs": 1433.1,
+     "over25": 1,
+     "lateExcessMs": 1416.4
+    },
+    "sessionLateExcessMs": 1782.4,
+    "commitP95Ms": 3,
+    "foldMaxMs": 72.6,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.5,
+    "undoJsSumMs": 128.5,
+    "drawJsSumMs": 5674.2
+   }
+  ],
+  "comparison": {
+   "undoPhaseMaxMs": {
+    "control": {
+     "n": 2,
+     "median": 1419.3,
+     "min": 1405.4,
+     "max": 1433.1
+    },
+    "treatment": {
+     "n": 2,
+     "median": 20.3,
+     "min": 17,
+     "max": 23.6
+    },
+    "medianDifference": -1398.9,
+    "medianDifferenceCi95": [
+     -1416.1,
+     -1381.8
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "undoWindowsOverGate": {
+    "control": {
+     "n": 2,
+     "median": 2,
+     "min": 2,
+     "max": 2
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -2,
+    "medianDifferenceCi95": [
+     -2,
+     -2
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "undo.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 1421.8,
+     "min": 1416.4,
+     "max": 1427.2
+    },
+    "treatment": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "medianDifference": -1421.8,
+    "medianDifferenceCi95": [
+     -1427.2,
+     -1416.4
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "settle.maxMs": {
+    "control": {
+     "n": 2,
+     "median": 66.7,
+     "min": 66.7,
+     "max": 66.7
+    },
+    "treatment": {
+     "n": 2,
+     "median": 91.6,
+     "min": 83.3,
+     "max": 99.9
+    },
+    "medianDifference": 24.9,
+    "medianDifferenceCi95": [
+     16.6,
+     33.2
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "settle.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 374.5,
+     "min": 366,
+     "max": 383
+    },
+    "treatment": {
+     "n": 2,
+     "median": 407.8,
+     "min": 399.6,
+     "max": 415.9
+    },
+    "medianDifference": 33.3,
+    "medianDifferenceCi95": [
+     16.6,
+     49.9
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "draw.lateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "treatment": {
+     "n": 2,
+     "median": 8.3,
+     "min": 0,
+     "max": 16.6
+    },
+    "medianDifference": 8.3,
+    "medianDifferenceCi95": [
+     0,
+     16.6
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "sessionLateExcessMs": {
+    "control": {
+     "n": 2,
+     "median": 1796.3,
+     "min": 1782.4,
+     "max": 1810.2
+    },
+    "treatment": {
+     "n": 2,
+     "median": 416.1,
+     "min": 415.9,
+     "max": 416.2
+    },
+    "medianDifference": -1380.3,
+    "medianDifferenceCi95": [
+     -1394.3,
+     -1366.2
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "commitP95Ms": {
+    "control": {
+     "n": 2,
+     "median": 3,
+     "min": 3,
+     "max": 3
+    },
+    "treatment": {
+     "n": 2,
+     "median": 3.6,
+     "min": 3.5,
+     "max": 3.7
+    },
+    "medianDifference": 0.6,
+    "medianDifferenceCi95": [
+     0.5,
+     0.7
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   },
+   "foldMaxMs": {
+    "control": {
+     "n": 2,
+     "median": 72.6,
+     "min": 72.5,
+     "max": 72.6
+    },
+    "treatment": {
+     "n": 2,
+     "median": 72.5,
+     "min": 71.6,
+     "max": 73.4
+    },
+    "medianDifference": 0,
+    "medianDifferenceCi95": [
+     -1,
+     0.9
+    ],
+    "permutation": {
+     "p": 1,
+     "permutations": 6
+    }
+   },
+   "undoJsSumMs": {
+    "control": {
+     "n": 2,
+     "median": 127.1,
+     "min": 125.7,
+     "max": 128.5
+    },
+    "treatment": {
+     "n": 2,
+     "median": 138.1,
+     "min": 136.6,
+     "max": 139.5
+    },
+    "medianDifference": 11,
+    "medianDifferenceCi95": [
+     8.1,
+     13.8
+    ],
+    "permutation": {
+     "p": 0.3333333333333333,
+     "permutations": 6
+    }
+   }
+  }
+ },
+ "diag-flush": {
+  "runs": [
+   {
+    "label": "f1",
+    "arm": "f1",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1533.2,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1533,
+     1533,
+     22,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 366.5
+    },
+    "undo": {
+     "maxMs": 1533.2,
+     "over25": 1,
+     "lateExcessMs": 1516.5
+    },
+    "sessionLateExcessMs": 1883,
+    "commitP95Ms": 3.3,
+    "foldMaxMs": 71.9,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.2,
+    "undoJsSumMs": 136.4,
+    "drawJsSumMs": 5496.7
+   },
+   {
+    "label": "f2-512",
+    "arm": "512",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1550.4,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1550,
+     1550,
+     30,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     33,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 10,
+     "lateExcessMs": 349.9
+    },
+    "undo": {
+     "maxMs": 1550.4,
+     "over25": 3,
+     "lateExcessMs": 1563.9
+    },
+    "sessionLateExcessMs": 1913.8,
+    "commitP95Ms": 6.1,
+    "foldMaxMs": 72.3,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.1,
+    "undoJsSumMs": 125.4,
+    "drawJsSumMs": 5528.3
+   },
+   {
+    "label": "g1-glflush",
+    "arm": "glflush",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 18.1,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     18,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 1616.8,
+     "over25": 11,
+     "lateExcessMs": 1999.9
+    },
+    "undo": {
+     "maxMs": 18.1,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 1999.9,
+    "commitP95Ms": 3,
+    "foldMaxMs": 71.9,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.7,
+    "undoJsSumMs": 133.3,
+    "drawJsSumMs": 5630.3
+   },
+   {
+    "label": "g2-preglflush",
+    "arm": "preglflush",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 17.2,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 50,
+     "over25": 1,
+     "lateExcessMs": 33.3
+    },
+    "settle": {
+     "maxMs": 66.7,
+     "over25": 12,
+     "lateExcessMs": 433.4
+    },
+    "undo": {
+     "maxMs": 17.2,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 466.7,
+    "commitP95Ms": 3.1,
+    "foldMaxMs": 72.9,
+    "foldCount": 10,
+    "undoJsMaxMs": 11.2,
+    "undoJsSumMs": 137.7,
+    "drawJsSumMs": 5775
+   }
+  ],
+  "comparison": {}
+ },
+ "trace-runs": {
+  "runs": [
+   {
+    "label": "t6",
+    "arm": "t6",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 3484,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     3484,
+     3484,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 100.1,
+     "over25": 10,
+     "lateExcessMs": 633
+    },
+    "undo": {
+     "maxMs": 3484,
+     "over25": 1,
+     "lateExcessMs": 3467.3
+    },
+    "sessionLateExcessMs": 4100.3,
+    "commitP95Ms": 2.7,
+    "foldMaxMs": 103,
+    "foldCount": 10,
+    "undoJsMaxMs": 16,
+    "undoJsSumMs": 105,
+    "drawJsSumMs": 5731.3
+   },
+   {
+    "label": "t7-pregl",
+    "arm": "pregl",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 17.1,
+    "undoWindowsOverGate": 0,
+    "undoWindowWorstMs": [
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 50,
+     "over25": 2,
+     "lateExcessMs": 49.9
+    },
+    "settle": {
+     "maxMs": 83.4,
+     "over25": 10,
+     "lateExcessMs": 549.5
+    },
+    "undo": {
+     "maxMs": 17.1,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "sessionLateExcessMs": 599.4,
+    "commitP95Ms": 2.8,
+    "foldMaxMs": 91.9,
+    "foldCount": 10,
+    "undoJsMaxMs": 13.1,
+    "undoJsSumMs": 122.1,
+    "drawJsSumMs": 5745.2
+   },
+   {
+    "label": "t8-main-light",
+    "arm": "light",
+    "entry": "start.Cp_dNZ9s.js",
+    "viewport": "360x643@3 PORTRAIT",
+    "brush": "crayon",
+    "deposition": "restamp",
+    "cadenceMs": 16.7,
+    "strokes": 30,
+    "historyBeforeUndo": {
+     "historyLength": 20,
+     "snapshots": 20,
+     "baseRasters": 20,
+     "rasterBytes": 8027008,
+     "baseRasterBytes": 3703680
+    },
+    "undos": 20,
+    "inkAfterUndo": 334027,
+    "undoPhaseMaxMs": 1700.2,
+    "undoWindowsOverGate": 2,
+    "undoWindowWorstMs": [
+     1700,
+     1700,
+     18,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "draw": {
+     "maxMs": 17.3,
+     "over25": 0,
+     "lateExcessMs": 0
+    },
+    "settle": {
+     "maxMs": 83.4,
+     "over25": 10,
+     "lateExcessMs": 549.9
+    },
+    "undo": {
+     "maxMs": 1700.2,
+     "over25": 2,
+     "lateExcessMs": 1700.2
+    },
+    "sessionLateExcessMs": 2250.1,
+    "commitP95Ms": 5.9,
+    "foldMaxMs": 89,
+    "foldCount": 10,
+    "undoJsMaxMs": 13.3,
+    "undoJsSumMs": 114.4,
+    "drawJsSumMs": 5615.5
+   }
+  ],
+  "comparison": {}
+ }
+}

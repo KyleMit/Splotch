@@ -13,7 +13,7 @@ import {
   MIN_TILED_UNDO_COMMANDS,
   TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE,
   TILE_HISTORY_FOLD_IDLE_MS,
-} from '../src/lib/drawing/tiledRenderer';
+} from '../src/lib/drawing/tiledHistoryLimits';
 import { MAX_UNDO_DEPTH } from '../src/lib/drawing/undoHistory';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { openDrawer, pickBrush } from './flows-harness';
