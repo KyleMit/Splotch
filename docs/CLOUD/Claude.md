@@ -343,13 +343,23 @@ which the hook applies at the next session start. Do not run `codex login` from 
 (device-code auth does work there, but it is a login per VM and needs the account's device-code
 toggle), and never fall back to an API key: the guard rejects it, and it bills metered credits.
 
-### What is still unproven in cloud
+### What has run in cloud, and what has not
 
 The seed path, the sandbox, and the failure wording were measured on 2026-09-02 (codex-cli 0.152.1;
-the issue records each probe). A full `rival:launch` from a cloud session — disposable-worktree
-creation and install, the broker loop, and a posted review — has not yet run here. On Linux the
-spool root under `/tmp` stays writable to the sandboxed rival, the integrity exposure
-`tools/rival-agent/NOTES.md` accepted "if Linux ever matters"; a cloud session is where it now does.
+the issue records each probe). On 2026-09-19 a commit-scope `rival:launch` ran end to end from a
+cloud session whose login the hook had seeded (codex-cli 0.155.1): the disposable worktree with its
+dependencies, the rival running the tool tests inside its own sandbox, a validated findings
+document, and the worktree removed afterwards, in about two minutes and with no broker request. That
+run did not refresh the login file, so the rotation cadence is still unmeasured.
+
+The PR scope and `rival:post` have not run here and cannot yet: the launcher's PR lookup and the
+poster both go through the `gh` CLI (`readPullRequest` and `defaultGh` in
+`tools/rival-agent/post-review.mjs`), which the cloud VM does not have, so `--pr <n>` fails at once
+with `spawnSync gh ENOENT`. The GitHub API answers from the VM and the session carries `GH_TOKEN`,
+so installing the CLI in the setup script is the open follow-up; until then, review a commit or
+branch scope and relay the findings by hand. On Linux the spool root under `/tmp` stays writable to
+the sandboxed rival, the integrity exposure `tools/rival-agent/NOTES.md` accepted "if Linux ever
+matters"; a cloud session is where it now does.
 
 ## Previewing the dev server on a phone
 
