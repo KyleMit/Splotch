@@ -29,6 +29,7 @@ const FORWARDED_METHODS = new Set(['GET', 'HEAD']);
 // judged here and the path the upstream decodes could name different routes.
 // No file the page loads needs one.
 const ENCODED_SEPARATOR = /%(2f|5c|2e|25)/i;
+const MALFORMED_ESCAPE = /%(?![0-9a-f]{2})/i;
 // A leaf that names the constrained address AND a name outside the constraint.
 // A device that enforces the root's name constraint must refuse it.
 const CONSTRAINT_PROBE_OUTSIDE_NAME = 'DNS:example.com';
@@ -38,11 +39,7 @@ const OUTSIDE_ADDRESS = '203.0.113.10';
 export function frontDecision({ method, pathname, isBuildFile }) {
   if (!FORWARDED_METHODS.has(method)) return 'deny:method';
   if (ENCODED_SEPARATOR.test(pathname)) return 'deny:encoded';
-  try {
-    decodeURIComponent(pathname);
-  } catch {
-    return 'deny:encoded';
-  }
+  if (MALFORMED_ESCAPE.test(pathname)) return 'deny:encoded';
   const path = normalize(pathname);
   if (DENIED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
     return 'deny:prefix';
@@ -147,15 +144,12 @@ function makeAuthority() {
 // target, so an absolute-form request cannot reach the preview unparsed.
 export function createFrontHandler({ upstream, isBuildFile, log = () => {} }) {
   return (req, res) => {
-    let target;
-    try {
-      target = new URL(req.url, 'http://front');
-    } catch {
+    if (!URL.canParse(req.url, 'http://front')) {
       log(req.method, req.url, 'deny:unparsable');
       res.writeHead(400, { 'content-type': 'text/plain' }).end('bad request\n');
       return;
     }
-    const { pathname, search } = target;
+    const { pathname, search } = new URL(req.url, 'http://front');
     const decision = frontDecision({ method: req.method, pathname, isBuildFile });
     log(req.method, pathname, decision);
     if (decision !== 'allow') {
