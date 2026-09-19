@@ -284,6 +284,10 @@ needed on every fresh VM. Instead:
   `CODEX_VERSION`) and lives in the environment snapshot. Its binary ships as an npm optional
   dependency, so the install needs only `registry.npmjs.org`. An environment whose snapshot predates
   that step has no `codex` until the setup script is re-saved in the dialog; the hook below says so.
+  Pasting the variables does not rebuild the snapshot. For the session at hand, run the script's
+  `npm install --global "@openai/codex@<CODEX_VERSION>"` line by hand and then
+  `node tools/seed-codex-auth.mjs`, which is the hook itself; it seeds exactly as it would have at
+  start-up.
 * **The login is seeded per session** by `tools/seed-codex-auth.mjs`, a SessionStart hook registered
   in `.claude/settings.json`. When no `$CODEX_HOME/auth.json` exists yet it writes one from the
   `CODEX_AUTH_JSON` environment variable, after checking that it is a ChatGPT login with a refresh
@@ -291,7 +295,10 @@ needed on every fresh VM. Instead:
   records which seed value wrote the file: the same seed arriving again leaves the file alone,
   because Codex refreshes it in place; a **different** seed replaces it, which is how a re-paste
   repairs a resumed VM holding a retired login; a file the hook did not write is never touched, and
-  the status line says so. The snapshot never holds the credential.
+  the status line says so. The snapshot never holds the credential. To confirm the variable arrived,
+  test it with `[ -n "${CODEX_AUTH_JSON:-}" ]`; a command that prints the value, or even its length,
+  is denied by the auto-mode classifier as credential materialization, and so is reading `auth.json`
+  back.
 * **The model is seeded the same way.** `rival:launch` passes `--ignore-user-config` and then reads
   the model from one place, a top-level `model` in `~/.codex/config.toml`, which a fresh VM lacks.
   The hook writes that file from `CODEX_MODEL` when none exists; without the variable every cloud
@@ -377,6 +384,16 @@ without the `<!-- splotch-rival-review:` marker falls out of the worklist `addre
 in autonomous mode unless the handler adds its findings by hand. Both rounds of review on PR #2100
 landed this way on 2026-09-19, and each served one broker request, so the broker loop is proven in
 cloud; the `--pr` scope and the poster's own transport are what remain unrun.
+
+Expect the rival to escalate its own test runs. Inside its sandbox on this VM, every synchronous
+Node child spawn (`spawnSync`, `execFileSync`) comes back with `error.code === 'EPERM'` even though
+the child ran to completion with exit 0 and full output; asynchronous `spawn` is unaffected.
+Measured on 2026-09-19 with `codex sandbox node -e …` against `true`, `rg`, `git`, and `node`. Any
+helper that treats `result.error` as failure, such as the `git()` wrapper in
+`tools/rival-agent/worktree.mjs` and the tests that build temporary repositories, therefore fails in
+the sandbox, and the rival sends that command through the broker. Serve it: the same command run by
+the handler passes, and a request for the rival-agent tests is routine, not a sign the tests are
+broken.
 
 On Linux the spool root under `/tmp` stays writable to the sandboxed rival, the integrity exposure
 `tools/rival-agent/NOTES.md` accepted "if Linux ever matters"; a cloud session is where it now does.

@@ -36,10 +36,14 @@ ChatGPT plan"). See [permissions.md](references/permissions.md) for what the lau
 
 ## Launch the rival in the background
 
-Pick the scope. `--base main` is the default; `--pr <n>` is what the poster needs.
+Pick the scope. `--base main` is the default; `--pr <n>` is what the poster needs. Both `--pr` and
+the poster call the `gh` CLI, which a Claude Code on the web session does not have: there, launch
+with `--base <the PR's base branch>` after checking the PR's recorded base and head through the
+GitHub MCP tools, and carry the findings onto the PR by the marked hand relay in
+`docs/CLOUD/Claude.md` ("Codex reviews on the ChatGPT plan").
 
 ```bash
-npm run --silent rival:launch -- --pr <n> > /private/tmp/rival-launch-<unique>.json 2> /private/tmp/rival-launch-<unique>.log
+npm run --silent rival:launch -- --pr <n> > "${TMPDIR:-/tmp}/rival-launch-<unique>.json" 2> "${TMPDIR:-/tmp}/rival-launch-<unique>.log"
 ```
 
 ```bash

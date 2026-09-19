@@ -190,7 +190,7 @@ export function seedCodexAuth({
     return {
       status: 'uninstalled',
       message:
-        'Codex CLI is not installed: the environment snapshot predates .claude/cloud/setup.sh installing it. Re-save the setup script in the environment dialog to rebuild the snapshot; run-rival-agent is unavailable until then.',
+        'Codex CLI is not installed: the environment snapshot predates .claude/cloud/setup.sh installing it. Re-save the setup script in the environment dialog to rebuild the snapshot. For this session, run the install line from that script by hand and then `node tools/seed-codex-auth.mjs` to seed the login; run-rival-agent is unavailable until one of those happens.',
     };
   }
   const auth = seedAuth({ env, authPath, identityPath, now, readFile, writeFile, removeFile });

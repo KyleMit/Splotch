@@ -209,8 +209,12 @@ export function matchingMarkedReviews(reviews, { base, head }) {
   );
 }
 
+export const GH_MISSING_MESSAGE =
+  'the gh CLI is not on PATH: the pr scope and the review poster both need it. Where it cannot be installed (a Claude Code on the web session), launch with --base <the PR base branch> and carry the findings onto the PR by hand.';
+
 export function defaultGh(args, { input } = {}) {
   const result = spawnSync('gh', args, { encoding: 'utf8', input });
+  if (result.error?.code === 'ENOENT') throw new Error(GH_MISSING_MESSAGE);
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(`gh ${args.join(' ')} exited ${result.status}: ${result.stderr.trim()}`);
