@@ -4,6 +4,8 @@ import {
   BROKER_SERVER_PATH,
   buildCodexArgs,
   codexVendor,
+  describeCodexLoginFailure,
+  isCodexLoginFailure,
   ISOLATION_FEATURES,
   readConfiguredModel,
   resolveCodexModel,
@@ -19,6 +21,7 @@ import {
 } from '../../.claude/skills/run-rival-agent/scripts/codex-subscription-auth.mjs';
 import { assertSubscriptionLogin } from '../../.claude/skills/run-rival-agent/scripts/codex-health.mjs';
 import { PENDING_REQUEST_TIMEOUT_MS } from '../rival-agent/spool.mjs';
+import { STREAM_FAILURE } from '../rival-agent/stream.mjs';
 import { FINDINGS_SCHEMA_PATH } from '../rival-agent/validate-findings.mjs';
 
 const PLAN_AUTH = { auth_mode: 'chatgpt', tokens: { access_token: 'token' } };
@@ -71,6 +74,10 @@ describe('Codex rival model selection', () => {
     expect(resolveCodexModel(undefined, 'model = "other"\n')).toBe('other');
     expect(() => resolveCodexModel('--yolo', '')).toThrow(/model/);
     expect(() => resolveCodexModel(undefined, '')).toThrow(/no model/);
+    expect(() => resolveCodexModel(undefined, '', {})).not.toThrow(/CODEX_MODEL/);
+    expect(() => resolveCodexModel(undefined, '', { CLAUDE_CODE_REMOTE: 'true' })).toThrow(
+      /CODEX_MODEL/
+    );
   });
 });
 
@@ -171,5 +178,41 @@ describe('Codex rival command construction', () => {
     expect(typeof codexVendor.prepare).toBe('function');
     expect(typeof codexVendor.resolveModel).toBe('function');
     expect(codexVendor.buildArgs).toBe(buildCodexArgs);
+    expect(codexVendor.isLoginFailure).toBe(isCodexLoginFailure);
+    expect(codexVendor.describeLoginFailure).toBe(describeCodexLoginFailure);
+  });
+});
+
+// Measured on codex-cli 0.152.1 with a fake auth.json whose refresh token the auth server had never
+// issued: Codex exits 1 with this wording, while `codex login status` and the health check stay
+// green because both read only the file. A retry would spend nothing but would also fix nothing.
+describe('Codex rival retired login', () => {
+  const codexError = Object.assign(
+    new Error(
+      'codex exited 1 after "thread.started". Log: /tmp/x.jsonl\nERROR: Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.'
+    ),
+    { code: STREAM_FAILURE.exited }
+  );
+
+  it('recognizes the wording only on an exit', () => {
+    expect(isCodexLoginFailure(codexError)).toBe(true);
+    expect(isCodexLoginFailure({ code: STREAM_FAILURE.exited, message: 'exited 2' })).toBe(false);
+    expect(
+      isCodexLoginFailure({
+        code: STREAM_FAILURE.stalled,
+        message: 'refresh token was already used',
+      })
+    ).toBe(false);
+  });
+
+  it('names the remedy for the platform the launcher runs on', () => {
+    const cloud = describeCodexLoginFailure(codexError, { CLAUDE_CODE_REMOTE: 'true' });
+    expect(cloud).toContain('rival:seed');
+    expect(cloud).toContain('CODEX_AUTH_JSON');
+    expect(cloud).not.toContain('`codex login`');
+    const local = describeCodexLoginFailure(codexError, {});
+    expect(local).toContain('`codex login`');
+    expect(local).not.toContain('CODEX_AUTH_JSON');
+    expect(local).toContain(codexError.message);
   });
 });

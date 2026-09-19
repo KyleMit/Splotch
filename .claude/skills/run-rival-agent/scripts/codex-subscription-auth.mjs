@@ -6,6 +6,15 @@ export const CODEX_HOME = process.env.CODEX_HOME ?? join(homedir(), '.codex');
 export const AUTH_PATH = join(CODEX_HOME, 'auth.json');
 export const CONFIG_PATH = join(CODEX_HOME, 'config.toml');
 
+// A Claude Code on the web session has no login and no config of its own: tools/seed-codex-auth.mjs
+// writes both at SessionStart from these environment variables (docs/CLOUD/Claude.md, "Codex
+// reviews on the ChatGPT plan").
+export const SEED_ENVIRONMENT_KEY = 'CODEX_AUTH_JSON';
+export const MODEL_ENVIRONMENT_KEY = 'CODEX_MODEL';
+// Codex model slugs are free-form and change between releases, so a slug is checked only for the
+// shape that cannot be mistaken for a flag rather than against a set that would go stale.
+export const CODEX_MODEL_SLUG_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
 // Codex prefers an inherited credential over the stored ChatGPT login, so every one of these would
 // silently move the run onto metered API billing instead of the plan's included usage. Plan usage
 // reaches chatgpt.com/backend-api/codex; a bearer credential from the environment instead reaches

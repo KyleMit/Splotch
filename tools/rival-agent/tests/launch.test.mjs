@@ -104,4 +104,16 @@ describe('shared launch arguments', () => {
     expect(isRetryableResumeFailure({ code: STREAM_FAILURE.logFailed })).toBe(false);
     expect(isRetryableResumeFailure(new Error('something else'))).toBe(false);
   });
+
+  // A retired login exits the same way a pruned thread does, and only the vendor knows the wording;
+  // retrying it would fail identically and hide the remedy behind a second stream log.
+  it('lets the vendor veto the retry for a login it recognizes as dead', () => {
+    const exited = { code: STREAM_FAILURE.exited, message: 'refresh token was already used' };
+    const vendor = { isLoginFailure: (error) => /refresh token/.test(error.message) };
+    expect(isRetryableResumeFailure(exited, vendor)).toBe(false);
+    expect(
+      isRetryableResumeFailure({ code: STREAM_FAILURE.exited, message: 'pruned' }, vendor)
+    ).toBe(true);
+    expect(isRetryableResumeFailure(exited, {})).toBe(true);
+  });
 });

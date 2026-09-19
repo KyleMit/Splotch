@@ -59,6 +59,7 @@ fi
 printf 'stub chisel'`
   );
   writeExecutable(join(bin, 'gunzip'), `/bin/cat`);
+  writeExecutable(join(bin, 'npm'), `exit "\${FAIL_CODEX:-0}"`);
   writeExecutable(join(bin, 'chmod'), `exit 0`);
 
   return spawnSync('/bin/bash', [fixtureSetupPath], {
@@ -73,6 +74,7 @@ printf 'stub chisel'`
       FAIL_PLAYWRIGHT_VERSION: String(failures.playwrightVersionDerivation ?? 0),
       PLAYWRIGHT_VERSION: failures.playwrightVersion ?? '1.61.1',
       FAIL_CHISEL: String(failures.chisel ?? 0),
+      FAIL_CODEX: String(failures.codex ?? 0),
     },
   });
 }
@@ -106,6 +108,16 @@ describe('Claude cloud setup warnings', () => {
     - chisel install skipped — check github release-asset egress
 ==> The environment is up but may be incomplete; address the warnings above.
 `
+    );
+  });
+
+  it('keeps a failed Codex CLI install non-fatal and names the skill it costs', () => {
+    const result = runSetup({ codex: 1 });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr.match(/CLAUDE SETUP WARNING/g)).toHaveLength(1);
+    expect(result.stderr).toContain(
+      'codex install skipped — run-rival-agent is unavailable until the snapshot rebuilds with it'
     );
   });
 
