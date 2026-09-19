@@ -1,6 +1,7 @@
 # Declarative label taxonomy for the Splotch issue tracker.
 # Synced to GitHub by .github/workflows/label-sync.yml (crazy-max/ghaction-github-labeler).
 # Edit here, not in the GitHub UI, so the label set stays reviewable and reproducible.
+# GitHub caps description length; tools/tests/labels.test.mjs enforces the limit before Label Sync hits it.
 # The glossary (what each label means, and the triage flow) lives in docs/ISSUE-WORKFLOW.md.
 
 # --- type: what kind of work (exactly one per issue) ---
@@ -27,7 +28,7 @@
   description: 'Documentation'
 - name: 'type:audit'
   color: 'cc317c'
-  description: 'Surfaced by an audit skill (vet-audits) — provenance marker fix-audits burns down; may coexist with a substantive type:*'
+  description: 'Audit-skill provenance marker that fix-audits burns down; may coexist with a substantive type:*'
 
 # --- area: which part of the product (one or more per issue) ---
 - name: 'area:drawing'
@@ -99,7 +100,7 @@
 # --- meta: workflow signals ---
 - name: 'in-progress'
   color: 'd93f0b'
-  description: 'Claimed by a ship-issue or ship-campaign session actively working it — excluded from future pickup until the issue closes'
+  description: 'Claimed by a ship-issue or ship-campaign session; excluded from pickup until the issue closes'
 - name: 'reviewed'
   color: '1f883d'
   description: 'Review pass complete — ready for the project ToDo queue'
@@ -108,7 +109,7 @@
   description: 'Filed from the in-app Report form (Settings → About)'
 - name: 'needs-triage'
   color: 'ffd8b1'
-  description: 'Valid audit finding whose fix approach is unclear — a human should confirm direction before fix-audits implements it'
+  description: 'Valid audit finding with an unclear fix — a human confirms direction before fix-audits implements it'
 - name: 'needs-scoping'
   color: 'fef2c0'
   description: 'Rough spec — investigate and firm up (often an ADR) before significant work'
