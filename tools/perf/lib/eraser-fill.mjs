@@ -119,3 +119,45 @@ export function eraserFillFunctionSource() {
     return { tiles: tiles.length, backings, transparentTiles };
   }`;
 }
+
+// Point samples of every live tile's backing on an ERASER_CENSUS_GRID square
+// lattice. Smoothing is off, so each sample is one real backing pixel rather
+// than an average, and a fully opaque census means ink under every lattice
+// point — which, at this density, is ink wherever the fixed gesture can put
+// the eraser. The eraser pass is then proven by samples that went transparent.
+// Reads go through the same 1x1-scratch pattern's larger sibling (a
+// willReadFrequently scratch, never getImageData on a live tile), and every
+// census runs between contacts. Hidden tiles are sampled like visible ones:
+// their DOM rect is empty, but their backing is what the eraser works on.
+export const ERASER_CENSUS_GRID = 64;
+// Below this alpha a sample counts as erased rather than antialiased edge.
+export const ERASED_ALPHA_BELOW = 128;
+
+export function eraserInkCensusFunctionSource() {
+  return `function eraserInkCensus() {
+    const tiles = [...document.querySelectorAll('canvas[data-live-tile]')];
+    if (!tiles.length) return { error: 'no live tiles to sample' };
+    const grid = ${ERASER_CENSUS_GRID};
+    const scratch = document.createElement('canvas');
+    scratch.width = grid;
+    scratch.height = grid;
+    const context = scratch.getContext('2d', { willReadFrequently: true });
+    context.imageSmoothingEnabled = false;
+    return {
+      tiles: tiles.map((canvas) => {
+        const backing = canvas.width + 'x' + canvas.height;
+        if (!canvas.width || !canvas.height) return { backing, samples: 0, opaque: 0, erased: 0 };
+        context.clearRect(0, 0, grid, grid);
+        context.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, grid, grid);
+        const data = context.getImageData(0, 0, grid, grid).data;
+        let opaque = 0;
+        let erased = 0;
+        for (let index = 3; index < data.length; index += 4) {
+          if (data[index] === 255) opaque += 1;
+          else if (data[index] < ${ERASED_ALPHA_BELOW}) erased += 1;
+        }
+        return { backing, samples: grid * grid, opaque, erased };
+      }),
+    };
+  }`;
+}
