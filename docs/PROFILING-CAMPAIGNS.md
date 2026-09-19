@@ -316,12 +316,13 @@ If a resume reuses output paths, snapshot and hash the failed artifacts before i
 
 **An interrupted action sweep can leave the Android panel pinned at 60Hz.** The android action sweep
 pins `peak_refresh_rate`/`min_refresh_rate` for its duration (ADR-0143) and restores them in its
-`finally` — but Ctrl-C, a `fail()` on an unserved URL or stale build, and kill -9 all exit without
-running it. A leaked pin then fails **every subsequent drawing cell on that phone** as
-`off-refresh-regime`, burning retries on a cause no retry can fix, and nothing in those failures
-names the setting. Check with `adb shell dumpsys display | grep -o 'renderFrameRate [0-9.]*'` — a
-phone that should boost to 120 reporting 60 is the tell — and clear it with
-`adb shell settings delete system peak_refresh_rate` and the same for `min_refresh_rate`.
+`finally`, and in a process `exit` listener that covers a `fail()` on an unserved URL or a stale
+build. Ctrl-C and kill -9 still exit without running either. A leaked pin then fails **every
+subsequent drawing cell on that phone** as `off-refresh-regime`, burning retries on a cause no retry
+can fix, and nothing in those failures names the setting. Check with
+`adb shell dumpsys display | grep -o 'renderFrameRate [0-9.]*'` — a phone that should boost to 120
+reporting 60 is the tell — and clear it with `adb shell settings delete system peak_refresh_rate`
+and the same for `min_refresh_rate`.
 
 **Eraser cells before the between-pass refill are optimistic by an unknown amount.** The gesture
 plan replays identical geometry every pass, so eraser passes 2..N dragged the eraser across pixels
