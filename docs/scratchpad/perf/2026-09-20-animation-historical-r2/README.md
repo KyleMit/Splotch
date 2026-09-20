@@ -11,16 +11,19 @@ all completed capture identities and controls, and every stored summary against 
 packaged inputs. Each run is checked against the per-target controls declared in `lib.mjs`
 (`DECLARED_CONTROLS`, transcribed from the table below), not merely against its own arm, so a
 uniformly miscampaigned target fails rather than agreeing with itself; a native run has to have
-loaded its own arm entry and no other. `negative-controls.mjs` proves those two assertions fire, by
+loaded its own arm entry and no other. The declared controls include the gate allowance ledger each
+target scored under, because the scorer consumes it: iPad Safari's expectation is the harness's own
+`actionGateAllowancesFor('ipad-device-web')` constant rather than a copy of it, and every other
+target declares the base gates it recorded. `negative-controls.mjs` proves those assertions fire, by
 mutating a loaded capture in memory — a mixed-arm entry list, a wrong iPadOS version, orientation,
-theme, runtime, input mode or cadence pin — and requiring each mutation to be rejected. Run
-`compare.mjs` for every red action, or `compare.mjs --all` for every action. `CAPTURE-ORDER.tsv`
-gives the raw artifact hashes, capture completion times, and verdicts. `COVERAGE.json` names all
-twenty positions and the exact holes. Each reduction retains every input read by `summarizeActions`;
-its `sourceSha256` refers to the private original. The raw JSON, full console logs, install proofs,
-restricted-front request logs, and failed attempts remain under the rig's
-`evidence/1870/animation-historical-r2/` directory because they contain device identifiers and local
-paths.
+theme, runtime, input mode or cadence pin, a widened or missing allowance ledger — and requiring
+each mutation to be rejected. Run `compare.mjs` for every red action, or `compare.mjs --all` for
+every action. `CAPTURE-ORDER.tsv` gives the raw artifact hashes, capture completion times, and
+verdicts. `COVERAGE.json` names all twenty positions and the exact holes. Each reduction retains
+every input read by `summarizeActions`; its `sourceSha256` refers to the private original. The raw
+JSON, full console logs, install proofs, restricted-front request logs, and failed attempts remain
+under the rig's `evidence/1870/animation-historical-r2/` directory because they contain device
+identifiers and local paths.
 
 ## Frozen identities and commands
 

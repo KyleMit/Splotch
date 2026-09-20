@@ -51,6 +51,22 @@ rejects('an iPad Safari capture driven by synthetic rather than the declared nat
 rejects('an iPad Safari capture carrying a cadence pin the target never declared',
   { ...safariBefore, refreshRatePin: { requestedHz: 60, observedHz: 60 } },
   (run) => matchesDeclaredControls(run, 'ipad-safari'));
+rejects('an iPad Safari capture whose open Settings P95 allowance was widened from 29 ms to 999 ms',
+  {
+    ...safariBefore,
+    gateAllowances: {
+      ...safariBefore.gateAllowances,
+      p95: { ...safariBefore.gateAllowances.p95, 'open Settings': 999 },
+    },
+  },
+  (run) => matchesDeclaredControls(run, 'ipad-safari'));
+rejects('an iPad Safari capture that recorded no allowance ledger at all',
+  { ...safariBefore, gateAllowances: {} }, (run) => matchesDeclaredControls(run, 'ipad-safari'));
+rejects('an iPad native capture handed the iPad web row allowance ledger it never scored under',
+  { ...nativeBefore, gateAllowances: safariBefore.gateAllowances },
+  (run) => matchesDeclaredControls(run, 'ipad-native'));
+accepts('the unmodified iPad native before capture scored on the base gates it declares',
+  nativeBefore, (run) => matchesDeclaredControls(run, 'ipad-native'));
 rejects('an Android Chrome capture whose observed cadence missed the declared 60 Hz pin',
   { ...readRun('runs', 'android-chrome', 'before-1'), refreshRatePin: { requestedHz: 60, observedHz: 30 } },
   (run) => matchesDeclaredControls(run, 'android-chrome'));
