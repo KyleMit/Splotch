@@ -49,9 +49,41 @@ const ROUTE_COLLIDING_NAMES = new Set(['api', 'design']);
 
 const SCANNED_EXTENSIONS = ['.md', '.mjs', '.json'];
 
-// A path, extension, regex escape, or namespaced token continuing past the name
-// means the match was never a skill reference.
-const NOT_A_REFERENCE_SUFFIX = /^[/\\:.-]/;
+// A path, extension, regex escape, namespaced token, or further word character
+// continuing past the name means the match was never a skill reference. One
+// character is the whole test, so a hit on a long line costs a lookup instead
+// of a substring of everything after it.
+const CONTINUES_PAST_THE_NAME = /[/\\:.\w-]/;
+
+// Characters that are ordinary in a skill name but meaningful inside a regex
+// alternation.
+const REGEX_METACHARACTERS = /[.*+?^${}()|[\]\\-]/g;
+
+// One alternation over the whole vocabulary, so a line costs a single regex
+// pass rather than one indexOf per sigil per name. The sweep reads tens of
+// megabytes of tracked files, and scanning every line of them once per name is
+// what pushed this check past its own suite's timeout twice — first when the
+// desktop rotation corpus landed (stack 1353), then again once the
+// page-inventory captures did. Longest name first, because an alternation
+// takes the first branch that matches rather than the longest.
+//
+// Keyed on the vocabulary's contents rather than on the caller's array, so a
+// caller that builds its list up across calls gets a matcher for the list it
+// actually holds. Keying on array identity is faster and wrong in the one
+// direction this file cannot afford: a stale matcher reports no violation for a
+// name added after the first call, and a guard that silently finds nothing
+// looks exactly like a guard that passed.
+const matchers = new Map();
+function candidateMatcher(names) {
+  const ordered = [...names].sort((a, b) => b.length - a.length);
+  const signature = ordered.join('\u0000');
+  const cached = matchers.get(signature);
+  if (cached) return cached;
+  const alternation = ordered.map((name) => name.replace(REGEX_METACHARACTERS, '\\$&')).join('|');
+  const matcher = new RegExp(`[/$](?:${alternation})`, 'g');
+  matchers.set(signature, matcher);
+  return matcher;
+}
 
 export function registeredSkillNames(root = ROOT) {
   const authored = readdirSync(join(root, '.ruler', 'skills'), { withFileTypes: true })
@@ -241,31 +273,45 @@ export function maskCodeOutsideText(source) {
 export function findFileViolations(file, text, names) {
   const runner = runnerOf(file);
   if (HISTORICAL_PATHS.includes(file)) return [];
+  if (!names.length) return [];
 
-  const forbidden = [
-    runner === 'claude' ? null : { sigil: '/', runner: 'Claude Code' },
-    runner === 'codex' ? null : { sigil: '$', runner: 'Codex' },
-  ].filter(Boolean);
-  if (!forbidden.length) return [];
+  const forbiddenSigils = new Map(
+    [
+      runner === 'claude' ? null : ['/', 'Claude Code'],
+      runner === 'codex' ? null : ['$', 'Codex'],
+    ].filter(Boolean)
+  );
+  if (!forbiddenSigils.size) return [];
+
+  const matcher = candidateMatcher(names);
+  // Masking only ever blanks regions, so text holding no candidate at all holds
+  // none after masking either. Running the prefilter on the raw text spares the
+  // overwhelming majority of files — which name no skill anywhere — both the
+  // mask and the line split.
+  matcher.lastIndex = 0;
+  if (!matcher.test(text)) return [];
 
   const searchable = file.endsWith('.mjs') ? maskCodeOutsideText(text) : text;
   const sourceLines = text.split(/\r?\n/);
   const violations = [];
   searchable.split(/\r?\n/).forEach((line, index) => {
-    for (const { sigil, runner: sigilRunner } of forbidden) {
-      for (const name of names) {
-        const token = `${sigil}${name}`;
-        let found = line.indexOf(token);
-        while (found !== -1) {
-          const before = found === 0 ? '\n' : line[found - 1];
-          const after = line.slice(found + token.length);
-          if (OPENER.test(before) && !NOT_A_REFERENCE_SUFFIX.test(after) && !/^\w/.test(after)) {
-            const text = sourceLines[index].trim();
-            violations.push({ file, line: index + 1, token, sigilRunner, text });
-          }
-          found = line.indexOf(token, found + 1);
-        }
+    matcher.lastIndex = 0;
+    let match = matcher.exec(line);
+    while (match !== null) {
+      const token = match[0];
+      const sigilRunner = forbiddenSigils.get(token[0]);
+      const before = match.index === 0 ? '\n' : line[match.index - 1];
+      const after = line[match.index + token.length];
+      if (sigilRunner && OPENER.test(before) && !(after && CONTINUES_PAST_THE_NAME.test(after))) {
+        violations.push({
+          file,
+          line: index + 1,
+          token,
+          sigilRunner,
+          text: sourceLines[index].trim(),
+        });
       }
+      match = matcher.exec(line);
     }
   });
   return violations;
