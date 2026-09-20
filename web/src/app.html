@@ -56,12 +56,12 @@
              touching their flags, so those read as off while it is off.
            • data-single-brush — the one enabled optional brush, when exactly one
              remains, so its direct-button face is correct before hydration.
-           • data-no-actions — present when every first-paint action is disabled,
+           • data-no-actions — present when no first-paint action is painted,
              so the panel and its drawer control never paint empty.
-           • data-ai-slot — present when AI images are enabled, so the hidden
-             button reserves its place while the runtime grant is checked.
+           • data-ai-slot — present for opted-in AI unless its last known grant
+             was unavailable. The button paints disabled until runtime checks it.
            • --action-btn-count — set only when persisted hidden controls reduce
-             or AI opt-in expands the default five-button row; the hydrated panel then
+             or the AI button expands the default five-button row; the hydrated panel then
              publishes its live count on its own root.
            • data-brush — the persisted brush type when it deviates from the default
              pen ('crayon' or 'magic'; the eraser is never persisted), so the Brush
@@ -162,10 +162,11 @@
 
           var visibleActionButtonCount =
             (optionalBrushCount > 0 ? 1 : 0) + stroke + coloring + screenshot + undo;
-          var aiSlot = on('splotch-ai-image-enabled', false);
+          var aiSlot =
+            on('splotch-ai-image-enabled', false) && on('splotch-ai-button-available', true);
           el.toggleAttribute('data-ai-slot', aiSlot);
           var actionButtonCount = visibleActionButtonCount + Number(aiSlot);
-          el.toggleAttribute('data-no-actions', visibleActionButtonCount === 0);
+          el.toggleAttribute('data-no-actions', actionButtonCount === 0);
           if (actionButtonCount !== 5 && actionButtonCount > 0) {
             el.style.setProperty('--action-btn-count', String(actionButtonCount));
           }

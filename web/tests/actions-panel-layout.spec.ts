@@ -100,6 +100,8 @@ async function startupPanelGeometry(page: Page) {
       panel: rect(panel),
       toggle: rect(toggle),
       ai: rect(ai),
+      aiPainted:
+        getComputedStyle(ai).display !== 'none' && getComputedStyle(ai).visibility === 'visible',
       count: getComputedStyle(panel).getPropertyValue('--action-btn-count').trim(),
     };
   });
@@ -109,7 +111,7 @@ for (const scenario of [
   { name: 'grant arrives', status: 200, viewport: PORTRAIT_VIEWPORTS[0] },
   { name: 'grant is unavailable', status: 503, viewport: LANDSCAPE_VIEWPORTS[1] },
 ] as const) {
-  test(`opted-in AI slot stays fixed from first paint when ${scenario.name}`, async ({
+  test(`opted-in AI button paints without moving the drawer when ${scenario.name}`, async ({
     browser,
     page,
   }) => {
@@ -143,10 +145,16 @@ for (const scenario of [
     );
     releaseGrant();
     await grantResponse;
-    await expect(page.locator('#aiImageButton')).toBeVisible({ visible: scenario.status === 200 });
+    await expect(page.locator('#aiImageButton')).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('splotch-ai-button-available')))
+      .toBe(String(scenario.status === 200));
     const settled = await startupPanelGeometry(page);
 
     expect(firstPaint.count).toBe('6');
+    expect(firstPaint.aiPainted).toBe(true);
+    expect(pending.aiPainted).toBe(true);
+    expect(settled.aiPainted).toBe(true);
     expect(pending.count).toBe(firstPaint.count);
     expect(settled.count).toBe(firstPaint.count);
     expect(pending.panel).toEqual(firstPaint.panel);
@@ -157,6 +165,113 @@ for (const scenario of [
     expect(settled.ai).toEqual(firstPaint.ai);
   });
 }
+
+test('last known unavailable AI grant leaves no gap in the first painted row', async ({
+  browser,
+  page,
+}) => {
+  const seedUnavailable = async (target: Page) => {
+    await seedAiEnabled(target);
+    await target.addInitScript(() => {
+      localStorage.setItem('splotch-drawer-open', 'true');
+      localStorage.setItem('splotch-ai-button-available', 'false');
+    });
+  };
+
+  const firstPaintContext = await browser.newContext({ viewport: PORTRAIT_VIEWPORTS[0] });
+  const firstPaintPage = await firstPaintContext.newPage();
+  await seedUnavailable(firstPaintPage);
+  await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
+  await firstPaintPage.goto('/');
+  const firstPaint = await startupPanelGeometry(firstPaintPage);
+  await firstPaintContext.close();
+
+  await page.route('**/api/free-generation-grant', (route) =>
+    route.fulfill({ status: 503, body: JSON.stringify({ ok: false }) })
+  );
+  await seedUnavailable(page);
+  await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
+  await gotoApp(page);
+  await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+  await expect(page.locator('#aiImageButton')).toBeHidden();
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('splotch-ai-button-available')))
+    .toBe('false');
+  const settled = await startupPanelGeometry(page);
+
+  expect(firstPaint.count).toBe('5');
+  expect(firstPaint.aiPainted).toBe(false);
+  expect(settled.count).toBe('5');
+  expect(settled.aiPainted).toBe(false);
+  expect(settled.panel).toEqual(firstPaint.panel);
+  expect(settled.toggle).toEqual(firstPaint.toggle);
+});
+
+test('AI-only drawer paints its disabled button before the grant arrives', async ({ page }) => {
+  let releaseGrant!: () => void;
+  const grantGate = new Promise<void>((resolve) => (releaseGrant = resolve));
+  await page.route('**/api/free-generation-grant', async (route) => {
+    await grantGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, remaining: 7 }),
+    });
+  });
+  await seedAiEnabled(page);
+  await seedPersistedHiddenControls(page, [
+    'splotch-stroke-width-control',
+    'splotch-crayon-enabled',
+    'splotch-magic-brush-enabled',
+    'splotch-eraser-enabled',
+    'splotch-coloring-book-enabled',
+    'splotch-screenshot-enabled',
+    'splotch-undo-button-enabled',
+  ]);
+  await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
+  await gotoApp(page);
+  await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+  await expect(page.locator('.actions-panel')).not.toHaveAttribute('data-no-actions', '');
+  await expect(page.locator('#aiImageButton')).toBeVisible();
+  const pending = await startupPanelGeometry(page);
+
+  releaseGrant();
+  await expect(page.locator('#aiImageButton .free-count')).toBeVisible();
+  const settled = await startupPanelGeometry(page);
+  expect(pending.count).toBe('1');
+  expect(settled.count).toBe('1');
+  expect(settled.panel).toEqual(pending.panel);
+  expect(settled.toggle).toEqual(pending.toggle);
+});
+
+test('a usable AI button stays hidden with the closed drawer', async ({ page }) => {
+  await page.route('**/api/free-generation-grant', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, remaining: 7 }),
+    })
+  );
+  await seedAiEnabled(page);
+  await gotoApp(page);
+  await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+  await expect(page.locator('#aiImageButton .free-count')).toHaveCount(1);
+  const canvas = await page.locator('#drawingCanvas').boundingBox();
+  if (!canvas) throw new Error('Drawing canvas is unavailable');
+  await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(canvas.x + canvas.width / 2 + 40, canvas.y + canvas.height / 2 + 40);
+  await page.mouse.up();
+  await expect(page.locator('#aiImageButton')).toBeEnabled();
+  await expect(page.locator('#aiImageButton')).toBeHidden();
+  await expect(page.locator('#undoButton')).toBeHidden();
+  const aiFocused = await page.evaluate(() => {
+    const aiButton = document.querySelector<HTMLButtonElement>('#aiImageButton')!;
+    aiButton.focus();
+    return document.activeElement === aiButton;
+  });
+  expect(aiFocused).toBe(false);
+});
 
 for (const viewport of LANDSCAPE_VIEWPORTS) {
   test(`${viewport.name} Actions Panel first paint matches hydrated geometry`, async ({

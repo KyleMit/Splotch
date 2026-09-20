@@ -37,7 +37,9 @@ import {
   availablePerButton,
   ACTION_BUTTON_GAP,
   ACTION_BUTTON_COUNT_PROPERTY,
+  AI_SLOT_ATTRIBUTE,
   isAiImageButtonVisible,
+  isAiImageButtonShown,
   layoutActionButtonCount,
   visibleActionButtonCount,
   maxActionButtonScale,
@@ -81,6 +83,7 @@ beforeAll(() => {
 });
 
 function resetState() {
+  document.documentElement.removeAttribute(AI_SLOT_ATTRIBUTE);
   setToolDrawerEnabled(true);
   setStrokeWidthControl(true);
   setCrayon(true);
@@ -180,9 +183,14 @@ describe('visibleActionButtonCount', () => {
 });
 
 describe('layoutActionButtonCount', () => {
-  it('reserves an opted-in AI slot while its grant is unavailable', () => {
+  it('shows a disabled AI button while its boot hint is present', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
     expect(visibleActionButtonCount()).toBe(5);
+    expect(isAiImageButtonShown()).toBe(false);
+    expect(layoutActionButtonCount()).toBe(5);
+
+    document.documentElement.setAttribute(AI_SLOT_ATTRIBUTE, '');
+    expect(isAiImageButtonShown()).toBe(true);
     expect(layoutActionButtonCount()).toBe(6);
 
     freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
@@ -190,9 +198,11 @@ describe('layoutActionButtonCount', () => {
     expect(layoutActionButtonCount()).toBe(6);
   });
 
-  it('does not reserve an AI slot when the parent switched it off', () => {
+  it('does not show AI when the parent switched it off', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
+    document.documentElement.setAttribute(AI_SLOT_ATTRIBUTE, '');
     setAiImage(false);
+    expect(isAiImageButtonShown()).toBe(false);
     expect(layoutActionButtonCount()).toBe(5);
   });
 });
@@ -549,7 +559,7 @@ describe('publishActionPanelState', () => {
     expect(el.getAttribute(SINGLE_BRUSH_ATTRIBUTE)).toBe('eraser');
   });
 
-  it('hides the whole panel when no action is visible', () => {
+  it('hides an empty panel and shows a disabled AI-only panel', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
     setCrayon(false);
     setMagicBrush(false);
@@ -561,6 +571,11 @@ describe('publishActionPanelState', () => {
     const el = document.createElement('div');
     publishActionPanelState(el, false, 1);
     expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(true);
+
+    document.documentElement.setAttribute(AI_SLOT_ATTRIBUTE, '');
+    publishActionPanelState(el, false, 1);
+    expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(false);
+    expect(el.style.getPropertyValue(ACTION_BUTTON_COUNT_PROPERTY)).toBe('1');
   });
 
   it('reflects each non-pen brush in data-brush', () => {

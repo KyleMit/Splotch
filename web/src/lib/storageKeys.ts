@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   coloringBookEnabled: 'splotch-coloring-book-enabled',
   coloringPacksAllowMetered: 'splotch-coloring-packs-allow-metered',
   aiImageEnabled: 'splotch-ai-image-enabled',
+  aiButtonAvailable: 'splotch-ai-button-available',
   aiCustomizationEnabled: 'splotch-ai-customization-enabled',
   autoSaveAi: 'splotch-auto-save-ai',
   legacyAiAccessToken: 'splotch-ai-access-token',

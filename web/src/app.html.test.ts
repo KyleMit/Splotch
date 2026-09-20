@@ -345,10 +345,15 @@ describe("app.html's boot script mirrors the state modules", () => {
   }
 
   for (const [key, fallback] of bootBoolDefaults) {
+    if (key === STORAGE_KEYS.aiButtonAvailable) continue;
     it(`${key} falls back to its BOOL_SETTINGS default`, () => {
       expect(boolDefaults.get(key)).toBe(fallback);
     });
   }
+
+  it('defaults an unknown AI grant to a visible disabled button', () => {
+    expect(bootBoolDefaults).toContainEqual([STORAGE_KEYS.aiButtonAvailable, true]);
+  });
 
   // The Tool Drawer switch hides its own tools without touching their flags, so
   // the boot script gates exactly TOOL_DRAWER_CONTROLS' keys behind it. One
@@ -419,7 +424,7 @@ describe("app.html's boot script mirrors the state modules", () => {
     expect(bootScript).toContain(`toggleAttribute('${AI_SLOT_ATTRIBUTE}'`);
   });
 
-  it('keeps an AI-only drawer hidden until its grant is usable', () => {
+  it('paints an AI-only drawer disabled while its grant is checked', () => {
     localStorage.clear();
     document.documentElement.removeAttribute(NO_ACTIONS_ATTRIBUTE);
     for (const key of [
@@ -437,9 +442,26 @@ describe("app.html's boot script mirrors the state modules", () => {
 
     new Function(bootScript)();
 
-    expect(document.documentElement.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(true);
+    expect(document.documentElement.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(false);
     expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(true);
     expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe('1');
+  });
+
+  it.each([
+    { cached: null, present: true, count: '6' },
+    { cached: 'true', present: true, count: '6' },
+    { cached: 'false', present: false, count: '' },
+  ])('seeds the AI button from its last known grant ($cached)', ({ cached, present, count }) => {
+    localStorage.clear();
+    document.documentElement.removeAttribute(AI_SLOT_ATTRIBUTE);
+    document.documentElement.style.removeProperty('--action-btn-count');
+    localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+    if (cached !== null) localStorage.setItem(STORAGE_KEYS.aiButtonAvailable, cached);
+
+    new Function(bootScript)();
+
+    expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(present);
+    expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe(count);
   });
 
   it('counts and names every optional brush for the single-brush presentation', () => {

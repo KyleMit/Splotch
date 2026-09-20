@@ -21,6 +21,9 @@ import type { Orientation } from '$lib/platform';
 import { layoutState } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import { PALETTE_LANDSCAPE_WIDTH_PX } from '$lib/design/trimGeometry';
+import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
+import { STORAGE_KEYS } from '$lib/storageKeys';
+import { writeBool } from '$lib/storage';
 import {
   actionButtonSizeClass,
   LARGE_TABLET_MIN_SIDE_PX,
@@ -113,10 +116,8 @@ export const PALETTE_CLEARANCE = 8;
 // book, screenshot, AI image, undo.
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
-// The AI button is invisible in the prerendered HTML because its usability
-// depends on client-only credential, grant, and network state. An opted-in
-// install reserves its slot before first paint; publishActionPanelState keeps
-// the live count stable when the button becomes usable.
+// The prerendered HTML cannot know the live grant. The boot script uses the
+// last known result to paint a disabled button while its status is checked.
 export const FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT = MAX_ACTION_BUTTON_COUNT - 1;
 
 // The custom property carrying the occupied button count the app.css formula
@@ -142,6 +143,22 @@ export function isAiImageButtonVisible(): boolean {
   );
 }
 
+export function isAiImageButtonShown(): boolean {
+  return (
+    settingsState.aiImageEnabled &&
+    (isAiImageButtonVisible() ||
+      (typeof document !== 'undefined' && document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)))
+  );
+}
+
+export function rememberAiButtonAvailability(): void {
+  if (!settingsState.aiImageEnabled || !persistedStateStatus.hydrated || !networkState.online)
+    return;
+  const hasCredential = Boolean(settingsState.aiUserApiKey || settingsState.aiAccessToken);
+  if (!hasCredential && freeGenerationsState.loading) return;
+  writeBool(STORAGE_KEYS.aiButtonAvailable, hasCredential || freeGenerationsState.available);
+}
+
 export function visibleActionButtonCount(): number {
   return (
     (enabledOptionalBrushes().length > 0 ? 1 : 0) +
@@ -153,13 +170,10 @@ export function visibleActionButtonCount(): number {
   );
 }
 
-// An opted-in AI button keeps its place while the grant and connectivity
-// answers arrive. Without the reserved slot, its late appearance moves every
-// control after it and the drawer toggle during startup.
+// Count the button the parent sees, including a disabled one shown from the
+// boot hint while the grant is pending.
 export function layoutActionButtonCount(): number {
-  return (
-    visibleActionButtonCount() + (settingsState.aiImageEnabled && !isAiImageButtonVisible() ? 1 : 0)
-  );
+  return visibleActionButtonCount() + (isAiImageButtonShown() && !isAiImageButtonVisible() ? 1 : 0);
 }
 
 // The palette's extent along the row's axis: the landscape column's declared
@@ -327,7 +341,7 @@ export function publishActionPanelState(
   } else {
     el.removeAttribute(SINGLE_BRUSH_ATTRIBUTE);
   }
-  el.toggleAttribute(NO_ACTIONS_ATTRIBUTE, visibleActionButtonCount() === 0);
+  el.toggleAttribute(NO_ACTIONS_ATTRIBUTE, layoutActionButtonCount() === 0);
   // The Brush Button's face is the active brush's icon. All four icons are in
   // the DOM and CSS shows the one matching this attribute ({@html} icons can't
   // swap during hydration — see .claude/rules/svelte.md), absent for the

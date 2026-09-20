@@ -596,9 +596,8 @@ body {
   display: none;
 }
 
-/* The prerendered AI button is hidden until hydration knows whether it can
-   work. An opted-in install reserves its slot before the grant request so the
-   rest of the drawer keeps its first-paint geometry. */
+/* The boot script uses the last known grant to place the AI button before
+   hydration. It paints disabled until the runtime can verify availability. */
 html[data-ai-slot] .actions-panel:not([data-action-panel-live]) #aiImageButton[hidden] {
   display: flex;
 }

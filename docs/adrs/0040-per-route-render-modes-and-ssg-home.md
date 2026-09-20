@@ -2,8 +2,8 @@
 
 **Status:** Active **Date:** 2026-07. Amended 2026-08-03: the landscape Color Palette and Actions
 Panel share deterministic first-paint geometry for the persisted visible-button count, with
-orientation-tagged measurement retained as a hydrated correction. Amended 2026-09-19: AI opt-in
-reserves a stable button slot before its runtime grant resolves.
+orientation-tagged measurement retained as a hydrated correction. Amended 2026-09-19: the AI button
+uses the last known grant to paint before its runtime grant resolves.
 
 ## Context
 
@@ -67,11 +67,11 @@ that are already correct in the prerendered HTML:
    capped by the viewport extent (`100vw`, or `100dvh` in portrait) less the palette, the panel's
    fixed chrome, the gaps and the safe-area insets, divided by `--action-btn-count` — five in the
    stylesheet, re-seeded on `<html>` by the boot script when persisted toggles hide controls or AI
-   opt-in reserves a slot, and republished on the panel by `publishActionPanelState` after hydration
-   (issue 1892 retired the palette `ResizeObserver` and the inline `left` / `--action-btn-size`
-   writes that used to correct this after hydration). Drift-guard tests derive the CSS literals from
-   `design/trimGeometry.ts` and the Actions Panel constants, so this shared non-importable geometry
-   cannot silently diverge.
+   availability places a button, and republished on the panel by `publishActionPanelState` after
+   hydration (issue 1892 retired the palette `ResizeObserver` and the inline `left` /
+   `--action-btn-size` writes that used to correct this after hydration). Drift-guard tests derive
+   the CSS literals from `design/trimGeometry.ts` and the Actions Panel constants, so this shared
+   non-importable geometry cannot silently diverge.
 2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline script runs
    before first paint and stamps `<html>` from `localStorage`, and the Action-center panel's CSS
    reads those stamps so the state is correct at render. During hydration, a publish `$effect` in
@@ -95,13 +95,14 @@ that are already correct in the prerendered HTML:
      while it is off (issue #1927; `TOOL_DRAWER_CONTROLS` in `settings.svelte.ts`).
    * `data-single-brush` — present when exactly one optional brush is enabled, selecting the direct
      button's fixed face independently of the active brush.
-   * `data-no-actions` — present when every first-paint action is disabled, hiding both the panel
-     and its drawer control.
-   * `data-ai-slot` — present when AI images are enabled. The prerendered button occupies an
-     invisible, inert slot while its grant and network availability are checked.
-   * `--action-btn-count` — set when persisted off-states or AI opt-in change the default
-     five-button row. The hydrated panel counts the visible AI button or its reserved slot, so the
-     row's size and position do not change when the grant resolves.
+   * `data-no-actions` — present when no first-paint action is painted, hiding both the panel and
+     its drawer control.
+   * `data-ai-slot` — present when AI images are enabled and the last known grant was not
+     unavailable. The prerendered button paints disabled while its grant and network availability
+     are checked.
+   * `--action-btn-count` — set when persisted off-states or the AI button change the default
+     five-button row. The hydrated panel counts the painted AI button, including its disabled state,
+     so the row's size and position stay fixed through the grant check.
    * `data-brush` — present for a persisted non-default brush (default: pen).
 
    This is what lets the drawer be **always rendered** (in the DOM) yet shown/hidden and the
@@ -113,13 +114,16 @@ that are already correct in the prerendered HTML:
    (delayed past the collapse) so the buttons are truly inert — out of hit-testing, the a11y tree,
    and tab order.
 
-The AI button's usability still depends on runtime, non-persisted signals: connectivity,
-credentials, and the free-generation grant. The head script cannot predict those answers. Instead,
-the persisted AI opt-in reserves its layout slot from first paint, and the button becomes visible
-within that slot only when usable. If the grant remains unavailable, the empty slot remains; this is
-the deliberate cost of keeping the other controls stationary. When every non-AI action is off,
-`data-no-actions` hides the panel until AI becomes usable, avoiding an empty drawer. Fully
-non-persisted state (the active color always boots to Purple) needs no treatment.
+The AI button's usability still depends on runtime signals: connectivity, credentials, and the
+free-generation grant. The head script cannot predict those answers, so it reads the last known
+availability from local storage. With no prior answer, an opted-in button paints disabled, then
+becomes usable when the grant arrives. A failed grant records an unavailable hint for the next
+launch; the disabled button stays painted for this launch so the other controls do not jump. A
+returning launch with an unavailable hint omits the button and its space. A later successful grant
+may introduce the button during that launch, reflecting changed server availability. An AI-only
+drawer paints its disabled button while the grant is pending; `data-no-actions` hides the panel only
+when no button is painted. Fully non-persisted state (the active color always boots to Purple) needs
+no treatment.
 
 ### Performance
 
