@@ -51,6 +51,7 @@ import {
   UNDO_NEXT_FRAME_P95_GATE_MS,
 } from './lib/undo-action-stats.mjs';
 import { FULL_ACTION_GROUPS, actionNotApplicableReason } from './lib/action-applicability.mjs';
+import { artifactFrameStampEpoch, DUAL_FRAME_STAMP_EPOCH } from './lib/frame-stamps.mjs';
 
 const DEFAULT_MANIFEST = join(
   ROOT,
@@ -214,6 +215,41 @@ function normalizedActionFrames(frames) {
     normalized.maxBreachSamples = frames.maxBreachSamples;
   if (frames.maxUnconfirmed === true) normalized.maxUnconfirmed = true;
   return normalized;
+}
+
+function normalizedFrameStamps(frameStamps) {
+  if (
+    !Number.isInteger(frameStamps?.frames) ||
+    frameStamps.frames < 1 ||
+    !Number.isInteger(frameStamps.hiddenOverruns) ||
+    frameStamps.hiddenOverruns < 0 ||
+    frameStamps.hiddenOverruns > frameStamps.frames ||
+    ![
+      frameStamps.actual?.p50,
+      frameStamps.actual?.p95,
+      frameStamps.actual?.max,
+      frameStamps.p95DeltaMs,
+      frameStamps.maxDeltaMs,
+      frameStamps.callbackDelay?.p95,
+      frameStamps.callbackDelay?.max,
+    ].every(Number.isFinite)
+  )
+    return null;
+  return {
+    frames: frameStamps.frames,
+    actual: {
+      p50: round(frameStamps.actual.p50),
+      p95: round(frameStamps.actual.p95),
+      max: round(frameStamps.actual.max),
+    },
+    p95DeltaMs: round(frameStamps.p95DeltaMs),
+    maxDeltaMs: round(frameStamps.maxDeltaMs),
+    callbackDelay: {
+      p95: round(frameStamps.callbackDelay.p95),
+      max: round(frameStamps.callbackDelay.max),
+    },
+    hiddenOverruns: frameStamps.hiddenOverruns,
+  };
 }
 
 function captureOrientation(profile) {
@@ -885,19 +921,41 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
         rotationFirstFrameNa(runtime, label, recordedEngine)
       )
     : profile.summaries;
+  let frameStampEpoch;
+  try {
+    frameStampEpoch = artifactFrameStampEpoch(profile);
+  } catch (error) {
+    throw new Error(`${spec.source}: ${error.message}`, { cause: error });
+  }
+  const dualFrameStamps = frameStampEpoch === DUAL_FRAME_STAMP_EPOCH;
+  if (dualFrameStamps && !scoredFromSamples) {
+    throw new Error(
+      `${spec.source} carries epoch-2 summaries but no raw samples, so frame-stamp divergence ` +
+        `cannot be re-derived under the target's max gate — fold a capture with samples`
+    );
+  }
   const results = summaries
     .filter((summary) => summary.count > 0 && (!labels || labels.has(summary.label)))
-    .map((summary) => ({
-      label: summary.label,
-      count: summary.count,
-      firstFrame: normalizedDistribution(summary.firstFrame),
-      ready: normalizedDistribution(summary.ready),
-      postActionFrames: normalizedActionFrames(summary.frames),
-      ...actionGateAllowance(allowances, summary.label),
-      passed: summary.passed,
-      source: spec.source,
-      productCommit: spec.productCommit,
-    }));
+    .map((summary) => {
+      const frameStamps = dualFrameStamps ? normalizedFrameStamps(summary.frameStamps) : null;
+      if (dualFrameStamps && !frameStamps && summary.frameSamples.scored > 0) {
+        throw new Error(
+          `${spec.source}: ${summary.label} scored frames without both clocks — its epoch-2 marker disagrees with its frame table`
+        );
+      }
+      return {
+        label: summary.label,
+        count: summary.count,
+        firstFrame: normalizedDistribution(summary.firstFrame),
+        ready: normalizedDistribution(summary.ready),
+        postActionFrames: normalizedActionFrames(summary.frames),
+        ...(frameStamps ? { frameStamps } : {}),
+        ...actionGateAllowance(allowances, summary.label),
+        passed: summary.passed,
+        source: spec.source,
+        productCommit: spec.productCommit,
+      };
+    });
   const missingLabels = spec.labels?.filter(
     (label) => !results.some((result) => result.label === label)
   );
@@ -1705,6 +1763,11 @@ function firstFrameP95Text(result) {
   return result.firstFrame.na === true ? 'N/A' : `${fmt(result.firstFrame.p95)} ms`;
 }
 
+function actionFrameStampsText(frameStamps, maxGateMs) {
+  if (!frameStamps) return '';
+  return ` · frame stamps (informational): actual P95 ${fmt(frameStamps.actual.p95)} ms, actual minus scheduled P95 ${fmt(frameStamps.p95DeltaMs)} ms; hidden overruns ${frameStamps.hiddenOverruns}/${frameStamps.frames} scored frames above ${fmt(maxGateMs)} ms max gate`;
+}
+
 function heatClass(ratio) {
   if (!Number.isFinite(ratio)) return 'missing';
   if (ratio <= 0.75) return 'cool';
@@ -1789,7 +1852,7 @@ function actionModeCells(mode, label, labels, gates, targetId) {
             : `PASS${allowanceVerdictSuffix(result, ledger)}`
           : `FAIL${allowanceVerdictSuffix(result, ledger)}`
         : `unscoreable: this mode\u2019s idle frame control is ${mode.actions?.controlEvidence ?? 'absent'}`;
-      const tooltip = `${index + 1}. ${result.label} · ${label} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
+      const tooltip = `${index + 1}. ${result.label} · ${label} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}${actionFrameStampsText(result.frameStamps, result.gateAllowance?.maxMs ?? gates.postActionFrameMaxMs)}`;
       const cellClass = !attributable
         ? 'unscoreable'
         : unconfirmed
