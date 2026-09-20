@@ -94,9 +94,10 @@ The #1870 performance campaign quarantined draft PR #2115 around 03:50 EDT, then
 its deadline was 06:00. The prior rule scaled the stop margin to the longest completed unit's
 elapsed time, including serial device, review, and CI waits, leaving roughly two hours unused. The
 user explicitly asked to keep taking the next independent item after a documented quarantine and not
-stop two hours early. A fixed 15-minute handoff reserve leaves time to verify live state and report
-while allowing bounded work on another eligible item. Partial work stays a draft with its exact
-remainder; no review or merge gate is relaxed.
+stop two hours early. A fixed 15-minute deadline reserve is for live-state verification and
+reporting; each new unit must leave enough earlier time for its full quarantine unwind if it cannot
+ship. An issue that depends on quarantined work is skipped by name while independent items continue.
+Partial work stays a draft with its exact remainder; no review or merge gate is relaxed.
 
 ## Open questions
 
