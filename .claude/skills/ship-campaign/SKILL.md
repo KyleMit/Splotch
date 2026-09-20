@@ -1,6 +1,6 @@
 ---
 name: ship-campaign
-description: Ship a queue of GitHub issues unattended — an explicit list, an epic's sub-issues, or the newest unclaimed backlog issues — one at a time, each through ship-issue mode=autonomous and merged before the next starts from fresh main. Proves everything that could stall an overnight run while the user is still present, quarantines a stuck issue instead of stalling the queue, and ends with a verified morning report. Use when asked to run a campaign, work through several issues or an epic overnight or unattended, burn down the backlog, or grab the next issue.
+description: Ship a queue of GitHub issues unattended — an explicit list, an epic's sub-issues, or the newest unclaimed backlog issues — one at a time through ship-issue mode=autonomous, merging successful PRs before the next starts from fresh main. Proves everything that could stall an overnight run while the user is still present, quarantines a stuck issue instead of stalling the queue, and ends with a verified morning report. Use when asked to run a campaign, work through several issues or an epic overnight or unattended, burn down the backlog, or grab the next issue.
 ---
 
 # Ship a campaign
@@ -8,13 +8,14 @@ description: Ship a queue of GitHub issues unattended — an explicit list, an e
 A campaign is a queue of issues shipped **merge-as-you-go**:
 
 **preflight (user present) → for each issue: fresh `main` → `ship-issue mode=autonomous` → verify
-the merge from live state → next → morning report**
+the merge or quarantine from live state → next → morning report**
 
-Every unit merges before the next one starts, and every unit branches from the `main` that already
-contains its predecessors. That is the point of the shape. An independent reviewer vets each change
-as it lands, so a mistaken premise is caught in the PR that introduced it instead of compounding
-through the layers stacked above it, and no fix ever has to be carried to the tip of a chain. Ship a
-chain of unmerged dependent PRs only when the user asks for one; that is `create-stacked-prs`.
+Every successful unit merges before the next one starts. A quarantined or skipped unit is recorded,
+then the next independent unit branches from fresh `main` without carrying its PR. That is the point
+of the shape. An independent reviewer vets each change as it lands, so a mistaken premise is caught
+in the PR that introduced it instead of compounding through the layers stacked above it, and no fix
+ever has to be carried to the tip of a chain. Ship a chain of unmerged dependent PRs only when the
+user asks for one; that is `create-stacked-prs`.
 
 One campaign runs in one session. Several sessions working one epic in parallel is orchestration,
 which hands out prompts rather than implementing, and is not this skill.
@@ -27,7 +28,8 @@ The input names the queue and, optionally, a deadline:
 * **`epic=<n>`** — the epic's open children, ordered by `enumerate-sub-issues`.
 * **`backlog`** (optionally `backlog=<count>`) — the newest open issues nobody has claimed, picked
   one at a time so that parallel sessions each pick a different issue (see step 1).
-* **`until=<time>`** or **`hours=<n>`** — the deadline the stop margin in step 5 counts back from.
+* **`until=<time>`** or **`hours=<n>`** — the deadline and short handoff reserve described in
+  step 5.
 * **`profile=performance`** — the unit is a causal performance cluster; see the last section.
 
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
@@ -71,8 +73,8 @@ fix done before declaring the campaign started.
 * **Open the ledger** (below) with the resolved queue.
 
 Then report: the queue in order, what was dropped and why, the decisions only the user can make
-(walk them one at a time with options, pros and cons, and a recommendation), the deadline and stop
-margin, and the preflight checklist. The campaign starts when the user says go.
+(walk them one at a time with options, pros and cons, and a recommendation), the deadline and
+handoff reserve, and the preflight checklist. The campaign starts when the user says go.
 
 ### The ledger
 
@@ -191,9 +193,15 @@ write the morning report and stop.
 
 ## 5. Stop and report
 
-**Stop margin.** Start no new unit when the time left before the deadline is shorter than the
-longest unit this campaign has completed (90 minutes before any unit has completed). Finish the unit
-in flight: through merge, or through quarantine.
+**Deadline reserve.** Keep taking eligible independent units after each merge, quarantine, or skip
+until 15 minutes before the deadline. Reserve those final minutes for live-state verification,
+quarantining an in-flight PR, ledger updates, and the morning report. Never scale the reserve to the
+longest completed unit: its review, CI, or device waits must not strand hours of useful queue time.
+As the deadline approaches, choose a bounded part of the next eligible unit that can reach a
+coherent pushed checkpoint. If its full review and merge gate cannot finish in time, leave a draft
+PR with the exact evidence, blocker, and next step; do not call it shipped. At reserve start, begin
+no new unit. Finish or quarantine the one in flight and report by the deadline. Do not overrun the
+deadline merely to merge.
 
 **Control messages** steer the running campaign; they do not replace it.
 
