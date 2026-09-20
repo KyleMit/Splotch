@@ -531,7 +531,11 @@
           class="action-icon"
         />
         {#if !settingsState.aiUserApiKey && !settingsState.aiAccessToken && freeGenerationsState.badgeRemaining !== null && !storeCapture}
-          <span class="free-count" aria-hidden="true">{freeGenerationsState.badgeRemaining}</span>
+          <span
+            class="free-count"
+            data-free-count={freeGenerationsState.badgeRemaining}
+            aria-hidden="true"
+          ></span>
         {/if}
       </button>
 

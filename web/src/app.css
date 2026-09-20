@@ -603,13 +603,16 @@ html[data-ai-slot] .actions-panel:not([data-action-panel-live]) #aiImageButton[h
   display: flex;
 }
 
+.actions-panel #aiImageButton .free-count::before {
+  content: attr(data-free-count);
+}
+
 .actions-panel:not([data-action-panel-live]) #aiImageButton .free-count {
   display: none;
 }
 
 html[data-ai-free-count] .actions-panel:not([data-action-panel-live]) #aiImageButton .free-count {
   display: grid;
-  font-size: 0;
 }
 
 html[data-ai-free-count]
@@ -617,7 +620,6 @@ html[data-ai-free-count]
   #aiImageButton
   .free-count::before {
   content: var(--ai-free-count);
-  font-size: var(--font-size-xs);
 }
 
 /* The L's two four-slot legs share this budget with Settings' scale ceiling.

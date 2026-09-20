@@ -115,9 +115,7 @@ async function startupPanelGeometry(page: Page) {
       ai: rect(ai),
       aiPainted,
       badgeCount: badgePainted
-        ? panel.hasAttribute('data-action-panel-live')
-          ? badge.textContent
-          : getComputedStyle(badge, '::before').content.replace(/^"|"$/g, '')
+        ? getComputedStyle(badge, '::before').content.replace(/^"|"$/g, '')
         : null,
       count: getComputedStyle(panel).getPropertyValue('--action-btn-count').trim(),
     };
