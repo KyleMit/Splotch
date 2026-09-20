@@ -18,39 +18,53 @@ const root = (page: Page) => page.locator('html');
 // full motion first is what makes the reduced values mean something.
 async function globalCues(page: Page) {
   return page.evaluate(() => {
-    const probe = (element: string, className: string, open = false) => {
-      const el = document.createElement(element);
-      el.className = className;
-      if (open) el.setAttribute('open', '');
-      document.body.appendChild(el);
-      const style = getComputedStyle(el);
-      const read = { animationName: style.animationName, display: style.display };
-      el.remove();
-      return read;
-    };
-    // The capture cue styles the camera glyph inside the pressed button, so its
-    // probe needs both halves of that pair.
-    const screenshotPop = () => {
-      const button = document.createElement('div');
-      button.className = 'screenshot-capture-feedback';
-      const icon = document.createElement('span');
-      icon.setAttribute('data-icon', 'camera');
-      button.appendChild(icon);
-      document.body.appendChild(button);
-      const read = getComputedStyle(icon).animationName;
-      button.remove();
+    // Several cues style a descendant of the element that carries the state
+    // class, so a probe builds the whole chain and reads the innermost. Each
+    // layer is `tag` plus a space-separated list of classes and [attributes].
+    const probe = (...layers: [tag: string, parts: string][]) => {
+      let root: HTMLElement | undefined;
+      let leaf: HTMLElement | undefined;
+      for (const [tag, parts] of layers) {
+        const el = document.createElement(tag);
+        for (const part of parts.split(' ').filter(Boolean)) {
+          if (part.startsWith('[')) {
+            const [name, value] = part.slice(1, -1).split('=');
+            el.setAttribute(name, value ?? '');
+          } else el.classList.add(part);
+        }
+        leaf?.appendChild(el);
+        root ??= el;
+        leaf = el;
+      }
+      document.body.appendChild(root!);
+      const style = getComputedStyle(leaf!);
+      const read = {
+        animationName: style.animationName,
+        animationDuration: style.animationDuration,
+        display: style.display,
+      };
+      root!.remove();
       return read;
     };
     return {
-      undoSpin: probe('div', 'undo-firing').animationName,
-      undoGhost: probe('div', 'undo-ink-motion').display,
-      clearSheet: probe('div', 'clear-sheet-motion').display,
-      unavailable: probe('div', 'action-unavailable').animationName,
-      confirmFlyIn: probe('dialog', 'confirm-card modal-dialog modal-fly-in', true).animationName,
+      undoSpin: probe(['div', 'undo-firing']).animationName,
+      undoGhost: probe(['div', 'undo-ink-motion']).display,
+      clearSheet: probe(['div', 'clear-sheet-motion']).display,
+      unavailable: probe(['div', 'action-unavailable']).animationName,
+      confirmFlyIn: probe(['dialog', 'confirm-card modal-dialog modal-fly-in [open]'])
+        .animationName,
       // No per-dialog class: the shared treatment is what every fly-in modal
-      // gets, including the four that carry no fade of their own.
-      dialogFlyIn: probe('dialog', 'modal-dialog modal-fly-in', true).animationName,
-      screenshotPop: screenshotPop(),
+      // gets, including the four that carried no fade of their own.
+      dialogFlyIn: probe(['dialog', 'modal-dialog modal-fly-in [open]']).animationName,
+      screenshotPop: probe(['div', 'screenshot-capture-feedback'], ['span', '[data-icon=camera]'])
+        .animationName,
+      // The one cue that slows instead of stopping: it is the only sign the
+      // button gives that a generation is still running.
+      aiSpinPace: probe(
+        ['div', 'actions-panel'],
+        ['button', 'action-button loading'],
+        ['span', 'action-icon']
+      ).animationDuration,
     };
   });
 }
@@ -63,6 +77,7 @@ const FULL_MOTION_CUES = {
   confirmFlyIn: 'dialogFlyFromOrigin',
   dialogFlyIn: 'dialogFlyFromOrigin',
   screenshotPop: 'screenshot-capture',
+  aiSpinPace: '1s',
 };
 
 const REDUCED_CUES = {
@@ -73,6 +88,7 @@ const REDUCED_CUES = {
   confirmFlyIn: 'modalFadeIn',
   dialogFlyIn: 'modalFadeIn',
   screenshotPop: 'none',
+  aiSpinPace: '2.4s',
 };
 
 // Cues a component owns, which Svelte scopes to a generated class — so unlike

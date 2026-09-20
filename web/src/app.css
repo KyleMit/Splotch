@@ -664,6 +664,15 @@ body {
   animation: aiSpin 1s linear infinite;
 }
 
+/* Reduced motion: this spin slows rather than stopping, because it is the only
+   sign the button gives that a generation is still running — the same call the
+   waiting polaroid's spinner makes, and at the same calm pace. A spinner that
+   sits beside a label already reading as busy stops outright instead (the
+   .ring in design/Button). */
+:root[data-reduce-motion] .actions-panel .action-button.loading .action-icon {
+  animation-duration: 2.4s;
+}
+
 /* Flyout chrome shared by the Brush Menu and the Stroke Width Menu: the popover
    shell and its option buttons. Each component keeps only what differs — the
    eraser-mode sizing.
