@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 // Playwright tags decide which engine a spec runs on: Firefox and WebKit grep
@@ -9,8 +10,8 @@ import { describe, expect, it } from 'vitest';
 // Hence: tags come from tags.ts by import, never as a string literal, which
 // makes a typo a module-resolution error instead of a routing one.
 //
-// Regex-level on purpose: no TypeScript parser runs in this Node-only suite,
-// and these specs are dprint-formatted.
+// Syntax-only on purpose: the extractor below parses each spec but resolves no
+// types and loads no program, so this stays a Node-only suite.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const testsDir = join(repoRoot, 'web', 'tests');
 const TAGS_MODULE = './tags';
@@ -34,15 +35,37 @@ const specs = readdirSync(testsDir)
   .map((name) => ({ name, source: readFileSync(join(testsDir, name), 'utf8') }));
 
 // The `tag:` value in a test()/test.describe() options object — a bare
-// identifier, a quoted literal, or an array of either.
-const TAG_VALUE = /\btag:\s*(\[[^\]]*\]|'[^']*'|"[^"]*"|[A-Za-z_$][\w$]*)/g;
+// identifier, a quoted literal, or an array of either. Literals keep their
+// quotes so isLiteral below can reject them.
+//
+// Parsed rather than pattern-matched: a TypeScript labelled tuple element —
+// `[tag: string, parts: string]` — is textually identical to this property, and
+// excluding the type names it can carry would blind the guard to a value bound
+// to one of those same names. The syntax tree separates a NamedTupleMember from
+// a PropertyAssignment outright, so neither reading has to be guessed.
+const propertyName = (name) =>
+  ts.isIdentifier(name) || ts.isStringLiteralLike(name) ? name.text : undefined;
 
-function taggedEntries({ source }) {
-  return [...source.matchAll(TAG_VALUE)].flatMap(([, value]) =>
-    (value.startsWith('[') ? value.slice(1, -1).split(',') : [value])
-      .map((entry) => entry.trim())
-      .filter(Boolean)
-  );
+function taggedEntries({ name = 'spec.ts', source }) {
+  const parsed = ts.createSourceFile(name, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const entries = [];
+
+  const collect = (value) => {
+    if (ts.isArrayLiteralExpression(value)) value.elements.forEach(collect);
+    else entries.push(value.getText(parsed));
+  };
+
+  const visit = (node) => {
+    if (ts.isPropertyAssignment(node) && propertyName(node.name) === 'tag') {
+      collect(node.initializer);
+    } else if (ts.isShorthandPropertyAssignment(node) && propertyName(node.name) === 'tag') {
+      entries.push(node.name.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  ts.forEachChild(parsed, visit);
+  return entries;
 }
 
 const isLiteral = (entry) => entry.startsWith("'") || entry.startsWith('"');
@@ -82,6 +105,40 @@ describe('E2E engine tags', () => {
   it('at least one spec carries ENGINE_SMOKE_TAG', () => {
     const tagged = specs.filter((spec) => taggedEntries(spec).includes('ENGINE_SMOKE_TAG'));
     expect(tagged.map(({ name }) => name)).not.toHaveLength(0);
+  });
+
+  it('reads a bare identifier tag', () => {
+    const source = "test.describe('x', { tag: ENGINE_SMOKE_TAG }, () => {});";
+    expect(taggedEntries({ source })).toEqual(['ENGINE_SMOKE_TAG']);
+  });
+
+  it('reads every identifier in an array tag', () => {
+    const source = "test.describe('x', { tag: [ENGINE_SMOKE_TAG] }, () => {});";
+    expect(taggedEntries({ source })).toEqual(['ENGINE_SMOKE_TAG']);
+  });
+
+  it('ignores a labelled tuple element typed as a primitive', () => {
+    const source = 'const probe = (...layers: [tag: string, parts: string][]) => {};';
+    expect(taggedEntries({ source })).toEqual([]);
+  });
+
+  it('keeps rejecting a quoted tag spelling a primitive type name', () => {
+    const source = "test('x', { tag: 'string' }, () => {});";
+    const entries = taggedEntries({ source });
+    expect(entries.filter(isLiteral)).toEqual(["'string'"]);
+  });
+
+  it('ignores a labelled tuple element typed as a named type', () => {
+    const source = 'const probe = (...layers: [tag: IconName, parts: string][]) => {};';
+    expect(taggedEntries({ source })).toEqual([]);
+  });
+
+  // The reason the tuple labels are read as syntax rather than excluded by
+  // name: a value may carry a type's name, and that value is a real tag the
+  // cross-file assertion below has to see.
+  it('reads a tag bound to an identifier that spells a type name', () => {
+    const source = "const string = '@engine-smoke-typo';\ntest('x', { tag: [string] }, () => {});";
+    expect(taggedEntries({ source })).toEqual(['string']);
   });
 
   it('Chromium excludes the engine-smoke tag', () => {
