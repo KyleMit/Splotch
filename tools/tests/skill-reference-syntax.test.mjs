@@ -9,12 +9,6 @@ import {
 const NAMES = ['build', 'cut-release', 'create-adr'];
 const tokensIn = (violations) => violations.map((v) => v.token);
 
-// The repo-wide sweep reads every tracked .md/.mjs/.json file. Vitest's 5s
-// default is sized for a unit test, not for an I/O pass over the repository,
-// and that gap is what made this the suite's flakiest test twice over. The
-// matcher is fast enough now that the budget is slack rather than a target.
-const REPO_SWEEP_TIMEOUT_MS = 30_000;
-
 describe('skill reference vocabulary', () => {
   const names = registeredSkillNames();
 
@@ -179,13 +173,9 @@ describe('the user-facing shapes this guard exists to catch', () => {
 // both generated provider trees, the human docs, and the release tooling's own
 // output all have to stay neutral (issue #991).
 describe('the repository', () => {
-  it(
-    'has no runner-specific skill sigils in shared prose',
-    () => {
-      expect(findViolations()).toEqual([]);
-    },
-    REPO_SWEEP_TIMEOUT_MS
-  );
+  it('has no runner-specific skill sigils in shared prose', () => {
+    expect(findViolations()).toEqual([]);
+  });
 
   // Without this exemption the guard fails on its own fixtures and worked
   // examples, and the tempting fix is to soften the matcher until they stop
