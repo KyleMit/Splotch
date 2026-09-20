@@ -92,9 +92,19 @@
 <ClearCoachmark bind:this={coachmark} />
 
 <style>
+  /* The dock clears the strip Android reserves along the top screen edge while
+     immersive mode hides the system bars: a touch starting inside it reveals the
+     bars instead of lifting the button, and the drag is lost with nothing on
+     screen to explain it. The floor is two EDGE_SWIPE_BAND_PX bands
+     (lib/drawing/strokeMath.ts, which guards the canvas against the same class
+     of OS gesture on the other three edges) — one for the reserved strip, one of
+     fingertip margin, since a finger reaching for a corner-pinned target lands
+     high on it. A floor rather than an addition, so an orientation that already
+     reports a top inset is not pushed down twice. ClearButton.dock.test.ts fails
+     if this literal and that constant drift apart. */
   .clear-container {
     position: fixed;
-    top: calc(20px + var(--safe-area-top));
+    top: max(48px, calc(20px + var(--safe-area-top)));
     right: calc(-10px + var(--safe-area-right));
     z-index: var(--z-clear-button);
     pointer-events: none; /* Allow clicks through container to children */
