@@ -802,7 +802,9 @@ so it remains off that path.
 WebKit 26.6 browser build rather than the app, and a gate that fails every merge cannot catch a
 regression. The job still measures, confirms and reports a breach and still uploads its diagnostics
 — it exits 0. The retry and filing described next key on this job failing, so neither runs while it
-is advisory. Issue 1774 carries the pending policy decision; issue 1779 has the evidence.
+is advisory. A green job with a nonempty failure fingerprint puts that finding in the run's step
+summary and keeps the raw distributions in the diagnostics artifact. Issue 1774 carries the pending
+policy decision; issue 1779 has the evidence.
 
 A failure does not file on its own. `webkit-commit-gate-fast-retry` re-runs the identical gate on a
 fresh `macos-latest` VM, and an issue opens only when **the same scenario failed the same way on

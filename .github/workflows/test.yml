@@ -402,6 +402,22 @@ jobs:
           echo "gate=${{ steps.gate.outcome }}" >> "$GITHUB_OUTPUT"
           echo "failures=$(node tools/perf/report-undo-gate-failures.mjs | tr -d '\n')" >> "$GITHUB_OUTPUT"
 
+      # A green gate run can retain a failure fingerprint. Surface that evidence
+      # on the run page without changing the gate outcome, retry condition, or
+      # issue-filing policy.
+      - name: Surface WebKit gate finding on green runs
+        if: steps.gate.outcome == 'success' && steps.verdict.outputs.failures != ''
+        env:
+          GATE_FAILURES: ${{ steps.verdict.outputs.failures }}
+        run: |
+          {
+            echo '### WebKit commit gate: finding on a green job'
+            echo
+            printf '* Failure fingerprint: `%s`\n' "$GATE_FAILURES"
+            echo '* Green job status does not clear this finding. See issue 1774 for the pending policy decision.'
+            echo '* Raw distributions are in the webkit-undo-fast-diagnostics artifact on this run.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # Uploaded on green runs too (issue 1250): the noise investigation had
       # outcomes but no distributions, because only failures kept their tables.
       - name: Upload WebKit undo diagnostics
