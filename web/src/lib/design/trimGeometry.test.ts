@@ -71,6 +71,12 @@ function px(body: string, property: string, variables = body): number {
   return variable[1] ? -value : value;
 }
 
+function variable(body: string, property: string): string {
+  const match = body.match(new RegExp(`(?:^|[\\s;{])${property}:\\s*var\\((--[\\w-]+)\\)`));
+  expect(match, `expected a variable for ${property}`).not.toBeNull();
+  return match![1];
+}
+
 /** `max-height: 90vh` → 0.9, the fraction of the viewport the grid may use. */
 const viewportFraction = (body: string, property: string, unit: 'vw' | 'vh') =>
   declaration(body, property, unit) / 100;
@@ -282,6 +288,17 @@ describe('ColorMenu', () => {
     expect(px(option, 'height', menu)).toBe(px(option, 'width', menu));
     expect(COLOR_MENU_GEOMETRY.gapPx).toBe(px(menu, 'gap'));
     expect(COLOR_MENU_GEOMETRY.paddingPx).toBe(2 * px(menu, 'padding'));
+  });
+
+  it('keeps bare toolbar spacing tied to the menu geometry', () => {
+    const menu = blockAfter(css, '.color-menu-space .color-menu {');
+    const bare = blockAfter(
+      sourceFile('../../app.css'),
+      "html[data-toolbar='bare'] .actions-panel .color-menu {"
+    );
+    for (const property of ['padding', 'gap']) {
+      expect(variable(bare, property)).toBe(variable(menu, property));
+    }
   });
 
   it('drops a swatch at a time as the room to the right of the Color Button narrows', () => {

@@ -326,7 +326,7 @@
     width: calc(100% / var(--pop-scale));
     height: calc(100% / var(--pop-scale));
     pointer-events: none;
-    transition: transform 150ms ease-out;
+    transition: transform var(--duration-fast) ease-out;
   }
 
   /* Selection pop: the hexagon cluster scales toward the ring. Keyed on .ringed

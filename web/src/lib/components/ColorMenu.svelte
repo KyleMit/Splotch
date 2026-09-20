@@ -117,6 +117,9 @@
   .color-option.active {
     border-color: var(--color-menu-surface);
   }
+  /* The flyout closes when custom color opens, so its active state is also its
+     ringed state. The palette's icon pop lands on the content box, leaving the
+     same selection gap around hexagons and round swatches (issue #310). */
   .more-colors {
     --pop-scale: 1.12;
 
