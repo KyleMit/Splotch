@@ -223,9 +223,9 @@ export function installedBooksLostMessage(state) {
     : `The fresh document lost coloring books that preparation installed: missing ${state.missing.join(', ')}`;
 }
 
-// A document-scoped observer records an open even after the dialog closes. It
-// begins immediately after the app is ready, before preparation or sweep setup.
-// Historical builds pre-render tiles, so tile count cannot prove an open.
+// The witness records an open even after the dialog closes. It begins after
+// app readiness, before preparation or sweep setup. Historical builds
+// pre-render tiles, so tile count cannot prove an open.
 export const ARM_PICKER_OPEN_WITNESS_SCRIPT = `
   const dialog = document.querySelector('#coloring-book-dialog');
   if (!window.${PICKER_WITNESS_KEY}) {
@@ -233,16 +233,23 @@ export const ARM_PICKER_OPEN_WITNESS_SCRIPT = `
       token: String(Date.now()) + ':' + Math.random(),
       opened: dialog?.open === true,
       checked: false,
+      dialog,
     };
     const observer = new MutationObserver((mutations) => {
       if (mutations.some((mutation) =>
         mutation.type === 'attributes' && mutation.target.id === 'coloring-book-dialog'
       )) witness.opened = true;
-      if (document.querySelector('#coloring-book-dialog')?.open === true) witness.opened = true;
+      if (!dialog && document.querySelector('#coloring-book-dialog')?.open === true) {
+        witness.opened = true;
+      }
     });
-    observer.observe(document, {
-      attributes: true, attributeFilter: ['open'], childList: true, subtree: true,
-    });
+    if (dialog) {
+      observer.observe(dialog, { attributes: true, attributeFilter: ['open'] });
+    } else {
+      observer.observe(document, {
+        attributes: true, attributeFilter: ['open'], childList: true, subtree: true,
+      });
+    }
     witness.observer = observer;
     window.${PICKER_WITNESS_KEY} = witness;
   }
@@ -265,9 +272,12 @@ export async function assertPickerNeverOpened(execute) {
         witness.opened = true;
       }
     }
-    const opened = witness.opened || document.querySelector('#coloring-book-dialog')?.open === true;
+    const currentDialog = document.querySelector('#coloring-book-dialog');
+    const replaced = witness.dialog && witness.dialog !== currentDialog;
+    const opened = witness.opened || currentDialog?.open === true;
     witness.checked = true;
     witness.observer.disconnect();
+    if (replaced) throw new Error('The coloring picker dialog changed after its open witness was armed');
     return opened;
   `);
   if (opened) throw new Error(pickerAlreadyOpenedMessage());

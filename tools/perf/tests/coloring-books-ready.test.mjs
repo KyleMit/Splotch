@@ -6,7 +6,11 @@ import { Window } from 'happy-dom';
 import {
   COLORING_PACK_CACHE_FAMILY_PREFIX as PRODUCT_CACHE_FAMILY_PREFIX,
   COLORING_PACK_MARKER_PREFIX as PRODUCT_MARKER_PREFIX,
+  coloringPackCacheName,
+  coloringPackMarkerPath,
+  coloringPackMarkerValue,
 } from '../../../web/src/lib/coloringPacks/cacheKeys.ts';
+import { coloringPackResolutionForScreen } from '../../../web/src/lib/coloringPacks/resolution.ts';
 import { VERSION_JSON_PATH as PRODUCT_VERSION_JSON_PATH } from '../../../web/src/lib/pwa/versionEndpoint.ts';
 import { createWebDriverClient, executePagePromise } from '../ios/capture-xcuitest-screen.mjs';
 import {
@@ -268,6 +272,30 @@ describe('the in-page install-state script', () => {
         },
       })
     ).resolves.toEqual({ catalog: CATALOG, missing: ['creatures'] });
+  });
+
+  it('recognizes the product cache, marker, value, and screen resolution together', async () => {
+    for (const screen of [
+      { width: 1512, height: 982, devicePixelRatio: 2 },
+      { width: 360, height: 780, devicePixelRatio: 2 },
+    ]) {
+      const resolution = coloringPackResolutionForScreen({
+        widthCssPx: screen.width,
+        heightCssPx: screen.height,
+        devicePixelRatio: screen.devicePixelRatio,
+      });
+      const book = manifest.books[1];
+      const marker = {
+        path: coloringPackMarkerPath(book.id),
+        value: coloringPackMarkerValue({ id: book.id, ...book.variants[resolution] }),
+      };
+      await expect(
+        runInPage({
+          screen,
+          cacheEntries: { [coloringPackCacheName({ resolution })]: [marker] },
+        })
+      ).resolves.toEqual({ catalog: CATALOG, missing: ['creatures'] });
+    }
   });
 
   it('ignores markers in a cache outside the pack family', async () => {
@@ -618,6 +646,15 @@ describe('the control on the first-open measurement', () => {
     dialog.showModal();
     dialog.close();
     await expect(assertPickerNeverOpened(execute)).rejects.toThrow(pickerAlreadyOpenedMessage());
+  });
+
+  it('fails closed if a directly observed picker is replaced before measurement', async () => {
+    const { window, execute } = browserDocument();
+    await armPickerOpenWitness(execute);
+    window.document.body.innerHTML = '<dialog id="coloring-book-dialog"></dialog>';
+    await expect(assertPickerNeverOpened(execute)).rejects.toThrow(
+      'The coloring picker dialog changed after its open witness was armed'
+    );
   });
 
   it('observes a lazy-mounted picker before its first open', async () => {
