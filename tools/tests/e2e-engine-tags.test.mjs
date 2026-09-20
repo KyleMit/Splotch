@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 // Playwright tags decide which engine a spec runs on: Firefox and WebKit grep
@@ -9,8 +10,8 @@ import { describe, expect, it } from 'vitest';
 // Hence: tags come from tags.ts by import, never as a string literal, which
 // makes a typo a module-resolution error instead of a routing one.
 //
-// Regex-level on purpose: no TypeScript parser runs in this Node-only suite,
-// and these specs are dprint-formatted.
+// Syntax-only on purpose: the extractor below parses each spec but resolves no
+// types and loads no program, so this stays a Node-only suite.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const testsDir = join(repoRoot, 'web', 'tests');
 const TAGS_MODULE = './tags';
@@ -34,24 +35,37 @@ const specs = readdirSync(testsDir)
   .map((name) => ({ name, source: readFileSync(join(testsDir, name), 'utf8') }));
 
 // The `tag:` value in a test()/test.describe() options object — a bare
-// identifier, a quoted literal, or an array of either.
+// identifier, a quoted literal, or an array of either. Literals keep their
+// quotes so isLiteral below can reject them.
 //
-// A TypeScript labelled tuple element — `[tag: string, parts: string]` — is
-// indistinguishable from an options key at this level, so PRIMITIVE_TYPE_NAMES
-// is excluded below. None of those names can be a legitimate tag: tags arrive
-// as identifiers exported from tags.ts, so the exclusion costs no coverage.
-// A labelled tuple annotated with a named type still reads as a tag, which
-// keeps the guard fail-closed on anything it cannot rule out.
-const TAG_VALUE = /\btag:\s*(\[[^\]]*\]|'[^']*'|"[^"]*"|[A-Za-z_$][\w$]*)/g;
-const PRIMITIVE_TYPE_NAMES = new Set(['string', 'number', 'boolean']);
+// Parsed rather than pattern-matched: a TypeScript labelled tuple element —
+// `[tag: string, parts: string]` — is textually identical to this property, and
+// excluding the type names it can carry would blind the guard to a value bound
+// to one of those same names. The syntax tree separates a NamedTupleMember from
+// a PropertyAssignment outright, so neither reading has to be guessed.
+const propertyName = (name) =>
+  ts.isIdentifier(name) || ts.isStringLiteralLike(name) ? name.text : undefined;
 
-function taggedEntries({ source }) {
-  return [...source.matchAll(TAG_VALUE)].flatMap(([, value]) =>
-    (value.startsWith('[') ? value.slice(1, -1).split(',') : [value])
-      .map((entry) => entry.trim())
-      .filter(Boolean)
-      .filter((entry) => !PRIMITIVE_TYPE_NAMES.has(entry))
-  );
+function taggedEntries({ name = 'spec.ts', source }) {
+  const parsed = ts.createSourceFile(name, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const entries = [];
+
+  const collect = (value) => {
+    if (ts.isArrayLiteralExpression(value)) value.elements.forEach(collect);
+    else entries.push(value.getText(parsed));
+  };
+
+  const visit = (node) => {
+    if (ts.isPropertyAssignment(node) && propertyName(node.name) === 'tag') {
+      collect(node.initializer);
+    } else if (ts.isShorthandPropertyAssignment(node) && propertyName(node.name) === 'tag') {
+      entries.push(node.name.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  ts.forEachChild(parsed, visit);
+  return entries;
 }
 
 const isLiteral = (entry) => entry.startsWith("'") || entry.startsWith('"');
@@ -114,12 +128,17 @@ describe('E2E engine tags', () => {
     expect(entries.filter(isLiteral)).toEqual(["'string'"]);
   });
 
-  // The residual hole, pinned: a named type in a labelled tuple is
-  // indistinguishable from a tag identifier, so the guard stays eager there
-  // rather than opening a way past it.
-  it('still reads a labelled tuple element typed as a named type', () => {
+  it('ignores a labelled tuple element typed as a named type', () => {
     const source = 'const probe = (...layers: [tag: IconName, parts: string][]) => {};';
-    expect(taggedEntries({ source })).toEqual(['IconName']);
+    expect(taggedEntries({ source })).toEqual([]);
+  });
+
+  // The reason the tuple labels are read as syntax rather than excluded by
+  // name: a value may carry a type's name, and that value is a real tag the
+  // cross-file assertion below has to see.
+  it('reads a tag bound to an identifier that spells a type name', () => {
+    const source = "const string = '@engine-smoke-typo';\ntest('x', { tag: [string] }, () => {});";
+    expect(taggedEntries({ source })).toEqual(['string']);
   });
 
   it('Chromium excludes the engine-smoke tag', () => {
