@@ -91,9 +91,11 @@ export function createNetwork(
       const native = __IS_CAPACITOR__ && isNative();
       // Native WebViews can report online before the network plugin resolves.
       // Keep the stored state until the device status arrives.
-      if (!native) updateOnline(navigator.onLine ?? true);
-      window.addEventListener('online', onOnline);
-      window.addEventListener('offline', onOffline);
+      if (!native) {
+        updateOnline(navigator.onLine ?? true);
+        window.addEventListener('online', onOnline);
+        window.addEventListener('offline', onOffline);
+      }
       // __IS_CAPACITOR__ makes the branch compile-time dead on web so Rollup drops
       // the plugin chunk (isNative() alone can't tree-shake across modules). The
       // default loader stays inside the branch for the same reason.

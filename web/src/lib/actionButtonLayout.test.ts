@@ -37,7 +37,6 @@ import {
   availablePerButton,
   ACTION_BUTTON_GAP,
   ACTION_BUTTON_COUNT_PROPERTY,
-  AI_SLOT_ATTRIBUTE,
   isAiImageButtonVisible,
   isAiImageButtonShown,
   layoutActionButtonCount,
@@ -83,7 +82,6 @@ beforeAll(() => {
 });
 
 function resetState() {
-  document.documentElement.removeAttribute(AI_SLOT_ATTRIBUTE);
   setToolDrawerEnabled(true);
   setStrokeWidthControl(true);
   setCrayon(true);
@@ -204,7 +202,6 @@ describe('layoutActionButtonCount', () => {
 
   it('does not show AI when the parent switched it off', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
-    document.documentElement.setAttribute(AI_SLOT_ATTRIBUTE, '');
     setAiImage(false);
     expect(isAiImageButtonShown()).toBe(false);
     expect(layoutActionButtonCount()).toBe(5);

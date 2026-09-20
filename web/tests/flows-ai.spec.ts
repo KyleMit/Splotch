@@ -85,7 +85,9 @@ test('returning to the visible app recovers a failed free allowance', async ({ p
     page.getByText('while the free allowance is unavailable', { exact: false })
   ).toBeVisible();
   await settings.getByRole('button', { name: 'Close' }).click();
-  await expect(page.locator('#aiImageButton')).toBeHidden();
+  await expect(page.locator('#aiImageButton')).toBeVisible();
+  await expect(page.locator('#aiImageButton')).toBeDisabled();
+  await expect(page.locator('#aiImageButton')).toHaveAccessibleName('AI image unavailable');
   await expect(settings).not.toBeVisible();
 
   await page.evaluate(() => {

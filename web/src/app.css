@@ -596,8 +596,9 @@ body {
   display: none;
 }
 
-/* The boot script uses the last known network state to place the AI button
-   before hydration. It paints disabled until the runtime checks its grant. */
+/* The boot script uses the last known network state and a definite offline
+   report to place the AI button before hydration. It paints disabled until
+   the runtime checks its grant. */
 html[data-ai-slot] .actions-panel:not([data-action-panel-live]) #aiImageButton[hidden] {
   display: flex;
 }

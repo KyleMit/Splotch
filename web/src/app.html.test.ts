@@ -467,6 +467,26 @@ describe("app.html's boot script mirrors the state modules", () => {
     }
   );
 
+  it('omits the AI button before paint when the browser reports offline', () => {
+    const onLineDescriptor = Object.getOwnPropertyDescriptor(navigator, 'onLine');
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+    try {
+      localStorage.clear();
+      document.documentElement.removeAttribute(AI_SLOT_ATTRIBUTE);
+      document.documentElement.style.removeProperty('--action-btn-count');
+      localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+      localStorage.setItem(STORAGE_KEYS.lastNetworkOnline, 'true');
+
+      new Function(bootScript)();
+
+      expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(false);
+      expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe('');
+    } finally {
+      if (onLineDescriptor) Object.defineProperty(navigator, 'onLine', onLineDescriptor);
+      else Reflect.deleteProperty(navigator, 'onLine');
+    }
+  });
+
   it('counts and names every optional brush for the single-brush presentation', () => {
     const countExpression = bootStringLiteral(/var optionalBrushCount = ([^;]+);/);
     const countedBrushes = [...countExpression.matchAll(/\b(\w+)\b/g)].map((match) => match[1]);

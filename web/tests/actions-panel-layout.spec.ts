@@ -167,47 +167,49 @@ for (const scenario of [
   });
 }
 
-test('last known offline state leaves no gap in the first painted row', async ({
-  browser,
-  page,
-}) => {
-  const seedOffline = async (target: Page) => {
-    await seedAiEnabled(target);
-    await target.addInitScript(() => {
-      localStorage.setItem('splotch-drawer-open', 'true');
-      localStorage.setItem('splotch-last-network-online', 'false');
-      Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
-    });
-  };
+for (const cached of [null, 'false', 'true'] as const) {
+  test(`offline status leaves no gap in the first painted row (cached ${cached})`, async ({
+    browser,
+    page,
+  }) => {
+    const seedOffline = async (target: Page) => {
+      await seedAiEnabled(target);
+      await target.addInitScript((storedState) => {
+        localStorage.setItem('splotch-drawer-open', 'true');
+        if (storedState !== null) localStorage.setItem('splotch-last-network-online', storedState);
+        Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+      }, cached);
+    };
 
-  const firstPaintContext = await browser.newContext({ viewport: PORTRAIT_VIEWPORTS[0] });
-  const firstPaintPage = await firstPaintContext.newPage();
-  await seedOffline(firstPaintPage);
-  await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
-  await firstPaintPage.goto('/');
-  const firstPaint = await startupPanelGeometry(firstPaintPage);
-  await firstPaintContext.close();
+    const firstPaintContext = await browser.newContext({ viewport: PORTRAIT_VIEWPORTS[0] });
+    const firstPaintPage = await firstPaintContext.newPage();
+    await seedOffline(firstPaintPage);
+    await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
+    await firstPaintPage.goto('/');
+    const firstPaint = await startupPanelGeometry(firstPaintPage);
+    await firstPaintContext.close();
 
-  await page.route('**/api/free-generation-grant', (route) =>
-    route.fulfill({ status: 503, body: JSON.stringify({ ok: false }) })
-  );
-  await seedOffline(page);
-  await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
-  await gotoApp(page);
-  await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
-  await expect(page.locator('#aiImageButton')).toBeHidden();
-  await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('splotch-last-network-online')))
-    .toBe('false');
-  const settled = await startupPanelGeometry(page);
+    await page.route('**/api/free-generation-grant', (route) =>
+      route.fulfill({ status: 503, body: JSON.stringify({ ok: false }) })
+    );
+    await seedOffline(page);
+    await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
+    await gotoApp(page);
+    await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+    await expect(page.locator('#aiImageButton')).toBeHidden();
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('splotch-last-network-online')))
+      .toBe('false');
+    const settled = await startupPanelGeometry(page);
 
-  expect(firstPaint.count).toBe('5');
-  expect(firstPaint.aiPainted).toBe(false);
-  expect(settled.count).toBe('5');
-  expect(settled.aiPainted).toBe(false);
-  expect(settled.panel).toEqual(firstPaint.panel);
-  expect(settled.toggle).toEqual(firstPaint.toggle);
-});
+    expect(firstPaint.count).toBe('5');
+    expect(firstPaint.aiPainted).toBe(false);
+    expect(settled.count).toBe('5');
+    expect(settled.aiPainted).toBe(false);
+    expect(settled.panel).toEqual(firstPaint.panel);
+    expect(settled.toggle).toEqual(firstPaint.toggle);
+  });
+}
 
 test('a changed network state replaces the stored first-paint guess', async ({ browser, page }) => {
   const seedStoredOffline = async (target: Page) => {

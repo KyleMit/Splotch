@@ -97,8 +97,9 @@ that are already correct in the prerendered HTML:
      button's fixed face independently of the active brush.
    * `data-no-actions` — present when no first-paint action is painted, hiding both the panel and
      its drawer control.
-   * `data-ai-slot` — present when AI images are enabled and the last known network state was
-     online. The prerendered button paints disabled while its grant is checked.
+   * `data-ai-slot` — present when AI images are enabled, the last known network state was online,
+     and `navigator.onLine` does not report offline. The prerendered button paints disabled while
+     its grant is checked.
    * `--action-btn-count` — set when persisted off-states or the AI button change the default
      five-button row. The hydrated panel counts the painted AI button, including its disabled state,
      so the row's size and position stay fixed through the grant check.
@@ -115,13 +116,15 @@ that are already correct in the prerendered HTML:
 
 The AI button's usability still depends on runtime connectivity, credentials, and the
 free-generation grant. The head script reads the last known network state from local storage, with
-online as the default. The live network store starts from the same value and persists each platform
-status update. Native keeps that value until the Capacitor network plugin responds, since the
-WebView's `navigator.onLine` can disagree with the device status. On an online startup, an opted-in
-button paints disabled and stays in the row if the grant fails; the grant only changes whether it
-can be used. On an offline startup, the button and its space are absent. A changed network state may
-alter the row after first paint. `data-no-actions` hides the panel only when no button is painted.
-Fully non-persisted state (the active color always boots to Purple) needs no treatment.
+online as the default. A definite offline report from `navigator.onLine` removes the AI button
+before paint even when the stored state was online. The live network store starts from the saved
+value and persists each platform status update. Native keeps that value until the Capacitor network
+plugin responds, since the WebView's online status can disagree with the device status; only the
+plugin's reports update native connectivity. On an online startup, an opted-in button paints
+disabled and stays in the row if the grant fails; the grant only changes whether it can be used. On
+an offline startup, the button and its space are absent. A changed network state may alter the row
+after first paint. `data-no-actions` hides the panel only when no button is painted. Fully
+non-persisted state (the active color always boots to Purple) needs no treatment.
 
 ### Performance
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createNetwork, type NetworkState } from './network.svelte';
+import { createNetwork, networkState, type NetworkState } from './network.svelte';
 import { STORAGE_KEYS } from '$lib/storageKeys';
 
 type StatusListener = (status: { connected: boolean }) => void;
@@ -21,6 +21,8 @@ vi.mock('@capacitor/network', () => ({
 }));
 
 let network: NetworkState | null = null;
+
+beforeEach(() => networkState.dispose());
 
 function installNetwork() {
   network = createNetwork();
@@ -129,6 +131,10 @@ describe('native network status', () => {
     network.install();
     await vi.waitFor(() => expect(mocks.getStatus).toHaveBeenCalledOnce());
 
+    expect(network.online).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBeNull();
+
+    window.dispatchEvent(new Event('online'));
     expect(network.online).toBe(false);
     expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBeNull();
 
