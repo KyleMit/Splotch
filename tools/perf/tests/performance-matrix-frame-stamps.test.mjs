@@ -224,8 +224,32 @@ describe('epoch-2 frame stamps in the performance matrix', () => {
     writeFileSync(capturePath, JSON.stringify(capture));
     try {
       expect(() => matrixFor('android-device-web', capture, capturePath)).toThrow(
-        `${capturePath}: clear drawing has incomplete epoch-2 frame stamps`
+        `${capturePath}: clear drawing scored frames without both clocks`
       );
+    } finally {
+      rmSync(directory, { recursive: true });
+    }
+  });
+
+  it('keeps a zero-scored-frame epoch-2 action as a failed cell without divergence', () => {
+    const capture = fixture('android-device-web');
+    capture.samples = capture.samples.map((sample) => ({
+      ...sample,
+      postActionFrameGapsMs: [],
+      postActionFrames: [],
+    }));
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-zero-frame-matrix-'));
+    const capturePath = join(directory, 'actions.json');
+    writeFileSync(capturePath, JSON.stringify(capture));
+    try {
+      const summary = summarizeActions(capture.samples)[0];
+      expect(summary.frameSamples.scored).toBe(0);
+      expect(summary.passed).toBe(false);
+      const matrix = matrixFor('android-device-web', capture, capturePath);
+      const result = matrix.targets[0].modes.find((mode) => mode.actions)?.actions.results[0];
+      expect(result.passed).toBe(false);
+      expect(result).not.toHaveProperty('frameStamps');
+      expect(renderReport(matrix)).not.toContain('frame stamps (informational)');
     } finally {
       rmSync(directory, { recursive: true });
     }

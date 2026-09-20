@@ -6,12 +6,13 @@
 
 > **Amendment (2026-09, issue #1714): the matrix publishes informational divergence.** The
 > deployment-target matrix re-derives an epoch-2 action group's `frameStamps` from raw samples under
-> the target's shipped max gate and carries the figure into `data.json`. Each epoch-2 action cell's
-> tooltip shows actual P95, actual-minus-scheduled P95, and hidden overruns with that gate's
-> threshold; `data.json` retains the complete figure. Summary-only epoch-2 artifacts cannot supply
-> the raw stamps needed to re-derive the gate-dependent count and are refused. Legacy epoch-1 cells
-> retain their existing shape and tooltip. None of these fields enters the verdict or heat ratio,
-> and the scoring cutover condition in section 5 is unchanged.
+> the target's shipped max gate and carries the figure into `data.json`. Each epoch-2 action cell
+> with scored frames shows actual P95, actual-minus-scheduled P95, and hidden overruns with that
+> gate's threshold in its tooltip; `data.json` retains the complete figure. A cell with no scored
+> frames has no divergence figure and keeps its failed verdict. Summary-only epoch-2 artifacts
+> cannot supply the raw stamps needed to re-derive the gate-dependent count and are refused. Legacy
+> epoch-1 cells retain their existing shape and tooltip. None of these fields enters the verdict or
+> heat ratio, and the scoring cutover condition in section 5 is unchanged.
 
 > **Amendment (2026-09, issue #1713): the probe retains the onset rows.** Every sample `finish()`
 > returns carries two rows beside `postActionFrames`, each in the same shape as a `postActionFrames`

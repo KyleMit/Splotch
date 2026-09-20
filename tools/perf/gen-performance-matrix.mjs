@@ -938,8 +938,10 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
     .filter((summary) => summary.count > 0 && (!labels || labels.has(summary.label)))
     .map((summary) => {
       const frameStamps = dualFrameStamps ? normalizedFrameStamps(summary.frameStamps) : null;
-      if (dualFrameStamps && !frameStamps) {
-        throw new Error(`${spec.source}: ${summary.label} has incomplete epoch-2 frame stamps`);
+      if (dualFrameStamps && !frameStamps && summary.frameSamples.scored > 0) {
+        throw new Error(
+          `${spec.source}: ${summary.label} scored frames without both clocks — its epoch-2 marker disagrees with its frame table`
+        );
       }
       return {
         label: summary.label,
