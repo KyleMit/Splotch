@@ -7,6 +7,7 @@ import { gunzipSync } from 'node:zlib';
 
 import {
   rotationFirstFrameNa,
+  scoredActionFrameGaps,
   summarizeActions,
 } from '../../../../tools/perf/lib/action-stats.mjs';
 
@@ -54,5 +55,10 @@ export function rescore(run) {
 export const scoredSamples = (run, label) =>
   run.samples.filter((sample) => sample.label === label && !sample.warmup);
 
+// The worst gap of each scored repeat over the frames the scorer gates, which is the population
+// the 33.5 ms worst-frame rule reads; rawMaxima keeps every recorded post-action gap instead.
 export const scoredMaxima = (run, label) =>
+  scoredSamples(run, label).map((sample) => Math.max(...scoredActionFrameGaps(sample)));
+
+export const rawMaxima = (run, label) =>
   scoredSamples(run, label).map((sample) => Math.max(...sample.postActionFrameGapsMs));

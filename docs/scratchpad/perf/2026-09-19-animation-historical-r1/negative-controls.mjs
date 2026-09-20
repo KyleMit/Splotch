@@ -47,11 +47,35 @@ const MUTATIONS = {
     'reused/android-web.r2.before-1',
     [
       'reused/android-web.r2.before-1: no sample carries either first-open or reopen label',
-      'reused/android-web.r2: its coloring open carries only the retired ambiguous label',
+      'reused/android-web.r2: it alone ran the legacy coloring sequence',
     ],
     (run) => {
       for (const sample of run.samples) {
         if (sample.label === 'open coloring books') sample.label = 'first open of coloring books';
+      }
+    },
+  ],
+  'both Settings actions removed from an Android capture': [
+    'runs/android-chrome.after-2',
+    ['runs/android-chrome.after-2: exactly the idle control plus the 19 non-coloring actions'],
+    (run) => {
+      const settings = (label) => label === 'open Settings' || label === 'close Settings';
+      run.samples = run.samples.filter((entry) => !settings(entry.label));
+      run.summaries = run.summaries.filter((entry) => !settings(entry.label));
+      run.actionPlan.applicableLabels = run.actionPlan.applicableLabels.filter(
+        (label) => !settings(label)
+      );
+    },
+  ],
+  'an Android coloring-page clear that fails on first frame instead of post P95': [
+    'runs/android-chrome.before-1',
+    ['android-chrome: `clear drawing on a coloring page` is the only red action'],
+    (run) => {
+      for (const sample of run.samples.filter(
+        (entry) => entry.label === 'clear drawing on a coloring page'
+      )) {
+        sample.firstFrameMs = 100;
+        for (const row of sample.postActionFrameRows) row[GAP_COLUMN] = Math.min(row[GAP_COLUMN], 17);
       }
     },
   ],

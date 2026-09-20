@@ -1,7 +1,7 @@
 // Prints the before/after comparison every README table is copied from, rescored from the packaged
 // samples by the scorer at this checkout. Descriptive only: it attributes nothing.
 //   node docs/scratchpad/perf/2026-09-19-animation-historical-r1/compare.mjs [--all]
-import { SETS, armOf, readRun, rescore, scoredMaxima } from './lib.mjs';
+import { SETS, armOf, rawMaxima, readRun, rescore, scoredMaxima } from './lib.mjs';
 
 const showAll = process.argv.includes('--all');
 const round = (value) => (value === undefined || value === null ? 'n/a' : Math.round(value * 10) / 10);
@@ -17,7 +17,7 @@ for (const [directory, target, captures] of SETS) {
       return {
         capture,
         passed: summary.passed,
-        text: `${summary.passed ? 'pass' : 'FAIL'} first ${round(summary.firstFrame?.p95)} post ${round(summary.frames?.p95)} max [${scoredMaxima(run, label).map(round).join(', ')}]`,
+        text: `${summary.passed ? 'pass' : 'FAIL'} first ${round(summary.firstFrame?.p95)} post ${round(summary.frames?.p95)} ready p50 ${round(summary.ready?.p50)} scored max [${scoredMaxima(run, label).map(round).join(', ')}] raw max [${rawMaxima(run, label).map(round).join(', ')}]`,
       };
     });
     const arms = new Set(cells.filter((cell) => cell.passed === false).map((cell) => armOf(cell.capture)));

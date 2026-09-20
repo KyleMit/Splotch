@@ -8,7 +8,7 @@ incompatibilities block every `coloring` cell, and all of physical iPad Safari, 
 harness repair lands.
 
 Run `node docs/scratchpad/perf/2026-09-19-animation-historical-r1/check.mjs` (content claims,
-rescored from the packaged samples) and `negative-controls.mjs` (five mutations with refreshed
+rescored from the packaged samples) and `negative-controls.mjs` (seven mutations with refreshed
 hashes, each of which must fail its targeted claims). `compare.mjs --all` prints every per-capture
 figure quoted below.
 
@@ -35,7 +35,10 @@ ones although the source is the same commit.
 `new` = captured by this unit on the frozen harness, ABBA, one warmup plus three scored repeats.
 `reused` = the 2026-09-19 overnight ABBA on the harness that merged as PR 2075, packaged here for
 the first time and rescored by today's scorer with identical results. `BLOCKED` = no evidence, for
-the reason named. Every new and reused sequence **omits the `coloring` group**, so under the
+the reason named. Every new sequence, and the reused macOS web and Android native ones, **omit the
+`coloring` group**. The reused Android Chrome set ran the *legacy* coloring sequence instead (the
+retired bare open, then open a book, scroll, select and clear a page) with its AI coverage blocked.
+No sequence here is the canonical one with separate first-open and reopen rows, so under the
 campaign rule that only the canonical sequence certifies, every cell below is partial evidence, not
 acceptance.
 
@@ -83,10 +86,18 @@ first open or a reopen; `check.mjs` fails if any packaged sample carries either 
    arm ran. By source the first-open guard in (2) applies there as well; that is an inference, not
    an observation.
 
-None of these was patched. Each is a harness repair for a separate bounded unit: read both marker
-layouts; prove "never opened" without depending on product structure the historical arms lack (or
-record, per arm, that the guard is not applicable and why); plumb the foreign-build flag into the
-iPad action runner.
+None of these was patched. (1) and (2) need a harness repair in a separate bounded unit: read both
+marker layouts; prove "never opened" without depending on product structure the historical arms lack
+(or record, per arm, that the guard is not applicable and why). (3) has two routes. The repair is to
+plumb the foreign-build flag into the iPad action runner, so the artifact records
+`verifiedAgainstCheckout: false` as the desktop and Android runners do. The rival review of this PR
+showed a route with no code change as well: the guard compares served chunks with the bytes in the
+harness checkout's `web/build`, so staging each historical build and its provenance stamp there
+satisfies it with the guard enabled. This unit did not take that route. Its assignment allowed no
+new workaround for a compatibility block, and a staged build would be recorded as verified against a
+checkout whose source it does not come from, which is a different provenance statement from the one
+the other two targets make for the same situation. Whether that is acceptable is the campaign
+owner's call; the iPad Safari captures stay blocked until it is made or the flag is plumbed.
 
 ## Results
 
@@ -97,10 +108,13 @@ observing 60 Hz. Landscape light on the iPad, portrait light on the phone, in bo
 
 ### Physical iPad native (new; 19 actions x 4 captures, none blocked)
 
-* **Comparable, no change between arms:** 17 of 19 actions pass in all four captures with post P95
-  17 to 18 ms in both arms, including both AI waiting actions (every scored maximum at or under 23
-  ms), undo, the unavailable-action flash, the Settings and color-picker fly-ins and the blank
-  clear.
+* **Same gate verdict in both arms:** 17 of 19 actions pass in all four captures with post P95 17 to
+  18 ms in both arms, including both AI waiting actions (every scored maximum at or under 23 ms),
+  undo, the unavailable-action flash, the Settings and color-picker fly-ins and the blank clear.
+  Passing the same thresholds is not equivalence. The clearest measured difference is the one PR
+  1867 intended: `open Settings` becomes ready at a median of 243 and 240 ms in the two before
+  captures and 331 and 333 ms in the two after captures, the lengthened fly-in, with no frame-gate
+  consequence.
 * **Red in both arms, so not attributable to PR 1867:** `clear drawing on a coloring page` fails all
   four captures, with two or three scored maxima of 37 to 45 ms each, and first-frame P95 of 37 to
   43 ms in three of the four. The clear sheet on a coloring page was the issue's first suspect; on
@@ -139,6 +153,8 @@ record of what each port served.
   structure; action lists and capture conditions equal across arms; Android Chrome served-build
   identity and AI-run proof per sample; the red and passing cells above from raw scored gaps; the
   three pilot failures and the marker probe by their text; absence of first-open and reopen labels.
+  Every maximum quoted here is over the frames the scorer gates (`scoredActionFrameGaps`);
+  `compare.mjs` prints the raw maxima beside them.
 * **Operator provenance only:** which app was installed for each iPad native capture (native
   artifacts carry no product identity; the install log and bundle listing are local), the desktop
   pilot's served build, capture order and exit codes (`CAPTURE-ORDER.tsv`), rig restoration, and the

@@ -25,6 +25,7 @@ const SCORED_FIGURES = (summary) =>
     summary.frameSamples,
   ]);
 const MAX_GATE_MS = 33.5;
+const POST_P95_GATE_MS = 20;
 
 const manifest = JSON.parse(read('MANIFEST.json'));
 for (const { path, sha256 } of manifest.files) {
@@ -133,6 +134,16 @@ for (const capture of ABBA) {
   const chrome = run(`runs/android-chrome.${capture}`);
   const arm = identity[armOf(capture)];
   check(
+    `runs/android-chrome.${capture}: exactly the idle control plus the 19 non-coloring actions, in samples and summaries as well as the plan`,
+    [
+      chrome.actionPlan.applicableLabels,
+      [...new Set(chrome.samples.map((sample) => sample.label))],
+      chrome.summaries.map((summary) => summary.label),
+    ].every(
+      (labels) => JSON.stringify(labels) === JSON.stringify(['idle frame control', ...NO_COLORING_LABELS])
+    )
+  );
+  check(
     `runs/android-chrome.${capture}: the artifact's own served entry and build digest are the ${armOf(capture)} build's, reached as localhost`,
     chrome.buildEntry === arm.webBuild.servedEntry &&
       chrome.buildDigest === arm.webBuild.servedBuildDigest &&
@@ -225,7 +236,15 @@ check(
       [],
       ['clear drawing on a coloring page'],
       ['clear drawing on a coloring page'],
-    ])
+    ]) &&
+    ABBA.every((capture) => {
+      const summary = rescore(run(`runs/android-chrome.${capture}`)).find(
+        (entry) => entry.label === 'clear drawing on a coloring page'
+      );
+      return capture === 'after-1'
+        ? summary.frames.p95 <= POST_P95_GATE_MS
+        : summary.frames.p95 > POST_P95_GATE_MS && summary.firstFrame.p95 <= MAX_GATE_MS;
+    })
 );
 check(
   'android-chrome: no scored AI waiting gap exceeds 33.5 ms in either arm',
@@ -254,10 +273,14 @@ check(
   })
 );
 check(
-  'reused/android-web.r2: its coloring open carries only the retired ambiguous label, and the other two reused targets carry no coloring-picker action at all',
+  'reused/android-web.r2: it alone ran the legacy coloring sequence, whose open carries only the retired ambiguous label; the other two reused targets carry no coloring-picker action at all',
   ABBA.every(
     (capture) =>
       scoredSamples(run(`reused/android-web.r2.${capture}`), LEGACY_OPEN).length === 3 &&
+      run(`reused/android-web.r2.${capture}`).actionGroups.includes('coloring') &&
+      ['macos-web.r2', 'android-native.r2'].every(
+        (target) => !run(`reused/${target}.${capture}`).actionGroups.includes('coloring')
+      ) &&
       ['macos-web.r2', 'android-native.r2'].every((target) =>
         run(`reused/${target}.${capture}`).samples.every(
           (sample) => sample.label !== LEGACY_OPEN && sample.label !== 'open coloring book'
