@@ -1,0 +1,85 @@
+[
+  {
+    "name": "macos-before-1",
+    "status": "captured"
+  },
+  {
+    "name": "macos-after-1",
+    "status": "captured"
+  },
+  {
+    "name": "macos-after-2",
+    "status": "captured"
+  },
+  {
+    "name": "macos-before-2",
+    "status": "captured"
+  },
+  {
+    "name": "ipad-safari-before-1",
+    "status": "captured"
+  },
+  {
+    "name": "ipad-safari-after-1",
+    "status": "captured"
+  },
+  {
+    "name": "ipad-safari-after-2",
+    "status": "captured"
+  },
+  {
+    "name": "ipad-safari-before-2",
+    "status": "captured"
+  },
+  {
+    "name": "ipad-native-before-1",
+    "status": "captured"
+  },
+  {
+    "name": "ipad-native-after-1",
+    "status": "captured"
+  },
+  {
+    "name": "ipad-native-after-2",
+    "status": "captured"
+  },
+  {
+    "name": "ipad-native-before-2",
+    "status": "captured"
+  },
+  {
+    "name": "android-chrome-before-1",
+    "status": "captured"
+  },
+  {
+    "name": "android-chrome-after-1",
+    "status": "captured"
+  },
+  {
+    "name": "android-chrome-after-2",
+    "status": "captured"
+  },
+  {
+    "name": "android-chrome-before-2",
+    "status": "captured"
+  },
+  {
+    "name": "android-native-before-1",
+    "status": "captured"
+  },
+  {
+    "name": "android-native-after-1",
+    "status": "hole",
+    "reason": "No capture: the 90-minute active operator-time bound, excluding unattended capture and CI waits, reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
+  },
+  {
+    "name": "android-native-after-2",
+    "status": "hole",
+    "reason": "No capture: the 90-minute active operator-time bound, excluding unattended capture and CI waits, reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
+  },
+  {
+    "name": "android-native-before-2",
+    "status": "hole",
+    "reason": "No capture: the 90-minute active operator-time bound, excluding unattended capture and CI waits, reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
+  }
+]
