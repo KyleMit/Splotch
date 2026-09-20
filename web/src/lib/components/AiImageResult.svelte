@@ -427,9 +427,12 @@
     }
   }
 
-  /* Reduced motion: the button still arrives a beat after the picture, so the
-     staging still reads — it fades up instead of springing open. */
-  :global(:root[data-reduce-motion]) .ai-result-download {
+  /* Reduced motion: the footer still arrives a beat after the picture, so the
+     staging still reads — it fades up instead of springing open. Both footers
+     share the pop and both take the fade: the Download button, and the saved
+     caption that replaces it when auto-save is on. */
+  :global(:root[data-reduce-motion]) .ai-result-download,
+  :global(:root[data-reduce-motion]) .ai-result-saved {
     animation-name: downloadFadeIn;
   }
 

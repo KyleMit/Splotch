@@ -278,7 +278,10 @@
     }
   }
 
+  /* Both rings are a transient pulse that ends at opacity 0 — the selection
+     itself is the resting ring, which stays. */
   :global(:root[data-reduce-motion]) .color-swatch:global(.releasing),
+  :global(:root[data-reduce-motion]) .color-swatch.ring-animate:not(.gradient-swatch)::before,
   :global(:root[data-reduce-motion]) .color-swatch.ring-animate:not(.gradient-swatch)::after {
     animation: none;
   }

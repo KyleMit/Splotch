@@ -5,6 +5,7 @@ import { REDUCE_MOTION_ATTRIBUTE } from '../src/lib/platform/reducedMotion';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { gotoApp, openSettingsModal } from './helpers';
 import { openDrawer } from './flows-harness';
+import { revealAiResult } from './ai-harness';
 
 // Reduce Motion (issue #2093) has two triggers — the Settings switch and the OS
 // preference — resolved into one attribute on <html> that every reduced
@@ -395,3 +396,52 @@ test('the drawer and the launch guard still work with Reduce Motion on', async (
   await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.locator('#settingsModal')).toBeVisible();
 });
+
+// ─── Cues a component scopes to a pseudo-element or a branch ────────────────
+// Neither is reachable from the probe table: a Svelte-scoped ::before carries a
+// generated class, and the AI footer has two branches that share one keyframe.
+const RING_TRIGGERS = [
+  { name: 'stops both selection rings expanding', reduced: true, rings: ['none', 'none'] },
+  { name: 'leaves both selection rings expanding', reduced: false, rings: ['expand', 'trail'] },
+] as const;
+
+for (const trigger of RING_TRIGGERS) {
+  test(`Reduce Motion ${trigger.name}`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: trigger.reduced ? 'reduce' : 'no-preference' });
+    await gotoApp(page);
+    // Visible only: the palette trims swatches by rank at narrow viewports, and
+    // a trimmed one is display:none rather than absent.
+    const swatch = page.locator('.color-swatch:not(.gradient-swatch):visible').nth(1);
+    await swatch.click();
+    // The leading ring and the trail it drags behind it are separate
+    // pseudo-elements; #2093 reached only the second.
+    const rings = await swatch.evaluate((el) =>
+      (['::before', '::after'] as const).map((pseudo) =>
+        getComputedStyle(el, pseudo).animationName.replace(/^svelte-\w+-swatch-ring-/, '')
+      )
+    );
+    expect(rings).toEqual(trigger.rings);
+  });
+}
+
+const FOOTER_TRIGGERS = [
+  { name: 'fades', reduced: true, animation: 'downloadFadeIn' },
+  { name: 'pops', reduced: false, animation: 'downloadPop' },
+] as const;
+
+for (const trigger of FOOTER_TRIGGERS) {
+  test(`the saved caption ${trigger.name} in, the branch the download button hides`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: trigger.reduced ? 'reduce' : 'no-preference' });
+    await page.addInitScript((key) => localStorage.setItem(key, 'true'), STORAGE_KEYS.autoSaveAi);
+    await revealAiResult(page);
+
+    const caption = page.locator('.ai-result-saved');
+    await expect(caption).toBeVisible();
+    // Svelte scopes a component's own keyframe names at build time.
+    expect(await caption.evaluate((el) => getComputedStyle(el).animationName)).toMatch(
+      new RegExp(`^svelte-\\w+-${trigger.animation}$`)
+    );
+  });
+}
