@@ -32,9 +32,9 @@ import {
 } from './capture-xcuitest-screen.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import {
-  assertServedBuildIsFresh,
   entryModulePath,
   loadedPageEntryProblem,
+  servedBuildBinding,
 } from '../lib/profile-preview.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
@@ -2391,7 +2391,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
           allowForeignBuild,
         });
     if (!nativeApp) {
-      servedBuild = await assertServedBuildIsFresh(requestedAppUrl, { allowForeignBuild });
+      servedBuild = await servedBuildBinding(requestedAppUrl, {
+        verifiedAgainstCheckout: !allowForeignBuild,
+      });
     }
     client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
     client.nativeApp = nativeApp;
