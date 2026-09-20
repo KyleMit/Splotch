@@ -1481,19 +1481,24 @@ The historical arm is deliberately **not** this checkout's build, so it needs
 `--allow-foreign-build`; that flag exists for exactly this case. The invariant being protected is
 the *intended, independently verified* product commit — not current-worktree identity.
 
-The **action** runner (`perf:ios:xcuitest:actions`) carries no such override: pointed at a port
-serving another checkout's build it stops with "the port is held by another build" and no flag lets
-it through. For an action A/B, run the historical arm's sweep **from the historical worktree
-itself** against the port that worktree serves, after proving the two checkouts' harness is
-byte-identical (`git diff --stat <historical> <current> -- tools/perf` prints nothing); only the
-product then differs, and the artifact records the served entry module either way. The 2026-09-02
-raster-tier and backdrop-blur A/Bs ran their `origin/main` arms this way. Two more shell-level traps
-from the same night: the default shell is zsh, which does **not** word-split an unquoted `$ARGS`
-variable — the runner received one giant argument and asked for `--device-id` — spell the flags out
-or use `${=ARGS}`; and killing the `serve-profile-build` wrapper can leave its `vite preview` child
-holding the port with a manifest whose chunks a later rebuild has replaced (`manifest OK` fails on
-the entry fetch) — `lsof -nP -iTCP:<port> -sTCP:LISTEN` names the child, and its cwd
-(`lsof -p <pid>`) says whether it is yours to stop.
+The **action** runner (`perf:ios:xcuitest:actions`) accepts `--allow-foreign-build` only with an
+explicit `--url=`. It still verifies that the served manifest resolves and that the loaded page uses
+the served entry; its artifact records the served entry and digest. The product commit stays null
+for a foreign build, so bind that digest to the historical worktree's clean provenance in the
+capture record. Run the action runner from the current harness checkout, separate from the isolated
+checkout that hosts the restricted HTTPS front. The front checks file existence in its own
+`web/build`; stage the historical build there byte-for-byte before serving it, keeping the path
+allowlist intact. The runner cannot use that other checkout's build stamp as its own product
+identity, so `--allow-foreign-build` keeps `productCommit` null. A native app records its loaded
+entry separately and must be identified from its installed bundle, never from the harness checkout.
+The 2026-09-02 raster-tier and backdrop-blur A/Bs instead ran their `origin/main` arms from the
+historical worktree itself. Two shell-level traps from the same night: the default shell is zsh,
+which does **not** word-split an unquoted `$ARGS` variable — the runner received one giant argument
+and asked for `--device-id` — spell the flags out or use `${=ARGS}`; and killing the
+`serve-profile-build` wrapper can leave its `vite preview` child holding the port with a manifest
+whose chunks a later rebuild has replaced (`manifest OK` fails on the entry fetch) —
+`lsof -nP -iTCP:<port> -sTCP:LISTEN` names the child, and its cwd (`lsof -p <pid>`) says whether it
+is yours to stop.
 
 The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
 `npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell

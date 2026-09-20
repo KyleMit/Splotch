@@ -301,7 +301,7 @@ check(
 // Historical incompatibilities of the frozen harness, preserved as they failed.
 const p1 = read('pilots/p1-macos-web-before-with-coloring.console.txt');
 check(
-  'p1: with `coloring` in the plan the desktop capture of the before build stopped at the 240 s install bound reading 0 of 7 books, and wrote no artifact',
+  'p1: with `coloring` in the plan the desktop capture of the before build stopped at the 240 s install bound reading 0 of 7 books, with no Wrote line in the console',
   /Timed out after 240 s waiting for coloring books to install: 0 of 7 extra books installed, missing dinosaur, creatures, nature, objects, shapes, space, vehicles/.test(p1) &&
     p1.includes('--url=http://127.0.0.1:54834/') &&
     !p1.includes('Wrote ')
@@ -320,14 +320,14 @@ for (const [arm, version] of [
 }
 const p2 = read('pilots/p2-ipad-native-before-with-coloring.console.txt');
 check(
-  'p2: on the iPad native before build the first-open guard refused a never-opened picker that already renders tiles, in sweep 1, and wrote no artifact',
+  'p2: on the iPad native before build the first-open guard refused a never-opened picker that already renders tiles, in sweep 1, with no Wrote line in the console',
   /Action sweep 1\/4\nError: The coloring picker already holds 3 rendered tiles/.test(p2) &&
     !p2.includes('Action sweep 2/4') &&
     !p2.includes('Wrote ')
 );
 const p4 = read('pilots/p4-android-native-before-with-coloring.console.txt');
 check(
-  'p4: on the Android native before build the first-open guard refused a never-opened picker that already renders tiles, in sweep 1, and wrote no artifact',
+  'p4: on the Android native before build the first-open guard refused a never-opened picker that already renders tiles, in sweep 1, with no Wrote line in the console',
   /Action sweep 1\/4\nError: The coloring picker already holds 6 rendered tiles/.test(p4) &&
     p4.includes('--native-webview-class=android.webkit.WebView') &&
     !p4.includes('Action sweep 2/4') &&

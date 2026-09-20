@@ -31,7 +31,11 @@ import {
   switchToWebContext,
 } from './capture-xcuitest-screen.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
-import { entryModulePath, loadedPageEntryProblem } from '../lib/profile-preview.mjs';
+import {
+  entryModulePath,
+  loadedPageEntryProblem,
+  servedBuildBinding,
+} from '../lib/profile-preview.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import {
@@ -425,6 +429,7 @@ export async function loadActionSweepDocument({ actions, execute, executePromise
   }
   return loadSweepDocumentWithColoringBooks({
     loadDocument,
+    execute,
     executePromise,
     prepare: () =>
       prepareColoringBooks({
@@ -2294,6 +2299,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         'output',
         'report-only',
         'no-serve',
+        'allow-foreign-build',
         'theme',
       ],
     },
@@ -2312,6 +2318,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   const actions = selectedActions(flag('actions'));
   const deviceClass = parseDeviceClass(flag('device-class'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
+  const allowForeignBuild = has('allow-foreign-build');
+  if (allowForeignBuild && !flag('url')) {
+    fail('--allow-foreign-build needs --url= naming the externally served build it allows');
+  }
   let sessionId = flag('session-id');
   const capabilitiesFile = flag('capabilities-file');
   validateBorrowedActionSession(sessionId, capabilitiesFile);
@@ -2332,6 +2342,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   let execute;
   let nativeRotationLockRestore;
   let cleanupPromise;
+  let servedBuild = null;
 
   function cleanup() {
     cleanupPromise ??= (async () => {
@@ -2374,7 +2385,16 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   process.once('SIGTERM', onSigterm);
 
   try {
-    server = nativeApp ? null : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
+    server = nativeApp
+      ? null
+      : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve') && !allowForeignBuild, {
+          allowForeignBuild,
+        });
+    if (!nativeApp) {
+      servedBuild = await servedBuildBinding(requestedAppUrl, {
+        verifiedAgainstCheckout: !allowForeignBuild,
+      });
+    }
     client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
     client.nativeApp = nativeApp;
     client.nativeWebViewClass = flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS);
@@ -2512,13 +2532,16 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         POLL_MS
       );
       if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
-      if (!nativeApp) {
-        const scriptSources = await execute(
-          "return Array.from(document.scripts, (script) => script.src || script.textContent || '');"
-        );
+      const scriptSources = await execute(
+        "return Array.from(document.scripts, (script) => script.src || script.textContent || '');"
+      );
+      const loadedEntry = entryModulePath(scriptSources.join('\n'));
+      if (nativeApp) {
+        if (loadedEntry) pageEntries.add(loadedEntry);
+      } else {
         const entryProblem = loadedPageEntryProblem(expectedEntry, scriptSources);
         if (entryProblem) throw new Error(`Preview identity mismatch: ${entryProblem}`);
-        pageEntries.add(entryModulePath(scriptSources.join('\n')));
+        pageEntries.add(loadedEntry);
       }
       serviceWorkerRegistrations.add(
         await blockServiceWorkerRegistrationForMeasurement(execute)
@@ -2602,6 +2625,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       orientation: originalOrientation,
       theme: baselineTheme,
       pageEntries: [...pageEntries],
+      ...servedBuild,
       serviceWorkerRegistration: [...serviceWorkerRegistrations],
       coloringPreparation,
       // A landscape phone measures CompactShell's quick toggles instead of the
