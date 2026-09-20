@@ -1,0 +1,39 @@
+
+> splotch@1.6.0 perf:ios:xcuitest:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-actions.mjs --appium-url=http://127.0.0.1:4727 --native-app --capabilities-file=<rig-evidence>/ipad-native-caps.local.json --device-class=tablet --repeats=4 --report-only --actions=palette,clear,brushes,stroke-width,undo,settings,color-picker,ai-waiting,unavailable,screenshot --output=<rig-evidence>/runs/ipad-native-no-coloring/after-1/actions.json
+
+
+Action sweep 1/4
+
+Action sweep 2/4
+
+Action sweep 3/4
+
+Action sweep 4/4
+
+Discrete action response
+┌─────────┬────────────────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬──────────┬─────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                             │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max │ raw max │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼────────────────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼──────────┼─────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'change ink color'                 │ '3/4' │ '4/4'      │ 7         │ 241            │ 244            │ 17       │ 18       │ 18      │ '157/159'         │ 17         │ 0               │ 'PASS'  │
+│ 1       │ 'open custom color picker'         │ '3/4' │ '4/4'      │ 6         │ 236            │ 238            │ 17       │ 20       │ 20      │ '138/240'         │ 17         │ 0               │ 'PASS'  │
+│ 2       │ 'select custom color'              │ '3/4' │ '4/4'      │ 6         │ 323            │ 426            │ 17       │ 17       │ 18      │ '72/261'          │ 17         │ 0               │ 'PASS'  │
+│ 3       │ 'open brush menu'                  │ '3/4' │ '4/4'      │ 7         │ 240            │ 241            │ 17       │ 18       │ 18      │ '104/160'         │ 17         │ 0               │ 'PASS'  │
+│ 4       │ 'select crayon brush'              │ '3/4' │ '4/4'      │ 6         │ 244            │ 252            │ 17       │ 18       │ 18      │ '94/160'          │ 17         │ 0               │ 'PASS'  │
+│ 5       │ 'select Magic brush'               │ '3/4' │ '4/4'      │ 6         │ 228            │ 238            │ 17       │ 82       │ 82      │ '107/152'         │ 17         │ 0               │ 'FAIL'  │
+│ 6       │ 'select eraser'                    │ '3/4' │ '4/4'      │ 5         │ 233            │ 234            │ 17       │ 21       │ 21      │ '118/158'         │ 17         │ 0               │ 'PASS'  │
+│ 7       │ 'select pen brush'                 │ '3/4' │ '4/4'      │ 6         │ 237            │ 245            │ 17       │ 21       │ 21      │ '93/160'          │ 17         │ 0               │ 'PASS'  │
+│ 8       │ 'open stroke-width menu'           │ '3/4' │ '4/4'      │ 5         │ 331            │ 345            │ 17       │ 17       │ 17      │ '107/171'         │ 17         │ 0               │ 'PASS'  │
+│ 9       │ 'change stroke width'              │ '3/4' │ '4/4'      │ 7         │ 238            │ 244            │ 17       │ 17       │ 17      │ '12/160'          │ 17         │ 0               │ 'PASS'  │
+│ 10      │ 'open Settings'                    │ '3/4' │ '4/4'      │ 11        │ 331            │ 343            │ 17       │ 22       │ 22      │ '129/254'         │ 17         │ 0               │ 'PASS'  │
+│ 11      │ 'close Settings'                   │ '3/4' │ '4/4'      │ 5         │ 63             │ 66             │ 17       │ 19       │ 19      │ '79/209'          │ 17         │ 0               │ 'PASS'  │
+│ 12      │ 'save screenshot'                  │ '3/4' │ '4/4'      │ 3         │ 228            │ 231            │ 17       │ 18       │ 18      │ '389/580'         │ 17         │ 0               │ 'PASS'  │
+│ 13      │ 'show AI waiting print'            │ '3/4' │ '4/4'      │ 11        │ 8              │ 8              │ 17       │ 17       │ 17      │ '199/199'         │ 17         │ 0               │ 'PASS'  │
+│ 14      │ 'finish AI waiting print'          │ '3/4' │ '4/4'      │ 18        │ 64             │ 68             │ 17       │ 23       │ 23      │ '981/1089'        │ 17         │ 0               │ 'PASS'  │
+│ 15      │ 'undo latest stroke'               │ '3/4' │ '4/4'      │ 7         │ 246            │ 251            │ 17       │ 19       │ 20      │ '96/242'          │ 17         │ 0               │ 'PASS'  │
+│ 16      │ 'tap unavailable undo'             │ '3/4' │ '4/4'      │ 1         │ 243            │ 247            │ 17       │ 21       │ 21      │ '131/242'         │ 17         │ 0               │ 'PASS'  │
+│ 17      │ 'clear drawing'                    │ '3/4' │ '4/4'      │ 23        │ 723            │ 729            │ 18       │ 28       │ 28      │ '192/324'         │ 18         │ 0               │ 'PASS'  │
+│ 18      │ 'clear drawing on a coloring page' │ '3/4' │ '4/4'      │ 37        │ 734            │ 734            │ 17       │ 44       │ 44      │ '189/324'         │ 18         │ 0               │ 'FAIL'  │
+└─────────┴────────────────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴──────────┴─────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote <rig-evidence>/runs/ipad-native-no-coloring/after-1/actions.json

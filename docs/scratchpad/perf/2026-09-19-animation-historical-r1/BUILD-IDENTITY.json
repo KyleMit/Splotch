@@ -1,0 +1,60 @@
+{
+  "harness": {
+    "commit": "6b533bb7c164e24f07338c5eef0e30d5dbd5fd2c",
+    "note": "origin/main at intake, clean checkout; every capture in runs/ used it"
+  },
+  "relationship": "before is the first parent of after (git rev-parse after^1)",
+  "perfSeams": "both web bundles and both iPad bundles contain engine.undoInkMotion, __aiGenerate and __committedBrushMode",
+  "before": {
+    "commit": "a9b633c4392de7ca943d3f927ff86686956cdb83",
+    "webBuild": {
+      "provenance": {
+        "commit": "a9b633c4392de7ca943d3f927ff86686956cdb83",
+        "dirty": false
+      },
+      "appVersion": "1789862611366",
+      "servedEntry": "/_app/immutable/entry/start.Cjzg_isR.js",
+      "servedBuildDigest": "166773f256ee200aaa9ad85b24b79505816ec24ec39569474c7de3294c44bd48",
+      "fileListingSha256": "9c6863786659cf32b0477057f20b890ebe05ec303c29bd3962ab3ee6e1ed5b03",
+      "files": 1205
+    },
+    "ipadApp": {
+      "bundleEntry": "start.BTJdy7tX.js",
+      "publicTreeListingSha256": "371dc29fe7897a7815219fec0a51e531e7d697f50da4d44542a6635903bb062b",
+      "bundleId": "art.splotch.app",
+      "version": "1.6.0 (8)",
+      "configuration": "Debug",
+      "serverUrl": null
+    },
+    "androidApk": {
+      "sha256": "343e5ba2f248e86838933bc1fd05156b91d6bc13bc7b0ca6d813172f8f258f17",
+      "builtBy": "the 2026-09-19 overnight session; reused by hash, not rebuilt; installed once for the guard pilot (pilots/p4), verified on the device by base.apk hash, then replaced by the phone's original APK"
+    }
+  },
+  "after": {
+    "commit": "751093de306f08f771f52f85996f55838b7b0d15",
+    "webBuild": {
+      "provenance": {
+        "commit": "751093de306f08f771f52f85996f55838b7b0d15",
+        "dirty": false
+      },
+      "appVersion": "1789862611365",
+      "servedEntry": "/_app/immutable/entry/start.iaOk9c5R.js",
+      "servedBuildDigest": "2266c03ea498d27e5c8a9fc3011f1a19826cc96286169443553f51e2ed1a933d",
+      "fileListingSha256": "4f2eeb9c04114871830556c7c075bb7d1727b6caea28d20b0a806c69c3407e1e",
+      "files": 1205
+    },
+    "ipadApp": {
+      "bundleEntry": "start.BNxTubaz.js",
+      "publicTreeListingSha256": "b050f4ce896b4bfb4d0b5a8f5df92888da103d7cf8550a8280a04eb9e29f5ed8",
+      "bundleId": "art.splotch.app",
+      "version": "1.6.0 (8)",
+      "configuration": "Debug",
+      "serverUrl": null
+    },
+    "androidApk": {
+      "sha256": "5ae3fd85d0f9ba77ac301a66a3463970545d3e51fafea1673ec38dbceecf96f1",
+      "builtBy": "the 2026-09-19 overnight session; reused by hash, not rebuilt; never installed by this unit"
+    }
+  }
+}
