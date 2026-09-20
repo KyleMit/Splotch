@@ -165,6 +165,26 @@ test('Buttons palette reaches the landscape edges and aligns its custom swatch w
   expect(custom.y + custom.height / 2).toBeCloseTo(brush.y + brush.height / 2);
 });
 
+test('Landscape palette keeps its edge padding at the smallest button size', async ({ page }) => {
+  await page.setViewportSize(layouts[0]);
+  await page.addInitScript(
+    (key) => localStorage.setItem(key, '70'),
+    STORAGE_KEYS.actionButtonScale
+  );
+  await gotoApp(page);
+  await openDrawer(page);
+  const palette = page.locator('.color-palette');
+  await expect(palette).toHaveCSS('padding-top', '12px');
+  const paletteBounds = (await palette.boundingBox())!;
+  const first = (await page.locator('.color-swatch:visible').first().boundingBox())!;
+  const custom = (await page.locator('.gradient-swatch').boundingBox())!;
+  const brush = (await page.locator('#brushButton').boundingBox())!;
+  expect(first.y).toBeCloseTo(paletteBounds.y + PALETTE_COLUMN_GEOMETRY.paddingPx / 2);
+  expect(Math.abs(custom.y + custom.height / 2 - (brush.y + brush.height / 2))).toBeLessThanOrEqual(
+    2
+  );
+});
+
 for (const { name, openMenu, trigger } of [
   { name: 'brush', openMenu: openBrushMenu, trigger: '#brushButton' },
   { name: 'stroke', openMenu: openStrokeMenu, trigger: '#strokeWidthButton' },

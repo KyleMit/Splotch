@@ -3,7 +3,7 @@
   import { layoutState } from '$lib/state/layout.svelte';
   const paletteBottom = $derived(
     layoutState.viewportWidth > 0
-      ? 8 + renderedActionButtonSize() / 2 - 30 + layoutState.safeArea.bottom
+      ? Math.max(0, 8 + renderedActionButtonSize() / 2 - 30 + layoutState.safeArea.bottom)
       : 8
   );
   import {
