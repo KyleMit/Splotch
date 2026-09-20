@@ -35,13 +35,22 @@ const specs = readdirSync(testsDir)
 
 // The `tag:` value in a test()/test.describe() options object — a bare
 // identifier, a quoted literal, or an array of either.
+//
+// A TypeScript labelled tuple element — `[tag: string, parts: string]` — is
+// indistinguishable from an options key at this level, so PRIMITIVE_TYPE_NAMES
+// is excluded below. None of those names can be a legitimate tag: tags arrive
+// as identifiers exported from tags.ts, so the exclusion costs no coverage.
+// A labelled tuple annotated with a named type still reads as a tag, which
+// keeps the guard fail-closed on anything it cannot rule out.
 const TAG_VALUE = /\btag:\s*(\[[^\]]*\]|'[^']*'|"[^"]*"|[A-Za-z_$][\w$]*)/g;
+const PRIMITIVE_TYPE_NAMES = new Set(['string', 'number', 'boolean']);
 
 function taggedEntries({ source }) {
   return [...source.matchAll(TAG_VALUE)].flatMap(([, value]) =>
     (value.startsWith('[') ? value.slice(1, -1).split(',') : [value])
       .map((entry) => entry.trim())
       .filter(Boolean)
+      .filter((entry) => !PRIMITIVE_TYPE_NAMES.has(entry))
   );
 }
 
@@ -82,6 +91,35 @@ describe('E2E engine tags', () => {
   it('at least one spec carries ENGINE_SMOKE_TAG', () => {
     const tagged = specs.filter((spec) => taggedEntries(spec).includes('ENGINE_SMOKE_TAG'));
     expect(tagged.map(({ name }) => name)).not.toHaveLength(0);
+  });
+
+  it('reads a bare identifier tag', () => {
+    const source = "test.describe('x', { tag: ENGINE_SMOKE_TAG }, () => {});";
+    expect(taggedEntries({ source })).toEqual(['ENGINE_SMOKE_TAG']);
+  });
+
+  it('reads every identifier in an array tag', () => {
+    const source = "test.describe('x', { tag: [ENGINE_SMOKE_TAG] }, () => {});";
+    expect(taggedEntries({ source })).toEqual(['ENGINE_SMOKE_TAG']);
+  });
+
+  it('ignores a labelled tuple element typed as a primitive', () => {
+    const source = 'const probe = (...layers: [tag: string, parts: string][]) => {};';
+    expect(taggedEntries({ source })).toEqual([]);
+  });
+
+  it('keeps rejecting a quoted tag spelling a primitive type name', () => {
+    const source = "test('x', { tag: 'string' }, () => {});";
+    const entries = taggedEntries({ source });
+    expect(entries.filter(isLiteral)).toEqual(["'string'"]);
+  });
+
+  // The residual hole, pinned: a named type in a labelled tuple is
+  // indistinguishable from a tag identifier, so the guard stays eager there
+  // rather than opening a way past it.
+  it('still reads a labelled tuple element typed as a named type', () => {
+    const source = 'const probe = (...layers: [tag: IconName, parts: string][]) => {};';
+    expect(taggedEntries({ source })).toEqual(['IconName']);
   });
 
   it('Chromium excludes the engine-smoke tag', () => {
