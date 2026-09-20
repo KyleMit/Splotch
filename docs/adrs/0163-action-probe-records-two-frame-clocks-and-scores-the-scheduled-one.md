@@ -4,6 +4,15 @@
 [ADR-0162](0162-measured-p95-allowance-for-the-android-web-theme-flip.md) and
 [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md) **Date:** 2026-09
 
+> **Amendment (2026-09, issue #1714): the matrix publishes informational divergence.** The
+> deployment-target matrix re-derives an epoch-2 action group's `frameStamps` from raw samples under
+> the target's shipped max gate and carries the figure into `data.json`. Each epoch-2 action cell's
+> tooltip shows actual P95, actual-minus-scheduled P95, and hidden overruns with that gate's
+> threshold; `data.json` retains the complete figure. Summary-only epoch-2 artifacts cannot supply
+> the raw stamps needed to re-derive the gate-dependent count and are refused. Legacy epoch-1 cells
+> retain their existing shape and tooltip. None of these fields enters the verdict or heat ratio,
+> and the scoring cutover condition in section 5 is unchanged.
+
 > **Amendment (2026-09, issue #1713): the probe retains the onset rows.** Every sample `finish()`
 > returns carries two rows beside `postActionFrames`, each in the same shape as a `postActionFrames`
 > entry with both clocks: `lastPreActionFrame`, the last frame whose scheduled stamp precedes the
@@ -109,10 +118,10 @@ Beside those figures, a dual-channel group gains one informational `frameStamps`
 | `hiddenOverruns`           | Frames the scheduled stamp keeps under the group's max gate (allowance included) while the actual gap crossed it — the #1696 shape, counted |
 
 The console table every runner prints gains `actual p95` and `hidden overruns` columns (`n/a` for a
-legacy capture). A legacy group carries no `frameStamps` key at all. The matrix generator's
-`data.json` and rendered cells are unchanged: the figure lives in `actions.json`'s `summaries`, so a
-campaign reads divergence without reprocessing raw samples, and nothing on a published page changes
-meaning.
+legacy capture). A legacy group carries no `frameStamps` key at all. The matrix generator publishes
+the informational figure in `data.json` and a concise per-cell tooltip for epoch-2 captures, from
+their raw samples under the target's shipped gate. The published verdict and heat ratio still read
+only the scheduled channel, and legacy cells render unchanged.
 
 ### 4. Why the scheduled channel keeps the gate
 

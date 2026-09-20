@@ -107,6 +107,7 @@ describe('epoch-2 frame stamps in the performance matrix', () => {
       `hidden overruns ${sample.frameStamps.hiddenOverruns}/${sample.frameStamps.frames}`
     );
     expect(html).toContain(`actual P95 ${sample.frameStamps.actual.p95} ms`);
+    expect(html).toContain('scored frames above 33.5 ms max gate');
     expect(html).toContain('informational');
   });
 
@@ -129,6 +130,7 @@ describe('epoch-2 frame stamps in the performance matrix', () => {
       expect(markdown).toContain('## Discrete actions');
       expect(markdown).toContain('16.8 / 33.4');
       expect(html).toContain('hidden overruns 50/380 scored frames');
+      expect(html).toContain('above 33.5 ms max gate');
     } finally {
       rmSync(directory, { recursive: true });
     }
@@ -157,5 +159,75 @@ describe('epoch-2 frame stamps in the performance matrix', () => {
     expect(result).not.toHaveProperty('frameStamps');
     expect(html).not.toContain('frame stamps (informational)');
     expect(legacy.passed).toBe(summarizeActions(fixture('android-device-web').samples)[0].passed);
+  });
+
+  it('keeps an epoch-1 cell unchanged even when raw rows carry both clocks', () => {
+    const capture = fixture('android-device-web');
+    capture.frameStampEpoch = 1;
+    capture.samples = capture.samples.map((sample) => ({ ...sample, frameStampEpoch: 1 }));
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-epoch-marker-matrix-'));
+    const capturePath = join(directory, 'actions.json');
+    writeFileSync(capturePath, JSON.stringify(capture));
+    try {
+      expect(summarizeActions(capture.samples)[0]).toHaveProperty('frameStamps');
+      const matrix = matrixFor('android-device-web', capture, capturePath);
+      const result = matrix.targets[0].modes.find((mode) => mode.actions)?.actions.results[0];
+      expect(result).not.toHaveProperty('frameStamps');
+      expect(renderReport(matrix)).not.toContain('frame stamps (informational)');
+    } finally {
+      rmSync(directory, { recursive: true });
+    }
+  });
+
+  it('names the source when a capture mixes frame-stamp epochs', () => {
+    const capture = fixture('android-device-web');
+    delete capture.frameStampEpoch;
+    capture.samples[0].frameStampEpoch = 1;
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-mixed-epoch-matrix-'));
+    const capturePath = join(directory, 'actions.json');
+    writeFileSync(capturePath, JSON.stringify(capture));
+    try {
+      expect(() => matrixFor('android-device-web', capture, capturePath)).toThrow(
+        `${capturePath}: samples mix frame-stamp epochs 1, 2`
+      );
+    } finally {
+      rmSync(directory, { recursive: true });
+    }
+  });
+
+  it('refuses summary-only epoch-2 evidence whose max gate cannot be re-derived', () => {
+    const capture = fixture('android-device-web');
+    capture.summaries = summarizeActions(capture.samples);
+    delete capture.samples;
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-summary-epoch-matrix-'));
+    const capturePath = join(directory, 'actions.json');
+    writeFileSync(capturePath, JSON.stringify(capture));
+    try {
+      expect(() => matrixFor('android-emulator-web', capture, capturePath)).toThrow(
+        `${capturePath} carries epoch-2 summaries but no raw samples`
+      );
+    } finally {
+      rmSync(directory, { recursive: true });
+    }
+  });
+
+  it('refuses incomplete dual-clock summaries before rendering a partial figure', () => {
+    const capture = fixture('android-device-web');
+    capture.samples = capture.samples.map((sample) => ({
+      ...sample,
+      postActionFrames: sample.postActionFrames.map(
+        ({ actualGapMs: _actualGapMs, ranFromActionMs: _ranFromActionMs, ...frame }) => frame
+      ),
+    }));
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-partial-epoch-matrix-'));
+    const capturePath = join(directory, 'actions.json');
+    writeFileSync(capturePath, JSON.stringify(capture));
+    try {
+      expect(() => matrixFor('android-device-web', capture, capturePath)).toThrow(
+        `${capturePath}: clear drawing has incomplete epoch-2 frame stamps`
+      );
+    } finally {
+      rmSync(directory, { recursive: true });
+    }
   });
 });
