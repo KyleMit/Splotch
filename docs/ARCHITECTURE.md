@@ -434,8 +434,9 @@ media queries + the head-script stamp in `app.html`).
       motion — and writes the loosest of `reduce` / `full` / `system` that gives the requested
       answer, so it can also opt this app back out on a reduce-motion OS. Live treatments read
       `:root[data-reduce-motion]` (`platform/reducedMotion.ts`), never the media query. Entrance and
-      exit animations capture that answer at the start of their cue with `stampMotionAtStart()`;
-      swapping keyframes through the live attribute would replay an animation on a visible element.
+      other keyframe cues that must not replay capture that answer at the start of their cue, using
+      `stampMotionAtStart()` for DOM cues; swapping keyframes through the live attribute would
+      replay an animation on a visible element.
       * **Appearance Control** - Light / Dark / System segmented control at the top of the
         **Appearance** section. Dark mode themes the chrome (app background, palette bar, modals,
         Install Banner), the paper (a near-black warm tone under the same low-alpha texture), and

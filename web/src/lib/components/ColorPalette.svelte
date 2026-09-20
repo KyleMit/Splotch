@@ -23,6 +23,7 @@
   import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
   import { getRingColor } from '$lib/colorRing';
   import Icon from './Icon.svelte';
+  import { prefersReducedMotion } from '$lib/platform/reducedMotion';
 
   const SWATCH_RELEASE_CLASS = 'releasing';
 
@@ -37,6 +38,7 @@
   // Track the most recent click so we can fire the confirmation ring animation
   // only on the actual selection (not on every reactivity change).
   let ringAnimateHex = $state<string | null>(null);
+  let ringStartedReduced = $state(false);
 
   // The selected-state gap (border + seam) is surface-colored, not white, so in
   // dark mode it reads as bar background and the colored ring floats around the
@@ -48,6 +50,7 @@
   function selectSwatch(hex: string, paint: string) {
     selectInkBrush();
     selectPaletteColor(hex, paint);
+    ringStartedReduced = prefersReducedMotion();
     ringAnimateHex = hex;
     releaseAllPointers();
   }
@@ -76,6 +79,10 @@
   // subtree leaves out.
   function playSwatchRelease(e: PointerEvent & { currentTarget: HTMLButtonElement }) {
     const swatch = e.currentTarget;
+    if (prefersReducedMotion()) {
+      swatch.classList.remove(SWATCH_RELEASE_CLASS);
+      return;
+    }
     const release = swatch.getAnimations().find((animation) => animation instanceof CSSAnimation);
     if (release) {
       release.currentTime = 0;
@@ -89,6 +96,15 @@
   function endSwatchRelease(e: AnimationEvent & { currentTarget: HTMLButtonElement }) {
     if (e.target === e.currentTarget && e.pseudoElement === '')
       e.currentTarget.classList.remove(SWATCH_RELEASE_CLASS);
+  }
+
+  function clearReleaseOnCancel(node: HTMLButtonElement) {
+    const cancel = (event: AnimationEvent) => {
+      if (event.target === node && event.pseudoElement === '')
+        node.classList.remove(SWATCH_RELEASE_CLASS);
+    };
+    node.addEventListener('animationcancel', cancel);
+    return { destroy: () => node.removeEventListener('animationcancel', cancel) };
   }
 
   function handleSwatchCancel(e: PointerEvent) {
@@ -120,6 +136,7 @@
       class="color-swatch"
       class:active={!erasing && colorsState.activeSwatch === hex}
       class:ring-animate={ringAnimateHex === hex}
+      data-start-reduced-motion={ringAnimateHex === hex && ringStartedReduced ? '' : undefined}
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
       style="background-color: {shown}; {!erasing && colorsState.activeSwatch === hex
@@ -127,6 +144,7 @@
         : ''}"
       aria-label={shown === hex ? label : 'White'}
       use:scribbleTap={() => selectSwatch(hex, shown)}
+      use:clearReleaseOnCancel
       onpointerup={playSwatchRelease}
       onpointercancel={handleSwatchCancel}
       onanimationend={endSwatchRelease}
@@ -145,6 +163,7 @@
       ? `box-shadow: ${selectionRingShadow(colorsState.customColor)};`
       : ''}
     use:scribbleTap={selectCustomColor}
+    use:clearReleaseOnCancel
     onpointerup={playSwatchRelease}
     onpointercancel={handleSwatchCancel}
     onanimationend={endSwatchRelease}
@@ -280,8 +299,8 @@
   /* Both rings are a transient pulse that ends at opacity 0 — the selection
      itself is the resting ring, which stays. */
   :global(:root[data-reduce-motion]) .color-swatch:global(.releasing),
-  :global(:root[data-reduce-motion]) .color-swatch.ring-animate:not(.gradient-swatch)::before,
-  :global(:root[data-reduce-motion]) .color-swatch.ring-animate:not(.gradient-swatch)::after {
+  .color-swatch.ring-animate:global([data-start-reduced-motion]):not(.gradient-swatch)::before,
+  .color-swatch.ring-animate:global([data-start-reduced-motion]):not(.gradient-swatch)::after {
     animation: none;
   }
 

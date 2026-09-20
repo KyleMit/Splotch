@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { stampMotionAtStart } from '$lib/platform/reducedMotion';
   const CONFETTI_COLORS = ['#FF6FB5', '#FFD23F', '#5CC8FF', '#7BE08A', '#C792EA', '#FF9E4D'];
 
   const CONFETTI_COUNT = 38;
@@ -48,7 +49,7 @@
   });
 </script>
 
-<div class="confetti-layer" aria-hidden="true">
+<div class="confetti-layer" aria-hidden="true" use:stampMotionAtStart>
   {#each confetti as c, i (i)}
     <span
       class="confetti"
@@ -131,7 +132,7 @@
     }
   }
 
-  :global(:root[data-reduce-motion]) .confetti {
+  .confetti-layer:global([data-start-reduced-motion]) .confetti {
     animation: none;
     opacity: 0;
   }

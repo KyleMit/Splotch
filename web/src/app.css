@@ -1142,7 +1142,7 @@ body {
   display: none;
   animation: none;
 }
-:root[data-reduce-motion] .undo-firing {
+.undo-firing[data-start-reduced-motion] {
   animation: none;
 }
 

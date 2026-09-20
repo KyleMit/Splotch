@@ -3,6 +3,7 @@
   import { actionPanelEvents } from '$lib/actions/actionPanelEvents';
   import { unreachable } from '$lib/unreachable';
   import { drawerCascade } from '$lib/actions/drawerCascade';
+  import { prefersReducedMotion } from '$lib/platform/reducedMotion';
   import Icon from './Icon.svelte';
   import type { OpenFlyout } from '$lib/glassPanes';
   import ColorControl from './ColorControl.svelte';
@@ -538,9 +539,11 @@
         bind:this={undoBtnEl}
       >
         {#key canvasState.undoCount}
+          {@const undoStartedReduced = prefersReducedMotion()}
           <Icon
             name="undo"
             class={canvasState.undoCount > 0 ? 'action-icon undo-firing' : 'action-icon'}
+            data-start-reduced-motion={undoStartedReduced ? '' : undefined}
           />
         {/key}
       </button>

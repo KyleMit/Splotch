@@ -54,7 +54,7 @@ async function globalCues(page: Page) {
       return read;
     };
     return {
-      undoSpin: probe(['div', 'undo-firing']).animationName,
+      undoSpin: probe(['div', `undo-firing${startReduced}`]).animationName,
       undoGhost: probe(['div', 'undo-ink-motion']).display,
       clearSheet: probe(['div', 'clear-sheet-motion']).display,
       unavailable: probe(['div', `action-unavailable${startReduced}`]).animationName,
@@ -507,6 +507,28 @@ for (const trigger of RING_TRIGGERS) {
       )
     );
     expect(rings).toEqual(trigger.rings);
+  });
+}
+
+for (const initiallyReduced of [true, false]) {
+  test(`a selected color's completed ring stays settled when Reduce Motion turns ${initiallyReduced ? 'off' : 'on'}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: initiallyReduced ? 'reduce' : 'no-preference' });
+    await gotoApp(page);
+    const swatch = page.locator('.color-swatch:not(.gradient-swatch):visible').nth(1);
+    await swatch.click();
+    await page.waitForTimeout(900);
+    const ringAnimations = () =>
+      swatch.evaluate((el) =>
+        (['::before', '::after'] as const).map(
+          (pseudo) => getComputedStyle(el, pseudo).animationName
+        )
+      );
+    const before = await ringAnimations();
+    await page.emulateMedia({ reducedMotion: initiallyReduced ? 'no-preference' : 'reduce' });
+    expect(await ringAnimations()).toEqual(before);
+    await expect(swatch).not.toHaveClass(/releasing/);
   });
 }
 
