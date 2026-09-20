@@ -3,7 +3,16 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-import { ABBA, SETS, armOf, readRun, rescore, root } from './lib.mjs';
+import {
+  ABBA,
+  SETS,
+  armOf,
+  loadedOnlyArmEntry,
+  matchesDeclaredControls,
+  readRun,
+  rescore,
+  root,
+} from './lib.mjs';
 
 const failures = [];
 const check = (claim, ok) => {
@@ -13,7 +22,7 @@ const check = (claim, ok) => {
 const read = (path) => JSON.parse(readFileSync(join(root, path), 'utf8'));
 const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
   entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)]);
-const codeFiles = new Set(['MANIFEST.json', 'README.md', 'check.mjs', 'compare.mjs', 'lib.mjs', 'package.mjs']);
+const codeFiles = new Set(['MANIFEST.json', 'README.md', 'check.mjs', 'compare.mjs', 'lib.mjs', 'negative-controls.mjs', 'package.mjs']);
 const manifest = read('MANIFEST.json');
 const listed = manifest.files.map((entry) => entry.path);
 const actual = walk(root).map((path) => relative(root, path)).filter((path) => !codeFiles.has(path)).sort();
@@ -79,14 +88,16 @@ for (const [directory, target, captures] of SETS) {
     check(`${name}: source hash records its private raw artifact`, /^[0-9a-f]{64}$/.test(run.sourceSha256));
     const arm = identity[armOf(capture)];
     if (target.endsWith('native')) {
-      check(`${name}: loaded entry matches the archived ${armOf(capture)} app bundle`,
-        run.pageEntries?.includes(arm[target].entry) && run.transport === 'native-capacitor-webview');
+      check(`${name}: every loaded entry is the archived ${armOf(capture)} app bundle and no other arm`,
+        loadedOnlyArmEntry(run, arm[target].entry) && run.transport === 'native-capacitor-webview');
     } else {
       check(`${name}: served entry and digest match the archived ${armOf(capture)} web build`,
         run.buildEntry === arm.web.entry && run.buildDigest === arm.web.digest &&
         (target === 'macos' ? run.engine === 'webkit' && run.captureRuntime === 'desktop-playwright' :
           target === 'android-chrome' ? run.transport === 'android-chrome-cdp' : run.transport === 'browser'));
     }
+    check(`${name}: OS, orientation, theme, runtime, input and cadence pin match the declared campaign controls`,
+      matchesDeclaredControls(run, target));
     check(`${name}: AI finish ran in a secure context with one stubbed request`,
       run.samples.filter((sample) => sample.label === AI[1]).length === 4 &&
       run.samples.filter((sample) => sample.label === AI[1]).every((sample) =>
@@ -109,7 +120,7 @@ for (const [, target, captures] of SETS) {
     entry.actionPlan.applicableLabels, entry.orientation, entry.theme, entry.device?.os,
     entry.captureRuntime, entry.uiActivation, entry.refreshRatePin, entry.gateAllowances,
   ]);
-  check(`${target}: captured arms share action order, OS, orientation, theme, runtime, input, cadence pin and gates`,
+  check(`${target}: captured arms share action order and gate allowances`,
     group.every((entry) => controls(entry) === controls(group[0])));
 }
 console.log(`${runs.size} canonical captures, ${coverage.filter((entry) => entry.status === 'hole').length} explicit holes`);

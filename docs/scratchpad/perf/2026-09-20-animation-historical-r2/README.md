@@ -8,13 +8,19 @@ current-product matrix cell or product arm was changed.
 
 Run `node docs/scratchpad/perf/2026-09-20-animation-historical-r2/check.mjs` to verify the manifest,
 all completed capture identities and controls, and every stored summary against the scorer's
-packaged inputs. Run `compare.mjs` for every red action, or `compare.mjs --all` for every action.
-`CAPTURE-ORDER.tsv` gives the raw artifact hashes, capture completion times, and verdicts.
-`COVERAGE.json` names all twenty positions and the exact holes. Each reduction retains every input
-read by `summarizeActions`; its `sourceSha256` refers to the private original. The raw JSON, full
-console logs, install proofs, restricted-front request logs, and failed attempts remain under the
-rig's `evidence/1870/animation-historical-r2/` directory because they contain device identifiers and
-local paths.
+packaged inputs. Each run is checked against the per-target controls declared in `lib.mjs`
+(`DECLARED_CONTROLS`, transcribed from the table below), not merely against its own arm, so a
+uniformly miscampaigned target fails rather than agreeing with itself; a native run has to have
+loaded its own arm entry and no other. `negative-controls.mjs` proves those two assertions fire, by
+mutating a loaded capture in memory — a mixed-arm entry list, a wrong iPadOS version, orientation,
+theme, runtime, input mode or cadence pin — and requiring each mutation to be rejected. Run
+`compare.mjs` for every red action, or `compare.mjs --all` for every action. `CAPTURE-ORDER.tsv`
+gives the raw artifact hashes, capture completion times, and verdicts. `COVERAGE.json` names all
+twenty positions and the exact holes. Each reduction retains every input read by `summarizeActions`;
+its `sourceSha256` refers to the private original. The raw JSON, full console logs, install proofs,
+restricted-front request logs, and failed attempts remain under the rig's
+`evidence/1870/animation-historical-r2/` directory because they contain device identifiers and local
+paths.
 
 ## Frozen identities and commands
 

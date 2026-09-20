@@ -11,7 +11,7 @@ const walk = (dir) =>
   );
 const files = walk(root)
   .map((path) => relative(root, path))
-  .filter((path) => !['MANIFEST.json', 'README.md', 'check.mjs', 'compare.mjs', 'lib.mjs', 'package.mjs'].includes(path))
+  .filter((path) => !['MANIFEST.json', 'README.md', 'check.mjs', 'compare.mjs', 'lib.mjs', 'negative-controls.mjs', 'package.mjs'].includes(path))
   .sort()
   .map((path) => ({
     path,

@@ -60,3 +60,55 @@ export const scoredMaxima = (run, label) =>
 
 export const rawMaxima = (run, label) =>
   scoredSamples(run, label).map((sample) => Math.max(...sample.postActionFrameGapsMs));
+
+// The controls each target was campaigned under, declared here from the README's per-target table
+// rather than read back off a capture, so a run that disagrees with the campaign fails instead of
+// a uniformly misconfigured campaign agreeing with itself. `undefined` means the field is absent on
+// that target (a desktop run has no orientation; only the pinned Android web target has a cadence).
+export const DECLARED_CONTROLS = {
+  macos: {
+    os: 'darwin', orientation: undefined, theme: 'light',
+    captureRuntime: 'desktop-playwright', uiActivation: undefined, refreshRatePin: undefined,
+  },
+  'ipad-safari': {
+    os: '26.5', orientation: 'LANDSCAPE', theme: 'light',
+    captureRuntime: 'ios-safari',
+    uiActivation: 'driver+native-touch+webdriver-element-click', refreshRatePin: undefined,
+  },
+  'ipad-native': {
+    os: '26.5', orientation: 'LANDSCAPE', theme: 'light',
+    captureRuntime: 'ios-capacitor-webview',
+    uiActivation: 'native-touch+webdriver-element-click+native-accessibility-click+driver',
+    refreshRatePin: undefined,
+  },
+  'android-chrome': {
+    os: '16', orientation: 'PORTRAIT', theme: 'light',
+    captureRuntime: undefined, uiActivation: 'trusted-cdp-touch',
+    refreshRatePin: { requestedHz: 60, observedHz: 60 },
+  },
+  'android-native': {
+    os: '16', orientation: 'PORTRAIT', theme: 'light',
+    captureRuntime: 'android-capacitor-webview',
+    uiActivation: 'native-touch+webdriver-element-click+native-accessibility-click+driver',
+    refreshRatePin: undefined,
+  },
+};
+
+const sameValue = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+export const matchesDeclaredControls = (run, target) => {
+  const declared = DECLARED_CONTROLS[target];
+  return Boolean(declared) &&
+    sameValue(run.device?.os, declared.os) &&
+    sameValue(run.orientation, declared.orientation) &&
+    sameValue(run.theme, declared.theme) &&
+    sameValue(run.captureRuntime, declared.captureRuntime) &&
+    sameValue(run.uiActivation, declared.uiActivation) &&
+    sameValue(run.refreshRatePin, declared.refreshRatePin);
+};
+
+// Membership would accept a capture whose page also loaded the other arm's entry, which is exactly
+// the mixed-arm evidence the README says never happened. Every observed entry has to be the one.
+export const loadedOnlyArmEntry = (run, expectedEntry) =>
+  Array.isArray(run.pageEntries) && run.pageEntries.length > 0 &&
+  run.pageEntries.every((entry) => entry === expectedEntry);
