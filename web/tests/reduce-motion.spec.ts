@@ -8,9 +8,9 @@ import { openDrawer } from './flows-harness';
 import { revealAiResult } from './ai-harness';
 
 // Reduce Motion (issue #2093) has two triggers — the Settings switch and the OS
-// preference — resolved into one attribute on <html> that every reduced
-// treatment keys off. These prove each trigger reaches the CSS cues and the JS
-// callers alike, and that an explicit choice overrides the OS in both directions.
+// preference — resolved into one attribute on <html> that live treatments read
+// and entrance cues capture at start. These prove each trigger reaches the CSS
+// cues and JS callers alike, and that an explicit choice overrides the OS.
 
 const root = (page: Page) => page.locator('html');
 
@@ -18,7 +18,10 @@ const root = (page: Page) => page.locator('html');
 // classes the engine and the actions apply. Asserting the animated values at
 // full motion first is what makes the reduced values mean something.
 async function globalCues(page: Page) {
-  return page.evaluate(() => {
+  return page.evaluate((motionAttribute) => {
+    const startReduced = document.documentElement.hasAttribute(motionAttribute)
+      ? ' [data-start-reduced-motion]'
+      : '';
     // Several cues style a descendant of the element that carries the state
     // class, so a probe builds the whole chain and reads the innermost. Each
     // layer is an element name plus a space-separated list of classes and
@@ -51,17 +54,22 @@ async function globalCues(page: Page) {
       return read;
     };
     return {
-      undoSpin: probe(['div', 'undo-firing']).animationName,
+      undoSpin: probe(['div', `undo-firing${startReduced}`]).animationName,
       undoGhost: probe(['div', 'undo-ink-motion']).display,
       clearSheet: probe(['div', 'clear-sheet-motion']).display,
-      unavailable: probe(['div', 'action-unavailable']).animationName,
-      confirmFlyIn: probe(['dialog', 'confirm-card modal-dialog modal-fly-in [open]'])
-        .animationName,
+      unavailable: probe(['div', `action-unavailable${startReduced}`]).animationName,
+      confirmFlyIn: probe([
+        'dialog',
+        `confirm-card modal-dialog modal-fly-in [open]${startReduced}`,
+      ]).animationName,
       // No per-dialog class: the shared treatment is what every fly-in modal
       // gets, including the four that carried no fade of their own.
-      dialogFlyIn: probe(['dialog', 'modal-dialog modal-fly-in [open]']).animationName,
-      screenshotPop: probe(['div', 'screenshot-capture-feedback'], ['span', '[data-icon=camera]'])
+      dialogFlyIn: probe(['dialog', `modal-dialog modal-fly-in [open]${startReduced}`])
         .animationName,
+      screenshotPop: probe(
+        ['div', `screenshot-capture-feedback${startReduced}`],
+        ['span', '[data-icon=camera]']
+      ).animationName,
       // The one cue that slows instead of stopping: it is the only sign the
       // button gives that a generation is still running.
       aiSpinPace: probe(
@@ -70,7 +78,7 @@ async function globalCues(page: Page) {
         ['span', 'action-icon']
       ).animationDuration,
     };
-  });
+  }, REDUCE_MOTION_ATTRIBUTE);
 }
 
 const FULL_MOTION_CUES = {
@@ -183,7 +191,10 @@ test('the switch reduces every covered cue while the OS has no preference', asyn
   );
   expect(await globalCues(page)).toEqual(REDUCED_CUES);
   expect(await tocJumpSteps(page)).toBe(1);
-  expectReducedComponents(await componentCues(page));
+  expect(await componentCues(page)).toMatchObject({
+    settingsFlyIn: 'dialogFlyFromOrigin',
+    toggleThumb: '0s',
+  });
 
   // The first thing a parent sees after asking for calm is Settings itself, so
   // prove the card reopened under the switch no longer launches at them.
@@ -221,6 +232,7 @@ test('turning the switch off overrides a reduce-motion OS, across a reload', asy
     'full'
   );
   expect(await globalCues(page)).toEqual(FULL_MOTION_CUES);
+  expect(await componentCues(page)).toMatchObject({ settingsFlyIn: 'modalFadeIn' });
 
   await gotoApp(page);
   await expect(root(page)).not.toHaveAttribute(REDUCE_MOTION_ATTRIBUTE);
@@ -228,6 +240,77 @@ test('turning the switch off overrides a reduce-motion OS, across a reload', asy
   expect(await tocJumpSteps(page)).toBeGreaterThan(3);
   expectFullMotionComponents(await componentCues(page));
 });
+
+const SETTINGS_LAYOUTS = [
+  { name: 'phone portrait', width: 390, height: 844, hasSwitch: true },
+  { name: 'phone landscape', width: 844, height: 390, hasSwitch: false },
+  { name: 'tablet portrait', width: 768, height: 1024, hasSwitch: true },
+  { name: 'tablet landscape', width: 1024, height: 768, hasSwitch: true },
+] as const;
+
+async function visibleReduceMotionSwitch(page: Page) {
+  if (await page.locator('.settings-nav').count()) {
+    await page.locator('.settings-nav [data-section="accessibility"]').click();
+  } else {
+    await page.locator('.hub-row[data-section="accessibility"]').click();
+  }
+  const toggle = page.getByRole('switch', { name: 'Reduce Motion' });
+  await expect(toggle).toBeVisible();
+  return toggle;
+}
+
+async function expectSettingsStaysLanded(page: Page, changeMotion: () => Promise<void>) {
+  const dialog = page.locator('#settingsModal');
+  const before = await dialog.boundingBox();
+  await dialog.evaluate((el) => (el.dataset.animationRestarts = '0'));
+  await changeMotion();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+  );
+  expect(await dialog.boundingBox()).toEqual(before);
+  expect(await dialog.evaluate((el) => el.dataset.animationRestarts)).toBe('0');
+  expect(await dialog.evaluate((el) => el.getAnimations().length)).toBe(0);
+  await expect(dialog).toBeVisible();
+}
+
+for (const layout of SETTINGS_LAYOUTS) {
+  test(`changing Reduce Motion leaves open Settings still in ${layout.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: layout.width, height: layout.height });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await gotoApp(page);
+    const dialog = await openSettingsModal(page);
+    await dialog.evaluate((el) => {
+      el.dataset.animationRestarts = '0';
+      el.addEventListener('animationstart', (event) => {
+        if (event.target === el) {
+          el.dataset.animationRestarts = String(Number(el.dataset.animationRestarts) + 1);
+        }
+      });
+    });
+
+    const firstToggle = layout.hasSwitch ? await visibleReduceMotionSwitch(page) : null;
+    await expectSettingsStaysLanded(page, async () => {
+      if (firstToggle) await firstToggle.click();
+      else await page.emulateMedia({ reducedMotion: 'reduce' });
+      await expect(root(page)).toHaveAttribute(REDUCE_MOTION_ATTRIBUTE);
+    });
+
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
+    await openSettingsModal(page);
+    expect(await dialog.evaluate((el) => getComputedStyle(el).animationName)).toBe('modalFadeIn');
+
+    const secondToggle = layout.hasSwitch ? await visibleReduceMotionSwitch(page) : null;
+    await expectSettingsStaysLanded(page, async () => {
+      if (secondToggle) await secondToggle.click();
+      else await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await expect(root(page)).not.toHaveAttribute(REDUCE_MOTION_ATTRIBUTE);
+    });
+  });
+}
 
 test('a returning device is stamped before hydration', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -427,6 +510,28 @@ for (const trigger of RING_TRIGGERS) {
   });
 }
 
+for (const initiallyReduced of [true, false]) {
+  test(`a selected color's completed ring stays settled when Reduce Motion turns ${initiallyReduced ? 'off' : 'on'}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: initiallyReduced ? 'reduce' : 'no-preference' });
+    await gotoApp(page);
+    const swatch = page.locator('.color-swatch:not(.gradient-swatch):visible').nth(1);
+    await swatch.click();
+    await page.waitForTimeout(900);
+    const ringAnimations = () =>
+      swatch.evaluate((el) =>
+        (['::before', '::after'] as const).map(
+          (pseudo) => getComputedStyle(el, pseudo).animationName
+        )
+      );
+    const before = await ringAnimations();
+    await page.emulateMedia({ reducedMotion: initiallyReduced ? 'no-preference' : 'reduce' });
+    expect(await ringAnimations()).toEqual(before);
+    await expect(swatch).not.toHaveClass(/releasing/);
+  });
+}
+
 const FOOTER_TRIGGERS = [
   { name: 'fades', reduced: true, animation: 'downloadFadeIn' },
   { name: 'pops', reduced: false, animation: 'downloadPop' },
@@ -447,4 +552,45 @@ for (const trigger of FOOTER_TRIGGERS) {
       new RegExp(`^svelte-\\w+-${trigger.animation}$`)
     );
   });
+}
+
+for (const branch of ['saved', 'downloadButton'] as const) {
+  for (const initiallyReduced of [false, true]) {
+    test(`a visible AI ${branch} cue does not replay when Reduce Motion turns ${initiallyReduced ? 'off' : 'on'}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: initiallyReduced ? 'reduce' : 'no-preference' });
+      if (branch === 'saved') {
+        await page.addInitScript(
+          (key) => localStorage.setItem(key, 'true'),
+          STORAGE_KEYS.autoSaveAi
+        );
+      }
+      await revealAiResult(page);
+
+      const footer = page.locator(branch === 'saved' ? '.ai-result-saved' : '.ai-result-download');
+      await expect(footer).toBeVisible();
+      await footer.evaluate((el) =>
+        Promise.all(el.getAnimations().map((animation) => animation.finished))
+      );
+      const originalName = await footer.evaluate((el) => getComputedStyle(el).animationName);
+      await page.emulateMedia({ reducedMotion: initiallyReduced ? 'no-preference' : 'reduce' });
+      await expect
+        .poll(() =>
+          root(page).evaluate(
+            (el, attribute) => el.hasAttribute(attribute),
+            REDUCE_MOTION_ATTRIBUTE
+          )
+        )
+        .toBe(!initiallyReduced);
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          )
+      );
+      expect(await footer.evaluate((el) => getComputedStyle(el).animationName)).toBe(originalName);
+      expect(await footer.evaluate((el) => el.getAnimations().length)).toBe(0);
+    });
+  }
 }

@@ -10,6 +10,7 @@
     type StrokeSize,
   } from '$lib/state/strokeWidth.svelte';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
+  import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
   // Presentational Stroke Width popover: the parent (ActionsPanel) owns the
   // trigger, the open/close coordination, and the outside-click handling. It
@@ -41,6 +42,7 @@
     class:dark-stroke={darkStroke}
     class:eraser-mode={erasing}
     class:motionless={isStrokeActive()}
+    use:stampMotionAtStart
     style:color={menuColor}
   >
     <!-- The previews change shape with the tool, not just color (a pink pen would

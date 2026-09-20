@@ -3,6 +3,7 @@ import {
   replayActionUnavailableFeedback,
 } from '$lib/actionUnavailableFeedback';
 import { SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
+import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
 const CAPTURE_FEEDBACK_CLASS = 'screenshot-capture-feedback';
 
@@ -15,6 +16,7 @@ export function playScreenshotFeedback() {
   if (!button) return;
   button.classList.remove(CAPTURE_FEEDBACK_CLASS, ACTION_UNAVAILABLE_CLASS);
   void button.offsetWidth;
+  stampMotionAtStart(button);
   button.classList.add(CAPTURE_FEEDBACK_CLASS);
 }
 

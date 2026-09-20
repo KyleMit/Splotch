@@ -1,3 +1,5 @@
+import { stampMotionAtStart } from '$lib/platform/reducedMotion';
+
 export const ACTION_UNAVAILABLE_CLASS = 'action-unavailable';
 
 const ACTION_UNAVAILABLE_ANIMATION_PREFIX = `${ACTION_UNAVAILABLE_CLASS}-`;
@@ -18,6 +20,7 @@ export function replayActionUnavailableFeedback(element: HTMLElement | null | un
   element.classList.remove(ACTION_UNAVAILABLE_CLASS);
   // Force a reflow between removal and re-add so repeated taps restart the animation.
   void element.offsetWidth;
+  stampMotionAtStart(element);
   element.classList.add(ACTION_UNAVAILABLE_CLASS);
 
   const animations = (element.getAnimations?.() ?? []).filter(isActionUnavailableAnimation);

@@ -137,7 +137,7 @@ const UNPINNED_GLOBAL_SELECTOR_BASELINE = new Map(
     // The disclosure sizes and re-inks the class forwarded into its child Icon.
     'lib/components/AiResultDisclosure.svelte': 2,
     // The waiting print positions the class forwarded into its child Icon.
-    'lib/components/AiWaitingPolaroid.svelte': 2,
+    'lib/components/AiWaitingPolaroid.svelte': 1,
     // The clear control sizes the class forwarded into its child Icon.
     'lib/components/ClearButton.svelte': 2,
     // The coachmark positions and re-inks classes forwarded into child Icons.

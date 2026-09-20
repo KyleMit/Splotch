@@ -8,6 +8,7 @@
     type OptionalBrushType,
   } from '$lib/state/tool.svelte';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
+  import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
   // Presentational Brush Menu popover: the parent (ActionsPanel) owns the
   // trigger, the open/close coordination, and the outside-click handling; this
@@ -44,6 +45,7 @@
     class:white-stroke={inkWhite}
     class:dark-stroke={inkDark}
     class:motionless={isStrokeActive()}
+    use:stampMotionAtStart
     style:color={activeColor}
   >
     {#each visibleBrushes as opt, index (opt.brush)}

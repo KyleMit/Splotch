@@ -318,12 +318,12 @@ body {
   text-wrap: pretty;
 }
 
-/* Reduced motion: every fly-in dialog appears instead of launching. Keyed on
-   the shared class rather than per dialog, so a new modal that opts into
-   .modal-fly-in is calm the moment it exists. A fade, never `animation: none`:
+/* Reduced motion: every fly-in dialog appears instead of launching. The dialog
+   action captures the answer at each open; a live setting change cannot replay
+   the entrance on a dialog already open. A fade, never `animation: none`:
    WideShell's fill and the settleFlyIn test helper both wait on the dialog's
    own animation finishing, and a dialog with no animation never resolves one. */
-:root[data-reduce-motion] .modal-dialog.modal-fly-in[open] {
+.modal-dialog.modal-fly-in[open][data-start-reduced-motion] {
   animation: modalFadeIn var(--duration-base) ease;
 }
 
@@ -830,7 +830,7 @@ body {
 /* Reduced motion: no shutter squash. The capture still announces itself — the
    polaroid overlay flies the picture away, and that cue keeps its own calm
    fade (.polaroid-frame below) — so dropping this one costs no confirmation. */
-:root[data-reduce-motion] .screenshot-capture-feedback [data-icon='camera'] {
+.screenshot-capture-feedback[data-start-reduced-motion] [data-icon='camera'] {
   animation: none;
 }
 
@@ -892,7 +892,7 @@ body {
 }
 
 /* The non-positional flash keeps unavailable actions legible without the shake. */
-:root[data-reduce-motion] .action-unavailable {
+.action-unavailable[data-start-reduced-motion] {
   animation: action-unavailable-flash var(--action-unavailable-flash-duration) ease-in-out;
 }
 
@@ -989,11 +989,11 @@ body {
   }
 }
 
-:root[data-reduce-motion] .polaroid-flash {
+.polaroid-flash[data-start-reduced-motion] {
   animation: none;
 }
 
-:root[data-reduce-motion] .polaroid-frame {
+.polaroid-frame[data-start-reduced-motion] {
   animation-name: polaroid-fade;
   animation-duration: 0.7s;
 }
@@ -1076,8 +1076,8 @@ body {
 .flyout-menu.motionless > button {
   animation: none;
 }
-:root[data-reduce-motion] .flyout-menu,
-:root[data-reduce-motion] .flyout-menu > button {
+.flyout-menu[data-start-reduced-motion],
+.flyout-menu[data-start-reduced-motion] > button {
   animation: none;
 }
 
@@ -1142,7 +1142,7 @@ body {
   display: none;
   animation: none;
 }
-:root[data-reduce-motion] .undo-firing {
+.undo-firing[data-start-reduced-motion] {
   animation: none;
 }
 

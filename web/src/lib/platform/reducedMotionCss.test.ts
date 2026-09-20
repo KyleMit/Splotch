@@ -2,10 +2,10 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { REDUCE_MOTION_ATTRIBUTE } from './reducedMotion';
+import { REDUCE_MOTION_ATTRIBUTE, START_REDUCED_MOTION_ATTRIBUTE } from './reducedMotion';
 
-// Every reduced-motion treatment has one selector form, keyed off the attribute
-// that resolves the parent's preference against the OS. A treatment written as
+// Live treatments read the resolved root attribute; entrance and exit cues
+// read its snapshot on their own element. A treatment written as
 // `@media (prefers-reduced-motion)` would still work for an OS-level request —
 // which is why nothing else would catch it — but it ignores the Settings switch
 // in both directions: it stays animated when the switch asks for calm, and stays
@@ -15,6 +15,7 @@ const srcDir = new URL('../../', import.meta.url).pathname;
 
 const MEDIA_FORM = /@media[^{]*prefers-reduced-motion/;
 const ATTRIBUTE_SELECTOR = /:root\[(data-[\w-]*motion[\w-]*)\]/g;
+const START_ATTRIBUTE_SELECTOR = /\[(data-start-[\w-]*motion[\w-]*)\]/g;
 
 function collectStyleSources(dir: string, found: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -41,5 +42,12 @@ describe('reduced-motion CSS', () => {
       sources.flatMap(({ text }) => [...text.matchAll(ATTRIBUTE_SELECTOR)].map((m) => m[1]))
     );
     expect([...spellings]).toEqual([REDUCE_MOTION_ATTRIBUTE]);
+  });
+
+  it('spells the cue-start snapshot the way the platform module stamps it', () => {
+    const spellings = new Set(
+      sources.flatMap(({ text }) => [...text.matchAll(START_ATTRIBUTE_SELECTOR)].map((m) => m[1]))
+    );
+    expect([...spellings]).toEqual([START_REDUCED_MOTION_ATTRIBUTE]);
   });
 });

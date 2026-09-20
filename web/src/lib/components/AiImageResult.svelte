@@ -17,6 +17,7 @@
   import { autoSaveFooter } from '$lib/ai/autoSaveCopy';
   import '$lib/components/deferredIcons';
   import { downloadAiResult } from '$lib/ai/resultDownload';
+  import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
   let dialogEl: HTMLDialogElement;
 
@@ -85,6 +86,7 @@
 
     // Morph the modal into a polaroid, hold it in the center, then let it fly
     // off to the bottom-left. The fly-out animation's end dismisses the modal.
+    stampMotionAtStart(dialogEl);
     exiting = true;
   }
 
@@ -161,9 +163,9 @@
       {#if revealed && result}
         <div class="ai-result-footer">
           {#if footer?.kind === 'saved'}
-            <p class="ai-result-saved">✓ {footer.caption}</p>
+            <p class="ai-result-saved" use:stampMotionAtStart>✓ {footer.caption}</p>
           {:else if footer?.kind === 'downloadButton'}
-            <button class="ai-result-download" onclick={handleDownload}>
+            <button class="ai-result-download" onclick={handleDownload} use:stampMotionAtStart>
               <Icon name="download" class="ai-result-download-icon" />
               <span>Download</span>
             </button>
@@ -431,8 +433,8 @@
      staging still reads — it fades up instead of springing open. Both footers
      share the pop and both take the fade: the Download button, and the saved
      caption that replaces it when auto-save is on. */
-  :global(:root[data-reduce-motion]) .ai-result-download,
-  :global(:root[data-reduce-motion]) .ai-result-saved {
+  .ai-result-download:global([data-start-reduced-motion]),
+  .ai-result-saved:global([data-start-reduced-motion]) {
     animation-name: downloadFadeIn;
   }
 
@@ -492,7 +494,7 @@
     }
   }
 
-  :global(:root[data-reduce-motion]) .ai-result-modal.polaroid-mode {
+  .ai-result-modal.polaroid-mode:global([data-start-reduced-motion]) {
     transition: none;
     animation: ai-polaroid-fly 0.4s 0.5s ease forwards;
   }

@@ -1,11 +1,12 @@
 <script lang="ts">
   import { BRUSH_OPTIONS, type BrushType } from '$lib/state/tool.svelte';
   import Icon from './Icon.svelte';
+  import { stampMotionAtStart } from '$lib/platform/reducedMotion';
   let { faceRoll }: { faceRoll: { brush: BrushType } | null } = $props();
 </script>
 
 {#key faceRoll}
-  <span class="brush-button-faces" class:entering={faceRoll !== null}>
+  <span class="brush-button-faces" class:entering={faceRoll !== null} use:stampMotionAtStart>
     {#each BRUSH_OPTIONS as opt (opt.brush)}
       <Icon name={opt.icon} class="action-icon" data-brush-face={opt.brush} />
     {/each}
@@ -44,7 +45,7 @@
     }
   }
 
-  :global(:root[data-reduce-motion]) .brush-button-faces.entering {
+  .brush-button-faces.entering:global([data-start-reduced-motion]) {
     animation: none;
   }
 

@@ -38,6 +38,7 @@ import { untrack } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launchGuard';
 import type { Origin } from '$lib/state/modal.svelte';
+import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
 interface ModalOptions {
   open: boolean;
@@ -293,6 +294,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
       if (!node.open) {
         guardLaunchZone(o.origin ?? null);
         untrack(() => o.onOpen?.());
+        stampMotionAtStart(node);
         node.showModal();
         forgetOpenModal(node);
         openModals.push({ node, requestDismiss, closing: false });
