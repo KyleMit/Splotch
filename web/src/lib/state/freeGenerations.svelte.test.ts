@@ -8,6 +8,7 @@ import { createNetwork, type NetworkState } from './network.svelte';
 import { createSettings, type SettingsState } from './settings.svelte';
 import { createTool } from './tool.svelte';
 import { createFreeGenerations, type FreeGenerationsState } from './freeGenerations.svelte';
+import { STORAGE_KEYS } from '$lib/storage';
 
 function deferred<T>(): {
   promise: Promise<T>;
@@ -63,6 +64,63 @@ afterEach(() => {
   freeGenerationsState.dispose();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+describe('free-count display hint', () => {
+  it.each([
+    [null, 10],
+    ['7', 7],
+    ['0', 0],
+    ['unavailable', null],
+    ['invalid', 10],
+  ] as const)('reads cached %s as %s before grant hydration', (cached, expected) => {
+    freeGenerationsState.dispose();
+    if (cached !== null) localStorage.setItem(STORAGE_KEYS.freeGenerationBadgeHint, cached);
+    freeGenerationsState = createFreeGenerations({
+      settings: settingsState,
+      network: networkState,
+      persistedStateStatus,
+    });
+
+    expect(freeGenerationsState.badgeRemaining).toBe(expected);
+    expect(freeGenerationsState.available).toBe(false);
+  });
+
+  it('persists grant counts and an unavailable result without changing grant authority', () => {
+    expect(freeGenerationsState).toMatchObject({ badgeRemaining: 10, available: false });
+
+    freeGenerationsState.setFreeGenerationsRemaining(7);
+    expect(freeGenerationsState).toMatchObject({
+      badgeRemaining: 7,
+      remaining: 7,
+      available: true,
+    });
+    expect(localStorage.getItem(STORAGE_KEYS.freeGenerationBadgeHint)).toBe('7');
+
+    freeGenerationsState.setFreeGenerationsUnavailable();
+    expect(freeGenerationsState).toMatchObject({ badgeRemaining: null, available: false });
+    expect(localStorage.getItem(STORAGE_KEYS.freeGenerationBadgeHint)).toBe('unavailable');
+  });
+
+  it('keeps the last badge hint when AI is disabled', () => {
+    freeGenerationsState.setFreeGenerationsRemaining(7);
+    persistedStateStatus.markHydrated();
+    settingsState.setAiImage(false);
+    flushSync();
+
+    expect(freeGenerationsState.badgeRemaining).toBe(7);
+    expect(localStorage.getItem(STORAGE_KEYS.freeGenerationBadgeHint)).toBe('7');
+  });
+
+  it('hides the free badge on the next startup when a credential is used', () => {
+    freeGenerationsState.setFreeGenerationsRemaining(7);
+    persistedStateStatus.markHydrated();
+    settingsState.mirrorAiUserApiKey('parent-key');
+    flushSync();
+
+    expect(freeGenerationsState.badgeRemaining).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.freeGenerationBadgeHint)).toBe('unavailable');
+  });
 });
 
 describe('grantRefreshReady', () => {

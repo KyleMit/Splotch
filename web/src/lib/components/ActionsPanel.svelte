@@ -530,8 +530,8 @@
           name={aiGenerating && !aiGenerationState.minimized ? 'loading' : 'wand-stars'}
           class="action-icon"
         />
-        {#if !settingsState.aiUserApiKey && !settingsState.aiAccessToken && freeGenerationsState.available && !storeCapture}
-          <span class="free-count" aria-hidden="true">{freeGenerationsState.remaining}</span>
+        {#if !settingsState.aiUserApiKey && !settingsState.aiAccessToken && freeGenerationsState.badgeRemaining !== null && !storeCapture}
+          <span class="free-count" aria-hidden="true">{freeGenerationsState.badgeRemaining}</span>
         {/if}
       </button>
 

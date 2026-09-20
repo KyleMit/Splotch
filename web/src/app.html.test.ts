@@ -23,6 +23,7 @@ import {
   resolveReducedMotion,
 } from './lib/platform/reducedMotion';
 import { STORAGE_KEYS } from './lib/storage';
+import { FREE_GENERATION_LIMIT } from './lib/freeGenerations';
 import {
   RESOLVED_THEMES,
   resolveTheme,
@@ -466,6 +467,33 @@ describe("app.html's boot script mirrors the state modules", () => {
       expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe(count);
     }
   );
+
+  it.each([
+    { cached: null, shown: true, count: '"10"' },
+    { cached: '7', shown: true, count: '"7"' },
+    { cached: '0', shown: true, count: '"0"' },
+    { cached: 'unavailable', shown: false, count: '' },
+    { cached: 'invalid', shown: true, count: '"10"' },
+  ])('seeds the free-count badge from $cached before hydration', ({ cached, shown, count }) => {
+    localStorage.clear();
+    document.documentElement.removeAttribute('data-ai-free-count');
+    document.documentElement.style.removeProperty('--ai-free-count');
+    localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+    if (cached !== null) localStorage.setItem(STORAGE_KEYS.freeGenerationBadgeHint, cached);
+
+    new Function(bootScript)();
+
+    expect(document.documentElement.hasAttribute('data-ai-free-count')).toBe(shown);
+    expect(document.documentElement.style.getPropertyValue('--ai-free-count')).toBe(count);
+  });
+
+  it('uses the shared count limit and storage key for the boot badge', () => {
+    expect(bootScript).toContain(`localStorage.getItem('${STORAGE_KEYS.freeGenerationBadgeHint}')`);
+    expect(bootLiteral(/badgeRaw === null \? (\d+) : Number\(badgeRaw\)/)).toBe(
+      FREE_GENERATION_LIMIT
+    );
+    expect(bootLiteral(/badgeCount > (\d+)/)).toBe(FREE_GENERATION_LIMIT);
+  });
 
   it('omits the AI button before paint when the browser reports offline', () => {
     const onLineDescriptor = Object.getOwnPropertyDescriptor(navigator, 'onLine');

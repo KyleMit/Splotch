@@ -72,6 +72,12 @@ authoritative count without creating or spending a grant and reports unavailable
 key or daily budget cannot serve a free generation. Exhaustion keeps the AI button visible and
 routes the already-parent-gated operation to BYOK setup, following ADR-0094's operation-level gate.
 
+The client also caches the last grant count for the Action-center badge's first paint (ADR-0040).
+This local value is a display hint: the button stays disabled while the live grant is checked, and
+only the server's grant and generation responses establish availability or spend. A failed check
+clears the badge hint; neither a cached positive count nor a reset of local storage grants access to
+the project credential.
+
 The authenticated web-only `/admin` console (ADR-0101) reads the exact daily provider-start counter
 and samples at most 200 installation grants. Sample-derived successes, attempts, failures,
 active/exhausted grants, reservations, and activity are labelled as sampled; enumeration stops once

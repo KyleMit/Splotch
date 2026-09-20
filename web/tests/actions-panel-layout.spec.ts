@@ -35,6 +35,15 @@ const PERSISTED_VISIBILITY_CONFIGURATIONS = [
     visibleButtonCount: 1,
   },
 ] as const;
+const AI_ONLY_HIDDEN_CONTROLS = [
+  'splotch-stroke-width-control',
+  'splotch-crayon-enabled',
+  'splotch-magic-brush-enabled',
+  'splotch-eraser-enabled',
+  'splotch-coloring-book-enabled',
+  'splotch-screenshot-enabled',
+  'splotch-undo-button-enabled',
+] as const;
 
 interface ActionPanelGeometry {
   paletteRight: number;
@@ -92,16 +101,24 @@ async function startupPanelGeometry(page: Page) {
     const panel = document.querySelector('.actions-panel')!;
     const toggle = panel.querySelector('.drawer-toggle')!;
     const ai = panel.querySelector('#aiImageButton')!;
+    const badge = ai.querySelector('.free-count');
     const rect = (element: Element) => {
       const { x, y, width, height } = element.getBoundingClientRect();
       return { x, y, width, height };
     };
+    const aiPainted =
+      getComputedStyle(ai).display !== 'none' && getComputedStyle(ai).visibility === 'visible';
+    const badgePainted = aiPainted && badge !== null && getComputedStyle(badge).display !== 'none';
     return {
       panel: rect(panel),
       toggle: rect(toggle),
       ai: rect(ai),
-      aiPainted:
-        getComputedStyle(ai).display !== 'none' && getComputedStyle(ai).visibility === 'visible',
+      aiPainted,
+      badgeCount: badgePainted
+        ? panel.hasAttribute('data-action-panel-live')
+          ? badge.textContent
+          : getComputedStyle(badge, '::before').content.replace(/^"|"$/g, '')
+        : null,
       count: getComputedStyle(panel).getPropertyValue('--action-btn-count').trim(),
     };
   });
@@ -119,6 +136,9 @@ for (const scenario of [
     const firstPaintPage = await firstPaintContext.newPage();
     await seedAiEnabled(firstPaintPage);
     await firstPaintPage.addInitScript(() => localStorage.setItem('splotch-drawer-open', 'true'));
+    await firstPaintPage.addInitScript(() =>
+      localStorage.setItem('splotch-free-generation-badge-hint', '7')
+    );
     await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
     await firstPaintPage.goto('/');
     const firstPaint = await startupPanelGeometry(firstPaintPage);
@@ -136,6 +156,7 @@ for (const scenario of [
     });
     await seedAiEnabled(page);
     await page.addInitScript(() => localStorage.setItem('splotch-drawer-open', 'true'));
+    await page.addInitScript(() => localStorage.setItem('splotch-free-generation-badge-hint', '7'));
     await page.setViewportSize(scenario.viewport);
     await gotoApp(page);
     await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
@@ -154,8 +175,11 @@ for (const scenario of [
 
     expect(firstPaint.count).toBe('6');
     expect(firstPaint.aiPainted).toBe(true);
+    expect(firstPaint.badgeCount).toBe('7');
     expect(pending.aiPainted).toBe(true);
+    expect(pending.badgeCount).toBe('7');
     expect(settled.aiPainted).toBe(true);
+    expect(settled.badgeCount).toBe(scenario.status === 200 ? '7' : null);
     expect(pending.count).toBe(firstPaint.count);
     expect(settled.count).toBe(firstPaint.count);
     expect(pending.panel).toEqual(firstPaint.panel);
@@ -250,7 +274,16 @@ test('a changed network state replaces the stored first-paint guess', async ({ b
   );
 });
 
-test('AI-only drawer paints its disabled button before the grant arrives', async ({ page }) => {
+test('AI-only drawer paints its count before the grant arrives', async ({ browser, page }) => {
+  const firstPaintContext = await browser.newContext({ viewport: PORTRAIT_VIEWPORTS[0] });
+  const firstPaintPage = await firstPaintContext.newPage();
+  await seedAiEnabled(firstPaintPage);
+  await seedPersistedHiddenControls(firstPaintPage, AI_ONLY_HIDDEN_CONTROLS);
+  await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
+  await firstPaintPage.goto('/');
+  const firstPaint = await startupPanelGeometry(firstPaintPage);
+  await firstPaintContext.close();
+
   let releaseGrant!: () => void;
   const grantGate = new Promise<void>((resolve) => (releaseGrant = resolve));
   await page.route('**/api/free-generation-grant', async (route) => {
@@ -262,25 +295,20 @@ test('AI-only drawer paints its disabled button before the grant arrives', async
     });
   });
   await seedAiEnabled(page);
-  await seedPersistedHiddenControls(page, [
-    'splotch-stroke-width-control',
-    'splotch-crayon-enabled',
-    'splotch-magic-brush-enabled',
-    'splotch-eraser-enabled',
-    'splotch-coloring-book-enabled',
-    'splotch-screenshot-enabled',
-    'splotch-undo-button-enabled',
-  ]);
+  await seedPersistedHiddenControls(page, AI_ONLY_HIDDEN_CONTROLS);
   await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
   await gotoApp(page);
   await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
   await expect(page.locator('.actions-panel')).not.toHaveAttribute('data-no-actions', '');
   await expect(page.locator('#aiImageButton')).toBeVisible();
   const pending = await startupPanelGeometry(page);
+  expect(firstPaint.badgeCount).toBe('10');
+  expect(pending.badgeCount).toBe('10');
 
   releaseGrant();
   await expect(page.locator('#aiImageButton .free-count')).toBeVisible();
   const settled = await startupPanelGeometry(page);
+  expect(settled.badgeCount).toBe('7');
   expect(pending.count).toBe('1');
   expect(settled.count).toBe('1');
   expect(settled.panel).toEqual(pending.panel);

@@ -100,6 +100,10 @@ that are already correct in the prerendered HTML:
    * `data-ai-slot` — present when AI images are enabled, the last known network state was online,
      and `navigator.onLine` does not report offline. The prerendered button paints disabled while
      its grant is checked.
+   * `data-ai-free-count` and `--ai-free-count` — paint the last known free-generation badge before
+     hydration when the AI slot is present. An installation without a saved count paints ten; a
+     saved unavailable result omits the badge. The hydrated panel takes over after
+     `data-action-panel-live`.
    * `--action-btn-count` — set when persisted off-states or the AI button change the default
      five-button row. The hydrated panel counts the painted AI button, including its disabled state,
      so the row's size and position stay fixed through the grant check.
@@ -125,6 +129,13 @@ disabled and stays in the row if the grant fails; the grant only changes whether
 an offline startup, the button and its space are absent. A changed network state may alter the row
 after first paint. `data-no-actions` hides the panel only when no button is painted. Fully
 non-persisted state (the active color always boots to Purple) needs no treatment.
+
+The free-generation badge follows the same first-paint handoff. The last grant count is cached in
+local storage (and native Preferences) solely as a display hint. The head script paints it on the
+prerendered badge before hydration; the live grant response replaces it when available. A failed
+grant or a configured credential removes the saved free badge, while disabling AI retains the last
+count for a later opt-in. The cached value never permits a generation or changes the server's grant
+decision (ADR-0105).
 
 ### Performance
 

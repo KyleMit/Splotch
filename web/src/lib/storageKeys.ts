@@ -36,6 +36,7 @@ export const STORAGE_KEYS = {
   installRepromptsUsed: 'splotch-install-reprompts-used',
   legacyAiUserApiKey: 'splotch-ai-user-api-key',
   freeGenerationInstallation: 'splotch-free-generation-installation-v1',
+  freeGenerationBadgeHint: 'splotch-free-generation-badge-hint',
   // The web-vault rows a successful read has found missing, as a JSON name
   // list, so boot can skip opening the database once every row is accounted
   // for. Written and read only by secureStorage (noteSecretAbsent /

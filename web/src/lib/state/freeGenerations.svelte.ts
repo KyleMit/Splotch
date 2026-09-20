@@ -2,6 +2,7 @@ import { apiUrl } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
+import { readString, STORAGE_KEYS, writeString } from '$lib/storage';
 import {
   persistedStateStatus,
   type PersistedStateStatus,
@@ -12,6 +13,18 @@ import { settingsState, type SettingsState } from '$lib/state/settings.svelte';
 
 const INSTALLATION_NAMESPACE = 'splotch-free-generation-v1';
 const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
+const BADGE_UNAVAILABLE = 'unavailable';
+
+function cachedBadgeRemaining(): number | null {
+  const raw = readString(STORAGE_KEYS.freeGenerationBadgeHint, null);
+  if (raw === BADGE_UNAVAILABLE) return null;
+  if (raw === null) return FREE_GENERATION_LIMIT;
+  if (raw === '') return FREE_GENERATION_LIMIT;
+  const count = Number(raw);
+  return Number.isInteger(count) && count >= 0 && count <= FREE_GENERATION_LIMIT
+    ? count
+    : FREE_GENERATION_LIMIT;
+}
 
 let installationIdPromise: Promise<string> | null = null;
 
@@ -48,6 +61,7 @@ interface FreeGenerationsDeps {
 
 export interface FreeGenerationsState {
   readonly remaining: number;
+  readonly badgeRemaining: number | null;
   readonly loading: boolean;
   readonly available: boolean;
   setFreeGenerationsRemaining(remaining: number): void;
@@ -69,6 +83,7 @@ export function createFreeGenerations({
 }: FreeGenerationsDeps): FreeGenerationsState {
   const s = $state({
     remaining: FREE_GENERATION_LIMIT,
+    badgeRemaining: cachedBadgeRemaining(),
     loading: true,
     available: false,
   });
@@ -78,11 +93,20 @@ export function createFreeGenerations({
 
   function setFreeGenerationsRemaining(remaining: number): void {
     s.remaining = Math.max(0, Math.min(FREE_GENERATION_LIMIT, Math.floor(remaining)));
+    s.badgeRemaining = s.remaining;
+    writeString(STORAGE_KEYS.freeGenerationBadgeHint, String(s.remaining));
     s.available = true;
     s.loading = false;
   }
 
   function setFreeGenerationsUnavailable(): void {
+    s.badgeRemaining = null;
+    writeString(STORAGE_KEYS.freeGenerationBadgeHint, BADGE_UNAVAILABLE);
+    s.available = false;
+    s.loading = false;
+  }
+
+  function setFreeGenerationsInactive(): void {
     s.available = false;
     s.loading = false;
   }
@@ -141,7 +165,10 @@ export function createFreeGenerations({
     const online = network.online;
     if (!ready || !online) {
       freeGenerationGrantRequest.cancel();
-      if (persistedStateStatus.hydrated && !ready) setFreeGenerationsUnavailable();
+      if (persistedStateStatus.hydrated && !ready) {
+        if (settings.aiUserApiKey || settings.aiAccessToken) setFreeGenerationsUnavailable();
+        else setFreeGenerationsInactive();
+      }
       return;
     }
     if (s.available) return;
@@ -151,6 +178,9 @@ export function createFreeGenerations({
   return {
     get remaining() {
       return s.remaining;
+    },
+    get badgeRemaining() {
+      return s.badgeRemaining;
     },
     get loading() {
       return s.loading;
