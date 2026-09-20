@@ -1,6 +1,6 @@
 ---
 name: ship-campaign
-description: Ship a queue of GitHub issues unattended — an explicit list, an epic's sub-issues, or the newest unclaimed backlog issues — one at a time, each through ship-issue mode=autonomous and merged before the next starts from fresh main. Proves everything that could stall an overnight run while the user is still present, quarantines a stuck issue instead of stalling the queue, and ends with a verified morning report. Use when asked to run a campaign, work through several issues or an epic overnight or unattended, burn down the backlog, or grab the next issue.
+description: Ship a queue of GitHub issues unattended — an explicit list, an epic's sub-issues, or the newest unclaimed backlog issues — one at a time through ship-issue mode=autonomous, merging successful PRs before the next starts from fresh main. Proves everything that could stall an overnight run while the user is still present, quarantines a stuck issue instead of stalling the queue, and ends with a verified morning report. Use when asked to run a campaign, work through several issues or an epic overnight or unattended, burn down the backlog, or grab the next issue.
 ---
 
 # Ship a campaign
@@ -8,13 +8,15 @@ description: Ship a queue of GitHub issues unattended — an explicit list, an e
 A campaign is a queue of issues shipped **merge-as-you-go**:
 
 **preflight (user present) → for each issue: fresh `main` → `ship-issue mode=autonomous` → verify
-the merge from live state → next → morning report**
+the merge or quarantine from live state → next → morning report**
 
-Every unit merges before the next one starts, and every unit branches from the `main` that already
-contains its predecessors. That is the point of the shape. An independent reviewer vets each change
-as it lands, so a mistaken premise is caught in the PR that introduced it instead of compounding
-through the layers stacked above it, and no fix ever has to be carried to the tip of a chain. Ship a
-chain of unmerged dependent PRs only when the user asks for one; that is `create-stacked-prs`.
+Every successful unit merges before the next one starts, branching from the `main` that already
+contains its predecessors. That is the point of the shape. A quarantined or skipped unit is
+recorded, then the next independent unit branches from fresh `main` without carrying its PR. An
+independent reviewer vets each change as it lands, so a mistaken premise is caught in the PR that
+introduced it instead of compounding through the layers stacked above it, and no fix ever has to be
+carried to the tip of a chain. Ship a chain of unmerged dependent PRs only when the user asks for
+one; that is `create-stacked-prs`.
 
 One campaign runs in one session. Several sessions working one epic in parallel is orchestration,
 which hands out prompts rather than implementing, and is not this skill.
@@ -27,7 +29,7 @@ The input names the queue and, optionally, a deadline:
 * **`epic=<n>`** — the epic's open children, ordered by `enumerate-sub-issues`.
 * **`backlog`** (optionally `backlog=<count>`) — the newest open issues nobody has claimed, picked
   one at a time so that parallel sessions each pick a different issue (see step 1).
-* **`until=<time>`** or **`hours=<n>`** — the deadline the stop margin in step 5 counts back from.
+* **`until=<time>`** or **`hours=<n>`** — the deadline and deadline reserve described in step 5.
 * **`profile=performance`** — the unit is a causal performance cluster; see the last section.
 
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
@@ -71,8 +73,8 @@ fix done before declaring the campaign started.
 * **Open the ledger** (below) with the resolved queue.
 
 Then report: the queue in order, what was dropped and why, the decisions only the user can make
-(walk them one at a time with options, pros and cons, and a recommendation), the deadline and stop
-margin, and the preflight checklist. The campaign starts when the user says go.
+(walk them one at a time with options, pros and cons, and a recommendation), the deadline and
+deadline reserve, and the preflight checklist. The campaign starts when the user says go.
 
 ### The ledger
 
@@ -114,11 +116,12 @@ is far larger than it read or needs a product decision. For an issue unit, verif
 live state — no `in-progress` label and a comment naming the blocker — then remove the assignee
 `ship-issue` added and re-read the issue to confirm. A free-form unit has no issue: record its spec
 and blocker in the ledger, and on the tracking issue when the unit has one. Either way, record the
-unit as skipped, with the blocker and the question it raises, and continue.
+unit as skipped, with the blocker and the question it raises, and continue using the successor check
+in step 3.
 
 Never end the turn to ask a question. The user is not there, and a campaign that stops to ask sits
 idle until morning. Park the question in the ledger, apply the unit's quarantine or skip rule, and
-continue with the next unit.
+continue with the next independent eligible unit.
 
 ## 3. When a unit fails — quarantine it, don't stall
 
@@ -133,12 +136,12 @@ unit:
   deadline, inspect the runs: retry a cancelled or infrastructure run once, treat GitHub being
   unavailable as queue-wide, and classify anything else by causality.
 
-A unit that exhausts either budget, or still carries a valid blocking rival finding after round two,
-is **quarantined**:
+A unit that exhausts either budget, still carries a valid blocking rival finding after round two, or
+runs out of campaign time before its review and merge gate finishes is **quarantined**:
 
 * **Every unit:** convert the PR to draft and add a postmortem to its body — head and base SHAs, the
   failing commands or CI links, what was tried, the rival's open findings, and the concrete next
-  step. Record it in the ledger and continue with the next unit.
+  step. Record it in the ledger and continue with the next independent eligible unit.
 * **An issue unit, also:** replace `Fixes #<n>` with `Refs #<n>` and confirm the PR's
   `closingIssuesReferences` is empty — a closing keyword left in a commit message, or even a negated
   one, still links the issue for closure. Comment on the issue with the PR link and a one-paragraph
@@ -147,6 +150,11 @@ is **quarantined**:
   every future pickup, including the preflight of the next campaign.
 * **A free-form unit, also:** post the postmortem's summary to the tracking issue when the unit has
   one. There is no issue lifecycle to unwind.
+
+After quarantine or skip, check each queued successor against live `main`. Record a successor that
+needs the unfinished unit as dependency-blocked and skipped, naming that prerequisite in the ledger;
+continue with the first unit whose prerequisites are present and which passes step 2's open/claim
+check. A quarantine or skip never blocks unrelated queued work.
 
 **Establish causality before blaming the unit.** Before spending a repair attempt or quarantining,
 compare the failing head with its exact base under the same command and runner. The failure belongs
@@ -191,9 +199,17 @@ write the morning report and stop.
 
 ## 5. Stop and report
 
-**Stop margin.** Start no new unit when the time left before the deadline is shorter than the
-longest unit this campaign has completed (90 minutes before any unit has completed). Finish the unit
-in flight: through merge, or through quarantine.
+**Deadline reserve.** Unless a queue-wide blocker (step 3), a red-`main` pause (step 4), or a pause
+or wrap-up control message has stopped the queue, keep taking the next independent eligible unit
+after each merge, quarantine, or skip. Reserve only the final 15 minutes before the deadline for
+live-state verification, ledger updates, and the morning report; never scale that reserve to the
+longest completed unit. Before starting another unit, choose a bounded checkpoint whose work and, if
+needed, full step 3 quarantine can finish before the reserve begins. Scope the work to the time left
+instead of idling through hours of review, CI, or device waits from an earlier unit. If its review
+and merge gate cannot finish in time, apply step 3 quarantine by the reserve start: leave a draft PR
+with the exact evidence, blocker, and next step, unwind any issue claim, and do not call it shipped.
+At reserve start, begin no new unit; verify live state and report by the deadline. If an unexpected
+in-flight unit remains, quarantine it promptly. Do not overrun the deadline merely to merge.
 
 **Control messages** steer the running campaign; they do not replace it.
 

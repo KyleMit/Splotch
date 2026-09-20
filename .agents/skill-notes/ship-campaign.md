@@ -88,6 +88,18 @@ product/harness/evidence split in the ledger. The eight-hour cap on one gate is 
 call from the 2026-09-16 orchestrator session ("if we have more than 8 hours of running the same
 gate, we just have to accept the best version").
 
+## 2026-09-20 deadline-reserve correction
+
+The #1870 performance campaign quarantined draft PR #2115 around 03:50 EDT, then stopped even though
+its deadline was 06:00. The prior rule scaled the stop margin to the longest completed unit's
+elapsed time, including serial device, review, and CI waits, leaving roughly two hours unused. The
+user explicitly asked to keep taking the next independent item after a documented quarantine and not
+stop two hours early. A fixed 15-minute deadline reserve is for live-state verification and
+reporting; each new unit must leave enough earlier time for its full quarantine unwind if it cannot
+ship. An issue that depends on quarantined or skipped work is skipped by name while independent
+items continue. Partial work stays a draft with its exact remainder; no review or merge gate is
+relaxed.
+
 ## Open questions
 
 * The trunk-repair authority in step 4 is new and unexercised. The first draft reverted a campaign
