@@ -202,8 +202,28 @@ describe('the in-page install-state script', () => {
     books: CATALOG.map((id) => ({
       id,
       variants: {
-        compact: { bytes: 1, files: [] },
-        full: { bytes: 2, files: [] },
+        compact: {
+          bytes: 1,
+          files: [
+            {
+              path: `${id}/compact.webp`,
+              downloadPath: `/assets/${id}/compact.webp`,
+              bytes: 1,
+              sha256: 'a'.repeat(64),
+            },
+          ],
+        },
+        full: {
+          bytes: 2,
+          files: [
+            {
+              path: `${id}/full.webp`,
+              downloadPath: `/assets/${id}/full.webp`,
+              bytes: 2,
+              sha256: 'b'.repeat(64),
+            },
+          ],
+        },
       },
     })),
   };
@@ -242,7 +262,7 @@ describe('the in-page install-state script', () => {
                 const variant = manifest.books.find((book) => book.id === id)?.variants[resolution];
                 const value =
                   typeof entry === 'string'
-                    ? JSON.stringify({ id, bytes: variant?.bytes, files: variant?.files })
+                    ? coloringPackMarkerValue({ id, ...variant })
                     : entry.value;
                 return { text: async () => value };
               },
@@ -278,6 +298,7 @@ describe('the in-page install-state script', () => {
     for (const screen of [
       { width: 1512, height: 982, devicePixelRatio: 2 },
       { width: 360, height: 780, devicePixelRatio: 2 },
+      { width: 1140, height: 1150, devicePixelRatio: 1 },
     ]) {
       const resolution = coloringPackResolutionForScreen({
         widthCssPx: screen.width,
