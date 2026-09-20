@@ -585,6 +585,7 @@ body {
     border-color var(--duration-base) ease,
     box-shadow var(--duration-base) ease,
     transform var(--duration-base) ease,
+    filter var(--duration-base) ease,
     opacity var(--duration-base) ease;
   touch-action: manipulation;
   /* A sixth of the button, so the icon keeps its share of the face as
@@ -1290,11 +1291,8 @@ body {
   transition: none;
 }
 
-/* Bare is seeded by app.html before paint; the default toolbar keeps its own geometry. */
-html[data-toolbar='bare'] {
-  --palette-landscape-width: 100px;
-  --palette-portrait-height: 91px;
-}
+/* Bare is seeded by app.html before paint. Both styles reserve the same HUD
+   edges so toggling does not move the swatches, actions, or corner overlays. */
 html[data-toolbar='bare'] .app-container {
   background: var(--paper) url('/icons/handmade-paper.webp');
 }
@@ -1328,9 +1326,7 @@ html[data-toolbar='bare']
 html[data-toolbar='bare'] .actions-panel .action-button[aria-expanded='true'] {
   transform: scale(1.08);
 }
-html[data-toolbar='bare']
-  .actions-panel[data-open-flyout]
-  .action-button:not([aria-expanded='true']) {
+html[data-toolbar] .actions-panel[data-open-flyout] .action-button:not([aria-expanded='true']) {
   filter: grayscale(1) opacity(0.35);
 }
 html[data-toolbar='bare'] .actions-panel .action-button:active:not(:disabled):not(.disabled),
@@ -1368,7 +1364,7 @@ html[data-toolbar='bare'] .corner-button {
 html[data-toolbar='bare'] .corner-button:active {
   opacity: 1;
 }
-html[data-toolbar='bare'] .actions-panel[data-open-flyout] .drawer-toggle {
+html[data-toolbar] .actions-panel[data-open-flyout] .drawer-toggle {
   opacity: 0.2;
 }
 html[data-toolbar='bare'] .actions-panel .free-count {

@@ -139,8 +139,9 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     const widths = [...appCssSource.matchAll(/--palette-landscape-width:\s*(\d+)px/g)].map(
       (match) => Number(match[1])
     );
-    expect(widths).toEqual([PALETTE_LANDSCAPE_WIDTH_PX, 0, BARE_RAIL_WIDTH_PX, 0]);
-    expect(appCssSource).toContain(`--palette-portrait-height: ${BARE_RAIL_HEIGHT_PX}px`);
+    expect(widths).toEqual([PALETTE_LANDSCAPE_WIDTH_PX, 0, 0]);
+    expect(BARE_RAIL_WIDTH_PX).toBe(PALETTE_LANDSCAPE_WIDTH_PX);
+    expect(BARE_RAIL_HEIGHT_PX).toBe(PALETTE_BAR_RESERVE);
     expect(colorPaletteSource).toContain('width: var(--palette-landscape-width)');
   });
 

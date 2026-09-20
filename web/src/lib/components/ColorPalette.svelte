@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { bareButtonSize } from '$lib/glassPanes';
-  import { settingsState } from '$lib/state/settings.svelte';
+  import { renderedActionButtonSize } from '$lib/actionButtonLayout';
   import { layoutState } from '$lib/state/layout.svelte';
-  const bareBottom = $derived(
-    settingsState.toolbarStyle === 'bare' && layoutState.viewportWidth > 0
-      ? 8 + bareButtonSize() / 2 - 30 + layoutState.safeArea.bottom
+  const paletteBottom = $derived(
+    layoutState.viewportWidth > 0
+      ? 8 + renderedActionButtonSize() / 2 - 30 + layoutState.safeArea.bottom
       : 8
   );
   import {
@@ -109,7 +108,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="color-palette"
-  style:--bare-palette-bottom={`${bareBottom}px`}
+  style:--palette-bottom={`${paletteBottom}px`}
   use:scribbleGuard
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
@@ -160,10 +159,10 @@
     display: grid;
     grid-template-columns: 1fr;
     justify-items: center;
-    align-content: center;
+    align-content: space-between;
     width: var(--palette-landscape-width);
     gap: 12px;
-    padding: 12px;
+    padding: 12px 12px var(--palette-bottom);
     background: var(--palette-surface, var(--surface));
     box-shadow: 2px 0 10px rgb(0 0 0 / 10%);
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
@@ -335,7 +334,7 @@
     .color-palette {
       display: flex;
       flex-direction: row;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
       width: 100%;
       /* Declared, not content-sized: the Actions Panel's portrait column and
@@ -512,7 +511,7 @@
     background: transparent;
     box-shadow: none;
     align-content: space-between;
-    padding: 20px 0 var(--bare-palette-bottom);
+    padding: 12px 0 var(--palette-bottom);
   }
   :global(html[data-toolbar='bare']) .gradient-swatch {
     background: transparent;
@@ -522,9 +521,7 @@
     :global(html[data-toolbar='bare']) .color-palette {
       width: calc(100% - var(--safe-area-left) - var(--safe-area-right));
       bottom: auto;
-      justify-content: space-evenly;
       padding: 10px;
-      gap: 0;
     }
   }
 </style>
