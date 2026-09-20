@@ -55,4 +55,9 @@
   .disclosure[open] summary::after {
     transform: rotate(90deg);
   }
+
+  /* Reduced motion: the chevron still points open, without turning to get there. */
+  :global(:root[data-reduce-motion]) .disclosure summary::after {
+    transition: none;
+  }
 </style>

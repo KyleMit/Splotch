@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { slide } from 'svelte/transition';
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
@@ -8,7 +7,7 @@
   import AiValueProp from './AiValueProp.svelte';
   import ToggleRow from './ToggleRow.svelte';
   import { AI_CREATE_HELP, AI_CREATE_LABEL } from './aiSettingsCopy';
-  import { SECTION_SLIDE } from './sections';
+  import { sectionReveal } from './sectionReveal';
   import { settingsState, setAiImage, aiCredentialKind } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
   import { setUserSubmittedAiAccessToken } from '$lib/state/aiAccessToken';
@@ -222,13 +221,13 @@
   </section>
 
   {#if !settingsState.aiImageEnabled}
-    <div transition:slide={SECTION_SLIDE}>
+    <div transition:sectionReveal>
       <AiValueProp />
     </div>
   {/if}
 
   {#if settingsState.aiImageEnabled}
-    <div class="ai-enabled-settings" transition:slide={SECTION_SLIDE}>
+    <div class="ai-enabled-settings" transition:sectionReveal>
       <section class="setting-group">
         {#if aiLocked}
           <div class="setting byok">

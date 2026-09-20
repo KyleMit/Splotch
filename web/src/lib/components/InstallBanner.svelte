@@ -2,6 +2,9 @@
   import { onMount } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { backOut, cubicIn } from 'svelte/easing';
+  import { calm } from '$lib/platform/calmTransition';
+  import { CALM_FADE_MS } from '$lib/motionDurations';
+  import { prefersReducedMotion } from '$lib/platform/reducedMotion';
   import Icon from './Icon.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
@@ -33,6 +36,8 @@
   const BANNER_SHRINK_EXIT_MS = 550;
   const PARTING_FADE_MS = 200;
   const HINT_FADE_MS = 160;
+
+  const bannerEnter = calm(fly, { y: BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut });
 
   const INSTALL_PROMPT_COPY = {
     initial: {
@@ -111,6 +116,10 @@
   // message's "it lives in Settings" lands visually too. Manual
   // dismiss / completed install keep the plain fly-down.
   function bannerExit(node: HTMLElement) {
+    // Both exits travel, so a parent who asked for calm gets neither: the
+    // banner simply goes, and the parting message has already said where the
+    // steps live.
+    if (prefersReducedMotion()) return fade(node, { duration: CALM_FADE_MS });
     if (!exitIntoSettingsButton) return fly(node, { y: BANNER_FLY_Y, duration: BANNER_EXIT_MS });
     const target = document.getElementById(SETTINGS_BUTTON_ID)?.getBoundingClientRect();
     const from = node.getBoundingClientRect();
@@ -143,12 +152,7 @@
 </script>
 
 {#if visible || parting}
-  <div
-    class="install-banner"
-    hidden={controlsOpen}
-    in:fly={{ y: BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut }}
-    out:bannerExit
-  >
+  <div class="install-banner" hidden={controlsOpen} in:bannerEnter out:bannerExit>
     {#if parting}
       <div class="install-parting" in:fade={{ duration: PARTING_FADE_MS }}>
         <span class="install-mascot" aria-hidden="true">
@@ -437,6 +441,10 @@
   }
   .install-cta.expanded :global(.install-chevron) {
     transform: rotate(180deg);
+  }
+  /* Reduced motion: the chevron still points open, without turning to get there. */
+  :global(:root[data-reduce-motion]) .install-cta :global(.install-chevron) {
+    transition: none;
   }
   @media (max-width: 599px) and (orientation: portrait) {
     .install-main {

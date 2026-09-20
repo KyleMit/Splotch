@@ -318,12 +318,16 @@ body {
   text-wrap: pretty;
 }
 
-/* Reduced motion: fade instead of flying in, as the parental gate does. */
-:root[data-reduce-motion] .confirm-card.modal-fly-in[open] {
-  animation: confirmCardFadeIn var(--duration-base) ease;
+/* Reduced motion: every fly-in dialog appears instead of launching. Keyed on
+   the shared class rather than per dialog, so a new modal that opts into
+   .modal-fly-in is calm the moment it exists. A fade, never `animation: none`:
+   WideShell's fill and the settleFlyIn test helper both wait on the dialog's
+   own animation finishing, and a dialog with no animation never resolves one. */
+:root[data-reduce-motion] .modal-dialog.modal-fly-in[open] {
+  animation: modalFadeIn var(--duration-base) ease;
 }
 
-@keyframes confirmCardFadeIn {
+@keyframes modalFadeIn {
   from {
     opacity: 0;
   }
@@ -811,6 +815,13 @@ body {
 
 .screenshot-capture-feedback [data-icon='camera'] {
   animation: screenshot-capture 460ms var(--ease-pop);
+}
+
+/* Reduced motion: no shutter squash. The capture still announces itself — the
+   polaroid overlay flies the picture away, and that cue keeps its own calm
+   fade (.polaroid-frame below) — so dropping this one costs no confirmation. */
+:root[data-reduce-motion] .screenshot-capture-feedback [data-icon='camera'] {
+  animation: none;
 }
 
 /* Undo's end-of-history wall and rejected screenshot saves share this whole-button cue. The glow

@@ -318,6 +318,12 @@
     transform: translate(-50%, -50%) scale(var(--pop-scale));
   }
 
+  /* Reduced motion: the cluster still fills the ring when selected — that is
+     the selection reading — it just arrives there rather than popping. */
+  :global(:root[data-reduce-motion]) .gradient-swatch :global(.more-colors-icon) {
+    transition: none;
+  }
+
   /* Landscape tablets use one column, trimming swatches as the viewport
      shortens. Phone landscape uses ColorControl instead. trimGeometry.test.ts
      verifies the remaining palette ladder against its geometry. */

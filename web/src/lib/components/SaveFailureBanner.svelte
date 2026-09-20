@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
+  import { calm } from '$lib/platform/calmTransition';
   import Icon from './Icon.svelte';
   import Button from './design/Button.svelte';
   import {
@@ -18,6 +19,9 @@
   const BANNER_FLY_Y = 120;
   const BANNER_ENTER_MS = 420;
   const BANNER_EXIT_MS = 300;
+
+  const bannerEnter = calm(fly, { y: -BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut });
+  const bannerExit = calm(fly, { y: -BANNER_FLY_Y, duration: BANNER_EXIT_MS });
 
   const platform = getPlatform();
   const outcome = $derived(saveFailureState.outcome);
@@ -50,12 +54,7 @@
 </script>
 
 {#if visible && copy}
-  <div
-    class="save-failure-banner"
-    role="status"
-    in:fly={{ y: -BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut }}
-    out:fly={{ y: -BANNER_FLY_Y, duration: BANNER_EXIT_MS }}
-  >
+  <div class="save-failure-banner" role="status" in:bannerEnter out:bannerExit>
     <div class="save-failure-main">
       <span class="save-failure-mascot" aria-hidden="true">
         <Icon name="dottie-hiccup" class="save-failure-mascot-icon" />

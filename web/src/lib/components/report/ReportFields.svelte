@@ -1,5 +1,6 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
+  import { calm } from '$lib/platform/calmTransition';
   import Disclosure from '../design/Disclosure.svelte';
   import SegmentedPicker from '../design/SegmentedPicker.svelte';
   import { collectDeviceInfo } from '$lib/platform/deviceInfo';
@@ -20,6 +21,8 @@
   // because these uncover a couple of rows inside an already-open block rather
   // than opening a section.
   const DEVICE_REVEAL_SLIDE_MS = 180;
+
+  const deviceReveal = calm(slide, { duration: DEVICE_REVEAL_SLIDE_MS });
 
   // The feedback form's field set, shared by its two hosts: Settings'
   // ReportForm (which posts JSON to /api/report) and the standalone /feedback
@@ -128,7 +131,7 @@
   {/if}
 
   {#if kind === 'bug'}
-    <div class="report-device" transition:slide={{ duration: DEVICE_REVEAL_SLIDE_MS }}>
+    <div class="report-device" transition:deviceReveal>
       <label class="report-check">
         <input type="checkbox" name="includeDevice" bind:checked={includeDevice} />
         <span>Include device info <em>(helps us reproduce the bug)</em></span>
@@ -137,7 +140,7 @@
       {#if includeDevice}
         <!-- The slide rides a wrapper: transition directives only attach to DOM
              elements, never to a component instance. -->
-        <div transition:slide={{ duration: DEVICE_REVEAL_SLIDE_MS }}>
+        <div transition:deviceReveal>
           <Disclosure class="report-device-details">
             {#snippet summary()}What will be sent?{/snippet}
             {#if deviceRows.length}

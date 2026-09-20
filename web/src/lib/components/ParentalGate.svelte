@@ -377,10 +377,8 @@
     }
   }
 
-  /* ── Reduced motion: fades instead of fly/shake/pop (polaroid pattern) ──── */
-  :global(:root[data-reduce-motion]) .parental-gate.modal-fly-in[open] {
-    animation: gateFadeIn var(--duration-base) ease;
-  }
+  /* ── Reduced motion: fades instead of shake/pop (polaroid pattern). The
+        card's own fly-in is calmed by app.css's shared .modal-fly-in rule. ── */
   :global(:root[data-reduce-motion]) .gate-content.shaking {
     animation: none;
   }

@@ -116,6 +116,14 @@
   // live.
   const drawerExpanded = $derived(settingsState.drawerOpen || uiState.resizingActionButtons);
 
+  function drawerStillMoving() {
+    return (
+      drawerEl
+        ?.getAnimations()
+        .some((animation) => animation.pending || animation.playState === 'running') ?? false
+    );
+  }
+
   function stopDrawerMotion() {
     if (drawerMotionProbeFrame !== undefined) cancelAnimationFrame(drawerMotionProbeFrame);
     drawerMotionProbeFrame = undefined;
@@ -126,10 +134,7 @@
     if (drawerMotionProbeFrame !== undefined) cancelAnimationFrame(drawerMotionProbeFrame);
     drawerMotionProbeFrame = requestAnimationFrame(() => {
       drawerMotionProbeFrame = undefined;
-      const hasActiveTransition = drawerEl
-        ?.getAnimations()
-        .some((animation) => animation.pending || animation.playState === 'running');
-      if (!hasActiveTransition) drawerMotion = false;
+      if (!drawerStillMoving()) drawerMotion = false;
     });
   }
 
@@ -196,11 +201,14 @@
     if (!next) closeFlyout();
   }
 
+  // The drawer has settled once the last of its own transitions ends. Which
+  // property carries the collapse is not knowable here — one grid track at full
+  // motion, opacity alone under reduced motion — and a toggle that reverses an
+  // in-flight open cancels the carrying property outright, leaving only the
+  // decorative ones to end. So this asks the element what is still moving rather
+  // than naming a property that may not be among them.
   function finishDrawerMotion(event: TransitionEvent) {
-    // One grid track owns the collapse in each orientation; unlike the decorative
-    // gap margins, that transition cannot disappear without replacing the drawer.
-    if (event.target === event.currentTarget && event.propertyName.startsWith('grid-template-'))
-      stopDrawerMotion();
+    if (event.target === event.currentTarget && !drawerStillMoving()) stopDrawerMotion();
   }
 
   function openFlyoutWrapper() {
@@ -618,6 +626,13 @@
 
   .actions-panel[data-drawer-motion] .actions-drawer {
     transition: var(--drawer-transition);
+  }
+
+  /* Reduced motion: the drawer appears and leaves instead of unrolling. Opacity
+     alone stays transitioned — the track snaps — so the buttons still fade
+     rather than blink, and finishDrawerMotion still has a transition to end on. */
+  :global(:root[data-reduce-motion]) .actions-drawer {
+    --drawer-transition: opacity var(--drawer-collapse) ease;
   }
 
   .actions-panel.settings-covered {

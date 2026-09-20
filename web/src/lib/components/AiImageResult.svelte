@@ -427,6 +427,21 @@
     }
   }
 
+  /* Reduced motion: the button still arrives a beat after the picture, so the
+     staging still reads — it fades up instead of springing open. */
+  :global(:root[data-reduce-motion]) .ai-result-download {
+    animation-name: downloadFadeIn;
+  }
+
+  @keyframes downloadFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   :global(.ai-result-download-icon) {
     width: 18px;
     height: 18px;

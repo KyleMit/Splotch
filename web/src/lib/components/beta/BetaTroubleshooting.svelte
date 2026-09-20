@@ -99,6 +99,11 @@
     transform: rotate(90deg);
   }
 
+  /* Reduced motion: the chevron still points open, without turning to get there. */
+  :global(:root[data-reduce-motion]) .trouble :global(.chev) {
+    transition: none;
+  }
+
   .rows {
     padding: 0 20px 8px;
   }
