@@ -10,6 +10,11 @@ import {
   type StorageKey,
 } from '../storage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
+import {
+  isReduceMotionPreference,
+  REDUCE_MOTION_DEFAULT,
+  type ReduceMotionPreference,
+} from '$lib/platform/reducedMotion';
 import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import type { CredentialKind } from '$lib/aiCredential';
 import {
@@ -151,6 +156,11 @@ function readTheme(fallback: ThemePreference): ThemePreference {
   return isThemePreference(raw) ? raw : fallback;
 }
 
+function readReduceMotion(fallback: ReduceMotionPreference): ReduceMotionPreference {
+  const raw = readString(STORAGE_KEYS.reduceMotion, fallback);
+  return isReduceMotionPreference(raw) ? raw : fallback;
+}
+
 function readBoolSettings(): Record<BoolSettingKey, boolean> {
   return Object.fromEntries(
     boolSettingEntries().map(([prop, [key, def]]) => [prop, readBool(key, def)])
@@ -172,6 +182,9 @@ function readToolbarStyle(): ToolbarStyle {
 interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {
   // Appearance: explicit light/dark, or 'system' to follow the OS setting.
   theme: ThemePreference;
+  // Explicit reduce/full, or 'system' to follow the OS setting. The effective
+  // answer is resolved in appearance.svelte.ts, which also knows the OS half.
+  reduceMotion: ReduceMotionPreference;
   toolbarStyle: ToolbarStyle;
   // Managed-access token. Held in memory only; hydrated from secure storage on
   // boot by hydrateAiAccessToken(). Empty until then / unless set.
@@ -216,6 +229,7 @@ interface SettingsMutators {
   setPencilEraserEnabled(v: boolean): void;
   setApplePencilSeen(v: boolean): void;
   setTheme(v: ThemePreference): void;
+  setReduceMotion(v: ReduceMotionPreference): void;
   setToolbarStyle(v: ToolbarStyle): void;
   setSoundVolume(v: number): void;
   setActionButtonScale(v: number): void;
@@ -239,6 +253,7 @@ export function createSettings(tool: ToolState): SettingsState {
     ...readBoolSettings(),
     ...readIntSettings(),
     theme: readTheme(THEME_DEFAULT),
+    reduceMotion: readReduceMotion(REDUCE_MOTION_DEFAULT),
     toolbarStyle: readToolbarStyle(),
     aiAccessToken: '',
     aiUserApiKey: '',
@@ -333,6 +348,10 @@ export function createSettings(tool: ToolState): SettingsState {
     setPencilEraserEnabled: makeBoolSetter('pencilEraserEnabled'),
     setApplePencilSeen: makeBoolSetter('applePencilSeen'),
     setTheme,
+    setReduceMotion(v) {
+      s.reduceMotion = v;
+      writeString(STORAGE_KEYS.reduceMotion, v);
+    },
     setToolbarStyle(v) {
       s.toolbarStyle = v;
       writeString(STORAGE_KEYS.toolbarStyle, v);
@@ -370,6 +389,7 @@ export function createSettings(tool: ToolState): SettingsState {
         s[prop] = clamp(readInt(key, s[prop]));
       }
       s.theme = readTheme(s.theme);
+      s.reduceMotion = readReduceMotion(s.reduceMotion);
       s.toolbarStyle = readToolbarStyle();
       applyTheme(s.theme);
       normalizeDisabledBrushes();
@@ -406,6 +426,7 @@ export const {
   setPencilEraserEnabled,
   setApplePencilSeen,
   setTheme,
+  setReduceMotion,
   setToolbarStyle,
   setSoundVolume,
   setActionButtonScale,

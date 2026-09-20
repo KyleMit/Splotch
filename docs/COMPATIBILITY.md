@@ -190,6 +190,18 @@ non-polyfill choices:
   source cleanliness only, and a dual path would carry two placement systems — the top layer needs
   anchor positioning to sit a menu beside its trigger — with the hand-written one still serving
   every native iOS install at the 16.4 floor. The register row above holds the re-entry trigger.
+* **Reduced motion is resolved in JavaScript, not by a media query.** Every reduced-motion treatment
+  keys off `:root[data-reduce-motion]`, which the `app.html` boot script stamps before first paint
+  from the stored Reduce Motion preference and `prefers-reduced-motion`, and which
+  `state/appearance.svelte.ts` keeps live. One selector form is what lets the Settings switch ask
+  for calm on a no-preference OS and lets `full` opt this app back out on a reduce-motion OS. The
+  accepted cost: with JavaScript disabled nothing stamps the attribute, so the prerendered routes
+  that still render without it (`/privacy`, `/changelog`, `/design`) lose the OS-driven treatment.
+  On `/privacy` and `/changelog` that is a chevron transition. On `/design` it is more: the motion
+  section's easing lanes server-render and loop forever (`lane-travel`, `infinite`), so a
+  reduce-motion visitor with JavaScript off sees continuous movement there. The drawing app does not
+  run without JavaScript at all. `reducedMotionCss.test.ts` fails on a
+  `@media (prefers-reduced-motion)` block in `web/src`.
 * **Native-shell capabilities** (haptics, orientation lock, secure storage, media, connectivity) go
   through Capacitor plugins on device, so the web-API versions only need to work on the web floor.
 * **iPadOS Scribble** silently claims an Apple Pencil stroke that starts within ~450ms of a pen tap

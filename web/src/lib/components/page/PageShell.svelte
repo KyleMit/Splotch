@@ -243,10 +243,8 @@
     transform: rotate(90deg);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .lede-chevron {
-      transition: none;
-    }
+  :global(:root[data-reduce-motion]) .lede-chevron {
+    transition: none;
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and

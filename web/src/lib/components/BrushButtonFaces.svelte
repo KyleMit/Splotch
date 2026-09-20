@@ -44,10 +44,8 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .brush-button-faces.entering {
-      animation: none;
-    }
+  :global(:root[data-reduce-motion]) .brush-button-faces.entering {
+    animation: none;
   }
 
   .brush-button-faces :global(.action-icon[data-brush-face]) {

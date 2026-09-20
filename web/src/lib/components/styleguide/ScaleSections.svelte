@@ -323,10 +323,8 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .lane-dot {
-      animation: none;
-    }
+  :global(:root[data-reduce-motion]) .lane-dot {
+    animation: none;
   }
 
   .duration-chips {

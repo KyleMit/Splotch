@@ -70,6 +70,11 @@ paths:
   global seam with a scoped compound (`.picker :global(.picker-option-icon)`,
   `:global(html[data-drawer-open]) .actions-drawer`); an entirely unpinned selector such as
   `:global(.gate-mascot)` is forbidden because it relies on a globally unique class name.
+* A reduced-motion treatment is written `:global(:root[data-reduce-motion]) .thing { … }`, never
+  `@media (prefers-reduced-motion: reduce)`. The attribute is the Reduce Motion setting resolved
+  against the OS (`lib/platform/reducedMotion.ts`), so a media block would ignore the Settings
+  switch in both directions; `reducedMotionCss.test.ts` fails on one. JS reads the same answer
+  through `prefersReducedMotion()`.
 * A value repeated 3+ times in a component's `<style>` (a duration, gradient, transition list)
   becomes a local custom property on the block's root selector (see `--drawer-transition` in
   `ActionsPanel.svelte`). Never `!important` to beat a sibling rule — fix specificity or ordering.

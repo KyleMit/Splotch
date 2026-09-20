@@ -16,6 +16,7 @@ import {
   setEraser,
   setDrawerOpen,
   setTheme,
+  setReduceMotion,
   reloadSettings,
   createSettings,
   type SettingsState,
@@ -150,6 +151,21 @@ describe('setActionButtonScale', () => {
   });
 });
 
+describe('setReduceMotion', () => {
+  it('persists each of the three preferences', () => {
+    for (const preference of ['reduce', 'full', 'system'] as const) {
+      setReduceMotion(preference);
+      expect(settingsState.reduceMotion).toBe(preference);
+      expect(localStorage.getItem(STORAGE_KEYS.reduceMotion)).toBe(preference);
+    }
+  });
+
+  it('defaults a fresh device to following the OS', () => {
+    localStorage.removeItem(STORAGE_KEYS.reduceMotion);
+    expect(createSettings(createTool()).reduceMotion).toBe('system');
+  });
+});
+
 describe('setTheme', () => {
   it('persists the choice and stamps data-theme on <html>', () => {
     setTheme('dark');
@@ -210,6 +226,16 @@ describe('reloadSettings', () => {
     localStorage.setItem(STORAGE_KEYS.theme, 'blorange');
     reloadSettings();
     expect(settingsState.theme).toBe('dark');
+  });
+
+  it('re-reads the reduce-motion preference, keeping it when the stored value is invalid', () => {
+    localStorage.setItem(STORAGE_KEYS.reduceMotion, 'full');
+    reloadSettings();
+    expect(settingsState.reduceMotion).toBe('full');
+
+    localStorage.setItem(STORAGE_KEYS.reduceMotion, 'sometimes');
+    reloadSettings();
+    expect(settingsState.reduceMotion).toBe('full');
   });
 });
 

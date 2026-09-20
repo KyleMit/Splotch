@@ -378,18 +378,14 @@
   }
 
   /* ── Reduced motion: fades instead of fly/shake/pop (polaroid pattern) ──── */
-  @media (prefers-reduced-motion: reduce) {
-    .parental-gate.modal-fly-in[open] {
-      animation: gateFadeIn var(--duration-base) ease;
-    }
-
-    .gate-content.shaking {
-      animation: none;
-    }
-
-    .gate-success {
-      animation: gateFadeIn var(--duration-base) ease;
-    }
+  :global(:root[data-reduce-motion]) .parental-gate.modal-fly-in[open] {
+    animation: gateFadeIn var(--duration-base) ease;
+  }
+  :global(:root[data-reduce-motion]) .gate-content.shaking {
+    animation: none;
+  }
+  :global(:root[data-reduce-motion]) .gate-success {
+    animation: gateFadeIn var(--duration-base) ease;
   }
 
   @keyframes gateFadeIn {

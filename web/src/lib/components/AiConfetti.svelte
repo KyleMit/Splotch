@@ -131,10 +131,8 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .confetti {
-      animation: none;
-      opacity: 0;
-    }
+  :global(:root[data-reduce-motion]) .confetti {
+    animation: none;
+    opacity: 0;
   }
 </style>

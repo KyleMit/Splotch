@@ -294,17 +294,15 @@
     transition: opacity 280ms linear;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    /* Keep the wash (it conveys state, not just motion) but make it instant. */
-    .clear-accept-zone,
-    .clear-preview,
-    .clear-preview:global(.releasing) {
-      transition: none;
-    }
+  /* Keep the wash (it conveys state, not just motion) but make it instant. */
+  :global(:root[data-reduce-motion]) .clear-accept-zone,
+  :global(:root[data-reduce-motion]) .clear-preview,
+  :global(:root[data-reduce-motion]) .clear-preview:global(.releasing) {
+    transition: none;
+  }
 
-    .clear-button:global(.dragging) {
-      animation: none;
-    }
+  :global(:root[data-reduce-motion]) .clear-button:global(.dragging) {
+    animation: none;
   }
 
   @media (orientation: portrait) {

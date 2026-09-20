@@ -319,10 +319,8 @@ body {
 }
 
 /* Reduced motion: fade instead of flying in, as the parental gate does. */
-@media (prefers-reduced-motion: reduce) {
-  .confirm-card.modal-fly-in[open] {
-    animation: confirmCardFadeIn var(--duration-base) ease;
-  }
+:root[data-reduce-motion] .confirm-card.modal-fly-in[open] {
+  animation: confirmCardFadeIn var(--duration-base) ease;
 }
 
 @keyframes confirmCardFadeIn {
@@ -873,10 +871,8 @@ body {
 }
 
 /* The non-positional flash keeps unavailable actions legible without the shake. */
-@media (prefers-reduced-motion: reduce) {
-  .action-unavailable {
-    animation: action-unavailable-flash var(--action-unavailable-flash-duration) ease-in-out;
-  }
+:root[data-reduce-motion] .action-unavailable {
+  animation: action-unavailable-flash var(--action-unavailable-flash-duration) ease-in-out;
 }
 
 /* The save-time-only polaroid module creates these elements imperatively on
@@ -972,15 +968,13 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .polaroid-flash {
-    animation: none;
-  }
+:root[data-reduce-motion] .polaroid-flash {
+  animation: none;
+}
 
-  .polaroid-frame {
-    animation-name: polaroid-fade;
-    animation-duration: 0.7s;
-  }
+:root[data-reduce-motion] .polaroid-frame {
+  animation-name: polaroid-fade;
+  animation-duration: 0.7s;
 }
 
 @keyframes polaroid-fade {
@@ -1061,11 +1055,9 @@ body {
 .flyout-menu.motionless > button {
   animation: none;
 }
-@media (prefers-reduced-motion: reduce) {
-  .flyout-menu,
-  .flyout-menu > button {
-    animation: none;
-  }
+:root[data-reduce-motion] .flyout-menu,
+:root[data-reduce-motion] .flyout-menu > button {
+  animation: none;
 }
 
 .ink-motion {
@@ -1125,14 +1117,12 @@ body {
     transform: rotate(-360deg);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .undo-ink-motion {
-    display: none;
-    animation: none;
-  }
-  .undo-firing {
-    animation: none;
-  }
+:root[data-reduce-motion] .undo-ink-motion {
+  display: none;
+  animation: none;
+}
+:root[data-reduce-motion] .undo-firing {
+  animation: none;
 }
 
 .clear-sheet-layer {
@@ -1160,11 +1150,9 @@ body {
     transform: scale(0.02) rotate(14deg);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .clear-sheet-motion {
-    display: none;
-    animation: none;
-  }
+:root[data-reduce-motion] .clear-sheet-motion {
+  display: none;
+  animation: none;
 }
 
 .actions-drawer.opening .action-button:not(.action-unavailable) {
@@ -1179,10 +1167,8 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .actions-drawer.opening .action-button:not(.action-unavailable) {
-    animation: none;
-  }
+:root[data-reduce-motion] .actions-drawer.opening .action-button:not(.action-unavailable) {
+  animation: none;
 }
 
 .actions-panel .color-wrapper {
@@ -1280,10 +1266,8 @@ body {
     --flyout-from-y: 0px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .actions-panel .color-wrapper {
-    transition: none;
-  }
+:root[data-reduce-motion] .actions-panel .color-wrapper {
+  transition: none;
 }
 
 /* Bare is seeded by app.html before paint; the default toolbar keeps its own geometry. */

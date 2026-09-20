@@ -277,20 +277,18 @@
 
   /* Respect reduced-motion: drop the loop, show a single static "here's the
      gesture" frame instead. */
-  @media (prefers-reduced-motion: reduce) {
-    /* Match the .visible-scoped specificity above, or the loop would win. */
-    .clear-coachmark.visible .coachmark-ghost {
-      animation: none;
-      transform: translate(var(--tx), var(--ty));
-      opacity: 0.95;
-    }
-    .clear-coachmark.visible .coachmark-ring {
-      animation: none;
-      opacity: 1;
-      color: var(--ready-ink);
-      --clear-ring-dashes: 0;
-      --clear-ring-solid: 1;
-      background: var(--ready-fill);
-    }
+  /* Match the .visible-scoped specificity above, or the loop would win. */
+  :global(:root[data-reduce-motion]) .clear-coachmark.visible .coachmark-ghost {
+    animation: none;
+    transform: translate(var(--tx), var(--ty));
+    opacity: 0.95;
+  }
+  :global(:root[data-reduce-motion]) .clear-coachmark.visible .coachmark-ring {
+    animation: none;
+    opacity: 1;
+    color: var(--ready-ink);
+    --clear-ring-dashes: 0;
+    --clear-ring-solid: 1;
+    background: var(--ready-fill);
   }
 </style>

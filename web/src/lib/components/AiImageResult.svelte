@@ -474,10 +474,8 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .ai-result-modal.polaroid-mode {
-      transition: none;
-      animation: ai-polaroid-fly 0.4s 0.5s ease forwards;
-    }
+  :global(:root[data-reduce-motion]) .ai-result-modal.polaroid-mode {
+    transition: none;
+    animation: ai-polaroid-fly 0.4s 0.5s ease forwards;
   }
 </style>
