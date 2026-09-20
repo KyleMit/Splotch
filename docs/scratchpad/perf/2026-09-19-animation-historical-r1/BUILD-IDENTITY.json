@@ -28,7 +28,7 @@
     },
     "androidApk": {
       "sha256": "343e5ba2f248e86838933bc1fd05156b91d6bc13bc7b0ca6d813172f8f258f17",
-      "builtBy": "the 2026-09-19 overnight session; reused by hash, not rebuilt; never installed by this unit"
+      "builtBy": "the 2026-09-19 overnight session; reused by hash, not rebuilt; installed once for the guard pilot (pilots/p4), verified on the device by base.apk hash, then replaced by the phone's original APK"
     }
   },
   "after": {

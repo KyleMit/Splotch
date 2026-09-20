@@ -325,6 +325,14 @@ check(
     !p2.includes('Action sweep 2/4') &&
     !p2.includes('Wrote ')
 );
+const p4 = read('pilots/p4-android-native-before-with-coloring.console.txt');
+check(
+  'p4: on the Android native before build the first-open guard refused a never-opened picker that already renders tiles, in sweep 1, and wrote no artifact',
+  /Action sweep 1\/4\nError: The coloring picker already holds 6 rendered tiles/.test(p4) &&
+    p4.includes('--native-webview-class=android.webkit.WebView') &&
+    !p4.includes('Action sweep 2/4') &&
+    !p4.includes('Wrote ')
+);
 for (const capture of ABBA) {
   const refused = read(`pilots/p3-ipad-safari-${capture}-refused.console.txt`);
   const arm = identity[armOf(capture)];

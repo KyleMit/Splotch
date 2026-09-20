@@ -12,4 +12,5 @@ android-chrome	1	before-1	2026-09-20T00:42:44Z	2026-09-20T00:46:38Z	0
 android-chrome	2	after-1	2026-09-20T00:46:43Z	2026-09-20T00:50:39Z	0	
 android-chrome	3	after-2	2026-09-20T00:50:39Z	2026-09-20T00:54:35Z	0	
 android-chrome	4	before-2	2026-09-20T00:54:35Z	2026-09-20T00:58:28Z	0	
-android-native	-	before (with coloring)	2026-09-20T00:58:40Z	2026-09-20T01:10:00Z	-	never installed: a Play Protect dialog on the phone held adb install; no capture of a historical arm ran
+android-native	-	before install attempt	2026-09-20T00:58:40Z	2026-09-20T01:10:00Z	-	adb install held by a Play Protect dialog; command killed; nothing approved
+android-native	1	before-1 (with coloring)	2026-09-20T01:33:12Z	2026-09-20T01:33:47Z	1	pilots/p4: first-open guard refused the historical picker; before APK verified installed by hash (install committed on the phone at 01:25:39Z, not by this unit)

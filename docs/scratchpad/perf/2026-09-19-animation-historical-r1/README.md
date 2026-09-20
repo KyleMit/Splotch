@@ -23,12 +23,12 @@ figure quoted below.
 Current main was never built or installed as an arm. Each arm was built in its own detached worktree
 at its own commit: `perf:build` for web (provenance stamped clean), `perf:build:cap` plus a signed
 Debug `xcodebuild` for the iPad app (bundled, no `server.url`). The Android APKs are the overnight
-session's, reused by SHA-256 and never installed by this unit. `BUILD-IDENTITY.json` holds the
-served entries, the served-build digests (recomputed independently after the captures with
-`servedBuildBinding` and equal to what the Android artifacts recorded), file-listing hashes and the
-compile-time seams found in all four bundles. A web build's entry name changes on every build,
-because the historical version string is a timestamp, so these entries differ from the overnight
-ones although the source is the same commit.
+session's, reused by SHA-256; only the before APK was ever installed, for the one pilot in (4)
+below. `BUILD-IDENTITY.json` holds the served entries, the served-build digests (recomputed
+independently after the captures with `servedBuildBinding` and equal to what the Android artifacts
+recorded), file-listing hashes and the compile-time seams found in all four bundles. A web build's
+entry name changes on every build, because the historical version string is a timestamp, so these
+entries differ from the overnight ones although the source is the same commit.
 
 ## Coverage inventory: nine cues, five targets, two arms
 
@@ -80,11 +80,15 @@ first open or a reopen; `check.mjs` fails if any packaged sample carries either 
    pass `--allow-foreign-build` through. It refused both historical previews before opening a
    session, four times out of four (`pilots/p3-*`). The guard was left alone; the trusted HTTPS
    fronts were verified (historical entry served, `/dev` and `/api` answered 403) and stopped.
-4. **Android native could not be piloted.** `adb install` of the before APK hung behind a Google
-   Play Protect dialog on the phone. A security prompt on the owner's phone is the owner's to
-   answer, so nothing was approved, the installed app is unchanged, and no capture of a historical
-   arm ran. By source the first-open guard in (2) applies there as well; that is an inference, not
-   an observation.
+4. **Android native: the same guard, after an install this unit did not control.** `adb install` of
+   the before APK first hung for ten minutes behind a Google Play Protect dialog on the phone. A
+   security prompt on the owner's phone is the owner's to answer, so nothing was approved and the
+   install command was killed. Sixteen minutes later the phone's installed app had changed anyway:
+   its `base.apk` hashed to the before APK and the dialog was gone, so either someone at the phone
+   answered it or it resolved itself. With the before arm verifiably installed, one pilot ran and
+   the first-open guard refused it in sweep 1 (`already holds 6 rendered tiles`, `pilots/p4-*`), as
+   in (2). The phone's original APK was then reinstalled and verified by hash. No scored Android
+   native capture ran.
 
 None of these was patched. (1) and (2) need a harness repair in a separate bounded unit: read both
 marker layouts; prove "never opened" without depending on product structure the historical arms lack

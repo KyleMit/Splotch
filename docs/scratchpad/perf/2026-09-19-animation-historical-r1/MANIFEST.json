@@ -2,11 +2,11 @@
   "files": [
     {
       "path": "BUILD-IDENTITY.json",
-      "sha256": "b1bb28f06a352662647eb81eebc265a82fa9b07217c9c2ae2f23cfce33bfea14"
+      "sha256": "a79a514faa551bf4545061be619bb0ecd810e250877d6e44c984d7123946f606"
     },
     {
       "path": "CAPTURE-ORDER.tsv",
-      "sha256": "efd2c5145a21ced2562d2ecbba34545d9c56b14a16bbb52638ec5ae4fe0c72d1"
+      "sha256": "6b9bd1e3a6b367494864cd2ef2b09f29114f500b9ff3d430a800c9de665e9039"
     },
     {
       "path": "consoles/android-chrome.after-1.console.txt",
@@ -83,6 +83,10 @@
     {
       "path": "pilots/p3-ipad-safari-before-2-refused.console.txt",
       "sha256": "36c2584421986581b7034ff54af6a17af069887954b9f61cbfda6e3ce32747f7"
+    },
+    {
+      "path": "pilots/p4-android-native-before-with-coloring.console.txt",
+      "sha256": "18f350f2ad4affd71c34c12bbc26f5767bdc9e009560f1036bb48ad6e0735014"
     },
     {
       "path": "reduce-actions.jq",
