@@ -1,4 +1,5 @@
 import type { IconName } from '../icon-names';
+import { SECTION_SLIDE_MS } from '$lib/motionDurations';
 import { APP_VERSION } from '$lib/appVersion';
 import { aiCredentialKind, settingsState } from '$lib/state/settings.svelte';
 import { coloringPacksState } from '$lib/state/coloringPacks.svelte';
@@ -76,13 +77,7 @@ export function sectionHeading(id: SectionId): string {
   return meta.title ?? meta.label;
 }
 
-// Reveal timing for every conditional block a settings section itself owns. The
-// exception is the shared feedback field set, ReportFields: it is also hosted by
-// /feedback, outside Settings, so its nested device reveals name their own
-// shorter duration locally instead of importing this one. It lives here rather
-// than in tokens.css because `transition:slide` takes a JS number, not a
-// `var(--duration-*)` string.
-export const SECTION_SLIDE = { duration: 220 };
+export const SECTION_SLIDE = { duration: SECTION_SLIDE_MS };
 
 // What the Tool Drawer row says while every tool is showing: the contents of
 // the drawer, rather than a count of nothing.

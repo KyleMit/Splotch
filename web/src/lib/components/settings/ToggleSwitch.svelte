@@ -113,6 +113,12 @@
     transform: translateX(20px);
   }
 
+  /* Reduced motion: the thumb is where the state is, so it stays — it just
+     stops sliding there. */
+  :global(:root[data-reduce-motion]) .toggle-switch-thumb {
+    transition: none;
+  }
+
   /* The thumb is white on both papers, so the glyph on it cannot take the
      themed --icon-ink the modal shell re-inks monochrome icons with: that ink
      is near-white in dark mode. --brand-solid is the near-constant purple that

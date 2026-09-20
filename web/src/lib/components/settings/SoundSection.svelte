@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import SliderRow from './SliderRow.svelte';
   import {
@@ -13,7 +12,7 @@
     SOUND_VOLUME_MIN,
   } from '$lib/state/settings.svelte';
   import { playVolumePreview, stopDrawSound } from '$lib/audio/drawingSound';
-  import { SECTION_SLIDE } from './sections';
+  import { sectionReveal } from './sectionReveal';
   import '$lib/components/deferredIcons';
 
   const PREVIEW_SPEED = 0.45;
@@ -50,7 +49,7 @@
       onToggle={setSound}
     />
     {#if settingsState.soundEnabled}
-      <div class="slider-setting" transition:slide={SECTION_SLIDE}>
+      <div class="slider-setting" transition:sectionReveal>
         <SliderRow
           id="soundVolumeLabel"
           label="Volume"
@@ -66,7 +65,7 @@
   </div>
 
   {#if settingsState.soundEnabled}
-    <div class="sound-sources" transition:slide={SECTION_SLIDE}>
+    <div class="sound-sources" transition:sectionReveal>
       <h4 class="sources-heading">What makes sound</h4>
       <div class="source-rows">
         <div class="setting">

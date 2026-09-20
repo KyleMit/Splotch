@@ -318,12 +318,16 @@ body {
   text-wrap: pretty;
 }
 
-/* Reduced motion: fade instead of flying in, as the parental gate does. */
-:root[data-reduce-motion] .confirm-card.modal-fly-in[open] {
-  animation: confirmCardFadeIn var(--duration-base) ease;
+/* Reduced motion: every fly-in dialog appears instead of launching. Keyed on
+   the shared class rather than per dialog, so a new modal that opts into
+   .modal-fly-in is calm the moment it exists. A fade, never `animation: none`:
+   WideShell's fill and the settleFlyIn test helper both wait on the dialog's
+   own animation finishing, and a dialog with no animation never resolves one. */
+:root[data-reduce-motion] .modal-dialog.modal-fly-in[open] {
+  animation: modalFadeIn var(--duration-base) ease;
 }
 
-@keyframes confirmCardFadeIn {
+@keyframes modalFadeIn {
   from {
     opacity: 0;
   }
@@ -660,6 +664,15 @@ body {
   animation: aiSpin 1s linear infinite;
 }
 
+/* Reduced motion: this spin slows rather than stopping, because it is the only
+   sign the button gives that a generation is still running — the same call the
+   waiting polaroid's spinner makes, and at the same calm pace. A spinner that
+   sits beside a label already reading as busy stops outright instead (the
+   .ring in design/Button). */
+:root[data-reduce-motion] .actions-panel .action-button.loading .action-icon {
+  animation-duration: 2.4s;
+}
+
 /* Flyout chrome shared by the Brush Menu and the Stroke Width Menu: the popover
    shell and its option buttons. Each component keeps only what differs — the
    eraser-mode sizing.
@@ -811,6 +824,13 @@ body {
 
 .screenshot-capture-feedback [data-icon='camera'] {
   animation: screenshot-capture 460ms var(--ease-pop);
+}
+
+/* Reduced motion: no shutter squash. The capture still announces itself — the
+   polaroid overlay flies the picture away, and that cue keeps its own calm
+   fade (.polaroid-frame below) — so dropping this one costs no confirmation. */
+:root[data-reduce-motion] .screenshot-capture-feedback [data-icon='camera'] {
+  animation: none;
 }
 
 /* Undo's end-of-history wall and rejected screenshot saves share this whole-button cue. The glow

@@ -107,6 +107,12 @@
     transition: none;
   }
 
+  /* Reduced motion: the button is back in its corner on release, without
+     sailing across the paper to get there. */
+  :global(:root[data-reduce-motion]) .clear-container {
+    transition: none;
+  }
+
   /* Alarm red for the delete-ready glow (.clear-button) and the accept-zone
      threshold (.clear-accept-zone) below — declared once on the group since
      .clear-button (a child of .clear-container) and .clear-accept-zone (that

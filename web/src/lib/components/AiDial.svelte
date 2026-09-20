@@ -1,6 +1,7 @@
 <script lang="ts">
   import { scale } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
+  import { calm } from '$lib/platform/calmTransition';
   import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
 
@@ -9,6 +10,13 @@
   const HUE_SECOND_STOP_OFFSET_DEG = 46;
   const DIAL_EXIT_MS = 480;
   const DIAL_EXIT_START_SCALE = 1.35;
+
+  const dialExit = calm(scale, {
+    duration: DIAL_EXIT_MS,
+    start: DIAL_EXIT_START_SCALE,
+    opacity: 0,
+    easing: backOut,
+  });
 
   // A pure view of the shared progress (state/aiProgress.svelte.ts): the loop
   // that fills this belongs to the run, not to the dial, so minimizing and
@@ -28,12 +36,7 @@
     class:waiting={aiProgressState.waiting}
     style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle}; --dial-size: min({DIAL_STAGE_FRACTION *
       100}%, {DIAL_MAX_SIZE_PX}px);"
-    out:scale={{
-      duration: DIAL_EXIT_MS,
-      start: DIAL_EXIT_START_SCALE,
-      opacity: 0,
-      easing: backOut,
-    }}
+    out:dialExit
   >
     <div class="dial-glow"></div>
     <div class="dial-pie"></div>

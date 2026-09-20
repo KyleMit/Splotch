@@ -278,7 +278,10 @@
     }
   }
 
+  /* Both rings are a transient pulse that ends at opacity 0 — the selection
+     itself is the resting ring, which stays. */
   :global(:root[data-reduce-motion]) .color-swatch:global(.releasing),
+  :global(:root[data-reduce-motion]) .color-swatch.ring-animate:not(.gradient-swatch)::before,
   :global(:root[data-reduce-motion]) .color-swatch.ring-animate:not(.gradient-swatch)::after {
     animation: none;
   }
@@ -316,6 +319,12 @@
      against the palette's overflow: hidden. */
   .gradient-swatch.ringed :global(.more-colors-icon) {
     transform: translate(-50%, -50%) scale(var(--pop-scale));
+  }
+
+  /* Reduced motion: the cluster still fills the ring when selected — that is
+     the selection reading — it just arrives there rather than popping. */
+  :global(:root[data-reduce-motion]) .gradient-swatch :global(.more-colors-icon) {
+    transition: none;
   }
 
   /* Landscape tablets use one column, trimming swatches as the viewport

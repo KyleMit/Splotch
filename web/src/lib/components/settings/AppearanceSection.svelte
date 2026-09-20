@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import Icon from '../Icon.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
-  import { SECTION_SLIDE } from './sections';
+  import { sectionReveal } from './sectionReveal';
   import {
     settingsState,
     setLockRotation,
@@ -68,7 +67,7 @@
     </div>
 
     {#if settingsState.lockRotationEnabled}
-      <div class="setting" transition:slide={SECTION_SLIDE}>
+      <div class="setting" transition:sectionReveal>
         <ToggleRow
           icon={settingsState.forceLandscapeOrientation ? 'mobile-landscape' : 'mobile-portrait'}
           label="Force landscape orientation"

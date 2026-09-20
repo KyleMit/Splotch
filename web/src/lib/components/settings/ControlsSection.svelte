@@ -1,6 +1,5 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
-  import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import ButtonSizeSetting from './ButtonSizeSetting.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
@@ -9,7 +8,7 @@
     setToolDrawerEnabled,
     setPencilEraserEnabled,
   } from '$lib/state/settings.svelte';
-  import { SECTION_SLIDE } from './sections';
+  import { sectionReveal } from './sectionReveal';
   import { DRAWING_TOOLS, isDrawingToolOn, type DrawingToolId } from './drawingTools';
   import '$lib/components/deferredIcons';
 
@@ -106,7 +105,7 @@
   <ButtonSizeSetting id="actionButtonScaleLabel" />
 
   {#if settingsState.toolDrawerEnabled}
-    <div class="tool-drawer-settings" transition:slide={SECTION_SLIDE}>
+    <div class="tool-drawer-settings" transition:sectionReveal>
       <div class="tools-block" bind:this={toolsBlockEl}>
         <h4 class="tools-heading">Drawing Tools</h4>
         {#if useChips}
@@ -139,7 +138,7 @@
   {/if}
 
   {#if settingsState.applePencilSeen && settingsState.eraserEnabled}
-    <div class="setting pencil-eraser" transition:slide={SECTION_SLIDE}>
+    <div class="setting pencil-eraser" transition:sectionReveal>
       <ToggleRow
         icon="brush-eraser"
         label="Apple Pencil double-tap to erase"

@@ -267,4 +267,10 @@
     transform: scale(1);
     filter: blur(0);
   }
+
+  /* Reduced motion: the finished picture fades up out of its blur at its own
+     size, instead of also growing into place. */
+  :global(:root[data-reduce-motion]) .result {
+    transform: none;
+  }
 </style>
