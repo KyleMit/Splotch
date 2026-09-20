@@ -1,15 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { Window } from 'happy-dom';
 
 import {
   COLORING_PACK_CACHE_FAMILY_PREFIX as PRODUCT_CACHE_FAMILY_PREFIX,
   COLORING_PACK_MARKER_PREFIX as PRODUCT_MARKER_PREFIX,
 } from '../../../web/src/lib/coloringPacks/cacheKeys.ts';
 import { VERSION_JSON_PATH as PRODUCT_VERSION_JSON_PATH } from '../../../web/src/lib/pwa/versionEndpoint.ts';
-import { executePagePromise } from '../ios/capture-xcuitest-screen.mjs';
+import { createWebDriverClient, executePagePromise } from '../ios/capture-xcuitest-screen.mjs';
 import {
   BOOK_CHOICE_SELECTOR,
+  ARM_PICKER_OPEN_WITNESS_SCRIPT,
   COLORING_BOOK_INSTALL_STATE_EXPRESSION,
   COLORING_PACK_CACHE_FAMILY_PREFIX,
   COLORING_PACK_MANIFEST_PATH_TEMPLATE,
@@ -18,13 +20,14 @@ import {
   STOP_INSTALL_FRAME_PUMP_SCRIPT,
   VERSION_JSON_PATH,
   assertPickerNeverOpened,
+  armPickerOpenWitness,
   firstOpenListedMessage,
   installStateReadTimeoutMessage,
   installTimeoutMessage,
   installedBooksLostMessage,
   listedTimeoutMessage,
   loadSweepDocumentWithColoringBooks,
-  pickerAlreadyRenderedMessage,
+  pickerAlreadyOpenedMessage,
   prepareColoringBooks,
 } from '../lib/coloring-books-ready.mjs';
 import {
@@ -190,22 +193,55 @@ describe('prepareColoringBooks', () => {
 });
 
 describe('the in-page install-state script', () => {
-  const manifest = { starterBookId: 'farm', books: CATALOG.map((id) => ({ id })) };
+  const manifest = {
+    starterBookId: 'farm',
+    books: CATALOG.map((id) => ({
+      id,
+      variants: {
+        compact: { bytes: 1, files: [] },
+        full: { bytes: 2, files: [] },
+      },
+    })),
+  };
 
-  async function runInPage({ cacheEntries, native = false, withCaches = true, fetchImpl }) {
+  async function runInPage({
+    cacheEntries,
+    native = false,
+    withCaches = true,
+    fetchImpl,
+    version = '9.9.9',
+    screen = { width: 1512, height: 982, devicePixelRatio: 2 },
+  }) {
     const scope = {
       fetch:
         fetchImpl ??
         (async (path) => ({
           ok: true,
-          json: async () => (path === VERSION_JSON_PATH ? { version: '9.9.9' } : manifest),
+          json: async () => (path === VERSION_JSON_PATH ? { version } : manifest),
         })),
       caches: withCaches
         ? {
             keys: async () => Object.keys(cacheEntries),
             open: async (name) => ({
               keys: async () =>
-                cacheEntries[name].map((path) => ({ url: `http://host.test${path}` })),
+                cacheEntries[name].map((entry) => ({
+                  url: `http://host.test${typeof entry === 'string' ? entry : entry.path}`,
+                })),
+              match: async (request) => {
+                const entry = cacheEntries[name].find(
+                  (candidate) =>
+                    (typeof candidate === 'string' ? candidate : candidate.path) ===
+                    new URL(request.url).pathname
+                );
+                const id = new URL(request.url).pathname.split('/').at(-1);
+                const resolution = name.endsWith('-compact') ? 'compact' : 'full';
+                const variant = manifest.books.find((book) => book.id === id)?.variants[resolution];
+                const value =
+                  typeof entry === 'string'
+                    ? JSON.stringify({ id, bytes: variant?.bytes, files: variant?.files })
+                    : entry.value;
+                return { text: async () => value };
+              },
             }),
           }
         : undefined,
@@ -217,7 +253,11 @@ describe('the in-page install-state script', () => {
       'globalThis',
       `return ${COLORING_BOOK_INSTALL_STATE_EXPRESSION};`
     );
-    return run(scope.fetch, scope.caches, { Capacitor: scope.Capacitor });
+    return run(scope.fetch, scope.caches, {
+      Capacitor: scope.Capacitor,
+      screen: { width: screen.width, height: screen.height },
+      devicePixelRatio: screen.devicePixelRatio,
+    });
   }
 
   it('reports the catalog books with no install marker, never the starter', async () => {
@@ -234,6 +274,68 @@ describe('the in-page install-state script', () => {
     await expect(
       runInPage({ cacheEntries: { 'some-other-cache': ['/coloring/.installed/dinosaur'] } })
     ).resolves.toEqual({ catalog: CATALOG, missing: ['dinosaur', 'creatures'] });
+  });
+
+  it('accepts only historical markers bound to the served version and selected resolution', async () => {
+    const cacheEntries = {
+      'coloring-packs-v1-1.6.269-full': [
+        '/coloring/.installed/1.6.269/full/dinosaur',
+        '/coloring/.installed/1.6.268/full/creatures',
+        '/coloring/.installed/1.6.269/compact/creatures',
+      ],
+      'coloring-packs-v1-1.6.268-full': ['/coloring/.installed/1.6.269/full/creatures'],
+      'coloring-packs-v1-1.6.269-compact': ['/coloring/.installed/1.6.269/compact/creatures'],
+    };
+    await expect(runInPage({ cacheEntries, version: '1.6.269' })).resolves.toEqual({
+      catalog: CATALOG,
+      missing: ['creatures'],
+    });
+    await expect(
+      runInPage({
+        cacheEntries,
+        version: '1.6.269',
+        screen: { width: 360, height: 780, devicePixelRatio: 2 },
+      })
+    ).resolves.toEqual({
+      catalog: CATALOG,
+      missing: ['dinosaur'],
+    });
+  });
+
+  it('does not accept a current-layout marker from the wrong resolution cache', async () => {
+    await expect(
+      runInPage({
+        cacheEntries: {
+          'coloring-packs-v2-compact': ['/coloring/.installed/dinosaur'],
+        },
+      })
+    ).resolves.toEqual({ catalog: CATALOG, missing: ['dinosaur', 'creatures'] });
+  });
+
+  it('refuses a stale marker value and a current-layout cache on a historical build', async () => {
+    await expect(
+      runInPage({
+        version: '1.6.273',
+        cacheEntries: {
+          'coloring-packs-v1-1.6.273-full': [
+            { path: '/coloring/.installed/1.6.273/full/dinosaur', value: 'stale' },
+          ],
+          'coloring-packs-v2-full': ['/coloring/.installed/creatures'],
+        },
+      })
+    ).resolves.toEqual({ catalog: CATALOG, missing: ['dinosaur', 'creatures'] });
+  });
+
+  it('recognizes the after arm without accepting the before arm cache', async () => {
+    await expect(
+      runInPage({
+        version: '1.6.273',
+        cacheEntries: {
+          'coloring-packs-v1-1.6.269-full': ['/coloring/.installed/1.6.269/full/dinosaur'],
+          'coloring-packs-v1-1.6.273-full': ['/coloring/.installed/1.6.273/full/creatures'],
+        },
+      })
+    ).resolves.toEqual({ catalog: CATALOG, missing: ['dinosaur'] });
   });
 
   it('hands every fetch a signal it aborts at its own deadline', async () => {
@@ -293,6 +395,29 @@ describe('the transport that carries the install state', () => {
         `Promise.reject(new Error('/version.json answered 404'))`
       )
     ).rejects.toThrow('/version.json answered 404');
+  });
+
+  it('preserves a page-promise rejection through the WebDriver response envelope', async () => {
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(
+          JSON.stringify({
+            value: { ok: false, error: '/version.json answered 404' },
+          })
+        )
+    );
+    try {
+      const client = createWebDriverClient('http://127.0.0.1:4727');
+      await expect(
+        executePagePromise(
+          (script) => client.request('POST', '/session/test/execute/async', { script, args: [] }),
+          settled
+        )
+      ).rejects.toThrow('/version.json answered 404');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('is what each runner hands the preparation that reads the install state', () => {
@@ -402,9 +527,18 @@ describe('loadSweepDocumentWithColoringBooks', () => {
 
   function fakeRunner({ listed, freshDocumentState = installed }) {
     const calls = [];
+    let documentNumber = 0;
     return {
       calls,
-      loadDocument: async () => calls.push('load document'),
+      loadDocument: async () => {
+        documentNumber += 1;
+        calls.push('load document');
+      },
+      execute: async (script) => {
+        expect(script).toBe(ARM_PICKER_OPEN_WITNESS_SCRIPT);
+        calls.push('arm witness');
+        return String(documentNumber);
+      },
       prepare: async () => {
         calls.push('prepare');
         return listed;
@@ -420,7 +554,14 @@ describe('loadSweepDocumentWithColoringBooks', () => {
   it('prepares in one document and hands the sweep the next, with its books still installed', async () => {
     const { calls, ...runner } = fakeRunner({ listed: 3 });
     const result = await loadSweepDocumentWithColoringBooks(runner);
-    expect(calls).toEqual(['load document', 'prepare', 'load document', 'read install state']);
+    expect(calls).toEqual([
+      'load document',
+      'arm witness',
+      'prepare',
+      'load document',
+      'arm witness',
+      'read install state',
+    ]);
     expect(result).toMatchObject({ listedColoringBooks: 3, documentLoads: 2 });
     expect(result.preparationMs).toBeGreaterThanOrEqual(0);
   });
@@ -432,7 +573,7 @@ describe('loadSweepDocumentWithColoringBooks', () => {
       preparationMs: null,
       documentLoads: 1,
     });
-    expect(calls).toEqual(['load document', 'prepare']);
+    expect(calls).toEqual(['load document', 'arm witness', 'prepare']);
   });
 
   it('fails by name when the fresh document lost the prepared books', async () => {
@@ -444,27 +585,83 @@ describe('loadSweepDocumentWithColoringBooks', () => {
       loadSweepDocumentWithColoringBooks(fakeRunner({ listed: 3, freshDocumentState: null }))
     ).rejects.toThrow(installedBooksLostMessage(null));
   });
+
+  it('refuses preparation-document reuse before a purported first open', async () => {
+    const runner = fakeRunner({ listed: 3 });
+    runner.execute = async () => 'same-document';
+    await expect(loadSweepDocumentWithColoringBooks(runner)).rejects.toThrow(
+      'Coloring preparation reused the same document'
+    );
+  });
 });
 
 describe('the control on the first-open measurement', () => {
-  it('passes a document whose picker has rendered no tile', async () => {
-    await expect(assertPickerNeverOpened(async () => 0)).resolves.toBeUndefined();
+  function browserDocument({ lazy = false } = {}) {
+    const window = new Window();
+    if (!lazy) {
+      window.document.body.innerHTML =
+        '<dialog id="coloring-book-dialog"><button class="coloring-tile"></button></dialog>';
+    }
+    const execute = async (script) =>
+      new Function('window', 'document', 'MutationObserver', script)(
+        window,
+        window.document,
+        window.MutationObserver
+      );
+    return { window, execute, dialog: window.document.querySelector('#coloring-book-dialog') };
+  }
+
+  it('accepts a pre-rendered historical tile, then catches an open that was closed before the guard', async () => {
+    const { window, execute, dialog } = browserDocument();
+    await armPickerOpenWitness(execute);
+    expect(window.__perfColoringPickerOpenWitness.opened).toBe(false);
+    dialog.showModal();
+    dialog.close();
+    await expect(assertPickerNeverOpened(execute)).rejects.toThrow(pickerAlreadyOpenedMessage());
   });
 
-  it('refuses a document whose setup already opened the picker', async () => {
-    await expect(assertPickerNeverOpened(async () => 8)).rejects.toThrow(
-      pickerAlreadyRenderedMessage(8)
+  it('observes a lazy-mounted picker before its first open', async () => {
+    const { window, execute } = browserDocument({ lazy: true });
+    await armPickerOpenWitness(execute);
+    window.document.body.innerHTML =
+      '<dialog id="coloring-book-dialog"><button class="coloring-tile"></button></dialog>';
+    const dialog = window.document.querySelector('#coloring-book-dialog');
+    dialog.showModal();
+    dialog.close();
+    await expect(assertPickerNeverOpened(execute)).rejects.toThrow(pickerAlreadyOpenedMessage());
+  });
+
+  it('accepts a never-opened document after a lazy picker mounts', async () => {
+    const { window, execute } = browserDocument({ lazy: true });
+    await armPickerOpenWitness(execute);
+    window.document.body.innerHTML =
+      '<dialog id="coloring-book-dialog"><button class="coloring-tile"></button></dialog>';
+    await expect(assertPickerNeverOpened(execute)).resolves.toBeUndefined();
+  });
+
+  it('fails closed when the document witness was never armed', async () => {
+    const { execute } = browserDocument();
+    await expect(assertPickerNeverOpened(execute)).rejects.toThrow('witness was not armed');
+  });
+
+  it('passes a never-opened document even when historical tiles are pre-rendered', async () => {
+    await expect(assertPickerNeverOpened(async () => false)).resolves.toBeUndefined();
+  });
+
+  it('refuses a document whose setup already opened and closed the picker', async () => {
+    await expect(assertPickerNeverOpened(async () => true)).rejects.toThrow(
+      pickerAlreadyOpenedMessage()
     );
   });
 
-  it('counts the tiles the product renders for a held open', () => {
-    const picker = read('web', 'src', 'lib', 'components', 'ColoringBook.svelte');
-    expect(picker).toContain('id="coloring-book-dialog"');
-    expect(picker.match(/class="coloring-tile[ "]/g)).toHaveLength(2);
-    expect(picker).toContain('{#each books as book (book.id)}');
-    expect(read('web', 'src', 'lib', 'state', 'coloringPicker.svelte.ts')).toContain(
-      'const shown = $derived(installed.filter((book) => shownBookIds.includes(book.id)));'
-    );
+  it('arms a document-scoped observer before the measured open', async () => {
+    await expect(
+      armPickerOpenWitness(async (script) => {
+        expect(script).toBe(ARM_PICKER_OPEN_WITNESS_SCRIPT);
+        return 'document-token';
+      })
+    ).resolves.toBe('document-token');
+    expect(ARM_PICKER_OPEN_WITNESS_SCRIPT).toContain('MutationObserver');
   });
 
   it('names both counts when the first open lists fewer books than preparation did', () => {

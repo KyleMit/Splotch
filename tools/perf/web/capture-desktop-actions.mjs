@@ -104,6 +104,7 @@ export function desktopActionsArtifact({
   samples,
   summaries,
   passed,
+  servedBuild,
 }) {
   return {
     device: {
@@ -111,6 +112,7 @@ export function desktopActionsArtifact({
       os: process.platform,
     },
     appUrl: base,
+    ...servedBuild,
     engine: engineName,
     // Recorded so the matrix's runtime-agreement check has an artifact side
     // to compare against the target's declared runtime — a desktop capture
@@ -171,6 +173,9 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
   const requestedTheme = parseCampaignTheme(flag('theme'));
   const headless = !has('headed');
   const externalUrl = flag('url');
+  if (has('allow-foreign-build') && !externalUrl) {
+    fail('--allow-foreign-build needs --url= naming the externally served build it allows');
+  }
   const preview = externalUrl
     ? { base: new URL(externalUrl).toString(), stop: () => {} }
     : await buildAndPreview(port, { build });
@@ -178,9 +183,14 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
   // A `--url` capture skips buildAndPreview, which is where the build is normally
   // proved — and that is the path every campaign cell takes, so without this the
   // identity assertion covered only the path nobody uses.
+  let servedBuild;
   if (externalUrl) {
     await waitForUrl(base, READY_TIMEOUT_MS);
-    await assertServedBuildIsFresh(base, { allowForeignBuild: has('allow-foreign-build') });
+    servedBuild = await assertServedBuildIsFresh(base, {
+      allowForeignBuild: has('allow-foreign-build'),
+    });
+  } else {
+    servedBuild = await assertServedBuildIsFresh(base);
   }
   // A capture reloads the app once per sweep, and an ephemeral WebKit context
   // does not carry Cache Storage across that reload the way a browser profile
@@ -281,6 +291,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       samples,
       summaries,
       passed,
+      servedBuild,
     });
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
     console.log('\nDesktop discrete action response');

@@ -392,7 +392,7 @@ export function createWebDriverClient(baseUrl) {
     } catch {
       throw new Error(`${method} ${path} returned non-JSON (${response.status}): ${text}`);
     }
-    if (!response.ok || result.value?.error) {
+    if (!response.ok || (result.value?.error && !Object.hasOwn(result.value, 'ok'))) {
       throw new Error(result.value?.message ?? `${method} ${path} failed with ${response.status}`);
     }
     return result.value;

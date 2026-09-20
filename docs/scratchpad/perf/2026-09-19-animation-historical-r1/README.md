@@ -121,10 +121,11 @@ observing 60 Hz. Landscape light on the iPad, portrait light on the phone, in bo
   1867 intended: `open Settings` becomes ready at a median of 243 and 240 ms in the two before
   captures and 331 and 333 ms in the two after captures, the lengthened fly-in, with no frame-gate
   consequence.
-* **Red in both arms, so not attributable to PR 1867:** `clear drawing on a coloring page` fails all
-  four captures, with two or three scored maxima of 37 to 45 ms each, and first-frame P95 of 37 to
-  43 ms in three of the four. The clear sheet on a coloring page was the issue's first suspect; on
-  this target the before build is equally red.
+* **Red in both arms; no attribution to PR 1867 is established:** `clear drawing on a coloring page`
+  fails all four captures, with two or three scored maxima of 37 to 45 ms each, and first-frame P95
+  of 37 to 43 ms in three of the four. The clear sheet on a coloring page was the issue's first
+  suspect; on this target the before build is also red. That shows pre-existence, but does not rule
+  out a change in severity caused by the PR.
 * **Differs between arms, descriptive only:** `select Magic brush` shows one gap of about 80 ms (72
   to 84 ms) in 2 of 6 scored repeats before and 5 of 6 after. The two-of-three rule therefore passes
   both before captures and fails both after captures. The hitch itself predates PR 1867; its

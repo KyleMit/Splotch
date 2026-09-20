@@ -6,6 +6,11 @@ export const VERSION_JSON_PATH = '/version.json';
 export const COLORING_PACK_MANIFEST_PATH_TEMPLATE = '/coloring/manifest-{version}.json';
 export const COLORING_PACK_CACHE_FAMILY_PREFIX = 'coloring-packs-';
 export const COLORING_PACK_MARKER_PREFIX = '/coloring/.installed/';
+// The two product commits around PR 1867 use a versioned v1 cache and marker.
+const HISTORICAL_COLORING_PACK_CACHE_PREFIX = 'coloring-packs-v1-';
+const HISTORICAL_COLORING_PACK_VERSIONS = ['1.6.269', '1.6.273'];
+const COLORING_PACK_FULL_RESOLUTION_MAX_EDGE_PX = 1152;
+const COLORING_PACK_COMPACT_SHORT_EDGE_PX = 768;
 
 // A fresh desktop context installed the catalog's seven extra books in about
 // 112 s, one every ~16 s (docs/scratchpad/perf/2026-09-19-coloring-action-plan).
@@ -18,11 +23,7 @@ const COLORING_BOOKS_LISTED_TIMEOUT_MS = 30_000;
 const LISTED_POLL_MS = 250;
 
 export const BOOK_CHOICE_SELECTOR = '#coloring-book-dialog button[aria-label$="coloring book"]';
-// The picker dialog is always in the document, and renders a book or page tile
-// only for the books an open has held (createColoringPickerBooks.holdForOpen),
-// which then stay rendered behind the closed dialog. So tiles in a closed
-// picker are the trace of an earlier open in the same document.
-const PICKER_TILE_SELECTOR = '#coloring-book-dialog .coloring-tile';
+const PICKER_WITNESS_KEY = '__perfColoringPickerOpenWitness';
 
 // A stalled version or manifest response must fail the read, not hang the
 // capture: the page aborts its own fetches at the first bound, and the harness
@@ -50,14 +51,47 @@ export const COLORING_BOOK_INSTALL_STATE_EXPRESSION = `(async () => {
     const manifest = await json(
       ${JSON.stringify(COLORING_PACK_MANIFEST_PATH_TEMPLATE)}.replace('{version}', version)
     );
+    const width = globalThis.screen?.width;
+    const height = globalThis.screen?.height;
+    const dpr = globalThis.devicePixelRatio;
+    const validScreen = [width, height, dpr].every((value) =>
+      Number.isFinite(value) && value > 0
+    );
+    const shortEdge = validScreen ? Math.min(width, height) : 0;
+    const longEdge = validScreen ? Math.max(width, height) : 0;
+    const paperLongEdge = Math.min(
+      longEdge,
+      shortEdge * ${COLORING_PACK_FULL_RESOLUTION_MAX_EDGE_PX / COLORING_PACK_COMPACT_SHORT_EDGE_PX}
+    );
+    const resolution = validScreen && paperLongEdge * dpr <= ${COLORING_PACK_FULL_RESOLUTION_MAX_EDGE_PX}
+      ? 'compact' : 'full';
+    const historicalLayout = ${JSON.stringify(HISTORICAL_COLORING_PACK_VERSIONS)}.includes(version);
+    const expectedCache = historicalLayout
+      ? ${JSON.stringify(HISTORICAL_COLORING_PACK_CACHE_PREFIX)} + version + '-' + resolution
+      : ${JSON.stringify(COLORING_PACK_CACHE_FAMILY_PREFIX)} + 'v2-' + resolution;
+    const expectedMarkers = new Map(manifest.books.map((book) => {
+      const variant = book.variants[resolution];
+      return [book.id, JSON.stringify({
+        id: book.id,
+        bytes: variant.bytes,
+        files: variant.files.map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })),
+      })];
+    }));
     const marked = new Set();
     for (const name of await caches.keys()) {
-      if (!name.startsWith(${JSON.stringify(COLORING_PACK_CACHE_FAMILY_PREFIX)})) continue;
-      for (const request of await (await caches.open(name)).keys()) {
+      if (name !== expectedCache) continue;
+      const cache = await caches.open(name);
+      for (const request of await cache.keys()) {
         const path = new URL(request.url).pathname;
-        if (path.startsWith(${JSON.stringify(COLORING_PACK_MARKER_PREFIX)})) {
-          marked.add(path.slice(${JSON.stringify(COLORING_PACK_MARKER_PREFIX)}.length));
-        }
+        const prefix = historicalLayout
+          ? ${JSON.stringify(COLORING_PACK_MARKER_PREFIX)} + version + '/' + resolution + '/'
+          : ${JSON.stringify(COLORING_PACK_MARKER_PREFIX)};
+        if (!path.startsWith(prefix)) continue;
+        const id = path.slice(prefix.length);
+        const expected = expectedMarkers.get(id);
+        if (!expected) continue;
+        const marker = await cache.match(request);
+        if (await marker?.text() === expected) marked.add(id);
       }
     }
     const catalog = manifest.books.map((book) => book.id);
@@ -175,8 +209,8 @@ export async function prepareColoringBooks({
   return listed;
 }
 
-export function pickerAlreadyRenderedMessage(tiles) {
-  return `The coloring picker already holds ${tiles} rendered tiles, so it has opened in this document and its next open is not a first open`;
+export function pickerAlreadyOpenedMessage() {
+  return 'The coloring picker has already opened in this document, so its next open is not a first open';
 }
 
 export function firstOpenListedMessage(listed, prepared) {
@@ -189,13 +223,54 @@ export function installedBooksLostMessage(state) {
     : `The fresh document lost coloring books that preparation installed: missing ${state.missing.join(', ')}`;
 }
 
+// A document-scoped observer records an open even after the dialog closes. It
+// begins immediately after the app is ready, before preparation or sweep setup.
+// Historical builds pre-render tiles, so tile count cannot prove an open.
+export const ARM_PICKER_OPEN_WITNESS_SCRIPT = `
+  const dialog = document.querySelector('#coloring-book-dialog');
+  if (!window.${PICKER_WITNESS_KEY}) {
+    const witness = {
+      token: String(Date.now()) + ':' + Math.random(),
+      opened: dialog?.open === true,
+      checked: false,
+    };
+    const observer = new MutationObserver((mutations) => {
+      if (mutations.some((mutation) =>
+        mutation.type === 'attributes' && mutation.target.id === 'coloring-book-dialog'
+      )) witness.opened = true;
+      if (document.querySelector('#coloring-book-dialog')?.open === true) witness.opened = true;
+    });
+    observer.observe(document, {
+      attributes: true, attributeFilter: ['open'], childList: true, subtree: true,
+    });
+    witness.observer = observer;
+    window.${PICKER_WITNESS_KEY} = witness;
+  }
+  return window.${PICKER_WITNESS_KEY}.token;
+`;
+
+export async function armPickerOpenWitness(execute) {
+  return execute(ARM_PICKER_OPEN_WITNESS_SCRIPT);
+}
+
 // The control on the first-open measurement: fails when anything earlier in
 // this document, setup included, has opened the picker.
 export async function assertPickerNeverOpened(execute) {
-  const tiles = await execute(
-    `return document.querySelectorAll(${JSON.stringify(PICKER_TILE_SELECTOR)}).length;`
-  );
-  if (tiles > 0) throw new Error(pickerAlreadyRenderedMessage(tiles));
+  const opened = await execute(`
+    const witness = window.${PICKER_WITNESS_KEY};
+    if (!witness) throw new Error('The coloring picker open witness was not armed');
+    if (witness.checked) return true;
+    for (const mutation of witness.observer.takeRecords()) {
+      if (mutation.type === 'attributes' && mutation.target.id === 'coloring-book-dialog') {
+        witness.opened = true;
+      }
+    }
+    const opened = witness.opened || document.querySelector('#coloring-book-dialog')?.open === true;
+    witness.checked = true;
+    witness.observer.disconnect();
+    return opened;
+  `);
+  if (opened) throw new Error(pickerAlreadyOpenedMessage());
 }
 
 export async function listedBookChoices(execute) {
@@ -214,11 +289,13 @@ export async function listedBookChoices(execute) {
 export async function loadSweepDocumentWithColoringBooks({
   loadDocument,
   prepare,
+  execute,
   executePromise,
   // Test seam: production callers take the bound from the constant.
   readTimeoutMs = INSTALL_STATE_READ_TIMEOUT_MS,
 }) {
   await loadDocument();
+  const preparationDocument = await armPickerOpenWitness(execute);
   const startedAt = Date.now();
   const listedColoringBooks = await prepare();
   if (listedColoringBooks === null) {
@@ -226,6 +303,10 @@ export async function loadSweepDocumentWithColoringBooks({
   }
   const preparationMs = Date.now() - startedAt;
   await loadDocument();
+  const sweepDocument = await armPickerOpenWitness(execute);
+  if (sweepDocument === preparationDocument) {
+    throw new Error('Coloring preparation reused the same document as the first-open sweep');
+  }
   const state = await readInstallState(executePromise, readTimeoutMs);
   if (state === null || state.missing.length > 0) throw new Error(installedBooksLostMessage(state));
   return { listedColoringBooks, preparationMs, documentLoads: 2 };

@@ -144,6 +144,17 @@ describe('loaded page identity', () => {
       'the loaded page exposes no SvelteKit entry module'
     );
   });
+
+  it('binds an explicitly foreign Safari preview to its loaded entry and recorded served bytes', () => {
+    expect(IPAD_ACTIONS).toContain("'allow-foreign-build'");
+    expect(IPAD_ACTIONS).toContain("fail('--allow-foreign-build needs --url=");
+    expect(IPAD_ACTIONS).toContain('allowForeignBuild,');
+    expect(IPAD_ACTIONS).toContain(
+      'servedBuild = await assertServedBuildIsFresh(requestedAppUrl, { allowForeignBuild });'
+    );
+    expect(IPAD_ACTIONS).toContain('loadedPageEntryProblem(expectedEntry, scriptSources)');
+    expect(IPAD_ACTIONS).toContain('...servedBuild,');
+  });
 });
 
 describe('createActionSession', () => {
