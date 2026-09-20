@@ -130,9 +130,9 @@ export function portraitTrimSteps(colorCount: number): TrimStep[] {
 // ladder is a `@container` query on the sizing box the menu sits in.
 
 export const COLOR_MENU_GEOMETRY: PaletteStackGeometry = {
-  swatchPx: 56,
-  gapPx: 6,
-  paddingPx: 12,
+  swatchPx: PALETTE_ROW_GEOMETRY.swatchPx,
+  gapPx: PALETTE_ROW_GEOMETRY.gapPx,
+  paddingPx: PALETTE_ROW_GEOMETRY.paddingPx,
 };
 
 /**

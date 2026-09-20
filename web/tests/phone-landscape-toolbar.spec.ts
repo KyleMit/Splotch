@@ -1,7 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
-import { gotoApp, drawCommittedStroke } from './helpers';
+import { gotoApp, drawCommittedStroke, PICKER_GREEN, settleFlyIn } from './helpers';
 import { openDrawer } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { PALETTE_ROW_GEOMETRY } from '../src/lib/design/trimGeometry';
+import { PALETTE_COLORS } from '../src/lib/palette';
+import { getRingColor, SELECTION_RING_GAP_PX } from '../src/lib/colorRing';
+
+function cssRgb(hex: string): string {
+  return `rgb(${[1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16)).join(', ')})`;
+}
 
 async function settleToolbar(page: Page) {
   await page
@@ -127,6 +134,76 @@ test.describe('phone landscape interactions', () => {
     await expect(page.locator('#colorButton')).toBeFocused();
   });
 
+  test('compact colors use the portrait palette swatch spacing', async ({ page }) => {
+    await gotoApp(page);
+    await page.locator('#colorButton').click();
+    const menu = page.locator('.color-menu');
+    const selected = menu.getByRole('button', { name: PALETTE_COLORS[0].label });
+    await expect(menu).toBeVisible();
+    await expect(menu).toHaveCSS('gap', `${PALETTE_ROW_GEOMETRY.gapPx}px`);
+    await expect(menu).toHaveCSS('padding-left', `${PALETTE_ROW_GEOMETRY.paddingPx / 2}px`);
+    await expect(selected).toHaveCSS('width', `${PALETTE_ROW_GEOMETRY.swatchPx}px`);
+  });
+
+  test('compact selected color uses the palette selection ring', async ({ page }) => {
+    await gotoApp(page);
+    await page.locator('#colorButton').click();
+    const menu = page.locator('.color-menu');
+    const selected = menu.getByRole('button', { name: PALETTE_COLORS[0].label });
+    await expect(selected).toBeVisible();
+    await expect(selected).toHaveCSS('border-width', `${SELECTION_RING_GAP_PX}px`);
+    const selection = await selected.evaluate((button) => ({
+      border: getComputedStyle(button).borderColor,
+      ring: getComputedStyle(button).boxShadow,
+      surface: getComputedStyle(button.parentElement!).backgroundColor,
+    }));
+    expect(selection.border).toBe(selection.surface);
+    expect(selection.ring).toContain(cssRgb(getRingColor(PALETTE_COLORS[0].hex)));
+  });
+
+  test('compact custom color centers its icon inside its color ring', async ({ page }) => {
+    await gotoApp(page);
+    await page.locator('#colorButton').click();
+    await page.locator('.color-menu').getByRole('button', { name: 'Custom Color' }).click();
+    const dialog = page.locator('#color-picker');
+    await expect(dialog).toBeVisible();
+    await settleFlyIn(dialog);
+    await dialog.locator(`.grid.landscape .hexagon[data-color="${PICKER_GREEN}"]`).click();
+    await expect(dialog).not.toBeVisible();
+    await page.locator('#colorButton').click();
+    const custom = page.locator('.color-menu').getByRole('button', { name: 'Custom Color' });
+    await expect(custom).toHaveClass(/active/);
+    await settleToolbar(page);
+    expect(await custom.evaluate((button) => getComputedStyle(button).boxShadow)).toContain(
+      cssRgb(PICKER_GREEN)
+    );
+    const iconInsets = await custom.evaluate((button) => {
+      const buttonBox = button.getBoundingClientRect();
+      const iconBox = button.querySelector('span')!.getBoundingClientRect();
+      return [
+        iconBox.left - buttonBox.left,
+        buttonBox.right - iconBox.right,
+        iconBox.top - buttonBox.top,
+        buttonBox.bottom - iconBox.bottom,
+      ];
+    });
+    for (const inset of iconInsets) expect(inset).toBeCloseTo(SELECTION_RING_GAP_PX, 0);
+  });
+
+  test('dismissing the first custom picker leaves its swatch unpressed', async ({ page }) => {
+    await gotoApp(page);
+    await page.locator('#colorButton').click();
+    await page.locator('.color-menu').getByRole('button', { name: 'Custom Color' }).click();
+    const dialog = page.locator('#color-picker');
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await page.locator('#colorButton').click();
+    const custom = page.locator('.color-menu').getByRole('button', { name: 'Custom Color' });
+    await expect(custom).toHaveAttribute('aria-pressed', 'false');
+    await expect(custom).not.toHaveClass(/active/);
+  });
+
   test('flyout owners share one open menu and custom colors open the full picker', async ({
     page,
   }) => {
@@ -247,7 +324,10 @@ test.describe('phone landscape interactions', () => {
     await gotoApp(page);
     await page.locator('#colorButton').click();
     const menu = page.locator('.color-menu');
-    await expect(menu.getByRole('button').first()).toHaveCSS('width', '56px');
+    await expect(menu.getByRole('button').first()).toHaveCSS(
+      'width',
+      `${PALETTE_ROW_GEOMETRY.swatchPx}px`
+    );
     await settleToolbar(page);
     const box = await menu.boundingBox();
     expect(box && box.x + box.width).toBeLessThanOrEqual(620);

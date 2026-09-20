@@ -21,7 +21,12 @@
   import { colorPickerModal } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
-  import { getRingColor } from '$lib/colorRing';
+  import {
+    getRingColor,
+    selectionRingShadow,
+    SELECTION_RING_WIDTH_PX,
+    SELECTION_RING_GAP_PX,
+  } from '$lib/colorRing';
   import Icon from './Icon.svelte';
   import { prefersReducedMotion } from '$lib/platform/reducedMotion';
 
@@ -39,13 +44,6 @@
   // only on the actual selection (not on every reactivity change).
   let ringAnimateHex = $state<string | null>(null);
   let ringStartedReduced = $state(false);
-
-  // The selected-state gap (border + seam) is surface-colored, not white, so in
-  // dark mode it reads as bar background and the colored ring floats around the
-  // swatch. Light mode is unchanged (surface is white there).
-  function selectionRingShadow(ringColor: string): string {
-    return `0 0 0 0.5px var(--palette-surface, var(--surface)), 0 0 0 var(--selection-ring-width) ${ringColor}, 0 4px 8px rgb(0 0 0 / 20%)`;
-  }
 
   function selectSwatch(hex: string, paint: string) {
     selectInkBrush();
@@ -125,6 +123,8 @@
 <div
   class="color-palette"
   style:--palette-bottom={`${paletteBottom}px`}
+  style:--selection-ring-width={`${SELECTION_RING_WIDTH_PX}px`}
+  style:--selection-ring-gap-width={`${SELECTION_RING_GAP_PX}px`}
   use:scribbleGuard
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
@@ -140,7 +140,7 @@
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
       style="background-color: {shown}; {!erasing && colorsState.activeSwatch === hex
-        ? `box-shadow: ${selectionRingShadow(ringColor)}; --ring-color: ${ringColor};`
+        ? `box-shadow: ${selectionRingShadow(ringColor, 'var(--palette-surface, var(--surface))')}; --ring-color: ${ringColor};`
         : ''}"
       aria-label={shown === hex ? label : 'White'}
       use:scribbleTap={() => selectSwatch(hex, shown)}
@@ -160,7 +160,7 @@
     data-color="custom"
     aria-label="Custom Color"
     style={!erasing && colorsState.activeSwatch === CUSTOM_SWATCH && colorsState.customColorSelected
-      ? `box-shadow: ${selectionRingShadow(colorsState.customColor)};`
+      ? `box-shadow: ${selectionRingShadow(colorsState.customColor, 'var(--palette-surface, var(--surface))')};`
       : ''}
     use:scribbleTap={selectCustomColor}
     use:clearReleaseOnCancel
@@ -174,7 +174,6 @@
 
 <style>
   .color-palette {
-    --selection-ring-width: 4.5px;
     display: grid;
     grid-template-columns: 1fr;
     justify-items: center;
@@ -196,7 +195,7 @@
     position: relative;
     width: 60px;
     height: 60px;
-    border: 4px solid transparent;
+    border: var(--selection-ring-gap-width) solid transparent;
     border-radius: 50%;
     cursor: pointer;
     /* Orientation changes resize every swatch together. Keep those geometry
@@ -327,7 +326,7 @@
     width: calc(100% / var(--pop-scale));
     height: calc(100% / var(--pop-scale));
     pointer-events: none;
-    transition: transform 150ms ease-out;
+    transition: transform var(--duration-fast) ease-out;
   }
 
   /* Selection pop: the hexagon cluster scales toward the ring. Keyed on .ringed
