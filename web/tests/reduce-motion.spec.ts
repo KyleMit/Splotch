@@ -21,12 +21,15 @@ async function globalCues(page: Page) {
   return page.evaluate(() => {
     // Several cues style a descendant of the element that carries the state
     // class, so a probe builds the whole chain and reads the innermost. Each
-    // layer is `tag` plus a space-separated list of classes and [attributes].
-    const probe = (...layers: [tag: string, parts: string][]) => {
+    // layer is an element name plus a space-separated list of classes and
+    // [attributes]. The label is `element`, not `tag`: e2e-engine-tags.test.mjs
+    // reads a `tag` key anywhere in a spec as a Playwright tag, and a labelled
+    // tuple element reads as one.
+    const probe = (...layers: [element: string, parts: string][]) => {
       let root: HTMLElement | undefined;
       let leaf: HTMLElement | undefined;
-      for (const [tag, parts] of layers) {
-        const el = document.createElement(tag);
+      for (const [element, parts] of layers) {
+        const el = document.createElement(element);
         for (const part of parts.split(' ').filter(Boolean)) {
           if (part.startsWith('[')) {
             const [name, value] = part.slice(1, -1).split('=');
