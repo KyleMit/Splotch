@@ -97,9 +97,13 @@
      bars instead of lifting the button, and the drag is lost with nothing on
      screen to explain it. The floor is two EDGE_SWIPE_BAND_PX bands
      (lib/drawing/strokeMath.ts, which guards the canvas against the same class
-     of OS gesture on the other three edges) — one for the reserved strip, one of
-     fingertip margin, since a finger reaching for a corner-pinned target lands
-     high on it. A floor rather than an addition, so an orientation that already
+     of OS gesture on the other three edges): one band for the strip, whose width
+     is Android's standard status-bar height rather than a measurement from the
+     reported device, and a second as fingertip margin, since a finger reaching
+     for a corner-pinned target lands high on it. That second band is a chosen
+     margin, not a derived one — the clearance is a tuned assumption, and a
+     handset reserving a taller strip would need this raised. A floor rather than
+     an addition, so an orientation that already
      reports a top inset is not pushed down twice. ClearButton.dock.test.ts fails
      if this literal and that constant drift apart. */
   .clear-container {
