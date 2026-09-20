@@ -33,6 +33,8 @@ const LIGHT_COLOR_BRIGHTNESS = 0.5;
 const DARK_SWATCH_LUMINANCE = 0.2;
 const LIGHTEN_STEP = 38;
 const DARKEN_FACTOR = 0.9;
+export const SELECTION_RING_WIDTH_PX = 4.5;
+export const SELECTION_RING_GAP_PX = 4;
 
 // Compute a selection-ring color for a swatch: ~10% darker than the swatch so
 // the ring reads as a contrasting outline — but for very dark swatches (e.g.
@@ -48,4 +50,9 @@ export function getRingColor(color: string): string {
 
   const toHex = (v: number) => v.toString(16).padStart(2, '0');
   return `#${toHex(shift(r))}${toHex(shift(g))}${toHex(shift(b))}`;
+}
+
+export function selectionRingShadow(ringColor: string, surfaceColor: string): string {
+  // The seam inherits the swatch's surface, so it stays legible on light, dark and bare paper.
+  return `0 0 0 0.5px ${surfaceColor}, 0 0 0 var(--selection-ring-width) ${ringColor}, 0 4px 8px rgb(0 0 0 / 20%)`;
 }
