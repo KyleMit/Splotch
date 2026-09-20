@@ -51,6 +51,7 @@ import {
   UNDO_NEXT_FRAME_P95_GATE_MS,
 } from './lib/undo-action-stats.mjs';
 import { FULL_ACTION_GROUPS, actionNotApplicableReason } from './lib/action-applicability.mjs';
+import { artifactFrameStampEpoch, DUAL_FRAME_STAMP_EPOCH } from './lib/frame-stamps.mjs';
 
 const DEFAULT_MANIFEST = join(
   ROOT,
@@ -885,6 +886,7 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
         rotationFirstFrameNa(runtime, label, recordedEngine)
       )
     : profile.summaries;
+  const dualFrameStamps = artifactFrameStampEpoch(profile) === DUAL_FRAME_STAMP_EPOCH;
   const results = summaries
     .filter((summary) => summary.count > 0 && (!labels || labels.has(summary.label)))
     .map((summary) => ({
@@ -893,6 +895,7 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
       firstFrame: normalizedDistribution(summary.firstFrame),
       ready: normalizedDistribution(summary.ready),
       postActionFrames: normalizedActionFrames(summary.frames),
+      ...(dualFrameStamps && summary.frameStamps ? { frameStamps: summary.frameStamps } : {}),
       ...actionGateAllowance(allowances, summary.label),
       passed: summary.passed,
       source: spec.source,
@@ -1705,6 +1708,11 @@ function firstFrameP95Text(result) {
   return result.firstFrame.na === true ? 'N/A' : `${fmt(result.firstFrame.p95)} ms`;
 }
 
+function actionFrameStampsText(frameStamps) {
+  if (!frameStamps) return '';
+  return ` · frame stamps (informational): actual P50 ${fmt(frameStamps.actual.p50)} ms, actual P95 ${fmt(frameStamps.actual.p95)} ms, actual max ${fmt(frameStamps.actual.max)} ms; actual minus scheduled P95 ${fmt(frameStamps.p95DeltaMs)} ms, max ${fmt(frameStamps.maxDeltaMs)} ms; callback delay P95 ${fmt(frameStamps.callbackDelay.p95)} ms, max ${fmt(frameStamps.callbackDelay.max)} ms; hidden overruns ${frameStamps.hiddenOverruns}/${frameStamps.frames} scored frames`;
+}
+
 function heatClass(ratio) {
   if (!Number.isFinite(ratio)) return 'missing';
   if (ratio <= 0.75) return 'cool';
@@ -1789,7 +1797,7 @@ function actionModeCells(mode, label, labels, gates, targetId) {
             : `PASS${allowanceVerdictSuffix(result, ledger)}`
           : `FAIL${allowanceVerdictSuffix(result, ledger)}`
         : `unscoreable: this mode\u2019s idle frame control is ${mode.actions?.controlEvidence ?? 'absent'}`;
-      const tooltip = `${index + 1}. ${result.label} · ${label} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
+      const tooltip = `${index + 1}. ${result.label} · ${label} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}${actionFrameStampsText(result.frameStamps)}`;
       const cellClass = !attributable
         ? 'unscoreable'
         : unconfirmed
