@@ -16,10 +16,12 @@ export interface SpeedSample {
   distance: number;
 }
 
-// Backing-store px of the edge band a start touch must fall in to be treated as
-// an OS-gesture candidate, the travel before the inward/cross direction is
-// decided, and the minimum safe-area inset that marks a tablet's landscape
-// long-bottom as a real home-indicator zone. See engine.ts for the full story.
+// CSS px: the edge band a start touch must fall in to be treated as an
+// OS-gesture candidate, the travel before the inward/cross direction is decided,
+// and the minimum safe-area inset that marks a tablet's landscape long-bottom as
+// a real home-indicator zone. The first two are scaled by renderScale at the
+// point of use, so they stay constant in CSS px across backing-store densities;
+// the inset arrives already in CSS px. See engine.ts for the full story.
 export const EDGE_SWIPE_BAND_PX = 24;
 export const EDGE_SWIPE_DECISION_PX = 12;
 export const GESTURE_INSET_MIN_PX = 16;
