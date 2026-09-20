@@ -42,7 +42,7 @@ export const NATIVE_API_ORIGIN = SITE_ORIGIN;
 // app.html is shared by prerendered and SSR pages, so its synchronous pre-paint
 // stamp cannot use SvelteKit's SSR-only nonce placeholder. securityPolicy.test.ts
 // hashes the exact script body and guards this source against template drift.
-export const APP_TEMPLATE_SCRIPT_HASH = 'sha256-ZHqb0wgTPNZRwA4pfilV/gnaTxqWVaGOhiStCXHsAHs=';
+export const APP_TEMPLATE_SCRIPT_HASH = 'sha256-C/0KXWXIzfS0X9da9PbzKQqzBHOd3uiVuUVjgVwGNVw=';
 
 // /beta injects one other pre-paint script from BETA_PLATFORM_BOOT_SCRIPT.
 // securityPolicy.test.ts guards this hash against that source constant.

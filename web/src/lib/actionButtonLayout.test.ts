@@ -38,6 +38,7 @@ import {
   ACTION_BUTTON_GAP,
   ACTION_BUTTON_COUNT_PROPERTY,
   isAiImageButtonVisible,
+  layoutActionButtonCount,
   visibleActionButtonCount,
   maxActionButtonScale,
   publishActionPanelState,
@@ -175,6 +176,24 @@ describe('visibleActionButtonCount', () => {
   it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
     settingsState.mirrorAiAccessToken('tok');
     expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
+  });
+});
+
+describe('layoutActionButtonCount', () => {
+  it('reserves an opted-in AI slot while its grant is unavailable', () => {
+    freeGenerationsState.setFreeGenerationsUnavailable();
+    expect(visibleActionButtonCount()).toBe(5);
+    expect(layoutActionButtonCount()).toBe(6);
+
+    freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
+    expect(visibleActionButtonCount()).toBe(6);
+    expect(layoutActionButtonCount()).toBe(6);
+  });
+
+  it('does not reserve an AI slot when the parent switched it off', () => {
+    freeGenerationsState.setFreeGenerationsUnavailable();
+    setAiImage(false);
+    expect(layoutActionButtonCount()).toBe(5);
   });
 });
 

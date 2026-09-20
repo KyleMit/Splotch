@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { gotoApp } from './helpers';
+import { gotoApp, seedAiEnabled } from './helpers';
 
 const LANDSCAPE_VIEWPORTS = [
   { name: 'narrow phone L', width: 568, height: 320, paletteWidth: 0 },
@@ -85,6 +85,77 @@ async function seedPersistedHiddenControls(
     localStorage.setItem('splotch-drawer-open', 'true');
     for (const key of keys) localStorage.setItem(key, 'false');
   }, hiddenKeys);
+}
+
+async function startupPanelGeometry(page: Page) {
+  return page.evaluate(() => {
+    const panel = document.querySelector('.actions-panel')!;
+    const toggle = panel.querySelector('.drawer-toggle')!;
+    const ai = panel.querySelector('#aiImageButton')!;
+    const rect = (element: Element) => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return { x, y, width, height };
+    };
+    return {
+      panel: rect(panel),
+      toggle: rect(toggle),
+      ai: rect(ai),
+      count: getComputedStyle(panel).getPropertyValue('--action-btn-count').trim(),
+    };
+  });
+}
+
+for (const scenario of [
+  { name: 'grant arrives', status: 200, viewport: PORTRAIT_VIEWPORTS[0] },
+  { name: 'grant is unavailable', status: 503, viewport: LANDSCAPE_VIEWPORTS[1] },
+] as const) {
+  test(`opted-in AI slot stays fixed from first paint when ${scenario.name}`, async ({
+    browser,
+    page,
+  }) => {
+    const firstPaintContext = await browser.newContext({ viewport: scenario.viewport });
+    const firstPaintPage = await firstPaintContext.newPage();
+    await seedAiEnabled(firstPaintPage);
+    await firstPaintPage.addInitScript(() => localStorage.setItem('splotch-drawer-open', 'true'));
+    await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
+    await firstPaintPage.goto('/');
+    const firstPaint = await startupPanelGeometry(firstPaintPage);
+    await firstPaintContext.close();
+
+    let releaseGrant!: () => void;
+    const grantGate = new Promise<void>((resolve) => (releaseGrant = resolve));
+    await page.route('**/api/free-generation-grant', async (route) => {
+      await grantGate;
+      await route.fulfill({
+        status: scenario.status,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: scenario.status === 200, remaining: 7 }),
+      });
+    });
+    await seedAiEnabled(page);
+    await page.addInitScript(() => localStorage.setItem('splotch-drawer-open', 'true'));
+    await page.setViewportSize(scenario.viewport);
+    await gotoApp(page);
+    await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+    const pending = await startupPanelGeometry(page);
+    const grantResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/free-generation-grant')
+    );
+    releaseGrant();
+    await grantResponse;
+    await expect(page.locator('#aiImageButton')).toBeVisible({ visible: scenario.status === 200 });
+    const settled = await startupPanelGeometry(page);
+
+    expect(firstPaint.count).toBe('6');
+    expect(pending.count).toBe(firstPaint.count);
+    expect(settled.count).toBe(firstPaint.count);
+    expect(pending.panel).toEqual(firstPaint.panel);
+    expect(settled.panel).toEqual(firstPaint.panel);
+    expect(pending.toggle).toEqual(firstPaint.toggle);
+    expect(settled.toggle).toEqual(firstPaint.toggle);
+    expect(pending.ai).toEqual(firstPaint.ai);
+    expect(settled.ai).toEqual(firstPaint.ai);
+  });
 }
 
 for (const viewport of LANDSCAPE_VIEWPORTS) {

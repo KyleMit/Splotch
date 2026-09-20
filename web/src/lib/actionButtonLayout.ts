@@ -113,15 +113,15 @@ export const PALETTE_CLEARANCE = 8;
 // book, screenshot, AI image, undo.
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
-// The AI button is hidden in the prerendered HTML because its visibility depends
-// on client-only credential, grant-availability, and network state. app.html
-// corrects this default count before first paint when persisted settings hide
-// other buttons, and publishActionPanelState publishes the live count after.
+// The AI button is invisible in the prerendered HTML because its usability
+// depends on client-only credential, grant, and network state. An opted-in
+// install reserves its slot before first paint; publishActionPanelState keeps
+// the live count stable when the button becomes usable.
 export const FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT = MAX_ACTION_BUTTON_COUNT - 1;
 
-// The custom property carrying the button count the app.css formula divides
-// by: seeded on <html> by app.html for first paint, published on the panel's
-// own root once hydrated.
+// The custom property carrying the occupied button count the app.css formula
+// divides by: seeded on <html> by app.html for first paint, published on the
+// panel's own root once hydrated.
 export const ACTION_BUTTON_COUNT_PROPERTY = '--action-btn-count';
 
 export const LANDSCAPE_FIXED_RESERVE = SETTINGS_BUTTON_RESERVE + PANEL_FIXED_CHROME;
@@ -150,6 +150,15 @@ export function visibleActionButtonCount(): number {
     (actionControlShown('screenshotEnabled') ? 1 : 0) +
     (isAiImageButtonVisible() ? 1 : 0) +
     (actionControlShown('undoButtonEnabled') ? 1 : 0)
+  );
+}
+
+// An opted-in AI button keeps its place while the grant and connectivity
+// answers arrive. Without the reserved slot, its late appearance moves every
+// control after it and the drawer toggle during startup.
+export function layoutActionButtonCount(): number {
+  return (
+    visibleActionButtonCount() + (settingsState.aiImageEnabled && !isAiImageButtonVisible() ? 1 : 0)
   );
 }
 
@@ -211,7 +220,7 @@ export function renderedActionButtonSize(): number {
     );
   return Math.min(
     actionButtonBase(orientation) * scale,
-    availablePerButton(Math.max(1, visibleActionButtonCount()))
+    availablePerButton(Math.max(1, layoutActionButtonCount()))
   );
 }
 
@@ -242,7 +251,7 @@ export function maxActionButtonScale(): number {
     : actionButtonBase(layoutState.orientation);
   const available = layoutState.phoneLandscape
     ? phoneToolbarAvailablePerButton()
-    : availablePerButton(visibleActionButtonCount());
+    : availablePerButton(layoutActionButtonCount());
   const pct = Math.floor((available / base) * 100);
   return Math.min(ACTION_BUTTON_SCALE_MAX, Math.max(ACTION_BUTTON_SCALE_MIN, pct));
 }
@@ -276,6 +285,7 @@ export const DRAWER_OPEN_ATTRIBUTE = 'data-drawer-open';
 export const BRUSH_ATTRIBUTE = 'data-brush';
 export const SINGLE_BRUSH_ATTRIBUTE = 'data-single-brush';
 export const NO_ACTIONS_ATTRIBUTE = 'data-no-actions';
+export const AI_SLOT_ATTRIBUTE = 'data-ai-slot';
 
 // Publish the Actions Panel's hydrated UI state onto its own root so CSS can
 // drive each control's visibility, the drawer's open state, and the Brush
@@ -305,7 +315,7 @@ export function publishActionPanelState(
   // empty panel (hidden by NO_ACTIONS_ATTRIBUTE) never divides by zero.
   el.style.setProperty(
     ACTION_BUTTON_COUNT_PROPERTY,
-    String(Math.max(1, visibleActionButtonCount()))
+    String(Math.max(1, layoutActionButtonCount()))
   );
   el.toggleAttribute(DRAWER_OPEN_ATTRIBUTE, drawerExpanded);
   for (const [key, attribute] of controlOffEntries) {

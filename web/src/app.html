@@ -58,8 +58,10 @@
              remains, so its direct-button face is correct before hydration.
            • data-no-actions — present when every first-paint action is disabled,
              so the panel and its drawer control never paint empty.
+           • data-ai-slot — present when AI images are enabled, so the hidden
+             button reserves its place while the runtime grant is checked.
            • --action-btn-count — set only when persisted hidden controls reduce
-             the default five-button first-paint row; the hydrated panel then
+             or AI opt-in expands the default five-button row; the hydrated panel then
              publishes its live count on its own root.
            • data-brush — the persisted brush type when it deviates from the default
              pen ('crayon' or 'magic'; the eraser is never persisted), so the Brush
@@ -158,9 +160,12 @@
             el.setAttribute('data-single-brush', crayon ? 'crayon' : magic ? 'magic' : 'eraser');
           }
 
-          var actionButtonCount =
+          var visibleActionButtonCount =
             (optionalBrushCount > 0 ? 1 : 0) + stroke + coloring + screenshot + undo;
-          el.toggleAttribute('data-no-actions', actionButtonCount === 0);
+          var aiSlot = on('splotch-ai-image-enabled', false);
+          el.toggleAttribute('data-ai-slot', aiSlot);
+          var actionButtonCount = visibleActionButtonCount + Number(aiSlot);
+          el.toggleAttribute('data-no-actions', visibleActionButtonCount === 0);
           if (actionButtonCount !== 5 && actionButtonCount > 0) {
             el.style.setProperty('--action-btn-count', String(actionButtonCount));
           }

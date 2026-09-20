@@ -7,6 +7,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  AI_SLOT_ATTRIBUTE,
   BRUSH_ATTRIBUTE,
   CONTROL_OFF_ATTRIBUTES,
   DRAWER_OPEN_ATTRIBUTE,
@@ -415,6 +416,30 @@ describe("app.html's boot script mirrors the state modules", () => {
   it('seeds the single-brush and empty-panel presentation attributes', () => {
     expect(bootScript).toContain(`setAttribute('${SINGLE_BRUSH_ATTRIBUTE}'`);
     expect(bootScript).toContain(`toggleAttribute('${NO_ACTIONS_ATTRIBUTE}'`);
+    expect(bootScript).toContain(`toggleAttribute('${AI_SLOT_ATTRIBUTE}'`);
+  });
+
+  it('keeps an AI-only drawer hidden until its grant is usable', () => {
+    localStorage.clear();
+    document.documentElement.removeAttribute(NO_ACTIONS_ATTRIBUTE);
+    for (const key of [
+      STORAGE_KEYS.crayonEnabled,
+      STORAGE_KEYS.magicBrushEnabled,
+      STORAGE_KEYS.eraserEnabled,
+      STORAGE_KEYS.strokeWidthControl,
+      STORAGE_KEYS.coloringBookEnabled,
+      STORAGE_KEYS.screenshotEnabled,
+      STORAGE_KEYS.undoButtonEnabled,
+    ]) {
+      localStorage.setItem(key, 'false');
+    }
+    localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+
+    new Function(bootScript)();
+
+    expect(document.documentElement.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(true);
+    expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(true);
+    expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe('1');
   });
 
   it('counts and names every optional brush for the single-brush presentation', () => {

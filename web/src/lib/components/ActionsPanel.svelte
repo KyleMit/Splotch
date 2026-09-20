@@ -492,9 +492,8 @@
         <Icon name="camera" class="action-icon" />
       </button>
 
-      <!-- AI button keeps its reactive `hidden`: its visibility also depends on
-           runtime credential, grant-availability, and network signals the head
-           script can't know pre-paint, so there's no first-paint value to seed. -->
+      <!-- AI's opt-in reserves a slot before the grant and network answers
+           arrive. The button stays invisible and inert until usable. -->
       <button
         class="action-button"
         class:disabled={aiImageButtonBlocked}
@@ -512,7 +511,10 @@
                 : 'Create AI image'}
         aria-busy={aiGenerating && !aiGenerationState.minimized}
         disabled={aiImageButtonBlocked}
-        hidden={!aiImageButtonVisible}
+        hidden={!settingsState.aiImageEnabled}
+        style:visibility={aiImageButtonVisible ? 'visible' : 'hidden'}
+        aria-hidden={!aiImageButtonVisible}
+        inert={!aiImageButtonVisible}
         use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >
