@@ -116,11 +116,12 @@ is far larger than it read or needs a product decision. For an issue unit, verif
 live state — no `in-progress` label and a comment naming the blocker — then remove the assignee
 `ship-issue` added and re-read the issue to confirm. A free-form unit has no issue: record its spec
 and blocker in the ledger, and on the tracking issue when the unit has one. Either way, record the
-unit as skipped, with the blocker and the question it raises, and continue.
+unit as skipped, with the blocker and the question it raises, and continue using the successor check
+in step 3.
 
 Never end the turn to ask a question. The user is not there, and a campaign that stops to ask sits
 idle until morning. Park the question in the ledger, apply the unit's quarantine or skip rule, and
-continue with the next unit.
+continue with the next independent eligible unit.
 
 ## 3. When a unit fails — quarantine it, don't stall
 
@@ -150,10 +151,10 @@ runs out of campaign time before its review and merge gate finishes is **quarant
 * **A free-form unit, also:** post the postmortem's summary to the tracking issue when the unit has
   one. There is no issue lifecycle to unwind.
 
-After quarantine, check each queued successor against live `main`. Record a successor that needs the
-quarantined unit as dependency-blocked and skipped, naming that prerequisite in the ledger; continue
-with the first unit whose prerequisites are present and which passes step 2's open/claim check. A
-quarantine never blocks unrelated queued work.
+After quarantine or skip, check each queued successor against live `main`. Record a successor that
+needs the unfinished unit as dependency-blocked and skipped, naming that prerequisite in the ledger;
+continue with the first unit whose prerequisites are present and which passes step 2's open/claim
+check. A quarantine or skip never blocks unrelated queued work.
 
 **Establish causality before blaming the unit.** Before spending a repair attempt or quarantining,
 compare the failing head with its exact base under the same command and runner. The failure belongs
@@ -198,16 +199,17 @@ write the morning report and stop.
 
 ## 5. Stop and report
 
-**Deadline reserve.** Keep taking the next independent eligible unit after each merge, quarantine,
-or skip. Reserve only the final 15 minutes before the deadline for live-state verification, ledger
-updates, and the morning report; never scale that reserve to the longest completed unit. Before
-starting another unit, choose a bounded checkpoint whose work and, if needed, full step 3 quarantine
-can finish before the reserve begins. Scope the work to the time left instead of idling through
-hours of review, CI, or device waits from an earlier unit. If its review and merge gate cannot
-finish in time, apply step 3 quarantine by the reserve start: leave a draft PR with the exact
-evidence, blocker, and next step, unwind any issue claim, and do not call it shipped. At reserve
-start, begin no new unit; verify live state and report by the deadline. If an unexpected in-flight
-unit remains, quarantine it promptly. Do not overrun the deadline merely to merge.
+**Deadline reserve.** Unless a queue-wide blocker (step 3), a red-`main` pause (step 4), or a pause
+or wrap-up control message has stopped the queue, keep taking the next independent eligible unit
+after each merge, quarantine, or skip. Reserve only the final 15 minutes before the deadline for
+live-state verification, ledger updates, and the morning report; never scale that reserve to the
+longest completed unit. Before starting another unit, choose a bounded checkpoint whose work and, if
+needed, full step 3 quarantine can finish before the reserve begins. Scope the work to the time left
+instead of idling through hours of review, CI, or device waits from an earlier unit. If its review
+and merge gate cannot finish in time, apply step 3 quarantine by the reserve start: leave a draft PR
+with the exact evidence, blocker, and next step, unwind any issue claim, and do not call it shipped.
+At reserve start, begin no new unit; verify live state and report by the deadline. If an unexpected
+in-flight unit remains, quarantine it promptly. Do not overrun the deadline merely to merge.
 
 **Control messages** steer the running campaign; they do not replace it.
 

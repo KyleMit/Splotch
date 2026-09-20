@@ -96,8 +96,9 @@ elapsed time, including serial device, review, and CI waits, leaving roughly two
 user explicitly asked to keep taking the next independent item after a documented quarantine and not
 stop two hours early. A fixed 15-minute deadline reserve is for live-state verification and
 reporting; each new unit must leave enough earlier time for its full quarantine unwind if it cannot
-ship. An issue that depends on quarantined work is skipped by name while independent items continue.
-Partial work stays a draft with its exact remainder; no review or merge gate is relaxed.
+ship. An issue that depends on quarantined or skipped work is skipped by name while independent
+items continue. Partial work stays a draft with its exact remainder; no review or merge gate is
+relaxed.
 
 ## Open questions
 
