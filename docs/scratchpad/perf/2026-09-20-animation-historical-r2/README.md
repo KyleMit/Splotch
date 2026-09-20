@@ -2,9 +2,9 @@
 
 This is evidence for issue 1870, not its full acceptance. Seventeen of twenty planned captures
 completed on one frozen harness. Android native has only `before-1`; `after-1`, `after-2`, and
-`before-2` are explicit holes because the historical unit's active-time bound was reached. The
-native result cannot certify a before/after comparison. No current-product matrix cell or product
-arm was changed.
+`before-2` are explicit holes because the 90-minute active operator-time bound, excluding unattended
+capture and CI waits, was reached. The native result cannot certify a before/after comparison. No
+current-product matrix cell or product arm was changed.
 
 Run `node docs/scratchpad/perf/2026-09-20-animation-historical-r2/check.mjs` to verify the manifest,
 all completed capture identities and controls, and every stored summary against the scorer's
@@ -73,6 +73,12 @@ is green. First/reopen coloring-picker rows pass in all seventeen captures.
 | iPad native    | `select Magic brush` max 82 ms red, two breach samples   | Same action max 83 ms red, two breach samples | All 25 pass                                                                  | All 25 pass                      |
 | Android Chrome | All 26 pass                                              | All 26 pass                                   | `clear drawing on a coloring page` post P95 33.3 ms red                      | Same action post P95 33.3 ms red |
 | Android native | All 25 pass                                              | Not captured                                  | Not captured                                                                 | Not captured                     |
+
+Passing iPad runs still contain single-sample breaches: Safari after-1, after-2, and before-2 had
+`select Magic brush` maxima of 63, 63, and 66 ms; native after-2 and before-2 had 66 and 82 ms.
+Native before-1 and after-1 also had `select coloring page` maxima of 87 and 86 ms. Those actions
+pass only because the gate requires at least two breaching samples. The Magic action has a breach in
+every iPad capture, across Safari and native and both arms.
 
 The consistent macOS `clear drawing` post-P95 difference is measured in these two after captures;
 this package contains no trace that assigns its cause. The iPad Magic hitch is present before PR

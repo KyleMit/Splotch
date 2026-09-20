@@ -70,16 +70,16 @@
   {
     "name": "android-native-after-1",
     "status": "hole",
-    "reason": "No capture: the 90-active-minute historical unit bound reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
+    "reason": "No capture: the 90-minute active operator-time bound, excluding unattended capture and CI waits, reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
   },
   {
     "name": "android-native-after-2",
     "status": "hole",
-    "reason": "No capture: the 90-active-minute historical unit bound reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
+    "reason": "No capture: the 90-minute active operator-time bound, excluding unattended capture and CI waits, reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
   },
   {
     "name": "android-native-before-2",
     "status": "hole",
-    "reason": "No capture: the 90-active-minute historical unit bound reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
+    "reason": "No capture: the 90-minute active operator-time bound, excluding unattended capture and CI waits, reserved the remaining time for evidence preservation, rival review, CI, and device restoration."
   }
 ]

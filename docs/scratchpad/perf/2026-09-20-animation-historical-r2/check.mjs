@@ -13,7 +13,7 @@ const check = (claim, ok) => {
 const read = (path) => JSON.parse(readFileSync(join(root, path), 'utf8'));
 const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
   entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)]);
-const codeFiles = new Set(['MANIFEST.json', 'README.md', 'check.mjs', 'compare.mjs', 'lib.mjs', 'negative-controls.mjs', 'package.mjs']);
+const codeFiles = new Set(['MANIFEST.json', 'README.md', 'check.mjs', 'compare.mjs', 'lib.mjs', 'package.mjs']);
 const manifest = read('MANIFEST.json');
 const listed = manifest.files.map((entry) => entry.path);
 const actual = walk(root).map((path) => relative(root, path)).filter((path) => !codeFiles.has(path)).sort();
@@ -26,6 +26,10 @@ for (const { path, sha256 } of manifest.files) {
 const identity = read('BUILD-IDENTITY.json');
 const coverage = read('COVERAGE.json');
 const expected = SETS.flatMap(([, target]) => ABBA.map((capture) => `${target}-${capture}`));
+const order = readFileSync(join(root, 'CAPTURE-ORDER.tsv'), 'utf8').trimEnd().split('\n').slice(1).map((line) => {
+  const [target, capture, completedUtc, rawSha256, verdict] = line.split('\t');
+  return { name: `${target}-${capture}`, completedUtc, rawSha256, verdict };
+});
 check('coverage names every planned target and ABBA position exactly once', JSON.stringify(coverage.map((entry) => entry.name)) === JSON.stringify(expected));
 check('before and after source revisions are the immutable PR 1867 parent and merge',
   identity.before.commit === 'a9b633c4392de7ca943d3f927ff86686956cdb83' &&
@@ -37,7 +41,7 @@ const COLORING = ['first open of coloring books', 'reopen coloring books', 'open
 const AI = ['show AI waiting print', 'finish AI waiting print'];
 const figures = (summary) => JSON.stringify([
   summary.label, summary.passed, summary.count, summary.totalCount, summary.activation,
-  summary.firstFrame, summary.ready, summary.frames, summary.frameSamples,
+  summary.firstFrame, summary.ready, summary.frames, summary.frameSamples, summary.frameStamps,
 ]);
 const runs = new Map();
 for (const [directory, target, captures] of SETS) {
@@ -90,6 +94,14 @@ for (const [directory, target, captures] of SETS) {
         sample.aiRun.generateCalls === 1 && sample.aiRun.urls?.every((url) => /\/api\/generate-image/.test(url))));
   }
 }
+check('capture order contains exactly the completed ABBA positions',
+  JSON.stringify(order.map((entry) => entry.name)) === JSON.stringify(expected.filter((name) => runs.has(name))));
+check('capture completion times increase strictly',
+  order.every((entry, index) => Number.isFinite(Date.parse(entry.completedUtc)) &&
+    (index === 0 || Date.parse(entry.completedUtc) > Date.parse(order[index - 1].completedUtc))));
+check('capture order raw hashes and verdicts match every reduction',
+  order.every((entry) => entry.rawSha256 === runs.get(entry.name)?.sourceSha256 &&
+    entry.verdict === (runs.get(entry.name)?.passed ? 'pass' : 'red')));
 for (const [, target, captures] of SETS) {
   const group = captures.map((capture) => runs.get(`${target}-${capture}`)).filter(Boolean);
   if (!group.length) continue;
