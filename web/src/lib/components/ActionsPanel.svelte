@@ -28,7 +28,11 @@
   import { freeGenerationsState, retryOnVisibleReturn } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { layoutState } from '$lib/state/layout.svelte';
-  import { isAiImageButtonVisible, publishActionPanelState } from '$lib/actionButtonLayout';
+  import {
+    isAiImageButtonVisible,
+    isAiImageButtonShown,
+    publishActionPanelState,
+  } from '$lib/actionButtonLayout';
   import { prepareCanvasExport, undo, isStrokeActive } from '$lib/drawing/engine';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
@@ -81,6 +85,7 @@
   // construction (ADR-0040; the class of issue 317 and issue 706) and a
   // rotation re-lays the panel out in the browser's own pass.
   const aiImageButtonVisible = $derived(isAiImageButtonVisible());
+  const aiImageButtonShown = $derived(isAiImageButtonShown());
 
   // A minimized run is the one state where a generation is in flight and this
   // button is still live: it is what reveals the run again, so it must not be
@@ -492,27 +497,32 @@
         <Icon name="camera" class="action-icon" />
       </button>
 
-      <!-- AI button keeps its reactive `hidden`: its visibility also depends on
-           runtime credential, grant-availability, and network signals the head
-           script can't know pre-paint, so there's no first-paint value to seed. -->
+      <!-- The boot hint keeps a disabled button painted while its usable state
+           settles, so the row stays stable through hydration. -->
       <button
         class="action-button"
-        class:disabled={aiImageButtonBlocked}
+        class:disabled={aiImageButtonBlocked || !aiImageButtonVisible}
         class:loading={aiGenerating && !aiGenerationState.minimized}
         id="aiImageButton"
         style:--i="4"
         aria-label={minimizedRunLabel
           ? minimizedRunLabel
-          : settingsState.aiUserApiKey || settingsState.aiAccessToken
-            ? 'Create AI image'
-            : freeGenerationsState.available && freeGenerationsState.remaining > 0
-              ? `Create AI image, ${freeGenerationsState.remaining} free left`
-              : freeGenerationsState.available
-                ? 'Set up AI image'
-                : 'Create AI image'}
+          : !aiImageButtonVisible
+            ? freeGenerationsState.loading
+              ? 'Checking AI image availability'
+              : 'AI image unavailable'
+            : settingsState.aiUserApiKey || settingsState.aiAccessToken
+              ? 'Create AI image'
+              : freeGenerationsState.available && freeGenerationsState.remaining > 0
+                ? `Create AI image, ${freeGenerationsState.remaining} free left`
+                : freeGenerationsState.available
+                  ? 'Set up AI image'
+                  : 'Create AI image'}
         aria-busy={aiGenerating && !aiGenerationState.minimized}
-        disabled={aiImageButtonBlocked}
-        hidden={!aiImageButtonVisible}
+        disabled={aiImageButtonBlocked || !aiImageButtonVisible}
+        hidden={!aiImageButtonShown}
+        aria-hidden={!aiImageButtonShown || undefined}
+        inert={!aiImageButtonShown}
         use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >
@@ -520,8 +530,12 @@
           name={aiGenerating && !aiGenerationState.minimized ? 'loading' : 'wand-stars'}
           class="action-icon"
         />
-        {#if !settingsState.aiUserApiKey && !settingsState.aiAccessToken && freeGenerationsState.available && !storeCapture}
-          <span class="free-count" aria-hidden="true">{freeGenerationsState.remaining}</span>
+        {#if !settingsState.aiUserApiKey && !settingsState.aiAccessToken && freeGenerationsState.badgeRemaining !== null && !storeCapture}
+          <span
+            class="free-count"
+            data-free-count={freeGenerationsState.badgeRemaining}
+            aria-hidden="true"
+          ></span>
         {/if}
       </button>
 

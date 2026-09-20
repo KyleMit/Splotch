@@ -113,11 +113,10 @@ body {
   --palette-landscape-width: 84px;
   --palette-portrait-height: 75px;
   --corner-button-size: 48px;
-  /* How many action buttons the panel lays out. Five is the prerendered row
-     (the AI button waits for client-only state); app.html re-seeds this on
-     <html> before first paint when persisted settings hide controls, and the
-     hydrated panel publishes its live count on its own root, which wins by
-     being closer. */
+  /* How many slots the panel lays out. Five is the default prerendered row;
+     app.html re-seeds this on <html> when persisted settings hide controls or
+     AI opt-in reserves a slot, and the hydrated panel publishes its count on
+     its own root, which wins by being closer. */
   --action-btn-count: 5;
 }
 
@@ -595,6 +594,32 @@ body {
 
 .actions-panel .action-button[hidden] {
   display: none;
+}
+
+/* The boot script uses the last known network state and a definite offline
+   report to place the AI button before hydration. It paints disabled until
+   the runtime checks its grant. */
+html[data-ai-slot] .actions-panel:not([data-action-panel-live]) #aiImageButton[hidden] {
+  display: flex;
+}
+
+.actions-panel #aiImageButton .free-count::before {
+  content: attr(data-free-count);
+}
+
+.actions-panel:not([data-action-panel-live]) #aiImageButton .free-count {
+  display: none;
+}
+
+html[data-ai-free-count] .actions-panel:not([data-action-panel-live]) #aiImageButton .free-count {
+  display: grid;
+}
+
+html[data-ai-free-count]
+  .actions-panel:not([data-action-panel-live])
+  #aiImageButton
+  .free-count::before {
+  content: var(--ai-free-count);
 }
 
 /* The L's two four-slot legs share this budget with Settings' scale ceiling.

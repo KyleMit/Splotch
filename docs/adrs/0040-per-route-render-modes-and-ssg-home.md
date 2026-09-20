@@ -2,7 +2,8 @@
 
 **Status:** Active **Date:** 2026-07. Amended 2026-08-03: the landscape Color Palette and Actions
 Panel share deterministic first-paint geometry for the persisted visible-button count, with
-orientation-tagged measurement retained as a hydrated correction.
+orientation-tagged measurement retained as a hydrated correction. Amended 2026-09-19: the AI button
+uses the last known connectivity state to paint before runtime status resolves.
 
 ## Context
 
@@ -65,12 +66,12 @@ that are already correct in the prerendered HTML:
    (`--action-btn-size`) for first paint and the hydrated panel alike: the scaled size-class step,
    capped by the viewport extent (`100vw`, or `100dvh` in portrait) less the palette, the panel's
    fixed chrome, the gaps and the safe-area insets, divided by `--action-btn-count` — five in the
-   stylesheet, re-seeded on `<html>` by the boot script when persisted toggles hide controls, and
-   republished on the panel by `publishActionPanelState` once client-only AI visibility resolves
-   (issue 1892 retired the palette `ResizeObserver` and the inline `left` / `--action-btn-size`
-   writes that used to correct this after hydration). Drift-guard tests derive the CSS literals from
-   `design/trimGeometry.ts` and the Actions Panel constants, so this shared non-importable geometry
-   cannot silently diverge.
+   stylesheet, re-seeded on `<html>` by the boot script when persisted toggles hide controls or AI
+   availability places a button, and republished on the panel by `publishActionPanelState` after
+   hydration (issue 1892 retired the palette `ResizeObserver` and the inline `left` /
+   `--action-btn-size` writes that used to correct this after hydration). Drift-guard tests derive
+   the CSS literals from `design/trimGeometry.ts` and the Actions Panel constants, so this shared
+   non-importable geometry cannot silently diverge.
 2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline script runs
    before first paint and stamps `<html>` from `localStorage`, and the Action-center panel's CSS
    reads those stamps so the state is correct at render. During hydration, a publish `$effect` in
@@ -94,12 +95,18 @@ that are already correct in the prerendered HTML:
      while it is off (issue #1927; `TOOL_DRAWER_CONTROLS` in `settings.svelte.ts`).
    * `data-single-brush` — present when exactly one optional brush is enabled, selecting the direct
      button's fixed face independently of the active brush.
-   * `data-no-actions` — present when every first-paint action is disabled, hiding both the panel
-     and its drawer control.
-   * `--action-btn-count` — set only when those persisted off-states reduce the default five-button
-     row. It is derived from the same booleans that stamp `data-off-<control>`, so first-paint
-     sizing matches the visible controls; the hydrated panel publishes its live count on its own
-     root.
+   * `data-no-actions` — present when no first-paint action is painted, hiding both the panel and
+     its drawer control.
+   * `data-ai-slot` — present when AI images are enabled, the last known network state was online,
+     and `navigator.onLine` does not report offline. The prerendered button paints disabled while
+     its grant is checked.
+   * `data-ai-free-count` and `--ai-free-count` — paint the last known free-generation badge before
+     hydration when the AI slot is present. An installation without a saved count paints ten; a
+     saved unavailable result omits the badge. The hydrated panel takes over after
+     `data-action-panel-live`.
+   * `--action-btn-count` — set when persisted off-states or the AI button change the default
+     five-button row. The hydrated panel counts the painted AI button, including its disabled state,
+     so the row's size and position stay fixed through the grant check.
    * `data-brush` — present for a persisted non-default brush (default: pen).
 
    This is what lets the drawer be **always rendered** (in the DOM) yet shown/hidden and the
@@ -111,14 +118,28 @@ that are already correct in the prerendered HTML:
    (delayed past the collapse) so the buttons are truly inert — out of hit-testing, the a11y tree,
    and tab order.
 
-The one exception is the AI button, whose visibility also depends on a *runtime*, non-persisted
-signal (`networkState.online`) the head script can't know, and which defaults hidden (no access
-token) — so it keeps its reactive binding and needs no stamp. Fully non-persisted state (the active
-color always boots to Purple) needs no treatment either.
+The AI button's usability still depends on runtime connectivity, credentials, and the
+free-generation grant. The head script reads the last known network state from local storage, with
+online as the default. A definite offline report from `navigator.onLine` removes the AI button
+before paint even when the stored state was online. The live network store starts from the saved
+value and persists each platform status update. Native keeps that value until the Capacitor network
+plugin responds, since the WebView's online status can disagree with the device status; only the
+plugin's reports update native connectivity. On an online startup, an opted-in button paints
+disabled and stays in the row if the grant fails; the grant only changes whether it can be used. On
+an offline startup, the button and its space are absent. A changed network state may alter the row
+after first paint. `data-no-actions` hides the panel only when no button is painted. Fully
+non-persisted state (the active color always boots to Purple) needs no treatment.
+
+The free-generation badge follows the same first-paint handoff. The last grant count is cached in
+local storage (and native Preferences) solely as a display hint. The head script paints it on the
+prerendered badge before hydration; the live grant response replaces it when available. A failed
+grant or a configured credential removes the saved free badge, while disabling AI retains the last
+count for a later opt-in. The cached value never permits a generation or changes the server's grant
+decision (ADR-0105).
 
 ### Performance
 
-The head script was measured (prod build, real browser): **~0.1 ms cold** (the one-time,
+The original head script was measured (prod build, real browser): **~0.1 ms cold** (the one-time,
 parser-blocking cost) / ~10 µs warm; ~9 `localStorage` reads + a `matchMedia` + a few `<html>`
 attribute/style writes, no reflow (the `<body>` isn't rendered yet). FCP impact is within noise. The
 visible-button count reuses the existing setting reads. The script pays for itself easily: under a

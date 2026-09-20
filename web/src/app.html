@@ -56,10 +56,15 @@
              touching their flags, so those read as off while it is off.
            • data-single-brush — the one enabled optional brush, when exactly one
              remains, so its direct-button face is correct before hydration.
-           • data-no-actions — present when every first-paint action is disabled,
+           • data-no-actions — present when no first-paint action is painted,
              so the panel and its drawer control never paint empty.
+           • data-ai-slot — present for opted-in AI when the last known network
+             state was online and the browser does not report offline. The button
+             paints disabled until its grant resolves.
+           • --ai-free-count — the last known free-generation count (default: ten)
+             for the badge on that button, until its grant resolves.
            • --action-btn-count — set only when persisted hidden controls reduce
-             the default five-button first-paint row; the hydrated panel then
+             or the AI button expands the default five-button row; the hydrated panel then
              publishes its live count on its own root.
            • data-brush — the persisted brush type when it deviates from the default
              pen ('crayon' or 'magic'; the eraser is never persisted), so the Brush
@@ -158,8 +163,21 @@
             el.setAttribute('data-single-brush', crayon ? 'crayon' : magic ? 'magic' : 'eraser');
           }
 
-          var actionButtonCount =
+          var visibleActionButtonCount =
             (optionalBrushCount > 0 ? 1 : 0) + stroke + coloring + screenshot + undo;
+          var aiSlot =
+            on('splotch-ai-image-enabled', false) &&
+            on('splotch-last-network-online', true) &&
+            navigator.onLine !== false;
+          el.toggleAttribute('data-ai-slot', aiSlot);
+          var badgeRaw = localStorage.getItem('splotch-free-generation-badge-hint');
+          var badgeCount = badgeRaw === null ? 10 : Number(badgeRaw);
+          if (badgeRaw === '' || !Number.isInteger(badgeCount) || badgeCount < 0 || badgeCount > 10)
+            badgeCount = 10;
+          var showBadge = aiSlot && badgeRaw !== 'unavailable';
+          el.toggleAttribute('data-ai-free-count', showBadge);
+          if (showBadge) el.style.setProperty('--ai-free-count', '"' + badgeCount + '"');
+          var actionButtonCount = visibleActionButtonCount + Number(aiSlot);
           el.toggleAttribute('data-no-actions', actionButtonCount === 0);
           if (actionButtonCount !== 5 && actionButtonCount > 0) {
             el.style.setProperty('--action-btn-count', String(actionButtonCount));

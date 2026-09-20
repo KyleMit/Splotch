@@ -7,6 +7,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  AI_SLOT_ATTRIBUTE,
   BRUSH_ATTRIBUTE,
   CONTROL_OFF_ATTRIBUTES,
   DRAWER_OPEN_ATTRIBUTE,
@@ -22,6 +23,7 @@ import {
   resolveReducedMotion,
 } from './lib/platform/reducedMotion';
 import { STORAGE_KEYS } from './lib/storage';
+import { FREE_GENERATION_LIMIT } from './lib/freeGenerations';
 import {
   RESOLVED_THEMES,
   resolveTheme,
@@ -344,10 +346,15 @@ describe("app.html's boot script mirrors the state modules", () => {
   }
 
   for (const [key, fallback] of bootBoolDefaults) {
+    if (key === STORAGE_KEYS.lastNetworkOnline) continue;
     it(`${key} falls back to its BOOL_SETTINGS default`, () => {
       expect(boolDefaults.get(key)).toBe(fallback);
     });
   }
+
+  it('defaults unknown connectivity to online', () => {
+    expect(bootBoolDefaults).toContainEqual([STORAGE_KEYS.lastNetworkOnline, true]);
+  });
 
   // The Tool Drawer switch hides its own tools without touching their flags, so
   // the boot script gates exactly TOOL_DRAWER_CONTROLS' keys behind it. One
@@ -415,6 +422,97 @@ describe("app.html's boot script mirrors the state modules", () => {
   it('seeds the single-brush and empty-panel presentation attributes', () => {
     expect(bootScript).toContain(`setAttribute('${SINGLE_BRUSH_ATTRIBUTE}'`);
     expect(bootScript).toContain(`toggleAttribute('${NO_ACTIONS_ATTRIBUTE}'`);
+    expect(bootScript).toContain(`toggleAttribute('${AI_SLOT_ATTRIBUTE}'`);
+  });
+
+  it('paints an AI-only drawer disabled while its grant is checked', () => {
+    localStorage.clear();
+    document.documentElement.removeAttribute(NO_ACTIONS_ATTRIBUTE);
+    for (const key of [
+      STORAGE_KEYS.crayonEnabled,
+      STORAGE_KEYS.magicBrushEnabled,
+      STORAGE_KEYS.eraserEnabled,
+      STORAGE_KEYS.strokeWidthControl,
+      STORAGE_KEYS.coloringBookEnabled,
+      STORAGE_KEYS.screenshotEnabled,
+      STORAGE_KEYS.undoButtonEnabled,
+    ]) {
+      localStorage.setItem(key, 'false');
+    }
+    localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+
+    new Function(bootScript)();
+
+    expect(document.documentElement.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(false);
+    expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(true);
+    expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe('1');
+  });
+
+  it.each([
+    { cached: null, present: true, count: '6' },
+    { cached: 'true', present: true, count: '6' },
+    { cached: 'false', present: false, count: '' },
+  ])(
+    'seeds the AI button from its last known network state ($cached)',
+    ({ cached, present, count }) => {
+      localStorage.clear();
+      document.documentElement.removeAttribute(AI_SLOT_ATTRIBUTE);
+      document.documentElement.style.removeProperty('--action-btn-count');
+      localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+      if (cached !== null) localStorage.setItem(STORAGE_KEYS.lastNetworkOnline, cached);
+
+      new Function(bootScript)();
+
+      expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(present);
+      expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe(count);
+    }
+  );
+
+  it.each([
+    { cached: null, shown: true, count: '"10"' },
+    { cached: '7', shown: true, count: '"7"' },
+    { cached: '0', shown: true, count: '"0"' },
+    { cached: 'unavailable', shown: false, count: '' },
+    { cached: 'invalid', shown: true, count: '"10"' },
+  ])('seeds the free-count badge from $cached before hydration', ({ cached, shown, count }) => {
+    localStorage.clear();
+    document.documentElement.removeAttribute('data-ai-free-count');
+    document.documentElement.style.removeProperty('--ai-free-count');
+    localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+    if (cached !== null) localStorage.setItem(STORAGE_KEYS.freeGenerationBadgeHint, cached);
+
+    new Function(bootScript)();
+
+    expect(document.documentElement.hasAttribute('data-ai-free-count')).toBe(shown);
+    expect(document.documentElement.style.getPropertyValue('--ai-free-count')).toBe(count);
+  });
+
+  it('uses the shared count limit and storage key for the boot badge', () => {
+    expect(bootScript).toContain(`localStorage.getItem('${STORAGE_KEYS.freeGenerationBadgeHint}')`);
+    expect(bootLiteral(/badgeRaw === null \? (\d+) : Number\(badgeRaw\)/)).toBe(
+      FREE_GENERATION_LIMIT
+    );
+    expect(bootLiteral(/badgeCount > (\d+)/)).toBe(FREE_GENERATION_LIMIT);
+  });
+
+  it('omits the AI button before paint when the browser reports offline', () => {
+    const onLineDescriptor = Object.getOwnPropertyDescriptor(navigator, 'onLine');
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+    try {
+      localStorage.clear();
+      document.documentElement.removeAttribute(AI_SLOT_ATTRIBUTE);
+      document.documentElement.style.removeProperty('--action-btn-count');
+      localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+      localStorage.setItem(STORAGE_KEYS.lastNetworkOnline, 'true');
+
+      new Function(bootScript)();
+
+      expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(false);
+      expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe('');
+    } finally {
+      if (onLineDescriptor) Object.defineProperty(navigator, 'onLine', onLineDescriptor);
+      else Reflect.deleteProperty(navigator, 'onLine');
+    }
   });
 
   it('counts and names every optional brush for the single-brush presentation', () => {

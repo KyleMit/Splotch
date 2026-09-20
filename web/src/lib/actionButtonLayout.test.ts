@@ -38,6 +38,8 @@ import {
   ACTION_BUTTON_GAP,
   ACTION_BUTTON_COUNT_PROPERTY,
   isAiImageButtonVisible,
+  isAiImageButtonShown,
+  layoutActionButtonCount,
   visibleActionButtonCount,
   maxActionButtonScale,
   publishActionPanelState,
@@ -175,6 +177,34 @@ describe('visibleActionButtonCount', () => {
   it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
     settingsState.mirrorAiAccessToken('tok');
     expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
+  });
+});
+
+describe('layoutActionButtonCount', () => {
+  it('shows a disabled AI button while online even after the grant fails', () => {
+    freeGenerationsState.setFreeGenerationsUnavailable();
+    expect(visibleActionButtonCount()).toBe(5);
+    expect(isAiImageButtonShown()).toBe(true);
+    expect(layoutActionButtonCount()).toBe(6);
+
+    freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
+    expect(visibleActionButtonCount()).toBe(6);
+    expect(layoutActionButtonCount()).toBe(6);
+
+    networkState.setOnline(false);
+    expect(isAiImageButtonShown()).toBe(false);
+    expect(layoutActionButtonCount()).toBe(5);
+
+    networkState.setOnline(true);
+    expect(isAiImageButtonShown()).toBe(true);
+    expect(layoutActionButtonCount()).toBe(6);
+  });
+
+  it('does not show AI when the parent switched it off', () => {
+    freeGenerationsState.setFreeGenerationsUnavailable();
+    setAiImage(false);
+    expect(isAiImageButtonShown()).toBe(false);
+    expect(layoutActionButtonCount()).toBe(5);
   });
 });
 
@@ -530,7 +560,7 @@ describe('publishActionPanelState', () => {
     expect(el.getAttribute(SINGLE_BRUSH_ATTRIBUTE)).toBe('eraser');
   });
 
-  it('hides the whole panel when no action is visible', () => {
+  it('hides an empty panel and shows a disabled AI-only panel when online', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
     setCrayon(false);
     setMagicBrush(false);
@@ -539,9 +569,15 @@ describe('publishActionPanelState', () => {
     setColoringBook(false);
     setScreenshot(false);
     setUndoButton(false);
+    networkState.setOnline(false);
     const el = document.createElement('div');
     publishActionPanelState(el, false, 1);
     expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(true);
+
+    networkState.setOnline(true);
+    publishActionPanelState(el, false, 1);
+    expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(false);
+    expect(el.style.getPropertyValue(ACTION_BUTTON_COUNT_PROPERTY)).toBe('1');
   });
 
   it('reflects each non-pen brush in data-brush', () => {

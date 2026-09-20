@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   coloringBookEnabled: 'splotch-coloring-book-enabled',
   coloringPacksAllowMetered: 'splotch-coloring-packs-allow-metered',
   aiImageEnabled: 'splotch-ai-image-enabled',
+  lastNetworkOnline: 'splotch-last-network-online',
   aiCustomizationEnabled: 'splotch-ai-customization-enabled',
   autoSaveAi: 'splotch-auto-save-ai',
   legacyAiAccessToken: 'splotch-ai-access-token',
@@ -35,6 +36,7 @@ export const STORAGE_KEYS = {
   installRepromptsUsed: 'splotch-install-reprompts-used',
   legacyAiUserApiKey: 'splotch-ai-user-api-key',
   freeGenerationInstallation: 'splotch-free-generation-installation-v1',
+  freeGenerationBadgeHint: 'splotch-free-generation-badge-hint',
   // The web-vault rows a successful read has found missing, as a JSON name
   // list, so boot can skip opening the database once every row is accounted
   // for. Written and read only by secureStorage (noteSecretAbsent /
