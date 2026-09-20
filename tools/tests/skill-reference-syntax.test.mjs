@@ -9,6 +9,12 @@ import {
 const NAMES = ['build', 'cut-release', 'create-adr'];
 const tokensIn = (violations) => violations.map((v) => v.token);
 
+// The repo-wide sweep reads every tracked .md/.mjs/.json file. Vitest's 5s
+// default is sized for a unit test, not for an I/O pass over the repository,
+// and that gap is what made this the suite's flakiest test twice over. The
+// matcher is fast enough now that the budget is slack rather than a target.
+const REPO_SWEEP_TIMEOUT_MS = 30_000;
+
 describe('skill reference vocabulary', () => {
   const names = registeredSkillNames();
 
@@ -36,6 +42,15 @@ describe('shared surfaces', () => {
   it('flags a slash name in generated Codex-facing output', () => {
     const violations = findFileViolations('AGENTS.md', 'use `/create-adr` to record it', NAMES);
     expect(tokensIn(violations)).toEqual(['/create-adr']);
+  });
+
+  // The vocabulary comes from directory names, so a name is matched as literal
+  // text rather than as the pattern it would be inside the matcher's alternation.
+  it('reads a regex metacharacter in a name literally', () => {
+    expect(tokensIn(findFileViolations('docs/README.md', 'run `/a.c`', ['a.c', 'abc']))).toEqual([
+      '/a.c',
+    ]);
+    expect(findFileViolations('docs/README.md', 'run `/abc`', ['a.c'])).toEqual([]);
   });
 
   it('accepts the bare name', () => {
@@ -79,6 +94,10 @@ describe('runner-specific trees', () => {
 });
 
 describe('things that are not skill references', () => {
+  it('ignores a shorter name that only prefixes the one actually written', () => {
+    expect(findFileViolations('docs/README.md', 'run `/build-outputs`', NAMES)).toEqual([]);
+  });
+
   it.each([
     ['a repo path', 'docs/README.md', 'see tools/release/cut-release.mjs'],
     ['a glob', 'dprint.json', '"android/**/build",'],
@@ -147,9 +166,13 @@ describe('the user-facing shapes this guard exists to catch', () => {
 // both generated provider trees, the human docs, and the release tooling's own
 // output all have to stay neutral (issue #991).
 describe('the repository', () => {
-  it('has no runner-specific skill sigils in shared prose', () => {
-    expect(findViolations()).toEqual([]);
-  });
+  it(
+    'has no runner-specific skill sigils in shared prose',
+    () => {
+      expect(findViolations()).toEqual([]);
+    },
+    REPO_SWEEP_TIMEOUT_MS
+  );
 
   // Without this exemption the guard fails on its own fixtures and worked
   // examples, and the tempting fix is to soften the matcher until they stop
