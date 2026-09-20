@@ -2,6 +2,7 @@ import { getViewState } from './engine';
 import type { ExportOptions } from './exportDrawing';
 import { SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
 import { POLAROID_CLEANUP_TIMEOUT_MS } from './screenshotTiming';
+import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
 const POLAROID_MAX_WIDTH_PX = 480;
 const POLAROID_PREFERRED_MIN_WIDTH_PX = 260;
@@ -63,9 +64,11 @@ function mountPolaroidAnimation(canvas: HTMLCanvasElement, size: PolaroidSize) {
 
   const flash = document.createElement('div');
   flash.className = 'polaroid-flash';
+  stampMotionAtStart(flash);
 
   const frame = document.createElement('div');
   frame.className = 'polaroid-frame';
+  stampMotionAtStart(frame);
   setFrameOrigin(frame);
 
   canvas.className = 'polaroid-image';

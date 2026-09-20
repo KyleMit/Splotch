@@ -3,6 +3,7 @@
   import { aiGenerationState, restoreAiResult } from '$lib/state/aiGeneration.svelte';
   import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { unreachable } from '$lib/unreachable';
+  import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
   // The picture-in-progress, pinned to the top-left of the canvas while the
   // child keeps drawing (ADR-0116, ADR-0117). A photo rather than a chip: what
@@ -48,6 +49,11 @@
   // sixty times a second — over the canvas the child is drawing on — to move it
   // by a hundredth of a pixel.
   const fillPercent = $derived(Math.round(aiProgressState.value * 100));
+  let polaroidEl = $state<HTMLButtonElement>();
+
+  $effect(() => {
+    if (ready && polaroidEl) stampMotionAtStart(polaroidEl);
+  });
 </script>
 
 {#if waiting || ready}
@@ -57,6 +63,8 @@
     class:failed
     type="button"
     aria-label={label}
+    bind:this={polaroidEl}
+    use:stampMotionAtStart
     onclick={restoreAiResult}
   >
     <span class="polaroid-window">
@@ -299,9 +307,9 @@
   /* A toddler app that moves things unprompted has to honour this one. The
      spinner slows rather than stopping: it is the only sign left that anything
      is still happening. */
-  :global(:root[data-reduce-motion]) .ai-waiting-polaroid,
-  :global(:root[data-reduce-motion]) .ai-waiting-polaroid.ready,
-  :global(:root[data-reduce-motion]) :global(.polaroid-badge) {
+  .ai-waiting-polaroid:global([data-start-reduced-motion]),
+  .ai-waiting-polaroid.ready:global([data-start-reduced-motion]),
+  .ai-waiting-polaroid:global([data-start-reduced-motion]) :global(.polaroid-badge) {
     animation: none;
   }
   :global(:root[data-reduce-motion]) .polaroid-spinner {

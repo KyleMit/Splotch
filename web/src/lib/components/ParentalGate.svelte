@@ -6,6 +6,7 @@
   import ParentalGateProblem from './ParentalGateProblem.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { stampMotionAtStart } from '$lib/platform/reducedMotion';
   import type { Origin } from '$lib/state/modal.svelte';
   import '$lib/components/deferredIcons';
   import {
@@ -91,7 +92,7 @@
     style:--gate-shake-duration={`${GATE_SHAKE_MS}ms`}
   >
     {#if parentalGateState.unlocked}
-      <div class="gate-success" role="status">
+      <div class="gate-success" role="status" use:stampMotionAtStart>
         <span class="gate-success-badge">
           <Icon name="check" class="gate-success-icon" />
         </span>
@@ -382,7 +383,7 @@
   :global(:root[data-reduce-motion]) .gate-content.shaking {
     animation: none;
   }
-  :global(:root[data-reduce-motion]) .gate-success {
+  .gate-success:global([data-start-reduced-motion]) {
     animation: gateFadeIn var(--duration-base) ease;
   }
 

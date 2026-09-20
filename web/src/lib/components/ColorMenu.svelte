@@ -5,6 +5,7 @@
   import { colorsState, isDarkInk, themedSwatchColor } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { toolState } from '$lib/state/tool.svelte';
+  import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
   let {
     onpick,
@@ -21,7 +22,7 @@
      DOM, and the ladder hides the ranks that do not fit — decided in the same
      layout pass that places the menu, so the set is right in its first frame. -->
 <div class="color-menu-space">
-  <div class="flyout-menu color-menu" aria-label="Colors" role="group">
+  <div class="flyout-menu color-menu" aria-label="Colors" role="group" use:stampMotionAtStart>
     {#each LANDSCAPE_COLORS as { hex, label } (hex)}
       {@const paint = themedSwatchColor(hex, dark)}
       <button
