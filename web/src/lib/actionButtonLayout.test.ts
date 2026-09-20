@@ -183,18 +183,22 @@ describe('visibleActionButtonCount', () => {
 });
 
 describe('layoutActionButtonCount', () => {
-  it('shows a disabled AI button while its boot hint is present', () => {
+  it('shows a disabled AI button while online even after the grant fails', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
     expect(visibleActionButtonCount()).toBe(5);
-    expect(isAiImageButtonShown()).toBe(false);
-    expect(layoutActionButtonCount()).toBe(5);
-
-    document.documentElement.setAttribute(AI_SLOT_ATTRIBUTE, '');
     expect(isAiImageButtonShown()).toBe(true);
     expect(layoutActionButtonCount()).toBe(6);
 
     freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
     expect(visibleActionButtonCount()).toBe(6);
+    expect(layoutActionButtonCount()).toBe(6);
+
+    networkState.setOnline(false);
+    expect(isAiImageButtonShown()).toBe(false);
+    expect(layoutActionButtonCount()).toBe(5);
+
+    networkState.setOnline(true);
+    expect(isAiImageButtonShown()).toBe(true);
     expect(layoutActionButtonCount()).toBe(6);
   });
 
@@ -559,7 +563,7 @@ describe('publishActionPanelState', () => {
     expect(el.getAttribute(SINGLE_BRUSH_ATTRIBUTE)).toBe('eraser');
   });
 
-  it('hides an empty panel and shows a disabled AI-only panel', () => {
+  it('hides an empty panel and shows a disabled AI-only panel when online', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
     setCrayon(false);
     setMagicBrush(false);
@@ -568,11 +572,12 @@ describe('publishActionPanelState', () => {
     setColoringBook(false);
     setScreenshot(false);
     setUndoButton(false);
+    networkState.setOnline(false);
     const el = document.createElement('div');
     publishActionPanelState(el, false, 1);
     expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(true);
 
-    document.documentElement.setAttribute(AI_SLOT_ATTRIBUTE, '');
+    networkState.setOnline(true);
     publishActionPanelState(el, false, 1);
     expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(false);
     expect(el.style.getPropertyValue(ACTION_BUTTON_COUNT_PROPERTY)).toBe('1');

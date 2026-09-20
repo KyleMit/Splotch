@@ -32,7 +32,6 @@
     isAiImageButtonVisible,
     isAiImageButtonShown,
     publishActionPanelState,
-    rememberAiButtonAvailability,
   } from '$lib/actionButtonLayout';
   import { prepareCanvasExport, undo, isStrokeActive } from '$lib/drawing/engine';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
@@ -87,8 +86,6 @@
   // rotation re-lays the panel out in the browser's own pass.
   const aiImageButtonVisible = $derived(isAiImageButtonVisible());
   const aiImageButtonShown = $derived(isAiImageButtonShown());
-
-  $effect(rememberAiButtonAvailability);
 
   // A minimized run is the one state where a generation is in flight and this
   // button is still live: it is what reveals the run again, so it must not be

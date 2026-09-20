@@ -58,8 +58,8 @@
              remains, so its direct-button face is correct before hydration.
            • data-no-actions — present when no first-paint action is painted,
              so the panel and its drawer control never paint empty.
-           • data-ai-slot — present for opted-in AI unless its last known grant
-             was unavailable. The button paints disabled until runtime checks it.
+           • data-ai-slot — present for opted-in AI when the last known network
+             state was online. The button paints disabled until its grant resolves.
            • --action-btn-count — set only when persisted hidden controls reduce
              or the AI button expands the default five-button row; the hydrated panel then
              publishes its live count on its own root.
@@ -163,7 +163,7 @@
           var visibleActionButtonCount =
             (optionalBrushCount > 0 ? 1 : 0) + stroke + coloring + screenshot + undo;
           var aiSlot =
-            on('splotch-ai-image-enabled', false) && on('splotch-ai-button-available', true);
+            on('splotch-ai-image-enabled', false) && on('splotch-last-network-online', true);
           el.toggleAttribute('data-ai-slot', aiSlot);
           var actionButtonCount = visibleActionButtonCount + Number(aiSlot);
           el.toggleAttribute('data-no-actions', actionButtonCount === 0);

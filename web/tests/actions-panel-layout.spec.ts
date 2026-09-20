@@ -146,9 +146,10 @@ for (const scenario of [
     releaseGrant();
     await grantResponse;
     await expect(page.locator('#aiImageButton')).toBeVisible();
-    await expect
-      .poll(() => page.evaluate(() => localStorage.getItem('splotch-ai-button-available')))
-      .toBe(String(scenario.status === 200));
+    await expect(page.locator('#aiImageButton')).toHaveAttribute(
+      'aria-label',
+      scenario.status === 200 ? /Create AI image/ : 'AI image unavailable'
+    );
     const settled = await startupPanelGeometry(page);
 
     expect(firstPaint.count).toBe('6');
@@ -166,21 +167,22 @@ for (const scenario of [
   });
 }
 
-test('last known unavailable AI grant leaves no gap in the first painted row', async ({
+test('last known offline state leaves no gap in the first painted row', async ({
   browser,
   page,
 }) => {
-  const seedUnavailable = async (target: Page) => {
+  const seedOffline = async (target: Page) => {
     await seedAiEnabled(target);
     await target.addInitScript(() => {
       localStorage.setItem('splotch-drawer-open', 'true');
-      localStorage.setItem('splotch-ai-button-available', 'false');
+      localStorage.setItem('splotch-last-network-online', 'false');
+      Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
     });
   };
 
   const firstPaintContext = await browser.newContext({ viewport: PORTRAIT_VIEWPORTS[0] });
   const firstPaintPage = await firstPaintContext.newPage();
-  await seedUnavailable(firstPaintPage);
+  await seedOffline(firstPaintPage);
   await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
   await firstPaintPage.goto('/');
   const firstPaint = await startupPanelGeometry(firstPaintPage);
@@ -189,13 +191,13 @@ test('last known unavailable AI grant leaves no gap in the first painted row', a
   await page.route('**/api/free-generation-grant', (route) =>
     route.fulfill({ status: 503, body: JSON.stringify({ ok: false }) })
   );
-  await seedUnavailable(page);
+  await seedOffline(page);
   await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
   await gotoApp(page);
   await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
   await expect(page.locator('#aiImageButton')).toBeHidden();
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('splotch-ai-button-available')))
+    .poll(() => page.evaluate(() => localStorage.getItem('splotch-last-network-online')))
     .toBe('false');
   const settled = await startupPanelGeometry(page);
 
@@ -205,6 +207,45 @@ test('last known unavailable AI grant leaves no gap in the first painted row', a
   expect(settled.aiPainted).toBe(false);
   expect(settled.panel).toEqual(firstPaint.panel);
   expect(settled.toggle).toEqual(firstPaint.toggle);
+});
+
+test('a changed network state replaces the stored first-paint guess', async ({ browser, page }) => {
+  const seedStoredOffline = async (target: Page) => {
+    await seedAiEnabled(target);
+    await target.addInitScript(() => {
+      localStorage.setItem('splotch-drawer-open', 'true');
+      localStorage.setItem('splotch-last-network-online', 'false');
+    });
+  };
+
+  const firstPaintContext = await browser.newContext({ viewport: PORTRAIT_VIEWPORTS[0] });
+  const firstPaintPage = await firstPaintContext.newPage();
+  await seedStoredOffline(firstPaintPage);
+  await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
+  await firstPaintPage.goto('/');
+  const firstPaint = await startupPanelGeometry(firstPaintPage);
+  await firstPaintContext.close();
+
+  await page.route('**/api/free-generation-grant', (route) =>
+    route.fulfill({ status: 503, body: JSON.stringify({ ok: false }) })
+  );
+  await seedStoredOffline(page);
+  await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
+  await gotoApp(page);
+  await expect(page.locator('#aiImageButton')).toBeVisible();
+  await expect(page.locator('#aiImageButton')).toHaveAttribute(
+    'aria-label',
+    'AI image unavailable'
+  );
+  const settled = await startupPanelGeometry(page);
+
+  expect(firstPaint.count).toBe('5');
+  expect(firstPaint.aiPainted).toBe(false);
+  expect(settled.count).toBe('6');
+  expect(settled.aiPainted).toBe(true);
+  expect(await page.evaluate(() => localStorage.getItem('splotch-last-network-online'))).toBe(
+    'true'
+  );
 });
 
 test('AI-only drawer paints its disabled button before the grant arrives', async ({ page }) => {

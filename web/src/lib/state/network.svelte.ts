@@ -1,5 +1,7 @@
 import { browser } from '$app/environment';
 import { isNative } from '$lib/platform';
+import { readBool, writeBool } from '$lib/storage';
+import { STORAGE_KEYS } from '$lib/storageKeys';
 
 // Tracks connectivity so the UI can hide internet-only features (the AI button)
 // when offline — everything else in Splotch works fully offline. On the web we
@@ -27,18 +29,24 @@ interface NetworkPluginLike {
 type NetworkPluginModule = { Network: NetworkPluginLike };
 
 export function createNetwork(
-  loadNetworkPlugin?: () => Promise<NetworkPluginModule>
+  loadNetworkPlugin?: () => Promise<NetworkPluginModule>,
+  initialOnline = true
 ): NetworkState {
-  const s = $state({ online: true });
+  const s = $state({ online: initialOnline });
 
   let installed = false;
   let removeNativeListener: (() => void) | null = null;
 
-  const onOnline = () => setOnline(true);
-  const onOffline = () => setOnline(false);
+  const onOnline = () => updateOnline(true);
+  const onOffline = () => updateOnline(false);
 
   function setOnline(online: boolean) {
     s.online = online;
+  }
+
+  function updateOnline(online: boolean) {
+    setOnline(online);
+    writeBool(STORAGE_KEYS.lastNetworkOnline, online);
   }
 
   function installNativeStatus(loadPlugin: () => Promise<NetworkPluginModule>) {
@@ -52,12 +60,12 @@ export function createNetwork(
         if (disposed) return;
         Network.getStatus()
           .then((status) => {
-            if (!receivedStatusEvent && !disposed) setOnline(status.connected);
+            if (!receivedStatusEvent && !disposed) updateOnline(status.connected);
           })
           .catch(() => {});
         Network.addListener('networkStatusChange', (status) => {
           receivedStatusEvent = true;
-          if (!disposed) setOnline(status.connected);
+          if (!disposed) updateOnline(status.connected);
         })
           .then((handle) => {
             if (disposed) void handle.remove();
@@ -80,14 +88,16 @@ export function createNetwork(
     install() {
       if (installed) return;
       installed = true;
-      // Some old WebViews report `undefined` for navigator.onLine; assume online then.
-      setOnline(navigator.onLine ?? true);
+      const native = __IS_CAPACITOR__ && isNative();
+      // Native WebViews can report online before the network plugin resolves.
+      // Keep the stored state until the device status arrives.
+      if (!native) updateOnline(navigator.onLine ?? true);
       window.addEventListener('online', onOnline);
       window.addEventListener('offline', onOffline);
       // __IS_CAPACITOR__ makes the branch compile-time dead on web so Rollup drops
       // the plugin chunk (isNative() alone can't tree-shake across modules). The
       // default loader stays inside the branch for the same reason.
-      if (__IS_CAPACITOR__ && isNative()) {
+      if (native) {
         installNativeStatus(loadNetworkPlugin ?? (() => import('@capacitor/network')));
       }
     },
@@ -102,7 +112,10 @@ export function createNetwork(
   };
 }
 
-export const networkState = createNetwork();
+export const networkState = createNetwork(
+  undefined,
+  readBool(STORAGE_KEYS.lastNetworkOnline, true)
+);
 
 // Installed at module load (not from a component), gated on `browser`, so the
 // value is live before the first component renders — ActionsPanel reads

@@ -21,9 +21,6 @@ import type { Orientation } from '$lib/platform';
 import { layoutState } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import { PALETTE_LANDSCAPE_WIDTH_PX } from '$lib/design/trimGeometry';
-import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
-import { STORAGE_KEYS } from '$lib/storageKeys';
-import { writeBool } from '$lib/storage';
 import {
   actionButtonSizeClass,
   LARGE_TABLET_MIN_SIDE_PX,
@@ -116,8 +113,8 @@ export const PALETTE_CLEARANCE = 8;
 // book, screenshot, AI image, undo.
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
-// The prerendered HTML cannot know the live grant. The boot script uses the
-// last known result to paint a disabled button while its status is checked.
+// The prerendered HTML cannot know live connectivity. The boot script uses the
+// last known state to paint the button disabled while its grant is checked.
 export const FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT = MAX_ACTION_BUTTON_COUNT - 1;
 
 // The custom property carrying the occupied button count the app.css formula
@@ -144,19 +141,7 @@ export function isAiImageButtonVisible(): boolean {
 }
 
 export function isAiImageButtonShown(): boolean {
-  return (
-    settingsState.aiImageEnabled &&
-    (isAiImageButtonVisible() ||
-      (typeof document !== 'undefined' && document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)))
-  );
-}
-
-export function rememberAiButtonAvailability(): void {
-  if (!settingsState.aiImageEnabled || !persistedStateStatus.hydrated || !networkState.online)
-    return;
-  const hasCredential = Boolean(settingsState.aiUserApiKey || settingsState.aiAccessToken);
-  if (!hasCredential && freeGenerationsState.loading) return;
-  writeBool(STORAGE_KEYS.aiButtonAvailable, hasCredential || freeGenerationsState.available);
+  return settingsState.aiImageEnabled && networkState.online;
 }
 
 export function visibleActionButtonCount(): number {

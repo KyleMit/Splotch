@@ -345,14 +345,14 @@ describe("app.html's boot script mirrors the state modules", () => {
   }
 
   for (const [key, fallback] of bootBoolDefaults) {
-    if (key === STORAGE_KEYS.aiButtonAvailable) continue;
+    if (key === STORAGE_KEYS.lastNetworkOnline) continue;
     it(`${key} falls back to its BOOL_SETTINGS default`, () => {
       expect(boolDefaults.get(key)).toBe(fallback);
     });
   }
 
-  it('defaults an unknown AI grant to a visible disabled button', () => {
-    expect(bootBoolDefaults).toContainEqual([STORAGE_KEYS.aiButtonAvailable, true]);
+  it('defaults unknown connectivity to online', () => {
+    expect(bootBoolDefaults).toContainEqual([STORAGE_KEYS.lastNetworkOnline, true]);
   });
 
   // The Tool Drawer switch hides its own tools without touching their flags, so
@@ -451,18 +451,21 @@ describe("app.html's boot script mirrors the state modules", () => {
     { cached: null, present: true, count: '6' },
     { cached: 'true', present: true, count: '6' },
     { cached: 'false', present: false, count: '' },
-  ])('seeds the AI button from its last known grant ($cached)', ({ cached, present, count }) => {
-    localStorage.clear();
-    document.documentElement.removeAttribute(AI_SLOT_ATTRIBUTE);
-    document.documentElement.style.removeProperty('--action-btn-count');
-    localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
-    if (cached !== null) localStorage.setItem(STORAGE_KEYS.aiButtonAvailable, cached);
+  ])(
+    'seeds the AI button from its last known network state ($cached)',
+    ({ cached, present, count }) => {
+      localStorage.clear();
+      document.documentElement.removeAttribute(AI_SLOT_ATTRIBUTE);
+      document.documentElement.style.removeProperty('--action-btn-count');
+      localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
+      if (cached !== null) localStorage.setItem(STORAGE_KEYS.lastNetworkOnline, cached);
 
-    new Function(bootScript)();
+      new Function(bootScript)();
 
-    expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(present);
-    expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe(count);
-  });
+      expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(present);
+      expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe(count);
+    }
+  );
 
   it('counts and names every optional brush for the single-brush presentation', () => {
     const countExpression = bootStringLiteral(/var optionalBrushCount = ([^;]+);/);

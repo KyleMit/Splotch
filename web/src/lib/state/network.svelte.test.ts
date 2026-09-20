@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createNetwork, type NetworkState } from './network.svelte';
+import { STORAGE_KEYS } from '$lib/storageKeys';
 
 type StatusListener = (status: { connected: boolean }) => void;
 
@@ -36,6 +37,7 @@ describe('web network status', () => {
   beforeEach(() => {
     mocks.native = false;
     vi.clearAllMocks();
+    localStorage.removeItem(STORAGE_KEYS.lastNetworkOnline);
   });
 
   it('seeds from navigator.onLine and follows the online/offline events', () => {
@@ -44,9 +46,21 @@ describe('web network status', () => {
 
     window.dispatchEvent(new Event('offline'));
     expect(state.online).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBe('false');
 
     window.dispatchEvent(new Event('online'));
     expect(state.online).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBe('true');
+  });
+
+  it('uses the stored state before the platform status arrives', () => {
+    const state = createNetwork(undefined, false);
+    network = state;
+    expect(state.online).toBe(false);
+
+    state.install();
+    expect(state.online).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBe('true');
   });
 
   it('stops following the events once disposed', () => {
@@ -73,6 +87,7 @@ describe('native network status', () => {
   beforeEach(() => {
     mocks.native = true;
     vi.clearAllMocks();
+    localStorage.removeItem(STORAGE_KEYS.lastNetworkOnline);
   });
 
   it('keeps a status change that arrives before the initial status read resolves', async () => {
@@ -103,6 +118,23 @@ describe('native network status', () => {
 
     await vi.waitFor(() => expect(state.online).toBe(false));
     expect(mocks.getStatus).toHaveBeenCalledOnce();
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBe('false');
+  });
+
+  it('keeps a stored offline state until the native plugin reports connectivity', async () => {
+    let resolveStatus!: (status: { connected: boolean }) => void;
+    mocks.getStatus.mockReturnValue(new Promise((resolve) => (resolveStatus = resolve)));
+    mocks.addListener.mockResolvedValue({ remove: () => {} });
+    network = createNetwork(undefined, false);
+    network.install();
+    await vi.waitFor(() => expect(mocks.getStatus).toHaveBeenCalledOnce());
+
+    expect(network.online).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBeNull();
+
+    resolveStatus({ connected: true });
+    await vi.waitFor(() => expect(network?.online).toBe(true));
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBe('true');
   });
 
   it('applies later events after the initial native status', async () => {

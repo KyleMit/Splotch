@@ -3,7 +3,7 @@
 **Status:** Active **Date:** 2026-07. Amended 2026-08-03: the landscape Color Palette and Actions
 Panel share deterministic first-paint geometry for the persisted visible-button count, with
 orientation-tagged measurement retained as a hydrated correction. Amended 2026-09-19: the AI button
-uses the last known grant to paint before its runtime grant resolves.
+uses the last known connectivity state to paint before runtime status resolves.
 
 ## Context
 
@@ -97,9 +97,8 @@ that are already correct in the prerendered HTML:
      button's fixed face independently of the active brush.
    * `data-no-actions` — present when no first-paint action is painted, hiding both the panel and
      its drawer control.
-   * `data-ai-slot` — present when AI images are enabled and the last known grant was not
-     unavailable. The prerendered button paints disabled while its grant and network availability
-     are checked.
+   * `data-ai-slot` — present when AI images are enabled and the last known network state was
+     online. The prerendered button paints disabled while its grant is checked.
    * `--action-btn-count` — set when persisted off-states or the AI button change the default
      five-button row. The hydrated panel counts the painted AI button, including its disabled state,
      so the row's size and position stay fixed through the grant check.
@@ -114,16 +113,15 @@ that are already correct in the prerendered HTML:
    (delayed past the collapse) so the buttons are truly inert — out of hit-testing, the a11y tree,
    and tab order.
 
-The AI button's usability still depends on runtime signals: connectivity, credentials, and the
-free-generation grant. The head script cannot predict those answers, so it reads the last known
-availability from local storage. With no prior answer, an opted-in button paints disabled, then
-becomes usable when the grant arrives. A failed grant records an unavailable hint for the next
-launch; the disabled button stays painted for this launch so the other controls do not jump. A
-returning launch with an unavailable hint omits the button and its space. A later successful grant
-may introduce the button during that launch, reflecting changed server availability. An AI-only
-drawer paints its disabled button while the grant is pending; `data-no-actions` hides the panel only
-when no button is painted. Fully non-persisted state (the active color always boots to Purple) needs
-no treatment.
+The AI button's usability still depends on runtime connectivity, credentials, and the
+free-generation grant. The head script reads the last known network state from local storage, with
+online as the default. The live network store starts from the same value and persists each platform
+status update. Native keeps that value until the Capacitor network plugin responds, since the
+WebView's `navigator.onLine` can disagree with the device status. On an online startup, an opted-in
+button paints disabled and stays in the row if the grant fails; the grant only changes whether it
+can be used. On an offline startup, the button and its space are absent. A changed network state may
+alter the row after first paint. `data-no-actions` hides the panel only when no button is painted.
+Fully non-persisted state (the active color always boots to Purple) needs no treatment.
 
 ### Performance
 
