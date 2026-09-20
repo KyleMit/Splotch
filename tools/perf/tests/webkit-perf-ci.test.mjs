@@ -105,6 +105,22 @@ describe('WebKit performance CI', () => {
     expect(fastJob).not.toContain('continue-on-error');
   });
 
+  it('surfaces green gate findings and reporter failures without changing retry inputs', () => {
+    const fastJob = job('webkit-commit-gate-fast');
+    const verdict = step(fastJob, 'Record the gate verdict');
+    const summary = step(fastJob, 'Surface WebKit gate finding on green runs');
+
+    expect(verdict).toContain(
+      'if raw_fingerprint=$(node tools/perf/report-undo-gate-failures.mjs)'
+    );
+    expect(verdict).toContain("echo 'reporter-failed=true'");
+    expect(verdict).toContain("echo 'failures='");
+    expect(summary).toContain("steps.gate.outcome == 'success'");
+    expect(summary).toContain("steps.verdict.outputs.failures != ''");
+    expect(summary).toContain("steps.verdict.outputs.reporter-failed == 'true'");
+    expect(summary).toContain('GITHUB_STEP_SUMMARY');
+  });
+
   // The timing tier landing after the merge only works if every merge actually
   // gets one. The workflow-level group folds a push's SHA in for exactly that
   // reason; without it, back-to-back merges to the same ref cancel each other
