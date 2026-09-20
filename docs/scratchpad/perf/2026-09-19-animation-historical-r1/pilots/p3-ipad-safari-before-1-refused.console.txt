@@ -1,0 +1,6 @@
+
+> splotch@1.6.0 perf:ios:xcuitest:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-actions.mjs --url=https://<mac>.local:54836/ --no-serve --capabilities-file=~/.splotch-rig/ipad-caps-r2.json --appium-url=http://127.0.0.1:4727 --device-class=tablet --repeats=4 --report-only --actions=idle,palette,color-picker,brushes,stroke-width,settings,screenshot,ai-waiting,undo,unavailable,clear --output=<rig-evidence>/runs/ipad-safari-no-coloring/before-1/actions.json
+
+Serving already: https://<mac>.local:54836/
+https://<mac>.local:54836/ is serving /_app/immutable/entry/start.Cjzg_isR.js, which this checkout's web/build does not contain — the port is held by another build. A capture against it would measure a different product. Choose a free port rather than stopping a listener another session owns.

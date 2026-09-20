@@ -1,0 +1,15 @@
+target	sequence	capture	started_utc	ended_utc	exit	note
+macos-web-pilot	1	before (with coloring)	2026-09-20T00:04:28Z	2026-09-20T00:08:31Z	1	pilots/p1: coloring preparation timed out
+macos-web-pilot	2	before	2026-09-20T00:11:14Z	2026-09-20T00:14:25Z	0	
+macos-web-pilot	3	after	2026-09-20T00:14:25Z	2026-09-20T00:17:37Z	0	
+ipad-native	1	before-1 (with coloring)	2026-09-20T00:21:53Z	2026-09-20T00:22:49Z	1	pilots/p2: first-open guard refused the historical picker
+ipad-native	2	before-1	2026-09-20T00:23:37Z	2026-09-20T00:28:01Z	0	
+ipad-native	3	after-1	2026-09-20T00:28:09Z	2026-09-20T00:32:36Z	0	
+ipad-native	4	after-2	2026-09-20T00:32:37Z	2026-09-20T00:37:03Z	0	
+ipad-native	5	before-2	2026-09-20T00:37:05Z	2026-09-20T00:41:28Z	0	
+ipad-safari	1-4	before-1, after-1, after-2, before-2	2026-09-20T00:41:44Z	2026-09-20T00:41:45Z	1	pilots/p3: the runner refused each historical preview as a foreign build
+android-chrome	1	before-1	2026-09-20T00:42:44Z	2026-09-20T00:46:38Z	0	
+android-chrome	2	after-1	2026-09-20T00:46:43Z	2026-09-20T00:50:39Z	0	
+android-chrome	3	after-2	2026-09-20T00:50:39Z	2026-09-20T00:54:35Z	0	
+android-chrome	4	before-2	2026-09-20T00:54:35Z	2026-09-20T00:58:28Z	0	
+android-native	-	before (with coloring)	2026-09-20T00:58:40Z	2026-09-20T01:10:00Z	-	never installed: a Play Protect dialog on the phone held adb install; no capture of a historical arm ran

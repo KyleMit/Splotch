@@ -1,0 +1,11 @@
+
+> splotch@1.6.0 perf:ios:xcuitest:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-actions.mjs --appium-url=http://127.0.0.1:4727 --native-app --capabilities-file=<rig-evidence>/ipad-native-caps.local.json --device-class=tablet --repeats=4 --report-only --actions=palette,clear,brushes,stroke-width,undo,settings,color-picker,coloring,ai-waiting,unavailable,screenshot --output=<rig-evidence>/runs/ipad-native/before-1/actions.json
+
+
+Action sweep 1/4
+Error: The coloring picker already holds 3 rendered tiles, so it has opened in this document and its next open is not a first open
+    at assertPickerNeverOpened (file://<checkout>/tools/perf/lib/coloring-books-ready.mjs:198:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async runActionSweep (file://<checkout>/tools/perf/ios/capture-xcuitest-actions.mjs:1960:5)
+    at async runIpadActions (file://<checkout>/tools/perf/ios/capture-xcuitest-actions.mjs:2541:21)

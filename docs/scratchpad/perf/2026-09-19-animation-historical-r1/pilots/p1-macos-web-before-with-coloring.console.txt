@@ -1,0 +1,8 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54834/ --allow-foreign-build --engine=webkit --headed --viewport=1512x982 --device-scale-factor=2 --repeats=4 --report-only --actions=idle,palette,color-picker,brushes,stroke-width,settings,coloring,screenshot,ai-waiting,undo,unavailable,clear --output=<rig-evidence>/runs/macos-web/before-1/actions.json
+
+Error: Timed out after 240 s waiting for coloring books to install: 0 of 7 extra books installed, missing dinosaur, creatures, nature, objects, shapes, space, vehicles
+    at prepareColoringBooks (file://<checkout>/tools/perf/lib/coloring-books-ready.mjs:158:27)
+    at async loadSweepDocumentWithColoringBooks (file://<checkout>/tools/perf/lib/coloring-books-ready.mjs:223:31)
+    at async runDesktopActions (file://<checkout>/tools/perf/web/capture-desktop-actions.mjs:214:29)
