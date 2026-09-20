@@ -37,10 +37,10 @@ ones although the source is the same commit.
 the first time and rescored by today's scorer with identical results. `BLOCKED` = no evidence, for
 the reason named. Every new sequence, and the reused macOS web and Android native ones, **omit the
 `coloring` group**. The reused Android Chrome set ran the *legacy* coloring sequence instead (the
-retired bare open, then open a book, scroll, select and clear a page) with its AI coverage blocked.
-No sequence here is the canonical one with separate first-open and reopen rows, so under the
-campaign rule that only the canonical sequence certifies, every cell below is partial evidence, not
-acceptance.
+retired bare open, then scroll, select and clear a page; no `open coloring book` action) with its AI
+coverage blocked. No sequence here is the canonical one with separate first-open and reopen rows, so
+under the campaign rule that only the canonical sequence certifies, every cell below is partial
+evidence, not acceptance.
 
 | Cue (actions)                                                    | macOS web              | Android Chrome              | Android native | iPad native | iPad Safari |
 | ---------------------------------------------------------------- | ---------------------- | --------------------------- | -------------- | ----------- | ----------- |
@@ -89,15 +89,17 @@ first open or a reopen; `check.mjs` fails if any packaged sample carries either 
 None of these was patched. (1) and (2) need a harness repair in a separate bounded unit: read both
 marker layouts; prove "never opened" without depending on product structure the historical arms lack
 (or record, per arm, that the guard is not applicable and why). (3) has two routes. The repair is to
-plumb the foreign-build flag into the iPad action runner, so the artifact records
-`verifiedAgainstCheckout: false` as the desktop and Android runners do. The rival review of this PR
-showed a route with no code change as well: the guard compares served chunks with the bytes in the
-harness checkout's `web/build`, so staging each historical build and its provenance stamp there
-satisfies it with the guard enabled. This unit did not take that route. Its assignment allowed no
-new workaround for a compatibility block, and a staged build would be recorded as verified against a
-checkout whose source it does not come from, which is a different provenance statement from the one
-the other two targets make for the same situation. Whether that is acceptable is the campaign
-owner's call; the iPad Safari captures stay blocked until it is made or the flag is plumbed.
+plumb the foreign-build flag into the iPad action runner, the documented escape the desktop and
+Android runners already have. The rival review of this PR showed a route with no code change as
+well: the guard compares served chunks with the bytes in the harness checkout's `web/build`, so
+staging each historical build and its provenance stamp there satisfies it with the guard enabled.
+This unit did not take that route. Its assignment allowed no new workaround for a compatibility
+block, and that is the whole reason. (An earlier revision of this paragraph also claimed the staged
+artifact would record a verification flag. It would not: `servedBuildBinding` returns only the
+entry, digest and product commit, and the iPad runner discards even those, so an iPad Safari
+artifact carries no served-build identity by either route. That is a limit of its own for whoever
+captures this target.) Whether that is acceptable is the campaign owner's call; the iPad Safari
+captures stay blocked until it is made or the flag is plumbed.
 
 ## Results
 
