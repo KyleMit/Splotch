@@ -8,6 +8,7 @@ import {
 } from './helpers';
 import { openDrawer, openBrushMenu, openStrokeMenu } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { PALETTE_COLUMN_GEOMETRY } from '../src/lib/design/trimGeometry';
 
 const layouts = [
   { name: 'tablet', width: 1180, height: 820 },
@@ -116,6 +117,96 @@ test('Toolbar choice persists and switching keeps an existing drawing', async ({
   await expect.poll(() => firstOpaquePixel(page)).not.toBeNull();
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-toolbar', 'bare');
+});
+
+for (const layout of layouts.slice(0, 2)) {
+  test(`Switching toolbar styles keeps the ${layout.name} HUD controls in place`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(layout);
+    await page.addInitScript((key) => localStorage.setItem(key, 'true'), STORAGE_KEYS.drawerOpen);
+    await gotoApp(page);
+    const selectors = [
+      '.color-palette',
+      '.color-swatch:visible',
+      '.gradient-swatch',
+      '#brushButton',
+      '#strokeWidthButton',
+      '#undoButton',
+      '#settingsButton',
+    ];
+    const bounds = async () =>
+      Promise.all(selectors.map((selector) => page.locator(selector).first().boundingBox()));
+    const initial = await bounds();
+    await openSettingsModal(page);
+    if (layout.name === 'portrait')
+      await openHubSection(page, 'appearance', '[role="radiogroup"][aria-label="Toolbar"]');
+    const toolbar = page.getByRole('radiogroup', { name: 'Toolbar', exact: true });
+    await toolbar.getByRole('radio', { name: 'Bare', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-toolbar', 'bare');
+    await expect.poll(bounds).toEqual(initial);
+    await toolbar.getByRole('radio', { name: 'Buttons', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-toolbar', 'buttons');
+    await expect.poll(bounds).toEqual(initial);
+  });
+}
+
+test('Buttons palette reaches the landscape edges and aligns its custom swatch with the actions', async ({
+  page,
+}) => {
+  await page.setViewportSize(layouts[0]);
+  await gotoApp(page);
+  await openDrawer(page);
+  const palette = (await page.locator('.color-palette').boundingBox())!;
+  const first = (await page.locator('.color-swatch:visible').first().boundingBox())!;
+  const custom = (await page.locator('.gradient-swatch').boundingBox())!;
+  const brush = (await page.locator('#brushButton').boundingBox())!;
+  expect(first.y).toBeCloseTo(palette.y + PALETTE_COLUMN_GEOMETRY.paddingPx / 2);
+  expect(custom.y + custom.height / 2).toBeCloseTo(brush.y + brush.height / 2);
+});
+
+test('Landscape palette keeps its edge padding at the smallest button size', async ({ page }) => {
+  await page.setViewportSize(layouts[0]);
+  await page.addInitScript(
+    (key) => localStorage.setItem(key, '70'),
+    STORAGE_KEYS.actionButtonScale
+  );
+  await gotoApp(page);
+  await openDrawer(page);
+  const palette = page.locator('.color-palette');
+  await expect(palette).toHaveCSS('padding-top', '12px');
+  const paletteBounds = (await palette.boundingBox())!;
+  const first = (await page.locator('.color-swatch:visible').first().boundingBox())!;
+  const custom = (await page.locator('.gradient-swatch').boundingBox())!;
+  const brush = (await page.locator('#brushButton').boundingBox())!;
+  expect(first.y).toBeCloseTo(paletteBounds.y + PALETTE_COLUMN_GEOMETRY.paddingPx / 2);
+  expect(Math.abs(custom.y + custom.height / 2 - (brush.y + brush.height / 2))).toBeLessThanOrEqual(
+    2
+  );
+});
+
+for (const { name, openMenu, trigger } of [
+  { name: 'brush', openMenu: openBrushMenu, trigger: '#brushButton' },
+  { name: 'stroke', openMenu: openStrokeMenu, trigger: '#strokeWidthButton' },
+]) {
+  test(`Buttons toolbar dims other actions when the ${name} flyout opens`, async ({ page }) => {
+    await page.setViewportSize(layouts[0]);
+    await gotoApp(page);
+    await openDrawer(page);
+    await openMenu(page);
+    await expect(page.locator(trigger)).toHaveCSS('filter', 'none');
+    await expect(page.locator('#undoButton')).toHaveCSS('filter', 'grayscale(1) opacity(0.35)');
+    await expect(page.locator('.drawer-toggle')).toHaveCSS('opacity', '0.2');
+  });
+}
+
+test('Buttons toolbar dims other actions when the compact color flyout opens', async ({ page }) => {
+  await page.setViewportSize(layouts[2]);
+  await gotoApp(page);
+  await page.locator('#colorButton').click();
+  await expect(page.locator('.color-menu')).toBeVisible();
+  await expect(page.locator('#colorButton')).toHaveCSS('filter', 'none');
+  await expect(page.locator('#undoButton')).toHaveCSS('filter', 'grayscale(1) opacity(0.35)');
 });
 
 for (const layout of layouts) {

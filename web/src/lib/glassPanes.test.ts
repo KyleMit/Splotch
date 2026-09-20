@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { toolbarGlassPanes, bareButtonSize } from './glassPanes';
+import { toolbarGlassPanes } from './glassPanes';
+import { PALETTE_BAR_RESERVE, renderedActionButtonSize } from './actionButtonLayout';
+import { PALETTE_LANDSCAPE_WIDTH_PX } from './design/trimGeometry';
 import { settingsState } from './state/settings.svelte';
 
 const layout = vi.hoisted(() => ({
@@ -38,7 +40,7 @@ describe('toolbar glass geometry', () => {
     expect(toolbarGlassPanes(null, false)).toEqual([]);
   });
   it('clips the landscape pane exactly against the rail', () => {
-    expect(toolbarGlassPanes(null, true)[0].x).toBe(100);
+    expect(toolbarGlassPanes(null, true)[0].x).toBe(PALETTE_LANDSCAPE_WIDTH_PX);
   });
   it('shrinks the landscape strip with the drawer', () => {
     expect(toolbarGlassPanes(null, false)[0].width).toBeLessThan(
@@ -54,7 +56,7 @@ describe('toolbar glass geometry', () => {
   });
   it('follows safe-area insets at the rail boundary', () => {
     layout.safeArea.left = 30;
-    expect(toolbarGlassPanes(null, true)[0].x).toBe(130);
+    expect(toolbarGlassPanes(null, true)[0].x).toBe(30 + PALETTE_LANDSCAPE_WIDTH_PX);
   });
   it('keeps only corner glass when every action is disabled', () => {
     settingsState.setToolDrawerEnabled(false);
@@ -66,7 +68,7 @@ describe('toolbar glass geometry', () => {
   it.each([390, 820])('fits the portrait menu at width %s', (width) => {
     Object.assign(layout, { viewportWidth: width, viewportHeight: 1180, orientation: 'portrait' });
     const pane = toolbarGlassPanes('stroke', true)[0];
-    expect(pane.y).toBeGreaterThanOrEqual(91);
+    expect(pane.y).toBeGreaterThanOrEqual(PALETTE_BAR_RESERVE);
     expect(pane.x + pane.width).toBeLessThanOrEqual(width);
   });
   it.each([false, true])('unites the compact color menu with the drawer open=%s', (expanded) => {
@@ -79,8 +81,8 @@ describe('toolbar glass geometry', () => {
   it('uses the phone button scale and viewport cap', () => {
     Object.assign(layout, { viewportWidth: 844, viewportHeight: 390, phoneLandscape: true });
     settingsState.setActionButtonScale(70);
-    expect(bareButtonSize()).toBeCloseTo(33.6);
+    expect(renderedActionButtonSize()).toBeCloseTo(33.6);
     settingsState.setActionButtonScale(130);
-    expect(bareButtonSize()).toBeCloseTo(62.4);
+    expect(renderedActionButtonSize()).toBeCloseTo(62.4);
   });
 });

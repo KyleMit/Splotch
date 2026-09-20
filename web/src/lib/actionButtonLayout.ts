@@ -15,7 +15,6 @@ import {
   enabledOptionalBrushes,
   type ActionPanelControl,
 } from '$lib/state/settings.svelte';
-import { BARE_RAIL_WIDTH_PX, BARE_RAIL_HEIGHT_PX } from './bareToolbar';
 import { networkState } from '$lib/state/network.svelte';
 import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
 import type { Orientation } from '$lib/platform';
@@ -158,10 +157,6 @@ export function visibleActionButtonCount(): number {
 // width (app.css --palette-landscape-width, 0 on a landscape phone where the
 // column is hidden) or the portrait bar's declared height.
 function paletteExtent(orientation: Orientation): number {
-  if (settingsState.toolbarStyle === 'bare') {
-    if (orientation === 'portrait') return BARE_RAIL_HEIGHT_PX;
-    return layoutState.phoneLandscape ? 0 : BARE_RAIL_WIDTH_PX;
-  }
   if (orientation === 'portrait') return PALETTE_BAR_RESERVE;
   return layoutState.phoneLandscape ? 0 : PALETTE_LANDSCAPE_WIDTH_PX;
 }
@@ -194,6 +189,29 @@ export function availablePerButton(buttonCount: number): number {
   return (
     (viewportExtent - fixedRowCost(orientation, buttonCount, paletteExtent(orientation)) - insets) /
     buttonCount
+  );
+}
+
+export function renderedActionButtonSize(): number {
+  const {
+    viewportWidth: width,
+    viewportHeight: height,
+    safeArea: safe,
+    phoneLandscape,
+    orientation,
+  } = layoutState;
+  const scale = settingsState.actionButtonScale / 100;
+  if (phoneLandscape)
+    return Math.min(
+      PHONE_TOOLBAR_BUTTON_PX * scale,
+      (height - safe.top - safe.bottom - PHONE_TOOLBAR_VERTICAL_CHROME_PX) /
+        PHONE_TOOLBAR_LEG_SLOTS,
+      (width - safe.left - safe.right - PHONE_TOOLBAR_HORIZONTAL_CHROME_PX) /
+        PHONE_TOOLBAR_LEG_SLOTS
+    );
+  return Math.min(
+    actionButtonBase(orientation) * scale,
+    availablePerButton(Math.max(1, visibleActionButtonCount()))
   );
 }
 

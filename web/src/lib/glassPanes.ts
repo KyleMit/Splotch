@@ -4,16 +4,11 @@ import {
   PHONE_TOOLBAR_GAP_PX,
   FLYOUT_OPTION_MIN_BASE_PX,
   PANEL_INSET,
-  PHONE_TOOLBAR_BUTTON_PX,
-  PHONE_TOOLBAR_HORIZONTAL_CHROME_PX,
-  PHONE_TOOLBAR_VERTICAL_CHROME_PX,
-  PHONE_TOOLBAR_LEG_SLOTS,
-  actionButtonBase,
-  availablePerButton,
   visibleActionButtonCount,
+  renderedActionButtonSize,
 } from './actionButtonLayout';
 import { layoutState } from './state/layout.svelte';
-import { actionControlShown, enabledOptionalBrushes, settingsState } from './state/settings.svelte';
+import { actionControlShown, enabledOptionalBrushes } from './state/settings.svelte';
 import { STROKE_SIZES } from './state/strokeWidth.svelte';
 import { COLOR_MENU_GEOMETRY } from './design/trimGeometry';
 import { LANDSCAPE_COLORS } from './landscapeToolbar';
@@ -73,29 +68,6 @@ function glassPane(rects: Rect[], clip: Rect): Pane {
   return { x, y, width, height, mask: `url("data:image/svg+xml,${encodeURIComponent(svg)}")` };
 }
 
-export function bareButtonSize(): number {
-  const {
-    viewportWidth: width,
-    viewportHeight: height,
-    safeArea: safe,
-    phoneLandscape,
-    orientation,
-  } = layoutState;
-  const scale = settingsState.actionButtonScale / 100;
-  if (phoneLandscape)
-    return Math.min(
-      PHONE_TOOLBAR_BUTTON_PX * scale,
-      (height - safe.top - safe.bottom - PHONE_TOOLBAR_VERTICAL_CHROME_PX) /
-        PHONE_TOOLBAR_LEG_SLOTS,
-      (width - safe.left - safe.right - PHONE_TOOLBAR_HORIZONTAL_CHROME_PX) /
-        PHONE_TOOLBAR_LEG_SLOTS
-    );
-  return Math.min(
-    actionButtonBase(orientation) * scale,
-    availablePerButton(Math.max(1, visibleActionButtonCount()))
-  );
-}
-
 function flyoutRectangle(
   open: Exclude<OpenFlyout, null>,
   trigger: Rect,
@@ -144,7 +116,7 @@ export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
   const count = visibleActionButtonCount();
   const hasActions = count > 0;
   const drawerOpen = expanded && hasActions;
-  const size = bareButtonSize();
+  const size = renderedActionButtonSize();
   const pitch = size + (compact ? PHONE_TOOLBAR_GAP_PX : ACTION_BUTTON_GAP);
   const railX = compact || portrait ? 0 : safe.left + BARE_RAIL_WIDTH_PX;
   const railY = portrait ? safe.top + BARE_RAIL_HEIGHT_PX : 0;
