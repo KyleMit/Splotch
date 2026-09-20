@@ -161,9 +161,7 @@ test.describe('phone landscape interactions', () => {
     expect(selection.ring).toContain(cssRgb(getRingColor(PALETTE_COLORS[0].hex)));
   });
 
-  test('compact custom color keeps its own color ring after the picker closes', async ({
-    page,
-  }) => {
+  test('compact custom color centers its icon inside its color ring', async ({ page }) => {
     await gotoApp(page);
     await page.locator('#colorButton').click();
     await page.locator('.color-menu').getByRole('button', { name: 'Custom Color' }).click();
@@ -175,9 +173,35 @@ test.describe('phone landscape interactions', () => {
     await page.locator('#colorButton').click();
     const custom = page.locator('.color-menu').getByRole('button', { name: 'Custom Color' });
     await expect(custom).toHaveClass(/active/);
+    await settleToolbar(page);
     expect(await custom.evaluate((button) => getComputedStyle(button).boxShadow)).toContain(
       cssRgb(PICKER_GREEN)
     );
+    const iconInsets = await custom.evaluate((button) => {
+      const buttonBox = button.getBoundingClientRect();
+      const iconBox = button.querySelector('span')!.getBoundingClientRect();
+      return [
+        iconBox.left - buttonBox.left,
+        buttonBox.right - iconBox.right,
+        iconBox.top - buttonBox.top,
+        buttonBox.bottom - iconBox.bottom,
+      ];
+    });
+    for (const inset of iconInsets) expect(inset).toBeCloseTo(SELECTION_RING_GAP_PX, 0);
+  });
+
+  test('dismissing the first custom picker leaves its swatch unpressed', async ({ page }) => {
+    await gotoApp(page);
+    await page.locator('#colorButton').click();
+    await page.locator('.color-menu').getByRole('button', { name: 'Custom Color' }).click();
+    const dialog = page.locator('#color-picker');
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await page.locator('#colorButton').click();
+    const custom = page.locator('.color-menu').getByRole('button', { name: 'Custom Color' });
+    await expect(custom).toHaveAttribute('aria-pressed', 'false');
+    await expect(custom).not.toHaveClass(/active/);
   });
 
   test('flyout owners share one open menu and custom colors open the full picker', async ({

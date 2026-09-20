@@ -1350,8 +1350,8 @@ html[data-toolbar='bare'] .actions-panel .flyout-option.active .action-icon:not(
   fill: var(--icon-ink);
 }
 html[data-toolbar='bare'] .actions-panel .color-menu {
-  padding: 10px;
-  gap: 8px;
+  padding: var(--padding);
+  gap: var(--gap);
 }
 html[data-toolbar='bare'] .actions-panel .color-option.outlined {
   box-shadow: none;

@@ -8,12 +8,7 @@
     isDarkInk,
     themedSwatchColor,
   } from '$lib/state/colors.svelte';
-  import {
-    getRingColor,
-    selectionRingShadow,
-    SELECTION_RING_WIDTH_PX,
-    SELECTION_RING_GAP_PX,
-  } from '$lib/colorRing';
+  import { getRingColor, selectionRingShadow, SELECTION_RING_GAP_PX } from '$lib/colorRing';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { stampMotionAtStart } from '$lib/platform/reducedMotion';
@@ -26,6 +21,10 @@
     oncustom: () => void;
   } = $props();
   const dark = $derived(resolvedTheme() === 'dark');
+  const erasing = $derived(toolState.brush === 'eraser');
+  const customRinged = $derived(
+    !erasing && colorsState.activeSwatch === CUSTOM_SWATCH && colorsState.customColorSelected
+  );
 </script>
 
 <!-- The sizing box is the container the trim ladder in the style block queries:
@@ -37,36 +36,31 @@
     class="flyout-menu color-menu"
     aria-label="Colors"
     role="group"
-    style:--selection-ring-width={`${SELECTION_RING_WIDTH_PX}px`}
     style:--selection-ring-gap-width={`${SELECTION_RING_GAP_PX}px`}
     use:stampMotionAtStart
   >
     {#each LANDSCAPE_COLORS as { hex, label } (hex)}
       {@const paint = themedSwatchColor(hex, dark)}
+      {@const ringed = !erasing && colorsState.activeSwatch === hex}
       <button
         class="color-option"
         class:outlined={isDarkInk(paint)}
-        class:active={toolState.brush !== 'eraser' && colorsState.activeSwatch === hex}
-        style="background: {paint}; {toolState.brush !== 'eraser' &&
-        colorsState.activeSwatch === hex
+        class:active={ringed}
+        style="background: {paint}; {ringed
           ? `box-shadow: ${selectionRingShadow(getRingColor(paint), 'var(--color-menu-surface)')};`
           : ''}"
         data-trim-rank={landscapeTrimRank(hex)}
         aria-label={paint === hex ? label : 'White'}
-        aria-pressed={toolState.brush !== 'eraser' && colorsState.activeSwatch === hex}
+        aria-pressed={ringed}
         use:scribbleTap={() => onpick(hex, paint)}
       ></button>
     {/each}
     <button
       class="color-option more-colors"
-      class:active={toolState.brush !== 'eraser' &&
-        colorsState.activeSwatch === CUSTOM_SWATCH &&
-        colorsState.customColorSelected}
+      class:active={customRinged}
       aria-label="Custom Color"
-      aria-pressed={toolState.brush !== 'eraser' && colorsState.activeSwatch === CUSTOM_SWATCH}
-      style={toolState.brush !== 'eraser' &&
-      colorsState.activeSwatch === CUSTOM_SWATCH &&
-      colorsState.customColorSelected
+      aria-pressed={customRinged}
+      style={customRinged
         ? `box-shadow: ${selectionRingShadow(colorsState.customColor, 'var(--color-menu-surface)')};`
         : ''}
       use:scribbleTap={oncustom}
@@ -124,13 +118,26 @@
     border-color: var(--color-menu-surface);
   }
   .more-colors {
+    --pop-scale: 1.12;
+
     background: transparent;
-    display: grid;
-    place-items: center;
+    position: relative;
   }
   .more-colors :global(span) {
-    width: var(--swatch);
-    height: var(--swatch);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% / var(--pop-scale));
+    height: calc(100% / var(--pop-scale));
+    pointer-events: none;
+    transition: transform var(--duration-fast) ease-out;
+  }
+  .more-colors.active :global(span) {
+    transform: translate(-50%, -50%) scale(var(--pop-scale));
+  }
+  :global(:root[data-reduce-motion]) .more-colors :global(span) {
+    transition: none;
   }
 
   :global(html[data-toolbar='bare']) .color-menu-space .color-menu {
