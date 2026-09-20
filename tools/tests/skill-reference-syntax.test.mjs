@@ -44,6 +44,19 @@ describe('shared surfaces', () => {
     expect(tokensIn(violations)).toEqual(['/create-adr']);
   });
 
+  // The matcher is cached, and caching it against the caller's array rather
+  // than the names in it would report no violation for a name added after the
+  // first call — a guard silently finding nothing reads exactly like a passing
+  // one.
+  it('matches a name added to a vocabulary it has already been called with', () => {
+    const names = ['build'];
+    findFileViolations('docs/README.md', 'run `/build`', names);
+    names.push('cut-release');
+    expect(tokensIn(findFileViolations('docs/README.md', 'run `/cut-release`', names))).toEqual([
+      '/cut-release',
+    ]);
+  });
+
   // The vocabulary comes from directory names, so a name is matched as literal
   // text rather than as the pattern it would be inside the matcher's alternation.
   it('reads a regex metacharacter in a name literally', () => {

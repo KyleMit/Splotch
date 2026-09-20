@@ -66,16 +66,22 @@ const REGEX_METACHARACTERS = /[.*+?^${}()|[\]\\-]/g;
 // desktop rotation corpus landed (stack 1353), then again once the
 // page-inventory captures did. Longest name first, because an alternation
 // takes the first branch that matches rather than the longest.
-const matchers = new WeakMap();
+//
+// Keyed on the vocabulary's contents rather than on the caller's array, so a
+// caller that builds its list up across calls gets a matcher for the list it
+// actually holds. Keying on array identity is faster and wrong in the one
+// direction this file cannot afford: a stale matcher reports no violation for a
+// name added after the first call, and a guard that silently finds nothing
+// looks exactly like a guard that passed.
+const matchers = new Map();
 function candidateMatcher(names) {
-  const cached = matchers.get(names);
+  const ordered = [...names].sort((a, b) => b.length - a.length);
+  const signature = ordered.join('\u0000');
+  const cached = matchers.get(signature);
   if (cached) return cached;
-  const alternation = [...names]
-    .sort((a, b) => b.length - a.length)
-    .map((name) => name.replace(REGEX_METACHARACTERS, '\\$&'))
-    .join('|');
+  const alternation = ordered.map((name) => name.replace(REGEX_METACHARACTERS, '\\$&')).join('|');
   const matcher = new RegExp(`[/$](?:${alternation})`, 'g');
-  matchers.set(names, matcher);
+  matchers.set(signature, matcher);
   return matcher;
 }
 
