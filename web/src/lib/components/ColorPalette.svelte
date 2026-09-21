@@ -180,7 +180,10 @@
     align-content: space-between;
     width: var(--palette-landscape-width);
     gap: 12px;
-    padding: 12px 12px var(--palette-bottom);
+    /* The swatch drop shadow reaches 12px below its swatch (4px offset + 8px
+       blur), so the column keeps at least that much under the last one even
+       when the action-button clearance asks for less. */
+    padding: 12px 12px max(12px, var(--palette-bottom));
     background: var(--palette-surface, var(--surface));
     box-shadow: 2px 0 10px rgb(0 0 0 / 10%);
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
@@ -362,7 +365,9 @@
          the AI Waiting Polaroid both start below this bar by reading the same
          token, so the bar has to be exactly that tall. */
       height: var(--palette-portrait-height);
-      padding: 10px;
+      /* 8 + 55 + 12 = the 75px bar: the swatch sits 2px higher so its 12px
+         drop shadow ends at the bar's edge instead of 2px past the clip. */
+      padding: 8px 10px 12px;
       gap: 8px;
       box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
       /* clip (not hidden) so the bar stays unscrollable without forcing the
@@ -545,7 +550,7 @@
     :global(html[data-toolbar='bare']) .color-palette {
       width: calc(100% - var(--safe-area-left) - var(--safe-area-right));
       bottom: auto;
-      padding: 10px;
+      padding: 8px 10px 12px;
     }
   }
 </style>
