@@ -89,8 +89,10 @@ Both surfaced on 2026-09-21 when a Galaxy S25 Ultra joined the rig, and neither 
   without them. The service worker would now register too, three strokes into a first visit, and
   precache the build inside the measured window — so every one of these pages blocks
   `navigator.serviceWorker.register` before it can, as the Appium runners already did, and the
-  artifact records `serviceWorkerRegistration`. Android Chrome cells captured before this change ran
-  in the insecure context, so compare across that boundary deliberately. The instrument fingerprint
+  artifact records `serviceWorkerRegistration`. A worker an earlier run left on the same localhost
+  origin is evicted with one reload, and a probe page whose worker survives that reports
+  `stale-worker`, which the capture refuses. Android Chrome cells captured before this change ran in
+  the insecure context, so compare across that boundary deliberately. The instrument fingerprint
   includes the route and guard modules, so a resumed campaign flags the change instead of mixing the
   two.
 

@@ -33,7 +33,11 @@ import {
   requestPageEraserRefill,
   zeroInputProblem,
 } from '../split-capture/capture-device-frames.mjs';
-import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
+import {
+  SERVICE_WORKER_REGISTRATION_GUARD_SOURCE,
+  STALE_SERVICE_WORKER_EVICTION_SOURCE,
+  staleServiceWorkerProblem,
+} from '../lib/service-worker-guard.mjs';
 import {
   STROKES_PER_GESTURE_REPEAT,
   trustedGestureActions,
@@ -394,6 +398,60 @@ describe('SERVICE_WORKER_REGISTRATION_GUARD_SOURCE', () => {
 
   it('reports an insecure origin, which has no service worker to block', () => {
     expect(runGuard({})).toBe('unsupported');
+  });
+});
+
+// The guard stops new registrations only. A worker an earlier run left on the
+// same persistent localhost origin is evicted once, with a reload, and a page
+// whose worker survives that is refused rather than measured.
+describe('STALE_SERVICE_WORKER_EVICTION_SOURCE', () => {
+  const page = ({ registrations = [], controller = null, evicted = false } = {}) => {
+    const storage = new Map(evicted ? [['splotch-perf-service-worker-evicted', '1']] : []);
+    const deleted = [];
+    const context = {
+      navigator: {
+        serviceWorker: { controller, getRegistrations: async () => registrations },
+      },
+      sessionStorage: {
+        getItem: (key) => storage.get(key) ?? null,
+        setItem: (key, value) => storage.set(key, value),
+        removeItem: (key) => storage.delete(key),
+      },
+      caches: { keys: async () => ['precache-v1'], delete: async (key) => deleted.push(key) },
+      location: { reload: vi.fn() },
+    };
+    context.window = context;
+    return { context, storage, deleted };
+  };
+  const evict = ({ context }) =>
+    runInNewContext(`(async () => {${STALE_SERVICE_WORKER_EVICTION_SOURCE}})()`, context);
+
+  it('answers clean when nothing holds the origin', async () => {
+    const clean = page();
+
+    expect(await evict(clean)).toBe('clean');
+    expect(clean.context.location.reload).not.toHaveBeenCalled();
+  });
+
+  it('unregisters, clears caches, and reloads once for a leftover worker', async () => {
+    const unregister = vi.fn(async () => true);
+    const held = page({ registrations: [{ unregister }], controller: {} });
+
+    expect(await evict(held)).toBe('evicting');
+    expect(unregister).toHaveBeenCalledTimes(1);
+    expect(held.deleted).toEqual(['precache-v1']);
+    expect(held.context.location.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a worker that survived the eviction reload instead of looping', async () => {
+    const survived = page({ registrations: [{ unregister: async () => false }], evicted: true });
+
+    expect(await evict(survived)).toBe('stale-worker');
+    expect(survived.context.location.reload).not.toHaveBeenCalled();
+    expect(staleServiceWorkerProblem({ serviceWorkerRegistration: 'stale-worker' })).toContain(
+      'earlier run'
+    );
+    expect(staleServiceWorkerProblem({ serviceWorkerRegistration: 'blocked' })).toBeNull();
   });
 });
 

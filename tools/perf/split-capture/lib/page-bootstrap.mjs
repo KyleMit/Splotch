@@ -12,7 +12,10 @@
 // (ADR-0073) allows `script-src 'self'` and does not allow `unsafe-eval`, so
 // nothing about the policy has to be relaxed to measure the page.
 import { BRUSH_BUTTON_BY_MODE } from '../../ios/capture-xcuitest-screen.mjs';
-import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../../lib/service-worker-guard.mjs';
+import {
+  SERVICE_WORKER_REGISTRATION_GUARD_SOURCE,
+  STALE_SERVICE_WORKER_EVICTION_SOURCE,
+} from '../../lib/service-worker-guard.mjs';
 import { STAND_DOWN_PATH } from './chrome-tabs.mjs';
 import {
   COMPACT_SHELL_MARKER,
@@ -114,7 +117,13 @@ export function canvasDeltaFunctionSource() {
 export function pageBootstrapSource() {
   return `
 (async () => {
-  const serviceWorkerRegistration = (() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})();
+  const serviceWorkerGuard = (() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})();
+  const staleServiceWorker = await (async () => {${STALE_SERVICE_WORKER_EVICTION_SOURCE}})().catch(
+    () => 'stale-worker'
+  );
+  if (staleServiceWorker === 'evicting') return;
+  const serviceWorkerRegistration =
+    staleServiceWorker === 'stale-worker' ? 'stale-worker' : serviceWorkerGuard;
   const BRUSH_BUTTONS = ${JSON.stringify(BRUSH_BUTTON_BY_MODE)};
   const post = (path, body) =>
     fetch(path, {

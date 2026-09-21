@@ -61,6 +61,7 @@ import {
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -443,7 +444,7 @@ export function drivenCaptureArtifact({
     // has to be able to prove which theme it measured without re-deriving it.
     observedTheme: ready?.resolvedTheme ?? null,
     // 'blocked' on a secure origin, 'unsupported' on an insecure one; null
-    // predates the guard.
+    // predates the guard. A 'stale-worker' page is refused before this.
     serviceWorkerRegistration: ready?.serviceWorkerRegistration ?? null,
     nativeApp,
     nativePackage,
@@ -590,6 +591,8 @@ export async function captureDeviceFrames({
   // product's Settings controls and read back before anything is measured.
   const themeProblem = readinessThemeProblem(ready, theme);
   if (themeProblem) fail(themeProblem);
+  const workerProblem = staleServiceWorkerProblem(ready);
+  if (workerProblem) fail(workerProblem);
   if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
     fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
   }

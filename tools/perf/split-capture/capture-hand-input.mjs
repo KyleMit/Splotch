@@ -28,6 +28,7 @@ import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mj
 import { androidOpenSteps } from './lib/android-input.mjs';
 import { APP_BUNDLE_ID, writeArtifactFile } from './capture-device-frames.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -376,6 +377,8 @@ export async function captureHandInput({
   // product's Settings controls and read back before anything is measured.
   const themeProblem = readinessThemeProblem(ready, theme);
   if (themeProblem) fail(themeProblem);
+  const workerProblem = staleServiceWorkerProblem(ready);
+  if (workerProblem) fail(workerProblem);
   if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
     fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
   }

@@ -28,7 +28,10 @@
 import { createServer } from 'node:http';
 import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
-import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
+import {
+  SERVICE_WORKER_REGISTRATION_GUARD_SOURCE,
+  STALE_SERVICE_WORKER_EVICTION_SOURCE,
+} from '../lib/service-worker-guard.mjs';
 import { CHROME_PACKAGE } from './lib/android-input.mjs';
 import { pollFor } from './lib/poll.mjs';
 
@@ -61,10 +64,12 @@ const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 // Deliberately the smallest thing that can count frames: one closure, one array
 // of numbers, no listeners, no marks, no observers, no per-event work. Anything
 // richer would put the control's own cost into the comparison.
-// Both arms carry the service-worker guard, so a worker install lands in
-// neither window rather than only in the bare one.
+// Both arms carry the service-worker guard and the stale-worker eviction, so a
+// worker install or a leftover worker lands in neither window rather than only
+// in the bare one. An eviction reloads, and the reload's page is the one sampled.
 function counterSource(warmupMs, windowMs) {
   return `(() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})();
+(async () => {${STALE_SERVICE_WORKER_EVICTION_SOURCE}})();
 (() => {
   const deltas = [];
   let previous = 0;
