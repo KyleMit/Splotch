@@ -129,8 +129,10 @@
     }
 
     .sheet {
-      /* The topbar brings its own 18px, so this lands the mark 30px down. */
-      padding: 12px 32px 36px;
+      /* The topbar brings its own 18px, so this lands the mark 30px down.
+         The sides stay on --page-gutter: anything that bleeds past the
+         gutter (the underline tabs) measures itself against it. */
+      padding: 12px var(--page-gutter) 36px;
     }
   }
 
