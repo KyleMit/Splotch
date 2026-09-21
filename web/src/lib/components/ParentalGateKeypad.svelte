@@ -65,7 +65,9 @@
     color: var(--text-strong);
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--duration-fast) ease;
+    transition:
+      background var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
   }
 
   @media (hover: hover) {

@@ -88,6 +88,7 @@
     font-size: var(--font-size-lg, 18px);
     font-weight: var(--font-weight-bold, 700);
     cursor: pointer;
+    transition: transform var(--duration-fast, 0.15s) ease;
   }
 
   .error-restart:active {

@@ -424,7 +424,9 @@
     background: transparent;
     cursor: pointer;
     text-align: left;
-    transition: background var(--duration-fast) ease;
+    transition:
+      background var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
   }
 
   .hub-action {
