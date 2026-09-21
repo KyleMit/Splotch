@@ -414,7 +414,7 @@
   .hub-row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--space-3);
     flex: 1;
     min-width: 0;
     padding: 16px;

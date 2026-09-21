@@ -400,7 +400,7 @@
     display: flex;
     gap: 14px;
     align-items: baseline;
-    padding: 13px 0;
+    padding: var(--space-3) 0;
     margin: 0;
     border-bottom: var(--border-width) solid var(--brand-wash);
     color: var(--page-body);

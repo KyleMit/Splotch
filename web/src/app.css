@@ -288,7 +288,7 @@ body {
 .confirm-card-content {
   display: flex;
   flex-direction: column;
-  padding: 22px var(--space-6) var(--space-5);
+  padding: var(--space-6) var(--space-6) var(--space-5);
   gap: var(--space-4);
 }
 
