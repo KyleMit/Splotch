@@ -186,7 +186,10 @@
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
     position: relative;
-    overflow: hidden;
+    /* The bar never scrolls, and the selection bloom (::before/::after below)
+       overshoots the swatch by up to 4px past the column edge — it has to
+       escape the box to read as a bloom rather than a flat-sided smear. */
+    overflow: visible;
     touch-action: manipulation; /* Prevent iOS gesture delays */
   }
 
@@ -333,7 +336,7 @@
      (ring visible), not .active — tapping the swatch arms it before a color is
      picked, and the cluster shouldn't pop ringless. Popped it spans exactly the
      content box (52px at 60px), well inside the button, so nothing clips
-     against the palette's overflow: hidden. */
+     against the portrait bar's overflow clip. */
   .gradient-swatch.ringed :global(.more-colors-icon) {
     transform: translate(-50%, -50%) scale(var(--pop-scale));
   }
@@ -362,8 +365,11 @@
       padding: 10px;
       gap: 8px;
       box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
-      overflow-x: hidden;
-      overflow-y: visible;
+      /* clip (not hidden) so the bar stays unscrollable without forcing the
+         cross axis to auto; the clip margin lets the swatch bloom overshoot
+         the bar. WebKit ignores the margin and clips at the padding box. */
+      overflow: clip;
+      overflow-clip-margin: 12px;
       flex-wrap: nowrap;
     }
 
