@@ -44,13 +44,14 @@ for (const layout of [
       const source = await overlay.getAttribute('src');
       await page.clock.install();
       for (const target of [
-        initial === 'bare' ? 'Buttons' : 'Bare',
-        initial === 'bare' ? 'Bare' : 'Buttons',
+        initial === 'bare' ? 'Raised' : 'Flat',
+        initial === 'bare' ? 'Flat' : 'Raised',
       ]) {
         await openSettingsModal(page);
-        if (layout.width < 600) await openHubSection(page, 'appearance', '[aria-label="Toolbar"]');
+        if (layout.width < 600)
+          await openHubSection(page, 'appearance', '[aria-label="Button style"]');
         await page
-          .getByRole('radiogroup', { name: 'Toolbar', exact: true })
+          .getByRole('radiogroup', { name: 'Button style', exact: true })
           .getByRole('radio', { name: target, exact: true })
           .click();
         await page.keyboard.press('Escape');

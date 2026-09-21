@@ -10,6 +10,8 @@ export type IconName =
   | 'brush-eraser'
   | 'brush-magic'
   | 'brush-pen'
+  | 'button-style-flat'
+  | 'button-style-raised'
   | 'camera'
   | 'camera-party'
   | 'check'

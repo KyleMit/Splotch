@@ -20,8 +20,8 @@
   const showOrientationControls = supportsOrientationLock();
 
   const toolbarOptions: SegmentedPickerOption<ToolbarStyle>[] = [
-    { value: 'buttons', label: 'Buttons' },
-    { value: 'bare', label: 'Bare' },
+    { value: 'buttons', label: 'Raised', icon: 'button-style-raised' },
+    { value: 'bare', label: 'Flat', icon: 'button-style-flat' },
   ];
 
   const themeOptions: SegmentedPickerOption<ThemePreference>[] = [
@@ -46,9 +46,9 @@
   </div>
 
   <div class="setting">
-    <div class="appearance-label"><span class="appearance-title">Toolbar</span></div>
+    <div class="appearance-label"><span class="appearance-title">Button style</span></div>
     <SegmentedPicker
-      label="Toolbar"
+      label="Button style"
       options={toolbarOptions}
       selected={settingsState.toolbarStyle}
       onSelect={setToolbarStyle}

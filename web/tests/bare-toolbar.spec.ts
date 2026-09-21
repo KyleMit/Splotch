@@ -97,7 +97,7 @@ for (const layout of layouts) {
   }
 }
 
-test('Toolbar choice persists and switching keeps an existing drawing', async ({ page }) => {
+test('Button style choice persists and switching keeps an existing drawing', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoApp(page);
   await drawCommittedStroke(page, [
@@ -106,9 +106,9 @@ test('Toolbar choice persists and switching keeps an existing drawing', async ({
     { x: 260, y: 230 },
   ]);
   await openSettingsModal(page);
-  await openHubSection(page, 'appearance', '[role="radiogroup"][aria-label="Toolbar"]');
-  const toolbar = page.getByRole('radiogroup', { name: 'Toolbar', exact: true });
-  await toolbar.getByRole('radio', { name: 'Bare', exact: true }).click();
+  await openHubSection(page, 'appearance', '[role="radiogroup"][aria-label="Button style"]');
+  const toolbar = page.getByRole('radiogroup', { name: 'Button style', exact: true });
+  await toolbar.getByRole('radio', { name: 'Flat', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-toolbar', 'bare');
   await expect
     .poll(() => page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.toolbarStyle))
@@ -140,12 +140,12 @@ for (const layout of layouts.slice(0, 2)) {
     const initial = await bounds();
     await openSettingsModal(page);
     if (layout.name === 'portrait')
-      await openHubSection(page, 'appearance', '[role="radiogroup"][aria-label="Toolbar"]');
-    const toolbar = page.getByRole('radiogroup', { name: 'Toolbar', exact: true });
-    await toolbar.getByRole('radio', { name: 'Bare', exact: true }).click();
+      await openHubSection(page, 'appearance', '[role="radiogroup"][aria-label="Button style"]');
+    const toolbar = page.getByRole('radiogroup', { name: 'Button style', exact: true });
+    await toolbar.getByRole('radio', { name: 'Flat', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-toolbar', 'bare');
     await expect.poll(bounds).toEqual(initial);
-    await toolbar.getByRole('radio', { name: 'Buttons', exact: true }).click();
+    await toolbar.getByRole('radio', { name: 'Raised', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-toolbar', 'buttons');
     await expect.poll(bounds).toEqual(initial);
   });
