@@ -360,7 +360,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 28px 32px 18px;
+    /* 24px sides: the sidebar and hub tiles under the title start there. */
+    padding: 28px 24px 18px;
   }
 
   .settings-header h2 {
