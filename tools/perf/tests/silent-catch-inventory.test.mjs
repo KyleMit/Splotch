@@ -43,9 +43,12 @@ const AUDITED_SWALLOWS = {
     'bare-catch@f34a0355df5f',
     'benign-catch@10c7623c23ee',
     'benign-catch@6667cb768f1e',
-    'benign-catch@8838e0ff63b8',
+    'benign-catch@d58cc9c86591',
     'benign-catch@f8bf0febf110',
   ],
+  // Teardown in the finally, as in capture-browser-actions: a trace stop or
+  // browser close failing on a dropped device must not skip the adb restores.
+  'android/capture-clear-drag.mjs': ['benign-catch@70c355796ec3', 'benign-catch@f8bad8994279'],
   'campaign-sources.mjs': ['bare-catch@0c0deda10ec3'],
   'check-matrix-staleness.mjs': [
     'bare-catch@128f2f5c7510',

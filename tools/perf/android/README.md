@@ -2,7 +2,9 @@
 
 `perf:android` rebuilds, installs, and profiles the real Capacitor WebView on an ADB-connected
 Android emulator or device. `perf:android:browser:actions` runs the shared action plan directly in
-Android Chrome over CDP; its npm pre-hook prepares an instrumented production build.
+Android Chrome over CDP, and `perf:android:browser:clear-drag` holds the clear button and scrubs it
+across its accept radius once per toolbar style (`capture-clear-drag.mjs`); both npm pre-hooks
+prepare an instrumented production build.
 
 Both commands require a working Android SDK and a connected target. The browser runner may also
 serve the local build unless given an external URL. They write captures beneath `perf-profiles/` and

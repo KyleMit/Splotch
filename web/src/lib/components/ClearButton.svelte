@@ -15,6 +15,7 @@
   let buttonEl: HTMLButtonElement;
   let acceptZoneEl: HTMLDivElement;
   let clearPreviewEl: HTMLDivElement;
+  let clearWashEl: HTMLDivElement;
   let coachmark: ClearCoachmark;
 
   // Untracked latch — read imperatively by resetButtonPosition to skip a reset mid-gesture.
@@ -54,6 +55,7 @@
       containerEl,
       acceptZoneEl,
       clearPreviewEl,
+      clearWashEl,
       onClear: (home) => {
         // Fire-and-forget: the save must not delay the clear. Its export
         // snapshot is taken synchronously inside this call, before clearCanvas
@@ -86,8 +88,10 @@
 </div>
 
 <!-- Radial paper wash: emanates from the button's home corner and grows with
-     drag progress, previewing the clear before the user commits to it. -->
+     drag progress, previewing the clear before the user commits to it. The
+     flood (.clear-preview) takes over at the threshold. -->
 <div class="clear-preview" bind:this={clearPreviewEl} aria-hidden="true"></div>
+<div class="clear-wash" bind:this={clearWashEl} aria-hidden="true"></div>
 
 <ClearCoachmark bind:this={coachmark} />
 
@@ -257,43 +261,61 @@
     );
   }
 
-  /* Radial paper wash previewing the clear mid-drag. A paper-colored
-     gradient anchored at the button's home corner (top-right) that both grows
-     and strengthens as --clear-progress climbs 0→1. The theme's paper, not
-     white, so it reads as "returning to blank canvas," and anchored on the
-     corner the departing page flies into so the preview and the commit feel
-     continuous.
+  /* Radial paper wash previewing the clear mid-drag: a paper-colored gradient
+     anchored at the button's home corner (top-right) that grows and
+     strengthens as --clear-progress climbs 0→1. The theme's paper, not white,
+     so it reads as "returning to blank canvas," and anchored on the corner the
+     departing page flies into so the preview and the commit feel continuous.
+     A small fixed gradient scaled out by transform, never a repainted one: its
+     only per-move changes are transform and opacity, which the compositor
+     applies without re-rastering. dragToClear sets --clear-progress here and
+     --clear-wash-scale from this element's width, so the fade-out edge reaches
+     the same distance at any size.
      Each color-mix is preceded by its light-paper rgb fallback for
      pre-color-mix engines (docs/COMPATIBILITY.md). */
+  .clear-wash {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 256px;
+    height: 256px;
+    z-index: var(--z-clear-preview);
+    pointer-events: none;
+    transform-origin: 100% 0;
+    transform: scale(calc(var(--clear-progress, 0) * var(--clear-wash-scale, 0)));
+    opacity: var(--clear-progress, 0);
+    background: radial-gradient(
+      circle farthest-side at 100% 0,
+      rgb(252 251 248 / 90%),
+      rgb(252 251 248 / 0%)
+    );
+    background: radial-gradient(
+      circle farthest-side at 100% 0,
+      color-mix(in srgb, var(--paper) 90%, transparent),
+      color-mix(in srgb, var(--paper) 0%, transparent)
+    );
+    transition:
+      transform 0.12s linear,
+      opacity 0.12s linear;
+    will-change: transform, opacity;
+  }
+
+  /* The flood owns the page from the threshold through the release fade. */
+  .clear-preview:global(:is(.committed, .releasing)) + .clear-wash {
+    visibility: hidden;
+  }
+
+  /* Point of no return: a flood of paper over the whole canvas, giving the
+     threshold a distinct climax instead of a featureless ramp. On commit
+     (.releasing) it fades out while the departing page finishes the clear.
+     Only its opacity changes, so crossing the threshold back and forth never
+     repaints it. */
   .clear-preview {
     position: fixed;
     inset: 0;
     z-index: var(--z-clear-preview); /* above the canvas, below the departing page */
     pointer-events: none;
-    opacity: var(--clear-progress, 0);
-    background: radial-gradient(
-      circle at 100% 0,
-      rgb(252 251 248 / 90%),
-      rgb(252 251 248 / 0%) calc(var(--clear-progress, 0) * 130%)
-    );
-    background: radial-gradient(
-      circle at 100% 0,
-      color-mix(in srgb, var(--paper) 90%, transparent),
-      color-mix(in srgb, var(--paper) 0%, transparent) calc(var(--clear-progress, 0) * 130%)
-    );
-    transition:
-      opacity 0.12s linear,
-      background 0.12s linear;
-    will-change: opacity;
-  }
-
-  /* Point of no return: the wash snaps to flood the whole canvas, giving the
-     threshold a distinct climax instead of a featureless ramp. On commit
-     (.releasing) the flood keeps its fill while it fades out, since a gradient
-     cannot transition. */
-  .clear-preview:global(.committed),
-  .clear-preview:global(.releasing) {
-    opacity: 0.92;
+    opacity: 0;
     background: radial-gradient(
       circle at 100% 0,
       rgb(252 251 248 / 95%),
@@ -304,9 +326,11 @@
       color-mix(in srgb, var(--paper) 95%, transparent),
       color-mix(in srgb, var(--paper) 82%, transparent) 140%
     );
-    transition:
-      opacity 0.18s ease,
-      background 0.18s ease;
+    will-change: opacity;
+  }
+
+  .clear-preview:global(.committed) {
+    opacity: 0.92;
   }
 
   .clear-preview:global(.releasing) {
@@ -316,7 +340,7 @@
 
   /* Keep the wash (it conveys state, not just motion) but make it instant. */
   :global(:root[data-reduce-motion]) .clear-accept-zone,
-  :global(:root[data-reduce-motion]) .clear-preview,
+  :global(:root[data-reduce-motion]) .clear-wash,
   :global(:root[data-reduce-motion]) .clear-preview:global(.releasing) {
     transition: none;
   }

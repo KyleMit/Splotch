@@ -63,6 +63,20 @@ Keep this separate from the
 normal Appium drawing/action path can work while an older engine-probe wrapper cannot discover
 Safari pages. A failed wrapper is not proof that the established device automation path is broken.
 
+### A phone new to the rig has two settings the usual one does not
+
+Both surfaced on 2026-09-21 when a Galaxy S25 Ultra joined the rig, and neither names itself.
+
+* **Samsung Auto Blocker** (Settings → Security and privacy) blocks commands over USB and turns USB
+  debugging back off on its own. The phone stays on the USB bus — `ioreg` lists `SAMSUNG_Android` —
+  while `adb devices` lists nothing, not even `unauthorized`, and restarting the adb server changes
+  nothing. It dropped the phone mid-session, after debugging had been enabled and authorized. Turn
+  Auto Blocker off before capturing.
+* **Chrome's "Always use secure connections"** puts a full-page warning in front of a plain-`http`
+  LAN origin, so the preflight's floor control reports that the phone "could not load it" and every
+  LAN-addressed Chrome capture measures the warning page. Chrome exempts `localhost`, which is why
+  `perf:android:browser:clear-drag` loads the page through `adb reverse` by default.
+
 ### USB automation can work while Safari cannot load the preview
 
 Successful native taps or actual page rotation prove device control, not the iPad's network route to

@@ -33,13 +33,15 @@ function pointerEvent(type: string, pointerId: number, clientX = 0, clientY = 0)
 }
 
 const acceptRadius = () => Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
-const clearProgress = () => document.documentElement.style.getPropertyValue('--clear-progress');
+const clearProgress = (options: DragToClearOptions) =>
+  options.clearWashEl.style.getPropertyValue('--clear-progress');
 
 function createOptions(): DragToClearOptions {
   return {
     containerEl: document.createElement('div'),
     acceptZoneEl: document.createElement('div'),
     clearPreviewEl: document.createElement('div'),
+    clearWashEl: document.createElement('div'),
     onClear: vi.fn(),
     onTutorialShow: vi.fn(),
     onTutorialDismiss: vi.fn(),
@@ -67,7 +69,6 @@ describe('dragToClear pointer identity', () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.clearAllMocks();
-    document.documentElement.style.removeProperty('--clear-progress');
   });
 
   it('commits the clear when the same pointer drags past the accept radius', () => {
@@ -115,6 +116,17 @@ describe('dragToClear pointer identity', () => {
     expect(getOptions).toHaveBeenCalledOnce();
   });
 
+  it('drives the wash without restyling the document root', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, 100 + acceptRadius() / 2, 100));
+
+    expect(clearProgress(options)).toBe('0.5');
+    expect(document.documentElement.getAttribute('style') ?? '').toBe('');
+  });
+
   it('keeps progress, feedback, and release on the pointer-down radius after resize', () => {
     const width = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1_000);
     const height = vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1_000);
@@ -128,7 +140,7 @@ describe('dragToClear pointer identity', () => {
     height.mockReturnValue(250);
     node.dispatchEvent(pointerEvent('pointermove', 1, 300, 100));
 
-    expect(clearProgress()).toBe('0.5');
+    expect(clearProgress(options)).toBe('0.5');
     expect(updateClearSound).toHaveBeenLastCalledWith(0.5);
     expect(node.classList.contains('delete-ready')).toBe(false);
     expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
@@ -137,7 +149,7 @@ describe('dragToClear pointer identity', () => {
 
     node.dispatchEvent(pointerEvent('pointermove', 1, 500, 100));
 
-    expect(clearProgress()).toBe('1');
+    expect(clearProgress(options)).toBe('1');
     expect(updateClearSound).toHaveBeenLastCalledWith(1);
     expect(node.classList.contains('delete-ready')).toBe(true);
     expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(true);
@@ -287,7 +299,7 @@ describe('dragToClear pointer identity', () => {
     node.dispatchEvent(pointerEvent('pointermove', 2, far, 100));
 
     expect(options.containerEl.style.transform).toBe('');
-    expect(clearProgress()).toBe('0');
+    expect(clearProgress(options)).toBe('0');
 
     node.dispatchEvent(pointerEvent('pointerup', 2, far, 100));
 
@@ -333,7 +345,7 @@ describe('dragToClear pointer identity', () => {
     expect(options.acceptZoneEl.classList.contains('visible')).toBe(true);
     expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(true);
     expect(options.clearPreviewEl.classList.contains('committed')).toBe(true);
-    expect(clearProgress()).toBe('1');
+    expect(clearProgress(options)).toBe('1');
 
     vi.mocked(options.onTutorialDismiss).mockClear();
     vi.mocked(impactThreshold).mockClear();
@@ -354,7 +366,7 @@ describe('dragToClear pointer identity', () => {
     expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
     expect(options.clearPreviewEl.classList.contains('committed')).toBe(false);
     expect(options.clearPreviewEl.classList.contains('releasing')).toBe(false);
-    expect(clearProgress()).toBe('0');
+    expect(clearProgress(options)).toBe('0');
 
     vi.advanceTimersByTime(250);
 
@@ -369,12 +381,12 @@ describe('dragToClear pointer identity', () => {
     node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
     node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
 
-    expect(clearProgress()).toBe('1');
+    expect(clearProgress(options)).toBe('1');
 
     action.destroy();
 
     expect(cancelClearSound).toHaveBeenCalledOnce();
-    expect(clearProgress()).toBe('0');
+    expect(clearProgress(options)).toBe('0');
     expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
     expect(options.containerEl.style.transform).toBe('');
     expect(node.classList.contains('dragging')).toBe(false);
@@ -462,7 +474,6 @@ describe('dragToClear hold-to-show-tutorial timer', () => {
     cleanup = null;
     vi.useRealTimers();
     vi.clearAllMocks();
-    document.documentElement.style.removeProperty('--clear-progress');
   });
 
   it('shows the tutorial when the pointer is held still for the hold duration', () => {
