@@ -359,9 +359,9 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 14px;
+    gap: var(--space-3);
     margin: 0;
-    padding-bottom: 22px;
+    padding-bottom: var(--space-5);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
     letter-spacing: 0.14em;
@@ -425,16 +425,11 @@
   }
 
   /* The /changelog two-column shape: a sticky contents rail beside the reading
-     column. Both off the spacing scale on purpose: the rail is the width that
-     holds "What stays on your device" on one row at --font-size-sm, and the
-     gutter is what leaves the sections beside it inside --page-measure. */
+     column, on PageShell's shared rail width and gutter. */
   .details-body {
-    --rail-width: 226px;
-    --rail-gutter: 48px;
-
     display: grid;
-    grid-template-columns: var(--rail-width) minmax(0, 1fr);
-    gap: var(--rail-gutter);
+    grid-template-columns: var(--page-rail-width) minmax(0, 1fr);
+    gap: var(--page-rail-gutter);
     align-items: start;
   }
 

@@ -124,15 +124,9 @@
 
 <style>
   .changelog-body {
-    /* Both off the spacing scale on purpose: the rail is the width that holds
-       "Version 1.4.0" over its date without wrapping at --font-size-sm, and the
-       gutter is what leaves the notes beside it inside --page-measure. */
-    --rail-width: 232px;
-    --rail-gutter: 56px;
-
     display: grid;
-    grid-template-columns: var(--rail-width) minmax(0, 1fr);
-    gap: var(--rail-gutter);
+    grid-template-columns: var(--page-rail-width) minmax(0, 1fr);
+    gap: var(--page-rail-gutter);
     align-items: start;
   }
 
@@ -255,10 +249,10 @@
        padding means nothing is laid out beside the row to show through. */
     .changelog-body :global(.contents-disclosure) {
       display: block;
-      --toc-row-inset: var(--space-6);
+      --toc-row-inset: var(--space-4);
       padding-top: var(--toc-row-inset);
       background: var(--page-sheet);
-      margin-bottom: var(--space-6);
+      margin-bottom: var(--space-4);
     }
   }
 

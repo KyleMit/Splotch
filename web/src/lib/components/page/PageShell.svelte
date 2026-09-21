@@ -101,6 +101,13 @@
     --page-shadow: var(--float-shadow);
     /* Inside the sheet every band lines up on one horizontal padding. */
     --page-gutter: clamp(20px, 5vw, 34px);
+    /* The two-column reading shape /changelog and /privacy share: one rail
+       width and gutter, declared once so sibling pages one click apart wear
+       the same furniture. Off the spacing scale on purpose: the rail holds
+       the longest contents label on one row at --font-size-sm, and the
+       gutter leaves the column beside it inside --page-measure. */
+    --page-rail-width: 232px;
+    --page-rail-gutter: 48px;
 
     /* body's background is --app-bg, so a page whose ground differs from it has
        to reach the bottom of the viewport or a strip of the wrong color shows
