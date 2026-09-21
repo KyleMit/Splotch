@@ -41,6 +41,12 @@ export function registerDrawingEngineListeners(
   handlers: EngineListenerHandlers
 ) {
   listen(removers, window, 'resize', handlers.handleResize);
+  // Layout can resize the canvas with no window resize after it: the rotation
+  // viewport sync swaps the toolbar layout on its own timer, and when that lands
+  // after the resize settle the paper would keep the pre-swap box (issue 2125).
+  const canvasBox = new ResizeObserver(handlers.handleResize);
+  canvasBox.observe(canvas);
+  removers.push(() => canvasBox.disconnect());
   // Scroll/orientation move the canvas in the viewport without resizing it, so
   // refresh the cached rect (left/top) without the full backing-store rebuild.
   listen(removers, window, 'scroll', handlers.refreshCanvasRect, true);

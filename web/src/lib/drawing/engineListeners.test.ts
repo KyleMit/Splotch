@@ -78,6 +78,40 @@ it('registers the document resume listener in the native test build', () => {
   }
 });
 
+it('routes a canvas box resize through the settled resize path and stops observing on teardown', () => {
+  const RealResizeObserver = globalThis.ResizeObserver;
+  const observed: Element[] = [];
+  let notify: ResizeObserverCallback | undefined;
+  let disconnected = false;
+  globalThis.ResizeObserver = class {
+    constructor(callback: ResizeObserverCallback) {
+      notify = callback;
+    }
+    observe(target: Element) {
+      observed.push(target);
+    }
+    unobserve() {}
+    disconnect() {
+      disconnected = true;
+    }
+  } as unknown as typeof ResizeObserver;
+  const removers: Array<() => void> = [];
+  const canvas = document.createElement('canvas');
+  const handlers = listenerHandlers([], vi.fn());
+
+  try {
+    registerDrawingEngineListeners(removers, canvas, handlers);
+    notify?.([], {} as ResizeObserver);
+
+    expect(observed).toEqual([canvas]);
+    expect(handlers.handleResize).toHaveBeenCalledOnce();
+  } finally {
+    for (const remove of removers) remove();
+    globalThis.ResizeObserver = RealResizeObserver;
+  }
+  expect(disconnected).toBe(true);
+});
+
 it.each(['pointerdown', 'pointerup', 'pointercancel'] as const)(
   'finishes a suspended pen from a window %s',
   (eventType) => {
