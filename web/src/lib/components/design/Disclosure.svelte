@@ -40,6 +40,16 @@
     cursor: pointer;
     user-select: none;
     list-style: none;
+    border-radius: var(--radius-sm);
+  }
+
+  /* The summary fills the panel, whose overflow: hidden throws away a ring
+     drawn outside it, so the ring is drawn inside instead: the same width
+     and colour as everywhere else, offset inward by its own width. An inset
+     ring survives the clip in every engine, where overflow-clip-margin would
+     only rescue an outside ring off WebKit. */
+  .disclosure summary:focus-visible {
+    outline-offset: calc(-1 * var(--focus-ring-width));
   }
 
   .disclosure summary::-webkit-details-marker {
