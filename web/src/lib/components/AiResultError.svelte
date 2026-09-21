@@ -120,11 +120,6 @@
     font-weight: var(--font-weight-semibold);
   }
 
-  /* Keep this adult-only secondary action quieter than a primary `lg` decision
-     while preserving the app's minimum touch target. */
-  .ai-refusal-report :global(.btn) {
-    min-height: 44px;
-  }
 
   /* Very short viewports: shrink the error art so it still fits. */
   @media (max-height: 480px) {
