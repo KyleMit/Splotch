@@ -49,7 +49,7 @@
     gap: 16px;
     padding: 24px;
     text-align: center;
-    background: var(--app-bg, #fcfbf8);
+    background: var(--app-bg, #f5f5f5);
     color: var(--text-strong, #333);
     font-family: var(--font-family, 'Quicksand Variable', system-ui, sans-serif);
   }
