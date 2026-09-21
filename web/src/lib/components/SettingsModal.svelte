@@ -551,7 +551,7 @@
   .settings-content :global(.setting) {
     padding: 12px 16px;
     background: var(--surface-2);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-lg);
   }
 
   @media (max-width: 480px) {

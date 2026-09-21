@@ -67,7 +67,7 @@
     margin-bottom: 16px;
     padding: 16px;
     background: var(--surface-2);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
   }
 
   .whats-new-heading {
