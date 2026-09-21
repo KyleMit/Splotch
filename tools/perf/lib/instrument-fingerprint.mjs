@@ -33,6 +33,8 @@ const APPIUM_SCREEN_CAPTURE = 'tools/perf/ios/capture-xcuitest-screen.mjs';
 const APPIUM_ACTIONS_CAPTURE = 'tools/perf/ios/capture-xcuitest-actions.mjs';
 const ERASER_FILL = 'tools/perf/lib/eraser-fill.mjs';
 const UNDO_DRIVER = 'tools/perf/lib/undo-driver.mjs';
+// Which origin Android Chrome loads decides whether it is a secure context.
+const ANDROID_LOCALHOST_ROUTE = 'tools/perf/lib/android-localhost-route.mjs';
 
 export const INSTRUMENT_FILES_BY_COMMAND = {
   'perf:device:frames': [
@@ -43,6 +45,7 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
     'tools/perf/split-capture/lib/report-store.mjs',
     'tools/perf/split-capture/lib/android-input.mjs',
     'tools/perf/split-capture/lib/chrome-tabs.mjs',
+    ANDROID_LOCALHOST_ROUTE,
     APPIUM_SCREEN_CAPTURE,
     SHARED_SCREEN_PROBE,
     ERASER_FILL,
@@ -57,6 +60,7 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
   'perf:ios:xcuitest:actions': [APPIUM_ACTIONS_CAPTURE, SHARED_ACTION_PROBE],
   'perf:android:browser:actions': [
     'tools/perf/android/capture-browser-actions.mjs',
+    ANDROID_LOCALHOST_ROUTE,
     APPIUM_ACTIONS_CAPTURE,
     SHARED_ACTION_PROBE,
   ],

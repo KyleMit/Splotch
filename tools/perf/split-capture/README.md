@@ -74,10 +74,13 @@ is no iOS equivalent, so an iPad run is driven by a person calling the start.
 
 ## Inputs and outputs
 
-`--host` is the probe host URL **as the device sees it** — a LAN address, not `127.0.0.1`. The
-artifact records `orientation`, `theme`, and the `fidelity` verdict alongside the summaries, because
-the performance matrix validates a capture against the mode it was filed under and refuses one that
-cannot prove which mode it measured.
+`--host` is the probe host URL **as the device sees it** — a LAN address, not `127.0.0.1`. Android
+Chrome is the exception: the page opened over adb loads that host at `localhost` through
+`adb reverse` (`../lib/android-localhost-route.mjs`), because Chrome's *Always use secure
+connections* setting hides a plain-`http` LAN origin behind a warning page. The artifact records
+`orientation`, `theme`, and the `fidelity` verdict alongside the summaries, because the performance
+matrix validates a capture against the mode it was filed under and refuses one that cannot prove
+which mode it measured.
 
 `--undo-count=<n>` is valid only with `--brush=pen`. After the trusted gesture finishes, the page
 runs the shared canonical undo action source and records the raw engine/next-frame timings, the

@@ -60,6 +60,7 @@ import {
 } from './lib/android-input.mjs';
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
+import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -540,9 +541,15 @@ export async function captureDeviceFrames({
   });
 
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
+  // Android Chrome loads the probe host at localhost; the iPad keeps the LAN
+  // address, and a native WebView loads its own `server.url`.
+  const androidPage =
+    platform === 'android' && !nativeApp
+      ? reverseToLocalhost(pageUrl, adbRunner(serial))
+      : { url: pageUrl, release: () => {} };
   const driver =
     platform === 'android'
-      ? androidDriver({ serial, pageUrl, orientation, nativeApp, cdpPort })
+      ? androidDriver({ serial, pageUrl: androidPage.url, orientation, nativeApp, cdpPort })
       : iosDriver({ wdaUrl, pageUrl, nativeApp });
 
   await driver.openPage();
@@ -686,6 +693,7 @@ export async function captureDeviceFrames({
     payload,
   });
 
+  androidPage.release();
   if (output) {
     console.log(`Wrote ${writeArtifactFile(output, artifact)}`);
   }

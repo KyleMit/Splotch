@@ -244,8 +244,10 @@ and also serving as the CDP client when attaching to an Android target.
 WebView's DevTools socket — which is how CDP reaches an Android target.
 
 **`adb reverse`.** Device to host, the mirror image: makes the capture host's preview server
-reachable from the phone. The repository's `adb:reverse` helper forwards the dev-server port, so a
-capture against the preview port needs its own explicit forward.
+reachable from the phone at `localhost`. The repository's `adb:reverse` helper forwards the
+dev-server port; the Android Chrome capture paths reverse their own preview, probe, or floor-control
+port through `tools/perf/lib/android-localhost-route.mjs` and remove it on exit. Localhost is what
+exempts the page from Chrome's HTTPS-First warning and makes it a secure context.
 
 **`adb shell input swipe`.** The Android drawing input path. Unlike CDP touch it is an OS
 touchscreen event stream, which is what Chrome's display frame-rate boost responds to.

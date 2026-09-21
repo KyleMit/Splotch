@@ -27,6 +27,7 @@ import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regi
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
 import { APP_BUNDLE_ID, writeArtifactFile } from './capture-device-frames.mjs';
+import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -339,8 +340,12 @@ export async function captureHandInput({
   });
 
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
-  if (opener === 'adb') await openWithAdb({ serial, pageUrl, orientation, nativeApp });
-  else if (opener === 'devicectl') {
+  if (opener === 'adb') {
+    // Chrome loads the probe host at localhost, and the reverse stays up while the
+    // human draws; a native WebView loads its own `server.url`.
+    const adbPageUrl = nativeApp ? pageUrl : reverseToLocalhost(pageUrl, adbRunner(serial)).url;
+    await openWithAdb({ serial, pageUrl: adbPageUrl, orientation, nativeApp });
+  } else if (opener === 'devicectl') {
     openWithDevicectl({ udid });
     console.log(`  Launched the installed app; waiting for it to load ${host} …`);
     // The reset in the control call above zeroed the counter, so any request
