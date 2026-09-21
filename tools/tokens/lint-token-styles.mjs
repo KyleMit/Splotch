@@ -80,19 +80,15 @@ const BASELINE = new Map(
     // stops and the tag/sub inks from the store design handoff — marketing art
     // pinned to one look, deliberately outside the app's theming.
     'routes/dev/store-frames/lib/FeatureGraphic.svelte': 5,
-    // The polaroid flight's photographic near-paper white behind the print
-    // (the print itself is --polaroid-paper), like the AiResultStage picture it
-    // lands in — plus the #000 white-stroke ink keyline shared by the action
-    // buttons and the Brush/Stroke Width popovers (black reads against every
-    // pen color and both papers).
-    'app.css': 2,
+    // The #000 white-stroke ink keyline shared by the action buttons and the
+    // Brush/Stroke Width popovers (black reads against every pen color and
+    // both papers).
+    'app.css': 1,
     // /privacy, /changelog and both beta pages are absent on
     // purpose: they pinned a light-only --page-* palette until every page was
     // made to follow night mode, and now hold zero raw hexes. A new one there
     // is a page opting out of the theme again.
-    // The ground behind the picture, the same photographic white for the same
-    // reason: a picture is a print, and it hangs on paper under either theme.
-    'lib/components/AiResultStage.svelte': 1,
+
     // Constant dim swatch ring + var(--color) usage documented in-file.
     'lib/components/ColorPicker.svelte': 1,
     // The delete-ready gradient's darker second stop — unthemed on purpose,

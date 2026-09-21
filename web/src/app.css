@@ -988,7 +988,7 @@ html[data-ai-free-count]
 
 .polaroid-image {
   display: block;
-  background: #fcfbf8;
+  background: var(--polaroid-paper);
   border-radius: 1px;
 }
 
