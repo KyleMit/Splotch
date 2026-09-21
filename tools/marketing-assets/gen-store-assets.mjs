@@ -127,10 +127,10 @@ const seedButtonScale = (page) =>
   });
 
 // Page 05 shows the Tool Drawer section in dark mode: the tool drawer switch on
-// (so the per-tool toggles and the Button Size slider render) with the Stroke
-// width tool turned off — a parent mid-curation, "parents set the guardrails"
-// readable at a glance. The button scale matches the hero capture so the
-// slider shows the same value page 01's buttons render at.
+// (so the per-tool toggles render) with the Stroke width tool turned off — a
+// parent mid-curation, "parents set the guardrails" readable at a glance. The
+// button scale matches the hero capture so the Actions Panel behind Settings
+// renders at the size page 01 shows.
 const seedToolDrawerSettings = (page) =>
   page.addInitScript(
     ({ keys, buttonScale }) => {
