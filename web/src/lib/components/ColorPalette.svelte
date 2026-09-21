@@ -189,10 +189,14 @@
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
     position: relative;
-    /* The bar never scrolls, and the selection bloom (::before/::after below)
-       overshoots the swatch by up to 4px past the column edge — it has to
-       escape the box to read as a bloom rather than a flat-sided smear. */
-    overflow: visible;
+    /* clip, not hidden: the column is never a scroll container. It still has
+       to clip. The landscape ladder trims by viewport height, so on an iPad
+       that keeps its status bar in landscape the inset-shortened column can
+       run up to that inset past its last swatch (safe-area-matrix.spec.ts),
+       and a visible overflow there would scroll the page. The selection
+       bloom overshoots the column by 4px and loses that much; the portrait
+       bar below has no such overrun and gives it a clip margin instead. */
+    overflow: clip;
     touch-action: manipulation; /* Prevent iOS gesture delays */
   }
 
