@@ -77,9 +77,7 @@ async function beginButtonSizeDrag(page: Page) {
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoApp(page);
   const modal = await openSettingsModal(page);
-  await openHubSection(page, 'controls', '#toolDrawerToggle');
-  const drawerSwitch = page.locator('#toolDrawerToggle');
-  if ((await drawerSwitch.getAttribute('aria-checked')) === 'false') await drawerSwitch.click();
+  await openHubSection(page, 'accessibility', '#accessibilityButtonScaleLabel');
   const slider = page.locator('.button-size-setting .slider');
   await expect(slider).toBeVisible();
   const box = await slider.boundingBox();

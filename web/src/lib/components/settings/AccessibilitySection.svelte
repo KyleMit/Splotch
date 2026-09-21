@@ -8,10 +8,7 @@
 <!-- The one place a parent looks when their child needs something different:
      each accommodation with one sentence on who it helps. -->
 <section class="setting-group">
-  <ButtonSizeSetting
-    id="accessibilityButtonScaleLabel"
-    help="Bigger buttons help small or unsteady hands"
-  />
+  <ButtonSizeSetting />
   <!-- The switch shows the effective answer, so it reads as on when only the
        device's own setting asks for reduced motion. -->
   <div class="setting">

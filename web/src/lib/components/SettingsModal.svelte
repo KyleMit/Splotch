@@ -336,7 +336,7 @@
     visibility: hidden;
   }
 
-  .settings-modal.resizing :global(.button-size-setting.dragging) {
+  .settings-modal.resizing :global(.button-size-setting) {
     visibility: visible;
     background: var(--surface);
     border-radius: var(--radius-lg);
