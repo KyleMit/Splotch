@@ -122,8 +122,8 @@
   .ledger {
     --ledger-columns: minmax(0, 1fr) 100px 120px 272px;
     --ledger-label-size: var(--font-size-xs);
-    --ledger-meta-size: 13px;
-    --ledger-count-size: 15px;
+    --ledger-meta-size: var(--font-size-xs);
+    --ledger-count-size: var(--font-size-md);
     /* The design system's interaction-target floor: every row action meets
        44px even where its visual treatment is a slim link or outline chip. */
     --ledger-target-min: 44px;
