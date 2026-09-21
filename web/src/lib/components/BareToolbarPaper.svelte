@@ -19,6 +19,11 @@
     pointer-events: none;
     z-index: var(--z-toolbar-paper);
   }
+  /* The rail glass stands in for the Buttons palette's opaque surface, so it
+     must cover the Clear Accept Zone the way that surface does. */
+  :global(html[data-toolbar='bare']) .rail-glass {
+    z-index: var(--z-rail-glass);
+  }
   .rail-glass {
     inset: 0 auto 0 0;
     width: calc(var(--palette-landscape-width) + var(--safe-area-left));
