@@ -1209,7 +1209,7 @@ describe('the campaign probe-host protocol gate', () => {
 });
 
 describe('servedBuildFingerprintProblem', () => {
-  // A synthetic build rather than the real web/build: CI's unit job runs no build,
+  // A synthetic build rather than the real web/build: CI's browserless job runs no build,
   // and a test that reads the real one passes only where a build happens to exist.
   const fakeBuild = () => {
     const dir = mkdtempSync(join(tmpdir(), 'splotch-build-'));
