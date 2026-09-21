@@ -105,10 +105,6 @@
     transition: transform var(--duration-fast) var(--ease-glide);
   }
 
-  .ai-report-flag:focus-visible {
-    outline: 3px solid var(--brand);
-    outline-offset: 2px;
-  }
 
   .ai-report-flag:active {
     transform: scale(0.95);

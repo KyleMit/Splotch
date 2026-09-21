@@ -233,8 +233,6 @@
 
   .report-textarea:focus-visible {
     border-color: var(--brand);
-    outline: 2px solid var(--brand-text);
-    outline-offset: 2px;
   }
 
   .report-privacy-note {
