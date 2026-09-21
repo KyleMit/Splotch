@@ -173,10 +173,20 @@
   /* :global() — this class lands on Icon.svelte's own <span>, which carries
      Icon's style-scope hash, not this component's, so a scoped selector here
      would never match. */
+  /* The lid the ghost peels off the real Clear Button, at that button's own
+     icon size (ClearButton's .clear-icon), so the two never sit on top of
+     each other at different scales. */
   :global(.coachmark-trash) {
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
     display: block;
+  }
+
+  @media (orientation: portrait) {
+    .coachmark-button :global(.coachmark-trash) {
+      width: 38px;
+      height: 38px;
+    }
   }
 
   /* Hand rests on the lower-right of the ghost button, like a fingertip. */
