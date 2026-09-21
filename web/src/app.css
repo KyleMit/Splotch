@@ -1380,10 +1380,7 @@ html[data-toolbar='bare'] .actions-panel .flyout-menu {
   padding: 0;
   gap: 4px;
 }
-html[data-toolbar='bare'] .actions-panel .flyout-option {
-  width: max(var(--action-btn-size), 60px);
-  height: max(var(--action-btn-size), 60px);
-}
+
 html[data-toolbar='bare'] .actions-panel .flyout-option.active .action-icon {
   filter: drop-shadow(2px 0 0 var(--text-strong)) drop-shadow(-2px 0 0 var(--text-strong))
     drop-shadow(0 2px 0 var(--text-strong)) drop-shadow(0 -2px 0 var(--text-strong));
