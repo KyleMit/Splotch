@@ -223,6 +223,16 @@ export function renderedActionButtonSize(): number {
   );
 }
 
+// A flyout option's rendered size: the size-class step floored at
+// FLYOUT_OPTION_MIN_BASE_PX, then scaled — app.css's .flyout-option formula,
+// which the bare toolbar's glass has to agree with to cover an open menu. It
+// deliberately skips the per-button viewport cap: the menu is an extension of
+// the button that opened it and follows the slider, not the row's room.
+export function renderedFlyoutOptionSize(): number {
+  const scale = settingsState.actionButtonScale / 100;
+  return Math.max(actionButtonBase(layoutState.orientation), FLYOUT_OPTION_MIN_BASE_PX) * scale;
+}
+
 // Largest Button Size percentage the current screen can show without the
 // render-time cap kicking in — the dynamic maximum of the Button Size slider in Settings, so the
 // parent can't pick a size that would flow off the screen. Clamped to the
