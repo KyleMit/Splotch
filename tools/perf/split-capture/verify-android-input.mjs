@@ -13,7 +13,6 @@
 // alone. A slow app cannot make this fail and a fast one cannot make it pass,
 // and it needs no product build.
 import { argFlag, capture, fail, isMain, runMain, sleep, tryCapture } from '../../lib/proc.mjs';
-import { lanAddresses } from '../../lib/net.mjs';
 import { trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
 import { inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
@@ -27,6 +26,7 @@ import { classifyInputCadence, describeContactSamples } from './lib/input-verdic
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
+import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 
 const DEFAULT_PORT = 4177;
 const PAGE_SETTLE_MS = 6_000;
@@ -41,16 +41,6 @@ const CONTACT_BANK_MS = 600_000;
 
 const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 
-// The device loads this over the LAN, so loopback is useless. Picked rather than
-// required, because a wrong guess here fails as "the page never loaded" and
-// costs far more to diagnose than it saves. Delegates to the shared enumerator
-// rather than re-deriving: a local copy that skipped its link-local filter
-// agreed with it only by OS enumeration order, and the USB-tethered iPad's
-// 169.254 interface sits on exactly this rig.
-export function lanAddress() {
-  return lanAddresses()[0] ?? null;
-}
-
 // The same restored-tab race the capture runner guards against: session
 // restore across the force-stop can front a stale tab while the verify page
 // loads behind it, and the verifier then reports zero pointer input on a
@@ -64,7 +54,7 @@ export function lanAddress() {
 export async function guardVerifyForeground({
   serial,
   cdpPort,
-  hostname,
+  hostnames,
   nonce,
   forward = tryCapture,
   litterClearer = clearToolingLitter,
@@ -86,7 +76,7 @@ export async function guardVerifyForeground({
   }
   try {
     const cdpBase = `http://127.0.0.1:${cdpPort}`;
-    const cleared = await litterClearer({ cdpBase, hostname, nonce });
+    const cleared = await litterClearer({ cdpBase, hostnames, nonce });
     const fronted = await activate({ cdpBase, nonce, param: 'verify' });
     if (!fronted.activated) {
       console.log(
@@ -110,18 +100,18 @@ export async function verifyAndroidInput({
   // shifts this role off a held 9224, and a hardcoded default here would bind
   // the port the preflight just said it was avoiding.
   cdpPort = Number(argFlag('cdp-port', PORT_ROLES.androidCdp.port)),
-  address = argFlag('host-address', lanAddress()),
   repeats = Number(argFlag('gesture-repeats', PREFLIGHT_GESTURE_REPEATS)),
 } = {}) {
   if (!serial) fail('--device-serial= is required');
   if (!Number.isSafeInteger(repeats) || repeats < 1) {
     fail('--gesture-repeats must be a positive integer');
   }
-  if (!address) fail('no non-loopback IPv4 address found — pass --host-address=');
 
   const { server, state } = createFloorControlHost({ log: () => {} });
   await new Promise((resolve) => server.listen(port, '0.0.0.0', resolve));
   const host = `http://127.0.0.1:${port}`;
+  const route = await reverseToLocalhost(host, adbRunner(serial));
+  const pageBase = new URL(route.url);
   const nonce = `verify-${process.pid}-${Math.round(performance.now())}`;
   state.plan = { ...state.plan, label: nonce, nonce, finish: false, contactMs: CONTACT_BANK_MS };
 
@@ -135,11 +125,11 @@ export async function verifyAndroidInput({
       '-a',
       'android.intent.action.VIEW',
       '-d',
-      `'http://${address}:${port}/?verify=${nonce}'`,
+      `'${pageBase.origin}/?verify=${nonce}'`,
       'com.android.chrome',
     ]);
     await sleep(PAGE_SETTLE_MS);
-    await guardVerifyForeground({ serial, cdpPort, hostname: address, nonce });
+    await guardVerifyForeground({ serial, cdpPort, hostnames: route.toolingHostnames, nonce });
 
     const ready = await pollFor(
       async () => (await fetch(`${host}/__probe/state`).then((r) => r.json())).ready,
@@ -149,11 +139,13 @@ export async function verifyAndroidInput({
     // capture path fronts its page again right before dispatching — a
     // preflight proves the operations it performs, so this one performs the
     // same two.
-    if (ready) await guardVerifyForeground({ serial, cdpPort, hostname: address, nonce });
+    if (ready)
+      await guardVerifyForeground({ serial, cdpPort, hostnames: route.toolingHostnames, nonce });
     if (!ready) {
       fail(
-        `the floor control never reported ready on http://${address}:${port} — ` +
-          'the phone could not load it. Check that the host is reachable from the device.'
+        `the floor control never reported ready at ${pageBase.origin} (adb reverse of ` +
+          `tcp:${port}) — the phone's Chrome did not load it. Unlock the phone and check ` +
+          'that Chrome is in front of anything else on its screen.'
       );
     }
 
@@ -196,6 +188,7 @@ export async function verifyAndroidInput({
       fidelity: inputFidelity(input, 'android-chrome'),
     };
   } finally {
+    route.release();
     await closeFloorControlHost(server);
   }
 }

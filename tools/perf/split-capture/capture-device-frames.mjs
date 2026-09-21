@@ -60,6 +60,8 @@ import {
 } from './lib/android-input.mjs';
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
+import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -178,6 +180,7 @@ export function zeroInputProblem(pulse) {
 export function androidDriver({
   serial,
   pageUrl,
+  toolingHostnames,
   orientation,
   nativeApp,
   cdpPort,
@@ -187,7 +190,6 @@ export function androidDriver({
   litterClearer = clearToolingLitter,
 }) {
   const nonce = new URL(pageUrl).searchParams.get('probe');
-  const toolingHostname = new URL(pageUrl).hostname;
   // Session restore across the launch's force-stop can front a restored tab
   // while the run's page loads behind it (issue 1294). Closing the transport's
   // OWN litter removes the pile the restore re-fronts from — activation alone
@@ -216,7 +218,7 @@ export function androidDriver({
     }
     try {
       const cdpBase = `http://127.0.0.1:${cdpPort}`;
-      const cleared = await litterClearer({ cdpBase, hostname: toolingHostname, nonce });
+      const cleared = await litterClearer({ cdpBase, hostnames: toolingHostnames, nonce });
       if (cleared.closed > 0) {
         console.log(`closed ${cleared.closed} of this transport's leftover tab(s) ${moment}`);
       }
@@ -441,6 +443,9 @@ export function drivenCaptureArtifact({
     // already shows clears the override and leaves that field null. An artifact
     // has to be able to prove which theme it measured without re-deriving it.
     observedTheme: ready?.resolvedTheme ?? null,
+    // 'blocked' on a secure origin, 'unsupported' on an insecure one; null
+    // predates the guard. A 'stale-worker' page is refused before this.
+    serviceWorkerRegistration: ready?.serviceWorkerRegistration ?? null,
     nativeApp,
     nativePackage,
     // A native run reaches the instrumented page over the LAN through the app's
@@ -540,9 +545,22 @@ export async function captureDeviceFrames({
   });
 
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
+  // Android Chrome loads the probe host at localhost; the iPad keeps the LAN
+  // address, and a native WebView loads its own `server.url`.
+  const androidPage =
+    platform === 'android' && !nativeApp
+      ? await reverseToLocalhost(pageUrl, adbRunner(serial))
+      : { url: pageUrl, toolingHostnames: [new URL(pageUrl).hostname], release: () => {} };
   const driver =
     platform === 'android'
-      ? androidDriver({ serial, pageUrl, orientation, nativeApp, cdpPort })
+      ? androidDriver({
+          serial,
+          pageUrl: androidPage.url,
+          toolingHostnames: androidPage.toolingHostnames,
+          orientation,
+          nativeApp,
+          cdpPort,
+        })
       : iosDriver({ wdaUrl, pageUrl, nativeApp });
 
   await driver.openPage();
@@ -573,6 +591,8 @@ export async function captureDeviceFrames({
   // product's Settings controls and read back before anything is measured.
   const themeProblem = readinessThemeProblem(ready, theme);
   if (themeProblem) fail(themeProblem);
+  const workerProblem = staleServiceWorkerProblem(ready);
+  if (workerProblem) fail(workerProblem);
   if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
     fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
   }
@@ -686,6 +706,7 @@ export async function captureDeviceFrames({
     payload,
   });
 
+  androidPage.release();
   if (output) {
     console.log(`Wrote ${writeArtifactFile(output, artifact)}`);
   }

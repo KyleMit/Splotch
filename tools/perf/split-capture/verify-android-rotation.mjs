@@ -35,7 +35,7 @@ import {
   androidRotationVerdict,
 } from './lib/android-input.mjs';
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
-import { lanAddress } from './verify-android-input.mjs';
+import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { pollFor } from './lib/poll.mjs';
 
 const DEFAULT_PORT = 4177;
@@ -84,10 +84,8 @@ async function observeOrientation(serial, state, pageUrl, orientation) {
 export async function verifyAndroidRotation({
   serial = argFlag('device-serial'),
   port = Number(argFlag('port', DEFAULT_PORT)),
-  address = argFlag('host-address', lanAddress()),
 } = {}) {
   if (!serial) fail('--device-serial= is required');
-  if (!address) fail('no non-loopback IPv4 address found — pass --host-address=');
 
   const { server, state } = createFloorControlHost({ log: () => {} });
   await new Promise((resolve) => server.listen(port, '0.0.0.0', resolve));
@@ -95,17 +93,17 @@ export async function verifyAndroidRotation({
   // besides --wake-android that changes device state, and a preflight that leaves a
   // phone rotated is a preflight that corrupts the next session's portrait cells.
   const previous = readRotationSettings(serial);
+  const route = await reverseToLocalhost(`http://127.0.0.1:${port}/`, adbRunner(serial));
 
   try {
     const observations = [];
     for (const orientation of ORIENTATIONS) {
-      observations.push(
-        await observeOrientation(serial, state, `http://${address}:${port}/`, orientation)
-      );
+      observations.push(await observeOrientation(serial, state, route.url, orientation));
     }
     return { ...androidRotationVerdict(observations), observations, previous };
   } finally {
     for (const args of androidRotationRestoreCommands(previous)) adb(serial, args);
+    route.release();
     await closeFloorControlHost(server);
   }
 }

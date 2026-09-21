@@ -34,6 +34,11 @@ import {
   zeroInputProblem,
 } from '../split-capture/capture-device-frames.mjs';
 import {
+  SERVICE_WORKER_REGISTRATION_GUARD_SOURCE,
+  STALE_SERVICE_WORKER_EVICTION_SOURCE,
+  staleServiceWorkerProblem,
+} from '../lib/service-worker-guard.mjs';
+import {
   STROKES_PER_GESTURE_REPEAT,
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
@@ -362,6 +367,91 @@ describe('pageBootstrapSource', () => {
 
     expect(source).toContain("element.src = '/__probe/probe.js'");
     expect(source).not.toMatch(/\beval\(/);
+  });
+
+  // Android Chrome loads the probe host at localhost, a secure context, where the
+  // app registers its worker three strokes into a first visit and precaches the
+  // build inside the measured window. The guard has to be in place before the
+  // bootstrap's first await, long before any stroke lands.
+  it('blocks service-worker registration before anything else runs, and reports it', () => {
+    const source = pageBootstrapSource();
+    const guard = source.indexOf(SERVICE_WORKER_REGISTRATION_GUARD_SOURCE);
+
+    expect(guard).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(source.indexOf('await '));
+    expect(source).toContain('serviceWorkerRegistration,');
+  });
+});
+
+describe('SERVICE_WORKER_REGISTRATION_GUARD_SOURCE', () => {
+  const runGuard = (navigator) =>
+    runInNewContext(`(() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})()`, { navigator });
+
+  it('replaces register with a no-op on a secure origin', async () => {
+    const register = vi.fn();
+    const navigator = { serviceWorker: { register } };
+
+    expect(runGuard(navigator)).toBe('blocked');
+    await navigator.serviceWorker.register('/sw.js');
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('reports an insecure origin, which has no service worker to block', () => {
+    expect(runGuard({})).toBe('unsupported');
+  });
+});
+
+// The guard stops new registrations only. A worker an earlier run left on the
+// same persistent localhost origin is evicted once, with a reload, and a page
+// whose worker survives that is refused rather than measured.
+describe('STALE_SERVICE_WORKER_EVICTION_SOURCE', () => {
+  const page = ({ registrations = [], controller = null, evicted = false } = {}) => {
+    const storage = new Map(evicted ? [['splotch-perf-service-worker-evicted', '1']] : []);
+    const deleted = [];
+    const context = {
+      navigator: {
+        serviceWorker: { controller, getRegistrations: async () => registrations },
+      },
+      sessionStorage: {
+        getItem: (key) => storage.get(key) ?? null,
+        setItem: (key, value) => storage.set(key, value),
+        removeItem: (key) => storage.delete(key),
+      },
+      caches: { keys: async () => ['precache-v1'], delete: async (key) => deleted.push(key) },
+      location: { reload: vi.fn() },
+    };
+    context.window = context;
+    return { context, storage, deleted };
+  };
+  const evict = ({ context }) =>
+    runInNewContext(`(async () => {${STALE_SERVICE_WORKER_EVICTION_SOURCE}})()`, context);
+
+  it('answers clean when nothing holds the origin', async () => {
+    const clean = page();
+
+    expect(await evict(clean)).toBe('clean');
+    expect(clean.context.location.reload).not.toHaveBeenCalled();
+  });
+
+  it('unregisters, clears caches, and reloads once for a leftover worker', async () => {
+    const unregister = vi.fn(async () => true);
+    const held = page({ registrations: [{ unregister }], controller: {} });
+
+    expect(await evict(held)).toBe('evicting');
+    expect(unregister).toHaveBeenCalledTimes(1);
+    expect(held.deleted).toEqual(['precache-v1']);
+    expect(held.context.location.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a worker that survived the eviction reload instead of looping', async () => {
+    const survived = page({ registrations: [{ unregister: async () => false }], evicted: true });
+
+    expect(await evict(survived)).toBe('stale-worker');
+    expect(survived.context.location.reload).not.toHaveBeenCalled();
+    expect(staleServiceWorkerProblem({ serviceWorkerRegistration: 'stale-worker' })).toContain(
+      'earlier run'
+    );
+    expect(staleServiceWorkerProblem({ serviceWorkerRegistration: 'blocked' })).toBeNull();
   });
 });
 
@@ -1214,9 +1304,25 @@ describe('clearing the tooling litter', () => {
   // the host's plain preview pages stay: neither carries a signature that
   // proves it is ours rather than the operator's.
   it('claims tool-signature pages across ports, never operator or unmarked pages', () => {
-    const litter = toolingLitter(targets, 'host', 'run-7');
+    const litter = toolingLitter(targets, ['host'], 'run-7');
 
     expect(litter.map((target) => target.id)).toEqual(['stale-probe', 'stale-verify', 'husk']);
+  });
+
+  // Android Chrome moved from the LAN address to localhost through adb reverse,
+  // and Chrome restores tabs across that change: a probe tab a pre-route run
+  // left at the LAN address is still this host's litter.
+  it('claims leftovers under every name the session host was reached by', () => {
+    const mixed = [
+      { id: 'run', type: 'page', url: 'http://localhost:4175/?probe=run-7' },
+      { id: 'old-lan', type: 'page', url: 'http://192.168.1.9:4175/?probe=run-6' },
+      { id: 'new-local', type: 'page', url: 'http://localhost:4177/?verify=old-check' },
+      { id: 'other-host', type: 'page', url: 'http://10.0.0.7:4175/?probe=run-6' },
+    ];
+
+    const litter = toolingLitter(mixed, ['localhost', '192.168.1.9'], 'run-7');
+
+    expect(litter.map((target) => target.id)).toEqual(['old-lan', 'new-local']);
   });
 
   it('closes each leftover over the devtools http endpoint', async () => {
@@ -1228,7 +1334,7 @@ describe('clearing the tooling litter', () => {
 
     const result = await clearToolingLitter({
       cdpBase: 'http://127.0.0.1:9224',
-      hostname: 'host',
+      hostnames: ['host'],
       nonce: 'run-7',
       fetchImpl,
     });
@@ -1258,7 +1364,7 @@ describe('clearing the tooling litter', () => {
     };
     const result = await clearToolingLitter({
       cdpBase: 'http://127.0.0.1:9224',
-      hostname: 'host',
+      hostnames: ['host'],
       nonce: 'run-9',
       fetchImpl,
     });
@@ -1298,6 +1404,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     const driver = androidDriver({
       serial: 's',
       pageUrl: 'http://host:4175/?probe=run-7',
+      toolingHostnames: ['host'],
       orientation: 'PORTRAIT',
       nativeApp: false,
       cdpPort: 9224,
@@ -1320,7 +1427,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     }
 
     expect(deps.activateCalls.map((call) => call.nonce)).toEqual(['run-7', 'run-7']);
-    expect(deps.litterCalls.map((call) => call.hostname)).toEqual(['host', 'host']);
+    expect(deps.litterCalls.map((call) => call.hostnames)).toEqual([['host'], ['host']]);
     // --no-rebind refuses to steal a forward another session owns, and the
     // forward never routes through capture(), whose failure path is
     // process.exit — the combination that once killed a preflight.
@@ -1338,6 +1445,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     const driver = androidDriver({
       serial: 's',
       pageUrl: 'http://host:4175/?probe=run-7',
+      toolingHostnames: ['host'],
       orientation: 'PORTRAIT',
       nativeApp: true,
       cdpPort: 9224,
@@ -1368,6 +1476,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     const driver = androidDriver({
       serial: 's',
       pageUrl: 'http://host:4175/?probe=run-7',
+      toolingHostnames: ['host'],
       orientation: 'PORTRAIT',
       nativeApp: true,
       cdpPort: 9224,
@@ -1384,6 +1493,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     const driver = androidDriver({
       serial: 's',
       pageUrl: 'http://host:4175/?probe=run-7',
+      toolingHostnames: ['host'],
       orientation: 'PORTRAIT',
       nativeApp: true,
       cdpPort: 9224,
@@ -1500,7 +1610,7 @@ describe('the verify-foreground guard', () => {
       activateCalls,
       serial: 's',
       cdpPort: 9234,
-      hostname: 'host',
+      hostnames: ['host'],
       nonce: 'verify-1',
       forward: (cmd, args) => {
         forwardCalls.push(`${cmd} ${args.join(' ')}`);
@@ -1527,7 +1637,7 @@ describe('the verify-foreground guard', () => {
       'adb -s s forward --no-rebind tcp:9234 localabstract:chrome_devtools_remote',
       'adb -s s forward --remove tcp:9234',
     ]);
-    expect(d.litterCalls[0]).toMatchObject({ hostname: 'host', nonce: 'verify-1' });
+    expect(d.litterCalls[0]).toMatchObject({ hostnames: ['host'], nonce: 'verify-1' });
     expect(d.activateCalls[0]).toMatchObject({ nonce: 'verify-1', param: 'verify' });
   });
 

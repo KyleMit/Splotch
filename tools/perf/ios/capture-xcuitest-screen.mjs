@@ -53,6 +53,7 @@ import {
   releaseNativeRotationLock,
   restoreNativeRotationLock,
 } from '../lib/campaign-state.mjs';
+import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
 
 const APP_PATH = '/';
 const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
@@ -544,14 +545,7 @@ export async function dismissInstallBannerForMeasurement(execute) {
 }
 
 export async function blockServiceWorkerRegistrationForMeasurement(execute) {
-  return execute(`
-    if (!('serviceWorker' in navigator)) return 'unsupported';
-    Object.defineProperty(navigator.serviceWorker, 'register', {
-      configurable: true,
-      value: () => Promise.resolve(undefined)
-    });
-    return 'blocked';
-  `);
+  return execute(SERVICE_WORKER_REGISTRATION_GUARD_SOURCE);
 }
 
 async function readTable(execute, accessor, total) {

@@ -60,11 +60,15 @@ Instead the capture stops at its next step, cleanup runs, and the process exits 
 code. A second signal exits at once without restoring. kill -9 leaks all of it.
 
 **The AI waiting print needs a secure context.** Served to the phone at a LAN `http://` address, the
-page lacks `crypto.randomUUID` and `crypto.subtle`, and both AI actions are blocked coverage. Serve
-the preview to Chrome as `http://localhost:<port>` through `adb reverse tcp:<port> tcp:<port>`
-instead; a localhost origin is trustworthy, and no certificate is involved. The finish sample's
-`aiRun` record then proves the secure context, the crypto APIs, and that the in-page stub answered
-every generate request. The capture fails without that proof. Commands and evidence are in
+page lacks `crypto.randomUUID` and `crypto.subtle`, and both AI actions are blocked coverage. Both
+browser runners therefore load the preview in Chrome at `http://localhost:<port>` through
+`adb reverse tcp:<port> tcp:<port>` (`../lib/android-localhost-route.mjs`), and remove the reverse
+on exit. The default `--url` is localhost, and a `--url=` naming this machine's LAN address is
+rewritten to localhost for the device; the host-side build checks still use the URL as given. A
+localhost origin is trustworthy, involves no certificate, and is exempt from Chrome's *Always use
+secure connections* warning page. The finish sample's `aiRun` record then proves the secure context,
+the crypto APIs, and that the in-page stub answered every generate request. The capture fails
+without that proof. Commands and evidence are in
 `docs/scratchpad/perf/2026-09-19-device-web-secure-origin/`.
 
 Android-specific discovery and transport stay here. Shared device-session, action-scoring, trace,

@@ -72,10 +72,35 @@ Both surfaced on 2026-09-21 when a Galaxy S25 Ultra joined the rig, and neither 
   while `adb devices` lists nothing, not even `unauthorized`, and restarting the adb server changes
   nothing. It dropped the phone mid-session, after debugging had been enabled and authorized. Turn
   Auto Blocker off before capturing.
-* **Chrome's "Always use secure connections"** puts a full-page warning in front of a plain-`http`
-  LAN origin, so the preflight's floor control reports that the phone "could not load it" and every
-  LAN-addressed Chrome capture measures the warning page. Chrome exempts `localhost`, which is why
-  `perf:android:browser:clear-drag` loads the page through `adb reverse` by default.
+* **Chrome's "Always use secure connections"** (HTTPS-First) puts a full-page "This site doesn't
+  support a secure connection" warning in front of a plain-`http` LAN origin. Nothing on the host
+  can see it; the page just never reports in, which reads as a network fault. Chrome exempts
+  `localhost`, so every Android **Chrome** path this host serves loads its page at
+  `http://localhost:<port>/` through `adb reverse tcp:<port> tcp:<port>` and removes the reverse on
+  exit (`tools/perf/lib/android-localhost-route.mjs`): the preflight's input and rotation checks,
+  `perf:device:frames` and hand captures opened over adb, `perf:android:browser:actions` and
+  `:clear-drag`, and the probe-overhead measurement. A LAN `--url=`/`--host=` naming this machine is
+  rewritten to localhost for Chrome; one naming another machine is loaded as given and can still hit
+  the warning. The setting can stay on. The iPad and the native WebViews still load the LAN address,
+  so ATS and `cleartext` still apply to them.
+
+  Localhost is a secure context and the LAN origin was not: Android Chrome captures now run with
+  `crypto.subtle` and `crypto.randomUUID`, as production does, while iPad Safari captures still run
+  without them. The service worker would now register too, three strokes into a first visit, and
+  precache the build inside the measured window — so every one of these pages blocks
+  `navigator.serviceWorker.register` before it can, as the Appium runners already did, and the
+  artifact records `serviceWorkerRegistration`. A worker an earlier run left on the same localhost
+  origin is evicted with one reload, and a probe page whose worker survives that reports
+  `stale-worker`, which the capture refuses. Android Chrome cells captured before this change ran in
+  the insecure context, so compare across that boundary deliberately. The instrument fingerprint
+  includes the route and guard modules, so a resumed campaign flags the change instead of mixing the
+  two.
+
+  A LAN `--url=`/`--host=` counts as this machine when it is one of its interface addresses, or a
+  name (`my-mac.local`) that resolves only to them. Anything else prints a line saying Chrome may
+  show the warning page. A leftover `?probe=`/`?verify=` tab from a run before the route is still
+  recognized as tooling litter, because the sweep matches localhost and every address of this
+  machine.
 
 ### USB automation can work while Safari cannot load the preview
 

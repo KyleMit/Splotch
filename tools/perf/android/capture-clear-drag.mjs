@@ -15,11 +15,13 @@ import { chromium } from '@playwright/test';
 import { fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
+import { reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { ensurePreviewServer } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { servedBuildBinding } from '../lib/profile-preview.mjs';
 import {
   adb,
+  blockServiceWorkerRegistration,
   clearBrowserCaches,
   closeTarget,
   positiveInteger,
@@ -307,10 +309,6 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
   const cycles = positiveInteger(flag('cycles', '6'), 'cycles');
   const cdpPort = positiveInteger(flag('cdp-port', String(DEFAULT_CDP_PORT)), 'cdp-port');
   const deviceId = resolveAndroidDevice(flag('device-id'));
-  // localhost through `adb reverse` by default rather than the LAN address the
-  // other device runners use: Chrome's "Always use secure connections" setting
-  // interposes a warning page on a plain-http LAN origin, and exempts localhost.
-  const reversed = !flag('url');
   const base = flag('url') ?? `http://localhost:${port}/`;
   const endpoint = `http://127.0.0.1:${cdpPort}`;
   const token = `${Date.now()}`;
@@ -320,6 +318,7 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
 
   const originalAutoRotation = adb(deviceId, ['shell', 'settings', 'get', 'system', 'accelerometer_rotation']);
   const originalRotation = adb(deviceId, ['shell', 'settings', 'get', 'system', 'user_rotation']);
+  let devicePage;
   const restoreDevice = () => {
     adb(deviceId, ['shell', 'settings', 'put', 'system', 'user_rotation', originalRotation], {
       allowFailure: true,
@@ -328,7 +327,7 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
       allowFailure: true,
     });
     adb(deviceId, ['forward', '--remove', `tcp:${cdpPort}`], { allowFailure: true });
-    if (reversed) adb(deviceId, ['reverse', '--remove', `tcp:${port}`], { allowFailure: true });
+    devicePage?.release();
   };
   process.once('exit', restoreDevice);
 
@@ -341,13 +340,15 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
   try {
     server = await ensurePreviewServer(base, port, !has('no-serve'), { allowForeignBuild });
     const servedBuild = await servedBuildBinding(base, { verifiedAgainstCheckout: !allowForeignBuild });
-    if (reversed) adb(deviceId, ['reverse', `tcp:${port}`, `tcp:${port}`]);
+    devicePage = await reverseToLocalhost(base, (args, { bestEffort }) =>
+      adb(deviceId, args, { allowFailure: bestEffort })
+    );
     adb(deviceId, ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
     adb(deviceId, ['shell', 'settings', 'put', 'system', 'user_rotation', rotationFor(orientation)]);
-    const launchUrl = profilerUrl(base, token);
+    const launchUrl = profilerUrl(devicePage.url, token);
     adb(deviceId, ['shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', launchUrl, 'com.android.chrome']);
     adb(deviceId, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
-    target = await selectProfilerTarget(endpoint, base, token);
+    target = await selectProfilerTarget(endpoint, devicePage.url, token);
     browser = await chromium.connectOverCDP(endpoint);
     const context = browser.contexts()[0];
     const page = context.pages().find((candidate) => candidate.url() === target.url);
@@ -357,6 +358,7 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
     // the scrub would measure that build instead of the one just bound above.
     await waitForCanvas(page);
     await clearBrowserCaches(page);
+    const serviceWorkerRegistration = await blockServiceWorkerRegistration(page);
     cdp = await context.newCDPSession(page);
     const touch = touchDriver(cdp);
     if (has('trace')) {
@@ -396,8 +398,9 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
         id: deviceId,
         renderFrameRateHz: renderFrameRateFrom(adb(deviceId, ['shell', 'dumpsys', 'display'])),
       },
-      appUrl: base,
+      appUrl: devicePage.url,
       ...servedBuild,
+      serviceWorkerRegistration,
       transport: 'android-chrome-cdp',
       orientation,
       cycles,

@@ -16,7 +16,8 @@
 // One ownership rule decides what may be closed. The tooling's pages are
 // recognizable by their run-identity params (?probe= / ?verify=) or the
 // STAND_DOWN_PATH husks stale pages park themselves on, matched across EVERY
-// port the tooling serves on the session host — because the tab that steals
+// port the tooling serves on the session host, under every name the device has
+// reached it by (localhost through adb reverse, and the LAN addresses before it) — because the tab that steals
 // the foreground on relaunch is whichever tab Chrome used last, which can be
 // a different tool's page than the one being launched (a stale probe tab
 // stole the verifier's foreground from another port exactly this way).
@@ -48,12 +49,12 @@ export const STAND_DOWN_PAGE_HTML =
   'address — the <code>?probe=</code> query is the run’s identity and is ' +
   'load-bearing. Otherwise just close this tab; it is a leftover.</p></body>';
 
-export function toolingLitter(targets, hostname, keepNonce) {
+export function toolingLitter(targets, hostnames, keepNonce) {
   return targets.filter((target) => {
     if (target.type !== 'page') return false;
     try {
       const url = new URL(String(target.url ?? ''));
-      if (url.hostname !== hostname) return false;
+      if (!hostnames.includes(url.hostname)) return false;
       const marked =
         url.searchParams.has('probe') ||
         url.searchParams.has('verify') ||
@@ -68,9 +69,9 @@ export function toolingLitter(targets, hostname, keepNonce) {
   });
 }
 
-export async function clearToolingLitter({ cdpBase, hostname, nonce, fetchImpl = fetch }) {
+export async function clearToolingLitter({ cdpBase, hostnames, nonce, fetchImpl = fetch }) {
   const targets = await fetchImpl(`${cdpBase}/json/list`).then((response) => response.json());
-  const litter = toolingLitter(targets, hostname, nonce);
+  const litter = toolingLitter(targets, hostnames, nonce);
   let closed = 0;
   for (const target of litter) {
     // Counting attempts as closes reported a clean prune while a stale tab

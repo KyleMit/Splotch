@@ -27,7 +27,11 @@
 // the other's setup.
 import { createServer } from 'node:http';
 import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
-import { lanAddress } from './verify-android-input.mjs';
+import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import {
+  SERVICE_WORKER_REGISTRATION_GUARD_SOURCE,
+  STALE_SERVICE_WORKER_EVICTION_SOURCE,
+} from '../lib/service-worker-guard.mjs';
 import { CHROME_PACKAGE } from './lib/android-input.mjs';
 import { pollFor } from './lib/poll.mjs';
 
@@ -60,8 +64,13 @@ const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 // Deliberately the smallest thing that can count frames: one closure, one array
 // of numbers, no listeners, no marks, no observers, no per-event work. Anything
 // richer would put the control's own cost into the comparison.
+// Both arms carry the service-worker guard and the stale-worker eviction, so a
+// worker install or a leftover worker lands in neither window rather than only
+// in the bare one. An eviction reloads, and the reload's page is the one sampled.
 function counterSource(warmupMs, windowMs) {
-  return `(() => {
+  return `(() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})();
+(async () => {${STALE_SERVICE_WORKER_EVICTION_SOURCE}})();
+(() => {
   const deltas = [];
   let previous = 0;
   let recording = false;
@@ -341,18 +350,17 @@ export async function measureProbeOverhead({
   port = Number(argFlag('port', DEFAULT_PORT)),
   upstream = argFlag('upstream', DEFAULT_UPSTREAM),
   probeHost = argFlag('probe-host', DEFAULT_PROBE_HOST),
-  address = argFlag('host-address', lanAddress()),
   samples = Number(argFlag('samples', SAMPLES_PER_ARM)),
   brush = argFlag('brush', 'pen'),
 } = {}) {
   if (!serial) fail('--device-serial= is required');
-  if (!address) fail('no non-loopback IPv4 address found — pass --host-address=');
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
 
   const { server, state } = createOverheadHost({ upstream, probeHost });
   await new Promise((resolve) => server.listen(port, '0.0.0.0', resolve));
   const geometry = centreSwipe(readScreenSize(serial));
-  const pageUrl = `http://${address}:${port}/`;
+  const route = await reverseToLocalhost(`http://127.0.0.1:${port}/`, adbRunner(serial));
+  const pageUrl = route.url;
   const rows = [];
   const invalid = [];
   try {
@@ -367,6 +375,7 @@ export async function measureProbeOverhead({
       }
     }
   } finally {
+    route.release();
     await shutDown(serial, server, probeHost);
   }
   // Every requested pair has to be valid. A comparison missing one arm of one sample

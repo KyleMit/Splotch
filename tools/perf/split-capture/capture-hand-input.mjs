@@ -27,6 +27,8 @@ import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regi
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
 import { APP_BUNDLE_ID, writeArtifactFile } from './capture-device-frames.mjs';
+import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -268,6 +270,7 @@ export function handCaptureArtifact({
     buildDigest: servedBuild?.buildDigest ?? null,
     // The page's own answer, not the request — see capture-device-frames.
     observedTheme: ready?.resolvedTheme ?? null,
+    serviceWorkerRegistration: ready?.serviceWorkerRegistration ?? null,
     pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
     // The dominant variable for coalescing (issue 1303): a native WebView here
     // loads the probe host remotely, never its bundled assets.
@@ -339,8 +342,14 @@ export async function captureHandInput({
   });
 
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
-  if (opener === 'adb') await openWithAdb({ serial, pageUrl, orientation, nativeApp });
-  else if (opener === 'devicectl') {
+  if (opener === 'adb') {
+    // Chrome loads the probe host at localhost, and the reverse stays up while the
+    // human draws; a native WebView loads its own `server.url`.
+    const adbPageUrl = nativeApp
+      ? pageUrl
+      : (await reverseToLocalhost(pageUrl, adbRunner(serial))).url;
+    await openWithAdb({ serial, pageUrl: adbPageUrl, orientation, nativeApp });
+  } else if (opener === 'devicectl') {
     openWithDevicectl({ udid });
     console.log(`  Launched the installed app; waiting for it to load ${host} …`);
     // The reset in the control call above zeroed the counter, so any request
@@ -368,6 +377,8 @@ export async function captureHandInput({
   // product's Settings controls and read back before anything is measured.
   const themeProblem = readinessThemeProblem(ready, theme);
   if (themeProblem) fail(themeProblem);
+  const workerProblem = staleServiceWorkerProblem(ready);
+  if (workerProblem) fail(workerProblem);
   if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
     fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
   }

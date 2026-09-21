@@ -24,7 +24,9 @@ import {
   selectedActions,
   stableActionPlan,
 } from '../ios/capture-xcuitest-actions.mjs';
-import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
+import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
+import { ensurePreviewServer } from '../lib/profile-device-session.mjs';
+import { reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { servedBuildBinding } from '../lib/profile-preview.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
@@ -183,6 +185,14 @@ export async function clearBrowserCaches(page) {
   });
 }
 
+// Every later document gets the guard before its own scripts run; the document
+// already loaded gets it now, and its answer is what the artifact records.
+export async function blockServiceWorkerRegistration(page) {
+  const guard = `(() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})()`;
+  await page.addInitScript(guard);
+  return page.evaluate(guard);
+}
+
 export async function waitForStableFrames(page) {
   await sleep(PAGE_SETTLE_MS);
   await page.evaluate(
@@ -250,7 +260,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     },
     argv
   );
-  const base = resolveDeviceUrl(flag('url'), port, APP_PATH);
+  const base = flag('url') ?? `http://localhost:${port}${APP_PATH}`;
   // The override is only for a build another worktree serves at --url; with
   // the preview this runner spawns itself it would also switch off the
   // native-export and stale-build guards.
@@ -271,7 +281,6 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     fail('--orientation must be PORTRAIT or LANDSCAPE');
   }
   const token = `${Date.now()}`;
-  const launchUrl = profilerUrl(base, token);
   const endpoint = `http://127.0.0.1:${cdpPort}`;
   const originalAutoRotation = adb(deviceId, [
     'shell',
@@ -317,6 +326,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   let observedRefreshRateHz;
   let server;
   let servedBuild;
+  let devicePage;
   let browser;
   let cdp;
   let target;
@@ -351,6 +361,11 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     // Binds the artifact to the bytes measured; a foreign build keeps its
     // entry and digest and records no product commit.
     servedBuild = await servedBuildBinding(base, { verifiedAgainstCheckout: !allowForeignBuild });
+    // The host checks the preview at `base`; Chrome loads it at localhost.
+    devicePage = await reverseToLocalhost(base, (args, { bestEffort }) =>
+      adb(deviceId, args, { allowFailure: bestEffort })
+    );
+    const launchUrl = profilerUrl(devicePage.url, token);
     adb(deviceId, [
       'shell',
       'am',
@@ -362,7 +377,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       'com.android.chrome',
     ]);
     adb(deviceId, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
-    target = await selectProfilerTarget(endpoint, base, token);
+    target = await selectProfilerTarget(endpoint, devicePage.url, token);
     browser = await chromium.connectOverCDP(endpoint);
     const context = browser.contexts()[0];
     const page = context.pages().find((candidate) => candidate.url() === target.url);
@@ -370,6 +385,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     await page.bringToFront();
     await waitForCanvas(page);
     await clearBrowserCaches(page);
+    const serviceWorkerRegistration = await blockServiceWorkerRegistration(page);
 
     const readOrientation = () =>
       page.evaluate(() => (innerWidth > innerHeight ? 'LANDSCAPE' : 'PORTRAIT'));
@@ -421,7 +437,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         execute,
         executePromise,
         loadDocument: async () => {
-          await page.goto(profilingUrl(base, repeat), { waitUntil: 'load' });
+          await page.goto(profilingUrl(devicePage.url, repeat), { waitUntil: 'load' });
           await waitForCanvas(page);
         },
       });
@@ -471,8 +487,9 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         id: deviceId,
         uptimeSeconds: deviceUptimeSeconds,
       },
-      appUrl: base,
+      appUrl: devicePage.url,
       ...servedBuild,
+      serviceWorkerRegistration,
       transport: 'android-chrome-cdp',
       uiActivation: 'trusted-cdp-touch',
       refreshRatePin: {
@@ -507,6 +524,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     await browser?.close().catch(() => null);
     if (target) await closeTarget(endpoint, target.id);
     adb(deviceId, ['forward', '--remove', `tcp:${cdpPort}`], { allowFailure: true });
+    devicePage?.release();
     process.removeListener('exit', restoreDeviceSettings);
     restoreDeviceSettings();
     server?.stop();
