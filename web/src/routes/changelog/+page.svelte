@@ -163,6 +163,14 @@
     border-top: var(--border-width) solid var(--page-rule);
   }
 
+  /* Above the newest release the contents row (narrow) or the hero (wide)
+     already rules the column off; a hairline right under it would read as a
+     double strike, as /privacy reasons for its first section. */
+  .changelog :global(.release:first-of-type) {
+    padding-top: 0;
+    border-top: none;
+  }
+
   /* Nothing follows the oldest release, so without a reserve the scroll clamps
      while it is still below the spy band and it can never become the reading
      position. A band's worth of room under its own top is exactly what it needs
