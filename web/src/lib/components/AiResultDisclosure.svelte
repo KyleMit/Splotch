@@ -105,7 +105,6 @@
     transition: transform var(--duration-fast) var(--ease-glide);
   }
 
-
   .ai-report-flag:active {
     transform: scale(0.95);
   }

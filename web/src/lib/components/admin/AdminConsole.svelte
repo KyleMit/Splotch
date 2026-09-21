@@ -450,7 +450,6 @@
     width: 100%;
   }
 
-
   .add-form input {
     flex: 1;
     min-width: 0;

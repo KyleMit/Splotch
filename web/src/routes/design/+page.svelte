@@ -407,18 +407,15 @@
     padding: 28px 0 24px;
   }
 
-  /* PageShell's back link recipe: a 44px target whose growth past the text
-     line is handed back through the margins, so the stack sits where it did. */
+  /* PageShell's .back recipe: a 44px target, its growth handed back by margin. */
   .back {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
+    display: inline-block;
+    line-height: 44px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--brand-text);
     text-decoration: none;
-    margin-top: -11px;
-    margin-bottom: calc(var(--space-5) - 11px);
+    margin: -11px 0 calc(var(--space-5) - 11px);
   }
 
   .styleguide {
@@ -447,7 +444,7 @@
   }
 
   .mobile-back {
-    display: flex;
+    display: block;
     margin-bottom: var(--space-4);
   }
 

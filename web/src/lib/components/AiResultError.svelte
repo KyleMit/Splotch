@@ -120,7 +120,6 @@
     font-weight: var(--font-weight-semibold);
   }
 
-
   /* Very short viewports: shrink the error art so it still fits. */
   @media (max-height: 480px) {
     .ai-result-error {
