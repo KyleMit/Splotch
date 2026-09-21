@@ -416,27 +416,25 @@ media queries + the head-script stamp in `app.html`).
       install button when the browser supports it
     * **Tool Drawer Section** - an **Enable tool drawer** switch that hides only the drawer's own
       tools (the camera, coloring books, and AI buttons keep their own sections' switches; the
-      chevron goes only when every control is off), a **Button Size** slider that rescales the
-      Actions Panel buttons (dragging it melts the rest of Settings away so the buttons resize in
-      full view), and a **Drawing Tools** list that toggles each brush and Actions Panel button
-      on/off — brushes first, then the controls beside them. The list wears one of two skins, chosen
-      by the block's own measured width: a 2-column **chip grid** where two chips fit, and the same
-      plain **toggle rows** the rest of Settings uses wherever the block is down to one column.
-      Either way it is one exported list (`settings/drawingTools.ts`), which the hub row's "n tools
-      hidden" subtitle counts. The camera button's own visibility lives in **Saving** instead,
-      leading that section above Auto-Save on Delete.
+      chevron goes only when every control is off) and a **Drawing Tools** list that toggles each
+      brush and Actions Panel button on/off — brushes first, then the controls beside them. The list
+      wears one of two skins, chosen by the block's own measured width: a 2-column **chip grid**
+      where two chips fit, and the same plain **toggle rows** the rest of Settings uses wherever the
+      block is down to one column. Either way it is one exported list (`settings/drawingTools.ts`),
+      which the hub row's "n tools hidden" subtitle counts. The camera button's own visibility lives
+      in **Saving** instead, leading that section above Auto-Save on Delete.
     * **Accessibility Section** - the one section a parent finds by name when their child needs
       something different: each accommodation with one sentence on who it helps. Today that is the
-      **Button Size** slider, rendered here as well as in Tool Drawer
-      (`settings/ButtonSizeSetting.svelte`, one stored scale behind both), since bigger buttons are
-      the accommodation for small or unsteady hands, and the **Reduce Motion** switch. The switch
-      shows the effective answer — on when either the stored preference or the OS asks for reduced
-      motion — and writes the loosest of `reduce` / `full` / `system` that gives the requested
-      answer, so it can also opt this app back out on a reduce-motion OS. Live treatments read
-      `:root[data-reduce-motion]` (`platform/reducedMotion.ts`), never the media query. Entrance and
-      other keyframe cues that must not replay capture that answer at the start of their cue, using
-      `stampMotionAtStart()` for DOM cues; swapping keyframes through the live attribute would
-      replay an animation on a visible element.
+      **Button Size** slider (`settings/ButtonSizeSetting.svelte`), which rescales the Actions Panel
+      buttons — bigger buttons are the accommodation for small or unsteady hands, and dragging it
+      melts the rest of Settings away so the buttons resize in full view — and the **Reduce Motion**
+      switch. The switch shows the effective answer — on when either the stored preference or the OS
+      asks for reduced motion — and writes the loosest of `reduce` / `full` / `system` that gives
+      the requested answer, so it can also opt this app back out on a reduce-motion OS. Live
+      treatments read `:root[data-reduce-motion]` (`platform/reducedMotion.ts`), never the media
+      query. Entrance and other keyframe cues that must not replay capture that answer at the start
+      of their cue, using `stampMotionAtStart()` for DOM cues; swapping keyframes through the live
+      attribute would replay an animation on a visible element.
       * **Appearance Control** - Light / Dark / System segmented control at the top of the
         **Appearance** section. Dark mode themes the chrome (app background, palette bar, modals,
         Install Banner), the paper (a near-black warm tone under the same low-alpha texture), and

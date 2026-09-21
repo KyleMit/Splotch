@@ -77,7 +77,7 @@
 
   <div class="setting pack-storage">
     <div class="pack-summary">
-      <Icon name="shapes" class="setting-icon" />
+      <Icon name="picture-stack" class="setting-icon" />
       <div>
         <span class="pack-title">Downloaded pictures</span>
         {#if coloringPacksState.initialized}

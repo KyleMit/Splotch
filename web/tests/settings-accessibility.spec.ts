@@ -3,8 +3,8 @@ import { expect, test } from '@playwright/test';
 import { gotoApp, openHubSection, openSettingsModal } from './helpers';
 
 // The Accessibility section (issue #2091): one place a parent finds by name when
-// their child needs something different. It carries the Button Size slider —
-// the same stored scale the Tool Drawer section edits.
+// their child needs something different. It is the Button Size slider's only
+// home.
 
 test('Accessibility drills in from the phone hub with the Button Size slider', async ({ page }) => {
   await page.setViewportSize({ width: 460, height: 852 });
@@ -16,23 +16,17 @@ test('Accessibility drills in from the phone hub with the Button Size slider', a
   await expect(page.getByText('Bigger buttons help small or unsteady hands')).toBeVisible();
 });
 
-test('both Button Size sliders edit the one stored scale', async ({ page }) => {
+test('the Button Size slider lives in Accessibility alone', async ({ page }) => {
   await gotoApp(page);
   await openSettingsModal(page);
   await page.locator('.settings-nav').getByRole('button', { name: 'Accessibility' }).click();
 
-  const accessibilitySlider = page.locator(
-    '[aria-labelledby="accessibilityButtonScaleLabel"][role="slider"]'
-  );
-  const toolDrawerSlider = page.locator(
-    '[aria-labelledby="actionButtonScaleLabel"][role="slider"]'
-  );
-  await expect(accessibilitySlider).toBeInViewport();
-  const before = Number(await toolDrawerSlider.getAttribute('aria-valuenow'));
+  const slider = page.locator('[aria-labelledby="accessibilityButtonScaleLabel"][role="slider"]');
+  await expect(slider).toBeInViewport();
+  await expect(page.locator('.button-size-setting')).toHaveCount(1);
 
-  await accessibilitySlider.focus();
+  const before = Number(await slider.getAttribute('aria-valuenow'));
+  await slider.focus();
   await page.keyboard.press('ArrowLeft');
-
-  await expect(toolDrawerSlider).toHaveAttribute('aria-valuenow', String(before - 1));
-  await expect(accessibilitySlider).toHaveAttribute('aria-valuenow', String(before - 1));
+  await expect(slider).toHaveAttribute('aria-valuenow', String(before - 1));
 });

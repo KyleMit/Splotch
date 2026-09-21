@@ -52,7 +52,7 @@ design iteration.
 | 02 | `02-books.png`   | The Coloring Books picker showing all 8 real cover thumbs — two tall columns on the tall iPhone slot, the native 3/3/2 grid on the 16:9 Play phone                          |
 | 03 | `03-magic.png`   | A Farm cat page ~85% revealed by natural child scribbles in magic mode, magic brush active in the toolbar                                                                   |
 | 04 | `04-ai.png`      | Doodle → AI masterpiece showcase: a real drawing, the real generation it produced, the wand-stars icon                                                                      |
-| 05 | `05-parents.png` | Dark mode: Settings open on the Tool Drawer section — advanced controls on, one tool hidden, the button-size slider live                                                    |
+| 05 | `05-parents.png` | Dark mode: Settings open on the Tool Drawer section — advanced controls on, one tool hidden                                                                                 |
 
 The AI showcase uses a real input/output pair from the model bake-off
 (`scrapbook/model-eval/prompt-adherence/assets/`), so the "AI-generated picture" shown is an actual

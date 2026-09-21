@@ -54,6 +54,7 @@ export type IconName =
   | 'parent-center'
   | 'phone-tablet'
   | 'photo-size-select-small'
+  | 'picture-stack'
   | 'reduce-motion'
   | 'refresh'
   | 'release-fixed'

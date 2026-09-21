@@ -1,7 +1,6 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
   import ToggleRow from './ToggleRow.svelte';
-  import ButtonSizeSetting from './ButtonSizeSetting.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import {
     settingsState,
@@ -98,11 +97,6 @@
       help="Shows the brushes, stroke width, and undo in the drawer"
     />
   </div>
-
-  <!-- The slider sits outside the switch's gate: it sizes every Actions Panel
-       button, and the camera, coloring books, and AI button stay on screen
-       while the drawer's own tools are off. -->
-  <ButtonSizeSetting id="actionButtonScaleLabel" />
 
   {#if settingsState.toolDrawerEnabled}
     <div class="tool-drawer-settings" transition:sectionReveal>
