@@ -6,7 +6,7 @@ import {
   runBrowserlessTests,
   summarize,
 } from '../run-browserless-tests.mjs';
-import { jobBlock, runCommandsIn, testWorkflow } from './lib/workflow-job-steps.mjs';
+import { jobBlock, runCommandsIn, testWorkflow } from './workflow-job-steps.mjs';
 
 // `npm run test:browserless` exists because no other local command reproduced
 // this job: `test:unit` runs a fraction of it, and `npm test` omits the API

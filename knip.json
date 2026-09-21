@@ -40,7 +40,7 @@
     "web/*.ts",
     "netlify/**/*.ts",
     "tools/*.mjs",
-    "tools/{adrs,api-smoke,app-driver,audit-burndown,centerline-tracing,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,icons,lib,marketing-assets,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests,tokens}/**/*.mjs",
+    "tools/{adrs,api-smoke,app-driver,audit-burndown,centerline-tracing,ci-mirror,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,icons,lib,marketing-assets,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests,tokens}/**/*.mjs",
     "tools/asset-gen/{coloring,style-covers,crayon-reference,lib}/**/*.{mjs,ts}",
     "tools/vectorize/**/*.mjs"
   ],

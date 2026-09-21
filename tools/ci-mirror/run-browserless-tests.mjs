@@ -1,12 +1,10 @@
 // Mirrors CI's Browserless tests job locally — every Vitest tier plus the API
 // contract smoke, without the Playwright suite that `npm test` adds and with
-// the smoke that `npm test` omits. How the mirror runs and why it keeps going
-// past a failure: tools/lib/ci-job-mirror.mjs.
-//
-// BROWSERLESS_TEST_COMMANDS must stay in step with .github/workflows/test.yml,
-// enforced by tools/tests/run-browserless-tests.test.mjs.
-import { runJobCommands, summarizeJob } from './lib/ci-job-mirror.mjs';
-import { isMain, runMain } from './lib/proc.mjs';
+// the smoke that `npm test` omits. BROWSERLESS_TEST_COMMANDS must stay in step
+// with .github/workflows/test.yml, enforced by tests/run-browserless-tests.test.mjs;
+// tools/ci-mirror/README.md explains the capability.
+import { isMain, runMain } from '../lib/proc.mjs';
+import { runJobCommands, summarizeJob } from './lib/job-mirror.mjs';
 
 export const BROWSERLESS_TEST_COMMANDS = [
   'npm run test:unit:coverage',

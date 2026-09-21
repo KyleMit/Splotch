@@ -1,11 +1,8 @@
-// Mirrors CI's Quality job locally; tools/run-browserless-tests.mjs mirrors the
-// Browserless tests job, the other non-browser half of the gate. How the mirror
-// runs and why it keeps going past a failure: tools/lib/ci-job-mirror.mjs.
-//
-// QUALITY_COMMANDS must stay in step with .github/workflows/test.yml, enforced
-// by tools/tests/run-quality-checks.test.mjs.
-import { runJobCommands, summarizeJob } from './lib/ci-job-mirror.mjs';
-import { isMain, runMain } from './lib/proc.mjs';
+// Mirrors CI's Quality job locally. QUALITY_COMMANDS must stay in step with
+// .github/workflows/test.yml, enforced by tests/run-quality-checks.test.mjs;
+// tools/ci-mirror/README.md explains the capability.
+import { isMain, runMain } from '../lib/proc.mjs';
+import { runJobCommands, summarizeJob } from './lib/job-mirror.mjs';
 
 export const QUALITY_COMMANDS = [
   'npm run format:check',

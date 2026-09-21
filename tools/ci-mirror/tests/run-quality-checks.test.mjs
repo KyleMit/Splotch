@@ -4,14 +4,14 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { QUALITY_COMMANDS, runQualityChecks, summarize } from '../run-quality-checks.mjs';
-import { jobBlock, runCommandsIn, testWorkflow } from './lib/workflow-job-steps.mjs';
+import { jobBlock, runCommandsIn, testWorkflow } from './workflow-job-steps.mjs';
 
 // `npm run check:quality` exists so the Quality job is reproducible before pushing —
 // which it only is while it runs the same commands. The workflow is YAML and
 // cannot import the list, so the two sides are compared here instead: a step
 // added to CI and not to the script leaves the script quietly under-checking,
 // which is the exact failure it was written to prevent.
-const repoRoot = join(import.meta.dirname, '..', '..');
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const pnpmWorkspace = readFileSync(join(repoRoot, 'pnpm-workspace.yaml'), 'utf8');
 const dependencyAuditCommand = 'pnpm audit --audit-level=high';
 

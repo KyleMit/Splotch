@@ -1,13 +1,14 @@
 // Runs one CI job's commands locally, in the job's order, and — unlike CI —
 // keeps going after a failure so one run surfaces every problem instead of one
-// per push. Each mirror script owns its command list; a guard test per script
-// reads the job's steps out of .github/workflows/test.yml and fails on drift,
-// because a YAML workflow can't import from a Node module.
+// per push.
 import { spawnSync } from 'node:child_process';
-import { ROOT } from './proc.mjs';
+import { ROOT } from '../../lib/proc.mjs';
+
+const BOLD = '\x1b[1m';
+const RESET = '\x1b[0m';
 
 function runCommand(command) {
-  console.log(`\n[1m$ ${command}[0m`);
+  console.log(`\n${BOLD}$ ${command}${RESET}`);
   const { status } = spawnSync(command, { cwd: ROOT, stdio: 'inherit', shell: true });
   return status === 0;
 }
