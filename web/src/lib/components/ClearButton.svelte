@@ -216,7 +216,9 @@
     height: 40px;
     display: block;
     pointer-events: none;
-    margin-right: 2px;
+    /* Half the disc's 10px off-screen overhang: centres the lid on the
+       visible half-disc rather than on the full box. */
+    margin-right: 5px;
     transition: margin var(--duration-slow) ease;
   }
 
@@ -362,7 +364,7 @@
     :global(.clear-icon) {
       width: 38px;
       height: 38px;
-      margin-right: 2px;
+      margin-right: 5px;
     }
   }
 </style>
