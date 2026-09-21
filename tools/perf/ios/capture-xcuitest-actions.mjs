@@ -1073,7 +1073,7 @@ async function measureClear(client, sessionId, execute, label = 'clear drawing')
           rect: rect && { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
           classes: button?.className
         },
-        progress: getComputedStyle(document.documentElement).getPropertyValue('--clear-progress'),
+        progress: document.querySelector('.clear-wash')?.style.getPropertyValue('--clear-progress'),
         undoDisabled: document.querySelector('#undoButton')?.getAttribute('aria-disabled'),
         action: window.__actionProbe.finish(performance.now())
       };

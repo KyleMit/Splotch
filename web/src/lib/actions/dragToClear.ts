@@ -18,6 +18,10 @@ const MULTI_CLICK_WINDOW_MS = 1000;
 const MULTI_CLICK_THRESHOLD = 3;
 const ACCEPT_ZONE_HIDE_DELAY_MS = 250;
 const DRAW_SOUND_STOP_DELAY_MS = 300;
+// How far the wash's fade-out edge reaches at full progress, as a fraction of
+// the viewport diagonal — past the far corner, so the flood of paper covers
+// the whole page just as the threshold is crossed.
+const WASH_REACH_DIAGONAL_FRACTION = 1.3;
 
 function suppress(e: Event) {
   e.preventDefault();
@@ -28,6 +32,7 @@ export interface DragToClearOptions {
   containerEl: HTMLDivElement;
   acceptZoneEl: HTMLDivElement;
   clearPreviewEl: HTMLDivElement;
+  clearWashEl: HTMLDivElement;
   // Called when the user drags past the threshold and releases — should clear canvas and save.
   // `home` is the button's docked centre at release, where the departing page is headed.
   onClear: (home: ClientPoint) => void;
@@ -115,6 +120,23 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     });
   }
 
+  // The wash is a fixed-size gradient scaled out from the dock corner, so the
+  // growing preview is a compositor transform rather than a full-viewport
+  // repaint on every pointermove. Progress lives on the wash alone: an
+  // inherited custom property on the document root restyles every element and
+  // re-rasters every paint layer per move, which the bare toolbar's glass
+  // multiplies.
+  function armWash(o: DragToClearOptions): void {
+    const reachPx =
+      Math.hypot(window.innerWidth, window.innerHeight) * WASH_REACH_DIAGONAL_FRACTION;
+    o.clearWashEl.style.setProperty('--clear-wash-scale', `${reachPx / o.clearWashEl.offsetWidth}`);
+    setProgress(o, 0);
+  }
+
+  function setProgress(o: DragToClearOptions, progress: number): void {
+    o.clearWashEl.style.setProperty('--clear-progress', `${progress}`);
+  }
+
   function onPointerDown(e: PointerEvent) {
     if (activeDrag !== null) return;
 
@@ -132,7 +154,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     startPointerX = clientX;
     startPointerY = clientY;
     clearReady = false;
-    document.documentElement.style.setProperty('--clear-progress', '0');
+    armWash(o);
     o.clearPreviewEl.classList.remove('releasing');
 
     releaseAllPointers();
@@ -176,10 +198,9 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const distance = dragDistance(clientX, clientY);
 
     // Continuous 0→1 drag progress drives the radial paper wash that previews
-    // the clear (see .clear-preview). Inherited from :root so any element can read it.
+    // the clear (see .clear-wash).
     const normalizedDistance = distance / acceptRadius;
-    const progress = Math.min(normalizedDistance, 1);
-    document.documentElement.style.setProperty('--clear-progress', `${progress}`);
+    setProgress(o, Math.min(normalizedDistance, 1));
     updateClearSound(normalizedDistance);
 
     if (distance >= acceptRadius) {
@@ -227,7 +248,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     // fade starts from the flood.
     o.clearPreviewEl.classList.remove('committed');
     if (committed) o.clearPreviewEl.classList.add('releasing');
-    document.documentElement.style.setProperty('--clear-progress', '0');
+    setProgress(o, 0);
 
     node.classList.remove('delete-ready');
   }
