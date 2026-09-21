@@ -407,13 +407,18 @@
     padding: 28px 0 24px;
   }
 
+  /* PageShell's back link recipe: a 44px target whose growth past the text
+     line is handed back through the margins, so the stack sits where it did. */
   .back {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--brand-text);
     text-decoration: none;
-    margin-bottom: var(--space-5);
+    margin-top: -11px;
+    margin-bottom: calc(var(--space-5) - 11px);
   }
 
   .styleguide {

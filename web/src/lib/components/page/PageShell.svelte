@@ -165,6 +165,13 @@
   .back {
     flex-shrink: 0;
     white-space: nowrap;
+    /* A 44px target on a 56px bar: only the inline text was the anchor
+       (22.7px, under WCAG 2.5.8's 24px), so the box grows to the floor and
+       the negative block margin hands the growth back to the topbar. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block: -11px;
     color: var(--page-link);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
@@ -222,7 +229,8 @@
     align-items: center;
     gap: var(--space-1);
     flex-shrink: 0;
-    min-height: 32px;
+    min-height: 44px;
+    margin-block: -6px;
     padding: 0 var(--space-1);
     border: none;
     background: transparent;
