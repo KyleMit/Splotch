@@ -41,6 +41,14 @@ existing `CAPACITOR` build flag (ADR-0001), the single web-vs-native signal:
   the last `v*` tag. `release.mjs` already creates and pushes that tag, so the patch resets to `0`
   at each release and climbs by one per commit after.
 
+> Amended 2026-09: one build derives the version once. SvelteKit's client build re-evaluates
+> `vite.config.ts` in the same process, and each evaluation used to ask git again, so a commit
+> landing mid-build left the SSR bundle on one version and the client chunks, `version.json`, and
+> `sw.js` on the next — the page then fetched a coloring manifest the build never emitted.
+> `buildMetadataOncePerProcess` pins the first derivation in the process environment (keyed by
+> platform), and the `postbuild`/`postbuild:cap` check `tools/check-build-version.mjs` fails a build
+> whose client, server, `version.json`, coloring-manifest filename, or precache disagree.
+
 `__APP_VERSION__` and the emitted `version.json` both flow from this value unchanged, so the About
 tab and the `updates.ts` mismatch check pick it up with no other code changes. The mismatch redirect
 is safe to fire per-deploy: it runs only once at init (page load, canvas empty), never on the

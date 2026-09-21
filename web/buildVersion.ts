@@ -57,6 +57,50 @@ function currentBuildTime(): string {
   return new Date().toISOString().slice(0, 16).replace('T', ' ');
 }
 
+type BuildMetadata = { appVersion: string; buildTime: string };
+
+// SvelteKit's client build re-evaluates vite.config.ts in the same process, so
+// each evaluation would otherwise ask git again: a commit landing mid-build (or
+// the clock crossing a minute) splits one build across two versions — the SSR
+// bundle on one, the client chunks, version.json, and sw.js on the other.
+// process.env is the only state that survives the re-evaluation, and child
+// processes such as the prerenderer inherit it. The platform is recorded so a
+// Capacitor build spawned from a web build's process never reuses the web version.
+export const PINNED_BUILD_METADATA_ENV = 'SPLOTCH_PINNED_BUILD_METADATA';
+
+function pinnedBuildMetadata(
+  pinned: string | undefined,
+  isCapacitor: boolean
+): BuildMetadata | undefined {
+  if (!pinned) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(pinned);
+    if (typeof parsed !== 'object' || parsed === null) return undefined;
+    const { appVersion, buildTime, isCapacitor: pinnedFor } = parsed as Record<string, unknown>;
+    if (typeof appVersion !== 'string' || typeof buildTime !== 'string') return undefined;
+    return pinnedFor === isCapacitor ? { appVersion, buildTime } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function buildMetadataOncePerProcess({
+  isCapacitor,
+  env,
+  derive = () => buildMetadata({ isCapacitor }),
+}: {
+  isCapacitor: boolean;
+  env: Record<string, string | undefined>;
+  // Test seam: production derives from git and the clock through buildMetadata.
+  derive?: () => BuildMetadata;
+}): BuildMetadata {
+  const pinned = pinnedBuildMetadata(env[PINNED_BUILD_METADATA_ENV], isCapacitor);
+  if (pinned) return pinned;
+  const metadata = derive();
+  env[PINNED_BUILD_METADATA_ENV] = JSON.stringify({ ...metadata, isCapacitor });
+  return metadata;
+}
+
 export function buildMetadata({
   isCapacitor,
   packageVersion = readPackageVersion(),
@@ -67,7 +111,7 @@ export function buildMetadata({
   packageVersion?: string;
   buildTime?: string;
   runGit?: Git;
-}): { appVersion: string; buildTime: string } {
+}): BuildMetadata {
   return {
     appVersion: isCapacitor ? packageVersion : deriveWebVersion({ packageVersion, runGit }),
     buildTime,
