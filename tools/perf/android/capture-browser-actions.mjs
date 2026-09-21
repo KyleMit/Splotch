@@ -47,7 +47,7 @@ const STABLE_FRAME_TIMEOUT_MS = 10_000;
 const ORIENTATION_SETTLE_MS = 1_000;
 const PROFILER_PARAM = 'perf-android-web';
 
-function positiveInteger(value, name) {
+export function positiveInteger(value, name) {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isSafeInteger(parsed) || parsed < 1) fail(`--${name} must be a positive integer`);
   return parsed;
@@ -84,7 +84,7 @@ export function deviceUptimeSecondsFrom(procUptimeOutput) {
   return match ? Number.parseFloat(match[1]) : null;
 }
 
-function adb(deviceId, args, { allowFailure = false } = {}) {
+export function adb(deviceId, args, { allowFailure = false } = {}) {
   const result = spawnSync(ADB, [...(deviceId ? ['-s', deviceId] : []), ...args], {
     encoding: 'utf8',
   });
@@ -103,7 +103,7 @@ export function connectedAndroidDevices(output) {
     .map(([id]) => id);
 }
 
-function resolveAndroidDevice(requested) {
+export function resolveAndroidDevice(requested) {
   const devices = connectedAndroidDevices(adb(null, ['devices']));
   if (requested && !devices.includes(requested)) {
     fail(
@@ -116,7 +116,7 @@ function resolveAndroidDevice(requested) {
   return devices[0];
 }
 
-function profilerUrl(base, token) {
+export function profilerUrl(base, token) {
   const url = new URL(base);
   url.searchParams.set(PROFILER_PARAM, token);
   return url.toString();
@@ -141,11 +141,11 @@ async function cdpTargets(endpoint) {
   return response.json();
 }
 
-async function closeTarget(endpoint, id) {
+export async function closeTarget(endpoint, id) {
   await fetch(`${endpoint}/json/close/${encodeURIComponent(id)}`).catch(() => null);
 }
 
-async function selectProfilerTarget(endpoint, base, token) {
+export async function selectProfilerTarget(endpoint, base, token) {
   const target = await pollUntil(
     async () => {
       const targets = await cdpTargets(endpoint).catch(() => []);
@@ -170,7 +170,7 @@ async function selectProfilerTarget(endpoint, base, token) {
   return target;
 }
 
-async function clearBrowserCaches(page) {
+export async function clearBrowserCaches(page) {
   await page.evaluate(async () => {
     if ('serviceWorker' in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations();
@@ -183,7 +183,7 @@ async function clearBrowserCaches(page) {
   });
 }
 
-async function waitForStableFrames(page) {
+export async function waitForStableFrames(page) {
   await sleep(PAGE_SETTLE_MS);
   await page.evaluate(
     ({ stableWindowMs, maxGapMs, timeoutMs }) =>
@@ -213,7 +213,7 @@ async function waitForStableFrames(page) {
   );
 }
 
-async function waitForCanvas(page) {
+export async function waitForCanvas(page) {
   await page.waitForFunction(
     () => {
       const canvas = document.querySelector('#drawingCanvas');
@@ -224,7 +224,7 @@ async function waitForCanvas(page) {
   );
 }
 
-function rotationFor(orientation) {
+export function rotationFor(orientation) {
   return orientation === 'LANDSCAPE' ? '1' : '0';
 }
 
