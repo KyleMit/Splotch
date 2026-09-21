@@ -86,8 +86,8 @@ importers:
         specifier: ^8.5.2
         version: 8.5.2(supports-color@10.2.2)
       '@capacitor/ios':
-        specifier: ^8.5.1
-        version: 8.5.1(@capacitor/core@8.5.2)
+        specifier: ^8.5.2
+        version: 8.5.2(@capacitor/core@8.5.2)
       '@dprint/json':
         specifier: ^0.23.0
         version: 0.23.0
@@ -756,8 +756,8 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capacitor/ios@8.5.1':
-    resolution: {integrity: sha512-0EVqwCYf3RUp2JAjUGZ04xmG6dSpIsPmPacI9zKxn6mu9RSiHhmFF230ghe00HrkyB6ig6SfNdoADvVODxYhlQ==}
+  '@capacitor/ios@8.5.2':
+    resolution: {integrity: sha512-eOT2S67AfTFG7KN0T3oxwAajrJz4rSye+ODfvChiwrk0F/+kWufFM1qU6cDjGJUOfwdAoeuEpZyWHSwZlu4GFg==}
     peerDependencies:
       '@capacitor/core': ^8.5.0
 
@@ -5802,7 +5802,7 @@ snapshots:
       '@capacitor/android': 8.5.2(@capacitor/core@8.5.2)
       '@capacitor/app': 8.1.0(@capacitor/core@8.5.2)
       '@capacitor/core': 8.5.2
-      '@capacitor/ios': 8.5.1(@capacitor/core@8.5.2)
+      '@capacitor/ios': 8.5.2(@capacitor/core@8.5.2)
       '@capacitor/keyboard': 8.0.5(@capacitor/core@8.5.2)
 
   '@apideck/better-ajv-errors@0.3.7(ajv@8.20.0)':
@@ -6584,7 +6584,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.5.2
 
-  '@capacitor/ios@8.5.1(@capacitor/core@8.5.2)':
+  '@capacitor/ios@8.5.2(@capacitor/core@8.5.2)':
     dependencies:
       '@capacitor/core': 8.5.2
 
