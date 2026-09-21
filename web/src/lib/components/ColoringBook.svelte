@@ -393,8 +393,12 @@
   .coloring-tile {
     position: relative;
     background: var(--surface-2);
-    border: 2px solid var(--border);
+    /* The tile is the tap target, so its edge has to read as a card and not
+       as the art's bounding box: the strong warm border clears 1.9:1 on the
+       dialog where --border managed 1.3:1, and the float lift says "press". */
+    border: 2px solid var(--border-warm-strong);
     border-radius: var(--radius-md);
+    box-shadow: var(--float-shadow);
     cursor: pointer;
     overflow: hidden;
     padding: 0;
