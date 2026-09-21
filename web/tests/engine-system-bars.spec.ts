@@ -80,8 +80,9 @@ function paperOverhangPx(page: Page) {
   });
 }
 
-async function colorInAPage(page: Page) {
+async function colorInAPage(page: Page, beforeColoring = async () => {}) {
   await gotoApp(page);
+  await beforeColoring();
   await openDrawer(page);
   await applyFarmPage(page);
   await expect(page.locator('#coloringOverlay')).toHaveClass(/overlay-ready/);
@@ -144,4 +145,39 @@ test('clearing the canvas frees the windowed paper to the visible viewport', asy
   // page lays out against what the child can actually see.
   await page.locator('#undoButton').click();
   await expect.poll(() => paperOverhangPx(page)).toBe(0);
+});
+
+// A toolbar swap can grow the canvas by layout alone after the window resize has
+// settled (issue 2125). That is not a new screen, so the inked paper is kept and
+// fitted as one unit: re-adopting it would re-fit the coloring art inside a
+// resized paper while the strokes stay anchored at its origin.
+test('a layout-only grow keeps the inked paper and moves ink and art together', async ({
+  page,
+}) => {
+  const setLayoutBand = (px: number) =>
+    page.evaluate((band) => {
+      document.querySelector<HTMLElement>('.app-container')!.style.paddingBottom = `${band}px`;
+    }, px);
+  const paperLayers = () =>
+    page.evaluate(() => {
+      const style = (selector: string) => document.querySelector<HTMLElement>(selector)!.style;
+      return {
+        sheet: [style('.paper-sheet').width, style('.paper-sheet').height],
+        art: style('.paper-view').transform,
+        ink: style('.live-paper-view').transform,
+      };
+    });
+  await colorInAPage(page, async () => {
+    await setLayoutBand(SYSTEM_BARS_HEIGHT_PX);
+    await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+    await page.waitForTimeout(RESIZE_REBUILD_SETTLE_MS);
+  });
+  const before = await paperLayers();
+
+  await setLayoutBand(0);
+  await expect.poll(async () => (await paperLayers()).art).not.toBe(before.art);
+
+  const after = await paperLayers();
+  expect(after.sheet).toEqual(before.sheet);
+  expect(after.ink).toBe(after.art);
 });

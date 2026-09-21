@@ -26,9 +26,24 @@ it('refreshes resize geometry immediately and settles only the last event', () =
   expect(settle).toHaveBeenCalledOnce();
 });
 
+it('reports a settle as layout-only unless a window resize joined it', () => {
+  vi.useFakeTimers();
+  const settle = vi.fn();
+  const listener = createResizeListener(vi.fn(), settle);
+  listener.handleLayoutResize();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS);
+  listener.handleResize();
+  listener.handleLayoutResize();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS);
+  listener.handleLayoutResize();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS);
+  expect(settle.mock.calls).toEqual([[true], [false], [true]]);
+});
+
 function listenerHandlers(pointeroutCalls: string[], trackPenCanvasExit: () => void) {
   return {
     handleResize: vi.fn(),
+    handleLayoutResize: vi.fn(),
     refreshCanvasRect: vi.fn(),
     resyncOnReentry: vi.fn(),
     startDrawing: vi.fn(),
@@ -78,7 +93,7 @@ it('registers the document resume listener in the native test build', () => {
   }
 });
 
-it('routes a canvas box resize through the settled resize path and stops observing on teardown', () => {
+it('routes a canvas box resize through the layout settle and stops observing on teardown', () => {
   const RealResizeObserver = globalThis.ResizeObserver;
   const observed: Element[] = [];
   let notify: ResizeObserverCallback | undefined;
@@ -104,7 +119,8 @@ it('routes a canvas box resize through the settled resize path and stops observi
     notify?.([], {} as ResizeObserver);
 
     expect(observed).toEqual([canvas]);
-    expect(handlers.handleResize).toHaveBeenCalledOnce();
+    expect(handlers.handleLayoutResize).toHaveBeenCalledOnce();
+    expect(handlers.handleResize).not.toHaveBeenCalled();
   } finally {
     for (const remove of removers) remove();
     globalThis.ResizeObserver = RealResizeObserver;
