@@ -4,7 +4,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { buildDefines } from './defines';
 import { BROWSER_TARGETS } from './browserTargets';
-import { buildMetadata } from './buildVersion';
+import { buildMetadataOncePerProcess } from './buildVersion';
 import {
   RESPONSIVE_COLORING_URL_PATTERN,
   serveResponsiveColoringWithCanonicalFallback,
@@ -54,7 +54,10 @@ const profilingEsbuildOptions: import('vite').ESBuildOptions & {
 } = { keepNames: true };
 
 // Version semantics: ADR-0030; derivation + fallbacks live in ./buildVersion.ts.
-const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadata({ isCapacitor });
+const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadataOncePerProcess({
+  isCapacitor,
+  env: process.env,
+});
 
 // On a native device there is no local server, so the AI button must call the
 // hosted endpoint. On the web this stays empty and the relative path is used.
