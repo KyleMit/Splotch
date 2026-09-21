@@ -55,7 +55,7 @@
     mask-size: 100% 600px;
   }
   .second {
-    margin-left: 4.5px;
+    margin-left: 5px;
     opacity: var(--rule-secondary-opacity);
     mask-position: 0 137px;
   }
@@ -87,7 +87,7 @@
     }
     .second {
       margin-left: 0;
-      margin-top: 4.5px;
+      margin-top: 5px;
       mask-position: 137px 0;
     }
   }
