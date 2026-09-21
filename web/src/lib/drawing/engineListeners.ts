@@ -3,27 +3,39 @@ import type { ListenWindowFn } from './penStreamQuirks';
 
 export const RESIZE_SETTLE_MS = 150;
 
-export function createResizeListener(refresh: () => void, settle: () => void) {
+// Window and layout resizes share one settle; it reports whether anything but
+// the canvas box moved while it waited.
+export function createResizeListener(refresh: () => void, settle: (layoutOnly: boolean) => void) {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let viewportChanged = false;
   const dispose = () => {
     if (timer !== undefined) clearTimeout(timer);
     timer = undefined;
+    viewportChanged = false;
+  };
+  const schedule = () => {
+    refresh();
+    if (timer !== undefined) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = undefined;
+      const layoutOnly = !viewportChanged;
+      viewportChanged = false;
+      settle(layoutOnly);
+    }, RESIZE_SETTLE_MS);
   };
   return {
     handleResize() {
-      refresh();
-      dispose();
-      timer = setTimeout(() => {
-        timer = undefined;
-        settle();
-      }, RESIZE_SETTLE_MS);
+      viewportChanged = true;
+      schedule();
     },
+    handleLayoutResize: schedule,
     dispose,
   };
 }
 
 interface EngineListenerHandlers {
   handleResize: () => void;
+  handleLayoutResize: () => void;
   refreshCanvasRect: () => void;
   resyncOnReentry: () => void;
   startDrawing: (event: PointerEvent) => void;
@@ -41,6 +53,12 @@ export function registerDrawingEngineListeners(
   handlers: EngineListenerHandlers
 ) {
   listen(removers, window, 'resize', handlers.handleResize);
+  // Layout can resize the canvas with no window resize after it: the rotation
+  // viewport sync swaps the toolbar layout on its own timer, and when that lands
+  // after the resize settle the paper would keep the pre-swap box (issue 2125).
+  const canvasBox = new ResizeObserver(handlers.handleLayoutResize);
+  canvasBox.observe(canvas);
+  removers.push(() => canvasBox.disconnect());
   // Scroll/orientation move the canvas in the viewport without resizing it, so
   // refresh the cached rect (left/top) without the full backing-store rebuild.
   listen(removers, window, 'scroll', handlers.refreshCanvasRect, true);

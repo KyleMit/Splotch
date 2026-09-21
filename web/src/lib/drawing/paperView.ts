@@ -92,14 +92,18 @@ export function paperPresentationFor(state: {
   paperAngle: number;
   screenAngle: number;
   viewport: Size;
+  layoutOnly?: boolean;
 }): PaperPresentation {
-  const { canvasEmpty, paper, paperAngle, screenAngle, viewport } = state;
+  const { canvasEmpty, paper, paperAngle, screenAngle, viewport, layoutOnly } = state;
   if (canvasEmpty) return 'adopt';
   const rotated =
     rotationDelta(paperAngle, screenAngle) !== 0 ||
     paper.width > paper.height !== viewport.width > viewport.height;
   if (rotated) return 'fit';
-  if (!viewportDeltaIsChromeSized(paper, viewport)) return 'adopt';
+  // A canvas box that page layout alone resized (a toolbar swap, no window
+  // resize) is not a new screen, so inked paper is kept and fitted rather than
+  // re-adopted out from under its coloring art.
+  if (!viewportDeltaIsChromeSized(paper, viewport)) return layoutOnly ? 'fit' : 'adopt';
   // Inside the band the paper is kept either way; only a paper that actually
   // covers the viewport may take the identity `window`. A tolerated grow falls
   // through to `fit`, which scales the paper over the drift and re-arms the

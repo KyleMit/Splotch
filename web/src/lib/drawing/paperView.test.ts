@@ -41,7 +41,7 @@ describe('paperPresentationFor', () => {
   const PAPER = { width: 412, height: 915 };
   const presentation = (
     viewport: { width: number; height: number },
-    overrides: { canvasEmpty?: boolean; screenAngle?: number } = {}
+    overrides: { canvasEmpty?: boolean; screenAngle?: number; layoutOnly?: boolean } = {}
   ) =>
     paperPresentationFor({
       canvasEmpty: false,
@@ -49,6 +49,7 @@ describe('paperPresentationFor', () => {
       paperAngle: 0,
       screenAngle: 0,
       viewport,
+      layoutOnly: false,
       ...overrides,
     });
 
@@ -91,6 +92,16 @@ describe('paperPresentationFor', () => {
     expect(presentation({ width: 412, height: 818 })).toBe('adopt');
     expect(presentation({ width: 315, height: 915 })).toBe('adopt');
     expect(presentation({ width: 412, height: 500 })).toBe('adopt');
+  });
+
+  // Page layout resizing the canvas box is not a new screen; re-adopting inked
+  // paper would re-fit its coloring art out from under the strokes.
+  it('fits rather than adopts inked paper when only layout resized the canvas', () => {
+    expect(presentation({ width: 412, height: 960 }, { layoutOnly: true })).toBe('fit');
+    expect(presentation({ width: 412, height: 500 }, { layoutOnly: true })).toBe('fit');
+    expect(presentation({ width: 412, height: 960 }, { canvasEmpty: true, layoutOnly: true })).toBe(
+      'adopt'
+    );
   });
 
   it('adopts for an empty canvas whatever the geometry', () => {

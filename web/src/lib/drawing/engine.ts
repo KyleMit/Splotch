@@ -365,6 +365,7 @@ interface ResizeCanvasOptions {
   // needs the repaint — threading the flag there left a permanent blank
   // canvas with canvasEmpty false.
   repaintDeferredToRestore?: boolean;
+  layoutOnly?: boolean;
 }
 
 function resizeCanvas(
@@ -373,6 +374,7 @@ function resizeCanvas(
     preservedView,
     repaintRecoveredPixels = false,
     repaintDeferredToRestore = false,
+    layoutOnly,
   }: ResizeCanvasOptions = {}
 ) {
   const retry = (measured: DOMRect) => resizeCanvas(measured, { repaintRecoveredPixels });
@@ -393,6 +395,7 @@ function resizeCanvas(
         paperAngle,
         screenAngle: currentScreenAngle(),
         viewport: rect,
+        layoutOnly,
       });
   paperLocked = presentation !== 'adopt';
   if (!paperLocked) adoptPaper(rect);
@@ -435,7 +438,7 @@ function resizeCanvas(
 // orientation signal settles, so it needs the same trailing edge. Exported so
 // the dev harness's resizeTo() can wait out the settle window.
 export { RESIZE_SETTLE_MS } from './engineListeners';
-const resizeListener = createResizeListener(refreshCanvasRect, resyncOnReentry);
+const resizeListener = createResizeListener(refreshCanvasRect, resyncIfStale);
 const preserveLayout = createPaperLayoutMemory();
 
 // A hidden document gets no resize/orientationchange, so rotating the device
@@ -444,7 +447,7 @@ const preserveLayout = createPaperLayoutMemory();
 // Browser visibility and Capacitor's document-level resume event both land
 // here. Rebuild synchronously only when the geometry actually moved while away,
 // so a plain tab switch doesn't pay the backing-store wipe + repaint.
-function resyncOnReentry() {
+function resyncIfStale(layoutOnly: boolean) {
   if (!engineLive || document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
@@ -452,7 +455,7 @@ function resyncOnReentry() {
     viewport.width !== w || viewport.height !== h || resizedAngle !== currentScreenAngle();
   if (stale) {
     const contextsRecovered = recoverTiledRendererIfNeeded(false);
-    resizeCanvas(rect, { repaintRecoveredPixels: contextsRecovered });
+    resizeCanvas(rect, { repaintRecoveredPixels: contextsRecovered, layoutOnly });
   } else {
     recoverTiledRendererIfNeeded();
     refreshCanvasRect(rect);
@@ -1276,8 +1279,9 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
 
   registerDrawingEngineListeners(listenerRemovers, canvas, {
     handleResize: resizeListener.handleResize,
+    handleLayoutResize: resizeListener.handleLayoutResize,
     refreshCanvasRect: () => refreshCanvasRect(),
-    resyncOnReentry,
+    resyncOnReentry: () => resyncIfStale(false),
     startDrawing,
     draw,
     stopDrawing,

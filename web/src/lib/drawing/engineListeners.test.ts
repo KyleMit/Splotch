@@ -26,9 +26,24 @@ it('refreshes resize geometry immediately and settles only the last event', () =
   expect(settle).toHaveBeenCalledOnce();
 });
 
+it('reports a settle as layout-only unless a window resize joined it', () => {
+  vi.useFakeTimers();
+  const settle = vi.fn();
+  const listener = createResizeListener(vi.fn(), settle);
+  listener.handleLayoutResize();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS);
+  listener.handleResize();
+  listener.handleLayoutResize();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS);
+  listener.handleLayoutResize();
+  vi.advanceTimersByTime(RESIZE_SETTLE_MS);
+  expect(settle.mock.calls).toEqual([[true], [false], [true]]);
+});
+
 function listenerHandlers(pointeroutCalls: string[], trackPenCanvasExit: () => void) {
   return {
     handleResize: vi.fn(),
+    handleLayoutResize: vi.fn(),
     refreshCanvasRect: vi.fn(),
     resyncOnReentry: vi.fn(),
     startDrawing: vi.fn(),
@@ -76,6 +91,41 @@ it('registers the document resume listener in the native test build', () => {
   } finally {
     for (const remove of removers) remove();
   }
+});
+
+it('routes a canvas box resize through the layout settle and stops observing on teardown', () => {
+  const RealResizeObserver = globalThis.ResizeObserver;
+  const observed: Element[] = [];
+  let notify: ResizeObserverCallback | undefined;
+  let disconnected = false;
+  globalThis.ResizeObserver = class {
+    constructor(callback: ResizeObserverCallback) {
+      notify = callback;
+    }
+    observe(target: Element) {
+      observed.push(target);
+    }
+    unobserve() {}
+    disconnect() {
+      disconnected = true;
+    }
+  } as unknown as typeof ResizeObserver;
+  const removers: Array<() => void> = [];
+  const canvas = document.createElement('canvas');
+  const handlers = listenerHandlers([], vi.fn());
+
+  try {
+    registerDrawingEngineListeners(removers, canvas, handlers);
+    notify?.([], {} as ResizeObserver);
+
+    expect(observed).toEqual([canvas]);
+    expect(handlers.handleLayoutResize).toHaveBeenCalledOnce();
+    expect(handlers.handleResize).not.toHaveBeenCalled();
+  } finally {
+    for (const remove of removers) remove();
+    globalThis.ResizeObserver = RealResizeObserver;
+  }
+  expect(disconnected).toBe(true);
 });
 
 it.each(['pointerdown', 'pointerup', 'pointercancel'] as const)(
