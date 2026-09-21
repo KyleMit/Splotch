@@ -1,11 +1,20 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseArgs } from 'node:util';
 import { coloringPackManifestPath } from '../web/src/lib/coloringPacks/manifest.ts';
 import { VERSION_JSON_FILENAME } from '../web/src/lib/pwa/versionEndpoint.ts';
-import { filesRecursively } from './lib/filesystem.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
-const OUTPUT_DIR = join(ROOT, 'web/.svelte-kit/output');
+// Each bundle's version.json is emitted by the same vite.config.ts evaluation
+// that supplies that bundle's __APP_VERSION__ define, so it is the bundle's own
+// record of the version its JavaScript was compiled with. Comparing those
+// records across bundles catches a build split between evaluations without
+// guessing which string literals in minified output are the define.
+const SHIPPED_CLIENT_DIR = join(ROOT, 'web/build');
+const SERVER_DIRS = {
+  web: join(ROOT, 'web/.netlify/server'),
+  native: join(ROOT, 'web/.svelte-kit/output/server'),
+};
 const COLORING_MANIFEST_PATTERN = /^coloring\/manifest-.*\.json$/;
 const PRECACHE_URL_PATTERN = /\burl:"([^"]+)"/g;
 
@@ -28,16 +37,6 @@ function readVersion(versionJsonPath) {
   return JSON.parse(readFileSync(versionJsonPath, 'utf8')).version;
 }
 
-function bundleContainsVersionLiteral(bundleDir, version) {
-  const literals = [`"${version}"`, `'${version}'`, `\`${version}\``];
-  return filesRecursively(bundleDir)
-    .filter((path) => path.endsWith('.js'))
-    .some((path) => {
-      const source = readFileSync(path, 'utf8');
-      return literals.some((literal) => source.includes(literal));
-    });
-}
-
 function bundleVersionProblems(bundleDir, label, version) {
   const problems = [];
   const versionJsonPath = join(bundleDir, VERSION_JSON_FILENAME);
@@ -55,9 +54,6 @@ function bundleVersionProblems(bundleDir, label, version) {
       `${label} coloring manifests are [${manifestUrls.join(', ')}], expected only ${coloringManifestUrl(version)}`
     );
   }
-  if (!bundleContainsVersionLiteral(bundleDir, version)) {
-    problems.push(`${label} JavaScript never inlines __APP_VERSION__ ${version}`);
-  }
   return problems;
 }
 
@@ -73,9 +69,7 @@ function serviceWorkerProblems(clientDir, version) {
   ];
 }
 
-export function buildVersionProblems(outputDir) {
-  const clientDir = join(outputDir, 'client');
-  const serverDir = join(outputDir, 'server');
+export function buildVersionProblems({ clientDir, serverDir }) {
   const clientVersionJson = join(clientDir, VERSION_JSON_FILENAME);
   if (!existsSync(clientVersionJson)) return [`Client ${VERSION_JSON_FILENAME} does not exist`];
   const version = readVersion(clientVersionJson);
@@ -86,11 +80,16 @@ export function buildVersionProblems(outputDir) {
   ];
 }
 
-export async function checkBuildVersion({ outputDir = OUTPUT_DIR, log = console.log } = {}) {
-  const problems = buildVersionProblems(outputDir);
+export async function checkBuildVersion({ native = false, log = console.log } = {}) {
+  const clientDir = SHIPPED_CLIENT_DIR;
+  const serverDir = SERVER_DIRS[native ? 'native' : 'web'];
+  const problems = buildVersionProblems({ clientDir, serverDir });
   if (problems.length) throw new Error(problems.join('\n'));
-  const version = readVersion(join(outputDir, 'client', VERSION_JSON_FILENAME));
-  log(`[build-version] client, server, coloring manifest, and service worker all carry ${version}`);
+  const version = readVersion(join(clientDir, VERSION_JSON_FILENAME));
+  log(`[build-version] client, server, and coloring manifest all carry ${version}`);
 }
 
-if (isMain(import.meta.url)) runMain(checkBuildVersion);
+if (isMain(import.meta.url)) {
+  const { values } = parseArgs({ options: { native: { type: 'boolean' } } });
+  runMain(() => checkBuildVersion({ native: values.native }));
+}

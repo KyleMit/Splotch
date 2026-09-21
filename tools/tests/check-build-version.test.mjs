@@ -18,7 +18,6 @@ function write(root, path, contents) {
 function writeBundle(root, bundle, version) {
   write(root, `${bundle}/version.json`, JSON.stringify({ version }));
   write(root, `${bundle}/coloring/manifest-${version}.json`, '{}');
-  write(root, `${bundle}/chunks/manager.js`, `const APP_VERSION="${version}";`);
 }
 
 function buildOutput({ client = '1.6.896', server = client, serviceWorker = client } = {}) {
@@ -33,7 +32,7 @@ function buildOutput({ client = '1.6.896', server = client, serviceWorker = clie
       `precacheAndRoute([{url:"index.css",revision:"a"},{url:"coloring/manifest-${serviceWorker}.json",revision:"b"}]);`
     );
   }
-  return root;
+  return { clientDir: join(root, 'client'), serverDir: join(root, 'server') };
 }
 
 describe('buildVersionProblems', () => {
@@ -51,7 +50,6 @@ describe('buildVersionProblems', () => {
     expect(problems).toEqual([
       'Server version.json carries 1.6.895, not 1.6.896',
       'Server coloring manifests are [coloring/manifest-1.6.895.json], expected only coloring/manifest-1.6.896.json',
-      'Server JavaScript never inlines __APP_VERSION__ 1.6.896',
     ]);
   });
 
@@ -61,21 +59,19 @@ describe('buildVersionProblems', () => {
     ]);
   });
 
-  it('reports client chunks whose inlined version differs from version.json', () => {
-    const root = buildOutput();
-    write(root, 'client/chunks/manager.js', 'const APP_VERSION="1.6.897";');
-    write(root, 'client/coloring/manifest-1.6.897.json', '{}');
+  it('reports a shipped client holding a second version’s coloring manifest', () => {
+    const output = buildOutput();
+    write(output.clientDir, 'coloring/manifest-1.6.897.json', '{}');
 
-    expect(buildVersionProblems(root)).toEqual([
+    expect(buildVersionProblems(output)).toEqual([
       'Client coloring manifests are [coloring/manifest-1.6.896.json, coloring/manifest-1.6.897.json], expected only coloring/manifest-1.6.896.json',
-      'Client JavaScript never inlines __APP_VERSION__ 1.6.896',
     ]);
   });
 
   it('reports a build with no client version.json', () => {
-    const root = buildOutput();
-    rmSync(join(root, 'client/version.json'));
+    const output = buildOutput();
+    rmSync(join(output.clientDir, 'version.json'));
 
-    expect(buildVersionProblems(root)).toEqual(['Client version.json does not exist']);
+    expect(buildVersionProblems(output)).toEqual(['Client version.json does not exist']);
   });
 });
