@@ -73,7 +73,7 @@
   }
 
   .about-links a {
-    color: var(--brand);
+    color: var(--brand-text);
     text-decoration: none;
     font-weight: var(--font-weight-medium);
   }

@@ -450,7 +450,7 @@
     padding: 10px 12px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
-    color: var(--brand);
+    color: var(--brand-text);
   }
 
   .byok :global(.byok-howto ol) {
@@ -462,7 +462,7 @@
   }
 
   .byok :global(.byok-howto a) {
-    color: var(--brand);
+    color: var(--brand-text);
     font-weight: var(--font-weight-semibold);
   }
 
