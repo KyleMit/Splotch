@@ -129,7 +129,9 @@
 
   /* Outside the track — the break between groups is the point of the heading. */
   .toc-group {
-    padding: 0 10px;
+    /* The row text starts past the row's padding and the track's border;
+       the group label lines up on the same edge. */
+    padding: 0 calc(var(--space-4) + var(--border-width));
     margin: 18px 0 6px;
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
@@ -159,7 +161,9 @@
     gap: var(--space-3);
     width: 100%;
     /* Tighter vertically than a settings hub row: where an icon is present it
-       carries most of the row height on its own. */
+       carries most of the row height on its own; the floor keeps the icon-less
+       rows on /design, /changelog and /privacy at the touch-target minimum. */
+    min-height: 44px;
     padding: 9px var(--space-4);
     border: none;
     border-left: var(--border-width) solid var(--border);
@@ -214,10 +218,10 @@
 
   .section-activity-dot {
     position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 7px;
-    height: 7px;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--brand);
     box-shadow: 0 0 0 2px var(--surface);
