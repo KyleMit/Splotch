@@ -1,6 +1,7 @@
 <script lang="ts">
   import ToggleRow from './ToggleRow.svelte';
   import SliderRow from './SliderRow.svelte';
+  import RuleLabel from '../design/RuleLabel.svelte';
   import {
     settingsState,
     setDeleteSound,
@@ -66,7 +67,7 @@
 
   {#if settingsState.soundEnabled}
     <div class="sound-sources" transition:sectionReveal>
-      <h4 class="sources-heading">What makes sound</h4>
+      <RuleLabel as="h4" strong class="sources-heading">What makes sound</RuleLabel>
       <div class="source-rows">
         <div class="setting">
           <ToggleRow
@@ -106,12 +107,7 @@
     gap: 6px;
   }
 
-  .sources-heading {
-    margin: 0 0 10px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-soft);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
+  .sound-sources :global(h4.sources-heading) {
+    margin-bottom: 10px;
   }
 </style>
