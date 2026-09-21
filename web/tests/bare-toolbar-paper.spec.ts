@@ -82,3 +82,29 @@ for (const layout of [
     });
   }
 }
+
+for (const layout of [
+  { width: 390, height: 844 },
+  { width: 1180, height: 820 },
+]) {
+  test(`bare rail glass at ${layout.width}px covers the clear accept zone like the buttons palette`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(layout);
+    await page.addInitScript(({ key }) => localStorage.setItem(key, 'bare'), {
+      key: STORAGE_KEYS.toolbarStyle,
+    });
+    await gotoApp(page);
+    const layers = await page.evaluate(() => {
+      const glass = document.querySelector('.rail-glass')!;
+      const ring = document.getElementById('clearAcceptZone')!;
+      return {
+        siblings: glass.parentElement === ring.parentElement,
+        glass: Number(getComputedStyle(glass).zIndex),
+        ring: Number(getComputedStyle(ring).zIndex),
+      };
+    });
+    expect(layers.siblings).toBe(true);
+    expect(layers.glass).toBeGreaterThan(layers.ring);
+  });
+}
