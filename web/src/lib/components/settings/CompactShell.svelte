@@ -163,9 +163,16 @@
 
   /* Orientation fourth cell: a Portrait / Landscape segmented control in place
      of ToggleRow's switch. Tighter padding than a switch cell so the segments
-     fill it and its height lines up with the toggle rows beside it. */
+     fill it; the grid stretches the cell to the toggle rows' height, and the
+     flex centring keeps the track in the middle of it rather than at the top. */
   .setting.orientation-cell {
     padding: 6px;
+    display: flex;
+    align-items: center;
+  }
+
+  .setting.orientation-cell :global(.picker) {
+    flex: 1;
   }
 
   /* Non-toggle fourth cell: it sits on the same icon column as ToggleRow so the
