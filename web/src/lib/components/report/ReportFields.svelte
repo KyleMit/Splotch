@@ -227,7 +227,7 @@
     line-height: 1.5;
     color: var(--text-strong);
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border-warm-strong);
     border-radius: var(--radius-sm);
   }
 

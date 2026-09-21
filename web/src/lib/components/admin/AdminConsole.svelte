@@ -461,7 +461,7 @@
     padding: 13px 16px;
     font-size: var(--input-font-size);
     font-family: inherit;
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border-warm-strong);
     border-radius: var(--radius-md);
     background: var(--surface);
     color: var(--text-strong);
