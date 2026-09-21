@@ -12,6 +12,7 @@
 // (ADR-0073) allows `script-src 'self'` and does not allow `unsafe-eval`, so
 // nothing about the policy has to be relaxed to measure the page.
 import { BRUSH_BUTTON_BY_MODE } from '../../ios/capture-xcuitest-screen.mjs';
+import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../../lib/service-worker-guard.mjs';
 import { STAND_DOWN_PATH } from './chrome-tabs.mjs';
 import {
   COMPACT_SHELL_MARKER,
@@ -113,6 +114,7 @@ export function canvasDeltaFunctionSource() {
 export function pageBootstrapSource() {
   return `
 (async () => {
+  const serviceWorkerRegistration = (() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})();
   const BRUSH_BUTTONS = ${JSON.stringify(BRUSH_BUTTON_BY_MODE)};
   const post = (path, body) =>
     fetch(path, {
@@ -403,6 +405,7 @@ export function pageBootstrapSource() {
       // Reported so the runner can refuse a mismatch BEFORE a person or a device
       // spends the capture, rather than labelling the artifact from the request.
       resolvedTheme: resolvedTheme(),
+      serviceWorkerRegistration,
       // The verified-fill evidence (issue 1302); null for every other brush.
       eraserFill,
       geometry: {

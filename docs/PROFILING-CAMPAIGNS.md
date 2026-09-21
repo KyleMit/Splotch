@@ -85,10 +85,20 @@ Both surfaced on 2026-09-21 when a Galaxy S25 Ultra joined the rig, and neither 
   so ATS and `cleartext` still apply to them.
 
   Localhost is a secure context and the LAN origin was not: Android Chrome captures now run with
-  `crypto.subtle`, `crypto.randomUUID`, and the service worker available, as production does, while
-  iPad Safari captures still run without them. Android Chrome cells captured before this change ran
+  `crypto.subtle` and `crypto.randomUUID`, as production does, while iPad Safari captures still run
+  without them. The service worker would now register too, three strokes into a first visit, and
+  precache the build inside the measured window — so every one of these pages blocks
+  `navigator.serviceWorker.register` before it can, as the Appium runners already did, and the
+  artifact records `serviceWorkerRegistration`. Android Chrome cells captured before this change ran
   in the insecure context, so compare across that boundary deliberately. The instrument fingerprint
-  includes the route module, so a resumed campaign flags the change instead of mixing the two.
+  includes the route and guard modules, so a resumed campaign flags the change instead of mixing the
+  two.
+
+  A LAN `--url=`/`--host=` counts as this machine when it is one of its interface addresses, or a
+  name (`my-mac.local`) that resolves only to them. Anything else prints a line saying Chrome may
+  show the warning page. A leftover `?probe=`/`?verify=` tab from a run before the route is still
+  recognized as tooling litter, because the sweep matches localhost and every address of this
+  machine.
 
 ### USB automation can work while Safari cannot load the preview
 

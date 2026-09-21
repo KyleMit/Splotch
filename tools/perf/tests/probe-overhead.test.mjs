@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
 import {
   centreSwipe,
+  createOverheadHost,
   isKeepAliveRace,
   percentile,
   shouldRetryForward,
@@ -90,6 +92,31 @@ describe('the forward retry', () => {
   it('never retries a non-idempotent method, even on the race', () => {
     for (const method of ['POST', 'PUT', 'DELETE']) {
       expect(shouldRetryForward(method, { code: 'UND_ERR_SOCKET' })).toBe(false);
+    }
+  });
+});
+
+describe('the overhead host', () => {
+  // Both arms load counter.js and only the probe arm loads the bootstrap, so the
+  // service-worker guard rides on the counter: a worker install on the localhost
+  // origin would otherwise land in the bare arm's window alone.
+  it('serves the service-worker guard to both arms', async () => {
+    const { server } = createOverheadHost({
+      upstream: 'http://127.0.0.1:9',
+      probeHost: 'http://127.0.0.1:9',
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    try {
+      const counter = await fetch(
+        `http://127.0.0.1:${server.address().port}/__overhead/counter.js`
+      ).then((response) => response.text());
+
+      expect(counter.startsWith(`(() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})();`)).toBe(
+        true
+      );
+    } finally {
+      server.closeAllConnections?.();
+      await new Promise((resolve) => server.close(resolve));
     }
   });
 });

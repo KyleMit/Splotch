@@ -24,6 +24,7 @@ import {
   selectedActions,
   stableActionPlan,
 } from '../ios/capture-xcuitest-actions.mjs';
+import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
 import { ensurePreviewServer } from '../lib/profile-device-session.mjs';
 import { reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
@@ -182,6 +183,14 @@ export async function clearBrowserCaches(page) {
       await Promise.all(keys.map((key) => caches.delete(key)));
     }
   });
+}
+
+// Every later document gets the guard before its own scripts run; the document
+// already loaded gets it now, and its answer is what the artifact records.
+export async function blockServiceWorkerRegistration(page) {
+  const guard = `(() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})()`;
+  await page.addInitScript(guard);
+  return page.evaluate(guard);
 }
 
 export async function waitForStableFrames(page) {
@@ -353,7 +362,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     // entry and digest and records no product commit.
     servedBuild = await servedBuildBinding(base, { verifiedAgainstCheckout: !allowForeignBuild });
     // The host checks the preview at `base`; Chrome loads it at localhost.
-    devicePage = reverseToLocalhost(base, (args, { bestEffort }) =>
+    devicePage = await reverseToLocalhost(base, (args, { bestEffort }) =>
       adb(deviceId, args, { allowFailure: bestEffort })
     );
     const launchUrl = profilerUrl(devicePage.url, token);
@@ -376,6 +385,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     await page.bringToFront();
     await waitForCanvas(page);
     await clearBrowserCaches(page);
+    const serviceWorkerRegistration = await blockServiceWorkerRegistration(page);
 
     const readOrientation = () =>
       page.evaluate(() => (innerWidth > innerHeight ? 'LANDSCAPE' : 'PORTRAIT'));
@@ -479,6 +489,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       },
       appUrl: devicePage.url,
       ...servedBuild,
+      serviceWorkerRegistration,
       transport: 'android-chrome-cdp',
       uiActivation: 'trusted-cdp-touch',
       refreshRatePin: {

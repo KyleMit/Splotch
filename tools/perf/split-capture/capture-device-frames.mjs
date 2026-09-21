@@ -179,6 +179,7 @@ export function zeroInputProblem(pulse) {
 export function androidDriver({
   serial,
   pageUrl,
+  toolingHostnames,
   orientation,
   nativeApp,
   cdpPort,
@@ -188,7 +189,6 @@ export function androidDriver({
   litterClearer = clearToolingLitter,
 }) {
   const nonce = new URL(pageUrl).searchParams.get('probe');
-  const toolingHostname = new URL(pageUrl).hostname;
   // Session restore across the launch's force-stop can front a restored tab
   // while the run's page loads behind it (issue 1294). Closing the transport's
   // OWN litter removes the pile the restore re-fronts from — activation alone
@@ -217,7 +217,7 @@ export function androidDriver({
     }
     try {
       const cdpBase = `http://127.0.0.1:${cdpPort}`;
-      const cleared = await litterClearer({ cdpBase, hostname: toolingHostname, nonce });
+      const cleared = await litterClearer({ cdpBase, hostnames: toolingHostnames, nonce });
       if (cleared.closed > 0) {
         console.log(`closed ${cleared.closed} of this transport's leftover tab(s) ${moment}`);
       }
@@ -442,6 +442,9 @@ export function drivenCaptureArtifact({
     // already shows clears the override and leaves that field null. An artifact
     // has to be able to prove which theme it measured without re-deriving it.
     observedTheme: ready?.resolvedTheme ?? null,
+    // 'blocked' on a secure origin, 'unsupported' on an insecure one; null
+    // predates the guard.
+    serviceWorkerRegistration: ready?.serviceWorkerRegistration ?? null,
     nativeApp,
     nativePackage,
     // A native run reaches the instrumented page over the LAN through the app's
@@ -545,11 +548,18 @@ export async function captureDeviceFrames({
   // address, and a native WebView loads its own `server.url`.
   const androidPage =
     platform === 'android' && !nativeApp
-      ? reverseToLocalhost(pageUrl, adbRunner(serial))
-      : { url: pageUrl, release: () => {} };
+      ? await reverseToLocalhost(pageUrl, adbRunner(serial))
+      : { url: pageUrl, toolingHostnames: [new URL(pageUrl).hostname], release: () => {} };
   const driver =
     platform === 'android'
-      ? androidDriver({ serial, pageUrl: androidPage.url, orientation, nativeApp, cdpPort })
+      ? androidDriver({
+          serial,
+          pageUrl: androidPage.url,
+          toolingHostnames: androidPage.toolingHostnames,
+          orientation,
+          nativeApp,
+          cdpPort,
+        })
       : iosDriver({ wdaUrl, pageUrl, nativeApp });
 
   await driver.openPage();

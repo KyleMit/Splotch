@@ -28,6 +28,7 @@
 import { createServer } from 'node:http';
 import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
 import { CHROME_PACKAGE } from './lib/android-input.mjs';
 import { pollFor } from './lib/poll.mjs';
 
@@ -60,8 +61,11 @@ const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 // Deliberately the smallest thing that can count frames: one closure, one array
 // of numbers, no listeners, no marks, no observers, no per-event work. Anything
 // richer would put the control's own cost into the comparison.
+// Both arms carry the service-worker guard, so a worker install lands in
+// neither window rather than only in the bare one.
 function counterSource(warmupMs, windowMs) {
-  return `(() => {
+  return `(() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})();
+(() => {
   const deltas = [];
   let previous = 0;
   let recording = false;
@@ -350,7 +354,7 @@ export async function measureProbeOverhead({
   const { server, state } = createOverheadHost({ upstream, probeHost });
   await new Promise((resolve) => server.listen(port, '0.0.0.0', resolve));
   const geometry = centreSwipe(readScreenSize(serial));
-  const route = reverseToLocalhost(`http://127.0.0.1:${port}/`, adbRunner(serial));
+  const route = await reverseToLocalhost(`http://127.0.0.1:${port}/`, adbRunner(serial));
   const pageUrl = route.url;
   const rows = [];
   const invalid = [];

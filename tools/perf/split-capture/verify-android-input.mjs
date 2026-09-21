@@ -54,7 +54,7 @@ const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 export async function guardVerifyForeground({
   serial,
   cdpPort,
-  hostname,
+  hostnames,
   nonce,
   forward = tryCapture,
   litterClearer = clearToolingLitter,
@@ -76,7 +76,7 @@ export async function guardVerifyForeground({
   }
   try {
     const cdpBase = `http://127.0.0.1:${cdpPort}`;
-    const cleared = await litterClearer({ cdpBase, hostname, nonce });
+    const cleared = await litterClearer({ cdpBase, hostnames, nonce });
     const fronted = await activate({ cdpBase, nonce, param: 'verify' });
     if (!fronted.activated) {
       console.log(
@@ -110,7 +110,7 @@ export async function verifyAndroidInput({
   const { server, state } = createFloorControlHost({ log: () => {} });
   await new Promise((resolve) => server.listen(port, '0.0.0.0', resolve));
   const host = `http://127.0.0.1:${port}`;
-  const route = reverseToLocalhost(host, adbRunner(serial));
+  const route = await reverseToLocalhost(host, adbRunner(serial));
   const pageBase = new URL(route.url);
   const nonce = `verify-${process.pid}-${Math.round(performance.now())}`;
   state.plan = { ...state.plan, label: nonce, nonce, finish: false, contactMs: CONTACT_BANK_MS };
@@ -129,7 +129,7 @@ export async function verifyAndroidInput({
       'com.android.chrome',
     ]);
     await sleep(PAGE_SETTLE_MS);
-    await guardVerifyForeground({ serial, cdpPort, hostname: pageBase.hostname, nonce });
+    await guardVerifyForeground({ serial, cdpPort, hostnames: route.toolingHostnames, nonce });
 
     const ready = await pollFor(
       async () => (await fetch(`${host}/__probe/state`).then((r) => r.json())).ready,
@@ -139,7 +139,8 @@ export async function verifyAndroidInput({
     // capture path fronts its page again right before dispatching — a
     // preflight proves the operations it performs, so this one performs the
     // same two.
-    if (ready) await guardVerifyForeground({ serial, cdpPort, hostname: pageBase.hostname, nonce });
+    if (ready)
+      await guardVerifyForeground({ serial, cdpPort, hostnames: route.toolingHostnames, nonce });
     if (!ready) {
       fail(
         `the floor control never reported ready at ${pageBase.origin} (adb reverse of ` +

@@ -93,7 +93,7 @@ export async function verifyAndroidRotation({
   // besides --wake-android that changes device state, and a preflight that leaves a
   // phone rotated is a preflight that corrupts the next session's portrait cells.
   const previous = readRotationSettings(serial);
-  const route = reverseToLocalhost(`http://127.0.0.1:${port}/`, adbRunner(serial));
+  const route = await reverseToLocalhost(`http://127.0.0.1:${port}/`, adbRunner(serial));
 
   try {
     const observations = [];

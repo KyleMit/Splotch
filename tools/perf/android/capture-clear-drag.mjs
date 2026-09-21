@@ -21,6 +21,7 @@ import { profilePath } from '../lib/profile-paths.mjs';
 import { servedBuildBinding } from '../lib/profile-preview.mjs';
 import {
   adb,
+  blockServiceWorkerRegistration,
   clearBrowserCaches,
   closeTarget,
   positiveInteger,
@@ -339,7 +340,7 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
   try {
     server = await ensurePreviewServer(base, port, !has('no-serve'), { allowForeignBuild });
     const servedBuild = await servedBuildBinding(base, { verifiedAgainstCheckout: !allowForeignBuild });
-    devicePage = reverseToLocalhost(base, (args, { bestEffort }) =>
+    devicePage = await reverseToLocalhost(base, (args, { bestEffort }) =>
       adb(deviceId, args, { allowFailure: bestEffort })
     );
     adb(deviceId, ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
@@ -357,6 +358,7 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
     // the scrub would measure that build instead of the one just bound above.
     await waitForCanvas(page);
     await clearBrowserCaches(page);
+    const serviceWorkerRegistration = await blockServiceWorkerRegistration(page);
     cdp = await context.newCDPSession(page);
     const touch = touchDriver(cdp);
     if (has('trace')) {
@@ -398,6 +400,7 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
       },
       appUrl: devicePage.url,
       ...servedBuild,
+      serviceWorkerRegistration,
       transport: 'android-chrome-cdp',
       orientation,
       cycles,

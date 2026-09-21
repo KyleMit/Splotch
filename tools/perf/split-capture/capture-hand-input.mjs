@@ -269,6 +269,7 @@ export function handCaptureArtifact({
     buildDigest: servedBuild?.buildDigest ?? null,
     // The page's own answer, not the request — see capture-device-frames.
     observedTheme: ready?.resolvedTheme ?? null,
+    serviceWorkerRegistration: ready?.serviceWorkerRegistration ?? null,
     pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
     // The dominant variable for coalescing (issue 1303): a native WebView here
     // loads the probe host remotely, never its bundled assets.
@@ -343,7 +344,9 @@ export async function captureHandInput({
   if (opener === 'adb') {
     // Chrome loads the probe host at localhost, and the reverse stays up while the
     // human draws; a native WebView loads its own `server.url`.
-    const adbPageUrl = nativeApp ? pageUrl : reverseToLocalhost(pageUrl, adbRunner(serial)).url;
+    const adbPageUrl = nativeApp
+      ? pageUrl
+      : (await reverseToLocalhost(pageUrl, adbRunner(serial))).url;
     await openWithAdb({ serial, pageUrl: adbPageUrl, orientation, nativeApp });
   } else if (opener === 'devicectl') {
     openWithDevicectl({ udid });
