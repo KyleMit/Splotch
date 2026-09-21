@@ -12,7 +12,7 @@ npm run test:tools
 Use a relative file filter for a focused run:
 
 ```sh
-npm run test:tools -- tests/run-quality-checks.test.mjs
+npm run test:tools -- tests/check-release-seams.test.mjs
 ```
 
 The suite is local and deterministic except for tests that deliberately launch a loopback server.

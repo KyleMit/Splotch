@@ -90,7 +90,7 @@ The [Hosted Deploy Smoke workflow](../../.github/workflows/blobs-smoke.yml) runs
 `check-deployed-contract.mjs` with `install: 'false'`. That entry point and everything it loads —
 including `web/buildVersion.ts`, `web/src/lib/server/securityHeaders.ts`, the deployed admin
 contract, and the shared tool modules — must stay dependency-free. Adding an npm dependency to any
-of them breaks the deploy gate at runtime rather than in CI's unit job.
+of them breaks the deploy gate at runtime rather than in CI's browserless job.
 
 All workflow runs share a single concurrency group because previews and production use the same
 site-wide store. Keep production-write classification in `lib/deployed-admin-target.mjs`; the

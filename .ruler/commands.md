@@ -7,6 +7,8 @@
 | `npm run dev:netlify`         | Dev server **with** the `/api/*` serverless functions                                 |
 | `npm run check`               | svelte-check / type checking                                                          |
 | `npm test`                    | Run the CI test tiers declared by the `package.json` test entry                       |
+| `npm run check:quality`       | Mirror CI's Quality job locally, reporting every failed step                          |
+| `npm run test:browserless`    | Mirror CI's Browserless tests job (Vitest tiers + API smoke, no Playwright)           |
 | `npm run build` / `build:cap` | Web build / native static build                                                       |
 
 Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:variant` names

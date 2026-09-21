@@ -115,7 +115,7 @@ export async function servedBuildFingerprintProblem(
     nativeApp = false,
     fetchText = defaultFetchText,
     // Injected so a unit test can stand up a fake build rather than depending on
-    // one existing — CI's unit job does not run a build, and a test that reads
+    // one existing — CI's browserless job does not run a build, and a test that reads
     // web/build passes only on a machine that happens to have one.
     buildDir = join(ROOT, 'web', 'build'),
   } = {}
