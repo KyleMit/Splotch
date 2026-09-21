@@ -503,6 +503,11 @@ body {
   --action-btn-base-landscape: 60px;
   --action-btn-base-portrait: 55px;
   --action-btn-base: var(--action-btn-base-landscape);
+  /* Corner radius as a share of the face; the action buttons and their
+     flyout options both round by it so a menu stays concentric with the
+     button that opened it. On :root so the /design specimen, which sits
+     outside .actions-panel, rounds the same way. */
+  --action-btn-radius-ratio: 0.3;
 }
 
 @media (max-width: 599.98px), (max-height: 599.98px) {
@@ -573,7 +578,10 @@ body {
   height: var(--action-btn-size);
   background: var(--float-surface);
   border: 2px solid var(--float-border);
-  border-radius: 18px;
+  /* A fixed share of the face, so a phone at Button Size 70% (35px) and a
+     13" iPad at 130% (88px) keep the same corner shape instead of the one
+     going near-circular and the other square with a nick. 18px at 60px. */
+  border-radius: calc(var(--action-btn-size) * var(--action-btn-radius-ratio));
   cursor: pointer;
   display: flex;
   align-items: center;
