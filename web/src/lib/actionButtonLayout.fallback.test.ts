@@ -211,7 +211,7 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
   it('floors a flyout option at FLYOUT_OPTION_MIN_BASE_PX and squares it above', () => {
     const flyoutOption = cssRuleBody('.flyout-option');
     const optionBase = '--flyout-option-base';
-    expect(flyoutOption).toContain(
+    expect(cssRuleBody('.flyout-menu')).toContain(
       `${optionBase}: max(var(${ACTION_BUTTON_BASE_PROPERTY}), ${FLYOUT_OPTION_MIN_BASE_PX}px)`
     );
     for (const axis of ['width', 'height']) {
