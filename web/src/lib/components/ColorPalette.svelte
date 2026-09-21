@@ -180,10 +180,10 @@
     align-content: space-between;
     width: var(--palette-landscape-width);
     gap: 12px;
-    /* The swatch drop shadow reaches 12px below its swatch (4px offset + 8px
-       blur), so the column keeps at least that much under the last one even
-       when the action-button clearance asks for less. */
-    padding: 12px 12px max(12px, var(--palette-bottom));
+    /* The bottom padding is the action-button clearance that centres the
+       custom swatch on the Brush Button (bare-toolbar.spec.ts holds it); the
+       column's overflow is visible, so a swatch shadow past it still paints. */
+    padding: 12px 12px var(--palette-bottom);
     background: var(--palette-surface, var(--surface));
     box-shadow: 2px 0 10px rgb(0 0 0 / 10%);
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
