@@ -54,6 +54,7 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 | `fetch-image-reports.mjs`          | `fetch:image-reports`                     | Fetch retained production AI-report evidence for local review |
 | `optimize-svg-assets.mjs`          | `optimize:svg-assets`, `check:svg-assets` | Optimize shipped SVGs or detect optimization drift            |
 | `print-playwright-version.mjs`     | GitHub setup actions                      | Emit the installed Playwright version for cache keys          |
+| `run-browserless-tests.mjs`        | `test:browserless`                        | Mirror CI's Browserless tests job, reporting every failure    |
 | `run-quality-checks.mjs`           | `check:quality`                           | Mirror CI's Quality job while reporting every failed step     |
 | `run-web-tool.mjs`                 | web build, check, and test commands       | Run root-installed web tools with `web/` as their working dir |
 | `stage-netlify-functions.mjs`      | Netlify production build                  | Copy the adapter's SSR function tree to the repository root   |

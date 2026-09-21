@@ -195,11 +195,13 @@ dprint. Skills: `code-audit` and `extract-audit` to find work, `vet-audits` to p
 Three tiers - Vitest unit, Playwright end-to-end, and Maestro native smoke on both platforms - and a
 suite whose signal can be trusted rather than re-run until green.
 
-**Backed by.** Unit specs sit beside their sources in `web/src`, end-to-end specs in `web/tests`,
-tool specs in `tools/tests`, and native flows in `.maestro`. `playwright-flaky-reporter.ts` surfaces
-flake; the WebKit commit gates carry a bounded retry leg rather than an open one; ESLint's
-vacuous-test rules fail a spec that asserts nothing, under both the vitest and playwright spellings.
-The `testing` skill carries the full strategy and commands.
+**Backed by.** `test:browserless` runs CI's browser-free test job in one pass - every Vitest tier
+and the API contract smoke - and reports every failure rather than the first. Unit specs sit beside
+their sources in `web/src`, end-to-end specs in `web/tests`, tool specs in `tools/tests`, and native
+flows in `.maestro`. `playwright-flaky-reporter.ts` surfaces flake; the WebKit commit gates carry a
+bounded retry leg rather than an open one; ESLint's vacuous-test rules fail a spec that asserts
+nothing, under both the vitest and playwright spellings. The `testing` skill carries the full
+strategy and commands.
 
 ## Compatibility
 

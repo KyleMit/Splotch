@@ -538,8 +538,8 @@ once the verify budget is burned; valid token minus image → 400 — every case
 model call), then tears the server down. No model key or Netlify Blobs needed; successful generation
 and `verify-key` (which make live model calls) are out of scope. Use it to sanity-check the contract
 after changing any endpoint — it's the cheap counterpart to the Playwright admin E2E in
-`tests/admin.spec.ts`. CI runs it in the `unit` job of `test.yml` on every push/PR, so a contract
-regression fails the PR instead of shipping.
+`tests/admin.spec.ts`. CI runs it in the `browserless` job of `test.yml` on every push/PR, so a
+contract regression fails the PR instead of shipping.
 
 `test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs or deployed CDN
 configuration. The normal real-deploy gate is `npm run test:deploy:smoke`:

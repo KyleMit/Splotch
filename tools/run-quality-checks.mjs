@@ -1,13 +1,11 @@
-// Runs CI's Quality job locally, in its order, and — unlike CI — keeps going
-// after a failure so one run surfaces every problem instead of one per push.
-// `npm test` covers the test jobs; this covers the other half of the gate.
+// Mirrors CI's Quality job locally; tools/run-browserless-tests.mjs mirrors the
+// Browserless tests job, the other non-browser half of the gate. How the mirror
+// runs and why it keeps going past a failure: tools/lib/ci-job-mirror.mjs.
 //
-// QUALITY_COMMANDS must stay in step with .github/workflows/test.yml. A YAML
-// workflow can't import from a Node module, so the agreement is enforced by
-// tools/tests/run-quality-checks.test.mjs, which reads the steps out of the
-// workflow and fails when either side gains, loses, or reorders a command.
-import { spawnSync } from 'node:child_process';
-import { ROOT, isMain, runMain } from './lib/proc.mjs';
+// QUALITY_COMMANDS must stay in step with .github/workflows/test.yml, enforced
+// by tools/tests/run-quality-checks.test.mjs.
+import { runJobCommands, summarizeJob } from './lib/ci-job-mirror.mjs';
+import { isMain, runMain } from './lib/proc.mjs';
 
 export const QUALITY_COMMANDS = [
   'npm run format:check',
@@ -25,24 +23,12 @@ export const QUALITY_COMMANDS = [
   'pnpm audit --audit-level=high',
 ];
 
-function runCommand(command) {
-  console.log(`\n[1m$ ${command}[0m`);
-  const { status } = spawnSync(command, { cwd: ROOT, stdio: 'inherit', shell: true });
-  return status === 0;
-}
-
 export function summarize(failures, log = console) {
-  if (!failures.length) {
-    log.log(`\n✓ Quality: all ${QUALITY_COMMANDS.length} checks passed`);
-    return 0;
-  }
-  log.error(`\n✗ Quality: ${failures.length} of ${QUALITY_COMMANDS.length} checks failed`);
-  for (const command of failures) log.error(`    ${command}`);
-  return 1;
+  return summarizeJob('Quality', QUALITY_COMMANDS, failures, log);
 }
 
-export function runQualityChecks({ run = runCommand } = {}) {
-  return QUALITY_COMMANDS.filter((command) => !run(command));
+export function runQualityChecks({ run } = {}) {
+  return runJobCommands(QUALITY_COMMANDS, { run });
 }
 
 if (isMain(import.meta.url)) {

@@ -17,7 +17,7 @@ its obsolete pre-merge blob-encoding guard retired.
 | Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`   | tracer/consumer paths + manual dispatch      |
 | Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                | every push / PR                              |
 | E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
-| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
+| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (browserless job)            |
 | Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`         | daily production + manual deploy URL         |
 | Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`        | every push / PR (parallel job)               |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
@@ -27,12 +27,18 @@ its obsolete pre-merge blob-encoding guard retired.
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 `pnpm audit --audit-level=high`) also runs on every push/PR alongside the tests — see Continuous
-integration below. The hosted deploy smoke runs separately against real deployments; its narrower
-`test:blobs:smoke` diagnostic is manual.
+integration below. Two commands reproduce the non-browser half of that gate before a push, each in
+CI's order and each continuing past a failure so one run reports everything: `npm run check:quality`
+mirrors the `quality` job, and `npm run test:browserless` mirrors the `browserless` job — the four
+Vitest tiers plus `test:api:smoke`, about a minute locally. A tools test per script reads its job's
+steps out of `test.yml` and fails on drift. The hosted deploy smoke runs separately against real
+deployments; its narrower `test:blobs:smoke` diagnostic is manual.
 
 `npm test` runs the first five (`test:unit:coverage` + `test:asset-gen` + `test:store-drawings` +
-`test:tools` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
-they need an emulator/simulator and the native toolchains.
+`test:tools` + `test:e2e`). It is not a mirror of any one CI job: it adds the Playwright suite and
+omits `test:api:smoke`, and `test:unit` alone runs only the first tier. The native smoke tests are
+intentionally **not** part of `npm test` — they need an emulator/simulator and the native
+toolchains.
 
 Centerline tracing is also intentionally outside `npm test`: it is the repository's first isolated
 Python/uv capability. Its dedicated path-filtered workflow provisions Python 3.11 and uv only when
@@ -120,7 +126,7 @@ Three Node smoke entry points guard the server contract:
 * **`test:api:smoke`** boots a throwaway `vite dev` and checks the `/api/*` shapes (admin auth flow,
   bearer gate, token add/remove, `verify-access-code`) plus the CORS/preflight contract the native
   apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. CI runs it in the
-  browserless `unit` job on every push/PR; run it locally after any endpoint change (see the `api`
+  `browserless` job on every push/PR; run it locally after any endpoint change (see the `api`
   skill).
 * **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
   SSR-rendered `/admin`, security and cache headers, the checked-out commit's exact `version.json`,
@@ -227,8 +233,8 @@ npm run test:asset-gen
 
 Configured in `tools/asset-gen/vitest.config.mjs`. These run in Node against committed fixtures and
 mocked generator workflows, with no model calls or network access. CI runs them in the browser-free
-`unit` job, after the app-unit suite and alongside the repo-script suite, in parallel with the e2e
-shards.
+`browserless` job, after the app-unit suite and alongside the repo-script suite, in parallel with
+the e2e shards.
 
 ## Store-drawing pipeline unit tests — Vitest
 
@@ -748,23 +754,23 @@ npm run test:android:device     # re-run as often as you like
 
 ## Continuous integration
 
-| Workflow                               | Trigger                                           | What it runs                                                                                                                                                             |
-| -------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push** | quality, unit, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs; fast WebKit commit gate on pushes to `main`; full gate on release tags |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                             |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                            |
-| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip        |
+| Workflow                               | Trigger                                           | What it runs                                                                                                                                                                    |
+| -------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push** | quality, browserless, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs; fast WebKit commit gate on pushes to `main`; full gate on release tags |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                                    |
+| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                                   |
+| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip               |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
 public repo, wall clock is not. The Vitest suites (`test:unit:coverage` + `test:asset-gen` +
-`test:store-drawings` + `test:tools`) run in a browser-free `unit` job, and the Playwright e2e suite
-runs as a matrix in `Tests` — each shard builds the app itself (a shared build artifact was measured
-slower: it serializes shards behind `needs:`), and each uploads its own `playwright-report-shard-N`
-artifact. The app-driver and worker-sweep smokes ride shard 1 only. With `fullyParallel` on,
-`--shard` deals out individual tests (not files) in a deterministic order, balanced by count and
-blind to duration — so the longest shard is bounded by the slowest single test, which lives among
-the deliberately heavy stress tests of `tests/flows-tile-history.spec.ts` (the header comment there
-explains why their cost is intrinsic).
+`test:store-drawings` + `test:tools`) run in a browser-free `browserless` job
+(`npm run test:browserless` locally), and the Playwright e2e suite runs as a matrix in `Tests` —
+each shard builds the app itself (a shared build artifact was measured slower: it serializes shards
+behind `needs:`), and each uploads its own `playwright-report-shard-N` artifact. The app-driver and
+worker-sweep smokes ride shard 1 only. With `fullyParallel` on, `--shard` deals out individual tests
+(not files) in a deterministic order, balanced by count and blind to duration — so the longest shard
+is bounded by the slowest single test, which lives among the deliberately heavy stress tests of
+`tests/flows-tile-history.spec.ts` (the header comment there explains why their cost is intrinsic).
 
 The 2026-08-19 shard-count measurement is preserved in the
 [shard-timing scratchpad](scratchpad/playwright-shard-timing-2026-08-19.md), including the expiring
@@ -772,11 +778,11 @@ report-derived partitions, the fixed build/preview term, and the first real eigh
 run. Four count-based shards kept the adjacent tile-history stress tests concentrated; eight cut the
 modeled slowest test load roughly in half. Holding the measured 17.1-second build/preview cost out
 of that scaling projected a roughly 77-second slowest e2e step, which the real warm-cache run
-matched. At that point checkout, dependency/browser setup, the two shard-1 smokes, and the unit job
-dominate the pull-request floor. Cold-cache eight-way contention has not been measured; the warming
-workflow mitigates it, and the scratchpad records what to inspect on the next runner-image rotation.
-Further sharding should re-measure setup and the whole workflow, not extrapolate the test-load
-reduction alone.
+matched. At that point checkout, dependency/browser setup, the two shard-1 smokes, and the
+browserless job dominate the pull-request floor. Cold-cache eight-way contention has not been
+measured; the warming workflow mitigates it, and the scratchpad records what to inspect on the next
+runner-image rotation. Further sharding should re-measure setup and the whole workflow, not
+extrapolate the test-load reduction alone.
 
 The Hosted Deploy Smoke workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching production's
 admin secret; without it the automatic job fails at the login step. A manually supplied preview must
