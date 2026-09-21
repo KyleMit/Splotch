@@ -103,7 +103,10 @@
     height: 54px;
     flex-shrink: 0;
     border-radius: 52% 48% 55% 45% / 45% 55%;
-    border: 2px dashed var(--border-warm-strong);
+    /* An empty dab is drawn by this edge alone, and it is the only hint of
+       how many digits the answer has, so it needs the 3:1 non-text floor
+       the warm border (1.9:1) misses. */
+    border: 2px dashed var(--icon-muted);
     background: transparent;
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
