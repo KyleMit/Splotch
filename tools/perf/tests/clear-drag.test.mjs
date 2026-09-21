@@ -8,6 +8,7 @@ import {
   TOOLBAR_STYLES,
   clearDragPath,
   frameIntervalSummary,
+  orientationOf,
   parseToolbarStyles,
 } from '../android/capture-clear-drag.mjs';
 
@@ -48,6 +49,12 @@ describe('drag-to-clear scrub', () => {
     const crossings = distances.slice(1).filter((d, i) => d >= 1 !== distances[i] >= 1);
     expect(crossings).toHaveLength(4);
     expect(path.every(({ x }) => x <= origin.x)).toBe(true);
+  });
+
+  it('labels orientation from the page size, square counting as portrait', () => {
+    expect(orientationOf({ width: 915, height: 412 })).toBe('LANDSCAPE');
+    expect(orientationOf({ width: 412, height: 915 })).toBe('PORTRAIT');
+    expect(orientationOf({ width: 500, height: 500 })).toBe('PORTRAIT');
   });
 
   it('summarizes only the frames inside the scrub window', () => {

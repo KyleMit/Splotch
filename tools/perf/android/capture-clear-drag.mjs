@@ -54,6 +54,8 @@ const SCRUB_FAR_FRACTION = 1.35;
 // rate is recorded rather than assumed.
 const MOVE_INTERVAL_MS = 8;
 const RELEASE_SETTLE_MS = 600;
+// How long the page gets to follow a rotation write before the run refuses it.
+const ORIENTATION_TIMEOUT_MS = 10_000;
 // A frame interval this long is a visibly dropped frame at 60 Hz and above.
 const JANK_INTERVAL_MS = 25;
 const LONG_JANK_INTERVAL_MS = 50;
@@ -144,10 +146,37 @@ async function scribble(page, touch) {
   }
 }
 
-async function loadToolbar(page, base, style) {
+export function orientationOf({ width, height }) {
+  return width > height ? 'LANDSCAPE' : 'PORTRAIT';
+}
+
+// Android can accept a rotation write and still hand the page the other
+// orientation, so the label is what the page reports, never what was asked.
+async function readOrientation(page) {
+  return orientationOf(
+    await page.evaluate(() => ({ width: innerWidth, height: innerHeight }))
+  );
+}
+
+async function waitForOrientation(page, orientation) {
+  await page
+    .waitForFunction(
+      (landscape) => innerWidth > innerHeight === landscape,
+      orientation === 'LANDSCAPE',
+      { timeout: ORIENTATION_TIMEOUT_MS }
+    )
+    .catch(async () => {
+      throw new Error(
+        `requested ${orientation} but the page reports ${await readOrientation(page)}; refusing to label the capture`
+      );
+    });
+}
+
+async function loadToolbar(page, base, style, orientation) {
   await page.evaluate(([key, value]) => localStorage.setItem(key, value), [TOOLBAR_STORAGE_KEY, style]);
   await page.goto(base, { waitUntil: 'load' });
   await waitForCanvas(page);
+  await waitForOrientation(page, orientation);
   await page.waitForFunction((value) => document.documentElement.dataset.toolbar === value, style);
   await waitForStableFrames(page);
 }
@@ -313,10 +342,15 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
     const samples = [];
     for (let repeat = 1; repeat <= repeats; repeat++) {
       for (const toolbar of toolbars) {
-        await loadToolbar(page, launchUrl, toolbar);
+        await loadToolbar(page, launchUrl, toolbar, orientation);
         await scribble(page, touch);
         await waitForStableFrames(page);
-        const sample = { repeat, toolbar, ...(await scrubClearButton(page, touch, cycles)) };
+        const scrub = await scrubClearButton(page, touch, cycles);
+        const observed = await readOrientation(page);
+        if (observed !== orientation) {
+          throw new Error(`the page rotated to ${observed} during the scrub; discarding the run`);
+        }
+        const sample = { repeat, toolbar, orientation: observed, ...scrub };
         console.log(
           `${toolbar.padEnd(7)} repeat ${repeat}: ${sample.fps} fps, p95 ${sample.p95Ms?.toFixed(1)} ms, ` +
             `max ${sample.maxMs?.toFixed(1)} ms, ${sample.over50Ms} frames >${LONG_JANK_INTERVAL_MS} ms, ` +
