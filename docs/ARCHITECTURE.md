@@ -449,7 +449,7 @@ media queries + the head-script stamp in `app.html`).
         follows the OS via `prefers-color-scheme` with no `data-theme` attribute stamped. See
         ADR-0052.
       * **Button Style Control** - Raised / Flat segmented control below the Appearance Control,
-        with a pen-on-a-tile and a bare-pen icon. Flat is the user-facing name of the **Bare
-        toolbar** (stored value `bare`, `splotch-toolbar-style`): it drops the tile behind each
-        Actions Panel button and puts the Color Palette on the paper with a printed margin (see
-        Layout notes above and ADR-0166).
+        each showing an outline of the magic brush: inside a rounded tile for Raised, on its own for
+        Flat. Flat is the user-facing name of the **Bare toolbar** (stored value `bare`,
+        `splotch-toolbar-style`): it drops the tile behind each Actions Panel button and puts the
+        Color Palette on the paper with a printed margin (see Layout notes above and ADR-0166).
