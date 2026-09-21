@@ -9,6 +9,7 @@ import {
   clearDragPath,
   frameIntervalSummary,
   orientationOf,
+  scrubGeometryProblem,
   parseToolbarStyles,
 } from '../android/capture-clear-drag.mjs';
 
@@ -55,6 +56,15 @@ describe('drag-to-clear scrub', () => {
     expect(orientationOf({ width: 915, height: 412 })).toBe('LANDSCAPE');
     expect(orientationOf({ width: 412, height: 915 })).toBe('PORTRAIT');
     expect(orientationOf({ width: 500, height: 500 })).toBe('PORTRAIT');
+  });
+
+  it('voids a scrub whose viewport rotated away and back', () => {
+    const size = { width: 412, height: 915 };
+    expect(scrubGeometryProblem({ before: size, after: size, resizes: 0 })).toBeNull();
+    expect(scrubGeometryProblem({ before: size, after: size, resizes: 2 })).toMatch(/resized 2/);
+    expect(
+      scrubGeometryProblem({ before: size, after: { width: 412, height: 870 }, resizes: 0 })
+    ).toMatch(/412x915 to 412x870/);
   });
 
   it('summarizes only the frames inside the scrub window', () => {

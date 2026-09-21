@@ -172,6 +172,17 @@ async function waitForOrientation(page, orientation) {
     });
 }
 
+// Matching endpoints cannot prove stable geometry: a rotation or resize that
+// returns before the scrub ends leaves the path aimed at the old layout and the
+// frame sample spanning both, so any recorded change voids the scrub.
+export function scrubGeometryProblem({ before, after, resizes }) {
+  if (resizes > 0) return `the viewport resized ${resizes} time(s) during the scrub`;
+  if (before.width !== after.width || before.height !== after.height) {
+    return `the viewport changed from ${before.width}x${before.height} to ${after.width}x${after.height} during the scrub`;
+  }
+  return null;
+}
+
 async function loadToolbar(page, base, style, orientation) {
   await page.evaluate(([key, value]) => localStorage.setItem(key, value), [TOOLBAR_STORAGE_KEY, style]);
   await page.goto(base, { waitUntil: 'load' });
@@ -193,6 +204,9 @@ async function scrubClearButton(page, touch, cycles) {
     };
   }, ACCEPT_RADIUS_FACTOR);
   await page.evaluate(() => {
+    window.__clearDragResizes = 0;
+    window.__clearDragOnResize ??= () => window.__clearDragResizes++;
+    addEventListener('resize', window.__clearDragOnResize);
     window.__clearDragFrames = [];
     const frame = (at) => {
       window.__clearDragFrames.push(at);
@@ -209,10 +223,21 @@ async function scrubClearButton(page, touch, cycles) {
   await touch('touchEnd');
   const end = await page.evaluate(() => performance.now());
   await sleep(RELEASE_SETTLE_MS);
-  const frames = await page.evaluate(() => {
+  const { frames, resizes, after } = await page.evaluate(() => {
     cancelAnimationFrame(window.__clearDragRaf);
-    return window.__clearDragFrames;
+    removeEventListener('resize', window.__clearDragOnResize);
+    return {
+      frames: window.__clearDragFrames,
+      resizes: window.__clearDragResizes,
+      after: { width: innerWidth, height: innerHeight },
+    };
   });
+  const problem = scrubGeometryProblem({
+    before: { width: geometry.width, height: geometry.height },
+    after,
+    resizes,
+  });
+  if (problem) throw new Error(`${problem}; discarding the run`);
   const summary = frameIntervalSummary(frames, start, end);
   return {
     ...summary,
