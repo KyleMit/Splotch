@@ -447,8 +447,8 @@
   }
 
   .mobile-back {
-    display: block;
-    margin-bottom: 14px;
+    display: flex;
+    margin-bottom: var(--space-4);
   }
 
   h1 {
@@ -462,7 +462,7 @@
   }
 
   .lede {
-    margin: 14px 0 0;
+    margin: var(--space-4) 0 0;
     max-width: 62ch;
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);
