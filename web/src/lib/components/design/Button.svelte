@@ -49,7 +49,7 @@
     font-family: inherit;
     font-weight: var(--font-weight-semibold);
     /* The app's touch-target floor lives in the primitive, so no call site
-       has to re-add it; the dense `sm` row opts down explicitly below. */
+       has to re-add it; `sm` shrinks the type and padding, never the target. */
     min-height: 44px;
     cursor: pointer;
     touch-action: manipulation;
@@ -117,7 +117,6 @@
   .sm {
     padding: var(--space-2) var(--space-4);
     font-size: var(--font-size-sm);
-    min-height: 36px;
   }
 
   /* --brand-solid, not --brand: this fill carries a text label, and --brand is
