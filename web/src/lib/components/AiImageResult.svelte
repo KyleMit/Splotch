@@ -473,6 +473,13 @@
     animation: ai-polaroid-fly 0.85s 0.9s cubic-bezier(0.55, 0, 0.85, 0.2) forwards;
   }
 
+  /* Once the card is a polaroid its frame is print white, so the stage behind
+     the picture is too; otherwise the two off-whites meet in a faint seam
+     wherever the picture is smaller than its box. */
+  .ai-result-modal.polaroid-mode :global(.ai-stage) {
+    background: var(--polaroid-paper);
+  }
+
   /* Hide the controls so the card reads as a clean polaroid. The download
      button keeps its footprint, leaving the thick blank border at the bottom. */
   .ai-result-modal.polaroid-mode :global(.ai-result-close),
