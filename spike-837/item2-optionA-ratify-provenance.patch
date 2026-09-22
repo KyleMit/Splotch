@@ -1,0 +1,16 @@
+diff --git a/tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js b/tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js
+index 82e182f3c..c41a36f04 100644
+--- a/tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js
++++ b/tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js
+@@ -137,7 +137,10 @@ function renderAll() {
+ 
+ // Review buckets are deliberately stricter than the `KEEP_THRESHOLD` ship gate in
+ // lib/outline-match.mjs (not importable — this file is browser-side plain JS) — a
+-// page can pass the pipeline gate and still show yellow/red here.
++// page can pass the pipeline gate and still show yellow/red here; they
++// were set as review-attention thresholds against the first fill corpus (2026-07-05,
++// weakest 94.2%, most ≥ 99%), never derived from the gate. The shipped catalog now
++// scores ≥ 99 throughout, so anything below is an outlier worth a look even when it ships.
+ const KEEP_GOOD = 99;
+ const KEEP_OK = 96;
+ function keepClass(keep) {

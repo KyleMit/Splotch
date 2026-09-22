@@ -1,0 +1,23 @@
+diff --git a/tools/asset-gen/legacy/retouch-line-art.mjs b/tools/asset-gen/legacy/retouch-line-art.mjs
+index 3194058d4..b38d0bb52 100644
+--- a/tools/asset-gen/legacy/retouch-line-art.mjs
++++ b/tools/asset-gen/legacy/retouch-line-art.mjs
+@@ -37,8 +37,8 @@ import { GoogleGenAI } from '@google/genai';
+ import { fail } from '../lib/asset-cli.mjs';
+ import { COLORING_DIR, SAMPLES_DARK_DIR } from '../lib/asset-paths.mjs';
+ import { classifyGeminiResponse } from '../lib/gemini-response.ts';
++import { IMAGE_MODEL } from '../lib/gemini.mjs';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const WEBP_QUALITY = 92;
+ const OUT_DIR = join(SAMPLES_DARK_DIR, 'retouch');
+ 
+@@ -80,7 +80,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+ 
+ async function editLineArt(imageBytes, temperature) {
+   const response = await ai.models.generateContent({
+-    model: MODEL,
++    model: IMAGE_MODEL,
+     contents: [
+       {
+         role: 'user',

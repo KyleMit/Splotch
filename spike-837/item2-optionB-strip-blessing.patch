@@ -1,0 +1,17 @@
+diff --git a/tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js b/tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js
+index 82e182f3c..55ab095ce 100644
+--- a/tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js
++++ b/tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js
+@@ -135,9 +135,9 @@ function renderAll() {
+   for (const t of tiles) render(t);
+ }
+ 
+-// Review buckets are deliberately stricter than the `KEEP_THRESHOLD` ship gate in
+-// lib/outline-match.mjs (not importable — this file is browser-side plain JS) — a
+-// page can pass the pipeline gate and still show yellow/red here.
++// Badge buckets, unrelated to the `KEEP_THRESHOLD` ship gate in lib/outline-match.mjs
++// (not importable — this file is browser-side plain JS); whether the divergence is
++// intended is an open question (issue 837).
+ const KEEP_GOOD = 99;
+ const KEEP_OK = 96;
+ function keepClass(keep) {

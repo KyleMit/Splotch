@@ -1,0 +1,15 @@
+diff --git a/tools/asset-gen/legacy/retouch-line-art.mjs b/tools/asset-gen/legacy/retouch-line-art.mjs
+index 3194058d4..9cd49558d 100644
+--- a/tools/asset-gen/legacy/retouch-line-art.mjs
++++ b/tools/asset-gen/legacy/retouch-line-art.mjs
+@@ -38,7 +38,9 @@ import { fail } from '../lib/asset-cli.mjs';
+ import { COLORING_DIR, SAMPLES_DARK_DIR } from '../lib/asset-paths.mjs';
+ import { classifyGeminiResponse } from '../lib/gemini-response.ts';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
++// Frozen at the model that produced the canonical-eye era's shipped outputs;
++// this file is a historical record, not a live generator.
++const MODEL = 'gemini-2.5-flash-image';
+ const WEBP_QUALITY = 92;
+ const OUT_DIR = join(SAMPLES_DARK_DIR, 'retouch');
+ 

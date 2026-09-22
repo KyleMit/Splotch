@@ -1,0 +1,14 @@
+diff --git a/tools/asset-gen/legacy/retouch-line-art.mjs b/tools/asset-gen/legacy/retouch-line-art.mjs
+index 3194058d4..299d81ab1 100644
+--- a/tools/asset-gen/legacy/retouch-line-art.mjs
++++ b/tools/asset-gen/legacy/retouch-line-art.mjs
+@@ -38,6 +38,9 @@ import { fail } from '../lib/asset-cli.mjs';
+ import { COLORING_DIR, SAMPLES_DARK_DIR } from '../lib/asset-paths.mjs';
+ import { classifyGeminiResponse } from '../lib/gemini-response.ts';
+ 
++// The canonical-eye era's shipped outputs were produced on gemini-2.5-flash-image;
++// the pin follows the live pipeline's model (lib/gemini.mjs IMAGE_MODEL) so the
++// file stays runnable as a one-off edit template, not to reproduce that era.
+ const MODEL = 'gemini-3.1-flash-image';
+ const WEBP_QUALITY = 92;
+ const OUT_DIR = join(SAMPLES_DARK_DIR, 'retouch');
