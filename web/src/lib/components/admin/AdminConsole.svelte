@@ -188,9 +188,7 @@
 
   {#snippet actions()}
     {#if authed}
-      <button type="button" class="sign-out" disabled={busy} onclick={handleLogout}>
-        Sign out
-      </button>
+      <Button variant="wash" size="md" disabled={busy} onclick={handleLogout}>Sign out</Button>
     {/if}
   {/snippet}
 
@@ -414,35 +412,6 @@
   .grant-table code {
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
-  }
-
-  /* Hero Sign out — the brand-wash ghost beside the H1. */
-  .sign-out {
-    padding: 8px 14px;
-    min-height: 44px;
-    color: var(--brand-text);
-    background: var(--brand-wash);
-    border: none;
-    border-radius: var(--radius-md);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background var(--duration-fast) ease;
-  }
-
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    .sign-out:hover {
-      background: var(--brand-wash-hover);
-    }
-  }
-
-  .sign-out:disabled {
-    opacity: var(--disabled-opacity);
-    cursor: default;
   }
 
   /* Add form (shared by the sign-in form and the add bar) */

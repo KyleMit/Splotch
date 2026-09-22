@@ -126,9 +126,9 @@ hardcoded duplicate (a failure review has caught three times).
 Shared UI primitives live in **`web/src/lib/components/design/`**. They style themselves entirely
 from tokens and are for modal/settings surfaces — the canvas-floating controls (Actions Panel,
 corner buttons, Clear Button) keep their bespoke paper treatments. The admin console (`/admin`) is
-themed (the 2026-08 redesign, recorded in the ADR-0071 amendments) but keeps its own bespoke
-controls: its ledger table, link-shaped actions, and standalone-page CTA are shapes the primitives
-don't offer.
+themed (the 2026-08 redesign, recorded in the ADR-0071 amendments) and takes its sign-in, add-code
+and Sign out buttons from the Button primitive, but keeps its own bespoke controls where the
+primitives offer no shape: the ledger table and its link-shaped actions.
 
 | Primitive                | Use for                                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
