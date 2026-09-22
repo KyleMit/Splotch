@@ -104,7 +104,7 @@
   .source-rows {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--setting-gap);
   }
 
   .sound-sources :global(h4.sources-heading) {

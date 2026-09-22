@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { createHydratedFlag } from '$lib/hydration.svelte';
+  import BackLink from './BackLink.svelte';
   import BrandMark from './BrandMark.svelte';
 
   // The chrome every standalone page wears: a ground, a centered sheet, a
@@ -34,7 +35,7 @@
 <main class="page">
   <div class="sheet">
     <div class="topbar">
-      <a class="back" href="/">← Back to drawing</a>
+      <BackLink />
       <!-- The mark is the masthead's second way home; the strip is decorative
            (aria-hidden), so the wordmark is the link's whole accessible name. -->
       <a class="brand" href="/">
@@ -169,24 +170,6 @@
     padding: 18px 0;
   }
 
-  /* Never wraps: the mark beside it shrinks first (its type and chips step down
-     on a phone), because a two-line back link reads as a layout fault. */
-  .back {
-    flex-shrink: 0;
-    white-space: nowrap;
-    /* A 44px target on a 56px bar: only the inline text was the anchor
-       (22.7px, under WCAG 2.5.8's 24px), so the box grows to the floor and
-       the negative block margin hands the growth back to the topbar. */
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    margin-block: -11px;
-    color: var(--page-link);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    text-decoration: none;
-  }
-
   /* Chips plus wordmark read as one mark, so they travel together and the
      wordmark stays quiet enough not to compete with the H1. */
   .brand {
@@ -273,7 +256,6 @@
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
-    .back:hover,
     .lede-toggle:hover {
       text-decoration: underline;
     }

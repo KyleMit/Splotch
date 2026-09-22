@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import type { SubmitFunction } from '@sveltejs/kit';
+  import Button from '$lib/components/design/Button.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
@@ -127,13 +128,9 @@
           </StatusMessage>
         {/if}
 
-        <!-- Not the Button primitive: that one is sized for a modal's settings
-             card, and this page's call to action is the same solid, generously
-             padded shape the beta page's step buttons wear, so the two
-             standalone pages read as one set. -->
-        <button class="submit" type="submit" disabled={submitting}>
+        <Button variant="brand" size="lg" type="submit" busy={submitting} class="submit">
           {submitting ? 'Sending…' : kind === 'bug' ? 'Send report' : 'Send idea'}
-        </button>
+        </Button>
       </form>
 
       {@render nextSteps()}
@@ -186,31 +183,11 @@
     border-radius: var(--radius-md);
   }
 
-  .submit {
+  /* The Button primitive's brand lg is the primary action here as on every
+     standalone page; the form only places it. */
+  .card :global(.submit) {
     align-self: flex-start;
     margin-top: 4px;
-    padding: 15px 24px;
-    border: none;
-    border-radius: var(--radius-md);
-    background: var(--page-accent);
-    color: var(--page-on-accent);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
-    touch-action: manipulation;
-    transition:
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .submit:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-
-  .submit:disabled {
-    opacity: 0.6;
-    cursor: default;
   }
 
   /* A callout in the step ledger's language rather than three lines floating in
@@ -286,10 +263,6 @@
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
-    .submit:hover:not(:disabled) {
-      background: var(--page-accent-hover);
-    }
-
     .done-again:hover,
     .aside a:hover {
       text-decoration-thickness: 2px;
@@ -321,9 +294,8 @@
       gap: 12px;
     }
 
-    .submit {
+    .card :global(.submit) {
       width: 100%;
-      min-height: 48px;
     }
   }
 </style>

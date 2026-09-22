@@ -64,11 +64,13 @@
         <span class="save-failure-detail">{copy.detail}</span>
       </div>
       <button
-        class="save-failure-dismiss"
+        class="banner-dismiss"
         aria-label="Dismiss"
         onclick={() => dismissSaveFailure()}
-        type="button">×</button
+        type="button"
       >
+        <Icon name="close" class="modal-close-icon" />
+      </button>
     </div>
     {#if offerSettings || pictureCount > 0}
       <div class="save-failure-actions">
@@ -159,38 +161,6 @@
   .save-failure-detail {
     color: var(--text-soft);
     font-size: var(--font-size-sm);
-  }
-
-  .save-failure-dismiss {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1)) 0 0;
-    padding: 0;
-    border: var(--border-width) solid var(--border-warm-strong);
-    border-radius: 50%;
-    background: var(--surface-2);
-    color: var(--text);
-    font-size: var(--font-size-xl);
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition:
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .save-failure-dismiss:active {
-    transform: scale(0.92);
-  }
-
-  @media (hover: hover) {
-    .save-failure-dismiss:hover {
-      background: var(--surface-hover);
-    }
   }
 
   .save-failure-actions {

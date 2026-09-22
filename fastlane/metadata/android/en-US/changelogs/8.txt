@@ -1,6 +1,6 @@
 New
 
-• Pick sounds for each part of the app—plus a clear sound.
+• Pick sounds for each part of the app — plus a clear sound.
 • Dottie the mascot now reacts on error screens.
 
 Improved

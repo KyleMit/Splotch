@@ -46,7 +46,10 @@
   </div>
 
   <div class="setting">
-    <div class="appearance-label"><span class="appearance-title">Button style</span></div>
+    <div class="appearance-label">
+      <Icon name="button-style-raised" class="setting-icon" />
+      <span class="appearance-title">Button style</span>
+    </div>
     <SegmentedPicker
       label="Button style"
       options={toolbarOptions}

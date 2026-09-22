@@ -499,6 +499,12 @@
     margin-bottom: 8px;
   }
 
+  /* The last paragraph's bottom margin would stack on the section padding and
+     put the rule closer to the next heading than to the text above it. */
+  .sections section > :last-child {
+    margin-bottom: 0;
+  }
+
   a {
     color: var(--page-link);
     text-underline-offset: 3px;

@@ -47,7 +47,8 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   inputFontSize:
     'Every text input — floors the size at 16px so iOS Safari never zoom-strands the canvas (ADR-0076).',
   fontFamily: 'The app-wide sans stack; reference it, never restate it.',
-  fontMono: 'Raw code and version strings: masked keys, inline code.',
+  fontMono:
+    'Raw code: masked keys, inline code, ledger ids. A version number is a label and stays in the sans.',
 
   fontWeightMedium: 'Quiet labels: settings rows, list leads.',
   fontWeightSemibold: 'Buttons, active states, sub-heads.',
@@ -59,8 +60,11 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   easePop: 'Anything that pops in or celebrates: dialog fly-ins, download-done, the swatch press.',
   easeGlide: 'Anything that settles or leaves: the polaroid, the swatch ring, the undo ghost.',
 
+  disabledOpacity:
+    'A whole disabled control: toggle rows, chips, buttons, gate keys. Never for text or a glyph on its own — those change ink token.',
+
   shadowControl:
-    'The tight lift on a small raised control: the modal close disc, a selected segment thumb.',
+    'The tight lift on a small raised control: a selected segment thumb, a tool popover.',
   shadowPop: 'The deep overlay lift under whole modal cards.',
 
   clearGradientRest:

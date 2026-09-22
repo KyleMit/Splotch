@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import Button from '../design/Button.svelte';
 
   interface Props {
     number: 1 | 2 | 3 | 4;
@@ -46,11 +47,12 @@
   </div>
   <p class="body">{@render body()}</p>
   <div class="action">
-    <a
-      class="btn"
+    <Button
+      variant="brand"
+      size="lg"
       href={actionHref}
       target={external ? '_blank' : undefined}
-      rel={external ? 'noopener noreferrer' : undefined}>{actionLabel}</a
+      rel={external ? 'noopener noreferrer' : undefined}>{actionLabel}</Button
     >
   </div>
   {#if showCard && cardLabel && cardBody}
@@ -132,24 +134,6 @@
     margin-top: 18px;
   }
 
-  .btn {
-    display: inline-block;
-    padding: 15px 24px;
-    border-radius: var(--radius-md);
-    background: var(--page-accent);
-    color: var(--page-on-accent);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    text-decoration: none;
-    transition:
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .btn:active {
-    transform: scale(0.97);
-  }
-
   .card {
     max-width: var(--page-measure);
     margin-top: 22px;
@@ -190,10 +174,6 @@
   /* Touch browsers can retain :hover after a tap, so hover-only changes stay
      behind a capability query instead of becoming sticky touch states. */
   @media (hover: hover) {
-    .btn:hover {
-      background: var(--page-accent-hover);
-    }
-
     .body :global(a:hover),
     .card-body :global(a:hover) {
       text-decoration-thickness: 2px;
@@ -218,10 +198,10 @@
       font-size: var(--font-size-lg);
     }
 
-    .btn {
-      display: block;
-      min-height: 48px;
-      text-align: center;
+    /* Full-width tap target; the primitive's inline-flex already centres the
+       label, which the old block anchor left sitting high in its box. */
+    .action :global(.btn) {
+      width: 100%;
     }
   }
 </style>

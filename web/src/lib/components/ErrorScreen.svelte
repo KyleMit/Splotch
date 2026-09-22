@@ -88,7 +88,15 @@
     font-size: var(--font-size-lg, 18px);
     font-weight: var(--font-weight-bold, 700);
     cursor: pointer;
-    transition: transform var(--duration-fast, 0.15s) ease;
+    transition:
+      background var(--duration-base, 0.2s) ease,
+      transform var(--duration-fast, 0.15s) ease;
+  }
+
+  @media (hover: hover) {
+    .error-restart:hover {
+      background: var(--brand-solid-hover, #6b3fbf);
+    }
   }
 
   .error-restart:active {

@@ -104,9 +104,19 @@ test('/design has no serious accessibility violations', async ({ page }) => {
   await expectNoSeriousViolations(page);
 });
 
+// The console's submit buttons ship disabled until hydration (AdminConsole's
+// hydration gate), and axe skips a disabled control, so a scan that starts on
+// the heading could grade the page with its primary action unexamined. The
+// scan waits for the live button; the console itself keeps the parked-to-live
+// flip instant, so there is no mid-fade state for the scan to land on.
+async function settleAdminSubmit(page: Page, name: string) {
+  await expect(page.getByRole('button', { name, exact: true })).toBeEnabled();
+}
+
 test('/admin logged out has no serious accessibility violations', async ({ page }) => {
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await settleAdminSubmit(page, 'Sign in');
   await expectNoSeriousViolations(page);
 });
 
@@ -120,6 +130,7 @@ test('/admin logged in has no serious accessibility violations', async ({ adminP
     }),
   });
   await expect(row).toBeVisible();
+  await settleAdminSubmit(page, 'Add code');
 
   await expectNoSeriousViolations(page);
 });

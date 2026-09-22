@@ -204,9 +204,11 @@
     height: var(--slider-thumb-size);
     transform: translateY(-50%);
     border-radius: 50%;
-    background: var(--surface);
+    /* White on both papers, like the toggle switch's thumb: --surface on the
+       dark --control-track sat at about 1.4:1 and the thumb vanished at night. */
+    background: white;
     border: 2px solid var(--border-warm);
-    box-shadow: var(--shadow-control);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
     pointer-events: none;
   }
 

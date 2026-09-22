@@ -62,7 +62,7 @@
 
   .about-links {
     padding-top: 20px;
-    border-top: 1px solid var(--border);
+    border-top: var(--border-width) solid var(--border);
     text-align: center;
     color: var(--text-soft);
     font-size: var(--font-size-sm);
@@ -107,19 +107,23 @@
   :global(.github-icon) {
     width: 20px;
     height: 20px;
-    opacity: 0.8;
-    transition: opacity var(--duration-base) ease;
+  }
+
+  /* Dimmed by ink token, not opacity, as every other glyph in the app is; the
+     modal shell's re-ink rule is zero-specificity (:where), so this wins. */
+  .github-link :global(.github-icon svg) {
+    fill: var(--icon-muted);
+    transition: fill var(--duration-base) ease;
   }
 
   @media (hover: hover) {
-    .github-link a:hover :global(.github-icon) {
-      opacity: 1;
+    .github-link a:hover :global(.github-icon svg) {
+      fill: var(--icon-ink);
     }
   }
 
   .version-text {
     font-size: var(--font-size-xs);
     color: var(--text-soft);
-    font-family: var(--font-mono);
   }
 </style>

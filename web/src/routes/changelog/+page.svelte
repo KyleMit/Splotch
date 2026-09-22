@@ -220,6 +220,12 @@
     margin-bottom: var(--space-2);
   }
 
+  /* Same reason as /privacy's last-child rule: the last item's margin would
+     stack on the release padding and push the rule off centre. */
+  .changelog :global(.release-notes li:last-child) {
+    margin-bottom: 0;
+  }
+
   /* A 232px rail beside a fluid sheet squeezes the notes, so the whole tablet
      and phone range takes the disclosure instead — the same breakpoint the
      shell drops its fixed sheet width at. The grid goes with it: a sticky row

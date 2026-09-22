@@ -4,6 +4,7 @@
   // Generated at build time from releases/*.md (see tools/release/gen-release-notes.mjs).
   import releases from '$lib/releases.json';
   import CurrentReleaseNotes, { RELEASE_NOTE_SECTION_COUNT } from './CurrentReleaseNotes.svelte';
+  import Icon from '../Icon.svelte';
   import '$lib/components/deferredIcons';
 
   // Called once the staged reveal below has no more blocks to add. A parent that
@@ -58,7 +59,10 @@
   {/if}
 
   <p class="all-releases">
-    <a href="/changelog">See all releases →</a>
+    <a href="/changelog">
+      See all releases
+      <Icon name="chevron-right" class="all-releases-icon" aria-hidden="true" />
+    </a>
   </p>
 </section>
 
@@ -109,6 +113,10 @@
     margin-bottom: 4px;
   }
 
+  .whats-new-body :global(li:last-child) {
+    margin-bottom: 0;
+  }
+
   .whats-new-body :global(a) {
     color: var(--brand-text);
   }
@@ -119,9 +127,22 @@
   }
 
   .all-releases a {
+    display: inline-flex;
+    align-items: center;
     color: var(--brand-text);
     text-decoration: none;
     font-weight: var(--font-weight-semibold);
+  }
+
+  /* An icon, not a "→" glyph the Quicksand subsets do not carry. */
+  .all-releases :global(.all-releases-icon) {
+    width: 18px;
+    height: 18px;
+    margin-right: -4px;
+  }
+
+  .all-releases :global(.all-releases-icon svg) {
+    fill: currentColor;
   }
 
   @media (hover: hover) {

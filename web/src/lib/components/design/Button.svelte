@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { HTMLButtonAttributes } from 'svelte/elements';
+  import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
 
   // Design-system button primitive (ADR-0071): the shared chrome for
   // text-labeled buttons on modal/settings surfaces. Canvas-floating controls
@@ -13,6 +13,10 @@
     variant?: 'brand' | 'wash' | 'outline' | 'danger';
     size?: 'sm' | 'md' | 'lg';
     busy?: boolean;
+    /** Renders the same chrome as a link — the beta page's step actions. */
+    href?: string;
+    target?: HTMLAnchorAttributes['target'];
+    rel?: string;
     children: Snippet;
   }
 
@@ -21,22 +25,29 @@
     size = 'md',
     busy = false,
     disabled = false,
+    href,
+    target,
+    rel,
     children,
     class: className,
     ...rest
   }: Props = $props();
 </script>
 
-<button
-  type="button"
-  class={['btn', variant, size, className]}
-  {...rest}
-  disabled={disabled || busy}
-  aria-busy={busy || undefined}
->
-  {#if busy}<span class="ring" aria-hidden="true"></span>{/if}
-  {@render children()}
-</button>
+{#if href}
+  <a class={['btn', variant, size, className]} {href} {target} {rel}>{@render children()}</a>
+{:else}
+  <button
+    type="button"
+    class={['btn', variant, size, className]}
+    {...rest}
+    disabled={disabled || busy}
+    aria-busy={busy || undefined}
+  >
+    {#if busy}<span class="ring" aria-hidden="true"></span>{/if}
+    {@render children()}
+  </button>
+{/if}
 
 <style>
   .btn {
@@ -48,6 +59,7 @@
     border-radius: var(--radius-md);
     font-family: inherit;
     font-weight: var(--font-weight-semibold);
+    text-decoration: none;
     /* The app's touch-target floor lives in the primitive, so no call site
        has to re-add it; `sm` shrinks the type and padding, never the target. */
     min-height: 44px;
@@ -67,7 +79,7 @@
   .btn:disabled:not([aria-busy='true']) {
     background: var(--control-track);
     color: var(--text-soft);
-    opacity: 0.7;
+    opacity: var(--disabled-opacity);
     cursor: default;
     transform: none;
   }

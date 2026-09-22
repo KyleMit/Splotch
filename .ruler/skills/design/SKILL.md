@@ -87,9 +87,12 @@ Foundations and only reach past a default when a rule says so.
 |           | Control-state motion (hover, press, reveal, fades) pairs a curve with a duration token; tuned                                                                                                    |
 |           | one-shot choreography — celebration keyframes, staged sequences like the AI reveal and polaroid                                                                                                  |
 |           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it                                                                                                            |
-| Elevation | Three shadows only: `--shadow-control` (the tight lift on a small raised control — modal close                                                                                                   |
-|           | disc, selected segment thumb), `--shadow-pop` (deep overlay lift under modal cards), and the                                                                                                     |
+| Elevation | Three shadows only: `--shadow-control` (the tight lift on a small raised control — selected                                                                                                      |
+|           | segment thumb, tool popover), `--shadow-pop` (deep overlay lift under modal cards), and the                                                                                                      |
 |           | themed `--float-shadow` (everything floating on the paper — cards, flyouts, page sheets)                                                                                                         |
+| Opacity   | `--disabled-opacity` — the one dimming for a whole parked control (toggle rows, chips, buttons,                                                                                                  |
+|           | gate keys). Text and glyphs on their own never take it: they change ink token (rule 5). The                                                                                                      |
+|           | canvas action buttons keep their deeper bespoke fade                                                                                                                                             |
 | Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                                                                                                             |
 |           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on                                                                                                     |
 |           | purpose (ADR-0052): it reads the same on both papers. `--polaroid-paper` / `--polaroid-ink` —                                                                                                    |
@@ -123,13 +126,13 @@ hardcoded duplicate (a failure review has caught three times).
 Shared UI primitives live in **`web/src/lib/components/design/`**. They style themselves entirely
 from tokens and are for modal/settings surfaces — the canvas-floating controls (Actions Panel,
 corner buttons, Clear Button) keep their bespoke paper treatments. The admin console (`/admin`) is
-themed (the 2026-08 redesign, recorded in the ADR-0071 amendments) but keeps its own bespoke
-controls: its ledger table, link-shaped actions, and standalone-page CTA are shapes the primitives
-don't offer.
+themed (the 2026-08 redesign, recorded in the ADR-0071 amendments) and takes its sign-in, add-code
+and Sign out buttons from the Button primitive, but keeps its own bespoke controls where the
+primitives offer no shape: the ledger table and its link-shaped actions.
 
 | Primitive                | Use for                                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DialogHeader.svelte`    | Dialog back/title/actions/close row with 44px targets: flat back, raised outlined close.                                                                                                                                                                                                                                                                   |
+| `DialogHeader.svelte`    | Dialog back/title/actions/close row with 44px targets: flat back, outlined close.                                                                                                                                                                                                                                                                          |
 |                          | Omit children for a floating close; `closeFeedback` preserves Settings press feedback.                                                                                                                                                                                                                                                                     |
 | `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger`, sizes `lg` / `md` / `sm`                                                                                                                                                                                                                                                                       |
 |                          | (`lg` takes a 16px label, for a pair that is a screen's primary decision rather                                                                                                                                                                                                                                                                            |

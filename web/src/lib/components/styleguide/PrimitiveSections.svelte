@@ -99,8 +99,8 @@
     </h3>
     <p class="sub-intro">
       Back and close share a 44px target and <code>--icon-ink</code> glyphs. Back has a flat fill with
-      extra space before the title; close has a raised, outlined disc. The title can wrap; optional actions
-      sit beside close.
+      extra space before the title; close has an outlined disc. The title can wrap; optional actions sit
+      beside close.
     </p>
     <div class="header-specimen">
       {#if headerOpen}

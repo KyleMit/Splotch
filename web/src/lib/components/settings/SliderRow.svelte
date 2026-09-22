@@ -5,10 +5,10 @@
 
   // A labelled slider setting: a name/value label row above a <Slider>. `id`
   // wires the label to the slider via aria-labelledby, so the two can't drift
-  // apart. With an `icon`, the name renders in the larger standalone-setting
-  // typeface; without one it stays in the muted sub-setting style used when the
-  // row sits indented under its own toggle. `help` is the calm sentence under
-  // the track, wired to the slider through aria-describedby.
+  // apart. The name always wears the setting-name type a ToggleRow label wears;
+  // an `icon` leads it, and without one the row sits indented under its own
+  // toggle. `help` is the calm sentence under the track, wired to the slider
+  // through aria-describedby.
   interface Props {
     id: string;
     label: string;
@@ -37,7 +37,7 @@
         {label}
       </span>
     {:else}
-      <span>{label}</span>
+      <span class="slider-label-name">{label}</span>
     {/if}
     <span>{displayedValueText}</span>
   </div>
@@ -65,6 +65,8 @@
     margin-left: var(--setting-indent);
   }
 
+  /* The row's own type is the value on the right: the name span sets the
+     setting-name type below, so Volume reads like the Sound name above it. */
   .slider-label {
     display: flex;
     justify-content: space-between;

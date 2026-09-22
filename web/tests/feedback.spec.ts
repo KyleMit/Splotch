@@ -28,7 +28,7 @@ test('the feedback page renders the shell and the report form', async ({ page })
 
   await expect(page.getByRole('heading', { name: 'Send us feedback', level: 1 })).toBeVisible();
   await expect(page.locator('.crayons i')).toHaveCount(7);
-  await expect(page.getByRole('link', { name: '← Back to drawing' })).toHaveAttribute('href', '/');
+  await expect(page.getByRole('link', { name: 'Back to drawing' })).toHaveAttribute('href', '/');
   await expect(page.getByRole('button', { name: 'Send report' })).toBeVisible();
 });
 

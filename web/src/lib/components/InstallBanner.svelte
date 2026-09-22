@@ -191,11 +191,13 @@
           {/if}
         </button>
         <button
-          class="install-dismiss"
+          class="banner-dismiss"
           aria-label="Not now"
           onclick={() => dismissInstall()}
-          type="button">×</button
+          type="button"
         >
+          <Icon name="close" class="modal-close-icon" />
+        </button>
       </div>
 
       {#if showHint && installState.mode !== 'oneTap'}
@@ -257,42 +259,6 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--float-shadow);
     font-family: inherit;
-  }
-
-  .install-dismiss {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    /* Same footprint as the 40px disc it replaces; the extra 4px is target. */
-    margin: -2px -2px 0 0;
-    padding: 0;
-    border: var(--border-width) solid var(--border-warm-strong);
-    border-radius: 50%;
-    background: var(--surface-2);
-    color: var(--text);
-    font-size: var(--font-size-xl);
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition:
-      border-color var(--duration-base) ease,
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .install-dismiss:active {
-    transform: scale(0.92);
-  }
-
-  @media (hover: hover) {
-    .install-dismiss:hover {
-      color: var(--text);
-      background: var(--surface-hover);
-      border-color: var(--border-warm-strong);
-    }
   }
 
   .install-main {
@@ -381,14 +347,19 @@
   }
 
   .install-cta:disabled {
-    opacity: 0.6;
+    opacity: var(--disabled-opacity);
     cursor: default;
   }
 
   :global(.install-cta-icon) {
     width: 18px;
     height: 18px;
-    filter: brightness(0) invert(1);
+  }
+
+  /* Re-inked by fill like every other icon on a brand fill; the scoped rule
+     outranks the banner's :where() re-ink below. */
+  .install-cta :global(.install-cta-icon svg) {
+    fill: var(--on-brand);
   }
 
   .install-hint {

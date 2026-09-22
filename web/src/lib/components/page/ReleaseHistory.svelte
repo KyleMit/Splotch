@@ -12,7 +12,7 @@
     <div class="release-notes">
       <ReleaseSectionHeading title="New" level={3} />
       <ul>
-        <li>Pick sounds for each part of the app—plus a clear sound.</li>
+        <li>Pick sounds for each part of the app — plus a clear sound.</li>
         <li>Dottie the mascot now reacts on error screens.</li>
       </ul>
       <ReleaseSectionHeading title="Improved" level={3} />
@@ -39,7 +39,7 @@
     <div class="release-notes">
       <ReleaseSectionHeading title="New" level={3} />
       <ul>
-        <li>Create 10 free AI pictures—no key needed.</li>
+        <li>Create 10 free AI pictures — no key needed.</li>
         <li>A new page chip shows and clears the current coloring page.</li>
         <li>Parents choose checks, kids&#39; tools, and report AI pictures.</li>
       </ul>

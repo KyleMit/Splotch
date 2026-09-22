@@ -110,6 +110,11 @@
     border-radius: var(--radius-pill);
     cursor: pointer;
     touch-action: manipulation;
+    transition: transform var(--duration-base) ease;
+  }
+  /* The palette swatch's press feedback, so a colour pill answers a tap. */
+  .color-option:active {
+    transform: scale(0.9);
   }
   .color-option.outlined {
     box-shadow: 0 0 0 2px var(--dark-ink-keyline);

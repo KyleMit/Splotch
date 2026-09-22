@@ -214,7 +214,8 @@
       border-color var(--duration-base) ease,
       box-shadow var(--duration-base) ease,
       transform var(--duration-base) ease;
-    box-shadow: 0 4px 8px rgb(0 0 0 / 20%);
+    /* Themed: a black drop shadow vanished on the dark bar and went flat. */
+    box-shadow: var(--float-shadow);
     touch-action: manipulation; /* Prevent iOS gesture delays */
   }
 

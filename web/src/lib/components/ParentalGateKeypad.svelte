@@ -83,7 +83,7 @@
   /* aria-disabled rather than disabled: a disabled key drops keyboard focus to
      <body>, outside the dialog's keydown handler, for the whole lockout. */
   .gate-key[aria-disabled='true'] {
-    opacity: 0.45;
+    opacity: var(--disabled-opacity);
     cursor: default;
   }
 

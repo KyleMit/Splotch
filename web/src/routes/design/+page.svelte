@@ -7,6 +7,7 @@
   import ScaleSections from '$lib/components/styleguide/ScaleSections.svelte';
   import TypeSections from '$lib/components/styleguide/TypeSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
+  import BackLink from '$lib/components/page/BackLink.svelte';
   import BrandMark from '$lib/components/page/BrandMark.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
@@ -193,20 +194,20 @@
 
   <div class="shell" id="top">
     <div class="toc" bind:this={sidebar}>
-      <a class="back" href="/">← Back to drawing</a>
+      <BackLink />
       <SidebarToc items={tocItems} {active} label="Contents" />
     </div>
 
     <main class="styleguide">
       <div class="hero">
-        <a class="back mobile-back" href="/">← Back to drawing</a>
+        <BackLink class="mobile-back" />
         <h1>Splotch design system</h1>
         <p class="lede">
           The visual language, rendered live from its sources. If it's not on this page, it's not
           part of the visual language.
         </p>
         <p class="sources">
-          Sources: <code>lib/design/tokens.ts</code> → <code>tokens.css</code>
+          Sources: <code>lib/design/tokens.ts</code> · <code>tokens.css</code>
           (<code>npm run gen:tokens</code>) · <code>lib/palette.ts</code> · the icon set · the shipped
           components
         </p>
@@ -309,6 +310,7 @@
 
   code {
     white-space: nowrap;
+    font-family: var(--font-mono);
     font-size: var(--font-size-xs);
     color: var(--brand-text);
   }
@@ -407,15 +409,10 @@
     padding: 28px 0 24px;
   }
 
-  /* PageShell's .back recipe: a 44px target, its growth handed back by margin. */
-  .back {
-    display: inline-block;
-    line-height: 44px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    color: var(--brand-text);
-    text-decoration: none;
-    margin: -11px 0 calc(var(--space-5) - 11px);
+  /* The link hands its 44px growth back through its own top margin; the
+     bottom keeps the rail's step down to the contents. */
+  .toc :global(.back) {
+    margin-bottom: calc(var(--space-5) - 11px);
   }
 
   .styleguide {
@@ -443,8 +440,8 @@
     padding: 40px 0 var(--space-2);
   }
 
-  .mobile-back {
-    display: block;
+  .hero :global(.mobile-back) {
+    display: flex;
     margin-bottom: var(--space-4);
   }
 
@@ -575,7 +572,7 @@
       display: block;
     }
 
-    .mobile-back {
+    .hero :global(.mobile-back) {
       display: none;
     }
   }

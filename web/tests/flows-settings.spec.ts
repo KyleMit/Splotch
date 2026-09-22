@@ -315,9 +315,9 @@ test('setting groups space their cards without affecting the compact grid', asyn
     '.settings-section[data-section="appearance"] .setting-group > .setting'
   );
   await expect(directCards).toHaveCount(4);
-  await expect(directCards.nth(1)).toHaveCSS('margin-top', '6px');
-  await expect(directCards.nth(2)).toHaveCSS('margin-top', '6px');
-  await expect(directCards.nth(3)).toHaveCSS('margin-top', '6px');
+  await expect(directCards.nth(1)).toHaveCSS('margin-top', '8px');
+  await expect(directCards.nth(2)).toHaveCSS('margin-top', '8px');
+  await expect(directCards.nth(3)).toHaveCSS('margin-top', '8px');
 
   await modal.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
   const aiToggle = page.locator('#aiImageToggle');
@@ -332,7 +332,7 @@ test('setting groups space their cards without affecting the compact grid', asyn
     '.settings-section[data-section="ai"] .setting-group:has(#aiCustomizationToggle) > .setting'
   );
   await expect(aiFeatureCards).toHaveCount(2);
-  await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '6px');
+  await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '8px');
 
   await page.setViewportSize({ width: 852, height: 390 });
   await expect(modal).toHaveClass(/compact/);

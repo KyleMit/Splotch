@@ -12,7 +12,7 @@
 {#if visibleSections >= 1}
   <ReleaseSectionHeading title="New" level={2} />
   <ul>
-    <li>Pick sounds for each part of the app—plus a clear sound.</li>
+    <li>Pick sounds for each part of the app — plus a clear sound.</li>
     <li>Dottie the mascot now reacts on error screens.</li>
   </ul>
 {/if}

@@ -89,8 +89,10 @@ export const scale = {
   // truth for the family name.
   fontFamily: `'${QUICKSAND_FONT_FAMILY}', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`,
 
-  // Raw code/version values (masked API keys, version strings, inline code).
-  fontMono: "'Courier New', monospace",
+  // Raw code values (masked API keys, inline code, ledger ids). The system
+  // mono stack rather than Courier New: Courier's thin strokes fell below
+  // comfortable contrast at 12–14px, most of all on the dark paper.
+  fontMono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
 
   // The weight ladder: 400 (untokenized default) body prose · medium quiet
   // labels · semibold buttons, active states, sub-heads · bold headings.
@@ -108,14 +110,20 @@ export const scale = {
   easePop: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   easeGlide: 'cubic-bezier(0.22, 1, 0.36, 1)',
 
+  // The one dimming for a whole parked control — a disabled toggle row, chip,
+  // button, or gate key. Text and glyphs on their own never take it: they
+  // change ink token instead (design rule 5). The canvas action buttons keep
+  // a deeper bespoke fade of their own in app.css.
+  disabledOpacity: '0.55',
+
   // Neutral (unthemed) elevation. The paper-floating cards use the *themed*
   // --float-shadow instead — these are for modal-layer chrome where one
   // shadow reads correctly on both themes.
   //
-  // shadowControl is the tight, hard lift on a small raised control — the
-  // modal close disc, a segmented toggle's selected thumb — close enough that
-  // the control reads as sitting just above its surface. shadowPop is the
-  // deep overlay lift for whole modal cards.
+  // shadowControl is the tight, hard lift on a small raised control — a
+  // segmented toggle's selected thumb, the Actions Panel's popovers — close
+  // enough that the control reads as sitting just above its surface.
+  // shadowPop is the deep overlay lift for whole modal cards.
   shadowControl: '0 1px 4px rgb(0 0 0 / 18%)',
   shadowPop: '0 8px 32px rgb(0 0 0 / 30%)',
 

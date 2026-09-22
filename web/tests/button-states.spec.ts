@@ -57,7 +57,7 @@ for (const theme of ['light', 'dark'] as const) {
         Array.from({ length: 4 }, () => ({
           neutralLabel: true,
           neutralFill: true,
-          opacity: '0.7',
+          opacity: '0.55',
         }))
       );
       const button = disabled.first();

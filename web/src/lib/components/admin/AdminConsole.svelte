@@ -40,6 +40,7 @@
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { FREE_GENERATION_LIMIT, type FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
   import PageShell from '../page/PageShell.svelte';
+  import Button from '../design/Button.svelte';
   import RuleLabel from '../design/RuleLabel.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
   import InviteLedger from './InviteLedger.svelte';
@@ -97,6 +98,21 @@
   const hydration = createHydratedFlag();
 
   let submitDisabled = $derived(busy || !hydration.hydrated);
+
+  // The gate flips `disabled` off on mount, and the Button primitive would
+  // fade its parked fill to the brand one over --duration-base — a grey-to-
+  // purple fade on every load, and a mid-fade the axe scan can sample. The
+  // flip stays instant by holding the primitive's transition off until the
+  // frame after the buttons went live.
+  let hydrationSettled = $state(false);
+  $effect(() => {
+    if (!hydration.hydrated) return;
+    const frame = requestAnimationFrame(() => {
+      hydrationSettled = true;
+    });
+    return () => cancelAnimationFrame(frame);
+  });
+  let submitClass = $derived(hydrationSettled ? '' : 'hydrating');
 
   // Callbacks that reject (e.g. a fetch failing offline) would otherwise be
   // unhandled rejections with no UI feedback, so catch here and surface a
@@ -187,9 +203,7 @@
 
   {#snippet actions()}
     {#if authed}
-      <button type="button" class="sign-out" disabled={busy} onclick={handleLogout}>
-        Sign out
-      </button>
+      <Button variant="wash" size="md" disabled={busy} onclick={handleLogout}>Sign out</Button>
     {/if}
   {/snippet}
 
@@ -210,7 +224,13 @@
           required
           bind:value={loginKey}
         />
-        <button type="submit" class="cta" disabled={submitDisabled}>Sign in</button>
+        <Button
+          variant="brand"
+          size="lg"
+          type="submit"
+          class={submitClass}
+          disabled={submitDisabled}>Sign in</Button
+        >
       </form>
     </section>
   {:else}
@@ -247,9 +267,16 @@
             required
             bind:value={newToken}
           />
-          <button type="submit" class="cta" disabled={submitDisabled} aria-label="Add code">
+          <Button
+            variant="brand"
+            size="lg"
+            type="submit"
+            class={submitClass}
+            disabled={submitDisabled}
+            aria-label="Add code"
+          >
             <span class="add-label-full">Add code</span><span class="add-label-short">Add</span>
-          </button>
+          </Button>
         </form>
 
         <InviteLedger
@@ -409,35 +436,6 @@
     font-size: var(--font-size-xs);
   }
 
-  /* Hero Sign out — the brand-wash ghost beside the H1. */
-  .sign-out {
-    padding: 8px 14px;
-    min-height: 44px;
-    color: var(--brand-text);
-    background: var(--brand-wash);
-    border: none;
-    border-radius: var(--radius-md);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background var(--duration-fast) ease;
-  }
-
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    .sign-out:hover {
-      background: var(--brand-wash-hover);
-    }
-  }
-
-  .sign-out:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-
   /* Add form (shared by the sign-in form and the add bar) */
   .add-form {
     display: flex;
@@ -467,35 +465,15 @@
   .add-form input:focus {
     border-color: var(--brand-solid);
   }
-
-  /* The standalone pages' solid call to action — the same shape as /feedback's
-     submit, so the consoles read as one set with the other parent pages. */
-  .cta {
-    /* One height for the sign-in and add-code forms' solid CTA. */
-    padding: 0 var(--space-6);
-    min-height: 48px;
-    border: none;
-    border-radius: var(--radius-md);
-    background: var(--brand-solid);
-    color: var(--on-brand);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
-    white-space: nowrap;
+  /* The forms' solid call to action is the Button primitive; the row only
+     keeps it from shrinking beside the input. */
+  .add-form :global(.btn) {
     flex-shrink: 0;
-    transition: background var(--duration-fast) ease;
+    white-space: nowrap;
   }
 
-  @media (hover: hover) {
-    .cta:hover {
-      background: var(--brand-solid-hover);
-    }
-  }
-
-  .cta:disabled {
-    opacity: 0.6;
-    cursor: default;
+  .add-form :global(.btn.hydrating) {
+    transition: none;
   }
 
   .add-label-short {
@@ -510,10 +488,6 @@
 
     .add-label-short {
       display: inline;
-    }
-
-    .cta {
-      padding: 0 var(--space-4);
     }
   }
 </style>
