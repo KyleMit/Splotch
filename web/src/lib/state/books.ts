@@ -69,7 +69,10 @@ const RESPONSIVE_COLORING_TIERS = {
     maxEdgePx: 240,
     widths: {
       cover: { candidate: 240, source: 400 },
-      selector: { portrait: 160, landscape: 240 } satisfies Record<BookOrientation, number>,
+      selector: { portrait: 160, landscape: 240 } as const satisfies Record<
+        BookOrientation,
+        number
+      >,
     },
   },
 } as const;
