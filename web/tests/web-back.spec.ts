@@ -109,9 +109,19 @@ test('Back closes nested dialogs from the top down', async ({ page }) => {
   await expect(gate).toBeVisible();
   await expectBackLayer(page, { guard: false, dialogs: 2 });
 
+  // The gate leaves the modal stack on its `close` event, a task after
+  // `dialog.open` flips. A Back that lands inside that window is refused as a
+  // request racing the retirement (modalDialog's requestDismiss) and re-pushes
+  // the entry, so the next Back waits for the event itself, not the flag.
+  const gateRetired = gate.evaluate(
+    (dialog) =>
+      new Promise<void>((resolve) =>
+        dialog.addEventListener('close', () => resolve(), { once: true })
+      )
+  );
   await page.goBack();
+  await gateRetired;
   await expect(gate).not.toBeVisible();
-  await expect.poll(() => gate.evaluate((dialog: HTMLDialogElement) => dialog.open)).toBe(false);
   await expect(settings).toBeVisible();
   await expectBackLayer(page, { guard: false, dialogs: 1 });
 
