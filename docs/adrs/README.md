@@ -44,6 +44,10 @@ The decisions that shape everything else, in rough order of importance. All are 
 * **[0058 — Agent Instruction Files Generated from `.ruler/`](0058-ruler-generated-agent-files.md)**
   — `CLAUDE.md`, `AGENTS.md`, and nearly every skill are generated; a small registry preserves
   explicitly direct provider packages, including the Codex-only issue-stack orchestrator.
+* **[0170 — Child Wellbeing Is a Binding Product Promise](0170-child-wellbeing-is-a-binding-product-promise.md)**
+  — the one axis that can veto a change passing every other: no engagement-extending mechanics, AI
+  builds on the child's drawing and never replaces it, motor development is part of the bar, and a
+  checkable list of what will never be built.
 
 ## Canvas & drawing
 

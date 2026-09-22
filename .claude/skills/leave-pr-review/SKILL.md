@@ -116,7 +116,10 @@ Every finding carries, from the moment it's drafted:
   author's call), `nit` (style/polish), or `question` (genuine ask, not a request).
 * **Claim + why it matters** — one issue per comment; what's wrong and the consequence.
 * **Evidence** — the repro, failing test, code path, or ADR that backs it (check the `adrs` skill; a
-  critique that contradicts a documented decision is probably wrong — or the ADR is stale).
+  critique that contradicts a documented decision is probably wrong — or the ADR is stale). A change
+  that touches the canvas chrome, a prompt shown to the child, notifications or permissions, the AI
+  path, or the session counters is also checked against ADR-0170's never-build list, and a finding
+  there quotes the line it breaks — that axis vetoes a change passing every other.
 * **Concrete fix** — what to do instead. When it's a small in-place replacement, include a
   ```suggestion`` block so the author can one-click apply it.
 

@@ -165,10 +165,15 @@ identifier from the Play Families prohibited list, requests no location permissi
 ## Child Wellbeing
 
 The app asks whether a two-year-old is better off for having used it - not whether they stayed
-longer. No streaks, no notifications pulling a child back, no engagement loop, and creative tools
-that build on what the child made rather than replacing it.
+longer. A session ends when the child or the parent ends it: no streaks, notifications, rewards for
+returning, timers, or nudges, and nothing that reports engagement back to us. AI acts on the child's
+own drawing, at a parent's say-so, and puts its result beside the drawing, never in its place. Motor
+development is part of the bar: chunky strokes, large targets, no precision demands, forgiving
+gestures. This axis can veto a change that scores perfectly on every other one.
 
-**Backed by.** Nothing yet.
+**Backed by.** ADR-0170 records the promise as a binding product constraint - the bar, the session
+shape, the AI rule, the motor rule, and a checkable list of what we will never build - and where in
+triage and PR review it is applied.
 
 ## Architecture
 
