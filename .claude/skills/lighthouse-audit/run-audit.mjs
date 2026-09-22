@@ -16,15 +16,29 @@
 // Usage:
 //   node .claude/skills/lighthouse-audit/run-audit.mjs [--url <url>] [--out <dir>]
 //        [--device phone|tablet|both] [--visits first|repeat|both]
+//        [--storage <key=value;key=value>] [--save-assets]
 //
 // Defaults: --url https://splotch.art/  --out lighthouse-reports  --device both --visits both
+//
+// --storage seeds localStorage for the audited origin into the Chrome profile
+// before that device's runs (see seed-storage.mjs), so the audit measures a
+// persisted startup setting: dark theme, bare toolbar, open drawer, and so on.
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { platform } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 const args = parseArgs(process.argv.slice(2));
+for (const flag of ['url', 'out', 'device', 'visits', 'storage']) {
+  // A value flag left bare (`--storage --device phone`) would otherwise run an
+  // unseeded or misdirected audit that reads as the requested one.
+  if (args[flag] === true) {
+    console.error(`--${flag} needs a value`);
+    process.exit(2);
+  }
+}
 const URL = args.url ?? 'https://splotch.art/';
 const OUT = resolve(args.out ?? 'lighthouse-reports');
 const DEVICE = args.device ?? 'both';
@@ -38,10 +52,14 @@ const pickedDevices = DEVICE === 'both' ? ['phone', 'tablet'] : [DEVICE];
 const pickedVisits = VISITS === 'both' ? ['first', 'repeat'] : [VISITS];
 
 mkdirSync(OUT, { recursive: true });
-const chromePath = resolveChrome();
+const chromePath = resolveChrome() ?? (await playwrightChromePath());
 const sandboxFlags = buildSandboxChromeFlags();
 
+const STORAGE = args.storage ?? '';
+const SEED_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'seed-storage.mjs');
+
 console.log(`Target : ${URL}`);
+if (STORAGE) console.log(`Storage: ${STORAGE}`);
 console.log(`Output : ${OUT}`);
 console.log(`Chrome : ${chromePath ?? '(auto-detected by lighthouse)'}`);
 console.log(
@@ -56,6 +74,14 @@ for (const key of pickedDevices) {
   const dev = DEVICES[key];
   const profileDir = join(OUT, `profile-${key}`);
   console.log(`### ${dev.label} (${dev.w}x${dev.h})`);
+  // A fresh profile per invocation: Lighthouse's own storage reset leaves
+  // localStorage alone, so a profile seeded by an earlier --storage run would
+  // otherwise carry that setting into this one.
+  rmSync(profileDir, { recursive: true, force: true });
+  if (STORAGE && !seedStorage(profileDir)) {
+    console.log('  ✗ localStorage seeding failed; skipping this device');
+    continue;
+  }
   for (const visit of pickedVisits) {
     const name = `${dev.label}-${visit}`;
     const isRepeat = visit === 'repeat';
@@ -72,6 +98,9 @@ for (const key of pickedDevices) {
 }
 
 printSummary(names);
+// Every run failing (Chrome missing, proxy down) must not read as success to a
+// caller that only checks the exit code.
+if (names.length === 0) process.exit(1);
 
 // ---------------------------------------------------------------------------
 
@@ -81,6 +110,9 @@ function runLighthouse({ name, dev, profileDir, repeat, quiet }) {
   // run's report in place for reportLine and printSummary to read as current.
   for (const ext of ['report.json', 'report.html']) {
     rmSync(join(OUT, `${name}.${ext}`), { force: true });
+  }
+  for (const asset of ['trace.json', 'devtoolslog.json']) {
+    rmSync(join(OUT, `${name}-0.${asset}`), { force: true });
   }
 
   const chromeFlags = [
@@ -109,6 +141,9 @@ function runLighthouse({ name, dev, profileDir, repeat, quiet }) {
     '--quiet',
     // Repeat visit: keep the disk cache the priming pass left behind.
     ...(repeat ? ['--disable-storage-reset'] : []),
+    // --save-assets writes <name>-0.trace.json + .devtoolslog.json beside the
+    // report, for reading a long task's real composition instead of its URL.
+    ...(args['save-assets'] ? ['--save-assets'] : []),
     `--chrome-flags=${chromeFlags}`,
   ];
 
@@ -121,6 +156,16 @@ function runLighthouse({ name, dev, profileDir, repeat, quiet }) {
     timeout: 240_000,
   });
   return res.status ?? 1;
+}
+
+function seedStorage(profileDir) {
+  const origin = new globalThis.URL(URL).origin;
+  const res = spawnSync(
+    process.execPath,
+    [SEED_SCRIPT, profileDir, origin, STORAGE, ...(chromePath ? ['--chrome', chromePath] : [])],
+    { stdio: ['ignore', 'inherit', 'inherit'], timeout: 60_000 }
+  );
+  return res.status === 0;
 }
 
 /** Returns whether this invocation produced a usable report for `name`. */
@@ -207,12 +252,33 @@ function resolveChrome() {
       .filter((d) => d.startsWith('chromium-') && !d.includes('headless'))
       .sort()
       .reverse();
+    // Playwright's Linux Chromium layout is chrome-linux/ (an older download
+    // shape was chrome-linux64/); the root `chromium` symlink points at the
+    // current one when present.
     for (const d of dirs) {
-      const bin = join(root, d, 'chrome-linux64', 'chrome');
-      if (existsSync(bin)) return bin;
+      for (const layout of ['chrome-linux', 'chrome-linux64']) {
+        const bin = join(root, d, layout, 'chrome');
+        if (existsSync(bin)) return bin;
+      }
     }
+    const symlink = join(root, 'chromium');
+    if (existsSync(symlink)) return symlink;
   }
-  return null; // let chrome-launcher find a system install
+  return null;
+}
+
+// Off-sandbox fallback: the seeder launches through Playwright, and Lighthouse
+// must open the seeded profile with the same binary — a profile written by a
+// newer Chromium is refused by an older system Chrome — so both get this path
+// rather than leaving Lighthouse to chrome-launcher's own search.
+async function playwrightChromePath() {
+  try {
+    const { chromium } = await import('@playwright/test');
+    const bin = chromium.executablePath();
+    return existsSync(bin) ? bin : null;
+  } catch {
+    return null;
+  }
 }
 
 function printSummary(names) {
@@ -267,7 +333,10 @@ function parseArgs(argv) {
   const out = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a.startsWith('--')) out[a.slice(2)] = argv[i + 1]?.startsWith('--') ? true : argv[++i];
+    if (!a.startsWith('--')) continue;
+    const next = argv[i + 1];
+    // A trailing or flag-followed switch is boolean; anything else takes a value.
+    out[a.slice(2)] = next === undefined || next.startsWith('--') ? true : argv[++i];
   }
   return out;
 }

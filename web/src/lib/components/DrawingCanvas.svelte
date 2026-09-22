@@ -307,7 +307,7 @@
     /* The texture is a low-alpha grain layer, so the theme only has to swap
        the color beneath it — same webp in light and dark. */
     background-color: var(--paper);
-    background-image: url('/icons/handmade-paper.webp');
+    background-image: var(--paper-texture);
     background-repeat: repeat;
   }
 

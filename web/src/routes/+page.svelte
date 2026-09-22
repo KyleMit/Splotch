@@ -168,11 +168,17 @@
       teardowns.forEach((teardown) => teardown());
     };
   });
+  // The app.html boot script stamps the persisted style before first paint, so
+  // the first run normally finds nothing to change. Measuring the canvas around
+  // a write that is not happening would only force a style recalc of the
+  // hydrated toolbar inside the boot task.
   $effect(() => {
     const toolbarStyle = settingsState.toolbarStyle;
     untrack(() => {
+      const root = document.documentElement;
+      if (root.dataset.toolbar === toolbarStyle) return;
       updateDrawingLayout(() => {
-        document.documentElement.dataset.toolbar = toolbarStyle;
+        root.dataset.toolbar = toolbarStyle;
       });
     });
   });

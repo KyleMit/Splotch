@@ -53,6 +53,16 @@ const profilingEsbuildOptions: import('vite').ESBuildOptions & {
   keepNames: boolean;
 } = { keepNames: true };
 
+// The paper-sheet texture is the drawing route's largest contentful paint. Served
+// as a file it is one more request queued behind the forty modulepreloaded
+// startup chunks on a slow connection; inlined into the route's CSS it arrives
+// with the document and the paint follows the first one. Only this file qualifies:
+// every other asset keeps Vite's default byte threshold (`undefined` here).
+const INLINED_TEXTURE_FILENAME = 'handmade-paper.webp';
+function inlineStartupTextures(filePath: string): boolean | undefined {
+  return filePath.endsWith(`/${INLINED_TEXTURE_FILENAME}`) ? true : undefined;
+}
+
 // Version semantics: ADR-0030; derivation + fallbacks live in ./buildVersion.ts.
 const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadataOncePerProcess({
   isCapacitor,
@@ -111,7 +121,7 @@ export default defineConfig({
     perfMarks,
     devHarness,
   }),
-  build: { target: BROWSER_TARGETS },
+  build: { target: BROWSER_TARGETS, assetsInlineLimit: inlineStartupTextures },
   // Profiling builds (PERF_MARKS=true) keep function names through minification
   // so the trace's CPU-sampler self-time is readable instead of mangled (`ci`).
   // No effect on shipping builds.

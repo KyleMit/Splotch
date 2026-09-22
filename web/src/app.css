@@ -104,6 +104,21 @@ body {
   --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
+/* The paper grain every paper surface paints: the drawing route's paper sheet
+   and clear-animation sheet, the bare toolbar's paper and glass panes, and the
+   /dev/notch frame. Vite inlines the file as a data URI (vite.config.ts,
+   inlineStartupTextures), so on the drawing route the largest contentful
+   paint's texture arrives with the document instead of as a request queued
+   behind the startup chunks. Declared here rather than on that route because a
+   `background` shorthand whose var() resolves to nothing is dropped whole,
+   colour included, wherever the route's declaration is absent; the cost is
+   the ~10 KB data URI in every route's inline CSS. paperTexture.test.ts keeps
+   the consumers on this property and the inlined file identical to the static
+   copy the export compositor and the styleguide load by URL. */
+:root {
+  --paper-texture: url('$lib/assets/handmade-paper.webp');
+}
+
 /* The Color Palette's declared extents, which the palette draws itself at and
    the Actions Panel sizes and offsets itself around — the landscape column's
    width and the portrait bar's height. actionButtonLayout.fallback.test.ts
@@ -1228,7 +1243,7 @@ html[data-ai-free-count]
   inset: 0;
   width: 100%;
   height: 100%;
-  background: var(--paper) url('/icons/handmade-paper.webp') repeat;
+  background: var(--paper) var(--paper-texture) repeat;
   animation: clear-sheet 560ms cubic-bezier(0.32, 0.02, 0.42, 1) forwards;
 }
 @keyframes clear-sheet {
@@ -1362,7 +1377,7 @@ html[data-ai-free-count]
 /* Bare is seeded by app.html before paint. Both styles reserve the same HUD
    edges so toggling does not move the swatches, actions, or corner overlays. */
 html[data-toolbar='bare'] .app-container {
-  background: var(--paper) url('/icons/handmade-paper.webp');
+  background: var(--paper) var(--paper-texture);
 }
 html[data-toolbar='bare'] .actions-panel .action-button,
 html[data-toolbar='bare'] .actions-panel .action-button:hover:not(:disabled):not(.disabled),

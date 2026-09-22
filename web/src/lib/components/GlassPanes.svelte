@@ -27,7 +27,7 @@
     pointer-events: none;
     z-index: var(--z-toolbar-paper);
     background-color: var(--paper);
-    background-image: url('/icons/handmade-paper.webp');
+    background-image: var(--paper-texture);
     mask-image: var(--glass-mask);
     mask-size: 100% 100%;
     mask-repeat: no-repeat;

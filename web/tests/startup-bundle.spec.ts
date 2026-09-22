@@ -100,6 +100,43 @@ test('the save pipeline stays out of the prerendered modulepreload list', () => 
   }
 });
 
+// The boot-hidden overlays (components/overlayChunk.ts) mount at idle, so their
+// stylesheet has no business in the prerendered head; lib/components/
+// overlayChunkLoader.ts is the dynamic-import hop that keeps SvelteKit from
+// inlining it. One scoped selector per dialog is the marker: a class name
+// survives the CSS build verbatim.
+const OVERLAY_CSS_MARKERS: Record<string, string> = {
+  'SettingsModal.svelte': '.settings-modal',
+  'ParentalGate.svelte': '.parental-gate',
+};
+
+test('the boot-hidden overlay stylesheet stays out of the prerendered head', () => {
+  const html = readFileSync(prerenderedIndex, 'utf8');
+  const inlineStyles = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+    .map((m) => m[1])
+    .join('\n');
+  expect(inlineStyles.length).toBeGreaterThan(0);
+  for (const [component, marker] of Object.entries(OVERLAY_CSS_MARKERS)) {
+    expect(
+      inlineStyles.includes(marker),
+      `${component} (marker "${marker}") is inlined into the prerendered head again — the overlay chunk is being imported at dynamic depth one`
+    ).toBe(false);
+  }
+});
+
+test('the overlay CSS markers still identify styles in the client build', () => {
+  const css = readdirSync(`${clientDir}/_app/immutable/assets`)
+    .filter((f) => f.endsWith('.css'))
+    .map((f) => readFileSync(`${clientDir}/_app/immutable/assets/${f}`, 'utf8'))
+    .join('\n');
+  for (const [component, marker] of Object.entries(OVERLAY_CSS_MARKERS)) {
+    expect(
+      css.includes(marker),
+      `marker "${marker}" for ${component} no longer appears in any built stylesheet — update OVERLAY_CSS_MARKERS`
+    ).toBe(true);
+  }
+});
+
 test('the save-module markers still identify code in the client build', () => {
   // Anti-vacuity check for the test above: if a marker string is renamed away,
   // it must fail loudly here instead of silently guarding nothing.

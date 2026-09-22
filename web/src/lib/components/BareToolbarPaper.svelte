@@ -29,14 +29,14 @@
   .rail-glass {
     inset: 0 auto 0 0;
     width: calc(var(--palette-landscape-width) + var(--safe-area-left));
-    background: var(--paper) url('/icons/handmade-paper.webp');
+    background: var(--paper) var(--paper-texture);
   }
   .fullscreen-glass {
     top: var(--safe-area-top);
     left: calc(var(--palette-landscape-width) + var(--safe-area-left));
     width: 114px;
     height: 114px;
-    background: var(--paper) url('/icons/handmade-paper.webp');
+    background: var(--paper) var(--paper-texture);
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='114' height='114'%3E%3Cfilter id='f' x='-50%25' y='-50%25' width='200%25' height='200%25'%3E%3CfeGaussianBlur stdDeviation='10'/%3E%3C/filter%3E%3Crect x='-44' y='-44' width='114' height='114' rx='18' filter='url(%23f)'/%3E%3C/svg%3E");
   }
   .margin-rule {
