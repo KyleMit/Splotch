@@ -25,6 +25,10 @@
     type EngineViewState,
   } from '$lib/drawing/engine';
 
+  // Added to the engine's own `RESIZE_SETTLE_MS` debounce so `resizeTo` resolves
+  // after the rebuild it triggers, not in the same tick the debounce fires.
+  const RESIZE_SETTLE_SLACK_MS = 50;
+
   let canvasEl: HTMLCanvasElement = $state()!;
   let wrapperEl: HTMLDivElement;
   let engine: ReturnType<typeof initDrawingCanvas> | null = null;
@@ -213,13 +217,15 @@
 
       // Resize the canvas box and fire the resize event the engine listens for,
       // so the spec can verify the tiled drawing survives a resize. The engine
-      // debounces the rebuild until the size
-      // settles, so resolve only after that window has passed.
+      // debounces the rebuild until the size settles, so resolve only after that
+      // window has passed.
       resizeTo(w: number, h: number) {
         wrapperEl.style.width = `${w}px`;
         wrapperEl.style.height = `${h}px`;
         window.dispatchEvent(new Event('resize'));
-        return new Promise<void>((resolve) => setTimeout(resolve, RESIZE_SETTLE_MS + 50));
+        return new Promise<void>((resolve) =>
+          setTimeout(resolve, RESIZE_SETTLE_MS + RESIZE_SETTLE_SLACK_MS)
+        );
       },
 
       // Rotation-while-backgrounded seam (issue #305): a hidden document fires
