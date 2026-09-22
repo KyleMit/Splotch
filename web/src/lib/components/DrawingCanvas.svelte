@@ -311,8 +311,10 @@
     background-repeat: repeat;
   }
 
+  /* The themed float shadow rather than a warm literal: its dark value carries
+     the hairline that gives the locked sheet an edge against the night margin. */
   .paper-sheet.paper-lifted {
-    box-shadow: 0 2px 14px rgb(93 84 68 / 18%);
+    box-shadow: var(--float-shadow);
   }
 
   /* The generated overlay carries only transparent black or white ink, so it
