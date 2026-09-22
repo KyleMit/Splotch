@@ -29,12 +29,42 @@ node .claude/skills/lighthouse-audit/run-audit.mjs \
   --url https://claude-my-branch--splotchy.netlify.app/
 ```
 
-| Flag       | Values                        | Default                            |
-| ---------- | ----------------------------- | ---------------------------------- |
-| `--url`    | any URL                       | `https://splotch.art/`             |
-| `--device` | `phone` \| `tablet` \| `both` | `both`                             |
-| `--visits` | `first` \| `repeat` \| `both` | `both`                             |
-| `--out`    | directory                     | `lighthouse-reports/` (gitignored) |
+| Flag            | Values                        | Default                            |
+| --------------- | ----------------------------- | ---------------------------------- |
+| `--url`         | any URL                       | `https://splotch.art/`             |
+| `--device`      | `phone` \| `tablet` \| `both` | `both`                             |
+| `--visits`      | `first` \| `repeat` \| `both` | `both`                             |
+| `--out`         | directory                     | `lighthouse-reports/` (gitignored) |
+| `--storage`     | `key=value;key=value`         | none                               |
+| `--save-assets` | flag                          | off                                |
+
+**Startup-setting variants (`--storage`).** A returning child's device boots from persisted settings
+— dark theme, bare toolbar, open drawer, a bigger button scale — and each changes the first paint
+(bare mode even moves the LCP element from `.paper-sheet` to `.rail-glass`). The flag seeds
+localStorage for the audited origin into the Chrome profile before that device's runs
+(`seed-storage.mjs`, through a page whose every request is answered locally, so the HTTP cache stays
+cold). Lighthouse 12 resets only file systems, shader cache, service workers, Cache Storage and the
+HTTP cache between runs, so the seed survives into a first visit. Keys are the `STORAGE_KEYS` values
+in `web/src/lib/storageKeys.ts`; confirm the seed took by decoding the report's `final-screenshot`
+(a dark run averages well under 100 per channel). Example:
+
+```bash
+node .claude/skills/lighthouse-audit/run-audit.mjs --device phone --visits first \
+  --storage "splotch-theme=dark;splotch-toolbar-style=bare;splotch-drawer-open=true"
+```
+
+**Reading a long task (`--save-assets`).** The flag keeps `<name>-0.trace.json` beside the report.
+Lighthouse's `long-tasks` and `bootup-time` attribute a task to the *first script URL on the stack*,
+which on this app is whichever tiny chunk happens to run first (a 670-byte safe-area helper got the
+whole 206 ms boot task). The trace's `RunTask` children tell the truth: `v8.evaluateModule` is
+module evaluation (the engine boot), `RunMicrotasks` under
+`BlinkScheduler_PerformMicrotaskCheckpoint` is SvelteKit hydration, and Lighthouse's trace carries
+no CPU samples. For function-level attribution run `npm run perf:web:mount` (its trace has the V8
+sampler) on a build made with `node tools/run-web-tool.mjs vite build --minify false` (then
+`--no-build`), and for the caller of a forced style recalc trace with
+`disabled-by-default-devtools.timeline.stack` so `UpdateLayoutTree` events carry a stack; the
+sampler's clock trails the trace clock by up to ~20 ms, which is enough to blame the wrong native
+call.
 
 **What's fixed** (the "slow device + slow internet" definition): Lighthouse's default mobile
 emulation — **simulated Slow 4G + 4× CPU throttle** — for every run. Form factors: **phone
@@ -153,6 +183,12 @@ background texture is already discoverable in the initial document and requested
 the `<div>` cannot itself take `fetchpriority`. Earlier builds used the painted canvas and had no
 LCP resource at all. Confirm the current LCP node plus `lcp-breakdown-insight` and request priority;
 only file this if a future LCP resource has meaningful discovery delay.
+
+**Sandbox Chrome:** the cloud sandbox's Playwright Chromium lives at
+`/opt/pw-browsers/chromium-<rev>/chrome-linux/chrome` (older downloads used `chrome-linux64`); the
+driver checks both and the root `chromium` symlink, and exits 1 when no run produced a report — an
+earlier version exited 0 with four failed cells, which a caller reading only the exit code took as
+success.
 
 **Variance:** `simulate` mode is not deterministic — Perf can swing ±15 points and TBT can double
 between identical runs (observed: phone-first Perf 84↔91, TBT 360↔560 ms across two production
