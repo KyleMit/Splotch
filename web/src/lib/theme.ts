@@ -29,6 +29,11 @@ export type ThemePreference = ResolvedTheme | 'system';
 
 export const THEME_DEFAULT: ThemePreference = 'system';
 
+// The one spelling of the OS query for JS call sites: appearance.svelte.ts
+// subscribes to it, and app.html's boot script re-types it — app.html.test.ts
+// fails on divergence. A typo evaluates to false and pins the app to light.
+export const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
+
 // Light keeps app.html's original white; dark is --app-bg.
 //
 // Written literally rather than read from design/tokens.ts, which is the

@@ -19,7 +19,12 @@
 import { untrack } from 'svelte';
 import { settingsState, type SettingsState } from './settings.svelte';
 import { colorsState, type ColorsState } from './colors.svelte';
-import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
+import {
+  DARK_SCHEME_QUERY,
+  resolveTheme,
+  type ResolvedTheme,
+  updateThemeColorMeta,
+} from '../theme';
 import {
   applyReducedMotion,
   REDUCED_MOTION_QUERY,
@@ -89,8 +94,7 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
     },
     install() {
       if (systemQuery) return;
-      // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
-      systemQuery = matchMedia('(prefers-color-scheme: dark)');
+      systemQuery = matchMedia(DARK_SCHEME_QUERY);
       appearance.systemDark = systemQuery.matches;
       systemQuery.addEventListener('change', onSystemChange);
       motionQuery = matchMedia(REDUCED_MOTION_QUERY);

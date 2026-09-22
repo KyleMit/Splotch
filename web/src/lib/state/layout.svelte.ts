@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
+import { PHONE_LANDSCAPE_QUERY, PORTRAIT_QUERY } from '$lib/breakpoints';
 import type { Orientation } from '$lib/platform';
 import { measureSafeAreaInsets, ZERO_INSETS, type SafeAreaInsets } from '$lib/platform/safeArea';
 import { readonlyValue } from './readonlyView';
@@ -145,8 +145,7 @@ export function createLayout(): LayoutState {
     install() {
       if (installed) return;
       installed = true;
-      // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
-      portraitQuery = window.matchMedia('(orientation: portrait)');
+      portraitQuery = window.matchMedia(PORTRAIT_QUERY);
       phoneLandscapeQuery = window.matchMedia(PHONE_LANDSCAPE_QUERY);
       syncViewportImmediately();
       window.addEventListener('resize', syncViewportOnResize);
