@@ -5,6 +5,14 @@ one canonical viewBox. Chroma classification lives here too, so the classifier a
 guard cannot disagree about which icons are colorful spot illustrations. The reviewable gallery of
 the shipped icon set is the app's own `/design` styleguide, not a generated page.
 
+## Icon sources
+
+The monochrome glyphs come from [Google Material Symbols](https://fonts.google.com/icons) (Rounded,
+weight 400, Apache-2.0), exported as SVG on Material's `0 -960 960 960` grid and rebased onto the
+canonical viewBox by `gen-icon-viewbox`. Spot illustrations are first-party. The hand-drawn
+replacements (`settings.svg`, `close.svg` so far) are authored directly on the canonical grid as a
+single `#1f1f1f` fill so they satisfy the monochrome guard in `Icon.svelte.test.ts` unchanged.
+
 ## Entry points
 
 | Entry point               | Public command             | Purpose                                        |

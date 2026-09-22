@@ -261,7 +261,13 @@ Two consequences worth knowing before styling one:
   empty states. `ErrorScreen.svelte` imports the stumped SVG directly to keep recovery independent
   of the icon registry. Her shared silhouette and brand fill are guarded by `dottie.test.ts`.
 * **Icons are first-party inline SVG** through `<Icon name="…">` — no icon font, no CDN set, no
-  emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked with
+  emoji-as-icons. The monochrome glyphs are
+  [Google Material Symbols](https://fonts.google.com/icons), **Rounded** style, weight 400, exported
+  as SVG and rebased onto the canonical grid (ADR-0125); the set is Apache-2.0, which needs no
+  attribution in the app. The spot illustrations (brushes, Dottie, the release marks) are drawn for
+  Splotch. The intended direction is a warmer hand-drawn set replacing the Material glyphs one at a
+  time through the same pipeline; `settings` and `close` are the pilot. Monochrome glyphs bake a
+  near-black fill and get re-inked with
   `fill: var(--icon-ink)` on themed surfaces; full-color "spot" icons carry their own palette and
   are **never tinted wholesale** — the split is the `COLOR_ICONS` set in `Icon.svelte`. Adding an
   icon: see the icon steps in `.claude/rules/svelte.md`.
