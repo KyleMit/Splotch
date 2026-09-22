@@ -101,7 +101,7 @@ import {
 } from './strokeSnapshot';
 import { registerDrawingEngineListeners, createResizeListener } from './engineListeners';
 import { scheduleIdle } from '../idle';
-import { PERF_MARKS } from './perf';
+import { PERF_MARKS, PERF_PLANT_COMMIT_MS } from './perf';
 import {
   adoptTiledRenderer,
   applyTiledView,
@@ -651,6 +651,12 @@ function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
   try {
     if (!commitTiledCommand()) return;
+    if (PERF_PLANT_COMMIT_MS > 0) {
+      const plantEnd = performance.now() + PERF_PLANT_COMMIT_MS;
+      while (performance.now() < plantEnd) {
+        // SPIKE (issue 1774): planted regression, see perf.ts.
+      }
+    }
     setCanUndo(true);
     callbacks.onStrokeEnd?.();
   } finally {

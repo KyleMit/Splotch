@@ -35,6 +35,8 @@ declare global {
   // marks for the profiling harness. Literal false in normal builds, so the
   // guarded blocks dead-code-eliminate and never reach production.
   const __PERF_MARKS__: boolean;
+  // SPIKE (issue 1774): planted commit-path regression in ms; 0 unless PERF_PLANT_COMMIT_MS is set.
+  const __PERF_PLANT_COMMIT_MS__: number;
   // Build-flag (PUBLIC_ENABLE_DEV_HARNESS=true) that keeps test/profiling
   // seams in opted-in bundles. Literal false in release builds.
   // CLIENT SEAM ONLY. Server-rendered modules stay in the server build, where

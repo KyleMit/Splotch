@@ -103,14 +103,20 @@ export default defineConfig({
     // own hostname; no effect on normal dev/build, only when TUNNEL_HOST is set.
     ...(process.env.TUNNEL_HOST ? { allowedHosts: [process.env.TUNNEL_HOST] } : {}),
   },
-  define: buildDefines({
-    appVersion: APP_VERSION,
-    buildTime: BUILD_TIME,
-    nativeApiBase: NATIVE_API_BASE,
-    isCapacitor,
-    perfMarks,
-    devHarness,
-  }),
+  define: {
+    ...buildDefines({
+      appVersion: APP_VERSION,
+      buildTime: BUILD_TIME,
+      nativeApiBase: NATIVE_API_BASE,
+      isCapacitor,
+      perfMarks,
+      devHarness,
+    }),
+    // SPIKE (issue 1774): a planted synchronous commit-path regression, in
+    // milliseconds, so the decision brief can show what the gate does and does
+    // not distinguish. Zero in every build that does not set it.
+    __PERF_PLANT_COMMIT_MS__: JSON.stringify(Number(process.env.PERF_PLANT_COMMIT_MS ?? 0)),
+  },
   build: { target: BROWSER_TARGETS },
   // Profiling builds (PERF_MARKS=true) keep function names through minification
   // so the trace's CPU-sampler self-time is readable instead of mangled (`ci`).
