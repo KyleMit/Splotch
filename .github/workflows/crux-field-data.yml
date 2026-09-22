@@ -1,0 +1,36 @@
+# SPIKE (issue 1440) — not wired to anything yet. Sketch of the "scheduled workflow" landing
+# option: read the CrUX field record for splotch.art once a month and keep it as a run artifact.
+# CrUX aggregates over a rolling 28-day window that updates daily, so anything more frequent than
+# weekly re-reads the same data. Needs one repository secret, CRUX_API_KEY (a Google Cloud API key
+# with the Chrome UX Report API enabled; the API is free at its default 150 queries/minute quota).
+name: CrUX field data
+
+on:
+  schedule:
+    - cron: '17 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  read:
+    name: Read CrUX for splotch.art
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-pnpm
+      - name: Query the CrUX API
+        env:
+          CRUX_API_KEY: ${{ secrets.CRUX_API_KEY }}
+        run: |
+          mkdir -p crux
+          for factor in ALL PHONE TABLET; do
+            node tools/read-crux-field-data.mjs --form-factor="$factor" | tee "crux/$factor.txt"
+            node tools/read-crux-field-data.mjs --form-factor="$factor" --json > "crux/$factor.json" || true
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: crux-field-data
+          path: crux/
