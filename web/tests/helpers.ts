@@ -225,6 +225,27 @@ export async function gotoApp(
   await waitForDrawableRenderedCanvas(page);
 }
 
+// ADR-0168 keeps one shallow history entry per open dialog and retires it with a
+// `history.back()` as the dialog closes. That traversal commits asynchronously,
+// and a reload issued while it is still pending is cancelled by it — Chromium
+// either aborts the reload's document request (net::ERR_ABORTED) or drops the
+// reload without issuing one, and Playwright then waits on a load that never
+// comes. So a spec that closes a dialog and then relaunches waits here for the
+// retired layers to leave history.state before it reloads. The marker key is
+// the web back handler's WEB_BACK_PAGE_STATE_KEY, repeated here because that
+// module imports $app/navigation and cannot load in the test process.
+export async function reloadAfterDialogClose(page: Page) {
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const marker = history.state?.['sveltekit:states']?.splotchBackNavigation;
+        return typeof marker?.dialogs === 'number' ? marker.dialogs : 0;
+      })
+    )
+    .toBe(0);
+  await page.reload();
+}
+
 export async function registerServiceWorkerAndControl(page: Page) {
   await page.evaluate(async () => {
     await navigator.serviceWorker.register('/sw.js');

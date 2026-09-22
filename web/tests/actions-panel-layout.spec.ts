@@ -304,7 +304,10 @@ test('AI-only drawer paints its count before the grant arrives', async ({ browse
   expect(pending.badgeCount).toBe('10');
 
   releaseGrant();
-  await expect(page.locator('#aiImageButton .free-count')).toBeVisible();
+  // The badge is painted from the cached count before the grant lands, so its
+  // visibility says nothing about which count it shows: wait for the granted
+  // number itself before reading the settled geometry.
+  await expect.poll(async () => (await startupPanelGeometry(page)).badgeCount).toBe('7');
   const settled = await startupPanelGeometry(page);
   expect(settled.badgeCount).toBe('7');
   expect(pending.count).toBe('1');
