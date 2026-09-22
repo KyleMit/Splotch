@@ -1,7 +1,7 @@
 import type { CommonIconName } from './components/iconTypes';
 import '$lib/components/deferredIcons';
 
-type ReleaseSection = 'New' | 'Improved' | 'Fixed';
+export type ReleaseSection = 'New' | 'Improved' | 'Fixed';
 
 export const RELEASE_SECTION_ICONS = {
   New: 'release-new',
