@@ -43,7 +43,7 @@ const ALLOWED = new Map(
 
 const SCAN_ROOTS = ['web/src', 'tools'];
 const SCAN_EXTENSIONS = /\.(ts|js|mjs|cjs|svelte|css|html|svg|json|md|ya?ml)$/;
-const EXCLUDED_DIRS = /(^|\/)(node_modules|legacy|ideas-exploration)(\/|$)/;
+const EXCLUDED_DIRS = /(^|\/)(node_modules|legacy)(\/|$)/;
 
 // Tracked files only. This guard polices *source* for drifted copies of a
 // palette hex, and a walk of the filesystem instead reads whatever the last

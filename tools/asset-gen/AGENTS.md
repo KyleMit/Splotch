@@ -141,10 +141,5 @@ carve-out):
   `night-fills.md` runbook and `retouch-line-art.mjs`, plus the history chronicle in
   `legacy/README.md`). Nothing in there is part of the current pipeline — `docs/pipeline.md` is the
   live runbook; borrow from legacy, don't follow it.
-* **`ideas-exploration/` is the frozen 2026-07 empirical burn-down of the old image-quality
-  backlog** (then `docs/IDEAS.md`, now GitHub issues labeled `area:asset-gen`) — one report,
-  evidence set, and (mostly) re-appliable patch per idea, plus a self-contained review dashboard
-  (`ideas-review.html`). Read its README before working an `area:asset-gen` issue: 24 of 25 ideas
-  were validated there; each report's `Status:` line records its current disposition and live-file
-  pointer, while the README scoreboard summarizes the promotion pass. Like `legacy/`, nothing in it
-  is live pipeline code.
+* **The 2026-07 `ideas-exploration` burn-down (25 validated ideas, their evidence and patches) lives
+  in the archive repository, not here** — `docs/gemini-3.1-migration.md` records what was promoted.

@@ -39,11 +39,9 @@ perf-profiles/evidence/**/index.json         text diff merge
 
 # Generated scrapbook bulk (ADR-0059). Each coloring-book proof sheet is a
 # multi-megabyte page of inlined renders written by `gen:coloring-book-proof-sheet`,
-# and `ideas-review.html` is written by `tools/asset-gen/ideas-exploration/build-review.mjs`;
 # together they make GitHub report the repo's primary language as HTML. The
 # proof-sheet hub and every other scrapbook entry page are authored against the
 # shared chrome and reviewed as ordinary diffs, so the rule targets the sheets by
 # path rather than the whole tree.
 scrapbook/coloring-book-proof-sheets/*.html          linguist-generated=true
 scrapbook/coloring-book-proof-sheets/index.html      linguist-generated=false
-tools/asset-gen/ideas-exploration/ideas-review.html  linguist-generated=true

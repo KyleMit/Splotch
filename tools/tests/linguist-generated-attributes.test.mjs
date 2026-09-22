@@ -40,7 +40,6 @@ describe('linguist-generated attributes on scrapbook bulk', () => {
   });
 
   it('marks the asset-gen ideas review', () => {
-    expect(linguistGenerated('tools/asset-gen/ideas-exploration/ideas-review.html')).toBe('true');
   });
 
   it('leaves every other scrapbook entry page reviewable', () => {

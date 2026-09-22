@@ -31,7 +31,6 @@ tools/store-drawings/generated/store-drawings.mjs
 web/tests/**/*-snapshots/
 *.svg
 # Frozen empirical run output; live pipeline configuration remains formatted.
-tools/asset-gen/ideas-exploration/**/*.json
 # Imported centerline evidence retains the producing Python serializer's stable shape.
 tools/centerline-tracing/benchmark/corpus/corpus.json
 tools/centerline-tracing/benchmark/metrics.json
@@ -39,7 +38,6 @@ tools/centerline-tracing/docs/source-manifest.json
 # Frozen review dashboard Prettier cannot round-trip: its reformatted output
 # fails its own HTML parser (raw ">" inside <pre> blocks), so formatting it
 # would leave the check permanently red.
-tools/asset-gen/ideas-exploration/ideas-review.html
 
 # Markdown is owned by dprint (dprint.json, ADR-0057) — permanently out of Prettier scope
 *.md
