@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { COLOR_ICONS, SELF_TINTING_ICON_NAMES } from './Icon.svelte';
 import { COLORFUL_ICONS } from './icon-meta';
+import type { CommonIconName } from './iconTypes';
 import { iconNameFromPath } from './iconTypes';
 import { isSpot, paintedValues } from '../../../../tools/icons/lib/icon-chroma.mjs';
 import { themes } from '../design/tokens';
@@ -73,7 +74,7 @@ describe('monochrome icon fill', () => {
 
   const monochrome = Object.keys(svgs)
     .map(iconNameFromPath)
-    .filter((name) => !COLOR_ICONS.has(name))
+    .filter((name) => !COLOR_ICONS.has(name as CommonIconName))
     .sort();
   const unpainted = monochrome.filter((name) => NO_PAINT_EXCEPTIONS.has(name));
   const painted = monochrome.filter((name) => !NO_PAINT_EXCEPTIONS.has(name));
