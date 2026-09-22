@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { ESLint } from 'eslint';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const eslint = new ESLint({ cwd: repoRoot });
@@ -12,6 +12,15 @@ const violations = async (fixture, source) => {
     (message) => message.ruleId === 'svelte/no-top-level-browser-globals'
   );
 };
+
+// The first lint of a web/src/**/*.ts path builds the type-aware project service for the whole
+// web/ program (the no-floating-promises block in eslint.config.js), which takes seconds on a
+// loaded runner and would otherwise land inside one test's own timeout.
+const PROJECT_SERVICE_WARMUP_TIMEOUT_MS = 60_000;
+
+beforeAll(async () => {
+  await violations('web/src/lib/state/warmup.svelte.ts', 'export const warm = 0;');
+}, PROJECT_SERVICE_WARMUP_TIMEOUT_MS);
 
 describe('the top-level browser-global guard', () => {
   it('rejects a browser-global read during Svelte component initialization', async () => {
