@@ -73,7 +73,16 @@ declare global {
   interface NetworkInformation extends EventTarget {
     effectiveType?: 'slow-2g' | '2g' | '3g' | '4g';
     saveData?: boolean;
-    type?: 'bluetooth' | 'cellular' | 'ethernet' | 'mixed' | 'none' | 'wifi' | 'wimax' | 'other' | 'unknown';
+    type?:
+      | 'bluetooth'
+      | 'cellular'
+      | 'ethernet'
+      | 'mixed'
+      | 'none'
+      | 'wifi'
+      | 'wimax'
+      | 'other'
+      | 'unknown';
   }
 
   interface Navigator {
