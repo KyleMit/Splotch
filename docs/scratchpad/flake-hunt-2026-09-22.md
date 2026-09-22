@@ -172,6 +172,23 @@ synchronous prelude of `generateAiImage` (modal launch, canvas export start) hel
 thread for 30 s. Isolated amplifier 0/10, absent from CI. Recorded, not filed: one event with no
 mechanism is a rate of 1 in 10,860 executions, not a flake with a shape.
 
+## The fix PR and its review
+
+PR \#2143 (`claude/flake-fixes-2026-09-22`, three commits on d8a8102) carries the three spec fixes.
+CI was green on every push, with no retried pass on the shards that carry the fixed specs. The Codex
+rival (`run-rival-agent`, round 1, thread 01a0c771…) read the five-file diff, ran `npm run check` in
+its sandbox and the five changed scenarios through the broker at 2 workers (5 passed), and returned
+no findings: it judged the history-state poll to observe the committed traversal, the drawing guard
+harmless to it (`dialogs: 0`), the marker duplication justified by the source module's
+`$app/navigation` import, the gate listener correctly ordered, and the badge poll the right outcome;
+its one caution — that a targeted pass is not proof under contention — is what sweep 2 below
+answers. Two cloud-session wrinkles for the next handler: the launcher's `--base main` resolves
+against the *local* `main`, which was 10 commits stale here, so the packet diff spanned 348 files
+until the rival's first broker request (a `gh pr view` the VM cannot run) was declined with the PR's
+real range; `git branch -f main origin/main` before launching avoids it. And the posted review
+carries the marker with the launcher's base, not the PR's, because the relay keeps the rival's own
+scope honest.
+
 ## Vitest and smoke tiers
 
 (Filled in after the runs.)
