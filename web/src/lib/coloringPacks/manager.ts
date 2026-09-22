@@ -18,12 +18,6 @@ import { COLORING_PACK_POLICY_EVENT, COLORING_PACK_REMOVE_EVENT } from './policy
 import { currentColoringPackResolution } from './resolution';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 
-interface NetworkInformationLike extends EventTarget {
-  effectiveType?: string;
-  saveData?: boolean;
-  type?: string;
-}
-
 async function fetchManifest(signal?: AbortSignal): Promise<ColoringPackManifest> {
   const response = await fetch(coloringPackManifestPath(__APP_VERSION__), {
     cache: 'no-store',
@@ -39,14 +33,10 @@ async function createStore(): Promise<ColoringPackStore> {
     : (await import('./webStore')).createWebColoringPackStore();
 }
 
-function connection(): NetworkInformationLike | undefined {
-  return (navigator as Navigator & { connection?: NetworkInformationLike }).connection;
-}
-
 function automaticDownloadAllowed(): boolean {
   if (!settingsState.coloringBookEnabled) return false;
   if (__IS_CAPACITOR__ || settingsState.coloringPacksAllowMetered) return true;
-  const network = connection();
+  const network = navigator.connection;
   if (!network) return true;
   if (network.saveData || network.type === 'cellular') return false;
   return network.effectiveType !== 'slow-2g' && network.effectiveType !== '2g';
@@ -176,7 +166,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
   const requestWhenVisible = () => {
     if (document.visibilityState === 'visible') requestRun();
   };
-  const network = connection();
+  const network = navigator.connection;
   const cancelActiveWork = () => {
     controller?.abort();
     void activeStore?.cancel().catch((error) => {
