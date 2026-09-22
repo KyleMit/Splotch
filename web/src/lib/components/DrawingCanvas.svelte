@@ -39,6 +39,7 @@
   } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
   import { scheduleIdle } from '$lib/idle';
+  import { prefersReducedMotion } from '$lib/platform/reducedMotion';
   import { prefetchImages } from '$lib/imagePrefetch';
   import FullscreenToggle from './FullscreenToggle.svelte';
   import LiveSurface from './LiveSurface.svelte';
@@ -192,13 +193,25 @@
   // decoded source at its paper-sized layout. A theme sibling has identical
   // registration, so it keeps the current art visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
+  // A cleared page stays on the paper through its exit: the art it was showing
+  // lifts off (.retiring) before the element takes `hidden`.
+  let retiringOverlayUrl = $state<string | null>(null);
+  // The reduced-motion answer captured as the art's arrival or exit starts, so
+  // a live setting change cannot restart either on the mounted image.
+  let overlayMotionStartedReduced = $state(false);
 
   $effect(() => {
     const url = themedOverlayUrl;
     if (!url) {
+      const shown = untrack(() => displayedOverlayUrl);
+      if (shown) {
+        overlayMotionStartedReduced = prefersReducedMotion();
+        retiringOverlayUrl = shown;
+      }
       displayedOverlayUrl = null;
       return;
     }
+    retiringOverlayUrl = null;
     const displayed = untrack(() => displayedOverlayUrl);
     if (!displayed || pageCompositionKey(displayed) !== pageCompositionKey(url)) {
       displayedOverlayUrl = null;
@@ -211,12 +224,33 @@
     // state a direct src assignment would have.
     const show = () => {
       if (!stale) {
+        if (!untrack(() => displayedOverlayUrl)) {
+          overlayMotionStartedReduced = prefersReducedMotion();
+        }
         displayedOverlayUrl = url;
       }
     };
     img.decode().then(show, show);
     return () => {
       stale = true;
+    };
+  });
+
+  // Release the cleared page once its exit has played. Awaiting the element's
+  // own animations rather than listening for animationend means a page with no
+  // exit running at all is released too, instead of staying on the paper.
+  let overlayEl: HTMLImageElement | undefined = $state();
+  $effect(() => {
+    const retiring = retiringOverlayUrl;
+    if (!retiring || !overlayEl) return;
+    let abandoned = false;
+    void Promise.all(
+      overlayEl.getAnimations().map((animation) => animation.finished.catch(() => undefined))
+    ).then(() => {
+      if (!abandoned && retiringOverlayUrl === retiring) retiringOverlayUrl = null;
+    });
+    return () => {
+      abandoned = true;
     };
   });
 
@@ -269,12 +303,15 @@
     <img
       class="coloring-overlay"
       class:overlay-ready={!!displayedOverlayUrl}
+      class:retiring={!!retiringOverlayUrl}
+      data-start-reduced-motion={overlayMotionStartedReduced ? '' : undefined}
       id={COLORING_OVERLAY_ID}
-      src={displayedOverlayUrl ?? ''}
+      src={displayedOverlayUrl ?? retiringOverlayUrl ?? ''}
       decoding="async"
       data-canonical-url={themedOverlayUrl ?? undefined}
       alt=""
-      hidden={!overlayUrl()}
+      hidden={!overlayUrl() && !retiringOverlayUrl}
+      bind:this={overlayEl}
     />
   </div>
   <LiveSurface bind:canvasEl {paperView} erasing={toolState.brush === 'eraser'} />
@@ -344,8 +381,70 @@
     opacity: 0;
   }
 
+  /* The page settles onto the paper rather than appearing in a frame: a fade
+     with a slight scale-down, transform and opacity only because the paper may
+     still be settling underneath. `both` holds the first frame so the art never
+     shows at full size before it animates. It replays on a composition change
+     (a blank-canvas rotation re-gates the art) but not on a theme sibling,
+     which keeps overlay-ready throughout. */
   .coloring-overlay.overlay-ready {
     opacity: 1;
+    animation: page-land var(--duration-slow) var(--ease-glide) both;
+  }
+
+  @keyframes page-land {
+    0% {
+      opacity: 0;
+      transform: scale(1.025);
+    }
+    55% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* A cleared page lifts off. The element is only held for this exit; the
+     script releases it once the animation finishes. */
+  .coloring-overlay.retiring {
+    animation: page-leave var(--duration-exit) var(--ease-glide) forwards;
+  }
+
+  @keyframes page-leave {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.985);
+    }
+  }
+
+  /* Calm twins, stamped when the cue starts: opacity only, no scale. */
+  .coloring-overlay.overlay-ready[data-start-reduced-motion] {
+    animation: overlay-fade-in var(--duration-base) ease both;
+  }
+
+  .coloring-overlay.retiring[data-start-reduced-motion] {
+    animation: overlay-fade-out var(--duration-base) ease forwards;
+  }
+
+  @keyframes overlay-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes overlay-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
   }
 
   .coloring-overlay[hidden] {

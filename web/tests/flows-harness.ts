@@ -367,6 +367,13 @@ export async function applyFarmPage(page: Page) {
     'data-canonical-url',
     /\.(?:dark\.)?overlay\.svg$/
   );
+  // The art settles onto the paper with a short scale-down, so a box or pixel
+  // read before it lands measures the arrival rather than the page.
+  await page
+    .locator('#coloringOverlay')
+    .evaluate((el) =>
+      Promise.all(el.getAnimations().map((animation) => animation.finished.catch(() => undefined)))
+    );
 }
 
 // Settings is a section list — a table-of-contents entry on tablet/desktop, a
