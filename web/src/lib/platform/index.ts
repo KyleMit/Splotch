@@ -10,6 +10,17 @@ const APP_LIKE_DISPLAY_MODE_QUERIES = [
   '(display-mode: minimal-ui)',
 ] as const;
 
+// A hand-held device rather than a monitor: the primary input is a finger, so
+// the screen itself can turn. `pointer` reports the primary pointer only, which
+// is why a touchscreen laptop driven by its mouse does not match.
+const COARSE_POINTER_QUERY = '(pointer: coarse)';
+
+// lib.dom declares `lock`/`unlock` as required members of ScreenOrientation, but
+// WebKit ships the interface without them, so the optional shape is the honest
+// one at this boundary. `lib/platform/orientation.ts` restates it for the call
+// itself; it cannot import this one without a cycle.
+type MaybeLockableScreenOrientation = ScreenOrientation & { lock?: unknown };
+
 // Capacitor injects a global `Capacitor` object both in the native runtime and
 // once @capacitor/core is loaded on the web. We read it off the global rather
 // than importing @capacitor/core here so this module stays safe to evaluate
@@ -120,10 +131,29 @@ export function getPlatform(): Platform {
  * window doesn't read as a phone. Every shipping iPhone is fullscreen-only and
  * stays well under 600 CSS px even in landscape, so the split is clean today; if
  * Apple ever brings windowing to the iPhone, revisit this (likely the behavioral
- * probe above). Web is left as-is (best-effort lock).
+ * probe above).
+ *
+ * On the web the question is instead whether the browser can rotate anything at
+ * all, and two independent facts have to hold:
+ *  - The Screen Orientation API's `lock()` has to exist. WebKit implements the
+ *    `ScreenOrientation` interface but not `lock()`/`unlock()`, so every iOS and
+ *    iPadOS browser — all of which run WebKit — can never honor the choice.
+ *  - The primary pointer has to be coarse, i.e. a device held in a hand rather
+ *    than a monitor on a desk. Desktop Chrome and Firefox expose `lock()` and
+ *    reject every call, so the capability check alone would leave the picker on
+ *    a screen that cannot turn. This is also what makes the picker reappear
+ *    under a browser's mobile-device emulation, which is where it gets tested.
+ *
+ * A behavioral probe is not an option here either: headless Chromium resolves
+ * `lock()` on a desktop viewport, and the call is async besides.
  */
 export function supportsOrientationLock(): boolean {
   if (!browser) return false;
-  if (!isNative()) return true;
+  if (!isNative()) {
+    return (
+      typeof (window.screen.orientation as MaybeLockableScreenOrientation | undefined)?.lock ===
+        'function' && window.matchMedia?.(COARSE_POINTER_QUERY).matches === true
+    );
+  }
   return Math.min(window.screen.width, window.screen.height) < TABLET_MIN_SIDE_PX;
 }
