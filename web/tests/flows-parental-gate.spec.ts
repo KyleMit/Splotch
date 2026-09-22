@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   gotoApp,
   openSettingsModal,
+  reloadAfterDialogClose,
   retryOpen,
   seedAiEnabled,
   seedParentalGatePolicies,
@@ -309,7 +310,7 @@ test('Parent Center is gated before its controls appear and persists every featu
   await page.locator(UNPROTECTED_CONFIRM).getByRole('button', { name: 'Turn it off' }).click();
 
   await settings.getByRole('button', { name: 'Close' }).click();
-  await page.reload();
+  await reloadAfterDialogClose(page);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
   const reopened = await openSettingsModal(page);
   await reopened.getByRole('button', { name: 'Parent Center' }).click();

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openSettingsModal } from './helpers';
+import { openSettingsModal, reloadAfterDialogClose } from './helpers';
 import { openArmedParentCenter, policyPicker } from './flows-harness';
 
 // Settings itself is deliberately reachable without a challenge (ADR-0094), so
@@ -30,7 +30,7 @@ test('cancelling the warning leaves the Parent Center check as it was', async ({
 
   // Nothing was persisted, so the check is still standing after a relaunch.
   await settings.getByRole('button', { name: 'Close' }).click();
-  await page.reload();
+  await reloadAfterDialogClose(page);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
   const reopened = await openSettingsModal(page);
   await reopened.getByRole('button', { name: 'Parent Center' }).click();
@@ -70,7 +70,7 @@ test('the standing warning survives a relaunch and asks nothing of the mode it i
   await page.locator(UNPROTECTED_CONFIRM).getByRole('button', { name: 'Turn it off' }).click();
   await settings.getByRole('button', { name: 'Close' }).click();
 
-  await page.reload();
+  await reloadAfterDialogClose(page);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
   const reopened = await openSettingsModal(page);
   await reopened.getByRole('button', { name: 'Parent Center' }).click();
