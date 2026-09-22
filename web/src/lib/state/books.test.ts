@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BOOKS,
   COLORING_IMAGE_SIZES,
+  MODAL_FULL_WIDTH_VW,
   bookAssetPaths,
   bookPackAssetPaths,
   coloringBookGridLayout,
@@ -33,6 +34,7 @@ const activePageChipComponent = readFileSync(
   'utf8'
 );
 const tokensCss = readFileSync(new URL('../../tokens.css', import.meta.url), 'utf8');
+const appCss = readFileSync(new URL('../../app.css', import.meta.url), 'utf8');
 
 function spacingTokenPx(token: string): number {
   const value = new RegExp(`--${token}: (\\d+)px`).exec(tokensCss)?.[1];
@@ -188,7 +190,7 @@ describe('responsive image sources', () => {
 
   it('keeps picker sizes aligned with the modal grid geometry', () => {
     for (const ownedCssValue of [
-      'max-width: min(920px, calc(100vw - 32px))',
+      'width: min(var(--modal-full-width), 920px)',
       '--book-grid-max-width: 856px',
       '--book-cols: 4',
       '@media (max-width: 520px)',
@@ -203,8 +205,16 @@ describe('responsive image sources', () => {
       hasOrphan: true,
       imageSizes: COLORING_IMAGE_SIZES.coverThumbnail.orphan,
     });
-    expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain('(90vw - 100px) / 4');
-    expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
+    const gutter = appCss.match(/--modal-gutter:\s*max\((\d+(?:\.\d+)?)vw,\s*\d+px\)/);
+    expect(gutter, 'app.css declares --modal-gutter as max(<n>vw, <n>px)').not.toBeNull();
+    expect(appCss).toMatch(/--modal-full-width:\s*calc\(100vw - 2 \* var\(--modal-gutter\)\)/);
+    expect(MODAL_FULL_WIDTH_VW).toBe(100 - 2 * Number(gutter![1]));
+    expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain(
+      `(${MODAL_FULL_WIDTH_VW}vw - 100px) / 4`
+    );
+    expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain(
+      `(${MODAL_FULL_WIDTH_VW}vw - 88px) / 3`
+    );
     for (const ownedCssValue of [
       '.coloring-pages-grid {',
       '--page-cols: 2',
@@ -224,10 +234,10 @@ describe('responsive image sources', () => {
     const wideLandscapeChromePx =
       2 * spacingTokenPx('space-7') + spacingTokenPx('space-3') + scrollbarReservePx;
     expect(COLORING_IMAGE_SIZES.pageSelector.portrait).toBe(
-      `(max-width: 520px) calc((90vw - ${narrowChromePx}px) / 2), min(calc((90vw - ${widePortraitChromePx}px) / 3), 272px)`
+      `(max-width: 520px) calc((${MODAL_FULL_WIDTH_VW}vw - ${narrowChromePx}px) / 2), min(calc((${MODAL_FULL_WIDTH_VW}vw - ${widePortraitChromePx}px) / 3), 272px)`
     );
     expect(COLORING_IMAGE_SIZES.pageSelector.landscape).toBe(
-      `(max-width: 520px) calc((90vw - ${narrowChromePx}px) / 2), min(calc((90vw - ${wideLandscapeChromePx}px) / 2), 414px)`
+      `(max-width: 520px) calc((${MODAL_FULL_WIDTH_VW}vw - ${narrowChromePx}px) / 2), min(calc((${MODAL_FULL_WIDTH_VW}vw - ${wideLandscapeChromePx}px) / 2), 414px)`
     );
     expect(coloringBookComponent).toContain(
       'pageSelectorImageSource(page, orientation, resolvedTheme())'

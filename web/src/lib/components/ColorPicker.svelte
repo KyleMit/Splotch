@@ -203,7 +203,7 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-pop);
     width: fit-content;
-    max-width: 90vw;
+    max-width: var(--modal-full-width);
     max-height: 90vh;
     overflow: hidden;
     padding: 0;
@@ -239,8 +239,8 @@
      1000px is LARGE_TABLET_MIN_SIDE_PX, which a CSS media query cannot import —
      the agreement with it, and with the other roomy dialogs' matching steps, is
      held by dialogTabletScaling.test.ts. The factor is the fit at the corner of
-     that floor: a 1000px-wide window caps the grid at 90vw, which the widest
-     row reaches at 1.52. */
+     that floor: a 1000px-wide window caps the grid at 920px (its
+     --modal-full-width), which the widest row reaches at 1.52. */
   @media (min-width: 1000px) and (min-height: 1000px) {
     .picker {
       --hex-scale: 1.3;
@@ -389,44 +389,46 @@
     }
   }
 
-  /* WIDTH — c columns fit while 90vw ≥ 60·c + 63 (60px column pitch + 31px
-     row offset + 32px padding; measured 603px at 9 columns), stepping at
-     (60c + 63) / 0.9 rounded up to the next 5px and then one 5px step further
-     — except the 4-column step, which stops at that first multiple of 5
-     (HEX_GRID_COLUMN_RULE and its one exception in HEX_GRID_COLUMN_LADDER).
-     Every row loses the same positions, so column trims never need offset
-     bookkeeping. Floor: 2 columns (c1 + c9). */
-  @media (max-width: 674.98px) {
+  /* WIDTH — c columns fit while the dialog's width cap ≥ 60·c + 63 (60px
+     column pitch + 31px row offset + 32px padding; measured 603px at 9
+     columns). The cap is --modal-full-width: 92vw, or 100vw − 32px below
+     400px where the gutter's 16px floor binds. Each step is the narrowest
+     viewport that clears it, rounded up to the next 5px and then one 5px
+     step further — except the 4-column step, which stops at that first
+     multiple of 5 (HEX_GRID_COLUMN_RULE and its one exception in
+     HEX_GRID_COLUMN_LADDER). Every row loses the same positions, so column
+     trims never need offset bookkeeping. Floor: 2 columns (c1 + c9). */
+  @media (max-width: 659.98px) {
     .c2 {
       display: none;
     }
   }
-  @media (max-width: 609.98px) {
+  @media (max-width: 594.98px) {
     .c4 {
       display: none;
     }
   }
-  @media (max-width: 544.98px) {
+  @media (max-width: 529.98px) {
     .c6 {
       display: none;
     }
   }
-  @media (max-width: 474.98px) {
+  @media (max-width: 464.98px) {
     .c8 {
       display: none;
     }
   }
-  @media (max-width: 409.98px) {
+  @media (max-width: 399.98px) {
     .c3 {
       display: none;
     }
   }
-  @media (max-width: 339.98px) {
+  @media (max-width: 334.98px) {
     .c7 {
       display: none;
     }
   }
-  @media (max-width: 274.98px) {
+  @media (max-width: 279.98px) {
     .c5 {
       display: none;
     }

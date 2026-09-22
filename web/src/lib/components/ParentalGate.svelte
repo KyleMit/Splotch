@@ -125,7 +125,7 @@
 
 <style>
   .parental-gate {
-    width: min(92vw, 336px);
+    width: min(var(--modal-full-width), 336px);
     border-radius: var(--radius-lg);
   }
 
@@ -254,7 +254,7 @@
      problem, and everything a parent taps and reads shares one screen. */
   @media (orientation: landscape) and (max-height: 599px) {
     .parental-gate {
-      width: min(94vw, 560px);
+      width: min(var(--modal-full-width), 560px);
     }
 
     .gate-content {
@@ -332,7 +332,7 @@
      target ratio rather than to fill the available room. */
   @media (min-width: 600px) and (min-height: 600px) {
     .parental-gate {
-      width: min(92vw, 420px);
+      width: min(var(--modal-full-width), 420px);
     }
 
     .gate-content {
@@ -361,7 +361,7 @@
      inside them can follow. */
   @media (min-width: 1000px) and (min-height: 1000px) {
     .parental-gate {
-      width: min(92vw, 480px);
+      width: min(var(--modal-full-width), 480px);
     }
 
     .gate-content {

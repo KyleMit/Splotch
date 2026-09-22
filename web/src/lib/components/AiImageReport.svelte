@@ -388,7 +388,7 @@
 
   @media (max-height: 480px) and (orientation: landscape) {
     .ai-report-confirm.refusal {
-      width: min(92vw, 560px);
+      width: min(var(--modal-full-width), 560px);
     }
 
     .ai-report-confirm.refusal .ai-report-confirm-content {

@@ -113,7 +113,7 @@ for (const { w, h, rows, cols, label } of CASES) {
 
 // Above both ladders the room goes into the swatches instead of the backdrop.
 // The count must not move — the grid is already whole there — and the scaled
-// honeycomb must still fit inside the 90vw/90vh cap the dialog is clipped to,
+// honeycomb must still fit inside the width and 90vh caps the dialog is clipped to,
 // which `clipped` is what checks.
 for (const [orientation, w, h] of [
   ['portrait', 1032, 1376],

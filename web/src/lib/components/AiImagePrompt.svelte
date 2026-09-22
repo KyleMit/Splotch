@@ -91,8 +91,7 @@
 
 <style>
   .ai-prompt-modal {
-    max-width: 480px;
-    width: 90%;
+    width: min(var(--modal-full-width), 480px);
     max-height: 90vh;
     overflow-y: auto;
   }

@@ -104,17 +104,25 @@ const TALL_COVER_GRID_MEDIA = '(max-aspect-ratio: 4 / 5) and (min-width: 741px)'
  * pick anyway — while rounding down would ship a soft cover.
  */
 const TALL_COVER_SIZE = `${TALL_COVER_GRID_MEDIA} 25vh`;
+/**
+ * The dialog's width in viewport units: app.css's `--modal-full-width`, which
+ * `sizes` cannot read. Below the width where the gutter's pixel floor binds,
+ * this over-estimates the dialog by a few pixels, which the rounding-up
+ * rationale above already accepts. books.test.ts binds it to the token.
+ */
+export const MODAL_FULL_WIDTH_VW = 92;
+const modalWidthLessPx = (chromePx: number) => `(${MODAL_FULL_WIDTH_VW}vw - ${chromePx}px)`;
 export const COLORING_IMAGE_SIZES = {
   coverThumbnail: {
-    standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px`,
-    orphan: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px`,
+    standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc(${modalWidthLessPx(48)} / 2), (max-width: 740px) calc(${modalWidthLessPx(88)} / 3), (max-width: 1022px) calc(${modalWidthLessPx(100)} / 4), 205px`,
+    orphan: `${TALL_COVER_SIZE}, (max-width: 520px) calc(${modalWidthLessPx(48)} / 2), (max-width: 1022px) calc(${modalWidthLessPx(88)} / 3), 277px`,
   },
   // The wide clauses reserve 16px for the vertical scrollbar inside the
   // overflow-y dialog; books.test.ts binds that reserve and every other term
   // to the component's columns, gaps, padding, breakpoint, and width cap.
   pageSelector: {
-    portrait: '(max-width: 520px) calc((90vw - 40px) / 2), min(calc((90vw - 104px) / 3), 272px)',
-    landscape: '(max-width: 520px) calc((90vw - 40px) / 2), min(calc((90vw - 92px) / 2), 414px)',
+    portrait: `(max-width: 520px) calc(${modalWidthLessPx(40)} / 2), min(calc(${modalWidthLessPx(104)} / 3), 272px)`,
+    landscape: `(max-width: 520px) calc(${modalWidthLessPx(40)} / 2), min(calc(${modalWidthLessPx(92)} / 2), 414px)`,
   },
   activePageChip: '36px',
 } as const;

@@ -284,7 +284,7 @@ body {
    choices lay out differently. Parent Center's unprotected-check confirmation,
    the AI report confirmation, and Leave Splotch. */
 .confirm-card {
-  width: min(92vw, 336px);
+  width: min(var(--modal-full-width), 336px);
 }
 
 .confirm-card-content {
@@ -345,6 +345,18 @@ body {
    this only reaches inside modal shells. */
 :where(.modal-shell) :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg {
   fill: var(--icon-ink);
+}
+
+/* Every dialog card keeps the same clearance from a phone's side edges: 4vw
+   reads as one proportion across phone widths, and the 16px floor keeps the
+   narrowest phones from pressing a card against the edge. A card's width is
+   min(var(--modal-full-width), <its own cap>), so the cap is the only thing a
+   dialog still decides for itself. ColorPicker's column-trim ladder is derived
+   from this same pair in design/trimGeometry.ts (HEX_GRID_GEOMETRY.widthGutter),
+   and trimGeometry.test.ts reads both sides. */
+:root {
+  --modal-gutter: max(4vw, 16px);
+  --modal-full-width: calc(100vw - 2 * var(--modal-gutter));
 }
 
 /* The close disc's touch-target size and its inset from the modal's top-right
