@@ -16,13 +16,20 @@
 //   npm run gen:coloring-punched-fills                     punch every raw fill
 //   npm run gen:coloring-punched-fills -- nature farm      only these categories
 //   npm run gen:coloring-punched-fills -- nature/ant-wide  one page (both variants)
+//   npm run gen:coloring-punched-fills -- --check          re-derive in memory, fail on any
+//                                                          shipped fill whose bytes differ
+//
+// --check is the freshness gate the sha256 manifest cannot be: the manifest pins
+// what is committed, this proves the committed fill IS the punch of the committed
+// raw against the committed line art (issue 247).
 import { parseArgs } from 'node:util';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { fail } from '../lib/asset-cli.mjs';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, toPosix } from '../lib/asset-paths.mjs';
-import { punchFill } from '../lib/punch-fill.mjs';
+import { punchFill, derivePunchedFill } from '../lib/punch-fill.mjs';
+import { readFile } from 'node:fs/promises';
 
 // Resolve args to raw fills (default: all). An arg is a category ("nature") or a
 // page ("nature/ant-wide" — both its light and night raws).
@@ -46,7 +53,10 @@ async function resolveArg(arg) {
   return matches;
 }
 
-const { positionals } = parseArgs({ allowPositionals: true });
+const {
+  positionals,
+  values: { check: checkMode },
+} = parseArgs({ allowPositionals: true, options: { check: { type: 'boolean' } } });
 const raws = (
   positionals.length ? (await Promise.all(positionals.map(resolveArg))).flat() : await rawsUnder()
 )
@@ -60,6 +70,26 @@ const raws = (
     return false;
   });
 if (!raws.length) fail(`No raw fills found under ${relative(REPO_ROOT, FILL_SRC_DIR)}/`);
+
+if (checkMode) {
+  const stale = [];
+  const started = Date.now();
+  for (const raw of raws) {
+    const { rel, out, bytes } = await derivePunchedFill(raw);
+    const shipped = await readFile(out).catch(() => null);
+    const verdict = !shipped ? 'MISSING' : shipped.equals(bytes) ? 'fresh' : 'STALE';
+    if (verdict !== 'fresh') stale.push(`${verdict} ${rel}`);
+    console.log(`${verdict.padEnd(7)} ${rel}`);
+  }
+  console.log(`\n${raws.length} fill(s) checked in ${((Date.now() - started) / 1000).toFixed(0)}s`);
+  if (stale.length)
+    fail(
+      `[punch --check] ${stale.length} shipped fill(s) are not the punch of their committed raw + line art:\n  ` +
+        stale.join('\n  ') +
+        '\nRun `npm run gen:coloring-punched-fills` and commit the result (then gen:assets:manifest).'
+    );
+  process.exit(0);
+}
 
 for (const raw of raws) {
   const { rel, punched } = await punchFill(raw);

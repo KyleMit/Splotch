@@ -95,6 +95,14 @@ export function bleedUnderMask(rgb, mask, width, height) {
 // fills punch against {page}.dark.overlay.svg. Alpha is theme-independent, so both
 // paths share one threshold and ordinary source-over composition owns line color.
 export async function punchFill(rawPath) {
+  const { rel, out, bytes, punched } = await derivePunchedFill(rawPath);
+  await writeFile(out, bytes);
+  return { rel, out, punched };
+}
+
+// The pure derivation: raw + canonical line art -> encoded shipped bytes, no
+// write, so --check can compare against what is committed.
+export async function derivePunchedFill(rawPath) {
   const rel = toPosix(relative(FILL_SRC_DIR, rawPath));
   const shippedRel = rel.replace(/\.raw\.webp$/, '.webp');
   const penPath = join(COLORING_DIR, shippedRel.replace(/\.(light|night)\.webp$/, '.overlay.svg'));
@@ -120,6 +128,6 @@ export async function punchFill(rawPath) {
   bleedUnderMask(fill, mask, width, height);
 
   const out = join(COLORING_DIR, shippedRel);
-  await writeFile(out, await encodePunchedFill(fill, width, height));
-  return { rel: shippedRel, out, punched: punchedCount / (width * height) };
+  const bytes = await encodePunchedFill(fill, width, height);
+  return { rel: shippedRel, out, bytes, punched: punchedCount / (width * height) };
 }
