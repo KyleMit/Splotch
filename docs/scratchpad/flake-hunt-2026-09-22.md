@@ -176,6 +176,19 @@ mechanism is a rate of 1 in 10,860 executions, not a flake with a shape.
 
 (Filled in after the runs.)
 
+## Issue index
+
+| Issue  | Spec › test                                                                                                | Rate (4 workers, retries off)          | Classification                     |
+| ------ | ---------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------- |
+| \#2145 | `flows-parent-center-warning` › survives a relaunch; `flows-parental-gate` › persists every feature policy | 7/12 and 2/12; amplifier 4/20          | spec race, fixed in PR \#2143      |
+| \#2146 | `actions-panel-layout` › AI-only drawer paints its count before the grant arrives                          | 5/12; amplifier 0/10                   | spec race, fixed in PR \#2143      |
+| \#2147 | `web-back` › Back closes nested dialogs from the top down                                                  | 1/12; amplifier 0/10                   | spec race, fixed in PR \#2143      |
+| \#2148 | `privacy-parent-center` › Parent Center reached from privacy hydrates its persisted settings               | 4/12; amplifier 0/20                   | container-only (provisional), open |
+| \#2149 | `flows-parental-gate` › the bundled privacy page gates its provider terms link                             | 1/12 (4/13 in 2026-09); amplifier 0/20 | container-only (provisional), open |
+| \#2150 | `pwa-registration` precache bytes; `store-drawing-replay` replay parity                                    | 12/12 each, both hunts                 | container-only, deterministic      |
+
+`reduce-motion` › downloadButton cue (1/12) is recorded above and not filed.
+
 ## Post-run validation
 
 (Filled in at the end.)
