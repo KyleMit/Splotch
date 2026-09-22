@@ -104,10 +104,12 @@ const TALL_COVER_GRID_MEDIA = '(max-aspect-ratio: 4 / 5) and (min-width: 741px)'
  * pick anyway — while rounding down would ship a soft cover.
  */
 const TALL_COVER_SIZE = `${TALL_COVER_GRID_MEDIA} 25vh`;
-// Every clause starts from the dialog's width, 100vw less a --modal-gutter
+// Every clause starts from the dialog's width, 100vw less --modal-gutter-min
 // (app.css) on each side; a `sizes` attribute cannot read the custom property,
 // so the 32px lives inside each subtracted chrome term and books.test.ts binds
-// it to the stylesheet.
+// it to the stylesheet. On a landscape notched phone the gutter grows past the
+// floor and the hint over-estimates the slot, which only ever rounds up to the
+// candidate a sharper screen would pick.
 export const COLORING_IMAGE_SIZES = {
   coverThumbnail: {
     standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc((100vw - 80px) / 2), (max-width: 740px) calc((100vw - 120px) / 3), (max-width: 1022px) calc((100vw - 132px) / 4), 205px`,

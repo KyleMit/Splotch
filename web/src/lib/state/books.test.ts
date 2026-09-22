@@ -43,8 +43,8 @@ function spacingTokenPx(token: string): number {
 
 /** Both screen-edge gutters the dialog width subtracts from 100vw (app.css). */
 function dialogGuttersPx(): number {
-  const value = /--modal-gutter: (\d+)px/.exec(appCss)?.[1];
-  expect(value, 'modal-gutter').toBeDefined();
+  const value = /--modal-gutter-min: (\d+)px/.exec(appCss)?.[1];
+  expect(value, 'modal-gutter-min').toBeDefined();
   return 2 * Number(value);
 }
 
@@ -212,6 +212,9 @@ describe('responsive image sources', () => {
       hasOrphan: true,
       imageSizes: COLORING_IMAGE_SIZES.coverThumbnail.orphan,
     });
+    expect(appCss).toContain(
+      '--modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));'
+    );
     const guttersPx = dialogGuttersPx();
     expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain(
       `(100vw - ${guttersPx + 100}px) / 4`
