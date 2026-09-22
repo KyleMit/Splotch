@@ -280,13 +280,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await modal.locator('button[data-section="parentCenter"]').click();
     const track = modal.locator('.policy-picker').first();
     await expect(track).toBeVisible();
+    // The selected cell's fill is the travelling thumb beneath it, not the cell.
     await expect
       .poll(() =>
-        track.locator('.active').evaluate((option) => {
-          const style = getComputedStyle(option);
+        track.locator('.thumb').evaluate((thumb) => {
+          const style = getComputedStyle(thumb);
           const probe = document.createElement('span');
           probe.style.backgroundColor = 'var(--brand-solid)';
-          option.append(probe);
+          thumb.append(probe);
           const expected = getComputedStyle(probe).backgroundColor;
           probe.remove();
           return style.backgroundColor === expected;
@@ -297,7 +298,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const active = getComputedStyle(node.querySelector('.active')!);
       return {
         activeInk: active.color,
-        activeFill: active.backgroundColor,
+        activeFill: getComputedStyle(node.querySelector('.thumb')!).backgroundColor,
         idleInk: getComputedStyle(node.querySelector('.option:not(.active)')!).color,
         track: getComputedStyle(node).backgroundColor,
       };
