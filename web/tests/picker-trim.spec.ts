@@ -73,8 +73,8 @@ async function openPickerAt(page: Page, width: number, height: number): Promise<
       hexWidth = hexes[0]?.width ?? hexWidth;
     }
     // The caps are read back off the dialog's own computed style: the width
-    // cap is the shared --modal-full-width, not a fraction this spec could
-    // restate without drifting from app.css.
+    // cap is 100vw less the shared --modal-gutter on each side, not a fraction
+    // this spec could restate without drifting from app.css.
     const rect = dialog.getBoundingClientRect();
     const { maxWidth, maxHeight } = getComputedStyle(dialog);
     const clipped =

@@ -150,9 +150,9 @@ export function colorMenuTrimSteps(colorCount: number, firstRank: number): TrimS
 // ── ColorPicker ────────────────────────────────────────────────────────────
 // The hexagon honeycomb overlaps its rows and indents alternating ones, so the
 // two axes need different extents. Height is divided by the 90vh cap the grid
-// is sized against; width is inverted through the shared dialog gutter. Either
-// way the raw minimum lands off-pixel — so each step rounds up, and the tables
-// below carry the two hand-tightened exceptions.
+// is sized against; width adds the shared dialog gutter on each side. The
+// height minimum lands off-pixel, so each step rounds up, and the tables below
+// carry the two hand-tightened exceptions.
 
 export interface HexGridGeometry {
   /** Full hexagon height; later rows overlap and only add `rowPitchPx`. */
@@ -165,8 +165,8 @@ export interface HexGridGeometry {
   paddingPx: number;
   /** The grid is capped at 90vh, so a viewport buys only this fraction of height. */
   viewportHeightFraction: number;
-  /** app.css's --modal-gutter on each side: a fraction of viewport width with a pixel floor. */
-  widthGutter: { viewportFraction: number; floorPx: number };
+  /** app.css's --modal-gutter-min, the gutter on each side of the width cap. */
+  widthGutterPx: number;
 }
 
 export const HEX_GRID_GEOMETRY: HexGridGeometry = {
@@ -176,7 +176,7 @@ export const HEX_GRID_GEOMETRY: HexGridGeometry = {
   rowOffsetPx: 30,
   paddingPx: 32,
   viewportHeightFraction: 0.9,
-  widthGutter: { viewportFraction: 0.04, floorPx: 16 },
+  widthGutterPx: 16,
 };
 
 interface HexGridLadderRule {
@@ -218,11 +218,10 @@ const HEX_GRID_COLUMN_LADDER: readonly HexGridStep[] = [
   { count: 7 },
   { count: 6 },
   { count: 5 },
-  // Four columns need 334px (the gutter's floor binds there), and this step
-  // stops at the first multiple of 5 above that (335) instead of the second
-  // (340) its neighbours take — 1px of slack rather than 6px. The narrowest
-  // steps are the ones a small phone actually lands on, so the tighter fit
-  // buys one more column there.
+  // Four columns need 334px, and this step stops at the first multiple of 5
+  // above that (335) instead of the second (340) its neighbours take — 1px of
+  // slack rather than 6px. The narrowest steps are the ones a small phone
+  // actually lands on, so the tighter fit buys one more column there.
   { count: 4, slackSteps: 0 },
   { count: 3 },
 ];
@@ -235,14 +234,6 @@ function hexGridBreakpointPx(
   const roundedPx = Math.ceil(minViewportPx / rule.roundToPx) * rule.roundToPx;
   const slackSteps = step.slackSteps ?? rule.slackSteps;
   return justBelowPx(roundedPx + slackSteps * rule.roundToPx);
-}
-
-/** Narrowest viewport whose gutter-capped width still holds `contentPx`: the
- *  proportional gutter until the floor binds, then the floor on each side. */
-function minViewportWidthPx(contentPx: number, gutter: HexGridGeometry['widthGutter']): number {
-  const proportionalPx = contentPx / (1 - 2 * gutter.viewportFraction);
-  const floorBindsBelowPx = gutter.floorPx / gutter.viewportFraction;
-  return proportionalPx >= floorBindsBelowPx ? proportionalPx : contentPx + 2 * gutter.floorPx;
 }
 
 /** Height below which the honeycomb drops below `step.count` rows. */
@@ -265,7 +256,7 @@ function hexGridColumnMaxWidthPx(step: HexGridStep): number {
     HEX_GRID_GEOMETRY.rowOffsetPx +
     HEX_GRID_GEOMETRY.paddingPx;
   return hexGridBreakpointPx(
-    minViewportWidthPx(contentPx, HEX_GRID_GEOMETRY.widthGutter),
+    contentPx + 2 * HEX_GRID_GEOMETRY.widthGutterPx,
     HEX_GRID_COLUMN_RULE,
     step
   );

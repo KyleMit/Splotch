@@ -318,7 +318,8 @@
      those two it does is down to the device. */
   .coloring-book-modal {
     --coloring-book-modal-max-height: 85vh;
-    width: min(var(--modal-full-width), 920px);
+    width: calc(100vw - 2 * var(--modal-gutter));
+    max-width: 920px;
     max-height: var(--coloring-book-modal-max-height);
     overflow-y: auto;
     /* The dialog is the scrollport its ScrollCue sticks to, and .modal-shell
@@ -439,12 +440,15 @@
     pointer-events: none;
   }
 
-  /* The 28px bottom band reserves the overlaid .coloring-book-label's height
-     (its 20px line plus 4px of padding each side): snapping down risks the
-     caption covering the art, snapping up opens a gap. Functional, not scale
-     drift. */
+  /* The bottom band reserves the overlaid .coloring-book-label's box, and the
+     label fills exactly that band: snapping the reserve down risks the caption
+     covering the art, snapping it up opens a gap. Functional, not scale drift. */
+  .coloring-book-tile {
+    --cover-caption-height: 28px;
+  }
+
   .coloring-book-tile img {
-    padding: var(--space-2) var(--space-2) 28px var(--space-2);
+    padding: var(--space-2) var(--space-2) var(--cover-caption-height) var(--space-2);
     mix-blend-mode: var(--lineart-blend);
     filter: var(--lineart-filter);
   }
@@ -544,14 +548,17 @@
     left: 0;
     right: 0;
     bottom: 0;
-    padding: var(--space-1) var(--space-2);
+    height: var(--cover-caption-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--space-2);
     /* rgb fallback precedes the color-mix (docs/COMPATIBILITY.md); both follow
        the theme so the caption sits on the tile's own paper tone. */
     background: rgb(255 255 255 / 92%);
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
-    line-height: 20px;
     color: var(--text);
     text-align: center;
   }

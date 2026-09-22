@@ -128,7 +128,7 @@
        44px even where its visual treatment is a slim link or outline chip. */
     --ledger-target-min: 44px;
 
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border);
     border-radius: var(--radius-lg);
     overflow: hidden;
   }
@@ -146,7 +146,7 @@
     align-items: center;
     padding: 10px var(--space-2) 10px var(--space-5);
     background: var(--surface-2);
-    border-bottom: 1px solid var(--border);
+    border-bottom: var(--border-width) solid var(--border);
   }
 
   .ledger-head-row span {
@@ -163,7 +163,7 @@
     gap: var(--space-2);
     align-items: center;
     padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
-    border-bottom: 1px solid var(--border);
+    border-bottom: var(--border-width) solid var(--border);
   }
 
   .invite:last-child {

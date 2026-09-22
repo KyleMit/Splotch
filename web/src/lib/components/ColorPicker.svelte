@@ -203,7 +203,7 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-pop);
     width: fit-content;
-    max-width: var(--modal-full-width);
+    max-width: calc(100vw - 2 * var(--modal-gutter));
     max-height: 90vh;
     overflow: hidden;
     padding: 0;
@@ -239,8 +239,8 @@
      1000px is LARGE_TABLET_MIN_SIDE_PX, which a CSS media query cannot import —
      the agreement with it, and with the other roomy dialogs' matching steps, is
      held by dialogTabletScaling.test.ts. The factor is the fit at the corner of
-     that floor: a 1000px-wide window caps the grid at 920px (its
-     --modal-full-width), which the widest row reaches at 1.52. */
+     that floor: a 1000px-wide window caps the grid at 968px (100vw less the
+     16px --modal-gutter on each side), which the widest row reaches at 1.6. */
   @media (min-width: 1000px) and (min-height: 1000px) {
     .picker {
       --hex-scale: 1.3;
@@ -391,29 +391,29 @@
 
   /* WIDTH — c columns fit while the dialog's width cap ≥ 60·c + 63 (60px
      column pitch + 31px row offset + 32px padding; measured 603px at 9
-     columns). The cap is --modal-full-width: 92vw, or 100vw − 32px below
-     400px where the gutter's 16px floor binds. Each step is the narrowest
-     viewport that clears it, rounded up to the next 5px and then one 5px
-     step further — except the 4-column step, which stops at that first
-     multiple of 5 (HEX_GRID_COLUMN_RULE and its one exception in
-     HEX_GRID_COLUMN_LADDER). Every row loses the same positions, so column
-     trims never need offset bookkeeping. Floor: 2 columns (c1 + c9). */
-  @media (max-width: 659.98px) {
+     columns). The cap is 100vw less --modal-gutter on each side, 16px at its
+     floor (a notched phone's larger inset is not modelled: no such device is
+     narrow enough to reach a rung). Each step is that minimum rounded up to
+     the next 5px and then one 5px step further — except the 4-column step,
+     which stops at that first multiple of 5 (HEX_GRID_COLUMN_RULE and its one
+     exception in HEX_GRID_COLUMN_LADDER). Every row loses the same positions,
+     so column trims never need offset bookkeeping. Floor: 2 columns (c1 + c9). */
+  @media (max-width: 639.98px) {
     .c2 {
       display: none;
     }
   }
-  @media (max-width: 594.98px) {
+  @media (max-width: 579.98px) {
     .c4 {
       display: none;
     }
   }
-  @media (max-width: 529.98px) {
+  @media (max-width: 519.98px) {
     .c6 {
       display: none;
     }
   }
-  @media (max-width: 464.98px) {
+  @media (max-width: 459.98px) {
     .c8 {
       display: none;
     }

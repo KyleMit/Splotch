@@ -68,7 +68,10 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
     'srcset',
     /\/coloring\/max-240px\/farm\/.+\.selector\.webp 240w, .* 400w/
   );
-  await expect(pagePreview).toHaveAttribute('sizes', /min\(calc\(\(92vw - 92px\) \/ 2\), 414px\)/);
+  await expect(pagePreview).toHaveAttribute(
+    'sizes',
+    /min\(calc\(\(100vw - 124px\) \/ 2\), 414px\)/
+  );
   await expect(pagePreview).toHaveCSS('mix-blend-mode', 'normal');
   await expect(pagePreview).toHaveCSS('filter', 'none');
   await pageTiles.first().click();

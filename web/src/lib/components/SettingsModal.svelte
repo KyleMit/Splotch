@@ -284,13 +284,14 @@
        than silently clipping the list. */
     --wide-card-height-ceiling: 760px;
 
-    width: min(var(--modal-full-width), 500px);
+    width: calc(100vw - 2 * var(--modal-gutter));
+    max-width: 500px;
     max-height: var(--card-height-cap);
     overflow: hidden;
   }
 
   .settings-modal.wide {
-    width: min(var(--modal-full-width), 860px);
+    max-width: 860px;
   }
 
   /* The wide pane stacks every section, so its settled content overflows
@@ -311,7 +312,7 @@
   /* Landscape phone: wider than the portrait card (width is the plentiful
      axis there) but nowhere near the tablet two-pane. */
   .settings-modal.compact {
-    width: min(var(--modal-full-width), 640px);
+    max-width: 640px;
   }
 
   /* While the parent drags the Button Size slider, the modal melts away to just

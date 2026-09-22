@@ -263,20 +263,14 @@ body {
   transform-origin: center;
 }
 
-/* Shared modal card: centering, white surface, rounded corners, shadow, and
-   the phone-edge gutter as its width cap. Per-modal width (a min() of that cap
-   and the card's own), max-height, and overflow stay in each component. The
-   max-width is load-bearing even though every card's width already respects
-   the gutter: the UA stylesheet gives <dialog> a max-width of
-   calc(100% - 6px - 2em), a 19px inset at 16px type, which silently outranks
-   any narrower gutter on a phone unless the shell overrides it. */
+/* Shared modal card: centering, white surface, rounded corners, shadow.
+   Per-modal width/max-height/overflow stays in each component. */
 .modal-shell {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
-  max-width: var(--modal-full-width);
   background: var(--surface);
   border: none;
   border-radius: var(--radius-lg);
@@ -290,7 +284,8 @@ body {
    choices lay out differently. Parent Center's unprotected-check confirmation,
    the AI report confirmation, and Leave Splotch. */
 .confirm-card {
-  width: min(var(--modal-full-width), 336px);
+  width: calc(100vw - 2 * var(--modal-gutter));
+  max-width: 336px;
 }
 
 .confirm-card-content {
@@ -353,24 +348,29 @@ body {
   fill: var(--icon-ink);
 }
 
-/* Every dialog card keeps the same clearance from a phone's side edges: 4vw
-   reads as one proportion across phone widths, and the 16px floor keeps the
-   narrowest phones from pressing a card against the edge. A card's width is
-   min(var(--modal-full-width), <its own cap>), so the cap is the only thing a
-   dialog still decides for itself. ColorPicker's column-trim ladder is derived
-   from this same pair in design/trimGeometry.ts (HEX_GRID_GEOMETRY.widthGutter),
-   and trimGeometry.test.ts reads both sides. */
-:root {
-  --modal-gutter: max(4vw, 16px);
-  --modal-full-width: calc(100vw - 2 * var(--modal-gutter));
-}
-
 /* The close disc's touch-target size and its inset from the modal's top-right
    corner, plus the room a header must leave so its own content clears the disc
    — horizontally beside it, vertically below it. Global so the modal headers
    that reserve that room derive it from the button's own geometry instead of
    restating it. */
 :root {
+  /* The gap a phone-width dialog leaves to each screen edge. Every dialog that
+     stretches with the viewport sets `width: calc(100vw - 2 * var(--modal-gutter))`
+     and states its cap as max-width, so they all land at the same distance;
+     the gate and confirm cards share the gutter under their own narrow 336px
+     cap, and the colour picker takes it as the max-width its fit-content
+     honeycomb is clipped to (design/trimGeometry.ts derives the picker's
+     column-trim ladder from --modal-gutter-min; trimGeometry.test.ts binds the
+     two). The cap has to be an explicit max-width: the UA stylesheet gives a
+     <dialog> a max-width of calc(100% - 38px), and a width alone stays under it.
+
+     The gutter grows to the larger side inset so a card that stretches on a
+     landscape notched phone clears the cutout on both sides; the card is
+     centred, so one symmetric gutter is the only shape that can. `sizes` hints
+     cannot read a custom property, so books.ts restates the floor and
+     books.test.ts binds the two. */
+  --modal-gutter-min: 16px;
+  --modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));
   --modal-close-size: 44px;
   --modal-close-inset: var(--space-3);
   --modal-close-clearance-x: calc(

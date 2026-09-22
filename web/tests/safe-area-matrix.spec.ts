@@ -10,6 +10,7 @@ import {
 } from '../src/routes/dev/notch/lib/orientations';
 import { appliedInsets, diagnose } from '../src/routes/dev/notch/lib/diagnostics';
 import type { DeviceProfile } from '../src/routes/dev/notch/lib/deviceProfile';
+import { openColoringBookGrid, openDrawer } from './flows-harness';
 
 // The whole device matrix, driven through the one seam that emulates real
 // safe-area insets: CDP's Emulation.setSafeAreaInsetsOverride. Chromium only —
@@ -227,6 +228,24 @@ test.describe('safe-area matrix', () => {
         const extent = edge === 'top' ? box?.height : box?.width;
         expect(extent, `${edge} band extent`).toBeCloseTo(insets[edge], 0);
       }
+
+      // 5. A dialog that stretches with the viewport clears the side insets.
+      // The coloring picker is the widest card (920px cap), so on a landscape
+      // phone it is the one --modal-gutter has to hold off the cutout; a
+      // narrower card passes trivially, which keeps the assertion unconditional.
+      await openDrawer(page);
+      await openColoringBookGrid(page);
+      const dialog = page.locator('#coloring-book-dialog');
+      await dialog.evaluate((element) =>
+        Promise.all(element.getAnimations().map((animation) => animation.finished))
+      );
+      const dialogBox = await dialog.boundingBox();
+      expect(dialogBox, 'coloring dialog has no box').not.toBeNull();
+      if (!dialogBox) return;
+      expect(dialogBox.x, 'coloring dialog left edge').toBeGreaterThanOrEqual(safe.left);
+      expect(dialogBox.x + dialogBox.width, 'coloring dialog right edge').toBeLessThanOrEqual(
+        safe.right
+      );
     });
   }
 });
