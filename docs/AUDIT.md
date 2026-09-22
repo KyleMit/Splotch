@@ -12,15 +12,15 @@ Audited 2026-09-22 with Lighthouse 12.8.2 (simulated Slow 4G + 4× CPU) against 
 fixes in PR (see the log entry). Four production runs of the phone-first cell across this and the
 2026-07-22 audit spanned Perf 82–97, so single-run deltas under ~5 points are noise.
 
-| Cell                    | Production (before)                          | Preview (after)                             |
-| ----------------------- | -------------------------------------------- | ------------------------------------------- |
-| phone first             | Perf 94 · LCP 1.9 s · TBT 280 ms             | Perf 97 / 96 · LCP 1.8 s · TBT 160 / 230 ms |
-| phone repeat            | Perf 94 · LCP 1.4 s · TBT 280 ms             | Perf 98 · LCP 1.0 s · TBT 170 ms            |
-| tablet first            | Perf 97 · LCP 1.9 s · TBT 190 ms             | Perf 99 · LCP 1.4 s · TBT 140 ms            |
-| tablet repeat           | Perf 97 · LCP 0.9 s · TBT 210 ms             | Perf 98 · LCP 1.0 s · TBT 150 ms            |
-| phone first, dark theme | Perf 96 · LCP 1.8 s · TBT 200 ms             | Perf 97 · LCP 1.8 s · TBT 160 ms            |
-| phone first, bare       | Perf 98 · LCP 1.9 s · TBT 151 ms             | Perf 97 · LCP 1.8 s · TBT 170 ms            |
-| phone first, everything | Perf 96 · LCP 1.9 s · TBT 220 ms · CLS 0.016 | not re-run                                  |
+| Cell                    | Production (before)                          | Preview (after)                                    |
+| ----------------------- | -------------------------------------------- | -------------------------------------------------- |
+| phone first             | Perf 94 · LCP 1.9 s · TBT 280 ms             | Perf 98 / 96 / 98 · LCP 1.2 s · TBT 160–210 ms     |
+| phone repeat            | Perf 94 · LCP 1.4 s · TBT 280 ms             | Perf 99 · LCP 1.2 s · TBT 120 ms                   |
+| tablet first            | Perf 97 · LCP 1.9 s · TBT 190 ms             | Perf 97 · LCP 1.2 s · TBT 200 ms                   |
+| tablet repeat           | Perf 97 · LCP 0.9 s · TBT 210 ms             | Perf 99 · LCP 1.2 s · TBT 130 ms                   |
+| phone first, dark theme | Perf 96 · LCP 1.8 s · TBT 200 ms             | Perf 98 · LCP 1.2 s · TBT 140 ms                   |
+| phone first, bare       | Perf 98 · LCP 1.9 s · TBT 151 ms             | Perf 97 · LCP 1.8 s · TBT 170 ms (before inlining) |
+| phone first, everything | Perf 96 · LCP 1.9 s · TBT 220 ms · CLS 0.016 | not re-run                                         |
 
 A11y, Best Practices and SEO were 100 in every cell. "Everything" seeds dark theme, bare toolbar,
 open drawer, AI enabled, reduced motion and a 120% button scale. First-visit transfer was 623 KB in
@@ -41,7 +41,9 @@ hydration in the same task's microtask checkpoint): 85 ms observed, ~340 ms simu
 | Hydration: redundant `resizeCanvas` from the same effect               |          ~15 | yes             |
 
 Post-boot, the crayon tooth-field prebuild ran as one 80–120 ms idle task inside the TBT window; the
-PR slices it per octave. The remaining findings below are what the PR did not take on.
+PR slices it per octave. The LCP resource — the paper texture, 17.6 KB behind the forty
+modulepreloaded chunks — is now a 7.8 KB data URI in the document, so LCP equals FCP (1.2 s on the
+preview against 1.8–1.9 s before). The remaining findings below are what the PR did not take on.
 
 ### [Performance] Hydration of the drawing route is ~240 ms of the ~400 ms throttled boot task
 
@@ -124,38 +126,6 @@ Run the `lighthouse-audit` driver on a phone profile with
 `--storage "splotch-action-button-scale=120"` and, separately, emulate a bottom inset through the
 `/dev/notch` harness (`docs/SAFE-AREA.md`); `cumulative-layout-shift` must stay 0 and the
 `layout-shifts` audit empty. `safe-area-matrix.spec.ts` is the place for a regression check.
-
-### [Performance] The paper texture is still a separate request on the LCP path
-
-**File(s):** `web/src/lib/components/DrawingCanvas.svelte` (`.paper-sheet`),
-`web/static/icons/handmade-paper.webp`
-
-#### Problem
-
-`.paper-sheet` is the LCP element and its background texture is the LCP resource. The PR preloads it
-from the route head with `fetchpriority=high` and shrinks it from 17.6 KB to 7.8 KB, which cuts the
-resource load delay and duration, but on simulated Slow 4G every extra request still costs a 150 ms
-round trip behind the document. Lighthouse's `lcp-breakdown` before the PR: TTFB 670 ms, load delay
-341 ms, load duration 795 ms, render delay 46 ms — the paint itself is instant once the bytes are
-there.
-
-#### Proposed solution
-
-Inline the texture as a data URI in the `.paper-sheet` rule so the LCP resource arrives with the
-document and LCP collapses to FCP. At 7.8 KB the base64 form adds ~10 KB to the prerendered document
-(~50 ms of Slow 4G transfer, which delays FCP by the same amount — FCP weighs 10%, LCP 25%). Route
-the file through Vite (`url('$lib/assets/…')` with an `assetsInlineLimit` predicate that matches
-only this file) rather than hand-pasting base64, and keep `/icons/handmade-paper.webp` for the
-export compositor, the styleguide and the bare toolbar's `.app-container` rule in `app.css`, which
-would otherwise carry the data URI into every route's inline CSS. Check Chrome's LCP entropy
-threshold (0.05 bits per displayed pixel): a 7.8 KB tile painted across a 412×840 viewport clears
-it, so the element stays the LCP candidate rather than falling back to a text node.
-
-#### Verification
-
-Lighthouse phone-first against a `feature/*` preview, three runs each way; compare the
-`largest-contentful-paint` median and the `lcp-breakdown-insight` subparts. The win is real only if
-LCP drops by more than FCP rises.
 
 ### [Performance] SvelteKit fetches the error route's chunks and stylesheet on every load
 

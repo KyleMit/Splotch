@@ -6,11 +6,11 @@ import { describe, expect, it } from 'vitest';
 // be rewritten by Vite into an asset glob and resolve to nothing.
 const read = (path: string) => readFileSync(resolve(process.cwd(), path));
 
-// The drawing route inlines the paper grain as a data URI (vite.config.ts,
-// inlineStartupTextures) through one custom property declared in +page.svelte.
-// Every surface on that route must paint from the property: a url() of the
-// static file would fetch the same bytes again as a separate request, which is
-// the LCP delay the inlining removes.
+// The paper grain is inlined as a data URI (vite.config.ts,
+// inlineStartupTextures) through one custom property declared in app.css.
+// Every paper surface on the drawing route must paint from the property: a
+// url() of the static file would fetch the same bytes again as a separate
+// request, which is the LCP delay the inlining removes.
 const PROPERTY_CONSUMERS = [
   'src/lib/components/DrawingCanvas.svelte',
   'src/lib/components/BareToolbarPaper.svelte',
@@ -26,10 +26,13 @@ describe('paper texture', () => {
     ).toBe(true);
   });
 
-  it('is declared once on the drawing route from the inlined asset', () => {
-    const page = read('src/routes/+page.svelte').toString();
-    expect(page).toMatch(/--paper-texture:\s*url\('\$lib\/assets\/handmade-paper\.webp'\)/);
-    expect(page).not.toContain(STATIC_URL);
+  it('is declared once, globally, from the inlined asset', () => {
+    const css = read('src/app.css').toString();
+    const declarations = css.match(
+      /--paper-texture:\s*url\('\$lib\/assets\/handmade-paper\.webp'\)/g
+    );
+    expect(declarations).toHaveLength(1);
+    expect(read('src/routes/+page.svelte').toString()).not.toContain('--paper-texture:');
   });
 
   for (const site of PROPERTY_CONSUMERS) {

@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-09-22 | [lighthouse-audit](#2026-09-22--lighthouse-audit)               |
 | 2026-09-11 | [vet-audits](#2026-09-11--vet-audits)                           |
 | 2026-09-11 | [code-audit](#2026-09-11--code-audit)                           |
 | 2026-09-10 | [vet-audits](#2026-09-10--vet-audits)                           |
@@ -106,6 +107,19 @@ token-map imports, per-`pointermove` DOM measurement, duplicated native bridge c
 validation that proves a value's shape then discards the proof, forcing the `as` casts the
 conventions ban. Two auditors independently reported the same `prefers-reduced-motion` duplication,
 which was merged into one finding.
+
+## 2026-09-22 · lighthouse-audit
+
+Production phone/tablet matrix at d8a8102: first visits Perf 94/97, LCP 1.9 s, 623 KB; repeats Perf
+94/97, LCP 0.9–1.4 s; CLS 0; A11y/BP/SEO 100 throughout. Startup-setting variants (new `--storage`
+seeding: dark theme, bare toolbar, everything-on) scored 96–98, bare moving the LCP element to
+`.rail-glass` and everything-on shifting a glass pane (CLS 0.016). The gap was one boot task —
+module evaluation plus hydration, ~340 ms simulated — and a texture request behind the
+modulepreloads. A throttled unminified `perf:web:mount` profile attributed it (AudioContext 73 ms,
+forced style recalc 13–26 ms, crayon fields 80–120 ms at idle, hydration ~230 ms, engine ~90 ms);
+the fixes on `feature/lighthouse-tuning` took the preview to Perf 96–99 across the matrix, LCP = FCP
+1.2 s, inline CSS 156 → 76 KB, and `unused-css-rules` to zero. Filed the hydration volume, the
+palette padding CLS on inset devices, and SvelteKit's eager error-node fetch.
 
 ## 2026-09-11 · vet-audits
 

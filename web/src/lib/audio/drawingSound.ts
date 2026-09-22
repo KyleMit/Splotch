@@ -63,14 +63,15 @@ let audioContext: AudioContext | null = null;
 // Constructing an AudioContext spins up the audio device thread, which a 4x
 // throttled phone spends tens of milliseconds on. The boot path fetches the
 // first pencil sound's bytes right away but leaves the context, and the decode
-// that needs it, to this idle slot; a stroke that lands first builds the
-// context itself, so nothing waits on idle.
-let cancelContextWarmup: (() => void) | undefined;
+// that needs it, to an idle callback; a stroke that lands first builds the
+// context itself, so nothing waits on idle. The callback re-checks the
+// setting, so it is never cancelled, only scheduled once.
+let contextWarmupScheduled = false;
 const buffers: AudioBuffer[] = [];
 const loadPromises = new Map<string, Promise<void>>();
-// Encoded bytes fetched ahead of a context, and kept so a decode retry never
-// refetches. A failed fetch drops its entry so the next attempt retries the
-// network.
+// Encoded bytes fetched ahead of a context. decodeAudioData detaches the
+// buffer it is handed, so an entry lives only until its one decode consumes
+// it; a failed fetch drops its entry so the next attempt retries the network.
 const soundBytes = new Map<string, Promise<ArrayBuffer>>();
 const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
@@ -123,7 +124,10 @@ function loadSound(ctx: AudioContext, url: string): Promise<void> {
   if (failedUrls.has(url)) return Promise.resolve();
 
   const pending = fetchSoundBytes(url)
-    .then((data) => ctx.decodeAudioData(data))
+    .then((data) => {
+      soundBytes.delete(url);
+      return ctx.decodeAudioData(data);
+    })
     .then((buffer) => {
       buffers.push(buffer);
     })
@@ -172,9 +176,10 @@ function preloadPencilSounds() {
 }
 
 function warmContextAtIdle() {
-  if (audioContext || cancelContextWarmup) return;
-  cancelContextWarmup = scheduleIdle(() => {
-    cancelContextWarmup = undefined;
+  if (audioContext || contextWarmupScheduled) return;
+  contextWarmupScheduled = true;
+  scheduleIdle(() => {
+    contextWarmupScheduled = false;
     if (canPlayDrawingSound()) preloadFirstPencilSound();
   });
 }

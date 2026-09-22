@@ -13,7 +13,7 @@
 // Usage: node seed-storage.mjs <profileDir> <origin> <key=value>[;<key=value>…]
 //        [--chrome <path>]
 
-import { chromium } from 'playwright-core';
+import { chromium } from '@playwright/test';
 
 const [profileDir, origin, pairs] = process.argv.slice(2);
 const chromeIdx = process.argv.indexOf('--chrome');

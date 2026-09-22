@@ -221,17 +221,6 @@
 {/if}
 
 <style>
-  /* The paper grain every surface on this route paints, declared once so the
-     data URI Vite inlines for it (vite.config.ts, inlineStartupTextures) lands
-     in the prerendered head a single time: the paper sheet is the largest
-     contentful paint, and with its texture in the document the paint no longer
-     waits on a request. paperTexture.test.ts keeps the consumers on this
-     property and the inlined file identical to the static copy the export
-     compositor and the styleguide load by URL. */
-  :global(:root) {
-    --paper-texture: url('$lib/assets/handmade-paper.webp');
-  }
-
   /* Fixed corner controls retain their drawer geometry; the dock reserves their
      collapsed footprints while sharing the canvas-chrome stacking layer. */
   .bottom-dock {

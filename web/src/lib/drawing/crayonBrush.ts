@@ -299,18 +299,24 @@ function crayonFields(): CrayonFields {
   return fields;
 }
 
+// Runs one slice of the prebuild; true once the fields exist. Shared by the
+// idle prebuild and the warm job below so a persisted crayon, whose warm-up
+// starts on the first animation frame, spreads the build across frames too
+// instead of finishing every slice inside one.
+function advanceFieldsSlice(): boolean {
+  if (fields) return true;
+  prebuild ??= buildFieldsInSlices();
+  const step = prebuild.next();
+  if (!step.done) return false;
+  fields = step.value;
+  prebuild = null;
+  return true;
+}
+
 function prebuildFieldsAtIdle() {
-  prebuild = buildFieldsInSlices();
   const slice = () => {
     cancelPrebuildSlice = undefined;
-    if (fields || !prebuild) return;
-    const step = prebuild.next();
-    if (step.done) {
-      fields = step.value;
-      prebuild = null;
-      return;
-    }
-    cancelPrebuildSlice = scheduleIdle(slice);
+    if (!advanceFieldsSlice()) cancelPrebuildSlice = scheduleIdle(slice);
   };
   cancelPrebuildSlice = scheduleIdle(slice);
 }
@@ -564,6 +570,10 @@ function warmCrayonTileForFrame(job: CrayonWarmJob) {
   const key = colorTileKey(job.color, job.passIdx);
   if (colorTileCache.has(key)) {
     warmNextCrayonPass(job);
+    return;
+  }
+  if (!fields && !advanceFieldsSlice()) {
+    scheduleCrayonWarmFrame(job);
     return;
   }
   job.build ??= createColorTileBuild(job.color, job.passIdx);

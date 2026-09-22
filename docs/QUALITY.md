@@ -103,7 +103,8 @@ Every degraded path returns usable app state rather than a dead end - offline, p
 exhausted quota, denied storage. Drawing history lives in memory for the session, so a reload starts
 a fresh page; carrying work across a restart is not a guarantee this axis makes today.
 
-**Backed by.** `early-boot.spec.ts` and `paper-texture-boot.spec.ts` on the startup path,
+**Backed by.** `early-boot.spec.ts` on the startup path (the paper texture that once painted late
+behind its own request now ships inline with the document, `paperTexture.test.ts`),
 `pwa-registration.spec.ts` on the service worker, `engine-pointer-recovery.spec.ts` on interrupted
 input. `idb.ts` requests persistent storage and resets its memoized promise on rejection;
 `storage.ts` handles `QuotaExceededError`.

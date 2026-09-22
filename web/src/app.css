@@ -104,6 +104,21 @@ body {
   --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
+/* The paper grain every paper surface paints: the drawing route's paper sheet
+   and clear-animation sheet, the bare toolbar's paper and glass panes, and the
+   /dev/notch frame. Vite inlines the file as a data URI (vite.config.ts,
+   inlineStartupTextures), so on the drawing route the largest contentful
+   paint's texture arrives with the document instead of as a request queued
+   behind the startup chunks. Declared here rather than on that route because a
+   `background` shorthand whose var() resolves to nothing is dropped whole,
+   colour included, wherever the route's declaration is absent; the cost is
+   the ~10 KB data URI in every route's inline CSS. paperTexture.test.ts keeps
+   the consumers on this property and the inlined file identical to the static
+   copy the export compositor and the styleguide load by URL. */
+:root {
+  --paper-texture: url('$lib/assets/handmade-paper.webp');
+}
+
 /* The Color Palette's declared extents, which the palette draws itself at and
    the Actions Panel sizes and offsets itself around — the landscape column's
    width and the portrait bar's height. actionButtonLayout.fallback.test.ts

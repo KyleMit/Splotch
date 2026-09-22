@@ -31,6 +31,14 @@ import { platform } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const args = parseArgs(process.argv.slice(2));
+for (const flag of ['url', 'out', 'device', 'visits', 'storage']) {
+  // A value flag left bare (`--storage --device phone`) would otherwise run an
+  // unseeded or misdirected audit that reads as the requested one.
+  if (args[flag] === true) {
+    console.error(`--${flag} needs a value`);
+    process.exit(2);
+  }
+}
 const URL = args.url ?? 'https://splotch.art/';
 const OUT = resolve(args.out ?? 'lighthouse-reports');
 const DEVICE = args.device ?? 'both';
@@ -44,10 +52,10 @@ const pickedDevices = DEVICE === 'both' ? ['phone', 'tablet'] : [DEVICE];
 const pickedVisits = VISITS === 'both' ? ['first', 'repeat'] : [VISITS];
 
 mkdirSync(OUT, { recursive: true });
-const chromePath = resolveChrome();
+const chromePath = resolveChrome() ?? (await playwrightChromePath());
 const sandboxFlags = buildSandboxChromeFlags();
 
-const STORAGE = typeof args.storage === 'string' ? args.storage : '';
+const STORAGE = args.storage ?? '';
 const SEED_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'seed-storage.mjs');
 
 console.log(`Target : ${URL}`);
@@ -98,6 +106,9 @@ function runLighthouse({ name, dev, profileDir, repeat, quiet }) {
   // run's report in place for reportLine and printSummary to read as current.
   for (const ext of ['report.json', 'report.html']) {
     rmSync(join(OUT, `${name}.${ext}`), { force: true });
+  }
+  for (const asset of ['trace.json', 'devtoolslog.json']) {
+    rmSync(join(OUT, `${name}-0.${asset}`), { force: true });
   }
 
   const chromeFlags = [
@@ -252,7 +263,21 @@ function resolveChrome() {
     const symlink = join(root, 'chromium');
     if (existsSync(symlink)) return symlink;
   }
-  return null; // let chrome-launcher find a system install
+  return null;
+}
+
+// Off-sandbox fallback: the seeder launches through Playwright, and Lighthouse
+// must open the seeded profile with the same binary — a profile written by a
+// newer Chromium is refused by an older system Chrome — so both get this path
+// rather than leaving Lighthouse to chrome-launcher's own search.
+async function playwrightChromePath() {
+  try {
+    const { chromium } = await import('@playwright/test');
+    const bin = chromium.executablePath();
+    return existsSync(bin) ? bin : null;
+  } catch {
+    return null;
+  }
 }
 
 function printSummary(names) {
