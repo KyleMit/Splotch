@@ -55,6 +55,7 @@ export function getRingColor(color: string): string {
 }
 
 export function selectionRingShadow(ringColor: string, surfaceColor: string): string {
-  // The seam inherits the swatch's surface, so it stays legible on light, dark and bare paper.
-  return `0 0 0 1px ${surfaceColor}, 0 0 0 ${SELECTION_RING_WIDTH_PX}px ${ringColor}, 0 4px 8px rgb(0 0 0 / 20%)`;
+  // The seam inherits the swatch's surface, so it stays legible on light, dark and bare paper;
+  // the trailing float shadow keeps the selected swatch's lift, themed like the resting one.
+  return `0 0 0 1px ${surfaceColor}, 0 0 0 ${SELECTION_RING_WIDTH_PX}px ${ringColor}, var(--float-shadow)`;
 }
