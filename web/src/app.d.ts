@@ -67,8 +67,13 @@ declare global {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
   }
 
-  interface NetworkInformation {
+  // Network Information API — Chromium-only; not in the default TS DOM lib.
+  // Declares only the surface lib/pwa/updates.ts, lib/fonts.ts, and
+  // lib/coloringPacks/manager.ts read.
+  interface NetworkInformation extends EventTarget {
+    effectiveType?: 'slow-2g' | '2g' | '3g' | '4g';
     saveData?: boolean;
+    type?: 'bluetooth' | 'cellular' | 'ethernet' | 'none' | 'wifi' | 'wimax' | 'other' | 'unknown';
   }
 
   interface Navigator {
