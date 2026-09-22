@@ -104,11 +104,14 @@ paths:
   holds its first keyframe across frames, which passes the stability check), while a dialog still
   flying in sits inside the launch dead zone that swallows the gesture; await its
   `Animation.finished` first via `settleFlyIn`, as `openSettingsModal` and `landedReportConfirm` do
-  (ADR-0078 §4a); when a spec needs an animation to be *in* a state — started, not yet ended — wait
-  on that animation's own `ready`/`finished` promise or its `animationend`/`animationcancel` event,
-  never a sleep sized to its duration (the lifting-halo spec, issue #2196; Svelte hash-scopes
-  component keyframe names, so match `animationName` by suffix); budget a **frame-paced** condition
-  in frames rather than milliseconds — the wide Settings pane mounts a section per frame, so
+  (ADR-0078 §4a); when a spec needs an animation to be *in* a phase, wait on the browser's signal
+  for that phase, never a sleep sized to its duration: `Animation.ready` for started (a play-pending
+  animation cancelled before its first frame fires no `animationcancel` at all),
+  `Animation.finished` or the `animationend`/`animationcancel` event for settled — the event, not
+  `finished`, when the product's own handler is on that event, since the `finished` continuation
+  runs before the event dispatches (the lifting-halo spec, issue #2196; Svelte hash-scopes component
+  keyframe names, so match `animationName` by suffix); budget a **frame-paced** condition in frames
+  rather than milliseconds — the wide Settings pane mounts a section per frame, so
   `settleSettingsPane` samples `aria-busy` from inside the page once per `requestAnimationFrame` and
   spends `SETTINGS_FILL_FRAME_BUDGET` frames, where the default 5s assertion timeout failed a fill
   that was only unfinished; reach for `settleTapGuard` when clicking where a tap just landed, since
