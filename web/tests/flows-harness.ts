@@ -210,9 +210,11 @@ export async function openArmedParentCenter(page: Page) {
 // Open the Brush Menu flyout and leave it open. The eraser and magic brush live
 // in this flyout (they used to be top-level action buttons), so selecting them
 // goes through here.
+// Both sentinels look inside a live menu: a menu that just closed stays in the
+// DOM, inert, for its exit, and its entries would read as an open menu.
 export async function openBrushMenu(page: Page) {
   await retryOpen(
-    page.locator('#penBrushButton'),
+    page.locator('.flyout-menu:not([inert]) #penBrushButton'),
     () => page.locator('#brushButton').click({ timeout: 1000 }),
     { settle: 1000 }
   );
@@ -223,7 +225,9 @@ export async function openBrushMenu(page: Page) {
 // spellings are matched rather than assuming the pen is the held brush.
 export async function openStrokeMenu(page: Page) {
   await retryOpen(
-    page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]'),
+    page.locator(
+      '.flyout-menu:not([inert]) :is(button[aria-label="Size 3"], button[aria-label="Eraser size 3"])'
+    ),
     () => page.locator('#strokeWidthButton').click({ timeout: 1000 }),
     { settle: 1000 }
   );
@@ -367,6 +371,13 @@ export async function applyFarmPage(page: Page) {
     'data-canonical-url',
     /\.(?:dark\.)?overlay\.svg$/
   );
+  // The art settles onto the paper with a short scale-down, so a box or pixel
+  // read before it lands measures the arrival rather than the page.
+  await page
+    .locator('#coloringOverlay')
+    .evaluate((el) =>
+      Promise.all(el.getAnimations().map((animation) => animation.finished.catch(() => undefined)))
+    );
 }
 
 // Settings is a section list — a table-of-contents entry on tablet/desktop, a

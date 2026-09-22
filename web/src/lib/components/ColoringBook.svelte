@@ -199,7 +199,6 @@
     origin: coloringBookModal.origin,
     onRequestClose: coloringBookModal.hide,
     onOpen: showInitialView,
-    retirement: 'compositor',
   })}
 >
   <div

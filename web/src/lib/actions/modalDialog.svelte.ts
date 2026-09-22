@@ -12,6 +12,10 @@
 // The argument is a *getter* — the action reads it inside a $effect, so any runes
 // it touches become reactive dependencies.
 //
+// Closing plays an exit before the dialog leaves the top layer: the card flies
+// back toward its opener (or sinks in place with no opener), and `close` fires
+// only once that exit has finished. waitForDialogRetirement resolves on it.
+//
 // Options:
 //   open            (required) whether the dialog should be shown.
 //   onRequestClose  called to dismiss — should flip `open` to false.
@@ -20,8 +24,6 @@
 //   onOpen          side-effect fired just before showModal() on each open.
 //   onClose         side-effect fired on the dialog's `close` event (Esc and
 //                   programmatic close alike).
-//   retirement      `compositor` hides the dialog surface before closing;
-//                   omit for content retirement.
 //   allowDismiss    () => boolean gate for *both* backdrop tap and Esc. When it
 //                   returns false the dismissal is blocked (the backdrop tap is
 //                   still swallowed; Esc is preventDefault'd).
@@ -46,7 +48,6 @@ interface ModalOptions {
   origin?: Origin | null;
   onOpen?: () => void;
   onClose?: () => void;
-  retirement?: 'compositor';
   allowDismiss?: () => boolean;
   blockBackdropAt?: (x: number, y: number) => boolean;
 }
@@ -106,6 +107,15 @@ function noticeModalClosing(node: HTMLDialogElement) {
   for (const observer of modalStackObservers) observer.closing(node);
 }
 
+// The class that plays a dialog's exit (app.css `.closing` rules). The dialog
+// stays open underneath it until the exit finishes, then closes.
+export const DIALOG_CLOSING_CLASS = 'closing';
+
+// How far past its own declared length an exit may run before the dialog closes
+// anyway. A dropped frame or a throttled background tab can hold `finished` back;
+// a stuck exit would otherwise strand a dialog that state already closed.
+const EXIT_GUARD_FACTOR = 1.5;
+
 export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> {
   if (!node.open) return Promise.resolve();
   return new Promise((resolve) => {
@@ -120,12 +130,7 @@ export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> 
     const scheduleFallback = () => {
       frame = requestAnimationFrame(() => {
         timer = window.setTimeout(() => {
-          const contentRetirementPending =
-            node.style.opacity === '0' ||
-            [...node.children].some(
-              (child) => child instanceof HTMLElement && child.style.visibility === 'hidden'
-            );
-          if (node.open && contentRetirementPending) {
+          if (node.open && node.classList.contains(DIALOG_CLOSING_CLASS)) {
             scheduleFallback();
             return;
           }
@@ -138,45 +143,76 @@ export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> 
   });
 }
 
-function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: () => ModalOptions) {
+function afterNextPaint(): { done: Promise<void>; cancel: () => void } {
+  let timer: number | undefined;
+  let frame = 0;
+  const done = new Promise<void>((resolve) => {
+    frame = requestAnimationFrame(() => {
+      timer = window.setTimeout(resolve);
+    });
+  });
+  return {
+    done,
+    cancel: () => {
+      cancelAnimationFrame(frame);
+      if (timer !== undefined) clearTimeout(timer);
+    },
+  };
+}
+
+// Resolves when every animation on the dialog itself has finished — its exit —
+// or when the guard lapses. A cancelled exit (the dialog reopening under it)
+// rejects `finished`, which is an ending too. A dialog with no running
+// animation still waits one painted frame, so the inert content is on screen
+// before the close.
+function exitFinished(node: HTMLDialogElement): { done: Promise<void>; cancel: () => void } {
+  const exits = node.getAnimations();
+  const longestMs = Math.max(
+    0,
+    ...exits.map((animation) => Number(animation.effect?.getComputedTiming().endTime) || 0)
+  );
+  if (exits.length === 0 || !Number.isFinite(longestMs)) return afterNextPaint();
+  let timer: number | undefined;
+  const done = new Promise<void>((resolve) => {
+    timer = window.setTimeout(resolve, longestMs * EXIT_GUARD_FACTOR);
+    void Promise.all(exits.map((animation) => animation.finished.catch(() => undefined))).then(() =>
+      resolve()
+    );
+  });
+  return { done, cancel: () => clearTimeout(timer) };
+}
+
+function closeAfterExit(node: HTMLDialogElement, getOptions: () => ModalOptions) {
   const contentRoots = [...node.children].filter(
     (child): child is HTMLElement => child instanceof HTMLElement
   );
   const initiallyInert = new Map(contentRoots.map((root) => [root, root.hasAttribute('inert')]));
-  const compositorRetirement = getOptions().retirement === 'compositor';
-  if (compositorRetirement) {
-    for (const animation of node.getAnimations()) animation.cancel();
-    node.style.opacity = '0';
-    for (const root of contentRoots) {
-      root.inert = true;
-      root.style.pointerEvents = 'none';
-    }
-  } else {
-    for (const root of contentRoots) root.style.visibility = 'hidden';
+  // The card stays on screen while it leaves, so it must stop taking input the
+  // moment it starts to.
+  for (const root of contentRoots) {
+    root.inert = true;
+    root.style.pointerEvents = 'none';
   }
-  const restoreContent = () => {
-    node.style.removeProperty('opacity');
+  stampMotionAtStart(node);
+  node.classList.add(DIALOG_CLOSING_CLASS);
+  const exit = exitFinished(node);
+  let abandoned = false;
+  void exit.done.then(() => {
+    if (abandoned || getOptions().open || !node.open) return;
+    node.close();
+    for (const root of contentRoots) root.style.visibility = 'hidden';
+  });
+  return () => {
+    abandoned = true;
+    exit.cancel();
+    // Dropping the class on a dialog still open swaps its exit back for the
+    // fly-in, which restarts from its first frame rather than resuming mid-exit.
+    node.classList.remove(DIALOG_CLOSING_CLASS);
     for (const root of contentRoots) {
       if (!initiallyInert.get(root)) root.inert = false;
       root.style.removeProperty('pointer-events');
       root.style.removeProperty('visibility');
     }
-  };
-  let timer: number | undefined;
-  const frame = requestAnimationFrame(() => {
-    timer = window.setTimeout(() => {
-      if (!getOptions().open && node.open) {
-        node.close();
-        if (compositorRetirement) {
-          for (const root of contentRoots) root.style.visibility = 'hidden';
-        }
-      }
-    });
-  });
-  return () => {
-    cancelAnimationFrame(frame);
-    if (timer !== undefined) clearTimeout(timer);
-    restoreContent();
   };
 }
 
@@ -305,7 +341,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
       }
     } else if (node.open) {
       noticeModalClosing(node);
-      return closeAfterContentRetirementPaint(node, getOptions);
+      return closeAfterExit(node, getOptions);
     }
   });
 

@@ -82,11 +82,14 @@ Foundations and only reach past a default when a rule says so.
 |           | step between them (ADR-0098). `--font-family`, `--font-mono`,                                                                                                                                    |
 |           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·                                                                                             |
 |           | headings; body prose stays at the untokenized 400 default)                                                                                                                                       |
-| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s); two curves only — `--ease-pop` (springy overshoot:                                                                                                 |
-|           | anything that pops in or celebrates) and `--ease-glide` (anything that settles or leaves).                                                                                                       |
+| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s) and `--duration-exit` (0.2s, what an exit takes);                                                                                                   |
+|           | `--ease-pop` (springy overshoot: two-state pops and single-segment keyframes), `--ease-glide`                                                                                                    |
+|           | (anything that settles or leaves), and `--ease-drawer` (symmetric, for two things that must move                                                                                                 |
+|           | as one — the drawer and its chevron).                                                                                                                                                            |
 |           | Control-state motion (hover, press, reveal, fades) pairs a curve with a duration token; tuned                                                                                                    |
 |           | one-shot choreography — celebration keyframes, staged sequences like the AI reveal and polaroid                                                                                                  |
-|           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it                                                                                                            |
+|           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it. The rules                                                                                                 |
+|           | for choosing among them are under **Motion** below                                                                                                                                               |
 | Elevation | Three shadows only: `--shadow-control` (the tight lift on a small raised control — selected                                                                                                      |
 |           | segment thumb, tool popover), `--shadow-pop` (deep overlay lift under modal cards), and the                                                                                                      |
 |           | themed `--float-shadow` (everything floating on the paper — cards, flyouts, page sheets)                                                                                                         |
@@ -120,6 +123,48 @@ and dark values (the compiler enforces this). Minting a token isn't done until i
 the vocabulary table above, has its usage rule in `tokenUsage.ts` (the `Record` types make the
 compiler demand one), and renders on `/design` — an undiscoverable token guarantees the next
 hardcoded duplicate (a failure review has caught three times).
+
+## Motion
+
+Keep what already works: the one `:root[data-reduce-motion]` answer with per-element
+`data-start-reduced-motion` stamps, nothing animating while a stroke may be live, pre-rasterized
+bitmaps behind the undo ghost and the clear sheet, and durations justified against measured frames
+rather than taste.
+
+1. **One curve per cue.** A shorthand timing function applies between *every* pair of keyframes. A
+   keyframe block that draws its own overshoot runs `linear` at the shorthand and sets
+   `animation-timing-function` per keyframe (`undo-spin`, `dialogFlyFromOrigin`). `--ease-pop` is
+   for two-state transitions and single-segment keyframes. `ease-in-out` is fine per segment when
+   every stop is a turning point — a shake, a wiggle, a pulse. `npm run lint:css` enforces it
+   (`splotch/keyframe-curves`, three or more transform stops).
+2. **Every entrance owes an exit.** An exit runs at roughly 0.6 of its entrance, on `--ease-glide`,
+   heading back toward where the entrance came from. Under reduced motion an exit is a **fade, never
+   `animation: none`** — code waits on it finishing (ADR-0170).
+3. **Compositor-only while ink can be live.** Anything that can run during a stroke animates
+   `transform`, `opacity` or `clip-path`. Known exceptions to work off: the drawer's grid track,
+   `action-unavailable-flash`, the Clear Button's lid `margin` and dock `border-radius`, the Bare
+   toolbar's sibling `filter`, the color picker hexagon `filter`.
+4. **Interruptible by construction.** A cue that can reverse mid-flight restarts or reverses from
+   the current state (the swatch press rewinds with `currentTime = 0`; a dialog reopened mid-exit
+   drops its closing class and restarts the fly-in) rather than cutting to an end state.
+5. **Whole-screen state changes swap layers, not properties.** A theme change crossfades one
+   snapshot with `document.startViewTransition`; engines without it swap at once (ADR-0171).
+6. **Frame budget on a 60 Hz beat.** WebKit hands web content 60 Hz even on a 120 Hz iPad: no cue
+   under 120 ms unless it follows the finger, keyframe stops at least two frames (33 ms) apart, and
+   a stagger capped so the last item lands within 1.3× the single-item duration.
+7. **Declare the calm twin beside the cue**, in the same commit. Entrances and exits fade; state
+   changes snap; loops slow or hold one frame.
+8. **`will-change` is a loan.** Promote in the frame before a cue and release after, or justify a
+   permanent layer in place.
+
+| Kind           | Duration                  | Curve                                                 | Reduced motion          |
+| -------------- | ------------------------- | ----------------------------------------------------- | ----------------------- |
+| Enter          | 300–360 ms                | `--ease-pop`, or `linear` + per-keyframe curves       | fade, `--duration-base` |
+| Exit           | `--duration-exit` (≈0.6×) | `--ease-glide`, 30–40% of the way back toward origin  | fade, `--duration-base` |
+| State change   | 150–200 ms                | `ease`; a symmetric curve when two things move as one | snap                    |
+| Gesture-follow | 0, or ≤120 ms catch-up    | `linear`                                              | instant                 |
+| Celebration    | own timing, ≤2 s          | `linear` + per-keyframe curves                        | 0.7 s fade, or hidden   |
+| Ambient loop   | 0.8–2.8 s                 | `linear` / `ease-in-out`                              | slow, or hold one frame |
 
 ## Primitives
 

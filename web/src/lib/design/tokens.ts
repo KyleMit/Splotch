@@ -102,12 +102,23 @@ export const scale = {
   durationFast: '0.15s',
   durationBase: '0.2s',
   durationSlow: '0.35s',
-  // Two curves only: the springy overshoot for anything that pops in or
-  // celebrates (dialog fly-ins, download-done, swatch press, Clear Button),
-  // and the glide for anything that settles or leaves (the polaroid, the
-  // swatch ring, the undo ghost). ADR-0097 folded the former softer pop into this one.
+  // What an exit takes: a dialog flying back, the coloring page lifting off.
+  // The same number as durationBase, named so an exit's ratio to its entrance
+  // reads at the call site (exits run at roughly 0.6 of the entrance).
+  durationExit: '0.2s',
+  // Two expressive curves: the springy overshoot for a two-state pop or a
+  // single-segment keyframe (download-done, the drawer's button cascade, the
+  // Clear Button), and the glide for anything that settles or leaves (the
+  // polaroid, the swatch ring, the undo ghost). ADR-0097 folded the former
+  // softer pop into this one. A keyframe block that draws its own overshoot
+  // takes neither at the shorthand — it runs linear with per-keyframe curves
+  // (the design skill's one-curve-per-cue rule).
   easePop: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   easeGlide: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  // The symmetric curve for two things that must move as one object — the
+  // drawer's edge and its chevron. Neither end front-loads, so both are at the
+  // same fraction of their journey on every frame.
+  easeDrawer: 'cubic-bezier(0.4, 0, 0.2, 1)',
 
   // The one dimming for a whole parked control — a disabled toggle row, chip,
   // button, or gate key. Text and glyphs on their own never take it: they

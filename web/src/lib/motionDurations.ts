@@ -14,3 +14,7 @@ export const SECTION_SLIDE_MS = 220;
 // appearance rather than a cut, short enough that the content is there by the
 // time a parent looks.
 export const CALM_FADE_MS = 150;
+
+// A flyout menu's exit on close: well under its entrance, since the pick has
+// already landed and the menu only has to get out of the way.
+export const FLYOUT_EXIT_MS = 120;

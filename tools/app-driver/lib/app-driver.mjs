@@ -235,6 +235,14 @@ export async function pickPage(page, pageName) {
 // it's the signal that a picked coloring page is actually painted.
 export async function waitForColoringOverlay(page, { timeout } = {}) {
   await page.waitForSelector(COLORING_OVERLAY_READY_SELECTOR, { timeout });
+  // The art settles onto the paper with a short scale-down, so a box read while
+  // it lands measures the arrival — and a pointer path aimed into that box
+  // misses the feature it was aimed at.
+  await page
+    .locator(COLORING_OVERLAY_READY_SELECTOR)
+    .evaluate((img) =>
+      Promise.all(img.getAnimations().map((animation) => animation.finished.catch(() => undefined)))
+    );
 }
 
 // Where the coloring page art actually renders, in page coordinates: the

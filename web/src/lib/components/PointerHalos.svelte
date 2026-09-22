@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { getCanvasRect, type StrokeStartData } from '$lib/drawing/engine';
   import { toolState } from '$lib/state/tool.svelte';
+  import { prefersReducedMotion } from '$lib/platform/reducedMotion';
 
   // Pointer-following halos: the eraser footprint bubble and the per-pointer
   // brush rings. Purely presentational — its only inputs are pointer events on
@@ -14,7 +16,8 @@
   let { canvasEl, eraserSizePx, brushRingSizePx }: Props = $props();
 
   // Bubble that previews the eraser footprint at the pointer while erasing.
-  const eraserCursor = $state({ visible: false, x: 0, y: 0 });
+  // `lifting` holds it one exit past the moment it is dismissed.
+  const eraserCursor = $state({ visible: false, lifting: false, x: 0, y: 0 });
 
   // Impact rings that track each drawing pointer while a stroke is live (pen and
   // magic brush; the eraser has its own bubble above). One ring per active
@@ -27,8 +30,14 @@
   // Rings die with the stroke: up/cancel/leave, plus lostpointercapture for
   // strokes the engine ends itself (releaseAllPointers — a second finger
   // pressing a swatch or dragging the clear button never sends this canvas a
-  // pointerup).
-  let brushRings = $state<Record<number, { x: number; y: number; magic: boolean }>>({});
+  // pointerup). A ring grows in on mount and, when its stroke ends, lifts off
+  // where the finger left it (`lifting`: position writes stop) before its record
+  // goes — on animationend, or on animationcancel when reduced motion is turned
+  // on mid-lift and swaps the lift for no animation at all. Under reduced motion
+  // there is no lift and the record goes at once.
+  let brushRings = $state<
+    Record<number, { x: number; y: number; magic: boolean; lifting: boolean }>
+  >({});
 
   // The immediate path, for the events that must not wait a frame: the bubble
   // appearing where the finger already is on enter and on press. Moves take the
@@ -45,11 +54,38 @@
     eraserCursor.x = e.clientX - rect.left;
     eraserCursor.y = e.clientY - rect.top;
     eraserCursor.visible = true;
+    eraserCursor.lifting = false;
   }
 
   function hideEraserCursor() {
     eraserPendingMove = false;
+    if (!eraserCursor.visible) return;
+    if (prefersReducedMotion()) {
+      eraserCursor.visible = false;
+      eraserCursor.lifting = false;
+    } else eraserCursor.lifting = true;
+  }
+
+  // Svelte's element typings carry no `onanimationcancel` attribute, so the
+  // cancel path listens through an action instead.
+  function onAnimationCancel(node: HTMLElement, handler: (e: AnimationEvent) => void) {
+    let current = handler;
+    const listener = (e: AnimationEvent) => current(e);
+    node.addEventListener('animationcancel', listener);
+    return {
+      update(next: (e: AnimationEvent) => void) {
+        current = next;
+      },
+      destroy() {
+        node.removeEventListener('animationcancel', listener);
+      },
+    };
+  }
+
+  function endEraserLift(e: AnimationEvent) {
+    if (e.target !== e.currentTarget || !eraserCursor.lifting) return;
     eraserCursor.visible = false;
+    eraserCursor.lifting = false;
   }
 
   // Exported so the parent's engine `onStrokeStart` callback (a down-less pen
@@ -61,6 +97,7 @@
       x: stroke.clientX - rect.left,
       y: stroke.clientY - rect.top,
       magic: stroke.magic,
+      lifting: false,
     };
   }
 
@@ -110,11 +147,12 @@
       eraserCursor.x = pendingEraserX;
       eraserCursor.y = pendingEraserY;
       eraserCursor.visible = true;
+      eraserCursor.lifting = false;
     }
     for (const key of Object.keys(pendingRingX)) {
       const pointerId = Number(key);
       const ring = brushRings[pointerId];
-      if (ring) {
+      if (ring && !ring.lifting) {
         ring.x = pendingRingX[pointerId];
         ring.y = pendingRingY[pointerId];
       }
@@ -132,7 +170,7 @@
       scheduleHaloFlush();
       return;
     }
-    if (!brushRings[e.pointerId]) return;
+    if (!brushRings[e.pointerId] || brushRings[e.pointerId].lifting) return;
     const rect = getCanvasRect();
     pendingRingX[e.pointerId] = e.clientX - rect.left;
     pendingRingY[e.pointerId] = e.clientY - rect.top;
@@ -140,11 +178,18 @@
   }
 
   function removeBrushRing(e: PointerEvent) {
-    delete brushRings[e.pointerId];
-    // A queued move for a ring that is gone would otherwise be flushed onto the
-    // next stroke that reuses the pointerId.
+    const ring = brushRings[e.pointerId];
+    if (ring && !prefersReducedMotion()) ring.lifting = true;
+    else delete brushRings[e.pointerId];
+    // A queued move for a ring that is leaving would otherwise be flushed onto
+    // it, or onto the next stroke that reuses the pointerId.
     delete pendingRingX[e.pointerId];
     delete pendingRingY[e.pointerId];
+  }
+
+  function endRingLift(e: AnimationEvent, pointerId: number) {
+    if (e.target === e.currentTarget && brushRings[pointerId]?.lifting)
+      delete brushRings[pointerId];
   }
 
   function handlePointerLeave(e: PointerEvent) {
@@ -181,7 +226,7 @@
 
   $effect(() => {
     if (toolState.brush === 'eraser') brushRings = {};
-    else hideEraserCursor();
+    else untrack(hideEraserCursor);
   });
 </script>
 
@@ -189,6 +234,9 @@
   <div
     class="brush-ring"
     class:magic={ring.magic}
+    class:lifting={ring.lifting}
+    onanimationend={(e) => endRingLift(e, Number(id))}
+    use:onAnimationCancel={(e) => endRingLift(e, Number(id))}
     style:transform="translate3d({ring.x}px, {ring.y}px, 0) translate(-50%, -50%)"
     style:width="{brushRingSizePx}px"
     style:height="{brushRingSizePx}px"
@@ -197,6 +245,9 @@
 {#if eraserCursor.visible}
   <div
     class="eraser-bubble"
+    class:lifting={eraserCursor.lifting}
+    onanimationend={endEraserLift}
+    use:onAnimationCancel={endEraserLift}
     style:transform="translate3d({eraserCursor.x}px, {eraserCursor.y}px, 0) translate(-50%, -50%)"
     style:width="{eraserSizePx}px"
     style:height="{eraserSizePx}px"
@@ -204,6 +255,45 @@
 {/if}
 
 <style>
+  /* A halo grows in where the finger lands and lifts off where it left. Both
+     animate the independent `scale` property: `transform` is written inline
+     every frame to follow the finger, and a keyframe on it would fight those
+     writes. Mount-time only — nothing here runs on the per-frame path. */
+  .brush-ring,
+  .eraser-bubble {
+    /* Short enough to read as the halo answering the touch rather than
+       arriving late to it; the lift a beat longer, so it reads as leaving. */
+    --halo-in-duration: 120ms;
+    --halo-out-duration: 140ms;
+    animation: halo-in var(--halo-in-duration) var(--ease-glide) both;
+  }
+
+  .brush-ring.lifting,
+  .eraser-bubble.lifting {
+    animation: halo-out var(--halo-out-duration) var(--ease-glide) forwards;
+  }
+
+  @keyframes halo-in {
+    from {
+      opacity: 0;
+      scale: 0.7;
+    }
+  }
+
+  @keyframes halo-out {
+    to {
+      opacity: 0;
+      scale: 1.12;
+    }
+  }
+
+  /* Instant, like the halos have always been; the script drops a lifted halo's
+     record at once under the same answer, since no animationend will come. */
+  :global(:root[data-reduce-motion]) .brush-ring,
+  :global(:root[data-reduce-motion]) .eraser-bubble {
+    animation: none;
+  }
+
   .eraser-bubble {
     position: absolute;
     top: 0;

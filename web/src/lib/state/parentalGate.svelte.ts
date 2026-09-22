@@ -179,6 +179,8 @@ interface ParentalGateMutators {
   submitGateAnswer(): void;
   pressGateKey(key: GateKeypadKey): void;
   dismissGate(): void;
+  /** Called by the gate dialog's own close, which releases a solved handoff. */
+  notifyGateClosed(): void;
   setParentalGateMode(feature: ParentalGateFeature, mode: ParentalGateMode): void;
   isParentCenterUnprotected(): boolean;
   endsParentCenterProtection(feature: ParentalGateFeature, mode: ParentalGateMode): boolean;
@@ -264,6 +266,19 @@ export function createParentalGate(): ParentalGateState {
     pendingDestination = null;
   }
 
+  // The gate plays an exit before its dialog leaves the top layer (ADR-0170).
+  // A destination that opens its own modal while the gate is still up makes the
+  // platform record a focus target inside a dialog that is about to go, so that
+  // modal's own close would land focus nowhere. The gate component reports its
+  // close through notifyGateClosed, and the handoff waits for it.
+  let handoffAfterGateClose: (() => void) | null = null;
+
+  function notifyGateClosed() {
+    const destination = handoffAfterGateClose;
+    handoffAfterGateClose = null;
+    destination?.();
+  }
+
   function succeed() {
     s.wrongStreak = 0;
     s.lockouts = 0;
@@ -282,9 +297,8 @@ export function createParentalGate(): ParentalGateState {
     }
     s.unlocked = true;
     successTimer = setTimeout(() => {
-      const destination = pendingDestination;
+      handoffAfterGateClose = pendingDestination;
       dismissGate();
-      destination?.();
     }, GATE_SUCCESS_HOLD_MS);
   }
 
@@ -467,6 +481,7 @@ export function createParentalGate(): ParentalGateState {
       else pressGateDigit(key);
     },
     dismissGate,
+    notifyGateClosed,
     setParentalGateMode(feature, mode) {
       if (!isAllowedParentalGateMode(feature, mode)) {
         throw new Error(`Unsupported parental gate mode: ${feature}/${mode}`);
@@ -514,6 +529,7 @@ export const {
   submitGateAnswer,
   pressGateKey,
   dismissGate,
+  notifyGateClosed,
   setParentalGateMode,
   isParentCenterUnprotected,
   endsParentCenterProtection,

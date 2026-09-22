@@ -198,6 +198,20 @@ body {
   }
 }
 
+/* A theme change crossfades one snapshot of the whole screen (applyTheme in
+   lib/theme.ts). Opacity only, and long enough to read as the room dimming
+   rather than a cut. The ::view-transition tree inherits from <html>, which is
+   where the duration is read. */
+:root {
+  --theme-crossfade-duration: 320ms;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--theme-crossfade-duration);
+  animation-timing-function: ease;
+}
+
 /* Shared dialog open animation — anchored at a per-dialog --origin-x/y so
    each modal appears to fly out from the button that opened it. It starts small
    but still recognisably the card, pulls back toward the button before it
@@ -207,6 +221,7 @@ body {
     transform: translate(calc(-50% + var(--origin-x, 0px)), calc(-50% + var(--origin-y, 0px)))
       scale(0.22);
     opacity: 0;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
   }
   8% {
     transform: translate(
@@ -215,6 +230,7 @@ body {
       )
       scale(0.2);
     opacity: 0.5;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   38% {
     opacity: 1;
@@ -222,10 +238,12 @@ body {
   74% {
     transform: translate(-50%, -50%) scale(1.032);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   89% {
     transform: translate(-50%, -50%) scale(0.994);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   100% {
     transform: translate(-50%, -50%) scale(1);
@@ -241,6 +259,19 @@ body {
   background: rgb(0 0 0 / 60%);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+/* The scrim arrives and leaves with the card rather than cutting in under it.
+   Opacity only, so every backdrop variant below — frosted, plain, and the
+   blur-less coarse-pointer picker — takes the same fade. Kept under reduced
+   motion: a short fade on a scrim is calm, and
+   snapping it would leave the scrim cutting while the card still fades. */
+.modal-dialog[open]::backdrop {
+  animation: modalFadeIn var(--duration-base) ease both;
+}
+
+.modal-dialog[open].closing::backdrop {
+  animation: modalFadeIn var(--duration-exit) ease reverse forwards;
 }
 
 /* Anyone who asked the OS for less transparency gets a plain, slightly deeper
@@ -274,8 +305,48 @@ body {
 }
 
 .modal-dialog.modal-fly-in[open] {
-  animation: dialogFlyFromOrigin 480ms var(--ease-pop);
+  animation: dialogFlyFromOrigin 360ms linear;
   transform-origin: center;
+}
+
+/* The exit the dialog action plays before it closes (DIALOG_CLOSING_CLASS in
+   modalDialog.svelte.ts). The card heads back toward the button it came from,
+   but only most of the way: arriving there fully reads as a second, slower
+   fly-in played backwards. The action awaits this animation, so a closing
+   dialog must always have one. */
+.modal-dialog.modal-fly-in[open].closing {
+  animation: dialogFlyBack var(--duration-exit) var(--ease-glide) forwards;
+}
+
+@keyframes dialogFlyBack {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(
+        calc(-50% + var(--origin-x, 0px) * 0.7),
+        calc(-50% + var(--origin-y, 0px) * 0.7)
+      )
+      scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* A dialog with no fly-in of its own has no opener to return to: it sinks in
+   place. Zero-specificity base (:where) so a dialog that choreographs its own
+   send-off — AiImageResult's polaroid — keeps it through the close, and the
+   independent `scale` so it composes with whatever centering transform the card
+   already carries. */
+:where(.modal-dialog[open]).closing {
+  animation: dialogSink var(--duration-exit) var(--ease-glide) forwards;
+}
+
+@keyframes dialogSink {
+  to {
+    scale: 0.94;
+    opacity: 0;
+  }
 }
 
 /* Shared modal card: centering, white surface, rounded corners, shadow.
@@ -342,6 +413,13 @@ body {
    own animation finishing, and a dialog with no animation never resolves one. */
 .modal-dialog.modal-fly-in[open][data-start-reduced-motion] {
   animation: modalFadeIn var(--duration-base) ease;
+}
+
+/* The exits' calm twins, stamped when the exit starts. A fade for the same
+   reason as the entrance: the dialog action closes only once it finishes. */
+:where(.modal-dialog[open][data-start-reduced-motion]).closing,
+.modal-dialog.modal-fly-in[open].closing[data-start-reduced-motion] {
+  animation: modalFadeIn var(--duration-base) ease reverse forwards;
 }
 
 @keyframes modalFadeIn {
@@ -625,10 +703,14 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: var(--float-shadow);
+  /* color carries the active ink into the Brush and Stroke Width faces
+     (style:color, drawn in currentColor), so it eases with the swatch ring
+     instead of cutting ahead of it. */
   transition:
     background-color var(--duration-base) ease,
     border-color var(--duration-base) ease,
     box-shadow var(--duration-base) ease,
+    color var(--duration-base) ease,
     transform var(--duration-base) ease,
     filter var(--duration-base) ease,
     opacity var(--duration-base) ease;
@@ -758,8 +840,43 @@ html[data-ai-free-count]
    top of a short landscape screen. Absolutely positioned against the parent's
    position:relative .flyout-wrapper (a Svelte component adds no wrapper DOM,
    so this menu is a direct child of it). */
+/* The springy release a press plays instead of snapping back from :active —
+   a swatch in the palette, and the Stroke Width trigger when a size is picked
+   (lib/actions/pressRelease.ts plays and rewinds it by this name). */
+:root {
+  --press-release-duration: 420ms;
+}
+
+@keyframes swatch-press {
+  0% {
+    transform: scale(0.9);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  42% {
+    transform: scale(1.075);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  72% {
+    transform: scale(0.984);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.actions-panel .action-button.releasing {
+  animation: swatch-press var(--press-release-duration) linear;
+}
+
+:root[data-reduce-motion] .actions-panel .action-button.releasing {
+  animation: none;
+}
+
 .flyout-menu {
-  --stagger: 40ms;
+  /* The last of five options lands near 400 ms, inside the 1.3× cap on a
+     stagger (the design skill's frame-budget practice). */
+  --stagger: 25ms;
   --flyout-from-x: 0px;
   --flyout-from-y: 6px;
   --flyout-menu-padding: 6px;
@@ -772,7 +889,10 @@ html[data-ai-free-count]
     var(--flyout-option-base) * var(--action-btn-scale, 1) * var(--action-btn-radius-ratio)
   );
   transform-origin: calc(var(--action-btn-size) / 2) 100%;
-  animation: flyout-shell 300ms var(--ease-pop) both;
+  animation: flyout-shell 300ms linear both;
+  /* An open menu's option faces take the ink too; recolor in step with the
+     trigger behind them. */
+  transition: color var(--duration-base) ease;
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
@@ -907,7 +1027,7 @@ html[data-ai-free-count]
 }
 
 .screenshot-capture-feedback [data-icon='camera'] {
-  animation: screenshot-capture 460ms var(--ease-pop);
+  animation: screenshot-capture 460ms linear;
 }
 
 /* Reduced motion: no shutter squash. The capture still announces itself — the
@@ -927,14 +1047,21 @@ html[data-ai-free-count]
 }
 
 @keyframes screenshot-capture {
+  0% {
+    transform: scale(1) rotate(0);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
   28% {
     transform: scale(1.14) rotate(-6deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   58% {
     transform: scale(0.985) rotate(1.6deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   80% {
     transform: scale(1.012) rotate(-0.6deg);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   100% {
     transform: scale(1) rotate(0);
@@ -1018,7 +1145,7 @@ html[data-ai-free-count]
   opacity: 0;
   contain: layout paint;
   will-change: transform, opacity;
-  animation: polaroid-show 1.9s var(--ease-glide) forwards;
+  animation: polaroid-show 1.9s linear forwards;
 }
 
 /* A save that failed takes the polaroid back mid-flight; the overlay's cleanup timer still removes it. */
@@ -1043,28 +1170,34 @@ html[data-ai-free-count]
   0% {
     transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.12) rotate(-16deg);
     opacity: 0;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
   }
   7% {
     transform: translate3d(calc(var(--from-x) * 1.04), calc(var(--from-y) * 1.04), 0) scale(0.14)
       rotate(-18deg);
     opacity: 0.55;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   28% {
     transform: translate3d(0, 0, 0) scale(1.05) rotate(-6.5deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   36% {
     transform: translate3d(0, 0, 0) scale(0.995) rotate(-2.8deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   44% {
     transform: translate3d(0, 0, 0) scale(1.008) rotate(-4.6deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   52%,
   78% {
     transform: translate3d(0, 0, 0) scale(1) rotate(-4deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
   100% {
     transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.12) rotate(-16deg);
@@ -1120,12 +1253,14 @@ html[data-ai-free-count]
   0% {
     opacity: 0;
     transform: translate(var(--flyout-from-x), var(--flyout-from-y)) scale(0.9);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   52% {
     opacity: 1;
   }
   72% {
     transform: translate(0, 0) scale(1.022);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   100% {
     opacity: 1;
@@ -1138,13 +1273,16 @@ html[data-ai-free-count]
   0% {
     opacity: 0;
     transform: translateY(11px) rotate(-5deg);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   58% {
     opacity: 1;
     transform: translateY(-2px) rotate(1.6deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   82% {
     transform: translateY(0.5px) rotate(-0.6deg);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   100% {
     opacity: 1;
@@ -1152,7 +1290,7 @@ html[data-ai-free-count]
   }
 }
 .flyout-menu > button {
-  animation: flyout-option 320ms var(--ease-pop) backwards;
+  animation: flyout-option 260ms linear backwards;
   animation-delay: calc(40ms + var(--i) * var(--stagger));
 }
 .flyout-menu.motionless,
@@ -1260,7 +1398,7 @@ html[data-ai-free-count]
 }
 
 .actions-drawer.opening .action-button:not(.action-unavailable) {
-  animation: btn-cascade var(--duration-slow) var(--ease-pop) backwards;
+  animation: btn-cascade var(--duration-base) var(--ease-pop) backwards;
   animation-delay: calc(var(--i) * var(--cascade));
 }
 
@@ -1393,6 +1531,7 @@ html[data-toolbar='bare'] .actions-panel .action-button {
   padding: calc(var(--action-btn-size) / 10);
   opacity: 1;
   transition:
+    color var(--duration-base) ease,
     transform var(--duration-base) var(--ease-glide),
     filter var(--duration-base) var(--ease-glide);
 }

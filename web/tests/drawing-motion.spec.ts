@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp, drawCommittedStroke } from './helpers';
-import { openDrawer, opaqueCanvasPixelCount, pickBrush } from './flows-harness';
+import { openDrawer, openStrokeMenu, opaqueCanvasPixelCount, pickBrush } from './flows-harness';
 
 for (const viewport of [
   { width: 1000, height: 650 },
@@ -24,21 +24,68 @@ for (const viewport of [
   });
 }
 
-test('flyouts replay staggered arrivals and unmount immediately on close', async ({ page }) => {
+test('flyouts replay staggered arrivals and unmount on close', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
   for (const trigger of ['#brushButton', '#strokeWidthButton']) {
     await page.locator(trigger).click();
-    const menu = page.locator('.flyout-menu');
+    const menu = page.locator('.flyout-menu:not([inert])');
     await expect(menu).toBeVisible();
     await expect(menu).toHaveCSS('animation-name', 'flyout-shell');
-    await expect(menu.locator('button').nth(1)).toHaveCSS('animation-delay', '0.08s');
+    await expect(menu.locator('button').nth(1)).toHaveCSS('animation-delay', '0.065s');
     await page.keyboard.press('Escape');
-    await expect(menu).toHaveCount(0);
+    await expect(page.locator('.flyout-menu')).toHaveCount(0);
     await page.locator(trigger).click();
     await expect(menu).toHaveCSS('animation-name', 'flyout-shell');
     await page.keyboard.press('Escape');
   }
+});
+
+test('a stroke size pick presses its trigger, even re-picking the same size', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  const trigger = page.locator('#strokeWidthButton');
+  for (let pick = 0; pick < 2; pick++) {
+    await openStrokeMenu(page);
+    await page.locator('.flyout-menu:not([inert]) button[aria-label="Size 4"]').click();
+    await expect(trigger).toHaveCSS('animation-name', 'swatch-press');
+    await expect(trigger).toHaveCSS('animation-name', 'none');
+  }
+});
+
+test('a halo still lifting is released when reduced motion cancels its exit', async ({ page }) => {
+  await gotoApp(page);
+  // Turning reduced motion on mid-lift swaps the lift for no animation, which
+  // cancels it rather than ending it; the ring's record must still go. Driven
+  // in one page-side script so the switch lands inside the short lift.
+  const result = await page.evaluate(async () => {
+    const canvas = document.querySelector('#drawingCanvas')!;
+    const rect = canvas.getBoundingClientRect();
+    const send = (type: string) =>
+      canvas.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 9,
+          pointerType: 'touch',
+          isPrimary: true,
+          bubbles: true,
+          clientX: rect.left + 300,
+          clientY: rect.top + 300,
+          buttons: type === 'pointerup' ? 0 : 1,
+        })
+      );
+    send('pointerdown');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    send('pointerup');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const ring = document.querySelector('.brush-ring');
+    const lifting = !!ring?.classList.contains('lifting');
+    const seen: string[] = [];
+    ring?.addEventListener('animationcancel', () => seen.push('animationcancel'));
+    document.documentElement.setAttribute('data-reduce-motion', '');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    return { lifting, seen, rings: document.querySelectorAll('.brush-ring').length };
+  });
+  expect(result).toEqual({ lifting: true, seen: ['animationcancel'], rings: 0 });
 });
 
 test('reduced motion skips all five effects', async ({ page }) => {

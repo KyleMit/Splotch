@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createModal } from '$lib/state/modal.svelte';
-import { modalDialog, waitForDialogRetirement } from './modalDialog.svelte';
+import { DIALOG_CLOSING_CLASS, modalDialog, waitForDialogRetirement } from './modalDialog.svelte';
 
 describe('modalDialog', () => {
   function afterContentRetirementPaint() {
@@ -70,7 +70,7 @@ describe('modalDialog', () => {
     }
   });
 
-  it('removes compositor-retired content from focus and accessibility until cleanup', async () => {
+  it('removes exiting content from focus and accessibility until cleanup', async () => {
     const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));
     const content = dialog.appendChild(document.createElement('div'));
@@ -78,7 +78,6 @@ describe('modalDialog', () => {
       const action = modalDialog(dialog, () => ({
         open: modal.open,
         onRequestClose: modal.hide,
-        retirement: 'compositor',
       }));
       return action.destroy;
     });
@@ -104,33 +103,12 @@ describe('modalDialog', () => {
     }
   });
 
-  it('keeps waiting while retired content remains in an open dialog', async () => {
+  it('keeps waiting while an open dialog is still playing its exit', async () => {
     const dialog = document.body.appendChild(document.createElement('dialog'));
     dialog.appendChild(document.createElement('div'));
     try {
       dialog.showModal();
-      dialog.style.opacity = '0';
-
-      let settled = false;
-      const retired = waitForDialogRetirement(dialog).then(() => (settled = true));
-      await afterContentRetirementPaint();
-      expect(settled).toBe(false);
-
-      dialog.close();
-      await retired;
-      expect(settled).toBe(true);
-    } finally {
-      if (dialog.open) dialog.close();
-      dialog.remove();
-    }
-  });
-
-  it('keeps waiting while hidden content remains in an open dialog', async () => {
-    const dialog = document.body.appendChild(document.createElement('dialog'));
-    const content = dialog.appendChild(document.createElement('div'));
-    try {
-      dialog.showModal();
-      content.style.visibility = 'hidden';
+      dialog.classList.add(DIALOG_CLOSING_CLASS);
 
       let settled = false;
       const retired = waitForDialogRetirement(dialog).then(() => (settled = true));
@@ -261,7 +239,8 @@ describe('modalDialog', () => {
       await Promise.resolve();
 
       expect(dialog.open).toBe(true);
-      expect(content.style.visibility).toBe('hidden');
+      expect(dialog.classList.contains(DIALOG_CLOSING_CLASS)).toBe(true);
+      expect(content.style.visibility).toBe('');
 
       await afterContentRetirementPaint();
 
@@ -272,6 +251,7 @@ describe('modalDialog', () => {
       await Promise.resolve();
 
       expect(dialog.open).toBe(true);
+      expect(dialog.classList.contains(DIALOG_CLOSING_CLASS)).toBe(false);
       expect(content.style.visibility).toBe('');
     } finally {
       destroy();
@@ -327,22 +307,58 @@ describe('modalDialog', () => {
     }
   });
 
-  it('retires compositor content after the transparent dialog closes', async () => {
-    const modal = createModal();
-    const dialog = document.body.appendChild(document.createElement('dialog'));
-    const content = dialog.appendChild(document.createElement('div'));
-    const cancelFlyIn = vi.fn();
+  function stubExit(dialog: HTMLDialogElement, endTime: number) {
+    let finish = () => {};
+    const finished = new Promise<void>((resolve) => (finish = resolve));
     Object.defineProperty(dialog, 'getAnimations', {
-      value: () => [{ cancel: cancelFlyIn }],
+      configurable: true,
+      value: () =>
+        dialog.classList.contains(DIALOG_CLOSING_CLASS)
+          ? [{ finished, effect: { getComputedTiming: () => ({ endTime }) } }]
+          : [],
     });
-    const destroy = $effect.root(() => {
+    return () => finish();
+  }
+
+  function mountClosable(dialog: HTMLDialogElement, modal: ReturnType<typeof createModal>) {
+    return $effect.root(() => {
       const action = modalDialog(dialog, () => ({
         open: modal.open,
         onRequestClose: modal.hide,
-        retirement: 'compositor',
       }));
       return action.destroy;
     });
+  }
+
+  it('closes only once the exit animation finishes', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const finishExit = stubExit(dialog, 10_000);
+    const destroy = mountClosable(dialog, modal);
+
+    try {
+      modal.show(null);
+      await Promise.resolve();
+      modal.hide();
+      await Promise.resolve();
+      await afterContentRetirementPaint();
+
+      expect(dialog.open).toBe(true);
+      expect(dialog.classList.contains(DIALOG_CLOSING_CLASS)).toBe(true);
+
+      finishExit();
+      await vi.waitFor(() => expect(dialog.open).toBe(false));
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
+
+  it('closes past an exit that never reports finishing', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    stubExit(dialog, 20);
+    const destroy = mountClosable(dialog, modal);
 
     try {
       modal.show(null);
@@ -350,24 +366,38 @@ describe('modalDialog', () => {
       modal.hide();
       await Promise.resolve();
 
-      expect(dialog.style.opacity).toBe('0');
-      expect(cancelFlyIn).toHaveBeenCalledOnce();
-      expect(content.style.pointerEvents).toBe('none');
-      expect(content.style.visibility).toBe('');
+      expect(dialog.open).toBe(true);
+      await vi.waitFor(() => expect(dialog.open).toBe(false));
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
 
-      await afterContentRetirementPaint();
+  it('restarts cleanly when reopened mid-exit', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const content = dialog.appendChild(document.createElement('div'));
+    const finishExit = stubExit(dialog, 10_000);
+    const destroy = mountClosable(dialog, modal);
 
-      expect(dialog.open).toBe(false);
-      expect(content.style.visibility).toBe('hidden');
-
+    try {
       modal.show(null);
       await Promise.resolve();
+      modal.hide();
+      await Promise.resolve();
+      modal.show(null);
+      await Promise.resolve();
+      finishExit();
+      await afterContentRetirementPaint();
 
       expect(dialog.open).toBe(true);
-      expect(dialog.style.opacity).toBe('');
+      expect(dialog.classList.contains(DIALOG_CLOSING_CLASS)).toBe(false);
+      expect(content.inert).toBe(false);
       expect(content.style.pointerEvents).toBe('');
-      expect(content.style.visibility).toBe('');
     } finally {
+      modal.hide();
+      await Promise.resolve();
       destroy();
       dialog.remove();
     }

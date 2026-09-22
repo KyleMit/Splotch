@@ -18,7 +18,10 @@
 //     stylelint 16 removed its own stylistic rules for that reason.
 //   * The checks in `npm run lint:tokens` (ADR-0071). Some are expressible
 //     here, but consolidating them is its own decision.
+import keyframeCurves from './tools/stylelint-keyframe-curves.mjs';
+
 export default {
+  plugins: [keyframeCurves],
   // A `stylelint-disable` must say why, must actually be suppressing
   // something, and must name a rule this config enables — the same standard
   // ADR-0031 holds the justified `{@html}` disables to. Without these, a
@@ -172,6 +175,12 @@ export default {
     'color-function-notation': 'modern',
     'color-hex-length': 'short',
     'shorthand-property-no-redundant-values': true,
+
+    // A keyframe block that hand-draws its own overshoot plays on `linear` and
+    // names each segment's curve inside the keyframe; a shorthand curve would
+    // re-apply between every pair of stops (the design skill's motion
+    // practice 01, tools/stylelint-keyframe-curves.mjs).
+    'splotch/keyframe-curves': true,
   },
   overrides: [
     {

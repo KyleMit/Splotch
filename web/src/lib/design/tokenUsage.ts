@@ -57,8 +57,13 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   durationFast: 'Presses, hovers, color flips.',
   durationBase: 'Standard transitions: fills, borders, reveals.',
   durationSlow: 'Whole-surface entrances: dialogs, panels.',
-  easePop: 'Anything that pops in or celebrates: dialog fly-ins, download-done, the swatch press.',
+  durationExit:
+    'Exits: a dialog flying back, a coloring page lifting off. Pair it with --ease-glide.',
+  easePop:
+    'A two-state pop or a single-segment keyframe: download-done, the drawer cascade. Hand-drawn overshoot runs linear instead.',
   easeGlide: 'Anything that settles or leaves: the polaroid, the swatch ring, the undo ghost.',
+  easeDrawer:
+    'Two things that must move as one: the drawer and its chevron. Symmetric, so neither gets ahead.',
 
   disabledOpacity:
     'A whole disabled control: toggle rows, chips, buttons, gate keys. Never for text or a glyph on its own — those change ink token.',

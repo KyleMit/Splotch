@@ -9,6 +9,7 @@
   import ColorControl from './ColorControl.svelte';
   import BrushControl from './BrushControl.svelte';
   import InkOrMagicIcon from './InkOrMagicIcon.svelte';
+  import { playPressRelease, pressRelease } from '$lib/actions/pressRelease';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colorsState, isWhite, isDarkInk } from '$lib/state/colors.svelte';
@@ -348,6 +349,7 @@
   function handleStrokeSizeClick(size: StrokeSize) {
     setStrokeSize(size);
     closeFlyout({ restoreFocus: true });
+    if (strokeTriggerEl) playPressRelease(strokeTriggerEl);
   }
 
   function handleColoringBookClick() {
@@ -455,6 +457,7 @@
           use:scribbleTap={handleStrokeBtnClick}
           onclick={restoreFlyoutTriggerFocus}
           bind:this={strokeTriggerEl}
+          use:pressRelease
           style:color={colorsState.activeColor}
         >
           {#if erasing}
@@ -576,6 +579,10 @@
 
 <style>
   .actions-panel {
+    /* One clock for the drawer gesture: track, margin and chevron (the drawer's
+       sibling, hence declared here) share it and --ease-drawer. The chevron turns
+       only mid-gesture, so a rotation's axis change snaps. */
+    --drawer-collapse: var(--duration-base);
     pointer-events: auto;
     position: fixed;
     bottom: calc(8px + var(--safe-area-bottom));
@@ -626,32 +633,36 @@
      the old slide axis — while the inner clips its overflowing content. The margin
      toward the toggle collapses too, so the toggle glides to the corner. */
   .actions-drawer {
-    --cascade: 45ms;
+    --cascade: 30ms;
     display: grid;
     grid-template-columns: 1fr;
     align-items: center;
     /* 4px plus the toggle's own 8px icon padding puts the chevron on the
        row's 12px rhythm. */
     margin-right: 4px;
-    /* Grid-track animation repaints the scene beneath this fixed panel on mobile
-       Chromium. Keep the motion perceptible without spanning enough frames to
-       starve drawing-surface presentation. */
-    --drawer-collapse: calc(var(--duration-fast) / 2);
+    /* No opacity: the track's clip is the reveal. Grid-track animation re-lays
+       out under this fixed panel on mobile Chromium; measure before lengthening. */
     --drawer-transition:
-      grid-template-columns var(--drawer-collapse) ease,
-      grid-template-rows var(--drawer-collapse) ease, opacity var(--drawer-collapse) ease,
-      margin var(--drawer-collapse) ease;
+      grid-template-columns var(--drawer-collapse) var(--ease-drawer),
+      grid-template-rows var(--drawer-collapse) var(--ease-drawer),
+      margin var(--drawer-collapse) var(--ease-drawer);
   }
 
   .actions-panel[data-drawer-motion] .actions-drawer {
     transition: var(--drawer-transition);
   }
 
-  /* Reduced motion: the drawer appears and leaves instead of unrolling. Opacity
-     alone stays transitioned — the track snaps — so the buttons still fade
-     rather than blink, and finishDrawerMotion still has a transition to end on. */
+  /* Reduced motion: the track and chevron snap and only opacity transitions (the
+     closed drawer takes opacity 0 only here), so the buttons fade rather than
+     blink and finishDrawerMotion still has a transition to end on. */
   :global(:root[data-reduce-motion]) .actions-drawer {
     --drawer-transition: opacity var(--drawer-collapse) ease;
+  }
+
+  :global(:root[data-reduce-motion])
+    :global(.actions-panel[data-action-panel-live]:not([data-drawer-open]))
+    .actions-drawer {
+    opacity: 0;
   }
 
   .actions-panel.settings-covered {
@@ -684,7 +695,6 @@
     .actions-drawer,
   :global(.actions-panel[data-action-panel-live]:not([data-drawer-open])) .actions-drawer {
     grid-template-columns: 0fr;
-    opacity: 0;
     margin-right: 0;
     pointer-events: none;
     /* Inert when closed: out of hit-testing, the a11y tree, and tab order (unlike
@@ -771,6 +781,13 @@
     --drawer-axis-rot: 0deg;
     --drawer-open-rot: 0deg;
     transform: rotate(calc(var(--drawer-axis-rot) + var(--drawer-open-rot)));
+  }
+
+  .actions-panel[data-drawer-motion] :global(.drawer-toggle-icon) {
+    transition: transform var(--drawer-collapse) var(--ease-drawer);
+  }
+  :global(:root[data-reduce-motion]) .actions-panel :global(.drawer-toggle-icon) {
+    transition: none;
   }
 
   :global(html[data-drawer-open])

@@ -22,6 +22,11 @@
 // app.html also resolves the theme before hydration and follows the OS on
 // routes without reactive appearance state.
 
+// The extension is explicit because Node tooling loads this module directly
+// under --experimental-strip-types (gen-style-covers.mjs), the same reason
+// design/tokens.ts names '../fonts.ts'.
+import { prefersReducedMotion } from './platform/reducedMotion.ts';
+
 export const RESOLVED_THEMES = ['light', 'dark'] as const;
 
 export type ResolvedTheme = (typeof RESOLVED_THEMES)[number];
@@ -79,9 +84,24 @@ export function updateThemeColorMeta(resolved: ResolvedTheme) {
   setThemeColorMeta(THEME_COLORS[resolved]);
 }
 
+// A theme change repaints every surface at once — ~45 tokens per theme, half of
+// them behind a prefers-color-scheme block no transition can reach — so it
+// crossfades one snapshot of the whole screen instead of transitioning
+// properties (ADR-0171). A restamp that changes nothing (hydration, the boot
+// fallback) never starts one, so first paint stays instant. Engines without
+// View Transitions, and reduced motion, swap at once.
 export function applyTheme(preference: ThemePreference) {
   if (typeof document === 'undefined') return;
   const el = document.documentElement;
-  if (preference === 'system') el.removeAttribute('data-theme');
-  else el.setAttribute('data-theme', preference);
+  const wanted = preference === 'system' ? null : preference;
+  if (el.getAttribute('data-theme') === wanted) return;
+  const swap = () => {
+    if (wanted === null) el.removeAttribute('data-theme');
+    else el.setAttribute('data-theme', wanted);
+  };
+  if (prefersReducedMotion() || typeof document.startViewTransition !== 'function') {
+    swap();
+    return;
+  }
+  document.startViewTransition(swap);
 }

@@ -85,9 +85,57 @@
     return Array.isArray(selected) ? selected.includes(value) : selected === value;
   }
 
-  // Element refs for the roving focus moves below — deliberately untracked,
-  // nothing renders from them.
-  const optionEls: HTMLButtonElement[] = [];
+  // Element refs for the roving focus moves below and the thumb's measurement —
+  // deliberately untracked, nothing renders from them.
+  const optionEls: HTMLElement[] = [];
+  let trackEl: HTMLDivElement | undefined = $state();
+
+  // The segment skin's one raised thumb travels between cells instead of each
+  // cell painting its own fill. It is measured rather than computed from the
+  // index because cells are equal-width only under `fill`: hugging tracks and
+  // collapsed square options are not. No thumb without exactly one selection —
+  // the orientation segment can release to null, and toggle chips pass a subset.
+  const thumbIndex = $derived(
+    variant === 'segment' && !Array.isArray(selected) && selected !== null
+      ? options.findIndex((option) => option.value === selected)
+      : -1
+  );
+  let thumbX = $state(0);
+  let thumbWidth = $state(0);
+  // Off while the thumb is placed without travel: on first paint, and when a
+  // resize moves the cells rather than the selection.
+  let thumbTravels = $state(false);
+  let travelFrame: number | undefined;
+
+  function placeThumb(travel: boolean) {
+    const target = optionEls[thumbIndex];
+    if (!target) return;
+    const firstPlacement = thumbWidth === 0;
+    thumbX = target.offsetLeft;
+    thumbWidth = target.offsetWidth;
+    if (travel && !firstPlacement) return;
+    thumbTravels = false;
+    if (travelFrame !== undefined) cancelAnimationFrame(travelFrame);
+    travelFrame = requestAnimationFrame(() => {
+      travelFrame = undefined;
+      thumbTravels = true;
+    });
+  }
+
+  $effect(() => {
+    if (thumbIndex !== -1) placeThumb(true);
+  });
+
+  $effect(() => {
+    if (thumbIndex === -1 || !trackEl) return;
+    const observer = new ResizeObserver(() => placeThumb(false));
+    observer.observe(trackEl);
+    for (const option of optionEls) if (option) observer.observe(option);
+    return () => {
+      observer.disconnect();
+      if (travelFrame !== undefined) cancelAnimationFrame(travelFrame);
+    };
+  });
 
   // APG radio-group pattern: the group is one tab stop. The selected option
   // carries it — or the first enabled one while nothing is selected.
@@ -119,11 +167,24 @@
 </script>
 
 <div
-  class={['picker', variant, fill && 'fill', labels === 'collapsible' && 'collapsible', className]}
+  class={[
+    'picker',
+    variant,
+    fill && 'fill',
+    labels === 'collapsible' && 'collapsible',
+    thumbTravels && 'thumb-travels',
+    className,
+  ]}
   role={mode === 'radio' ? 'radiogroup' : 'group'}
   aria-label={label}
   aria-describedby={describedBy}
+  style:--thumb-x={thumbIndex === -1 ? undefined : `${thumbX}px`}
+  style:--thumb-width={thumbIndex === -1 ? undefined : `${thumbWidth}px`}
+  bind:this={trackEl}
 >
+  {#if thumbIndex !== -1}
+    <span class="thumb" aria-hidden="true"></span>
+  {/if}
   <!-- Both branches carry aria-label: an option's name would otherwise come from
      its visible text — the button's own content, the wrapping label's content
      for a native radio — which is exactly the text `labels="collapsible"` lets
@@ -132,7 +193,7 @@
   {#each options as option, index (option.value)}
     {@const active = isSelected(option.value)}
     {#if inputName}
-      <label class="option" class:active id={option.id}>
+      <label class="option" class:active id={option.id} bind:this={optionEls[index]}>
         <input
           type="radio"
           name={inputName}
@@ -238,6 +299,11 @@
      through the option direction, gap, and padding, and the compact settings
      shell matches the track to its cell through the two radii. */
   .segment {
+    /* Past --duration-base so the travel reads as a glide between cells rather
+       than a jump, and inside a toddler's second tap. */
+    --thumb-travel-duration: 220ms;
+    /* The thumb's containing block, so option offsets measure from here. */
+    position: relative;
     display: inline-flex;
     gap: var(--space-1);
     padding: var(--space-1);
@@ -262,10 +328,33 @@
     line-height: 1.2;
     /* Concentric with the track: --radius-md outer minus the --space-1 inset. */
     border-radius: var(--segment-option-radius, var(--radius-sm));
+    transition: color var(--duration-fast) ease;
+  }
+
+  /* Painted first, so every option — relatively positioned above — sits on it.
+     Inset like the options, and on their radius, so it reads as the cell. */
+  .segment .thumb {
+    position: absolute;
+    top: var(--space-1);
+    bottom: var(--space-1);
+    left: 0;
+    width: var(--thumb-width, 0);
+    border-radius: var(--segment-option-radius, var(--radius-sm));
+    background: var(--brand-solid);
+    box-shadow: var(--shadow-control);
+    transform: translateX(var(--thumb-x, 0));
+    pointer-events: none;
+  }
+
+  .segment.thumb-travels .thumb {
     transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      box-shadow var(--duration-fast) ease;
+      transform var(--thumb-travel-duration) var(--ease-glide),
+      width var(--thumb-travel-duration) var(--ease-glide);
+  }
+
+  /* Exactly ToggleSwitch's calm twin: a state change snaps. */
+  :global(:root[data-reduce-motion]) .segment .thumb {
+    transition: none;
   }
 
   .segment.fill .option {
@@ -293,9 +382,7 @@
   }
 
   .segment .option.active {
-    background: var(--brand-solid);
     color: var(--on-brand);
-    box-shadow: var(--shadow-control);
   }
 
   .segment :global(.picker-option-icon) {
