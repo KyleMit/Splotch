@@ -44,6 +44,13 @@ const HUD_CONTROLS = [
 const FULLSCREEN_TOGGLE = '.fullscreen-toggle';
 const ANDROID_BROWSER_UA =
   'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36';
+// The Notch Band excludes iPads by device class (isIosTabletClass), and on the
+// web that class is read off the user agent (isIosDevice) — so an iOS profile
+// has to present as one or the matrix exercises a Chromium desktop that happens
+// to have an iPad's insets. The native app never needs the sniff: the Capacitor
+// global names the platform, which no CDP emulation can supply.
+const IOS_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1';
 
 function expectsFullscreenToggle(profile: DeviceProfile): boolean {
   return profile.platform === 'android' && profile.surface === 'browser';
@@ -82,6 +89,9 @@ async function applyScenario(page: Page, profile: DeviceProfile, orientation: Or
   if (expectsFullscreenToggle(profile)) {
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setUserAgentOverride', { userAgent: ANDROID_BROWSER_UA });
+  }
+  if (profile.platform === 'ios') {
+    await cdp.send('Emulation.setUserAgentOverride', { userAgent: IOS_UA });
   }
   // The applied values, not the researched ones: CDP rounds fractional insets
   // (see overrideSafeAreaInsets), so this is what the page will actually report.
