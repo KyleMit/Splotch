@@ -6,9 +6,8 @@
       ? Math.max(0, 8 + renderedActionButtonSize() / 2 - 30 + layoutState.safeArea.bottom)
       : 8
   );
+  import { activePalette, activeTrimOrder } from '$lib/state/activePalette.svelte';
   import {
-    PALETTE_COLORS,
-    TRIM_ORDER,
     CUSTOM_SWATCH,
     colorsState,
     selectPaletteColor,
@@ -116,7 +115,8 @@
   // correct on the prerendered first paint with no resize flash. The palette
   // always spans the full relevant viewport dimension (height in landscape,
   // width in portrait), so viewport breakpoints map directly onto its room.
-  const trimRank = new Map(TRIM_ORDER.map((hex, i) => [hex, i]));
+  const palette = $derived(activePalette());
+  const trimRank = $derived(new Map(activeTrimOrder().map((hex, i) => [hex, i])));
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -129,7 +129,7 @@
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
 >
-  {#each PALETTE_COLORS as { hex, label } (hex)}
+  {#each palette as { hex, label } (hex)}
     {@const shown = themedSwatchColor(hex, dark)}
     {@const ringColor = getRingColor(shown)}
     <button

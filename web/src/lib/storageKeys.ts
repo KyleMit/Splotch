@@ -26,6 +26,7 @@ export const STORAGE_KEYS = {
   applePencilSeen: 'splotch-apple-pencil-seen',
   theme: 'splotch-theme',
   reduceMotion: 'splotch-reduce-motion',
+  colorBlindFriendly: 'splotch-color-blind-friendly',
   toolbarStyle: 'splotch-toolbar-style',
   brushType: 'splotch-brush-type',
   strokeWidthSize: 'splotch-stroke-width-size',

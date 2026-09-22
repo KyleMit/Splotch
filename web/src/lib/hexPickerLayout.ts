@@ -161,13 +161,27 @@ export interface PickerRow {
 }
 
 /** Portrait grid: one row per family, shades light → dark across. */
-export const PORTRAIT_ROWS: PickerRow[] = COLOR_FAMILIES.map((f) => ({
-  key: f.name,
-  colors: f.shades,
-}));
+export function portraitRows(families: readonly ColorFamily[]): PickerRow[] {
+  return families.map((f) => ({ key: f.name, colors: f.shades }));
+}
 
 /** Landscape grid: the transpose — one row per shade level, families across. */
-export const LANDSCAPE_ROWS: PickerRow[] = Array.from({ length: SHADE_COUNT }, (_, s) => ({
-  key: `shade-${s + 1}`,
-  colors: COLOR_FAMILIES.map((f) => f.shades[s]),
-}));
+export function landscapeRows(families: readonly ColorFamily[]): PickerRow[] {
+  return Array.from({ length: SHADE_COUNT }, (_, s) => ({
+    key: `shade-${s + 1}`,
+    colors: families.map((f) => f.shades[s]),
+  }));
+}
+
+export const PORTRAIT_ROWS: PickerRow[] = portraitRows(COLOR_FAMILIES);
+export const LANDSCAPE_ROWS: PickerRow[] = landscapeRows(COLOR_FAMILIES);
+
+// Spike (issue #2096): the largest set of whole families whose every
+// cross-family pair stays ΔE ≥ 10 apart under protan, deutan and tritan
+// simulation at once (worst pair 11.9) — four columns of the nine.
+const COLOR_BLIND_FAMILY_NAMES = ['yellows', 'greens', 'purples', 'greys'];
+export const COLOR_BLIND_FAMILIES: ColorFamily[] = COLOR_FAMILIES.filter((f) =>
+  COLOR_BLIND_FAMILY_NAMES.includes(f.name)
+);
+export const COLOR_BLIND_PORTRAIT_ROWS: PickerRow[] = portraitRows(COLOR_BLIND_FAMILIES);
+export const COLOR_BLIND_LANDSCAPE_ROWS: PickerRow[] = landscapeRows(COLOR_BLIND_FAMILIES);

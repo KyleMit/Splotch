@@ -96,3 +96,46 @@ const _everySwatchHasATrimRank: [UnrankedSwatch] extends [never] ? true : Unrank
 export const TRIM_ORDER: readonly string[] = [...PALETTE_TIERS]
   .reverse()
   .flatMap((tier) => TIER_TRIM_PRIORITY[tier].map((label) => paletteHex(label)));
+
+// Spike (issue #2096): fifteen swatches that stay CIE76 ΔE ≥ 14.8 apart under
+// typical, protan, deutan and tritan simulation at once (Machado 2009,
+// severity 1.0) — the audit's feasibility set with White swapped for a slate
+// grey so the bar keeps its no-white rule. Fourteen of the fifteen are colors
+// the app already owns. Uncurated: same slot count as PALETTE_COLORS so the
+// trim ladders, MAX_COLOR_TILES and the landscape toolbar need no change.
+const COLOR_BLIND_SOURCE = [
+  { hex: '#AB71E1', label: 'Purple' },
+  { hex: '#7209B7', label: 'Violet' },
+  { hex: '#E0AAFF', label: 'Lavender' },
+  { hex: '#023E8A', label: 'Navy' },
+  { hex: '#03045E', label: 'Midnight' },
+  { hex: '#4FC4C0', label: 'Teal' },
+  { hex: '#2D6A4F', label: 'Forest' },
+  { hex: '#8CC864', label: 'Green' },
+  { hex: '#BEDD40', label: 'Lime' },
+  { hex: '#F77F00', label: 'Orange' },
+  { hex: '#D62828', label: 'Red' },
+  { hex: '#6A040F', label: 'Maroon' },
+  { hex: '#B5835A', label: 'Brown' },
+  { hex: '#607D8B', label: 'Slate' },
+  { hex: BLACK_INK, label: 'Black' },
+] as const satisfies readonly PaletteColor[];
+
+export const COLOR_BLIND_PALETTE: readonly PaletteColor[] = COLOR_BLIND_SOURCE;
+
+type ColorBlindLabel = (typeof COLOR_BLIND_SOURCE)[number]['label'];
+
+// Which of these a small phone keeps: a blue, a warm, a green, a purple, black.
+const COLOR_BLIND_TRIM_PRIORITY = {
+  core: ['Red', 'Orange', 'Green', 'Navy', 'Purple', 'Black'],
+  bonus: ['Brown', 'Teal', 'Maroon'],
+  deluxe: ['Slate', 'Lime', 'Forest', 'Midnight', 'Violet', 'Lavender'],
+} as const satisfies Record<PaletteTier, readonly ColorBlindLabel[]>;
+
+function colorBlindHex(label: ColorBlindLabel): string {
+  return COLOR_BLIND_SOURCE.find((entry) => entry.label === label)!.hex;
+}
+
+export const COLOR_BLIND_TRIM_ORDER: readonly string[] = [...PALETTE_TIERS]
+  .reverse()
+  .flatMap((tier) => COLOR_BLIND_TRIM_PRIORITY[tier].map((label) => colorBlindHex(label)));

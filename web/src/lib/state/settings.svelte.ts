@@ -80,6 +80,9 @@ const BOOL_SETTINGS = {
   // double-tap fires. Not a user toggle itself — it's what reveals the
   // pencilEraserEnabled row in Settings.
   applePencilSeen: [STORAGE_KEYS.applePencilSeen, false],
+  // Swaps the crayon bar and hex picker for palettes that stay distinct under
+  // red-green and blue-yellow color blindness (issue #2096 spike).
+  colorBlindFriendlyEnabled: [STORAGE_KEYS.colorBlindFriendly, false],
 } satisfies Record<string, [StorageKey, boolean]>;
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
@@ -228,6 +231,7 @@ interface SettingsMutators {
   setForceLandscapeOrientation(v: boolean): void;
   setPencilEraserEnabled(v: boolean): void;
   setApplePencilSeen(v: boolean): void;
+  setColorBlindFriendly(v: boolean): void;
   setTheme(v: ThemePreference): void;
   setReduceMotion(v: ReduceMotionPreference): void;
   setToolbarStyle(v: ToolbarStyle): void;
@@ -347,6 +351,7 @@ export function createSettings(tool: ToolState): SettingsState {
     setForceLandscapeOrientation: makeBoolSetter('forceLandscapeOrientation'),
     setPencilEraserEnabled: makeBoolSetter('pencilEraserEnabled'),
     setApplePencilSeen: makeBoolSetter('applePencilSeen'),
+    setColorBlindFriendly: makeBoolSetter('colorBlindFriendlyEnabled'),
     setTheme,
     setReduceMotion(v) {
       s.reduceMotion = v;
@@ -425,6 +430,7 @@ export const {
   setForceLandscapeOrientation,
   setPencilEraserEnabled,
   setApplePencilSeen,
+  setColorBlindFriendly,
   setTheme,
   setReduceMotion,
   setToolbarStyle,

@@ -5,7 +5,14 @@
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
   import { HEX_GRID_GEOMETRY } from '$lib/design/trimGeometry';
-  import { PORTRAIT_ROWS, LANDSCAPE_ROWS, PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
+  import {
+    PORTRAIT_ROWS,
+    LANDSCAPE_ROWS,
+    COLOR_BLIND_PORTRAIT_ROWS,
+    COLOR_BLIND_LANDSCAPE_ROWS,
+    PICKER_DIM_BORDER,
+  } from '$lib/hexPickerLayout';
+  import { settingsState } from '$lib/state/settings.svelte';
 
   // Both grid arrangements are rendered; CSS media queries pick one per
   // orientation and progressively trim it (see the trim ladders in the style
@@ -13,10 +20,17 @@
   // rules, the layout is correct on the prerendered first paint with no JS
   // measurement or resize flash. Landscape first: E2E helpers grab the first
   // `.hexagon`, and the Playwright default viewport is landscape.
-  const GRIDS = [
-    { name: 'landscape', rows: LANDSCAPE_ROWS },
-    { name: 'portrait', rows: PORTRAIT_ROWS },
-  ];
+  const GRIDS = $derived(
+    settingsState.colorBlindFriendlyEnabled
+      ? [
+          { name: 'landscape', rows: COLOR_BLIND_LANDSCAPE_ROWS },
+          { name: 'portrait', rows: COLOR_BLIND_PORTRAIT_ROWS },
+        ]
+      : [
+          { name: 'landscape', rows: LANDSCAPE_ROWS },
+          { name: 'portrait', rows: PORTRAIT_ROWS },
+        ]
+  );
 
   interface HexCenter {
     color: string;
