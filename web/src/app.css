@@ -198,6 +198,20 @@ body {
   }
 }
 
+/* A theme change crossfades one snapshot of the whole screen (applyTheme in
+   lib/theme.ts). Opacity only, and long enough to read as the room dimming
+   rather than a cut. The ::view-transition tree inherits from <html>, which is
+   where the duration is read. */
+:root {
+  --theme-crossfade-duration: 320ms;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--theme-crossfade-duration);
+  animation-timing-function: ease;
+}
+
 /* Shared dialog open animation — anchored at a per-dialog --origin-x/y so
    each modal appears to fly out from the button that opened it. It starts small
    but still recognisably the card, pulls back toward the button before it
