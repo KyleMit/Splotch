@@ -353,6 +353,20 @@ body {
    that reserve that room derive it from the button's own geometry instead of
    restating it. */
 :root {
+  /* The gap a phone-width dialog leaves to each screen edge. Every dialog that
+     stretches with the viewport sets `width: calc(100vw - 2 * var(--modal-gutter))`
+     and states its cap as max-width, so they all land at the same distance;
+     the gate and confirm cards keep their own narrow 336px cap. The cap has to
+     be an explicit max-width: the UA stylesheet gives a <dialog> a max-width of
+     calc(100% - 38px), and a width alone stays under it.
+
+     The gutter grows to the larger side inset so a card that stretches on a
+     landscape notched phone clears the cutout on both sides; the card is
+     centred, so one symmetric gutter is the only shape that can. `sizes` hints
+     cannot read a custom property, so books.ts restates the floor and
+     books.test.ts binds the two. */
+  --modal-gutter-min: 16px;
+  --modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));
   --modal-close-size: 44px;
   --modal-close-inset: var(--space-3);
   --modal-close-clearance-x: calc(

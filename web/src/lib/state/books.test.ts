@@ -33,11 +33,30 @@ const activePageChipComponent = readFileSync(
   'utf8'
 );
 const tokensCss = readFileSync(new URL('../../tokens.css', import.meta.url), 'utf8');
+const appCss = readFileSync(new URL('../../app.css', import.meta.url), 'utf8');
 
 function spacingTokenPx(token: string): number {
   const value = new RegExp(`--${token}: (\\d+)px`).exec(tokensCss)?.[1];
   expect(value, token).toBeDefined();
   return Number(value);
+}
+
+/** Both screen-edge gutters the dialog width subtracts from 100vw (app.css). */
+function dialogGuttersPx(): number {
+  const value = /--modal-gutter-min: (\d+)px/.exec(appCss)?.[1];
+  expect(value, 'modal-gutter-min').toBeDefined();
+  return 2 * Number(value);
+}
+
+/** The viewport width at which the dialog reaches its max-width cap. */
+function dialogCapViewportPx(): number {
+  const modalRule = coloringBookComponent.slice(
+    coloringBookComponent.indexOf('.coloring-book-modal {'),
+    coloringBookComponent.indexOf('.coloring-book-content {')
+  );
+  const cap = /max-width: (\d+)px/.exec(modalRule)?.[1];
+  expect(cap, 'coloring-book-modal max-width').toBeDefined();
+  return Number(cap) + dialogGuttersPx();
 }
 
 describe('page defaults', () => {
@@ -188,7 +207,8 @@ describe('responsive image sources', () => {
 
   it('keeps picker sizes aligned with the modal grid geometry', () => {
     for (const ownedCssValue of [
-      'max-width: min(920px, calc(100vw - 32px))',
+      'width: calc(100vw - 2 * var(--modal-gutter))',
+      'max-width: 920px',
       '--book-grid-max-width: 856px',
       '--book-cols: 4',
       '@media (max-width: 520px)',
@@ -203,8 +223,17 @@ describe('responsive image sources', () => {
       hasOrphan: true,
       imageSizes: COLORING_IMAGE_SIZES.coverThumbnail.orphan,
     });
-    expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain('(90vw - 100px) / 4');
-    expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
+    expect(appCss).toContain(
+      '--modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));'
+    );
+    const guttersPx = dialogGuttersPx();
+    const capViewportPx = dialogCapViewportPx();
+    expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain(
+      `(max-width: ${capViewportPx}px) calc((100vw - ${guttersPx + 100}px) / 4), 205px`
+    );
+    expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain(
+      `(max-width: ${capViewportPx}px) calc((100vw - ${guttersPx + 88}px) / 3), 277px`
+    );
     for (const ownedCssValue of [
       '.coloring-pages-grid {',
       '--page-cols: 2',
@@ -217,17 +246,20 @@ describe('responsive image sources', () => {
     ]) {
       expect(coloringBookComponent).toContain(ownedCssValue);
     }
-    const narrowChromePx = 2 * spacingTokenPx('space-4') + spacingTokenPx('space-2');
+    const narrowChromePx = guttersPx + 2 * spacingTokenPx('space-4') + spacingTokenPx('space-2');
     const scrollbarReservePx = spacingTokenPx('space-4');
     const widePortraitChromePx =
-      2 * spacingTokenPx('space-7') + 2 * spacingTokenPx('space-3') + scrollbarReservePx;
+      guttersPx +
+      2 * spacingTokenPx('space-7') +
+      2 * spacingTokenPx('space-3') +
+      scrollbarReservePx;
     const wideLandscapeChromePx =
-      2 * spacingTokenPx('space-7') + spacingTokenPx('space-3') + scrollbarReservePx;
+      guttersPx + 2 * spacingTokenPx('space-7') + spacingTokenPx('space-3') + scrollbarReservePx;
     expect(COLORING_IMAGE_SIZES.pageSelector.portrait).toBe(
-      `(max-width: 520px) calc((90vw - ${narrowChromePx}px) / 2), min(calc((90vw - ${widePortraitChromePx}px) / 3), 272px)`
+      `(max-width: 520px) calc((100vw - ${narrowChromePx}px) / 2), min(calc((100vw - ${widePortraitChromePx}px) / 3), 272px)`
     );
     expect(COLORING_IMAGE_SIZES.pageSelector.landscape).toBe(
-      `(max-width: 520px) calc((90vw - ${narrowChromePx}px) / 2), min(calc((90vw - ${wideLandscapeChromePx}px) / 2), 414px)`
+      `(max-width: 520px) calc((100vw - ${narrowChromePx}px) / 2), min(calc((100vw - ${wideLandscapeChromePx}px) / 2), 414px)`
     );
     expect(coloringBookComponent).toContain(
       'pageSelectorImageSource(page, orientation, resolvedTheme())'
