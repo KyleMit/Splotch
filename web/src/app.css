@@ -278,6 +278,46 @@ body {
   transform-origin: center;
 }
 
+/* The exit the dialog action plays before it closes (DIALOG_CLOSING_CLASS in
+   modalDialog.svelte.ts). The card heads back toward the button it came from,
+   but only most of the way: arriving there fully reads as a second, slower
+   fly-in played backwards. The action awaits this animation, so a closing
+   dialog must always have one. */
+.modal-dialog.modal-fly-in[open].closing {
+  animation: dialogFlyBack var(--duration-exit) var(--ease-glide) forwards;
+}
+
+@keyframes dialogFlyBack {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(
+        calc(-50% + var(--origin-x, 0px) * 0.7),
+        calc(-50% + var(--origin-y, 0px) * 0.7)
+      )
+      scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* A dialog with no fly-in of its own has no opener to return to: it sinks in
+   place. Zero-specificity base (:where) so a dialog that choreographs its own
+   send-off — AiImageResult's polaroid — keeps it through the close, and the
+   independent `scale` so it composes with whatever centering transform the card
+   already carries. */
+:where(.modal-dialog[open]).closing {
+  animation: dialogSink var(--duration-exit) var(--ease-glide) forwards;
+}
+
+@keyframes dialogSink {
+  to {
+    scale: 0.94;
+    opacity: 0;
+  }
+}
+
 /* Shared modal card: centering, white surface, rounded corners, shadow.
    Per-modal width/max-height/overflow stays in each component. */
 .modal-shell {
@@ -342,6 +382,13 @@ body {
    own animation finishing, and a dialog with no animation never resolves one. */
 .modal-dialog.modal-fly-in[open][data-start-reduced-motion] {
   animation: modalFadeIn var(--duration-base) ease;
+}
+
+/* The exits' calm twins, stamped when the exit starts. A fade for the same
+   reason as the entrance: the dialog action closes only once it finishes. */
+:where(.modal-dialog[open][data-start-reduced-motion]).closing,
+.modal-dialog.modal-fly-in[open].closing[data-start-reduced-motion] {
+  animation: modalFadeIn var(--duration-base) ease reverse forwards;
 }
 
 @keyframes modalFadeIn {

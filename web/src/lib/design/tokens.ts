@@ -102,6 +102,10 @@ export const scale = {
   durationFast: '0.15s',
   durationBase: '0.2s',
   durationSlow: '0.35s',
+  // What an exit takes: a dialog flying back, the coloring page lifting off.
+  // The same number as durationBase, named so an exit's ratio to its entrance
+  // reads at the call site (exits run at roughly 0.6 of the entrance).
+  durationExit: '0.2s',
   // Two curves only: the springy overshoot for anything that pops in or
   // celebrates (dialog fly-ins, download-done, swatch press, Clear Button),
   // and the glide for anything that settles or leaves (the polaroid, the

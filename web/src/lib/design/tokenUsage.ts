@@ -57,6 +57,8 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   durationFast: 'Presses, hovers, color flips.',
   durationBase: 'Standard transitions: fills, borders, reveals.',
   durationSlow: 'Whole-surface entrances: dialogs, panels.',
+  durationExit:
+    'Exits: a dialog flying back, a coloring page lifting off. Pair it with --ease-glide.',
   easePop: 'Anything that pops in or celebrates: dialog fly-ins, download-done, the swatch press.',
   easeGlide: 'Anything that settles or leaves: the polaroid, the swatch ring, the undo ghost.',
 

@@ -29,6 +29,7 @@
     durationFast: 'presses & hovers',
     durationBase: 'standard transitions',
     durationSlow: 'whole-surface entrances',
+    durationExit: 'exits',
   };
 
   const easeKeys = ['easePop', 'easeGlide'] as const;

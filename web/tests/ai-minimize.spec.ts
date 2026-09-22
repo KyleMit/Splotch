@@ -216,7 +216,7 @@ test.describe('a generation minimized to the corner', () => {
     await invokeAiGeneration(page);
     await page.getByLabel('Keep drawing while this is made').click();
     await expect(page.locator(polaroid)).toBeVisible();
-    // modalDialog keeps a closing dialog in the top layer through its content-retirement frame.
+    // modalDialog keeps a closing dialog in the top layer until its exit finishes.
     await expect(page.locator(modal)).not.toHaveAttribute('open', /.*/);
 
     // A tie is settled by DOM order, and the banner mounts second — which left
