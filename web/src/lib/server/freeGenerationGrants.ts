@@ -6,6 +6,7 @@ import {
   type FreeGenerationFailureKind,
   type FreeGenerationGrantAdminStats,
 } from '$lib/freeGenerations';
+import { sleep } from './sleep';
 
 const STORE_NAME = 'free-generation-grants';
 const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
@@ -54,8 +55,6 @@ type GrantUpdate<T> = (
 
 const memoryGrants = new Map<string, FreeGenerationGrant>();
 const memoryDailyProviderStarts = new Map<string, DailyProviderStarts>();
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Netlify Blobs reads are eventually consistent by default: after a write, an
 // edge node can keep serving the previous copy for up to a minute. Every

@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import { getStore } from '@netlify/blobs';
+import { sleep } from './sleep';
 import { deleteUsage } from './usage';
 
 // Access tokens live in Netlify Blobs so they can be added/removed at runtime from the
@@ -41,8 +42,6 @@ const SEED_CONFIRMATION_ATTEMPTS = 3;
 // would make every lost seed race fail to confirm, strictly worse than pacing
 // eventual reads — so we stay on eventual and just space the attempts.
 const SEED_CONFIRMATION_BACKOFF_MS = 50;
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function seedFromEnv(): string[] {
   const raw = env.ALLOWED_TOKENS_LIST || '';
