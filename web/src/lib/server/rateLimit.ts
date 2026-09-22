@@ -4,6 +4,7 @@
 // short-lived, and the goal is only to blunt rapid brute-force bursts against
 // the token/key oracles — not to enforce a durable, cross-instance quota. If we
 // ever need that, swap the Map for a Netlify Blobs counter (see tokens.js).
+import type { RateLimitBudget } from './rateLimitPolicy';
 
 // A bucket records the window it was written under so the eviction sweep can
 // judge every key by its own window. One Map is shared by endpoints whose
@@ -57,10 +58,7 @@ function sweepExpiredBuckets(now: number): void {
  * Returns `{ limited, retryAfter }` — `retryAfter` is seconds until the oldest
  * hit in the window ages out (only meaningful when `limited` is true).
  */
-export function rateLimit(
-  key: string,
-  { limit = 10, windowMs = 60_000 }: { limit?: number; windowMs?: number } = {}
-): RateLimitResult {
+export function rateLimit(key: string, { limit, windowMs }: RateLimitBudget): RateLimitResult {
   const now = Date.now();
   const hits = liveHits(key, now, windowMs);
 
@@ -83,10 +81,7 @@ export function rateLimit(
  * no oracle answer), then call `rateLimit` to record a hit only when the
  * check fails, so legitimate callers never consume the budget.
  */
-export function peekRateLimit(
-  key: string,
-  { limit = 10, windowMs = 60_000 }: { limit?: number; windowMs?: number } = {}
-): RateLimitResult {
+export function peekRateLimit(key: string, { limit, windowMs }: RateLimitBudget): RateLimitResult {
   const now = Date.now();
   const hits = liveHits(key, now, windowMs);
   if (hits.length < limit) return { limited: false, retryAfter: 0 };

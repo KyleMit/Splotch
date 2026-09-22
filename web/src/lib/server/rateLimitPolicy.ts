@@ -1,3 +1,8 @@
+export interface RateLimitBudget {
+  limit: number;
+  windowMs: number;
+}
+
 type EndpointRateLimitPolicy = Record<
   | 'verifyAccessCode'
   | 'verifyKey'
@@ -12,7 +17,7 @@ type EndpointRateLimitPolicy = Record<
   | 'generateFree'
   | 'freeGrantStatus'
   | 'generationResult',
-  { limit: number; windowMs: number }
+  RateLimitBudget
 >;
 
 const WINDOW_MS = 60_000;

@@ -13,15 +13,15 @@ describe('rateLimit', () => {
   it('allows hits up to the limit, then blocks the next one', () => {
     const key = 'allow-then-block';
     for (let i = 0; i < 3; i++) {
-      expect(rateLimit(key, { limit: 3 }).limited).toBe(false);
+      expect(rateLimit(key, { limit: 3, windowMs: 60_000 }).limited).toBe(false);
     }
-    expect(rateLimit(key, { limit: 3 }).limited).toBe(true);
+    expect(rateLimit(key, { limit: 3, windowMs: 60_000 }).limited).toBe(true);
   });
 
   it('reports a retryAfter of at least one second once limited', () => {
     const key = 'retry-after';
-    rateLimit(key, { limit: 1 });
-    const result = rateLimit(key, { limit: 1 });
+    rateLimit(key, { limit: 1, windowMs: 60_000 });
+    const result = rateLimit(key, { limit: 1, windowMs: 60_000 });
     expect(result.limited).toBe(true);
     expect(result.retryAfter).toBeGreaterThanOrEqual(1);
   });
@@ -81,10 +81,10 @@ describe('rateLimit', () => {
   });
 
   it('tracks each key independently', () => {
-    expect(rateLimit('key-a', { limit: 1 }).limited).toBe(false);
-    expect(rateLimit('key-a', { limit: 1 }).limited).toBe(true);
+    expect(rateLimit('key-a', { limit: 1, windowMs: 60_000 }).limited).toBe(false);
+    expect(rateLimit('key-a', { limit: 1, windowMs: 60_000 }).limited).toBe(true);
     // A different key has its own budget and is unaffected.
-    expect(rateLimit('key-b', { limit: 1 }).limited).toBe(false);
+    expect(rateLimit('key-b', { limit: 1, windowMs: 60_000 }).limited).toBe(false);
   });
 });
 
@@ -92,15 +92,15 @@ describe('peekRateLimit', () => {
   it('never consumes budget, no matter how often it is called', () => {
     const key = 'peek-free';
     for (let i = 0; i < 10; i++) {
-      expect(peekRateLimit(key, { limit: 1 }).limited).toBe(false);
+      expect(peekRateLimit(key, { limit: 1, windowMs: 60_000 }).limited).toBe(false);
     }
-    expect(rateLimit(key, { limit: 1 }).limited).toBe(false);
+    expect(rateLimit(key, { limit: 1, windowMs: 60_000 }).limited).toBe(false);
   });
 
   it('reports the limited state recorded by rateLimit, with a retryAfter', () => {
     const key = 'peek-sees-hits';
-    rateLimit(key, { limit: 1 });
-    const peeked = peekRateLimit(key, { limit: 1 });
+    rateLimit(key, { limit: 1, windowMs: 60_000 });
+    const peeked = peekRateLimit(key, { limit: 1, windowMs: 60_000 });
     expect(peeked.limited).toBe(true);
     expect(peeked.retryAfter).toBeGreaterThanOrEqual(1);
   });
