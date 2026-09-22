@@ -430,7 +430,7 @@ test('quick-toggle changes persist into the full portrait Settings', async ({ pa
 // compact 2×2; a mini About cell (Splotch icon + version) fills the bottom-right
 // slot instead — the one device-varying cell, so the other three toggles sit in
 // the same place on every device. supportsOrientationLock reads the *physical
-// screen's* smaller side while COMPACT_QUERY reads the window, so the stubbed
+// screen's* smaller side while PHONE_LANDSCAPE_QUERY reads the window, so the stubbed
 // screen stays tablet-sized (min side ≥ 600) while the window height drops
 // under 600 — the small-tablet-in-landscape combination from the report. (The
 // screen getters are stubbed directly because Playwright's `screen` context

@@ -12,7 +12,7 @@
   import { SECTIONS, sectionHeading, sectionSubtitle, type SectionId } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
-  import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+  import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { settingsState, setSound } from '$lib/state/settings.svelte';
@@ -28,13 +28,13 @@
 
   // A landscape *phone* has plenty of width (so it would match WIDE_QUERY) but
   // almost no height — the full section list is unusably cramped there. Detect
-  // it by orientation plus the shared tablet-class floor, and swap in a
-  // stripped-down shell of quick toggles. A landscape tablet keeps its height at
-  // or above that floor, so it stays on the sidebar shell untouched. The bound
-  // is derived from the threshold rather than restated, so retuning the floor
-  // cannot leave shell selection disagreeing with the orientation defaults.
-  const COMPACT_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 1}px)`;
-  const shell = createSettingsMediaQueries({ wide: WIDE_QUERY, compact: COMPACT_QUERY });
+  // it with the app-wide phone-landscape query and swap in a stripped-down
+  // shell of quick toggles. A landscape tablet keeps its height at or above the
+  // tablet-class floor, so it stays on the sidebar shell untouched. Sharing the
+  // one query is what keeps shell selection agreeing with the orientation
+  // defaults and the layout store's phone-landscape classification at every
+  // viewport height, fractional ones included.
+  const shell = createSettingsMediaQueries({ wide: WIDE_QUERY, compact: PHONE_LANDSCAPE_QUERY });
 
   // 'hub' = the phone top-level list; a section id = that section is drilled
   // into. Only the phone shell navigates: the wide shell stacks every section in
