@@ -69,8 +69,7 @@ const RESPONSIVE_COLORING_TIERS = {
     maxEdgePx: 240,
     widths: {
       cover: { candidate: 240, source: 400 },
-      portraitSelector: 160,
-      landscapeSelector: 240,
+      selector: { portrait: 160, landscape: 240 } satisfies Record<BookOrientation, number>,
     },
   },
 } as const;
@@ -318,13 +317,9 @@ export function pageSelectorImageSource(
 ): ResponsiveColoringImage {
   const source = pageSelectorAssetPath(page, orientation, theme);
   const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
-  const mediumWidth =
-    orientation === 'portrait'
-      ? thumbnailTier.widths.portraitSelector
-      : thumbnailTier.widths.landscapeSelector;
   const image = responsiveImage(
     source,
-    [{ directory: thumbnailTier.directory, widthPx: mediumWidth }],
+    [{ directory: thumbnailTier.directory, widthPx: thumbnailTier.widths.selector[orientation] }],
     PAGE_SELECTOR_WIDTHS[orientation]
   );
   return { ...image, src: resolveColoringAssetUrl(source) };
@@ -409,15 +404,11 @@ export function responsiveSelectorColoringAssets(book: Book): ColoringDerivative
       (['light', 'dark'] as const).map((theme) => {
         const source = pageOverlayAssetPath(page, orientation, theme);
         const selector = pageSelectorAssetPath(page, orientation, theme);
-        const mediumWidth =
-          orientation === 'portrait'
-            ? thumbnailTier.widths.portraitSelector
-            : thumbnailTier.widths.landscapeSelector;
         return {
           source,
           target: responsiveTierPath(selector, thumbnailTier.directory),
           maxEdgePx: thumbnailTier.maxEdgePx,
-          widthPx: mediumWidth,
+          widthPx: thumbnailTier.widths.selector[orientation],
           encoding: 'selector' as const,
         };
       })
