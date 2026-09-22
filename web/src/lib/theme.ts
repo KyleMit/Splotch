@@ -22,7 +22,10 @@
 // app.html also resolves the theme before hydration and follows the OS on
 // routes without reactive appearance state.
 
-import { prefersReducedMotion } from './platform/reducedMotion';
+// The extension is explicit because Node tooling loads this module directly
+// under --experimental-strip-types (gen-style-covers.mjs), the same reason
+// design/tokens.ts names '../fonts.ts'.
+import { prefersReducedMotion } from './platform/reducedMotion.ts';
 
 export const RESOLVED_THEMES = ['light', 'dark'] as const;
 
