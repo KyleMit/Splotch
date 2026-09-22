@@ -1,0 +1,38 @@
+# Proves the Fastlane store-upload lanes (issue 241) still load: installs the
+# locked Ruby bundle, lists the lanes, and runs the Node wrapper's credential
+# gate with no secrets present, which must refuse before Fastlane starts.
+# Nothing here can publish: no store credential exists in this repository's
+# secrets, and the lanes are never invoked with one.
+name: Store upload lanes
+
+on:
+  pull_request:
+    paths: ['fastlane/**', 'Gemfile', 'Gemfile.lock', 'tools/release/upload-store-artifacts.mjs']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lanes:
+    name: Fastlane lanes load
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ruby/setup-ruby@3ff19f5e2baf30647122352b96108b1fbe250c64 # v1.299.0
+        with:
+          bundler-cache: true
+
+      - name: List lanes
+        run: bundle exec fastlane lanes
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - name: Wrapper refuses without credentials
+        run: |
+          if node tools/release/upload-store-artifacts.mjs --only=android --dry-run; then
+            echo "expected the wrapper to refuse with no artifact and no credentials" >&2
+            exit 1
+          fi

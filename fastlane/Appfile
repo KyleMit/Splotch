@@ -1,0 +1,6 @@
+# Store identities for the upload lanes in Fastfile. Credentials never live
+# here: the Play service-account JSON path and the App Store Connect API key
+# come from the environment (see tools/release/upload-store-artifacts.mjs).
+app_identifier "art.splotch.app"
+package_name "art.splotch.app"
+json_key_file ENV["SPLOTCH_PLAY_JSON_KEY"]

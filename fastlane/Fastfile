@@ -1,0 +1,48 @@
+# Store upload lanes (issue 241). Building stays in the npm scripts
+# (android:bundle / ios:ipa) and version verification stays in
+# tools/release/publish-release-artifacts.mjs (ADR-0077); these lanes only
+# move an already-verified artifact plus the generated metadata in
+# fastlane/metadata/ to the store. Run them through
+# `npm run release:upload`, which checks the credentials and the artifact
+# version first.
+
+opt_out_usage
+
+ANDROID_AAB = "android/app/build/outputs/bundle/release/app-release.aab"
+IOS_IPA = "ios/App/build/ipa/App.ipa"
+DRY_RUN = ENV["SPLOTCH_STORE_DRY_RUN"] == "true"
+
+platform :android do
+  desc "Upload the signed .aab plus fastlane/metadata/android to the Play track in SPLOTCH_PLAY_TRACK (default internal); SPLOTCH_STORE_DRY_RUN=true validates with the Play API without publishing"
+  lane :upload do
+    upload_to_play_store(
+      aab: ANDROID_AAB,
+      track: ENV.fetch("SPLOTCH_PLAY_TRACK", "internal"),
+      metadata_path: "fastlane/metadata/android",
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      validate_only: DRY_RUN
+    )
+  end
+end
+
+platform :ios do
+  desc "Upload the exported .ipa plus fastlane/metadata/en-US to App Store Connect without submitting for review; SPLOTCH_STORE_DRY_RUN=true stops after authenticating (deliver has no validate-only mode)"
+  lane :upload do
+    app_store_connect_api_key(
+      key_id: ENV.fetch("SPLOTCH_ASC_KEY_ID"),
+      issuer_id: ENV.fetch("SPLOTCH_ASC_ISSUER_ID"),
+      key_filepath: ENV.fetch("SPLOTCH_ASC_KEY_PATH")
+    )
+    next if DRY_RUN
+
+    upload_to_app_store(
+      ipa: IOS_IPA,
+      metadata_path: "fastlane/metadata",
+      skip_screenshots: true,
+      submit_for_review: false,
+      precheck_include_in_app_purchases: false,
+      force: true
+    )
+  end
+end

@@ -258,3 +258,11 @@ ios/local.xcconfig
 # burn-down-audits skill): per-call Claude JSON / Codex JSONL envelopes, run
 # log, completed list, schemas, STOP sentinel. Durable state is docs/AUDIT.md + git.
 .audit-work/
+
+# Fastlane / Bundler (issue 241): gems and run reports stay local; store
+# credentials are read from the environment and must never be committed.
+vendor/bundle/
+.bundle/
+fastlane/report.xml
+fastlane/README.md
+*.p8
