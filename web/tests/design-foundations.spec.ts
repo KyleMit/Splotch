@@ -163,7 +163,7 @@ for (const theme of ['light', 'dark'] as const) {
     expect(controls[0].borderWidth).toBe('0px');
     expect(controls[0].shadow).toBe('none');
     expect(controls[1].borderWidth).toBe('2px');
-    expect(controls[1].shadow).not.toBe('none');
+    expect(controls[1].shadow).toBe('none');
     const title = await specimen.getByRole('heading', { name: 'Appearance' }).boundingBox();
     expect(title!.x - controls[0].right).toBeGreaterThanOrEqual(16);
     expect(controls[0].top).toBe(controls[1].top);

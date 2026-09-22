@@ -120,10 +120,10 @@ export const scale = {
   // --float-shadow instead — these are for modal-layer chrome where one
   // shadow reads correctly on both themes.
   //
-  // shadowControl is the tight, hard lift on a small raised control — the
-  // modal close disc, a segmented toggle's selected thumb — close enough that
-  // the control reads as sitting just above its surface. shadowPop is the
-  // deep overlay lift for whole modal cards.
+  // shadowControl is the tight, hard lift on a small raised control — a
+  // segmented toggle's selected thumb, the Actions Panel's popovers — close
+  // enough that the control reads as sitting just above its surface.
+  // shadowPop is the deep overlay lift for whole modal cards.
   shadowControl: '0 1px 4px rgb(0 0 0 / 18%)',
   shadowPop: '0 8px 32px rgb(0 0 0 / 30%)',
 

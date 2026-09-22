@@ -64,7 +64,7 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
     'A whole disabled control: toggle rows, chips, buttons, gate keys. Never for text or a glyph on its own — those change ink token.',
 
   shadowControl:
-    'The tight lift on a small raised control: the modal close disc, a selected segment thumb.',
+    'The tight lift on a small raised control: a selected segment thumb, a tool popover.',
   shadowPop: 'The deep overlay lift under whole modal cards.',
 
   clearGradientRest:

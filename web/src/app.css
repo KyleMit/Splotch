@@ -393,7 +393,9 @@ body {
    variant below, the banners' dismiss disc. An outlined white disc sized to
    --modal-close-size, deliberately chunky so small fingers can spot and hit it;
    the padding below keeps the glyph itself visibly smaller than the disc, so
-   the extra box reads as hit area and the ring that makes it pop. */
+   the extra box reads as hit area and the ring that makes it pop. Outlined,
+   not raised: beside the flat back disc a shadow made the header's pair read
+   heavier than the section's own controls. */
 :is(.modal-close-btn, .dialog-header-control, .banner-dismiss) {
   position: absolute;
   top: var(--modal-close-inset);
@@ -408,7 +410,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-control);
   touch-action: manipulation;
   transition:
     border-color var(--duration-base) ease,
