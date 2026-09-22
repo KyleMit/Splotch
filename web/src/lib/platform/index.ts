@@ -164,11 +164,14 @@ export function getPlatform(): Platform {
  * such browsers stay inside this repo's floor: Chrome on Android honors a lock
  * only in fullscreen or an installed app, and Firefox for Android 114-143
  * exposes one that always fails. The picker renders there and the choice
- * persists; `applyDeviceOrientationPreference` swallows the rejection. Closing
- * that gap is not a narrower gate — the control becomes functional the moment
- * the user hits the Fullscreen toggle — but re-applying the preference when
- * fullscreen or display mode changes, which today's settings-keyed effect in
- * `routes/+page.svelte` does not do.
+ * persists, because a narrower gate would hide a control that becomes
+ * functional the moment the user hits the Fullscreen toggle. Instead
+ * `applyDeviceOrientationPreference` keys a web lock on the fullscreen state
+ * `routes/+page.svelte` passes it, so a lock the tab refused is requested
+ * again on entering fullscreen and after each re-entry. An installed app needs
+ * no retry: it launches as its own document, which applies the preference at
+ * boot. Firefox's always-failing `lock()` stays unapplied until it ages out of
+ * the floor.
  *
  * A behavioral probe is not an option here either: headless Chromium resolves
  * `lock()` on a desktop viewport, and the call is async besides.

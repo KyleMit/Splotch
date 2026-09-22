@@ -132,6 +132,6 @@ describe('hydratePersistedState', () => {
 
     await hydratePersistedState();
 
-    expect(applyDeviceOrientationPreference).toHaveBeenCalledWith(false, true);
+    expect(applyDeviceOrientationPreference).toHaveBeenCalledWith(false, true, false);
   });
 });

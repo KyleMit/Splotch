@@ -6,11 +6,33 @@ import {
   type Orientation,
 } from '$lib/platform';
 
-let lastRequested: Orientation | 'unlocked' | null = null;
+type OrientationTarget = Orientation | 'unlocked';
+
+// A web lock is honored or refused per display context — Chrome on Android
+// grants one only in fullscreen, and exiting fullscreen releases it — so the
+// latch keys a web lock on that context. A refused tab lock is then retried the
+// moment fullscreen begins, and one released by leaving fullscreen is requested
+// afresh on the next entry. Native and unlocking never depend on it.
+type OrientationRequest = OrientationTarget | `${Orientation}:fullscreen`;
+
+let lastRequested: OrientationRequest | null = null;
+
+function orientationTarget(
+  lockRotationEnabled: boolean,
+  forceLandscapeOrientation: boolean
+): OrientationTarget {
+  if (!lockRotationEnabled) return 'unlocked';
+  return forceLandscapeOrientation ? 'landscape' : 'portrait';
+}
+
+function releaseLatch(request: OrientationRequest) {
+  if (lastRequested === request) lastRequested = null;
+}
 
 export async function applyDeviceOrientationPreference(
   lockRotationEnabled: boolean,
-  forceLandscapeOrientation: boolean
+  forceLandscapeOrientation: boolean,
+  fullscreenActive: boolean
 ) {
   if (!browser) return;
 
@@ -18,21 +40,20 @@ export async function applyDeviceOrientationPreference(
   // only floats a letterboxed window, so leave it to the OS window controls.
   if (!supportsOrientationLock()) return;
 
-  const target: Orientation | 'unlocked' = lockRotationEnabled
-    ? forceLandscapeOrientation
-      ? 'landscape'
-      : 'portrait'
-    : 'unlocked';
+  const target = orientationTarget(lockRotationEnabled, forceLandscapeOrientation);
+  const native = __IS_CAPACITOR__ && isNative();
+  const request: OrientationRequest =
+    !native && target !== 'unlocked' && fullscreenActive ? `${target}:fullscreen` : target;
 
-  if (target === lastRequested) return;
-  lastRequested = target;
+  if (request === lastRequested) return;
+  lastRequested = request;
 
   // Native: lock at the Activity level via @capacitor/screen-orientation. Unlike
   // the Web Screen Orientation API, this overrides the OS Auto-Rotate setting, so
   // the parent's choice is honored even when the device has rotation turned off.
   // The literal __IS_CAPACITOR__ lets Rollup drop the plugin import from the web
   // bundle; isNative() alone is a runtime check it can't tree-shake.
-  if (__IS_CAPACITOR__ && isNative()) {
+  if (__IS_CAPACITOR__ && native) {
     try {
       const { ScreenOrientation } = await import('@capacitor/screen-orientation');
       if (target === 'unlocked') await ScreenOrientation.unlock();
@@ -41,20 +62,18 @@ export async function applyDeviceOrientationPreference(
       // Plugin unavailable or the platform refused the lock — the setting stays
       // persisted for the next launch. Clearing the latch lets a later call with
       // the same target retry within this session.
-      lastRequested = null;
+      releaseLatch(request);
     }
     return;
   }
 
   // Web fallback. Browsers may require fullscreen/user activation, and some
   // WebViews do not expose locking at all; failures are swallowed since the
-  // setting remains persisted for platforms that can honor it.
+  // setting remains persisted, and the fullscreen-keyed latch retries it.
   const orientation = window.screen.orientation as LockableScreenOrientation | undefined;
   if (target === 'unlocked') {
     orientation?.unlock?.();
     return;
   }
-  orientation?.lock?.(target).catch(() => {
-    lastRequested = null;
-  });
+  orientation?.lock?.(target).catch(() => releaseLatch(request));
 }

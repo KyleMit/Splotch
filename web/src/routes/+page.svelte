@@ -35,6 +35,7 @@
   import { captureAiAccessTokenFromUrl } from '$lib/state/aiAccessToken';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
+  import { fullscreenState } from '$lib/state/fullscreen.svelte';
   import {
     mountBootHiddenOverlays,
     type BootHiddenOverlayKey,
@@ -54,10 +55,13 @@
   import { installSystemBack, syncBackNavigationCanvas } from '$lib/boot/systemBack';
   import { installOverlayDemand } from '$lib/state/overlayDemand';
 
+  // Keyed on fullscreen too: Chrome on Android honors a web lock only in
+  // fullscreen, so entering it is when a refused lock can finally apply.
   $effect(() => {
     applyDeviceOrientationPreference(
       settingsState.lockRotationEnabled,
-      settingsState.forceLandscapeOrientation
+      settingsState.forceLandscapeOrientation,
+      fullscreenState.active
     );
   });
 

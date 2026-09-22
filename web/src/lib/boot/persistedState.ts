@@ -3,6 +3,7 @@ import { hydrateAiAccessToken } from '$lib/state/aiAccessToken';
 import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
 import { recordSession } from '$lib/state/sessionCounters.svelte';
 import { settingsState } from '$lib/state/settings.svelte';
+import { fullscreenState } from '$lib/state/fullscreen.svelte';
 import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
 import { persistedStateStatus, type PersistedStateStatus } from './persistedStateStatus.svelte';
@@ -27,7 +28,8 @@ async function hydrateSettingsStores(): Promise<void> {
   if (restored) {
     void applyDeviceOrientationPreference(
       settingsState.lockRotationEnabled,
-      settingsState.forceLandscapeOrientation
+      settingsState.forceLandscapeOrientation,
+      fullscreenState.active
     );
   }
 }
