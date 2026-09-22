@@ -196,12 +196,12 @@ non-polyfill choices:
   `state/appearance.svelte.ts` keeps live. One selector form is what lets the Settings switch ask
   for calm on a no-preference OS and lets `full` opt this app back out on a reduce-motion OS. The
   accepted cost: with JavaScript disabled nothing stamps the attribute, so the prerendered routes
-  that still render without it (`/privacy`, `/changelog`, `/design`) lose the OS-driven treatment.
-  On `/privacy` and `/changelog` that is a chevron transition. On `/design` it is more: the motion
-  section's easing lanes server-render and loop forever (`lane-travel`, `infinite`), so a
-  reduce-motion visitor with JavaScript off sees continuous movement there. The drawing app does not
-  run without JavaScript at all. `reducedMotionCss.test.ts` fails on a
-  `@media (prefers-reduced-motion)` block in `web/src`.
+  that still render without it (`/privacy`, `/accessibility`, `/changelog`, `/design`) lose the
+  OS-driven treatment. On `/privacy`, `/accessibility` and `/changelog` that is a chevron
+  transition. On `/design` it is more: the motion section's easing lanes server-render and loop
+  forever (`lane-travel`, `infinite`), so a reduce-motion visitor with JavaScript off sees
+  continuous movement there. The drawing app does not run without JavaScript at all.
+  `reducedMotionCss.test.ts` fails on a `@media (prefers-reduced-motion)` block in `web/src`.
 * **Native-shell capabilities** (haptics, orientation lock, secure storage, media, connectivity) go
   through Capacitor plugins on device, so the web-API versions only need to work on the web floor.
 * **iPadOS Scribble** silently claims an Apple Pencil stroke that starts within ~450ms of a pen tap

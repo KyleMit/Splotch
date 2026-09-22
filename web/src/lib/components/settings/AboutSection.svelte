@@ -21,6 +21,7 @@
 
   <div class="about-links">
     <p><a href="/privacy">Privacy Policy</a></p>
+    <p><a href="/accessibility">Accessibility</a></p>
     <p class="github-link">
       <a
         href={GITHUB_REPO_URL}

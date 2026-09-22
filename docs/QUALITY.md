@@ -71,7 +71,11 @@ giant wordless buttons and no reading order are not WCAG's model.
 
 **Backed by.** `a11y.spec.ts` runs axe-core, and hand-computes contrast for the cases axe reports as
 `incomplete` and therefore never fails on: short text nodes, `::placeholder` pseudo-elements,
-`aria-hidden` digits, and dialogs whose background it cannot resolve.
+`aria-hidden` digits, and dialogs whose background it cannot resolve. The public `/accessibility`
+statement makes that claim in parent-readable terms, scoped to the surfaces the spec scans, with the
+known limitations listed; `requiredNativePageProblems` and `requiredNativePageLinkProblems` fail
+`build:cap` if the statement is missing from the static export or unlinked in the bundle, the same
+guarantee `/privacy` has.
 
 ## Illustration
 

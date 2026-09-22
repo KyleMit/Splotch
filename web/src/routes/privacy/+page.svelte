@@ -21,9 +21,10 @@
   import { paletteHex } from '$lib/palette';
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import { USAGE_RECORD_RETENTION_DAYS } from '$lib/usageRecord';
-  import { HIGHLIGHTS, SECTIONS, SPY_LINE_PX, watchReadingPosition } from './contents';
+  import { SPY_LINE_PX, watchReadingPosition } from '$lib/components/nav/readingPosition';
+  import { HIGHLIGHTS, SECTIONS } from './contents';
   import type { SectionId } from './contents';
-  import { createPrivacyParentCenter } from './parentCenter.svelte';
+  import { createPageParentCenter } from '$lib/components/page/pageParentCenter.svelte';
 
   const LAST_UPDATED = 'August 20, 2026';
   const DESCRIPTION =
@@ -44,13 +45,13 @@
   let entered = $state(false);
 
   $effect(() =>
-    watchReadingPosition((reading) => {
+    watchReadingPosition(SECTIONS, (reading) => {
       active = reading.active;
       entered = reading.entered;
     })
   );
 
-  const parentCenter = createPrivacyParentCenter();
+  const parentCenter = createPageParentCenter();
   const gatedLink = parentCenter.gatedLink;
 
   onMount(() => scheduleIdle(parentCenter.mountParentalGate));

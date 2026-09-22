@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { clearRequestedSettingsSection, settingsModal } from '$lib/state/ui.svelte';
-import { createPrivacyParentCenter } from './parentCenter.svelte';
+import { createPageParentCenter } from './pageParentCenter.svelte';
 
 vi.mock('$lib/components/SettingsModal.svelte', () => ({ default: vi.fn() }));
 vi.mock('$lib/boot/persistedState', () => ({ hydratePersistedState: vi.fn() }));
 
 function createParentCenterUnderEffects() {
-  let parentCenter!: ReturnType<typeof createPrivacyParentCenter>;
+  let parentCenter!: ReturnType<typeof createPageParentCenter>;
   const destroy = $effect.root(() => {
-    parentCenter = createPrivacyParentCenter();
+    parentCenter = createPageParentCenter();
   });
   return { parentCenter, destroy };
 }
@@ -23,7 +23,7 @@ afterEach(() => {
   document.querySelector('#settingsModal')?.remove();
 });
 
-describe('privacy Parent Center', () => {
+describe('standalone page Parent Center', () => {
   it('keeps its modal mounted when Settings reopens during retirement', async () => {
     const dialog = document.body.appendChild(document.createElement('dialog'));
     dialog.id = 'settingsModal';

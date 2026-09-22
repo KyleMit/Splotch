@@ -5,8 +5,8 @@
   import SidebarToc, { type SidebarTocItem } from './SidebarToc.svelte';
 
   // The narrow-screen stand-in for the SidebarToc rail, shared by /design,
-  // /changelog and /privacy: one sticky row whose collapsed state doubles as the scrollspy
-  // readout. It states what the page holds while the reader is still above the
+  // /changelog, /privacy and /accessibility: one sticky row whose collapsed
+  // state doubles as the scrollspy readout. It states what the page holds while the reader is still above the
   // first section, and names the section they are in once they are inside one.
   // Opened, it shows the same rail the wide layout uses — same rows, groups and
   // active treatment — so neither surface carries a second table of contents.

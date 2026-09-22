@@ -288,6 +288,7 @@ test('link-preview meta tags are present and match the real OG image', async ({
 // (issue #1956). One card per document: a second og:title would hand the
 // scraper the wrong one.
 for (const [path, titleWord] of [
+  ['/accessibility', 'Accessibility'],
   ['/beta', 'Beta'],
   ['/changelog', 'Changelog'],
   ['/design', 'Design'],

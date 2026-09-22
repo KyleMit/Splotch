@@ -93,6 +93,10 @@ const SERVER_ENV = {
 
 const ROUTES = {
   '/': ['Drawing canvas', 'The blank drawing surface and its resting canvas chrome.'],
+  '/accessibility': [
+    'Accessibility statement',
+    'The public accessibility statement at its opening position.',
+  ],
   '/admin': ['Admin · signed out', 'The server-rendered administrator sign-in surface.'],
   '/changelog': ['Changelog', 'The complete release history at its opening position.'],
   '/design': ['Design system', 'The public living styleguide at its opening position.'],

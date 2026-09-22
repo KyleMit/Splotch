@@ -125,7 +125,7 @@
       name: 'PageShell + RuleLabel',
       file: 'page/PageShell.svelte',
       blurb:
-        'The standalone-page chrome: ground, centered sheet, crayon-strip masthead, wordmark, hero. Worn by every standalone page (/beta, /changelog, /feedback, /privacy, /admin).',
+        'The standalone-page chrome: ground, centered sheet, crayon-strip masthead, wordmark, hero. Worn by every standalone page (/beta, /changelog, /feedback, /privacy, /accessibility, /admin).',
       zone: 'shell',
     },
     {

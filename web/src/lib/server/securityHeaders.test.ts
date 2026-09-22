@@ -100,7 +100,7 @@ describe('securityHeadersFor', () => {
     );
   });
 
-  it.each(['/', '/admin', '/privacy', '/beta', '/feedback/', '/feedback/extra'])(
+  it.each(['/', '/admin', '/privacy', '/accessibility', '/beta', '/feedback/', '/feedback/extra'])(
     'leaves %s on the site-wide no-referrer',
     (pathname) => {
       expect(securityHeadersFor(pathname)).toEqual(SECURITY_HEADERS);

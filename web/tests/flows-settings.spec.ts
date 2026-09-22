@@ -305,6 +305,24 @@ test('About opens the bundled privacy policy without a parental gate', async ({ 
   await expect(page.locator('#parentalGate')).not.toBeVisible();
 });
 
+test('About opens the bundled accessibility statement without a parental gate', async ({
+  page,
+}) => {
+  await gotoApp(page, '/', { gates: 'always' });
+
+  await openSettingsModal(page);
+  await retryOpen(page.getByRole('link', { name: 'Accessibility' }), () =>
+    page.getByRole('button', { name: 'About' }).click({ timeout: 3000 })
+  );
+  await page.getByRole('link', { name: 'Accessibility' }).click();
+
+  await expect(page).toHaveURL(/\/accessibility$/);
+  await expect(
+    page.getByRole('heading', { name: 'Accessibility statement', level: 1 })
+  ).toBeVisible();
+  await expect(page.locator('#parentalGate')).not.toBeVisible();
+});
+
 test('setting groups space their cards without affecting the compact grid', async ({ page }) => {
   await gotoApp(page, `/?${AI_ACCESS_TOKEN_PARAM}=test-access-code`);
 

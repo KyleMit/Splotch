@@ -5,12 +5,13 @@ import { createSingleFlight } from '$lib/singleFlight';
 import type { Origin } from '$lib/state/modal.svelte';
 import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
 
-// The privacy page's grown-up-gate wiring, as a factory so the page owns the
-// instance (and tests could own fresh ones): the gate component mounts lazily
-// — on idle, or on the first tap of a gated link — and its Manage destination
-// opens Parent Center by loading the full Settings modal and persisted state
-// on demand. Must be called during component init: it registers $effects.
-export function createPrivacyParentCenter() {
+// A standalone page's grown-up-gate wiring (/privacy, /accessibility), as a
+// factory so the page owns the instance (and tests could own fresh ones): the
+// gate component mounts lazily — on idle, or on the first tap of a gated link —
+// and its Manage destination opens Parent Center by loading the full Settings
+// modal and persisted state on demand. Must be called during component init:
+// it registers $effects.
+export function createPageParentCenter() {
   let managingPolicies = $state(false);
   let gateComponent = $state<Component | null>(null);
   let modalComponent = $state<Component | null>(null);
@@ -33,7 +34,7 @@ export function createPrivacyParentCenter() {
   function mountParentalGate() {
     void loadParentalGate()
       .then((component) => (gateComponent = component))
-      .catch((error) => console.error('Privacy parental gate failed to load:', error));
+      .catch((error) => console.error('Standalone page parental gate failed to load:', error));
   }
 
   function gatedLink(node: HTMLAnchorElement) {
@@ -55,7 +56,7 @@ export function createPrivacyParentCenter() {
       .catch((error) => {
         settingsModal.hide();
         managingPolicies = false;
-        console.error('Privacy Parent Center failed to load:', error);
+        console.error('Standalone page Parent Center failed to load:', error);
       });
   }
 

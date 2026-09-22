@@ -38,7 +38,11 @@ import {
 // matching is worse than no guard, because the build stays green.
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
 const ADMIN_CONSOLE_PATH = 'web/src/lib/components/admin/AdminConsole.svelte';
-export const REQUIRED_NATIVE_PAGES = ['privacy.html', 'changelog.html'];
+export const REQUIRED_NATIVE_PAGES = ['privacy.html', 'accessibility.html', 'changelog.html'];
+// The required pages whose contact path is the hosted feedback form: inside
+// the app the form is web-only (web/nativeExcludedRoutes.ts), so each must link
+// to the hosted copy and must not keep the relative link the web build uses.
+export const FEEDBACK_LINKED_NATIVE_PAGES = ['privacy.html', 'accessibility.html'];
 
 // These literals survive minification and uniquely identify the web-only boot
 // behavior that initWebOnlyServices() must keep out of the native JavaScript.
@@ -318,7 +322,8 @@ export function nativeContentSecurityPolicyProblems(dir) {
 /**
  * The other half of {@link requiredNativePageProblems}: a page that ships but
  * that nothing links to is unreachable in the app, and the store requirement is
- * that a parent can *get to* the privacy policy — not that a file exists.
+ * that a parent can *get to* the privacy policy — not that a file exists. The
+ * accessibility statement rides the same guarantee (issue #1430).
  *
  * Matching on the `href="…"` prefix is what separates a real link from noise:
  * the route manifest (`entry/app.*.js`) names every route as a bare `"/privacy"`
@@ -326,6 +331,9 @@ export function nativeContentSecurityPolicyProblems(dir) {
  * vacuously forever. Only `.js` is scanned because both links live in the
  * client bundle's component chunks (Settings' About and What's New sections),
  * and a prerendered page contains its own path in ways that would self-match.
+ * Only the `.js` chunks that carry a link are scanned, which is also why one
+ * required page linking to another (the statement links to the policy) cannot
+ * satisfy this on the policy's behalf.
  *
  * This is a *presence* assertion, so it cannot rot quietly: if Svelte ever stops
  * emitting the attribute as a literal, the build fails rather than passing.
@@ -343,18 +351,20 @@ export function requiredNativePageLinkProblems(dir) {
   });
 }
 
-export function nativePrivacyFeedbackProblems(dir) {
-  const privacyPath = join(dir, 'privacy.html');
-  if (!existsSync(privacyPath)) return [];
-  const source = readFileSync(privacyPath, 'utf8');
-  return [
-    ...(source.includes(`href="${FEEDBACK_URL}"`)
-      ? []
-      : [`Native privacy page does not link to the hosted feedback form: ${FEEDBACK_URL}`]),
-    ...(source.includes('href="/feedback"')
-      ? ['Native privacy page retains a relative /feedback link']
-      : []),
-  ];
+export function nativeFeedbackLinkProblems(dir) {
+  return FEEDBACK_LINKED_NATIVE_PAGES.flatMap((page) => {
+    const pagePath = join(dir, page);
+    if (!existsSync(pagePath)) return [];
+    const source = readFileSync(pagePath, 'utf8');
+    return [
+      ...(source.includes(`href="${FEEDBACK_URL}"`)
+        ? []
+        : [`Native ${page} does not link to the hosted feedback form: ${FEEDBACK_URL}`]),
+      ...(source.includes('href="/feedback"')
+        ? [`Native ${page} retains a relative /feedback link`]
+        : []),
+    ];
+  });
 }
 
 export async function checkStaticBundle({
@@ -382,7 +392,7 @@ export async function checkStaticBundle({
     ...requiredNativePageProblems(dir),
     ...nativeContentSecurityPolicyProblems(dir),
     ...requiredNativePageLinkProblems(dir),
-    ...nativePrivacyFeedbackProblems(dir),
+    ...nativeFeedbackLinkProblems(dir),
   ];
   if (problems.length) throw new Error(problems.join('\n'));
   log(
@@ -394,7 +404,7 @@ export async function checkStaticBundle({
       `native-only lifecycle code is present (${NATIVE_ONLY_MODULE_MARKERS.length} marker(s)); ` +
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present and linked; ` +
       `every HTML document carries one native CSP; ` +
-      `privacy links to the hosted feedback form; ` +
+      `${FEEDBACK_LINKED_NATIVE_PAGES.join(' and ')} link to the hosted feedback form; ` +
       `only ${STARTER_COLORING_BOOK_ID} is bundled; ` +
       `canonical page SVGs are present and web-only coloring rasters are absent`
   );

@@ -21,11 +21,11 @@
   import SectionIcon from '../SectionIcon.svelte';
 
   // The guide-rail table of contents over one continuously scrolling document,
-  // shared by the wide Settings sidebar, /design, /changelog and /privacy. A hairline
-  // track runs the full list and the row holding the reading position thickens
-  // and tints its own segment of it — so the highlight reads as a position in a
-  // document rather than as a selection, and the track itself says the column
-  // is its own scroller.
+  // shared by the wide Settings sidebar, /design, /changelog, /privacy and
+  // /accessibility. A hairline track runs the full list and the row holding
+  // the reading position thickens and tints its own segment of it — so the
+  // highlight reads as a position in a document rather than as a selection,
+  // and the track itself says the column is its own scroller.
   //
   // The surfaces differ only in their data: an item with an `icon`
   // renders one, an item with `meta` gets a second line, and a run of items

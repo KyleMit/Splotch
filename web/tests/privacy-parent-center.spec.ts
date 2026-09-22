@@ -10,7 +10,7 @@ import { solveParentalGate } from './flows-harness';
 
 // The privacy page has no Settings button: Parent Center is reached through a
 // gated link's challenge, and the page mounts the Settings modal on demand,
-// only while Parent Center is being managed (routes/privacy/parentCenter.svelte.ts).
+// only while Parent Center is being managed (lib/components/page/pageParentCenter.svelte.ts).
 
 const PRIVACY_GATED_LINK = 'OpenAI Services Agreement';
 

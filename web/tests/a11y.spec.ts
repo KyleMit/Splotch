@@ -12,8 +12,9 @@ import { openParentalGate } from './flows-harness';
 import { openAiResult } from './ai-harness';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
-// /changelog, /beta, /feedback, /design, /admin (both auth states),
-// and the Settings dialog.
+// /accessibility, /changelog, /beta, /feedback, /design, /admin (both auth
+// states), and the Settings dialog. The surfaces scanned here are the surfaces
+// /accessibility may claim conformance for (issue #1430).
 // The toddler-facing canvas chrome is deliberately out of scope — its UX rules
 // (giant wordless buttons, no reading order) aren't WCAG's — so the Settings scan
 // is scoped to the dialog itself rather than the whole drawing page.
@@ -55,6 +56,12 @@ async function expectNoSeriousViolations(page: Page, include?: string) {
 test('/privacy has no serious accessibility violations', async ({ page }) => {
   await page.goto('/privacy');
   await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await expectNoSeriousViolations(page);
+});
+
+test('/accessibility has no serious accessibility violations', async ({ page }) => {
+  await page.goto('/accessibility');
+  await expect(page.getByRole('heading', { name: 'Accessibility statement' })).toBeVisible();
   await expectNoSeriousViolations(page);
 });
 

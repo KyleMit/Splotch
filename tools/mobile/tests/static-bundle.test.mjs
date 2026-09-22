@@ -14,7 +14,8 @@ import {
   nativeBundleProblems,
   nativeColoringPresentationProblems,
   nativeContentSecurityPolicyProblems,
-  nativePrivacyFeedbackProblems,
+  FEEDBACK_LINKED_NATIVE_PAGES,
+  nativeFeedbackLinkProblems,
   REQUIRED_NATIVE_PAGES,
   requiredNativePageLinkProblems,
   requiredNativePageProblems,
@@ -208,7 +209,8 @@ describe('native-only bundle boundaries', () => {
 });
 
 describe('required native pages', () => {
-  it('requires the privacy policy and changelog in the static export', () => {
+  it('requires the privacy policy, accessibility statement, and changelog in the static export', () => {
+    expect(REQUIRED_NATIVE_PAGES).toEqual(['privacy.html', 'accessibility.html', 'changelog.html']);
     const root = mkdtempSync(join(tmpdir(), 'splotch-native-pages-'));
     try {
       for (const page of REQUIRED_NATIVE_PAGES) writeFileSync(join(root, page), page);
@@ -352,33 +354,41 @@ describe('native content security policy', () => {
   });
 });
 
-describe('native privacy feedback link', () => {
-  it('requires the hosted feedback URL', () => {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-native-privacy-'));
-    try {
-      writeFileSync(join(root, 'privacy.html'), '<a href="/privacy">Privacy</a>');
-      expect(nativePrivacyFeedbackProblems(root)).toContainEqual(
-        expect.stringContaining(FEEDBACK_URL)
-      );
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
+describe('native feedback links', () => {
+  it('covers every page whose contact path is the feedback form, and only required pages', () => {
+    expect(FEEDBACK_LINKED_NATIVE_PAGES).toEqual(['privacy.html', 'accessibility.html']);
+    for (const page of FEEDBACK_LINKED_NATIVE_PAGES) expect(REQUIRED_NATIVE_PAGES).toContain(page);
   });
 
-  it('rejects a relative feedback link even when the hosted link is present', () => {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-native-privacy-'));
+  it.each(FEEDBACK_LINKED_NATIVE_PAGES)('requires the hosted feedback URL in %s', (page) => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-feedback-'));
     try {
-      writeFileSync(
-        join(root, 'privacy.html'),
-        `<a href="${FEEDBACK_URL}">Hosted</a><a href="/feedback">Relative</a>`
-      );
-      expect(nativePrivacyFeedbackProblems(root)).toEqual([
-        'Native privacy page retains a relative /feedback link',
+      writeFileSync(join(root, page), '<a href="/privacy">Privacy</a>');
+      expect(nativeFeedbackLinkProblems(root)).toEqual([
+        `Native ${page} does not link to the hosted feedback form: ${FEEDBACK_URL}`,
       ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it.each(FEEDBACK_LINKED_NATIVE_PAGES)(
+    'rejects a relative feedback link in %s even when the hosted link is present',
+    (page) => {
+      const root = mkdtempSync(join(tmpdir(), 'splotch-native-feedback-'));
+      try {
+        writeFileSync(
+          join(root, page),
+          `<a href="${FEEDBACK_URL}">Hosted</a><a href="/feedback">Relative</a>`
+        );
+        expect(nativeFeedbackLinkProblems(root)).toEqual([
+          `Native ${page} retains a relative /feedback link`,
+        ]);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  );
 });
 
 describe('web-only boot markers', () => {
