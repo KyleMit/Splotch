@@ -2,6 +2,12 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { ANDROID_UA, drawCommittedStroke, gotoApp, openSettingsModal, retryOpen } from './helpers';
 
+declare global {
+  interface Window {
+    __gateRetired?: Promise<void>;
+  }
+}
+
 interface BackLayer {
   guard: boolean;
   dialogs: number;
@@ -112,15 +118,16 @@ test('Back closes nested dialogs from the top down', async ({ page }) => {
   // The gate leaves the modal stack on its `close` event, a task after
   // `dialog.open` flips. A Back that lands inside that window is refused as a
   // request racing the retirement (modalDialog's requestDismiss) and re-pushes
-  // the entry, so the next Back waits for the event itself, not the flag.
-  const gateRetired = gate.evaluate(
-    (dialog) =>
-      new Promise<void>((resolve) =>
-        dialog.addEventListener('close', () => resolve(), { once: true })
-      )
-  );
+  // the entry, so the next Back waits for the event itself, not the flag. The
+  // listener is installed, and awaited, before the Back that closes the gate:
+  // the event can land before a listener attached in the same breath.
+  await gate.evaluate((dialog) => {
+    window.__gateRetired = new Promise<void>((resolve) =>
+      dialog.addEventListener('close', () => resolve(), { once: true })
+    );
+  });
   await page.goBack();
-  await gateRetired;
+  await page.evaluate(() => window.__gateRetired);
   await expect(gate).not.toBeVisible();
   await expect(settings).toBeVisible();
   await expectBackLayer(page, { guard: false, dialogs: 1 });
