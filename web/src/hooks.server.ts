@@ -5,6 +5,8 @@ import {
   ACCESS_TOKEN_HEADER,
   API_KEY_HEADER,
   ASYNC_GENERATION_HEADER,
+  CLIENT_PLATFORM_HEADER,
+  CLIENT_VERSION_HEADER,
   FREE_GENERATIONS_REMAINING_HEADER,
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
@@ -31,7 +33,10 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
   // generate-image credentials (secrets kept out of the query string).
-  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}, ${ASYNC_GENERATION_HEADER}, ${INSTALLATION_ID_HEADER}, ${REPORT_TOKEN_HEADER}`,
+  // CLIENT_*: the identifying pair every request carries — custom headers turn
+  // even a GET into a preflighted request, so they must be listed or the
+  // native apps' cross-origin calls fail before reaching any route.
+  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}, ${ASYNC_GENERATION_HEADER}, ${INSTALLATION_ID_HEADER}, ${REPORT_TOKEN_HEADER}, ${CLIENT_VERSION_HEADER}, ${CLIENT_PLATFORM_HEADER}`,
   'Access-Control-Expose-Headers': `${FREE_GENERATIONS_REMAINING_HEADER}, ${REPORT_TOKEN_HEADER}`,
   // Let native clients cache the preflight for a day instead of paying an
   // extra OPTIONS round trip on every cross-origin JSON request.

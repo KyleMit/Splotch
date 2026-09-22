@@ -1,4 +1,4 @@
-import { apiUrl } from '$lib/api';
+import { apiFetch } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
@@ -126,7 +126,7 @@ export function createFreeGenerations({
       const id = await installationId();
       if (!latest.isCurrent(request.id)) return;
       if (!INSTALLATION_ID_PATTERN.test(id)) throw new Error('Invalid installation identifier');
-      const response = await fetch(apiUrl('/api/free-generation-grant'), {
+      const response = await apiFetch('/api/free-generation-grant', {
         headers: { [INSTALLATION_ID_HEADER]: id },
         signal: request.signal,
       });

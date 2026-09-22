@@ -3,7 +3,7 @@
   import StatusMessage from '../design/StatusMessage.svelte';
   import RuleLabel from '../design/RuleLabel.svelte';
   import ReportFields from '../report/ReportFields.svelte';
-  import { apiUrl } from '$lib/api';
+  import { apiFetch } from '$lib/api';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import {
@@ -71,7 +71,7 @@
 
     try {
       const device = attachDevice ? await fields.ensureDevice() : undefined;
-      const res = await fetch(apiUrl('/api/report'), {
+      const res = await apiFetch('/api/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, device }),

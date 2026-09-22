@@ -1,5 +1,6 @@
 import { isHttpError, json } from '@sveltejs/kit';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
+import { describeClient, readClientContext } from './clientContext';
 
 export function contentTypeOf(request: Request): string {
   return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
@@ -112,7 +113,7 @@ export function throttled(retryAfter: number) {
  * the one unwrapped endpoint: its responses are deliberately bodyless
  * (browsers ignore them).
  */
-export function apiHandler<Event extends { url: { pathname: string } }>(
+export function apiHandler<Event extends { url: { pathname: string }; request: Request }>(
   handler: (event: Event) => Response | Promise<Response>
 ): (event: Event) => Promise<Response> {
   return async (event) => {
@@ -120,7 +121,13 @@ export function apiHandler<Event extends { url: { pathname: string } }>(
       return await handler(event);
     } catch (cause) {
       if (isHttpError(cause)) return fail(cause.status, cause.body.message);
-      console.error(ERROR_LOG_PREFIX.server, event.url.pathname, 500, cause);
+      console.error(
+        ERROR_LOG_PREFIX.server,
+        event.url.pathname,
+        500,
+        describeClient(readClientContext(event.request)),
+        cause
+      );
       return fail(500, GENERIC_ERROR_MESSAGE);
     }
   };

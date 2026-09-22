@@ -14,7 +14,7 @@ import {
   endAiGeneration,
 } from '$lib/state/aiGeneration.svelte';
 import { settingsState } from '$lib/state/settings.svelte';
-import { apiUrl } from '$lib/api';
+import { apiClientHeaders, apiUrl } from '$lib/api';
 import {
   ASYNC_GENERATION_HEADER,
   FREE_GENERATIONS_REMAINING_HEADER,
@@ -210,6 +210,7 @@ function buildRequest(
     // decides — it answers in-line wherever it has no background worker to hand
     // the drawing to (ADR-0115).
     [ASYNC_GENERATION_HEADER]: '1',
+    ...apiClientHeaders(),
     ...credentialHeaders,
   };
 
@@ -309,7 +310,7 @@ async function collectGeneration(
     // as the modal being closed, and this request is the part that can hang.
     fetchResult: async (id, pollSignal) => {
       const result = await fetch(generationResultUrl(id), {
-        headers: credentialHeaders,
+        headers: { ...apiClientHeaders(), ...credentialHeaders },
         signal: pollSignal,
       });
       headers = result.headers;

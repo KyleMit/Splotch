@@ -10,7 +10,7 @@
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
   import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
-  import { apiUrl } from '$lib/api';
+  import { apiFetch } from '$lib/api';
   import { aiCredentialHeaders } from '$lib/ai/credentials';
   import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
   import type { StyleName } from '$lib/ai/styles';
@@ -87,7 +87,7 @@
   async function submit(signal: AbortSignal): Promise<Response> {
     if (problem) {
       const device = includeDevice ? await fields?.ensureDevice() : undefined;
-      return fetch(apiUrl('/api/report'), {
+      return apiFetch('/api/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -110,7 +110,7 @@
     form.set('style', style ?? '');
 
     const credentials = await aiCredentialHeaders();
-    return fetch(apiUrl('/api/report-image'), {
+    return apiFetch('/api/report-image', {
       method: 'POST',
       headers: reportToken ? { ...credentials, [REPORT_TOKEN_HEADER]: reportToken } : credentials,
       body: form,

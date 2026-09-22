@@ -1,4 +1,4 @@
-import { apiUrl } from '$lib/api';
+import { apiFetch } from '$lib/api';
 import {
   KEY_CHECK_UNAVAILABLE_CODE,
   looksLikeApiKey,
@@ -48,7 +48,7 @@ export async function verifyCredential(
   const endpoint = kind === 'apiKey' ? '/api/verify-key' : '/api/verify-access-code';
   const body = kind === 'apiKey' ? { apiKey: value } : { code: value };
 
-  const res = await fetch(apiUrl(endpoint), {
+  const res = await apiFetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

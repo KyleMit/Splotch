@@ -7,14 +7,24 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 
 **CORS:** `hooks.server.ts` answers preflights and adds `Access-Control-Allow-Origin: *` to every
 `/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` /
-`X-Access-Token` / `X-Api-Key` / `X-Installation-Id` / `X-Report-Token` headers allowed, plus
-`X-Free-Generations-Remaining` and `X-Report-Token` exposed and `Access-Control-Max-Age: 86400` so
-native clients can read the updated allowance and cache the preflight instead of paying an OPTIONS
-round trip per request. The wildcard is safe because every endpoint is either gated by a credential
-the caller must already hold (access token, OpenAI key, or admin session) or rate-limited and
-bounded. The credential-less `report` endpoint creates a sanitized private support issue;
-`csp-report` is size-capped and bounded to log lines. Nothing under `/api` uses cookies. See
-ADR-0007.
+`X-Access-Token` / `X-Api-Key` / `X-Installation-Id` / `X-Report-Token` / `X-Splotch-Version` /
+`X-Splotch-Platform` headers allowed, plus `X-Free-Generations-Remaining` and `X-Report-Token`
+exposed and `Access-Control-Max-Age: 86400` so native clients can read the updated allowance and
+cache the preflight instead of paying an OPTIONS round trip per request. The wildcard is safe
+because every endpoint is either gated by a credential the caller must already hold (access token,
+OpenAI key, or admin session) or rate-limited and bounded. The credential-less `report` endpoint
+creates a sanitized private support issue; `csp-report` is size-capped and bounded to log lines.
+Nothing under `/api` uses cookies. See ADR-0007.
+
+**Client identification:** every request carries `X-Splotch-Version` (the ADR-0030 build version: a
+store semver from a native app, the per-commit form from the web) and `X-Splotch-Platform`
+(`android` | `ios` | `web`), attached by `apiFetch()` / `apiClientHeaders()` in
+`web/src/lib/api.ts`. The server reads them through `readClientContext()`
+(`web/src/lib/server/clientContext.ts`), which validates both to a closed shape and reads anything
+else — including a client shipped before the headers existed — as unidentified. Today the only
+consumer is the `apiHandler` 500 log line; the headers exist so that a future incompatible change
+can recognise and degrade old installed clients instead of breaking them (issue 248). No endpoint
+changes its response on them.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard

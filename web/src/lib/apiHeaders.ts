@@ -12,3 +12,12 @@ export const REPORT_TOKEN_HEADER = 'X-Report-Token';
 // the server still answers synchronously when it has no background worker to
 // hand the job to, and a client that never sends it always gets the old shape.
 export const ASYNC_GENERATION_HEADER = 'X-Async-Generation';
+
+// Sent by every client on every /api/* call so the server can tell which build
+// and platform a request came from. Installed native releases outlive several
+// hosted API revisions and cannot be updated in lockstep with a deploy (issue
+// 248), so the server's only way to recognise an old client is a signal the
+// client has been sending since before the server needed it. Read by
+// lib/server/clientContext.ts; carried in the CORS allow-list (hooks.server.ts).
+export const CLIENT_VERSION_HEADER = 'X-Splotch-Version';
+export const CLIENT_PLATFORM_HEADER = 'X-Splotch-Platform';

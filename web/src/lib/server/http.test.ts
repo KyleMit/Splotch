@@ -198,7 +198,10 @@ describe('fail', () => {
 });
 
 describe('apiHandler', () => {
-  const event = { url: { pathname: '/api/test' } };
+  const event = {
+    url: { pathname: '/api/test' },
+    request: new Request('https://splotch.art/api/test'),
+  };
 
   it('converts a thrown SvelteKit error into the canonical failure shape', async () => {
     const handler = apiHandler(async () => {
@@ -229,7 +232,26 @@ describe('apiHandler', () => {
 
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ ok: false, error: 'Something went wrong.' });
-    expect(logged).toHaveBeenCalledWith('[server error]', '/api/test', 500, boom);
+    expect(logged).toHaveBeenCalledWith('[server error]', '/api/test', 500, 'unidentified', boom);
+    logged.mockRestore();
+  });
+
+  it('names the client build in the 500 log when the request identifies one', async () => {
+    const identified = {
+      url: { pathname: '/api/test' },
+      request: new Request('https://splotch.art/api/test', {
+        headers: { 'X-Splotch-Version': '1.6.0', 'X-Splotch-Platform': 'ios' },
+      }),
+    };
+    const boom = new Error('boom');
+    const handler = apiHandler(async () => {
+      throw boom;
+    });
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await handler(identified);
+
+    expect(logged).toHaveBeenCalledWith('[server error]', '/api/test', 500, 'ios/1.6.0', boom);
     logged.mockRestore();
   });
 });
