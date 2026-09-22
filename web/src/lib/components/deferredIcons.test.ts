@@ -24,14 +24,16 @@ const startupSvgs = import.meta.glob<string>('../icons/*.svg', {
   import: 'default',
 });
 
-// Every non-test source file, minus the two modules that enumerate the icons
-// themselves and so name every deferred icon by construction.
+// Every non-test source file, minus the modules that enumerate the icons
+// themselves and so name deferred icons by construction (icon-meta.ts is the
+// generated colorful subset).
 const sources = import.meta.glob<string>(
   [
     '../../**/*.svelte',
     '../../**/*.ts',
     '!../../lib/components/Icon.svelte',
     '!../../lib/components/deferredIcons.ts',
+    '!../../lib/components/icon-meta.ts',
     '!../../**/*.d.ts',
     '!../../**/*.test.ts',
   ],

@@ -1,27 +1,20 @@
 <script module lang="ts">
   import { deferredIconMarkup, ensureDeferredIcons } from './iconRegistry.svelte';
+  import { COLORFUL_ICONS } from './icon-meta';
   import { iconNameFromPath, type CommonIconName } from './iconTypes';
 
   // Full-color "spot" icons carry their own palette, so callers that tint
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
-  // Some (brush-pen, brush-crayon, line-weight-brush) mix that fixed palette with currentColor
-  // ink parts that ActionsPanel tints to the active drawing color.
-  //
-  // Guarded by Icon.svelte.test.ts: every icon the chroma classifier deems
-  // colorful must appear here, so a newly added full-color SVG can't slip in
-  // un-tagged and render wrongly tinted. The set is an allowed superset — the
-  // release headings and stroke-size previews are monochrome in their raw SVG but still opt
-  // out because they tint via currentColor / theme vars.
-  export const COLOR_ICONS = new Set<CommonIconName>([
-    'appearance',
+  // COLORFUL_ICONS is generated from each SVG's painted hues (gen:icon-names);
+  // the hand list below holds the monochrome icons that still opt out because
+  // they tint themselves via currentColor or theme vars. Icon.svelte.test.ts
+  // keeps the generated list fresh and this list free of anything the
+  // classifier would have found on its own.
+  const SELF_TINTING_ICONS: readonly CommonIconName[] = [
     'ink-splotch',
-    'brush-crayon',
-    'brush-eraser',
-    'brush-magic',
-    'brush-pen',
-    'camera',
-    'controls',
+    // Dottie paints her brand fill through var(--brand, #hex), which the chroma
+    // classifier does not read as a painted hue.
     'dottie-another-idea',
     'dottie-bright',
     'dottie-giggle',
@@ -32,26 +25,15 @@
     'dottie-retry',
     'dottie-stumped',
     'dottie-sunny',
-    'feedback',
     // The stroke glyph inherits its caller's ink instead of the modal fill override.
     'refresh',
+    // Some (brush-pen, brush-crayon, line-weight-brush) mix a fixed palette with
+    // currentColor ink parts that ActionsPanel tints to the active drawing color.
     'line-weight-brush',
     'line-weight-eraser',
-    'line-weight-magic',
-    'more-colors',
-    'parent-center',
     'release-fixed',
     'release-improved',
     'release-new',
-    'save-picture',
-    'setup',
-    'shapes',
-    'sound',
-    'trash-closed',
-    'trash-open',
-    'undo',
-    'wand-stars',
-    'whats-new',
     // Stroke-size previews carry their own coloring — the brush sizes via
     // currentColor (the active ink color), the eraser sizes and its
     // line-weight-eraser trigger via theme vars (--paper / --hole-stroke) —
@@ -66,12 +48,10 @@
     'size-eraser-3',
     'size-eraser-4',
     'size-eraser-5',
-    'size-magic-1',
-    'size-magic-2',
-    'size-magic-3',
-    'size-magic-4',
-    'size-magic-5',
-  ]);
+  ];
+  export const COLOR_ICONS = new Set<CommonIconName>([...COLORFUL_ICONS, ...SELF_TINTING_ICONS]);
+  /** The monochrome opt-outs alone, for the guard that keeps them out of the generated list. */
+  export const SELF_TINTING_ICON_NAMES = SELF_TINTING_ICONS;
 
   // The exclusions must be spelled out literally here — Vite resolves
   // import.meta.glob statically — but NON_RENDERABLE_ICONS in iconTypes.ts is

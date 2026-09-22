@@ -19,6 +19,11 @@ guard the production icon set, and `/design` renders the same split for review.
 
 ## Name generation
 
+`gen-icon-names.mjs` also writes `web/src/lib/components/icon-meta.ts`, the `COLORFUL_ICONS` value
+module listing every renderable icon `isSpot` classifies as full-color; `Icon.svelte` unions it with
+its hand list of self-tinting monochrome opt-outs, and `Icon.svelte.test.ts` fails when the
+committed module no longer matches the SVGs.
+
 `gen-icon-names.mjs` reads every SVG under `web/src/lib/icons/` — the startup set at the top level
 and the deferred set in `deferred/` (ADR-0164) — sorts the basenames, and replaces
 `web/src/lib/components/icon-names.d.ts`. A basename present in both directories fails the run. It

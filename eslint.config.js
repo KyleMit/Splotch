@@ -195,6 +195,7 @@ export default tseslint.config(
       'ios/',
       'scrapbook/',
       'web/src/lib/components/icon-names.d.ts',
+      'web/src/lib/components/icon-meta.ts',
       'web/src/lib/releases.json',
     ],
   },

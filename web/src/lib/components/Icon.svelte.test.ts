@@ -1,16 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { COLOR_ICONS } from './Icon.svelte';
+import { COLOR_ICONS, SELF_TINTING_ICON_NAMES } from './Icon.svelte';
+import { COLORFUL_ICONS } from './icon-meta';
 import { iconNameFromPath } from './iconTypes';
-import type { CommonIconName } from './iconTypes';
 import { isSpot, paintedValues } from '../../../../tools/icons/lib/icon-chroma.mjs';
 import { themes } from '../design/tokens';
 
-// Guards the hand-maintained COLOR_ICONS allowlist (Icon.svelte) against a
-// forgotten full-color icon: every icon whose raw SVG paints a saturated hue
-// must be tagged, or it renders wrongly tinted by the monochrome fill filter.
-// COLOR_ICONS is an allowed superset — it also holds monochrome opt-outs (the
-// stroke-size previews that tint via currentColor / theme vars), so the
-// inclusion is one-directional: {colorful} ⊆ COLOR_ICONS.
+// Guards the two halves of Icon.svelte's `icon-color` opt-out set. COLORFUL_ICONS
+// is generated from the SVGs by gen:icon-names, so the committed module must
+// equal what the classifier says about the SVGs on disk (a recolored existing
+// icon changes the classification without touching the type union). The
+// SELF_TINTING hand list is the complement: monochrome icons that opt out for
+// their own reasons, so anything the classifier already flags has no business
+// there — that inclusion used to be one-directional and is now exact.
 //
 // Mirror Icon.svelte's own glob plus the deferred directory (ADR-0164) so the
 // guard covers exactly the icons the app can render through <Icon>. The
@@ -29,28 +30,30 @@ const svgByName = Object.fromEntries(
   Object.entries(svgs).map(([path, src]) => [iconNameFromPath(path), src])
 );
 
-describe('COLOR_ICONS allowlist', () => {
-  const colorful = new Set(
-    Object.entries(svgs)
-      .filter(([, src]) => isSpot(src))
-      .map(([path]) => iconNameFromPath(path))
-  );
+describe('icon-color opt-out set', () => {
+  const colorful = Object.entries(svgs)
+    .filter(([, src]) => isSpot(src))
+    .map(([path]) => iconNameFromPath(path))
+    .sort();
 
   it('flags at least the known spot icons (classifier sanity check)', () => {
-    expect(colorful.has('camera')).toBe(true);
-    expect(colorful.size).toBeGreaterThan(5);
+    expect(colorful).toContain('camera');
+    expect(colorful.length).toBeGreaterThan(5);
   });
 
-  it.each(Object.keys(svgs).map(iconNameFromPath).sort())(
-    '%s: if colorful, it opts out of the monochrome tint',
-    (name) => {
-      if (!colorful.has(name)) return;
-      expect(
-        COLOR_ICONS.has(name as CommonIconName),
-        `${name} paints a saturated hue but is missing from COLOR_ICONS`
-      ).toBe(true);
-    }
-  );
+  it('the generated COLORFUL_ICONS module is fresh (rerun npm run gen:icon-names)', () => {
+    expect([...COLORFUL_ICONS]).toEqual(colorful);
+  });
+
+  it('the self-tinting hand list holds only icons the classifier calls monochrome', () => {
+    const misfiled = SELF_TINTING_ICON_NAMES.filter((name) => colorful.includes(name));
+    expect(misfiled, 'already generated into COLORFUL_ICONS; drop from the hand list').toEqual([]);
+  });
+
+  it('every listed name is a shipped icon', () => {
+    const missing = [...COLOR_ICONS].filter((name) => !(name in svgByName));
+    expect(missing).toEqual([]);
+  });
 });
 
 describe('monochrome icon fill', () => {
@@ -70,7 +73,7 @@ describe('monochrome icon fill', () => {
 
   const monochrome = Object.keys(svgs)
     .map(iconNameFromPath)
-    .filter((name) => !COLOR_ICONS.has(name as CommonIconName))
+    .filter((name) => !COLOR_ICONS.has(name))
     .sort();
   const unpainted = monochrome.filter((name) => NO_PAINT_EXCEPTIONS.has(name));
   const painted = monochrome.filter((name) => !NO_PAINT_EXCEPTIONS.has(name));
