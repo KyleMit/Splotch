@@ -263,14 +263,20 @@ body {
   transform-origin: center;
 }
 
-/* Shared modal card: centering, white surface, rounded corners, shadow.
-   Per-modal width/max-height/overflow stays in each component. */
+/* Shared modal card: centering, white surface, rounded corners, shadow, and
+   the phone-edge gutter as its width cap. Per-modal width (a min() of that cap
+   and the card's own), max-height, and overflow stay in each component. The
+   max-width is load-bearing even though every card's width already respects
+   the gutter: the UA stylesheet gives <dialog> a max-width of
+   calc(100% - 6px - 2em), a 19px inset at 16px type, which silently outranks
+   any narrower gutter on a phone unless the shell overrides it. */
 .modal-shell {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
+  max-width: var(--modal-full-width);
   background: var(--surface);
   border: none;
   border-radius: var(--radius-lg);
