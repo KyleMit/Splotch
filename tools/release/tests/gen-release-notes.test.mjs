@@ -5,6 +5,7 @@ import {
   renderReleaseComponent,
   renderReleaseHistory,
   validateBundledReleaseText,
+  validateEmDashSpacing,
   validateStoreText,
 } from '../gen-release-notes.mjs';
 
@@ -69,6 +70,22 @@ describe('validateBundledReleaseText', () => {
       );
     }
   );
+});
+
+describe('validateEmDashSpacing', () => {
+  it('allows the open em dash the app copy uses', () => {
+    expect(() =>
+      validateEmDashSpacing(
+        'Dark mode — Light, Dark, or follow the system.\nSplotch — a quiet app.'
+      )
+    ).not.toThrow();
+  });
+
+  it('rejects a closed em dash and names the open form', () => {
+    expect(() =>
+      validateEmDashSpacing('Pick sounds for the app—plus a clear sound.', '2.0.0.md')
+    ).toThrow('2.0.0.md: em dashes are set open in this app\'s copy — write "p — p", not "p—p"');
+  });
 });
 
 describe('renderReleaseComponent', () => {
