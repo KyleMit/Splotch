@@ -73,6 +73,33 @@ three ranked CI flakes all reproduced; the CI digest's `flows-palette-brush` era
 `bare-toolbar` rotation, `coloring-pack-download` fresh install, and the `cancelling the warning`
 sibling did not (0 of 12 each).
 
+### Sweep 2 — 12 reps on the fix branch, 10,860 executions, 608–636 s per rep
+
+Run on `claude/flake-fixes-2026-09-22` at e19690a (main at d8a8102 plus the three spec fixes),
+`--prebuilt` against the same bundle, with a niced (`nice -n 19`, one worker) Vitest loop sharing
+the box, so the contention was higher than sweep 1's. It is both the post-fix validation and the
+second discovery pass.
+
+| Reps failed | Spec › test                                                                                                  | Failing state                                                                                         |
+| ----------: | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+|       12/12 | `pwa-registration.spec.ts` › serves canonical precache bytes                                                 | container baseline                                                                                    |
+|       12/12 | `store-drawing-replay.spec.ts` › pointer and engine replay render the same compiled scene                    | container baseline                                                                                    |
+|        0/12 | `flows-parent-center-warning.spec.ts` › the standing warning survives a relaunch                             | fixed (was 7/12)                                                                                      |
+|        0/12 | `flows-parental-gate.spec.ts` › Parent Center is gated before its controls appear and persists …             | fixed (was 2/12)                                                                                      |
+|        0/12 | `actions-panel-layout.spec.ts` › AI-only drawer paints its count before the grant arrives                    | fixed (was 5/12)                                                                                      |
+|        0/12 | `web-back.spec.ts` › Back closes nested dialogs from the top down                                            | fixed (was 1/12)                                                                                      |
+|        4/12 | `privacy-parent-center.spec.ts` › Parent Center reached from privacy hydrates its persisted settings         | `settleSettingsPane` timeout, as in sweep 1                                                           |
+|        4/12 | `privacy-parent-center.spec.ts` › closing Parent Center with its close button returns focus …                | same `settleSettingsPane` timeout inside `openPrivacyParentCenter` (0/12 in sweep 1)                  |
+|        3/12 | `privacy-parent-center.spec.ts` › closing Parent Center with a backdrop tap returns focus …                  | same (0/12 in sweep 1)                                                                                |
+|        3/12 | `flows-parental-gate.spec.ts` › the bundled privacy page gates its provider terms link                       | gate gone mid-solve, as in sweep 1 (1/12 there)                                                       |
+|        1/12 | `changelog.spec.ts` › phone landscape › the open contents panel scrolls inside itself, bottom edge on screen | panel bottom 98 px past the viewport for the whole 5 s poll after `pinContentsRow`'s `scrollIntoView` |
+|        1/12 | `design.spec.ts` › the disclosure chevron rotates open                                                       | `summary.click()` never gave the `<details>` its `open` attribute (5 s poll)                          |
+
+Per rep: 2, 2, 4, 3, 2, 4, 7, 2, 3, 4, 5, 2 failures. Reps 7 and 11 lost all three privacy-route
+specs together. The /privacy hangs and the mid-solve gate loss both rose with the extra load, which
+fits a contention mechanism and is recorded on issues \#2148 and \#2149; the two singles join the
+`reduce-motion` one from sweep 1 as seen-once failures with no second event across 24 reps.
+
 ## The reload race after a dialog closes
 
 `flows-parent-center-warning.spec.ts` › the standing warning survives a relaunch (7/12) and
@@ -169,8 +196,14 @@ the next hunt can instrument `WideShell`'s `stagedContentSettled` on this route.
 `reduce-motion.spec.ts` › a visible AI downloadButton cue does not replay when Reduce Motion turns
 off: 1/12, 35.6 s. The whole budget went inside `invokeAiGeneration`'s `page.evaluate`, i.e. the
 synchronous prelude of `generateAiImage` (modal launch, canvas export start) held the page's main
-thread for 30 s. Isolated amplifier 0/10, absent from CI. Recorded, not filed: one event with no
-mechanism is a rate of 1 in 10,860 executions, not a flake with a shape.
+thread for 30 s. Isolated amplifier 0/10, absent from CI.
+
+Sweep 2 added two more singles: `changelog.spec.ts` › phone landscape › the open contents panel
+scrolls inside itself (1/12; the pre-hydration `scrollIntoView` pin did not hold and the panel sat
+98 px past the fold for the whole poll) and `design.spec.ts` › the disclosure chevron rotates open
+(1/12; the `summary.click()` produced no `open` attribute). Each is one event in 21,720 executions
+with no second sighting and no capture; they are filed together as issue \#2151 so a later sweep has
+somewhere to add a second event, not as three flakes with a shape.
 
 ## The fix PR and its review
 
@@ -195,16 +228,17 @@ scope honest.
 
 ## Issue index
 
-| Issue  | Spec › test                                                                                                | Rate (4 workers, retries off)          | Classification                     |
-| ------ | ---------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------- |
-| \#2145 | `flows-parent-center-warning` › survives a relaunch; `flows-parental-gate` › persists every feature policy | 7/12 and 2/12; amplifier 4/20          | spec race, fixed in PR \#2143      |
-| \#2146 | `actions-panel-layout` › AI-only drawer paints its count before the grant arrives                          | 5/12; amplifier 0/10                   | spec race, fixed in PR \#2143      |
-| \#2147 | `web-back` › Back closes nested dialogs from the top down                                                  | 1/12; amplifier 0/10                   | spec race, fixed in PR \#2143      |
-| \#2148 | `privacy-parent-center` › Parent Center reached from privacy hydrates its persisted settings               | 4/12; amplifier 0/20                   | container-only (provisional), open |
-| \#2149 | `flows-parental-gate` › the bundled privacy page gates its provider terms link                             | 1/12 (4/13 in 2026-09); amplifier 0/20 | container-only (provisional), open |
-| \#2150 | `pwa-registration` precache bytes; `store-drawing-replay` replay parity                                    | 12/12 each, both hunts                 | container-only, deterministic      |
+| Issue  | Spec › test                                                                                                | Rate (4 workers, retries off)                     | Classification                     |
+| ------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------- |
+| \#2145 | `flows-parent-center-warning` › survives a relaunch; `flows-parental-gate` › persists every feature policy | 7/12 and 2/12; amplifier 4/20                     | spec race, fixed in PR \#2143      |
+| \#2146 | `actions-panel-layout` › AI-only drawer paints its count before the grant arrives                          | 5/12; amplifier 0/10                              | spec race, fixed in PR \#2143      |
+| \#2147 | `web-back` › Back closes nested dialogs from the top down                                                  | 1/12; amplifier 0/10                              | spec race, fixed in PR \#2143      |
+| \#2148 | `privacy-parent-center` › Parent Center reached from privacy hydrates its persisted settings               | 4/12; amplifier 0/20                              | container-only (provisional), open |
+| \#2149 | `flows-parental-gate` › the bundled privacy page gates its provider terms link                             | 1/12, then 3/12 (4/13 in 2026-09); amplifier 0/20 | container-only (provisional), open |
+| \#2150 | `pwa-registration` precache bytes; `store-drawing-replay` replay parity                                    | 12/12 each, both hunts                            | container-only, deterministic      |
 
-`reduce-motion` › downloadButton cue (1/12) is recorded above and not filed.
+`reduce-motion` › downloadButton cue, `changelog` › contents panel bottom edge, and `design` › the
+disclosure chevron (1/24 each) are filed together as \#2151, a place for a second sighting.
 
 ## Post-run validation
 
