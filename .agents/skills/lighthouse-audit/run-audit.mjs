@@ -74,6 +74,10 @@ for (const key of pickedDevices) {
   const dev = DEVICES[key];
   const profileDir = join(OUT, `profile-${key}`);
   console.log(`### ${dev.label} (${dev.w}x${dev.h})`);
+  // A fresh profile per invocation: Lighthouse's own storage reset leaves
+  // localStorage alone, so a profile seeded by an earlier --storage run would
+  // otherwise carry that setting into this one.
+  rmSync(profileDir, { recursive: true, force: true });
   if (STORAGE && !seedStorage(profileDir)) {
     console.log('  ✗ localStorage seeding failed; skipping this device');
     continue;
@@ -154,10 +158,7 @@ function runLighthouse({ name, dev, profileDir, repeat, quiet }) {
   return res.status ?? 1;
 }
 
-// A fresh profile per invocation: a leftover profile could carry an earlier
-// seed, and Lighthouse only resets the storage types it knows about.
 function seedStorage(profileDir) {
-  rmSync(profileDir, { recursive: true, force: true });
   const origin = new globalThis.URL(URL).origin;
   const res = spawnSync(
     process.execPath,
