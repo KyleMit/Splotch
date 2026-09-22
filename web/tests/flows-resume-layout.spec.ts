@@ -5,7 +5,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 import { openDrawer } from './flows-harness';
-import { draw, gotoApp, renderedCanvasHandle } from './helpers';
+import { draw, gotoApp, opaquePixelCount } from './helpers';
 
 // The backing-store size of every production live tile. This is the surface the
 // bug destroyed: a rect with no area resized every tile to zero, after which
@@ -31,21 +31,6 @@ async function tileGridSpan(page: Page) {
       .filter((_, index) => index % LIVE_TILE_COLUMNS === 0)
       .reduce((total, [, height]) => total + height, 0),
   };
-}
-
-async function opaquePixelCount(page: Page) {
-  const canvas = await renderedCanvasHandle(page);
-  try {
-    return await canvas.evaluate((element) => {
-      if (element.width === 0 || element.height === 0) return 0;
-      const { data } = element.getContext('2d')!.getImageData(0, 0, element.width, element.height);
-      let count = 0;
-      for (let index = 3; index < data.length; index += 4) if (data[index] > 0) count++;
-      return count;
-    });
-  } finally {
-    await canvas.dispose();
-  }
 }
 
 // Drive the engine through a re-entry whose rect has no area yet, then let the

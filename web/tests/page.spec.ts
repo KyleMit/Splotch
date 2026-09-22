@@ -5,7 +5,7 @@ import {
   enforceProductionCsp,
   expectNoReload,
   gotoApp,
-  renderedCanvasHandle,
+  opaquePixelCount,
   spaNavigate,
 } from './helpers';
 import { AI_ACCESS_TOKEN_PARAM } from '../src/lib/inviteLink';
@@ -13,24 +13,6 @@ import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
-
-async function opaquePixelCount(page: Page) {
-  const canvas = await renderedCanvasHandle(page);
-  try {
-    return canvas.evaluate((element) => {
-      const pixels = element
-        .getContext('2d')!
-        .getImageData(0, 0, element.width, element.height).data;
-      let count = 0;
-      for (let index = 3; index < pixels.length; index += 4) {
-        if (pixels[index] > 0) count++;
-      }
-      return count;
-    });
-  } finally {
-    await canvas.dispose();
-  }
-}
 
 test('home page renders the drawing canvas', async ({ page }) => {
   await page.goto('/');

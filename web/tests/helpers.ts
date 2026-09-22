@@ -558,6 +558,27 @@ export async function firstOpaquePixel(page: Page): Promise<Rgba | null> {
   }
 }
 
+/**
+ * Count of non-transparent pixels on the canvas. A composite with no area reads
+ * as 0 rather than throwing, so callers can poll across a zero-area resize.
+ */
+export async function opaquePixelCount(page: Page): Promise<number> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c) => {
+      if (c.width === 0 || c.height === 0) return 0;
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      let count = 0;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] > 0) count++;
+      }
+      return count;
+    });
+  } finally {
+    await canvas.dispose();
+  }
+}
+
 export function isBlueDominant(px: Rgba) {
   return px[2] > px[0];
 }
