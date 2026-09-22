@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { createHmac } from 'node:crypto';
 import type { StyleName } from '../ai/styles';
 import { USAGE_RECORD_RETENTION_DAYS, type UsageOutcome } from '../usageRecord';
+import { sleep } from './sleep';
 import {
   isExpiredUsage,
   USAGE_GRANT_KEY_PREFIX,
@@ -32,8 +33,6 @@ function usageGrantKey(token: string): string | null {
     .digest('hex');
   return `${USAGE_GRANT_KEY_PREFIX}${grantId}`;
 }
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function usageLogLine(
   credential: 'byok' | 'managed',
