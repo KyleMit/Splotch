@@ -246,8 +246,9 @@
       <Icon name="settings" class="corner-button-icon" />
     </span>
     <span class="value">
-      Muted canvas-corner chrome: whole-button opacity and icon tint step idle (0.4) → hover →
-      pressed. Drawer toggle, Fullscreen Toggle, Settings Button.
+      Muted canvas-corner chrome: whole-button opacity steps idle (0.5, the floor that keeps the
+      glyph above 3:1 on both papers) → hover → pressed over a full-ink glyph. Drawer toggle,
+      Fullscreen Toggle, Settings Button.
     </span>
   </div>
 
