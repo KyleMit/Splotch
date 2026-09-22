@@ -8,6 +8,7 @@ import {
   fail,
   readBodyWithinLimit,
   readJsonBody,
+  stringField,
   throttled,
   type JsonBodyResult,
 } from './http';
@@ -289,5 +290,49 @@ describe('throttled', () => {
       ok: false,
       error: 'Too many attempts. Please wait 12s.',
     });
+  });
+});
+
+describe('stringField', () => {
+  it('returns a present string value verbatim', () => {
+    expect(stringField({ key: '  sunny-meadow  ' }, 'key')).toBe('  sunny-meadow  ');
+  });
+
+  it.each<[string, unknown]>([
+    ['a number', 0],
+    ['an object', {}],
+    ['an array', []],
+    ['null', null],
+    ['undefined', undefined],
+    ['a boolean', true],
+  ])('coerces %s to an empty string', (_, value) => {
+    expect(stringField({ key: value }, 'key')).toBe('');
+  });
+
+  it('returns an empty string for a field the body does not carry', () => {
+    expect(stringField({ other: 'sunny-meadow' }, 'key')).toBe('');
+  });
+
+  it.each<[string, unknown]>([
+    ['a string', 'sunny-meadow'],
+    ['a number', 7],
+    ['null', null],
+    ['undefined', undefined],
+  ])('returns an empty string when the body is %s rather than an object', (_, body) => {
+    expect(stringField(body, 'key')).toBe('');
+  });
+
+  it('returns an empty string for an array body that asRecord rejects', () => {
+    const body = [{ key: 'sunny-meadow' }];
+
+    expect(asRecord(body)).toBeNull();
+    expect(stringField(body, 'key')).toBe('');
+  });
+
+  it('returns a present empty string, which callers cannot tell from a coerced one', () => {
+    const present = stringField({ key: '' }, 'key');
+
+    expect(present).toBe('');
+    expect(present).toBe(stringField({ key: 0 }, 'key'));
   });
 });
