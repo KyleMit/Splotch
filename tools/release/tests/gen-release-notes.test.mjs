@@ -81,10 +81,14 @@ describe('validateEmDashSpacing', () => {
     ).not.toThrow();
   });
 
-  it('rejects a closed em dash and names the open form', () => {
-    expect(() =>
-      validateEmDashSpacing('Pick sounds for the app—plus a clear sound.', '2.0.0.md')
-    ).toThrow('2.0.0.md: em dashes are set open in this app\'s copy — write "p — p", not "p—p"');
+  it.each([
+    ['closed on both sides', 'Pick sounds for the app—plus a clear sound.', 'p—p'],
+    ['closed on the left', 'Pick sounds for the app— plus a clear sound.', 'p—'],
+    ['closed on the right', 'Pick sounds for the app —plus a clear sound.', '—p'],
+  ])('rejects an em dash %s and names the offending run', (_shape, text, run) => {
+    expect(() => validateEmDashSpacing(text, '2.0.0.md')).toThrow(
+      `2.0.0.md: em dashes are set open in this app's copy — put a space on both sides of "${run}"`
+    );
   });
 });
 

@@ -18,9 +18,11 @@ const RELEASES_DIR = join(ROOT, 'releases');
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
 const ISO_RELEASE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const FORBIDDEN_BUNDLED_RELEASE_PHRASES = ['Google Play', 'Play Store', 'App Store'];
-// The app's body copy sets em dashes open ("Night Mode — Light"); a closed one
-// ("app—plus") reads as a different house style beside it on /changelog.
-const CLOSED_EM_DASH = /\S—\S/;
+// The app's body copy sets em dashes open ("Night Mode — Light"); one closed
+// on either side ("app—plus", "app— plus") reads as a different house style
+// beside it on /changelog.
+// Longest form first, so a dash closed on both sides reports both neighbours.
+const CLOSED_EM_DASH = /\S—\S|\S—|—\S/;
 
 function parseRelease(filename) {
   return parseReleaseSource(filename, readFileSync(join(RELEASES_DIR, filename), 'utf8'));
@@ -76,7 +78,7 @@ export function validateEmDashSpacing(text, filename = 'release notes') {
   const match = CLOSED_EM_DASH.exec(text);
   if (match) {
     throw new Error(
-      `${filename}: em dashes are set open in this app's copy — write "${match[0][0]} — ${match[0][2]}", not "${match[0]}"`
+      `${filename}: em dashes are set open in this app's copy — put a space on both sides of "${match[0]}"`
     );
   }
 }
