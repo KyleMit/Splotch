@@ -685,10 +685,14 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: var(--float-shadow);
+  /* color carries the active ink into the Brush and Stroke Width faces
+     (style:color, drawn in currentColor), so it eases with the swatch ring
+     instead of cutting ahead of it. */
   transition:
     background-color var(--duration-base) ease,
     border-color var(--duration-base) ease,
     box-shadow var(--duration-base) ease,
+    color var(--duration-base) ease,
     transform var(--duration-base) ease,
     filter var(--duration-base) ease,
     opacity var(--duration-base) ease;
@@ -833,6 +837,9 @@ html[data-ai-free-count]
   );
   transform-origin: calc(var(--action-btn-size) / 2) 100%;
   animation: flyout-shell 300ms var(--ease-pop) both;
+  /* An open menu's option faces take the ink too; recolor in step with the
+     trigger behind them. */
+  transition: color var(--duration-base) ease;
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
@@ -1453,6 +1460,7 @@ html[data-toolbar='bare'] .actions-panel .action-button {
   padding: calc(var(--action-btn-size) / 10);
   opacity: 1;
   transition:
+    color var(--duration-base) ease,
     transform var(--duration-base) var(--ease-glide),
     filter var(--duration-base) var(--ease-glide);
 }
