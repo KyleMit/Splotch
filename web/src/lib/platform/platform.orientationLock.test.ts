@@ -1,5 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { supportsOrientationLock } from './index';
+import { supportsOrientationLock, type LockableScreenOrientation } from './index';
+
+// The whole point of LockableScreenOrientation is that `lock` may be absent, and
+// nothing at runtime can catch it silently becoming required again — an
+// intersection with ScreenOrientation cannot weaken a member lib.dom requires,
+// so the obvious spelling of that type compiles and promises the opposite. This
+// assertion fails `npm run check` if it ever does.
+type Assert<T extends true> = T;
+type _LockStaysOptional = Assert<
+  Record<string, never> extends Pick<LockableScreenOrientation, 'lock'> ? true : false
+>;
 
 const originalCapacitor = globalThis.Capacitor;
 const originalOrientation = Object.getOwnPropertyDescriptor(Screen.prototype, 'orientation');

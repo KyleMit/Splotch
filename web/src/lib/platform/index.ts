@@ -91,9 +91,12 @@ export type Orientation = 'portrait' | 'landscape';
 
 // lib.dom declares `lock`/`unlock` as required members of ScreenOrientation, but
 // no WebKit build ships either, so the optional shape is the honest one at this
-// boundary. One declaration serves both readers of it: the capability check
-// below and the call in `lib/platform/orientation.ts`.
-export type LockableScreenOrientation = ScreenOrientation & {
+// boundary. They are omitted before being re-added: an intersection cannot
+// weaken a member the other side requires, so `ScreenOrientation & { lock?: … }`
+// would still promise callers a `lock` that is always there. One declaration
+// serves both readers of it: the capability check below and the call in
+// `lib/platform/orientation.ts`.
+export type LockableScreenOrientation = Omit<ScreenOrientation, 'lock' | 'unlock'> & {
   lock?: (orientation: Orientation) => Promise<void>;
   unlock?: () => void;
 };
