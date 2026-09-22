@@ -44,20 +44,28 @@ describe('createClearRingContours', () => {
     expect(Math.max(...chords) - Math.min(...chords)).toBeGreaterThan(5);
   });
 
-  it('draws the ready contour as one closed circle of two half arcs', () => {
-    const diameterPx = 255;
-    const radiusPx = diameterPx / 2;
-    const { solid } = createClearRingContours(diameterPx);
-    const match = /^(M[\d.,]+ A[^A]+?)( A.+?)Z$/.exec(solid);
-    if (!match) throw new Error(`Not a closed pair of arcs: ${solid}`);
-    const first = parseArc(match[1]);
-    const second = parseArc(`M${first.to.x.toFixed(2)},${first.to.y.toFixed(2)}${match[2]}`);
-    for (const arc of [first, second]) {
-      expect(arc.rx).toBeCloseTo(radiusPx, 2);
-      expect(arc.ry).toBeCloseTo(radiusPx, 2);
-      expect(arc.largeArc).toBe(1);
+  it.each([255, 610.390625, 815.1875])(
+    'draws the %fpx ready contour as one closed circle of four quarter arcs',
+    (diameterPx) => {
+      const radiusPx = diameterPx / 2;
+      const { solid } = createClearRingContours(diameterPx);
+      expect(solid.endsWith('Z')).toBe(true);
+      const [start, ...arcs] = solid.slice(0, -1).split(' A');
+      expect(arcs).toHaveLength(4);
+      let from = start;
+      for (const arc of arcs) {
+        const parsed = parseArc(`${from} A${arc}`);
+        expect(parsed.rx).toBeCloseTo(radiusPx, 2);
+        expect(parsed.ry).toBeCloseTo(radiusPx, 2);
+        expect(parsed.largeArc).toBe(0);
+        expect(radialErrorPx(parsed.to, radiusPx)).toBeLessThan(ON_CIRCLE_TOLERANCE_PX);
+        expect(Math.hypot(parsed.to.x - parsed.from.x, parsed.to.y - parsed.from.y)).toBeCloseTo(
+          radiusPx * Math.SQRT2,
+          1
+        );
+        from = `M${parsed.to.x.toFixed(2)},${parsed.to.y.toFixed(2)}`;
+      }
+      expect(from).toBe(start);
     }
-    expect(second.to).toEqual(first.from);
-    expect(first.to).toEqual({ x: 0, y: radiusPx });
-  });
+  );
 });

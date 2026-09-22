@@ -57,7 +57,7 @@ for (const viewport of [
       expect(alignment.top).toBeCloseTo(2, 1);
       expect(alignment.width).toBeCloseTo(4, 1);
       expect(alignment.height).toBeCloseTo(4, 1);
-      const marks = await dashes.evaluate((element) => {
+      const contourMetrics = (element: SVGElement) => {
         if (!(element instanceof SVGPathElement)) throw new Error('Pen path is missing');
         const svg = element.ownerSVGElement!;
         const radius = svg.viewBox.baseVal.width / 2;
@@ -70,8 +70,8 @@ for (const viewport of [
           path.setAttribute('d', `M${segment}`);
           const length = path.getTotalLength();
           lengths.push(length * scale);
-          for (let sample = 0; sample <= 10; sample++) {
-            const point = path.getPointAtLength((length * sample) / 10);
+          for (let sample = 0; sample <= 100; sample++) {
+            const point = path.getPointAtLength((length * sample) / 100);
             maxDeviation = Math.max(
               maxDeviation,
               Math.abs(Math.hypot(point.x - radius, point.y - radius) - radius) * scale
@@ -84,12 +84,16 @@ for (const viewport of [
           longest: Math.max(...lengths),
           maxDeviation,
         };
-      });
+      };
+      const marks = await dashes.evaluate(contourMetrics);
       expect(marks.pitch).toBeGreaterThan(24);
       expect(marks.pitch).toBeLessThan(26);
       expect(marks.shortest).toBeGreaterThan(8);
       expect(marks.longest).toBeLessThan(21);
       expect(marks.maxDeviation).toBeLessThan(0.1);
+      // Chromium draws each quarter arc as one cubic Bézier, whose radial error is a
+      // fixed fraction of the radius: about 0.12px at the largest ring covered here.
+      expect((await solid.evaluate(contourMetrics)).maxDeviation).toBeLessThan(0.25);
       const contours = await ring
         .locator('path')
         .evaluateAll((paths) => paths.map((path) => path.getAttribute('d')));

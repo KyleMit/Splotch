@@ -49,15 +49,19 @@ export function createClearRingContours(diameterPx: number) {
     return `${(radiusPx + Math.cos(angle) * radiusPx).toFixed(2)},${(radiusPx + Math.sin(angle) * radiusPx).toFixed(2)}`;
   }
 
-  function arc(fromAngle: number, toAngle: number, largeArc: 0 | 1) {
-    return `M${point(fromAngle)} A${radius} ${radius} 0 ${largeArc} 1 ${point(toAngle)}`;
+  function arcTo(angle: number) {
+    return `A${radius} ${radius} 0 0 1 ${point(angle)}`;
   }
 
   const dashes: string[] = [];
   for (let index = 0; index < dashCount; index++) {
     const [start, end] = PEN_MARKS[index % PEN_MARKS.length];
-    dashes.push(arc((index + start) * anglePerDash, (index + end) * anglePerDash, 0));
+    dashes.push(`M${point((index + start) * anglePerDash)} ${arcTo((index + end) * anglePerDash)}`);
   }
-  const solid = `${arc(0, Math.PI, 1)} A${radius} ${radius} 0 1 1 ${point(0)}Z`;
+  // Quarter arcs, never halves: a half-circle arc's chord equals its diameter, so the
+  // separately rounded endpoints and radius can disagree by a hundredth of a pixel and
+  // the browser then bows the arc by the square root of that gap, whole pixels at tablet size.
+  const quarterTurns = [1, 2, 3, 4].map((quarter) => arcTo((quarter * Math.PI) / 2));
+  const solid = `M${point(0)} ${quarterTurns.join(' ')}Z`;
   return { dashes: dashes.join(' '), solid };
 }
