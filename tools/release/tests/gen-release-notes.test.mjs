@@ -125,17 +125,16 @@ describe('renderReleaseComponent', () => {
     expect(component).toContain('<ReleaseSectionHeading title="Improved" level={2} />');
     expect(component).toContain('<p>New</p>');
     expect(component).toContain('<h3>Fixed</h3>');
-    expect(component).toContain('<ReleaseSectionHeading title="Notes" level={2} />');
+    expect(component).toContain('<h2>Notes</h2>');
     expect(component).toContain('&lt;h2&gt;New&lt;/h2&gt;');
-    expect(component.match(/<ReleaseSectionHeading /g)).toHaveLength(2);
+    expect(component.match(/<ReleaseSectionHeading /g)).toHaveLength(1);
   });
 
-  it('escapes quoted titles and Svelte expressions in generated heading attributes', () => {
+  it('leaves a heading outside the section vocabulary as an escaped plain heading', () => {
     const component = renderReleaseComponent('## A "{draft}" & notes', '2.0.0.md');
 
-    expect(component).toContain(
-      '<ReleaseSectionHeading title="A &quot;&#123;draft&#125;&quot; &amp; notes" level={2} />'
-    );
+    expect(component).toContain('<h2>A &quot;&#123;draft&#125;&quot; &amp; notes</h2>');
+    expect(component).not.toContain('<ReleaseSectionHeading');
   });
 });
 
