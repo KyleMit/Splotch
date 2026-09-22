@@ -457,10 +457,6 @@ function restampRect(
 // is the only moment blankness is knowable without reading pixels.
 const blankAtPassOpen = new WeakSet<CanvasRenderingContext2D>();
 
-export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
-  blankAtPassOpen.add(target);
-}
-
 // The renderer's one-call seam for a crayon ink op's tile visibility: plane
 // deposition previews on the composited planes, so the tile must stay as it
 // was (returns false); restamp deposition mutates the tile directly, so it is

@@ -10,8 +10,8 @@ vi.mock('./crayonBrush', () => ({
 import {
   configureCrayonDeposition,
   crayonBufferIsDirty,
+  crayonOpShowsTile,
   flushCrayonBuffer,
-  noteCrayonTargetBlank,
   setCrayonBufferForTarget,
 } from './crayonPassBuffer';
 import { renderOp, type StrokeOp } from './strokeOps';
@@ -124,7 +124,7 @@ describe('tiled crayon pass buffers', () => {
 
   it('a pass opening on a blank tile restamps with a single blit', () => {
     const target = context2d();
-    noteCrayonTargetBlank(target);
+    crayonOpShowsTile(target, true);
 
     renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
 
