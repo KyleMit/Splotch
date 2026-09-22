@@ -702,6 +702,18 @@ const PROXIMITY_FRACTION = 0.45;
 const EXCLUDE_ARC_FRACTION = 2.5;
 const ANCHOR_SPACING_FRACTION = 0.25;
 
+// At thin line widths these floors, not the fractions above, are what governs
+// pass splitting: a sub-pixel direction step would let rasterized hand jitter
+// rotate the measured direction, and a sub-pixel proximity or anchor spacing
+// would put re-entry below the resolution the anchors are sampled at. The
+// exclude-arc floor is counted in dir-steps rather than pixels because its job
+// is to keep the trailing exclusion longer than the window direction is
+// measured over, so the tip cannot re-enter on the strip it is still laying.
+const MIN_DIR_STEP_PX = 3;
+const MIN_PROXIMITY_PX = 2;
+const MIN_ANCHOR_SPACING_PX = 2;
+const MIN_EXCLUDE_ARC_DIR_STEPS = 3;
+
 export type CrayonPoint = Point;
 
 // Decides where a crayon gesture's polyline must start a new deposition pass
@@ -730,10 +742,13 @@ export class CrayonPassTracker {
   private dirOriginY: number;
 
   constructor(startX: number, startY: number, lineWidth: number) {
-    this.dirStep = Math.max(3, lineWidth * DIR_STEP_FRACTION);
-    this.proximity = Math.max(2, lineWidth * PROXIMITY_FRACTION);
-    this.excludeArc = Math.max(this.dirStep * 3, lineWidth * EXCLUDE_ARC_FRACTION);
-    this.anchorSpacing = Math.max(2, lineWidth * ANCHOR_SPACING_FRACTION);
+    this.dirStep = Math.max(MIN_DIR_STEP_PX, lineWidth * DIR_STEP_FRACTION);
+    this.proximity = Math.max(MIN_PROXIMITY_PX, lineWidth * PROXIMITY_FRACTION);
+    this.excludeArc = Math.max(
+      this.dirStep * MIN_EXCLUDE_ARC_DIR_STEPS,
+      lineWidth * EXCLUDE_ARC_FRACTION
+    );
+    this.anchorSpacing = Math.max(MIN_ANCHOR_SPACING_PX, lineWidth * ANCHOR_SPACING_FRACTION);
     this.lastX = startX;
     this.lastY = startY;
     this.dirOriginX = startX;
