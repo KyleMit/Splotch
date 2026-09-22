@@ -185,9 +185,11 @@ for (const theme of ['light', 'dark']) {
   );
   const page = await context.newPage();
   page.setDefaultTimeout(15_000);
+  // A page with no origin yet has no localStorage; every surface's prepare starts by seeding it.
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   for (const s of surfaces) {
     try {
-      await s.prepare(page);
+      await s.prepare(page, VIEWPORTS[args.viewport]);
       await page.waitForTimeout(400);
       await collect(page, s.id, theme, records);
       await s.cleanup?.(page);
