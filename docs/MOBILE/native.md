@@ -154,12 +154,16 @@ alone won't compile/register the new Swift/Java classes.
 
 The Settings rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied by
 `web/src/lib/platform/orientation.ts`. On native it locks via **`@capacitor/screen-orientation`**,
-which calls Android's `Activity.setRequestedOrientation` — this **overrides the OS Auto-Rotate
-setting**, so the parent's choice is honored even on a device with rotation turned off. The Web
-Screen Orientation API (the web fallback) can't do this: it only chooses an orientation within what
-the OS already permits, so with Auto-Rotate off it silently no-ops. The branch is keyed on
-`isNative()` (ADR-0013). Adding/removing this plugin requires a fresh native build — `cap:sync`
-alone won't register it.
+which calls Android's `Activity.setRequestedOrientation` — a Portrait or Landscape lock **overrides
+the OS Auto-Rotate setting**, so the parent's choice is honored even on a device with rotation
+turned off. The plugin's `unlock()` does not: it requests `SCREEN_ORIENTATION_UNSPECIFIED`, which
+defers to that setting. So on Android, Auto goes through the app-local `SensorOrientation` plugin
+(`SensorOrientationPlugin.java`), which requests `SCREEN_ORIENTATION_SENSOR` — accelerometer
+rotation past the OS toggle, excluding upside-down portrait. iOS has no public way past the Control
+Center rotation lock and keeps `unlock()`. The Web Screen Orientation API (the web fallback) can't
+do this: it only chooses an orientation within what the OS already permits, so with Auto-Rotate off
+it silently no-ops. The branch is keyed on `isNative()` (ADR-0013). Adding/removing this plugin
+requires a fresh native build — `cap:sync` alone won't register it.
 
 ### Data & privacy posture (important for store forms)
 
