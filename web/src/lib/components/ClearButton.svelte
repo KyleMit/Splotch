@@ -216,9 +216,10 @@
     height: 40px;
     display: block;
     pointer-events: none;
-    /* Half the disc's 10px off-screen overhang: centres the lid on the
+    /* The disc's whole 10px off-screen overhang, not half of it: a flex-centred
+       item moves by half its margin, so this is what centres the lid on the
        visible half-disc rather than on the full box. */
-    margin-right: 5px;
+    margin-right: 10px;
     transition: margin var(--duration-slow) ease;
   }
 
@@ -364,7 +365,7 @@
     :global(.clear-icon) {
       width: 38px;
       height: 38px;
-      margin-right: 5px;
+      margin-right: 10px;
     }
   }
 </style>
