@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import sharp from 'sharp';
 import {
   gotoApp,
   openSettingsModal,
@@ -309,6 +310,58 @@ test('Bare compact fullscreen shares one pane with the toolbar', async ({ page }
     page,
     '.fullscreen-toggle, .actions-panel .action-button, #settingsButton'
   );
+});
+
+test('Bare compact glass fades out between separate controls', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.addInitScript((keys) => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value:
+        'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36',
+    });
+    localStorage.setItem(keys.toolbarStyle, 'bare');
+    localStorage.setItem(keys.drawerOpen, 'false');
+  }, STORAGE_KEYS);
+  await gotoApp(page);
+  await expect(page.locator('.fullscreen-toggle')).toBeVisible();
+  const [fullscreen, color, drawer] = await Promise.all(
+    ['.fullscreen-toggle', '#colorButton', '.drawer-toggle'].map(async (selector) => {
+      const box = await page.locator(selector).boundingBox();
+      if (!box) throw new Error(`${selector} has no box`);
+      return box;
+    })
+  );
+  const column = Math.round(color.x + color.width / 2);
+  const gaps = [
+    Math.round((fullscreen.y + fullscreen.height + color.y) / 2),
+    Math.round((color.y + color.height + drawer.y) / 2),
+  ];
+  await page.evaluate(() => {
+    const pane = document.querySelector<HTMLElement>('[data-glass-pane="0"]');
+    if (!pane) throw new Error('missing pane');
+    const bounds = pane.getBoundingClientRect();
+    const probe = document.createElement('div');
+    Object.assign(probe.style, {
+      position: 'fixed',
+      left: `${bounds.x}px`,
+      top: `${bounds.y}px`,
+      width: `${bounds.width}px`,
+      height: `${bounds.height}px`,
+      background: '#fff',
+      maskImage: getComputedStyle(pane).maskImage,
+      maskSize: '100% 100%',
+      maskRepeat: 'no-repeat',
+    });
+    document.body.replaceChildren(probe);
+    document.documentElement.style.background = '#000';
+    document.body.style.background = '#000';
+  });
+  const { data, info } = await sharp(await page.screenshot({ scale: 'css' }))
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const alphaAt = (y: number) => data[(y * info.width + column) * info.channels] / 255;
+  for (const y of gaps) expect(alphaAt(y)).toBeLessThan(0.1);
 });
 
 test('Bare hides stale pane geometry until rotation layout settles', async ({ page }) => {
