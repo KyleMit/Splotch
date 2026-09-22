@@ -90,7 +90,8 @@ for (const viewport of [
       expect(marks.pitch).toBeLessThan(26);
       expect(marks.shortest).toBeGreaterThan(8);
       expect(marks.longest).toBeLessThan(21);
-      expect(marks.maxDeviation).toBeLessThan(0.1);
+      expect(marks.maxDeviation).toBeGreaterThan(0.5);
+      expect(marks.maxDeviation).toBeLessThan(1.5);
       // Chromium draws each quarter arc as one cubic Bézier, whose radial error is a
       // fixed fraction of the radius: about 0.12px at the largest ring covered here.
       expect((await solid.evaluate(contourMetrics)).maxDeviation).toBeLessThan(0.25);

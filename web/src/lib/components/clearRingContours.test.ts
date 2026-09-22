@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { createClearRingContours } from './clearRingContours';
 
 const ARC = /^M([\d.]+),([\d.]+) A([\d.]+) ([\d.]+) 0 ([01]) 1 ([\d.]+),([\d.]+)$/;
+const CUBIC =
+  /^M(-?[\d.]+),(-?[\d.]+) C(-?[\d.]+),(-?[\d.]+) (-?[\d.]+),(-?[\d.]+) (-?[\d.]+),(-?[\d.]+)$/;
 const ON_CIRCLE_TOLERANCE_PX = 0.01;
+const PEN_DEVIATION_LIMIT_PX = 1;
 
 function parseArc(command: string) {
   const match = ARC.exec(command);
@@ -13,7 +16,14 @@ function parseArc(command: string) {
 }
 
 function parseDashes(path: string) {
-  return path.split(' M').map((segment, index) => parseArc(index === 0 ? segment : `M${segment}`));
+  return path.split(' M').map((segment, index) => {
+    const command = index === 0 ? segment : `M${segment}`;
+    const match = CUBIC.exec(command);
+    if (!match) throw new Error(`Not a single cubic pen mark: ${command}`);
+    const numbers = match.slice(1).map(Number);
+    const points = [0, 2, 4, 6].map((offset) => ({ x: numbers[offset], y: numbers[offset + 1] }));
+    return { from: points[0], to: points[3], points };
+  });
 }
 
 function radialErrorPx(point: { x: number; y: number }, radiusPx: number) {
@@ -21,15 +31,24 @@ function radialErrorPx(point: { x: number; y: number }, radiusPx: number) {
 }
 
 describe('createClearRingContours', () => {
-  it.each([255, 390, 1024])('draws every dash as an arc of the %ipx ring', (diameterPx) => {
-    const radiusPx = diameterPx / 2;
-    for (const arc of parseDashes(createClearRingContours(diameterPx).dashes)) {
-      expect(arc.rx).toBeCloseTo(radiusPx, 2);
-      expect(arc.ry).toBeCloseTo(radiusPx, 2);
-      expect(arc.largeArc).toBe(0);
-      expect(radialErrorPx(arc.from, radiusPx)).toBeLessThan(ON_CIRCLE_TOLERANCE_PX);
-      expect(radialErrorPx(arc.to, radiusPx)).toBeLessThan(ON_CIRCLE_TOLERANCE_PX);
+  it.each([255, 390, 1024])(
+    'keeps every %ipx pen mark within a pen width of the ring',
+    (diameterPx) => {
+      const radiusPx = diameterPx / 2;
+      for (const dash of parseDashes(createClearRingContours(diameterPx).dashes)) {
+        for (const point of dash.points) {
+          expect(radialErrorPx(point, radiusPx)).toBeLessThan(PEN_DEVIATION_LIMIT_PX);
+        }
+      }
     }
+  );
+
+  it('bends every pen mark off the circle so the dashes read hand-drawn', () => {
+    const radiusPx = 255 / 2;
+    const deviations = parseDashes(createClearRingContours(255).dashes).map((dash) =>
+      Math.max(...dash.points.map((point) => radialErrorPx(point, radiusPx)))
+    );
+    expect(Math.min(...deviations)).toBeGreaterThan(0.5);
   });
 
   it('adds dashes as the ring grows instead of stretching them', () => {
@@ -38,8 +57,8 @@ describe('createClearRingContours', () => {
   });
 
   it('keeps the authored variation in dash length', () => {
-    const chords = parseDashes(createClearRingContours(255).dashes).map((arc) =>
-      Math.hypot(arc.to.x - arc.from.x, arc.to.y - arc.from.y)
+    const chords = parseDashes(createClearRingContours(255).dashes).map((dash) =>
+      Math.hypot(dash.to.x - dash.from.x, dash.to.y - dash.from.y)
     );
     expect(Math.max(...chords) - Math.min(...chords)).toBeGreaterThan(5);
   });
