@@ -105,13 +105,12 @@ test('/design has no serious accessibility violations', async ({ page }) => {
 });
 
 // The console's submit buttons ship disabled until hydration (AdminConsole's
-// hydration gate) and the Button primitive fades its fill and label from the
-// parked state to the brand one, so a scan that starts on the heading can sample
-// the mid-fade colors. The scan waits for the label to land on --on-brand.
+// hydration gate), and axe skips a disabled control, so a scan that starts on
+// the heading could grade the page with its primary action unexamined. The
+// scan waits for the live button; the console itself keeps the parked-to-live
+// flip instant, so there is no mid-fade state for the scan to land on.
 async function settleAdminSubmit(page: Page, name: string) {
-  const submit = page.getByRole('button', { name, exact: true });
-  await expect(submit).toBeEnabled();
-  await expect(submit).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(page.getByRole('button', { name, exact: true })).toBeEnabled();
 }
 
 test('/admin logged out has no serious accessibility violations', async ({ page }) => {

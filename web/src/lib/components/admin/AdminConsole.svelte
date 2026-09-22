@@ -99,6 +99,21 @@
 
   let submitDisabled = $derived(busy || !hydration.hydrated);
 
+  // The gate flips `disabled` off on mount, and the Button primitive would
+  // fade its parked fill to the brand one over --duration-base — a grey-to-
+  // purple fade on every load, and a mid-fade the axe scan can sample. The
+  // flip stays instant by holding the primitive's transition off until the
+  // frame after the buttons went live.
+  let hydrationSettled = $state(false);
+  $effect(() => {
+    if (!hydration.hydrated) return;
+    const frame = requestAnimationFrame(() => {
+      hydrationSettled = true;
+    });
+    return () => cancelAnimationFrame(frame);
+  });
+  let submitClass = $derived(hydrationSettled ? '' : 'hydrating');
+
   // Callbacks that reject (e.g. a fetch failing offline) would otherwise be
   // unhandled rejections with no UI feedback, so catch here and surface a
   // generic message in whichever branch (login form or console) is visible.
@@ -209,7 +224,13 @@
           required
           bind:value={loginKey}
         />
-        <Button variant="brand" size="lg" type="submit" disabled={submitDisabled}>Sign in</Button>
+        <Button
+          variant="brand"
+          size="lg"
+          type="submit"
+          class={submitClass}
+          disabled={submitDisabled}>Sign in</Button
+        >
       </form>
     </section>
   {:else}
@@ -250,6 +271,7 @@
             variant="brand"
             size="lg"
             type="submit"
+            class={submitClass}
             disabled={submitDisabled}
             aria-label="Add code"
           >
@@ -448,6 +470,10 @@
   .add-form :global(.btn) {
     flex-shrink: 0;
     white-space: nowrap;
+  }
+
+  .add-form :global(.btn.hydrating) {
+    transition: none;
   }
 
   .add-label-short {
