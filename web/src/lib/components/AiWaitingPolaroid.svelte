@@ -126,7 +126,7 @@
     font-family: var(--font-family);
     cursor: pointer;
     transform: rotate(var(--polaroid-tilt));
-    animation: polaroidIn 400ms var(--ease-pop);
+    animation: polaroidIn 400ms linear;
   }
 
   /* The palette is a top bar here, so the same corner of the canvas is below it
@@ -231,7 +231,7 @@
     right: -10px;
     width: 28px;
     height: 28px;
-    animation: badgePop 560ms var(--ease-pop);
+    animation: badgePop 560ms linear;
   }
 
   @keyframes polaroidSpin {
@@ -244,13 +244,16 @@
     0% {
       opacity: 0;
       transform: rotate(6deg) scale(0.62) translateY(-18px);
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
     62% {
       opacity: 1;
       transform: rotate(-7deg) scale(1.04) translateY(0);
+      animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
     }
     84% {
       transform: rotate(-3.4deg) scale(0.995) translateY(0);
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
     }
     100% {
       transform: rotate(var(--polaroid-tilt)) scale(1) translateY(0);
@@ -292,12 +295,15 @@
   @keyframes badgePop {
     0% {
       transform: scale(0) rotate(-22deg);
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
     62% {
       transform: scale(1.18) rotate(5deg);
+      animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
     }
     84% {
       transform: scale(0.97) rotate(-2deg);
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
     }
     100% {
       transform: scale(1) rotate(0);

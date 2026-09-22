@@ -224,18 +224,21 @@
   }
 
   .color-swatch:global(.releasing) {
-    animation: swatch-press 420ms var(--ease-pop);
+    animation: swatch-press 420ms linear;
   }
 
   @keyframes swatch-press {
     0% {
       transform: scale(0.9);
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
     42% {
       transform: scale(1.075);
+      animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
     }
     72% {
       transform: scale(0.984);
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
     }
     100% {
       transform: scale(1);

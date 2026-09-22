@@ -125,6 +125,15 @@ choices:
   vocabulary is what this config already does for genuine idioms. At zero afterwards, it catches
   `:focus-visable` across every component — the single highest-value rule in the set.
 
+  **The first project-owned stylelint rule** (amended 2026-09, the motion pass). The design skill's
+  "one curve per cue" practice — a keyframe block with three or more transform stops plays on
+  `linear` (or `ease-in-out`, when every stop is a turning point) and names each segment's curve
+  inside the keyframe — is a local plugin, `tools/stylelint-keyframe-curves.mjs`, registered as
+  `splotch/keyframe-curves`. It measured 16 violations; five were shakes, pulses and wiggles already
+  on `ease-in-out`, which the rule accepts by design, and the remaining 11 reached zero in the
+  change that enabled it, because converting them was the change. It sees one stylesheet at a time,
+  so a component playing a keyframe block declared in another file is not covered.
+
   **`:global()` shape stays in the token ratchet, not stylelint** (amended 2026-09, issue 1938).
   Svelte's syntax is legitimate when a scoped compound pins a forwarded class, cross-component
   state, `{@html}` content, or an imperative class to its component; only a selector whose every

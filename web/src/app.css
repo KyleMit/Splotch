@@ -207,6 +207,7 @@ body {
     transform: translate(calc(-50% + var(--origin-x, 0px)), calc(-50% + var(--origin-y, 0px)))
       scale(0.22);
     opacity: 0;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
   }
   8% {
     transform: translate(
@@ -215,6 +216,7 @@ body {
       )
       scale(0.2);
     opacity: 0.5;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   38% {
     opacity: 1;
@@ -222,10 +224,12 @@ body {
   74% {
     transform: translate(-50%, -50%) scale(1.032);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   89% {
     transform: translate(-50%, -50%) scale(0.994);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   100% {
     transform: translate(-50%, -50%) scale(1);
@@ -287,7 +291,7 @@ body {
 }
 
 .modal-dialog.modal-fly-in[open] {
-  animation: dialogFlyFromOrigin 480ms var(--ease-pop);
+  animation: dialogFlyFromOrigin 360ms linear;
   transform-origin: center;
 }
 
@@ -836,7 +840,7 @@ html[data-ai-free-count]
     var(--flyout-option-base) * var(--action-btn-scale, 1) * var(--action-btn-radius-ratio)
   );
   transform-origin: calc(var(--action-btn-size) / 2) 100%;
-  animation: flyout-shell 300ms var(--ease-pop) both;
+  animation: flyout-shell 300ms linear both;
   /* An open menu's option faces take the ink too; recolor in step with the
      trigger behind them. */
   transition: color var(--duration-base) ease;
@@ -974,7 +978,7 @@ html[data-ai-free-count]
 }
 
 .screenshot-capture-feedback [data-icon='camera'] {
-  animation: screenshot-capture 460ms var(--ease-pop);
+  animation: screenshot-capture 460ms linear;
 }
 
 /* Reduced motion: no shutter squash. The capture still announces itself — the
@@ -994,14 +998,21 @@ html[data-ai-free-count]
 }
 
 @keyframes screenshot-capture {
+  0% {
+    transform: scale(1) rotate(0);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
   28% {
     transform: scale(1.14) rotate(-6deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   58% {
     transform: scale(0.985) rotate(1.6deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   80% {
     transform: scale(1.012) rotate(-0.6deg);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   100% {
     transform: scale(1) rotate(0);
@@ -1085,7 +1096,7 @@ html[data-ai-free-count]
   opacity: 0;
   contain: layout paint;
   will-change: transform, opacity;
-  animation: polaroid-show 1.9s var(--ease-glide) forwards;
+  animation: polaroid-show 1.9s linear forwards;
 }
 
 /* A save that failed takes the polaroid back mid-flight; the overlay's cleanup timer still removes it. */
@@ -1110,28 +1121,34 @@ html[data-ai-free-count]
   0% {
     transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.12) rotate(-16deg);
     opacity: 0;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
   }
   7% {
     transform: translate3d(calc(var(--from-x) * 1.04), calc(var(--from-y) * 1.04), 0) scale(0.14)
       rotate(-18deg);
     opacity: 0.55;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   28% {
     transform: translate3d(0, 0, 0) scale(1.05) rotate(-6.5deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   36% {
     transform: translate3d(0, 0, 0) scale(0.995) rotate(-2.8deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   44% {
     transform: translate3d(0, 0, 0) scale(1.008) rotate(-4.6deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   52%,
   78% {
     transform: translate3d(0, 0, 0) scale(1) rotate(-4deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
   100% {
     transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.12) rotate(-16deg);
@@ -1187,12 +1204,14 @@ html[data-ai-free-count]
   0% {
     opacity: 0;
     transform: translate(var(--flyout-from-x), var(--flyout-from-y)) scale(0.9);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   52% {
     opacity: 1;
   }
   72% {
     transform: translate(0, 0) scale(1.022);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   100% {
     opacity: 1;
@@ -1205,13 +1224,16 @@ html[data-ai-free-count]
   0% {
     opacity: 0;
     transform: translateY(11px) rotate(-5deg);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   58% {
     opacity: 1;
     transform: translateY(-2px) rotate(1.6deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   82% {
     transform: translateY(0.5px) rotate(-0.6deg);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
   100% {
     opacity: 1;
@@ -1219,7 +1241,7 @@ html[data-ai-free-count]
   }
 }
 .flyout-menu > button {
-  animation: flyout-option 320ms var(--ease-pop) backwards;
+  animation: flyout-option 320ms linear backwards;
   animation-delay: calc(40ms + var(--i) * var(--stagger));
 }
 .flyout-menu.motionless,

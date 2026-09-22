@@ -137,7 +137,7 @@
   /* --gate-shake-duration is stamped by the markup from GATE_SHAKE_MS, the
      same constant that clears the shaking flag — one source of truth. */
   .gate-content.shaking {
-    animation: gateShakeSoft var(--gate-shake-duration) ease;
+    animation: gateShakeSoft var(--gate-shake-duration) ease-in-out;
   }
 
   @keyframes gateShakeSoft {
@@ -198,7 +198,7 @@
     min-height: 300px;
     padding: var(--space-6);
     text-align: center;
-    animation: gatePopIn var(--duration-slow) var(--ease-pop);
+    animation: gatePopIn var(--duration-slow) linear;
   }
 
   .gate-success-badge {
@@ -238,9 +238,11 @@
     0% {
       transform: scale(0.3);
       opacity: 0;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
     70% {
       transform: scale(1.08);
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
     }
     100% {
       transform: scale(1);

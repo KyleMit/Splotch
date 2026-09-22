@@ -21,7 +21,7 @@
   }
 
   .brush-button-faces.entering {
-    animation: face-roll 460ms var(--ease-pop) backwards;
+    animation: face-roll 460ms linear backwards;
     transform-origin: center;
   }
 
@@ -31,13 +31,16 @@
     0% {
       opacity: 0;
       transform: rotate(-54deg) scale(0.62);
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
     56% {
       opacity: 1;
       transform: rotate(7deg) scale(1.045);
+      animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
     }
     80% {
       transform: rotate(-2.5deg) scale(0.99);
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
     }
     100% {
       opacity: 1;
