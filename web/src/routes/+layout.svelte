@@ -88,5 +88,18 @@
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-bold);
     cursor: pointer;
+    transition:
+      background var(--duration-base) ease,
+      transform var(--duration-fast) ease;
+  }
+
+  @media (hover: hover) {
+    button:hover {
+      background: var(--brand-solid-hover);
+    }
+  }
+
+  button:active {
+    transform: scale(0.97);
   }
 </style>

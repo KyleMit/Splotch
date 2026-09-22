@@ -333,7 +333,6 @@
   }
 
   .coloring-book-content h2 {
-    margin: 0 0 var(--space-5) 0;
     font-size: var(--font-size-xl);
     color: var(--text-strong);
     font-weight: var(--font-weight-semibold);
@@ -441,9 +440,10 @@
     pointer-events: none;
   }
 
-  /* The 28px bottom band reserves the overlaid .coloring-book-label's height:
-     snapping down risks the caption covering the art, snapping up opens a gap.
-     Functional, not scale drift. */
+  /* The 28px bottom band reserves the overlaid .coloring-book-label's height
+     (its 20px line plus 4px of padding each side): snapping down risks the
+     caption covering the art, snapping up opens a gap. Functional, not scale
+     drift. */
   .coloring-book-tile img {
     padding: var(--space-2) var(--space-2) 28px var(--space-2);
     mix-blend-mode: var(--lineart-blend);
@@ -552,6 +552,7 @@
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
+    line-height: 20px;
     color: var(--text);
     text-align: center;
   }

@@ -354,7 +354,12 @@
   :global(.install-cta-icon) {
     width: 18px;
     height: 18px;
-    filter: brightness(0) invert(1);
+  }
+
+  /* Re-inked by fill like every other icon on a brand fill; the scoped rule
+     outranks the banner's :where() re-ink below. */
+  .install-cta :global(.install-cta-icon svg) {
+    fill: var(--on-brand);
   }
 
   .install-hint {

@@ -450,7 +450,7 @@
   }
 
   .hub-row:active {
-    transform: scale(0.99);
+    transform: scale(0.97);
   }
 
   /* Untiled: the icon takes the space the tile's padding used to. The box stays

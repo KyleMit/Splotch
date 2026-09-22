@@ -62,7 +62,7 @@
 
   .about-links {
     padding-top: 20px;
-    border-top: 1px solid var(--border);
+    border-top: var(--border-width) solid var(--border);
     text-align: center;
     color: var(--text-soft);
     font-size: var(--font-size-sm);
