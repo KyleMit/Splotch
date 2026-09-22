@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   nativeLock: vi.fn<(options: { orientation: string }) => Promise<void>>(),
   nativeUnlock: vi.fn<() => Promise<void>>(),
   followSensor: vi.fn<() => Promise<void>>(),
+  sensorModuleDelayMs: 0,
 }));
 
 vi.mock('$app/environment', () => ({ browser: true }));
@@ -19,9 +20,10 @@ vi.mock('$lib/platform', async (importOriginal) => ({
 vi.mock('@capacitor/screen-orientation', () => ({
   ScreenOrientation: { lock: mocks.nativeLock, unlock: mocks.nativeUnlock },
 }));
-vi.mock('$lib/plugins/sensorOrientation', () => ({
-  SensorOrientation: { followSensor: mocks.followSensor },
-}));
+vi.mock('$lib/plugins/sensorOrientation', async () => {
+  await new Promise((resolve) => setTimeout(resolve, mocks.sensorModuleDelayMs));
+  return { SensorOrientation: { followSensor: mocks.followSensor } };
+});
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -37,6 +39,7 @@ async function freshModule() {
 beforeEach(() => {
   mocks.native = false;
   mocks.platform = 'android';
+  mocks.sensorModuleDelayMs = 0;
   mocks.supportsLock = true;
   mocks.nativeLock.mockReset().mockResolvedValue(undefined);
   mocks.nativeUnlock.mockReset().mockResolvedValue(undefined);
@@ -109,6 +112,18 @@ describe('applyDeviceOrientationPreference on native', () => {
 
     expect(mocks.followSensor).toHaveBeenCalledTimes(1);
     expect(mocks.nativeUnlock).not.toHaveBeenCalled();
+  });
+
+  it('drops an Auto request that a Portrait request overtook while loading', async () => {
+    mocks.sensorModuleDelayMs = 10;
+    const { applyDeviceOrientationPreference } = await freshModule();
+
+    const auto = applyDeviceOrientationPreference(false, false, false);
+    await applyDeviceOrientationPreference(true, false, false);
+    await auto;
+
+    expect(mocks.nativeLock).toHaveBeenCalledWith({ orientation: 'portrait' });
+    expect(mocks.followSensor).not.toHaveBeenCalled();
   });
 
   it('unlocks through the plugin on iOS', async () => {

@@ -58,15 +58,17 @@ export async function applyDeviceOrientationPreference(
   // bundle; isNative() alone is a runtime check it can't tree-shake.
   if (__IS_CAPACITOR__ && native) {
     try {
+      // The two plugins load as separate chunks, so an older request's import
+      // can settle after a newer one's; once superseded, it must not reach the
+      // Activity. Plugin calls themselves dispatch in call order.
       if (target === 'unlocked' && getPlatform() === 'android') {
         const { SensorOrientation } = await import('$lib/plugins/sensorOrientation');
-        await SensorOrientation.followSensor();
-      } else if (target === 'unlocked') {
-        const { ScreenOrientation } = await import('@capacitor/screen-orientation');
-        await ScreenOrientation.unlock();
+        if (request === lastRequested) await SensorOrientation.followSensor();
       } else {
         const { ScreenOrientation } = await import('@capacitor/screen-orientation');
-        await ScreenOrientation.lock({ orientation: target });
+        if (request !== lastRequested) return;
+        if (target === 'unlocked') await ScreenOrientation.unlock();
+        else await ScreenOrientation.lock({ orientation: target });
       }
     } catch {
       // Plugin unavailable or the platform refused the lock — the setting stays
