@@ -119,6 +119,14 @@ an hour, so answer or decline every request rather than walking away.
 `node /Users/kylemit/.local/libexec/splotch-rival-agent/broker.mjs status --session <dir>`
 summarizes where things stand.
 
+**An interrupted loop does not lose the review.** The session directory is the durable record, not
+the `next` call: a finished run has already written `done.json` and `findings.json` there, and a
+still-pending request is a file under `requests/`. So when the loop is broken into — a declined
+command, a lost turn, a timeout you did not expect — read those before concluding anything about the
+rival, and post a completed round's findings as usual rather than relaunching it. Empty `requests/`
+and `replies/` directories beside a `done.json` mean the rival asked for nothing and finished on its
+own.
+
 Judge each request on its own merits. A targeted test file or `npm run check` in the worktree is
 routine; a full Playwright suite is host-exclusive and worth declining; anything that reaches
 outside the worktree, the network, or git's shared state deserves the scrutiny you would give your
