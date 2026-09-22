@@ -170,8 +170,10 @@ const surfaces = allSurfaces().filter(
 );
 const failures = [];
 for (const theme of ['light', 'dark']) {
+  const { width, height, ...device } = VIEWPORTS[args.viewport];
   const context = await browser.newContext({
-    ...VIEWPORTS[args.viewport],
+    viewport: { width, height },
+    ...device,
     baseURL: args.url,
     colorScheme: theme,
   });
@@ -189,7 +191,7 @@ for (const theme of ['light', 'dark']) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   for (const s of surfaces) {
     try {
-      await s.prepare(page, VIEWPORTS[args.viewport]);
+      await s.prepare(page, { width, height });
       await page.waitForTimeout(400);
       await collect(page, s.id, theme, records);
       await s.cleanup?.(page);
