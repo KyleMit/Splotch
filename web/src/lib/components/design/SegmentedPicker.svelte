@@ -13,6 +13,7 @@
 
 <script lang="ts" generics="T extends string">
   import Icon from '../Icon.svelte';
+  import '$lib/components/deferredIcons';
 
   // Design-system picker primitive: the one owner of the selected-state
   // control pattern Button deliberately excludes — those are pickers, not
@@ -180,7 +181,12 @@
   {/if}
   <span class="option-label">{option.label}</span>
   {#if variant === 'chip'}
-    <span class="option-check" aria-hidden="true">{active ? '✓' : ''}</span>
+    <!-- The check is an icon rather than a "✓" glyph: U+2713 sits outside the
+         Quicksand subsets and rendered in the OS fallback face. The span keeps
+         its width while empty so labels do not shift when a chip toggles. -->
+    <span class="option-check" aria-hidden="true">
+      {#if active}<Icon name="check" class="option-check-icon" />{/if}
+    </span>
   {/if}
 {/snippet}
 
@@ -470,9 +476,17 @@
 
   .option-check {
     flex-shrink: 0;
+    display: inline-flex;
+    justify-content: center;
     width: 14px;
-    text-align: center;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
+  }
+
+  .option-check :global(.option-check-icon) {
+    width: 14px;
+    height: 14px;
+  }
+
+  .option-check :global(.option-check-icon svg) {
+    fill: currentColor;
   }
 </style>

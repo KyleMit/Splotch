@@ -2,6 +2,8 @@
   import type { Snippet } from 'svelte';
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import BrandMark from './BrandMark.svelte';
+  import Icon from '../Icon.svelte';
+  import '$lib/components/deferredIcons';
 
   // The chrome every standalone page wears: a ground, a centered sheet, a
   // masthead (back link + crayon strip + wordmark) and a hero. Shared by
@@ -34,7 +36,12 @@
 <main class="page">
   <div class="sheet">
     <div class="topbar">
-      <a class="back" href="/">← Back to drawing</a>
+      <!-- An icon, not a "←" glyph: the Quicksand subsets cover ↑ and ↓ but
+           not U+2190, which fell to the OS font at its own weight. -->
+      <a class="back" href="/">
+        <Icon name="chevron-left" class="back-icon" aria-hidden="true" />
+        Back to drawing
+      </a>
       <!-- The mark is the masthead's second way home; the strip is decorative
            (aria-hidden), so the wordmark is the link's whole accessible name. -->
       <a class="brand" href="/">
@@ -179,12 +186,25 @@
        the negative block margin hands the growth back to the topbar. */
     display: inline-flex;
     align-items: center;
+    gap: 2px;
     min-height: 44px;
     margin-block: -11px;
     color: var(--page-link);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     text-decoration: none;
+  }
+
+  /* The glyph's own side bearing would float it off the sheet edge the text
+     sits on, so the negative margin pulls it back into the text column. */
+  .back :global(.back-icon) {
+    width: 18px;
+    height: 18px;
+    margin-left: -5px;
+  }
+
+  .back :global(.back-icon svg) {
+    fill: currentColor;
   }
 
   /* Chips plus wordmark read as one mark, so they travel together and the
