@@ -89,17 +89,24 @@ export type Platform = 'android' | 'ios' | 'web';
 
 export type Orientation = 'portrait' | 'landscape';
 
-// lib.dom declares `lock`/`unlock` as required members of ScreenOrientation, but
-// no WebKit build ships either, so the optional shape is the honest one at this
-// boundary. They are omitted before being re-added: an intersection cannot
-// weaken a member the other side requires, so `ScreenOrientation & { lock?: … }`
-// would still promise callers a `lock` that is always there. One declaration
-// serves both readers of it: the capability check below and the call in
-// `lib/platform/orientation.ts`.
-export type LockableScreenOrientation = Omit<ScreenOrientation, 'lock' | 'unlock'> & {
+type OrientationLockMembers = {
   lock?: (orientation: Orientation) => Promise<void>;
   unlock?: () => void;
 };
+
+// lib.dom declares both members as required on ScreenOrientation, but no WebKit
+// build ships either, so the optional shape is the honest one at this boundary.
+// They are omitted before being re-added: an intersection cannot weaken a member
+// the other side requires, so intersecting the optional shape straight onto
+// ScreenOrientation would still promise callers members that are always there.
+// The omitted keys come from `keyof` rather than a written-out pair, so adding a
+// member to the shape above cannot leave the required original behind it — and
+// deferredIcons.test.ts reads a quoted icon name in any source file as that file
+// rendering the icon, which a literal pair here would trip. One declaration
+// serves both readers of it: the capability check below and the call in
+// `lib/platform/orientation.ts`.
+export type LockableScreenOrientation = Omit<ScreenOrientation, keyof OrientationLockMembers> &
+  OrientationLockMembers;
 
 export function getPlatform(): Platform {
   if (!browser) return 'web';
