@@ -20,6 +20,7 @@ import {
   FREE_GENERATIONS_REMAINING_HEADER,
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
+import { GENERATION_STYLE_PARAM } from '$lib/apiParams';
 import { aiCredentialHeaders } from '$lib/ai/credentials';
 import {
   setFreeGenerationsRemaining,
@@ -214,7 +215,8 @@ function buildRequest(
   };
 
   const endpoint =
-    apiUrl('/api/generate-image') + (style ? `?style=${encodeURIComponent(style)}` : '');
+    apiUrl('/api/generate-image') +
+    (style ? `?${GENERATION_STYLE_PARAM}=${encodeURIComponent(style)}` : '');
   return { endpoint, headers, body: uploadBlob };
 }
 

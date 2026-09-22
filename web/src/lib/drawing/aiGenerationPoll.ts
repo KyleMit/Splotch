@@ -1,4 +1,5 @@
 import { apiUrl } from '$lib/api';
+import { GENERATION_JOB_PARAM } from '$lib/apiParams';
 import { GENERATION_POLL_INTERVAL_MS, GENERATION_POLL_TIMEOUT_MS } from '$lib/ai/limits';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 
@@ -123,5 +124,5 @@ const isAbort = (cause: unknown) =>
   cause instanceof DOMException && (cause.name === 'AbortError' || cause.name === 'TimeoutError');
 
 export function generationResultUrl(jobId: string): string {
-  return `${apiUrl('/api/generation-result')}?job=${encodeURIComponent(jobId)}`;
+  return `${apiUrl('/api/generation-result')}?${GENERATION_JOB_PARAM}=${encodeURIComponent(jobId)}`;
 }
