@@ -209,7 +209,7 @@
   }
 
   .submit:disabled {
-    opacity: 0.6;
+    opacity: var(--disabled-opacity);
     cursor: default;
   }
 

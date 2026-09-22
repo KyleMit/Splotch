@@ -53,9 +53,10 @@
     dense rows and toolbars; <code>danger</code> confirms something destructive. Disabled drops
     every variant to the same neutral treatment (<code>--control-track</code> fill,
     <code>--text-soft</code>
-    label at 0.7 opacity; outline keeps a <code>--border</code> hairline instead), so a parked
-    button cannot be mistaken for a live one on either paper. Busy is the <code>busy</code> prop: it
-    implies
+    label at <code>--disabled-opacity</code>; outline keeps a <code>--border</code> hairline
+    instead), so a parked button cannot be mistaken for a live one on either paper. Busy is the
+    <code>busy</code>
+    prop: it implies
     <code>disabled</code>, sets <code>aria-busy</code>, keeps the variant’s fill, and adds a 14px
     ring in <code>currentColor</code> before the label. The call site supplies the present-tense verb.
     The specimen below plays once as it comes into view; tap it to replay.

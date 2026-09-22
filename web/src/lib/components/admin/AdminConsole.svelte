@@ -434,7 +434,7 @@
   }
 
   .sign-out:disabled {
-    opacity: 0.6;
+    opacity: var(--disabled-opacity);
     cursor: default;
   }
 
@@ -494,7 +494,7 @@
   }
 
   .cta:disabled {
-    opacity: 0.6;
+    opacity: var(--disabled-opacity);
     cursor: default;
   }
 

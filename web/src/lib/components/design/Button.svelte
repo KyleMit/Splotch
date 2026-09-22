@@ -67,7 +67,7 @@
   .btn:disabled:not([aria-busy='true']) {
     background: var(--control-track);
     color: var(--text-soft);
-    opacity: 0.7;
+    opacity: var(--disabled-opacity);
     cursor: default;
     transform: none;
   }

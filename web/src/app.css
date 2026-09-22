@@ -674,6 +674,9 @@ html[data-ai-free-count]
   background: var(--brand-wash);
 }
 
+/* Deeper than --disabled-opacity on purpose: these are big, saturated canvas
+   controls, and at the shared step a parked one still reads as live to a
+   toddler. Canvas chrome keeps its bespoke treatment (the design skill). */
 .actions-panel .action-button:disabled,
 .actions-panel .action-button.disabled {
   opacity: 0.3;

@@ -90,6 +90,9 @@ Foundations and only reach past a default when a rule says so.
 | Elevation | Three shadows only: `--shadow-control` (the tight lift on a small raised control — modal close                                                                                                   |
 |           | disc, selected segment thumb), `--shadow-pop` (deep overlay lift under modal cards), and the                                                                                                     |
 |           | themed `--float-shadow` (everything floating on the paper — cards, flyouts, page sheets)                                                                                                         |
+| Opacity   | `--disabled-opacity` — the one dimming for a whole parked control (toggle rows, chips, buttons,                                                                                                  |
+|           | gate keys). Text and glyphs on their own never take it: they change ink token (rule 5). The                                                                                                      |
+|           | canvas action buttons keep their deeper bespoke fade                                                                                                                                             |
 | Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                                                                                                             |
 |           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on                                                                                                     |
 |           | purpose (ADR-0052): it reads the same on both papers. `--polaroid-paper` / `--polaroid-ink` —                                                                                                    |

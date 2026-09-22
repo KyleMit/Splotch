@@ -110,6 +110,12 @@ export const scale = {
   easePop: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   easeGlide: 'cubic-bezier(0.22, 1, 0.36, 1)',
 
+  // The one dimming for a whole parked control — a disabled toggle row, chip,
+  // button, or gate key. Text and glyphs on their own never take it: they
+  // change ink token instead (design rule 5). The canvas action buttons keep
+  // a deeper bespoke fade of their own in app.css.
+  disabledOpacity: '0.55',
+
   // Neutral (unthemed) elevation. The paper-floating cards use the *themed*
   // --float-shadow instead — these are for modal-layer chrome where one
   // shadow reads correctly on both themes.

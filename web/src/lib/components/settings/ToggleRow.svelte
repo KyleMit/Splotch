@@ -75,7 +75,7 @@
 
   .setting-toggle.disabled,
   .setting-help.disabled {
-    opacity: 0.55;
+    opacity: var(--disabled-opacity);
   }
 
   .setting-toggle.disabled .setting-info {

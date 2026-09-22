@@ -213,7 +213,7 @@
 
   .option:disabled {
     cursor: not-allowed;
-    opacity: 0.55;
+    opacity: var(--disabled-opacity);
   }
 
   /* app.css targets .picker .option for the visible keyboard ring;

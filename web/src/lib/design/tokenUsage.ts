@@ -60,6 +60,9 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   easePop: 'Anything that pops in or celebrates: dialog fly-ins, download-done, the swatch press.',
   easeGlide: 'Anything that settles or leaves: the polaroid, the swatch ring, the undo ghost.',
 
+  disabledOpacity:
+    'A whole disabled control: toggle rows, chips, buttons, gate keys. Never for text or a glyph on its own — those change ink token.',
+
   shadowControl:
     'The tight lift on a small raised control: the modal close disc, a selected segment thumb.',
   shadowPop: 'The deep overlay lift under whole modal cards.',

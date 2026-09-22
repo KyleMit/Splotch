@@ -33,6 +33,7 @@
 
   const easeKeys = ['easePop', 'easeGlide'] as const;
   const glassKeys = ['glassRail', 'glassStrip'] as const;
+  const opacityKeys = ['disabledOpacity'] as const;
 </script>
 
 <section id="space" data-sg-section>
@@ -83,6 +84,17 @@
       </div>
     {/each}
   </div>
+  <h4>Disabled</h4>
+  <div class="space-rows">
+    {#each opacityKeys as key (key)}
+      <div class="space-row" title={scaleUsage[key]}>
+        <code>{toCssVarName(key)}</code>
+        <span>{scaleUsage[key]}</span>
+        <span class="space-value">{scale[key]}</span>
+      </div>
+    {/each}
+  </div>
+  <h4>Shadows</h4>
   <div class="shadow-grid">
     {#each shadowKeys as key (key)}
       <div class="shadow-tile">
