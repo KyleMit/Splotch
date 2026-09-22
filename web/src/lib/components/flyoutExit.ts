@@ -19,7 +19,7 @@ function glide(t: number) {
 // at all while a stroke may be live (the rule .flyout-menu.motionless keeps
 // for the entrance) or under reduced motion: the menu goes at once. Svelte
 // marks an exiting element inert, so the menu stops taking input as it leaves.
-export function flyoutExit(): TransitionConfig {
+export function flyoutExit(_node: Element): TransitionConfig {
   if (isStrokeActive() || prefersReducedMotion()) return { duration: 0 };
   return {
     duration: FLYOUT_EXIT_MS,
