@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import sharp from 'sharp';
 import {
   gotoApp,
   openSettingsModal,
@@ -309,6 +310,93 @@ test('Bare compact fullscreen shares one pane with the toolbar', async ({ page }
     page,
     '.fullscreen-toggle, .actions-panel .action-button, #settingsButton'
   );
+});
+
+async function gotoCompactBare(page: Page, drawerOpen: boolean) {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.addInitScript(
+    ({ keys, drawerOpen }) => {
+      Object.defineProperty(navigator, 'userAgent', {
+        value:
+          'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36',
+      });
+      localStorage.setItem(keys.toolbarStyle, 'bare');
+      localStorage.setItem(keys.drawerOpen, String(drawerOpen));
+    },
+    { keys: STORAGE_KEYS, drawerOpen }
+  );
+  await gotoApp(page);
+  await expect(page.locator('.fullscreen-toggle')).toBeVisible();
+}
+
+async function boxOf(page: Page, selector: string) {
+  const box = await page.locator(selector).first().boundingBox();
+  if (!box) throw new Error(`${selector} has no box`);
+  return box;
+}
+
+// Replaces the page with the first pane's mask painted white on black, so a
+// screenshot pixel reads as that pane's glass alpha.
+async function glassAlphaAt(page: Page, points: { x: number; y: number }[]) {
+  await page.evaluate(() => {
+    const pane = document.querySelector<HTMLElement>('[data-glass-pane="0"]');
+    if (!pane) throw new Error('missing pane');
+    const bounds = pane.getBoundingClientRect();
+    const probe = document.createElement('div');
+    Object.assign(probe.style, {
+      position: 'fixed',
+      left: `${bounds.x}px`,
+      top: `${bounds.y}px`,
+      width: `${bounds.width}px`,
+      height: `${bounds.height}px`,
+      background: '#fff',
+      maskImage: getComputedStyle(pane).maskImage,
+      maskSize: '100% 100%',
+      maskRepeat: 'no-repeat',
+    });
+    document.body.replaceChildren(probe);
+    document.documentElement.style.background = '#000';
+    document.body.style.background = '#000';
+  });
+  const { data, info } = await sharp(await page.screenshot({ scale: 'css' }))
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return points.map(
+    ({ x, y }) => data[(Math.round(y) * info.width + Math.round(x)) * info.channels] / 255
+  );
+}
+
+test('Bare compact glass fades out between separate controls', async ({ page }) => {
+  await gotoCompactBare(page, false);
+  const fullscreen = await boxOf(page, '.fullscreen-toggle');
+  const color = await boxOf(page, '#colorButton');
+  const drawer = await boxOf(page, '.drawer-toggle');
+  const column = color.x + color.width / 2;
+  const alphas = await glassAlphaAt(page, [
+    { x: column, y: (fullscreen.y + fullscreen.height + color.y) / 2 },
+    { x: column, y: (color.y + color.height + drawer.y) / 2 },
+  ]);
+  for (const alpha of alphas) expect(alpha).toBeLessThan(0.1);
+});
+
+test('Bare compact L leaves the canvas open beyond its row and above its column', async ({
+  page,
+}) => {
+  await gotoCompactBare(page, true);
+  const fullscreen = await boxOf(page, '.fullscreen-toggle');
+  const color = await boxOf(page, '#colorButton');
+  const drawer = await boxOf(page, '.drawer-toggle');
+  const gear = await boxOf(page, '#settingsButton');
+  const open = [
+    { x: color.x + color.width / 2, y: (fullscreen.y + fullscreen.height + color.y) / 2 },
+    { x: (drawer.x + drawer.width + gear.x) / 2, y: drawer.y + drawer.height / 2 },
+  ];
+  for (const { x, y } of open)
+    expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.id, [x, y])).toBe(
+      'drawingCanvas'
+    );
+  for (const alpha of await glassAlphaAt(page, open)) expect(alpha).toBeLessThan(0.1);
 });
 
 test('Bare hides stale pane geometry until rotation layout settles', async ({ page }) => {
