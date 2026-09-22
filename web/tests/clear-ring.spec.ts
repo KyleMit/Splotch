@@ -89,8 +89,7 @@ for (const viewport of [
       expect(marks.pitch).toBeLessThan(26);
       expect(marks.shortest).toBeGreaterThan(8);
       expect(marks.longest).toBeLessThan(21);
-      expect(marks.maxDeviation).toBeGreaterThan(0.5);
-      expect(marks.maxDeviation).toBeLessThan(1.5);
+      expect(marks.maxDeviation).toBeLessThan(0.1);
       const contours = await ring
         .locator('path')
         .evaluateAll((paths) => paths.map((path) => path.getAttribute('d')));
