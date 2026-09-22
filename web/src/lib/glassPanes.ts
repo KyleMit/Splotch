@@ -21,22 +21,15 @@ import {
   BARE_MENU_GAP_PX,
   VERTICAL_MENU_MAX_WIDTH_PX,
 } from './bareToolbar';
-const FEATHER_SIGMA_PX = 32;
+const FEATHER_SIGMA_PX = 24;
 // Phone landscape unites controls that sit only a few button-widths apart
 // (fullscreen, color, drawer toggle) into one pane; a wider feather would sum
 // their tails into a frosted strip down the left edge.
-const COMPACT_FEATHER_SIGMA_PX = 14;
+const COMPACT_FEATHER_SIGMA_PX = 12;
 // Three sigma, where the blurred mask is effectively transparent, so the
 // pane's own box never shows as an edge.
 const FEATHER_REACH_SIGMAS = 3;
 const FEATHER_CURVE_SAMPLES = 16;
-// Remaps the blur's alpha so the glass is solid across each shape and then
-// eases out into the canvas: doubling puts full opacity at the shape edge, and
-// the quadratic ease-out meets it with zero slope so no crease marks the seam.
-const FEATHER_CURVE = Array.from({ length: FEATHER_CURVE_SAMPLES + 1 }, (_, i) => {
-  const doubled = Math.min(1, (2 * i) / FEATHER_CURVE_SAMPLES);
-  return +(1 - (1 - doubled) ** 2).toFixed(3);
-}).join(' ');
 const INFLATE_PX = 14;
 const BLEED_PX = 44;
 const MENU_PADDING_PX = 24;
@@ -54,6 +47,28 @@ interface Rect {
 }
 interface Pane extends Rect {
   mask: string;
+}
+
+// Abramowitz & Stegun 7.1.26: the blurred alpha a straight shape edge reaches
+// `distance` inside itself is the normal CDF of distance / sigma.
+function normalCdf(z: number): number {
+  const t = 1 / (1 + (0.3275911 * Math.abs(z)) / Math.SQRT2);
+  const poly =
+    t *
+    (0.254829592 + t * (-0.284496736 + t * (1.421413061 + t * (-1.453152027 + t * 1.061405429))));
+  const erf = 1 - poly * Math.exp(-(z * z) / 2);
+  return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2;
+}
+
+// Remaps the blur's alpha so the glass is solid up to the controls (the
+// INFLATE_PX margin inside each shape) and eases out from there; the quadratic
+// ease-out meets the solid region with zero slope so no crease marks the seam.
+function featherCurve(sigma: number): string {
+  const solidAlpha = normalCdf(INFLATE_PX / sigma);
+  return Array.from({ length: FEATHER_CURVE_SAMPLES + 1 }, (_, i) => {
+    const ramp = Math.min(1, i / FEATHER_CURVE_SAMPLES / solidAlpha);
+    return +(1 - (1 - ramp) ** 2).toFixed(3);
+  }).join(' ');
 }
 
 function rectangle(left: number, top: number, right: number, bottom: number, radius = 0): Rect {
@@ -77,7 +92,7 @@ function glassPane(rects: Rect[], clip: Rect, sigma: number): Pane {
         `<rect x="${r.x - x}" y="${r.y - y}" width="${r.width}" height="${r.height}" rx="${r.radius ?? 0}"/>`
     )
     .join('');
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}"><feGaussianBlur stdDeviation="${sigma}"/><feComponentTransfer><feFuncA type="table" tableValues="${FEATHER_CURVE}"/></feComponentTransfer></filter><g filter="url(#f)" fill="black">${shapes}</g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}"><feGaussianBlur stdDeviation="${sigma}"/><feComponentTransfer><feFuncA type="table" tableValues="${featherCurve(sigma)}"/></feComponentTransfer></filter><g filter="url(#f)" fill="black">${shapes}</g></svg>`;
   return { x, y, width, height, mask: `url("data:image/svg+xml,${encodeURIComponent(svg)}")` };
 }
 
