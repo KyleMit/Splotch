@@ -48,6 +48,17 @@ function dialogGuttersPx(): number {
   return 2 * Number(value);
 }
 
+/** The viewport width at which the dialog reaches its max-width cap. */
+function dialogCapViewportPx(): number {
+  const modalRule = coloringBookComponent.slice(
+    coloringBookComponent.indexOf('.coloring-book-modal {'),
+    coloringBookComponent.indexOf('.coloring-book-content {')
+  );
+  const cap = /max-width: (\d+)px/.exec(modalRule)?.[1];
+  expect(cap, 'coloring-book-modal max-width').toBeDefined();
+  return Number(cap) + dialogGuttersPx();
+}
+
 describe('page defaults', () => {
   it('every page ships night fills and dark overlays for both orientations', () => {
     for (const book of BOOKS) {
@@ -216,11 +227,12 @@ describe('responsive image sources', () => {
       '--modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));'
     );
     const guttersPx = dialogGuttersPx();
+    const capViewportPx = dialogCapViewportPx();
     expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain(
-      `(100vw - ${guttersPx + 100}px) / 4`
+      `(max-width: ${capViewportPx}px) calc((100vw - ${guttersPx + 100}px) / 4), 205px`
     );
     expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain(
-      `(100vw - ${guttersPx + 88}px) / 3`
+      `(max-width: ${capViewportPx}px) calc((100vw - ${guttersPx + 88}px) / 3), 277px`
     );
     for (const ownedCssValue of [
       '.coloring-pages-grid {',
