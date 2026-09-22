@@ -1179,7 +1179,11 @@ describe('compact settings shell', () => {
   });
 
   it('stays keyed to the landscape-phone media query that selects the shell', () => {
-    expect(settingsModal).toContain('(orientation: landscape) and (max-height:');
+    const breakpoints = read(join('web', 'src', 'lib', 'breakpoints.ts'));
+    expect(settingsModal).toContain('compact: PHONE_LANDSCAPE_QUERY');
+    expect(breakpoints).toContain(
+      'PHONE_LANDSCAPE_QUERY = `(orientation: landscape) and (max-height:'
+    );
   });
 
   it('skips the section list rather than waiting for rows the shell omits', () => {
