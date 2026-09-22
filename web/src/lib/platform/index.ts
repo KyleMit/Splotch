@@ -2,6 +2,14 @@ import { browser } from '$app/environment';
 
 import { TABLET_MIN_SIDE_PX } from '../breakpoints';
 
+// Every display mode that drops the browser chrome. A typo here evaluates to
+// false and quietly drops that mode from isStandalone().
+const APP_LIKE_DISPLAY_MODE_QUERIES = [
+  '(display-mode: standalone)',
+  '(display-mode: fullscreen)',
+  '(display-mode: minimal-ui)',
+] as const;
+
 // Capacitor injects a global `Capacitor` object both in the native runtime and
 // once @capacitor/core is loaded on the web. We read it off the global rather
 // than importing @capacitor/core here so this module stays safe to evaluate
@@ -24,13 +32,8 @@ export function isNative(): boolean {
  */
 export function isStandalone(): boolean {
   if (!browser) return false;
-  return !!(
-    // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
-    window.matchMedia?.('(display-mode: standalone)').matches ||
-    // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
-    window.matchMedia?.('(display-mode: fullscreen)').matches ||
-    // eslint-disable-next-line no-restricted-syntax -- predates the constant-per-query convention; see the follow-up to migrate it
-    window.matchMedia?.('(display-mode: minimal-ui)').matches ||
+  return (
+    APP_LIKE_DISPLAY_MODE_QUERIES.some((query) => window.matchMedia?.(query).matches) ||
     (window.navigator as { standalone?: boolean }).standalone === true
   );
 }

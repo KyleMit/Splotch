@@ -81,7 +81,7 @@ const MEDIA_QUERY_LITERAL = ['Literal', 'TemplateLiteral'].flatMap((argumentType
   ].map((callee) => ({
     selector: `CallExpression[${callee}][arguments.0.type="${argumentType}"]`,
     message:
-      'Import the query constant (lib/platform/reducedMotion.ts, lib/breakpoints.ts) instead of spelling a media query at the matchMedia call.',
+      'Import the query constant (lib/platform/reducedMotion.ts, lib/breakpoints.ts, lib/theme.ts) instead of spelling a media query at the matchMedia call.',
   }))
 );
 

@@ -17,6 +17,11 @@ export const TABLET_MIN_SIDE_PX = 600;
 
 export const PHONE_LANDSCAPE_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 0.02}px)`;
 
+// The orientation query layout.svelte.ts subscribes to. app.html's boot script
+// re-types it for the data-orientation stamp; app.html.test.ts fails on
+// divergence.
+export const PORTRAIT_QUERY = '(orientation: portrait)';
+
 export function isPhoneLandscape(width: number, height: number): boolean {
   return width > height && height < TABLET_MIN_SIDE_PX;
 }

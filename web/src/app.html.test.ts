@@ -15,6 +15,7 @@ import {
   SINGLE_BRUSH_ATTRIBUTE,
 } from './lib/actionButtonLayout';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
+import { PORTRAIT_QUERY } from './lib/breakpoints';
 import {
   EXPLICIT_REDUCE_MOTION_PREFERENCES,
   REDUCE_MOTION_ATTRIBUTE,
@@ -25,6 +26,7 @@ import {
 import { STORAGE_KEYS } from './lib/storage';
 import { FREE_GENERATION_LIMIT } from './lib/freeGenerations';
 import {
+  DARK_SCHEME_QUERY,
   RESOLVED_THEMES,
   resolveTheme,
   THEME_COLOR_META_SELECTOR,
@@ -141,9 +143,9 @@ describe("app.html's boot script paints theme-color like the theme module", () =
 
     const osListeners: OsChangeListener[] = [];
     window.matchMedia = ((query: string) => ({
-      matches: query.includes('dark') && systemDark,
+      matches: query === DARK_SCHEME_QUERY && systemDark,
       addEventListener: (_type: string, listener: OsChangeListener) => {
-        if (query.includes('dark')) osListeners.push(listener);
+        if (query === DARK_SCHEME_QUERY) osListeners.push(listener);
       },
     })) as unknown as typeof window.matchMedia;
 
@@ -202,6 +204,12 @@ describe("app.html's boot script paints theme-color like the theme module", () =
     } finally {
       refusedRead.mockRestore();
     }
+  });
+
+  it('subscribes to the OS scheme by the query theme.ts declares', () => {
+    expect(bootStringLiteral(/var darkQuery = window\.matchMedia\('([^']*)'\)/)).toBe(
+      DARK_SCHEME_QUERY
+    );
   });
 
   it('reaches the tag by the selector theme.ts uses', () => {
@@ -530,6 +538,12 @@ describe("app.html's boot script mirrors the state modules", () => {
   it('stamps data-theme for every resolved theme', () => {
     const bootThemes = [...bootScript.matchAll(/theme === '(\w+)'/g)].map((m) => m[1]);
     expect(new Set(bootThemes)).toEqual(new Set(RESOLVED_THEMES));
+  });
+
+  it('stamps data-orientation from the query layout.svelte.ts subscribes to', () => {
+    expect(
+      bootStringLiteral(/'data-orientation',\s*window\.matchMedia\('([^']*)'\)\.matches/)
+    ).toBe(PORTRAIT_QUERY);
   });
 
   it('seeds data-app-surface for DRAWING_ROUTE', () => {
