@@ -51,6 +51,7 @@
   --duration-exit: 0.2s;
   --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-drawer: cubic-bezier(0.4, 0, 0.2, 1);
   --disabled-opacity: 0.55;
   --shadow-control: 0 1px 4px rgb(0 0 0 / 18%);
   --shadow-pop: 0 8px 32px rgb(0 0 0 / 30%);

@@ -576,6 +576,13 @@
 
 <style>
   .actions-panel {
+    /* One clock for the drawer gesture: the track, its margin and the chevron
+       (a sibling of the drawer, hence declared here) share this duration and
+       --ease-drawer, so the chevron's angle and the drawer's edge are at the same
+       fraction of their journey on every frame. --duration-base because it is
+       the shortest value that reads as movement at 60 Hz; the settings-covered
+       zeroing of --duration-base below reaches it too. */
+    --drawer-collapse: var(--duration-base);
     pointer-events: auto;
     position: fixed;
     bottom: calc(8px + var(--safe-area-bottom));
@@ -626,21 +633,23 @@
      the old slide axis — while the inner clips its overflowing content. The margin
      toward the toggle collapses too, so the toggle glides to the corner. */
   .actions-drawer {
-    --cascade: 45ms;
+    --cascade: 30ms;
     display: grid;
     grid-template-columns: 1fr;
     align-items: center;
     /* 4px plus the toggle's own 8px icon padding puts the chevron on the
        row's 12px rhythm. */
     margin-right: 4px;
-    /* Grid-track animation repaints the scene beneath this fixed panel on mobile
-       Chromium. Keep the motion perceptible without spanning enough frames to
-       starve drawing-surface presentation. */
-    --drawer-collapse: calc(var(--duration-fast) / 2);
+    /* No opacity here: the track's own clip is the reveal, and fading the
+       buttons on a second curve opened a lit gap between the chevron and the
+       drawer's edge. Grid-track animation re-lays out under this fixed panel on
+       mobile Chromium, which is why the collapse was once held to half of
+       --duration-fast; the one-object gesture trades that for a collapse that
+       reads as movement, pending a hardware measurement. */
     --drawer-transition:
-      grid-template-columns var(--drawer-collapse) ease,
-      grid-template-rows var(--drawer-collapse) ease, opacity var(--drawer-collapse) ease,
-      margin var(--drawer-collapse) ease;
+      grid-template-columns var(--drawer-collapse) var(--ease-drawer),
+      grid-template-rows var(--drawer-collapse) var(--ease-drawer),
+      margin var(--drawer-collapse) var(--ease-drawer);
   }
 
   .actions-panel[data-drawer-motion] .actions-drawer {
@@ -649,9 +658,17 @@
 
   /* Reduced motion: the drawer appears and leaves instead of unrolling. Opacity
      alone stays transitioned — the track snaps — so the buttons still fade
-     rather than blink, and finishDrawerMotion still has a transition to end on. */
+     rather than blink, and finishDrawerMotion still has a transition to end on.
+     Only here does the closed drawer take opacity 0; at full motion the clip
+     hides it. The chevron snaps. */
   :global(:root[data-reduce-motion]) .actions-drawer {
     --drawer-transition: opacity var(--drawer-collapse) ease;
+  }
+
+  :global(:root[data-reduce-motion])
+    :global(.actions-panel[data-action-panel-live]:not([data-drawer-open]))
+    .actions-drawer {
+    opacity: 0;
   }
 
   .actions-panel.settings-covered {
@@ -684,7 +701,6 @@
     .actions-drawer,
   :global(.actions-panel[data-action-panel-live]:not([data-drawer-open])) .actions-drawer {
     grid-template-columns: 0fr;
-    opacity: 0;
     margin-right: 0;
     pointer-events: none;
     /* Inert when closed: out of hit-testing, the a11y tree, and tab order (unlike
@@ -771,6 +787,18 @@
     --drawer-axis-rot: 0deg;
     --drawer-open-rot: 0deg;
     transform: rotate(calc(var(--drawer-axis-rot) + var(--drawer-open-rot)));
+  }
+
+  /* Turns only while the drawer is moving, so a rotation's axis change still
+     snaps. */
+  .actions-panel[data-drawer-motion] :global(.drawer-toggle-icon) {
+    transition: transform var(--drawer-collapse) var(--ease-drawer);
+  }
+
+  :global(:root[data-reduce-motion])
+    .actions-panel[data-drawer-motion]
+    :global(.drawer-toggle-icon) {
+    transition: none;
   }
 
   :global(html[data-drawer-open])

@@ -1349,7 +1349,7 @@ html[data-ai-free-count]
 }
 
 .actions-drawer.opening .action-button:not(.action-unavailable) {
-  animation: btn-cascade var(--duration-slow) var(--ease-pop) backwards;
+  animation: btn-cascade var(--duration-base) var(--ease-pop) backwards;
   animation-delay: calc(var(--i) * var(--cascade));
 }
 

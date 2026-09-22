@@ -32,7 +32,7 @@
     durationExit: 'exits',
   };
 
-  const easeKeys = ['easePop', 'easeGlide'] as const;
+  const easeKeys = ['easePop', 'easeGlide', 'easeDrawer'] as const;
   const glassKeys = ['glassRail', 'glassStrip'] as const;
   const opacityKeys = ['disabledOpacity'] as const;
 </script>
@@ -115,10 +115,10 @@
 <section id="motion" data-sg-section>
   <h3>Motion</h3>
   <p>
-    Two curves: the springy overshoot for anything that pops in or celebrates, the glide for
-    anything that settles or leaves. Press states scale down (0.9–0.96); hovers swap to a wash or
-    hover token. Tuned one-shot choreography — the AI reveal, the polaroid flight — carries its own
-    timing. The lanes run each easing curve on a loop.
+    Three curves: the springy overshoot for a two-state pop, the glide for anything that settles or
+    leaves, and the symmetric drawer curve for two things that move as one. Press states scale down
+    (0.9–0.96); hovers swap to a wash or hover token. Tuned one-shot choreography — the AI reveal,
+    the polaroid flight — carries its own timing. The lanes run each easing curve on a loop.
   </p>
   <div class="motion-lanes">
     {#each easeKeys as key (key)}

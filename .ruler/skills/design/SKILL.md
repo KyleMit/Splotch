@@ -83,8 +83,9 @@ Foundations and only reach past a default when a rule says so.
 |           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·                                                                                             |
 |           | headings; body prose stays at the untokenized 400 default)                                                                                                                                       |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s) and `--duration-exit` (0.2s, what an exit takes);                                                                                                   |
-|           | two curves only — `--ease-pop` (springy overshoot: two-state pops and single-segment keyframes)                                                                                                  |
-|           | and `--ease-glide` (anything that settles or leaves).                                                                                                                                            |
+|           | `--ease-pop` (springy overshoot: two-state pops and single-segment keyframes), `--ease-glide`                                                                                                    |
+|           | (anything that settles or leaves), and `--ease-drawer` (symmetric, for two things that must move                                                                                                 |
+|           | as one — the drawer and its chevron).                                                                                                                                                            |
 |           | Control-state motion (hover, press, reveal, fades) pairs a curve with a duration token; tuned                                                                                                    |
 |           | one-shot choreography — celebration keyframes, staged sequences like the AI reveal and polaroid                                                                                                  |
 |           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it. The rules                                                                                                 |
