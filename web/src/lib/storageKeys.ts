@@ -52,6 +52,8 @@ export const STORAGE_KEYS = {
   // Records that unsaved pictures wait in IndexedDB (unsavedPictureStore.ts), so a boot with
   // nothing to retry never opens that database.
   unsavedPicturesHeld: 'splotch-unsaved-pictures-held',
+  // Records that a drawing-session snapshot waits in IndexedDB (drawingSession.ts).
+  drawingSessionHeld: 'splotch-drawing-session-held',
   parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',
   parentalGateImageReportMode: 'splotch-parental-gate-image-report-mode',
   parentalGateExternalLinksMode: 'splotch-parental-gate-external-links-mode',

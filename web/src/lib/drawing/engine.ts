@@ -128,8 +128,10 @@ import {
   undoTiledCommand,
   peekTiledUndoCommand,
   paintVisibleTiledInk,
+  stampTiledBaseImage,
 } from './tiledRenderer';
 import { createInkMotion, type ClientPoint } from './inkMotion';
+import { createDrawingSession, type RestoredInk } from './drawingSession';
 import type { DrawingWorkDebug } from './drawingWorkDebug';
 
 // --- Canvas, tool, and callback state -------------------------------------
@@ -198,6 +200,25 @@ function backingSizeOf(rect: DOMRect): { w: number; h: number } {
 }
 
 let canUndo = false;
+
+const drawingSession = createDrawingSession({
+  captureInk: () => {
+    if (!paperIsSized() || activePointers.size > 0) return null;
+    const { pxW: width, pxH: height } = paper;
+    return { canvas: createStrokeSnapshot(width, height, 1, renderTiledSnapshot), width, height };
+  },
+  isEmpty: () => canvasEmpty,
+});
+
+function stampRestoredInk({ bitmap, width, height }: RestoredInk) {
+  const scale = Math.min(paper.pxW / width, paper.pxH / height);
+  const fit = { width: width * scale, height: height * scale, x: 0, y: 0 };
+  fit.x = (paper.pxW - fit.width) / 2;
+  fit.y = (paper.pxH - fit.height) / 2;
+  stampTiledBaseImage(bitmap, fit);
+  bitmap.close();
+  setCanvasEmptyState(false);
+}
 
 function setCanUndo(value: boolean) {
   canUndo = value;
@@ -653,6 +674,7 @@ function commitStrokeGroup() {
     if (!commitTiledCommand()) return;
     setCanUndo(true);
     callbacks.onStrokeEnd?.();
+    drawingSession.schedule();
   } finally {
     if (PERF_MARKS) {
       performance.mark('engine.commit:end');
@@ -1088,6 +1110,7 @@ export function undo(towards?: HTMLElement | null): Promise<void> {
   setCanvasEmptyState(state.empty, state.recordedPaper);
   setCanUndo(state.canUndo);
   state.restoreAppearance?.();
+  drawingSession.schedule();
   if (animate) callbacks.onUndo?.();
   if (PERF_MARKS) {
     performance.mark('engine.undo:end');
@@ -1124,6 +1147,7 @@ export function clearCanvas({ animateInto }: { animateInto?: ClientPoint } = {})
   crayonPasses.reset();
   setCanvasEmptyState(state.empty);
   setCanUndo(state.canUndo);
+  drawingSession.schedule();
   clearMagicGradient();
   if (magicActive) ensureMagicSheet();
 }
@@ -1180,6 +1204,7 @@ function teardownEngine() {
   inkMotion.cancel();
   if (!engineLive) return;
   engineLive = false;
+  drawingSession.dispose();
   for (const remove of listenerRemovers) remove();
   listenerRemovers = [];
   resizeListener.dispose();
@@ -1302,6 +1327,11 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
 
   engineLive = true;
   scheduleTiledHistoryFold();
+  void drawingSession.restore().then((restored) => {
+    if (!restored) return;
+    if (engineLive && paperIsSized()) stampRestoredInk(restored);
+    else restored.bitmap.close();
+  });
   return { teardown: teardownEngine };
 }
 

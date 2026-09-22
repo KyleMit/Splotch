@@ -548,6 +548,24 @@ export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
   readback.renderTiledReadback(target, historyBase, history, activeCommand, paper);
 }
 
+// Spike (issue #1450): paint a restored snapshot beneath everything as folded
+// history — not undoable, exactly like ink the fold loop already flattened.
+export function stampTiledBaseImage(
+  image: ImageBitmap,
+  fit: { x: number; y: number; width: number; height: number }
+) {
+  const paper = host?.paperSize();
+  if (!paper) return;
+  ensureHistoryBase();
+  clipTilesToPaper(historyBase, paper);
+  for (const tile of historyBase) {
+    tile.ctx.drawImage(image, fit.x, fit.y, fit.width, fit.height);
+    tile.painted = true;
+  }
+  restoreTileContexts(historyBase);
+  repaintTiledRenderer();
+}
+
 export function detachTiledRenderer() {
   cancelHistoryFold();
   clearCapture.cancel();
