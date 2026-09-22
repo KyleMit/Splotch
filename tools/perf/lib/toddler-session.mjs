@@ -30,6 +30,21 @@ import { rethrowIfBroken } from './error-classification.mjs';
 
 // Brand palette (src/lib/state/colors.svelte) — the swatches the harness clicks.
 const COLORS = ['#EC534E', '#F89C45', '#F9D24F', '#8CC864', '#62A2E9', '#AB71E1'];
+
+// The suite label and its beat list ride in every summary.json so a trend
+// series can be keyed on what was actually run: a point from a shorter or
+// longer session must never land on the same chart (issue 688).
+export const TODDLER_SESSION_SUITE = 'toddler-session';
+export const TODDLER_SESSION_BEATS = [
+  'boot-settle',
+  'draw-single',
+  'multi-finger-draw',
+  'change-colors',
+  'stroke-size',
+  'erase',
+  'undo',
+  'clear',
+];
 const MAX_UNDO_CLICKS = 12;
 
 async function beat(page, label, fn) {
@@ -224,6 +239,8 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   const metrics = buildMetrics({
     settings: {
       ...settings,
+      suite: TODDLER_SESSION_SUITE,
+      scenarios: TODDLER_SESSION_BEATS,
       captureMode: useTrace ? 'cdp-trace' : 'user-timing',
       startedAt: new Date(t0).toISOString(),
       durationMs: Date.now() - t0,

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Release performance trend</title>
+    <style>
+      :root { --ink: #222; --paper: #fff; --muted: #666; }
+      @media (prefers-color-scheme: dark) { :root { --ink: #eee; --paper: #161616; --muted: #aaa; } }
+      body { margin: 0 auto; max-width: 64rem; padding: 1rem; font: 16px/1.5 system-ui, sans-serif; color: var(--ink); background: var(--paper); }
+      .note { color: var(--muted); }
+      table { border-collapse: collapse; width: 100%; }
+      td, th { padding: 0.25rem 0.5rem; text-align: left; border-bottom: 1px solid var(--muted); }
+    </style>
+  </head>
+  <body>
+    <h1>Release performance trend</h1>
+    <p class="note">
+      One point per <code>v*</code> tag, captured on GitHub-hosted emulated hardware: the Android
+      emulator's frame timings are the host's and Playwright WebKit runs without Apple's GPU, so
+      these numbers are a release-over-release shape, not device-accurate values. The physical-device
+      matrix is the source for absolute numbers. Each series is keyed on target and suite; a fast and a
+      full run never share a chart.
+    </p>
+    <div id="series"></div>
+    <script src="data.js"></script>
+    <script>
+      const data = window.BENCHMARK_DATA;
+      const root = document.getElementById('series');
+      if (!data) {
+        root.textContent = 'No trend data yet — the first v* tag after this page lands writes data.js.';
+      } else {
+        for (const [name, runs] of Object.entries(data.entries)) {
+          const h = document.createElement('h2');
+          h.textContent = name;
+          root.append(h);
+          const table = document.createElement('table');
+          table.innerHTML = '<tr><th>Tag</th><th>Metric</th><th>Value</th></tr>';
+          for (const run of runs) {
+            for (const bench of run.benches) {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `<td>${run.commit.id.slice(0, 12)}</td><td>${bench.name}</td><td>${bench.value} ${bench.unit}</td>`;
+              table.append(tr);
+            }
+          }
+          root.append(table);
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -26,7 +26,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 40
     permissions:
-      contents: read
+      contents: write # was read: the trend step pushes to main (issue 688)
       issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,6 +50,31 @@ jobs:
           # Budget cold hosted XCTest startup separately from the app's paint assertion.
           MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000
         run: npm run test:ios -- --skip-sync
+
+      # Trend capture (issue 688): Playwright WebKit against the production
+      # preview — the engine family the WKWebView runs, without Apple's GPU.
+      - uses: ./.github/actions/setup-playwright-webkit
+
+      - name: Capture WebKit perf trend point
+        id: perf
+        run: |
+          npm run perf:web:webkit
+          node tools/perf/gen-benchmark-series.mjs --summary="$(ls -d perf-profiles/*ios-webkit* | tail -1)" --out=benchmark-webkit.json
+
+      - name: Append WebKit perf trend
+        if: ${{ steps.perf.outcome == 'success' && github.event_name == 'push' }}
+        uses: benchmark-action/github-action-benchmark@fd31771ce86cc65eab85653da103f71ab1b4479c # v1.9.0
+        with:
+          name: WebKit engine (trend, not device-accurate)
+          tool: customSmallerIsBetter
+          output-file-path: benchmark-webkit.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gh-pages-branch: main
+          benchmark-data-dir-path: scrapbook/performance/release-trend
+          auto-push: true
+          alert-threshold: '175%'
+          comment-on-alert: true
+          fail-on-alert: false
 
       - name: Upload Maestro report
         id: report

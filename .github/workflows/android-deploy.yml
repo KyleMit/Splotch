@@ -107,9 +107,9 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # install: true (was false) — perf:android needs @playwright/test for
+      # connectOverCDP; no browser download is needed for that.
       - uses: ./.github/actions/setup-pnpm
-        with:
-          install: false
 
       - name: Download test-signed release APK
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -137,12 +137,65 @@ jobs:
             # :device runs Maestro against the emulator this action already booted.
             # (Plain `test:android` boots + tears down its own emulator — for local use.)
             npm run test:android:device
+            # Trend capture (issue 688): profile the installed WebView over adb
+            # forward + CDP. The release APK carries no PERF_MARKS, so this
+            # only yields frames + long tasks until the build job produces an
+            # instrumented APK as well — see the decision brief.
+            if [[ "${{ matrix.api-level }}" == "${{ fromJSON(needs.build.outputs.levels)[0] }}" ]]; then
+              npm run perf:android -- --no-build
+              node tools/perf/gen-benchmark-series.mjs --summary="$(ls -d perf-profiles/*android* | tail -1)" --out=benchmark-android.json
+            fi
+
+      - name: Upload perf capture
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: perf-android-api-${{ matrix.api-level }}
+          path: |
+            perf-profiles/
+            benchmark-android.json
+          if-no-files-found: ignore
+          retention-days: 90
 
       - name: Upload Maestro report
         if: ${{ !cancelled() }}
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-report-api-${{ matrix.api-level }}
+
+  # Trend history (issue 688): append this tag's Android series to the committed
+  # scrapbook history. Trend, not gate — fail-on-alert stays false and a
+  # regression past the threshold comments on the commit instead.
+  trend:
+    name: Append Android perf trend
+    needs: [build, smoke]
+    if: ${{ !cancelled() && needs.smoke.result == 'success' && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: perf-android-api-*
+          merge-multiple: true
+
+      - uses: benchmark-action/github-action-benchmark@fd31771ce86cc65eab85653da103f71ab1b4479c # v1.9.0
+        with:
+          name: Android emulator (trend, not device-accurate)
+          tool: customSmallerIsBetter
+          output-file-path: benchmark-android.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gh-pages-branch: main
+          benchmark-data-dir-path: scrapbook/performance/release-trend
+          auto-push: true
+          alert-threshold: '175%'
+          comment-on-alert: true
+          fail-on-alert: false
 
   # A tag-only gate nobody is watching is not a gate: this one was red on every
   # release tag from v1.3.0 through v1.5.0, and all three shipped anyway. One
