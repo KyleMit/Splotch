@@ -318,8 +318,8 @@
      those two it does is down to the device. */
   .coloring-book-modal {
     --coloring-book-modal-max-height: 85vh;
-    max-width: min(920px, calc(100vw - 32px));
-    width: 90%;
+    width: calc(100vw - 2 * var(--modal-gutter));
+    max-width: 920px;
     max-height: var(--coloring-book-modal-max-height);
     overflow-y: auto;
     /* The dialog is the scrollport its ScrollCue sticks to, and .modal-shell
