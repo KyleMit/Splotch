@@ -26,13 +26,16 @@ import type { Orientation, Platform } from './index';
 // imported here, so this file never touches @capacitor/status-bar at runtime.
 import type { Style, StatusBarPlugin } from '@capacitor/status-bar';
 
-// Minimum top safe-area inset (CSS px) we treat as a real display cutout. Above
-// it: iPhone notches / Dynamic Island (~44–59px) and Android hole-punches.
-// Below it: a plain status bar or a bezel-camera iPad (~20–24px), which get no
-// band. CSS insets can't perfectly separate an Android hole-punch from an iPad
-// status bar (they overlap near ~24px); this threshold reliably excludes the
-// bezel-iPad case and is the single knob to tune if a device misjudges.
-export const NOTCH_INSET_THRESHOLD_PX = 30;
+// Minimum safe-area inset (CSS px) we treat as a real display cutout. Above
+// it: iPhone notches / Dynamic Island (44–68px portrait, the same depth on
+// both sides in landscape) and Android hole-punches (38px+ on the cutout side).
+// Below it: a plain status bar or a bezel-camera iPad, which get no band. The
+// iPad status bar is the ceiling that matters — 20–24px through iPadOS 18 and
+// 32px on iPadOS 26 (docs/SAFE-AREA.md) — and the shallowest Android cutout
+// inset the band should still paint is the 38px landscape side of a Pixel
+// hole-punch, so the usable window is 33–38. 36 sits mid-gap. A Samsung One UI
+// punch (28.6px) was already below the line and stays there.
+export const NOTCH_INSET_THRESHOLD_PX = 36;
 
 // Capacitor StatusBar.Style string values (mirrored here so the pure layer has
 // no plugin import): 'DARK' = light icons (for a dark band), 'LIGHT' = dark

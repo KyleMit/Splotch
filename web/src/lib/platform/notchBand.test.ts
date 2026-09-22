@@ -20,6 +20,9 @@ import { PAPER_COLORS } from '../theme';
 // Representative insets: a clear notch vs. a bezel/status-bar device.
 const NOTCH_INSET = 47; // iPhone notch (portrait)
 const BEZEL_INSET = 20; // iPad / plain status bar
+const IPADOS_26_STATUS_BAR_INSET = 32; // the deepest inset a cutout-free iPad reports
+const ANDROID_LANDSCAPE_PUNCH_INSET = 38; // the shallowest cutout inset the band must still paint
+const ANDROID_PORTRAIT_PUNCH_INSET = 42; // Pixel 7 Pro, measured on the native WebView
 const TRANSPARENT_EDGE_COLORS = {
   top: 'transparent',
   left: 'transparent',
@@ -58,8 +61,13 @@ describe('hasNotch', () => {
     expect(hasNotch(NOTCH_INSET_THRESHOLD_PX)).toBe(true); // boundary is inclusive
   });
 
+  it('still paints the shallowest Android landscape cutout', () => {
+    expect(hasNotch(ANDROID_LANDSCAPE_PUNCH_INSET)).toBe(true);
+  });
+
   it('treats a shallow inset (bezel iPad / status bar) as no cutout', () => {
     expect(hasNotch(BEZEL_INSET)).toBe(false);
+    expect(hasNotch(IPADOS_26_STATUS_BAR_INSET)).toBe(false);
     expect(hasNotch(0)).toBe(false); // desktop / browser tab
     expect(hasNotch(NOTCH_INSET_THRESHOLD_PX - 1)).toBe(false);
   });
@@ -331,7 +339,7 @@ describe('computeNotchBandState — deployment targets', () => {
     const state = computeNotchBandState({
       ...NO_CUTOUT,
       platform: 'android',
-      insetTop: 34,
+      insetTop: ANDROID_PORTRAIT_PUNCH_INSET,
       activeColor: purple,
     });
     expect(state.backgroundColors.top).toBe(purple);

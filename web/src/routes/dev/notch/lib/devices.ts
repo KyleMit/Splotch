@@ -240,7 +240,7 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     },
     confidence: 'high',
     notes:
-      'A bottom inset with no cutout anywhere, identical in all four orientations. No iPad has a display cutout, so no iPad should paint a Notch Band. The 24 recorded here was long treated as the hard ceiling that left the 30px notch threshold its headroom — but an iPad mini and an iPad Pro 13-inch on iPadOS 26.5 each measured 32, which clears the threshold and paints a band on a cutout-free device. The number stays 24 until NOTCH_INSET_THRESHOLD_PX is decided, because safe-area-matrix.spec.ts derives its expected band edges from these insets and would otherwise assert the defect as correct. See docs/SAFE-AREA.md. Note the 25px corner radius still produces left/right insets of ZERO: rounded corners do not inset the sides on iPad.',
+      'A bottom inset with no cutout anywhere, identical in all four orientations. No iPad has a display cutout, so no iPad should paint a Notch Band. The top inset is 32 on iPadOS 26 (measured on an iPad mini and an iPad Pro 13-inch simulator, 2026-08-24; it was 24 through iPadOS 18), which is why NOTCH_INSET_THRESHOLD_PX sits above it — safe-area-matrix.spec.ts derives its expected band edges from these insets, so the two move together. See docs/SAFE-AREA.md. Note the 25px corner radius still produces left/right insets of ZERO: rounded corners do not inset the sides on iPad.',
     sources: IPAD_SOURCES,
   },
   {
