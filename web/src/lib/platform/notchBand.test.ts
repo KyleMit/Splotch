@@ -5,6 +5,7 @@ import {
   createStatusBarApplier,
   bandColor,
   hasNotch,
+  isIosTabletClass,
   statusBarStyleForBand,
   bandEdges,
   CUTOUT_LEFT_ANGLE,
@@ -38,6 +39,7 @@ const NO_CUTOUT: NotchBandInput = {
   insetLeft: 0,
   insetRight: 0,
   orientationAngle: 0,
+  iosTablet: false,
   activeColor: '#AB71E1',
   eraser: false,
   paperColor: PAPER_COLORS.light,
@@ -65,11 +67,35 @@ describe('hasNotch', () => {
     expect(hasNotch(ANDROID_LANDSCAPE_PUNCH_INSET)).toBe(true);
   });
 
-  it('treats a shallow inset (bezel iPad / status bar) as no cutout', () => {
+  it('treats a shallow inset (plain status bar) as no cutout', () => {
     expect(hasNotch(BEZEL_INSET)).toBe(false);
-    expect(hasNotch(IPADOS_26_STATUS_BAR_INSET)).toBe(false);
     expect(hasNotch(0)).toBe(false); // desktop / browser tab
     expect(hasNotch(NOTCH_INSET_THRESHOLD_PX - 1)).toBe(false);
+  });
+});
+
+describe('isIosTabletClass', () => {
+  it('classes a tablet-sized iOS viewport as an iPad', () => {
+    expect(isIosTabletClass(true, 744)).toBe(true); // iPad mini, the narrowest iPad
+    expect(isIosTabletClass(true, 420)).toBe(false); // iPhone Air, the widest iPhone
+    expect(isIosTabletClass(false, 800)).toBe(false); // Android tablet
+  });
+});
+
+describe('bandEdges on an iPad', () => {
+  it('paints nothing however deep the status-bar inset gets', () => {
+    for (const insetTop of [BEZEL_INSET, IPADOS_26_STATUS_BAR_INSET, NOTCH_INSET]) {
+      expect(bandEdges({ ...NO_CUTOUT, iosTablet: true, insetTop })).toEqual([]);
+    }
+    expect(
+      bandEdges({
+        ...NO_CUTOUT,
+        iosTablet: true,
+        orientation: 'landscape',
+        insetLeft: 47,
+        insetRight: 47,
+      })
+    ).toEqual([]);
   });
 });
 

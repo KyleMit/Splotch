@@ -1,10 +1,11 @@
 <script lang="ts">
   import { colorsState } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
-  import { isNative, getPlatform } from '$lib/platform';
+  import { isNative, getPlatform, isIosDevice } from '$lib/platform';
   import {
     createStatusBarApplier,
     computeNotchBandState,
+    isIosTabletClass,
     listenForStatusBarReentry,
     type StatusBarStyle,
   } from '$lib/platform/notchBand';
@@ -33,6 +34,10 @@
       insetLeft: layoutState.safeArea.left,
       insetRight: layoutState.safeArea.right,
       orientationAngle: layoutState.orientationAngle,
+      iosTablet: isIosTabletClass(
+        getPlatform() === 'ios' || isIosDevice(),
+        Math.min(layoutState.viewportWidth, layoutState.viewportHeight)
+      ),
       activeColor: colorsState.activeColor,
       eraser: toolState.brush === 'eraser',
       paperColor: PAPER_COLORS[resolvedTheme()],

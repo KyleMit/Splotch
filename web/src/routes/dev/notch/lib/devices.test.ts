@@ -73,8 +73,23 @@ describe('device profiles', () => {
     }
   });
 
-  it('never claims a cutout deep enough to band on a device with no cutout', () => {
+  // Asserted through the app's own bandEdges rather than against the threshold
+  // number: an iPad is excluded by device class, so its status-bar inset may
+  // legitimately exceed NOTCH_INSET_THRESHOLD_PX (32 on iPadOS 26 against 30).
+  it('never paints a band on a device with no cutout', () => {
     for (const profile of DEVICE_PROFILES.filter((p) => p.cutout.kind === 'none')) {
+      for (const orientation of supportedOrientations(profile)) {
+        expect(diagnose(profile, orientation)?.bandEdges, `${profile.id} · ${orientation}`).toEqual(
+          []
+        );
+      }
+    }
+  });
+
+  it('keeps every non-iPad cutout-free inset under the threshold', () => {
+    for (const profile of DEVICE_PROFILES.filter(
+      (p) => p.cutout.kind === 'none' && p.platform !== 'ios'
+    )) {
       for (const orientation of supportedOrientations(profile)) {
         const insets = profile.insets[orientation];
         expect(insets && Math.max(insets.top, insets.left, insets.right)).toBeLessThan(

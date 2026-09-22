@@ -17,6 +17,7 @@
 // All of the platform-independent decisions live here as pure functions so the
 // four deployment targets and the color math are unit-testable without a DOM.
 
+import { TABLET_MIN_SIDE_PX } from '../breakpoints';
 import { isLightColor } from '../colorRing';
 // Type-only import — erased at build time, so this file keeps its no-runtime-
 // plugin-import purity (no @capacitor/core reaches the pure layer).
@@ -27,15 +28,14 @@ import type { Orientation, Platform } from './index';
 import type { Style, StatusBarPlugin } from '@capacitor/status-bar';
 
 // Minimum safe-area inset (CSS px) we treat as a real display cutout. Above
-// it: iPhone notches / Dynamic Island (44–68px portrait, the same depth on
-// both sides in landscape) and Android hole-punches (38px+ on the cutout side).
-// Below it: a plain status bar or a bezel-camera iPad, which get no band. The
-// iPad status bar is the ceiling that matters — 20–24px through iPadOS 18 and
-// 32px on iPadOS 26 (docs/SAFE-AREA.md) — and the shallowest Android cutout
-// inset the band should still paint is the 38px landscape side of a Pixel
-// hole-punch, so the usable window is 33–38. 36 sits mid-gap. A Samsung One UI
-// punch (28.6px) was already below the line and stays there.
-export const NOTCH_INSET_THRESHOLD_PX = 36;
+// it: iPhone notches / Dynamic Island (44–68px) and Android hole-punches
+// (38px+ on the cutout side). Below it: a plain status bar, which gets no
+// band. iPads are excluded by device class (isIosTabletClass), not by this
+// number: their status bar grew from 24 to 32 on iPadOS 26 and there is no
+// reason to believe it has stopped moving, so the threshold only has to
+// separate an Android status bar (24, or 28 in landscape) from an Android
+// cutout, and a Samsung One UI punch (28.6px) stays just below the line.
+export const NOTCH_INSET_THRESHOLD_PX = 30;
 
 // Capacitor StatusBar.Style string values (mirrored here so the pure layer has
 // no plugin import): 'DARK' = light icons (for a dark band), 'LIGHT' = dark
@@ -74,6 +74,12 @@ export interface NotchBandInput {
    * see landscapeBandEdges.
    */
   orientationAngle: number;
+  /**
+   * True on an iPad-class device (see isIosTabletClass). No iPad has ever had
+   * a display cutout, and its status-bar inset moves between iPadOS releases,
+   * so the band is gated on the device class rather than on the inset depth.
+   */
+  iosTablet: boolean;
   /** Current drawing color, always a valid hex. */
   activeColor: string;
   eraser: boolean;
@@ -106,6 +112,18 @@ export function bandColor(activeColor: string, eraser: boolean, paperColor: stri
 
 export function hasNotch(insetTop: number): boolean {
   return insetTop >= NOTCH_INSET_THRESHOLD_PX;
+}
+
+// An iPad, as far as the app can tell: an iOS device whose viewport's shorter
+// side is tablet-sized. Every shipping iPhone stays under TABLET_MIN_SIDE_PX
+// in both orientations, and a Safari tab or home-screen PWA on an iPad reports
+// no native platform, so the iOS half is a UA sniff on the web (isIosDevice).
+// The viewport rather than the screen so the /dev/notch frames and the CDP
+// matrix classify the emulated device, not the developer's monitor; an iPadOS
+// windowed app narrower than a phone would classify as a phone here, and what
+// it reports for the top inset in that state is unmeasured.
+export function isIosTabletClass(iosDevice: boolean, shorterViewportSidePx: number): boolean {
+  return iosDevice && shorterViewportSidePx >= TABLET_MIN_SIDE_PX;
 }
 
 export function statusBarStyleForBand(color: string): StatusBarStyle {
@@ -149,6 +167,7 @@ function landscapeBandEdges(input: NotchBandInput): NotchEdge[] {
 }
 
 export function bandEdges(input: NotchBandInput): NotchEdge[] {
+  if (input.iosTablet) return [];
   if (input.orientation === 'landscape') return landscapeBandEdges(input);
   return hasNotch(input.insetTop) ? ['top'] : [];
 }

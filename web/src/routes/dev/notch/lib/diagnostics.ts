@@ -2,6 +2,7 @@ import { PAPER_COLORS } from '$lib/theme';
 import {
   bandEdges,
   hasNotch,
+  isIosTabletClass,
   statusBarHiddenFor,
   type NotchBandInput,
   type NotchEdge,
@@ -50,6 +51,10 @@ function bandInputFor(
     // The rotation this tile depicts, in the same frame of reference the OS
     // reports: a device rotated counter-clockwise onto its left edge is 90.
     orientationAngle: ORIENTATION_ANGLES[orientation],
+    iosTablet: isIosTabletClass(
+      profile.platform === 'ios',
+      Math.min(profile.viewport.width, profile.viewport.height)
+    ),
     activeColor: '#000000',
     eraser: false,
     paperColor: PAPER_COLORS.light,
