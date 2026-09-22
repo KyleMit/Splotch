@@ -180,23 +180,21 @@
     align-content: space-between;
     width: var(--palette-landscape-width);
     gap: 12px;
-    /* The bottom padding is the action-button clearance that centres the
-       custom swatch on the Brush Button (bare-toolbar.spec.ts holds it); the
-       column's overflow is visible, so a swatch shadow past it still paints. */
+    /* Bottom: the clearance that centres the custom swatch on the Brush Button
+       (bare-toolbar.spec.ts); the vertical clip below trims the last swatch's
+       shadow where it is under 12px, since it cannot grow. */
     padding: 12px 12px var(--palette-bottom);
     background: var(--palette-surface, var(--surface));
     box-shadow: 2px 0 10px rgb(0 0 0 / 10%);
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
     position: relative;
-    /* clip, not hidden: the column is never a scroll container. It still has
-       to clip. The landscape ladder trims by viewport height, so on an iPad
-       that keeps its status bar in landscape the inset-shortened column can
-       run up to that inset past its last swatch (safe-area-matrix.spec.ts),
-       and a visible overflow there would scroll the page. The selection
-       bloom overshoots the column by 4px and loses that much; the portrait
-       bar below has no such overrun and gives it a clip margin instead. */
-    overflow: clip;
+    /* Visible sideways so the selection bloom can overshoot the edges; clipped
+       (not hidden: no scroll container) vertically because the ladder trims by
+       viewport height, so a status-bar iPad's inset-shortened column overruns
+       its last swatch (safe-area-matrix.spec.ts) and would scroll the page. */
+    overflow-x: visible;
+    overflow-y: clip;
     touch-action: manipulation; /* Prevent iOS gesture delays */
   }
 
@@ -374,9 +372,9 @@
       padding: 8px 10px 12px;
       gap: 8px;
       box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
-      /* clip (not hidden) so the bar stays unscrollable without forcing the
-         cross axis to auto; the clip margin lets the swatch bloom overshoot
-         the bar. WebKit ignores the margin and clips at the padding box. */
+      /* The clip margin lets the swatch bloom overshoot the bar (WebKit ignores
+         it and clips at the padding box); no overrun risk here, the bar is a
+         declared height. */
       overflow: clip;
       overflow-clip-margin: 12px;
       flex-wrap: nowrap;
