@@ -305,124 +305,158 @@ test('About opens the bundled privacy policy without a parental gate', async ({ 
   await expect(page.locator('#parentalGate')).not.toBeVisible();
 });
 
-test('setting groups space their cards without affecting the compact grid', async ({ page }) => {
-  await gotoApp(page, `/?${AI_ACCESS_TOKEN_PARAM}=test-access-code`);
+// The Orientation picker only renders where the browser can actually turn
+// the screen (supportsOrientationLock), so these reach it through touch
+// emulation — the same way a browser's mobile-device mode does. Without it a
+// desktop context gets the About cell instead, and the Appearance section is
+// one card shorter.
+test.describe('settings on a rotatable device', () => {
+  test.use({ hasTouch: true });
+
+  test('setting groups space their cards without affecting the compact grid', async ({ page }) => {
+    await gotoApp(page, `/?${AI_ACCESS_TOKEN_PARAM}=test-access-code`);
+
+    const modal = await openSettingsModal(page);
+    // Scoped to one section: the wide pane stacks every section at once, so an
+    // unscoped selector would sweep up the whole modal's cards.
+    const directCards = page.locator(
+      '.settings-section[data-section="appearance"] .setting-group > .setting'
+    );
+    await expect(directCards).toHaveCount(3);
+    await expect(directCards.nth(1)).toHaveCSS('margin-top', '8px');
+    await expect(directCards.nth(2)).toHaveCSS('margin-top', '8px');
+
+    await modal.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+    const aiToggle = page.locator('#aiImageToggle');
+    await expect(aiToggle).toBeInViewport();
+    await aiToggle.click();
+    await expect(page.locator('#aiCodeActive')).toBeVisible();
+    const aiPrimaryCards = page.locator(
+      '.settings-section[data-section="ai"] .setting-group:has(#aiImageToggle) > .setting'
+    );
+    await expect(aiPrimaryCards).toHaveCount(1);
+    const aiFeatureCards = page.locator(
+      '.settings-section[data-section="ai"] .setting-group:has(#aiCustomizationToggle) > .setting'
+    );
+    await expect(aiFeatureCards).toHaveCount(2);
+    await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '8px');
+
+    await page.setViewportSize({ width: 852, height: 390 });
+    await expect(modal).toHaveClass(/compact/);
+    const quickToggleCells = page.locator('.quick-toggles > .setting');
+    await expect(quickToggleCells).toHaveCount(4);
+    await expect(quickToggleCells.nth(1)).toHaveCSS('margin-top', '0px');
+    await expect(quickToggleCells.nth(2)).toHaveCSS('margin-top', '0px');
+    await expect(quickToggleCells.nth(3)).toHaveCSS('margin-top', '0px');
+  });
+
+  async function openSettingsModalCompact(page: Page) {
+    await page.setViewportSize({ width: 852, height: 390 });
+    await gotoApp(page);
+    return openSettingsModal(page);
+  }
+
+  // A landscape phone has the width of the tablet shell but almost none of its
+  // height, so the full section list is unusably cramped there. Settings
+  // collapses to a strip of quick toggles plus a pointer to portrait; a landscape
+  // tablet (height ≥ 600px, e.g. the default desktop viewport above) keeps the
+  // two-pane shell.
+  test('landscape phone renders compact quick toggles', async ({ page }) => {
+    const modal = await openSettingsModalCompact(page);
+    await expect(modal).toHaveClass(/compact/);
+
+    // Quick toggles render instead of the hub list or the sidebar.
+    await expect(page.locator('.hub-list')).toHaveCount(0);
+    await expect(page.locator('.settings-nav')).toHaveCount(0);
+    await expect(page.locator('#quickSoundToggle')).toBeVisible();
+    await expect(page.locator('#quickNightToggle')).toBeVisible();
+    await expect(page.locator('#quickToolDrawerToggle')).toBeVisible();
+    // The Orientation picker holds the device-varying bottom-right (last) slot, so
+    // the other three toggles sit in the same place on lock-incapable devices too.
+    const orientationCell = page.locator('.quick-toggles > .setting').nth(3);
+    for (const choice of ['portrait', 'landscape', 'auto']) {
+      await expect(orientationCell.locator(`#orientationOption-${choice}`)).toBeVisible();
+    }
+    await expect(page.getByText('Switch to portrait for the full settings')).toBeVisible();
+  });
+
+  test('the compact Orientation picker locks either side or releases to Auto', async ({ page }) => {
+    await openSettingsModalCompact(page);
+    const option = (choice: string) => page.locator(`#orientationOption-${choice}`);
+
+    // A phone-sized screen defaults to a portrait lock, so Portrait starts selected.
+    await expect(option('portrait')).toHaveAttribute('aria-checked', 'true');
+
+    await option('landscape').click();
+    await expect(option('landscape')).toHaveAttribute('aria-checked', 'true');
+    await expect(option('portrait')).toHaveAttribute('aria-checked', 'false');
+
+    // Auto is its own option, so tapping the selected side again keeps it locked.
+    await option('landscape').click();
+    await expect(option('landscape')).toHaveAttribute('aria-checked', 'true');
+
+    await option('auto').click();
+    await expect(option('auto')).toHaveAttribute('aria-checked', 'true');
+    await expect(option('landscape')).toHaveAttribute('aria-checked', 'false');
+  });
+
+  test('quick-toggle changes persist into the full portrait Settings', async ({ page }) => {
+    await openSettingsModalCompact(page);
+
+    // A quick toggle drives the same persisted setting as the full section...
+    await page.locator('#quickToolDrawerToggle').click();
+    await expect(page.locator('#quickToolDrawerToggle')).toHaveAttribute('aria-checked', 'false');
+
+    // Set a landscape lock, away from the phone's portrait default, so the full
+    // shell below can only show it if the quick picker persisted it.
+    await expect(page.locator('#orientationOption-portrait')).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
+    await page.locator('#orientationOption-landscape').click();
+    await expect(page.locator('#orientationOption-landscape')).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
+
+    // ...and rotating to portrait swaps in the full hub shell live, where the
+    // Controls section reflects the change made from the quick toggle.
+    await page.setViewportSize({ width: 390, height: 852 });
+    await expect(page.locator('.hub-list')).toBeVisible();
+    await expect(page.locator('#quickSoundToggle')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Tool Drawer' }).click();
+    await expect(page.locator('#toolDrawerToggle')).toHaveAttribute('aria-checked', 'false');
+
+    // The Appearance section's Orientation picker shows the lock we set.
+    await page.getByRole('button', { name: 'Back' }).click();
+    await page.getByRole('button', { name: 'Appearance' }).click();
+    await expect(page.locator('#orientationOption-landscape')).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
+  });
+});
+
+// The default context is a desktop browser: a fine pointer on a screen that
+// cannot turn, so the picker would be a control the app can never honor. This
+// test deliberately sits outside the touch-emulated describe above, and the two
+// together are the whole web gate — one viewport short enough to reach the
+// compact shell, which a desktop window can be, proves the About cell fills the
+// slot there too rather than leaving a hole.
+test('a desktop browser offers no Orientation picker in either shell', async ({ page }) => {
+  await gotoApp(page);
 
   const modal = await openSettingsModal(page);
-  // Scoped to one section: the wide pane stacks every section at once, so an
-  // unscoped selector would sweep up the whole modal's cards.
-  const directCards = page.locator(
-    '.settings-section[data-section="appearance"] .setting-group > .setting'
-  );
-  await expect(directCards).toHaveCount(3);
-  await expect(directCards.nth(1)).toHaveCSS('margin-top', '8px');
-  await expect(directCards.nth(2)).toHaveCSS('margin-top', '8px');
-
-  await modal.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
-  const aiToggle = page.locator('#aiImageToggle');
-  await expect(aiToggle).toBeInViewport();
-  await aiToggle.click();
-  await expect(page.locator('#aiCodeActive')).toBeVisible();
-  const aiPrimaryCards = page.locator(
-    '.settings-section[data-section="ai"] .setting-group:has(#aiImageToggle) > .setting'
-  );
-  await expect(aiPrimaryCards).toHaveCount(1);
-  const aiFeatureCards = page.locator(
-    '.settings-section[data-section="ai"] .setting-group:has(#aiCustomizationToggle) > .setting'
-  );
-  await expect(aiFeatureCards).toHaveCount(2);
-  await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '8px');
+  await expect(modal).toHaveClass(/wide/);
+  await expect(page.locator('[id^="orientationOption-"]')).toHaveCount(0);
+  await expect(
+    page.locator('.settings-section[data-section="appearance"] .setting-group > .setting')
+  ).toHaveCount(2);
 
   await page.setViewportSize({ width: 852, height: 390 });
   await expect(modal).toHaveClass(/compact/);
-  const quickToggleCells = page.locator('.quick-toggles > .setting');
-  await expect(quickToggleCells).toHaveCount(4);
-  await expect(quickToggleCells.nth(1)).toHaveCSS('margin-top', '0px');
-  await expect(quickToggleCells.nth(2)).toHaveCSS('margin-top', '0px');
-  await expect(quickToggleCells.nth(3)).toHaveCSS('margin-top', '0px');
-});
-
-async function openSettingsModalCompact(page: Page) {
-  await page.setViewportSize({ width: 852, height: 390 });
-  await gotoApp(page);
-  return openSettingsModal(page);
-}
-
-// A landscape phone has the width of the tablet shell but almost none of its
-// height, so the full section list is unusably cramped there. Settings
-// collapses to a strip of quick toggles plus a pointer to portrait; a landscape
-// tablet (height ≥ 600px, e.g. the default desktop viewport above) keeps the
-// two-pane shell.
-test('landscape phone renders compact quick toggles', async ({ page }) => {
-  const modal = await openSettingsModalCompact(page);
-  await expect(modal).toHaveClass(/compact/);
-
-  // Quick toggles render instead of the hub list or the sidebar.
-  await expect(page.locator('.hub-list')).toHaveCount(0);
-  await expect(page.locator('.settings-nav')).toHaveCount(0);
-  await expect(page.locator('#quickSoundToggle')).toBeVisible();
-  await expect(page.locator('#quickNightToggle')).toBeVisible();
-  await expect(page.locator('#quickToolDrawerToggle')).toBeVisible();
-  // The Orientation picker holds the device-varying bottom-right (last) slot, so
-  // the other three toggles sit in the same place on lock-incapable devices too.
-  const orientationCell = page.locator('.quick-toggles > .setting').nth(3);
-  for (const choice of ['portrait', 'landscape', 'auto']) {
-    await expect(orientationCell.locator(`#orientationOption-${choice}`)).toBeVisible();
-  }
-  await expect(page.getByText('Switch to portrait for the full settings')).toBeVisible();
-});
-
-test('the compact Orientation picker locks either side or releases to Auto', async ({ page }) => {
-  await openSettingsModalCompact(page);
-  const option = (choice: string) => page.locator(`#orientationOption-${choice}`);
-
-  // A phone-sized screen defaults to a portrait lock, so Portrait starts selected.
-  await expect(option('portrait')).toHaveAttribute('aria-checked', 'true');
-
-  await option('landscape').click();
-  await expect(option('landscape')).toHaveAttribute('aria-checked', 'true');
-  await expect(option('portrait')).toHaveAttribute('aria-checked', 'false');
-
-  // Auto is its own option, so tapping the selected side again keeps it locked.
-  await option('landscape').click();
-  await expect(option('landscape')).toHaveAttribute('aria-checked', 'true');
-
-  await option('auto').click();
-  await expect(option('auto')).toHaveAttribute('aria-checked', 'true');
-  await expect(option('landscape')).toHaveAttribute('aria-checked', 'false');
-});
-
-test('quick-toggle changes persist into the full portrait Settings', async ({ page }) => {
-  await openSettingsModalCompact(page);
-
-  // A quick toggle drives the same persisted setting as the full section...
-  await page.locator('#quickToolDrawerToggle').click();
-  await expect(page.locator('#quickToolDrawerToggle')).toHaveAttribute('aria-checked', 'false');
-
-  // Set a landscape lock, away from the phone's portrait default, so the full
-  // shell below can only show it if the quick picker persisted it.
-  await expect(page.locator('#orientationOption-portrait')).toHaveAttribute('aria-checked', 'true');
-  await page.locator('#orientationOption-landscape').click();
-  await expect(page.locator('#orientationOption-landscape')).toHaveAttribute(
-    'aria-checked',
-    'true'
-  );
-
-  // ...and rotating to portrait swaps in the full hub shell live, where the
-  // Controls section reflects the change made from the quick toggle.
-  await page.setViewportSize({ width: 390, height: 852 });
-  await expect(page.locator('.hub-list')).toBeVisible();
-  await expect(page.locator('#quickSoundToggle')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Tool Drawer' }).click();
-  await expect(page.locator('#toolDrawerToggle')).toHaveAttribute('aria-checked', 'false');
-
-  // The Appearance section's Orientation picker shows the lock we set.
-  await page.getByRole('button', { name: 'Back' }).click();
-  await page.getByRole('button', { name: 'Appearance' }).click();
-  await expect(page.locator('#orientationOption-landscape')).toHaveAttribute(
-    'aria-checked',
-    'true'
-  );
+  await expect(page.locator('[id^="orientationOption-"]')).toHaveCount(0);
+  await expect(page.locator('.quick-toggles > .setting.about-cell')).toBeVisible();
 });
 
 // A lock-incapable device (tablet-class native — supportsOrientationLock) hides

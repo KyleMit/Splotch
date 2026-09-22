@@ -10,6 +10,11 @@ const APP_LIKE_DISPLAY_MODE_QUERIES = [
   '(display-mode: minimal-ui)',
 ] as const;
 
+// A hand-held device rather than a monitor: the primary input is a finger, so
+// the screen itself can turn. `pointer` reports the primary pointer only, which
+// is why a touchscreen laptop driven by its mouse does not match.
+const COARSE_POINTER_QUERY = '(pointer: coarse)';
+
 // Capacitor injects a global `Capacitor` object both in the native runtime and
 // once @capacitor/core is loaded on the web. We read it off the global rather
 // than importing @capacitor/core here so this module stays safe to evaluate
@@ -84,6 +89,25 @@ export type Platform = 'android' | 'ios' | 'web';
 
 export type Orientation = 'portrait' | 'landscape';
 
+type OrientationLockMembers = {
+  lock?: (orientation: Orientation) => Promise<void>;
+  unlock?: () => void;
+};
+
+// lib.dom declares both members as required on ScreenOrientation, but no WebKit
+// build ships either, so the optional shape is the honest one at this boundary.
+// They are omitted before being re-added: an intersection cannot weaken a member
+// the other side requires, so intersecting the optional shape straight onto
+// ScreenOrientation would still promise callers members that are always there.
+// The omitted keys come from `keyof` rather than a written-out pair, so adding a
+// member to the shape above cannot leave the required original behind it — and
+// deferredIcons.test.ts reads a quoted icon name in any source file as that file
+// rendering the icon, which a literal pair here would trip. One declaration
+// serves both readers of it: the capability check below and the call in
+// `lib/platform/orientation.ts`.
+export type LockableScreenOrientation = Omit<ScreenOrientation, keyof OrientationLockMembers> &
+  OrientationLockMembers;
+
 export function getPlatform(): Platform {
   if (!browser) return 'web';
   const platform = globalThis.Capacitor?.getPlatform?.();
@@ -120,10 +144,42 @@ export function getPlatform(): Platform {
  * window doesn't read as a phone. Every shipping iPhone is fullscreen-only and
  * stays well under 600 CSS px even in landscape, so the split is clean today; if
  * Apple ever brings windowing to the iPhone, revisit this (likely the behavioral
- * probe above). Web is left as-is (best-effort lock).
+ * probe above).
+ *
+ * On the web the question is instead whether this browser, on this device, can
+ * turn anything, and two independent facts have to hold:
+ *  - The Screen Orientation API's `lock()` has to exist. No WebKit build ships
+ *    it — MDN's compatibility data records `version_added: false` for Safari and
+ *    Safari iOS — so no browser on iOS or iPadOS, all of which run WebKit, can
+ *    ever honor the choice.
+ *  - The primary pointer has to be coarse, i.e. a device held in a hand rather
+ *    than a monitor on a desk, because a screen that cannot physically turn has
+ *    nothing for a lock to do. The capability check alone would not catch that:
+ *    desktop Chrome exposes `lock()` and always throws `NotSupportedError`, and
+ *    Firefox implements it for real from 144 — for the devices that can rotate.
+ *    The pointer is also what makes the picker reappear under a browser's
+ *    mobile-device emulation, which is where it gets tested.
+ *
+ * Necessary, not sufficient — a `lock()` that exists can still refuse, and two
+ * such browsers stay inside this repo's floor: Chrome on Android honors a lock
+ * only in fullscreen or an installed app, and Firefox for Android 114-143
+ * exposes one that always fails. The picker renders there and the choice
+ * persists; `applyDeviceOrientationPreference` swallows the rejection. Closing
+ * that gap is not a narrower gate — the control becomes functional the moment
+ * the user hits the Fullscreen toggle — but re-applying the preference when
+ * fullscreen or display mode changes, which today's settings-keyed effect in
+ * `routes/+page.svelte` does not do.
+ *
+ * A behavioral probe is not an option here either: headless Chromium resolves
+ * `lock()` on a desktop viewport, and the call is async besides.
  */
 export function supportsOrientationLock(): boolean {
   if (!browser) return false;
-  if (!isNative()) return true;
+  if (!isNative()) {
+    return (
+      typeof (window.screen.orientation as LockableScreenOrientation | undefined)?.lock ===
+        'function' && window.matchMedia?.(COARSE_POINTER_QUERY).matches === true
+    );
+  }
   return Math.min(window.screen.width, window.screen.height) < TABLET_MIN_SIDE_PX;
 }

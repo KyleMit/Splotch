@@ -2,6 +2,13 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { gotoApp, openSettingsModal } from './helpers';
 
+// The picker renders only where the browser can actually turn the screen
+// (supportsOrientationLock), which on the web needs a coarse primary pointer.
+// Touch emulation supplies one, the same way a browser's mobile-device mode
+// does — and every viewport below is a phone or tablet, so it is also the
+// honest input for them.
+test.use({ hasTouch: true });
+
 // Portrait phone widths across the device range, plus the pair of widths whose
 // tracks land on either side of OrientationPicker's stacking threshold (the
 // portrait shell spends 104px of the viewport on gutters and padding, so 433px
