@@ -68,9 +68,12 @@ should happen and no way to ask for it. Concretely, the following mechanics are 
 * Timers, countdowns, progress toward a goal, "keep going" nudges, and "one more" prompts. Nothing
   starts the next activity on its own; the canvas waits.
 * Reporting engagement to the maker. No analytics, no session events, no usage telemetry (the
-  Privacy axis). The one server-side count is the free-picture allowance per installation pseudonym
-  ([ADR-0105](0105-server-authoritative-free-ai-grants.md)), kept for cost control, never per child
-  and never read back as a usage signal.
+  Privacy axis). The server keeps operational accounting for the AI path and nothing else: the
+  free-picture allowance per installation pseudonym and the daily provider-start ceiling
+  ([ADR-0105](0105-server-authoritative-free-ai-grants.md)), and the per-access-code usage tally for
+  quota and rogue-code detection ([ADR-0006](0006-server-side-ai-generation.md), disclosed in
+  `/privacy`). Each counts requests to a paid service, none is per child, none records a session,
+  and none is read back as an engagement signal.
 
 What exists today, and why it stays on the right side of the line:
 
@@ -97,8 +100,10 @@ This is the load-bearing section. What the product does today:
   drawing, keep every shape where and at the size the child drew it, treat scribbled fill as intent,
   and never add objects or characters the child did not draw. ADR-0118 measured that framing against
   prettier alternatives and chose the child's layout over the model's.
-* **An adult opens the door.** AI image creation is off until a parent turns it on (ADR-0127), and
-  each generation sits behind the grown-up check (ADR-0094).
+* **An adult opens the door.** AI image creation is off until a parent turns it on (ADR-0127). The
+  grown-up check on each generation is a parent's choice in Parent Center, Every time, Per session,
+  or Never (ADR-0094); the store apps start at Every time and the web starts open. The promise is
+  the opt-in and the parent's control of the check, not a challenge on every tap.
 * **The result sits beside the drawing, never in its place.** The finished picture opens in a dialog
   above the canvas (`AiImageResult.svelte`); the paper underneath is untouched, and no action writes
   the picture onto it. It can be saved to photos or downloaded, and it can be reported. What the
@@ -114,10 +119,11 @@ This is the load-bearing section. What the product does today:
 The rule those facts obey: **AI and automation act on what the child made, where the child made it,
 at the parent's say-so, and put the result next to the child's work rather than in its place.** A
 future AI feature must take the child's own work as its input, leave the canvas the child's, be off
-by default and gated (ADR-0127, ADR-0094), and present its output as a separate, labeled artifact.
-It must not generate from nothing or from a text prompt, suggest what to draw, correct or tidy or
-"improve" strokes on the canvas as the child draws, put a character or a chat in front of the child,
-or produce anything for the child to pass off as their own.
+by default (ADR-0127) with its grown-up check under the parent's policies (ADR-0094), and present
+its output as a separate, labeled artifact. It must not generate from nothing or from a text prompt,
+suggest what to draw, correct or tidy or "improve" strokes on the canvas as the child draws, put a
+character or a chat in front of the child, or produce anything for the child to pass off as their
+own.
 
 ### Motor development is part of the bar
 
@@ -163,8 +169,9 @@ Stated so that a pull request can be measured against each line:
    is configured by an adult in Settings (`docs/MOBILE/compliance.md`, "No IAP, no purchase
    steering").
 5. **No measurement of the child.** No analytics, session length, return rate, or usage reporting to
-   us or to anyone. The per-installation free-picture count (ADR-0105) is the only server-side count
-   and stays a cost control.
+   us or to anyone. The server's AI accounting (the free-picture allowance and daily ceiling of
+   ADR-0105, the access-code tally of ADR-0006) counts requests to a paid service for cost and abuse
+   control; it never counts a child or a session, and nothing new joins it on engagement grounds.
 6. **No AI that draws from nothing, draws for the child, or draws over the child's canvas**, and no
    AI that talks to the child.
 7. **No character, voice, or chat that addresses the child or asks the child for anything.** A
