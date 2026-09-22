@@ -180,16 +180,17 @@ export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
             colorTop + size + INFLATE_PX
           )
     );
-    if (drawerOpen)
+    if (drawerOpen) {
+      const rowCount = count - Number(brush) - Number(stroke);
       strip.push(
         rectangle(
           -BLEED_PX,
           height - safe.bottom - depth - INFLATE_PX,
-          width + BLEED_PX,
+          x + rowCount * pitch + DRAWER_TOGGLE_SIZE + INFLATE_PX,
           height + BLEED_PX
         )
       );
-    else if (hasActions)
+    } else if (hasActions)
       strip.push(
         rectangle(
           -BLEED_PX,
