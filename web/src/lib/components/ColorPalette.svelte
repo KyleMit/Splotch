@@ -29,8 +29,7 @@
   } from '$lib/colorRing';
   import Icon from './Icon.svelte';
   import { prefersReducedMotion } from '$lib/platform/reducedMotion';
-
-  const SWATCH_RELEASE_CLASS = 'releasing';
+  import { playPressRelease, pressRelease } from '$lib/actions/pressRelease';
 
   let customSwatchEl: HTMLButtonElement | undefined;
 
@@ -70,39 +69,9 @@
   }
 
   // The press gets its own springy release instead of snapping back from the
-  // :active scale. A press landing while the last one is still settling rewinds
-  // that animation rather than stacking a second. Svelte scopes the keyframe's
-  // name, so the release is found as the swatch's only own CSS animation — its
-  // selection rings animate its pseudo-elements, which getAnimations() without
-  // subtree leaves out.
+  // :active scale (lib/actions/pressRelease.ts).
   function playSwatchRelease(e: PointerEvent & { currentTarget: HTMLButtonElement }) {
-    const swatch = e.currentTarget;
-    if (prefersReducedMotion()) {
-      swatch.classList.remove(SWATCH_RELEASE_CLASS);
-      return;
-    }
-    const release = swatch.getAnimations().find((animation) => animation instanceof CSSAnimation);
-    if (release) {
-      release.currentTime = 0;
-      release.play();
-      return;
-    }
-    swatch.classList.add(SWATCH_RELEASE_CLASS);
-  }
-
-  // The rings' animationend bubbles from the swatch's pseudo-elements.
-  function endSwatchRelease(e: AnimationEvent & { currentTarget: HTMLButtonElement }) {
-    if (e.target === e.currentTarget && e.pseudoElement === '')
-      e.currentTarget.classList.remove(SWATCH_RELEASE_CLASS);
-  }
-
-  function clearReleaseOnCancel(node: HTMLButtonElement) {
-    const cancel = (event: AnimationEvent) => {
-      if (event.target === node && event.pseudoElement === '')
-        node.classList.remove(SWATCH_RELEASE_CLASS);
-    };
-    node.addEventListener('animationcancel', cancel);
-    return { destroy: () => node.removeEventListener('animationcancel', cancel) };
+    playPressRelease(e.currentTarget);
   }
 
   function handleSwatchCancel(e: PointerEvent) {
@@ -144,10 +113,9 @@
         : ''}"
       aria-label={shown === hex ? label : 'White'}
       use:scribbleTap={() => selectSwatch(hex, shown)}
-      use:clearReleaseOnCancel
+      use:pressRelease
       onpointerup={playSwatchRelease}
       onpointercancel={handleSwatchCancel}
-      onanimationend={endSwatchRelease}
     ></button>
   {/each}
 
@@ -163,10 +131,9 @@
       ? `box-shadow: ${selectionRingShadow(colorsState.customColor, 'var(--palette-surface, var(--surface))')};`
       : ''}
     use:scribbleTap={selectCustomColor}
-    use:clearReleaseOnCancel
+    use:pressRelease
     onpointerup={playSwatchRelease}
     onpointercancel={handleSwatchCancel}
-    onanimationend={endSwatchRelease}
     bind:this={customSwatchEl}
     ><Icon name="more-colors" class="more-colors-icon" aria-hidden="true" /></button
   >
@@ -224,25 +191,7 @@
   }
 
   .color-swatch:global(.releasing) {
-    animation: swatch-press 420ms linear;
-  }
-
-  @keyframes swatch-press {
-    0% {
-      transform: scale(0.9);
-      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    42% {
-      transform: scale(1.075);
-      animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
-    }
-    72% {
-      transform: scale(0.984);
-      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
-    }
-    100% {
-      transform: scale(1);
-    }
+    animation: swatch-press var(--press-release-duration) linear;
   }
 
   .color-swatch.active {

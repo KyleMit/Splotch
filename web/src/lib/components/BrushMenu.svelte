@@ -9,6 +9,7 @@
   } from '$lib/state/tool.svelte';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
   import { stampMotionAtStart } from '$lib/platform/reducedMotion';
+  import { flyoutExit } from './flyoutExit';
 
   // Presentational Brush Menu popover: the parent (ActionsPanel) owns the
   // trigger, the open/close coordination, and the outside-click handling; this
@@ -46,6 +47,7 @@
     class:dark-stroke={inkDark}
     class:motionless={isStrokeActive()}
     use:stampMotionAtStart
+    out:flyoutExit
     style:color={activeColor}
   >
     {#each visibleBrushes as opt, index (opt.brush)}

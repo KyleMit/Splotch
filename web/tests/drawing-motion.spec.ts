@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp, drawCommittedStroke } from './helpers';
-import { openDrawer, opaqueCanvasPixelCount, pickBrush } from './flows-harness';
+import { openDrawer, openStrokeMenu, opaqueCanvasPixelCount, pickBrush } from './flows-harness';
 
 for (const viewport of [
   { width: 1000, height: 650 },
@@ -24,20 +24,32 @@ for (const viewport of [
   });
 }
 
-test('flyouts replay staggered arrivals and unmount immediately on close', async ({ page }) => {
+test('flyouts replay staggered arrivals and unmount on close', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
   for (const trigger of ['#brushButton', '#strokeWidthButton']) {
     await page.locator(trigger).click();
-    const menu = page.locator('.flyout-menu');
+    const menu = page.locator('.flyout-menu:not([inert])');
     await expect(menu).toBeVisible();
     await expect(menu).toHaveCSS('animation-name', 'flyout-shell');
-    await expect(menu.locator('button').nth(1)).toHaveCSS('animation-delay', '0.08s');
+    await expect(menu.locator('button').nth(1)).toHaveCSS('animation-delay', '0.065s');
     await page.keyboard.press('Escape');
-    await expect(menu).toHaveCount(0);
+    await expect(page.locator('.flyout-menu')).toHaveCount(0);
     await page.locator(trigger).click();
     await expect(menu).toHaveCSS('animation-name', 'flyout-shell');
     await page.keyboard.press('Escape');
+  }
+});
+
+test('a stroke size pick presses its trigger, even re-picking the same size', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  const trigger = page.locator('#strokeWidthButton');
+  for (let pick = 0; pick < 2; pick++) {
+    await openStrokeMenu(page);
+    await page.locator('.flyout-menu:not([inert]) button[aria-label="Size 4"]').click();
+    await expect(trigger).toHaveCSS('animation-name', 'swatch-press');
+    await expect(trigger).toHaveCSS('animation-name', 'none');
   }
 });
 

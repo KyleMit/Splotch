@@ -826,8 +826,43 @@ html[data-ai-free-count]
    top of a short landscape screen. Absolutely positioned against the parent's
    position:relative .flyout-wrapper (a Svelte component adds no wrapper DOM,
    so this menu is a direct child of it). */
+/* The springy release a press plays instead of snapping back from :active —
+   a swatch in the palette, and the Stroke Width trigger when a size is picked
+   (lib/actions/pressRelease.ts plays and rewinds it by this name). */
+:root {
+  --press-release-duration: 420ms;
+}
+
+@keyframes swatch-press {
+  0% {
+    transform: scale(0.9);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  42% {
+    transform: scale(1.075);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  72% {
+    transform: scale(0.984);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.actions-panel .action-button.releasing {
+  animation: swatch-press var(--press-release-duration) linear;
+}
+
+:root[data-reduce-motion] .actions-panel .action-button.releasing {
+  animation: none;
+}
+
 .flyout-menu {
-  --stagger: 40ms;
+  /* The last of five options lands near 400 ms, inside the 1.3× cap on a
+     stagger (the design skill's frame-budget practice). */
+  --stagger: 25ms;
   --flyout-from-x: 0px;
   --flyout-from-y: 6px;
   --flyout-menu-padding: 6px;
@@ -1241,7 +1276,7 @@ html[data-ai-free-count]
   }
 }
 .flyout-menu > button {
-  animation: flyout-option 320ms linear backwards;
+  animation: flyout-option 260ms linear backwards;
   animation-delay: calc(40ms + var(--i) * var(--stagger));
 }
 .flyout-menu.motionless,

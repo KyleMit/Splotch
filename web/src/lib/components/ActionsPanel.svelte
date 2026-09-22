@@ -9,6 +9,7 @@
   import ColorControl from './ColorControl.svelte';
   import BrushControl from './BrushControl.svelte';
   import InkOrMagicIcon from './InkOrMagicIcon.svelte';
+  import { playPressRelease, pressRelease } from '$lib/actions/pressRelease';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colorsState, isWhite, isDarkInk } from '$lib/state/colors.svelte';
@@ -348,6 +349,7 @@
   function handleStrokeSizeClick(size: StrokeSize) {
     setStrokeSize(size);
     closeFlyout({ restoreFocus: true });
+    if (strokeTriggerEl) playPressRelease(strokeTriggerEl);
   }
 
   function handleColoringBookClick() {
@@ -455,6 +457,7 @@
           use:scribbleTap={handleStrokeBtnClick}
           onclick={restoreFlyoutTriggerFocus}
           bind:this={strokeTriggerEl}
+          use:pressRelease
           style:color={colorsState.activeColor}
         >
           {#if erasing}
@@ -576,12 +579,9 @@
 
 <style>
   .actions-panel {
-    /* One clock for the drawer gesture: the track, its margin and the chevron
-       (a sibling of the drawer, hence declared here) share this duration and
-       --ease-drawer, so the chevron's angle and the drawer's edge are at the same
-       fraction of their journey on every frame. --duration-base because it is
-       the shortest value that reads as movement at 60 Hz; the settings-covered
-       zeroing of --duration-base below reaches it too. */
+    /* One clock for the drawer gesture: track, margin and chevron (the drawer's
+       sibling, hence declared here) share it and --ease-drawer. The chevron turns
+       only mid-gesture, so a rotation's axis change snaps. */
     --drawer-collapse: var(--duration-base);
     pointer-events: auto;
     position: fixed;
@@ -640,12 +640,8 @@
     /* 4px plus the toggle's own 8px icon padding puts the chevron on the
        row's 12px rhythm. */
     margin-right: 4px;
-    /* No opacity here: the track's own clip is the reveal, and fading the
-       buttons on a second curve opened a lit gap between the chevron and the
-       drawer's edge. Grid-track animation re-lays out under this fixed panel on
-       mobile Chromium, which is why the collapse was once held to half of
-       --duration-fast; the one-object gesture trades that for a collapse that
-       reads as movement, pending a hardware measurement. */
+    /* No opacity: the track's clip is the reveal. Grid-track animation re-lays
+       out under this fixed panel on mobile Chromium; measure before lengthening. */
     --drawer-transition:
       grid-template-columns var(--drawer-collapse) var(--ease-drawer),
       grid-template-rows var(--drawer-collapse) var(--ease-drawer),
@@ -656,11 +652,9 @@
     transition: var(--drawer-transition);
   }
 
-  /* Reduced motion: the drawer appears and leaves instead of unrolling. Opacity
-     alone stays transitioned — the track snaps — so the buttons still fade
-     rather than blink, and finishDrawerMotion still has a transition to end on.
-     Only here does the closed drawer take opacity 0; at full motion the clip
-     hides it. The chevron snaps. */
+  /* Reduced motion: the track and chevron snap and only opacity transitions (the
+     closed drawer takes opacity 0 only here), so the buttons fade rather than
+     blink and finishDrawerMotion still has a transition to end on. */
   :global(:root[data-reduce-motion]) .actions-drawer {
     --drawer-transition: opacity var(--drawer-collapse) ease;
   }
@@ -789,15 +783,10 @@
     transform: rotate(calc(var(--drawer-axis-rot) + var(--drawer-open-rot)));
   }
 
-  /* Turns only while the drawer is moving, so a rotation's axis change still
-     snaps. */
   .actions-panel[data-drawer-motion] :global(.drawer-toggle-icon) {
     transition: transform var(--drawer-collapse) var(--ease-drawer);
   }
-
-  :global(:root[data-reduce-motion])
-    .actions-panel[data-drawer-motion]
-    :global(.drawer-toggle-icon) {
+  :global(:root[data-reduce-motion]) .actions-panel :global(.drawer-toggle-icon) {
     transition: none;
   }
 
