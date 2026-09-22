@@ -118,16 +118,37 @@ describe('parental gate', () => {
     }
   });
 
-  it('solving unlocks, then closes and runs the destination after the success hold', () => {
+  it('solving unlocks, then closes and runs the destination once the dialog has closed', () => {
     const destination = vi.fn();
     gate.requireParentalGate('aiImage', destination);
     typeAnswer(correctAnswer());
     expect(gate.unlocked).toBe(true);
     expect(destination).not.toHaveBeenCalled();
 
+    // The success hold closes the gate, but the destination waits for the
+    // dialog's own close — its exit plays first (ADR-0170) — so a destination
+    // that opens a modal never opens it over a dialog on its way out.
     vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
-    expect(destination).toHaveBeenCalledOnce();
     expect(gate.open).toBe(false);
+    expect(destination).not.toHaveBeenCalled();
+
+    gate.notifyGateClosed();
+    expect(destination).toHaveBeenCalledOnce();
+  });
+
+  it('releases a solved handoff only once, and never for an unsolved dismissal', () => {
+    const destination = vi.fn();
+    gate.requireParentalGate('aiImage', destination);
+    gate.dismissGate();
+    gate.notifyGateClosed();
+    expect(destination).not.toHaveBeenCalled();
+
+    gate.requireParentalGate('aiImage', destination);
+    typeAnswer(correctAnswer());
+    vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
+    gate.notifyGateClosed();
+    gate.notifyGateClosed();
+    expect(destination).toHaveBeenCalledOnce();
   });
 
   it('a wrong answer regenerates the problem, clears input, and shows a timed error', () => {
@@ -270,6 +291,7 @@ describe('parental gate', () => {
     typeAnswer(correctAnswer());
     expect(gate.unlocked).toBe(true);
     vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
+    gate.notifyGateClosed();
     expect(destination).not.toHaveBeenCalled();
     expect(uiState.requestedSettingsSection).toBe('parentCenter');
     expect(settingsModal.open).toBe(true);

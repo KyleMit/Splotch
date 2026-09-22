@@ -14,6 +14,7 @@ import {
   openDrawer,
   openParentalGate,
   policyPicker,
+  settleTapGuard,
   solveParentalGate,
 } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
@@ -577,6 +578,10 @@ test('reporting an AI picture waits for its own parental gate before confirming'
   await landedReportConfirm(page);
   expect(reportRequests).toBe(0);
 
+  // The confirmation now opens after the gate's dialog has closed, so its own
+  // launch dead zone at the Report button's spot is live — Send sits inside it,
+  // and a repeat tap there would send the report (issue #308's hazard).
+  await settleTapGuard(page);
   await confirm.getByRole('button', { name: 'Send report' }).click();
   await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible({
     timeout: 5000,

@@ -12,6 +12,7 @@
   import {
     parentalGateState,
     dismissGate,
+    notifyGateClosed,
     pressGateDigit,
     pressGateBackspace,
     submitGateAnswer,
@@ -79,6 +80,10 @@
     open: parentalGateState.open,
     origin: parentalGateState.origin,
     onRequestClose: dismissGate,
+    // A solved gate hands off to its destination only once this dialog has
+    // actually closed, so the destination's own modal is not opened over a
+    // dialog on its way out (see notifyGateClosed).
+    onClose: notifyGateClosed,
     // A correct answer is committed: dismissing during the success hold would
     // silently drop the captured destination, so backdrop taps and Esc are
     // blocked until the handoff runs.
