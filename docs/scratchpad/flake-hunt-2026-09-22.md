@@ -224,22 +224,66 @@ scope honest.
 
 ## Vitest and smoke tiers
 
-(Filled in after the runs.)
+Two passes, because the first one measured my own contention. The plan's 20 iterations per tier ran
+as a loop at `nice -n 19` with one worker underneath sweep 2, so the box held 4 Playwright workers
+plus this; an iteration of all four tiers took about 14 minutes there instead of 4, and the loop
+reached 8 complete iterations (9 for `unit`) before sweep 2 ended and it was stopped.
+
+| Tier                  | Contended (nice 19, under sweep 2) | Uncontended, default workers                  | Shuffled (`--sequence.shuffle`)                                                                                                            |
+| --------------------- | ---------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `test:unit`           | 9/9 clean (3,305 + 12 tests)       | 3/3 clean                                     | **18 failed** in 5 files, seed 1790060363551 (issue \#2152); the SSR config did not run in that pass because the two are chained with `&&` |
+| `test:tools`          | 1/8 clean                          | 3/3 clean                                     | clean                                                                                                                                      |
+| `test:asset-gen`      | 4/8 clean                          | 3/3 clean                                     | clean                                                                                                                                      |
+| `test:store-drawings` | 8/8 clean                          | 3/3 clean                                     | clean                                                                                                                                      |
+| `test:api:smoke`      | —                                  | 5/5 clean (40 checks each, `SMOKE_PORT=4517`) | —                                                                                                                                          |
+
+Every contended miss was a timeout, never an assertion: `tools` lost
+`svelte-browser-globals-lint.test.mjs › rejects a browser-global read at the top level of a rune module`
+(an in-process ESLint run, 9.8–12.7 s against its 5 s budget) in 7 of 8 iterations, and `asset-gen`
+lost `outline-analysis.test.mjs › preserves every scorer result while accepting raw buffers` (10 s
+budget) in 4 and
+`composite-eye.test.mjs › separates the two classes with margin on both sides of the threshold` (5
+s) in 1. Uncontended, all of them pass three times in a row at their normal speed, so those are a
+measurement of a niced process under a full E2E sweep, not of the tiers, and are not filed. CI runs
+these tiers alone in the Browserless job.
+
+The shuffle pass is the one Vitest finding: the web unit tier carries order dependence across
+`app.html.test.ts` (13 tests: the boot-script fixture's DOM node is null when they run first),
+`storage.test.ts` (a once-per-class warning latch already tripped), `tiledRenderer.test.ts` and
+`tiledRendererBlankUndo.test.ts` (undo history carried between tests), and `saveOnDelete.test.ts` (a
+memoized module load already satisfied). Reported as a hidden flake source in issue \#2152, not as a
+proposal to shuffle in CI.
 
 ## Issue index
 
-| Issue  | Spec › test                                                                                                | Rate (4 workers, retries off)                                                            | Classification                     |
-| ------ | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------- |
-| \#2145 | `flows-parent-center-warning` › survives a relaunch; `flows-parental-gate` › persists every feature policy | 7/12 and 2/12; amplifier 4/20; post-fix 0/12 and 0/12, amplifier 0/20                    | spec race, fixed in PR \#2143      |
-| \#2146 | `actions-panel-layout` › AI-only drawer paints its count before the grant arrives                          | 5/12; amplifier 0/10; post-fix 0/12                                                      | spec race, fixed in PR \#2143      |
-| \#2147 | `web-back` › Back closes nested dialogs from the top down                                                  | 1/12; amplifier 0/10; post-fix 0/12, amplifier 0/10                                      | spec race, fixed in PR \#2143      |
-| \#2148 | `privacy-parent-center` › Parent Center reached from privacy hydrates its persisted settings               | 4/12, then 4/12, 4/12 and 3/12 across the three privacy specs in sweep 2; amplifier 0/20 | container-only (provisional), open |
-| \#2149 | `flows-parental-gate` › the bundled privacy page gates its provider terms link                             | 1/12, then 3/12 (4/13 in 2026-09); amplifier 0/20                                        | container-only (provisional), open |
-| \#2150 | `pwa-registration` precache bytes; `store-drawing-replay` replay parity                                    | 12/12 each, both hunts                                                                   | container-only, deterministic      |
-
-`reduce-motion` › downloadButton cue, `changelog` › contents panel bottom edge, and `design` › the
-disclosure chevron (1/24 each) are filed together as \#2151, a place for a second sighting.
+| Issue  | Spec › test                                                                                                       | Rate (4 workers, retries off)                                                            | Classification                         |
+| ------ | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------- |
+| \#2145 | `flows-parent-center-warning` › survives a relaunch; `flows-parental-gate` › persists every feature policy        | 7/12 and 2/12; amplifier 4/20; post-fix 0/12 and 0/12, amplifier 0/20                    | spec race, fixed in PR \#2143          |
+| \#2146 | `actions-panel-layout` › AI-only drawer paints its count before the grant arrives                                 | 5/12; amplifier 0/10; post-fix 0/12                                                      | spec race, fixed in PR \#2143          |
+| \#2147 | `web-back` › Back closes nested dialogs from the top down                                                         | 1/12; amplifier 0/10; post-fix 0/12, amplifier 0/10                                      | spec race, fixed in PR \#2143          |
+| \#2148 | `privacy-parent-center` › Parent Center reached from privacy hydrates its persisted settings                      | 4/12, then 4/12, 4/12 and 3/12 across the three privacy specs in sweep 2; amplifier 0/20 | container-only (provisional), open     |
+| \#2149 | `flows-parental-gate` › the bundled privacy page gates its provider terms link                                    | 1/12, then 3/12 (4/13 in 2026-09); amplifier 0/20                                        | container-only (provisional), open     |
+| \#2150 | `pwa-registration` precache bytes; `store-drawing-replay` replay parity                                           | 12/12 each, both hunts                                                                   | container-only, deterministic          |
+| \#2151 | `reduce-motion` › downloadButton cue; `changelog` › contents panel bottom edge; `design` › the disclosure chevron | 1/24 each                                                                                | seen once, no capture                  |
+| \#2152 | web unit tier under `--sequence.shuffle`: 18 tests in 5 files                                                     | 18/3,305 at seed 1790060363551; 0 in order                                               | order dependence (hidden flake source) |
 
 ## Post-run validation
 
-(Filled in at the end.)
+* Container: 4 logical CPUs, 15 GB, Chromium from `/opt/pw-browsers`, `main` at d8a8102 for
+  discovery, e19690a for validation. Contention level: 4 workers (ADR-0078's supported CI count) for
+  every full-suite rep, 8 workers for every amplifier.
+* Sample: 24 full-suite reps, 21,720 test executions, all through `test:e2e:sweep` with a fresh
+  preview server per rep (sweep 1 built once; sweep 2 `--prebuilt` on the same bundle), plus 120
+  amplifier executions pre-fix and 40 post-fix. Vitest: 8–9 contended and 3 uncontended iterations
+  per tier, one shuffle pass per tier, 5 smoke runs.
+* Fixed specs after the fix: 0 of 12 full-suite reps each and 0 of 20/10/10 amplifier executions,
+  against 7/12, 2/12, 5/12, 1/12 before. That is the protocol's three clean reps four times over,
+  and it is validation, not proof: the pre-fix rates put the reload race at roughly one rep in two
+  and the badge race at one in 2.4, so twelve clean reps make a surviving rate of either size
+  unlikely, and a rate of one in fifty would still hide in this sample.
+* Not fixed and still red here: the /privacy route (issues \#2148 and \#2149, which both scaled with
+  load — sweep 2 carried the Vitest loop on top), the deterministic pair (\#2150), and the three
+  singles (\#2151). `gen:flaky-digest` cannot run from this container (401 through the proxy); the
+  digest came from the workflow's own history artifact.
+* Timing for the next hunt: a rep of 905 tests takes 553–563 s alone at 4 workers, 608–636 s with a
+  niced one-worker Vitest loop beside it; 12 reps is just under two hours either way.
