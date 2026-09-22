@@ -5,52 +5,14 @@
   import SplotchyIcon from '../SplotchyIcon.svelte';
   import ToggleRow from './ToggleRow.svelte';
   import ScrollCue from '../design/ScrollCue.svelte';
-  import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
+  import OrientationPicker from './OrientationPicker.svelte';
   import { APP_VERSION } from '$lib/appVersion';
-  import {
-    settingsState,
-    setSound,
-    setLockRotation,
-    setForceLandscapeOrientation,
-    setToolDrawerEnabled,
-  } from '$lib/state/settings.svelte';
+  import { settingsState, setSound, setToolDrawerEnabled } from '$lib/state/settings.svelte';
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
-  import { supportsOrientationLock, type Orientation } from '$lib/platform';
+  import { supportsOrientationLock } from '$lib/platform';
   import '$lib/components/deferredIcons';
 
   const showOrientationControls = supportsOrientationLock();
-
-  // Compact orientation control: a two-way Portrait / Landscape selector that
-  // replaces the old single Lock Rotation switch. Picking a side is what enables
-  // the lock (and sets the orientation) — so a phone with rotation *unlocked*
-  // keeps free-rotating until the parent taps a side, and neither segment reads
-  // as active. When locked, the active segment mirrors forceLandscapeOrientation,
-  // and tapping it again releases the lock back to free rotation. This is also
-  // the escape hatch from a landscape lock: tapping Portrait flips the lock
-  // upright, which rotates the device out of this cramped shell and back to the
-  // full settings — the old switch could only *remove* the lock.
-  type LockedOrientation = Orientation;
-  const orientationOptions: SegmentedPickerOption<LockedOrientation>[] = [
-    { value: 'portrait', label: 'Portrait', icon: 'mobile-portrait', id: 'quickLockPortrait' },
-    { value: 'landscape', label: 'Landscape', icon: 'mobile-landscape', id: 'quickLockLandscape' },
-  ];
-  const lockedOrientation = $derived<LockedOrientation | null>(
-    settingsState.lockRotationEnabled
-      ? settingsState.forceLandscapeOrientation
-        ? 'landscape'
-        : 'portrait'
-      : null
-  );
-  function lockOrientation(value: LockedOrientation) {
-    // Tapping the already-locked side releases the lock — the only way back to
-    // free rotation from the compact shell.
-    if (lockedOrientation === value) {
-      setLockRotation(false);
-      return;
-    }
-    setForceLandscapeOrientation(value === 'landscape');
-    setLockRotation(true);
-  }
 </script>
 
 <!-- Landscape phone: too cramped for the full section list, so just the
@@ -92,19 +54,11 @@
          supportsOrientationLock) — a mini About cell so the 2×2 stays
          flush instead of leaving a hole. -->
     {#if showOrientationControls}
-      <!-- Matches the Theme picker in AppearanceSection, at the compact size so
-           the cell's height lines up with the toggle rows beside it. No segment
-           is active while rotation is unlocked, so the pair reads as "off" until
-           the parent picks a side. -->
+      <!-- The picker is the whole cell: its track takes the cell's place
+           instead of sitting inside a padded card, so the options get all of
+           the cell's room. -->
       <div class="setting orientation-cell">
-        <SegmentedPicker
-          label="Lock screen orientation"
-          mode="toggle"
-          size="sm"
-          options={orientationOptions}
-          selected={lockedOrientation}
-          onSelect={lockOrientation}
-        />
+        <OrientationPicker />
       </div>
     {:else}
       <div class="setting about-cell">
@@ -161,18 +115,23 @@
     gap: var(--setting-gap);
   }
 
-  /* Orientation fourth cell: a Portrait / Landscape segmented control in place
-     of ToggleRow's switch. Tighter padding than a switch cell so the segments
-     fill it; the grid stretches the cell to the toggle rows' height, and the
-     flex centring keeps the track in the middle of it rather than at the top. */
-  .setting.orientation-cell {
-    padding: 6px;
+  /* The orientation track replaces the cell's card, so the cell gives up its
+     padding and surface, and the track takes the card's corner radius. The
+     options stay concentric with it: --radius-lg minus the track's --space-1
+     inset. Over-qualified by .quick-toggles so it outranks SettingsModal's
+     shared .setting padding and does not depend on stylesheet order. */
+  .quick-toggles .setting.orientation-cell {
     display: flex;
-    align-items: center;
+    padding: 0;
+    background: none;
   }
 
-  .setting.orientation-cell :global(.picker) {
-    flex: 1;
+  .orientation-cell :global(.picker) {
+    border-radius: var(--radius-lg);
+  }
+
+  .quick-toggles .orientation-cell :global(.picker.segment .option) {
+    border-radius: var(--radius-md);
   }
 
   /* Non-toggle fourth cell: it sits on the same icon column as ToggleRow so the

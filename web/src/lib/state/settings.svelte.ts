@@ -17,6 +17,7 @@ import {
 } from '$lib/platform/reducedMotion';
 import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import type { CredentialKind } from '$lib/aiCredential';
+import type { Orientation } from '$lib/platform';
 import {
   OPTIONAL_BRUSH_TYPES,
   toolState,
@@ -175,6 +176,12 @@ function readIntSettings(): Record<IntSettingKey, number> {
 
 export type ToolbarStyle = 'buttons' | 'bare';
 
+// The Orientation picker's vocabulary over the two persisted lock booleans:
+// a locked side, or 'auto' for no in-app lock. 'auto' leaves
+// forceLandscapeOrientation as it was, so the side a parent last locked to is
+// still there when they lock again.
+export type OrientationChoice = Orientation | 'auto';
+
 function readToolbarStyle(): ToolbarStyle {
   return readString(STORAGE_KEYS.toolbarStyle, 'buttons') === 'bare' ? 'bare' : 'buttons';
 }
@@ -224,8 +231,7 @@ interface SettingsMutators {
   setAutoSaveAi(v: boolean): void;
   setToolDrawerEnabled(v: boolean): void;
   setDrawerOpen(v: boolean): void;
-  setLockRotation(v: boolean): void;
-  setForceLandscapeOrientation(v: boolean): void;
+  setOrientationChoice(v: OrientationChoice): void;
   setPencilEraserEnabled(v: boolean): void;
   setApplePencilSeen(v: boolean): void;
   setTheme(v: ThemePreference): void;
@@ -243,6 +249,7 @@ interface SettingsMutators {
   actionControlShown(control: ActionPanelControl): boolean;
   enabledOptionalBrushes(): OptionalBrushType[];
   aiCredentialKind(): AiCredentialKind;
+  orientationChoice(): OrientationChoice;
   reloadSettings(): void;
 }
 
@@ -303,6 +310,8 @@ export function createSettings(tool: ToolState): SettingsState {
   const setMagicBrushSetting = makeBoolSetter('magicBrushEnabled');
   const setEraserSetting = makeBoolSetter('eraserEnabled');
   const setToolDrawerSetting = makeBoolSetter('toolDrawerEnabled');
+  const setLockRotation = makeBoolSetter('lockRotationEnabled');
+  const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');
 
   function setTheme(v: ThemePreference) {
     s.theme = v;
@@ -343,8 +352,10 @@ export function createSettings(tool: ToolState): SettingsState {
       if (!v) normalizeDisabledBrushes();
     },
     setDrawerOpen: makeBoolSetter('drawerOpen'),
-    setLockRotation: makeBoolSetter('lockRotationEnabled'),
-    setForceLandscapeOrientation: makeBoolSetter('forceLandscapeOrientation'),
+    setOrientationChoice(v) {
+      if (v !== 'auto') setForceLandscapeOrientation(v === 'landscape');
+      setLockRotation(v !== 'auto');
+    },
     setPencilEraserEnabled: makeBoolSetter('pencilEraserEnabled'),
     setApplePencilSeen: makeBoolSetter('applePencilSeen'),
     setTheme,
@@ -377,6 +388,10 @@ export function createSettings(tool: ToolState): SettingsState {
       if (s.aiUserApiKey) return 'apiKey';
       if (s.aiAccessToken) return 'accessCode';
       return 'none';
+    },
+    orientationChoice() {
+      if (!s.lockRotationEnabled) return 'auto';
+      return s.forceLandscapeOrientation ? 'landscape' : 'portrait';
     },
     // Re-read every persisted setting into the live store. Used after the durable
     // storage layer recovers values that the native WebView had evicted (see
@@ -421,8 +436,7 @@ export const {
   setAutoSaveAi,
   setToolDrawerEnabled,
   setDrawerOpen,
-  setLockRotation,
-  setForceLandscapeOrientation,
+  setOrientationChoice,
   setPencilEraserEnabled,
   setApplePencilSeen,
   setTheme,
@@ -433,6 +447,7 @@ export const {
   actionControlShown,
   enabledOptionalBrushes,
   aiCredentialKind,
+  orientationChoice,
   reloadSettings,
 } = settingsState;
 

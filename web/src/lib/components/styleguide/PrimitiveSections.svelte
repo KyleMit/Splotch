@@ -12,7 +12,6 @@
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
-  import type { Orientation } from '$lib/platform';
   import '$lib/components/deferredIcons';
 
   let { theme }: { theme: ResolvedTheme } = $props();
@@ -33,15 +32,6 @@
   // The same options as the specimen above, so the pair reads as one control
   // with and without its words rather than as two unrelated pickers.
   let demoCollapsedTheme = $state<DemoTheme>('light');
-
-  type DemoOrientation = Orientation;
-  const demoOrientationOptions: SegmentedPickerOption<DemoOrientation>[] = [
-    { value: 'portrait', label: 'Portrait', icon: 'mobile-portrait' },
-    { value: 'landscape', label: 'Landscape', icon: 'mobile-landscape' },
-  ];
-  // Deselectable, like the real orientation segment: tapping the active side
-  // releases it back to none.
-  let demoOrientation = $state<DemoOrientation | null>('portrait');
 
   type DemoKind = 'bug' | 'feature';
   const demoKindOptions: SegmentedPickerOption<DemoKind>[] = [
@@ -154,16 +144,6 @@
       options={demoThemeOptions}
       selected={demoCollapsedTheme}
       onSelect={(value) => (demoCollapsedTheme = value)}
-    />
-  </div>
-  <div class="picker-demo picker-demo-narrow">
-    <SegmentedPicker
-      label="Lock screen orientation (specimen)"
-      mode="toggle"
-      size="sm"
-      options={demoOrientationOptions}
-      selected={demoOrientation}
-      onSelect={(value) => (demoOrientation = demoOrientation === value ? null : value)}
     />
   </div>
   <div class="picker-demo">
@@ -411,10 +391,6 @@
   .picker-demo {
     max-width: 360px;
     margin-bottom: var(--space-3);
-  }
-
-  .picker-demo-narrow {
-    max-width: 240px;
   }
 
   /* The specimen shows the mode's point, which is only visible once a caller

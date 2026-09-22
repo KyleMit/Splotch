@@ -21,7 +21,7 @@
   // track with a raised brand-filled thumb, and the borderless
   // toggle chips. Selection *semantics* stay with the caller: onSelect always fires
   // with the clicked value, so a radio caller sets it, while a toggle caller
-  // may release it (the orientation segment) or flip it in a set (the chips).
+  // may flip it in a set (the chips).
   interface Props {
     /** Accessible name for the option group. */
     label: string;
@@ -61,7 +61,6 @@
      * hiding it with its own CSS would be left with unnamed controls.
      */
     labels?: 'always' | 'collapsible';
-    size?: 'md' | 'sm';
     /** false = the track hugs its content instead of stretching full-width. */
     fill?: boolean;
     /** Forwarded to the track so a call site can restyle via `:global()`. */
@@ -78,7 +77,6 @@
     inputName,
     variant = 'segment',
     labels = 'always',
-    size = 'md',
     fill = true,
     class: className,
   }: Props = $props();
@@ -121,14 +119,7 @@
 </script>
 
 <div
-  class={[
-    'picker',
-    variant,
-    size,
-    fill && 'fill',
-    labels === 'collapsible' && 'collapsible',
-    className,
-  ]}
+  class={['picker', variant, fill && 'fill', labels === 'collapsible' && 'collapsible', className]}
   role={mode === 'radio' ? 'radiogroup' : 'group'}
   aria-label={label}
   aria-describedby={describedBy}
@@ -259,6 +250,10 @@
     justify-content: center;
     color: var(--text);
     gap: 6px;
+    min-height: 44px;
+    padding: var(--space-2) var(--space-1);
+    font-size: var(--font-size-sm);
+    line-height: 1.2;
     /* Concentric with the track: --radius-md outer minus the --space-1 inset. */
     border-radius: var(--radius-sm);
     transition:
@@ -272,36 +267,17 @@
     min-width: 0;
   }
 
-  .segment.md .option {
-    min-height: 44px;
-    padding: var(--space-2) var(--space-1);
-    font-size: var(--font-size-sm);
-    line-height: 1.2;
-  }
-
   /* A hugging track's options carry their own horizontal room instead of flexing. */
-  .segment.md:not(.fill) .option {
+  .segment:not(.fill) .option {
     padding: var(--space-2) 14px;
-  }
-
-  /* Compact track: option height runs 1px shy of the md step so a picker cell
-     lines up with the toggle rows beside it in the landscape settings shell. */
-  .segment.sm .option {
-    padding: 7px var(--space-1);
-    font-size: var(--font-size-xs);
   }
 
   /* Collapsed, an option is a square rather than a shrunken pill: the label is
      what gave it width, and the touch-target floor is what's left. The caller
      hides .option-label at a width it chooses; this keeps the target legal
-     when it does. Both axes, and on the collapsible rule rather than the size
-     rules: the label carries the sm track's height too, so a collapsed sm
-     option would otherwise stand 29px. The floor outranks that track's
-     deliberate 1px undercut of the md step — its row alignment is worth a
-     pixel, not a target a toddler misses. */
+     when it does. */
   .segment.collapsible .option {
     min-width: 44px;
-    min-height: 44px;
   }
 
   @media (hover: hover) {
@@ -316,15 +292,9 @@
     box-shadow: var(--shadow-control);
   }
 
-  .segment.md :global(.picker-option-icon) {
+  .segment :global(.picker-option-icon) {
     width: 16px;
     height: 16px;
-    flex-shrink: 0;
-  }
-
-  .segment.sm :global(.picker-option-icon) {
-    width: 15px;
-    height: 15px;
     flex-shrink: 0;
   }
 

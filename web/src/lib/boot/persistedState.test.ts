@@ -57,11 +57,7 @@ vi.mock('../platform/orientation', () => ({
 import { STORAGE_KEYS } from '../storage';
 import { saveAccessCode } from '../secureStorage';
 import { applyDeviceOrientationPreference } from '../platform/orientation';
-import {
-  setForceLandscapeOrientation,
-  setLockRotation,
-  settingsState,
-} from '../state/settings.svelte';
+import { setOrientationChoice, settingsState } from '../state/settings.svelte';
 import { hydratePersistedState } from './persistedState';
 import { createPersistedStateStatus } from './persistedStateStatus.svelte';
 
@@ -73,8 +69,7 @@ beforeEach(() => {
   secureStore.accessCode = null;
   settingsState.mirrorAiUserApiKey('');
   settingsState.mirrorAiAccessToken('');
-  setLockRotation(true);
-  setForceLandscapeOrientation(false);
+  setOrientationChoice('portrait');
   // The setters persist; the durable-restore cases want an empty local store.
   localStorage.clear();
   ctrl.native = false;

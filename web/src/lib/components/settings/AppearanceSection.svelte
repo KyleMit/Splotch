@@ -1,12 +1,9 @@
 <script lang="ts">
-  import ToggleRow from './ToggleRow.svelte';
+  import OrientationPicker from './OrientationPicker.svelte';
   import Icon from '../Icon.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
-  import { sectionReveal } from './sectionReveal';
   import {
     settingsState,
-    setLockRotation,
-    setForceLandscapeOrientation,
     setTheme,
     setToolbarStyle,
     type ToolbarStyle,
@@ -16,7 +13,7 @@
   import '$lib/components/deferredIcons';
 
   // Windowed platforms (iPadOS 26+) own device orientation through their own
-  // window controls and ignore in-app locks, so the toggles are hidden there.
+  // window controls and ignore in-app locks, so the picker is hidden there.
   const showOrientationControls = supportsOrientationLock();
 
   const toolbarOptions: SegmentedPickerOption<ToolbarStyle>[] = [
@@ -60,26 +57,12 @@
 
   {#if showOrientationControls}
     <div class="setting">
-      <ToggleRow
-        icon={settingsState.lockRotationEnabled ? 'mobile-lock' : 'mobile-rotate'}
-        label="Lock device rotation"
-        id="lockRotationToggle"
-        checked={settingsState.lockRotationEnabled}
-        onToggle={setLockRotation}
-      />
-    </div>
-
-    {#if settingsState.lockRotationEnabled}
-      <div class="setting" transition:sectionReveal>
-        <ToggleRow
-          icon={settingsState.forceLandscapeOrientation ? 'mobile-landscape' : 'mobile-portrait'}
-          label="Force landscape orientation"
-          id="forceLandscapeToggle"
-          checked={settingsState.forceLandscapeOrientation}
-          onToggle={setForceLandscapeOrientation}
-        />
+      <div class="appearance-label">
+        <Icon name="mobile-rotate" class="setting-icon" />
+        <span class="appearance-title">Orientation</span>
       </div>
-    {/if}
+      <OrientationPicker />
+    </div>
   {/if}
 </section>
 
