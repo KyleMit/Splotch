@@ -234,8 +234,12 @@
             </ol>
           {:else}
             <p>
-              Open the <strong>⋮</strong> menu, then tap
-              <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
+              Open the <span class="hint-term"
+                ><Icon name="more-vert" class="install-inline-icon install-menu-icon" aria-hidden="true" /><span
+                  class="visually-hidden">three-dot</span
+                > menu</span
+              >, then tap <strong>"Install app"</strong> or
+              <strong>"Add to Home screen"</strong>.
             </p>
           {/if}
         </div>
@@ -408,6 +412,23 @@
     white-space: nowrap;
     font-weight: var(--font-weight-bold);
     color: var(--text-strong);
+  }
+  /* The vertical-dots glyph stands in for text, so it takes the term's own ink
+     rather than the banner's icon re-ink; the scoped rule outranks that
+     :where() one. */
+  .hint-term :global(.install-menu-icon svg) {
+    fill: currentColor;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   :global(.install-chevron) {
     transition: transform var(--duration-base) var(--ease-glide);

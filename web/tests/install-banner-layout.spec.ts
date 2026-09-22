@@ -239,7 +239,10 @@ test.describe('Chromium install', () => {
     await earnBanner(page);
     const banner = page.locator('.install-banner');
     await banner.getByRole('button', { name: 'How?' }).click();
-    await expect(banner.locator('.install-hint')).toContainText('Open the ⋮ menu');
+    const hint = banner.locator('.install-hint');
+    await expect(hint.locator('[data-icon="more-vert"]')).toBeVisible();
+    await expect(hint).toContainText('Open the three-dot menu');
+    await expect(hint).not.toContainText('⋮');
     await banner.getByRole('button', { name: 'Hide' }).click();
     await expect(banner.locator('.install-hint')).toBeHidden();
   });
