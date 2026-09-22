@@ -116,22 +116,18 @@
   }
 
   /* The orientation track replaces the cell's card, so the cell gives up its
-     padding and surface, and the track takes the card's corner radius. The
-     options stay concentric with it: --radius-lg minus the track's --space-1
-     inset. Over-qualified by .quick-toggles so it outranks SettingsModal's
-     shared .setting padding and does not depend on stylesheet order. */
+     padding and surface, and the track takes the card's corner radius through
+     SegmentedPicker's radius properties, which inherit from here. The options
+     stay concentric with it: --radius-lg minus the track's --space-1 inset.
+     Over-qualified by .quick-toggles so it outranks SettingsModal's shared
+     .setting padding and does not depend on stylesheet order. */
   .quick-toggles .setting.orientation-cell {
+    --segment-track-radius: var(--radius-lg);
+    --segment-option-radius: var(--radius-md);
+
     display: flex;
     padding: 0;
     background: none;
-  }
-
-  .orientation-cell :global(.picker) {
-    border-radius: var(--radius-lg);
-  }
-
-  .quick-toggles .orientation-cell :global(.picker.segment .option) {
-    border-radius: var(--radius-md);
   }
 
   /* Non-toggle fourth cell: it sits on the same icon column as ToggleRow so the

@@ -27,10 +27,16 @@
 </script>
 
 <!-- One picker for both settings shells, so each shell sets the lock the same
-     way. The container is this wrapper, not the track, so the query can style
-     the options inside the track. -->
+     way. The container is this wrapper, not the track, because a container
+     query styles only the container's descendants. -->
 <div class="orientation-picker">
-  <SegmentedPicker label="Orientation" {options} {selected} onSelect={setOrientationChoice} />
+  <SegmentedPicker
+    label="Orientation"
+    class="orientation-track"
+    {options}
+    {selected}
+    onSelect={setOrientationChoice}
+  />
 </div>
 
 <style>
@@ -42,7 +48,7 @@
     flex: 1;
   }
 
-  .orientation-picker :global(.picker) {
+  .orientation-picker :global(.orientation-track) {
     flex: 1;
   }
 
@@ -50,14 +56,12 @@
      side, so every option puts its icon above its label. The width is the
      widest label plus its icon, gap, and padding, times three, plus the track's
      own padding and gaps. orientation-picker.spec.ts checks that no label is
-     clipped on each side of this width. The selector repeats the track's own
-     classes because SegmentedPicker's scoped `.segment .option` rule would
-     otherwise tie it on specificity. */
+     clipped on each side of this width. */
   @container orientation-picker (max-width: 329.98px) {
-    .orientation-picker :global(.picker.segment.fill .option) {
-      flex-direction: column;
-      gap: 2px;
-      padding: var(--space-1) 2px;
+    .orientation-picker :global(.orientation-track) {
+      --segment-option-direction: column;
+      --segment-option-gap: 2px;
+      --segment-option-padding: var(--space-1) 2px;
     }
   }
 </style>

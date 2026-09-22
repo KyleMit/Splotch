@@ -231,13 +231,18 @@
     fill: var(--icon-ink);
   }
 
-  /* Segmented track with a raised brand-filled thumb. */
+  /* Segmented track with a raised brand-filled thumb. Callers restyle it
+     through the --segment-* custom properties, set on the element they forward
+     through `class` or on any ancestor, never by selecting this component's
+     internal classes: the Orientation picker stacks each icon above its label
+     through the option direction, gap, and padding, and the compact settings
+     shell matches the track to its cell through the two radii. */
   .segment {
     display: inline-flex;
     gap: var(--space-1);
     padding: var(--space-1);
     background: var(--control-track);
-    border-radius: var(--radius-md);
+    border-radius: var(--segment-track-radius, var(--radius-md));
   }
 
   .segment.fill {
@@ -248,14 +253,15 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-direction: var(--segment-option-direction, row);
     color: var(--text);
-    gap: 6px;
+    gap: var(--segment-option-gap, 6px);
     min-height: 44px;
-    padding: var(--space-2) var(--space-1);
+    padding: var(--segment-option-padding, var(--space-2) var(--space-1));
     font-size: var(--font-size-sm);
     line-height: 1.2;
     /* Concentric with the track: --radius-md outer minus the --space-1 inset. */
-    border-radius: var(--radius-sm);
+    border-radius: var(--segment-option-radius, var(--radius-sm));
     transition:
       background var(--duration-fast) ease,
       color var(--duration-fast) ease,
