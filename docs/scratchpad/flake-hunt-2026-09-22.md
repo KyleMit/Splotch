@@ -73,6 +73,105 @@ three ranked CI flakes all reproduced; the CI digest's `flows-palette-brush` era
 `bare-toolbar` rotation, `coloring-pack-download` fresh install, and the `cancelling the warning`
 sibling did not (0 of 12 each).
 
+## The reload race after a dialog closes
+
+`flows-parent-center-warning.spec.ts` › the standing warning survives a relaunch (7/12) and
+`flows-parental-gate.spec.ts` › Parent Center is gated before its controls appear and persists every
+feature policy (2/12). The CI digest's top two, 83 and 28 masked events in 7 days.
+
+Both specs confirm the unprotected-Parent-Center dialog, close Settings, and call `page.reload()`
+within about 100 ms. ADR-0168 pushes one shallow SvelteKit history entry per open dialog and retires
+it with `history.back()` as the dialog closes; two dialogs closed back to back leave two traversals
+in flight. A reload issued while one is pending is cancelled by it, in either of two shapes:
+
+* **Aborted** (6 of the 7 reps, 3 of 4 amplifier failures):
+  `page.reload: net::ERR_ABORTED; maybe frame was detached?`. The reload's document request starts
+  and is torn down.
+* **Dropped** (1 rep here, 1 amplifier failure, and every CI trace read):
+  `waiting for navigation until "load"` for the whole 30 s budget. The trace shows the Close click's
+  navigations "finished", then the reload call, then nothing — no document request leaves the page,
+  and the page snapshot at timeout is the un-reloaded page with Settings closed. CI run 35647052273
+  shard 5 (retry 1 trace, `flows-parent-center-warnin-36a31…-retry1/trace.zip`) and the local
+  `amp/pre-reload-results/…-repeat9/trace.zip` agree: 87 ms from Close to reload, zero network
+  entries after it.
+
+Ruled out: `beforeunload` (none in `web/src`); the app.html pre-hydration unwind (it runs
+`history.go(-n)` only when a reload lands on a still-shallow entry, which is the same pending
+traversal seen from the other side, and `web-back.spec.ts` › refreshing with a dialog open does that
+deliberately and passes 12/12); the confirm dialog's fly-in (both clicks landed, the dialogs
+closed). The `cancelling the warning` sibling does the same close-then-reload but spends three
+assertions between them, and went 0/12 here and 2 events in CI.
+
+Pre-fix amplifier (both specs, `--workers=8 --retries=0 --repeat-each=10`, main at d8a8102): 4 of 20
+failed, all on the persistence spec (3 aborted, 1 dropped).
+
+Classification: **spec race**. A user who reloads within tens of milliseconds of closing a dialog
+loses one reload and lands on the same page; nothing else is reachable. Fix (PR \#2143):
+`reloadAfterDialogClose` in `tests/helpers.ts` polls `history.state` until the back-navigation
+marker reports zero dialog layers, then reloads. Post-fix amplifier: 0 of 20.
+
+## The AI-only badge count
+
+`actions-panel-layout.spec.ts` › AI-only drawer paints its count before the grant arrives (5/12; 10
+masked CI events). The spec releases the mocked grant, waits for `.free-count` to be visible, and
+reads the badge, expecting `7`; it reads `10`. The badge is painted from the cached count before
+hydration (commit 61f57da), so it is visible long before the grant response is applied, and the read
+races the fulfilment. In isolation the fulfilment always wins (amplifier 0/10 at 8 workers); under
+the full suite it lost 5 reps in 12.
+
+Classification: **spec race**. Fix (PR \#2143): poll `startupPanelGeometry(page).badgeCount` for the
+granted number before reading the settled geometry. Post-fix amplifier: 0 of 10.
+
+## Back through nested dialogs
+
+`web-back.spec.ts` › Back closes nested dialogs from the top down (1/12; not in the CI digest). The
+first `page.goBack()` closes the gate; the spec polls `dialog.open === false`, checks Settings, and
+presses Back again, which left `#settingsModal` open. A dialog stays on the modal stack until its
+`close` event, a queued task after `dialog.open` flips (`modalDialog.svelte.ts`, `onClose` →
+`forgetOpenModal`), and `requestDismiss` on a dialog whose `open` option is already false returns
+`refused` by design, so the back handler re-pushes the entry (`restoreRefusedDialog`) and Settings
+stays. Under contention the second Back landed inside that window. Isolated amplifier: 0/10.
+
+Classification: **spec race** (the refusal is the documented guard against a Back racing a
+retirement; a human cannot press twice inside one task). Fix (PR \#2143): install a `close` listener
+on the gate before the first Back and await it before the second. The first version attached the
+listener from an un-awaited `evaluate` and lost to the event 10 of 10 times; the committed version
+installs and awaits it first.
+
+## The privacy-route Parent Center
+
+`privacy-parent-center.spec.ts` › Parent Center reached from privacy hydrates its persisted settings
+(4/12; not in the CI digest, 0 events in 7 days). Bimodal: 3.8 s when it passes, 30 s when it fails.
+Three of the four timed out inside `settleSettingsPane` — 300 animation frames never elapsed and the
+pane never reported `aria-busy="false"`, with every section, including Parent Center's policy
+pickers and the "Add your own OpenAI API key" copy the spec was about to assert, already in the
+snapshot. The fourth failed the way the provider-terms gate below does. Isolated amplifier (with the
+provider-terms spec, 20 executions at 8 workers): 0 failures.
+
+Classification: **container-only**, provisionally. It needs the full suite's contention, it never
+retried in CI over 3,000 samples, and the mechanism — frames that stop arriving for a modal that is,
+by every DOM measure, done filling — has no product reading yet. Not fixed in PR \#2143; filed so
+the next hunt can instrument `WideShell`'s `stagedContentSettled` on this route.
+
+## Container baseline, re-measured
+
+* `pwa-registration.spec.ts` › serves canonical precache bytes: 12/12, unchanged since 2026-09-02.
+* `store-drawing-replay.spec.ts` › pointer and engine replay render the same compiled scene: 12/12
+  (30 s timeout every rep), unchanged.
+* `flows-parental-gate.spec.ts` › the bundled privacy page gates its provider terms link: 1/12 (was
+  4/13). Same shape as before: `solveParentalGate` types the digits, then `Check answer` is never
+  found for 15 s, and the failure snapshot has no dialog on the page at all — the gate closed
+  mid-solve. Isolated amplifier 0/20. Still not chased; it shares the /privacy route with the
+  hydration hang above.
+
+## Seen once
+
+`reduce-motion.spec.ts` › a visible AI downloadButton cue does not replay when Reduce Motion turns
+off: 1/12, 35.6 s. The whole budget went inside `invokeAiGeneration`'s `page.evaluate`, i.e. the
+synchronous prelude of `generateAiImage` (modal launch, canvas export start) held the page's main
+thread for 30 s. Isolated amplifier 0/10, absent from CI. Recorded, not filed: one event with no
+mechanism is a rate of 1 in 10,860 executions, not a flake with a shape.
+
 ## Vitest and smoke tiers
 
 (Filled in after the runs.)
