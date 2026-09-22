@@ -389,11 +389,12 @@ body {
 }
 
 /* Absolute-positioned close button (top-right corner) and its icon, shared
-   across all icon-style modal close buttons. An outlined white disc sized to
+   across all icon-style modal close buttons and, in its static-position
+   variant below, the banners' dismiss disc. An outlined white disc sized to
    --modal-close-size, deliberately chunky so small fingers can spot and hit it;
    the padding below keeps the glyph itself visibly smaller than the disc, so
    the extra box reads as hit area and the ring that makes it pop. */
-:is(.modal-close-btn, .dialog-header-control) {
+:is(.modal-close-btn, .dialog-header-control, .banner-dismiss) {
   position: absolute;
   top: var(--modal-close-inset);
   right: var(--modal-close-inset);
@@ -415,11 +416,19 @@ body {
     transform var(--duration-fast) ease;
 }
 
-:is(.modal-close-btn, .dialog-header-control):active {
+:is(.modal-close-btn, .dialog-header-control, .banner-dismiss):active {
   transform: scale(0.92);
 }
 
-:is(.modal-close-btn, .dialog-header-control).activation-pending {
+/* The banners' dismiss sits in their flex row rather than a card corner. Same
+   footprint as the 40px disc it replaced; the extra 4px is target. */
+.banner-dismiss {
+  position: static;
+  flex-shrink: 0;
+  margin: -2px -2px 0 0;
+}
+
+:is(.modal-close-btn, .dialog-header-control, .banner-dismiss).activation-pending {
   transform: scale(0.92);
   transition:
     border-color var(--duration-base) ease,
@@ -440,7 +449,7 @@ body {
 }
 
 @media (hover: hover) {
-  :is(.modal-close-btn, .dialog-header-control):not(:disabled):hover {
+  :is(.modal-close-btn, .dialog-header-control, .banner-dismiss):not(:disabled):hover {
     background: var(--surface-hover);
     border-color: var(--border-warm-strong);
   }
