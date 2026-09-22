@@ -120,6 +120,5 @@
   .version-text {
     font-size: var(--font-size-xs);
     color: var(--text-soft);
-    font-family: var(--font-mono);
   }
 </style>

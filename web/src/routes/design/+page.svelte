@@ -316,6 +316,7 @@
 
   code {
     white-space: nowrap;
+    font-family: var(--font-mono);
     font-size: var(--font-size-xs);
     color: var(--brand-text);
   }

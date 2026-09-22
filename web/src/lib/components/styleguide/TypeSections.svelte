@@ -87,7 +87,7 @@
       <span class="type-sample" style:font-family={cssVar('fontMono')}>Splotch says hello</span>
       <span class="type-meta">
         <code>--font-mono</code>
-        <span class="meta-line">{monoFamilyName} · code &amp; versions</span>
+        <span class="meta-line">{monoFamilyName} · code</span>
       </span>
     </div>
   </div>

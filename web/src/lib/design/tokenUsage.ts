@@ -47,7 +47,8 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   inputFontSize:
     'Every text input — floors the size at 16px so iOS Safari never zoom-strands the canvas (ADR-0076).',
   fontFamily: 'The app-wide sans stack; reference it, never restate it.',
-  fontMono: 'Raw code and version strings: masked keys, inline code.',
+  fontMono:
+    'Raw code: masked keys, inline code, ledger ids. A version number is a label and stays in the sans.',
 
   fontWeightMedium: 'Quiet labels: settings rows, list leads.',
   fontWeightSemibold: 'Buttons, active states, sub-heads.',

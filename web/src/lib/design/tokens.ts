@@ -89,8 +89,10 @@ export const scale = {
   // truth for the family name.
   fontFamily: `'${QUICKSAND_FONT_FAMILY}', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`,
 
-  // Raw code/version values (masked API keys, version strings, inline code).
-  fontMono: "'Courier New', monospace",
+  // Raw code values (masked API keys, inline code, ledger ids). The system
+  // mono stack rather than Courier New: Courier's thin strokes fell below
+  // comfortable contrast at 12–14px, most of all on the dark paper.
+  fontMono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
 
   // The weight ladder: 400 (untokenized default) body prose · medium quiet
   // labels · semibold buttons, active states, sub-heads · bold headings.
