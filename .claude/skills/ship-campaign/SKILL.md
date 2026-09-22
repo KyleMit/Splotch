@@ -43,6 +43,26 @@ new issues, or touching work outside the queue and those two exceptions. Carry t
 into every unit's instructions: an unattended unit must never have to infer its authority, and a
 runner that sees "never merge" anywhere in its instructions will refuse the merge.
 
+**A denied tool call is not a withdrawn authorization.** A single rejected command — a permission
+prompt declined, a hook refusing an edit, a call interrupted mid-turn — says nothing about the grant
+above, and the campaign already has its own vocabulary for changing that grant: the **pause**,
+**wrap up**, and **stop** control messages in step 5. Until one of those arrives, the authorization
+holds. So treat a denial as you would any other failed command: adjust and continue. Look for the
+route that does not need the denied call — the state it would have fetched is usually already on
+disk or one different query away — and if the unit genuinely cannot proceed, that is step 3's
+quarantine, not a question for the user. Handing a pre-authorized merge back costs the user the
+round trip the campaign exists to spare them, at the moment they are least likely to be watching.
+(2026-09-22, unit 12 of the 2161–2170 campaign: a declined `broker.mjs next`, whose rival had
+already finished and written its findings to disk, was read as the merge authority lapsing; the
+queue stopped with a green, reviewed PR unmerged.)
+
+**Report an interruption from live state, never from assumption.** What step 5 requires of
+**status** binds harder on an unplanned stop, because that report is what the user decides on:
+re-read the PR, the checks, the issue's labels, and the reviewer's session directory before
+describing any of them. In the incident above the interruption report asserted the rival was
+mid-request and might hang for an hour. Both claims were false, both were contradicted by files
+already sitting in the session directory, and both made stopping look better founded than it was.
+
 ## 1. Preflight — before the user leaves
 
 A blocker found at 3 a.m. costs the whole night; the same blocker found now costs one question. Run
