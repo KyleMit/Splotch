@@ -6,6 +6,7 @@ import {
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
+import { GENERATION_STYLE_PARAM } from '$lib/apiParams';
 import { issueReportToken, type ReportTokenBinding } from '$lib/server/reportToken';
 import {
   FREE_DAILY_LIMIT_EXHAUSTED_CODE,
@@ -134,7 +135,7 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
     token: request.headers.get(ACCESS_TOKEN_HEADER),
     apiKey: request.headers.get(API_KEY_HEADER),
     installationId: request.headers.get(INSTALLATION_ID_HEADER),
-    style: url.searchParams.get('style'),
+    style: url.searchParams.get(GENERATION_STYLE_PARAM),
     readValidatedImage: async () => {
       const mimeType = contentTypeOf(request);
       assertAllowedImageType(mimeType);

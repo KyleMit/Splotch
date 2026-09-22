@@ -6,6 +6,7 @@ import {
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
+import { GENERATION_JOB_PARAM } from '$lib/apiParams';
 import { apiHandler, fail, throttled } from '$lib/server/http';
 import { GENERATION_UNAVAILABLE_CODE, type GenerationUnavailable } from '$lib/ai/generationResult';
 import { rateLimit } from '$lib/server/rateLimit';
@@ -89,7 +90,7 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   );
   if (limited) return throttled(retryAfter);
 
-  const jobId = url.searchParams.get('job') ?? '';
+  const jobId = url.searchParams.get(GENERATION_JOB_PARAM) ?? '';
   if (!JOB_ID_PATTERN.test(jobId)) throw error(400, 'Unknown generation');
 
   const job = await readJob(jobId);
