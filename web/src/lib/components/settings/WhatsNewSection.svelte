@@ -109,6 +109,10 @@
     margin-bottom: 4px;
   }
 
+  .whats-new-body :global(li:last-child) {
+    margin-bottom: 0;
+  }
+
   .whats-new-body :global(a) {
     color: var(--brand-text);
   }
