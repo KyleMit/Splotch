@@ -66,6 +66,22 @@
     } else eraserCursor.lifting = true;
   }
 
+  // Svelte's element typings carry no `onanimationcancel` attribute, so the
+  // cancel path listens through an action instead.
+  function onAnimationCancel(node: HTMLElement, handler: (e: AnimationEvent) => void) {
+    let current = handler;
+    const listener = (e: AnimationEvent) => current(e);
+    node.addEventListener('animationcancel', listener);
+    return {
+      update(next: (e: AnimationEvent) => void) {
+        current = next;
+      },
+      destroy() {
+        node.removeEventListener('animationcancel', listener);
+      },
+    };
+  }
+
   function endEraserLift(e: AnimationEvent) {
     if (e.target !== e.currentTarget || !eraserCursor.lifting) return;
     eraserCursor.visible = false;
@@ -220,7 +236,7 @@
     class:magic={ring.magic}
     class:lifting={ring.lifting}
     onanimationend={(e) => endRingLift(e, Number(id))}
-    onanimationcancel={(e) => endRingLift(e, Number(id))}
+    use:onAnimationCancel={(e) => endRingLift(e, Number(id))}
     style:transform="translate3d({ring.x}px, {ring.y}px, 0) translate(-50%, -50%)"
     style:width="{brushRingSizePx}px"
     style:height="{brushRingSizePx}px"
@@ -231,7 +247,7 @@
     class="eraser-bubble"
     class:lifting={eraserCursor.lifting}
     onanimationend={endEraserLift}
-    onanimationcancel={endEraserLift}
+    use:onAnimationCancel={endEraserLift}
     style:transform="translate3d({eraserCursor.x}px, {eraserCursor.y}px, 0) translate(-50%, -50%)"
     style:width="{eraserSizePx}px"
     style:height="{eraserSizePx}px"
