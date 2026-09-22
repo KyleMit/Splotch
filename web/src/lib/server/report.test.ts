@@ -139,3 +139,64 @@ describe('submitReport and the device opt-in', () => {
     expect(issueBody()).toContain('x'.repeat(MAX_REPORT_MESSAGE_LENGTH));
   });
 });
+
+// The issue title is the only part of a report a triager sees in a list view,
+// and its truncation is a bare-eye-invisible off-by-one waiting to happen.
+describe('the issue title', () => {
+  beforeEach(() => createIssue.mockClear());
+
+  function issueTitle(): string {
+    return createIssue.mock.calls[0][0].title;
+  }
+
+  // Deliberately a literal rather than an import of the module's constant: the
+  // guarantee under test is the length a reader actually gets, which an import
+  // would silently track instead of catching.
+  const EXPECTED_SUMMARY_LENGTH = 72;
+  const base = { device: null, hp: '' };
+
+  it('prefixes a bug report and keeps a short message whole', async () => {
+    await submitReport({ ...base, kind: 'bug', message: 'The crayon draws green' });
+
+    expect(issueTitle()).toBe('[Bug] The crayon draws green');
+  });
+
+  it('prefixes a feature request', async () => {
+    await submitReport({ ...base, kind: 'feature', message: 'Add a glitter brush' });
+
+    expect(issueTitle()).toBe('[Feature] Add a glitter brush');
+  });
+
+  it('summarizes a multi-line message by its first line alone', async () => {
+    await submitReport({
+      ...base,
+      kind: 'bug',
+      message: 'Eraser leaves a smudge\nand then the app closes',
+    });
+
+    expect(issueTitle()).toBe('[Bug] Eraser leaves a smudge');
+  });
+
+  it(`leaves a first line of exactly ${EXPECTED_SUMMARY_LENGTH} characters untruncated`, async () => {
+    const summary = 'x'.repeat(EXPECTED_SUMMARY_LENGTH);
+
+    await submitReport({ ...base, kind: 'bug', message: summary });
+
+    expect(issueTitle()).toBe(`[Bug] ${summary}`);
+  });
+
+  it(`truncates a longer first line to exactly ${EXPECTED_SUMMARY_LENGTH} characters ending in an ellipsis`, async () => {
+    const expectedSummary = `${'y'.repeat(EXPECTED_SUMMARY_LENGTH - 1)}…`;
+    // The fixture asserts itself first: U+2026 is one UTF-16 code unit, so the
+    // ellipsis costs one character of the cap, not three.
+    expect(expectedSummary).toHaveLength(EXPECTED_SUMMARY_LENGTH);
+
+    await submitReport({
+      ...base,
+      kind: 'bug',
+      message: 'y'.repeat(EXPECTED_SUMMARY_LENGTH + 1),
+    });
+
+    expect(issueTitle()).toBe(`[Bug] ${expectedSummary}`);
+  });
+});

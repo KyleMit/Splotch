@@ -18,10 +18,19 @@ import { MAX_REPORT_MESSAGE_LENGTH, type ReportKind } from '$lib/report';
 const REPORT_LABEL = 'user-report';
 const KIND_LABEL: Record<ReportKind, string> = { bug: 'type:bug', feature: 'type:feature' };
 
+// Keeps an issue title scannable in a GitHub list view. A truncated summary
+// spends its last character on the ellipsis (U+2026 is a single UTF-16 code
+// unit), so it measures exactly the cap rather than one glyph short of it.
+const MAX_ISSUE_TITLE_SUMMARY_LENGTH = 72;
+const TITLE_ELLIPSIS = '…';
+
 function titleFor(kind: ReportKind, message: string): string {
   const prefix = kind === 'bug' ? 'Bug' : 'Feature';
   const firstLine = message.split('\n', 1)[0].trim();
-  const summary = firstLine.length > 72 ? `${firstLine.slice(0, 69)}…` : firstLine;
+  const summary =
+    firstLine.length > MAX_ISSUE_TITLE_SUMMARY_LENGTH
+      ? `${firstLine.slice(0, MAX_ISSUE_TITLE_SUMMARY_LENGTH - TITLE_ELLIPSIS.length)}${TITLE_ELLIPSIS}`
+      : firstLine;
   const fallback = kind === 'bug' ? 'User-reported bug' : 'User feature request';
   return `[${prefix}] ${summary || fallback}`;
 }
