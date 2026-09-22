@@ -154,12 +154,6 @@ export function colorMenuTrimSteps(colorCount: number, firstRank: number): TrimS
 // way the raw minimum lands off-pixel — so each step rounds up, and the tables
 // below carry the two hand-tightened exceptions.
 
-/** app.css's --modal-gutter: a fraction of viewport width with a pixel floor. */
-export interface ModalGutter {
-  viewportFraction: number;
-  floorPx: number;
-}
-
 export interface HexGridGeometry {
   /** Full hexagon height; later rows overlap and only add `rowPitchPx`. */
   firstRowPx: number;
@@ -171,8 +165,8 @@ export interface HexGridGeometry {
   paddingPx: number;
   /** The grid is capped at 90vh, so a viewport buys only this fraction of height. */
   viewportHeightFraction: number;
-  /** The width cap is the shared dialog gutter on each side. */
-  widthGutter: ModalGutter;
+  /** app.css's --modal-gutter on each side: a fraction of viewport width with a pixel floor. */
+  widthGutter: { viewportFraction: number; floorPx: number };
 }
 
 export const HEX_GRID_GEOMETRY: HexGridGeometry = {
@@ -245,7 +239,7 @@ function hexGridBreakpointPx(
 
 /** Narrowest viewport whose gutter-capped width still holds `contentPx`: the
  *  proportional gutter until the floor binds, then the floor on each side. */
-function minViewportWidthPx(contentPx: number, gutter: ModalGutter): number {
+function minViewportWidthPx(contentPx: number, gutter: HexGridGeometry['widthGutter']): number {
   const proportionalPx = contentPx / (1 - 2 * gutter.viewportFraction);
   const floorBindsBelowPx = gutter.floorPx / gutter.viewportFraction;
   return proportionalPx >= floorBindsBelowPx ? proportionalPx : contentPx + 2 * gutter.floorPx;

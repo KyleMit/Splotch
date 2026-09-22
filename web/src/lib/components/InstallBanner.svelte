@@ -235,9 +235,11 @@
           {:else}
             <p>
               Open the <span class="hint-term"
-                ><Icon name="more-vert" class="install-inline-icon install-menu-icon" aria-hidden="true" /><span
-                  class="visually-hidden">three-dot</span
-                > menu</span
+                ><Icon
+                  name="more-vert"
+                  class="install-inline-icon install-menu-icon"
+                  aria-hidden="true"
+                /><span class="visually-hidden">three-dot</span> menu</span
               >, then tap <strong>"Install app"</strong> or
               <strong>"Add to Home screen"</strong>.
             </p>
