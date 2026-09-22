@@ -77,6 +77,15 @@ describe('the one-curve-per-cue rule', () => {
     ).toHaveLength(1);
   });
 
+  it('finds the name behind a variable or calculated duration', async () => {
+    expect(
+      await violations(`${SHAPED} .a { animation: var(--duration) var(--ease-pop) pop; }`)
+    ).toHaveLength(1);
+    expect(
+      await violations(`${SHAPED} .a { animation: calc(200ms + 100ms) var(--ease-pop) pop; }`)
+    ).toHaveLength(1);
+  });
+
   it('ignores opacity-only stops when counting the shape', async () => {
     const code = `
       @keyframes glow { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0.5; } }

@@ -106,12 +106,14 @@ const SHORTHAND_KEYWORDS = new Set([
 ]);
 const NUMERIC = /^[+-]?(\d|\.\d)/;
 
-// The one token of a shorthand layer that is its keyframe name: whatever is
-// left once the timing function, times, iteration count, and the other
-// keywords are set aside.
-function animationNameOf(tokens) {
+// The shaped keyframe block a shorthand layer plays, if any: a token naming a
+// declared block that is not one of the shorthand's own keywords. Matching
+// against the declared names, rather than taking whatever token is left over,
+// keeps a `var()` or `calc()` duration from being read as the name.
+function shapedNameOf(tokens, shaped) {
   return tokens.find(
     (token) =>
+      shaped.has(token) &&
       !SHORTHAND_KEYWORDS.has(token) &&
       !NUMERIC.test(token) &&
       !TIMING_KEYWORDS.has(token) &&
@@ -140,8 +142,8 @@ const ruleFunction = (enabled) => (root, result) => {
   root.walkDecls(/^animation$/i, (decl) => {
     for (const layer of splitTopLevel(decl.value, /,/)) {
       const tokens = splitTopLevel(layer, /\s/);
-      const name = animationNameOf(tokens);
-      if (!shaped.has(name) || PER_SEGMENT_SAFE_CURVES.has(timingFunctionOf(tokens))) continue;
+      const name = shapedNameOf(tokens, shaped);
+      if (!name || PER_SEGMENT_SAFE_CURVES.has(timingFunctionOf(tokens))) continue;
       report({
         ruleName,
         result,
