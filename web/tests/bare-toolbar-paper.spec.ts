@@ -88,7 +88,7 @@ for (const layout of [
   { width: 390, height: 844 },
   { width: 1180, height: 820 },
 ]) {
-  test(`bare rail glass at ${layout.width}px covers the clear accept zone like the buttons palette`, async ({
+  test(`bare rail glass and margin rules at ${layout.width}px cover the clear feedback like the buttons palette`, async ({
     page,
   }) => {
     await page.setViewportSize(layout);
@@ -97,15 +97,23 @@ for (const layout of [
     });
     await gotoApp(page);
     const layers = await page.evaluate(() => {
-      const glass = document.querySelector('.rail-glass')!;
+      const z = (el: Element) => Number(getComputedStyle(el).zIndex);
       const ring = document.getElementById('clearAcceptZone')!;
+      const paper = [
+        document.querySelector('.rail-glass')!,
+        ...document.querySelectorAll('.margin-rule'),
+      ];
+      const feedback = [ring, document.querySelector('.clear-preview')!];
       return {
-        siblings: glass.parentElement === ring.parentElement,
-        glass: Number(getComputedStyle(glass).zIndex),
-        ring: Number(getComputedStyle(ring).zIndex),
+        rules: paper.length - 1,
+        siblings: [...paper, ...feedback].every((el) => el.parentElement === ring.parentElement),
+        paper: paper.map(z),
+        feedback: feedback.map(z),
       };
     });
+    expect(layers.rules).toBe(2);
     expect(layers.siblings).toBe(true);
-    expect(layers.glass).toBeGreaterThan(layers.ring);
+    for (const paper of layers.paper)
+      for (const feedback of layers.feedback) expect(paper).toBeGreaterThan(feedback);
   });
 }
