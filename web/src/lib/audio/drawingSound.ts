@@ -32,8 +32,9 @@ const CLEAR_REACH_PROGRESS = 2.6;
 const CLEAR_ROLLOFF_KNEE_HZ = 1_400;
 const CLEAR_ROLLOFF_EXPONENT = 0.6;
 
-// Matched to BASE_SCRATCH_GAIN: the clear drag used to sit around a sixth of the
-// app's own pencil sound, which a tablet speaker in a noisy room loses entirely.
+// Kept near BASE_SCRATCH_GAIN, the scratch's full-speed gain before volume
+// scaling, so the clear drag carries as far as the app's own pencil sound: a
+// quieter bubble is lost entirely by a tablet speaker in a noisy room.
 const CLEAR_BUBBLE_GAIN = 0.22;
 const CLEAR_BUBBLE_ATTACK_S = 0.003;
 const CLEAR_BUBBLE_DURATION_S = 0.11;

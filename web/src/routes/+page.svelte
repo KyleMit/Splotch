@@ -140,8 +140,8 @@
     });
     // The app.html head script already stamped data-theme before first paint;
     // this re-stamps it as a fallback if that inline script was blocked. The
-    // theme-color meta and OS-switch tracking now fall out of the single
-    // reactive source in lib/state/appearance.svelte.ts.
+    // theme-color meta and OS-switch tracking fall out of the single reactive
+    // source in lib/state/appearance.svelte.ts.
     applyTheme(settingsState.theme);
     const settingsReady = capturedAccessToken.then(hydrateSettings);
 

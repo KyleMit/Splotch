@@ -225,9 +225,9 @@ export function createPWAUpdates() {
 
   // A waiting worker whose build matches the running page can take control
   // without a reload: this is every online cold launch (NetworkFirst serves
-  // the new HTML before the new worker finishes installing), which used to
-  // reload a page that was already current. Only a genuinely stale page — a
-  // resumed session that predates the deploy — defers to the hidden edge.
+  // the new HTML before the new worker finishes installing), where reloading
+  // would reload a page that is already current. Only a genuinely stale page —
+  // a resumed session that predates the deploy — defers to the hidden edge.
   async function decideWaitingActivation(sw: ServiceWorker): Promise<void> {
     if (updateReload !== 'none') return;
     updateReload = 'ready';
