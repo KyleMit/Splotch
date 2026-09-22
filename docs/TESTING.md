@@ -514,6 +514,20 @@ Write specs that can't race in the first place:
   rendered frames — and note this is the *complementary* half of the bullet above: a CSS animation
   runs on rendered frames too, but it exposes `Animation.finished`, so there you await the browser's
   own signal instead of counting.
+* **Pace a spec on the animation it depends on, never on a clock sized to it.** The lifting-halo
+  spec in `drawing-motion.spec.ts` needs a lift that has started and not ended when reduced motion
+  switches it off, and the `animationcancel` that switch produces is dispatched only by a rendering
+  update. Three fixed sleeps sized that on an idle machine and went red 8 times in 20 repeats at
+  four times capacity (issue \#2196): the shard rendered no frame inside the 300 ms budget, so the
+  cancel never came and the ring was still there. The rewrite waits on the browser's own signal for
+  each phase — the grow-in's `animationend`, then the lift's `Animation.ready` before the attribute
+  flips, then the lift's `animationcancel` — and asserts the removal through a web-first
+  `toHaveCount(0)`, so a starved worker stretches each wait and breaks none of them. Two of those
+  choices are load-bearing, both measured in Chromium: a play-pending animation cancelled before its
+  first frame fires no `animationcancel` at all, so `ready` is what makes the cancel certain; and an
+  `Animation.finished` continuation runs before `animationend` dispatches, so a spec that depends on
+  the product's end handler having run waits on the event, not the promise. Svelte scopes a
+  component's keyframe names with its hash, so match `animationName` by suffix, not equality.
 * **A modal open is not the only thing that arms a dead zone.** `launchGuard.guardTapZone` is armed
   by any tap that repaints something else under the finger, so a spec can be swallowed well after
   the fly-in has landed. `ColoringBook` arms one when a book cover swaps the grid for that book's

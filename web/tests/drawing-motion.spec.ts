@@ -57,7 +57,11 @@ test('a halo still lifting is released when reduced motion cancels its exit', as
   await gotoApp(page);
   // Turning reduced motion on mid-lift swaps the lift for no animation, which
   // cancels it rather than ending it; the ring's record must still go. Driven
-  // in one page-side script so the switch lands inside the short lift.
+  // in one page-side script so the switch lands inside the short lift, and
+  // paced on the halo's own animations rather than the clock: the grow-in has
+  // to end before the lift can begin, the lift has to be running before the
+  // switch can cancel it, and the cancel is dispatched only by a rendering
+  // update — each of which a starved worker grants late (issue #2196).
   const result = await page.evaluate(async () => {
     const canvas = document.querySelector('#drawingCanvas')!;
     const rect = canvas.getBoundingClientRect();
@@ -73,19 +77,41 @@ test('a halo still lifting is released when reduced motion cancels its exit', as
           buttons: type === 'pointerup' ? 0 : 1,
         })
       );
+    // Svelte scopes a component's keyframe names with its hash, so the halo's
+    // animations are matched by suffix.
+    const haloSettled = (ring: Element, keyframes: string) =>
+      new Promise<string>((resolve) => {
+        for (const type of ['animationend', 'animationcancel'])
+          ring.addEventListener(type, (e) => {
+            if (e instanceof AnimationEvent && e.animationName.endsWith(keyframes)) resolve(type);
+          });
+      });
     send('pointerdown');
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await Promise.resolve();
+    const ring = document.querySelector('.brush-ring')!;
+    const growIn = await haloSettled(ring, 'halo-in');
     send('pointerup');
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    const ring = document.querySelector('.brush-ring');
-    const lifting = !!ring?.classList.contains('lifting');
-    const seen: string[] = [];
-    ring?.addEventListener('animationcancel', () => seen.push('animationcancel'));
+    await Promise.resolve();
+    const lifting = ring.classList.contains('lifting');
+    const lift = ring
+      .getAnimations()
+      .find(
+        (animation): animation is CSSAnimation =>
+          animation instanceof CSSAnimation && animation.animationName.endsWith('halo-out')
+      );
+    await lift?.ready;
+    const liftPlayState = lift?.playState;
+    const liftSettled = haloSettled(ring, 'halo-out');
     document.documentElement.setAttribute('data-reduce-motion', '');
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    return { lifting, seen, rings: document.querySelectorAll('.brush-ring').length };
+    return { growIn, lifting, liftPlayState, liftEnd: await liftSettled };
   });
-  expect(result).toEqual({ lifting: true, seen: ['animationcancel'], rings: 0 });
+  expect(result).toEqual({
+    growIn: 'animationend',
+    lifting: true,
+    liftPlayState: 'running',
+    liftEnd: 'animationcancel',
+  });
+  await expect(page.locator('.brush-ring')).toHaveCount(0);
 });
 
 test('reduced motion skips all five effects', async ({ page }) => {
