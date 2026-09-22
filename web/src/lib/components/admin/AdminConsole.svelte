@@ -40,6 +40,7 @@
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { FREE_GENERATION_LIMIT, type FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
   import PageShell from '../page/PageShell.svelte';
+  import Button from '../design/Button.svelte';
   import RuleLabel from '../design/RuleLabel.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
   import InviteLedger from './InviteLedger.svelte';
@@ -210,7 +211,7 @@
           required
           bind:value={loginKey}
         />
-        <button type="submit" class="cta" disabled={submitDisabled}>Sign in</button>
+        <Button variant="brand" size="lg" type="submit" disabled={submitDisabled}>Sign in</Button>
       </form>
     </section>
   {:else}
@@ -247,9 +248,15 @@
             required
             bind:value={newToken}
           />
-          <button type="submit" class="cta" disabled={submitDisabled} aria-label="Add code">
+          <Button
+            variant="brand"
+            size="lg"
+            type="submit"
+            disabled={submitDisabled}
+            aria-label="Add code"
+          >
             <span class="add-label-full">Add code</span><span class="add-label-short">Add</span>
-          </button>
+          </Button>
         </form>
 
         <InviteLedger
@@ -467,35 +474,11 @@
   .add-form input:focus {
     border-color: var(--brand-solid);
   }
-
-  /* The standalone pages' solid call to action — the same shape as /feedback's
-     submit, so the consoles read as one set with the other parent pages. */
-  .cta {
-    /* One height for the sign-in and add-code forms' solid CTA. */
-    padding: 0 var(--space-6);
-    min-height: 48px;
-    border: none;
-    border-radius: var(--radius-md);
-    background: var(--brand-solid);
-    color: var(--on-brand);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
-    white-space: nowrap;
+  /* The forms' solid call to action is the Button primitive; the row only
+     keeps it from shrinking beside the input. */
+  .add-form :global(.btn) {
     flex-shrink: 0;
-    transition: background var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .cta:hover {
-      background: var(--brand-solid-hover);
-    }
-  }
-
-  .cta:disabled {
-    opacity: var(--disabled-opacity);
-    cursor: default;
+    white-space: nowrap;
   }
 
   .add-label-short {
@@ -510,10 +493,6 @@
 
     .add-label-short {
       display: inline;
-    }
-
-    .cta {
-      padding: 0 var(--space-4);
     }
   }
 </style>
