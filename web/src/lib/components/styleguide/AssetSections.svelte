@@ -33,7 +33,7 @@
     { label: 'theme-*', members: ['theme-light', 'theme-dark', 'theme-auto'] },
     {
       label: 'mobile-*',
-      members: ['mobile-portrait', 'mobile-landscape', 'mobile-rotate', 'mobile-lock'],
+      members: ['mobile-portrait', 'mobile-landscape', 'mobile-rotate'],
     },
     { label: 'volume-*', members: ['volume-on', 'volume-off'] },
     { label: 'fullscreen-*', members: ['fullscreen', 'fullscreen-exit'] },

@@ -17,6 +17,8 @@ import {
   setDrawerOpen,
   setTheme,
   setReduceMotion,
+  setOrientationChoice,
+  orientationChoice,
   reloadSettings,
   createSettings,
   type SettingsState,
@@ -163,6 +165,29 @@ describe('setReduceMotion', () => {
   it('defaults a fresh device to following the OS', () => {
     localStorage.removeItem(STORAGE_KEYS.reduceMotion);
     expect(createSettings(createTool()).reduceMotion).toBe('system');
+  });
+});
+
+describe('orientation choice', () => {
+  it('locks to the chosen side and reads it back', () => {
+    setOrientationChoice('landscape');
+    expect(orientationChoice()).toBe('landscape');
+    expect(settingsState.lockRotationEnabled).toBe(true);
+    expect(settingsState.forceLandscapeOrientation).toBe(true);
+
+    setOrientationChoice('portrait');
+    expect(orientationChoice()).toBe('portrait');
+    expect(settingsState.forceLandscapeOrientation).toBe(false);
+  });
+
+  it('auto releases the lock and keeps the last locked side for the next lock', () => {
+    setOrientationChoice('landscape');
+    setOrientationChoice('auto');
+
+    expect(orientationChoice()).toBe('auto');
+    expect(settingsState.lockRotationEnabled).toBe(false);
+    expect(settingsState.forceLandscapeOrientation).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEYS.lockRotation)).toBe('false');
   });
 });
 

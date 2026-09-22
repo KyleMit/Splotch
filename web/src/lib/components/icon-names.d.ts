@@ -49,7 +49,6 @@ export type IconName =
   | 'loading'
   | 'lock'
   | 'mobile-landscape'
-  | 'mobile-lock'
   | 'mobile-portrait'
   | 'mobile-rotate'
   | 'more-colors'
