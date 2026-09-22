@@ -17,13 +17,19 @@ describe('parseReleaseArgs', () => {
       version: '1.4.0',
       dryRun: false,
       noPublish: false,
+      unverified: false,
+      rehearse: false,
     });
     expect(parseReleaseArgs(['1.4.0-beta.1', '--dry-run'])).toEqual({
       version: '1.4.0-beta.1',
       dryRun: true,
       noPublish: false,
+      unverified: false,
+      rehearse: false,
     });
     expect(parseReleaseArgs(['--no-publish', '1.4.0']).noPublish).toBe(true);
+    expect(parseReleaseArgs(['1.4.0', '--unverified']).unverified).toBe(true);
+    expect(parseReleaseArgs(['1.4.0', '--rehearse']).rehearse).toBe(true);
   });
 
   // A typo'd --dry-run used to be dropped silently, which ran the full publish

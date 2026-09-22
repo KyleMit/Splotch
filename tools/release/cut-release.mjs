@@ -27,6 +27,7 @@ import { parseArgs } from 'node:util';
 import { ROOT, fail, run, capture, isMain, parseOrFail } from '../lib/proc.mjs';
 import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
+import { assertReleaseReady } from './check-release-readiness.mjs';
 
 // No lockfile entry: pnpm-lock.yaml records dependency resolutions, not the root
 // package's own version, so a version bump leaves it untouched and a dirty
@@ -77,7 +78,7 @@ export const findStrayReleasePaths = (status) =>
     .filter((path) => !isReleasePath(path));
 
 const RELEASE_USAGE =
-  'Usage: node tools/release/cut-release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0';
+  'Usage: node tools/release/cut-release.mjs <semver> [--no-publish] [--dry-run] [--unverified] [--rehearse]\n  <semver> must look like 1.2.0';
 
 // Strict parsing is the safety here: a mistyped --dry-run must not fall through
 // to the real publish path, so an unknown flag is rejected rather than ignored.
@@ -89,7 +90,12 @@ export function parseReleaseArgs(args) {
     parsed = parseArgs({
       args,
       allowPositionals: true,
-      options: { 'dry-run': { type: 'boolean' }, 'no-publish': { type: 'boolean' } },
+      options: {
+        'dry-run': { type: 'boolean' },
+        'no-publish': { type: 'boolean' },
+        unverified: { type: 'boolean' },
+        rehearse: { type: 'boolean' },
+      },
     });
   } catch (err) {
     throw new Error(`${err.message}\n${RELEASE_USAGE}`, { cause: err });
@@ -102,6 +108,8 @@ export function parseReleaseArgs(args) {
     version,
     dryRun: parsed.values['dry-run'] ?? false,
     noPublish: parsed.values['no-publish'] ?? false,
+    unverified: parsed.values.unverified ?? false,
+    rehearse: parsed.values.rehearse ?? false,
   };
 }
 
@@ -207,8 +215,26 @@ function publish(version, body) {
   console.log(`  npm run release:publish   attaches them to v${version}`);
 }
 
+// The readiness gate runs before any file moves so a refused release leaves
+// nothing to clean up. --unverified is the reviewed escape hatch for a host
+// without gh, or a release deliberately cut from a known-red main; it prints
+// what it skipped so the choice is visible in the terminal log.
+function gateRelease({ dryRun, unverified, rehearse }) {
+  if (dryRun) return;
+  if (unverified) {
+    console.log(
+      '--unverified: skipping the origin/main + CI readiness gate (reviewed escape hatch).'
+    );
+    return;
+  }
+  assertReleaseReady({ rehearse });
+}
+
 export function main(args = process.argv.slice(2)) {
-  const { version, dryRun, noPublish } = parseOrFail(() => parseReleaseArgs(args));
+  const { version, dryRun, noPublish, unverified, rehearse } = parseOrFail(() =>
+    parseReleaseArgs(args)
+  );
+  gateRelease({ dryRun, unverified, rehearse });
   const { body, versionCode } = resolveVersionCode(releasePath(version), version);
 
   console.log(`\nReleasing v${version} (versionCode ${versionCode})\n`);
