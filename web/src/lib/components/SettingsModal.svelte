@@ -31,9 +31,9 @@
   // it with the app-wide phone-landscape query and swap in a stripped-down
   // shell of quick toggles. A landscape tablet keeps its height at or above the
   // tablet-class floor, so it stays on the sidebar shell untouched. Sharing the
-  // one query is what keeps shell selection agreeing with the orientation
-  // defaults and the layout store's phone-landscape classification at every
-  // viewport height, fractional ones included.
+  // one query is what keeps shell selection agreeing with the layout store's
+  // phone-landscape classification at every viewport height, fractional ones
+  // included.
   const shell = createSettingsMediaQueries({ wide: WIDE_QUERY, compact: PHONE_LANDSCAPE_QUERY });
 
   // 'hub' = the phone top-level list; a section id = that section is drilled
