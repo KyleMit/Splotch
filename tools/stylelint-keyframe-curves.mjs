@@ -88,6 +88,38 @@ function splitTopLevel(value, separator) {
   return parts;
 }
 
+// The shorthand's other keywords. A keyframe block may share a name with one
+// (`@keyframes reverse`), and the grammar reads such a token as the keyword, so
+// it can never be the animation's name.
+const SHORTHAND_KEYWORDS = new Set([
+  'infinite',
+  'normal',
+  'reverse',
+  'alternate',
+  'alternate-reverse',
+  'none',
+  'forwards',
+  'backwards',
+  'both',
+  'running',
+  'paused',
+]);
+const NUMERIC = /^[+-]?(\d|\.\d)/;
+
+// The one token of a shorthand layer that is its keyframe name: whatever is
+// left once the timing function, times, iteration count, and the other
+// keywords are set aside.
+function animationNameOf(tokens) {
+  return tokens.find(
+    (token) =>
+      !SHORTHAND_KEYWORDS.has(token) &&
+      !NUMERIC.test(token) &&
+      !TIMING_KEYWORDS.has(token) &&
+      !TIMING_FUNCTIONS.test(token) &&
+      !EASING_TOKEN.test(token)
+  );
+}
+
 function timingFunctionOf(tokens) {
   return (
     tokens.find(
@@ -108,8 +140,8 @@ const ruleFunction = (enabled) => (root, result) => {
   root.walkDecls(/^animation$/i, (decl) => {
     for (const layer of splitTopLevel(decl.value, /,/)) {
       const tokens = splitTopLevel(layer, /\s/);
-      const name = tokens.find((token) => shaped.has(token));
-      if (!name || PER_SEGMENT_SAFE_CURVES.has(timingFunctionOf(tokens))) continue;
+      const name = animationNameOf(tokens);
+      if (!shaped.has(name) || PER_SEGMENT_SAFE_CURVES.has(timingFunctionOf(tokens))) continue;
       report({
         ruleName,
         result,

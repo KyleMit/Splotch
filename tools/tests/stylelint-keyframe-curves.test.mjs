@@ -62,6 +62,21 @@ describe('the one-curve-per-cue rule', () => {
     expect(await violations(code)).toHaveLength(1);
   });
 
+  it('reads a keyword sharing a shaped block name as the keyword, not the name', async () => {
+    const code = `
+      @keyframes reverse { 0% { scale: 0.8; } 50% { scale: 1.1; } 100% { scale: 1; } }
+      @keyframes fade { to { opacity: 0; } }
+      .a { animation: 1s ease reverse fade; }
+    `;
+    expect(await violations(code)).toEqual([]);
+  });
+
+  it('finds the name wherever it sits among the other shorthand values', async () => {
+    expect(
+      await violations(`${SHAPED} .a { animation: 300ms 2 alternate both var(--ease-pop) pop; }`)
+    ).toHaveLength(1);
+  });
+
   it('ignores opacity-only stops when counting the shape', async () => {
     const code = `
       @keyframes glow { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
