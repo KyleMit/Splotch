@@ -53,6 +53,41 @@ test('a stroke size pick presses its trigger, even re-picking the same size', as
   }
 });
 
+test('a halo still lifting is released when reduced motion cancels its exit', async ({ page }) => {
+  await gotoApp(page);
+  // Turning reduced motion on mid-lift swaps the lift for no animation, which
+  // cancels it rather than ending it; the ring's record must still go. Driven
+  // in one page-side script so the switch lands inside the short lift.
+  const result = await page.evaluate(async () => {
+    const canvas = document.querySelector('#drawingCanvas')!;
+    const rect = canvas.getBoundingClientRect();
+    const send = (type: string) =>
+      canvas.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 9,
+          pointerType: 'touch',
+          isPrimary: true,
+          bubbles: true,
+          clientX: rect.left + 300,
+          clientY: rect.top + 300,
+          buttons: type === 'pointerup' ? 0 : 1,
+        })
+      );
+    send('pointerdown');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    send('pointerup');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const ring = document.querySelector('.brush-ring');
+    const lifting = !!ring?.classList.contains('lifting');
+    const seen: string[] = [];
+    ring?.addEventListener('animationcancel', () => seen.push('animationcancel'));
+    document.documentElement.setAttribute('data-reduce-motion', '');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    return { lifting, seen, rings: document.querySelectorAll('.brush-ring').length };
+  });
+  expect(result).toEqual({ lifting: true, seen: ['animationcancel'], rings: 0 });
+});
+
 test('reduced motion skips all five effects', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await gotoApp(page);

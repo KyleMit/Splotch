@@ -32,7 +32,9 @@
   // pressing a swatch or dragging the clear button never sends this canvas a
   // pointerup). A ring grows in on mount and, when its stroke ends, lifts off
   // where the finger left it (`lifting`: position writes stop) before its record
-  // goes. Under reduced motion there is no lift and the record goes at once.
+  // goes — on animationend, or on animationcancel when reduced motion is turned
+  // on mid-lift and swaps the lift for no animation at all. Under reduced motion
+  // there is no lift and the record goes at once.
   let brushRings = $state<
     Record<number, { x: number; y: number; magic: boolean; lifting: boolean }>
   >({});
@@ -218,6 +220,7 @@
     class:magic={ring.magic}
     class:lifting={ring.lifting}
     onanimationend={(e) => endRingLift(e, Number(id))}
+    onanimationcancel={(e) => endRingLift(e, Number(id))}
     style:transform="translate3d({ring.x}px, {ring.y}px, 0) translate(-50%, -50%)"
     style:width="{brushRingSizePx}px"
     style:height="{brushRingSizePx}px"
@@ -228,6 +231,7 @@
     class="eraser-bubble"
     class:lifting={eraserCursor.lifting}
     onanimationend={endEraserLift}
+    onanimationcancel={endEraserLift}
     style:transform="translate3d({eraserCursor.x}px, {eraserCursor.y}px, 0) translate(-50%, -50%)"
     style:width="{eraserSizePx}px"
     style:height="{eraserSizePx}px"
