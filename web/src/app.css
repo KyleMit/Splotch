@@ -243,6 +243,19 @@ body {
   -webkit-backdrop-filter: blur(4px);
 }
 
+/* The scrim arrives and leaves with the card rather than cutting in under it.
+   Opacity only, so every backdrop variant below — frosted, plain, and the
+   blur-less coarse-pointer picker — takes the same fade. Kept under reduced
+   motion: a short fade on a scrim is calm, and
+   snapping it would leave the scrim cutting while the card still fades. */
+.modal-dialog[open]::backdrop {
+  animation: modalFadeIn var(--duration-base) ease both;
+}
+
+.modal-dialog[open].closing::backdrop {
+  animation: modalFadeIn var(--duration-exit) ease reverse forwards;
+}
+
 /* Anyone who asked the OS for less transparency gets a plain, slightly deeper
    dim instead of the frosted layer. */
 @media (prefers-reduced-transparency: reduce) {
