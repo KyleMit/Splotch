@@ -20,8 +20,10 @@
     z-index: var(--z-toolbar-paper);
   }
   /* The rail glass stands in for the Buttons palette's opaque surface, so it
-     must cover the Clear Accept Zone the way that surface does. */
-  :global(html[data-toolbar='bare']) .rail-glass {
+     must cover the Clear Accept Zone the way that surface does. The margin
+     rules are that glass's printed edge, so they share the layer: below it the
+     drag-to-clear flood covers them, and the rail reads as unruled paper. */
+  :global(html[data-toolbar='bare']) :is(.rail-glass, .margin-rule) {
     z-index: var(--z-rail-glass);
   }
   .rail-glass {

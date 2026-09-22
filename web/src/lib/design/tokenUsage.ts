@@ -78,7 +78,7 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
 };
 
 export const zIndexUsage: Record<keyof typeof zIndex, string> = {
-  zToolbarPaper: 'Bare action glass panes and printed margin rule, above ink and below controls.',
+  zToolbarPaper: 'Bare action glass panes, above ink and below controls.',
   zPointerHalo: 'Brush ring and eraser footprint, above toolbar glass and below controls.',
   zCanvasChrome: 'The floor of the shared root context — chrome that must clear the canvas layers.',
   zClearPreview: 'The full-viewport paper wash previewing a drag-to-clear.',
@@ -89,7 +89,7 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
   zBanner: 'The Install Banner inside the bottom dock, clear of the corner controls.',
   zClearAcceptZone: 'The drag-accept ring, below the button it rings.',
   zRailGlass:
-    'The Bare palette rail glass, covering the drag-accept ring like the Buttons palette surface.',
+    'The Bare palette rail glass and its printed margin rules, covering the drag-accept ring and the clear flood like the Buttons palette surface.',
   zClearButton: 'The Clear Button itself.',
   zNotch: 'The safe-area Notch Band; its tie with --z-clear-button resolves by DOM order.',
   zClearCoachmark: 'The tutorial ghost button, above the real one.',

@@ -180,7 +180,7 @@ export const zIndex = {
   zFlyout: 901,
   zBanner: 950, // InstallBanner inside the bottom dock; SaveFailureBanner atop the canvas
   zClearAcceptZone: 998, // below the button it rings, so the button stays on top
-  zRailGlass: 999, // Bare palette glass covers the accept ring as the Buttons palette does
+  zRailGlass: 999, // Bare palette glass and its margin rules cover the accept ring as the Buttons palette does
   zClearButton: 1000,
   // Pre-existing tie with zClearButton: both are fixed, and which one paints on
   // top is DOM order today. Preserved deliberately — resolving it is a visual
