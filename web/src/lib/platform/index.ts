@@ -136,16 +136,29 @@ export function getPlatform(): Platform {
  * Apple ever brings windowing to the iPhone, revisit this (likely the behavioral
  * probe above).
  *
- * On the web the question is instead whether the browser can rotate anything at
- * all, and two independent facts have to hold:
- *  - The Screen Orientation API's `lock()` has to exist. WebKit implements the
- *    `ScreenOrientation` interface but not `lock()`/`unlock()`, so every iOS and
- *    iPadOS browser — all of which run WebKit — can never honor the choice.
+ * On the web the question is instead whether this browser, on this device, can
+ * turn anything, and two independent facts have to hold:
+ *  - The Screen Orientation API's `lock()` has to exist. No WebKit build ships
+ *    it — MDN's compatibility data records `version_added: false` for Safari and
+ *    Safari iOS — so no browser on iOS or iPadOS, all of which run WebKit, can
+ *    ever honor the choice.
  *  - The primary pointer has to be coarse, i.e. a device held in a hand rather
- *    than a monitor on a desk. Desktop Chrome and Firefox expose `lock()` and
- *    reject every call, so the capability check alone would leave the picker on
- *    a screen that cannot turn. This is also what makes the picker reappear
- *    under a browser's mobile-device emulation, which is where it gets tested.
+ *    than a monitor on a desk, because a screen that cannot physically turn has
+ *    nothing for a lock to do. The capability check alone would not catch that:
+ *    desktop Chrome exposes `lock()` and always throws `NotSupportedError`, and
+ *    Firefox implements it for real from 144 — for the devices that can rotate.
+ *    The pointer is also what makes the picker reappear under a browser's
+ *    mobile-device emulation, which is where it gets tested.
+ *
+ * Necessary, not sufficient — a `lock()` that exists can still refuse, and two
+ * such browsers stay inside this repo's floor: Chrome on Android honors a lock
+ * only in fullscreen or an installed app, and Firefox for Android 114-143
+ * exposes one that always fails. The picker renders there and the choice
+ * persists; `applyDeviceOrientationPreference` swallows the rejection. Closing
+ * that gap is not a narrower gate — the control becomes functional the moment
+ * the user hits the Fullscreen toggle — but re-applying the preference when
+ * fullscreen or display mode changes, which today's settings-keyed effect in
+ * `routes/+page.svelte` does not do.
  *
  * A behavioral probe is not an option here either: headless Chromium resolves
  * `lock()` on a desktop viewport, and the call is async besides.
