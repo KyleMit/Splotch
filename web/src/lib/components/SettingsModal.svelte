@@ -392,13 +392,13 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--setting-gap);
   }
 
-  /* The two switch rows lead the list; this reads the gap after them as the
+  /* The two switch rows lead the list; this doubles the gap after them as the
      break between "flip it here" and "go configure". */
   .hub-list .group-break {
-    margin-top: 10px;
+    margin-top: var(--setting-gap);
   }
 
   /* Android's split row: the body still drills in, and the trailing switch acts
@@ -547,7 +547,7 @@
   }
 
   .settings-content :global(.setting-group > .setting + .setting) {
-    margin-top: 6px;
+    margin-top: var(--setting-gap);
   }
 
   .settings-content :global(.setting) {

@@ -158,7 +158,7 @@
   .quick-toggles {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: var(--setting-gap);
   }
 
   /* Orientation fourth cell: a Portrait / Landscape segmented control in place

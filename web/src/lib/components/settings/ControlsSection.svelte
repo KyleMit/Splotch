@@ -160,7 +160,7 @@
   .tool-rows {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--setting-gap);
   }
 
   .tools-block :global(h4.tools-heading) {
