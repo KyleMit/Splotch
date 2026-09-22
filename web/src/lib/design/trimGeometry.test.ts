@@ -264,8 +264,16 @@ describe('ColorPicker', () => {
     );
     expect(HEX_GRID_GEOMETRY.rowOffsetPx).toBe(px(offsetRow, 'margin-left', picker));
     expect(HEX_GRID_GEOMETRY.paddingPx).toBe(2 * px(picker, 'padding', tokens));
-    expect(HEX_GRID_GEOMETRY.viewportFraction).toBe(viewportFraction(dialog, 'max-height', 'vh'));
-    expect(HEX_GRID_GEOMETRY.viewportFraction).toBe(viewportFraction(dialog, 'max-width', 'vw'));
+    expect(HEX_GRID_GEOMETRY.viewportHeightFraction).toBe(
+      viewportFraction(dialog, 'max-height', 'vh')
+    );
+    // The width cap is the shared dialog gutter, which app.css declares once
+    // and every dialog card consumes; the ladder adds its floor on each side.
+    expect(dialog).toContain('max-width: calc(100vw - 2 * var(--modal-gutter));');
+    const app = sourceFile('../../app.css');
+    const gutterMin = app.match(/--modal-gutter-min:\s*(\d+)px/);
+    expect(gutterMin, 'app.css declares --modal-gutter-min in px').not.toBeNull();
+    expect(HEX_GRID_GEOMETRY.widthGutterPx).toBe(Number(gutterMin![1]));
     // firstRowPx counts the first hexagon whole, which only holds while the
     // first row's negative margin is cancelled by the picker's own.
     expect(px(picker, 'margin-top') + px(firstRow, 'margin-top', picker)).toBe(0);

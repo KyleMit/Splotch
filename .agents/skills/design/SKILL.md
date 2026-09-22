@@ -175,8 +175,12 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
 |                                                                     | ADR-0157). AiImageResult has its own open choreography, so it takes                                                        |
 |                                                                     | `.modal-dialog` alone                                                                                                      |
 | `.modal-shell`                                                      | The centered modal card — surface, radius, shadow, and re-inked                                                            |
-|                                                                     | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt,                                                 |
-|                                                                     | AiImageResult, ColoringBook, SettingsModal                                                                                 |
+|                                                                     | monochrome icons. Max-height/overflow stay per-modal; a card that stretches                                                |
+|                                                                     | with the viewport is `width: calc(100vw - 2 * var(--modal-gutter))` with its                                               |
+|                                                                     | own `max-width` cap (the explicit cap is what beats the UA `<dialog>` max-width,                                           |
+|                                                                     | whose 19px inset otherwise wins on phones), so the `--modal-gutter` phone-edge                                             |
+|                                                                     | inset is shared and only the cap is per-modal. AiImagePrompt, AiImageResult                                                |
+|                                                                     | (its own safe-area-aware bound), ColoringBook, SettingsModal                                                               |
 | `.modal-close-btn` / `.dialog-header-control` / `.modal-close-icon` | Shared control sizing and glyphs. `DialogHeader` gives back a flat fill and keeps `.modal-close-btn` on raised close only. |
 | `.confirm-card` / `.confirm-card-content` / `.confirm-card-heading` | The two-choice confirmation card — width, padding, and the title-and-consequence group;                                    |
 |                                                                     | the action row stays per dialog. Parent Center's unprotected-check confirmation, the AI                                    |

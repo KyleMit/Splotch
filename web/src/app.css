@@ -284,7 +284,8 @@ body {
    choices lay out differently. Parent Center's unprotected-check confirmation,
    the AI report confirmation, and Leave Splotch. */
 .confirm-card {
-  width: min(92vw, 336px);
+  width: calc(100vw - 2 * var(--modal-gutter));
+  max-width: 336px;
 }
 
 .confirm-card-content {
@@ -356,9 +357,12 @@ body {
   /* The gap a phone-width dialog leaves to each screen edge. Every dialog that
      stretches with the viewport sets `width: calc(100vw - 2 * var(--modal-gutter))`
      and states its cap as max-width, so they all land at the same distance;
-     the gate and confirm cards keep their own narrow 336px cap. The cap has to
-     be an explicit max-width: the UA stylesheet gives a <dialog> a max-width of
-     calc(100% - 38px), and a width alone stays under it.
+     the gate and confirm cards share the gutter under their own narrow 336px
+     cap, and the colour picker takes it as the max-width its fit-content
+     honeycomb is clipped to (design/trimGeometry.ts derives the picker's
+     column-trim ladder from --modal-gutter-min; trimGeometry.test.ts binds the
+     two). The cap has to be an explicit max-width: the UA stylesheet gives a
+     <dialog> a max-width of calc(100% - 38px), and a width alone stays under it.
 
      The gutter grows to the larger side inset so a card that stretches on a
      landscape notched phone clears the cutout on both sides; the card is
