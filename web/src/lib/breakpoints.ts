@@ -4,8 +4,8 @@
 
 // The tablet-class floor, shared by every site that classifies a device by size:
 // platform's orientation-lock capability check, settings' default orientation
-// (`defaultForceLandscapeOrientation`), and SettingsModal's compact-shell media
-// query, which derives its max-height from this value. iPad Mini and larger
+// (`defaultForceLandscapeOrientation`), and SettingsModal's compact shell,
+// selected by PHONE_LANDSCAPE_QUERY below. iPad Mini and larger
 // tablets have a smallest side around 744px and Android tablet layouts commonly
 // start at 600dp; phone-class devices stay below this even in landscape.
 //
