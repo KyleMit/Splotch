@@ -1,14 +1,12 @@
 import { browser } from '$app/environment';
-import { isNative, supportsOrientationLock, type Orientation } from '$lib/platform';
+import {
+  isNative,
+  supportsOrientationLock,
+  type LockableScreenOrientation,
+  type Orientation,
+} from '$lib/platform';
 
-type OrientationLockType = Orientation;
-
-type LockableScreenOrientation = ScreenOrientation & {
-  lock?: (orientation: OrientationLockType) => Promise<void>;
-  unlock?: () => void;
-};
-
-let lastRequested: OrientationLockType | 'unlocked' | null = null;
+let lastRequested: Orientation | 'unlocked' | null = null;
 
 export async function applyDeviceOrientationPreference(
   lockRotationEnabled: boolean,
@@ -20,7 +18,7 @@ export async function applyDeviceOrientationPreference(
   // only floats a letterboxed window, so leave it to the OS window controls.
   if (!supportsOrientationLock()) return;
 
-  const target: OrientationLockType | 'unlocked' = lockRotationEnabled
+  const target: Orientation | 'unlocked' = lockRotationEnabled
     ? forceLandscapeOrientation
       ? 'landscape'
       : 'portrait'

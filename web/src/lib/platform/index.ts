@@ -15,12 +15,6 @@ const APP_LIKE_DISPLAY_MODE_QUERIES = [
 // is why a touchscreen laptop driven by its mouse does not match.
 const COARSE_POINTER_QUERY = '(pointer: coarse)';
 
-// lib.dom declares `lock`/`unlock` as required members of ScreenOrientation, but
-// WebKit ships the interface without them, so the optional shape is the honest
-// one at this boundary. `lib/platform/orientation.ts` restates it for the call
-// itself; it cannot import this one without a cycle.
-type MaybeLockableScreenOrientation = ScreenOrientation & { lock?: unknown };
-
 // Capacitor injects a global `Capacitor` object both in the native runtime and
 // once @capacitor/core is loaded on the web. We read it off the global rather
 // than importing @capacitor/core here so this module stays safe to evaluate
@@ -95,6 +89,15 @@ export type Platform = 'android' | 'ios' | 'web';
 
 export type Orientation = 'portrait' | 'landscape';
 
+// lib.dom declares `lock`/`unlock` as required members of ScreenOrientation, but
+// no WebKit build ships either, so the optional shape is the honest one at this
+// boundary. One declaration serves both readers of it: the capability check
+// below and the call in `lib/platform/orientation.ts`.
+export type LockableScreenOrientation = ScreenOrientation & {
+  lock?: (orientation: Orientation) => Promise<void>;
+  unlock?: () => void;
+};
+
 export function getPlatform(): Platform {
   if (!browser) return 'web';
   const platform = globalThis.Capacitor?.getPlatform?.();
@@ -151,7 +154,7 @@ export function supportsOrientationLock(): boolean {
   if (!browser) return false;
   if (!isNative()) {
     return (
-      typeof (window.screen.orientation as MaybeLockableScreenOrientation | undefined)?.lock ===
+      typeof (window.screen.orientation as LockableScreenOrientation | undefined)?.lock ===
         'function' && window.matchMedia?.(COARSE_POINTER_QUERY).matches === true
     );
   }
