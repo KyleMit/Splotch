@@ -1,0 +1,221 @@
+{
+  "devices": [
+    {
+      "device": "iPad Pro 12.9\" (1366×1024 css, DPR 2)",
+      "sheetLongEdgePx": 2564,
+      "source": "measured",
+      "upscaleVsMaster": "1.67",
+      "upscaleVsCompact": "2.23"
+    },
+    {
+      "device": "iPad Air/Pro 11\" (1180×820 css, DPR 2)",
+      "sheetLongEdgePx": 2215,
+      "source": "estimated",
+      "upscaleVsMaster": "1.44",
+      "upscaleVsCompact": "1.92"
+    },
+    {
+      "device": "iPad mini (1133×744 css, DPR 2)",
+      "sheetLongEdgePx": 2095,
+      "source": "estimated",
+      "upscaleVsMaster": "1.36",
+      "upscaleVsCompact": "1.82"
+    },
+    {
+      "device": "Galaxy S21 FE (851×393 css, DPR 3 → sheet 2×)",
+      "sheetLongEdgePx": 1106,
+      "source": "estimated",
+      "upscaleVsMaster": "0.72",
+      "upscaleVsCompact": "0.96"
+    },
+    {
+      "device": "iPhone 15 (852×393 css, DPR 3 → sheet 2×)",
+      "sheetLongEdgePx": 1106,
+      "source": "estimated",
+      "upscaleVsMaster": "0.72",
+      "upscaleVsCompact": "0.96"
+    },
+    {
+      "device": "MacBook Air (1440×900 css, DPR 2)",
+      "sheetLongEdgePx": 2534,
+      "source": "estimated",
+      "upscaleVsMaster": "1.65",
+      "upscaleVsCompact": "2.20"
+    },
+    {
+      "device": "Desktop (1920×1080 css, DPR 1)",
+      "sheetLongEdgePx": 1520,
+      "source": "estimated",
+      "upscaleVsMaster": "0.99",
+      "upscaleVsCompact": "1.32"
+    }
+  ],
+  "pseudoReference": {
+    "creatures-dragon-wide.light": {
+      "simulatedUpscale": 1.67,
+      "crop": {
+        "x": 416,
+        "y": 480,
+        "score": 11021
+      },
+      "linear": {
+        "fillOnly": {
+          "meanAbs": 2.71,
+          "p99": 46,
+          "visibleFraction": 0.0904,
+          "visibleUnderOrBesideInk": 0.839
+        },
+        "composite": {
+          "meanAbs": 1.5,
+          "p99": 31,
+          "visibleFraction": 0.0469,
+          "visibleUnderOrBesideInk": 0.69
+        }
+      },
+      "lanczos3": {
+        "fillOnly": {
+          "meanAbs": 2.64,
+          "p99": 45,
+          "visibleFraction": 0.0913,
+          "visibleUnderOrBesideInk": 0.817
+        },
+        "composite": {
+          "meanAbs": 1.49,
+          "p99": 29,
+          "visibleFraction": 0.0484,
+          "visibleUnderOrBesideInk": 0.655
+        }
+      }
+    },
+    "creatures-dragon-wide.night": {
+      "simulatedUpscale": 1.67,
+      "crop": {
+        "x": 480,
+        "y": 480,
+        "score": 17896
+      },
+      "linear": {
+        "fillOnly": {
+          "meanAbs": 3.02,
+          "p99": 52,
+          "visibleFraction": 0.0978,
+          "visibleUnderOrBesideInk": 0.842
+        },
+        "composite": {
+          "meanAbs": 1.63,
+          "p99": 35,
+          "visibleFraction": 0.051,
+          "visibleUnderOrBesideInk": 0.697
+        }
+      },
+      "lanczos3": {
+        "fillOnly": {
+          "meanAbs": 2.95,
+          "p99": 51,
+          "visibleFraction": 0.0996,
+          "visibleUnderOrBesideInk": 0.82
+        },
+        "composite": {
+          "meanAbs": 1.61,
+          "p99": 33,
+          "visibleFraction": 0.0525,
+          "visibleUnderOrBesideInk": 0.659
+        }
+      }
+    },
+    "space-station-wide.light": {
+      "simulatedUpscale": 1.67,
+      "crop": {
+        "x": 864,
+        "y": 320,
+        "score": 9343
+      },
+      "linear": {
+        "fillOnly": {
+          "meanAbs": 2.19,
+          "p99": 41,
+          "visibleFraction": 0.0738,
+          "visibleUnderOrBesideInk": 0.839
+        },
+        "composite": {
+          "meanAbs": 1.13,
+          "p99": 25,
+          "visibleFraction": 0.0344,
+          "visibleUnderOrBesideInk": 0.654
+        }
+      },
+      "lanczos3": {
+        "fillOnly": {
+          "meanAbs": 2.16,
+          "p99": 39,
+          "visibleFraction": 0.0763,
+          "visibleUnderOrBesideInk": 0.825
+        },
+        "composite": {
+          "meanAbs": 1.11,
+          "p99": 23,
+          "visibleFraction": 0.035,
+          "visibleUnderOrBesideInk": 0.618
+        }
+      }
+    },
+    "space-station-wide.night": {
+      "simulatedUpscale": 1.67,
+      "crop": {
+        "x": 864,
+        "y": 352,
+        "score": 12060
+      },
+      "linear": {
+        "fillOnly": {
+          "meanAbs": 2.66,
+          "p99": 50,
+          "visibleFraction": 0.0845,
+          "visibleUnderOrBesideInk": 0.839
+        },
+        "composite": {
+          "meanAbs": 1.4,
+          "p99": 32,
+          "visibleFraction": 0.0411,
+          "visibleUnderOrBesideInk": 0.668
+        }
+      },
+      "lanczos3": {
+        "fillOnly": {
+          "meanAbs": 2.62,
+          "p99": 48,
+          "visibleFraction": 0.0873,
+          "visibleUnderOrBesideInk": 0.822
+        },
+        "composite": {
+          "meanAbs": 1.38,
+          "p99": 29,
+          "visibleFraction": 0.0418,
+          "visibleUnderOrBesideInk": 0.628
+        }
+      }
+    }
+  },
+  "tierBytes": {
+    "creatures-dragon-wide.light": {
+      "shipped1536": 103400,
+      "lanczos3072q85": 202654,
+      "ratio": 1.96
+    },
+    "creatures-dragon-wide.night": {
+      "shipped1536": 108860,
+      "lanczos3072q85": 219026,
+      "ratio": 2.01
+    },
+    "space-station-wide.light": {
+      "shipped1536": 81468,
+      "lanczos3072q85": 153496,
+      "ratio": 1.88
+    },
+    "space-station-wide.night": {
+      "shipped1536": 88576,
+      "lanczos3072q85": 178624,
+      "ratio": 2.02
+    }
+  }
+}
