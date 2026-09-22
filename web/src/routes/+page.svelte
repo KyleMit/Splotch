@@ -6,7 +6,7 @@
   // this removes.
   import '$lib/drawing/earlyBoot';
   import { onMount, type Component } from 'svelte';
-  import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
+  import DrawingCanvas, { PAPER_TEXTURE_URL } from '$lib/components/DrawingCanvas.svelte';
   import { updateDrawingLayout } from '$lib/drawing/engine';
   import { untrack } from 'svelte';
   import { uiState } from '$lib/state/ui.svelte';
@@ -168,11 +168,17 @@
       teardowns.forEach((teardown) => teardown());
     };
   });
+  // The app.html boot script stamps the persisted style before first paint, so
+  // the first run normally finds nothing to change. Measuring the canvas around
+  // a write that is not happening would only force a style recalc of the
+  // hydrated toolbar inside the boot task.
   $effect(() => {
     const toolbarStyle = settingsState.toolbarStyle;
     untrack(() => {
+      const root = document.documentElement;
+      if (root.dataset.toolbar === toolbarStyle) return;
       updateDrawingLayout(() => {
-        document.documentElement.dataset.toolbar = toolbarStyle;
+        root.dataset.toolbar = toolbarStyle;
       });
     });
   });
@@ -181,6 +187,10 @@
 <svelte:head>
   <title>{HOME_CARD.title}</title>
   <meta name="description" content={HOME_CARD.description} />
+  <!-- The paper texture is the largest contentful paint: without this hint the
+       browser only discovers it from the inline stylesheet after parsing the
+       whole document, behind the forty modulepreloaded startup chunks. -->
+  <link rel="preload" as="image" href={PAPER_TEXTURE_URL} fetchpriority="high" />
 </svelte:head>
 
 <SocialCard />

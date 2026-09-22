@@ -54,7 +54,8 @@ type OverlayCatalogLoader = () => Promise<OverlayCatalog>;
 // test hands in a loader it can fail on purpose to exercise the retry.
 export function mountBootHiddenOverlays(
   onOverlay: (key: BootHiddenOverlayKey, overlay: Component) => void,
-  loadChunk: OverlayCatalogLoader = () => import('$lib/components/overlayChunk')
+  loadChunk: OverlayCatalogLoader = () =>
+    import('$lib/components/overlayChunkLoader').then(({ loadOverlayChunk }) => loadOverlayChunk())
 ): BootHiddenOverlays {
   let stopped = false;
   let idleRetriesLeft = OVERLAY_CHUNK_IDLE_RETRY_LIMIT;

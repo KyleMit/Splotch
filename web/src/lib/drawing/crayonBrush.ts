@@ -242,18 +242,26 @@ interface CrayonFields {
   dither: Float32Array;
 }
 
-function buildFields(): CrayonFields {
+// Each yield is a resumption point for the idle prebuild: one octave, or the
+// normalize-and-body pass, or the dither pass, is a slice small enough that no
+// idle callback becomes a long task on a 4x throttled phone. Built whole in one
+// go, the passes were the largest main-thread task after boot.
+function* buildFieldsInSlices(): Generator<void, CrayonFields> {
   const size = opts.tile;
   const rand = mulberry32(0x5c1a1); // fixed — deterministic tooth every run
 
   const h = new Float32Array(size * size);
   const wsum = opts.octaves.reduce((s, o) => s + o.weight, 0) || 1;
-  for (const o of opts.octaves) addOctave(h, size, o.cell, o.weight / wsum, rand);
+  for (const o of opts.octaves) {
+    addOctave(h, size, o.cell, o.weight / wsum, rand);
+    yield;
+  }
   normalizeInPlace(h);
 
   const b = new Float32Array(size * size);
   addOctave(b, size, opts.bodyVariationCell, 1, rand);
   normalizeInPlace(b);
+  yield;
 
   const d = new Float32Array(size * size);
   const drand = mulberry32(0x0d17e); // fixed, independent of the tooth stream
@@ -262,20 +270,58 @@ function buildFields(): CrayonFields {
   return { tile: size, height: h, body: b, dither: d };
 }
 
+function finishFields(build: Generator<void, CrayonFields>): CrayonFields {
+  let step = build.next();
+  while (!step.done) step = build.next();
+  return step.value;
+}
+
+function buildFields(): CrayonFields {
+  return finishFields(buildFieldsInSlices());
+}
+
 // Built lazily so the per-texel field passes stay off the drawing route's boot
 // path: the first reader builds them, and the idle prebuild below front-loads
-// that cost for the common case where the crayon does get picked.
+// that cost, one slice per idle callback, for the common case where the crayon
+// does get picked. A reader arriving mid-prebuild finishes the remaining slices
+// synchronously rather than starting over.
 let fields: CrayonFields | null = null;
+let prebuild: Generator<void, CrayonFields> | null = null;
+let cancelPrebuildSlice: (() => void) | undefined;
 
 function crayonFields(): CrayonFields {
-  if (!fields) fields = buildFields();
+  if (!fields) {
+    cancelPrebuildSlice?.();
+    cancelPrebuildSlice = undefined;
+    fields = finishFields(prebuild ?? buildFieldsInSlices());
+    prebuild = null;
+  }
   return fields;
 }
 
-scheduleIdle(() => crayonFields());
+function prebuildFieldsAtIdle() {
+  prebuild = buildFieldsInSlices();
+  const slice = () => {
+    cancelPrebuildSlice = undefined;
+    if (fields || !prebuild) return;
+    const step = prebuild.next();
+    if (step.done) {
+      fields = step.value;
+      prebuild = null;
+      return;
+    }
+    cancelPrebuildSlice = scheduleIdle(slice);
+  };
+  cancelPrebuildSlice = scheduleIdle(slice);
+}
+
+prebuildFieldsAtIdle();
 
 export function setCrayonOptions(next: Partial<CrayonOptions>) {
   cancelCrayonWarmup();
+  cancelPrebuildSlice?.();
+  cancelPrebuildSlice = undefined;
+  prebuild = null;
   opts = clone({ ...opts, ...next });
   fields = buildFields();
   colorTileCache.clear();

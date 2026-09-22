@@ -69,6 +69,9 @@
            • data-brush — the persisted brush type when it deviates from the default
              pen ('crayon' or 'magic'; the eraser is never persisted), so the Brush
              Button wears the right face at first paint. Mirrors state/tool.svelte.ts.
+           • data-toolbar — the persisted toolbar style ('bare' or the default
+             'buttons'), stamped for both so hydration finds the value it would
+             write and leaves the attribute alone. Mirrors settings.svelte.ts.
            • data-theme — present only when the parent explicitly chose light or dark
              (default: system, where the prefers-color-scheme CSS drives the theme
              with no attribute at all). Mirrors lib/theme.ts.
@@ -191,10 +194,14 @@
           /* private-mode / disabled storage — fall back to CSS defaults */
         }
 
+        // Stamped for both styles so hydration finds the attribute it would
+        // write and skips the write, which otherwise forces a style recalc of
+        // the whole toolbar inside the boot task.
+        var toolbar = 'buttons';
         try {
-          if (localStorage.getItem('splotch-toolbar-style') === 'bare')
-            el.setAttribute('data-toolbar', 'bare');
+          if (localStorage.getItem('splotch-toolbar-style') === 'bare') toolbar = 'bare';
         } catch (_) {}
+        el.setAttribute('data-toolbar', toolbar);
         var theme;
         try {
           theme = localStorage.getItem('splotch-theme');

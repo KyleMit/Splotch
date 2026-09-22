@@ -1,5 +1,6 @@
 import { settingsState, SOUND_VOLUME_DEFAULT } from '$lib/state/settings.svelte';
 import type { DrawSoundData } from '$lib/drawing/engine';
+import { scheduleIdle } from '$lib/idle';
 
 const SOUND_URLS = ['/sounds/pencil-1.mp3', '/sounds/pencil-2.mp3', '/sounds/pencil-3.mp3'];
 const CLEAR_PAGE_TURN_URL = '/sounds/clear-page-turn.mp3';
@@ -59,8 +60,18 @@ const CLEAR_CANCEL_GAIN_MULTIPLIER = 0.4;
 const CLEAR_PAGE_TURN_GAIN = 1;
 
 let audioContext: AudioContext | null = null;
+// Constructing an AudioContext spins up the audio device thread, which a 4x
+// throttled phone spends tens of milliseconds on. The boot path fetches the
+// first pencil sound's bytes right away but leaves the context, and the decode
+// that needs it, to this idle slot; a stroke that lands first builds the
+// context itself, so nothing waits on idle.
+let cancelContextWarmup: (() => void) | undefined;
 const buffers: AudioBuffer[] = [];
 const loadPromises = new Map<string, Promise<void>>();
+// Encoded bytes fetched ahead of a context, and kept so a decode retry never
+// refetches. A failed fetch drops its entry so the next attempt retries the
+// network.
+const soundBytes = new Map<string, Promise<ArrayBuffer>>();
 const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 type PencilPlaybackKind = 'drawing' | 'volume-preview';
@@ -95,19 +106,30 @@ function ensureContext(): AudioContext | null {
   return audioContext;
 }
 
+function fetchSoundBytes(url: string): Promise<ArrayBuffer> {
+  const existing = soundBytes.get(url);
+  if (existing) return existing;
+  const pending = fetch(url).then((response) => response.arrayBuffer());
+  soundBytes.set(url, pending);
+  pending.catch(() => {
+    if (soundBytes.get(url) === pending) soundBytes.delete(url);
+  });
+  return pending;
+}
+
 function loadSound(ctx: AudioContext, url: string): Promise<void> {
   const existing = loadPromises.get(url);
   if (existing) return existing;
   if (failedUrls.has(url)) return Promise.resolve();
 
-  const pending = fetch(url)
-    .then((response) => response.arrayBuffer())
+  const pending = fetchSoundBytes(url)
     .then((data) => ctx.decodeAudioData(data))
     .then((buffer) => {
       buffers.push(buffer);
     })
     .catch(() => {
       loadPromises.delete(url);
+      soundBytes.delete(url);
       failedUrls.add(url);
     })
     .then(() => startPlaybackIfReady())
@@ -149,9 +171,22 @@ function preloadPencilSounds() {
   for (const url of SOUND_URLS) void loadSound(ctx, url);
 }
 
+function warmContextAtIdle() {
+  if (audioContext || cancelContextWarmup) return;
+  cancelContextWarmup = scheduleIdle(() => {
+    cancelContextWarmup = undefined;
+    if (canPlayDrawingSound()) preloadFirstPencilSound();
+  });
+}
+
 export function preloadFirstDrawSound() {
   if (!canPlayDrawingSound()) return;
-  preloadFirstPencilSound();
+  if (audioContext) {
+    preloadFirstPencilSound();
+    return;
+  }
+  void fetchSoundBytes(SOUND_URLS[0]).catch(() => {});
+  warmContextAtIdle();
 }
 
 export function preloadDrawSounds() {

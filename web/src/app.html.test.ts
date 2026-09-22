@@ -569,7 +569,7 @@ describe('toolbar before first paint', () => {
     localStorage.setItem(STORAGE_KEYS.toolbarStyle, preference);
     new Function(bootScript)();
     expect(document.documentElement.getAttribute('data-toolbar')).toBe(
-      preference === 'bare' ? 'bare' : null
+      preference === 'bare' ? 'bare' : 'buttons'
     );
   });
 });

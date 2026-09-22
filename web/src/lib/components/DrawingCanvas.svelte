@@ -1,3 +1,11 @@
+<script module lang="ts">
+  // The paper-sheet texture this component's stylesheet paints. The route head
+  // preloads the same file, and CSS cannot import a constant, so the url() sites
+  // below and exportDrawing.ts carry the literal; paperTexture.test.ts fails
+  // if any of them drifts from this one.
+  export const PAPER_TEXTURE_URL = '/icons/handmade-paper.webp';
+</script>
+
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
   import {
