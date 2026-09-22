@@ -214,9 +214,7 @@
       border-color var(--duration-base) ease,
       box-shadow var(--duration-base) ease,
       transform var(--duration-base) ease;
-    /* The themed float shadow: a black drop shadow vanished on the dark bar and
-       the swatches went flat, while its dark value adds the hairline that lifts
-       black and navy off the surface. */
+    /* Themed: a black drop shadow vanished on the dark bar and went flat. */
     box-shadow: var(--float-shadow);
     touch-action: manipulation; /* Prevent iOS gesture delays */
   }

@@ -7,8 +7,8 @@
   import ScaleSections from '$lib/components/styleguide/ScaleSections.svelte';
   import TypeSections from '$lib/components/styleguide/TypeSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
+  import BackLink from '$lib/components/page/BackLink.svelte';
   import BrandMark from '$lib/components/page/BrandMark.svelte';
-  import Icon from '$lib/components/Icon.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
   import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
@@ -194,19 +194,13 @@
 
   <div class="shell" id="top">
     <div class="toc" bind:this={sidebar}>
-      <a class="back" href="/">
-        <Icon name="chevron-left" class="back-icon" aria-hidden="true" />
-        Back to drawing
-      </a>
+      <BackLink />
       <SidebarToc items={tocItems} {active} label="Contents" />
     </div>
 
     <main class="styleguide">
       <div class="hero">
-        <a class="back mobile-back" href="/">
-          <Icon name="chevron-left" class="back-icon" aria-hidden="true" />
-          Back to drawing
-        </a>
+        <BackLink class="mobile-back" />
         <h1>Splotch design system</h1>
         <p class="lede">
           The visual language, rendered live from its sources. If it's not on this page, it's not
@@ -415,28 +409,10 @@
     padding: 28px 0 24px;
   }
 
-  /* PageShell's .back recipe: a 44px target, its growth handed back by margin,
-     and the chevron icon in place of a "←" the Quicksand subsets do not carry. */
-  .back {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    min-height: 44px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    color: var(--brand-text);
-    text-decoration: none;
-    margin: -11px 0 calc(var(--space-5) - 11px);
-  }
-
-  .back :global(.back-icon) {
-    width: 18px;
-    height: 18px;
-    margin-left: -5px;
-  }
-
-  .back :global(.back-icon svg) {
-    fill: currentColor;
+  /* The link hands its 44px growth back through its own top margin; the
+     bottom keeps the rail's step down to the contents. */
+  .toc :global(.back) {
+    margin-bottom: calc(var(--space-5) - 11px);
   }
 
   .styleguide {
@@ -464,7 +440,7 @@
     padding: 40px 0 var(--space-2);
   }
 
-  .mobile-back {
+  .hero :global(.mobile-back) {
     display: flex;
     margin-bottom: var(--space-4);
   }
@@ -596,7 +572,7 @@
       display: block;
     }
 
-    .mobile-back {
+    .hero :global(.mobile-back) {
       display: none;
     }
   }
