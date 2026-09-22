@@ -331,9 +331,9 @@ export async function hydrateDurableStorage() {
     return restored;
   });
   if (completedRestore !== undefined) restored = completedRestore;
-  // localStorage is now repopulated, so every registered reloader re-reads fresh
-  // values. Only fire when something actually changed — a no-op restore leaves
-  // the live stores untouched.
+  // The restore pass has repopulated localStorage, so every registered reloader
+  // re-reads fresh values. Only fire when something actually changed — a no-op
+  // restore leaves the live stores untouched.
   if (restored) {
     notifyDurableRestore();
   }

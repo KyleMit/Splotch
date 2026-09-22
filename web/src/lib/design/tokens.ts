@@ -10,8 +10,7 @@ import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
 // hand-synced mirror to drift.
 //
 // The `ThemeTokens` interface is what keeps light and dark structurally
-// identical — the compiler now enforces what app.css previously demanded via
-// a "these blocks MUST stay identical" comment.
+// identical: a token added to one theme and not the other fails the compiler.
 
 const BRAND_HEX = '#ab71e1';
 

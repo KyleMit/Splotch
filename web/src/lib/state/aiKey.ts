@@ -64,11 +64,11 @@ export function hydrateApiKey() {
 
     // Deleting is driven by recognising the retired shape, not by failing to
     // recognise the current one: a destructive step keyed off a negation removes
-    // anything a future key format is not yet known to be. A key for the provider
-    // the app used to call is not a working credential any more (ADR-0113) —
-    // restoring it would leave AI switched on and fail every generation with an
-    // upstream error the parent cannot act on, while forgetting it puts Settings
-    // back into the state that explains what to do.
+    // anything a future key format is not yet known to be. A key of the retired
+    // shape is not a working credential for the provider the app calls
+    // (ADR-0113) — restoring it would leave AI switched on and fail every
+    // generation with an upstream error the parent cannot act on, while
+    // forgetting it puts Settings back into the state that explains what to do.
     if (key && looksLikeRetiredGeminiKey(key)) {
       await clearApiKey();
       return;

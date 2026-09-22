@@ -39,7 +39,7 @@ function defaultForceLandscapeOrientation() {
 // setting means adding one entry here (plus a one-line named-export wrapper so
 // the setter keeps its stable import name — ES modules can't generate those).
 // Forgetting the reloadSettings entry — the bug this table exists to prevent —
-// is now impossible.
+// is impossible.
 const BOOL_SETTINGS = {
   soundEnabled: [STORAGE_KEYS.soundEnabled, true],
   drawingSoundEnabled: [STORAGE_KEYS.drawingSoundEnabled, true],

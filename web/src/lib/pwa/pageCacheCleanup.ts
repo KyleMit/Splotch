@@ -1,13 +1,13 @@
 // The service worker's runtime page cache, and the cleanup its activation runs.
 //
-// Navigations to the drawing app were once cached in the page cache under their
-// exact URLs, one more for each update a stale-page recovery reload carried. The
-// app-shell route (appShellRoute.ts) now answers them and never reads that cache,
-// so those entries would stay on the device forever. Workbox's expiration
-// plugin cannot cap them either: it tracks only the entries it wrote itself.
-// The navigation route therefore writes a cache of a new name, and activation
-// deletes the old cache whole. Nothing reads the old cache any more, and every
-// entry in the new one is counted against its cap.
+// The app-shell route (appShellRoute.ts) answers navigations to the drawing app
+// and never reads LEGACY_PAGES_CACHE_NAME, so the entries a device already holds
+// there — one per exact navigation URL, plus one more for each update a
+// stale-page recovery reload carried — are unreachable and unbounded. Workbox's
+// expiration plugin cannot cap them either: it tracks only the entries it wrote
+// itself. The navigation route therefore writes under PAGES_CACHE_NAME, and
+// activation deletes the legacy cache whole, so nothing reads an entry that
+// counts against no cap.
 //
 // Workbox's generated worker has no activate hook of its own, so the listener
 // ships as a separate script the worker loads with `importScripts`.
