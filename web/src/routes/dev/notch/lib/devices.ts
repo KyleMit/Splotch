@@ -233,10 +233,10 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     cornerRadiusPx: 25,
     cutout: NO_CUTOUT,
     insets: {
-      portrait: { top: 24, right: 0, bottom: 20, left: 0 },
-      'landscape-left': { top: 24, right: 0, bottom: 20, left: 0 },
-      'landscape-right': { top: 24, right: 0, bottom: 20, left: 0 },
-      'portrait-upside-down': { top: 24, right: 0, bottom: 20, left: 0 },
+      portrait: { top: 32, right: 0, bottom: 20, left: 0 },
+      'landscape-left': { top: 32, right: 0, bottom: 20, left: 0 },
+      'landscape-right': { top: 32, right: 0, bottom: 20, left: 0 },
+      'portrait-upside-down': { top: 32, right: 0, bottom: 20, left: 0 },
     },
     confidence: 'high',
     notes:
@@ -253,10 +253,10 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     cornerRadiusPx: 21,
     cutout: NO_CUTOUT,
     insets: {
-      portrait: { top: 24, right: 0, bottom: 20, left: 0 },
-      'landscape-left': { top: 24, right: 0, bottom: 20, left: 0 },
-      'landscape-right': { top: 24, right: 0, bottom: 20, left: 0 },
-      'portrait-upside-down': { top: 24, right: 0, bottom: 20, left: 0 },
+      portrait: { top: 32, right: 0, bottom: 20, left: 0 },
+      'landscape-left': { top: 32, right: 0, bottom: 20, left: 0 },
+      'landscape-right': { top: 32, right: 0, bottom: 20, left: 0 },
+      'portrait-upside-down': { top: 32, right: 0, bottom: 20, left: 0 },
     },
     confidence: 'high',
     notes:
@@ -273,10 +273,10 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     cornerRadiusPx: 18,
     cutout: NO_CUTOUT,
     insets: {
-      portrait: { top: 24, right: 0, bottom: 20, left: 0 },
-      'landscape-left': { top: 24, right: 0, bottom: 20, left: 0 },
-      'landscape-right': { top: 24, right: 0, bottom: 20, left: 0 },
-      'portrait-upside-down': { top: 24, right: 0, bottom: 20, left: 0 },
+      portrait: { top: 32, right: 0, bottom: 20, left: 0 },
+      'landscape-left': { top: 32, right: 0, bottom: 20, left: 0 },
+      'landscape-right': { top: 32, right: 0, bottom: 20, left: 0 },
+      'portrait-upside-down': { top: 32, right: 0, bottom: 20, left: 0 },
     },
     confidence: 'medium',
     notes:
