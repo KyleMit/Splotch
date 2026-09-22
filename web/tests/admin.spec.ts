@@ -235,6 +235,11 @@ test('web /admin chevron press feedback beats hover on a hover-capable pointer',
   }
 });
 
+// Outlasts the reveal's close animation, which runs for `--duration-fast`, so
+// the focus assertion after it observes where the finished transition left
+// focus rather than racing it.
+const REVEAL_CLOSE_SETTLE_MS = 400;
+
 // Closing the reveal must drop its controls from the tab order the moment
 // `open` flips, not when the close animation ends (PR #950 review): a
 // transitioned visibility kept the closing subtree focusable in
@@ -279,10 +284,9 @@ test('web /admin closing the reveal removes its actions from the tab order immed
   );
   expect(focusedLabel).not.toBe(`Copy link for ${token}`);
 
-  // Idle past the close animation (--duration-fast), then confirm focus was
-  // not dumped to <body> when it ended — it should sit on the next row's
-  // Copy button.
-  await page.waitForTimeout(400);
+  // Idle past the close animation, then confirm focus was not dumped to <body>
+  // when it ended — it should sit on the next row's Copy button.
+  await page.waitForTimeout(REVEAL_CLOSE_SETTLE_MS);
   expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 });
 
