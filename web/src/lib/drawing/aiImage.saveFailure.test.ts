@@ -82,4 +82,22 @@ describe('AI auto-save failures', () => {
     expect(state.phase).toMatchObject({ kind: 'result', autoSave: { status: 'photos' } });
     expect(mocks.reportSaveFailure).not.toHaveBeenCalled();
   });
+
+  // The drawing copy dedupes on a content signature, so an unchanged drawing normally saves once
+  // across re-rolls. A digest the platform cannot compute yields a null signature, which is never a
+  // duplicate: the copy is saved again rather than the failure escaping past the revealed picture.
+  it('saves the drawing on every re-roll when its digest cannot be computed', async () => {
+    vi.spyOn(crypto.subtle, 'digest').mockRejectedValue(new Error('digest unavailable'));
+    mocks.saveImageBlob.mockResolvedValue({ status: 'photos' });
+    const unchanged = new Blob(['same-drawing']);
+
+    await runAutoSavedGeneration(unchanged);
+    const state = await runAutoSavedGeneration(unchanged);
+
+    expect(state.phase).toMatchObject({ kind: 'result', autoSave: { status: 'photos' } });
+    const tags = mocks.saveImageBlob.mock.calls.map(([, baseName]) => baseName);
+    expect(tags.filter((tag) => tag === 'splotch-ai')).toHaveLength(2);
+    expect(tags.filter((tag) => tag === 'splotch')).toHaveLength(2);
+    expect(mocks.reportSaveFailure).not.toHaveBeenCalled();
+  });
 });

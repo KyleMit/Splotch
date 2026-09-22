@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SaveResult } from '$lib/saveNaming';
 import type { HeldPicture, UnsavedPictureStore } from '$lib/drawing/unsavedPictureStore';
 import {
@@ -84,6 +84,29 @@ describe('reportSaveFailure', () => {
 
     expect(save).toHaveBeenCalledTimes(UNSAVED_PICTURE_LIMIT);
     expect(save.mock.calls.map(([saved]) => saved.baseName)).not.toContain('name-0');
+  });
+});
+
+// A picture with no content identity is still a picture the child made, so a digest the platform
+// cannot compute must degrade to a null signature rather than fail the report and drop it.
+describe('a report whose picture cannot be hashed', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('holds the picture with no content signature', async () => {
+    vi.spyOn(crypto.subtle, 'digest').mockRejectedValue(new Error('digest unavailable'));
+    const store = memoryStore();
+    const failure = failureWith(saverReturning(), store);
+    const held = picture('unhashable');
+
+    await expect(failure.reportSaveFailure('denied', held)).resolves.toBeUndefined();
+
+    expect(failure.outcome).toBe('denied');
+    expect(failure.pictureCount).toBe(1);
+    await vi.waitFor(() =>
+      expect(store.held).toMatchObject([{ blob: held.blob, outcome: 'denied', signature: null }])
+    );
   });
 });
 
