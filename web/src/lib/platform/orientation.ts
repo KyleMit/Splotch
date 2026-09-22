@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import {
+  getPlatform,
   isNative,
   supportsOrientationLock,
   type LockableScreenOrientation,
@@ -49,15 +50,26 @@ export async function applyDeviceOrientationPreference(
   lastRequested = request;
 
   // Native: lock at the Activity level via @capacitor/screen-orientation. Unlike
-  // the Web Screen Orientation API, this overrides the OS Auto-Rotate setting, so
-  // the parent's choice is honored even when the device has rotation turned off.
+  // the Web Screen Orientation API, a Portrait or Landscape lock overrides the OS
+  // Auto-Rotate setting. The plugin's unlock() defers to that setting instead, so
+  // Android unlocks through SensorOrientation to rotate even with Auto-Rotate off;
+  // iOS offers no way past its rotation lock and keeps unlock().
   // The literal __IS_CAPACITOR__ lets Rollup drop the plugin import from the web
   // bundle; isNative() alone is a runtime check it can't tree-shake.
   if (__IS_CAPACITOR__ && native) {
     try {
-      const { ScreenOrientation } = await import('@capacitor/screen-orientation');
-      if (target === 'unlocked') await ScreenOrientation.unlock();
-      else await ScreenOrientation.lock({ orientation: target });
+      // The two plugins load as separate chunks, so an older request's import
+      // can settle after a newer one's; once superseded, it must not reach the
+      // Activity. Plugin calls themselves dispatch in call order.
+      if (target === 'unlocked' && getPlatform() === 'android') {
+        const { SensorOrientation } = await import('$lib/plugins/sensorOrientation');
+        if (request === lastRequested) await SensorOrientation.followSensor();
+      } else {
+        const { ScreenOrientation } = await import('@capacitor/screen-orientation');
+        if (request !== lastRequested) return;
+        if (target === 'unlocked') await ScreenOrientation.unlock();
+        else await ScreenOrientation.lock({ orientation: target });
+      }
     } catch {
       // Plugin unavailable or the platform refused the lock — the setting stays
       // persisted for the next launch. Clearing the latch lets a later call with

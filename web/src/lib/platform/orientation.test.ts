@@ -2,20 +2,28 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   native: false,
+  platform: 'android' as 'android' | 'ios',
   supportsLock: true,
   nativeLock: vi.fn<(options: { orientation: string }) => Promise<void>>(),
   nativeUnlock: vi.fn<() => Promise<void>>(),
+  followSensor: vi.fn<() => Promise<void>>(),
+  sensorModuleDelayMs: 0,
 }));
 
 vi.mock('$app/environment', () => ({ browser: true }));
 vi.mock('$lib/platform', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/platform')>()),
   isNative: () => mocks.native,
+  getPlatform: () => (mocks.native ? mocks.platform : 'web'),
   supportsOrientationLock: () => mocks.supportsLock,
 }));
 vi.mock('@capacitor/screen-orientation', () => ({
   ScreenOrientation: { lock: mocks.nativeLock, unlock: mocks.nativeUnlock },
 }));
+vi.mock('$lib/plugins/sensorOrientation', async () => {
+  await new Promise((resolve) => setTimeout(resolve, mocks.sensorModuleDelayMs));
+  return { SensorOrientation: { followSensor: mocks.followSensor } };
+});
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -30,9 +38,12 @@ async function freshModule() {
 
 beforeEach(() => {
   mocks.native = false;
+  mocks.platform = 'android';
+  mocks.sensorModuleDelayMs = 0;
   mocks.supportsLock = true;
   mocks.nativeLock.mockReset().mockResolvedValue(undefined);
   mocks.nativeUnlock.mockReset().mockResolvedValue(undefined);
+  mocks.followSensor.mockReset().mockResolvedValue(undefined);
   webLock.mockReset().mockResolvedValue(undefined);
   webUnlock.mockReset();
   Object.defineProperty(window.screen, 'orientation', {
@@ -85,13 +96,53 @@ describe('applyDeviceOrientationPreference on native', () => {
   });
 
   it('retries the same target after a failed unlock', async () => {
-    mocks.nativeUnlock.mockRejectedValue(new Error('plugin not ready'));
+    mocks.followSensor.mockRejectedValue(new Error('plugin not ready'));
     const { applyDeviceOrientationPreference } = await freshModule();
 
     await applyDeviceOrientationPreference(false, false, false);
     await applyDeviceOrientationPreference(false, false, false);
 
-    expect(mocks.nativeUnlock).toHaveBeenCalledTimes(2);
+    expect(mocks.followSensor).toHaveBeenCalledTimes(2);
+  });
+
+  it('follows the sensor on Android so Auto rotates past the OS rotation lock', async () => {
+    const { applyDeviceOrientationPreference } = await freshModule();
+
+    await applyDeviceOrientationPreference(false, false, false);
+
+    expect(mocks.followSensor).toHaveBeenCalledTimes(1);
+    expect(mocks.nativeUnlock).not.toHaveBeenCalled();
+  });
+
+  it('drops an Auto request that a Portrait request overtook while loading', async () => {
+    mocks.sensorModuleDelayMs = 10;
+    const { applyDeviceOrientationPreference } = await freshModule();
+
+    const auto = applyDeviceOrientationPreference(false, false, false);
+    await applyDeviceOrientationPreference(true, false, false);
+    await auto;
+
+    expect(mocks.nativeLock).toHaveBeenCalledWith({ orientation: 'portrait' });
+    expect(mocks.followSensor).not.toHaveBeenCalled();
+  });
+
+  it('unlocks through the plugin on iOS', async () => {
+    mocks.platform = 'ios';
+    const { applyDeviceOrientationPreference } = await freshModule();
+
+    await applyDeviceOrientationPreference(false, false, false);
+
+    expect(mocks.nativeUnlock).toHaveBeenCalledTimes(1);
+    expect(mocks.followSensor).not.toHaveBeenCalled();
+  });
+
+  it('pins Portrait through the plugin after Auto on Android', async () => {
+    const { applyDeviceOrientationPreference } = await freshModule();
+
+    await applyDeviceOrientationPreference(false, false, false);
+    await applyDeviceOrientationPreference(true, false, false);
+
+    expect(mocks.nativeLock).toHaveBeenCalledWith({ orientation: 'portrait' });
   });
 });
 
