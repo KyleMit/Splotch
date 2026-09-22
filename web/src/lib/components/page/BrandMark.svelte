@@ -42,9 +42,12 @@
   @media (max-width: 540px) {
     .brand-mark {
       gap: 6px;
-      --crayon-width: 7px;
-      --crayon-height: 6px;
-      --crayon-gap: 2px;
+      /* Same 60px strip as before, but the height shrinks more than the
+         width so the chips keep the desktop mark's bar silhouette; at 7x6
+         with a pill radius they were a row of dots. */
+      --crayon-width: 9px;
+      --crayon-height: 5px;
+      --crayon-gap: 3px;
     }
 
     .wordmark {

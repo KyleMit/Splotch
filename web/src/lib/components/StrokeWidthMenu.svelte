@@ -85,9 +85,12 @@
     padding: 0;
   }
 
+  /* True size while the option has room for it; contained once Button Size
+     shrinks the option below 56px (42px at 70%), where the pinned preview
+     otherwise overhangs the option on every side. */
   .stroke-width-menu.eraser-mode .flyout-option :global(.action-icon) {
-    width: 56px;
-    height: 56px;
+    width: min(56px, 100%);
+    height: min(56px, 100%);
     flex-shrink: 0;
   }
 </style>

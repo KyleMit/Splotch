@@ -2,10 +2,10 @@ import {
   ACTION_BUTTON_GAP,
   DRAWER_TOGGLE_SIZE,
   PHONE_TOOLBAR_GAP_PX,
-  FLYOUT_OPTION_MIN_BASE_PX,
   PANEL_INSET,
   visibleActionButtonCount,
   renderedActionButtonSize,
+  renderedFlyoutOptionSize,
 } from './actionButtonLayout';
 import { layoutState } from './state/layout.svelte';
 import { actionControlShown, enabledOptionalBrushes } from './state/settings.svelte';
@@ -76,7 +76,7 @@ function flyoutRectangle(
   compact: boolean
 ): Rect {
   const { viewportWidth: width, safeArea: safe, orientation } = layoutState;
-  const option = Math.max(size, FLYOUT_OPTION_MIN_BASE_PX);
+  const option = renderedFlyoutOptionSize();
   const count = open === 'brush' ? enabledOptionalBrushes().length + 1 : STROKE_SIZES.length;
   const vertical = portrait && width <= VERTICAL_MENU_MAX_WIDTH_PX;
   let menuWidth = vertical ? option : count * option + (count - 1) * BARE_MENU_GAP_PX;

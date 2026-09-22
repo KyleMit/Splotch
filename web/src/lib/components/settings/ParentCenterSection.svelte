@@ -316,13 +316,12 @@
       column-gap: var(--space-6);
     }
 
-    /* Deliberately over-qualified: SettingsModal's shared card padding and
-       radius reach these tiles through `.settings-content :global(.setting)`,
+    /* Deliberately over-qualified: SettingsModal's shared card padding
+       reaches these tiles through `.settings-content :global(.setting)`,
        which already carries three classes once Svelte adds its scope, so a
        plain `.policy-card` ties it and loses on source order. */
     .policy-list .policy-card.setting {
       padding: var(--space-4) var(--space-5);
-      border-radius: var(--radius-md);
     }
 
     .policy-header {

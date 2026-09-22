@@ -180,13 +180,21 @@
     align-content: space-between;
     width: var(--palette-landscape-width);
     gap: 12px;
+    /* Bottom: the clearance that centres the custom swatch on the Brush Button
+       (bare-toolbar.spec.ts); the vertical clip below trims the last swatch's
+       shadow where it is under 12px, since it cannot grow. */
     padding: 12px 12px var(--palette-bottom);
     background: var(--palette-surface, var(--surface));
     box-shadow: 2px 0 10px rgb(0 0 0 / 10%);
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
     position: relative;
-    overflow: hidden;
+    /* Visible sideways so the selection bloom can overshoot the edges; clipped
+       (not hidden: no scroll container) vertically because the ladder trims by
+       viewport height, so a status-bar iPad's inset-shortened column overruns
+       its last swatch (safe-area-matrix.spec.ts) and would scroll the page. */
+    overflow-x: visible;
+    overflow-y: clip;
     touch-action: manipulation; /* Prevent iOS gesture delays */
   }
 
@@ -333,7 +341,7 @@
      (ring visible), not .active — tapping the swatch arms it before a color is
      picked, and the cluster shouldn't pop ringless. Popped it spans exactly the
      content box (52px at 60px), well inside the button, so nothing clips
-     against the palette's overflow: hidden. */
+     against the portrait bar's overflow clip. */
   .gradient-swatch.ringed :global(.more-colors-icon) {
     transform: translate(-50%, -50%) scale(var(--pop-scale));
   }
@@ -359,11 +367,16 @@
          the AI Waiting Polaroid both start below this bar by reading the same
          token, so the bar has to be exactly that tall. */
       height: var(--palette-portrait-height);
-      padding: 10px;
+      /* 8 + 55 + 12 = the 75px bar: the swatch sits 2px higher so its 12px
+         drop shadow ends at the bar's edge instead of 2px past the clip. */
+      padding: 8px 10px 12px;
       gap: 8px;
       box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
-      overflow-x: hidden;
-      overflow-y: visible;
+      /* The clip margin lets the swatch bloom overshoot the bar (WebKit ignores
+         it and clips at the padding box); no overrun risk here, the bar is a
+         declared height. */
+      overflow: clip;
+      overflow-clip-margin: 12px;
       flex-wrap: nowrap;
     }
 
@@ -539,7 +552,7 @@
     :global(html[data-toolbar='bare']) .color-palette {
       width: calc(100% - var(--safe-area-left) - var(--safe-area-right));
       bottom: auto;
-      padding: 10px;
+      padding: 8px 10px 12px;
     }
   }
 </style>

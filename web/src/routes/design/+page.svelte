@@ -407,13 +407,15 @@
     padding: 28px 0 24px;
   }
 
+  /* PageShell's .back recipe: a 44px target, its growth handed back by margin. */
   .back {
-    display: block;
+    display: inline-block;
+    line-height: 44px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--brand-text);
     text-decoration: none;
-    margin-bottom: var(--space-5);
+    margin: -11px 0 calc(var(--space-5) - 11px);
   }
 
   .styleguide {
@@ -443,7 +445,7 @@
 
   .mobile-back {
     display: block;
-    margin-bottom: 14px;
+    margin-bottom: var(--space-4);
   }
 
   h1 {
@@ -457,7 +459,7 @@
   }
 
   .lede {
-    margin: 14px 0 0;
+    margin: var(--space-4) 0 0;
     max-width: 62ch;
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);

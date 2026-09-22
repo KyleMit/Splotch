@@ -170,7 +170,11 @@
     line-height: 0; /* drop the inline-image baseline gap under the sizer */
     border-radius: var(--radius-md);
     overflow: hidden;
-    background: #fcfbf8;
+    /* Themed paper, not the print white: before the export decodes (and
+       around a picture whose ratio differs from the placeholder) this is an
+       empty box inside the card, and at night a cream box in a dark card is
+       the wrong colour. The polaroid morph repaints it as print white. */
+    background: var(--paper);
     box-shadow: 0 4px 16px rgb(0 0 0 / 15%);
     /* Own the touch gesture so the scoped pinch-zoom (use:pinchZoom) drives the
        preview instead of the browser — the drawing surface stays zoom-locked

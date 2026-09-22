@@ -93,7 +93,10 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(
       demo.getByRole('heading', { name: 'Heading with count · Count', level: 3 })
     ).toBeVisible();
-    await expect(demo.getByRole('heading')).toHaveCount(2);
+    await expect(
+      demo.getByRole('heading', { name: 'Strong heading', level: 4, exact: true })
+    ).toBeVisible();
+    await expect(demo.getByRole('heading')).toHaveCount(3);
     const heading = demo.getByRole('heading', { name: 'Heading', exact: true });
     await expect(heading).toHaveCSS('padding-bottom', '0px');
     await expect(heading).toHaveCSS('gap', '12px');

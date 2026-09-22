@@ -130,7 +130,7 @@
   }
 
   .gate-content {
-    padding: 22px var(--space-6) var(--space-5);
+    padding: var(--space-6) var(--space-6) var(--space-5);
   }
 
   /* --gate-shake-duration is stamped by the markup from GATE_SHAKE_MS, the

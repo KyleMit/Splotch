@@ -71,11 +71,15 @@
   p {
     font-size: var(--font-size-md);
     color: var(--text-soft);
+    max-width: 320px;
   }
 
+  /* Mirrors ErrorScreen's .error-restart: this fallback is the same screen
+     for when that component's lazy import fails, so it wears the same
+     button. */
   button {
-    min-height: 44px;
-    padding: var(--space-3) var(--space-7);
+    margin-top: var(--space-2);
+    padding: 14px var(--space-7);
     border: 0;
     border-radius: var(--radius-pill);
     background: var(--brand-solid);

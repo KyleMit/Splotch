@@ -630,7 +630,9 @@
 
   .settings-pane-title {
     margin: 0 0 20px;
-    font-size: var(--font-size-xl);
+    /* One step under the dialog's own title, matching the phone shell's
+       drill-in sub-heading, so the header reads as the pane's parent. */
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
     color: var(--text-strong);
   }

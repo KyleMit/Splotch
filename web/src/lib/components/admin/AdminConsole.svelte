@@ -412,6 +412,7 @@
   /* Hero Sign out — the brand-wash ghost beside the H1. */
   .sign-out {
     padding: 8px 14px;
+    min-height: 44px;
     color: var(--brand-text);
     background: var(--brand-wash);
     border: none;
@@ -449,11 +450,6 @@
     width: 100%;
   }
 
-  .sign-in-form .cta {
-    padding: 0 var(--space-6);
-    min-height: 44px;
-  }
-
   .add-form input {
     flex: 1;
     min-width: 0;
@@ -461,7 +457,7 @@
     padding: 13px 16px;
     font-size: var(--input-font-size);
     font-family: inherit;
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border-warm-strong);
     border-radius: var(--radius-md);
     background: var(--surface);
     color: var(--text-strong);
@@ -475,7 +471,9 @@
   /* The standalone pages' solid call to action — the same shape as /feedback's
      submit, so the consoles read as one set with the other parent pages. */
   .cta {
-    padding: 15px 24px;
+    /* One height for the sign-in and add-code forms' solid CTA. */
+    padding: 0 var(--space-6);
+    min-height: 48px;
     border: none;
     border-radius: var(--radius-md);
     background: var(--brand-solid);
@@ -515,7 +513,7 @@
     }
 
     .cta {
-      padding: 13px 18px;
+      padding: 0 var(--space-4);
     }
   }
 </style>

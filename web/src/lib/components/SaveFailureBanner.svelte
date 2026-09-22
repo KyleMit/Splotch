@@ -73,15 +73,12 @@
     {#if offerSettings || pictureCount > 0}
       <div class="save-failure-actions">
         {#if offerSettings}
-          <Button variant="brand" size="md" class="save-failure-action" onclick={onOpenSettings}>
-            Open Settings
-          </Button>
+          <Button variant="brand" size="md" onclick={onOpenSettings}>Open Settings</Button>
         {/if}
         {#if pictureCount > 0}
           <Button
             variant={offerSettings ? 'wash' : 'brand'}
             size="md"
-            class="save-failure-action"
             busy={saveFailureState.retrying}
             onclick={() => void retryUnsavedPictures()}
           >
@@ -202,9 +199,5 @@
     justify-content: flex-end;
     gap: var(--space-2);
     margin-top: var(--space-3);
-  }
-
-  .save-failure-actions :global(.save-failure-action) {
-    min-height: 44px;
   }
 </style>

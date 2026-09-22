@@ -240,7 +240,7 @@
     padding: 0 14px;
     color: var(--brand-text);
     background: var(--surface);
-    border: var(--border-width) solid var(--border);
+    border: var(--border-width) solid var(--border-warm-strong);
     border-radius: var(--radius-sm);
     font-family: inherit;
     font-size: var(--font-size-sm);

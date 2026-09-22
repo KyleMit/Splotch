@@ -630,7 +630,9 @@
     display: grid;
     grid-template-columns: 1fr;
     align-items: center;
-    margin-right: 8px;
+    /* 4px plus the toggle's own 8px icon padding puts the chevron on the
+       row's 12px rhythm. */
+    margin-right: 4px;
     /* Grid-track animation repaints the scene beneath this fixed panel on mobile
        Chromium. Keep the motion perceptible without spanning enough frames to
        starve drawing-surface presentation. */
@@ -704,7 +706,7 @@
       grid-template-columns: none;
       grid-template-rows: 1fr;
       margin-right: 0;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     .actions-drawer-inner {

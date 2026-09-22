@@ -2,6 +2,7 @@
   import { tick, untrack } from 'svelte';
   import ToggleRow from './ToggleRow.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
+  import RuleLabel from '../design/RuleLabel.svelte';
   import {
     settingsState,
     setToolDrawerEnabled,
@@ -101,7 +102,7 @@
   {#if settingsState.toolDrawerEnabled}
     <div class="tool-drawer-settings" transition:sectionReveal>
       <div class="tools-block" bind:this={toolsBlockEl}>
-        <h4 class="tools-heading">Drawing Tools</h4>
+        <RuleLabel as="h4" strong class="tools-heading">Drawing Tools</RuleLabel>
         {#if useChips}
           <SegmentedPicker
             variant="chip"
@@ -162,13 +163,8 @@
     gap: 6px;
   }
 
-  .tools-heading {
-    margin: 0 0 10px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-soft);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
+  .tools-block :global(h4.tools-heading) {
+    margin-bottom: 10px;
   }
 
   .pencil-eraser {

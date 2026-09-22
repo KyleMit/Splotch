@@ -57,8 +57,13 @@
     padding: 0;
     position: relative;
     cursor: pointer;
-    transition: background var(--duration-base) ease;
+    transition:
+      background var(--duration-base) ease,
+      box-shadow var(--duration-base) ease;
     flex-shrink: 0;
+    /* The OFF track is two shades from its card (1.1:1); this rim gives its
+       boundary the 3:1 WCAG 1.4.11 asks of a state you read by position. */
+    box-shadow: inset 0 0 0 var(--border-width) var(--icon-muted);
   }
 
   @media (hover: hover) {
@@ -69,6 +74,7 @@
 
   .toggle-switch.active {
     background: var(--brand);
+    box-shadow: none;
   }
 
   @media (hover: hover) {

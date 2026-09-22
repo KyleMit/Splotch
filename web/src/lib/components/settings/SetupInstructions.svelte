@@ -3,6 +3,7 @@
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
+  import RuleLabel from '../design/RuleLabel.svelte';
   import '$lib/components/deferredIcons';
   import {
     installState,
@@ -236,7 +237,7 @@
   </section>
 {:else}
   <section class="os-section">
-    <h3 class="os-heading">{OS_LABEL[deviceOs]}</h3>
+    <RuleLabel as="h3" strong class="os-heading">{OS_LABEL[deviceOs]}</RuleLabel>
     <Disclosure class="help-section">
       {#snippet summary()}
         <span class="summary-text">
@@ -291,13 +292,8 @@
     flex-shrink: 0;
   }
 
-  .os-heading {
-    margin: 0 0 10px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-soft);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
+  .os-section :global(h3.os-heading) {
+    margin-bottom: 10px;
   }
 
   /* Native: the lock-setup title is the section header, styled to match the

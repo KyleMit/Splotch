@@ -101,6 +101,13 @@
     --page-shadow: var(--float-shadow);
     /* Inside the sheet every band lines up on one horizontal padding. */
     --page-gutter: clamp(20px, 5vw, 34px);
+    /* The two-column reading shape /changelog and /privacy share: one rail
+       width and gutter, declared once so sibling pages one click apart wear
+       the same furniture. Off the spacing scale on purpose: the rail holds
+       the longest contents label on one row at --font-size-sm, and the
+       gutter leaves the column beside it inside --page-measure. */
+    --page-rail-width: 232px;
+    --page-rail-gutter: 48px;
 
     /* body's background is --app-bg, so a page whose ground differs from it has
        to reach the bottom of the viewport or a strip of the wrong color shows
@@ -129,8 +136,10 @@
     }
 
     .sheet {
-      /* The topbar brings its own 18px, so this lands the mark 30px down. */
-      padding: 12px 32px 36px;
+      /* The topbar brings its own 18px, so this lands the mark 30px down.
+         The sides stay on --page-gutter: anything that bleeds past the
+         gutter (the underline tabs) measures itself against it. */
+      padding: 12px var(--page-gutter) 36px;
     }
   }
 
@@ -165,6 +174,13 @@
   .back {
     flex-shrink: 0;
     white-space: nowrap;
+    /* A 44px target on a 56px bar: only the inline text was the anchor
+       (22.7px, under WCAG 2.5.8's 24px), so the box grows to the floor and
+       the negative block margin hands the growth back to the topbar. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block: -11px;
     color: var(--page-link);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
@@ -191,11 +207,17 @@
     flex: 1 1 auto;
   }
 
-  /* Rides level with the H1's cap height rather than the hero's top edge, so a
-     compact control doesn't float above the title it belongs to. */
+  /* Centred on the H1's first line rather than hung from the hero's top edge,
+     so a compact control doesn't float above the title it belongs to. The
+     H1 is fluid (34-46px at line-height 1.08), so the offset is computed
+     from it; a fixed offset was right at one viewport width only. The
+     control is the design system's 44px floor, which every hero action
+     meets (the admin console's Sign out is the one caller). */
   .hero-actions {
+    --hero-action-height: 44px;
+
     flex-shrink: 0;
-    padding-top: 6px;
+    margin-top: calc((var(--font-size-display) * 1.08 - var(--hero-action-height)) / 2);
   }
 
   h1 {
@@ -222,7 +244,8 @@
     align-items: center;
     gap: var(--space-1);
     flex-shrink: 0;
-    min-height: 32px;
+    min-height: 44px;
+    margin-block: -6px;
     padding: 0 var(--space-1);
     border: none;
     background: transparent;

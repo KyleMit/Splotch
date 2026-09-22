@@ -227,14 +227,12 @@
     line-height: 1.5;
     color: var(--text-strong);
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border-warm-strong);
     border-radius: var(--radius-sm);
   }
 
   .report-textarea:focus-visible {
     border-color: var(--brand);
-    outline: 2px solid var(--brand-text);
-    outline-offset: 2px;
   }
 
   .report-privacy-note {

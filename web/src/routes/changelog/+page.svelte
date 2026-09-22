@@ -124,15 +124,9 @@
 
 <style>
   .changelog-body {
-    /* Both off the spacing scale on purpose: the rail is the width that holds
-       "Version 1.4.0" over its date without wrapping at --font-size-sm, and the
-       gutter is what leaves the notes beside it inside --page-measure. */
-    --rail-width: 232px;
-    --rail-gutter: 56px;
-
     display: grid;
-    grid-template-columns: var(--rail-width) minmax(0, 1fr);
-    gap: var(--rail-gutter);
+    grid-template-columns: var(--page-rail-width) minmax(0, 1fr);
+    gap: var(--page-rail-gutter);
     align-items: start;
   }
 
@@ -161,6 +155,14 @@
     scroll-margin-top: var(--release-park, var(--space-6));
     padding: var(--space-8) 0;
     border-top: var(--border-width) solid var(--page-rule);
+  }
+
+  /* Above the newest release the contents row (narrow) or the hero (wide)
+     already rules the column off; a hairline right under it would read as a
+     double strike, as /privacy reasons for its first section. */
+  .changelog :global(.release:first-of-type) {
+    padding-top: 0;
+    border-top: none;
   }
 
   /* Nothing follows the oldest release, so without a reserve the scroll clamps
@@ -247,10 +249,10 @@
        padding means nothing is laid out beside the row to show through. */
     .changelog-body :global(.contents-disclosure) {
       display: block;
-      --toc-row-inset: var(--space-6);
+      --toc-row-inset: var(--space-4);
       padding-top: var(--toc-row-inset);
       background: var(--page-sheet);
-      margin-bottom: var(--space-6);
+      margin-bottom: var(--space-4);
     }
   }
 

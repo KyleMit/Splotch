@@ -48,6 +48,9 @@
     border-radius: var(--radius-md);
     font-family: inherit;
     font-weight: var(--font-weight-semibold);
+    /* The app's touch-target floor lives in the primitive, so no call site
+       has to re-add it; `sm` shrinks the type and padding, never the target. */
+    min-height: 44px;
     cursor: pointer;
     touch-action: manipulation;
     transition:

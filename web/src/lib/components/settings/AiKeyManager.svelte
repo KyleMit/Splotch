@@ -410,14 +410,14 @@
     min-width: 0;
     padding: 8px 12px;
     font-size: var(--input-font-size);
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border-warm-strong);
     border-radius: var(--radius-sm);
     background: var(--surface);
     color: var(--text-strong);
   }
 
-  .access-code-input:focus {
-    outline: none;
+  /* The global focus ring stays; the border tints alongside it. */
+  .access-code-input:focus-visible {
     border-color: var(--brand);
   }
 
@@ -450,7 +450,7 @@
     padding: 10px 12px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
-    color: var(--brand);
+    color: var(--brand-text);
   }
 
   .byok :global(.byok-howto ol) {
@@ -462,7 +462,7 @@
   }
 
   .byok :global(.byok-howto a) {
-    color: var(--brand);
+    color: var(--brand-text);
     font-weight: var(--font-weight-semibold);
   }
 

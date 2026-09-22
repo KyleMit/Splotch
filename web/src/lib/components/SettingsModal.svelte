@@ -360,7 +360,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 28px 32px 18px;
+    /* 24px sides: the sidebar and hub tiles under the title start there. */
+    padding: 28px 24px 18px;
   }
 
   .settings-header h2 {
@@ -414,7 +415,7 @@
   .hub-row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--space-3);
     flex: 1;
     min-width: 0;
     padding: 16px;
@@ -423,7 +424,9 @@
     background: transparent;
     cursor: pointer;
     text-align: left;
-    transition: background var(--duration-fast) ease;
+    transition:
+      background var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
   }
 
   .hub-action {
@@ -550,7 +553,7 @@
   .settings-content :global(.setting) {
     padding: 12px 16px;
     background: var(--surface-2);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-lg);
   }
 
   @media (max-width: 480px) {

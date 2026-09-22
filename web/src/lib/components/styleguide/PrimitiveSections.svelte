@@ -220,6 +220,10 @@
       <RuleLabel as="h3" count="Count">Heading with count</RuleLabel>
       <p>The optional count follows the heading. Content sits below the rule.</p>
     </div>
+    <div class="rule-section">
+      <RuleLabel as="h4" strong>Strong heading</RuleLabel>
+      <p>The heavier tier: section heads inside Settings, over the controls they name.</p>
+    </div>
   </div>
 
   <h3 id={primitiveSections.disclosure.id} data-sg-section>

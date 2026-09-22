@@ -62,6 +62,16 @@ function declaration(body: string, property: string, unit: string): number {
   return Number(match![1]);
 }
 
+// The inline (side) component of a `padding` shorthand: the second value when
+// the shorthand gives block and inline separately, else its only value.
+function inlinePaddingPx(body: string): number {
+  const match = body.match(/(?:^|[\s;{])padding:\s*([^;]+);/);
+  expect(match, 'expected a `padding` declaration').not.toBeNull();
+  const values = match![1].trim().split(/\s+/);
+  const inline = values.length >= 2 ? values[1] : values[0];
+  return declaration(`padding: ${inline};`, 'padding', 'px');
+}
+
 function px(body: string, property: string, variables = body): number {
   const variable = body.match(
     new RegExp(`(?:^|[\\s;{])${property}:\\s*(calc\\(\\s*-1\\s*\\*\\s*)?var\\((--[\\w-]+)\\)`)
@@ -159,7 +169,7 @@ describe('ColorPalette', () => {
     expect(PALETTE_COLUMN_GEOMETRY.swatchPx).toBe(px(swatch, 'width'));
     expect(px(swatch, 'height')).toBe(px(swatch, 'width'));
     expect(PALETTE_COLUMN_GEOMETRY.gapPx).toBe(px(palette, 'gap'));
-    expect(PALETTE_COLUMN_GEOMETRY.paddingPx).toBe(2 * px(palette, 'padding'));
+    expect(PALETTE_COLUMN_GEOMETRY.paddingPx).toBe(2 * inlinePaddingPx(palette));
   });
 
   it('restates the portrait row geometry', () => {
@@ -169,7 +179,7 @@ describe('ColorPalette', () => {
     expect(PALETTE_ROW_GEOMETRY.swatchPx).toBe(px(swatch, 'width'));
     expect(px(swatch, 'height')).toBe(px(swatch, 'width'));
     expect(PALETTE_ROW_GEOMETRY.gapPx).toBe(px(palette, 'gap'));
-    expect(PALETTE_ROW_GEOMETRY.paddingPx).toBe(2 * px(palette, 'padding'));
+    expect(PALETTE_ROW_GEOMETRY.paddingPx).toBe(2 * inlinePaddingPx(palette));
   });
 
   it('keeps orientation-driven swatch geometry out of interaction transitions', () => {

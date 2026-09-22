@@ -184,7 +184,7 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    border: 2.5px solid color-mix(in srgb, var(--brand) 25%, transparent);
+    border: 2px solid color-mix(in srgb, var(--brand) 25%, transparent);
     border-top-color: var(--brand);
     animation: polaroidSpin 900ms linear infinite;
   }

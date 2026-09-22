@@ -142,22 +142,30 @@
     border-radius: var(--radius-pill);
   }
 
+  /* A 26px disc on a 44px target: the padding is the hit area, the negative
+     margin keeps the row's layout where the 26px control alone put it, and
+     background-clip keeps the disc visibly 26px. */
   .folder-clear {
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 44px;
+    height: 44px;
+    margin: -9px;
+    padding: 9px;
+    background-clip: content-box;
     border: none;
     border-radius: 50%;
     color: var(--text-soft);
-    background: var(--surface);
+    background-color: var(--surface);
     cursor: pointer;
   }
 
-  .folder-clear:hover {
-    background: var(--surface-hover);
+  @media (hover: hover) {
+    .folder-clear:hover {
+      background-color: var(--surface-hover);
+    }
   }
 
   :global(.folder-clear-icon) {

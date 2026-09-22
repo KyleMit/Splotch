@@ -261,8 +261,10 @@
 
   .install-dismiss {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
+    /* Same footprint as the 40px disc it replaces; the extra 4px is target. */
+    margin: -2px -2px 0 0;
     padding: 0;
     border: var(--border-width) solid var(--border-warm-strong);
     border-radius: 50%;
@@ -351,7 +353,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
-    height: 40px;
+    height: 44px;
     padding: 0 var(--space-3) 0 var(--space-4);
     border: none;
     border-radius: var(--radius-pill);
@@ -453,7 +455,6 @@
     .install-cta {
       order: 1;
       flex-basis: 100%;
-      height: 44px;
       justify-content: center;
       margin-top: var(--space-1);
     }

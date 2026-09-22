@@ -288,7 +288,7 @@ body {
 .confirm-card-content {
   display: flex;
   flex-direction: column;
-  padding: 22px var(--space-6) var(--space-5);
+  padding: var(--space-6) var(--space-6) var(--space-5);
   gap: var(--space-4);
 }
 
@@ -503,6 +503,11 @@ body {
   --action-btn-base-landscape: 60px;
   --action-btn-base-portrait: 55px;
   --action-btn-base: var(--action-btn-base-landscape);
+  /* Corner radius as a share of the face; the action buttons and their
+     flyout options both round by it so a menu stays concentric with the
+     button that opened it. On :root so the /design specimen, which sits
+     outside .actions-panel, rounds the same way. */
+  --action-btn-radius-ratio: 0.3;
 }
 
 @media (max-width: 599.98px), (max-height: 599.98px) {
@@ -573,7 +578,10 @@ body {
   height: var(--action-btn-size);
   background: var(--float-surface);
   border: 2px solid var(--float-border);
-  border-radius: 18px;
+  /* A fixed share of the face, so a phone at Button Size 70% (35px) and a
+     13" iPad at 130% (88px) keep the same corner shape instead of the one
+     going near-circular and the other square with a nick. 18px at 60px. */
+  border-radius: calc(var(--action-btn-size) * var(--action-btn-radius-ratio));
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -713,6 +721,15 @@ html[data-ai-free-count]
   --stagger: 40ms;
   --flyout-from-x: 0px;
   --flyout-from-y: 6px;
+  --flyout-menu-padding: 6px;
+  /* The options are action-button sized (see .flyout-option below) and round
+     by the action button's ratio, so the shell's radius is theirs plus the
+     padding between: concentric corners, and the option that opened the
+     menu wears the same corner as the button it grew from. */
+  --flyout-option-base: max(var(--action-btn-base), 60px);
+  --flyout-option-radius: calc(
+    var(--flyout-option-base) * var(--action-btn-scale, 1) * var(--action-btn-radius-ratio)
+  );
   transform-origin: calc(var(--action-btn-size) / 2) 100%;
   animation: flyout-shell 300ms var(--ease-pop) both;
   position: absolute;
@@ -721,10 +738,10 @@ html[data-ai-free-count]
   display: flex;
   flex-direction: row;
   gap: 6px;
-  padding: 6px;
+  padding: var(--flyout-menu-padding);
   background: var(--float-surface);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: calc(var(--flyout-option-radius) + var(--flyout-menu-padding));
   box-shadow: var(--float-shadow);
   z-index: var(--z-flyout);
 }
@@ -760,13 +777,13 @@ html[data-ai-free-count]
      stay its size while a parent drags (issue #317) — which leaves the floor as
      what a parent's smallest setting is measured down from. Mirrors
      FLYOUT_OPTION_MIN_BASE_PX, drift-guarded by
-     actionButtonLayout.fallback.test.ts. */
-  --flyout-option-base: max(var(--action-btn-base), 60px);
+     actionButtonLayout.fallback.test.ts. --flyout-option-base itself is
+     declared on .flyout-menu so the shell can derive its radius from it. */
   width: calc(var(--flyout-option-base) * var(--action-btn-scale, 1));
   height: calc(var(--flyout-option-base) * var(--action-btn-scale, 1));
   background: var(--float-surface);
   border: 2px solid var(--float-border);
-  border-radius: 14px;
+  border-radius: var(--flyout-option-radius);
   cursor: pointer;
   /* Inherit the menu's color so the line icons (currentColor) pick up the
      active pen/eraser color — buttons don't inherit color by default. */
@@ -971,7 +988,7 @@ html[data-ai-free-count]
 
 .polaroid-image {
   display: block;
-  background: #fcfbf8;
+  background: var(--polaroid-paper);
   border-radius: 1px;
 }
 
@@ -1363,10 +1380,7 @@ html[data-toolbar='bare'] .actions-panel .flyout-menu {
   padding: 0;
   gap: 4px;
 }
-html[data-toolbar='bare'] .actions-panel .flyout-option {
-  width: max(var(--action-btn-size), 60px);
-  height: max(var(--action-btn-size), 60px);
-}
+
 html[data-toolbar='bare'] .actions-panel .flyout-option.active .action-icon {
   filter: drop-shadow(2px 0 0 var(--text-strong)) drop-shadow(-2px 0 0 var(--text-strong))
     drop-shadow(0 2px 0 var(--text-strong)) drop-shadow(0 -2px 0 var(--text-strong));

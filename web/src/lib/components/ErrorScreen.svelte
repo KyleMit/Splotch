@@ -49,7 +49,7 @@
     gap: 16px;
     padding: 24px;
     text-align: center;
-    background: var(--app-bg, #fcfbf8);
+    background: var(--app-bg, #f5f5f5);
     color: var(--text-strong, #333);
     font-family: var(--font-family, 'Quicksand Variable', system-ui, sans-serif);
   }
@@ -88,6 +88,7 @@
     font-size: var(--font-size-lg, 18px);
     font-weight: var(--font-weight-bold, 700);
     cursor: pointer;
+    transition: transform var(--duration-fast, 0.15s) ease;
   }
 
   .error-restart:active {

@@ -191,9 +191,9 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* The ring itself is app.css's global :focus-visible; only its shape is
+     the slider's. */
   .slider:focus-visible {
-    outline: 3px solid var(--brand);
-    outline-offset: 6px;
     border-radius: var(--radius-pill);
   }
 

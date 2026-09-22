@@ -170,7 +170,7 @@ export const HEX_GRID_GEOMETRY: HexGridGeometry = {
   firstRowPx: 69,
   rowPitchPx: 51,
   columnPitchPx: 60,
-  rowOffsetPx: 31,
+  rowOffsetPx: 30,
   paddingPx: 32,
   viewportFraction: 0.9,
 };
@@ -214,7 +214,7 @@ const HEX_GRID_COLUMN_LADDER: readonly HexGridStep[] = [
   { count: 7 },
   { count: 6 },
   { count: 5 },
-  // Four columns need 336.67px, and this step stops at the first multiple of 5
+  // Four columns need 335.56px, and this step stops at the first multiple of 5
   // above that (340) instead of the second (345) its neighbours take — 3.3px of
   // slack rather than 5–8.3px. The narrowest steps are the ones a small phone
   // actually lands on, so the tighter fit buys one more column there.

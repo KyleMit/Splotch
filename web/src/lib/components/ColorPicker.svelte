@@ -221,7 +221,7 @@
        from, so they are the values at scale 1 and only the roomy step past the
        ladders may raise it. */
     --hex-scale: 1;
-    --hex-offset: calc(31px * var(--hex-scale));
+    --hex-offset: calc(30px * var(--hex-scale)); /* half the 60px hexagon: an exact interlock */
     --hex-first-row-overlap: calc(15px * var(--hex-scale));
     --hex-row-overlap: calc(18px * var(--hex-scale));
     --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);

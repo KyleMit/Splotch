@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from '../design/Button.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
+  import RuleLabel from '../design/RuleLabel.svelte';
   import ReportFields from '../report/ReportFields.svelte';
   import { apiUrl } from '$lib/api';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
@@ -101,7 +102,7 @@
 </script>
 
 <section class="setting-group">
-  <h3 class="report-heading">Send Feedback</h3>
+  <RuleLabel as="h3" strong class="report-heading">Send Feedback</RuleLabel>
   <p class="report-intro">
     Found a bug or have an idea? Tell us here — it opens a private support issue that only the
     Splotch maintainer can read. No account needed.
@@ -129,13 +130,8 @@
 </section>
 
 <style>
-  .report-heading {
-    margin: 0 0 6px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-soft);
+  .setting-group :global(h3.report-heading) {
+    margin-bottom: 6px;
   }
 
   .report-intro {

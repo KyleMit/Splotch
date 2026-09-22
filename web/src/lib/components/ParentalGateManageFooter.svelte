@@ -64,7 +64,9 @@
     text-align: center;
     cursor: pointer;
     touch-action: manipulation;
-    transition: color var(--duration-fast) ease;
+    transition:
+      color var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
