@@ -1,5 +1,6 @@
 import { apiUrl } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
+import { sha256Hex } from '$lib/digestHex';
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
 import { readString, STORAGE_KEYS, writeString } from '$lib/storage';
@@ -38,9 +39,7 @@ async function rawInstallationId(): Promise<string> {
 
 async function createInstallationId(): Promise<string> {
   const raw = await rawInstallationId();
-  const bytes = new TextEncoder().encode(`${INSTALLATION_NAMESPACE}:${raw}`);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return sha256Hex(new TextEncoder().encode(`${INSTALLATION_NAMESPACE}:${raw}`));
 }
 
 // A memoized promise that resets itself on rejection, so a failed derivation is

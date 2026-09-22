@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { sha256Hex } from '$lib/digestHex';
 import { onDurableRestore } from '$lib/storage';
 import { isUnsaved, type SaveResult, type UnsavedStatus } from '$lib/saveNaming';
 import {
@@ -34,8 +35,7 @@ export interface SaveFailureState {
 
 async function pictureSignature(blob: Blob): Promise<string | null> {
   try {
-    const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
-    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return await sha256Hex(await blob.arrayBuffer());
   } catch {
     return null;
   }

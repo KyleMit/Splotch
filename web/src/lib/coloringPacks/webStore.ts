@@ -1,3 +1,4 @@
+import { sha256Hex } from '$lib/digestHex';
 import { scheduleIdle } from '$lib/idle';
 import {
   isInvariantColoringPackAssetPath,
@@ -61,13 +62,8 @@ async function waitForIdle(signal: AbortSignal): Promise<void> {
   });
 }
 
-async function digestHex(bytes: ArrayBuffer): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
 async function matchesManifest(bytes: ArrayBuffer, file: ColoringPackFile): Promise<boolean> {
-  return bytes.byteLength === file.bytes && (await digestHex(bytes)) === file.sha256;
+  return bytes.byteLength === file.bytes && (await sha256Hex(bytes)) === file.sha256;
 }
 
 function coloringAssetContentType(path: string): string {
@@ -86,7 +82,7 @@ async function verifiedResponse(file: ColoringPackFile, signal: AbortSignal): Pr
   if (bytes.byteLength !== file.bytes) {
     throw new Error(`Coloring asset byte count mismatch: ${file.path}`);
   }
-  if ((await digestHex(bytes)) !== file.sha256) {
+  if ((await sha256Hex(bytes)) !== file.sha256) {
     throw new Error(`Coloring asset digest mismatch: ${file.path}`);
   }
   return new Response(bytes, {

@@ -15,6 +15,7 @@ import {
 } from '$lib/state/aiGeneration.svelte';
 import { settingsState } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
+import { sha256Hex } from '$lib/digestHex';
 import {
   ASYNC_GENERATION_HEADER,
   FREE_GENERATIONS_REMAINING_HEADER,
@@ -114,8 +115,7 @@ const drawingSaver = createDrawingDeduper();
 
 async function blobSignature(blob: Blob): Promise<string | null> {
   try {
-    const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
-    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return await sha256Hex(await blob.arrayBuffer());
   } catch {
     return null;
   }
