@@ -21,7 +21,18 @@ import {
   BARE_MENU_GAP_PX,
   VERTICAL_MENU_MAX_WIDTH_PX,
 } from './bareToolbar';
-const FEATHER_SIGMA_PX = 10;
+const FEATHER_SIGMA_PX = 32;
+// Three sigma, where the blurred mask is effectively transparent, so the
+// pane's own box never shows as an edge.
+const FEATHER_REACH_PX = 3 * FEATHER_SIGMA_PX;
+const FEATHER_CURVE_SAMPLES = 16;
+// Remaps the blur's alpha so the glass is solid across each shape and then
+// eases out into the canvas: doubling puts full opacity at the shape edge, and
+// the quadratic ease-out meets it with zero slope so no crease marks the seam.
+const FEATHER_CURVE = Array.from({ length: FEATHER_CURVE_SAMPLES + 1 }, (_, i) => {
+  const doubled = Math.min(1, (2 * i) / FEATHER_CURVE_SAMPLES);
+  return +(1 - (1 - doubled) ** 2).toFixed(3);
+}).join(' ');
 const INFLATE_PX = 14;
 const BLEED_PX = 44;
 const MENU_PADDING_PX = 24;
@@ -46,15 +57,15 @@ function rectangle(left: number, top: number, right: number, bottom: number, rad
 }
 
 function glassPane(rects: Rect[], clip: Rect): Pane {
-  const x = Math.max(clip.x, Math.min(...rects.map((r) => r.x)) - BLEED_PX);
-  const y = Math.max(clip.y, Math.min(...rects.map((r) => r.y)) - BLEED_PX);
+  const x = Math.max(clip.x, Math.min(...rects.map((r) => r.x)) - FEATHER_REACH_PX);
+  const y = Math.max(clip.y, Math.min(...rects.map((r) => r.y)) - FEATHER_REACH_PX);
   const right = Math.min(
     clip.x + clip.width,
-    Math.max(...rects.map((r) => r.x + r.width)) + BLEED_PX
+    Math.max(...rects.map((r) => r.x + r.width)) + FEATHER_REACH_PX
   );
   const bottom = Math.min(
     clip.y + clip.height,
-    Math.max(...rects.map((r) => r.y + r.height)) + BLEED_PX
+    Math.max(...rects.map((r) => r.y + r.height)) + FEATHER_REACH_PX
   );
   const width = Math.max(0, right - x);
   const height = Math.max(0, bottom - y);
@@ -64,7 +75,7 @@ function glassPane(rects: Rect[], clip: Rect): Pane {
         `<rect x="${r.x - x}" y="${r.y - y}" width="${r.width}" height="${r.height}" rx="${r.radius ?? 0}"/>`
     )
     .join('');
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><filter id="f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${FEATHER_SIGMA_PX}"/></filter><g filter="url(#f)" fill="black">${shapes}</g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}"><feGaussianBlur stdDeviation="${FEATHER_SIGMA_PX}"/><feComponentTransfer><feFuncA type="table" tableValues="${FEATHER_CURVE}"/></feComponentTransfer></filter><g filter="url(#f)" fill="black">${shapes}</g></svg>`;
   return { x, y, width, height, mask: `url("data:image/svg+xml,${encodeURIComponent(svg)}")` };
 }
 
