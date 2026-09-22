@@ -170,6 +170,10 @@ const UNPINNED_GLOBAL_SELECTOR_BASELINE = new Map(
     'lib/components/settings/ToggleSwitch.svelte': 2,
     // The styleguide re-inks nested Icon SVGs rendered by child furniture components.
     'lib/components/styleguide/ChromeSections.svelte': 1,
+    // The drawing route declares the inlined paper texture as one :root custom
+    // property so sibling surfaces (paper sheet, bare-toolbar paper, glass panes)
+    // inherit a single data URI instead of each embedding its own copy.
+    'routes/+page.svelte': 1,
   })
 );
 

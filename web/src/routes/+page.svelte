@@ -6,7 +6,7 @@
   // this removes.
   import '$lib/drawing/earlyBoot';
   import { onMount, type Component } from 'svelte';
-  import DrawingCanvas, { PAPER_TEXTURE_URL } from '$lib/components/DrawingCanvas.svelte';
+  import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
   import { updateDrawingLayout } from '$lib/drawing/engine';
   import { untrack } from 'svelte';
   import { uiState } from '$lib/state/ui.svelte';
@@ -187,10 +187,6 @@
 <svelte:head>
   <title>{HOME_CARD.title}</title>
   <meta name="description" content={HOME_CARD.description} />
-  <!-- The paper texture is the largest contentful paint: without this hint the
-       browser only discovers it from the inline stylesheet after parsing the
-       whole document, behind the forty modulepreloaded startup chunks. -->
-  <link rel="preload" as="image" href={PAPER_TEXTURE_URL} fetchpriority="high" />
 </svelte:head>
 
 <SocialCard />
@@ -225,6 +221,17 @@
 {/if}
 
 <style>
+  /* The paper grain every surface on this route paints, declared once so the
+     data URI Vite inlines for it (vite.config.ts, inlineStartupTextures) lands
+     in the prerendered head a single time: the paper sheet is the largest
+     contentful paint, and with its texture in the document the paint no longer
+     waits on a request. paperTexture.test.ts keeps the consumers on this
+     property and the inlined file identical to the static copy the export
+     compositor and the styleguide load by URL. */
+  :global(:root) {
+    --paper-texture: url('$lib/assets/handmade-paper.webp');
+  }
+
   /* Fixed corner controls retain their drawer geometry; the dock reserves their
      collapsed footprints while sharing the canvas-chrome stacking layer. */
   .bottom-dock {
