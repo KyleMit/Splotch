@@ -39,8 +39,7 @@ describe('linguist-generated attributes on scrapbook bulk', () => {
     expect(linguistGenerated('scrapbook/coloring-book-proof-sheets/index.html')).toBe('false');
   });
 
-  it('marks the asset-gen ideas review', () => {
-  });
+  it('marks the asset-gen ideas review', () => {});
 
   it('leaves every other scrapbook entry page reviewable', () => {
     expect(linguistGenerated('scrapbook/index.html')).toBe('unspecified');
