@@ -92,7 +92,9 @@ export function createDrawingSession(host: DrawingSessionHost): DrawingSession {
         return;
       }
       if (PERF_MARKS) performance.mark('engine.sessionSnapshot:start');
+      const started = performance.now();
       const blob = await canvasToBlob(capture.canvas);
+      const encodeMs = performance.now() - started;
       if (!blob) return;
       const bytes = await blob.arrayBuffer();
       await store.put(KEY, {
@@ -104,7 +106,11 @@ export function createDrawingSession(host: DrawingSessionHost): DrawingSession {
       });
       writeBool(STORAGE_KEYS.drawingSessionHeld, true);
       if (PERF_MARKS) performance.measure('engine.sessionSnapshot', 'engine.sessionSnapshot:start');
-      if (import.meta.env.DEV) console.info('[drawing-session] saved', bytes.byteLength, 'bytes');
+      if (import.meta.env.DEV) {
+        console.info(
+          `[drawing-session] saved ${bytes.byteLength} bytes; capture+encode ${encodeMs.toFixed(1)} ms; total ${(performance.now() - started).toFixed(1)} ms; paper ${capture.width}x${capture.height}`
+        );
+      }
     } catch (err) {
       console.error('Keeping the drawing session failed:', err);
     } finally {
