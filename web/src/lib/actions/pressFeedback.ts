@@ -1,6 +1,4 @@
-function nextFrame() {
-  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-}
+import { nextFrame } from '$lib/nextFrame';
 
 export async function runSingleFlightActivation(
   button: HTMLButtonElement,

@@ -33,6 +33,7 @@
     type ResponsiveImageRequest,
   } from '$lib/imagePrefetch';
   import { scheduleIdle } from '$lib/idle';
+  import { nextFrame } from '$lib/nextFrame';
   import {
     applyColoringPageWithMagicUndo,
     clearColoringPageWithMagicUndo,
@@ -63,10 +64,6 @@
   );
   const bookGridLayout = $derived(coloringBookGridLayout(books.length));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
-
-  function nextFrame() {
-    return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-  }
 
   // Warm the resolved theme's cover thumbnails at idle so the first picker open
   // and a later theme change both paint without fetching every cover on demand.
