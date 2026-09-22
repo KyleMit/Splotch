@@ -2,11 +2,6 @@
 const PROTOTYPE_DIAMETER_PX = 255;
 const PROTOTYPE_DASH_COUNT = 32;
 const DASH_PITCH_PX = (Math.PI * PROTOTYPE_DIAMETER_PX) / PROTOTYPE_DASH_COUNT;
-const READY_SAMPLE_SPACING_PX = 5;
-const READY_WOBBLE_PX = 0.85;
-const READY_PRIMARY_LOBES = 7;
-const READY_SECONDARY_LOBES = 13;
-const READY_PRIMARY_WEIGHT = 0.65;
 
 // Each authored pen mark stores four polar control points: cell fraction, radial offset in pixels.
 const PEN_MARKS = [
@@ -48,14 +43,14 @@ export function createClearRingContours(diameterPx: number) {
   const radiusPx = diameterPx / 2;
   const dashCount = Math.max(1, Math.round((Math.PI * diameterPx) / DASH_PITCH_PX));
   const anglePerDash = (Math.PI * 2) / dashCount;
-  const dashes: string[] = [];
-  const solid: string[] = [];
+  const radius = radiusPx.toFixed(2);
 
-  function point(angle: number, deviationPx: number) {
-    const radius = radiusPx + deviationPx;
-    return `${(radiusPx + Math.cos(angle) * radius).toFixed(2)},${(radiusPx + Math.sin(angle) * radius).toFixed(2)}`;
+  function point(angle: number, deviationPx = 0) {
+    const distance = radiusPx + deviationPx;
+    return `${(radiusPx + Math.cos(angle) * distance).toFixed(2)},${(radiusPx + Math.sin(angle) * distance).toFixed(2)}`;
   }
 
+  const dashes: string[] = [];
   for (let index = 0; index < dashCount; index++) {
     const mark = PEN_MARKS[index % PEN_MARKS.length];
     const points: string[] = [];
@@ -65,14 +60,12 @@ export function createClearRingContours(diameterPx: number) {
     dashes.push(`M${points[0]} C${points.slice(1).join(' ')}`);
   }
 
-  const readySamples = Math.ceil((Math.PI * diameterPx) / READY_SAMPLE_SPACING_PX);
-  for (let index = 0; index < readySamples; index++) {
-    const angle = (index / readySamples) * Math.PI * 2;
-    const deviation =
-      READY_WOBBLE_PX *
-      (Math.sin(angle * READY_PRIMARY_LOBES) * READY_PRIMARY_WEIGHT +
-        Math.sin(angle * READY_SECONDARY_LOBES) * (1 - READY_PRIMARY_WEIGHT));
-    solid.push(`${index === 0 ? 'M' : 'L'}${point(angle, deviation)}`);
-  }
-  return { dashes: dashes.join(' '), solid: `${solid.join(' ')}Z` };
+  // Quarter arcs, never halves: a half-circle arc's chord equals its diameter, so the
+  // separately rounded endpoints and radius can disagree by a hundredth of a pixel and
+  // the browser then bows the arc by the square root of that gap, whole pixels at tablet size.
+  const quarterTurns = [1, 2, 3, 4].map(
+    (quarter) => `A${radius} ${radius} 0 0 1 ${point((quarter * Math.PI) / 2)}`
+  );
+  const solid = `M${point(0)} ${quarterTurns.join(' ')}Z`;
+  return { dashes: dashes.join(' '), solid };
 }
