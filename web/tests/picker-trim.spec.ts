@@ -1,6 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { HEX_GRID_GEOMETRY, hexGridRowLadderPx } from '$lib/design/trimGeometry';
+import {
+  HEX_GRID_GEOMETRY,
+  hexGridColumnLadderPx,
+  hexGridRowLadderPx,
+} from '$lib/design/trimGeometry';
 import { CUSTOM_SWATCH_COLOR, swatch } from './helpers';
 import { isPhoneLandscape } from '$lib/breakpoints';
 
@@ -68,12 +72,16 @@ async function openPickerAt(page: Page, width: number, height: number): Promise<
       rowLefts.push(hexes[0]?.left ?? 0);
       hexWidth = hexes[0]?.width ?? hexWidth;
     }
+    // The caps are read back off the dialog's own computed style: the width
+    // cap is the shared --modal-full-width, not a fraction this spec could
+    // restate without drifting from app.css.
     const rect = dialog.getBoundingClientRect();
+    const { maxWidth, maxHeight } = getComputedStyle(dialog);
     const clipped =
       dialog.scrollWidth > dialog.clientWidth + 1 ||
       dialog.scrollHeight > dialog.clientHeight + 1 ||
-      rect.width > innerWidth * 0.9 + 1 ||
-      rect.height > innerHeight * 0.9 + 1;
+      rect.width > parseFloat(maxWidth) + 1 ||
+      rect.height > parseFloat(maxHeight) + 1;
     return { rowCount: rows.length, colsPerRow, rowLefts, hexWidth, clipped };
   });
 }
@@ -129,6 +137,23 @@ for (const [orientation, w, h] of [
     expectHoneycomb(grid);
   });
 }
+
+// The width ladder's rungs are where the honeycomb sits closest to the
+// dialog's width cap, so each is walked from just inside it — one column fewer
+// than the rung keeps, still interlocking, and still inside the cap.
+test('honeycomb fits the width cap at every column-ladder rung', async ({ page }) => {
+  const ladder = hexGridColumnLadderPx();
+  const untrimmed = await openPickerAt(page, Math.ceil(ladder[0]) + 20, 1100);
+  expect(untrimmed.colsPerRow).toEqual(Array(untrimmed.rowCount).fill(9));
+  expectHoneycomb(untrimmed);
+  for (const [rung, breakpoint] of ladder.entries()) {
+    const grid = await openPickerAt(page, Math.floor(breakpoint), 1100);
+    expect(grid.colsPerRow, `${Math.floor(breakpoint)}px wide`).toEqual(
+      Array(grid.rowCount).fill(8 - rung)
+    );
+    expectHoneycomb(grid);
+  }
+});
 
 // The offset restatement is the fragile part of the trim CSS: hidden rows
 // still count for :nth-child, so each height step re-declares the offsets.
