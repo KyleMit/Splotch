@@ -261,12 +261,13 @@ interval.
   1,200-op crayon commands into the history base, one command per fold (`foldOldestCommand` in
   `web/src/lib/drawing/tiledRenderer.ts`). The folds inside the interval total 2,962 ms and 9,340
   ms. The same fold takes ≤ 22 ms per command at finger pace on the same iPad (PR 2070).
-* **Not attributed: the remaining ~4–10 s** (10,364 ms and 4,207 ms) carries no `engine.*` measure.
-  It is consistent with the candidate in Finding 2 above, WebKit waiting for accelerated
-  CoreGraphics to finish deferred canvas drawing. That candidate was named from macOS samples, not
-  from the iPad. **The iPad interval was never traced.** A WebKit timeline recording of the burst on
-  the iPad (Web Inspector, attached to the device) is the way to trace it. Closing the issue does
-  not claim that the remainder was traced or that the candidate is its cause.
+* **Not attributed: the remaining ~4–10 s** (10,364 ms and 4,207 ms) carries no `engine.*` measure
+  beyond a 1 ms `engine.crayonShadow` in run 2. It is consistent with the candidate in Finding 2
+  above, WebKit waiting for accelerated CoreGraphics to finish deferred canvas drawing. That
+  candidate was named from macOS samples, not from the iPad. **The iPad interval was never traced.**
+  A WebKit timeline recording of the burst on the iPad (Web Inspector, attached to the device) is
+  the way to trace it. Closing the issue does not claim that the remainder was traced or that the
+  candidate is its cause.
 
 ### The runner side
 
