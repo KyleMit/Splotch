@@ -6,6 +6,6 @@
     "androidScheme": "https"
   },
   "ios": {
-    "contentInset": "always"
+    "contentInset": "never"
   }
 }

@@ -20,6 +20,10 @@ import {
 import {
   activationModeFor,
   actionGateAllowances,
+  calibrateWebContentOffset,
+  calibratesWebContentOffset,
+  offsetNativeBounds,
+  webContentOffsetFrom,
   canvasHasInk,
   coloringClearActivation,
   coloringScrollTransport,
@@ -712,6 +716,100 @@ describe('action state planning', () => {
       expect(activationModeFor({ activation, webdriverClicks, hasNativeTarget })).toBe(expected);
     }
   );
+
+  describe('WebView content offset', () => {
+    const iosNative = () => ({ nativeApp: true, platformName: 'iOS' });
+    // Undo on the physical iPad Pro 12.9 (iPadOS 26.5) under contentInset
+    // "always": at launch its projected rect and accessibility frame agree;
+    // after a rotation to portrait the page lays it out 32px higher while
+    // WebKit draws it where it was.
+    const controlAtLaunch = { x: 8, y: 960, width: 62, height: 62 };
+    const controlProjectedAfterRotation = { x: 8, y: 928, width: 62, height: 62 };
+    const controlFrame = { x: 8, y: 960, width: 62, height: 62 };
+    const calibrate = (client, projected, frame) =>
+      calibrateWebContentOffset(client, 'session', null, {
+        projectedLandmark: async () => ({ projected }),
+        landmarkFrame: async () => ({ bounds: frame }),
+      });
+
+    it('re-resolves control coordinates after a rotation moves the WebView content', async () => {
+      const client = iosNative();
+      await calibrate(client, controlAtLaunch, controlFrame);
+      expect(offsetNativeBounds(controlAtLaunch, client.webContentOffset)).toEqual(controlFrame);
+
+      await calibrate(client, controlProjectedAfterRotation, controlFrame);
+      expect(client.webContentOffset).toEqual({ x: 0, y: 32 });
+      expect(offsetNativeBounds(controlProjectedAfterRotation, client.webContentOffset)).toEqual(
+        controlFrame
+      );
+    });
+
+    it('recalibrates measureRotation after every rotation it measures', () => {
+      const source = readFileSync(
+        join(ROOT, 'tools/perf/ios/capture-xcuitest-actions.mjs'),
+        'utf8'
+      );
+      const body = source.slice(
+        source.indexOf('async function measureRotation('),
+        source.indexOf('\n}\n', source.indexOf('async function measureRotation('))
+      );
+      const finish = body.indexOf('__actionProbe.finish');
+      expect(finish).toBeGreaterThan(-1);
+      expect(body.indexOf('calibrateWebContentOffset(')).toBeGreaterThan(finish);
+    });
+
+    it('keeps the uncorrected projection when the landmark frame cannot be trusted', async () => {
+      const warn = console.warn;
+      console.warn = () => {};
+      try {
+        const client = iosNative();
+        await calibrate(client, controlProjectedAfterRotation, {
+          x: 0,
+          y: 0,
+          width: 1024,
+          height: 44,
+        });
+        expect(client.webContentOffset).toBeNull();
+        await calibrate(client, controlProjectedAfterRotation, null);
+        expect(client.webContentOffset).toBeNull();
+        expect(offsetNativeBounds(controlProjectedAfterRotation, null)).toEqual(
+          controlProjectedAfterRotation
+        );
+      } finally {
+        console.warn = warn;
+      }
+    });
+
+    it.each([
+      ['iOS native', { nativeApp: true, platformName: 'iOS' }, true],
+      ['iPad Safari', { nativeApp: false, platformName: 'iOS' }, false],
+      ['Android native', { nativeApp: true, platformName: 'Android' }, false],
+    ])('decides whether %s calibrates', (_label, client, expected) => {
+      expect(calibratesWebContentOffset(client)).toBe(expected);
+    });
+
+    it.each([
+      ['iPad Safari', { nativeApp: false, platformName: 'iOS' }],
+      ['Android native', { nativeApp: true, platformName: 'Android' }],
+    ])('leaves %s taps on the projection without measuring', async (_label, client) => {
+      await expect(
+        calibrateWebContentOffset(client, 'session', null, {
+          projectedLandmark: () => {
+            throw new Error('must not measure');
+          },
+        })
+      ).resolves.toBeNull();
+      expect(client.webContentOffset).toBeUndefined();
+    });
+
+    it('rejects a frame whose size disagrees with the projected landmark', () => {
+      expect(webContentOffsetFrom(controlAtLaunch, { ...controlFrame, width: 70 })).toBeNull();
+      expect(webContentOffsetFrom(controlAtLaunch, { ...controlFrame, height: 63 })).toEqual({
+        x: 0,
+        y: 0,
+      });
+    });
+  });
 
   it('reports native accessibility downgrades while they can still be rerun', () => {
     expect(

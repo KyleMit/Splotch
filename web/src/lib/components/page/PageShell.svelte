@@ -115,7 +115,11 @@
        beneath short content. */
     min-height: 100vh;
     background: var(--page-ground);
-    padding: 32px 16px 72px;
+    /* viewport-fit=cover lets the page run under the status bar, notch, and
+       home indicator (ADR-0026), and the native WebView adds no inset of its
+       own, so every breakpoint pads by the safe area on top of its own spacing. */
+    padding: calc(32px + var(--safe-area-top)) calc(16px + var(--safe-area-right))
+      calc(72px + var(--safe-area-bottom)) calc(16px + var(--safe-area-left));
     color: var(--page-ink);
     font-size: var(--font-size-md);
     line-height: 1.62;
@@ -133,7 +137,9 @@
 
   @media (max-width: 920px) {
     .page {
-      padding: var(--space-6);
+      padding: calc(var(--space-6) + var(--safe-area-top))
+        calc(var(--space-6) + var(--safe-area-right)) calc(var(--space-6) + var(--safe-area-bottom))
+        calc(var(--space-6) + var(--safe-area-left));
     }
 
     .sheet {
@@ -149,7 +155,8 @@
      viewport) has to match it. */
   @media (max-width: 540px) {
     .page {
-      padding: 0;
+      padding: var(--safe-area-top) var(--safe-area-right) var(--safe-area-bottom)
+        var(--safe-area-left);
       background: var(--page-sheet);
     }
 
@@ -274,7 +281,9 @@
   /* SHORT_PAGE_HEIGHT_PX; pageHeight.test.ts guards the CSS boundary. */
   @media (max-height: 500px) {
     .page {
-      padding: var(--space-3) var(--space-6) var(--space-6);
+      padding: calc(var(--space-3) + var(--safe-area-top))
+        calc(var(--space-6) + var(--safe-area-right)) calc(var(--space-6) + var(--safe-area-bottom))
+        calc(var(--space-6) + var(--safe-area-left));
     }
 
     .sheet {
