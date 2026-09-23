@@ -6,6 +6,11 @@
 > the "Undo attribution" section below measured was introduced by PR 1733's bbd51a7d882e and is now
 > replaced by a ghost read from the live tiles. The evidence below is unchanged.
 
+> **Closed 2026-09-22.** Issue 1750 closed with its shipped undo fixes recorded, the burst restamp
+> cost dropped, glaze-direct on web left open as a product option, and the commit contract handed to
+> ADR-0173. See [Disposition](#disposition). The sections before it are the unchanged record of the
+> attempt.
+
 No product optimization was selected. Eleven candidate snapshot interventions failed to demonstrate
 a convincing combined-path improvement. Device readiness was restored and physical iPad diagnostics
 were captured, but no candidate earned correctness or performance approval. The only code change
@@ -275,3 +280,93 @@ already documented the old inspector proxy's modern-iOS limitation, while the iP
 said to reach for that wrapper first. The profiling entry points now direct current-device sessions
 to Appium, and the campaign guide requires reports to name the failing connection layer without
 inferring an unsupported device or recent OS change.
+
+## Disposition
+
+On 2026-09-22 the maintainer closed issue 1750 as part of closing out the September performance
+campaign (issue 1567). The work ends here with a record, not with more harness or product work. The
+decision has four parts.
+
+### Shipped
+
+Both fixes target undo.
+
+* **iPad undo ghost settle, [PR 2070](https://github.com/KyleMit/Splotch/pull/2070).** On iOS only,
+  the crayon or magic undo ghost reads one pixel back after its mask and before the undo restore
+  writes the tiles. In iPad Safari, undos over the 33.5 ms action-frame gate fell from 5 and 3 of 20
+  to 0 and 0 of 20, and the worst undo frame fell from 39–45 ms to 22–23 ms. Restamp pixels are
+  byte-identical to main. Evidence:
+  [`2026-09-18-issue-1750-ipad-baseline/`](../scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/README.md).
+  The installed native iPad app (WKWebView, glaze-direct) was validated afterwards, with 0, 1, 1, 0
+  over the gate on main against 0, 0, 0, 0 on the fix across four scored runs per arm. That evidence
+  was merged in [PR 2071](https://github.com/KyleMit/Splotch/pull/2071) as
+  [`2026-09-18-pr-2070-native-ipad-validation/`](../scratchpad/perf/2026-09-18-pr-2070-native-ipad-validation/README.md).
+* **Android early-undo stall, [PR 2074](https://github.com/KyleMit/Splotch/pull/2074)** (issue 2072,
+  [ADR-0169](../adrs/0169-flush-history-fold-raster-on-android-chrome.md)). The cause was the idle
+  history fold's raster, held on Chromium's GPU channel until the undo frame flushed it. A WebGL
+  `flush()` after each fold took the worst undo interval from 1,400 ms to 25.7 ms. Evidence:
+  [`2026-09-18-issue-2072-android-fold-flush/`](../scratchpad/perf/2026-09-18-issue-2072-android-fold-flush/README.md).
+
+Each fix leaves drawing pixels, commit, and retained history (20 undo steps and their rasters)
+unchanged on its device, but not every other cost is identical:
+
+* The iOS settle adds about 7 ms of JavaScript to each undo. One native-validation run also recorded
+  a 61 ms history-fold total against 31–41 ms elsewhere. The folds finish before the first undo, so
+  the settle is not a plausible cause, but that outlier is unresolved rather than ruled out.
+* The Android flush moves each fold's GPU raster into the idle frame after that fold. The longest
+  idle interval grew from 66.7 ms to 83.4 ms (medians), and the fix adds one 1×1 WebGL context per
+  page. The GPU-process memory sample rules out a large increase, not a small one.
+
+### Dropped: the burst restamp cost
+
+On the iPad, finger-paced crayon drawing is clean on both deposition pipelines. Over 40 s of paced
+drawing, there were 0–1 frames over the gate, commit took ≤ 4 ms, and history folds took ≤ 22 ms.
+The CI gate's synchronous burst of 22 strokes × 1,200 ops is about ten times slower on restamp than
+on glaze-direct (116 s against 12 s on the iPad). The desktop mechanism evidence, WebKit
+copy-on-write detaches associated with restamp's per-op blits, is in
+[`2026-09-18-issue-1750-restamp-detach/`](../scratchpad/perf/2026-09-18-issue-1750-restamp-detach/README.md)
+([PR 2062](https://github.com/KyleMit/Splotch/pull/2062)). At finger pace the relationship reverses.
+Restamp spends 0.05 ms of draw JavaScript per op against glaze-direct's 0.15 ms. The burst measures
+back-pressure that no finger builds up.
+
+That cost is **dropped as a workload no finger produces**. It is not fixed. The post-burst stall
+that issue 1700 tracks
+([runner-side note](../scratchpad/perf/2026-09-18-issue-1700-post-burst-stall-attribution.md))
+follows that same synthetic burst, so it is part of the workload dropped here. This record does not
+dispose of issue 1700, which keeps its own thread.
+
+Reopen the burst cost if a real input path produces the back-pressure. Evidence would be a trusted
+or finger-paced capture on a device that shows restamp losing frames, or a product feature that
+deposits many crayon ops in one synchronous task.
+
+### Open product option: glaze-direct on web
+
+Glaze-direct on web was **not tried and rejected**. On the iPad it removes the burst cost and gains
+nothing at finger pace. It is blocked on appearance, not on performance. Glaze-direct differs from
+web's restamp glaze where strokes cross other colours and at antialiased rims
+([ADR-0148](../adrs/0148-crayon-per-op-glaze-on-native.md)). Choosing it for web is a product
+decision that needs a human judgement of web crossings on the iPad. Adoption would also supersede
+the web half of [ADR-0147](../adrs/0147-crayon-restamp-renderer-no-preview-planes.md). If someone
+takes it up, it still owes the acceptance list at the end of the restamp-detach note.
+
+### Commit contract
+
+[ADR-0173](../adrs/0173-physical-ipad-holds-the-commit-contract.md) owns the 25 ms commit contract.
+The physical iPad holds it, with one check per release, and the macOS runner gate stays advisory.
+The snapshot interventions above aimed at the runner's commit P95. That measure is now a diagnostics
+stream, so the commit side of this issue closes by that decision, not by a product change. ADR-0173
+also records the check that remains outstanding: the first commit reading on iPadOS 26.6.
+
+### Limits
+
+* **One device of each kind.** One 12.9-inch iPad Pro on iPadOS 26.5 (Safari 26.5) and one Android
+  phone. No iPadOS 26.6 device measurement exists.
+* **Synthetic input.** The iPad and Android figures come from synthetic input dispatched in the page
+  on `/dev/engine`, not from trusted touch in the real app. The native validation ran in a Debug
+  shell.
+* **The burst is synthetic.** It is the CI gate's scenario, not a recorded input.
+* **Done-when items not met.** A combined-latency reduction against a concurrent main control was
+  shown for undo only. Draw and commit were already within budget at finger pace on the device, so
+  they were not treated. The quiet-local and fresh-runner commit comparisons were not redone,
+  because no shipped change touched commit. Redo correctness is unverified: the device captures run
+  20 undos and no redo.

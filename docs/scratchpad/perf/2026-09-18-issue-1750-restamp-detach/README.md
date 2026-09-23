@@ -130,6 +130,11 @@ restamp shadow drain here took at most 1 ms.
 
 ## What this supports next
 
+> Issue 1750 closed on 2026-09-22 without taking this step. Glaze-direct on web stays an open
+> product option, blocked on the ADR-0148 appearance decision. See the
+> [disposition](../../../investigations/webkit-snapshot-experiments-1750.md#disposition). The
+> screening plan below still applies to anyone who takes it up.
+
 The next step is a **screening** experiment, not adoption: device captures of the web build with
 glaze-direct against unchanged restamp. It would cover the `ipad-device-web` and
 `android-device-web` crayon drawing cells plus the undo and discrete-action cells, under the

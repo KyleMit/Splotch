@@ -188,3 +188,7 @@ PR. Its mechanism is not attributed here.
 * **The burst's restamp cost remains.** It is real on the device and absent at finger pace.
   Switching web to glaze-direct changes where strokes cross (ADR-0148). That is a product decision,
   and this evidence does not force it.
+
+Issue 1750 closed on 2026-09-22. The burst cost was dropped as a workload no finger produces, and
+glaze-direct on web stays an open product option. See the
+[disposition](../../../investigations/webkit-snapshot-experiments-1750.md#disposition).
