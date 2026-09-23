@@ -9,6 +9,8 @@ import {
   runCampaignSources,
 } from '../campaign-sources.mjs';
 import { modeProvenance } from '../check-matrix-staleness.mjs';
+import { normalizeMatrix } from '../gen-performance-matrix.mjs';
+import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
 import { artifactPath } from '../lib/campaign-plan.mjs';
 import { ROOT } from '../../lib/proc.mjs';
 
@@ -594,7 +596,204 @@ describe('campaign sources', () => {
     expect(merged.undoSource).toBe(merged.drawing.pen[0]);
     expect(merged).not.toHaveProperty('undoProductCommit');
   });
+
+  it('marks raw published action pointers preserved instead of carrying them to be re-scored', () => {
+    const rawSources = [
+      { source: 'perf-profiles/old/actions.json', productCommit: 'aaaaaaaaaaaa', kind: 'full' },
+    ];
+    const manifest = {
+      preservedEvidence: { from: 'data.json', reason: 'The action transport is blocked.' },
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              actionSources: rawSources,
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', [preservingEntry(PRODUCT_COMMIT)]);
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.actionSources).toBe('preserved');
+    expect(merged).not.toHaveProperty('actionProductCommit');
+    // Preserved sections are exempt from the currency check, so the fold no longer
+    // hands check:matrix-staleness the old sweep's commit to fail --strict on.
+    expect(modeProvenance(merged)).not.toContain('aaaaaaaaaaaa');
+  });
+
+  it('refuses to mark actions preserved when the manifest names no published report', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              actionSources: [
+                { source: 'perf-profiles/old/actions.json', productCommit: 'aaaa', kind: 'full' },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(() =>
+      applyCampaignModes(manifest, 'android-device-web', [preservingEntry(PRODUCT_COMMIT)])
+    ).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `Cannot preserve actions for android-device-web/${MODE.id}: the manifest declares no preservedEvidence source`
+      )
+    );
+  });
+
+  // The 2026-09-23 fold hit this for real: FULL_ACTION_GROUPS gained ai-waiting
+  // and unavailable after the 2026-09-06 sweeps were published, so re-scoring
+  // their raw pointers was refused and twelve sections were marked preserved by
+  // hand. The published report is generated while the older group list is in
+  // force, then the fold and regeneration run under the current one.
+  it('regenerates a sweep that predates a FULL_ACTION_GROUPS change byte for byte', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-preserve-actions-'));
+    temporaryDirectories.push(directory);
+    const predatingGroups = FULL_ACTION_GROUPS.filter(
+      (group) => group !== 'ai-waiting' && group !== 'unavailable'
+    );
+    const source = writePredatingActionSweep(directory, predatingGroups);
+    const rawManifest = () =>
+      predatingFixtureManifest([{ source, productCommit: 'old123', kind: 'full' }]);
+
+    vi.resetModules();
+    vi.doMock('../lib/action-applicability.mjs', async (importOriginal) => ({
+      ...(await importOriginal()),
+      FULL_ACTION_GROUPS: predatingGroups,
+    }));
+    const { normalizeMatrix: normalizeWithPredatingGroups } =
+      await import('../gen-performance-matrix.mjs');
+    vi.doUnmock('../lib/action-applicability.mjs');
+    const { preservedEvidence: _unpublished, ...firstPublication } = rawManifest();
+    const published = normalizeWithPredatingGroups(firstPublication, directory);
+    writeFileSync(join(directory, 'data.json'), `${JSON.stringify(published, null, 2)}\n`);
+    expect(published.targets[0].modes[0].actions.actionPlan.actionGroups).toEqual(predatingGroups);
+    expect(published.targets[0].modes[0].actions.results).toHaveLength(2);
+
+    expect(() => normalizeMatrix(rawManifest(), directory)).toThrow(
+      'is marked full but its actionPlan records a subset action run'
+    );
+
+    const folded = applyCampaignModes(rawManifest(), 'fixture', [
+      preservingEntry('final123', {
+        id: 'portrait-light',
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        drawing: {},
+      }),
+    ]);
+    const regenerated = normalizeMatrix(folded, directory);
+
+    expect(folded.targets[0].modes[0].actionSources).toBe('preserved');
+    const actionsOf = (matrix) => JSON.stringify(matrix.targets[0].modes[0].actions, null, 2);
+    expect(actionsOf(regenerated)).toBe(actionsOf(published));
+    expect(regenerated.targets[0].modes[0].preservedSections).toEqual(['actions']);
+  });
 });
+
+// The entry shape `campaignModeSources` returns under --preserve-actions: a
+// folded drawing recapture whose mode carries no action section of its own.
+function preservingEntry(productCommit, mode = { id: MODE.id }) {
+  return {
+    id: mode.id,
+    partial: 'actions-preserved',
+    mode: { status: 'captured', drawingProductCommit: productCommit, ...mode },
+  };
+}
+
+function writePredatingActionSweep(directory, actionGroups) {
+  const labels = ['idle frame control', 'expand action drawer'];
+  const path = join(directory, 'actions.json');
+  writeFileSync(
+    path,
+    JSON.stringify({
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      repeats: 4,
+      samples: labels.flatMap((label) =>
+        Array.from({ length: 4 }, (_, index) => ({
+          label,
+          warmup: index === 0,
+          eventType: 'click',
+          trusted: true,
+          firstFrameMs: 3 + index,
+          readyMs: 5 + index,
+          postActionFrameGapsMs: [8, 9 + index],
+        }))
+      ),
+      actionPlan: {
+        schemaVersion: 1,
+        actionGroups,
+        applicableLabels: labels,
+        notApplicable: [],
+        context: { orientation: 'PORTRAIT', settingsShell: 'sectioned' },
+      },
+    })
+  );
+  return path;
+}
+
+function predatingFixtureManifest(actionSources) {
+  const unavailable = (orientation, theme) => ({
+    id: `${orientation.toLowerCase()}-${theme}`,
+    orientation,
+    theme,
+    status: 'unavailable',
+    reason: 'Not captured.',
+  });
+  return {
+    schemaVersion: 3,
+    recordedOn: '2026-09-23',
+    productCommit: 'final123',
+    preservedEvidence: { from: 'data.json', reason: 'The action transport is blocked.' },
+    targets: [
+      {
+        id: 'fixture',
+        number: 1,
+        label: 'Fixture',
+        platform: 'test',
+        deviceKind: 'physical',
+        runtime: 'web',
+        environment: 'test device',
+        fidelity: 'synthetic-advisory',
+        modes: [
+          {
+            id: 'portrait-light',
+            orientation: 'PORTRAIT',
+            theme: 'light',
+            status: 'captured',
+            drawingProductCommit: 'old123',
+            drawing: {},
+            actionSources,
+          },
+          unavailable('PORTRAIT', 'dark'),
+          unavailable('LANDSCAPE', 'light'),
+          unavailable('LANDSCAPE', 'dark'),
+        ],
+      },
+    ],
+  };
+}
 
 // Issue 1309: a tracked manifest drifted from the folder's own
 // `JSON.stringify(..., null, 2)` form (46 \uXXXX escapes, 230 extra bytes), so
