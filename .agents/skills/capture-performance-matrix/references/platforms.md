@@ -405,7 +405,8 @@ scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 
 Fold a finished campaign into it rather than hand-writing cells — the tool derives each evidence
 path from the same plan that wrote it, and accepts a mode only when all four brushes plus the action
-sweep landed through the target's own transport:
+sweep landed through the target's own transport, and treats a sweep `perf:campaign:status` refuses
+as `blocked-coverage` as missing:
 
 ```sh
 npm run perf:campaign:sources -- \

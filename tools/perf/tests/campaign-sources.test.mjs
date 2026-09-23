@@ -11,7 +11,9 @@ import {
 import { modeProvenance } from '../check-matrix-staleness.mjs';
 import { normalizeMatrix } from '../gen-performance-matrix.mjs';
 import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
-import { artifactPath } from '../lib/campaign-plan.mjs';
+import { artifactPath, campaignTarget } from '../lib/campaign-plan.mjs';
+import { BLOCKED_COVERAGE, FAILED } from '../lib/campaign-ledger.mjs';
+import { inspectArtifact } from '../run-campaign.mjs';
 import { ROOT } from '../../lib/proc.mjs';
 
 const temporaryDirectories = [];
@@ -130,6 +132,69 @@ describe('campaign sources', () => {
     expect(entry.mode.actionsUnavailableReason).toBe('P1: blocked by #1194.');
     expect(entry.mode).not.toHaveProperty('actionSources');
     expect(Object.keys(entry.mode.drawing)).toHaveLength(4);
+  });
+
+  describe('a sweep the runner refuses for blocked coverage', () => {
+    const BLOCKED_SWEEP = {
+      actionPlan: {
+        blocked: [{ label: 'show AI waiting print', reason: 'no secure context' }],
+      },
+    };
+    const MALFORMED_SWEEP = { actionPlan: { blocked: [{ reason: 'no label' }] } };
+    const campaignWith = (actions) =>
+      writeCampaign('ipad-device-native', 'native-capacitor-webview', {
+        artifactForItem: { actions },
+      });
+    const statusOf = (outputRoot) =>
+      inspectArtifact(
+        artifactPath(outputRoot, 'ipad-device-native', MODE, 'actions'),
+        campaignTarget('ipad-device-native').runtime
+      );
+
+    it.each([
+      ['blocked', BLOCKED_SWEEP, BLOCKED_COVERAGE],
+      ['malformed', MALFORMED_SWEEP, FAILED],
+    ])('is not folded as a full sweep when %s, matching campaign status', (_, sweep, status) => {
+      const outputRoot = campaignWith(sweep);
+      const [entry] = sourcesFor('ipad-device-native', outputRoot);
+
+      expect(statusOf(outputRoot).status).toBe(status);
+      expect(entry.mode).toBeUndefined();
+      expect(entry.missing).toEqual(['actions']);
+    });
+
+    it('still folds a sweep whose recorded blocked list is empty', () => {
+      const outputRoot = campaignWith({ actionPlan: { blocked: [] } });
+      const [entry] = sourcesFor('ipad-device-native', outputRoot);
+
+      expect(statusOf(outputRoot).ok).toBe(true);
+      expect(entry.mode.actionSources).toEqual([
+        expect.objectContaining({ source: expect.stringContaining('actions.json'), kind: 'full' }),
+      ]);
+    });
+
+    it('folds the drawing as a partial mode when given an unavailable reason', () => {
+      const [entry] = campaignModeSources('ipad-device-native', {
+        outputRoot: campaignWith(BLOCKED_SWEEP),
+        productCommit: PRODUCT_COMMIT,
+        modes: [MODE.id],
+        actionsUnavailableReason: 'P1: AI-waiting actions need a secure context.',
+      });
+
+      expect(entry.partial).toBe('actions-unavailable');
+      expect(entry.mode).not.toHaveProperty('actionSources');
+    });
+
+    it('lets the published action section be preserved over it', () => {
+      const [entry] = campaignModeSources('ipad-device-native', {
+        outputRoot: campaignWith(BLOCKED_SWEEP),
+        productCommit: PRODUCT_COMMIT,
+        modes: [MODE.id],
+        preserveActions: true,
+      });
+
+      expect(entry.partial).toBe('actions-preserved');
+    });
   });
 
   it('accepts four complete brushes without an action artifact when preserving actions', () => {

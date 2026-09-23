@@ -16,6 +16,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
 import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
+import { blockedCoverageRefusal } from './run-campaign.mjs';
 import {
   CAMPAIGN_MODES,
   SPLIT_TRANSPORT,
@@ -38,11 +39,16 @@ function readArtifact(relativePath) {
   }
 }
 
-// A cell counts only if it parses AND records the transport its target asked for —
-// the same acceptance the campaign runner applies, so the two cannot disagree.
+// A cell counts only if it parses, records the transport its target asked for, and
+// is not refused for blocked coverage — the runner's own identity and coverage
+// checks, so the fold cannot publish a sweep perf:campaign:status reports refused.
 function usableCellArtifact(relativePath, runtime) {
   const artifact = readArtifact(relativePath);
-  return artifact !== null && artifactMatchesRuntime(artifact, runtime) ? artifact : null;
+  return artifact !== null &&
+    artifactMatchesRuntime(artifact, runtime) &&
+    blockedCoverageRefusal(artifact) === null
+    ? artifact
+    : null;
 }
 
 function recordedBuildField(artifact, path, field) {
@@ -314,7 +320,9 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
   });
 
   for (const entry of entries.filter((candidate) => candidate.missing)) {
-    console.log(`SKIP  ${entry.id} — missing or wrong-transport: ${entry.missing.join(', ')}`);
+    console.log(
+      `SKIP  ${entry.id} — missing, wrong-transport, or coverage-blocked: ${entry.missing.join(', ')}`
+    );
   }
   const ready = entries.filter((entry) => entry.mode);
   for (const entry of ready.filter((candidate) => candidate.partial)) {
