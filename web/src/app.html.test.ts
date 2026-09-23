@@ -72,6 +72,29 @@ const bootScript = (() => {
   return match![1];
 })();
 
+const themeColorMetaMarkup = (() => {
+  const match = html.match(/<meta name="theme-color"[^>]*>/);
+  expect(match, 'app.html has a theme-color meta').not.toBeNull();
+  return match![0];
+})();
+
+// A value no theme resolves to, so a boot script that throws before it paints
+// (its IIFE swallows the error) fails every case instead of passing the ones
+// whose expected color happens to be what the tag already shipped with.
+const UNPAINTED = 'unpainted';
+
+// The boot script repaints app.html's theme-color tag unconditionally, so every
+// fixture that executes the script owns seeding that tag. A fixture that runs
+// the script against whatever head a previous test left behind passes only in
+// declaration order, and throws on a null tag the moment it runs first.
+function runBootScript(): void {
+  document.head.innerHTML = themeColorMetaMarkup.replace(
+    /content="[^"]*"/,
+    `content="${UNPAINTED}"`
+  );
+  new Function(bootScript)();
+}
+
 const settingsSource = sourceFile('./lib/state/settings.svelte.ts');
 const registryKeys = new Set(Object.values(STORAGE_KEYS));
 
@@ -123,23 +146,11 @@ describe("app.html's prerendered head mirrors the theme module", () => {
 // so this runs the shipped script against the shipped tag instead: every
 // preference the app can resolve, under both OS preferences.
 describe("app.html's boot script paints theme-color like the theme module", () => {
-  const metaMarkup = (() => {
-    const match = html.match(/<meta name="theme-color"[^>]*>/);
-    expect(match, 'app.html has a theme-color meta').not.toBeNull();
-    return match![0];
-  })();
-
-  // A value no theme resolves to, so a boot script that throws before it paints
-  // (its IIFE swallows the error) fails every case instead of passing the ones
-  // whose expected color happens to be what the tag already shipped with.
-  const UNPAINTED = 'unpainted';
-
   type OsChangeListener = (event: { matches: boolean }) => void;
 
   function boot(preference: ThemePreference, systemDark: boolean) {
     localStorage.clear();
     if (preference !== THEME_DEFAULT) localStorage.setItem(STORAGE_KEYS.theme, preference);
-    document.head.innerHTML = metaMarkup.replace(/content="[^"]*"/, `content="${UNPAINTED}"`);
 
     const osListeners: OsChangeListener[] = [];
     window.matchMedia = ((query: string) => ({
@@ -149,7 +160,7 @@ describe("app.html's boot script paints theme-color like the theme module", () =
       },
     })) as unknown as typeof window.matchMedia;
 
-    new Function(bootScript)();
+    runBootScript();
 
     return {
       // Read through theme.ts's selector, against a head seeded from app.html's
@@ -266,7 +277,7 @@ describe("app.html's boot script stamps reduce-motion like the platform module",
       },
     })) as unknown as typeof window.matchMedia;
 
-    new Function(bootScript)();
+    runBootScript();
 
     return {
       stamped: () => document.documentElement.hasAttribute(REDUCE_MOTION_ATTRIBUTE),
@@ -449,7 +460,7 @@ describe("app.html's boot script mirrors the state modules", () => {
     }
     localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
 
-    new Function(bootScript)();
+    runBootScript();
 
     expect(document.documentElement.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(false);
     expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(true);
@@ -469,7 +480,7 @@ describe("app.html's boot script mirrors the state modules", () => {
       localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
       if (cached !== null) localStorage.setItem(STORAGE_KEYS.lastNetworkOnline, cached);
 
-      new Function(bootScript)();
+      runBootScript();
 
       expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(present);
       expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe(count);
@@ -489,7 +500,7 @@ describe("app.html's boot script mirrors the state modules", () => {
     localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
     if (cached !== null) localStorage.setItem(STORAGE_KEYS.freeGenerationBadgeHint, cached);
 
-    new Function(bootScript)();
+    runBootScript();
 
     expect(document.documentElement.hasAttribute('data-ai-free-count')).toBe(shown);
     expect(document.documentElement.style.getPropertyValue('--ai-free-count')).toBe(count);
@@ -513,7 +524,7 @@ describe("app.html's boot script mirrors the state modules", () => {
       localStorage.setItem(STORAGE_KEYS.aiImageEnabled, 'true');
       localStorage.setItem(STORAGE_KEYS.lastNetworkOnline, 'true');
 
-      new Function(bootScript)();
+      runBootScript();
 
       expect(document.documentElement.hasAttribute(AI_SLOT_ATTRIBUTE)).toBe(false);
       expect(document.documentElement.style.getPropertyValue('--action-btn-count')).toBe('');
@@ -581,7 +592,7 @@ describe('toolbar before first paint', () => {
     localStorage.clear();
     document.documentElement.removeAttribute('data-toolbar');
     localStorage.setItem(STORAGE_KEYS.toolbarStyle, preference);
-    new Function(bootScript)();
+    runBootScript();
     expect(document.documentElement.getAttribute('data-toolbar')).toBe(
       preference === 'bare' ? 'bare' : 'buttons'
     );

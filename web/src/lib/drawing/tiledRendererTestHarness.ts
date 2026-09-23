@@ -1,9 +1,27 @@
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { LIVE_TILE_COUNT } from './liveTiles';
-import { detachTiledRenderer } from './tiledRenderer';
+import * as sharedRenderer from './tiledRenderer';
 
-export function installTiledRendererTestHarness() {
+export type TiledRendererModule = typeof sharedRenderer;
+
+// The renderer keeps its drawing history in module state that
+// detachTiledRenderer leaves standing on purpose: engine.ts's teardown spells
+// out that tiled history outlives a mount, so a remount keeps the ink, and
+// nothing in the product ever discards it. A test that asserts an absolute
+// history depth or undo-patch budget therefore has to run against a renderer
+// that has never drawn, which only a module instance of its own can give it.
+export async function loadFreshTiledRenderer(): Promise<TiledRendererModule> {
+  vi.resetModules();
+  return import('./tiledRenderer');
+}
+
+// The renderer to tear down defaults to the module every test in the file
+// shares; a file whose tests each load their own passes a getter for the one
+// the running test is using.
+export function installTiledRendererTestHarness(
+  currentRenderer: () => Pick<TiledRendererModule, 'detachTiledRenderer'> = () => sharedRenderer
+) {
   let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
 
   beforeEach(() => {
@@ -49,7 +67,7 @@ export function installTiledRendererTestHarness() {
   });
 
   afterEach(() => {
-    detachTiledRenderer();
+    currentRenderer().detachTiledRenderer();
     HTMLCanvasElement.prototype.getContext = originalGetContext;
     vi.unstubAllGlobals();
     vi.useRealTimers();

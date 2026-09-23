@@ -1,7 +1,21 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { measureSafeAreaInsets } from './safeArea';
 
 describe('measureSafeAreaInsets', () => {
+  // The module retains its probe until the probe leaves the document, so an
+  // empty body is what makes each test's first measurement the one that builds
+  // a probe — which is what the element counts below are counting.
+  beforeEach(() => {
+    document.body.replaceChildren();
+  });
+
+  // vi.spyOn hands back the existing spy when a method is already mocked, carrying
+  // its call count with it, so a spy left standing makes the next test's counts
+  // include this one's.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('reuses one retained probe while measuring every inset', () => {
     vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(390);
     vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(844);

@@ -290,7 +290,14 @@ describe('removeKey', () => {
 });
 
 describe('resilience to a throwing localStorage', () => {
-  it('warns once for each failure class', () => {
+  // The read and write latches are module state by design — one warning per
+  // page, not per call — and the module has no way to unlatch them, so the
+  // only module that can be observed warning for the first time is one that
+  // has never warned. Every other test in this file shares the statically
+  // imported instance, which any earlier failure has already latched.
+  it('warns once for each failure class', async () => {
+    vi.resetModules();
+    const unwarned = await import('./storage');
     const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('quota', 'QuotaExceededError');
     });
@@ -299,10 +306,10 @@ describe('resilience to a throwing localStorage', () => {
     });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      writeBool(STORAGE_KEYS.soundEnabled, true);
-      writeBool(STORAGE_KEYS.soundEnabled, false);
-      expect(readBool(STORAGE_KEYS.soundEnabled, true)).toBe(true);
-      expect(readBool(STORAGE_KEYS.soundEnabled, false)).toBe(false);
+      unwarned.writeBool(STORAGE_KEYS.soundEnabled, true);
+      unwarned.writeBool(STORAGE_KEYS.soundEnabled, false);
+      expect(unwarned.readBool(STORAGE_KEYS.soundEnabled, true)).toBe(true);
+      expect(unwarned.readBool(STORAGE_KEYS.soundEnabled, false)).toBe(false);
       expect(warn).toHaveBeenCalledTimes(2);
     } finally {
       setItem.mockRestore();

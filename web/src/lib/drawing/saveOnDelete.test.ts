@@ -17,14 +17,19 @@ vi.mock('./engine', () => ({
 vi.mock('$lib/state/saveFailure.svelte', () => ({
   reportSaveFailure: mocks.reportSaveFailure,
 }));
-vi.mock('./screenshot', () => {
-  mocks.screenshotModuleLoads += 1;
-  return { saveImageBlob: mocks.saveImageBlob };
-});
-
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
+  // Registered per test rather than hoisted once: vi.resetModules drops the
+  // module graph but keeps the result a hoisted vi.mock factory already
+  // produced, so a counter inside that factory counts the first test to import
+  // ./screenshot and nothing after it. vi.doMock registers a factory the next
+  // import has to run, which is what makes the count this file asserts on a
+  // per-test measurement.
+  vi.doMock('./screenshot', () => {
+    mocks.screenshotModuleLoads += 1;
+    return { saveImageBlob: mocks.saveImageBlob };
+  });
   mocks.settings.saveOnDeleteEnabled = true;
   mocks.isCanvasEmpty.mockReturnValue(false);
   mocks.screenshotModuleLoads = 0;
