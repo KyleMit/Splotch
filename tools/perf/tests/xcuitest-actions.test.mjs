@@ -41,6 +41,11 @@ import {
   unclassifiedDeviceWarning,
   validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
+  COMPACT_CUSTOM_COLOR_SELECTOR,
+  compactColorMenuOfferedExpression,
+  compactColorOptionSelector,
+  compactColorPickedExpression,
+  visibleInactiveColorOptionRankExpression,
   isAiReadyCueAnimation,
   actionCaptureVerdict,
   reportActionCaptureVerdict,
@@ -569,6 +574,84 @@ describe('action state planning', () => {
     expect(expression).toContain('.color-swatch:not(.active):not(.gradient-swatch)');
     expect(expression).toContain('getBoundingClientRect()');
     expect(expression).toContain('rect.width > 0 && rect.height > 0');
+  });
+
+  describe('the phone-landscape Color Button flyout', () => {
+    const fakeElement = ({ width = 55, height = 55, classes = [], trimRank, style = {} } = {}) => ({
+      classes,
+      dataset: trimRank === undefined ? {} : { trimRank: String(trimRank) },
+      style,
+      getBoundingClientRect: () => ({ width, height }),
+    });
+    const evaluate = (body, document) => new Function('document', body)(document);
+
+    it('is offered only while the Color Button has a size', () => {
+      const withButton = (button) => ({ querySelector: () => button });
+
+      expect(evaluate(compactColorMenuOfferedExpression(), withButton(fakeElement()))).toBe(true);
+      expect(
+        evaluate(
+          compactColorMenuOfferedExpression(),
+          withButton(fakeElement({ width: 0, height: 0 }))
+        )
+      ).toBe(false);
+      expect(evaluate(compactColorMenuOfferedExpression(), withButton(null))).toBe(false);
+    });
+
+    it('picks the first inactive color the trim ladder left visible', () => {
+      let queried;
+      const options = [
+        fakeElement({ width: 0, height: 0, trimRank: 4 }),
+        fakeElement({ trimRank: 5 }),
+        fakeElement({ trimRank: 6 }),
+      ];
+      const document = {
+        querySelectorAll: (selector) => {
+          queried = selector;
+          return options;
+        },
+      };
+
+      expect(evaluate(visibleInactiveColorOptionRankExpression(), document)).toBe('5');
+      expect(queried).toBe('.color-menu .color-option:not(.active):not(.more-colors)');
+      expect(compactColorOptionSelector('5')).toBe('.color-menu .color-option[data-trim-rank="5"]');
+    });
+
+    it('is picked once the menu closes and the inline ink matches the option', () => {
+      const paint = 'rgb(236, 83, 78)';
+      const ready = compactColorPickedExpression(paint);
+      const state = (menuOpen, inkColor) => ({
+        querySelector: (selector) =>
+          selector === '.color-menu'
+            ? menuOpen
+              ? fakeElement()
+              : null
+            : fakeElement({ style: { color: inkColor } }),
+      });
+
+      expect(evaluate(`return ${ready};`, state(false, paint))).toBe(true);
+      expect(evaluate(`return ${ready};`, state(true, paint))).toBe(false);
+      expect(evaluate(`return ${ready};`, state(false, 'rgb(0, 0, 0)'))).toBe(false);
+    });
+
+    it('routes the palette and custom-color steps through the flyout before measuring', () => {
+      const paletteStart = IPAD_ACTIONS.indexOf("if (actions.has('palette'))");
+      const pickerStart = IPAD_ACTIONS.indexOf("if (actions.has('color-picker'))", paletteStart);
+      const brushesStart = IPAD_ACTIONS.indexOf("if (actions.has('brushes'))", pickerStart);
+      const offered = IPAD_ACTIONS.lastIndexOf('compactColorMenuOfferedExpression()', paletteStart);
+      const paletteBlock = IPAD_ACTIONS.slice(paletteStart, pickerStart);
+      const pickerBlock = IPAD_ACTIONS.slice(pickerStart, brushesStart);
+
+      expect(offered).toBeGreaterThan(-1);
+      expect(paletteBlock).toMatch(
+        /if \(compactColors\) \{\s*await openCompactColorMenu\(execute\);[\s\S]*?compactColorPickedExpression[\s\S]*?label: 'change ink color'/
+      );
+      expect(pickerBlock).toMatch(
+        /if \(compactColors\) await openCompactColorMenu\(execute\);[\s\S]*?compactColors \? COMPACT_CUSTOM_COLOR_SELECTOR : '\.gradient-swatch'/
+      );
+      expect(pickerBlock).toContain('compactInkColorExpression()} !== ');
+      expect(COMPACT_CUSTOM_COLOR_SELECTOR).toBe('.color-menu .color-option.more-colors');
+    });
   });
 
   it('observes custom-color activation before pointer capture retargets the release', () => {

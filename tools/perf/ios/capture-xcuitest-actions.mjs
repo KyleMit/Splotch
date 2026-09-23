@@ -491,6 +491,46 @@ export function visibleInactiveSwatchColorExpression() {
   `;
 }
 
+// A phone-landscape viewport replaces the Color Palette with the Color Button
+// and its flyout: the palette's swatches stay in the DOM at zero size, so the
+// plan reaches colors through the surface a user there actually taps.
+export const COMPACT_COLOR_BUTTON_SELECTOR = '#colorButton';
+export const COMPACT_COLOR_MENU_SELECTOR = '.color-menu';
+export const COMPACT_CUSTOM_COLOR_SELECTOR = `${COMPACT_COLOR_MENU_SELECTOR} .color-option.more-colors`;
+
+export function compactColorMenuOfferedExpression() {
+  return `
+    const rect = document.querySelector(${JSON.stringify(COMPACT_COLOR_BUTTON_SELECTOR)})?.getBoundingClientRect();
+    return !!rect && rect.width > 0 && rect.height > 0;
+  `;
+}
+
+export function visibleInactiveColorOptionRankExpression() {
+  return `
+    const option = [...document.querySelectorAll(${JSON.stringify(`${COMPACT_COLOR_MENU_SELECTOR} .color-option:not(.active):not(.more-colors)`)})]
+      .find((candidate) => {
+        const rect = candidate.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+    return option?.dataset.trimRank;
+  `;
+}
+
+export function compactColorOptionSelector(trimRank) {
+  return `${COMPACT_COLOR_MENU_SELECTOR} .color-option[data-trim-rank=${JSON.stringify(String(trimRank))}]`;
+}
+
+// The Color Button's inline color is the active ink, set in the same update
+// that dismisses the flyout; its computed color eases through a transition, so
+// only the inline value marks the state change without adding the ease.
+export function compactInkColorExpression() {
+  return `document.querySelector(${JSON.stringify(COMPACT_COLOR_BUTTON_SELECTOR)})?.style.color`;
+}
+
+export function compactColorPickedExpression(optionPaint) {
+  return `!document.querySelector(${JSON.stringify(COMPACT_COLOR_MENU_SELECTOR)}) && ${compactInkColorExpression()} === ${JSON.stringify(optionPaint)}`;
+}
+
 export function screenshotActivation(nativeApp) {
   return nativeApp ? 'native-accessibility-click' : 'native';
 }
@@ -562,6 +602,19 @@ async function waitForTargetToHoldStill(execute, selector, failure) {
     POLL_MS
   );
   if (!stable) throw new Error(failure);
+}
+
+async function openCompactColorMenu(execute) {
+  await ensureState(
+    execute,
+    `!!document.querySelector(${JSON.stringify(COMPACT_COLOR_MENU_SELECTOR)})`,
+    `document.querySelector(${JSON.stringify(COMPACT_COLOR_BUTTON_SELECTOR)})?.click()`
+  );
+  await waitForTargetToHoldStill(
+    execute,
+    COMPACT_CUSTOM_COLOR_SELECTOR,
+    'the compact color menu never settled after it opened'
+  );
 }
 
 async function clickWebElement(client, sessionId, selector) {
@@ -1526,9 +1579,27 @@ export async function runActionSweep({
     `document.querySelector('button[aria-label="Expand controls"]')?.click()`
   );
 
+  const compactColors = await execute(compactColorMenuOfferedExpression());
+
   if (actions.has('palette')) {
-    const color = await execute(visibleInactiveSwatchColorExpression());
-    const selector = `.color-swatch[data-color=${JSON.stringify(color)}]`;
+    let selector;
+    let ready;
+    if (compactColors) {
+      await openCompactColorMenu(execute);
+      const trimRank = await execute(visibleInactiveColorOptionRankExpression());
+      if (trimRank === undefined || trimRank === null) {
+        throw new Error('The compact color menu offers no visible inactive color');
+      }
+      selector = compactColorOptionSelector(trimRank);
+      const optionPaint = await execute(
+        `return document.querySelector(${JSON.stringify(selector)})?.style.backgroundColor;`
+      );
+      ready = compactColorPickedExpression(optionPaint);
+    } else {
+      const color = await execute(visibleInactiveSwatchColorExpression());
+      selector = `.color-swatch[data-color=${JSON.stringify(color)}]`;
+      ready = `document.querySelector(${JSON.stringify(selector)})?.classList.contains('active') === true`;
+    }
     await record(
       measureClick({
         client,
@@ -1536,19 +1607,20 @@ export async function runActionSweep({
         execute,
         label: 'change ink color',
         selector,
-        ready: `document.querySelector(${JSON.stringify(selector)})?.classList.contains('active') === true`,
+        ready,
       })
     );
   }
 
   if (actions.has('color-picker')) {
+    if (compactColors) await openCompactColorMenu(execute);
     await record(
       measureClick({
         client,
         sessionId,
         execute,
         label: 'open custom color picker',
-        selector: '.gradient-swatch',
+        selector: compactColors ? COMPACT_CUSTOM_COLOR_SELECTOR : '.gradient-swatch',
         ready: `document.querySelector('#color-picker')?.open === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
@@ -1571,6 +1643,7 @@ export async function runActionSweep({
     const preRingedSwatch = await execute(
       `return [...document.querySelectorAll('.color-swatch')].findIndex((s) => (s.getAttribute('style') || '').includes('box-shadow'));`
     );
+    const preInkColor = await execute(`return ${compactInkColorExpression()};`);
     await waitForTargetToHoldStill(
       execute,
       hexSelector,
@@ -1585,7 +1658,9 @@ export async function runActionSweep({
         selector: hexSelector,
         ready:
           `document.querySelector('#color-picker')?.open !== true && ` +
-          `[...document.querySelectorAll('.color-swatch')].findIndex((s) => (s.getAttribute('style') || '').includes('box-shadow')) !== ${preRingedSwatch}`,
+          (compactColors
+            ? `${compactInkColorExpression()} !== ${JSON.stringify(preInkColor)}`
+            : `[...document.querySelectorAll('.color-swatch')].findIndex((s) => (s.getAttribute('style') || '').includes('box-shadow')) !== ${preRingedSwatch}`),
         settleMs: ANIMATED_ACTION_SETTLE_MS,
         eventTypes: customColorSelectionEventTypes(),
       })
