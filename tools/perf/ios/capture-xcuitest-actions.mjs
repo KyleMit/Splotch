@@ -699,11 +699,9 @@ async function measureClick({
   activation = 'native',
 }) {
   let nativeTarget = null;
-  let tapPoint = null;
   if (!client.webdriverClicks) {
     if (activation === 'native') {
       nativeTarget = await nativeBoundsForSelector(client, sessionId, execute, selector);
-      tapPoint = nativeTapPoint(client, nativeTarget.bounds, label);
     } else if (activation === 'native-accessibility') {
       nativeTarget = await nativeAccessibilityBoundsForSelector(
         client,
@@ -713,6 +711,7 @@ async function measureClick({
       ).catch(() => null);
     }
   }
+  const tapPoint = nativeTarget ? nativeTapPoint(client, nativeTarget.bounds, label) : null;
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(label)}, ${JSON.stringify(
