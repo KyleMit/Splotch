@@ -41,6 +41,7 @@ import {
   unclassifiedDeviceWarning,
   validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
+  COMPACT_COLOR_MENU_ACTION_LABEL,
   COMPACT_CUSTOM_COLOR_SELECTOR,
   compactColorMenuOfferedExpression,
   compactColorOptionSelector,
@@ -644,8 +645,12 @@ describe('action state planning', () => {
 
       expect(offered).toBeGreaterThan(-1);
       expect(paletteBlock).toMatch(
-        /if \(compactColors\) \{\s*await openCompactColorMenu\(execute\);[\s\S]*?compactColorPickedExpression[\s\S]*?label: 'change ink color'/
+        /if \(compactColors\) \{\s*await record\(\s*measureClick\(\{[\s\S]*?label: COMPACT_COLOR_MENU_ACTION_LABEL,\s*selector: COMPACT_COLOR_BUTTON_SELECTOR,[\s\S]*?await openCompactColorMenu\(execute\);[\s\S]*?compactColorPickedExpression[\s\S]*?label: 'change ink color'/
       );
+      expect(paletteBlock).toMatch(
+        /\} else \{\s*notApplicable\.set\(COMPACT_COLOR_MENU_ACTION_LABEL, COMPACT_COLOR_MENU_NOT_APPLICABLE_REASON\);/
+      );
+      expect(COMPACT_COLOR_MENU_ACTION_LABEL).toBe('open color menu');
       expect(pickerBlock).toMatch(
         /if \(compactColors\) await openCompactColorMenu\(execute\);[\s\S]*?compactColors \? COMPACT_CUSTOM_COLOR_SELECTOR : '\.gradient-swatch'/
       );

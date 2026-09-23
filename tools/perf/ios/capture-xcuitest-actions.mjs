@@ -498,6 +498,13 @@ export const COMPACT_COLOR_BUTTON_SELECTOR = '#colorButton';
 export const COMPACT_COLOR_MENU_SELECTOR = '.color-menu';
 export const COMPACT_CUSTOM_COLOR_SELECTOR = `${COMPACT_COLOR_MENU_SELECTOR} .color-option.more-colors`;
 
+// Reaching a color in phone landscape costs a tap the palette does not: the
+// flyout open is its own measured action, so the option taps keep the labels
+// every other mode records without hiding that first tap.
+export const COMPACT_COLOR_MENU_ACTION_LABEL = 'open color menu';
+export const COMPACT_COLOR_MENU_NOT_APPLICABLE_REASON =
+  'the Color Palette shows every color, so there is no Color Button flyout to open';
+
 export function compactColorMenuOfferedExpression() {
   return `
     const rect = document.querySelector(${JSON.stringify(COMPACT_COLOR_BUTTON_SELECTOR)})?.getBoundingClientRect();
@@ -1585,6 +1592,17 @@ export async function runActionSweep({
     let selector;
     let ready;
     if (compactColors) {
+      await record(
+        measureClick({
+          client,
+          sessionId,
+          execute,
+          label: COMPACT_COLOR_MENU_ACTION_LABEL,
+          selector: COMPACT_COLOR_BUTTON_SELECTOR,
+          ready: `!!document.querySelector(${JSON.stringify(COMPACT_COLOR_MENU_SELECTOR)})`,
+          settleMs: ANIMATED_ACTION_SETTLE_MS,
+        })
+      );
       await openCompactColorMenu(execute);
       const trimRank = await execute(visibleInactiveColorOptionRankExpression());
       if (trimRank === undefined || trimRank === null) {
@@ -1596,6 +1614,7 @@ export async function runActionSweep({
       );
       ready = compactColorPickedExpression(optionPaint);
     } else {
+      notApplicable.set(COMPACT_COLOR_MENU_ACTION_LABEL, COMPACT_COLOR_MENU_NOT_APPLICABLE_REASON);
       const color = await execute(visibleInactiveSwatchColorExpression());
       selector = `.color-swatch[data-color=${JSON.stringify(color)}]`;
       ready = `document.querySelector(${JSON.stringify(selector)})?.classList.contains('active') === true`;
