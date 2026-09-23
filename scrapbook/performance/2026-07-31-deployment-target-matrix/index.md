@@ -122,10 +122,10 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   not captured, and its landscape sweeps failed when Appium could not rotate the device to
   ROTATION_270.
 * The preserved sweeps predate the 2026-09-17 ai-waiting and unavailable action groups and several
-  later action labels. Their heatmap cells for those labels render as missing wherever a current
-  sweep in the same Settings shell offers the action. The physical Android web and physical Android
-  native landscape modes use the compact shell, which no current sweep covers, so their cells for
-  those labels still render as N/A; read them as not measured.
+  later action labels. Their heatmap cells for those labels render as missing, not N/A. On the
+  physical Android web and physical Android native landscape modes, which use the compact Settings
+  shell that no current sweep covers, that includes the Accessibility section and tool-drawer
+  toggles, which the compact shell may not offer at all; their tooltips say the shell is unverified.
 * The physical Android native drawing and undo sections come from a probe-host server.url build
   carrying the ADR-0135 split transport. Those artifacts record pageIdentity unprovable by
   construction, because the fixed server.url carries no per-cell nonce. Its three drift references

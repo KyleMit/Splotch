@@ -1312,7 +1312,7 @@ describe('deployment matrix report', () => {
       ])
     );
 
-    function publishReport(directory, mode = {}) {
+    function publishReport(directory, mode = {}, otherModes = []) {
       const drawing = mode.drawing ?? publishedDrawing;
       writeFileSync(
         join(directory, 'data.json'),
@@ -1321,7 +1321,7 @@ describe('deployment matrix report', () => {
             {
               id: 'fixture',
               label: 'Fixture',
-              modes: [{ id: 'portrait-light', undo: null, ...mode, drawing }],
+              modes: [{ id: 'portrait-light', undo: null, ...mode, drawing }, ...otherModes],
             },
           ],
         })
@@ -1510,6 +1510,76 @@ describe('deployment matrix report', () => {
       // Only a current plan in the SAME shell vouches that the action is offered,
       // so the compact shell's toggles stay N/A on the sectioned preserved mode.
       expect(coordinate(compactLabel)).toMatchObject({ state: 'not-applicable' });
+    });
+
+    it('treats a preserved sweep in a shell no current sweep covers as unknown for new actions', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const predatingGroups = FULL_ACTION_GROUPS.filter(
+        (group) => group !== 'ai-waiting' && group !== 'unavailable'
+      );
+      const olderActions = (orientation, settingsShell, applicableLabels) => ({
+        ...normalizedActions([action('expand action drawer', true, 'old123')]),
+        actionPlan: {
+          ...fullActionPlan({ orientation, settingsShell, applicableLabels }),
+          actionGroups: predatingGroups,
+        },
+      });
+      const olderLabel = 'open Settings section: Sound';
+      publishReport(
+        manifestDirectory,
+        { actions: olderActions('PORTRAIT', 'compact', ['expand action drawer']) },
+        [
+          {
+            id: 'portrait-dark',
+            undo: null,
+            drawing: publishedDrawing,
+            actions: olderActions('PORTRAIT', 'sectioned', ['expand action drawer', olderLabel]),
+          },
+        ]
+      );
+      const repeated = (label) =>
+        Array.from({ length: 4 }, (_, index) => ({
+          ...actionSample(label, index === 0),
+          postActionFrameGapsMs: [1],
+        }));
+      const currentLabels = ['expand action drawer', 'show AI waiting print', olderLabel];
+      const currentSource = writeActionCapture(manifestDirectory, 'current-actions.json', {
+        orientation: 'LANDSCAPE',
+        theme: 'light',
+        samples: [
+          ...repeated('idle frame control'),
+          ...currentLabels.flatMap((label) => repeated(label)),
+        ],
+        actionPlan: fullActionPlan({
+          orientation: 'LANDSCAPE',
+          settingsShell: 'sectioned',
+          applicableLabels: ['idle frame control', ...currentLabels],
+        }),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        capturedManifestMode(modeSpecs[1], { drawing: {}, actionSources: 'preserved' }),
+        capturedManifestMode(modeSpecs[2], {
+          actionSources: [{ source: currentSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[3]),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+      const compactCoordinate = (label) =>
+        matrix.targets[0].modes[0].actionCoordinates.find((candidate) => candidate.label === label);
+
+      expect(compactCoordinate('show AI waiting print')).toEqual({
+        label: 'show AI waiting print',
+        state: 'missing',
+        reason:
+          'the sweep predates this action (its plan omits the ai-waiting, unavailable action groups), and no current sweep in its Settings shell shows whether that shell offers it',
+      });
+      // An older harness knew this label and left it out of the compact shell,
+      // so that omission is still a judgement and stays N/A.
+      expect(compactCoordinate(olderLabel)).toMatchObject({ state: 'not-applicable' });
     });
 
     it('keeps a freshly captured untracked section scoreable and labels its provenance', () => {

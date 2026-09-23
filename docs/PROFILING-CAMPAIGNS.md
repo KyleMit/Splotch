@@ -1594,8 +1594,10 @@ latest full plan to classify every global heatmap coordinate: an absent applicab
 missing, while an action outside that mode's declared plan is N/A. A capture predating this
 declaration stays missing rather than gaining an inferred N/A verdict. The same holds for a plan
 written before `FULL_ACTION_GROUPS` grew: an action it never had the chance to offer is missing, not
-N/A, whenever a plan that covers every current group offers it in the same Settings shell. A label
-the older plan declared not-applicable keeps its recorded reason.
+N/A, whenever a plan that covers every current group offers it in the same Settings shell. When no
+current plan covers that shell at all, an action no older plan ever named is missing too, with a
+reason saying the shell is unverified. A label the older plan declared not-applicable keeps its
+recorded reason.
 
 The published page draws those states apart, with a legend, because they ask for different work: an
 **N/A by design** cell (`not-applicable`) is a single struck stroke; an **unavailable** cell — a
