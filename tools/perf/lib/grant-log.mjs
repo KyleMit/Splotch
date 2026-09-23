@@ -42,7 +42,7 @@ export const REDACTED_UDID = '<hardware UDID redacted>';
 // The device column is pseudonymized, but a launch failure's detail is Appium's
 // own message, which quotes the hardware UDID ("Unknown device or simulator
 // UDID: '…'") into a tracked file.
-export function redactGrantDetail(udid, detail) {
+function redactGrantDetail(udid, detail) {
   const text = String(detail ?? '');
   return udid ? text.split(String(udid)).join(REDACTED_UDID) : text;
 }
