@@ -22,11 +22,18 @@
 // for it to answer "is this the app or the browser", never to score a release.
 //
 // The DOM shape (#drawingCanvas, .paper-view) is what the probe requires.
+//
+// Drive a capture against it with `perf:device:frames --host=<this host>`. The
+// capture recognises the floor by `/__probe/state`'s `page` and, in place of the
+// SvelteKit build guard the floor can never satisfy, proves the served bytes are
+// this checkout's floor (`floorControlIdentity`).
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
 import { join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
+import { PROBE_REPORT_PATH } from './lib/probe-host-protocol.mjs';
 import { keepIncomingReport, reportFileName, reportRejectionReason } from './lib/report-store.mjs';
 
 const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
@@ -37,6 +44,9 @@ const CONTACT_BANK_MS = 600_000;
 // surface than the thing it is a control for.
 const MAX_DEVICE_PIXEL_RATIO = 2;
 const STROKE_WIDTH_CSS_PX = 12;
+export const FLOOR_CONTROL_PAGE = 'floor-control';
+// The page paints one fixed light paper; there is no dark variant to request.
+export const FLOOR_CONTROL_THEME = 'light';
 
 const PAGE = `<!doctype html>
 <html><head>
@@ -106,11 +116,14 @@ export const FLOOR_BOOTSTRAP_SOURCE = `
   const plan = await fetch('/__probe/plan').then((response) => response.json());
   const nonce = plan.nonce;
   // The same opened-page identity the capture bootstrap proves (issue 1307):
-  // the preflight launches this page at a URL carrying the run's nonce, so a
-  // restored or delayed floor page from an earlier run can prove it is not this
-  // run's page and stand down instead of adopting the current plan. Only when
-  // the plan carries a nonce — a hand-opened standalone host asks for no proof.
-  if (nonce && new URLSearchParams(location.search).get('verify') !== nonce) {
+  // the launcher opens this page at a URL carrying the run's nonce — ?verify=
+  // from the Android preflight, ?probe= from perf:device:frames — so a restored
+  // or delayed floor page from an earlier run can prove it is not this run's
+  // page and stand down instead of adopting the current plan. Only when the
+  // plan carries a nonce — a hand-opened standalone host asks for no proof.
+  const params = new URLSearchParams(location.search);
+  const openedFor = params.get('probe') ?? params.get('verify');
+  if (nonce && openedFor !== nonce) {
     location.replace('${STAND_DOWN_PATH}');
     return;
   }
@@ -127,6 +140,7 @@ export const FLOOR_BOOTSTRAP_SOURCE = `
   const rect = document.querySelector('#drawingCanvas').getBoundingClientRect();
   await post('/__probe/ready', {
     nonce,
+    resolvedTheme: '${FLOOR_CONTROL_THEME}',
     geometry: {
       canvas: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
       viewport: { width: innerWidth, height: innerHeight },
@@ -162,8 +176,51 @@ export const FLOOR_BOOTSTRAP_SOURCE = `
 })();
 `;
 
-const json = (res, body) => {
-  res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+// The scripted bytes a floor host serves, by path. One table feeds both the
+// server and the identity check, so a capture compares exactly what is served.
+const FLOOR_SERVED_BODIES = {
+  '/': () => PAGE,
+  '/__probe/control.js': () => CONTROL,
+  '/__probe/bootstrap.js': () => FLOOR_BOOTSTRAP_SOURCE,
+  '/__probe/probe.js': () => readFileSync(PROBE_SOURCE, 'utf8'),
+};
+
+function sha256(value) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+// The floor's counterpart to the served-build guard: it has no SvelteKit
+// manifest, so its identity is its own served bytes. A floor host another
+// checkout or an older commit left on the port serves a different page or
+// probe, and a capture against it would measure a different control. Returns
+// the first differing path as `problem`, and one digest over every served file
+// as `buildDigest` so the artifact records which floor it measured.
+export async function floorControlIdentity(host, fetchText = defaultFetchText) {
+  const digests = [];
+  for (const [path, localBody] of Object.entries(FLOOR_SERVED_BODIES)) {
+    const served = sha256(await fetchText(new URL(path, host)));
+    if (served !== sha256(localBody())) {
+      return {
+        problem:
+          `${host} serves ${path} with different content from this checkout's floor control — ` +
+          'the port is held by another checkout or an older floor host. Choose a free port ' +
+          'rather than stopping a listener another session owns.',
+        buildDigest: null,
+      };
+    }
+    digests.push(`${path} ${served}`);
+  }
+  return { problem: null, buildDigest: sha256(digests.join('\n')) };
+}
+
+async function defaultFetchText(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+  return response.text();
+}
+
+const json = (res, body, status = 200) => {
+  res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
   res.end(JSON.stringify(body));
 };
 
@@ -205,14 +262,19 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
       return send(res, 'text/html', STAND_DOWN_PAGE_HTML);
     }
     if (pathname === '/__probe/state') {
-      return json(res, { ready: state.progress, hasReport: !!state.report });
+      return json(res, {
+        page: FLOOR_CONTROL_PAGE,
+        ready: state.progress,
+        hasReport: !!state.report,
+      });
     }
-    if (pathname === '/__probe/control.js') return send(res, 'text/javascript', CONTROL);
-    if (pathname === '/__probe/bootstrap.js') {
-      return send(res, 'text/javascript', FLOOR_BOOTSTRAP_SOURCE);
+    if (req.method === 'GET' && pathname === PROBE_REPORT_PATH) {
+      return state.report
+        ? json(res, state.report)
+        : json(res, { error: 'no accepted report for the current plan' }, 404);
     }
-    if (pathname === '/__probe/probe.js') {
-      return send(res, 'text/javascript', readFileSync(PROBE_SOURCE, 'utf8'));
+    if (pathname !== '/' && Object.hasOwn(FLOOR_SERVED_BODIES, pathname)) {
+      return send(res, 'text/javascript', FLOOR_SERVED_BODIES[pathname]());
     }
     if (req.method === 'PUT' && pathname === '/__probe/control') {
       const patch = await readBody(req);
@@ -226,7 +288,7 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
     }
     if (req.method === 'POST' && pathname.startsWith('/__probe/')) {
       const payload = await readBody(req);
-      if (pathname === '/__probe/report') {
+      if (pathname === PROBE_REPORT_PATH) {
         // The plan nonce arms the stale-run gate in reportRejectionReason;
         // omitting it here left that gate disabled on the floor path, so a
         // restored floor page could bank an earlier run's cadence under the
@@ -250,7 +312,7 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
       }
       return json(res, {});
     }
-    return send(res, 'text/html; charset=utf-8', PAGE);
+    return send(res, 'text/html; charset=utf-8', FLOOR_SERVED_BODIES['/']());
   });
 
   return { server, state };

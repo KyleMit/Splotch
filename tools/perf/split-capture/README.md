@@ -72,6 +72,25 @@ The device cue matters more than it sounds. Whoever is drawing is holding the de
 the terminal, so the Android path buzzes once when the window opens and twice when it closes. There
 is no iOS equivalent, so an iPad run is driven by a person calling the start.
 
+## Capturing the floor control
+
+`npm run perf:device:floor` serves the floor control (ADR-0136): one canvas, one `stroke()` per
+pointermove, the same probe. Point `perf:device:frames` at it in place of the probe host:
+
+```sh
+npm run perf:device:floor -- --port=4177 &
+npm run perf:device:frames -- --platform=ios --wda-url=http://127.0.0.1:8100 \
+  --host=http://<lan-ip>:4177 --brush=pen --theme=light
+```
+
+The capture reads `page: 'floor-control'` from `/__probe/state` and swaps the SvelteKit served-build
+guard, which a page with no build can never pass, for the floor's own identity check: every file the
+floor serves must match this checkout's `serve-floor-control.mjs` and probe byte for byte. It
+refuses what the floor cannot honour — `--native-app`, a brush other than pen, a theme other than
+light, undo — before touching the device. The artifact records `page: 'floor-control'`, a floor
+`buildDigest`, and no `productCommit`, so the matrix fold refuses it: a floor capture is a
+diagnostic, never a cell.
+
 ## Inputs and outputs
 
 `--host` is the probe host URL **as the device sees it** — a LAN address, not `127.0.0.1`. Android

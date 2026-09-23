@@ -12,11 +12,11 @@ import { FLOOR_BOOTSTRAP_SOURCE } from '../split-capture/serve-floor-control.mjs
 
 const BOOTSTRAP_TIMEOUT_MS = 10_000;
 
-function runFloorBootstrap(plan, openedFor) {
+function runFloorBootstrap(plan, openedFor, param = 'verify') {
   window.happyDOM?.setURL?.(
     openedFor === null
       ? 'http://floor-control.test/'
-      : `http://floor-control.test/?verify=${encodeURIComponent(openedFor)}`
+      : `http://floor-control.test/?${param}=${encodeURIComponent(openedFor)}`
   );
   document.body.innerHTML = '<canvas id="drawingCanvas"></canvas>';
   const posted = [];
@@ -63,6 +63,25 @@ describe('the floor page proving which run opened it', () => {
       expect(posted.find((call) => call.path === '/__probe/ready')?.body.nonce).toBe(
         'this-preflight'
       );
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // Issue 2217: perf:device:frames opens its page with ?probe=, and the page
+  // must report the theme it painted or the capture refuses the readiness.
+  it(
+    'accepts the capture runner’s ?probe= launch and reports its fixed light theme',
+    async () => {
+      const { posted, reportPosted } = runFloorBootstrap(
+        { nonce: 'this-capture', finish: true, contactMs: 1_000 },
+        'this-capture',
+        'probe'
+      );
+
+      await reportPosted;
+      const ready = posted.find((call) => call.path === '/__probe/ready')?.body;
+      expect(ready?.nonce).toBe('this-capture');
+      expect(ready?.resolvedTheme).toBe('light');
     },
     BOOTSTRAP_TIMEOUT_MS
   );
