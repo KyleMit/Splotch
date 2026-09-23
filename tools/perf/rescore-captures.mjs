@@ -211,7 +211,8 @@ function row(scored) {
     ...(scored.cellAttributable === false ? { cell: 'UNATTRIBUTABLE' } : {}),
     // A floor-control capture scores against the target's gate so it can be
     // compared with the app (ADR-0136), but it is never that target's result.
-    ...(scored.floorControl ? { cell: 'FLOOR-CONTROL' } : {}),
+    // Its own column, so a re-admitted floor capture keeps both markings.
+    ...(scored.floorControl ? { page: FLOOR_CONTROL_PAGE } : {}),
     target: scored.target ?? '(unknown)',
     brush: scored.brush,
     'mv/s': round(phase.input?.movesPerSecond, 1),

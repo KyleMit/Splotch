@@ -175,8 +175,34 @@ describe('the rescorer labelling a floor-control capture', () => {
     try {
       await rescoreCaptures({ corpus: relative(ROOT, corpusDir), targetId: 'ipad-device-web' });
       const byName = Object.fromEntries(table.mock.calls[0][0].map((row) => [row.capture, row]));
-      expect(byName.floor?.cell).toBe('FLOOR-CONTROL');
-      expect(byName.app?.cell).toBeUndefined();
+      expect(byName.floor?.page).toBe(FLOOR_CONTROL_PAGE);
+      expect(byName.app?.page).toBeUndefined();
+    } finally {
+      quiet.mockRestore();
+      table.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps the unattributable marking on a re-admitted floor capture', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-floor-readmit-'));
+    writeFileSync(
+      join(corpusDir, 'index.json'),
+      JSON.stringify({
+        kept: [{ file: 'floor.json', target: 'ipad-device-web', cellAttributable: false }],
+      })
+    );
+    writeFileSync(
+      join(corpusDir, 'floor.json'),
+      JSON.stringify({ page: FLOOR_CONTROL_PAGE, brush: 'pen', report })
+    );
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const table = vi.spyOn(console, 'table').mockImplementation(() => {});
+
+    try {
+      await rescoreCaptures({ corpus: relative(ROOT, corpusDir), includeUnattributable: true });
+      const [row] = table.mock.calls[0][0];
+      expect(row).toMatchObject({ cell: 'UNATTRIBUTABLE', page: FLOOR_CONTROL_PAGE });
     } finally {
       quiet.mockRestore();
       table.mockRestore();
