@@ -5,10 +5,10 @@
 //     --product-commit=<sha> --manifest=<sources.json>
 //
 // The campaign already knows where every cell writes, so deriving the manifest
-// entries from `artifactPath` rather than retyping them is what keeps a path or a
+// entries from the plan's `artifact` paths rather than retyping them is what keeps a path or a
 // product commit from being transcribed wrong into a cell that then reads as
 // measured. A mode is normally rewritten only when all five of its artifacts are
-// present and captured through the right transport. The explicit action-only
+// present and accepted by the campaign runner's own inspection. The explicit action-only
 // exceptions either record why actions are unavailable or preserve the published
 // action section while replacing a complete four-brush drawing capture.
 
@@ -16,15 +16,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
 import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
-import {
-  CAMPAIGN_MODES,
-  SPLIT_TRANSPORT,
-  UNDO_COUNT,
-  artifactMatchesRuntime,
-  artifactPath,
-  campaignTarget,
-  splitUndoEvidenceProblem,
-} from './lib/campaign-plan.mjs';
+import { cellInspection } from './run-campaign.mjs';
+import { CAMPAIGN_MODES, campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
 
 const BRUSH_BY_ITEM = { 'pen-undo': 'pen', crayon: 'crayon', magic: 'magic', eraser: 'eraser' };
 
@@ -38,11 +31,14 @@ function readArtifact(relativePath) {
   }
 }
 
-// A cell counts only if it parses AND records the transport its target asked for —
-// the same acceptance the campaign runner applies, so the two cannot disagree.
-function usableCellArtifact(relativePath, runtime) {
-  const artifact = readArtifact(relativePath);
-  return artifact !== null && artifactMatchesRuntime(artifact, runtime) ? artifact : null;
+// A cell counts only if the campaign runner itself would accept it: this is the
+// same cellInspection perf:campaign:status reports from, over the same plan cell,
+// so the fold can never publish an artifact status calls outstanding — a
+// blocked-coverage sweep, a failed fidelity verdict, or the wrong transport. The
+// runner's status comes back with a refusal so the fold can name it.
+function inspectCell(cell, target) {
+  const { ok, status } = cellInspection(cell, target);
+  return ok ? { artifact: readArtifact(cell.artifact), status } : { artifact: null, status };
 }
 
 function recordedBuildField(artifact, path, field) {
@@ -129,43 +125,43 @@ export function campaignModeSources(
     : CAMPAIGN_MODES;
 
   return selected.map((mode) => {
-    const paths = Object.fromEntries(
-      Object.entries(BRUSH_BY_ITEM).map(([item, brush]) => [
-        brush,
-        artifactPath(outputRoot, targetId, mode, item),
-      ])
+    const cells = Object.fromEntries(
+      planCampaign(targetId, { outputRoot, modes: [mode.id] }).map((cell) => [cell.item, cell])
     );
-    const actions = artifactPath(outputRoot, targetId, mode, 'actions');
-    const actionsArtifact = usableCellArtifact(actions, target.runtime);
+    const paths = Object.fromEntries(
+      Object.entries(BRUSH_BY_ITEM).map(([item, brush]) => [brush, cells[item].artifact])
+    );
+    const actions = cells.actions.artifact;
+    const actionsInspection = inspectCell(cells.actions, target);
+    const actionsArtifact = actionsInspection.artifact;
     if (preserveActions && actionsArtifact) {
       fail(
         `Cannot preserve actions for ${targetId}/${mode.id}: a usable action artifact exists at ${actions}`
       );
     }
-    const brushArtifacts = Object.fromEntries(
-      Object.entries(paths).map(([brush, path]) => [
+    const brushInspections = Object.fromEntries(
+      Object.entries(BRUSH_BY_ITEM).map(([item, brush]) => [
         brush,
-        usableCellArtifact(path, target.runtime),
+        inspectCell(cells[item], target),
       ])
     );
-    const missing = Object.entries(brushArtifacts)
-      .filter(([, artifact]) => artifact === null)
-      .map(([brush]) => brush);
-    if (
-      target.transport === SPLIT_TRANSPORT &&
-      brushArtifacts.pen &&
-      splitUndoEvidenceProblem(brushArtifacts.pen, UNDO_COUNT)
-    ) {
-      missing.push('undo');
-    }
-    if (!preserveActions && !actionsArtifact) missing.push('actions');
+    const brushArtifacts = Object.fromEntries(
+      Object.entries(brushInspections).map(([brush, { artifact }]) => [brush, artifact])
+    );
+    const refusals = Object.fromEntries(
+      Object.entries(brushInspections)
+        .filter(([, { artifact }]) => artifact === null)
+        .map(([brush, { status }]) => [brush, status])
+    );
+    if (!preserveActions && !actionsArtifact) refusals.actions = actionsInspection.status;
+    const missing = Object.keys(refusals);
     // A mode whose only gap is the action sweep still carries four scored brushes and an
     // undo probe. The manifest already has a shape for that — `actionsUnavailableReason`,
     // which the report renders as no action data — so it is filed as the partial
     // measurement it is rather than discarded beside genuinely uncaptured modes.
     const actionsOnly = missing.length === 1 && missing[0] === 'actions';
     if (missing.length && !(actionsOnly && actionsUnavailableReason)) {
-      return { id: mode.id, missing };
+      return { id: mode.id, missing, refusals };
     }
 
     const foldingActions = !preserveActions && !actionsOnly;
@@ -314,7 +310,8 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
   });
 
   for (const entry of entries.filter((candidate) => candidate.missing)) {
-    console.log(`SKIP  ${entry.id} — missing or wrong-transport: ${entry.missing.join(', ')}`);
+    const refused = entry.missing.map((name) => `${name} (${entry.refusals[name]})`);
+    console.log(`SKIP  ${entry.id} — not accepted by the campaign runner: ${refused.join(', ')}`);
   }
   const ready = entries.filter((entry) => entry.mode);
   for (const entry of ready.filter((candidate) => candidate.partial)) {
