@@ -120,12 +120,13 @@ The driven capture's lost-frame share is instrument evidence. Read it as follows
   capture keeps detecting relative regressions: **a driven pen reading above 1.37% is not explained.
   It needs a real-finger capture at that commit.** A green finger capture explains the cell. A red
   finger capture makes it a product red.
-* **Every other driven drawing lost-frame red on the two iPad rows needs a finger capture before it
-  is explained.** That includes Magic and eraser, any native red, and any other brush. Magic's only
-  finger capture fails the gate as scored, so its band is not validated. Eraser has no finger
-  capture at all. The native row has no finger floor for the bundled build and no measured band. Its
-  tax is presumed only because it shares the transport, and its driven readings cap that tax at 0.09
-  points.
+* **Every other new driven drawing lost-frame red on the two iPad rows needs a finger capture before
+  it is explained.** That includes Magic and eraser readings at any later commit, any native red,
+  and any other brush. The one standing exception is the three e5142fab eraser readings, which
+  decision 2 explains by extension. Magic's only finger capture fails the gate as scored, so its
+  band is not validated. Eraser has no finger capture at all. The native row has no finger floor for
+  the bundled build and no measured band. Its tax is presumed only because it shares the transport,
+  and its driven readings cap that tax at 0.09 points.
 
 Crayon keeps ADR-0137's 1.5% exception on both iPad rows. That exception was sized from driven
 captures, and no Safari finger capture of crayon exists. Its driven readings (0.22–0.47% web,

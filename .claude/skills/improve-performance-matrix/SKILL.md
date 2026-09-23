@@ -255,8 +255,11 @@ reject or narrow hypotheses; do not let their passes overrule a calibrated physi
 On both physical iPad rows, drawing lost-frame share is judged against the real-finger floor, not
 the driven capture (ADR-0174). XCUITest touch synthesis adds about one point in Safari. A driven pen
 reading inside ADR-0174's recorded band is already explained, so do not spend product work on it.
-Any other driven iPad drawing lost-frame red, including Magic and eraser, needs a `perf:device:hand`
-capture at that commit before you count it as a product red or an artifact.
+Any other new driven iPad drawing lost-frame red, including a Magic or eraser reading at a later
+commit, needs a `perf:device:hand` capture at that commit before you count it as a product red or an
+artifact. The three e5142fab eraser reds are the exception: ADR-0174 already explains them by
+extension, so do not reopen them. The e5142fab Magic cells stay an open product red (the first-load
+stall), not a transport question.
 
 ## Work one causal cluster at a time
 

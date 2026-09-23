@@ -30,7 +30,7 @@
 > floor, not the driven capture. The ten `ipad-device-web` pen, Magic, and eraser driven reds at
 > e5142fab are instrument artifacts. Pen and eraser are explained. Magic's own finger capture fails
 > as scored on a first-load stall, so it stays an open product red. A driven pen reading inside the
-> recorded band counts as explained. Any other driven drawing lost-frame red on either iPad row
+> recorded band counts as explained. Any other new driven drawing lost-frame red on either iPad row
 > needs a real-finger capture first.
 
 ## Context
