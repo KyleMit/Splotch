@@ -80,8 +80,8 @@ function readJson(path) {
 // evidence in the last data.json. Copying that forward is how a rerun of the
 // generator keeps a first valid result — including a red gate — instead of
 // silently dropping the cell or recapturing it into a different number.
-const PRESERVED = 'preserved';
-const CAPTURED_UNTRACKED = 'captured-untracked';
+export const PRESERVED = 'preserved';
+export const CAPTURED_UNTRACKED = 'captured-untracked';
 
 function loadPreservedEvidence(manifest, manifestDirectory) {
   const spec = manifest.preservedEvidence;

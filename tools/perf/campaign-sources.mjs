@@ -15,6 +15,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
+import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
 import {
   CAMPAIGN_MODES,
   SPLIT_TRANSPORT,
@@ -209,6 +210,39 @@ export function campaignModeSources(
   });
 }
 
+// Preserving actions carries the PUBLISHED section, never its raw inputs. Raw
+// `actionSources` pointers are re-scored by gen:performance-matrix under current
+// rules, so a sweep that predates a FULL_ACTION_GROUPS change is refused outright
+// and any other rule change would re-derive the numbers the flag promised to keep.
+// PRESERVED is the generator's own route for copying a section from
+// `preservedEvidence.from`, re-deriving only its final-product-commit coverage
+// count. A section that is already PRESERVED or
+// CAPTURED_UNTRACKED is published-section-routed already and keeps its route.
+function preservedActionSection(manifest, targetId, modeId, existing) {
+  if (Array.isArray(existing.actionSources)) {
+    if (!manifest.preservedEvidence) {
+      fail(
+        `Cannot preserve actions for ${targetId}/${modeId}: the manifest declares no ` +
+          'preservedEvidence source to carry the published section from. Declare ' +
+          'preservedEvidence (the published data.json and why its raw inputs are not re-read) first.'
+      );
+    }
+    return { actionSources: PRESERVED };
+  }
+  if (existing.actionSources !== undefined) {
+    return {
+      actionSources: existing.actionSources,
+      ...(existing.actionSources === CAPTURED_UNTRACKED
+        ? { actionProductCommit: existing.actionProductCommit ?? existing.drawingProductCommit }
+        : {}),
+    };
+  }
+  if (existing.actionsUnavailableReason !== undefined) {
+    return { actionsUnavailableReason: existing.actionsUnavailableReason };
+  }
+  return {};
+}
+
 export function applyCampaignModes(manifest, targetId, entries) {
   const target = manifest.targets?.find((candidate) => candidate.id === targetId);
   if (!target) fail(`Manifest has no target ${targetId}`);
@@ -234,19 +268,7 @@ export function applyCampaignModes(manifest, targetId, entries) {
     }
     const preservedActions =
       entry.partial === 'actions-preserved'
-        ? existing.actionSources !== undefined
-          ? {
-              actionSources: existing.actionSources,
-              ...(existing.actionSources === 'captured-untracked'
-                ? {
-                    actionProductCommit:
-                      existing.actionProductCommit ?? existing.drawingProductCommit,
-                  }
-                : {}),
-            }
-          : existing.actionsUnavailableReason !== undefined
-            ? { actionsUnavailableReason: existing.actionsUnavailableReason }
-            : {}
+        ? preservedActionSection(manifest, targetId, entry.id, existing)
         : {};
     target.modes[index] = {
       ...entry.mode,
