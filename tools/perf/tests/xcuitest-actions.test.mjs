@@ -970,6 +970,55 @@ describe('trusted action setup', () => {
     expect(restoreLock).toBeGreaterThan(restoreOrientation);
   });
 
+  // Issue 2215: Auto on the Android app follows the sensor, so Appium can only
+  // rotate once the display is pinned to user rotation — after the lock is
+  // released, and unpinned only after the lock is back.
+  it('pins native Android to user rotation only between lock release and lock restore', () => {
+    const setupStart = IPAD_ACTIONS.indexOf('const needsNativeRotationUnlock =');
+    const setupEnd = IPAD_ACTIONS.indexOf('const appUrl =', setupStart);
+    const setup = IPAD_ACTIONS.slice(setupStart, setupEnd);
+    const unlock = setup.indexOf('releaseNativeRotationLock(execute)');
+    const record = setup.indexOf(
+      'displayRotationModeRestore = readDisplayRotationMode(client.androidTouchTarget.serial)'
+    );
+    const pin = setup.indexOf('pinDisplayToUserRotation(displayRotationModeRestore)');
+    const rotate = setup.indexOf('orientation: requestedOrientation');
+
+    expect(unlock).toBeGreaterThan(-1);
+    expect(record).toBeGreaterThan(unlock);
+    expect(pin).toBeGreaterThan(record);
+    expect(rotate).toBeGreaterThan(pin);
+
+    const cleanupStart = IPAD_ACTIONS.indexOf('function cleanup()');
+    const cleanupEnd = IPAD_ACTIONS.indexOf('const onSignal', cleanupStart);
+    const cleanup = IPAD_ACTIONS.slice(cleanupStart, cleanupEnd);
+    const restoreLock = cleanup.indexOf('restoreNativeRotationLock(execute,');
+    const unpin = cleanup.indexOf('restoreDisplayRotationMode(displayRotationModeRestore)');
+    const deleteSession = cleanup.indexOf("'DELETE'");
+
+    expect(unpin).toBeGreaterThan(restoreLock);
+    expect(deleteSession).toBeGreaterThan(unpin);
+    // A failed unpin fails the capture after the session is released, rather
+    // than warning and letting the next cell start on a pinned phone.
+    const rethrow = cleanup.indexOf('if (unpinError)');
+    expect(rethrow).toBeGreaterThan(deleteSession);
+    expect(cleanup.slice(rethrow)).toMatch(/throw new Error\(/);
+    // A campaign lands a cell on its artifact, not the exit status, so the
+    // artifact of a capture that left the phone pinned is removed first.
+    const removeArtifact = cleanup.indexOf('rmSync(writtenArtifact');
+    expect(removeArtifact).toBeGreaterThan(rethrow);
+    expect(cleanup.indexOf('throw new Error(', rethrow)).toBeGreaterThan(removeArtifact);
+    expect(IPAD_ACTIONS).toContain('writtenArtifact = output;');
+
+    const signal = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf('const onSignal'),
+      IPAD_ACTIONS.indexOf('const onSigint')
+    );
+    expect(signal.indexOf('.catch(')).toBeGreaterThan(-1);
+    expect(signal.indexOf('process.exit')).toBeGreaterThan(signal.indexOf('.catch('));
+    expect(IPAD_ACTIONS).toContain('new AggregateError(');
+  });
+
   it('records desktop scroll as trusted wheel while retaining native touch transport', () => {
     expect(coloringScrollTransport({ useWheelForScroll: true })).toEqual({
       eventTypes: ['wheel'],
