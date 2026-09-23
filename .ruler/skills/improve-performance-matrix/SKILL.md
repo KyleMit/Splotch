@@ -253,10 +253,10 @@ rules explicitly give them approval authority (ADR-0156 names the release-gate r
 reject or narrow hypotheses; do not let their passes overrule a calibrated physical failure.
 
 On both physical iPad rows, drawing lost-frame share is judged against the real-finger floor, not
-the driven capture (ADR-0174). XCUITest touch synthesis adds about one point in Safari. A driven
-pen, Magic, or eraser reading inside ADR-0174's recorded band is already explained, so do not spend
-product work on it. A reading above the band, or any other driven iPad drawing lost-frame red, needs
-a `perf:device:hand` capture at that commit before you count it as a product red.
+the driven capture (ADR-0174). XCUITest touch synthesis adds about one point in Safari. A driven pen
+reading inside ADR-0174's recorded band is already explained, so do not spend product work on it.
+Any other driven iPad drawing lost-frame red, including Magic and eraser, needs a `perf:device:hand`
+capture at that commit before you count it as a product red or an artifact.
 
 ## Work one causal cluster at a time
 

@@ -120,11 +120,12 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   construction because the fixed server.url carries no per-cell nonce.
 * Every physical drawing and undo cell passed its input-fidelity gate. The ten iPad web pen, Magic,
   and eraser lost-frame-share reds (1.02-1.37% against the 1% budget) stay as the driven capture
-  measured them; ADR-0174 reclassifies them as an explained instrument artifact of the
-  synthesized-touch transport, not a product cost. Re-scored real-finger captures of the same
-  product read 0.04-0.06% for pen and 0.04% for Magic outside one 433 ms first-load stall (1.13% as
-  scored); eraser has no finger capture. The remaining scoreable reds are three discrete actions
-  tracked by issues 1694 and 1695. The physical Android native row carries no red cell.
+  measured them; ADR-0174 reclassifies them as an instrument artifact of the synthesized-touch
+  transport, not a product cost. Re-scored real-finger captures of the same product read 0.04-0.06%
+  for pen. The one Magic finger capture reads 0.04% apart from a 433 ms first-load stall but fails
+  at 1.13% as scored, which leaves Magic an open product finding. Eraser has no finger capture. The
+  remaining scoreable reds are three discrete actions tracked by issues 1694 and 1695. The physical
+  Android native row carries no red cell.
 * The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the
   physical iPad native and both physical Android rows to be current and scored before campaign
   completion; every one is current here.

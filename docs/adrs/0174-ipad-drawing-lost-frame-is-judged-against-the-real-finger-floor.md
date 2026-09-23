@@ -34,19 +34,20 @@ different metric from the gate's. `npm run perf:rescore -- --target=ipad-device-
 raw frame tables through the shipped scorer, in the row's declared 60 Hz regime. All three observed
 a 17 ms beat. The result is the gate's own lost-frame share:
 
-| Cell                    | Real finger (moves/s) | Driven, same cell at e5142fab | Driven minus finger |
-| ----------------------- | --------------------: | ----------------------------: | ------------------: |
-| pen / portrait / light  |         0.06% (160.1) |                     1.37% RED |         1.31 points |
-| pen / landscape / dark  |         0.04% (154.5) |                     1.22% RED |         1.18 points |
-| Magic / portrait / dark |     **1.13%** (127.8) |                     1.15% RED |           see below |
+| Cell                    | Real finger (moves/s) | Driven, same cell at e5142fab |   Driven minus finger |
+| ----------------------- | --------------------: | ----------------------------: | --------------------: |
+| pen / portrait / light  |         0.06% (160.1) |                     1.37% RED |           1.31 points |
+| pen / landscape / dark  |         0.04% (154.5) |                     1.22% RED |           1.18 points |
+| Magic / portrait / dark |     **1.13%** (127.8) |                     1.15% RED | 0.02 points as scored |
 
 The Magic finger capture has a single in-contact stall of 433 ms. The issue 1715 thread attributes
 it to Magic's deferred paint while its sheet loads: strokes are recorded and painted once the
 overlay arrives, which is a shipped behavior. That one episode charges 416 ms of the 432 ms that the
-capture lost in contact. Without it, the capture loses 15 ms over 38.1 s, which is 0.04%, so the
-driven-minus-finger gap is 1.11 points. The driven Magic captures never hit this path: their paint
-maximum is at most 38 ms. So the 1.13% is a real product cost that a finger felt and the driven
-cells do not measure. It is not the transport tax, and this record does not reclassify it.
+capture lost in contact. Without it, the capture loses 15 ms over 38.1 s, which is 0.04%. That
+figure is an analysis, not the gate's number: as scored, the gap to the driven cell is only 0.02
+points. The driven Magic captures never hit this path: their paint maximum is at most 38 ms. So the
+1.13% is a real product cost that a finger felt and the driven cells do not measure. It is not the
+transport tax, and this record does not reclassify it.
 
 **The native row.** `ipad-device-native` uses the same transport. Its sixteen drawing cells at
 e5142fab read 0.00–0.09% (`perf-profiles/evidence/2026-09-06-epic-1567-ipad-native-e514/`). It has
@@ -110,18 +111,21 @@ The driven capture's lost-frame share is instrument evidence. Read it as follows
   red is in question. A driven green still comes from input slower than a finger, and ADR-0135
   already notes that such input does not exercise the case where input arrives faster than frames.
   This record does not change that limit.
-* **A driven red on `ipad-device-web` pen, Magic, or eraser, with passing paint gates and a reading
-  inside the recorded driven band (0.99–1.37% at e5142fab, 1.27% on 2026-09-22), is explained by
-  this record.** The smallest measured driven-minus-finger gap is 1.11 points. If a real product red
-  (above 1%) had that tax added, the driven reading would be above 2.1%, well over the band. So a
-  reading inside the band is consistent with a finger floor near zero. This is how the driven
-  capture keeps detecting relative regressions: **a driven reading above 1.37% is not explained. It
-  needs a real-finger capture of that brush at that commit.** A green finger capture explains the
-  cell. A red finger capture makes it a product red.
+* **A driven pen red on `ipad-device-web`, with passing paint gates and a reading inside the
+  recorded driven pen band (1.22–1.37% at e5142fab, 1.27% on 2026-09-22), is explained by this
+  record.** Pen is the one brush whose band is checked against the gate's own metric: both finger
+  captures pass as scored, and the smaller driven-minus-finger gap is 1.18 points. If a real product
+  red (above 1%) had that tax added, the driven reading would be above 2.18%, well over the band. So
+  a pen reading inside the band is consistent with a finger floor near zero. This is how the driven
+  capture keeps detecting relative regressions: **a driven pen reading above 1.37% is not explained.
+  It needs a real-finger capture at that commit.** A green finger capture explains the cell. A red
+  finger capture makes it a product red.
 * **Every other driven drawing lost-frame red on the two iPad rows needs a finger capture before it
-  is explained.** That includes any native red, and any web red outside those three brushes. The
-  native row has no finger floor for the bundled build and no measured band. Its tax is presumed
-  only because it shares the transport, and its driven readings cap that tax at 0.09 points.
+  is explained.** That includes Magic and eraser, any native red, and any other brush. Magic's only
+  finger capture fails the gate as scored, so its band is not validated. Eraser has no finger
+  capture at all. The native row has no finger floor for the bundled build and no measured band. Its
+  tax is presumed only because it shares the transport, and its driven readings cap that tax at 0.09
+  points.
 
 Crayon keeps ADR-0137's 1.5% exception on both iPad rows. That exception was sized from driven
 captures, and no Safari finger capture of crayon exists. Its driven readings (0.22–0.47% web,
@@ -129,20 +133,27 @@ captures, and no Safari finger capture of crayon exists. Its driven readings (0.
 
 ### 2. The ten e5142fab reds are an instrument artifact
 
-The ten `ipad-device-web` drawing lost-frame reds at e5142fab are reclassified as **explained
-instrument artifacts of the synthesized-touch transport**, not product costs. This record is their
-disposition under the ADR-0160 definition: it states the measured basis, the attribution, and the
-reopen condition. The basis differs by brush:
+The ten driven `ipad-device-web` drawing lost-frame readings at e5142fab are reclassified as
+**instrument artifacts of the synthesized-touch transport**, not product costs. For the seven pen
+and eraser cells, this record is their disposition under the ADR-0160 definition: it states the
+measured basis, the attribution, and the reopen condition, and the cells count as explained. The
+three Magic cells do not, for the reason below. The basis differs by brush:
 
 * **Pen (4 cells): measured.** Two finger captures, covering both orientations and both themes, read
   0.04–0.06% against 1.22–1.37% driven. The 2026-09-22 control reproduces the driven red on current
   main.
-* **Magic (3 cells): measured, with an exception.** The one finger capture reads 0.04% outside its
-  single 433 ms first-load stall, against 1.02–1.15% driven. That stall is what brings the capture
-  to 1.13% as scored. It is a separate, open product observation and is not covered here.
+* **Magic (3 cells): the driven reds are reclassified, but the finger floor is itself red.** The one
+  finger capture reads 0.04% outside its single 433 ms first-load stall, against 1.02–1.15% driven,
+  so the driven readings are transport, not steady-state drawing cost. As scored, though, that
+  capture fails at 1.13%. Under decision 1 that makes the Magic cells an **open product red** (the
+  first-load stall, not the transport) until the stall gets its own disposition. Only portrait/dark
+  has a finger capture, so whether the stall affects the other modes is not measured. This record
+  does not decide it.
 * **Eraser (3 cells): by extension, not by measurement.** No finger capture of eraser exists. It is
-  reclassified because its driven readings (1.19–1.25%) fall in the same band, on the same row and
-  commit, with the same paint time. The maintainer's decision applies to all ten cells.
+  reclassified because its driven readings (1.19–1.25%) sit below the top of pen's measured band, on
+  the same row and commit, with the same paint time. The maintainer's decision applies to all ten
+  cells. Because it rests on extension, the explanation covers these three e5142fab readings only. A
+  future driven eraser red needs a finger capture (decision 1).
 
 ### 3. What the driven captures keep
 
@@ -215,33 +226,35 @@ Reopen this record, and treat the affected cells as product reds, if any of the 
 * A paired driven-vs-hand capture shows the **hand arm also red** on the same commit. That would
   bring back the product-floor explanation this evidence retired.
 * A finger capture of eraser in the declared regime reads red.
-* A driven pen, Magic, or eraser reading on `ipad-device-web` rises above 1.37% and a finger capture
-  at that commit reads red. That is an ordinary product red under decision 1. It reopens this record
-  only if the gap between the driven and finger readings has shrunk below about one point, because
-  the band argument rests on that gap.
+* A driven pen reading on `ipad-device-web` rises above 1.37% and a finger capture at that commit
+  reads red. That is an ordinary product red under decision 1. It reopens this record only if the
+  gap between the driven and finger readings has shrunk below about one point, because the pen band
+  argument rests on that gap.
 * The transport changes. For example, a hardware actuator or an XCUITest release changes how touch
   is synthesized. The band was measured on the current transport and must be measured again.
 
 ## Consequences
 
-* \+ The largest block of release-gate reds is resolved on a measurement that could have gone the
+* \+ Seven of the ten reds (pen and eraser) are resolved on a measurement that could have gone the
   other way. If the finger had also read about 1.2%, this record would owe a real allowance or more
-  product work.
+  product work. The three Magic cells move from a transport question to a named product one.
 * \+ The driven captures stay useful. Fidelity, paint, action cells, and lost-frame regression
   detection all keep running unattended. Only the lost-frame verdict on the iPad drawing path moves
   to the finger.
 * \+ The native row's clean result is recorded as a finding in itself: the same transport costs at
   most 0.09 points there. The "transport tax" is therefore specific to Safari and to the brush.
-* − **The matrix still renders ten FAIL cells that the release process treats as explained.**
+* − **The matrix still renders seven FAIL cells that the release process treats as explained.**
   ADR-0160 rejected exactly this state for action cells, because the matrix then shows red that
   releases ignore. Here the alternative is a budget that misstates what the product costs. The
   limitation note is the mitigation. A rendered disposition marker in the generator would be the
   real fix.
-* − A drawing lost-frame verdict on these rows can now need a person at the iPad. The band keeps the
-  common case unattended. A reading above the band cannot be settled overnight.
+* − A drawing lost-frame verdict on these rows can now need a person at the iPad. The pen band keeps
+  pen unattended. Any Magic or eraser red, and any pen reading above the band, cannot be settled
+  overnight.
 * − Eraser is reclassified by extension, not by measurement. The native row is covered only by
   presumption. Both gaps are named above instead of being closed.
 * − The Magic first-load stall (433 ms in contact, 1.13% as scored) is a product cost that the
-  driven Magic cells cannot see. This record names it but does not decide it.
-* − The band is a threshold derived from three measured pairs. It assumes the tax adds at least
-  about one point and stays stable. Both assumptions rest on n = 3 plus one control.
+  driven Magic cells cannot see. It leaves the Magic cells an open product red under decision 1.
+  This record names it but does not decide it.
+* − The pen band is a threshold derived from two measured pairs. It assumes the tax adds at least
+  about one point and stays stable. Both assumptions rest on n = 2 plus one control.

@@ -9,11 +9,11 @@
 
 > **Amended by
 > [ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md):** on the
-> physical iPad, XCUITest touch synthesis adds about 1.1–1.3 points of lost-frame share to Safari
-> pen and Magic drawing captures, through Appium or WebDriverAgent alike. A real finger does not. So
-> a driven capture's drawing lost-frame share on the iPad rows is instrument evidence, and the
-> real-finger floor judges it. Driven captures keep fidelity, paint, discrete actions, and relative
-> regression detection.
+> physical iPad, XCUITest touch synthesis adds about 1.2–1.3 points of lost-frame share to Safari
+> pen drawing captures, through Appium or WebDriverAgent alike. A real finger does not. So a driven
+> capture's drawing lost-frame share on the iPad rows is instrument evidence, and the real-finger
+> floor judges it. Driven captures keep fidelity, paint, discrete actions, and relative regression
+> detection.
 
 ## Context
 
