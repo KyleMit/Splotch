@@ -3,30 +3,48 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LIVE_TILE_COUNT } from './liveTiles';
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import type { StrokeOp } from './strokeOps';
-import {
-  adoptTiledRenderer,
-  applyTiledView,
-  beginTiledCommand,
-  clearTiledRenderer,
-  commitTiledCommand,
-  detachTiledRenderer,
-  peekTiledUndoPaper,
-  recordTiledOp,
-  renderTiledOp,
-  resizeTiledRenderer,
-  scanTiledRendererIsEmpty,
-  tiledHistoryDebug,
-  undoTiledCommand,
-} from './tiledRenderer';
+import { loadFreshTiledRenderer, type TiledRendererModule } from './tiledRendererTestHarness';
 
 vi.mock('./crayonBrush', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./crayonBrush')>()),
   crayonPatternFor: () => ({}) as CanvasPattern,
 }));
 
+// The last case here drives undo down to an empty history, which is only
+// reachable on a renderer no earlier test has drawn on, so every test takes a
+// module instance of its own.
+let renderer: TiledRendererModule;
+let adoptTiledRenderer: TiledRendererModule['adoptTiledRenderer'];
+let applyTiledView: TiledRendererModule['applyTiledView'];
+let beginTiledCommand: TiledRendererModule['beginTiledCommand'];
+let clearTiledRenderer: TiledRendererModule['clearTiledRenderer'];
+let commitTiledCommand: TiledRendererModule['commitTiledCommand'];
+let peekTiledUndoPaper: TiledRendererModule['peekTiledUndoPaper'];
+let recordTiledOp: TiledRendererModule['recordTiledOp'];
+let renderTiledOp: TiledRendererModule['renderTiledOp'];
+let resizeTiledRenderer: TiledRendererModule['resizeTiledRenderer'];
+let scanTiledRendererIsEmpty: TiledRendererModule['scanTiledRendererIsEmpty'];
+let tiledHistoryDebug: TiledRendererModule['tiledHistoryDebug'];
+let undoTiledCommand: TiledRendererModule['undoTiledCommand'];
+
 let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
 
-beforeEach(() => {
+beforeEach(async () => {
+  renderer = await loadFreshTiledRenderer();
+  ({
+    adoptTiledRenderer,
+    applyTiledView,
+    beginTiledCommand,
+    clearTiledRenderer,
+    commitTiledCommand,
+    peekTiledUndoPaper,
+    recordTiledOp,
+    renderTiledOp,
+    resizeTiledRenderer,
+    scanTiledRendererIsEmpty,
+    tiledHistoryDebug,
+    undoTiledCommand,
+  } = renderer);
   originalGetContext = HTMLCanvasElement.prototype.getContext;
   (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
     this: HTMLCanvasElement,
@@ -82,7 +100,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  detachTiledRenderer();
+  renderer.detachTiledRenderer();
   HTMLCanvasElement.prototype.getContext = originalGetContext;
   vi.unstubAllGlobals();
 });

@@ -32,6 +32,15 @@ const overlays = vi.hoisted(() => ({
 
 vi.mock('$lib/components/overlayChunk', () => overlays);
 
+// The default loader reaches the chunk through overlayChunkLoader, and mocking
+// only the chunk leaves that hop importing the real dialog graph — whose
+// module-load work includes crayonBrush's own scheduleIdle, which lands an
+// entry in the queue above from whichever test happens to trigger the import
+// first. Mocking the hop keeps the default loader on the fake catalog.
+vi.mock('$lib/components/overlayChunkLoader', () => ({
+  loadOverlayChunk: async () => overlays,
+}));
+
 import { mountBootHiddenOverlays, type BootHiddenOverlayKey } from './bootHiddenOverlays';
 
 async function flushNext(queue: typeof scheduler.idle) {

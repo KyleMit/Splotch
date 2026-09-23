@@ -50,6 +50,10 @@ beforeEach(() => {
 
 afterEach(() => {
   HTMLCanvasElement.prototype.getContext = originalGetContext;
+  // The deposition mode is module state the plane tests below switch, so the
+  // restore belongs to every test in the file rather than to the describe that
+  // assumes the default.
+  configureCrayonDeposition('restamp');
 });
 
 function context2d(): CanvasRenderingContext2D {
@@ -73,10 +77,6 @@ function crayonDot(overrides: Partial<Extract<StrokeOp, { kind: 'dot' }>> = {}):
 }
 
 describe('tiled crayon pass buffers', () => {
-  afterEach(() => {
-    configureCrayonDeposition('restamp');
-  });
-
   it('keeps the preview planes hidden for the whole pass lifecycle', () => {
     const target = context2d();
     const buffer = context2d();

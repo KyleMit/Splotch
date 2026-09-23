@@ -47,8 +47,16 @@ beforeEach(() => {
   window.history.replaceState({}, '', '/');
 });
 
-afterEach(() => {
+afterEach(async () => {
   window.history.replaceState({}, '', '/');
+  // aiAccessToken.ts wires one coordinator for the whole module, and a
+  // hydration that rejects latches it into refusing every later write until a
+  // hydration completes. Clearing the latch here keeps it inside the test that
+  // set it; the coordinator's own behaviour is covered against fresh instances
+  // in secureCredentialCoordinator.test.ts.
+  vi.mocked(loadAccessCode).mockReset().mockResolvedValue(null);
+  vi.mocked(saveAccessCode).mockReset().mockResolvedValue(undefined);
+  await hydrateAiAccessToken();
 });
 
 describe('setAiAccessToken', () => {

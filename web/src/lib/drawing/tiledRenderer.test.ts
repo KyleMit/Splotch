@@ -1,33 +1,30 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
 import type { StrokeOp } from './strokeOps';
 import {
-  adoptTiledRenderer,
-  applyTiledView,
-  beginTiledCommand,
-  captureTiledCanvasSnapshot,
-  clearTiledRenderer,
-  commitTiledCommand,
-  recordTiledOp,
-  recoverTiledRendererIfNeeded,
-  repaintTiledRenderer,
-  renderTiledOp,
-  resizeTiledRenderer,
-  tiledHistoryDebug,
-  tiledSurfaceTopologyDebug,
-  tiledWorkDebug,
-  undoTiledCommand,
-} from './tiledRenderer';
-import { installTiledRendererTestHarness, rendererElements } from './tiledRendererTestHarness';
+  installTiledRendererTestHarness,
+  loadFreshTiledRenderer,
+  rendererElements,
+  type TiledRendererModule,
+} from './tiledRendererTestHarness';
 
 vi.mock('./crayonBrush', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./crayonBrush')>()),
   crayonPatternFor: () => ({}) as CanvasPattern,
 }));
 
-installTiledRendererTestHarness();
+// Several cases here assert an absolute history depth or undo-patch budget, so
+// each test draws on a renderer of its own rather than on whatever the test
+// before it left in the shared module's history.
+let renderer: TiledRendererModule;
+
+installTiledRendererTestHarness(() => renderer);
+
+beforeEach(async () => {
+  renderer = await loadFreshTiledRenderer();
+});
 
 const TEST_PAPER_PX = 400;
 const TEST_TILE_WIDTH_PX = TEST_PAPER_PX / LIVE_TILE_COLUMNS;
@@ -36,20 +33,20 @@ const TEST_TILE_HEIGHT_PX = TEST_PAPER_PX / LIVE_TILE_ROWS;
 describe('idle tiled canvas visibility', () => {
   it('composites only painted tiles and restores visibility through clear and undo', () => {
     const { host, canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
     canvas.width = 1;
     canvas.height = 1;
-    resizeTiledRenderer(400, 400, 1);
-    expect(tiledSurfaceTopologyDebug()).toEqual(
+    renderer.resizeTiledRenderer(400, 400, 1);
+    expect(renderer.tiledSurfaceTopologyDebug()).toEqual(
       Array.from({ length: LIVE_TILE_COUNT }, () => ({
         width: TEST_TILE_WIDTH_PX,
         height: TEST_TILE_HEIGHT_PX,
       }))
     );
-    expect(tiledWorkDebug()).toMatchObject({
+    expect(renderer.tiledWorkDebug()).toMatchObject({
       backingMigrationPending: false,
       liveSurfaceElements: 60,
       realizedNormalBackings: LIVE_TILE_COUNT,
@@ -58,7 +55,7 @@ describe('idle tiled canvas visibility', () => {
       totalLiveBackingBytes: 640_000,
       lastCommand: null,
     });
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const deferredCrayonTiles = [
       ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-bottom]'),
       ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-top]'),
@@ -75,22 +72,22 @@ describe('idle tiled canvas visibility', () => {
       color: '#ff0000',
       erase: false,
     };
-    beginTiledCommand(true);
-    renderTiledOp(dot);
-    recordTiledOp(dot);
-    commitTiledCommand();
+    renderer.beginTiledCommand(true);
+    renderer.renderTiledOp(dot);
+    renderer.recordTiledOp(dot);
+    renderer.commitTiledCommand();
 
-    expect(tiledWorkDebug()).toMatchObject({
+    expect(renderer.tiledWorkDebug()).toMatchObject({
       lastCommand: { inputOps: 1, rasterizedOps: 1, maxSurfaceVisitsPerOp: 1 },
     });
 
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
-    expect(resizeTiledRenderer(400, 400, 1)).toBe(false);
+    expect(renderer.resizeTiledRenderer(400, 400, 1)).toBe(false);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
-    expect(tiledHistoryDebug().patchBytes).toBe(0);
+    expect(renderer.tiledHistoryDebug().patchBytes).toBe(0);
 
-    const patchBytesBeforeClear = tiledHistoryDebug().patchBytes;
+    const patchBytesBeforeClear = renderer.tiledHistoryDebug().patchBytes;
     const clearCallsBefore = tiles.reduce(
       (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
       0
@@ -100,20 +97,20 @@ describe('idle tiled canvas visibility', () => {
       deferredFrames.push(callback);
       return deferredFrames.length;
     });
-    clearTiledRenderer(false);
+    renderer.clearTiledRenderer(false);
     expect(tiles.every((tile) => tile.hidden)).toBe(true);
     const clearCallsAfter = tiles.reduce(
       (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
       0
     );
-    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(0);
+    expect(renderer.tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(0);
     expect(clearCallsAfter - clearCallsBefore).toBe(0);
     deferredFrames.shift()?.(0);
-    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(
+    expect(renderer.tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(
       TEST_TILE_WIDTH_PX * TEST_TILE_HEIGHT_PX * 4
     );
 
-    undoTiledCommand(1);
+    renderer.undoTiledCommand(1);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
     const clearCallsAfterUndo = tiles.reduce(
       (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
@@ -131,7 +128,7 @@ describe('idle tiled canvas visibility', () => {
       (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
       0
     );
-    expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: false });
+    expect(renderer.undoTiledCommand(1)).toEqual({ empty: true, canUndo: false });
     expect(tiles.every((tile) => tile.hidden)).toBe(true);
     expect(
       tiles.reduce(
@@ -143,12 +140,12 @@ describe('idle tiled canvas visibility', () => {
 
   it('counts seam overdraw with no crayon plane backings realized', () => {
     const { canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const crayonDot: StrokeOp = {
       kind: 'dot',
       x: 100,
@@ -159,29 +156,29 @@ describe('idle tiled canvas visibility', () => {
       crayon: true,
       seed: 1,
     };
-    beginTiledCommand(true);
-    renderTiledOp(crayonDot);
-    recordTiledOp(crayonDot);
-    commitTiledCommand();
+    renderer.beginTiledCommand(true);
+    renderer.renderTiledOp(crayonDot);
+    renderer.recordTiledOp(crayonDot);
+    renderer.commitTiledCommand();
 
     // The restamp renderer deposits wax on the normal tiles; the vestigial
     // preview planes never realize a backing (crayonPassBuffer.ts).
-    expect(tiledWorkDebug()).toMatchObject({
+    expect(renderer.tiledWorkDebug()).toMatchObject({
       realizedCrayonBackings: 0,
       totalLiveBackingBytes: 640_000,
       lastCommand: { inputOps: 1, rasterizedOps: 4, maxSurfaceVisitsPerOp: 4 },
     });
-    undoTiledCommand(1);
+    renderer.undoTiledCommand(1);
   });
 
   it('recounts an active command from scratch when repaint replays it', () => {
     const { canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const dot: StrokeOp = {
       kind: 'dot',
       x: 50,
@@ -190,27 +187,27 @@ describe('idle tiled canvas visibility', () => {
       color: '#ff0000',
       erase: false,
     };
-    beginTiledCommand(true);
-    renderTiledOp(dot);
-    recordTiledOp(dot);
+    renderer.beginTiledCommand(true);
+    renderer.renderTiledOp(dot);
+    renderer.recordTiledOp(dot);
 
-    repaintTiledRenderer();
-    commitTiledCommand();
+    renderer.repaintTiledRenderer();
+    renderer.commitTiledCommand();
 
-    expect(tiledWorkDebug()).toMatchObject({
+    expect(renderer.tiledWorkDebug()).toMatchObject({
       lastCommand: { inputOps: 1, rasterizedOps: 1, maxSurfaceVisitsPerOp: 1 },
     });
-    undoTiledCommand(1);
+    renderer.undoTiledCommand(1);
   });
 
   it('rebinds reset live contexts and rebuilds their pixels from retained history', () => {
     const { host, canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const dot: StrokeOp = {
       kind: 'dot',
       x: 50,
@@ -219,10 +216,10 @@ describe('idle tiled canvas visibility', () => {
       color: '#ff0000',
       erase: false,
     };
-    beginTiledCommand(true);
-    renderTiledOp(dot);
-    recordTiledOp(dot);
-    commitTiledCommand();
+    renderer.beginTiledCommand(true);
+    renderer.renderTiledOp(dot);
+    renderer.recordTiledOp(dot);
+    renderer.commitTiledCommand();
 
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
     for (const tile of tiles) {
@@ -235,12 +232,12 @@ describe('idle tiled canvas visibility', () => {
     const crayonBottom = host.querySelector<HTMLCanvasElement>('[data-live-crayon-bottom]')!;
     crayonBottom.getContext('2d')!.lineCap = 'butt';
 
-    expect(recoverTiledRendererIfNeeded()).toBe(true);
+    expect(renderer.recoverTiledRendererIfNeeded()).toBe(true);
     expect(tiles[0].hidden).toBe(false);
     expect(tiles[5].getContext('2d')!.getTransform()).toMatchObject({ e: -100, f: -80 });
     expect(tiles.every((tile) => tile.getContext('2d')!.lineCap === 'round')).toBe(true);
     expect(crayonBottom.getContext('2d')!.lineCap).toBe('round');
-    expect(recoverTiledRendererIfNeeded()).toBe(false);
+    expect(renderer.recoverTiledRendererIfNeeded()).toBe(false);
   });
 
   it('waits until every reported live context is restored before rebuilding', () => {
@@ -251,12 +248,12 @@ describe('idle tiled canvas visibility', () => {
     });
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
     const { host, canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
     let firstLost = true;
     let secondLost = true;
@@ -286,12 +283,12 @@ describe('idle tiled canvas visibility', () => {
     );
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
     const { canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => true,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const dot: StrokeOp = {
       kind: 'dot',
       x: 50,
@@ -300,20 +297,20 @@ describe('idle tiled canvas visibility', () => {
       color: '#ff0000',
       erase: false,
     };
-    beginTiledCommand(true);
-    renderTiledOp(dot);
-    recordTiledOp(dot);
+    renderer.beginTiledCommand(true);
+    renderer.renderTiledOp(dot);
+    renderer.recordTiledOp(dot);
 
-    clearTiledRenderer(false);
-    renderTiledOp(dot);
-    recordTiledOp(dot);
-    commitTiledCommand();
+    renderer.clearTiledRenderer(false);
+    renderer.renderTiledOp(dot);
+    renderer.recordTiledOp(dot);
+    renderer.commitTiledCommand();
 
-    expect(tiledWorkDebug()).toMatchObject({
+    expect(renderer.tiledWorkDebug()).toMatchObject({
       lastCommand: { inputOps: 1, rasterizedOps: 1, maxSurfaceVisitsPerOp: 1 },
     });
-    undoTiledCommand(1);
-    undoTiledCommand(1);
+    renderer.undoTiledCommand(1);
+    renderer.undoTiledCommand(1);
   });
 
   it('captures visible settled tiles before an asynchronous export continues', async () => {
@@ -325,17 +322,17 @@ describe('idle tiled canvas visibility', () => {
     let nextBitmap = 0;
     const createBitmap = vi.fn((_: HTMLCanvasElement) => Promise.resolve(bitmaps[nextBitmap++]));
     vi.stubGlobal('createImageBitmap', createBitmap);
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
     tiles[0].hidden = false;
     tiles[5].hidden = false;
 
-    const snapshot = captureTiledCanvasSnapshot();
+    const snapshot = renderer.captureTiledCanvasSnapshot();
 
     expect(snapshot).toMatchObject({ width: 400, height: 400 });
     expect(snapshot?.tiles).toHaveLength(2);
@@ -349,11 +346,11 @@ describe('idle tiled canvas visibility', () => {
 
   it('spreads clear snapshots across separate animation frames', () => {
     const { host, canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(400, 400, 1);
+    renderer.resizeTiledRenderer(400, 400, 1);
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
     for (const tile of tiles.slice(0, 4)) tile.hidden = false;
     const deferredFrames: FrameRequestCallback[] = [];
@@ -362,13 +359,13 @@ describe('idle tiled canvas visibility', () => {
       return deferredFrames.length;
     });
 
-    clearTiledRenderer(false);
+    renderer.clearTiledRenderer(false);
     const tileBytes = TEST_TILE_WIDTH_PX * TEST_TILE_HEIGHT_PX * 4;
     let previousBytes = 0;
     let captureFrames = 0;
-    while (tiledHistoryDebug().patchBytes < tileBytes * 4) {
+    while (renderer.tiledHistoryDebug().patchBytes < tileBytes * 4) {
       deferredFrames.shift()?.(0);
-      const bytes = tiledHistoryDebug().patchBytes;
+      const bytes = renderer.tiledHistoryDebug().patchBytes;
       expect(bytes - previousBytes).toBeLessThanOrEqual(tileBytes);
       if (bytes > previousBytes) captureFrames++;
       previousBytes = bytes;
@@ -378,12 +375,12 @@ describe('idle tiled canvas visibility', () => {
 
   it('drops an open crayon pass when the paper is cleared', () => {
     const { host, canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => true,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const crayonLayers = [
       ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-bottom]'),
       ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-top]'),
@@ -404,50 +401,50 @@ describe('idle tiled canvas visibility', () => {
       return deferredFrames.length;
     });
 
-    beginTiledCommand(true);
-    renderTiledOp(crayonDot);
-    recordTiledOp(crayonDot);
+    renderer.beginTiledCommand(true);
+    renderer.renderTiledOp(crayonDot);
+    renderer.recordTiledOp(crayonDot);
     // Wax lands on the normal tile; the vestigial preview planes stay hidden.
     expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
       1
     );
     expect(crayonLayers.every((layer) => layer.hidden)).toBe(true);
 
-    clearTiledRenderer(true);
+    renderer.clearTiledRenderer(true);
     expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
       0
     );
 
     // A redraw after the clear opens a fresh pass rather than resurrecting
     // the dropped one.
-    renderTiledOp(crayonDot);
-    recordTiledOp(crayonDot);
+    renderer.renderTiledOp(crayonDot);
+    renderer.recordTiledOp(crayonDot);
     expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
       1
     );
     expect(crayonLayers.every((layer) => layer.hidden)).toBe(true);
 
     const crayonFlush: StrokeOp = { kind: 'crayonFlush' };
-    renderTiledOp(crayonFlush);
-    recordTiledOp(crayonFlush);
-    commitTiledCommand();
+    renderer.renderTiledOp(crayonFlush);
+    renderer.recordTiledOp(crayonFlush);
+    renderer.commitTiledCommand();
     deferredFrames.shift()?.(0);
     deferredFrames.shift()?.(16);
     expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
       1
     );
-    undoTiledCommand(1);
-    undoTiledCommand(1);
+    renderer.undoTiledCommand(1);
+    renderer.undoTiledCommand(1);
   });
 
   it('migrates blank backings across frames without rebuilding stale undo patches', () => {
     const { host, canvas } = rendererElements();
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 800, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
     const dot: StrokeOp = {
       kind: 'dot',
@@ -457,29 +454,29 @@ describe('idle tiled canvas visibility', () => {
       color: '#ff0000',
       erase: false,
     };
-    beginTiledCommand(true);
-    renderTiledOp(dot);
-    recordTiledOp(dot);
-    commitTiledCommand();
+    renderer.beginTiledCommand(true);
+    renderer.renderTiledOp(dot);
+    renderer.recordTiledOp(dot);
+    renderer.commitTiledCommand();
     const deferredFrames: FrameRequestCallback[] = [];
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       deferredFrames.push(callback);
       return deferredFrames.length;
     });
-    clearTiledRenderer(false);
-    const patchBytesBeforeResize = tiledHistoryDebug().patchBytes;
+    renderer.clearTiledRenderer(false);
+    const patchBytesBeforeResize = renderer.tiledHistoryDebug().patchBytes;
 
-    resizeTiledRenderer(800, 400, 1, true);
-    const patchBytesAfterResize = tiledHistoryDebug().patchBytes;
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(800, 400, 1, true);
+    const patchBytesAfterResize = renderer.tiledHistoryDebug().patchBytes;
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     expect(tiles.some((tile) => tile.width !== 200 || tile.height !== 80)).toBe(true);
     while (deferredFrames.length) deferredFrames.shift()!(0);
 
     expect(tiles.every((tile) => tile.width === 200 && tile.height === 80)).toBe(true);
     expect(patchBytesAfterResize).toBeGreaterThan(patchBytesBeforeResize);
-    expect(tiledHistoryDebug().patchBytes).toBe(patchBytesAfterResize);
-    expect(undoTiledCommand(1)).toMatchObject({ empty: false, canUndo: true });
-    expect(tiledHistoryDebug().patchBytes).toBeLessThan(patchBytesAfterResize);
+    expect(renderer.tiledHistoryDebug().patchBytes).toBe(patchBytesAfterResize);
+    expect(renderer.undoTiledCommand(1)).toMatchObject({ empty: false, canUndo: true });
+    expect(renderer.tiledHistoryDebug().patchBytes).toBeLessThan(patchBytesAfterResize);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
   });
 
@@ -487,13 +484,13 @@ describe('idle tiled canvas visibility', () => {
     const { canvas } = rendererElements();
     const createBitmap = vi.fn();
     vi.stubGlobal('createImageBitmap', createBitmap);
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => true,
     });
-    resizeTiledRenderer(400, 400, 1);
+    renderer.resizeTiledRenderer(400, 400, 1);
 
-    expect(captureTiledCanvasSnapshot()).toBeNull();
+    expect(renderer.captureTiledCanvasSnapshot()).toBeNull();
     expect(createBitmap).not.toHaveBeenCalled();
   });
 
@@ -501,12 +498,12 @@ describe('idle tiled canvas visibility', () => {
     vi.useFakeTimers();
     const { host, canvas } = rendererElements();
     let paperReady = true;
-    adoptTiledRenderer(canvas, {
+    renderer.adoptTiledRenderer(canvas, {
       paperSize: () => (paperReady ? { width: 400, height: 400 } : { width: 0, height: 0 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(400, 400, 1);
-    applyTiledView(IDENTITY_PAPER_VIEW);
+    renderer.resizeTiledRenderer(400, 400, 1);
+    renderer.applyTiledView(IDENTITY_PAPER_VIEW);
     const dot: StrokeOp = {
       kind: 'dot',
       x: 50,
@@ -515,28 +512,28 @@ describe('idle tiled canvas visibility', () => {
       color: '#ff0000',
       erase: false,
     };
-    const initialHistoryLength = tiledHistoryDebug().historyLength ?? 0;
+    const initialHistoryLength = renderer.tiledHistoryDebug().historyLength ?? 0;
     for (let index = 0; index < 21; index++) {
-      beginTiledCommand(index === 0);
-      renderTiledOp(dot);
-      recordTiledOp(dot);
-      commitTiledCommand();
+      renderer.beginTiledCommand(index === 0);
+      renderer.renderTiledOp(dot);
+      renderer.recordTiledOp(dot);
+      renderer.commitTiledCommand();
     }
 
     paperReady = false;
     vi.advanceTimersByTime(1_500);
-    expect(tiledHistoryDebug()).toMatchObject({
+    expect(renderer.tiledHistoryDebug()).toMatchObject({
       baseRasters: 0,
       historyLength: initialHistoryLength + 21,
     });
 
     paperReady = true;
     vi.advanceTimersByTime(1_500);
-    expect(tiledHistoryDebug()).toMatchObject({
+    expect(renderer.tiledHistoryDebug()).toMatchObject({
       baseRasters: LIVE_TILE_COUNT,
       historyLength: initialHistoryLength + 20,
     });
-    repaintTiledRenderer(false);
+    renderer.repaintTiledRenderer(false);
 
     expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
       1
