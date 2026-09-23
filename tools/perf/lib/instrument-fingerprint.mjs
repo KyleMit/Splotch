@@ -36,6 +36,8 @@ const UNDO_DRIVER = 'tools/perf/lib/undo-driver.mjs';
 // Which origin Android Chrome loads decides whether it is a secure context.
 const ANDROID_LOCALHOST_ROUTE = 'tools/perf/lib/android-localhost-route.mjs';
 const SERVICE_WORKER_GUARD = 'tools/perf/lib/service-worker-guard.mjs';
+// Where a native Android action tap lands when an overlay obscures its centre.
+const ANDROID_TOUCH_OCCLUSION = 'tools/perf/lib/android-touch-occlusion.mjs';
 
 export const INSTRUMENT_FILES_BY_COMMAND = {
   'perf:device:frames': [
@@ -60,7 +62,12 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
     ERASER_FILL,
     UNDO_DRIVER,
   ],
-  'perf:ios:xcuitest:actions': [APPIUM_ACTIONS_CAPTURE, SERVICE_WORKER_GUARD, SHARED_ACTION_PROBE],
+  'perf:ios:xcuitest:actions': [
+    APPIUM_ACTIONS_CAPTURE,
+    ANDROID_TOUCH_OCCLUSION,
+    SERVICE_WORKER_GUARD,
+    SHARED_ACTION_PROBE,
+  ],
   'perf:android:browser:actions': [
     'tools/perf/android/capture-browser-actions.mjs',
     ANDROID_LOCALHOST_ROUTE,

@@ -350,6 +350,17 @@ built-in capabilities cannot express:
 --capabilities-file=<capabilities.json> --native-app --native-webview-class=android.webkit.WebView
 ```
 
+**A tap that records `eventType: uncaptured` never reached the WebView.** Two causes are known, and
+the actions runner now handles both. With `noReset`, UiAutomator2 does not launch an app that is
+already running, so a session opened with another app in front scripted the background WebView while
+taps landed in the foreground app; the runner calls `mobile: activateApp` first. Android 12+ also
+drops any touch (a real finger included) where another app's overlay windows combine past 0.8
+opacity. On the capture phone, a third-party navigation-bar accessibility service draws two 1-px
+windows down the portrait centre column (x=540), which silently killed the Dark theme tap (issue
+2214). The runner reads `dumpsys input` before each native tap and moves an obscured tap to the
+nearest clear point inside the target, logging the overlay by name. `logcat -s InputDispatcher`
+shows `Dropping untrusted touch` for any case it misses.
+
 **CacheStorage wedges the Capacitor WebView.** In Android System WebView 151, `caches.keys()` never
 settles — and worse, once one is pending, async-script callbacks stop being delivered for the rest
 of the session, plain `setTimeout` included, while synchronous evaluation keeps working. An in-page
