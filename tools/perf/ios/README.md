@@ -4,6 +4,8 @@ These entry points collect physical-device and Appium evidence:
 
 * `perf:ios:webkit:gates` attaches to Mobile Safari through the WebKit Inspector Protocol and runs
   the engine gates.
+* `perf:ios:webkit:commit` runs the per-release commit-latency contract check (ADR-0173) over the
+  same transport.
 * `perf:ios:webkit:frames` captures real-screen frame, input, paint, and optional Timeline data.
 * `perf:ios:xcuitest:screen` drives trusted native-coordinate drawing and undo through Appium.
 * `perf:ios:bundled:frames` carries a full bundled-WKWebView report through Capacitor Preferences

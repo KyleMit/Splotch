@@ -66,17 +66,17 @@ finger-paced crayon session. The maintainer runs the check with the capture rig 
 and `glaze-direct` the native one.
 
 ```bash
-npm run perf:serve   # its pre-hook runs perf:build (PERF_MARKS); serves on the preview port
-HARNESS_URL=http://<lan-ip>:<port>/dev/engine OUT_DIR=<scratch-dir> \
-  node docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/run-session.mjs release-restamp restamp paced
-HARNESS_URL=http://<lan-ip>:<port>/dev/engine OUT_DIR=<scratch-dir> \
-  node docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/run-session.mjs release-glaze glaze-direct paced
-node docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/analyze.mjs <scratch-dir>
+npm run perf:ios:webkit:commit   # its pre-hook runs perf:build (PERF_MARKS)
 ```
 
-`<lan-ip>:<port>` is the URL `perf:serve` prints. It is normally port 4173, but it moves to another
-port when 4173 is taken, and `run-session.mjs` probes whatever URL it is given. Read
-`commit p95/max` from the analyzer's line for each run.
+The script (`tools/perf/ios/capture-commit-contract.mjs`) serves the build on the LAN, loads a fresh
+`/dev/engine` for each arm, injects the baseline payload
+(`tools/perf/probes/paced-crayon-session.js`, drift-guarded byte for byte against the 2026-09-18
+package), and scores each arm with the reduction in `tools/perf/lib/commit-contract.mjs`. It prints
+the iPadOS and Safari versions, the build SHA, and each arm's commit P95/max, and it exits non-zero
+on a breach or on any arm it could not score. When the preview port is taken, pass `--port=N` (or
+`--url=` with `--no-serve` for a server started separately). Issue 2223 promoted the check from the
+scratchpad package's `run-session.mjs` and `analyze.mjs`, which stay as the baseline's history.
 
 The runner reaches Safari through `ios_webkit_debug_proxy` (`connectDevice()` in
 `tools/perf/lib/profile-device-session.mjs`). That is how the 2026-09-18 baseline reached iPadOS
@@ -94,8 +94,8 @@ check.
 * **Record:** add the iPadOS and Safari versions, the build SHA, and the commit P95/max for each arm
   to the tag's GitHub Release notes. This is the same place the manual iOS floor gate is recorded.
 
-The raw run files in `<scratch-dir>` carry the LAN harness URL. Keep them out of the repo, and
-commit only derived figures.
+The raw `commit-contract.json` the script writes under `perf-profiles/` carries the LAN harness URL.
+Keep it out of the repo, and commit only derived figures.
 
 **2. The runner job stays, and stays advisory.** `webkit-commit-gate-fast` on pushes to `main` and
 the release-tag full run keep measuring, confirming and reporting exactly as ADR-0140 describes.
@@ -108,9 +108,9 @@ reverses this decision, so it needs a record that supersedes this one.
 **3. Two properties survive whatever the runner scores:**
 
 * The harness refuses to score a bundle built without `PERF_MARKS`. It reports
-  `NOT EVALUATED: no engine.commit samples` instead of a 0 ms pass. That refusal belongs to the
-  runner harness. The device analyzer has no such refusal: it prints a `null` commit P95 when a
-  bundle has no marks. Treat that as "rebuild with `npm run perf:serve`", never as a pass.
+  `NOT EVALUATED: no engine.commit samples` instead of a 0 ms pass. The device check refuses the
+  same way: an arm with no `engine.commit` samples has a `null` commit P95, which
+  `perf:ios:webkit:commit` reports as NOT EVALUATED and exits non-zero on, never as a pass.
 * The WebKit engine smoke (`npm run test:webkit:smoke`) is a separate instrument and this decision
   does not affect it. It asserts boot, hydration parity, and core UI on WebKit, and has no timing
   assertion.
@@ -137,10 +137,11 @@ the bimodal charging mode.
 * − The check depends on the maintainer and the capture rig. It cannot run in CI, it costs a rig
   session per release, and a release cut in a hurry can skip it. The release checklist item in
   `docs/MOBILE/ios.md` and the `cut-release` skill's reminder are the only enforcement.
-* − The command runs a scratchpad evidence package, not an npm script. A refactor of
-  `tools/perf/lib/profile-device-session.mjs` or `webkit-inspector.mjs` can break it without any
-  test noticing, and the first sign would be a failed release check. Promoting it to a named
-  `perf:*` script with a test is the obvious next step.
+* − Only part of the check is tested off the device. `tools/perf/tests/commit-contract.test.mjs`
+  covers the reduction, the verdict, the `PERF_MARKS` refusal, and the payload's identity with the
+  baseline. The inspector transport in `tools/perf/lib/profile-device-session.mjs` and
+  `webkit-inspector.mjs` can still break without a test noticing, and the first sign would be a
+  failed release check.
 * − Until the iPad runs iPadOS 26.6, the contract is anchored on a 26.5 baseline. The question this
   record inherits from issue 1774, whether the 26.6 commit wait is real on device, has no answer
   yet.
