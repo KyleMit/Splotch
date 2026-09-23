@@ -15,7 +15,10 @@ or raw event rows. The payload, runners, and analyzer that produced it sit besid
 * **Runtimes.**
   * iPad: a 12.9-inch iPad Pro on iPadOS 26.5, Safari 26.5, landscape, 1366×885 at DPR 2. Safari's
     rAF ran at 120 Hz (a median idle interval of 8.0 ms), so the 33.5 ms gate spans four refresh
-    intervals.
+    intervals. This disagrees with the 60 Hz Safari beat that `docs/PROFILING-IPAD.md` records. The
+    app's drawing route read 17 ms on the same iPad on 2026-09-22 (ADR-0174). Why this `/dev/engine`
+    session ran at 120 Hz has not been established. Do not assume that this page's beat applies to
+    the app route.
   * Android: a phone running Android 10-class Chrome, portrait, 360×643 at DPR 3, with rAF at 60 Hz.
 * **Workload.** `session-payload.js` runs in-page on `/dev/engine`, with a fresh page load for every
   run. The host only injects it and polls, so automation round trips sit outside every measured

@@ -3,7 +3,9 @@
 **Status:** Active — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md),
 [ADR-0137](0137-lost-frame-gate-exceptions.md), and
 [ADR-0142](0142-rotation-actions-anchor-at-resize.md); amended by
-[ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md) **Date:** 2026-09
+[ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md) and
+[ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md) **Date:**
+2026-09
 
 > **Amended by [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md):**
 > the completion gate in decision 3 now reads "zero current, scoreable, **unexplained** red cells on
@@ -21,6 +23,14 @@
 > untouched; the allowance sits exactly at that gate, so a P95 past it needs three over-gate gaps,
 > which decision 4 confirms when they fall in different repeats and the allowance alone fails when
 > they fall in one.
+
+> **Amended by
+> [ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md):** on both
+> physical iPad rows, the release-gate verdict for drawing lost-frame share is the real-finger
+> floor, not the driven capture. The ten `ipad-device-web` pen, Magic, and eraser reds at e5142fab
+> are explained instrument artifacts. A driven reading of those brushes inside the recorded band
+> counts as explained. A reading above it, and any other driven drawing lost-frame red on either
+> iPad row, needs a real-finger capture first.
 
 ## Context
 

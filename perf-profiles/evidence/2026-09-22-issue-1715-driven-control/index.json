@@ -1,0 +1,18 @@
+{
+  "campaign": "2026-09-22-issue-1715-driven-control",
+  "productCommit": "3511b95ccdfb9677cfcf60b989fadb50ad074020",
+  "capturedFrom": "perf-profiles/scratch-1715-control",
+  "kept": [
+    {
+      "file": "ipad-device-web-pen.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "control-ipad-web-pen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}

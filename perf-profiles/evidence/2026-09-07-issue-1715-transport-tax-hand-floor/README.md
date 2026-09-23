@@ -19,6 +19,15 @@ The magic capture additionally carries intentional overlay-load deferred-paint s
 
 These are attribution evidence, not scoreable gate captures (the tool records "no established regime
 — not scoreable"), and its `late %` is not the byte-identical metric of the driven scorer's
-`lost-frame share`. Read the gap as directional. LAN host redacted to `<lan-host>`; no device
-identifiers were present. Retained here because the `/private/tmp` capture worktree they were taken
-in is disposable.
+`lost-frame share`. Read the gap as directional.
+
+The gate's own number is available anyway. Running
+`npm run perf:rescore -- --corpus=perf-profiles/evidence/2026-09-07-issue-1715-transport-tax-hand-floor --target=ipad-device-web`
+re-scores each raw frame table through the shipped scorer in the row's declared 60 Hz regime. All
+three captures observed a 17 ms beat. The results are pen 0.06% (portrait/light) and 0.04%
+(landscape/dark). Magic reads **1.13%**: a single 433 ms in-contact stall at the first sheet load
+charges 416 ms of it, and the rest of that capture is 0.04%. The driven Magic cells never show that
+stall.
+[ADR-0174](../../../docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md)
+records how these figures are read. LAN host redacted to `<lan-host>`; no device identifiers were
+present. Retained here because the `/private/tmp` capture worktree they were taken in is disposable.
