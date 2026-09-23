@@ -63,6 +63,34 @@ describe('untrustedOcclusionAt', () => {
     expect(untrustedOcclusionAt(windows, PACKAGE, 1050, 400)).toBeNull();
   });
 
+  it('treats a transparent window as invisible only when it is also untouchable', () => {
+    const transparent = (flags, mode) => ({
+      name: 'overlay',
+      flags: new Set(flags),
+      alpha: 0,
+      frame: { left: 0, top: 0, right: 100, bottom: 100 },
+      ownerUid: 1,
+      occlusionMode: mode,
+    });
+    const target = windows.at(-1);
+    expect(
+      untrustedOcclusionAt(
+        [transparent(['NOT_FOCUSABLE', 'NOT_TOUCHABLE'], 'BLOCK_UNTRUSTED'), target],
+        PACKAGE,
+        50,
+        50
+      )
+    ).toBeNull();
+    expect(
+      untrustedOcclusionAt(
+        [transparent(['NOT_FOCUSABLE'], 'BLOCK_UNTRUSTED'), target],
+        PACKAGE,
+        50,
+        50
+      )
+    ).toEqual({ window: 'overlay', opacity: 1 });
+  });
+
   it('reports nothing when the target app has no window', () => {
     expect(untrustedOcclusionAt(windows, 'com.example.absent', 540, 963)).toBeNull();
   });

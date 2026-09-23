@@ -71,7 +71,7 @@ export function untrustedOcclusionAt(windows, packageName, x, y) {
       window.ownerUid === targetUid ||
       window.flags.has('NOT_VISIBLE') ||
       window.flags.has('TRUSTED_OVERLAY') ||
-      window.alpha === 0 ||
+      (window.alpha === 0 && window.flags.has('NOT_TOUCHABLE')) ||
       window.occlusionMode === 'ALLOW' ||
       !frameContains(window.frame, x, y)
     ) {
