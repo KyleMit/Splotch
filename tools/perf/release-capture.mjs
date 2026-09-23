@@ -33,6 +33,10 @@ import { dirname, join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain, sleep } from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import { PORT_ROLES } from './lib/capture-readiness.mjs';
+import {
+  FIXED_TO_USER_ROTATION_STOCK,
+  fixedToUserRotationCommand,
+} from './lib/android-user-rotation.mjs';
 
 // The phone's stock screen timeout. perf:preflight --wake-android sets 30 minutes
 // and never records what it replaced, so release restores the stock value rather
@@ -398,7 +402,8 @@ function releaseForwards(serial, { dryRun }) {
 }
 
 // The writes perf:preflight --wake-android and --hold-android-awake make, undone,
-// plus the rotation pair a crashed input check can leave pinned to landscape.
+// plus the rotation pair a crashed input check can leave pinned to landscape and
+// the user-rotation pin a crashed native action sweep can leave in force.
 function androidResetCommands() {
   return [
     ['svc', 'power', 'stayon', 'false'],
@@ -412,6 +417,7 @@ function androidResetCommands() {
     ['dumpsys', 'battery', 'reset'],
     ['settings', 'put', 'system', 'accelerometer_rotation', '1'],
     ['settings', 'put', 'system', 'user_rotation', '0'],
+    fixedToUserRotationCommand(FIXED_TO_USER_ROTATION_STOCK),
   ];
 }
 

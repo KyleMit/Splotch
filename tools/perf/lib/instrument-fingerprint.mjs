@@ -38,6 +38,8 @@ const ANDROID_LOCALHOST_ROUTE = 'tools/perf/lib/android-localhost-route.mjs';
 const SERVICE_WORKER_GUARD = 'tools/perf/lib/service-worker-guard.mjs';
 // Where a native Android action tap lands when an overlay obscures its centre.
 const ANDROID_TOUCH_OCCLUSION = 'tools/perf/lib/android-touch-occlusion.mjs';
+// Whether Appium's rotation can turn a native Android capture that released its lock.
+const ANDROID_USER_ROTATION = 'tools/perf/lib/android-user-rotation.mjs';
 
 export const INSTRUMENT_FILES_BY_COMMAND = {
   'perf:device:frames': [
@@ -65,6 +67,7 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
   'perf:ios:xcuitest:actions': [
     APPIUM_ACTIONS_CAPTURE,
     ANDROID_TOUCH_OCCLUSION,
+    ANDROID_USER_ROTATION,
     SERVICE_WORKER_GUARD,
     SHARED_ACTION_PROBE,
   ],

@@ -120,7 +120,12 @@ and restore what it changed; do not bypass product persistence with a test-only 
 Which control that is depends on the platform, and the runner resolves it rather than assuming:
 
 * Where the product persists an in-app rotation lock, the run flips that Settings control and
-  restores the observed lock and orientation in cleanup.
+  restores the observed lock and orientation in cleanup. On the Android phone app that release
+  selects Auto, which requests `SCREEN_ORIENTATION_SENSOR` and follows only the accelerometer, so
+  Appium's rotation is refused ("locked programmatically?") on a phone lying still. The runner then
+  pins the display to user rotation with `wm fixed-to-user-rotation enabled` — the stand-in for
+  turning the phone — and puts the prior mode back after the lock
+  (`tools/perf/lib/android-user-rotation.mjs`).
 * On a native tablet there is no such control — `supportsOrientationLock()` is false because iPadOS
   windowing ignores an in-app lock — so device rotation is the only path the product offers and the
   runner takes it, recording `platformOwnsRotation` in the capture. A missing toggle there is the

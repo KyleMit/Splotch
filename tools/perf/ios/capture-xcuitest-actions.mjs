@@ -19,6 +19,10 @@ import {
   NATIVE_TRANSPORT,
 } from '../lib/campaign-plan.mjs';
 import { readAndroidInputWindows, unoccludedTapPoint } from '../lib/android-touch-occlusion.mjs';
+import {
+  pinDisplayToUserRotation,
+  restoreDisplayRotationMode,
+} from '../lib/android-user-rotation.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
@@ -2494,6 +2498,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   let session;
   let execute;
   let nativeRotationLockRestore;
+  let displayRotationModeRestore;
   let cleanupPromise;
   let servedBuild = null;
 
@@ -2520,6 +2525,17 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
             `cleanup: rotation-lock restore failed (${error.message}) — the device may measure the next cell unlocked`
           )
         );
+      }
+      // After the lock restore, so the restored Portrait/Landscape lock takes
+      // over from the pinned user rotation rather than the sensor.
+      if (displayRotationModeRestore) {
+        try {
+          restoreDisplayRotationMode(displayRotationModeRestore);
+        } catch (error) {
+          console.warn(
+            `cleanup: ${error.message} — the phone keeps ignoring app orientation requests until it is reset`
+          );
+        }
       }
       if (sessionId && ownsSession) {
         await client?.request('DELETE', `/session/${sessionId}`).catch(() => {});
@@ -2638,6 +2654,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         if (!unlockedReady) {
           throw new Error('The native app did not reload after unlocking rotation');
         }
+      }
+      if (client.androidTouchTarget && initialRotationLock !== PLATFORM_OWNS_ROTATION) {
+        displayRotationModeRestore = pinDisplayToUserRotation(client.androidTouchTarget.serial);
       }
     }
     if (nativeApp && requestedOrientation) {

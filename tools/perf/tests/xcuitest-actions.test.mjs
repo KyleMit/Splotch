@@ -970,6 +970,32 @@ describe('trusted action setup', () => {
     expect(restoreLock).toBeGreaterThan(restoreOrientation);
   });
 
+  // Issue 2215: Auto on the Android app follows the sensor, so Appium can only
+  // rotate once the display is pinned to user rotation — after the lock is
+  // released, and unpinned only after the lock is back.
+  it('pins native Android to user rotation only between lock release and lock restore', () => {
+    const setupStart = IPAD_ACTIONS.indexOf('const needsNativeRotationUnlock =');
+    const setupEnd = IPAD_ACTIONS.indexOf('const appUrl =', setupStart);
+    const setup = IPAD_ACTIONS.slice(setupStart, setupEnd);
+    const unlock = setup.indexOf('releaseNativeRotationLock(execute)');
+    const pin = setup.indexOf('pinDisplayToUserRotation(client.androidTouchTarget.serial)');
+    const rotate = setup.indexOf('orientation: requestedOrientation');
+
+    expect(unlock).toBeGreaterThan(-1);
+    expect(pin).toBeGreaterThan(unlock);
+    expect(rotate).toBeGreaterThan(pin);
+
+    const cleanupStart = IPAD_ACTIONS.indexOf('function cleanup()');
+    const cleanupEnd = IPAD_ACTIONS.indexOf('const onSignal', cleanupStart);
+    const cleanup = IPAD_ACTIONS.slice(cleanupStart, cleanupEnd);
+    const restoreLock = cleanup.indexOf('restoreNativeRotationLock(execute,');
+    const unpin = cleanup.indexOf('restoreDisplayRotationMode(displayRotationModeRestore)');
+    const deleteSession = cleanup.indexOf("'DELETE'");
+
+    expect(unpin).toBeGreaterThan(restoreLock);
+    expect(deleteSession).toBeGreaterThan(unpin);
+  });
+
   it('records desktop scroll as trusted wheel while retaining native touch transport', () => {
     expect(coloringScrollTransport({ useWheelForScroll: true })).toEqual({
       eventTypes: ['wheel'],
