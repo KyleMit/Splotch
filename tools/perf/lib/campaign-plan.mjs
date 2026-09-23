@@ -614,11 +614,28 @@ function desktopArgs(target, mode, item, host) {
   return args;
 }
 
+// An iPad Appium cell reaches an already-running WebDriverAgent through
+// `--wda-url`, which the xcuitest runners turn into `appium:webDriverAgentUrl`.
+// That capability also skips Appium's device discovery, the stale part of a
+// borrowed server (issue 2218). Android Appium cells have no WebDriverAgent.
+const isIosTarget = (target) => target.captureRuntime?.startsWith('ios-') ?? false;
+
 function transportArgs(target, host) {
   const args = [];
   if (host.appiumUrl) args.push(`--appium-url=${host.appiumUrl}`);
   if (host.capabilitiesFile) args.push(`--capabilities-file=${host.capabilitiesFile}`);
   if (host.deviceId) args.push(`--device-id=${host.deviceId}`);
+  if (isIosTarget(target) && host.wdaUrl) {
+    // Refused here rather than by the child, which would fail every cell's
+    // every attempt on the same conflict before the queue could report it.
+    if (host.capabilitiesFile) {
+      throw new Error(
+        `${target.id}: pass --wda-url or --capabilities-file, not both — put ` +
+          'appium:webDriverAgentUrl in the capabilities file instead'
+      );
+    }
+    args.push(`--wda-url=${host.wdaUrl}`);
+  }
   if (target.runtime === 'native') {
     args.push('--native-app');
     if (target.webviewClass) args.push(`--native-webview-class=${target.webviewClass}`);

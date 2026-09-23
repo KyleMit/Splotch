@@ -158,23 +158,41 @@ harmless but wastes an approval round-trip.
 The same applies to the Appium server and to WebDriverAgent: look first.
 
 **A borrowed long-running Appium can report the attached iPad as
-`Unknown device or simulator UDID`.** `perf:preflight --verify-ios-launch` reuses a compatible
-Appium on 4723. When that server's real-device registry has gone stale, every launch fails with that
-message even though `idevice_id`, `devicectl`, and the tunnel all see the iPad. The message is the
-same whether the registry is stale or the XCTest grant has expired, so the preflight cannot tell the
-two apart. Seen 2026-09-14, 09-17, 09-18, 09-19, and 09-22. Do not stop the borrowed server or
-restart the root tunnel. Instead:
+`Unknown device or simulator UDID`.** The message comes from XCUITest's device discovery, before any
+WebDriverAgent build or launch. Discovery short-circuits on the root RemoteXPC tunnel's registry, so
+when that registry is empty or stale, every Appium on the host fails this way. That includes a fresh
+one. `idevice_id`, `devicectl`, and the tunnel all still see the iPad. The message says nothing
+about the XCTest grant. Seen 2026-09-14, 09-17, 09-18, 09-19, 09-22, and 09-23. Do not stop the
+borrowed server or restart the root tunnel.
 
-1. Launch WebDriverAgent directly:
-   `xcodebuild test-without-building -xctestrun ~/Library/Developer/Xcode/DerivedData/WebDriverAgent-*/Build/Products/WebDriverAgentRunner_iphoneos*-arm64.xctestrun -destination id=<udid>`.
-2. Forward it on the preflight's resolved WDA port: `iproxy -u <udid> <wda-port>:8100`.
-3. Read the result. `GET /status` ready proves the grant. `Timed out while enabling automation mode`
-   is the expired grant, which only a human at the iPad can clear.
+`perf:preflight --verify-ios-launch` recovers from it on its own (issue 2218). Only
+`appium:webDriverAgentUrl` skips discovery, so the recovery gets a WebDriverAgent it can name by
+URL, in this order:
 
-Split-transport captures take the forward as `--wda-url=`. Appium-transport captures, which includes
-`perf:campaign` for both iPad rows, need a fresh Appium you start on a free port, with
-`appium:webDriverAgentUrl` in a `--capabilities-file` (see the next section). The grant-log row the
-failed preflight writes still counts as an attempt.
+1. It reuses a runner that already answers `/status` ready on an existing `iproxy` forward, or on a
+   forward it starts on the resolved WDA port.
+2. If no runner answers, it launches one directly with `xcodebuild test-without-building` against
+   the newest device `.xctestrun` in DerivedData, forwarded on the resolved WDA port. It never
+   launches over an XCTest runner that already holds the device, because a second runner would end
+   the first.
+3. It opens a Safari session through that runner on a fresh Appium on a free port, proves a
+   rotation, and deletes the session. It stops everything it started.
+
+The `ios launch` line then reads `!` rather than `✗` and names the grant verdict. **Valid** means a
+direct launch came up ready. **Expired** means the runner logged
+`Timed out while enabling automation mode`, which only a human at the iPad can clear.
+**Undetermined** means a reused runner, a runner that could not be launched, or any other cause. A
+runner that is already serving a session is left alone and reported. The grant log gets two rows:
+the borrowed server's discovery failure, then the recovery's. A reused runner writes outcome
+`reused`, so the lifetime summary never counts it as a successful launch.
+
+The recovered runner does not repair the borrowed server. Split-transport captures take the forward
+as `--wda-url=`. Appium-transport captures reach it through `appium:webDriverAgentUrl`: pass
+`--wda-url=` to `perf:campaign`, which forwards it to both iPad rows' runners. A runner the
+preflight launched itself is stopped when the check ends; its `ios launch` line prints the
+`xcodebuild` and `iproxy` commands that bring it back. The manual route is the same:
+`xcodebuild test-without-building -xctestrun ~/Library/Developer/Xcode/DerivedData/WebDriverAgent-*/Build/Products/WebDriverAgentRunner_iphoneos*-arm64.xctestrun -destination id=<udid>`,
+then `iproxy -u <udid> <wda-port>:8100`.
 
 **An unattended session cannot start the iPad secure-origin front.** iPad Safari loads the LAN
 origin, which is not a secure context, so the action sweep's AI-waiting actions cannot run there and
@@ -203,11 +221,17 @@ or tool handle created and recorded by the current session."*
 built-in capabilities default WDA there — so each cell dies with Appium's
 `The port #8100 is occupied by an other process` and writes no artifact, three attempts each, the
 whole queue P1. The preflight resolves and reports a free WDA port (8110), but the campaign's flags
-(`--device-id`, `--appium-url`, `--probe-host`, …) have no way to pass it through. The route is a
-**capabilities file**: both `capture-xcuitest-screen` and `capture-xcuitest-actions` take
-`--capabilities-file` and use it verbatim through `capabilitiesFromFile` (its `alwaysMatch`),
-replacing the builtin caps entirely — so the file must carry the whole native cap set, not just the
-port:
+(`--device-id`, `--appium-url`, `--probe-host`, …) have no way to pass it through.
+
+When a WebDriverAgent is already running, pass `--wda-url=http://127.0.0.1:<port>` instead. The iPad
+runners then attach through `appium:webDriverAgentUrl` and never build or forward a runner of their
+own. The campaign refuses `--wda-url` together with `--capabilities-file`, because the file replaces
+the built-in capabilities; put `appium:webDriverAgentUrl` in the file instead.
+
+Without a running runner, the route is a **capabilities file**: both `capture-xcuitest-screen` and
+`capture-xcuitest-actions` take `--capabilities-file` and use it verbatim through
+`capabilitiesFromFile` (its `alwaysMatch`), replacing the builtin caps entirely — so the file must
+carry the whole native cap set, not just the port:
 
 ```json
 {

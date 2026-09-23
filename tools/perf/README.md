@@ -12,9 +12,11 @@ complete flag and output descriptions.
   for its password again, distinguishes sandbox USB denial from two detached devices, and resolves
   preview/probe ports around foreign worktrees without stopping their listeners. A probe is reused
   only after its checkout, upstream, build, and run identity agree with the selected preview.
-  `lib/capture-readiness.mjs` holds the decisions as pure functions so they are testable without a
-  device. The failures it exists to prevent are catalogued in
-  [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
+  `--verify-ios-launch` recovers from a borrowed Appium whose device discovery cannot see the iPad
+  by reaching a WebDriverAgent through `appium:webDriverAgentUrl` and reporting the grant as valid,
+  expired, or undetermined (`lib/wda-recovery.mjs`, issue 2218). `lib/capture-readiness.mjs` holds
+  the decisions as pure functions so they are testable without a device. The failures it exists to
+  prevent are catalogued in [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
 * `perf:operator` (`run-operator-session.mjs`) is the guided session for the two capture inputs only
   a human at the devices can give: arming the iPad automation grant (the passcode prompt exists only
   during a WebDriverAgent launch — issue 1299; every attempt is appended to the tracked grant log

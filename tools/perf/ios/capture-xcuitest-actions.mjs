@@ -18,6 +18,7 @@ import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
   BORROWED_SESSION_CAPABILITIES_ERROR,
+  WDA_URL_WITH_CAPABILITIES_FILE_ERROR,
   appiumCapabilities,
   borrowedSessionDescriptor,
   capabilitiesFromFile,
@@ -217,7 +218,9 @@ function sessionCapabilities({
   allowProvisioning,
   file,
   nativeApp,
+  webDriverAgentUrl,
 }) {
+  if (file && webDriverAgentUrl) fail(WDA_URL_WITH_CAPABILITIES_FILE_ERROR);
   if (file) return capabilitiesFromFile(file);
   if (!deviceId) fail('Pass --device-id= for a local iPad or --capabilities-file= for a cloud one');
   if (!existsSync(xcodeConfigFile)) {
@@ -232,6 +235,7 @@ function sessionCapabilities({
     wdaBundleId,
     allowProvisioning,
     nativeApp,
+    webDriverAgentUrl,
   });
 }
 
@@ -2289,6 +2293,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         'allow-provisioning',
         'capabilities-file',
         'session-id',
+        'wda-url',
         'native-app',
         'native-webview-class',
         'webdriver-clicks',
@@ -2332,6 +2337,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     allowProvisioning: has('allow-provisioning'),
     file: capabilitiesFile,
     nativeApp,
+    webDriverAgentUrl: flag('wda-url'),
   });
   let server;
   let client;

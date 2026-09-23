@@ -5,7 +5,11 @@
 //
 // `MODE` selects the behaviour under test: `denial` reproduces the automation
 // prompt, `silent` answers without ever logging a cause, and `crash` exits
-// before becoming ready.
+// before becoming ready. `stale-discovery` reproduces a server whose device
+// discovery cannot see the iPad: it refuses every session with XCUITest's
+// `Unknown device` message unless the session names `EXPECT_WDA_URL` as its
+// `appium:webDriverAgentUrl`, the capability that skips discovery.
+// `DELETE_FAILS` makes it refuse to delete the session it opened.
 import { createServer } from 'node:http';
 
 const port = Number(process.argv[2]);
@@ -13,11 +17,35 @@ const mode = process.env.MODE ?? 'denial';
 
 if (mode === 'crash') process.exit(3);
 
-createServer((req, res) => {
-  if (req.url === '/status') {
-    res.writeHead(200, { 'content-type': 'application/json' });
-    return res.end(JSON.stringify({ value: { ready: true } }));
+const json = (res, status, value) => {
+  res.writeHead(status, { 'content-type': 'application/json' });
+  res.end(JSON.stringify({ value }));
+};
+
+function staleDiscovery(req, res) {
+  if (req.method === 'DELETE') {
+    return process.env.DELETE_FAILS
+      ? json(res, 500, { error: 'unknown error', message: 'delete failed' })
+      : json(res, 200, null);
   }
+  let body = '';
+  req.on('data', (chunk) => (body += chunk));
+  req.on('end', () => {
+    const capabilities = JSON.parse(body || '{}').capabilities?.alwaysMatch ?? {};
+    const wdaUrl = capabilities['appium:webDriverAgentUrl'];
+    if (wdaUrl && wdaUrl === process.env.EXPECT_WDA_URL) {
+      return json(res, 200, { sessionId: 'recovered-session', capabilities });
+    }
+    json(res, 500, {
+      error: 'unknown error',
+      message: `Unknown device or simulator UDID: '${capabilities['appium:udid']}'`,
+    });
+  });
+}
+
+createServer((req, res) => {
+  if (req.url === '/status') return json(res, 200, { ready: true });
+  if (mode === 'stale-discovery') return staleDiscovery(req, res);
   if (mode === 'denial') {
     console.log('[XCUITest] Error: Timed out while enabling automation mode');
   }
