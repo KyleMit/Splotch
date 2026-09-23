@@ -1898,7 +1898,7 @@ describe('release gate prose', () => {
     );
 
     expect(renderReport(matrix)).toContain(
-      'The release gate is one physical row, Android device · web. Android device · web carries a calibrated drawing instrument — 4/4 modes captured, 4 of 16 brush aggregates over gate.'
+      'The release gate is one physical row, Android device · web. Android device · web carries a calibrated drawing instrument — 4/4 modes captured, 4 of 16 brush aggregates over gate (4 open, 0 explained by a recorded disposition).'
     );
   });
 

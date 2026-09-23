@@ -142,6 +142,30 @@
           "share": 0.015,
           "reason": "Per-frame crayon op merging (ADR-0137 as amended, issue 1236) brought the native WKWebView from a 2.14% published cell to Safari parity: three same-session samples on 2026-08-25 measured 0.96/1.11/1.44%, median 1.11% — inside the web cell's own 1.11-1.17% median band with the same shape of single-sample excursion. The same residual per-move wax cost now binds both runtimes, so the same 1.5% single-capture budget applies, set by the same above-the-excursion rule."
         }
+      },
+      "lostFrameDispositions": {
+        "ipad-device-web:pen": {
+          "adr": "ADR-0174",
+          "adrPath": "docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md",
+          "band": {
+            "minShare": 0.0122,
+            "maxShare": 0.0137
+          },
+          "productCommits": null,
+          "basis": "Synthesized-touch transport cost, not product cost: real-finger pen captures read 0.04–0.06% where the driven cells read 1.22–1.37%. A driven pen red inside that band with passing paint gates is explained; a reading above it needs a real-finger capture at that commit."
+        },
+        "ipad-device-web:eraser": {
+          "adr": "ADR-0174",
+          "adrPath": "docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md",
+          "band": {
+            "minShare": 0.0119,
+            "maxShare": 0.0125
+          },
+          "productCommits": [
+            "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3"
+          ],
+          "basis": "Explained by extension from the pen band, not by measurement: no finger capture of eraser exists, so the explanation covers only the three 1.19–1.25% readings at e5142fab. A later driven eraser red needs a real-finger capture."
+        }
       }
     },
     "undo": {
