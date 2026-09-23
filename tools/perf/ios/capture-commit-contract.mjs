@@ -15,6 +15,7 @@
 // polls from a fresh attachment, so no automation round trip lands inside a
 // measured interval.
 
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, isMain, runMain, sleep } from '../../lib/proc.mjs';
@@ -51,32 +52,53 @@ const SESSION_TIMEOUT_MS = 15 * 60_000;
 const POLL_COMMAND_TIMEOUT_MS = 300_000;
 
 // The configuration the payload reads. Only the arm varies; everything else is
-// the payload's own default, which is what the baseline ran.
-function sessionConfigScript(arm) {
-  return `window.__cfg = ${JSON.stringify({ arm, mode: 'paced' })};`;
+// the payload's own default, which is what the baseline ran. The nonce is the
+// host's own mark on the tab it injected, outside the payload's config.
+function sessionConfigScript(arm, nonce) {
+  return [
+    `window.__cfg = ${JSON.stringify({ arm, mode: 'paced' })};`,
+    `window.__commitContractNonce = ${JSON.stringify(nonce)};`,
+  ].join('\n');
 }
 
-async function pollSession(device, harnessUrl, deviceConsole) {
+// Another tab can sit on the same /dev/engine URL holding an earlier run's
+// finished window.__session, so a result counts only from the tab carrying
+// this run's nonce.
+export function sessionPollExpression(nonce) {
+  return (
+    `window.__commitContractNonce === ${JSON.stringify(nonce)} ` +
+    '? { session: window.__session ?? null, progress: window.__sessionProgress ?? null } ' +
+    ': null'
+  );
+}
+
+async function readSessionFrom(page, nonce, deviceConsole) {
+  let attached;
+  try {
+    attached = await attachToPage(page.webSocketDebuggerUrl, {
+      onConsole: deviceConsole.onConsole,
+      commandTimeoutMs: POLL_COMMAND_TIMEOUT_MS,
+    });
+    return await attached.readJson(sessionPollExpression(nonce));
+  } catch (error) {
+    rethrowIfBroken(error);
+    console.log(`  poll: ${error.message}`);
+    return null;
+  } finally {
+    attached?.close();
+  }
+}
+
+async function pollSession(device, harnessUrl, nonce, deviceConsole) {
   const deadline = Date.now() + SESSION_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await sleep(RESULT_POLL_INTERVAL_MS);
-    const page = (await listPages(device)).find((candidate) => candidate.url === harnessUrl);
-    if (!page) continue;
-    let session;
-    try {
-      session = await attachToPage(page.webSocketDebuggerUrl, {
-        onConsole: deviceConsole.onConsole,
-        commandTimeoutMs: POLL_COMMAND_TIMEOUT_MS,
-      });
-      const result = await session.readJson('window.__session ?? null');
-      if (result) return result;
-      const progress = await session.readJson('window.__sessionProgress ?? null');
-      if (progress) console.log(`  … ${progress}`);
-    } catch (error) {
-      rethrowIfBroken(error);
-      console.log(`  poll: ${error.message}`);
-    } finally {
-      session?.close();
+    const candidates = (await listPages(device)).filter((page) => page.url === harnessUrl);
+    for (const page of candidates) {
+      const state = await readSessionFrom(page, nonce, deviceConsole);
+      if (!state) continue;
+      if (state.session) return state.session;
+      if (state.progress) console.log(`  … ${state.progress}`);
     }
   }
   return null;
@@ -84,6 +106,7 @@ async function pollSession(device, harnessUrl, deviceConsole) {
 
 async function runArm(device, harnessUrl, arm) {
   const deviceConsole = createDeviceConsole();
+  const nonce = randomUUID();
   console.log(`\n${arm}: loading a fresh ${HARNESS_PATH}`);
   const page = await openDevicePage(device, harnessUrl, {
     onConsole: deviceConsole.onConsole,
@@ -93,14 +116,14 @@ async function runArm(device, harnessUrl, arm) {
       'PUBLIC_ENABLE_DEV_HARNESS=true (npm run perf:serve does).',
   });
   try {
-    await page.evaluate(sessionConfigScript(arm));
+    await page.evaluate(sessionConfigScript(arm, nonce));
     // WebKit's Runtime.evaluate has no awaitPromise: this returns as the
     // session starts, and window.__session is what it is tracked by.
     await page.evaluate(readFileSync(SESSION_PAYLOAD_FILE, 'utf8'));
   } finally {
     page.close();
   }
-  const session = await pollSession(device, harnessUrl, deviceConsole);
+  const session = await pollSession(device, harnessUrl, nonce, deviceConsole);
   return { session, console: deviceConsole.forReport() };
 }
 

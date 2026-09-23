@@ -24,6 +24,14 @@ export function reduceCommitSession(arm, session) {
   const samples = (session.measures ?? [])
     .filter(([name]) => name === COMMIT_MEASURE)
     .map(([, , durationMs]) => durationMs);
+  // JSON carries a non-finite duration across as null, which sorts as 0.
+  const unscorable = samples.filter((durationMs) => !Number.isFinite(durationMs)).length;
+  if (unscorable) {
+    return {
+      arm,
+      error: `${unscorable} of ${samples.length} ${COMMIT_MEASURE} samples have no finite duration`,
+    };
+  }
   return {
     arm,
     sessionArm: session.arm,

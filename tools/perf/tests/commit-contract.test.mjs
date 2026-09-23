@@ -9,7 +9,7 @@ import {
   judgeCommitContract,
   reduceCommitSession,
 } from '../lib/commit-contract.mjs';
-import { SESSION_PAYLOAD_FILE } from '../ios/capture-commit-contract.mjs';
+import { SESSION_PAYLOAD_FILE, sessionPollExpression } from '../ios/capture-commit-contract.mjs';
 
 const BASELINE_PAYLOAD = join(
   ROOT,
@@ -121,6 +121,20 @@ describe('judgeCommitContract', () => {
     expect(judgement.verdict).toBe('not-evaluated');
   });
 
+  // A non-finite duration crosses the inspector's JSON as null, and null sorts
+  // as 0 — one such sample alone would otherwise score a 0 ms pass.
+  it('refuses an arm with a commit sample that has no finite duration', () => {
+    const withNull = session('restamp', clean);
+    withNull.measures.push(['engine.commit', 500, null]);
+    const judgement = judgeCommitContract(reduceBoth(withNull, session('glaze-direct', [null])));
+
+    expect(judgement.verdict).toBe('not-evaluated');
+    expect(judgement.arms.map((arm) => arm.reason)).toEqual([
+      '1 of 31 engine.commit samples have no finite duration',
+      '1 of 1 engine.commit samples have no finite duration',
+    ]);
+  });
+
   it('refuses a missing arm', () => {
     const judgement = judgeCommitContract([
       reduceCommitSession('restamp', session('restamp', clean)),
@@ -153,6 +167,27 @@ describe('judgeCommitContract', () => {
       'the session failed: ReferenceError: E is not defined',
       'the session published no result',
     ]);
+  });
+});
+
+describe('sessionPollExpression', () => {
+  const read = (nonce, page) =>
+    new Function('window', `return ${sessionPollExpression(nonce)}`)(page);
+
+  // An older tab on the same URL can hold a finished session from an earlier run.
+  it('ignores a tab this run did not inject', () => {
+    const stale = { __commitContractNonce: 'earlier-run', __session: { arm: 'restamp' } };
+
+    expect(read('this-run', stale)).toBeNull();
+    expect(read('this-run', { __session: { arm: 'restamp' } })).toBeNull();
+  });
+
+  it('reads the session and progress from the tab carrying this run nonce', () => {
+    const running = { __commitContractNonce: 'this-run', __sessionProgress: 'stroke 3/30' };
+    const done = { ...running, __session: { arm: 'restamp' }, __sessionProgress: 'done' };
+
+    expect(read('this-run', running)).toEqual({ session: null, progress: 'stroke 3/30' });
+    expect(read('this-run', done)).toEqual({ session: { arm: 'restamp' }, progress: 'done' });
   });
 });
 
