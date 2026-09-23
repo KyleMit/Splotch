@@ -1474,6 +1474,19 @@ describe('trusted XCUITest input', () => {
     );
   });
 
+  it('attaches to a running WebDriverAgent only when given its URL', () => {
+    const base = {
+      deviceId: 'device',
+      xcodeConfigFile: '/tmp/local.xcconfig',
+      wdaBundleId: 'art.splotch.WebDriverAgentRunner',
+    };
+
+    expect(appiumCapabilities(base)).not.toHaveProperty('appium:webDriverAgentUrl');
+    expect(
+      appiumCapabilities({ ...base, webDriverAgentUrl: 'http://127.0.0.1:8110' })
+    ).toHaveProperty('appium:webDriverAgentUrl', 'http://127.0.0.1:8110');
+  });
+
   it('opens the app bundle for a native capture and Safari otherwise', () => {
     const base = {
       deviceId: 'device',

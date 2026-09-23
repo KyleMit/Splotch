@@ -1,6 +1,9 @@
 // Drive one deployment-target capture campaign to completion, resumably.
 //
 //   npm run perf:campaign -- --target=ipad-simulator-native --capabilities-file=<file>
+//   npm run perf:campaign -- --target=ipad-device-web --device-id=<udid> \
+//     --wda-url=http://127.0.0.1:8110 --url=http://<lan-ip>:4173/
+//   (attaches to a WebDriverAgent already running on the iPad)
 //   npm run perf:campaign -- --target=android-emulator-web --device-id=emulator-5554 \
 //     --url=http://127.0.0.1:4173/ --probe-host=http://<lan-ip>:4175
 //   (emulator drawing rides the split transport, so --probe-host is required —

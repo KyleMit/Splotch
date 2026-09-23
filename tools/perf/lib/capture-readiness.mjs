@@ -373,7 +373,13 @@ export function classifyLaunchProbe({
   rotationVerified = false,
   logCause = null,
   diagnostic = null,
+  recovery = null,
 }) {
+  // A recovery from stale device discovery already classified its own result,
+  // including the grant verdict the outer message cannot carry.
+  if (!ok && recovery) {
+    return { status: recovery.status, detail: recovery.detail, grant: recovery.grant };
+  }
   if (ok) {
     return {
       status: 'ok',

@@ -292,6 +292,7 @@ export function appiumCapabilities({
   wdaBundleId,
   allowProvisioning = false,
   nativeApp = false,
+  webDriverAgentUrl,
 }) {
   return {
     // A native capture attaches to the app's own WebView, so it must open the app.
@@ -309,8 +310,15 @@ export function appiumCapabilities({
     'appium:wdaLaunchTimeout': WDA_LAUNCH_TIMEOUT_MS,
     'appium:wdaStartupRetries': WDA_STARTUP_RETRIES,
     ...(allowProvisioning ? { 'appium:allowProvisioningDeviceRegistration': true } : {}),
+    // A runner already on the device: Appium attaches to it instead of building
+    // and launching its own, which also skips device discovery (issue 2218).
+    ...(webDriverAgentUrl ? { 'appium:webDriverAgentUrl': webDriverAgentUrl } : {}),
   };
 }
+
+export const WDA_URL_WITH_CAPABILITIES_FILE_ERROR =
+  '--wda-url builds its own capabilities; put appium:webDriverAgentUrl in the ' +
+  '--capabilities-file instead of passing both';
 
 // A hosted provider is addressed by a capability file and has no local device id,
 // which is what the `cloud` fallback exists for. A local capability-file run —
@@ -615,6 +623,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'allow-provisioning',
         'capabilities-file',
         'session-id',
+        'wda-url',
         'native-app',
         'bundled-report',
         'hand-input',
@@ -648,6 +657,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   if (borrowedSessionId && !capabilitiesFile) {
     fail(BORROWED_SESSION_CAPABILITIES_ERROR);
   }
+  if (flag('wda-url') && capabilitiesFile) fail(WDA_URL_WITH_CAPABILITIES_FILE_ERROR);
   const xcodeConfigFile = flag('xcode-config', DEFAULT_XCODE_CONFIG);
   if (!capabilitiesFile && !borrowedSessionId && !existsSync(xcodeConfigFile)) {
     fail(
@@ -706,6 +716,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
           allowProvisioning: has('allow-provisioning'),
           nativeApp,
+          webDriverAgentUrl: flag('wda-url'),
         });
   let server;
   let sessionId = borrowedSessionId;

@@ -1501,3 +1501,39 @@ describe('which commands can answer for a refresh regime', () => {
     }
   });
 });
+
+// Issue 2218's related gap: a physical-iPad Appium row could reach an
+// already-running WebDriverAgent only through a hand-written capabilities file.
+describe('an iPad Appium target given a running WebDriverAgent', () => {
+  const WDA_URL = 'http://127.0.0.1:8110';
+  const wdaHost = { appiumUrl: 'http://127.0.0.1:4779', deviceId: 'UDID', wdaUrl: WDA_URL };
+
+  it('forwards --wda-url to every drawing, action, and reference cell', () => {
+    const cells = planCampaign('ipad-device-web', { outputRoot: 'out', host: wdaHost });
+    const references = planCampaignReferences('ipad-device-web', {
+      modeId: cells[0].mode.id,
+      outputRoot: 'out',
+      host: wdaHost,
+      productCommands: cells.map((cell) => cell.command),
+    });
+
+    for (const cell of [...cells, ...references]) {
+      expect(cell.args, cell.id).toContain(`--wda-url=${WDA_URL}`);
+    }
+  });
+
+  it('never hands it to an Android Appium cell, which has no WebDriverAgent', () => {
+    const cells = planCampaign('android-emulator-native', { outputRoot: 'out', host: wdaHost });
+
+    expect(cells.some((cell) => cell.args.some((arg) => arg.startsWith('--wda-url')))).toBe(false);
+  });
+
+  it('refuses a capabilities file beside it before any cell runs', () => {
+    expect(() =>
+      planCampaign('ipad-device-native', {
+        outputRoot: 'out',
+        host: { ...wdaHost, capabilitiesFile: '/tmp/caps.json' },
+      })
+    ).toThrow('not both');
+  });
+});

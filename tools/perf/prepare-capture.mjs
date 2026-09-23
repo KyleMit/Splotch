@@ -21,7 +21,8 @@
 // already running, and anything cheap moves to a free port instead.
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT, argFlag, hasCommand, isMain, runMain } from '../lib/proc.mjs';
 import { portListenerOwners } from '../lib/vite-server.mjs';
@@ -44,6 +45,16 @@ import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
 import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
 import { verifyAndroidRotation } from './split-capture/verify-android-rotation.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
+import {
+  DEVICE_WDA_PORT,
+  describeRecovery,
+  grantFromRunnerLaunch,
+  iproxyForwardPorts,
+  isStaleDeviceDiscovery,
+  launchAttemptRows,
+  newestDeviceXctestrun,
+  runnerHoldsDevice,
+} from './lib/wda-recovery.mjs';
 
 const ANDROID_STAY_AWAKE_TIMEOUT_MS = 1_800_000;
 // Android clears stay-awake on its own across a USB reconnect or a reboot, and a
@@ -618,52 +629,312 @@ const defaultDiagnosticAppium = (port) =>
     detached: true,
   });
 
+const WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
+
+function safariSessionBody(udid, transport) {
+  return {
+    capabilities: {
+      alwaysMatch: {
+        platformName: 'iOS',
+        'appium:automationName': 'XCUITest',
+        'appium:udid': udid,
+        'appium:updatedWDABundleId': WDA_BUNDLE_ID,
+        'appium:browserName': 'Safari',
+        'appium:newCommandTimeout': 120,
+        ...transport,
+      },
+      firstMatch: [{}],
+    },
+  };
+}
+
+// Opens a session, optionally proves a rotation through it, and deletes it.
+// `opened: false` carries Appium's refusal message for the caller to classify.
+async function openAndCloseSession(appiumUrl, body, verifyRotation) {
+  const response = await fetch(`${appiumUrl}/session`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
+  });
+  const payload = await response.json();
+  const sessionId = payload.value?.sessionId;
+  if (!sessionId) {
+    return { ok: false, opened: false, message: String(payload.value?.message ?? '') };
+  }
+  const rotation = verifyRotation
+    ? await verifyIosRotation(appiumUrl, sessionId).catch((error) => ({
+        ok: false,
+        message: error instanceof Error ? error.message : String(error),
+      }))
+    : null;
+  await fetch(`${appiumUrl}/session/${sessionId}`, { method: 'DELETE' });
+  return rotation && !rotation.ok
+    ? { ...rotation, opened: true }
+    : { ok: true, opened: true, rotationVerified: verifyRotation };
+}
+
+// `recoverStaleDiscovery` is the preflight's: the operator harness arms the
+// grant through the borrowed server itself, so a recovery that goes around
+// that server would report a grant step it did not take.
 export async function probeIosLaunch({
   udid,
   appiumUrl,
   wdaPort,
   verifyRotation = false,
   diagnose = true,
+  recoverStaleDiscovery = false,
+  // Test seam: overrides members of the recovery's process rig.
+  wdaRig,
 }) {
-  const body = {
-    capabilities: {
-      alwaysMatch: {
-        platformName: 'iOS',
-        'appium:automationName': 'XCUITest',
-        'appium:udid': udid,
-        'appium:xcodeConfigFile': join(ROOT, 'ios', 'local.xcconfig'),
-        'appium:updatedWDABundleId': 'art.splotch.WebDriverAgentRunner',
-        'appium:wdaLocalPort': wdaPort,
-        'appium:browserName': 'Safari',
-        'appium:newCommandTimeout': 120,
-      },
-      firstMatch: [{}],
-    },
-  };
+  const body = safariSessionBody(udid, {
+    'appium:xcodeConfigFile': join(ROOT, 'ios', 'local.xcconfig'),
+    'appium:wdaLocalPort': wdaPort,
+  });
   try {
-    const response = await fetch(`${appiumUrl}/session`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
-    });
-    const payload = await response.json();
-    const sessionId = payload.value?.sessionId;
-    if (!sessionId) {
-      const message = String(payload.value?.message ?? '');
-      const probe = diagnose ? await diagnoseLaunchFailure(body) : null;
-      return { ok: false, message, logCause: probe?.cause ?? null, diagnostic: probe?.diagnostic };
+    const result = await openAndCloseSession(appiumUrl, body, verifyRotation);
+    if (result.opened) return result;
+    const { message } = result;
+    // Checked before the diagnostic, which would replay the full launch on a
+    // fresh server and so build a second runner over one a campaign may hold.
+    if (recoverStaleDiscovery && isStaleDeviceDiscovery(message)) {
+      return {
+        ok: false,
+        message,
+        recovery: await recoverStaleDiscoveryLaunch({
+          udid,
+          wdaPort,
+          verifyRotation,
+          rig: wdaRig,
+        }),
+      };
     }
-    const rotation = verifyRotation
-      ? await verifyIosRotation(appiumUrl, sessionId).catch((error) => ({
-          ok: false,
-          message: error instanceof Error ? error.message : String(error),
-        }))
-      : null;
-    await fetch(`${appiumUrl}/session/${sessionId}`, { method: 'DELETE' });
-    return rotation && !rotation.ok ? rotation : { ok: true, rotationVerified: verifyRotation };
+    const probe = diagnose ? await diagnoseLaunchFailure(body) : null;
+    return { ok: false, message, logCause: probe?.cause ?? null, diagnostic: probe?.diagnostic };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+// Recovery from a borrowed Appium whose device discovery cannot see the iPad
+// (issue 2218). Discovery is skipped only by `appium:webDriverAgentUrl`, so the
+// recovery first finds or starts a WebDriverAgent it can name by URL, then
+// opens a session through it on a fresh Appium this process owns.
+//
+// A runner already on the device is reused rather than relaunched: only one
+// XCTest runner can hold a device, and a second launch would end whichever
+// capture started the first.
+const WDA_STATUS_TIMEOUT_MS = 3_000;
+// A runner that holds the grant answered in seconds on every recorded manual
+// recovery; an expired grant logs its timeout after about a minute (the
+// 2026-09-19 relaunch loop), so this bounds both with room.
+const DIRECT_WDA_LAUNCH_TIMEOUT_MS = 120_000;
+const DIRECT_WDA_POLL_MS = 1_000;
+// How long a forward this process just started gets to reach a runner that is
+// already on the device before the recovery concludes there is none.
+const FORWARD_SETTLE_MS = 2_000;
+const DERIVED_DATA = join(homedir(), 'Library', 'Developer', 'Xcode', 'DerivedData');
+
+async function wdaStatus(url) {
+  const response = await fetch(`${url}/status`, {
+    signal: AbortSignal.timeout(WDA_STATUS_TIMEOUT_MS),
+  }).catch((error) => {
+    rethrowIfBroken(error);
+    return null;
+  });
+  if (!response?.ok) return null;
+  try {
+    const payload = await response.json();
+    return { ready: payload?.value?.ready === true, sessionId: payload?.sessionId ?? null };
+  } catch (error) {
+    rethrowIfBroken(error);
+    return null;
+  }
+}
+
+function deviceXctestruns() {
+  if (!existsSync(DERIVED_DATA)) return [];
+  return readdirSync(DERIVED_DATA)
+    .filter((name) => name.startsWith('WebDriverAgent-'))
+    .flatMap((name) => {
+      const products = join(DERIVED_DATA, name, 'Build', 'Products');
+      if (!existsSync(products)) return [];
+      return readdirSync(products)
+        .filter((file) => file.endsWith('.xctestrun'))
+        .map((file) => join(products, file));
+    })
+    .map((path) => ({ path, mtimeMs: statSync(path).mtimeMs }));
+}
+
+// Each member is a seam for the tests, which reach this path without an iPad.
+const defaultWdaRig = {
+  processList: () => sh('ps', ['-axo', 'pid=,args=']).out,
+  wdaStatus,
+  deviceXctestrun: () => newestDeviceXctestrun(deviceXctestruns()),
+  startForward: (udid, hostPort) =>
+    spawn('iproxy', ['-u', udid, `${hostPort}:${DEVICE_WDA_PORT}`], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
+    }),
+  startRunner: (udid, xctestrun) =>
+    spawn(
+      'xcodebuild',
+      ['test-without-building', '-xctestrun', xctestrun, '-destination', `id=${udid}`],
+      { stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+    ),
+  spawnAppium: defaultDiagnosticAppium,
+  forwardSettleMs: FORWARD_SETTLE_MS,
+  launchTimeoutMs: DIRECT_WDA_LAUNCH_TIMEOUT_MS,
+  pollMs: DIRECT_WDA_POLL_MS,
+};
+
+// A child this process started, with its exit and output tracked so teardown
+// can tell a live process from a corpse (see terminateDiagnostic).
+function ownedChild(child) {
+  const state = { child, log: '', exited: null, spawnError: null };
+  child.on('error', (error) => (state.spawnError = error));
+  child.on('exit', (code, signal) => (state.exited = { code, signal }));
+  child.stdout?.on('data', (chunk) => (state.log += chunk));
+  child.stderr?.on('data', (chunk) => (state.log += chunk));
+  state.stop = () => terminateDiagnostic(child, () => state.exited);
+  state.gone = () => state.exited !== null || state.spawnError !== null;
+  return state;
+}
+
+async function readyForwardedWda(rig, udid) {
+  for (const port of iproxyForwardPorts(rig.processList(), udid)) {
+    const url = `http://127.0.0.1:${port}`;
+    const status = await rig.wdaStatus(url);
+    if (status?.ready) return { url, status };
+  }
+  return null;
+}
+
+async function pollRunner(rig, url, runner) {
+  const deadline = Date.now() + rig.launchTimeoutMs;
+  while (Date.now() < deadline && !runner.gone()) {
+    if ((await rig.wdaStatus(url))?.ready) return true;
+    if (grantFromRunnerLaunch({ ready: false, log: runner.log }).cause) return false;
+    await new Promise((resolve) => setTimeout(resolve, rig.pollMs));
+  }
+  return (await rig.wdaStatus(url))?.ready === true;
+}
+
+// Returns `{ route, grant, wdaUrl, cause, reason, xctestrun, release }`; `wdaUrl`
+// is null when nothing answered, and `release` stops whatever this started.
+async function acquireReadyWda({ udid, wdaPort, rig }) {
+  const forwarded = await readyForwardedWda(rig, udid);
+  if (forwarded) {
+    return {
+      route: 'reused',
+      grant: 'undetermined',
+      wdaUrl: forwarded.url,
+      busy: forwarded.status,
+    };
+  }
+  const url = `http://127.0.0.1:${wdaPort}`;
+  const forward = ownedChild(rig.startForward(udid, wdaPort));
+  const owned = [forward];
+  const release = () => Promise.all(owned.map((child) => child.stop()));
+  await new Promise((resolve) => setTimeout(resolve, rig.forwardSettleMs));
+  const unforwarded = await rig.wdaStatus(url);
+  if (unforwarded?.ready) {
+    return {
+      route: 'reused',
+      grant: 'undetermined',
+      wdaUrl: url,
+      forwardedHere: true,
+      busy: unforwarded,
+      release,
+    };
+  }
+  const refusal = (reason) => ({ route: 'launched', grant: 'undetermined', reason, release });
+  if (runnerHoldsDevice(rig.processList(), udid)) {
+    return refusal(
+      'an XCTest runner already holds this iPad and answered on no forward; launching another ' +
+        'would end it.'
+    );
+  }
+  const xctestrun = rig.deviceXctestrun();
+  if (!xctestrun) {
+    return refusal(
+      'no built WebDriverAgent device test run in Xcode DerivedData; one Appium launch that ' +
+        'reaches the device builds it.'
+    );
+  }
+  const runner = ownedChild(rig.startRunner(udid, xctestrun));
+  owned.push(runner);
+  const ready = await pollRunner(rig, url, runner);
+  const { grant, cause } = grantFromRunnerLaunch({ ready, log: runner.log });
+  return {
+    route: 'launched',
+    grant,
+    cause,
+    xctestrun,
+    wdaUrl: ready ? url : null,
+    reason: ready ? null : `the direct launch did not answer ready at ${url}.`,
+    release,
+  };
+}
+
+async function sessionThroughWda({ udid, wdaUrl, verifyRotation, rig }) {
+  const appium = await startOwnedAppium(rig);
+  if (!appium.url) return { ok: false, message: appium.failure };
+  try {
+    const body = safariSessionBody(udid, { 'appium:webDriverAgentUrl': wdaUrl });
+    return await openAndCloseSession(appium.url, body, verifyRotation);
+  } catch (error) {
+    rethrowIfBroken(error);
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  } finally {
+    await appium.server.stop();
+  }
+}
+
+async function startOwnedAppium(rig) {
+  let port;
+  try {
+    port = await freeDiagnosticPort();
+  } catch (error) {
+    return { failure: `could not reserve a port for a fresh Appium: ${error.message}` };
+  }
+  let server;
+  try {
+    server = ownedChild(rig.spawnAppium(port));
+  } catch (error) {
+    return { failure: `could not start a fresh Appium: ${error.message}` };
+  }
+  const url = `http://127.0.0.1:${port}`;
+  const deadline = Date.now() + DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS;
+  while (Date.now() < deadline && !server.gone()) {
+    if (await rig.wdaStatus(url)) return { url, server };
+    await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_POLL_MS));
+  }
+  await server.stop();
+  return { failure: `a fresh Appium on ${port} never became ready` };
+}
+
+// `rig` overrides members of defaultWdaRig; only the tests pass it.
+export async function recoverStaleDiscoveryLaunch({ udid, wdaPort, verifyRotation = false, rig }) {
+  const wdaRig = { ...defaultWdaRig, ...rig };
+  const wda = await acquireReadyWda({ udid, wdaPort, rig: wdaRig });
+  try {
+    const report = (session) =>
+      describeRecovery({ ...wda, udid, wdaPort, session: session ?? null });
+    if (!wda.wdaUrl) return report();
+    // WebDriverAgent serves one session at a time, so opening one here would end
+    // whatever capture holds it.
+    if (wda.busy?.sessionId) {
+      return report({
+        ok: false,
+        message: `it is serving session ${wda.busy.sessionId}; not opened, to leave that capture running`,
+      });
+    }
+    return report(
+      await sessionThroughWda({ udid, wdaUrl: wda.wdaUrl, verifyRotation, rig: wdaRig })
+    );
+  } finally {
+    await wda.release?.();
   }
 }
 
@@ -760,21 +1031,22 @@ if (isMain(import.meta.url)) {
           'Passcode for XCTest" DURING this minute and nowhere else — watch the device.'
       );
       console.log(`  ${describeGrantHistory(report.iosUdid)}`);
-      const probe = classifyLaunchProbe(
-        await probeIosLaunch({
-          udid: report.iosUdid,
-          appiumUrl: argFlag('appium-url', `http://127.0.0.1:${report.ports.appium}`),
-          wdaPort: report.ports.wda,
-          verifyRotation: true,
-        })
-      );
+      const launch = await probeIosLaunch({
+        udid: report.iosUdid,
+        appiumUrl: argFlag('appium-url', `http://127.0.0.1:${report.ports.appium}`),
+        wdaPort: report.ports.wda,
+        verifyRotation: true,
+        recoverStaleDiscovery: true,
+      });
+      const probe = classifyLaunchProbe(launch);
       // Every launch attempt feeds the grant-lifetime dataset, not only the
       // operator harness's — the preflight makes most of them.
-      recordGrantAttempt(report.iosUdid, probe.status, probe.detail);
-      console.log(
-        `${probe.status === 'ok' ? '✓' : '✗'} ${'ios launch'.padEnd(22)} ${probe.detail}`
-      );
-      if (probe.status !== 'ok') process.exitCode = 1;
+      for (const row of launchAttemptRows(launch, probe)) {
+        recordGrantAttempt(report.iosUdid, row.outcome, row.detail);
+      }
+      const mark = probe.status === 'ok' ? '✓' : probe.status === 'warn' ? '!' : '✗';
+      console.log(`${mark} ${'ios launch'.padEnd(22)} ${probe.detail}`);
+      if (probe.status === 'blocked') process.exitCode = 1;
     }
     if (argv.includes('--hold-android-awake') && report.androidSerial) {
       process.exitCode = 0;
