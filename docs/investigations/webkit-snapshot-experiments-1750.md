@@ -289,7 +289,7 @@ decision has four parts.
 
 ### Shipped
 
-Both fixes target undo. Neither changes draw, commit, history folds, retained undo depth, or memory.
+Both fixes target undo.
 
 * **iPad undo ghost settle, [PR 2070](https://github.com/KyleMit/Splotch/pull/2070).** On iOS only,
   the crayon or magic undo ghost reads one pixel back after its mask and before the undo restore
@@ -306,6 +306,16 @@ Both fixes target undo. Neither changes draw, commit, history folds, retained un
   history fold's raster, held on Chromium's GPU channel until the undo frame flushed it. A WebGL
   `flush()` after each fold took the worst undo interval from 1,400 ms to 25.7 ms. Evidence:
   [`2026-09-18-issue-2072-android-fold-flush/`](../scratchpad/perf/2026-09-18-issue-2072-android-fold-flush/README.md).
+
+Each fix leaves drawing pixels, commit, and retained history (20 undo steps and their rasters)
+unchanged on its device, but not every other cost is identical:
+
+* The iOS settle adds about 7 ms of JavaScript to each undo. One native-validation run also recorded
+  a 61 ms history-fold total against 31–41 ms elsewhere. The folds finish before the first undo, so
+  the settle is not a plausible cause, but that outlier is unresolved rather than ruled out.
+* The Android flush moves each fold's GPU raster into the idle frame after that fold. The longest
+  idle interval grew from 66.7 ms to 83.4 ms (medians), and the fix adds one 1×1 WebGL context per
+  page. The GPU-process memory sample rules out a large increase, not a small one.
 
 ### Dropped: the burst restamp cost
 
@@ -358,4 +368,5 @@ also records the check that remains outstanding: the first commit reading on iPa
 * **Done-when items not met.** A combined-latency reduction against a concurrent main control was
   shown for undo only. Draw and commit were already within budget at finger pace on the device, so
   they were not treated. The quiet-local and fresh-runner commit comparisons were not redone,
-  because no shipped change touched commit.
+  because no shipped change touched commit. Redo correctness is unverified: the device captures run
+  20 undos and no redo.
