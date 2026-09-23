@@ -30,7 +30,9 @@ import {
 import {
   androidDriver,
   driveSplitGesturePasses,
+  iosDriver,
   requestPageEraserRefill,
+  windowOrientation,
   zeroInputProblem,
 } from '../split-capture/capture-device-frames.mjs';
 import {
@@ -1510,6 +1512,134 @@ describe('the wiring that fronts the page and judges the input', () => {
     expect(zeroInputProblem({ nonce: 'n', events: 517 })).toBeNull();
     expect(zeroInputProblem(null)).toBeNull();
     expect(zeroInputProblem(undefined)).toBeNull();
+  });
+});
+
+// Issue 2216: a LANDSCAPE capture on the iPad learned the device was PORTRAIT only
+// after a WDA session and a page load. The rotation has to land BEFORE the page
+// opens, because the bootstrap reports its geometry once, at ready.
+describe('the iPad driver turns the device before the page opens', () => {
+  const PORTRAIT_WINDOW = { width: 820, height: 1180 };
+  const LANDSCAPE_WINDOW = { width: 1180, height: 820 };
+  const fakeWda = ({ startsIn = 'PORTRAIT', turns = true } = {}) => {
+    const calls = [];
+    let device = startsIn;
+    let window = startsIn === 'PORTRAIT' ? PORTRAIT_WINDOW : LANDSCAPE_WINDOW;
+    const request = async (method, path, body) => {
+      calls.push(
+        `${method} ${path.replace('/session/s1', '')}${body ? ` ${JSON.stringify(body)}` : ''}`
+      );
+      if (path === '/status') return {};
+      if (method === 'POST' && path === '/session') return { sessionId: 's1' };
+      if (path.endsWith('/orientation')) {
+        if (method === 'GET') return device;
+        device = body.orientation;
+        if (turns) window = device === 'PORTRAIT' ? PORTRAIT_WINDOW : LANDSCAPE_WINDOW;
+        return null;
+      }
+      if (path.endsWith('/window/size')) return window;
+      return null;
+    };
+    return { calls, request, pause: async () => {} };
+  };
+  const drive = async (work) => {
+    vi.useFakeTimers();
+    try {
+      const done = work();
+      const outcome = done.then(
+        () => null,
+        (error) => error
+      );
+      await vi.runAllTimersAsync();
+      const error = await outcome;
+      if (error) throw error;
+      return done;
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+  const driverFor = (fake, options) =>
+    iosDriver({
+      wdaUrl: 'http://wda',
+      pageUrl: 'http://host:4185/?probe=run-7',
+      nativeApp: false,
+      orientation: 'LANDSCAPE',
+      request: fake.request,
+      pause: fake.pause,
+      ...options,
+    });
+
+  it('rotates Safari to the requested orientation before navigating, and restores it', async () => {
+    const fake = fakeWda();
+    const driver = driverFor(fake);
+    await drive(() => driver.openPage());
+    const rotatedAt = fake.calls.indexOf('POST /orientation {"orientation":"LANDSCAPE"}');
+    const navigatedAt = fake.calls.findIndex((call) => call.startsWith('POST /url'));
+    expect(rotatedAt).toBeGreaterThan(0);
+    expect(navigatedAt).toBeGreaterThan(rotatedAt);
+    expect(fake.calls.slice(rotatedAt + 1, navigatedAt)).toContain('GET /window/size');
+    expect(fake.calls[1]).toContain('"bundleId":"com.apple.mobilesafari"');
+
+    fake.calls.length = 0;
+    await drive(() => driver.release());
+    expect(fake.calls).toEqual([
+      'GET /orientation',
+      'POST /orientation {"orientation":"PORTRAIT"}',
+      'GET /window/size',
+      'DELETE ',
+    ]);
+  });
+
+  // WDA's launch only activates a running app (same pid on the rig iPad,
+  // 2026-09-23), whose page would keep its pre-rotation geometry.
+  it('cold-launches the native app only after the device has turned', async () => {
+    const fake = fakeWda();
+    await drive(() => driverFor(fake, { nativeApp: true }).openPage());
+    expect(fake.calls[1]).not.toContain('bundleId');
+    const rotatedAt = fake.calls.indexOf('POST /orientation {"orientation":"LANDSCAPE"}');
+    const terminatedAt = fake.calls.indexOf(
+      'POST /wda/apps/terminate {"bundleId":"art.splotch.app"}'
+    );
+    const launchedAt = fake.calls.indexOf('POST /wda/apps/launch {"bundleId":"art.splotch.app"}');
+    expect(rotatedAt).toBeGreaterThan(0);
+    expect(terminatedAt).toBeGreaterThan(rotatedAt);
+    expect(launchedAt).toBe(terminatedAt + 1);
+    expect(fake.calls.some((call) => call.startsWith('POST /url'))).toBe(false);
+  });
+
+  it('leaves a device already in the requested orientation alone', async () => {
+    const fake = fakeWda({ startsIn: 'LANDSCAPE' });
+    const driver = driverFor(fake);
+    await drive(() => driver.openPage());
+    await drive(() => driver.release());
+    expect(fake.calls.filter((call) => call.startsWith('POST /orientation'))).toEqual([]);
+    expect(fake.calls.at(-1)).toBe('DELETE ');
+  });
+
+  it('refuses before navigating when the window never turns, and still turns the device back', async () => {
+    const fake = fakeWda({ turns: false });
+    const driver = driverFor(fake);
+    await expect(drive(() => driver.openPage())).rejects.toThrow(
+      /did not turn to LANDSCAPE.*rotation lock/
+    );
+    expect(fake.calls.some((call) => call.startsWith('POST /url'))).toBe(false);
+
+    // WDA accepted the turn, so the device reads LANDSCAPE while the window
+    // stayed put: the restore target has to be what was read before the turn.
+    fake.calls.length = 0;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await drive(() => driver.release());
+    } finally {
+      warn.mockRestore();
+    }
+    expect(fake.calls).toContain('POST /orientation {"orientation":"PORTRAIT"}');
+    expect(fake.calls.at(-1)).toBe('DELETE ');
+  });
+
+  it('reads a window by its shape', () => {
+    expect(windowOrientation(LANDSCAPE_WINDOW)).toBe('LANDSCAPE');
+    expect(windowOrientation(PORTRAIT_WINDOW)).toBe('PORTRAIT');
   });
 });
 

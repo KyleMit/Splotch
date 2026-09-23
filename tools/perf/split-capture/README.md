@@ -50,7 +50,14 @@ npm run perf:device:frames -- --platform=android --device-serial=<serial> \
 ```
 
 For iPadOS, pass `--platform=ios --wda-url=http://127.0.0.1:8100` and leave `--device-serial` off;
-WebDriverAgent must already be running and reachable.
+WebDriverAgent must already be running and reachable. The driver turns the iPad to `--orientation`
+through WebDriverAgent before it opens the page, because the page reports its geometry once. It then
+turns the iPad back and deletes its WDA session when the report arrives or the capture is refused.
+Safari is navigated after the turn. The native app is stopped and cold-launched after it, because
+WebDriverAgent's launch only brings an app that is already running to the front. A window that does
+not follow the turn within the timeout fails before the page opens and names the rotation locks. On
+the rig iPad each `POST /orientation` call returned after about 10.3 s, with the window already
+turned.
 
 ## Calibrating from a hand
 
