@@ -126,6 +126,13 @@ Which control that is depends on the platform, and the runner resolves it rather
   runner takes it, recording `platformOwnsRotation` in the capture. A missing toggle there is the
   product's answer, not a targeting failure; treating it as unavailable is what left the iPad
   simulator's native landscape cells unmeasured in the 2026-08-20 campaign.
+* On a **web** target the control is state-dependent, not just platform-dependent:
+  `orientationLockApplies()` hides it outside element fullscreen and outside an installed
+  `fullscreen` display mode, because Chromium refuses the lock there (ADR-0172). So a missing picker
+  in a browser tab is a refusing *context*, not the product's answer about the platform — the
+  opposite reading from the tablet case above. Enter fullscreen and re-read the control before
+  concluding anything; recording `platformOwnsRotation` off a plain tab would file a browser
+  limitation as a platform fact.
 
 Shells differ by mode too, and an action plan that assumes one will time out against the other. A
 landscape phone renders the compact Settings shell — quick toggles and a pointer to portrait instead
