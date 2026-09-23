@@ -41,6 +41,10 @@ let pwaUpdates: ReturnType<typeof createPWAUpdates>;
 
 beforeEach(() => {
   pwaUpdates = createPWAUpdates();
+  // The mocked canvas state is one object for the file, and the mismatch guard
+  // reads it, so the default belongs to every describe — the same placement
+  // updates.activation.test.ts uses.
+  canvasState.canvasEmpty = true;
 });
 
 // --- checkVersionMismatch ---
@@ -50,7 +54,6 @@ describe('checkVersionMismatch', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
-    canvasState.canvasEmpty = true;
     Object.defineProperty(window, 'location', {
       value: { href: 'https://splotch.art/', replace: vi.fn() },
       writable: true,
@@ -185,7 +188,6 @@ describe('deferred service worker registration', () => {
 
   beforeEach(() => {
     idle.queue = [];
-    canvasState.canvasEmpty = true;
     originalFetch = globalThis.fetch;
     stubDeployedVersion(CURRENT_VERSION);
     (import.meta.env as Record<string, unknown>).DEV = false;
