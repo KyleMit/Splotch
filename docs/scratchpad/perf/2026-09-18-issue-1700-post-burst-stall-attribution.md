@@ -1,5 +1,9 @@
 # Issue 1700 — whether the post-crayon-burst stall still happens, and a candidate mechanism
 
+> **Closed 2026-09-22.** Issue 1700 closed as matched on the physical iPad, with part of the stall
+> attributed and the rest not. See [Disposition](#disposition). The sections before it are the
+> unchanged runner-side record; its "What remains open" list is superseded by the disposition.
+
 Runner-side evidence for issue 1700. It names a candidate mechanism, not the stall's task. No
 physical device was available for this pass (the iPad's XCTest automation grant had expired and the
 phone was locked), so the issue's "shown not to occur on the physical iPad" half is **not** answered
@@ -217,3 +221,79 @@ decompresses to the SHA-256 its ledger entry records. The full runner set (173 f
 `webkit-native-samples` artifact of run 35298666234, retained for 7 days; after that, the ledger is
 the audit trail for the counts, and the committed files show the stack shapes. The remaining 26
 local files were not retained.
+
+## Disposition
+
+On 2026-09-22 the maintainer closed issue 1700 as matched on the device (option A of the issue's
+2026-09-19 comment), as part of closing out the September performance campaign (issue 1567). The
+work ends with this record. No new capture, trace, or product change was made for it.
+
+### The done-when's second branch is met
+
+The issue is done when "an iPad capture after a comparable crayon burst shows a matching gap and the
+cause is moved to a product issue". [PR 2070](https://github.com/KyleMit/Splotch/pull/2070)'s iPad
+evidence already ran this gate's synchronous burst on the physical iPad: `crayon-scribbles`, 22
+strokes × 1,200 ops through `strokeSync`, in Safari 26.5 on `/dev/engine`, main at
+7a2365631aba6078f94038235d661add6e2e42cb (entry `start.DY5Ge2nJ.js`). A continuous rAF sampler ran
+through the history settle. The figures are the `present` phase of the four `burst-*` rows under
+`burstPipelineAB` in
+[`2026-09-18-issue-1750-ipad-baseline/summary.json`](2026-09-18-issue-1750-ipad-baseline/summary.json):
+
+| Pipeline                         | Run | Synchronous burst | One rAF interval right after `drawEnd` | `engine.fold` inside that interval |
+| -------------------------------- | --: | ----------------: | -------------------------------------: | ---------------------------------- |
+| restamp (web)                    |   1 |           116.4 s |                          **13,326 ms** | 8 ms and 2,954 ms                  |
+| restamp (web)                    |   2 |           116.4 s |                          **13,547 ms** | 4,304 ms and 5,036 ms              |
+| glaze-direct (native, in Safari) |   1 |            12.3 s |                               2,623 ms | 12 ms                              |
+| glaze-direct (native, in Safari) |   2 |            12.0 s |                               2,956 ms | 10 ms                              |
+
+On the web (restamp) pipeline, the burst is followed by a single frame-less interval of 13.3–13.5 s.
+That is the same shape as the runner's 4.6–9.7 s stall: one long interval, with the page making no
+progress, before the first settle poll could run. It is longer on the device, as the draw itself is.
+Glaze-direct, native's pipeline measured here in iPad Safari, shows 2.6–3.0 s.
+
+The shape matches, but the contents differ in part. On the runner the folds ran after the stall, at
+12–130 ms, so the runner's interval held no product JavaScript. On the iPad the folds run inside the
+interval.
+
+### What is attributed, and what is not
+
+* **Attributed: 3–9 s is `engine.fold`.** This is the idle history fold replaying the burst's
+  1,200-op crayon commands into the history base, one command per fold (`foldOldestCommand` in
+  `web/src/lib/drawing/tiledRenderer.ts`). The folds inside the interval total 2,962 ms and 9,340
+  ms. The same fold takes ≤ 22 ms per command at finger pace on the same iPad (PR 2070).
+* **Not attributed: the remaining ~4–10 s** (10,364 ms and 4,207 ms) carries no `engine.*` measure.
+  It is consistent with the candidate in Finding 2 above, WebKit waiting for accelerated
+  CoreGraphics to finish deferred canvas drawing. That candidate was named from macOS samples, not
+  from the iPad. **The iPad interval was never traced.** A WebKit timeline recording of the burst on
+  the iPad (Web Inspector, attached to the device) is the way to trace it. Closing the issue does
+  not claim that the remainder was traced or that the candidate is its cause.
+
+### The runner side
+
+The runner-side stall has not recurred since WebKit 26.6: 197 fast-gate samples from 2026-09-11 to
+2026-09-18, with a first-poll round trip of at most 723 ms (Finding 1). The iPad result does not
+change that.
+
+### Where the product side went
+
+The stall follows the CI gate's synchronous burst. Issue 1750's
+[disposition](../../investigations/webkit-snapshot-experiments-1750.md#disposition) dropped that
+burst as a workload no finger produces, and it names this stall as part of the dropped workload. So
+the cause moves to issue 1750's product scope and is dropped there with the rest of the burst, not
+fixed. No separate product issue is filed. At finger pace on the same iPad, drawing is clean on both
+pipelines and each fold takes ≤ 22 ms.
+
+### What would reopen it
+
+* A finger-paced or real-use session on a device that shows a comparable post-stroke stall: a
+  frame-less interval of seconds after drawing ends.
+* A product feature that deposits many crayon ops in one synchronous task, which is issue 1750's
+  reopening condition for the burst cost.
+* A recurrence on the runner, by the thresholds in "What remains open for issue 1700" above. That
+  reopens the runner-side attribution with the sampler, not the product question.
+
+### Limits
+
+* One 12.9-inch iPad Pro on iPadOS 26.5 (Safari 26.5). No iPadOS 26.6 capture exists.
+* Synthetic input dispatched in the page on `/dev/engine`, not trusted touch in the real app.
+* Two runs per pipeline.
