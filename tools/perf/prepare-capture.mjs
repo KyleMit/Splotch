@@ -668,10 +668,30 @@ async function openAndCloseSession(appiumUrl, body, verifyRotation) {
         message: error instanceof Error ? error.message : String(error),
       }))
     : null;
-  await fetch(`${appiumUrl}/session/${sessionId}`, { method: 'DELETE' });
-  return rotation && !rotation.ok
-    ? { ...rotation, opened: true }
-    : { ok: true, opened: true, rotationVerified: verifyRotation };
+  const closeProblem = await sessionCloseProblem(appiumUrl, sessionId);
+  if (rotation && !rotation.ok) return { ...rotation, opened: true };
+  // A session left open keeps WebDriverAgent occupied, so the next capture
+  // meets a busy runner; an unproved close is not a clean launch.
+  if (closeProblem) return { ok: false, opened: true, message: closeProblem };
+  return { ok: true, opened: true, rotationVerified: verifyRotation };
+}
+
+async function sessionCloseProblem(appiumUrl, sessionId) {
+  try {
+    const response = await fetch(`${appiumUrl}/session/${sessionId}`, { method: 'DELETE' });
+    if (response.ok) return null;
+    const payload = await response.json().catch((error) => {
+      rethrowIfBroken(error);
+      return null;
+    });
+    return (
+      `session ${sessionId} could not be deleted (HTTP ${response.status}` +
+      `${payload?.value?.message ? `: ${payload.value.message}` : ''})`
+    );
+  } catch (error) {
+    rethrowIfBroken(error);
+    return `session ${sessionId} could not be deleted: ${error.message}`;
+  }
 }
 
 // `recoverStaleDiscovery` is the preflight's: the operator harness arms the
@@ -833,10 +853,28 @@ async function acquireReadyWda({ udid, wdaPort, rig }) {
     };
   }
   const url = `http://127.0.0.1:${wdaPort}`;
-  const forward = ownedChild(rig.startForward(udid, wdaPort));
-  const owned = [forward];
+  const owned = [ownedChild(rig.startForward(udid, wdaPort))];
   const release = () => Promise.all(owned.map((child) => child.stop()));
+  try {
+    return { ...(await readyBehindOwnForward({ udid, url, rig, owned })), release };
+  } catch (error) {
+    await release();
+    throw error;
+  }
+}
+
+// Everything after this process started its own forward. Every child it starts
+// joins `owned`, so the caller releases all of them whether this returns or throws.
+async function readyBehindOwnForward({ udid, url, rig, owned }) {
+  const [forward] = owned;
   await new Promise((resolve) => setTimeout(resolve, rig.forwardSettleMs));
+  const refusal = (reason) => ({ route: 'launched', grant: 'undetermined', reason });
+  // Without the forward nothing can observe a runner, so launching one would
+  // only wait out the launch timeout on a device it may still take over.
+  if (forward.gone()) {
+    const how = forward.spawnError?.message ?? `it exited (${JSON.stringify(forward.exited)})`;
+    return refusal(`the WebDriverAgent forward on ${url} could not start: ${how}.`);
+  }
   const unforwarded = await rig.wdaStatus(url);
   if (unforwarded?.ready) {
     return {
@@ -845,10 +883,8 @@ async function acquireReadyWda({ udid, wdaPort, rig }) {
       wdaUrl: url,
       forwardedHere: true,
       busy: unforwarded,
-      release,
     };
   }
-  const refusal = (reason) => ({ route: 'launched', grant: 'undetermined', reason, release });
   if (runnerHoldsDevice(rig.processList(), udid)) {
     return refusal(
       'an XCTest runner already holds this iPad and answered on no forward; launching another ' +
@@ -873,7 +909,6 @@ async function acquireReadyWda({ udid, wdaPort, rig }) {
     xctestrun,
     wdaUrl: ready ? url : null,
     reason: ready ? null : `the direct launch did not answer ready at ${url}.`,
-    release,
   };
 }
 

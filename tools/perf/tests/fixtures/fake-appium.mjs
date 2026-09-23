@@ -9,6 +9,7 @@
 // discovery cannot see the iPad: it refuses every session with XCUITest's
 // `Unknown device` message unless the session names `EXPECT_WDA_URL` as its
 // `appium:webDriverAgentUrl`, the capability that skips discovery.
+// `DELETE_FAILS` makes it refuse to delete the session it opened.
 import { createServer } from 'node:http';
 
 const port = Number(process.argv[2]);
@@ -22,7 +23,11 @@ const json = (res, status, value) => {
 };
 
 function staleDiscovery(req, res) {
-  if (req.method === 'DELETE') return json(res, 200, null);
+  if (req.method === 'DELETE') {
+    return process.env.DELETE_FAILS
+      ? json(res, 500, { error: 'unknown error', message: 'delete failed' })
+      : json(res, 200, null);
+  }
   let body = '';
   req.on('data', (chunk) => (body += chunk));
   req.on('end', () => {

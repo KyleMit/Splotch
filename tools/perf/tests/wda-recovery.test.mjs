@@ -224,18 +224,20 @@ const idleChild = (script = 'setInterval(() => {}, 1000)') =>
     spawn(process.execPath, ['-e', script], { stdio: ['ignore', 'pipe', 'pipe'], detached: true })
   );
 
-const fakeAppium = (expectWdaUrl) => (port) =>
-  track(
-    spawn(
-      process.execPath,
-      [join(ROOT, 'tools/perf/tests/fixtures/fake-appium.mjs'), String(port)],
-      {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, MODE: 'stale-discovery', EXPECT_WDA_URL: expectWdaUrl },
-        detached: true,
-      }
-    )
-  );
+const fakeAppium =
+  (expectWdaUrl, env = {}) =>
+  (port) =>
+    track(
+      spawn(
+        process.execPath,
+        [join(ROOT, 'tools/perf/tests/fixtures/fake-appium.mjs'), String(port)],
+        {
+          stdio: ['ignore', 'pipe', 'pipe'],
+          env: { ...process.env, MODE: 'stale-discovery', EXPECT_WDA_URL: expectWdaUrl, ...env },
+          detached: true,
+        }
+      )
+    );
 
 const gone = (child) => child.exitCode !== null || child.signalCode !== null;
 
@@ -367,5 +369,68 @@ describe('recovering a launch from stale device discovery', () => {
 
     expect(recovery).toMatchObject({ status: 'blocked', grant: 'undetermined' });
     expect(recovery.detail).toContain('campaign-session');
+  }, 60_000);
+
+  // The rival review of PR 2244 found these three by fake-rig reproduction.
+  it('does not call a session it could not delete a clean recovery', async () => {
+    const wda = await fakeWda();
+
+    const recovery = await recoverStaleDiscoveryLaunch({
+      udid: UDID,
+      wdaPort: 1,
+      rig: {
+        ...FAST,
+        processList: () => `22376 iproxy -u ${UDID} ${wda.port}:8100`,
+        spawnAppium: fakeAppium(wda.url, { DELETE_FAILS: '1' }),
+      },
+    });
+
+    expect(recovery.status, recovery.detail).toBe('blocked');
+    expect(recovery.detail).toContain('could not be deleted');
+    expect(recovery.detail).not.toContain('closed cleanly');
+  }, 60_000);
+
+  it('never launches a runner behind a forward that failed to start', async () => {
+    let started = false;
+
+    const recovery = await recoverStaleDiscoveryLaunch({
+      udid: UDID,
+      wdaPort: 1,
+      rig: {
+        ...FAST,
+        processList: () => '',
+        startForward: () => track(spawn('definitely-not-a-real-iproxy-xyz', [])),
+        deviceXctestrun: () => '/x/WebDriverAgentRunner_iphoneos26.5-arm64.xctestrun',
+        startRunner: () => {
+          started = true;
+          return idleChild();
+        },
+      },
+    });
+
+    expect(started).toBe(false);
+    expect(recovery).toMatchObject({ status: 'blocked', grant: 'undetermined' });
+    expect(recovery.detail).toContain('forward');
+  }, 60_000);
+
+  it('stops the forward it started when acquisition throws', async () => {
+    const wda = await fakeWda({ ready: false });
+    let forward;
+
+    await expect(
+      recoverStaleDiscoveryLaunch({
+        udid: UDID,
+        wdaPort: wda.port,
+        rig: {
+          ...FAST,
+          processList: () => '',
+          startForward: () => (forward = idleChild()),
+          deviceXctestrun: () => {
+            throw new Error('DerivedData unreadable');
+          },
+        },
+      })
+    ).rejects.toThrow('DerivedData unreadable');
+    expect(gone(forward)).toBe(true);
   }, 60_000);
 });
