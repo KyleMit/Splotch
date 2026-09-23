@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import { classifyLaunchProbe } from '../lib/capture-readiness.mjs';
+import { FAKE_IOS_UDID } from '../lib/device-identifiers.mjs';
 import { isGrantDenial } from '../lib/grant-log.mjs';
 import {
   describeRecovery,
@@ -16,8 +17,9 @@ import {
 } from '../lib/wda-recovery.mjs';
 import { probeIosLaunch, recoverStaleDiscoveryLaunch } from '../prepare-capture.mjs';
 
-const UDID = '00008103-DEADBEEFDEADBEEF';
-const OTHER_UDID = '00008103-FEEDFACEFEEDFACE';
+// Not UDID-shaped on purpose: the device-identifier guard allows only FAKE_IOS_UDID.
+const UDID = FAKE_IOS_UDID;
+const OTHER_UDID = 'another-ipad';
 const UNKNOWN_DEVICE = `Unknown device or simulator UDID: '${UDID}'`;
 const AUTOMATION_TIMEOUT = 'Timed out while enabling automation mode';
 
@@ -45,7 +47,7 @@ describe('iproxyForwardPorts', () => {
   });
 
   it('finds nothing for a device with no forward', () => {
-    expect(iproxyForwardPorts(ps, '00008103-000000000000000A')).toEqual([]);
+    expect(iproxyForwardPorts(ps, 'unforwarded-ipad')).toEqual([]);
   });
 });
 
@@ -432,5 +434,34 @@ describe('recovering a launch from stale device discovery', () => {
       })
     ).rejects.toThrow('DerivedData unreadable');
     expect(gone(forward)).toBe(true);
+  }, 60_000);
+
+  it('rechecks the forward immediately before launching a runner', async () => {
+    let forward;
+    let started = false;
+
+    const recovery = await recoverStaleDiscoveryLaunch({
+      udid: UDID,
+      wdaPort: 1,
+      rig: {
+        ...FAST,
+        processList: () => '',
+        startForward: () => (forward = idleChild()),
+        // The forward dies while the status check is in flight.
+        wdaStatus: async () => {
+          forward.kill('SIGKILL');
+          await new Promise((resolve) => forward.once('exit', resolve));
+          return null;
+        },
+        deviceXctestrun: () => '/x/WebDriverAgentRunner_iphoneos26.5-arm64.xctestrun',
+        startRunner: () => {
+          started = true;
+          return idleChild();
+        },
+      },
+    });
+
+    expect(started).toBe(false);
+    expect(recovery.detail).toContain('forward');
   }, 60_000);
 });

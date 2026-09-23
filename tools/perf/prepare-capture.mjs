@@ -830,9 +830,9 @@ async function readyForwardedWda(rig, udid) {
   return null;
 }
 
-async function pollRunner(rig, url, runner) {
+async function pollRunner(rig, url, runner, forward) {
   const deadline = Date.now() + rig.launchTimeoutMs;
-  while (Date.now() < deadline && !runner.gone()) {
+  while (Date.now() < deadline && !runner.gone() && !forward.gone()) {
     if ((await rig.wdaStatus(url))?.ready) return true;
     if (grantFromRunnerLaunch({ ready: false, log: runner.log }).cause) return false;
     await new Promise((resolve) => setTimeout(resolve, rig.pollMs));
@@ -870,11 +870,15 @@ async function readyBehindOwnForward({ udid, url, rig, owned }) {
   await new Promise((resolve) => setTimeout(resolve, rig.forwardSettleMs));
   const refusal = (reason) => ({ route: 'launched', grant: 'undetermined', reason });
   // Without the forward nothing can observe a runner, so launching one would
-  // only wait out the launch timeout on a device it may still take over.
-  if (forward.gone()) {
+  // only wait out the launch timeout on a device it may still take over. Asked
+  // again immediately before the launch, because the forward can exit while the
+  // checks between here and there await.
+  const forwardLost = () => {
+    if (!forward.gone()) return null;
     const how = forward.spawnError?.message ?? `it exited (${JSON.stringify(forward.exited)})`;
-    return refusal(`the WebDriverAgent forward on ${url} could not start: ${how}.`);
-  }
+    return `the WebDriverAgent forward on ${url} stopped: ${how}.`;
+  };
+  if (forwardLost()) return refusal(forwardLost());
   const unforwarded = await rig.wdaStatus(url);
   if (unforwarded?.ready) {
     return {
@@ -898,9 +902,10 @@ async function readyBehindOwnForward({ udid, url, rig, owned }) {
         'reaches the device builds it.'
     );
   }
+  if (forwardLost()) return refusal(forwardLost());
   const runner = ownedChild(rig.startRunner(udid, xctestrun));
   owned.push(runner);
-  const ready = await pollRunner(rig, url, runner);
+  const ready = await pollRunner(rig, url, runner, forward);
   const { grant, cause } = grantFromRunnerLaunch({ ready, log: runner.log });
   return {
     route: 'launched',
@@ -908,7 +913,7 @@ async function readyBehindOwnForward({ udid, url, rig, owned }) {
     cause,
     xctestrun,
     wdaUrl: ready ? url : null,
-    reason: ready ? null : `the direct launch did not answer ready at ${url}.`,
+    reason: ready ? null : (forwardLost() ?? `the direct launch did not answer ready at ${url}.`),
   };
 }
 
