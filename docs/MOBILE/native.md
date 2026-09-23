@@ -160,10 +160,15 @@ turned off. The plugin's `unlock()` does not: it requests `SCREEN_ORIENTATION_UN
 defers to that setting. So on Android, Auto goes through the app-local `SensorOrientation` plugin
 (`SensorOrientationPlugin.java`), which requests `SCREEN_ORIENTATION_SENSOR` — accelerometer
 rotation past the OS toggle, excluding upside-down portrait. iOS has no public way past the Control
-Center rotation lock and keeps `unlock()`. The Web Screen Orientation API (the web fallback) can't
-do this: it only chooses an orientation within what the OS already permits, so with Auto-Rotate off
-it silently no-ops. The branch is keyed on `isNative()` (ADR-0013). Adding/removing this plugin
-requires a fresh native build — `cap:sync` alone won't register it.
+Center rotation lock and keeps `unlock()`. The Web Screen Orientation API (the web fallback) has no
+equivalent for Auto — and the reason is narrower than "the web can't override the OS". Chromium maps
+a web Portrait or Landscape lock to `SCREEN_ORIENTATION_SENSOR_PORTRAIT`/`_LANDSCAPE`, which **do**
+beat the OS toggle; it maps `unlock()` to `SCREEN_ORIENTATION_USER` and `lock('any')` to
+`FULL_USER`, and only those two defer to it. So on the web it is Auto alone that no-ops with
+Auto-Rotate off, which is why every non-Android target captions the Settings picker to say Auto
+follows the device setting (`autoOrientationOverridesSystemLock`). The branch is keyed on
+`isNative()` (ADR-0013). Adding/removing this plugin requires a fresh native build — `cap:sync`
+alone won't register it.
 
 ### Data & privacy posture (important for store forms)
 

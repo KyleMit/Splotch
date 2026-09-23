@@ -9,10 +9,11 @@
   import { APP_VERSION } from '$lib/appVersion';
   import { settingsState, setSound, setToolDrawerEnabled } from '$lib/state/settings.svelte';
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
-  import { supportsOrientationLock } from '$lib/platform';
+  import { orientationLockApplies } from '$lib/platform';
+  import { fullscreenState } from '$lib/state/fullscreen.svelte';
   import '$lib/components/deferredIcons';
 
-  const showOrientationControls = supportsOrientationLock();
+  const showOrientationControls = $derived(orientationLockApplies(fullscreenState.active));
 </script>
 
 <!-- Landscape phone: too cramped for the full section list, so just the
@@ -49,10 +50,12 @@
         onToggle={setToolDrawerEnabled}
       />
     </div>
-    <!-- The bottom-right cell is the only one that varies by device: the
-         orientation lock selector, or — where the OS owns orientation (see
-         supportsOrientationLock) — a mini About cell so the 2×2 stays
-         flush instead of leaving a hole. -->
+    <!-- The bottom-right cell is the only one that varies: the orientation lock
+         selector, or — wherever a lock would be refused (see
+         orientationLockApplies) — a mini About cell so the 2×2 stays flush
+         instead of leaving a hole. The cell has no room for the Appearance
+         section's Auto caption, and the landscape phone this shell exists for
+         already points at portrait for the full settings. -->
     {#if showOrientationControls}
       <!-- The picker is the whole cell: its track takes the cell's place
            instead of sitting inside a padded card, so the options get all of

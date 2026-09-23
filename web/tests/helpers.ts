@@ -214,6 +214,55 @@ async function waitForCommittedDrawingHistory(
 
 /** Navigate to the drawing app and wait for its hydrated engine and rendered
  *  composite to become drawable. Early-boot specs navigate directly. */
+/**
+ * Enters real element fullscreen — the state Chromium demands before it honors
+ * `screen.orientation.lock()`, and so the state the Settings Orientation picker
+ * renders in at all (`orientationLockApplies`).
+ *
+ * The app's own Fullscreen Toggle cannot do this from a spec: it renders only
+ * for Android user agents. `requestFullscreen()` needs a user gesture, which
+ * `evaluate()` does not carry, so the activation comes from a keypress the app
+ * binds nothing to. A keypress rather than a click deliberately: a click needs
+ * something to land on, and an overlay over an open dialog trips outside-click
+ * handling and the launch dead zone. The viewport keeps its size, so layout
+ * assertions still measure the box they were written against. Call it after
+ * `gotoApp` — navigating leaves fullscreen.
+ */
+export async function enterFullscreen(page: Page) {
+  await page.evaluate(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'F2') return;
+      document.removeEventListener('keydown', onKey, true);
+      void document.documentElement.requestFullscreen();
+    };
+    document.addEventListener('keydown', onKey, true);
+  });
+  await page.keyboard.press('F2');
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true);
+}
+
+/**
+ * Leaves element fullscreen. Chromium backs it with a fullscreen browser window
+ * and then refuses `setViewportSize` with "restore it to normal state first", so
+ * a spec that measures a second viewport has to exit between cases. Navigating
+ * does not exit on its own. Exiting needs no user gesture.
+ */
+export async function exitFullscreen(page: Page) {
+  await page.evaluate(() => (document.fullscreenElement ? document.exitFullscreen() : undefined));
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
+}
+
+/**
+ * Changes the viewport while leaving the page in fullscreen either side of it,
+ * for a spec that measures a second viewport and needs the state Chromium
+ * honors an orientation lock in at both.
+ */
+export async function resizeInFullscreen(page: Page, size: { width: number; height: number }) {
+  await exitFullscreen(page);
+  await page.setViewportSize(size);
+  await enterFullscreen(page);
+}
+
 export async function gotoApp(
   page: Page,
   path = '/',

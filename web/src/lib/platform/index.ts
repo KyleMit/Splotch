@@ -2,11 +2,16 @@ import { browser } from '$app/environment';
 
 import { TABLET_MIN_SIDE_PX } from '../breakpoints';
 
+// The one display mode Chromium will accept an orientation lock in without
+// element fullscreen, so it is named apart from the chrome-less list below that
+// it also belongs to.
+const FULLSCREEN_DISPLAY_MODE_QUERY = '(display-mode: fullscreen)';
+
 // Every display mode that drops the browser chrome. A typo here evaluates to
 // false and quietly drops that mode from isStandalone().
 const APP_LIKE_DISPLAY_MODE_QUERIES = [
   '(display-mode: standalone)',
-  '(display-mode: fullscreen)',
+  FULLSCREEN_DISPLAY_MODE_QUERY,
   '(display-mode: minimal-ui)',
 ] as const;
 
@@ -161,17 +166,18 @@ export function getPlatform(): Platform {
  *    mobile-device emulation, which is where it gets tested.
  *
  * Necessary, not sufficient — a `lock()` that exists can still refuse, and two
- * such browsers stay inside this repo's floor: Chrome on Android honors a lock
- * only in fullscreen or an installed app, and Firefox for Android 114-143
- * exposes one that always fails. The picker renders there and the choice
- * persists, because a narrower gate would hide a control that becomes
- * functional the moment the user hits the Fullscreen toggle. Instead
- * `applyDeviceOrientationPreference` keys a web lock on the fullscreen state
- * `routes/+page.svelte` passes it, so a lock the tab refused is requested
- * again on entering fullscreen and after each re-entry. An installed app needs
- * no retry: it launches as its own document, which applies the preference at
- * boot. Firefox's always-failing `lock()` stays unapplied until it ages out of
- * the floor.
+ * such browsers stay inside this repo's floor: Chromium honors a lock only in
+ * element fullscreen or a `fullscreen` display mode, and Firefox for Android
+ * 114-143 exposes one that always fails. So this answers the capability half
+ * only, which is the half `applyDeviceOrientationPreference` needs before it
+ * attempts a lock at all. `orientationLockApplies` adds the per-moment half and
+ * is what the Settings picker renders on, so no control is offered while a lock
+ * would be refused outright. `applyDeviceOrientationPreference` still keys a web
+ * lock on the fullscreen state `routes/+page.svelte` passes it, because Chromium
+ * releases the lock when fullscreen ends and the choice has to be re-requested
+ * on the next entry. Firefox's always-failing `lock()` is the refusal neither
+ * gate can see: there the picker renders and the choice stays unapplied until it
+ * ages out of the floor.
  *
  * A behavioral probe is not an option here either: headless Chromium resolves
  * `lock()` on a desktop viewport, and the call is async besides.
@@ -185,4 +191,39 @@ export function supportsOrientationLock(): boolean {
     );
   }
   return Math.min(window.screen.width, window.screen.height) < TABLET_MIN_SIDE_PX;
+}
+
+/**
+ * Whether an orientation lock requested *right now* would be honored — the gate
+ * the Settings picker renders on, because a control that cannot turn anything is
+ * worse than no control.
+ *
+ * The native shells lock at the Activity or scene level with no such condition,
+ * so there capability is the whole answer. On the web Chromium rejects `lock()`
+ * with a `SecurityError` unless the page is in element fullscreen or its display
+ * mode is `fullscreen`; `screen_orientation_provider.cc` tests exactly that pair
+ * and nothing else. An installed Splotch meets the second through the manifest's
+ * `"display": "fullscreen"` — `standalone` would not, which is why `isStandalone()`
+ * is the wrong signal here even though it covers this case.
+ */
+export function orientationLockApplies(fullscreenActive: boolean): boolean {
+  if (!supportsOrientationLock()) return false;
+  if (isNative()) return true;
+  return fullscreenActive || window.matchMedia?.(FULLSCREEN_DISPLAY_MODE_QUERY).matches === true;
+}
+
+/**
+ * Whether choosing Auto can rotate past the device's own rotation lock.
+ *
+ * Only the Android shell can, by requesting `SCREEN_ORIENTATION_SENSOR` through
+ * `SensorOrientationPlugin`. Everywhere else Auto means "follow the system": the
+ * web API's unlock maps to `SCREEN_ORIENTATION_USER` and iOS restores the
+ * all-orientations mask, and the user's rotation lock pins both. No platform
+ * reports whether that setting is on — Android could read
+ * `Settings.System.ACCELEROMETER_ROTATION`, but it is the one platform with
+ * nothing to warn about — so a caption keyed on this is the honest signal.
+ */
+export function autoOrientationOverridesSystemLock(): boolean {
+  // Only the native Android shell reports 'android'; Chrome on Android is 'web'.
+  return getPlatform() === 'android';
 }

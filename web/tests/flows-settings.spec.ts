@@ -5,9 +5,11 @@ import { AI_ACCESS_TOKEN_PARAM } from '../src/lib/inviteLink';
 
 import {
   activeNavRowInsideColumn,
+  enterFullscreen,
   gotoApp,
   headingOffsetFromPaneTop,
   openSettingsModal,
+  resizeInFullscreen,
   retryOpen,
   SECTION_LANDED_MAX_PX,
 } from './helpers';
@@ -305,16 +307,17 @@ test('About opens the bundled privacy policy without a parental gate', async ({ 
   await expect(page.locator('#parentalGate')).not.toBeVisible();
 });
 
-// The Orientation picker only renders where the browser can actually turn
-// the screen (supportsOrientationLock), so these reach it through touch
-// emulation — the same way a browser's mobile-device mode does. Without it a
-// desktop context gets the About cell instead, and the Appearance section is
-// one card shorter.
+// The Orientation picker renders only where a lock would be honored
+// (orientationLockApplies): a coarse pointer, supplied by touch emulation as a
+// browser's mobile-device mode does, plus a state Chromium accepts a lock in,
+// supplied by enterFullscreen. Missing either, a desktop tab gets the About cell
+// and the Appearance section is one card shorter.
 test.describe('settings on a rotatable device', () => {
   test.use({ hasTouch: true });
 
   test('setting groups space their cards without affecting the compact grid', async ({ page }) => {
     await gotoApp(page, `/?${AI_ACCESS_TOKEN_PARAM}=test-access-code`);
+    await enterFullscreen(page);
 
     const modal = await openSettingsModal(page);
     // Scoped to one section: the wide pane stacks every section at once, so an
@@ -341,7 +344,9 @@ test.describe('settings on a rotatable device', () => {
     await expect(aiFeatureCards).toHaveCount(2);
     await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '8px');
 
-    await page.setViewportSize({ width: 852, height: 390 });
+    // Chromium will not resize a fullscreen window; re-entering restores the
+    // state the Orientation cell renders in.
+    await resizeInFullscreen(page, { width: 852, height: 390 });
     await expect(modal).toHaveClass(/compact/);
     const quickToggleCells = page.locator('.quick-toggles > .setting');
     await expect(quickToggleCells).toHaveCount(4);
@@ -350,9 +355,12 @@ test.describe('settings on a rotatable device', () => {
     await expect(quickToggleCells.nth(3)).toHaveCSS('margin-top', '0px');
   });
 
+  // Fullscreen, or the quick grid's fourth cell is the About cell rather than
+  // the Orientation picker.
   async function openSettingsModalCompact(page: Page) {
     await page.setViewportSize({ width: 852, height: 390 });
     await gotoApp(page);
+    await enterFullscreen(page);
     return openSettingsModal(page);
   }
 
@@ -420,8 +428,9 @@ test.describe('settings on a rotatable device', () => {
     );
 
     // ...and rotating to portrait swaps in the full hub shell live, where the
-    // Controls section reflects the change made from the quick toggle.
-    await page.setViewportSize({ width: 390, height: 852 });
+    // Controls section reflects the change made from the quick toggle. The
+    // fullscreen round trip is what lets Chromium resize the window at all.
+    await resizeInFullscreen(page, { width: 390, height: 852 });
     await expect(page.locator('.hub-list')).toBeVisible();
     await expect(page.locator('#quickSoundToggle')).toHaveCount(0);
     await page.getByRole('button', { name: 'Tool Drawer' }).click();
