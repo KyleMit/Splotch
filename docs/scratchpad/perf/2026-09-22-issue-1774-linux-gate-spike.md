@@ -58,6 +58,6 @@ multi-finger baseline here is 0–5 ms, unlike the macOS runner's 26.6 regime of
 ## What it does not answer
 
 Nothing here measures a device. The only on-device commit numbers remain the 2026-09-18 iPad
-baseline (iPadOS 26.5: commit P95 0–2 ms and maximum ≤ 4 ms at finger pace; its `summary.json`
-records the synchronous burst at a commit P95 of 8–17 ms). The iPadOS 26.6 run the issue asks for
-has not been taken.
+baseline (iPadOS 26.5: commit P95 0–2 ms and maximum ≤ 4 ms in its paced pipeline runs; its
+`summary.json` records the synchronous burst at a commit P95 of 8–17 ms). The iPadOS 26.6 run the
+issue asks for has not been taken.

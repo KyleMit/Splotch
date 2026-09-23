@@ -190,11 +190,12 @@ required floor gate unless a successful run is captured.
       artifacts ([ADR-0173](../adrs/0173-physical-ipad-holds-the-commit-contract.md), which has the
       exact commands). With the rig armed, run one paced crayon session per deposition arm
       (`restamp`, `glaze-direct`) through
-      `docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/run-session.mjs`, then read
-      `commit p95/max` from that package's `analyze.mjs`. Pass is P95 ≤ 25 ms (`COMMIT_GATE_MS`) on
-      both arms. The baseline is P95 0–2 ms and max ≤ 4 ms on iPadOS 26.5. Record the iPadOS version
-      and each arm's figures in the tag's GitHub Release notes. The CI WebKit commit gate is
-      advisory and does not stand in for this check.
+      `docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/run-session.mjs`. Point it at the
+      `/dev/engine` URL that `npm run perf:serve` prints, because the port moves off 4173 when that
+      port is taken. Then read `commit p95/max` from that package's `analyze.mjs`. Pass is P95 ≤ 25
+      ms (`COMMIT_GATE_MS`) on both arms. The baseline is P95 0–2 ms and max ≤ 4 ms on iPadOS 26.5.
+      Record the iPadOS version and each arm's figures in the tag's GitHub Release notes. The CI
+      WebKit commit gate is advisory and does not stand in for this check.
 * [ ] Test on a real iPhone/iPad: AI flow (access code → image round-trip against
       `https://splotch.art`), offline airplane mode (AI button hides; Farm and installed coloring
       packs remain), disable Coloring Book during a background download and confirm it cancels while

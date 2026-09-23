@@ -51,9 +51,10 @@ browser build the runner cannot tell a real regression from its own noise.
 
 The device can. The
 [2026-09-18 iPad baseline](../scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/README.md) ran
-finger-paced crayon sessions on a physical 12.9-inch iPad Pro on iPadOS 26.5 (Safari 26.5). Across
-every paced run, on both deposition pipelines, commit P95 was 0–2 ms and the maximum was ≤ 4 ms.
-**No iPadOS 26.6 device measurement exists yet.**
+finger-paced crayon sessions on a physical 12.9-inch iPad Pro on iPadOS 26.5 (Safari 26.5). In its
+paced pipeline A/B runs (`pacedPipelineAB` in `summary.json`), on both deposition pipelines, commit
+P95 was 0–2 ms and the maximum was ≤ 4 ms. One diagnostic ghost variant reached a 6 ms maximum. **No
+iPadOS 26.6 device measurement exists yet.**
 
 ## Decision
 
@@ -66,14 +67,24 @@ and `glaze-direct` the native one.
 
 ```bash
 npm run perf:serve   # its pre-hook runs perf:build (PERF_MARKS); serves on the preview port
-HARNESS_URL=http://<lan-ip>:4173/dev/engine OUT_DIR=<scratch-dir> \
+HARNESS_URL=http://<lan-ip>:<port>/dev/engine OUT_DIR=<scratch-dir> \
   node docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/run-session.mjs release-restamp restamp paced
-HARNESS_URL=http://<lan-ip>:4173/dev/engine OUT_DIR=<scratch-dir> \
+HARNESS_URL=http://<lan-ip>:<port>/dev/engine OUT_DIR=<scratch-dir> \
   node docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/run-session.mjs release-glaze glaze-direct paced
 node docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/analyze.mjs <scratch-dir>
 ```
 
-Read `commit p95/max` from the analyzer's line for each run.
+`<lan-ip>:<port>` is the URL `perf:serve` prints. It is normally port 4173, but it moves to another
+port when 4173 is taken, and `run-session.mjs` probes whatever URL it is given. Read
+`commit p95/max` from the analyzer's line for each run.
+
+The runner reaches Safari through `ios_webkit_debug_proxy` (`connectDevice()` in
+`tools/perf/lib/profile-device-session.mjs`). That is how the 2026-09-18 baseline reached iPadOS
+26.5. The campaign runbook records that this proxy can list the device and still report zero pages
+on iOS 17 and newer
+([transport section](../PROFILING-CAMPAIGNS.md#ios_webkit_debug_proxy-is-obsolete-on-ios-17-and-newer)).
+If the check fails that way, follow that section. Don't read it as a missing device or as a skipped
+check.
 
 * **Pass:** P95 ≤ 25 ms on both arms. The baseline to compare against is P95 0–2 ms and max ≤ 4 ms
   on iPadOS 26.5.
