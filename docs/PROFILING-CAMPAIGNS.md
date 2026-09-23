@@ -157,6 +157,34 @@ harmless but wastes an approval round-trip.
 
 The same applies to the Appium server and to WebDriverAgent: look first.
 
+**A borrowed long-running Appium can report the attached iPad as
+`Unknown device or simulator UDID`.** `perf:preflight --verify-ios-launch` reuses a compatible
+Appium on 4723. When that server's real-device registry has gone stale, every launch fails with that
+message even though `idevice_id`, `devicectl`, and the tunnel all see the iPad. The message is the
+same whether the registry is stale or the XCTest grant has expired, so the preflight cannot tell the
+two apart. Seen 2026-09-14, 09-17, 09-18, 09-19, and 09-22. Do not stop the borrowed server or
+restart the root tunnel. Instead:
+
+1. Launch WebDriverAgent directly:
+   `xcodebuild test-without-building -xctestrun ~/Library/Developer/Xcode/DerivedData/WebDriverAgent-*/Build/Products/WebDriverAgentRunner_iphoneos*-arm64.xctestrun -destination id=<udid>`.
+2. Forward it on the preflight's resolved WDA port: `iproxy -u <udid> <wda-port>:8100`.
+3. Read the result. `GET /status` ready proves the grant. `Timed out while enabling automation mode`
+   is the expired grant, which only a human at the iPad can clear.
+
+Split-transport captures take the forward as `--wda-url=`. Appium-transport captures, which includes
+`perf:campaign` for both iPad rows, need a fresh Appium you start on a free port, with
+`appium:webDriverAgentUrl` in a `--capabilities-file` (see the next section). The grant-log row the
+failed preflight writes still counts as an attempt.
+
+**An unattended session cannot start the iPad secure-origin front.** iPad Safari loads the LAN
+origin, which is not a secure context, so the action sweep's AI-waiting actions cannot run there and
+`perf:campaign` refuses the sweep as `blocked-coverage`. The documented fix is the name-constrained
+HTTPS front (`perf:ios:secure-origin serve`, `docs/PROFILING-IPAD.md`). Claude Code's auto-mode
+permission classifier denies starting it ("Expose Local Services"), as it did on 2026-09-22. So
+schedule iPad web action sweeps for a session with the maintainer present, or fold the drawing cells
+with `--preserve-actions`. Android Chrome does not have this problem, because it loads the page at
+`localhost` through `adb reverse`, which is already a secure context.
+
 ## Port contention between sessions
 
 **Two Appium servers cannot share a WDA port.** The second one forwards host `8100` to the device,

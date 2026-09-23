@@ -47,6 +47,21 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   per-move wax cost now binds both runtimes, so the same 1.5% single-capture budget applies, set by
   the same above-the-excursion rule.
 
+Drawing reds explained by a recorded disposition. The cell still renders FAIL, because the gate
+still failed; the disposition says why the red is not an open product red:
+
+* **Pen on `ipad-device-web`** — lost-frame reds from 1.22% to 1.37%, paint gates passing,
+  [ADR-0174](https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md).
+  Synthesized-touch transport cost, not product cost: real-finger pen captures read 0.04–0.06% where
+  the driven cells read 1.22–1.37%. A driven pen red inside that band with passing paint gates is
+  explained; a reading above it needs a real-finger capture at that commit.
+* **Eraser on `ipad-device-web`** — lost-frame reds from 1.19% to 1.25% at e5142fab8ff2, paint gates
+  passing,
+  [ADR-0174](https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md).
+  Explained by extension from the pen band, not by measurement: no finger capture of eraser exists,
+  so the explanation covers only the three 1.19–1.25% readings at e5142fab. A later driven eraser
+  red needs a real-finger capture.
+
 Actions on `ipad-device-web` held to a measured allowance instead of the base post-action gates, and
 why (ADR-0090, ADR-0160); every target without a ledger scores them at the base gates:
 
@@ -453,6 +468,6 @@ their earlier measurement and provenance. Drawing raw tables and action samples 
 the current metric definitions when this report is generated; stored derived summaries are not
 trusted. The release gate is the 4 physical rows: iPad physical · web, iPad physical · native,
 Android physical · web, Android physical · native. Only iPad physical · web carries a calibrated
-drawing instrument — 4/4 modes captured, 3 of 16 brush aggregates over gate; the other 3 are
-gates-in-waiting until theirs are calibrated. Mac rows are a regression tripwire, and simulator and
-emulator rows are advisory (ADR-0156).
+drawing instrument — 4/4 modes captured, 3 of 16 brush aggregates over gate (3 open, 0 explained by
+a recorded disposition); the other 3 are gates-in-waiting until theirs are calibrated. Mac rows are
+a regression tripwire, and simulator and emulator rows are advisory (ADR-0156).

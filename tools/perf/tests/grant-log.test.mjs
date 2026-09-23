@@ -9,6 +9,8 @@ import {
   grantLogDevice,
   grantLogSummary,
   isGrantDenial,
+  recordGrantAttempt,
+  REDACTED_UDID,
 } from '../lib/grant-log.mjs';
 
 const UDID = '00008103-DEADBEEFDEADBEEF';
@@ -101,6 +103,22 @@ describe('grant log schema', () => {
     // the identifier scrub (issue #1645) and fail check-device-identifiers.
     for (const line of committed.slice(1).filter(Boolean)) {
       expect(line.split('\t')[1]).toMatch(/^device-[0-9a-f]{12}$/);
+      expect(line.split('\t')[3]).not.toMatch(/\b[0-9A-F]{8}-[0-9A-F]{16}\b/i);
+    }
+  });
+
+  it('redacts the hardware UDID from the detail Appium quotes it in', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-grant-log-'));
+    const logPath = join(directory, 'ipad-grant-log.tsv');
+    try {
+      recordGrantAttempt(UDID, 'blocked', `Unknown device or simulator UDID: '${UDID}'`, {
+        logPath,
+      });
+      const [, line] = readFileSync(logPath, 'utf8').split('\n');
+      expect(line).not.toContain(UDID);
+      expect(line.split('\t')[3]).toBe(`Unknown device or simulator UDID: '${REDACTED_UDID}'`);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 

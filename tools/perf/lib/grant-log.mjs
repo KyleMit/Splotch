@@ -37,6 +37,16 @@ export function grantLogLine({ timestamp, device, outcome, detail }) {
   return `${cell(timestamp)}\t${cell(device)}\t${cell(outcome)}\t${cell(detail)}\n`;
 }
 
+export const REDACTED_UDID = '<hardware UDID redacted>';
+
+// The device column is pseudonymized, but a launch failure's detail is Appium's
+// own message, which quotes the hardware UDID ("Unknown device or simulator
+// UDID: '…'") into a tracked file.
+function redactGrantDetail(udid, detail) {
+  const text = String(detail ?? '');
+  return udid ? text.split(String(udid)).join(REDACTED_UDID) : text;
+}
+
 export function recordGrantAttempt(udid, outcome, detail, { logPath = GRANT_LOG } = {}) {
   mkdirSync(join(logPath, '..'), { recursive: true });
   if (!existsSync(logPath)) appendFileSync(logPath, GRANT_LOG_HEADER);
@@ -46,7 +56,7 @@ export function recordGrantAttempt(udid, outcome, detail, { logPath = GRANT_LOG 
       timestamp: new Date().toISOString(),
       device: grantLogDevice(udid),
       outcome,
-      detail,
+      detail: redactGrantDetail(udid, detail),
     })
   );
 }
