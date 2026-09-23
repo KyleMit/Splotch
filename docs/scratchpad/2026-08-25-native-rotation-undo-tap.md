@@ -67,3 +67,50 @@ exit is frame-P95 gates, a valid red measurement of the same class portrait repo
   inset's side, which no web or element-rect API exposes.
 * Whether the post-rotation 32px top inset is user-visible in the native app (the web viewport
   genuinely shrinks — launch state is full-bleed, rotated state is inset) was not investigated.
+
+## Follow-up: issue 2212 (2026-09-23) — the offset was a product bug
+
+The landscape sweeps failed again at "undo restored stroke after blank rotation": the second Undo
+tap after the landscape→portrait rotation landed on the canvas (a brush-ring halo, no pointer event
+on the button). Diagnostic sessions on the same iPad (iPadOS 26.5) answered the question left open
+above.
+
+**Geometry.** Undo's projected web rect against its XCUITest accessibility frame, under
+`ios.contentInset: "always"`:
+
+| State                       | `innerHeight` | Web rect y | Accessibility frame y |
+| --------------------------- | ------------- | ---------- | --------------------- |
+| Portrait at launch          | 1346          | 960        | 960                   |
+| First rotation to landscape | 1024          | 936        | 936                   |
+| Back to portrait            | 1314          | 928        | 960                   |
+| Landscape again             | 992           | 904        | 936                   |
+
+After the first in-session rotation the WKWebView insets its content 32px from the top in both
+orientations, while every web and element-rect API still reports the full window.
+
+**Touch targeting.** A capture-phase `pointerdown` listener recorded each native tap's `clientY` and
+target along a vertical line through Clear (web rect y 122–182, drawn at screen y 154–214):
+
+| Screen y | `clientY` | Target                                      |
+| -------- | --------- | ------------------------------------------- |
+| 110      | 78        | canvas                                      |
+| 122–170  | 90–138    | Clear, except one `color-picker` hit at 134 |
+| 182–230  | 150–198   | canvas                                      |
+
+`clientY` was the drawn position, but WebKit resolved the target at the **un-inset** screen
+position. Every control answered touches 32px above where it was drawn, so a child tapping the lower
+half of a visible button drew on the canvas instead. The harness taps fell into the same gap. Aiming
+the harness at the drawn control (the accessibility frame) made the Undo taps pass and moved the
+failure to Clear's drag, which confirmed the mismatch.
+
+**Fix.** `capacitor.config.json` sets `ios.contentInset` to `"never"`. The page already owns the
+safe area through `viewport-fit=cover` and `env(safe-area-inset-*)` padding (ADR-0026), so the
+WebView inset was also a second top gap after rotation (and a second bottom gap at launch). With the
+rebuilt app, `innerHeight` reads 1366 in every state, Clear's accessibility frame equals its web
+rect, and every tap in the same sweep lands on the drawn control with `clientY` equal to screen y.
+`tools/mobile/ios/tests/ios-content-inset.test.mjs` pins the setting.
+
+The action capture keeps `calibrateWebContentOffset`: after the session is ready and after every
+rotation it compares Clear's accessibility frame with its projected rect, and native taps and
+strokes aim at the drawn control. On the fixed app it measures zero. If the inset returns, it warns
+and aims where a child would tap, so the bug fails the sweep instead of passing it.

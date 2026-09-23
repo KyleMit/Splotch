@@ -115,6 +115,14 @@ const COLORING_SCROLL_DISTANCE_PX = 400;
 // keeps it inside the narrowest picker gutter (--space-2) on every device.
 const COLORING_SCROLL_OFF_CENTRE_CSS_PX = 2;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
+// The landmark and its accessibility frame calibrate the iOS native WebView's
+// on-screen content origin. Clear is the landmark because it is exposed in
+// every orientation and drawer state, where Undo leaves the accessibility tree
+// with the collapsed Actions Panel. A landmark whose accessibility frame
+// differs in size from its projected web rect by more than this matched some
+// other element, so its origin says nothing about the WebView's.
+const WEB_CONTENT_LANDMARK_SELECTOR = '#clearButton';
+const WEB_CONTENT_LANDMARK_SIZE_TOLERANCE_PX = 2;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 // A capped walk back through history: enough to empty a sweep's own strokes,
 // never an unbounded loop against a button that refuses to disable.
@@ -953,8 +961,8 @@ async function closeDialogs(execute) {
 async function nativeBoundsForSelector(client, sessionId, execute, selector) {
   // Defensive scroll reset with reporting. The 32px post-rotation touch offset
   // (issue 1237) is NOT visible here — scrollX/scrollY and visualViewport all
-  // read zero while taps land 32px high, so this reset cannot be its fix (see
-  // docs/scratchpad/2026-08-25-native-rotation-undo-tap.md). It exists so that
+  // read zero while taps land 32px high, so this reset cannot be its fix;
+  // calibrateWebContentOffset is. It exists so that
   // if web-visible displacement ever DOES appear, the capture log names it and
   // the tap math measures from the app's intended origin instead of silently
   // absorbing it.
@@ -1001,14 +1009,90 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
     )
   ).filter(Boolean);
   const webViewBounds = largestNativeRect(webViewRects, nativeWindow);
-  const bounds = nativeCanvasBounds({
+  const projected = nativeCanvasBounds({
     webGeometry,
     webViewBounds,
     nativeWindow,
     includeBrowserChrome: client.includeBrowserChrome ?? !client.nativeApp,
   });
+  const bounds = offsetNativeBounds(projected, client.webContentOffset);
   await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
-  return { bounds, nativeWindow, webContext };
+  return { bounds, projected, nativeWindow, webContext };
+}
+
+// Only the iOS native WebView moves its content without telling the page:
+// Safari's chrome is already projected by nativeCanvasBounds, and Android's
+// accessibility ids are content descriptions rather than WebKit's AX frames.
+export function calibratesWebContentOffset(client) {
+  return client.nativeApp === true && client.platformName?.toLowerCase() === 'ios';
+}
+
+// A WKWebView that insets its content (ios.contentInset other than "never" in
+// capacitor.config.json) draws the page lower than the window after a
+// rotation while the element rect still reports the full window and no web
+// API sees the shift. The landmark's accessibility frame is where WebKit
+// actually drew it; the difference is the content offset. Aiming at the drawn
+// control is aiming where a child would tap, so a product whose touch
+// targeting lags its drawing fails the tap instead of passing it.
+export function webContentOffsetFrom(projected, accessibilityFrame) {
+  if (!accessibilityFrame) return null;
+  const sizeAgrees =
+    Math.abs(projected.width - accessibilityFrame.width) <=
+      WEB_CONTENT_LANDMARK_SIZE_TOLERANCE_PX &&
+    Math.abs(projected.height - accessibilityFrame.height) <=
+      WEB_CONTENT_LANDMARK_SIZE_TOLERANCE_PX;
+  if (!sizeAgrees) return null;
+  return {
+    x: Math.round(accessibilityFrame.x - projected.x),
+    y: Math.round(accessibilityFrame.y - projected.y),
+  };
+}
+
+export function offsetNativeBounds(bounds, offset) {
+  if (!offset) return bounds;
+  return { ...bounds, x: bounds.x + offset.x, y: bounds.y + offset.y };
+}
+
+// Re-resolved after every rotation settles (and once the session is ready),
+// because the offset follows the WebView's layout, not the page's: under an
+// inset WebView it read zero at launch and a status bar's height after the
+// first rotation (docs/scratchpad/2026-08-25-native-rotation-undo-tap.md).
+// `measure` is a test seam: production passes nothing and reads the device.
+export async function calibrateWebContentOffset(client, sessionId, execute, measure = {}) {
+  if (!calibratesWebContentOffset(client)) return null;
+  const {
+    projectedLandmark = () =>
+      nativeBoundsForSelector(client, sessionId, execute, WEB_CONTENT_LANDMARK_SELECTOR),
+    landmarkFrame = () =>
+      nativeAccessibilityBoundsForSelector(
+        client,
+        sessionId,
+        execute,
+        WEB_CONTENT_LANDMARK_SELECTOR
+      ),
+  } = measure;
+  const { projected } = await projectedLandmark();
+  const frame = await landmarkFrame()
+    .then((target) => target.bounds)
+    .catch((error) => {
+      rethrowIfBroken(error);
+      return null;
+    });
+  const offset = webContentOffsetFrom(projected, frame);
+  if (!offset) {
+    console.warn(
+      `[ipad-actions] could not calibrate the WebView content offset from ${WEB_CONTENT_LANDMARK_SELECTOR} ` +
+        `(accessibility frame ${JSON.stringify(frame)} vs projected ${JSON.stringify(projected)}); ` +
+        'native taps keep the uncorrected projection'
+    );
+  } else if (offset.x || offset.y) {
+    console.warn(
+      `[ipad-actions] the WebView draws its content offset by ${offset.x},${offset.y} from the page's ` +
+        'own coordinates; native taps aim at the drawn controls'
+    );
+  }
+  client.webContentOffset = offset;
+  return offset;
 }
 
 async function nativeAccessibilityBounds(client, sessionId, name) {
@@ -1233,6 +1317,7 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   );
   await sleep(ANIMATED_ACTION_SETTLE_MS);
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
+  await calibrateWebContentOffset(client, sessionId, execute);
   return { ...sample, activation: 'native-system' };
 }
 
@@ -2688,6 +2773,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       }
     }
     originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
+    await calibrateWebContentOffset(client, sessionId, execute);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
     const expectedEntry = nativeApp
       ? null
