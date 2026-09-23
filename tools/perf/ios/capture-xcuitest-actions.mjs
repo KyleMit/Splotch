@@ -13,7 +13,12 @@ import {
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { captureRuntime } from '../lib/input-fidelity.mjs';
-import { DEVICE_CLASSES, NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
+import {
+  ANDROID_NATIVE_PACKAGE,
+  DEVICE_CLASSES,
+  NATIVE_TRANSPORT,
+} from '../lib/campaign-plan.mjs';
+import { readAndroidInputWindows, unoccludedTapPoint } from '../lib/android-touch-occlusion.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
@@ -256,6 +261,27 @@ export function validateBorrowedActionSession(sessionId, capabilitiesFile) {
 
 function capabilityValue(capabilities, name) {
   return capabilities?.[name] ?? capabilities?.[`appium:${name}`];
+}
+
+// Which phone and package a native Android tap is aimed at, for the occlusion
+// check in nativeTapPoint; null everywhere else, where no such check applies.
+export function androidNativeTouchTarget({ nativeApp, deviceId, requestedCapabilities, session }) {
+  if (!nativeApp || sessionPlatformName({ requestedCapabilities, session }) !== 'android') {
+    return null;
+  }
+  const sessionCapabilities = resolvedSessionCapabilities(session);
+  const serial =
+    capabilityValue(sessionCapabilities, 'udid') ??
+    capabilityValue(requestedCapabilities, 'udid') ??
+    deviceId;
+  if (!serial) return null;
+  return {
+    serial,
+    packageName:
+      capabilityValue(sessionCapabilities, 'appPackage') ??
+      capabilityValue(requestedCapabilities, 'appPackage') ??
+      ANDROID_NATIVE_PACKAGE,
+  };
 }
 
 export function isPhysicalAppleUdid(value) {
@@ -633,6 +659,33 @@ async function clickWebElement(client, sessionId, selector) {
   await client.request('POST', `/session/${sessionId}/element/${elementId}/click`);
 }
 
+// UiAutomator2 with `noReset` does not launch an app that is already running,
+// so a session opened while another app is in front scripts the backgrounded
+// WebView while every native tap lands in the foreground app. Bring it forward.
+export async function foregroundAndroidApp(client, sessionId, packageName) {
+  await client.request('POST', `/session/${sessionId}/execute/sync`, {
+    script: 'mobile: activateApp',
+    args: [{ appId: packageName }],
+  });
+}
+
+// Read before the probe arms, so the dumpsys round trip stays outside the
+// measured action. Outside native Android there is nothing to read and the tap
+// keeps its centre.
+export function nativeTapPoint(client, bounds, label, readWindows = readAndroidInputWindows) {
+  const target = client.androidTouchTarget;
+  const windows = target ? readWindows(target.serial) : null;
+  const point = unoccludedTapPoint(bounds, windows, target?.packageName);
+  if (point.occludedBy) {
+    console.warn(
+      `[ipad-actions] ${label}: the target's centre is obscured by ${point.occludedBy.window} ` +
+        `(combined opacity ${point.occludedBy.opacity.toFixed(2)}), which Android drops as an ` +
+        `untrusted touch; tapping (${point.x}, ${point.y}) instead`
+    );
+  }
+  return point;
+}
+
 async function measureClick({
   client,
   sessionId,
@@ -658,6 +711,7 @@ async function measureClick({
       ).catch(() => null);
     }
   }
+  const tapPoint = nativeTarget ? nativeTapPoint(client, nativeTarget.bounds, label) : null;
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(label)}, ${JSON.stringify(
@@ -672,8 +726,7 @@ async function measureClick({
   const fallbackWarning = nativeAccessibilityFallbackWarning(label, activation, activationMode);
   if (fallbackWarning) console.warn(fallbackWarning);
   if (activationMode === 'native-touch') {
-    const x = Math.round(nativeTarget.bounds.x + nativeTarget.bounds.width / 2);
-    const y = Math.round(nativeTarget.bounds.y + nativeTarget.bounds.height / 2);
+    const { x, y } = tapPoint;
     await performNativeGesture(client, sessionId, nativeTarget.webContext, [
       { type: 'pointerMove', duration: 0, origin: 'viewport', x, y },
       { type: 'pointerDown', button: 0 },
@@ -730,7 +783,7 @@ async function measureClick({
       };
     `);
     throw new Error(
-      `${error.message}\nAction state: ${JSON.stringify({ ...state, nativeTarget })}`,
+      `${error.message}\nAction state: ${JSON.stringify({ ...state, nativeTarget, tapPoint })}`,
       {
         cause: error,
       }
@@ -2519,6 +2572,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       session.capabilities?.['appium:platformName'] ??
       capabilities?.platformName ??
       'iOS';
+    client.androidTouchTarget = androidNativeTouchTarget(deviceClassification);
+    if (client.androidTouchTarget) {
+      await foregroundAndroidApp(client, sessionId, client.androidTouchTarget.packageName);
+    }
     execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
     const executeAsync = (script, args = []) =>

@@ -1,0 +1,14 @@
+Input Dispatcher State:
+  FocusedDisplayId: 0
+  Display: 0
+    logicalSize=1080x2340
+    Windows:
+      8: name=6985298 com.sec.android.app.launcher/com.samsung.app.honeyspace.edge.edgepanel.app.CocktailBarService, id=37346, displayId=0, inputConfig=NOT_FOCUSABLE | TRUSTED_OVERLAY, samsungFlags=FORCE_TRUSTED_OVERLAY | 0x400000, alpha=1, frame=[1013,315][1080,657], globalScale=1, applicationInfo.name=, applicationInfo.token=<null>, touchableRegion=[1038,315][1080,657], pTouchableRegion=<empty>, 1HXY=[0, 0, 1], ownerPid=3376, ownerUid=10143, dispatchingTimeout=10000ms, token=0xb400007935251b10, touchOcclusionMode=BLOCK_UNTRUSTED
+      9: name=f19f0c4 StatusBar, id=102, displayId=0, inputConfig=NOT_FOCUSABLE | TRUSTED_OVERLAY, samsungFlags=0x0, alpha=1, frame=[0,0][1080,99], globalScale=1, applicationInfo.name=, applicationInfo.token=<null>, touchableRegion=[0,0][1080,99], pTouchableRegion=<empty>, 1HXY=[0, 0, 1], ownerPid=2840, ownerUid=10045, dispatchingTimeout=10000ms, token=0xb40000793519d550, touchOcclusionMode=BLOCK_UNTRUSTED
+      10: name=eaf6ae3 nu.nav.bar, id=33104, displayId=0, inputConfig=NOT_FOCUSABLE | NOT_TOUCHABLE, samsungFlags=0x0, alpha=0.799805, frame=[540,99][541,2340], globalScale=1, applicationInfo.name=, applicationInfo.token=<null>, touchableRegion=<empty>, pTouchableRegion=<empty>, 1HXY=[0, 0, 1], ownerPid=6256, ownerUid=10334, dispatchingTimeout=10000ms, token=0xb4000079352ea590, touchOcclusionMode=USE_OPACITY, canOccludePresentation
+      11: name=cf92dfa nu.nav.bar, id=18889, displayId=0, inputConfig=NOT_FOCUSABLE | NOT_TOUCHABLE, samsungFlags=0x0, alpha=0.799805, frame=[540,99][541,2340], globalScale=1, applicationInfo.name=, applicationInfo.token=<null>, touchableRegion=<empty>, pTouchableRegion=<empty>, 1HXY=[0, 0, 1], ownerPid=6256, ownerUid=10334, dispatchingTimeout=10000ms, token=0xb40000793536c010, touchOcclusionMode=USE_OPACITY, canOccludePresentation
+      13: name=b03e50e art.splotch.app/art.splotch.app.MainActivity, id=37362, displayId=0, inputConfig=0x0, samsungFlags=0x0, alpha=1, frame=[0,0][1080,2340], globalScale=1, applicationInfo.name=ActivityRecord{80495212 u0 art.splotch.app/.MainActivity t3195}, applicationInfo.token=0xb4000079551faff0, touchableRegion=[0,0][1080,2340], pTouchableRegion=<empty>, 1HXY=[0, 0, 1], ownerPid=27332, ownerUid=10339, dispatchingTimeout=10000ms, token=0xb4000079353826d0, touchOcclusionMode=BLOCK_UNTRUSTED, canOccludePresentation
+Input Dispatcher State at time of last ANR:
+  Display: 0
+    Windows:
+      10: name=eaf6ae3 nu.nav.bar, id=33104, displayId=0, inputConfig=NOT_FOCUSABLE | NOT_TOUCHABLE, samsungFlags=0x0, alpha=1, frame=[0,0][1080,2340], globalScale=1, applicationInfo.name=, applicationInfo.token=<null>, touchableRegion=<empty>, pTouchableRegion=<empty>, 1HXY=[0, 0, 1], ownerPid=6256, ownerUid=10334, dispatchingTimeout=10000ms, token=0xb4000079352ea590, touchOcclusionMode=USE_OPACITY, canOccludePresentation
