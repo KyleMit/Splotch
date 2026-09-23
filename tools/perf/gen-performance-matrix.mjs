@@ -1370,11 +1370,69 @@ function matrixActionLabels(targets) {
   ].filter((label) => !ACTION_CONTROL_LABELS.has(label));
 }
 
-function actionCoordinates(mode, labels) {
-  const results = new Set(mode.actions?.results.map(({ label }) => label) ?? []);
-  const applicable = mode.actions?.actionPlan
-    ? new Set(mode.actions.actionPlan.applicableLabels)
+function actionGroupsPredating(actionPlan) {
+  return FULL_ACTION_GROUPS.filter((group) => !actionPlan.actionGroups.includes(group));
+}
+
+// A plan written before FULL_ACTION_GROUPS grew never had the chance to offer
+// the later labels, so its silence about them is not a declaration that the
+// mode lacks them. The evidence that a label IS offered comes only from plans
+// that already cover every current group: an older plan's own omissions cannot
+// vouch for anything. A same-shell witness is exact. When the older plan's
+// shell has no current plan at all, a label no older plan ever named is still
+// unknown rather than N/A: its harness could not have judged it. A label an
+// older harness did know and left out of that shell keeps its N/A.
+function labelsOfferedByCurrentPlans(targets) {
+  const byShell = new Map();
+  const anywhere = new Set();
+  const knownToOlderPlans = new Set();
+  for (const mode of targets.flatMap((target) => target.modes)) {
+    const plan = mode.actions?.actionPlan;
+    if (!plan) continue;
+    if (actionGroupsPredating(plan).length) {
+      for (const label of [
+        ...plan.applicableLabels,
+        ...plan.notApplicable.map((entry) => entry.label),
+        ...(plan.blocked ?? []).map((entry) => entry.label),
+      ]) {
+        knownToOlderPlans.add(label);
+      }
+      continue;
+    }
+    const shell = plan.context.settingsShell;
+    if (!byShell.has(shell)) byShell.set(shell, new Set());
+    for (const label of plan.applicableLabels) {
+      byShell.get(shell).add(label);
+      anywhere.add(label);
+    }
+  }
+  return { byShell, anywhere, knownToOlderPlans };
+}
+
+function predatedActionReason(label, plan, predatedGroups, offeredByCurrentPlans) {
+  if (!predatedGroups.length || plan.notApplicable.some((entry) => entry.label === label)) {
+    return null;
+  }
+  const omitted = `its plan omits the ${predatedGroups.join(', ')} action groups`;
+  const offeredInShell = offeredByCurrentPlans.byShell.get(plan.context.settingsShell);
+  if (offeredInShell) {
+    return offeredInShell.has(label) ? `the sweep predates this action: ${omitted}` : null;
+  }
+  return offeredByCurrentPlans.anywhere.has(label) &&
+    !offeredByCurrentPlans.knownToOlderPlans.has(label)
+    ? `the sweep predates this action (${omitted}), and no current sweep in its Settings shell shows whether that shell offers it`
     : null;
+}
+
+function actionCoordinates(
+  mode,
+  labels,
+  offeredByCurrentPlans = { byShell: new Map(), anywhere: new Set(), knownToOlderPlans: new Set() }
+) {
+  const results = new Set(mode.actions?.results.map(({ label }) => label) ?? []);
+  const plan = mode.actions?.actionPlan;
+  const applicable = plan ? new Set(plan.applicableLabels) : null;
+  const predatedGroups = plan ? actionGroupsPredating(plan) : [];
   return labels.map((label) => {
     if (results.has(label)) {
       return mode.actions.scoreable === false
@@ -1390,6 +1448,8 @@ function actionCoordinates(mode, labels) {
       return { label, state: 'blocked', reason: `blocked coverage: ${blockedEntry.reason}` };
     }
     if (applicable && !applicable.has(label)) {
+      const predated = predatedActionReason(label, plan, predatedGroups, offeredByCurrentPlans);
+      if (predated) return { label, state: 'missing', reason: predated };
       return {
         label,
         state: 'not-applicable',
@@ -1410,6 +1470,7 @@ function actionCoordinates(mode, labels) {
 
 function withActionCoordinates(matrix) {
   const actionLabels = matrixActionLabels(matrix.targets);
+  const offeredByCurrentPlans = labelsOfferedByCurrentPlans(matrix.targets);
   return {
     ...matrix,
     actionLabels,
@@ -1417,7 +1478,7 @@ function withActionCoordinates(matrix) {
       ...target,
       modes: target.modes.map((mode) => ({
         ...mode,
-        actionCoordinates: actionCoordinates(mode, actionLabels),
+        actionCoordinates: actionCoordinates(mode, actionLabels, offeredByCurrentPlans),
       })),
     })),
   };
