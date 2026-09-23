@@ -392,7 +392,6 @@ export function iosDriver({
       );
       await pause(ROTATION_SETTLE_MS);
     }
-    return current;
   };
   return {
     async openPage() {
@@ -413,8 +412,10 @@ export function iosDriver({
         });
         sessionId = created.sessionId;
         await pause(WDA_SESSION_SETTLE_MS);
-        const previous = await rotate(orientation);
-        originalOrientation ??= previous;
+        // Recorded before the turn is requested: a turn that WDA accepts and the
+        // window never follows still has to be turned back by `release`.
+        originalOrientation ??= await request('GET', `/session/${sessionId}/orientation`);
+        await rotate(orientation);
         // The native app loads the probe host from its own configuration, so
         // there is no URL to navigate: launching it IS opening the page. WDA's
         // launch only activates an app that is already running, whose page kept

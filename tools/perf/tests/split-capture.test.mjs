@@ -1616,12 +1616,25 @@ describe('the iPad driver turns the device before the page opens', () => {
     expect(fake.calls.at(-1)).toBe('DELETE ');
   });
 
-  it('refuses before navigating when the window never turns', async () => {
+  it('refuses before navigating when the window never turns, and still turns the device back', async () => {
     const fake = fakeWda({ turns: false });
-    await expect(drive(() => driverFor(fake).openPage())).rejects.toThrow(
+    const driver = driverFor(fake);
+    await expect(drive(() => driver.openPage())).rejects.toThrow(
       /did not turn to LANDSCAPE.*rotation lock/
     );
     expect(fake.calls.some((call) => call.startsWith('POST /url'))).toBe(false);
+
+    // WDA accepted the turn, so the device reads LANDSCAPE while the window
+    // stayed put: the restore target has to be what was read before the turn.
+    fake.calls.length = 0;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await drive(() => driver.release());
+    } finally {
+      warn.mockRestore();
+    }
+    expect(fake.calls).toContain('POST /orientation {"orientation":"PORTRAIT"}');
+    expect(fake.calls.at(-1)).toBe('DELETE ');
   });
 
   it('reads a window by its shape', () => {
