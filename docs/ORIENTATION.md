@@ -48,13 +48,15 @@ inferred from a verified rule without a direct test.
 | Android tablet, fullscreen or PWA, Android ≤ 15 | yes          | works                | rotates           | stuck              | I  |
 | Android tablet, fullscreen or PWA, Android 16+  | yes          | dead                 | rotates           | stuck              | D  |
 | Android tablet, native                          | no           | n/a                  | rotates           | stuck              | S  |
-| Firefox Android 114–143, any web target         | yes          | dead                 | rotates           | stuck              | D  |
+| Firefox Android 114–143, browser tab            | no           | n/a                  | rotates           | stuck              | D  |
+| Firefox Android 114–143, fullscreen or PWA      | yes          | dead                 | rotates           | stuck              | D  |
 | iPhone, any web target                          | no           | n/a                  | rotates           | stuck              | D  |
 | iPhone, native                                  | yes          | works                | rotates           | stuck              | S  |
 | iPad, any web target                            | no           | n/a                  | rotates           | stuck              | D  |
 | iPad, native                                    | no           | n/a                  | rotates           | stuck              | S  |
 | Desktop, mouse primary                          | no           | n/a                  | n/a               | n/a                | S  |
-| Desktop, touch primary (Surface in tablet mode) | yes          | dead                 | rotates           | stuck              | D  |
+| Desktop, touch primary, browser tab             | no           | n/a                  | rotates           | stuck              | D  |
+| Desktop, touch primary, fullscreen              | yes          | dead                 | rotates           | stuck              | D  |
 
 Two rows carry the whole table. Portrait and Landscape work wherever a lock is permitted. Auto beats
 the OS rotation lock in the Android app and nowhere else, which is why every other target captions
@@ -116,7 +118,8 @@ async and it actually locks when it succeeds, so it cannot back a synchronous re
   web gate does not. On Android 16 that control is dead in every web target, fullscreen included.
 * **Foldables straddle the gate,** and the size read happens at render rather than on fold.
 * **Touch-primary desktops slip through** — a Surface in tablet mode reports a coarse pointer
-  against a `lock()` that always throws.
+  against a `lock()` that always throws. The fullscreen gate hides the picker in a tab there, so the
+  dead control only surfaces once the page is fullscreen.
 * **Leaving fullscreen silently unlocks.** Chromium releases the lock on exit, so the phone returns
   to portrait while the picker still reads Landscape.
 * **A shortcut is not an install.** Chrome offers "create shortcut" beside "install"; the shortcut

@@ -115,8 +115,9 @@ fails on divergence, so the coupling is caught rather than silent — but it is 
 between two files that share no code.
 
 − Firefox for Android 114–143 still slips through: it exposes a `lock()` that always fails, which
-neither gate can predict, so the picker renders there and the choice stays unapplied until that
-range ages out of the floor.
+neither gate can predict. The fullscreen half of the gate narrows the exposure to fullscreen and the
+installed app, but there the picker still renders and the choice stays unapplied until that range
+ages out of the floor.
 
 − Every E2E spec touching the picker now needs a fullscreen round trip, which is setup those specs
 did not previously carry.
