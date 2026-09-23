@@ -428,7 +428,7 @@ jobs:
             else
               printf '* Failure fingerprint: `%s`\n' "$GATE_FAILURES"
             fi
-            echo '* Green job status does not clear this finding. See issue 1774 for the pending policy decision.'
+            echo '* Green job status does not clear this finding. The physical iPad holds the commit contract; this job is advisory (ADR-0173).'
             echo '* Raw distributions are in the webkit-undo-fast-diagnostics artifact on this run.'
           } >> "$GITHUB_STEP_SUMMARY"
 

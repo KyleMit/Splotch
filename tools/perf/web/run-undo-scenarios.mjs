@@ -1172,9 +1172,8 @@ function reportCommitGate(
       `Inspect the engine.commit trace and tiled patch work.\n` +
       (COMMIT_GATE_ENFORCED
         ? ''
-        : `  NOT failing this run: the gate is advisory while its breaches follow the ` +
-          `browser build rather than the app (issue 1774). The measurement stands and ` +
-          `is in the artifact; flip COMMIT_GATE_ENFORCED to restore enforcement.\n`)
+        : `  NOT failing this run: the physical iPad holds the commit contract and this ` +
+          `gate is advisory (ADR-0173). The measurement stands and is in the artifact.\n`)
   );
   for (const scenario of breaches) {
     console.error(formatCommitBreach(scenario, timings.get(scenario.key)));

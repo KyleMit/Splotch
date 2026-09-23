@@ -3,8 +3,10 @@ import { UNDO_SCENARIO_KEYS } from './undo-scenario-keys.mjs';
 export const COMMIT_GATE_MS = 25;
 export const COMMIT_GATE_PERCENTILE = 0.95;
 
-// ENFORCEMENT IS OFF. The gate still measures, confirms and reports a breach; it
-// just does not fail the job. Its breaches follow the browser build rather than the
+// ENFORCEMENT IS OFF, as a standing decision (ADR-0173): the physical iPad holds the
+// commit contract, checked once per release, and this gate is an advisory
+// diagnostics stream. It still measures, confirms and reports a breach; it just
+// does not fail the job. Its breaches follow the browser build rather than the
 // app — the issue 1751 bisect ran the pre-regression product on WebKit 26.6 and it
 // failed, and the accused product on 26.5 and it passed — so an enforcing gate went
 // red on every merge and could no longer catch anything. Re-baselining is not the
@@ -13,10 +15,9 @@ export const COMMIT_GATE_PERCENTILE = 0.95;
 //
 // Nothing here lowers a score. COMMIT_GATE_MS is untouched and `breaches` /
 // `breachDispositions` read as they always did; `enforced` records that the run
-// could not go red. Flip this to `true` to restore enforcement — the fresh-runner
-// retry and the issue-filing step both key on this job failing, so they return with
-// it. The measurement that ends this state (one crayon-scribbles run on a physical
-// iPad on iPadOS 26.6) and the full evidence are on issues 1779 and 1774.
+// could not go red. Flipping this to `true` reverses ADR-0173 and needs a record that
+// supersedes it; the fresh-runner retry and the issue-filing step both key on this
+// job failing, so they would return with it.
 export const COMMIT_GATE_ENFORCED = false;
 
 // NORMALIZATION IS OFF. The divisor is not applied to any scenario, and no constant

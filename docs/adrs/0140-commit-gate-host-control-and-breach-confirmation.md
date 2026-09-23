@@ -1,7 +1,16 @@
 # ADR-0140: Give the Commit Gate a Stable Host Control and Confirm Its Breaches
 
 **Status:** Accepted — amends [ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md) and
-[ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md). **Date:** 2026-08
+[ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md); amended by
+[ADR-0158](0158-a-retry-confirms-only-the-same-failure.md) and
+[ADR-0173](0173-physical-ipad-holds-the-commit-contract.md). **Date:** 2026-08
+
+> **This gate does not enforce.** PR 1843 set `COMMIT_GATE_ENFORCED` to `false`, and
+> [ADR-0173](0173-physical-ipad-holds-the-commit-contract.md) keeps it that way: the physical iPad
+> holds the commit contract, checked once per release, and this runner gate is an advisory
+> diagnostics stream. Everything below still describes how a score is computed and confirmed. None
+> of it was relaxed, but a breach does not fail the job. The "gate-semantics decision" that the
+> second 2026-09 amendment leaves open is the one ADR-0173 makes.
 
 ## Context
 
