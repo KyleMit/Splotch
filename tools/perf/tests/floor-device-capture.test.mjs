@@ -6,10 +6,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   closeFloorControlHost,
   createFloorControlHost,
-  FLOOR_CONTROL_PAGE,
   floorControlIdentity,
 } from '../split-capture/serve-floor-control.mjs';
-import { fetchAcceptedProbeReport } from '../split-capture/lib/probe-host-protocol.mjs';
+import {
+  fetchAcceptedProbeReport,
+  FLOOR_CONTROL_PAGE,
+} from '../split-capture/lib/probe-host-protocol.mjs';
 import {
   assertServedPageIdentity,
   drivenCaptureArtifact,

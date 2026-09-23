@@ -24,6 +24,7 @@ import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
 import { numberInvalidatingFailure } from './lib/input-fidelity.mjs';
 import { attributionOf } from './lib/capture-attribution.mjs';
+import { FLOOR_CONTROL_PAGE } from './split-capture/lib/probe-host-protocol.mjs';
 
 export const EVIDENCE_ROOT = 'perf-profiles/evidence';
 export const REDACTED_DEVICE_IDENTIFIER = '[redacted]';
@@ -218,6 +219,15 @@ export async function keepCaptureEvidence({
       parsed = JSON.parse(readFileSync(file, 'utf8'));
     } catch {
       continue;
+    }
+    // Refused rather than skipped: evidence is filed as a target's
+    // representative capture, and a floor capture in the corpus is a mixed-in
+    // diagnostic the operator should move out, not quietly lose.
+    if (parsed?.page === FLOOR_CONTROL_PAGE) {
+      fail(
+        `${relative(root, file)} is a floor-control capture — a diagnostic of the browser, ` +
+          'never product evidence. Move it out of the corpus or narrow with --filter.'
+      );
     }
     const actionSuite = isActionSuite(parsed);
     if (!rawReportOf(parsed) && !actionSuite) continue;

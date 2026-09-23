@@ -33,7 +33,7 @@ import { createServer } from 'node:http';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
 import { join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
-import { PROBE_REPORT_PATH } from './lib/probe-host-protocol.mjs';
+import { FLOOR_CONTROL_PAGE, PROBE_REPORT_PATH } from './lib/probe-host-protocol.mjs';
 import { keepIncomingReport, reportFileName, reportRejectionReason } from './lib/report-store.mjs';
 
 const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
@@ -44,7 +44,6 @@ const CONTACT_BANK_MS = 600_000;
 // surface than the thing it is a control for.
 const MAX_DEVICE_PIXEL_RATIO = 2;
 const STROKE_WIDTH_CSS_PX = 12;
-export const FLOOR_CONTROL_PAGE = 'floor-control';
 // The page paints one fixed light paper; there is no dark variant to request.
 export const FLOOR_CONTROL_THEME = 'light';
 

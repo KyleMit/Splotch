@@ -20,6 +20,7 @@ import {
   WRONG_GESTURE_REPEATS,
 } from '../lib/campaign-ledger.mjs';
 import { cellInspection, inspectArtifact } from '../run-campaign.mjs';
+import { FLOOR_CONTROL_PAGE } from '../split-capture/lib/probe-host-protocol.mjs';
 
 // This is the function that decides whether a cell is banked or spent again, and
 // every campaign's evidence passes through it. It had no test.
@@ -77,6 +78,17 @@ describe('inspectArtifact', () => {
 
     expect(inspectArtifact(native, 'web')).toMatchObject({ ok: false, status: FAILED });
     expect(inspectArtifact(native, 'native')).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  // Issue 2217: perf:device:frames can now capture the floor control, and a
+  // floor artifact matches a browser cell's runtime, verdict, and regime.
+  it('refuses a floor-control capture at a product cell', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, page: FLOOR_CONTROL_PAGE }), 'web', {
+        verdictRequired: true,
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: false, status: FAILED });
   });
 
   // The split runner writes its artifact and THEN fails the gate, so acceptance on

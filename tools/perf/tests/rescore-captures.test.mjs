@@ -25,6 +25,7 @@ import {
 } from '../keep-capture-evidence.mjs';
 import { evidenceIndexTargets, targetOf } from '../rescore-captures.mjs';
 import { unattributableCaptureProblem } from '../analyze-frame-capture.mjs';
+import { FLOOR_CONTROL_PAGE } from '../split-capture/lib/probe-host-protocol.mjs';
 import { buildDirHoldsNativeExport } from '../lib/build-variant.mjs';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 
@@ -160,6 +161,30 @@ describe('evidenceIndexTargets', () => {
 // it. A capture whose frame tables belong to another cell re-scores cleanly
 // and answers wrongly, so the rescorer refuses it by default and re-admits it
 // only on an explicit flag.
+describe('the rescorer labelling a floor-control capture', () => {
+  it('marks the row as the floor rather than the target’s result', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-floor-rescore-'));
+    writeFileSync(
+      join(corpusDir, 'floor.json'),
+      JSON.stringify({ page: FLOOR_CONTROL_PAGE, brush: 'pen', report })
+    );
+    writeFileSync(join(corpusDir, 'app.json'), JSON.stringify({ brush: 'pen', report }));
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const table = vi.spyOn(console, 'table').mockImplementation(() => {});
+
+    try {
+      await rescoreCaptures({ corpus: relative(ROOT, corpusDir), targetId: 'ipad-device-web' });
+      const byName = Object.fromEntries(table.mock.calls[0][0].map((row) => [row.capture, row]));
+      expect(byName.floor?.cell).toBe('FLOOR-CONTROL');
+      expect(byName.app?.cell).toBeUndefined();
+    } finally {
+      quiet.mockRestore();
+      table.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('the rescorer honours cellAttributable', () => {
   const corpusWith = (index) => {
     const dir = mkdtempSync(join(tmpdir(), 'splotch-unattributable-'));
@@ -550,6 +575,43 @@ describe('keep-capture-evidence', () => {
       });
       expect(readFileSync(selectedSource, 'utf8')).toBe(selectedSourceBefore);
     } finally {
+      quiet.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+      rmSync(evidenceDir, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses to promote a floor-control capture as product evidence', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-floor-corpus-'));
+    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-floor-evidence-'));
+    mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
+    writeFileSync(
+      join(corpusDir, 'ipad-device-web', 'portrait-light', 'pen-real-screen.json'),
+      JSON.stringify({
+        page: FLOOR_CONTROL_PAGE,
+        brush: 'pen',
+        fidelity: { passed: true, checks: { trustedTouch: true, cadence: true } },
+        report,
+      })
+    );
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('exit');
+    });
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await expect(
+        keepCaptureEvidence({
+          corpus: relative(ROOT, corpusDir),
+          campaign: 'floor-test',
+          productCommit: PRODUCT_COMMIT,
+          evidenceRoot: relative(ROOT, evidenceDir),
+        })
+      ).rejects.toThrow('exit');
+      expect(quiet.mock.calls.flat().join('\n')).toMatch(/floor-control capture/);
+      expect(existsSync(join(evidenceDir, 'floor-test'))).toBe(false);
+    } finally {
+      exit.mockRestore();
       quiet.mockRestore();
       rmSync(corpusDir, { recursive: true, force: true });
       rmSync(evidenceDir, { recursive: true, force: true });

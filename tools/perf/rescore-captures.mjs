@@ -31,6 +31,7 @@ import {
 } from './lib/input-fidelity.mjs';
 import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
+import { FLOOR_CONTROL_PAGE } from './split-capture/lib/probe-host-protocol.mjs';
 import {
   LOST_FRAME_TIME_SHARE_GATE,
   lostFrameTimeShareGateFor,
@@ -185,7 +186,18 @@ export function rescoreCapture(parsed, { name, targetId }) {
     targetId ? (CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null) : null,
     summaries.regimeMixture
   );
-  return { name, target: targetId, brush, gateShare, summaries, drawing, fidelity, regime };
+  const floorControl = parsed?.page === FLOOR_CONTROL_PAGE;
+  return {
+    name,
+    target: targetId,
+    brush,
+    gateShare,
+    summaries,
+    drawing,
+    fidelity,
+    regime,
+    floorControl,
+  };
 }
 
 function row(scored) {
@@ -197,6 +209,9 @@ function row(scored) {
     // Present only on deliberately re-admitted rows, so a marked capture can
     // never sit in the table looking exactly like a clean one.
     ...(scored.cellAttributable === false ? { cell: 'UNATTRIBUTABLE' } : {}),
+    // A floor-control capture scores against the target's gate so it can be
+    // compared with the app (ADR-0136), but it is never that target's result.
+    ...(scored.floorControl ? { cell: 'FLOOR-CONTROL' } : {}),
     target: scored.target ?? '(unknown)',
     brush: scored.brush,
     'mv/s': round(phase.input?.movesPerSecond, 1),
@@ -352,6 +367,7 @@ export async function rescoreCaptures({
           ...(entry.cellAttributable === false
             ? { cellAttributable: false, reportNonce: entry.reportNonce ?? null }
             : {}),
+          ...(entry.floorControl ? { page: FLOOR_CONTROL_PAGE } : {}),
         })),
         null,
         2

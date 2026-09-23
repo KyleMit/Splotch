@@ -37,7 +37,11 @@ import {
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
-import { fetchAcceptedProbeReport, probeHostJson } from './lib/probe-host-protocol.mjs';
+import {
+  FLOOR_CONTROL_PAGE,
+  fetchAcceptedProbeReport,
+  probeHostJson,
+} from './lib/probe-host-protocol.mjs';
 import { ANDROID_NATIVE_PACKAGE, GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
@@ -62,11 +66,7 @@ import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
-import {
-  FLOOR_CONTROL_PAGE,
-  FLOOR_CONTROL_THEME,
-  floorControlIdentity,
-} from './serve-floor-control.mjs';
+import { FLOOR_CONTROL_THEME, floorControlIdentity } from './serve-floor-control.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -462,8 +462,9 @@ export function drivenCaptureArtifact({
 }) {
   return {
     label: runLabel,
-    // 'floor-control' marks a diagnostic of the browser's own floor
-    // (ADR-0136), never a cell of the product.
+    // FLOOR_CONTROL_PAGE marks a diagnostic of the browser's own floor
+    // (ADR-0136), never a cell of the product; campaign acceptance, evidence
+    // promotion, and the matrix fold all refuse it.
     page,
     platform,
     brush,
