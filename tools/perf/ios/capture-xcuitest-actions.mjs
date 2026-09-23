@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
 import {
@@ -2500,6 +2500,8 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   let execute;
   let nativeRotationLockRestore;
   let displayRotationModeRestore;
+  let writtenArtifact = null;
+  let sweepError = null;
   let cleanupPromise;
   let servedBuild = null;
 
@@ -2542,11 +2544,15 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       }
       server?.stop();
       // Fails the capture rather than warning: a phone left pinned ignores
-      // every app's orientation request, and the next cell's
-      // readDisplayRotationMode refuses to start until it is reset.
+      // every app's orientation request. The artifact goes too, because a
+      // campaign lands a cell on the artifact rather than the exit status;
+      // the retry then meets readDisplayRotationMode's refusal until the
+      // phone is reset.
       if (unpinError) {
+        if (writtenArtifact) rmSync(writtenArtifact, { force: true });
         throw new Error(
-          `cleanup: ${unpinError.message} — the phone ignores app orientation requests until it is reset`,
+          `cleanup: ${unpinError.message} — the phone ignores app orientation requests until it is reset` +
+            (writtenArtifact ? `; removed ${writtenArtifact} so no campaign scores it` : ''),
           { cause: unpinError }
         );
       }
@@ -2555,7 +2561,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   }
 
   const onSignal = (exitCode) => {
-    void cleanup().finally(() => process.exit(exitCode));
+    void cleanup()
+      .catch((error) => console.error(error.message))
+      .finally(() => process.exit(exitCode));
   };
   const onSigint = () => onSignal(130);
   const onSigterm = () => onSignal(143);
@@ -2833,15 +2841,26 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       passed,
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
+    writtenArtifact = output;
     console.log('\nDiscrete action response');
     console.table(actionRows(summaries));
     console.log(`\nWrote ${output}`);
     reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly: has('report-only') });
     return artifact;
+  } catch (error) {
+    sweepError = error;
+    throw error;
   } finally {
     process.off('SIGINT', onSigint);
     process.off('SIGTERM', onSigterm);
-    await cleanup();
+    await cleanup().catch((cleanupError) => {
+      // Keep the reason the sweep failed beside the device state it left.
+      if (!sweepError) throw cleanupError;
+      throw new AggregateError(
+        [sweepError, cleanupError],
+        `${sweepError.message}\n${cleanupError.message}`
+      );
+    });
   }
 }
 

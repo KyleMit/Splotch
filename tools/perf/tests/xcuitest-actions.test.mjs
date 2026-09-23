@@ -1003,6 +1003,20 @@ describe('trusted action setup', () => {
     const rethrow = cleanup.indexOf('if (unpinError)');
     expect(rethrow).toBeGreaterThan(deleteSession);
     expect(cleanup.slice(rethrow)).toMatch(/throw new Error\(/);
+    // A campaign lands a cell on its artifact, not the exit status, so the
+    // artifact of a capture that left the phone pinned is removed first.
+    const removeArtifact = cleanup.indexOf('rmSync(writtenArtifact');
+    expect(removeArtifact).toBeGreaterThan(rethrow);
+    expect(cleanup.indexOf('throw new Error(', rethrow)).toBeGreaterThan(removeArtifact);
+    expect(IPAD_ACTIONS).toContain('writtenArtifact = output;');
+
+    const signal = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf('const onSignal'),
+      IPAD_ACTIONS.indexOf('const onSigint')
+    );
+    expect(signal.indexOf('.catch(')).toBeGreaterThan(-1);
+    expect(signal.indexOf('process.exit')).toBeGreaterThan(signal.indexOf('.catch('));
+    expect(IPAD_ACTIONS).toContain('new AggregateError(');
   });
 
   it('records desktop scroll as trusted wheel while retaining native touch transport', () => {
