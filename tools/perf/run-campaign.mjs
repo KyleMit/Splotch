@@ -60,6 +60,7 @@ import {
   overlappingInstrumentFingerprints,
 } from './lib/instrument-fingerprint.mjs';
 import {
+  FLOOR_CONTROL_PAGE,
   probeHostJson,
   probeHostProtocolProblem,
 } from './split-capture/lib/probe-host-protocol.mjs';
@@ -202,6 +203,9 @@ export function inspectArtifact(
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
+  // A floor-control capture at a cell's path measured the browser, not the
+  // product, however well its runtime and verdict match the cell.
+  if (artifact?.page === FLOOR_CONTROL_PAGE) return { ok: false, status: FAILED };
   // Right after identity, ahead of every quality check: an action capture that
   // could not obtain a required action is missing coverage, and no gate, regime,
   // or fidelity verdict about the actions it DID measure can stand in for the

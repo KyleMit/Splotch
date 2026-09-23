@@ -54,6 +54,7 @@ import {
 } from './lib/undo-action-stats.mjs';
 import { FULL_ACTION_GROUPS, actionNotApplicableReason } from './lib/action-applicability.mjs';
 import { artifactFrameStampEpoch, DUAL_FRAME_STAMP_EPOCH } from './lib/frame-stamps.mjs';
+import { FLOOR_CONTROL_PAGE } from './split-capture/lib/probe-host-protocol.mjs';
 
 const DEFAULT_MANIFEST = join(
   ROOT,
@@ -270,6 +271,14 @@ function captureTheme(profile) {
 }
 
 function validateCaptureMode(profile, mode, source) {
+  // Every source kind passes through here, and a hand-written manifest reaches
+  // it without the campaign fold's build-identity check, so this is where a
+  // floor-control capture is kept from being published under a product commit.
+  if (profile?.page === FLOOR_CONTROL_PAGE) {
+    throw new Error(
+      `${source} is a floor-control capture — a diagnostic of the browser, never a product cell`
+    );
+  }
   const orientation = captureOrientation(profile);
   const theme = captureTheme(profile);
   const modeLabel = `${mode.orientation.toLowerCase()} / ${mode.theme}`;

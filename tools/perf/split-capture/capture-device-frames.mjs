@@ -37,7 +37,11 @@ import {
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
-import { fetchAcceptedProbeReport, probeHostJson } from './lib/probe-host-protocol.mjs';
+import {
+  FLOOR_CONTROL_PAGE,
+  fetchAcceptedProbeReport,
+  probeHostJson,
+} from './lib/probe-host-protocol.mjs';
 import { ANDROID_NATIVE_PACKAGE, GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
@@ -62,6 +66,7 @@ import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
+import { FLOOR_CONTROL_THEME, floorControlIdentity } from './serve-floor-control.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -171,6 +176,56 @@ export function zeroInputProblem(pulse) {
     'the page received zero input events across the whole dispatch — the injected touches ' +
     'landed on another tab or app, not the run page (issue 1294)'
   );
+}
+
+// The floor control (serve-floor-control.mjs) draws one fixed stroke on one
+// light page in a browser, so a request it cannot honour would be recorded as
+// if it had been measured. Eraser and undo also wait on page acknowledgements
+// the floor never sends.
+export function floorControlRequestProblem({ brush, theme, undoCount, nativeApp }) {
+  if (nativeApp) return 'the floor control is a browser page — --native-app has no floor to open';
+  if (brush !== 'pen') {
+    return `the floor control draws one fixed stroke — use --brush=pen, not ${brush}`;
+  }
+  if (theme !== FLOOR_CONTROL_THEME) {
+    return `the floor control renders only --theme=${FLOOR_CONTROL_THEME}, not ${theme}`;
+  }
+  if (undoCount > 0) return 'the floor control has no undo — use --undo-count=0';
+  return null;
+}
+
+// Which page the host serves decides how its identity is proven. The app's
+// probe host proxies a SvelteKit build, checked against this checkout's
+// web/build; the floor control has no build, so the served-build guard could
+// never pass against it and the floor's own served bytes are checked instead.
+// Either way the returned binding is what the artifact records. The readers
+// are injected so the routing is testable without a live host or a build.
+export async function assertServedPageIdentity(
+  host,
+  { brush, theme, undoCount, allowForeignBuild, nativeApp },
+  {
+    readState = probeState,
+    floorIdentity = floorControlIdentity,
+    buildIdentity = assertServedBuildIsFresh,
+  } = {}
+) {
+  if ((await readState(host)).page !== FLOOR_CONTROL_PAGE) {
+    return {
+      page: 'app',
+      servedBuild: await buildIdentity(host, { allowForeignBuild, nativeApp }),
+    };
+  }
+  const requestProblem = floorControlRequestProblem({ brush, theme, undoCount, nativeApp });
+  if (requestProblem) throw new Error(requestProblem);
+  const { problem, buildDigest } = await floorIdentity(host);
+  if (problem) throw new Error(problem);
+  // No productCommit: the floor measures no product, and the fold's build
+  // identity check refuses a recorded digest without one, which keeps a floor
+  // capture out of the committed matrix.
+  return {
+    page: FLOOR_CONTROL_PAGE,
+    servedBuild: { productCommit: null, buildEntry: null, buildDigest },
+  };
 }
 
 // `exec` and `activate` are injected so the wiring is testable at THIS call
@@ -397,6 +452,7 @@ export function drivenCaptureArtifact({
   nativeApp,
   nativePackage = null,
   requirePageIdentity = true,
+  page = 'app',
   servedBuild = null,
   fidelity,
   drawing,
@@ -406,6 +462,10 @@ export function drivenCaptureArtifact({
 }) {
   return {
     label: runLabel,
+    // FLOOR_CONTROL_PAGE marks a diagnostic of the browser's own floor
+    // (ADR-0136), never a cell of the product; campaign acceptance, evidence
+    // promotion, and the matrix fold all refuse it.
+    page,
     platform,
     brush,
     orientation,
@@ -522,7 +582,13 @@ export async function captureDeviceFrames({
   // preview, so the build the device will load is checkable from here — and until
   // it was, only the desktop runners verified a build at all. A native export
   // written after the preview started reached device cells unchallenged.
-  const servedBuild = await assertServedBuildIsFresh(host, { allowForeignBuild, nativeApp });
+  const { page, servedBuild } = await assertServedPageIdentity(host, {
+    brush,
+    theme,
+    undoCount,
+    allowForeignBuild,
+    nativeApp,
+  });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const hostLoadStart = sampleHostLoad();
@@ -698,6 +764,7 @@ export async function captureDeviceFrames({
     nativeApp,
     nativePackage: runtimeIdentity?.nativePackage ?? null,
     requirePageIdentity,
+    page,
     servedBuild,
     fidelity,
     drawing,

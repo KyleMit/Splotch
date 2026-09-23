@@ -1747,6 +1747,41 @@ describe('the gesture-repeat contract in a folded cell', () => {
   });
 });
 
+// Issue 2217: a floor-control capture matches a browser cell's mode, and a
+// manifest can name it directly without the campaign fold's identity check.
+describe('a floor-control capture named as a matrix source', () => {
+  it('is refused before it is scored under the manifest’s product commit', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, 'floor.json'),
+      JSON.stringify({
+        page: 'floor-control',
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        productCommit: null,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    const modes = [
+      capturedManifestMode(modeSpecs[0], { drawing: { pen: ['floor.json'] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ];
+
+    expect(() => normalizeMatrix(manifest(modes), directory)).toThrow(
+      'floor.json is a floor-control capture'
+    );
+  });
+});
+
 // Issue 1292's companion boundary: HOW the repeats were fed ink. An unrefilled
 // eraser run is optimistic by an unknown amount, so folding it beside a
 // refilled one launders the optimism into the cell. A run predating the field
