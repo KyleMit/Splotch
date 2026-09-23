@@ -105,7 +105,9 @@ clock 14.8 s → 33.7 s.
 
 * The 4.6–9.7 s browser task after a 40–65 s canvas burst on `macos-latest` is bounded to WebKit
   itself (layer flush or collection after the burst are the candidates) and only matters if a
-  physical device shows the same gap after a long crayon session.
+  physical device shows the same gap after a long crayon session. Issue 1700 tracked it and closed
+  on 2026-09-22, matched on the physical iPad and only partly attributed; see its
+  [disposition](2026-09-18-issue-1700-post-burst-stall-attribution.md#disposition).
 * `engine.crayonShadow` at 2–3 s on a software-canvas host, and ~0.5 s once on a developer Mac, is
   the deferred whole-tile readback doing exactly what it was built to defer; whether twenty tiles
   per burst is the right granularity on a slow host is a product question, out of scope here.
