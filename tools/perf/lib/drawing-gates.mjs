@@ -32,6 +32,73 @@ export const LOST_FRAME_TIME_SHARE_EXCEPTIONS = {
   },
 };
 
+const ADR_0174 = {
+  adr: 'ADR-0174',
+  adrPath: 'docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md',
+};
+const E5142FAB = 'e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3';
+
+// Drawing lost-frame reds an owner-recorded ADR explains, keyed like the
+// exception table. This is an ANNOTATION, not a budget: the cell is still scored
+// against its gate and still renders FAIL, with the disposition beside it so a
+// reader can tell an explained red from an open one (ADR-0160's completion gate
+// counts only the open ones). A red qualifies only when every paint gate passed,
+// lost frame is its only failure, and its reading sits inside the band the ADR
+// records — inclusive, on the published four-decimal share — plus, where the ADR
+// limits the explanation to named readings, at one of the named product commits.
+// The bands are the ADR's own figures; `drawing-dispositions.test.mjs` fails if
+// the ADR text stops stating them.
+export const LOST_FRAME_DISPOSITIONS = {
+  'ipad-device-web:pen': {
+    ...ADR_0174,
+    band: { minShare: 0.0122, maxShare: 0.0137 },
+    productCommits: null,
+    basis:
+      'Synthesized-touch transport cost, not product cost: real-finger pen captures read 0.04–0.06% where the driven cells read 1.22–1.37%. A driven pen red inside that band with passing paint gates is explained; a reading above it needs a real-finger capture at that commit.',
+  },
+  'ipad-device-web:eraser': {
+    ...ADR_0174,
+    band: { minShare: 0.0119, maxShare: 0.0125 },
+    productCommits: [E5142FAB],
+    basis:
+      'Explained by extension from the pen band, not by measurement: no finger capture of eraser exists, so the explanation covers only the three 1.19–1.25% readings at e5142fab. A later driven eraser red needs a real-finger capture.',
+  },
+};
+
+function paintGatesPassed(paint) {
+  return (
+    paint?.p95 <= PAINT_P95_GATE_MS &&
+    paint?.p99 <= PAINT_P99_GATE_MS &&
+    paint?.max <= PAINT_MAX_GATE_MS
+  );
+}
+
+// Takes a normalized matrix cell ({ aggregate, gateShare, runs }) and returns the
+// disposition covering its red, or null for a green, unscoreable, or uncovered one.
+export function lostFrameDispositionFor(targetId, brush, entry) {
+  const disposition = LOST_FRAME_DISPOSITIONS[`${targetId}:${brush}`];
+  const aggregate = entry?.aggregate;
+  const runs = entry?.runs ?? [];
+  if (!disposition || !aggregate || !runs.length) return null;
+  if (aggregate.scoreable === false || aggregate.blankPassed !== false) return null;
+  const share = aggregate.lostFrameTimeShare;
+  if (!(share >= disposition.band.minShare && share <= disposition.band.maxShare)) return null;
+  const phases = runs.flatMap((run) => run.phases ?? []);
+  const onlyLostFrameFailed = phases.every(
+    (phase) =>
+      paintGatesPassed(phase.paint) &&
+      (phase.passed || phase.lostFrameTimeShare > (entry.gateShare ?? LOST_FRAME_TIME_SHARE_GATE))
+  );
+  if (!phases.length || !onlyLostFrameFailed) return null;
+  if (
+    disposition.productCommits &&
+    !runs.every((run) => disposition.productCommits.includes(run.productCommit))
+  ) {
+    return null;
+  }
+  return { adr: disposition.adr, adrPath: disposition.adrPath };
+}
+
 export function lostFrameTimeShareGateFor(targetId, brush) {
   return (
     LOST_FRAME_TIME_SHARE_EXCEPTIONS[`${targetId}:${brush}`]?.share ?? LOST_FRAME_TIME_SHARE_GATE

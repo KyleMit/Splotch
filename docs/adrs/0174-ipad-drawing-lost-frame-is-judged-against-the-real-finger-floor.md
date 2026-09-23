@@ -177,6 +177,16 @@ before the timed frames start. That assumption is reasonable, but nobody has mea
 
 ### 4. How the matrix represents it
 
+> **Amended (issue #2222):** the generator now renders the disposition this section lacked. The
+> table `LOST_FRAME_DISPOSITIONS` in `tools/perf/lib/drawing-gates.mjs` lists the reds this record
+> explains: pen on `ipad-device-web` inside the 1.22–1.37% band, and eraser there only at e5142fab
+> inside 1.19–1.25%. A red qualifies only when every paint gate passed. It is an annotation, not a
+> scoring state: the scorer and every published number are unchanged, and a covered cell still reads
+> FAIL. The cell draws a dashed red edge and links this ADR. The calibrated row's summary counts
+> open reds apart from explained ones. `tools/perf/tests/drawing-dispositions.test.mjs` fails if
+> this record stops stating the bands or the commit. Magic, native, and pen readings outside the
+> band stay open reds.
+
 The scorer and the published verdicts do not change. The ten cells still render the lost-frame share
 the driven capture measured, marked FAIL, because that is what the instrument read. The drawing
 scorer has no "explained instrument artifact" state. Its only existing mechanism,

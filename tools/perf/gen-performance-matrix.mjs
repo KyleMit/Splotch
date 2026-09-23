@@ -37,8 +37,10 @@ import {
   splitUndoEvidenceProblem,
 } from './lib/campaign-plan.mjs';
 import {
+  LOST_FRAME_DISPOSITIONS,
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
+  lostFrameDispositionFor,
   lostFrameTimeShareGateFor,
   PAINT_MAX_GATE_MS,
   PAINT_P95_GATE_MS,
@@ -729,7 +731,9 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
             `Sources: ${blankRuns.map((run) => run.source).join(', ')}`
         );
       }
-      return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
+      const cell = { aggregate: aggregateDrawingRuns(runs), gateShare, runs };
+      const disposition = lostFrameDispositionFor(targetId, brush, cell);
+      return [brush, disposition ? { ...cell, disposition } : cell];
     })
   );
 }
@@ -1504,6 +1508,7 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
         paintMaxMs: PAINT_MAX_GATE_MS,
         lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE,
         lostFrameTimeShareExceptions: LOST_FRAME_TIME_SHARE_EXCEPTIONS,
+        lostFrameDispositions: LOST_FRAME_DISPOSITIONS,
       },
       undo: {
         engineP95Ms: UNDO_ENGINE_P95_GATE_MS,
@@ -1646,6 +1651,27 @@ function tipCell(classes, text, tooltip, data = '') {
   return `<span class="${classes}" tabindex="0"${data ? ` ${data}` : ''} title="${esc(tooltip)}" aria-label="${esc(tooltip)}">${text}</span>`;
 }
 
+// The same cell as tipCell, as a link: an explained red links the ADR that
+// records its disposition.
+function tipLink(classes, text, tooltip, data, href) {
+  return `<a class="${classes}" href="${esc(href)}"${data ? ` ${data}` : ''} title="${esc(tooltip)}" aria-label="${esc(tooltip)}">${text}</a>`;
+}
+
+const ADR_BASE_URL = 'https://github.com/KyleMit/Splotch/blob/main/';
+
+function adrUrl(disposition) {
+  return `${ADR_BASE_URL}${disposition.adrPath}`;
+}
+
+// A disposition annotates a current red and nothing else. A preserved or
+// unscoreable cell has no current verdict for it to explain, so a disposition
+// carried in its published entry stays provenance and is not rendered.
+function explainedRedDisposition(entry) {
+  const aggregate = entry?.aggregate;
+  if (!entry?.disposition || aggregate?.scoreable === false) return null;
+  return aggregate?.blankPassed === false ? entry.disposition : null;
+}
+
 function modeFilterAttrs(target, mode) {
   return `data-target="${esc(target.id)}" data-orientation="${mode.orientation.toLowerCase()}" data-theme="${esc(mode.theme)}"`;
 }
@@ -1659,6 +1685,7 @@ const DRAWING_METRIC_KEYS = ['p95', 'p99', 'max'];
 // Every paint metric rides the cell as data attributes so the metric switcher can
 // swap the displayed number and heat color client-side without re-rendering.
 const GATE_RED_NOTE = 'counts as red on a release-gate row (ADR-0156)';
+const EXPLAINED_RED_NOTE = 'red explained by a recorded disposition in';
 
 // ADR-0156 decision 1: on a release-gate row, a cell left unscoreable only by
 // checks its instrument has no calibrated expectation for counts as red, not as
@@ -1696,17 +1723,18 @@ function drawingOverviewCell(target, label, brush, entry, gates) {
   const published = aggregate.publishedFidelityChecks?.length
     ? ` · published verdict failed ${aggregate.publishedFidelityChecks.join(', ')}`
     : '';
+  const disposition = explainedRedDisposition(entry);
+  const explained = disposition ? ` · ${EXPLAINED_RED_NOTE} ${disposition.adr}` : '';
   const why = unscoreable
     ? ` · unscoreable: ${unscoreableReasons(aggregate).join(', ')}${published}${gateRed ? ` · ${GATE_RED_NOTE}` : ''}`
-    : ` · ${aggregate.blankPassed ? 'PASS' : 'FAIL'}`;
+    : ` · ${aggregate.blankPassed ? 'PASS' : 'FAIL'}${explained}`;
   const title = `${label} · ${brushLabel} · paint P95 ${fmt(aggregate.paint.p95)} / P99 ${fmt(aggregate.paint.p99)} / max ${fmt(aggregate.paint.max)} ms · lost frame time ${fmtPercent(aggregate.lostFrameTimeShare)} (budget ${fmtPercent(entry.gateShare)})${captureBasis(aggregate)}${why}`;
   const heat = unscoreable ? 'unscoreable' : heatClass(aggregate.paint.p95 / metricGates.p95);
-  return tipCell(
-    `mx-cell num ${heat}${failed ? ' failed' : ''}`,
-    fmt(aggregate.paint.p95),
-    title,
-    `${metricData} ${lostData}`
-  );
+  const classes = `mx-cell num ${heat}${failed ? ' failed' : ''}${disposition ? ' explained' : ''}`;
+  const data = `${metricData} ${lostData}`;
+  return disposition
+    ? tipLink(classes, fmt(aggregate.paint.p95), title, data, adrUrl(disposition))
+    : tipCell(classes, fmt(aggregate.paint.p95), title, data);
 }
 
 function undoOverviewCell(label, mode, gates) {
@@ -2121,6 +2149,29 @@ function renderLostFrameExceptionsMarkdown(exceptions) {
   return `Cells held to a different lost-frame budget, and why (ADR-0137):\n\n${lines.join('\n')}\n`;
 }
 
+function dispositionScope({ band, productCommits }) {
+  const commits = productCommits
+    ? ` at ${productCommits.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ')}`
+    : '';
+  // Two decimals, as the ADRs state their bands: the cell format's one decimal
+  // would print a 1.22–1.37% band as 1.2–1.4%.
+  const bandPercent = (share) => `${(share * 100).toFixed(2)}%`;
+  return `lost-frame reds from ${bandPercent(band.minShare)} to ${bandPercent(band.maxShare)}${commits}, paint gates passing`;
+}
+
+// Every red a recorded disposition explains, and what bounds it, so an
+// explained cell's annotation is never read as a pass or as a wider claim than
+// the ADR makes (ADR-0160, ADR-0174).
+function renderLostFrameDispositionsMarkdown(dispositions) {
+  const entries = Object.entries(dispositions ?? {});
+  if (entries.length === 0) return '';
+  const lines = entries.map(([cell, disposition]) => {
+    const [targetId, brush] = cell.split(':');
+    return `- **${BRUSH_LABELS[brush] ?? brush} on \`${targetId}\`** — ${dispositionScope(disposition)}, [${disposition.adr}](${adrUrl(disposition)}). ${disposition.basis}`;
+  });
+  return `Drawing reds explained by a recorded disposition. The cell still renders FAIL, because the gate still failed; the disposition says why the red is not an open product red:\n\n${lines.join('\n')}\n`;
+}
+
 // Every action held to a measured allowance instead of the base post-action
 // gates, per target that carries a ledger. Rendered so a passing cell under
 // an allowance is never read as a base-gate pass (ADR-0160).
@@ -2178,7 +2229,11 @@ function renderMarkdown(matrix) {
             ? `**unscoreable (${reasons}), ${GATE_RED_NOTE}**: ${value}`
             : `_unscoreable (${reasons})_: ${value}`;
         }
-        return aggregate.blankPassed ? value : `**FAIL ${value}**`;
+        if (aggregate.blankPassed) return value;
+        const disposition = explainedRedDisposition(target.drawing[brush]);
+        return disposition
+          ? `**FAIL ${value}**, ${EXPLAINED_RED_NOTE} [${disposition.adr}](${adrUrl(disposition)})`
+          : `**FAIL ${value}**`;
       }),
     ];
   });
@@ -2281,6 +2336,7 @@ under ADR-0142's \`resize\` anchor the value reads 0–2 ms by construction ther
 render N/A and rotation is scored by the post-action frame gates alone.
 
 ${renderLostFrameExceptionsMarkdown(matrix.gates.drawing.lostFrameTimeShareExceptions ?? {})}
+${renderLostFrameDispositionsMarkdown(matrix.gates.drawing.lostFrameDispositions)}
 ${renderActionAllowancesMarkdown(matrix.gates.actions.postActionAllowances)}
 ## Capture limitations
 
@@ -2396,29 +2452,33 @@ function targetsInRoleOrder(matrix) {
   return ROLE_SECTIONS.flatMap(({ role }) => targetsInRole(matrix, role));
 }
 
-function gateAggregates(target) {
+function gateEntries(target) {
   return target.modes
     .filter((mode) => mode.status === 'captured')
     .flatMap((mode) => Object.values(mode.drawing ?? {}))
-    .map((brush) => brush?.aggregate)
-    .filter(Boolean);
+    .filter((entry) => entry?.aggregate);
 }
 
 function calibratedGateStatus(gate) {
   const captured = gate.modes.filter((mode) => mode.status === 'captured').length;
   if (!captured) return ' and is unavailable in this campaign';
 
-  const aggregates = gateAggregates(gate);
-  const scoreable = aggregates.filter((aggregate) => aggregate.scoreable !== false);
+  const entries = gateEntries(gate);
+  const aggregates = entries.map((entry) => entry.aggregate);
+  const scoreable = entries.filter((entry) => entry.aggregate.scoreable !== false);
   const unscoreable = aggregates.length - scoreable.length;
-  const failing = scoreable.filter(
-    (aggregate) => (aggregate.allPhasesPassed ?? aggregate.blankPassed) === false
-  ).length;
+  const failingEntries = scoreable.filter(
+    ({ aggregate }) => (aggregate.allPhasesPassed ?? aggregate.blankPassed) === false
+  );
+  const failing = failingEntries.length;
+  // ADR-0160's completion gate counts only the reds no recorded disposition
+  // explains, so the split is published rather than left to cross-reading ADRs.
+  const explained = failingEntries.filter(explainedRedDisposition).length;
   const coverage = `${captured}/${gate.modes.length} modes captured`;
   const verdict = !scoreable.length
     ? 'no drawing aggregate scored'
     : failing
-      ? `${failing} of ${scoreable.length} brush aggregates over gate`
+      ? `${failing} of ${scoreable.length} brush aggregates over gate (${failing - explained} open, ${explained} explained by a recorded disposition)`
       : `all ${scoreable.length} brush aggregates inside gate`;
   const offRegime = aggregates.filter((aggregate) => aggregate.offRefreshRegime).length;
   const why = offRegime
@@ -2560,6 +2620,9 @@ const EXTRA_CSS = `
 .mx-cell.warn{background:color-mix(in srgb,var(--warn) 36%,var(--card-2))}
 .mx-cell.hot{background:color-mix(in srgb,var(--bad) 36%,var(--card-2))}
 .mx-cell.failed{box-shadow:inset 0 0 0 2px var(--bad)}
+/* An explained red keeps the red edge, dashed so it reads apart from an open one;
+   the dash is a border because outline is the focus ring. */
+.mx-cell.failed.explained{box-shadow:none;border:2px dashed var(--bad);color:inherit;text-decoration:none}
 .mx-cell:focus-visible,.heat-cell:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .mx-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 8px}
 .mx-legend b{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
@@ -3018,7 +3081,7 @@ function emptyLegend() {
 }
 
 function overviewLegend() {
-  return `<div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span><span><i class="mx-cell unscoreable failed"></i>uncalibrated on a release-gate row: counts as red</span></div>
+  return `<div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span><span><i class="mx-cell failed explained"></i>fails, explained by a recorded disposition: links its ADR</span><span><i class="mx-cell unscoreable failed"></i>uncalibrated on a release-gate row: counts as red</span></div>
   ${emptyLegend()}
   <div class="mx-legend"><b>Undo</b><span>✓ pass · ✕ fail against the undo gates</span><b>Actions</b><span>passed/measured — green all pass, amber a few failing, red more than one in ten failing</span></div>`;
 }
@@ -3043,6 +3106,19 @@ function lostFrameExceptionsHtml(exceptions) {
   return `<p><b>Lost-frame budget exceptions (ADR-0137).</b> Cells held to a different lost-frame budget, and why:</p><ul class="note-list">${items}</ul>`;
 }
 
+// The HTML twin of renderLostFrameDispositionsMarkdown.
+function lostFrameDispositionsHtml(dispositions) {
+  const entries = Object.entries(dispositions ?? {});
+  if (entries.length === 0) return '';
+  const items = entries
+    .map(([cell, disposition]) => {
+      const [targetId, brush] = cell.split(':');
+      return `<li><b>${esc(BRUSH_LABELS[brush] ?? brush)} on <code>${esc(targetId)}</code></b> — ${esc(dispositionScope(disposition))}, <a href="${esc(adrUrl(disposition))}">${esc(disposition.adr)}</a>. ${esc(disposition.basis)}</li>`;
+    })
+    .join('');
+  return `<p><b>Recorded dispositions.</b> Drawing reds an ADR explains. The cell still renders FAIL, because the gate still failed; its dashed outline links the ADR that says why the red is not an open product red:</p><ul class="note-list">${items}</ul>`;
+}
+
 // The HTML twin of renderActionAllowancesMarkdown.
 function actionAllowancesHtml(ledgers) {
   return (ledgers ?? [])
@@ -3065,6 +3141,7 @@ function scoringNotes(matrix) {
   return `
     <p><b>Gates.</b> Drawing passes when blank-paper paint P95 ≤ ${gates.drawing.paintP95Ms} ms, P99 ≤ ${gates.drawing.paintP99Ms} ms, max ≤ ${gates.drawing.paintMaxMs} ms, and lost frame time stays under ${fmtPercent(gates.drawing.lostFrameTimeShare)} of in-contact time. Undo passes at engine P95 ≤ ${gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${gates.undo.nextFrameP95Ms} ms, and next-frame max ≤ ${gates.undo.nextFrameMaxMs} ms. An action passes at first-frame P95 ≤ ${gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤ ${gates.actions.postActionFrameMaxMs} ms. A post-action max over its gate counts only when ${gates.actions.postActionFrameMaxConfirmingSamples} of the three scored repeats show it (ADR-0156); one breaching repeat renders as a warning, not a failure. Ready P95 appears in tooltips but is not gated: its completion semantics differ per action, so a frame-gate pass says nothing about end-to-end response time.</p>
     ${lostFrameExceptionsHtml(gates.drawing.lostFrameTimeShareExceptions ?? {})}
+    ${lostFrameDispositionsHtml(gates.drawing.lostFrameDispositions)}
     ${actionAllowancesHtml(gates.actions.postActionAllowances)}
     <p><b>Release roles (ADR-0156).</b> ${ROLE_SECTIONS.map(({ title, rule }) => `<b>${esc(title)}:</b> ${esc(rule)}`).join(' ')} A row’s role follows the hardware it ran on, not its fidelity class; the chip on a release-gate row says whether its drawing instrument is calibrated or the row is a gate-in-waiting.</p>
     <p><b>Empty cells.</b> A cell without a product verdict renders one of three ways. A single struck stroke is N/A by design: the check does not apply to that runtime. A diagonal hatch is unavailable: the capture exists but cannot be scored, because it failed an input-fidelity check, was measured at a refresh rate this target is not scored against, has a failed idle control, or is preserved evidence with no current verdict. A dashed, empty outline is missing: nothing valid was captured, so it is a gap to close. Every tooltip names the reason.</p>
