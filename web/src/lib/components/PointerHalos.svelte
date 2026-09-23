@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { getCanvasRect, type StrokeStartData } from '$lib/drawing/engine';
   import { toolState } from '$lib/state/tool.svelte';
-  import { prefersReducedMotion } from '$lib/platform/reducedMotion';
+  import { prefersReducedMotion, watchReducedMotion } from '$lib/platform/reducedMotion';
 
   // Pointer-following halos: the eraser footprint bubble and the per-pointer
   // brush rings. Purely presentational — its only inputs are pointer events on
@@ -32,9 +32,9 @@
   // pressing a swatch or dragging the clear button never sends this canvas a
   // pointerup). A ring grows in on mount and, when its stroke ends, lifts off
   // where the finger left it (`lifting`: position writes stop) before its record
-  // goes — on animationend, or on animationcancel when reduced motion is turned
-  // on mid-lift and swaps the lift for no animation at all. Under reduced motion
-  // there is no lift and the record goes at once.
+  // goes — on the lift's own animationend or animationcancel, or on the
+  // reduced-motion switch itself for a lift that will never report one. Under
+  // reduced motion there is no lift and the record goes at once.
   let brushRings = $state<
     Record<number, { x: number; y: number; magic: boolean; lifting: boolean }>
   >({});
@@ -66,6 +66,21 @@
     } else eraserCursor.lifting = true;
   }
 
+  // Both halos share these keyframes, and a halo's cleanup handlers hear EVERY
+  // animation the element runs — including the grow-in's cancellation, which is
+  // what setting `lifting` causes (the class swaps `halo-in` for `halo-out`).
+  // Acting on that cancellation would drop the record before the lift it just
+  // started could play, so the lift's own end is told apart by name. Svelte
+  // hash-scopes a component's keyframe names, so the animation arrives as
+  // `svelte-<hash>-halo-out` and the match is by suffix; a name that stopped
+  // matching would strand a lifted halo on screen, which
+  // `web/tests/halo-lift.spec.ts` is what catches.
+  const LIFT_KEYFRAMES = 'halo-out';
+
+  function isLiftEnd(e: AnimationEvent) {
+    return e.target === e.currentTarget && e.animationName.endsWith(LIFT_KEYFRAMES);
+  }
+
   // Svelte's element typings carry no `onanimationcancel` attribute, so the
   // cancel path listens through an action instead.
   function onAnimationCancel(node: HTMLElement, handler: (e: AnimationEvent) => void) {
@@ -83,7 +98,7 @@
   }
 
   function endEraserLift(e: AnimationEvent) {
-    if (e.target !== e.currentTarget || !eraserCursor.lifting) return;
+    if (!isLiftEnd(e) || !eraserCursor.lifting) return;
     eraserCursor.visible = false;
     eraserCursor.lifting = false;
   }
@@ -188,9 +203,27 @@
   }
 
   function endRingLift(e: AnimationEvent, pointerId: number) {
-    if (e.target === e.currentTarget && brushRings[pointerId]?.lifting)
-      delete brushRings[pointerId];
+    if (isLiftEnd(e) && brushRings[pointerId]?.lifting) delete brushRings[pointerId];
   }
+
+  // Reduced motion removes the lift outright, so a halo already lifting when the
+  // answer flips has no exit left to end: the swap to `animation: none` cancels
+  // whatever was running under a name these handlers ignore, and a lift still
+  // pending its first frame is cancelled with no event at all. Either way the
+  // halo would stay mounted over the drawing for good, so the switch itself
+  // releases it — the same reason drawerCascade watches the answer.
+  onMount(() =>
+    watchReducedMotion((reduced) => {
+      if (!reduced) return;
+      for (const key of Object.keys(brushRings)) {
+        const pointerId = Number(key);
+        if (brushRings[pointerId].lifting) delete brushRings[pointerId];
+      }
+      if (!eraserCursor.lifting) return;
+      eraserCursor.visible = false;
+      eraserCursor.lifting = false;
+    })
+  );
 
   function handlePointerLeave(e: PointerEvent) {
     hideEraserCursor();

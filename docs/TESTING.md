@@ -528,6 +528,17 @@ Write specs that can't race in the first place:
   `Animation.finished` continuation runs before `animationend` dispatches, so a spec that depends on
   the product's end handler having run waits on the event, not the promise. Svelte scopes a
   component's keyframe names with its hash, so match `animationName` by suffix, not equality.
+
+  A spec that has to act *inside* an animation needs the mirror-image move: widen the animation
+  rather than timing the act. The halo lift-off specs in `halo-lift.spec.ts` release the stroke
+  partway through a 120 ms grow-in, which no sleep can hit reliably, so they override
+  `--halo-in-duration` to 5 s through a `:root:root` rule that outranks the component's scoped
+  declaration — the lift keeps its real duration, and no slow frame can end the grow-in before the
+  release. The override has to come from a stylesheet rather than an inline style: the halo does not
+  exist until the press mounts it, so by the time a spec could reach the element a starved frame may
+  already have finished the grow-in. Those specs also resolve their outcome on the element's
+  *removal* as well as on its animation events, so the pre-fix product — which deleted the halo
+  before the lift could start — fails the assertion instead of hanging on an event that never comes.
 * **A modal open is not the only thing that arms a dead zone.** `launchGuard.guardTapZone` is armed
   by any tap that repaints something else under the finger, so a spec can be swallowed well after
   the fly-in has landed. `ColoringBook` arms one when a book cover swaps the grid for that book's
