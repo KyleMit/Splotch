@@ -667,47 +667,35 @@ describe('campaign sources', () => {
   // hand. The published report is generated while the older group list is in
   // force, then the fold and regeneration run under the current one.
   it('regenerates a sweep that predates a FULL_ACTION_GROUPS change byte for byte', async () => {
-    const directory = mkdtempSync(join(tmpdir(), 'splotch-preserve-actions-'));
-    temporaryDirectories.push(directory);
-    const predatingGroups = FULL_ACTION_GROUPS.filter(
-      (group) => group !== 'ai-waiting' && group !== 'unavailable'
-    );
-    const source = writePredatingActionSweep(directory, predatingGroups);
-    const rawManifest = () =>
-      predatingFixtureManifest([{ source, productCommit: 'old123', kind: 'full' }]);
-
-    vi.resetModules();
-    vi.doMock('../lib/action-applicability.mjs', async (importOriginal) => ({
-      ...(await importOriginal()),
-      FULL_ACTION_GROUPS: predatingGroups,
-    }));
-    const { normalizeMatrix: normalizeWithPredatingGroups } =
-      await import('../gen-performance-matrix.mjs');
-    vi.doUnmock('../lib/action-applicability.mjs');
-    const { preservedEvidence: _unpublished, ...firstPublication } = rawManifest();
-    const published = normalizeWithPredatingGroups(firstPublication, directory);
-    writeFileSync(join(directory, 'data.json'), `${JSON.stringify(published, null, 2)}\n`);
-    expect(published.targets[0].modes[0].actions.actionPlan.actionGroups).toEqual(predatingGroups);
-    expect(published.targets[0].modes[0].actions.results).toHaveLength(2);
+    const { directory, published, rawManifest } = await publishPredatingSweep('old123');
 
     expect(() => normalizeMatrix(rawManifest(), directory)).toThrow(
       'is marked full but its actionPlan records a subset action run'
     );
 
-    const folded = applyCampaignModes(rawManifest(), 'fixture', [
-      preservingEntry('final123', {
-        id: 'portrait-light',
-        orientation: 'PORTRAIT',
-        theme: 'light',
-        drawing: {},
-      }),
-    ]);
+    const folded = foldPreservingActions(rawManifest());
     const regenerated = normalizeMatrix(folded, directory);
 
     expect(folded.targets[0].modes[0].actionSources).toBe('preserved');
-    const actionsOf = (matrix) => JSON.stringify(matrix.targets[0].modes[0].actions, null, 2);
-    expect(actionsOf(regenerated)).toBe(actionsOf(published));
+    expect(actionsJson(regenerated)).toBe(actionsJson(published));
     expect(regenerated.targets[0].modes[0].preservedSections).toEqual(['actions']);
+  });
+
+  // The one field the preserved route re-derives: coverage of the report's final
+  // product commit, so a historical sweep cannot keep claiming current coverage
+  // after the matrix moves to a new commit.
+  it('re-derives only final-commit coverage when the fold moves the product commit', async () => {
+    const { directory, published, rawManifest } = await publishPredatingSweep('final123');
+    const folded = foldPreservingActions(rawManifest());
+    folded.productCommit = 'next456';
+
+    const regenerated = normalizeMatrix(folded, directory);
+
+    const publishedActions = published.targets[0].modes[0].actions;
+    expect(publishedActions.finalProductCommitActionCount).toBe(1);
+    expect(actionsJson(regenerated)).toBe(
+      JSON.stringify({ ...publishedActions, finalProductCommitActionCount: 0 }, null, 2)
+    );
   });
 });
 
@@ -719,6 +707,51 @@ function preservingEntry(productCommit, mode = { id: MODE.id }) {
     partial: 'actions-preserved',
     mode: { status: 'captured', drawingProductCommit: productCommit, ...mode },
   };
+}
+
+const PREDATING_ACTION_GROUPS = FULL_ACTION_GROUPS.filter(
+  (group) => group !== 'ai-waiting' && group !== 'unavailable'
+);
+
+const actionsJson = (matrix) => JSON.stringify(matrix.targets[0].modes[0].actions, null, 2);
+
+// Publishes data.json from the raw sweep while the older FULL_ACTION_GROUPS is in
+// force, on a fresh module graph so the statically imported generator keeps the
+// current list.
+async function publishPredatingSweep(sweepProductCommit) {
+  const directory = mkdtempSync(join(tmpdir(), 'splotch-preserve-actions-'));
+  temporaryDirectories.push(directory);
+  const source = writePredatingActionSweep(directory, PREDATING_ACTION_GROUPS);
+  const rawManifest = () =>
+    predatingFixtureManifest([{ source, productCommit: sweepProductCommit, kind: 'full' }]);
+
+  vi.resetModules();
+  vi.doMock('../lib/action-applicability.mjs', async (importOriginal) => ({
+    ...(await importOriginal()),
+    FULL_ACTION_GROUPS: PREDATING_ACTION_GROUPS,
+  }));
+  const { normalizeMatrix: normalizeWithPredatingGroups } =
+    await import('../gen-performance-matrix.mjs');
+  vi.doUnmock('../lib/action-applicability.mjs');
+  const { preservedEvidence: _unpublished, ...firstPublication } = rawManifest();
+  const published = normalizeWithPredatingGroups(firstPublication, directory);
+  writeFileSync(join(directory, 'data.json'), `${JSON.stringify(published, null, 2)}\n`);
+  expect(published.targets[0].modes[0].actions.actionPlan.actionGroups).toEqual(
+    PREDATING_ACTION_GROUPS
+  );
+  expect(published.targets[0].modes[0].actions.results).toHaveLength(2);
+  return { directory, published, rawManifest };
+}
+
+function foldPreservingActions(manifest) {
+  return applyCampaignModes(manifest, 'fixture', [
+    preservingEntry('final123', {
+      id: 'portrait-light',
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      drawing: {},
+    }),
+  ]);
 }
 
 function writePredatingActionSweep(directory, actionGroups) {

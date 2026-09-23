@@ -215,7 +215,8 @@ export function campaignModeSources(
 // rules, so a sweep that predates a FULL_ACTION_GROUPS change is refused outright
 // and any other rule change would re-derive the numbers the flag promised to keep.
 // PRESERVED is the generator's own route for copying a section from
-// `preservedEvidence.from` unchanged. A section that is already PRESERVED or
+// `preservedEvidence.from`, re-deriving only its final-product-commit coverage
+// count. A section that is already PRESERVED or
 // CAPTURED_UNTRACKED is published-section-routed already and keeps its route.
 function preservedActionSection(manifest, targetId, modeId, existing) {
   if (Array.isArray(existing.actionSources)) {
