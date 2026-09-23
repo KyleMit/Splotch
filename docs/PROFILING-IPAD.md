@@ -942,6 +942,19 @@ findings above is negligible engine cost beside long rendering-side records.
   platform** on Safari/iPad (the presentable frame is 16.7 ms), and **input outruns frames** — a
   digitizer delivering 120 Hz+ into a 60 Hz frame means per-`pointermove` work runs 2–4× per frame
   it can possibly be shown in.
+
+  **The beat is not always 60 Hz, and the cause has not been established.** Two recordings on this
+  same iPad read 120 Hz. One is the
+  [2026-09-18 issue 1750 baseline](scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/README.md),
+  which measured an 8.0 ms median idle interval on the `/dev/engine` harness page. The other is the
+  `2026-08-23-hand` finger corpus, where two fast captures on the app route, at 238 and 268 moves/s,
+  observed an 8 ms beat. The app's drawing route read 17 ms in every driven and real-finger capture
+  that ADR-0174 relies on, including the 2026-09-22 control. So `ipad-device-web`'s declared `60hz`
+  regime holds for the route the matrix scores. The routes, days, and input rates differ, and none
+  of them has been shown to be the cause. Read the beat from each capture, never from this
+  paragraph. The tooling already does this: `perf:rescore` and the matrix flag a capture that falls
+  outside the target's declared regime, and `perf:ios:xcuitest:screen` refuses one unless
+  `--report-only` is set.
 * **WebKit clamps `performance.now()` to ~1 ms**, so sub-millisecond marks read as 0. Fine at our
   scale (telling a ~10 ms patch capture from a hundreds-of-ms hang), but don't trust the second
   decimal.

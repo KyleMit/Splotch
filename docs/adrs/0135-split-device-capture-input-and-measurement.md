@@ -3,7 +3,17 @@
 **Status:** Active — amends
 [ADR-0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md),
 [ADR-0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md), and
-[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md). **Date:** 2026-08
+[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md); amended by
+[ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md). **Date:**
+2026-08
+
+> **Amended by
+> [ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md):** on the
+> physical iPad, XCUITest touch synthesis adds about 1.2–1.3 points of lost-frame share to Safari
+> pen drawing captures, through Appium or WebDriverAgent alike. A real finger does not. So a driven
+> capture's drawing lost-frame share on the iPad rows is instrument evidence, and the real-finger
+> floor judges it. Driven captures keep fidelity, paint, discrete actions, and relative regression
+> detection.
 
 ## Context
 
