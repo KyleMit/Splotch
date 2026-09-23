@@ -1370,11 +1370,33 @@ function matrixActionLabels(targets) {
   ].filter((label) => !ACTION_CONTROL_LABELS.has(label));
 }
 
-function actionCoordinates(mode, labels) {
+function actionGroupsPredating(actionPlan) {
+  return FULL_ACTION_GROUPS.filter((group) => !actionPlan.actionGroups.includes(group));
+}
+
+// A plan written before FULL_ACTION_GROUPS grew never had the chance to offer
+// the later labels, so its silence about them is not a declaration that the
+// mode lacks them. The evidence that a label IS offered in a shell comes only
+// from plans that already cover every current group: an older plan's own
+// omissions cannot vouch for anything.
+function labelsOfferedByCurrentPlans(targets) {
+  const offered = new Map();
+  for (const mode of targets.flatMap((target) => target.modes)) {
+    const plan = mode.actions?.actionPlan;
+    if (!plan || actionGroupsPredating(plan).length) continue;
+    const shell = plan.context.settingsShell;
+    if (!offered.has(shell)) offered.set(shell, new Set());
+    for (const label of plan.applicableLabels) offered.get(shell).add(label);
+  }
+  return offered;
+}
+
+function actionCoordinates(mode, labels, offeredByCurrentPlans = new Map()) {
   const results = new Set(mode.actions?.results.map(({ label }) => label) ?? []);
-  const applicable = mode.actions?.actionPlan
-    ? new Set(mode.actions.actionPlan.applicableLabels)
-    : null;
+  const plan = mode.actions?.actionPlan;
+  const applicable = plan ? new Set(plan.applicableLabels) : null;
+  const predatedGroups = plan ? actionGroupsPredating(plan) : [];
+  const offeredInShell = plan ? offeredByCurrentPlans.get(plan.context.settingsShell) : undefined;
   return labels.map((label) => {
     if (results.has(label)) {
       return mode.actions.scoreable === false
@@ -1390,6 +1412,16 @@ function actionCoordinates(mode, labels) {
       return { label, state: 'blocked', reason: `blocked coverage: ${blockedEntry.reason}` };
     }
     if (applicable && !applicable.has(label)) {
+      const declaredNotApplicable = plan.notApplicable.some((entry) => entry.label === label);
+      if (!declaredNotApplicable && predatedGroups.length && offeredInShell?.has(label)) {
+        return {
+          label,
+          state: 'missing',
+          reason: `the sweep predates this action: its plan omits the ${predatedGroups.join(
+            ', '
+          )} action groups`,
+        };
+      }
       return {
         label,
         state: 'not-applicable',
@@ -1410,6 +1442,7 @@ function actionCoordinates(mode, labels) {
 
 function withActionCoordinates(matrix) {
   const actionLabels = matrixActionLabels(matrix.targets);
+  const offeredByCurrentPlans = labelsOfferedByCurrentPlans(matrix.targets);
   return {
     ...matrix,
     actionLabels,
@@ -1417,7 +1450,7 @@ function withActionCoordinates(matrix) {
       ...target,
       modes: target.modes.map((mode) => ({
         ...mode,
-        actionCoordinates: actionCoordinates(mode, actionLabels),
+        actionCoordinates: actionCoordinates(mode, actionLabels, offeredByCurrentPlans),
       })),
     })),
   };

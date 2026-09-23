@@ -8,7 +8,7 @@
     "This fold measures product commit 3928cd88edbf441530e473a4e3c0b6767926bfc6, main on 2026-09-23, at which all four physical release-gate rows were recaptured from scratch on 2026-09-23. The strict staleness check reports every freshly captured section current at that commit.",
     "Freshly captured at 3928cd88: every drawing and pen-undo section in all four modes of all four physical rows, and the portrait-light and portrait-dark action sweeps on physical iPad native and physical Android web. The other twelve physical action sections could not be captured and are preserved from the published e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 sweeps (2026-09-05 to 2026-09-07), which keep that commit as their provenance and make no claim about 3928cd88.",
     "Why each of those twelve action sweeps is missing: physical iPad web has no scoreable sweep in any mode, because its AI-waiting actions need a secure context and the HTTPS front that provides one was not available to the unattended run (its one portrait-light sweep was refused as blocked coverage and is not folded). Physical iPad native landscape sweeps failed when the second Undo tap after a landscape-to-portrait rotation landed on the canvas. Physical Android web landscape sweeps failed because every color swatch in the landscape compact color flyout measured zero size. Physical Android native portrait sweeps failed when the native tap on the Dark theme button was not captured, and its landscape sweeps failed when Appium could not rotate the device to ROTATION_270.",
-    "The preserved sweeps predate the 2026-09-17 ai-waiting and unavailable action groups and several later action labels. Their heatmap cells for those labels render as N/A, because the generator classifies any label outside a mode’s declared plan as not applicable; on these modes the label was not in that harness’s plan, so read those cells as not measured.",
+    "The preserved sweeps predate the 2026-09-17 ai-waiting and unavailable action groups and several later action labels. Their heatmap cells for those labels render as missing wherever a current sweep in the same Settings shell offers the action. The physical Android web and physical Android native landscape modes use the compact shell, which no current sweep covers, so their cells for those labels still render as N/A; read them as not measured.",
     "The physical Android native drawing and undo sections come from a probe-host server.url build carrying the ADR-0135 split transport. Those artifacts record pageIdentity unprovable by construction, because the fixed server.url carries no per-cell nonce. Its three drift references were captured before its landscape cells, whose first attempt wrote no artifact and which were recaptured after the end reference, so the references do not bracket the landscape cells.",
     "Every physical drawing and undo cell passed its input-fidelity gate. Physical iPad web carries three drawing lost-frame reds against the 1% budget: landscape/dark pen 1.13%, landscape/light eraser 1.03%, and landscape/dark eraser 1.01%. The other seven of the ten e5142fab reds now read 0.71-0.98%. The pen reading is below the top of ADR-0174’s driven pen band (1.37%); ADR-0174 requires a real-finger capture before a driven eraser red at a later commit is explained, so both eraser cells are open. Physical Android web portrait carries six drawing reds (1.03-1.45%) against 0.40-0.75% at e5142fab, while its landscape cells read 0.20-0.54% in the same session. The physical Android native row carries no red cell.",
     "The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the physical iPad native and both physical Android rows to be current and scored before campaign completion. Drawing and undo are current on all four rows at 3928cd88, but twelve physical action sections are preserved from e5142fab, so this fold does not complete that requirement.",
@@ -2359,53 +2359,53 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -4581,53 +4581,53 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -6819,53 +6819,53 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -9057,53 +9057,53 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -17754,28 +17754,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -17783,23 +17783,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -20000,28 +20000,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -20029,23 +20029,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -49717,28 +49717,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -49746,23 +49746,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -52182,28 +52182,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -52211,23 +52211,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -74321,28 +74321,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -74350,23 +74350,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -76847,28 +76847,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -76876,23 +76876,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -79390,28 +79390,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -79419,23 +79419,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -81933,28 +81933,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -81962,23 +81962,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -84475,28 +84475,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -84504,23 +84504,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -87005,28 +87005,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -87034,23 +87034,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -89552,28 +89552,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -89581,23 +89581,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -92099,28 +92099,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -92128,23 +92128,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -94637,28 +94637,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -94666,23 +94666,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -97163,28 +97163,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -97192,23 +97192,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -99706,28 +99706,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -99735,23 +99735,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",
@@ -102249,28 +102249,28 @@
             },
             {
               "label": "open Settings section: Accessibility",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "disable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable tool drawer",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "first open of coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "reopen coloring books",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "open coloring book",
@@ -102278,23 +102278,23 @@
             },
             {
               "label": "show AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "finish AI waiting print",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "tap unavailable undo",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "clear drawing on a coloring page",
-              "state": "not-applicable",
-              "reason": "this target mode’s declared action plan does not offer the action"
+              "state": "missing",
+              "reason": "the sweep predates this action: its plan omits the ai-waiting, unavailable action groups"
             },
             {
               "label": "enable Night Mode in the compact shell",

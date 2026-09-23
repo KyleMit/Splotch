@@ -1429,6 +1429,89 @@ describe('deployment matrix report', () => {
       expect(renderReport(matrix)).toContain('ready P95 — ms');
     });
 
+    it('marks an action a preserved sweep predates as missing, not N/A by design', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([action('expand action drawer', true, 'old123')]);
+      actions.actionPlan = {
+        ...fullActionPlan({
+          orientation: 'PORTRAIT',
+          settingsShell: 'sectioned',
+          applicableLabels: ['expand action drawer'],
+          notApplicable: [
+            { label: 'declared exclusion', reason: 'the old capture excluded this on purpose' },
+          ],
+        }),
+        actionGroups: FULL_ACTION_GROUPS.filter(
+          (group) => group !== 'ai-waiting' && group !== 'unavailable'
+        ),
+      };
+      publishReport(manifestDirectory, { actions });
+      const repeated = (label) =>
+        Array.from({ length: 4 }, (_, index) => ({
+          ...actionSample(label, index === 0),
+          postActionFrameGapsMs: [1],
+        }));
+      const sectionedLabels = [
+        'expand action drawer',
+        'show AI waiting print',
+        'declared exclusion',
+      ];
+      const compactLabel = 'enable Night Mode in the compact shell';
+      const sectionedSource = writeActionCapture(manifestDirectory, 'sectioned-actions.json', {
+        orientation: 'LANDSCAPE',
+        theme: 'light',
+        samples: [
+          ...repeated('idle frame control'),
+          ...sectionedLabels.flatMap((label) => repeated(label)),
+        ],
+        actionPlan: fullActionPlan({
+          orientation: 'LANDSCAPE',
+          settingsShell: 'sectioned',
+          applicableLabels: ['idle frame control', ...sectionedLabels],
+        }),
+      });
+      const compactSource = writeActionCapture(manifestDirectory, 'compact-actions.json', {
+        orientation: 'LANDSCAPE',
+        theme: 'dark',
+        samples: [...repeated('idle frame control'), ...repeated(compactLabel)],
+        actionPlan: fullActionPlan({
+          orientation: 'LANDSCAPE',
+          settingsShell: 'compact',
+          applicableLabels: ['idle frame control', compactLabel],
+        }),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        unavailableMode(modeSpecs[1]),
+        capturedManifestMode(modeSpecs[2], {
+          actionSources: [{ source: sectionedSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        capturedManifestMode(modeSpecs[3], {
+          actionSources: [{ source: compactSource, productCommit: 'final123', kind: 'full' }],
+        }),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+      const coordinate = (label) =>
+        matrix.targets[0].modes[0].actionCoordinates.find((candidate) => candidate.label === label);
+
+      expect(coordinate('show AI waiting print')).toEqual({
+        label: 'show AI waiting print',
+        state: 'missing',
+        reason:
+          'the sweep predates this action: its plan omits the ai-waiting, unavailable action groups',
+      });
+      expect(coordinate('declared exclusion')).toMatchObject({
+        state: 'not-applicable',
+        reason: 'the old capture excluded this on purpose',
+      });
+      // Only a current plan in the SAME shell vouches that the action is offered,
+      // so the compact shell's toggles stay N/A on the sectioned preserved mode.
+      expect(coordinate(compactLabel)).toMatchObject({ state: 'not-applicable' });
+    });
+
     it('keeps a freshly captured untracked section scoreable and labels its provenance', () => {
       const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
       temporaryDirectories.push(manifestDirectory);
