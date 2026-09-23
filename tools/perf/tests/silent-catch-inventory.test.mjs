@@ -99,8 +99,8 @@ const AUDITED_SWALLOWS = {
   'run-campaign.mjs': ['bare-catch@90e6c3c41aa0'],
   'serve-profile-build.mjs': ['bare-catch@6617bf068df7', 'bare-catch@9a2c060a4fa1'],
   'split-capture/capture-device-frames.mjs': [
-    'benign-catch@09d7336a7f15',
     'benign-catch@25459d000b15',
+    'benign-catch@6e6589e824da',
   ],
   'split-capture/capture-hand-input.mjs': ['bare-catch@31986c96fa97'],
   'split-capture/lib/chrome-tabs.mjs': ['bare-catch@ecd020e49256', 'bare-catch@f34a0355df5f'],

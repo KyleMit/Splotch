@@ -77,6 +77,8 @@ const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const PAGE_SETTLE_MS = 6_000;
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
+const ROTATION_WINDOW_TIMEOUT_MS = 10_000;
+const ROTATION_WINDOW_POLL_MS = 250;
 const PROBE_READY_TIMEOUT_MS = 90_000;
 // Shorter than the full budget on purpose: this is how long to wait before
 // deciding the launch did not land, not how long a slow page may take.
@@ -343,44 +345,123 @@ export function androidDriver({
   };
 }
 
-function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
+// The page measures the WINDOW, while WDA's orientation is the DEVICE's, which
+// the interface need not follow (an app's own orientation lock). So a rotation
+// is settled when the window's own shape agrees, not the orientation.
+export function windowOrientation(size) {
+  return size.width > size.height ? 'LANDSCAPE' : 'PORTRAIT';
+}
+
+// The bootstrap reports its geometry once, at ready, so rotating after the page
+// loads cannot help: the device turns BEFORE the page opens. Safari is navigated
+// after the rotation, and the native app is launched into it from a session that
+// has not started it yet. `request` and `pause` are injected so the order is
+// testable at this call site, as `androidDriver`'s are.
+export function iosDriver({
+  wdaUrl,
+  pageUrl,
+  nativeApp,
+  orientation,
+  request = (method, path, body) => wda(wdaUrl, method, path, body),
+  pause = sleep,
+}) {
   let sessionId = null;
+  let originalOrientation = null;
+  let released = null;
+  const rotate = async (target) => {
+    const current = await request('GET', `/session/${sessionId}/orientation`);
+    const requestedAt = Date.now();
+    if (current !== target) {
+      await request('POST', `/session/${sessionId}/orientation`, { orientation: target });
+    }
+    const settled = await pollFor(
+      async () =>
+        windowOrientation(await request('GET', `/session/${sessionId}/window/size`)) === target,
+      ROTATION_WINDOW_TIMEOUT_MS,
+      { intervalMs: ROTATION_WINDOW_POLL_MS }
+    );
+    if (!settled) {
+      throw new Error(
+        `the iPad did not turn to ${target} within ${ROTATION_WINDOW_TIMEOUT_MS} ms — ` +
+          "a rotation lock (Control Centre, or the native app's Orientation setting) holds it"
+      );
+    }
+    if (current !== target) {
+      console.log(
+        `iPad turned ${current} → ${target}; window agreed in ${Date.now() - requestedAt} ms`
+      );
+      await pause(ROTATION_SETTLE_MS);
+    }
+    return current;
+  };
   return {
     async openPage() {
       // WDA keeps at most one session and expires it on its own schedule, so a
       // stale id from a previous capture reads as "Session does not exist" on
       // the first call. Always take a fresh one, and verify it before using it.
-      const status = await wda(wdaUrl, 'GET', '/status');
+      const status = await request('GET', '/status');
       if (status.sessionId) {
-        await wda(wdaUrl, 'DELETE', `/session/${status.sessionId}`).catch(() => null);
+        await request('DELETE', `/session/${status.sessionId}`).catch(() => null);
       }
       for (let attempt = 0; attempt < WDA_SESSION_ATTEMPTS; attempt += 1) {
-        const created = await wda(wdaUrl, 'POST', '/session', {
+        const created = await request('POST', '/session', {
           capabilities: {
-            alwaysMatch: {
-              bundleId: nativeApp ? APP_BUNDLE_ID : SAFARI_BUNDLE_ID,
-              shouldWaitForQuiescence: false,
-            },
+            alwaysMatch: nativeApp
+              ? { shouldWaitForQuiescence: false }
+              : { bundleId: SAFARI_BUNDLE_ID, shouldWaitForQuiescence: false },
           },
         });
         sessionId = created.sessionId;
-        await sleep(WDA_SESSION_SETTLE_MS);
+        await pause(WDA_SESSION_SETTLE_MS);
+        const previous = await rotate(orientation);
+        originalOrientation ??= previous;
         // The native app loads the probe host from its own configuration, so
-        // there is no URL to navigate: launching it IS opening the page.
-        const opened = nativeApp
-          ? true
-          : await wda(wdaUrl, 'POST', `/session/${sessionId}/url`, { url: pageUrl }).then(
-              () => true,
-              () => false
-            );
+        // there is no URL to navigate: launching it IS opening the page. WDA's
+        // launch only activates an app that is already running, whose page kept
+        // the geometry it reported before the turn — so it is stopped first.
+        const opened = await (
+          nativeApp
+            ? request('POST', `/session/${sessionId}/wda/apps/terminate`, {
+                bundleId: APP_BUNDLE_ID,
+              }).then(() =>
+                request('POST', `/session/${sessionId}/wda/apps/launch`, {
+                  bundleId: APP_BUNDLE_ID,
+                })
+              )
+            : request('POST', `/session/${sessionId}/url`, { url: pageUrl })
+        ).then(
+          () => true,
+          () => false
+        );
         if (opened) break;
-        await sleep(WDA_SESSION_SETTLE_MS);
+        await pause(WDA_SESSION_SETTLE_MS);
       }
-      await sleep(PAGE_SETTLE_MS);
+      await pause(PAGE_SETTLE_MS);
+    },
+    // Idempotent, and it never throws: it also runs on the failure paths, where
+    // the capture's own error is the one worth reporting.
+    release() {
+      released ??= (async () => {
+        if (!sessionId) return;
+        if (originalOrientation && originalOrientation !== orientation) {
+          await rotate(originalOrientation).catch((error) => {
+            rethrowIfBroken(error);
+            console.warn(
+              `could not restore the iPad to ${originalOrientation} (${error.message}) — ` +
+                'turn it back by hand before the next capture'
+            );
+          });
+        }
+        await request('DELETE', `/session/${sessionId}`).catch((error) => {
+          rethrowIfBroken(error);
+          console.warn(`could not delete WDA session ${sessionId} (${error.message})`);
+        });
+      })();
+      return released;
     },
     async boundsFrom(geometry) {
-      const size = await wda(wdaUrl, 'GET', `/session/${sessionId}/window/size`);
-      const element = await wda(wdaUrl, 'POST', `/session/${sessionId}/element`, {
+      const size = await request('GET', `/session/${sessionId}/window/size`);
+      const element = await request('POST', `/session/${sessionId}/element`, {
         using: 'class name',
         value: 'XCUIElementTypeWebView',
       }).catch((error) => {
@@ -389,8 +470,7 @@ function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
       });
       const key = 'element-6066-11e4-a52e-4f735466cecf';
       const webViewBounds = element
-        ? await wda(
-            wdaUrl,
+        ? await request(
             'GET',
             `/session/${sessionId}/element/${element[key] ?? element.ELEMENT}/rect`
           )
@@ -407,7 +487,7 @@ function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
       };
     },
     async dispatch({ bounds }, repeats) {
-      await wda(wdaUrl, 'POST', `/session/${sessionId}/actions`, {
+      await request('POST', `/session/${sessionId}/actions`, {
         actions: [
           {
             type: 'pointer',
@@ -534,6 +614,91 @@ export function drivenCaptureArtifact({
   };
 }
 
+// Everything that needs the device: from opening the page to the accepted
+// report. `refuse` hands the device back before exiting.
+async function driveOpenedCapture({
+  driver,
+  host,
+  brush,
+  theme,
+  orientation,
+  nonce,
+  repeats,
+  refuse,
+}) {
+  await driver.openPage();
+
+  // A launch does not always produce the page it asked for. Chrome restores the
+  // tabs a previous cell left behind, each re-runs the bootstrap, and with the
+  // identity guard in place those stand down correctly — but on a landscape cell
+  // the intended page then failed to appear at all, six leftovers standing down
+  // and no capture. Re-issuing the launch costs one settle when it was not
+  // needed, and is the difference between a banked cell and a P1 when it was.
+  let ready = await pollFor(
+    async () => (await probeState(host)).ready,
+    PROBE_READY_OPEN_TIMEOUT_MS
+  );
+  if (!ready) {
+    console.log('no page reported ready — re-opening');
+    await driver.openPage();
+    ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
+  }
+  if (!ready) await refuse('the page never reported the probe ready');
+  if (ready.committed && ready.committed !== brush) {
+    await refuse(`the engine is on ${ready.committed}, not ${brush}`);
+  }
+  // The device rotates, the page does not always agree. Trusting the request
+  // rather than the page is how a landscape capture gets filed as portrait.
+  // Theme used to be recorded from the REQUEST, so a light-labelled artifact
+  // could be written while the page stayed dark. It is now set through the
+  // product's Settings controls and read back before anything is measured.
+  const themeProblem = readinessThemeProblem(ready, theme);
+  if (themeProblem) await refuse(themeProblem);
+  const workerProblem = staleServiceWorkerProblem(ready);
+  if (workerProblem) await refuse(workerProblem);
+  if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
+    await refuse(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
+  }
+
+  const geometry = await driver.boundsFrom(ready.geometry);
+  const runtimeIdentity = await driver.runtimeIdentity?.();
+  console.log(`canvas ${JSON.stringify(geometry.bounds)} scale ${geometry.densityScale}`);
+
+  await driveSplitGesturePasses({
+    driver,
+    geometry,
+    repeats,
+    refillBetweenPasses:
+      brush === 'eraser'
+        ? (afterStroke) => requestPageEraserRefill({ host, nonce, afterStroke })
+        : null,
+  });
+  await sleep(GESTURE_TAIL_MS);
+  const pulsed = await probeState(host).catch((error) => {
+    rethrowIfBroken(error);
+    return null;
+  });
+  const inputProblem = zeroInputProblem(pulsed?.pulse);
+  if (inputProblem) await refuse(inputProblem);
+  await control(host, { finish: true });
+
+  const uploaded = await pollFor(
+    async () => ((await probeState(host)).hasReport ? true : null),
+    REPORT_TIMEOUT_MS
+  );
+  if (!uploaded) {
+    const finalState = await probeState(host).catch(() => null);
+    const seen = finalState?.pulse ? ` (page last pulsed ${finalState.pulse.events} events)` : '';
+    await refuse(`no report was uploaded${seen}`);
+  }
+
+  // Read the same nonce-gated in-memory payload whose `hasReport` flag ended the
+  // poll. A caller-local report directory can contain a same-label artifact from
+  // another host or run, while the live host has already accepted the right one.
+  const payload = await fetchAcceptedProbeReport(host);
+  return { ready, runtimeIdentity, payload };
+}
+
 export async function captureDeviceFrames({
   platform = argFlag('platform', 'android'),
   brush = argFlag('brush', 'pen'),
@@ -627,78 +792,25 @@ export async function captureDeviceFrames({
           nativeApp,
           cdpPort,
         })
-      : iosDriver({ wdaUrl, pageUrl, nativeApp });
+      : iosDriver({ wdaUrl, pageUrl, nativeApp, orientation });
 
-  await driver.openPage();
-
-  // A launch does not always produce the page it asked for. Chrome restores the
-  // tabs a previous cell left behind, each re-runs the bootstrap, and with the
-  // identity guard in place those stand down correctly — but on a landscape cell
-  // the intended page then failed to appear at all, six leftovers standing down
-  // and no capture. Re-issuing the launch costs one settle when it was not
-  // needed, and is the difference between a banked cell and a P1 when it was.
-  let ready = await pollFor(
-    async () => (await probeState(host)).ready,
-    PROBE_READY_OPEN_TIMEOUT_MS
-  );
-  if (!ready) {
-    console.log('no page reported ready — re-opening');
-    await driver.openPage();
-    ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
-  }
-  if (!ready) fail('the page never reported the probe ready');
-  if (ready.committed && ready.committed !== brush) {
-    fail(`the engine is on ${ready.committed}, not ${brush}`);
-  }
-  // The device rotates, the page does not always agree. Trusting the request
-  // rather than the page is how a landscape capture gets filed as portrait.
-  // Theme used to be recorded from the REQUEST, so a light-labelled artifact
-  // could be written while the page stayed dark. It is now set through the
-  // product's Settings controls and read back before anything is measured.
-  const themeProblem = readinessThemeProblem(ready, theme);
-  if (themeProblem) fail(themeProblem);
-  const workerProblem = staleServiceWorkerProblem(ready);
-  if (workerProblem) fail(workerProblem);
-  if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
-    fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
-  }
-
-  const geometry = await driver.boundsFrom(ready.geometry);
-  const runtimeIdentity = await driver.runtimeIdentity?.();
-  console.log(`canvas ${JSON.stringify(geometry.bounds)} scale ${geometry.densityScale}`);
-
-  await driveSplitGesturePasses({
+  // The device is handed back — the iPad turned to the orientation it started
+  // in — as soon as the report is in hand, and on every refusal before that:
+  // `fail` exits the process, so no `finally` would run in its place.
+  const refuse = async (message) => {
+    await driver.release?.();
+    fail(message);
+  };
+  const { ready, runtimeIdentity, payload } = await driveOpenedCapture({
     driver,
-    geometry,
+    host,
+    brush,
+    theme,
+    orientation,
+    nonce,
     repeats,
-    refillBetweenPasses:
-      brush === 'eraser'
-        ? (afterStroke) => requestPageEraserRefill({ host, nonce, afterStroke })
-        : null,
-  });
-  await sleep(GESTURE_TAIL_MS);
-  const pulsed = await probeState(host).catch((error) => {
-    rethrowIfBroken(error);
-    return null;
-  });
-  const inputProblem = zeroInputProblem(pulsed?.pulse);
-  if (inputProblem) fail(inputProblem);
-  await control(host, { finish: true });
-
-  const uploaded = await pollFor(
-    async () => ((await probeState(host)).hasReport ? true : null),
-    REPORT_TIMEOUT_MS
-  );
-  if (!uploaded) {
-    const finalState = await probeState(host).catch(() => null);
-    const seen = finalState?.pulse ? ` (page last pulsed ${finalState.pulse.events} events)` : '';
-    fail(`no report was uploaded${seen}`);
-  }
-
-  // Read the same nonce-gated in-memory payload whose `hasReport` flag ended the
-  // poll. A caller-local report directory can contain a same-label artifact from
-  // another host or run, while the live host has already accepted the right one.
-  const payload = await fetchAcceptedProbeReport(host);
+    refuse,
+  }).finally(() => driver.release?.());
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the gesture never reached the canvas');
