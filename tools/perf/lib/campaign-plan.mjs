@@ -39,7 +39,7 @@ const SCREEN_COMMAND = 'perf:ios:xcuitest:screen';
 // ADR-0135's transport. It carries its own argument vocabulary rather than the
 // Appium one minus the parts that would be ignored.
 export const SPLIT_SCREEN_COMMAND = 'perf:device:frames';
-export const SPLIT_TRANSPORT = 'split';
+const SPLIT_TRANSPORT = 'split';
 // Desktop rows run entirely on the capture host through Playwright. Orientation
 // is a viewport shape rather than a device rotation, and the matrix derives it
 // back from the recorded viewport, so the two geometries have to stay a matched

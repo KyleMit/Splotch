@@ -181,23 +181,6 @@ export function recordedBlockedCoverage(artifact) {
   return blocked;
 }
 
-// The single coverage judgement both the runner (and so perf:campaign:status)
-// and the matrix fold (campaign-sources.mjs) apply, so status cannot report a
-// sweep blocked while the fold publishes it as a full sweep. Null when the
-// artifact's coverage is not in question. Deliberately not `passed === false` —
-// campaign action cells run --report-only, and a red gate is valid evidence.
-export function blockedCoverageRefusal(artifact) {
-  let blockedCoverage;
-  try {
-    blockedCoverage = recordedBlockedCoverage(artifact);
-  } catch (error) {
-    rethrowIfBroken(error);
-    return { status: FAILED };
-  }
-  if (blockedCoverage.length === 0) return null;
-  return { status: BLOCKED_COVERAGE, blocked: blockedCoverage.map(({ label }) => label) };
-}
-
 export function inspectArtifact(
   path,
   runtime,
@@ -219,11 +202,25 @@ export function inspectArtifact(
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
-  // Right after identity, ahead of every quality check: no gate, regime, or
-  // fidelity verdict about the actions a sweep DID measure can stand in for one
-  // it could not obtain.
-  const coverageRefusal = blockedCoverageRefusal(artifact);
-  if (coverageRefusal) return { ok: false, ...coverageRefusal };
+  // Right after identity, ahead of every quality check: an action capture that
+  // could not obtain a required action is missing coverage, and no gate, regime,
+  // or fidelity verdict about the actions it DID measure can stand in for the
+  // one it did not. Deliberately not `passed === false` — campaign action cells
+  // run --report-only, and a red gate is valid evidence the ledger must bank.
+  let blockedCoverage;
+  try {
+    blockedCoverage = recordedBlockedCoverage(artifact);
+  } catch (error) {
+    rethrowIfBroken(error);
+    return { ok: false, status: FAILED };
+  }
+  if (blockedCoverage.length > 0) {
+    return {
+      ok: false,
+      status: BLOCKED_COVERAGE,
+      blocked: blockedCoverage.map(({ label }) => label),
+    };
+  }
   // The required-verdict check comes BEFORE re-derivation (the PR 1368 review's
   // boundary finding): a fidelity-reporting runner always writes the block, so
   // an artifact without one is stale or foreign — healthy-looking input stats

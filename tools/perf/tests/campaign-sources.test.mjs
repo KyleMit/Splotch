@@ -11,9 +11,9 @@ import {
 import { modeProvenance } from '../check-matrix-staleness.mjs';
 import { normalizeMatrix } from '../gen-performance-matrix.mjs';
 import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
-import { artifactPath, campaignTarget } from '../lib/campaign-plan.mjs';
-import { BLOCKED_COVERAGE, FAILED } from '../lib/campaign-ledger.mjs';
-import { inspectArtifact } from '../run-campaign.mjs';
+import { artifactPath, campaignTarget, planCampaign } from '../lib/campaign-plan.mjs';
+import { BLOCKED_COVERAGE, FAILED, UNSCOREABLE } from '../lib/campaign-ledger.mjs';
+import { cellInspection } from '../run-campaign.mjs';
 import { ROOT } from '../../lib/proc.mjs';
 
 const temporaryDirectories = [];
@@ -54,6 +54,31 @@ function splitUndoEvidence(count = 10) {
   };
 }
 
+// The fold accepts exactly what the campaign runner's cellInspection accepts, so a
+// drawing fixture must carry what that inspection re-derives: a fidelity verdict
+// backed by healthy input stats, and a frame interval in the target's regime.
+const HEALTHY_INPUT = {
+  kinds: 'touch',
+  trust: { share: 1 },
+  movesPerSecond: 115.5,
+  movesPerFrame: 1.93,
+  moveGapP95Ms: 16,
+  pressure: { p50: 0 },
+  contactWidth: { p50: 74 },
+  contactHeight: { p50: 74 },
+};
+const INTERVAL_MS_BY_REGIME = { '60hz': 16.7, '120hz': 8.3 };
+
+function scoreableDrawing(targetId) {
+  return {
+    fidelity: { passed: true },
+    summaries: {
+      intervalMs: INTERVAL_MS_BY_REGIME[campaignTarget(targetId).refreshRegime],
+      phases: [{ input: HEALTHY_INPUT }],
+    },
+  };
+}
+
 function writeCampaign(
   targetId,
   transport,
@@ -70,6 +95,7 @@ function writeCampaign(
       JSON.stringify({
         transport,
         ...(transport === 'native-capacitor-webview' ? { appUrl: 'capacitor://localhost' } : {}),
+        ...(item === 'actions' ? {} : scoreableDrawing(targetId)),
         ...(transport === 'split-input-measurement' && item === 'pen-undo'
           ? splitUndoEvidence()
           : {}),
@@ -134,7 +160,7 @@ describe('campaign sources', () => {
     expect(Object.keys(entry.mode.drawing)).toHaveLength(4);
   });
 
-  describe('a sweep the runner refuses for blocked coverage', () => {
+  describe('an artifact the campaign runner refuses', () => {
     const BLOCKED_SWEEP = {
       actionPlan: {
         blocked: [{ label: 'show AI waiting print', reason: 'no secure context' }],
@@ -146,9 +172,13 @@ describe('campaign sources', () => {
         artifactForItem: { actions },
       });
     const statusOf = (outputRoot) =>
-      inspectArtifact(
-        artifactPath(outputRoot, 'ipad-device-native', MODE, 'actions'),
-        campaignTarget('ipad-device-native').runtime
+      cellInspection(
+        planCampaign('ipad-device-native', {
+          outputRoot,
+          modes: [MODE.id],
+          items: ['actions'],
+        })[0],
+        campaignTarget('ipad-device-native')
       );
 
     it.each([
@@ -161,6 +191,28 @@ describe('campaign sources', () => {
       expect(statusOf(outputRoot).status).toBe(status);
       expect(entry.mode).toBeUndefined();
       expect(entry.missing).toEqual(['actions']);
+      expect(entry.refusals).toEqual({ actions: status });
+    });
+
+    it('refuses a drawing whose input fidelity re-derives to a failure', () => {
+      const underDriven = { ...HEALTHY_INPUT, movesPerFrame: 0.44, moveGapP95Ms: 40 };
+      const outputRoot = writeCampaign('ipad-device-native', 'native-capacitor-webview', {
+        artifactForItem: {
+          crayon: { summaries: { intervalMs: 16.7, phases: [{ input: underDriven }] } },
+        },
+      });
+      const [entry] = sourcesFor('ipad-device-native', outputRoot);
+      const crayonCell = planCampaign('ipad-device-native', {
+        outputRoot,
+        modes: [MODE.id],
+        items: ['crayon'],
+      })[0];
+
+      const { status } = cellInspection(crayonCell, campaignTarget('ipad-device-native'));
+
+      expect(status).toBe(UNSCOREABLE);
+      expect(entry.mode).toBeUndefined();
+      expect(entry.refusals).toEqual({ crayon: UNSCOREABLE });
     });
 
     it('still folds a sweep whose recorded blocked list is empty', () => {
@@ -442,7 +494,8 @@ describe('campaign sources', () => {
       const [entry] = sourcesFor('android-device-web', outputRoot);
 
       expect(entry.mode).toBeUndefined();
-      expect(entry.missing).toContain('undo');
+      expect(entry.missing).toEqual(['pen']);
+      expect(entry.refusals.pen).toBe(FAILED);
     }
   });
 

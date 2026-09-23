@@ -830,11 +830,14 @@ Two properties of step 2 decide how small an increment can be:
   it does not. A section already `preserved` or `captured-untracked` keeps its route and provenance.
   The fold refuses `--preserve-actions` when that mode already has a usable action artifact in the
   output root, so a stale runbook flag cannot discard a successful fresh sweep.
-* **A sweep refused for blocked coverage is not usable.** A sweep whose `actionPlan.blocked` names
-  an action it could not obtain is the one `perf:campaign:status` reports `blocked-coverage`, and
-  the fold treats it exactly like a missing sweep, through the same `blockedCoverageRefusal`
-  predicate in `run-campaign.mjs`. Fold the mode with `--actions-unavailable=<reason>` or
-  `--preserve-actions` instead; there is no need to move the refused sweep aside first.
+* **A cell is usable exactly when the campaign runner would accept it.** The fold judges each
+  artifact with the runner's own `cellInspection` over the same plan cell that
+  `perf:campaign:status` inspects, so the two cannot disagree: a sweep status reports
+  `blocked-coverage`, a drawing whose input fidelity re-derives to a failure, an off-regime capture,
+  or a split pen missing its undo evidence all read as missing, and the dry run names the runner's
+  status beside each refused item. For a refused action sweep, fold the mode with
+  `--actions-unavailable=<reason>` or `--preserve-actions`; there is no need to move the sweep aside
+  first.
 * **It is keyed off the artifacts on disk, not the ledger.** A cell that failed and wrote nothing is
   simply absent, so a partial run degrades to "that mode was not folded" rather than to a mode
   half-rewritten.
