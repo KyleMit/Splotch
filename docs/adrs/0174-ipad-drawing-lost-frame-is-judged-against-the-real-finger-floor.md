@@ -104,11 +104,12 @@ two fast captures observed an 8 ms beat. See decision 5.
 
 The driven capture's lost-frame share is instrument evidence. Read it as follows:
 
-* **A driven green stands.** The transport only adds lost frames: in every pair measured so far the
-  finger read lower, even though the finger was the heavier workload at 128–160 moves/s against
-  about 116. So a driven green does not hide a product red. It still comes from input slower than a
-  finger, and ADR-0135 already notes that such input does not exercise the case where input arrives
-  faster than frames. This record does not change that limit.
+* **A driven green stands.** This record assumes the transport only adds lost frames. Every pair
+  measured so far supports that: the finger read lower each time, even though it was the heavier
+  workload at 128–160 moves/s against about 116. So a driven green stays green, and only a driven
+  red is in question. A driven green still comes from input slower than a finger, and ADR-0135
+  already notes that such input does not exercise the case where input arrives faster than frames.
+  This record does not change that limit.
 * **A driven red on `ipad-device-web` pen, Magic, or eraser, with passing paint gates and a reading
   inside the recorded driven band (0.99–1.37% at e5142fab, 1.27% on 2026-09-22), is explained by
   this record.** The smallest measured driven-minus-finger gap is 1.11 points. If a real product red
@@ -133,11 +134,12 @@ instrument artifacts of the synthesized-touch transport**, not product costs. Th
 disposition under the ADR-0160 definition: it states the measured basis, the attribution, and the
 reopen condition. The basis differs by brush:
 
-* **Pen (4 cells): measured.** Two finger captures, one per orientation and theme, read 0.04–0.06%
-  against 1.22–1.37% driven. The 2026-09-22 control reproduces the driven red on current main.
+* **Pen (4 cells): measured.** Two finger captures, covering both orientations and both themes, read
+  0.04–0.06% against 1.22–1.37% driven. The 2026-09-22 control reproduces the driven red on current
+  main.
 * **Magic (3 cells): measured, with an exception.** The one finger capture reads 0.04% outside its
-  single 433 ms first-load stall, against 1.02–1.15% driven. That stall scores 1.13% on its own. It
-  is a separate, open product observation and is not covered here.
+  single 433 ms first-load stall, against 1.02–1.15% driven. That stall is what brings the capture
+  to 1.13% as scored. It is a separate, open product observation and is not covered here.
 * **Eraser (3 cells): by extension, not by measurement.** No finger capture of eraser exists. It is
   reclassified because its driven readings (1.19–1.25%) fall in the same band, on the same row and
   commit, with the same paint time. The maintainer's decision applies to all ten cells.
@@ -171,11 +173,12 @@ scoring state for one decision would be speculative surface. So the reclassifica
 two places. One is this ADR. The other is the matrix's capture-limitations note, which is in the
 `limitations` array of `sources.json` and in each published copy of it.
 
-The current generator cannot rebuild the 2026-09-06 report from its manifest. Later refusals reject
-its raw inputs (for example, "is marked full but its actionPlan records a subset action run"). So
-this change edits that one limitation string in `sources.json`, `data.json`, `index.md`, and
-`index.html` exactly as the generator would write it, and changes no other byte. The next matrix
-regeneration will carry the `sources.json` text forward.
+The 2026-09-06 report could not be rebuilt for this change. Its raw inputs are untracked. With the
+copy from the capture host restored, the current generator stops on one of them: "is marked full but
+its actionPlan records a subset action run". Finding out why is outside this record. So this change
+edits that one limitation string in `sources.json`, `data.json`, `index.md`, and `index.html`
+exactly as the generator would write it, and changes no other byte. The next matrix regeneration
+will carry the `sources.json` text forward.
 
 ### 5. The 60 vs 120 Hz question, for the scored route
 
