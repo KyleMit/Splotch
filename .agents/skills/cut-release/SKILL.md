@@ -79,6 +79,12 @@ Follow these steps:
    | 2. Build          | `build`             | the signed `.aab` / `.ipa` for that version    |
    | 3. Publish        | `publish-artifacts` | those artifacts attached to the release        |
 
+   Also remind the user that the **per-release commit-latency check on the physical iPad** is due
+   before the signed artifacts are published. The CI WebKit commit gate is advisory and does not
+   cover it (ADR-0173). The check needs the maintainer with the capture rig armed, so do not run it
+   from this skill. The exact commands and the baseline are in ADR-0173, and the item is on the
+   release checklist in `docs/MOBILE/ios.md`.
+
    Tell the user to run **`build`** next, then **`publish-artifacts`**. The publish step verifies
    each artifact's embedded version against the release and refuses a mismatch, so the stale-upload
    failure cannot recur silently.

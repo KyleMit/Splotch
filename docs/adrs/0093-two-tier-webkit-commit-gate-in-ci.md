@@ -4,7 +4,9 @@
 [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md); amended by
 [ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md), which moved this tier off
 the pull-request path. ADR-0100's 2026-08-11 amendment retired the structural half when tiled
-history removed the blob-encoding path it guarded. **Date:** 2026-08
+history removed the blob-encoding path it guarded. Amended by
+[ADR-0173](0173-physical-ipad-holds-the-commit-contract.md), which moves the commit contract to the
+physical iPad and keeps both runner tiers advisory. **Date:** 2026-08
 
 ## Amendment — 2026-08-11: tiled-history coverage
 
