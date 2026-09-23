@@ -66,6 +66,21 @@
     } else eraserCursor.lifting = true;
   }
 
+  // Both halos share these keyframes, and a halo's cleanup handlers hear EVERY
+  // animation the element runs — including the grow-in's cancellation, which is
+  // what setting `lifting` causes (the class swaps `halo-in` for `halo-out`).
+  // Acting on that cancellation would drop the record before the lift it just
+  // started could play, so the lift's own end is told apart by name. Svelte
+  // hash-scopes a component's keyframe names, so the animation arrives as
+  // `svelte-<hash>-halo-out` and the match is by suffix; a name that stopped
+  // matching would strand a lifted halo on screen, which
+  // `web/tests/drawing-motion.spec.ts` is what catches.
+  const LIFT_KEYFRAMES = 'halo-out';
+
+  function isLiftEnd(e: AnimationEvent) {
+    return e.target === e.currentTarget && e.animationName.endsWith(LIFT_KEYFRAMES);
+  }
+
   // Svelte's element typings carry no `onanimationcancel` attribute, so the
   // cancel path listens through an action instead.
   function onAnimationCancel(node: HTMLElement, handler: (e: AnimationEvent) => void) {
@@ -83,7 +98,7 @@
   }
 
   function endEraserLift(e: AnimationEvent) {
-    if (e.target !== e.currentTarget || !eraserCursor.lifting) return;
+    if (!isLiftEnd(e) || !eraserCursor.lifting) return;
     eraserCursor.visible = false;
     eraserCursor.lifting = false;
   }
@@ -188,8 +203,7 @@
   }
 
   function endRingLift(e: AnimationEvent, pointerId: number) {
-    if (e.target === e.currentTarget && brushRings[pointerId]?.lifting)
-      delete brushRings[pointerId];
+    if (isLiftEnd(e) && brushRings[pointerId]?.lifting) delete brushRings[pointerId];
   }
 
   function handlePointerLeave(e: PointerEvent) {
