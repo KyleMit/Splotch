@@ -18,7 +18,7 @@ export function drawerCascade(node: HTMLElement, opening: boolean) {
   }
   update(opening);
   node.addEventListener('animationend', finish);
-  // The one caller that reacts to the answer flipping mid-session: the reduced
+  // Reacts to the answer flipping mid-session, as PointerHalos does: the reduced
   // treatment cancels the cascade, so its animationend never clears the class.
   const stopWatching = watchReducedMotion((reduced) => {
     if (reduced) node.classList.remove('opening');
