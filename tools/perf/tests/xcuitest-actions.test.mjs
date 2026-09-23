@@ -978,11 +978,15 @@ describe('trusted action setup', () => {
     const setupEnd = IPAD_ACTIONS.indexOf('const appUrl =', setupStart);
     const setup = IPAD_ACTIONS.slice(setupStart, setupEnd);
     const unlock = setup.indexOf('releaseNativeRotationLock(execute)');
-    const pin = setup.indexOf('pinDisplayToUserRotation(client.androidTouchTarget.serial)');
+    const record = setup.indexOf(
+      'displayRotationModeRestore = readDisplayRotationMode(client.androidTouchTarget.serial)'
+    );
+    const pin = setup.indexOf('pinDisplayToUserRotation(displayRotationModeRestore)');
     const rotate = setup.indexOf('orientation: requestedOrientation');
 
     expect(unlock).toBeGreaterThan(-1);
-    expect(pin).toBeGreaterThan(unlock);
+    expect(record).toBeGreaterThan(unlock);
+    expect(pin).toBeGreaterThan(record);
     expect(rotate).toBeGreaterThan(pin);
 
     const cleanupStart = IPAD_ACTIONS.indexOf('function cleanup()');
@@ -994,6 +998,11 @@ describe('trusted action setup', () => {
 
     expect(unpin).toBeGreaterThan(restoreLock);
     expect(deleteSession).toBeGreaterThan(unpin);
+    // A failed unpin fails the capture after the session is released, rather
+    // than warning and letting the next cell start on a pinned phone.
+    const rethrow = cleanup.indexOf('if (unpinError)');
+    expect(rethrow).toBeGreaterThan(deleteSession);
+    expect(cleanup.slice(rethrow)).toMatch(/throw new Error\(/);
   });
 
   it('records desktop scroll as trusted wheel while retaining native touch transport', () => {

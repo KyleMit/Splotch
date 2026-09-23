@@ -34,10 +34,14 @@ function adbShell(serial, command) {
   return tryCapture(ADB, ['-s', serial, 'shell', ...command]);
 }
 
-// Returns the handle restoreDisplayRotationMode needs. Refuses rather than
-// guessing when the prior mode cannot be read: a pin with nothing recorded to
-// restore would leave the phone ignoring every app's orientation request.
-export function pinDisplayToUserRotation(serial, run = adbShell) {
+// The handle restoreDisplayRotationMode needs, read before anything is
+// written so a caller can hold it across a pin whose adb reply was lost.
+// Refuses rather than guessing when the prior mode cannot be read: a pin with
+// nothing recorded to restore would leave the phone ignoring every app's
+// orientation request. A display already pinned is refused too: no stock phone
+// ships it enabled, so it is a pin a crashed capture left behind, and adopting
+// it as the prior mode would make every later restore a no-op.
+export function readDisplayRotationMode(serial, run = adbShell) {
   const read = run(serial, fixedToUserRotationCommand());
   const prior = read.ok ? parseFixedToUserRotation(read.stdout) : null;
   if (!prior) {
@@ -46,17 +50,24 @@ export function pinDisplayToUserRotation(serial, run = adbShell) {
         'so the display cannot be pinned to user rotation and restored afterwards'
     );
   }
-  if (prior !== 'enabled') {
-    const pinned = run(serial, fixedToUserRotationCommand('enabled'));
-    if (!pinned.ok) {
-      throw new Error(`wm fixed-to-user-rotation enabled failed on ${serial}: ${pinned.stderr}`);
-    }
+  if (prior === 'enabled') {
+    throw new Error(
+      `The display on ${serial} is already pinned to user rotation, most likely by an ` +
+        'interrupted capture. Run npm run perf:release (or adb shell wm fixed-to-user-rotation ' +
+        `${FIXED_TO_USER_ROTATION_STOCK}) before capturing again`
+    );
   }
   return { serial, prior };
 }
 
+export function pinDisplayToUserRotation({ serial }, run = adbShell) {
+  const pinned = run(serial, fixedToUserRotationCommand('enabled'));
+  if (!pinned.ok) {
+    throw new Error(`wm fixed-to-user-rotation enabled failed on ${serial}: ${pinned.stderr}`);
+  }
+}
+
 export function restoreDisplayRotationMode({ serial, prior }, run = adbShell) {
-  if (prior === 'enabled') return;
   const restored = run(serial, fixedToUserRotationCommand(prior));
   if (!restored.ok) {
     throw new Error(`wm fixed-to-user-rotation ${prior} failed on ${serial}: ${restored.stderr}`);

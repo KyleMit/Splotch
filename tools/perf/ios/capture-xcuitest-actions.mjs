@@ -21,6 +21,7 @@ import {
 import { readAndroidInputWindows, unoccludedTapPoint } from '../lib/android-touch-occlusion.mjs';
 import {
   pinDisplayToUserRotation,
+  readDisplayRotationMode,
   restoreDisplayRotationMode,
 } from '../lib/android-user-rotation.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
@@ -2528,19 +2529,27 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       }
       // After the lock restore, so the restored Portrait/Landscape lock takes
       // over from the pinned user rotation rather than the sensor.
+      let unpinError = null;
       if (displayRotationModeRestore) {
         try {
           restoreDisplayRotationMode(displayRotationModeRestore);
         } catch (error) {
-          console.warn(
-            `cleanup: ${error.message} — the phone keeps ignoring app orientation requests until it is reset`
-          );
+          unpinError = error;
         }
       }
       if (sessionId && ownsSession) {
         await client?.request('DELETE', `/session/${sessionId}`).catch(() => {});
       }
       server?.stop();
+      // Fails the capture rather than warning: a phone left pinned ignores
+      // every app's orientation request, and the next cell's
+      // readDisplayRotationMode refuses to start until it is reset.
+      if (unpinError) {
+        throw new Error(
+          `cleanup: ${unpinError.message} — the phone ignores app orientation requests until it is reset`,
+          { cause: unpinError }
+        );
+      }
     })();
     return cleanupPromise;
   }
@@ -2656,7 +2665,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         }
       }
       if (client.androidTouchTarget && initialRotationLock !== PLATFORM_OWNS_ROTATION) {
-        displayRotationModeRestore = pinDisplayToUserRotation(client.androidTouchTarget.serial);
+        // Recorded before the write, so a pin whose adb reply is lost is still undone.
+        displayRotationModeRestore = readDisplayRotationMode(client.androidTouchTarget.serial);
+        pinDisplayToUserRotation(displayRotationModeRestore);
       }
     }
     if (nativeApp && requestedOrientation) {

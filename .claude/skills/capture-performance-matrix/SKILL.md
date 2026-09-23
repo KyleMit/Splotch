@@ -125,7 +125,8 @@ Which control that is depends on the platform, and the runner resolves it rather
   Appium's rotation is refused ("locked programmatically?") on a phone lying still. The runner then
   pins the display to user rotation with `wm fixed-to-user-rotation enabled` — the stand-in for
   turning the phone — and puts the prior mode back after the lock
-  (`tools/perf/lib/android-user-rotation.mjs`).
+  (`tools/perf/lib/android-user-rotation.mjs`). A failed unpin fails the capture, and a phone found
+  already pinned is refused until `npm run perf:release` resets it.
 * On a native tablet there is no such control — `supportsOrientationLock()` is false because iPadOS
   windowing ignores an in-app lock — so device rotation is the only path the product offers and the
   runner takes it, recording `platformOwnsRotation` in the capture. A missing toggle there is the
