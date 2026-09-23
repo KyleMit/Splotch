@@ -102,6 +102,34 @@ describe('which drawing reds a recorded disposition explains', () => {
     }
   });
 
+  // The aggregate reports the worst run, so a cell folding an in-band red with an
+  // out-of-band one would look covered if only the aggregate were read.
+  it('leaves a cell open when any one of its failing readings is outside the band', () => {
+    const phase = (share) => ({
+      phase: 'blank',
+      paint: { p95: 16, p99: 24, max: 39 },
+      lostFrameTimeShare: share,
+      passed: share <= LOST_FRAME_TIME_SHARE_GATE,
+    });
+    const folded = (phasesByRun) => {
+      const base = cell({ share: 0.0127 });
+      return {
+        ...base,
+        runs: phasesByRun.map((phases) => ({ ...base.runs[0], phases })),
+      };
+    };
+
+    expect(
+      lostFrameDispositionFor('ipad-device-web', 'pen', folded([[phase(0.0113)], [phase(0.0127)]]))
+    ).toBeNull();
+    expect(
+      lostFrameDispositionFor('ipad-device-web', 'pen', folded([[phase(0.0127), phase(0.02)]]))
+    ).toBeNull();
+    expect(
+      lostFrameDispositionFor('ipad-device-web', 'pen', folded([[phase(0.0127)], [phase(0.004)]]))
+    ).toMatchObject({ adr: 'ADR-0174' });
+  });
+
   it('explains eraser only at the e5142fab readings it was extended to', () => {
     const at = (share, productCommit) =>
       lostFrameDispositionFor('ipad-device-web', 'eraser', cell({ share, productCommit }));

@@ -81,15 +81,16 @@ export function lostFrameDispositionFor(targetId, brush, entry) {
   const runs = entry?.runs ?? [];
   if (!disposition || !aggregate || !runs.length) return null;
   if (aggregate.scoreable === false || aggregate.blankPassed !== false) return null;
-  const share = aggregate.lostFrameTimeShare;
-  if (!(share >= disposition.band.minShare && share <= disposition.band.maxShare)) return null;
+  const inBand = (share) =>
+    share >= disposition.band.minShare && share <= disposition.band.maxShare;
+  // Every failing phase of every run is judged on its own reading, not the
+  // aggregate maximum: a cell folding an in-band red with an out-of-band one
+  // holds a red the ADR does not explain, so the whole cell stays open.
   const phases = runs.flatMap((run) => run.phases ?? []);
-  const onlyLostFrameFailed = phases.every(
-    (phase) =>
-      paintGatesPassed(phase.paint) &&
-      (phase.passed || phase.lostFrameTimeShare > (entry.gateShare ?? LOST_FRAME_TIME_SHARE_GATE))
+  const everyRedCovered = phases.every(
+    (phase) => paintGatesPassed(phase.paint) && (phase.passed || inBand(phase.lostFrameTimeShare))
   );
-  if (!phases.length || !onlyLostFrameFailed) return null;
+  if (!phases.length || !everyRedCovered) return null;
   if (
     disposition.productCommits &&
     !runs.every((run) => disposition.productCommits.includes(run.productCommit))
