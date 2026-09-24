@@ -1,0 +1,43 @@
+{
+  "campaign": "2026-09-24-epic-2210-person-ipad-device-native",
+  "productCommit": "439cd3c3d8e78f02be1f86ad6a540d12acc5c982",
+  "capturedFrom": "perf-profiles/person-session/2026-09-24T01-57-36/captures",
+  "kept": [
+    {
+      "file": "magic-finger--4971246f.json",
+      "target": "ipad-device-native",
+      "brush": "magic",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-dark/magic-finger.json",
+      "handCapture": true,
+      "runtime": "ios-capacitor-webview",
+      "reading": null,
+      "device": {
+        "name": "iPad",
+        "os": "26.5",
+        "id": "[redacted]"
+      },
+      "pageDelivery": "bundled",
+      "drawSeconds": 20
+    },
+    {
+      "file": "pen-finger--eca4bb15.json",
+      "target": "ipad-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-light/pen-finger.json",
+      "handCapture": true,
+      "runtime": "ios-capacitor-webview",
+      "reading": null,
+      "device": {
+        "name": "iPad",
+        "os": "26.5",
+        "id": "[redacted]"
+      },
+      "pageDelivery": "bundled",
+      "drawSeconds": 20
+    }
+  ]
+}

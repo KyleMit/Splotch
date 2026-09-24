@@ -1,0 +1,41 @@
+{
+  "campaign": "2026-09-24-issue-2229-portrait-ab-head",
+  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+  "capturedFrom": "perf-profiles/ab-2229-staging/head",
+  "study": "issue 2229 portrait A/B, one session, three interleaved rounds per arm; foreign build served from an isolated worktree, identity proven by served-bytes fingerprint and buildDigest",
+  "kept": [
+    {
+      "file": "crayon-head-r1--4aafc163.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/crayon-head-r1.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-head-r2--38064c3b.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/crayon-head-r2.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-head-r3--a73fecce.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/crayon-head-r3.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}
