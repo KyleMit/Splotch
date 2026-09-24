@@ -344,10 +344,10 @@ with System stays with the app Settings) and a scrollspy-driven table of content
 `SidebarToc` rail on wide screens, and on narrow ones the `TocDisclosure` row that opens onto that
 same rail, its collapsed state naming the section being read. Each part's sections are partials in
 `lib/components/styleguide/` (`ColorSections` + `TypeSections` + `ScaleSections` + `AssetSections` +
-`RecipeSections`, `PrimitiveSections` + `ChromeSections`, `VoiceSections`); because everything is
-imported from `tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the
-implementation. `prerender = false` keeps the page out of the native static export — no native
-surface links to it — and serves it via SSR on the web. Use it to:
+`RecipeSections`, `PrimitiveSections` + `ChromeSections` (which renders `NamedChromeSection`),
+`VoiceSections`); because everything is imported from `tokens.ts`, `palette.ts`, and the icon glob,
+the page cannot drift from the implementation. `prerender = false` keeps the page out of the native
+static export — no native surface links to it — and serves it via SSR on the web. Use it to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
   `pr-screenshots` skill);
