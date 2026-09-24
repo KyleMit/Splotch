@@ -535,6 +535,15 @@ async function ensureWda(session, ctx, prompt) {
 // needs WebDriverAgent turns that into a relaunch instead of a lost capture.
 async function requireWda(session, prompt) {
   const ctx = session.state.ctx;
+  const status = await wdaStatus(ctx.wdaUrl);
+  // The same rule as ensureWda: never open a probe session on a runner that is
+  // serving someone else's, which would replace it.
+  if (status && (status.sessionId ?? status.value?.sessionId)) {
+    fail(
+      `WebDriverAgent ${ctx.wdaUrl} is serving another session — another capture is using the iPad. ` +
+        'Let it finish, then rerun; this runner resumes at the same capture.'
+    );
+  }
   const problem = await wdaSessionProblem(ctx.wdaUrl);
   if (!problem) return;
   console.log(`  WebDriverAgent ${ctx.wdaUrl} stopped opening sessions (${problem}) — relaunching`);
