@@ -1,5 +1,7 @@
+import { resetCrayonStateForClear } from './crayonPassBuffer';
 import type { StrokeGroupCommand } from './strokeOps';
 import { PERF_MARKS } from './perf';
+import type { LiveTile } from './tiledSurfaces';
 
 interface SnapshotTile {
   canvas: HTMLCanvasElement;
@@ -120,4 +122,25 @@ export function createTiledUndoPatches() {
     get: (command: StrokeGroupCommand) => byCommand.get(command),
     delete: (command: StrokeGroupCommand) => byCommand.delete(command),
   };
+}
+
+export function undoPatchesFitTiles(
+  snapshots: ReadonlyMap<number, UndoTileSnapshot> | undefined,
+  tiles: readonly SnapshotTile[]
+) {
+  return [...(snapshots ?? [])].every(([index, snapshot]) => {
+    const tile = tiles[index];
+    return snapshot.tileWidth === tile?.width && snapshot.tileHeight === tile?.height;
+  });
+}
+
+export function restoreUndoPatch(tile: LiveTile, snapshot: UndoTileSnapshot) {
+  resetCrayonStateForClear(tile.ctx);
+  tile.ctx.save();
+  tile.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  tile.ctx.clearRect(snapshot.x, snapshot.y, snapshot.canvas.width, snapshot.canvas.height);
+  tile.ctx.drawImage(snapshot.canvas, snapshot.x, snapshot.y);
+  tile.ctx.restore();
+  tile.needsClear = false;
+  tile.canvas.hidden = snapshot.hidden;
 }

@@ -19,7 +19,7 @@ export function compositeVisibleLiveTiles(root: ParentNode = document): HTMLCanv
   // before the first migration. Measuring a row or column of all-hidden tiles
   // off those backings sizes it wrong and shifts every later row or column, so
   // the composite maps paper coordinates onto the wrong pixels. Read the size
-  // the renderer publishes instead: `resizeTiledRenderer` writes it for every
+  // the renderer publishes instead: `layoutLiveTiles` writes it for every
   // tile in the same pass that hides them, so it leads the backings rather than
   // lagging them. Markup assembled without it prefers visible backings, falling
   // back to every backing only when the entire row or column is hidden.

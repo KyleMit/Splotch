@@ -1,5 +1,5 @@
 import { crayonBufferIsDirty, crayonDepositsOnTiles } from './crayonPassBuffer';
-import { crayonOpShowsTile, resetCrayonStateForClear } from './crayonPassBuffer';
+import { crayonOpShowsTile } from './crayonPassBuffer';
 import { withCanvasRasterFlush } from './canvasRasterFlush';
 import {
   MIN_TILED_UNDO_COMMANDS,
@@ -16,8 +16,8 @@ import { createProgressiveClearCapture } from './progressiveClearCapture';
 import { isCrayonInkOp, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { MAX_UNDO_DEPTH, type RecordedPaperState } from './undoHistory';
 import * as geo from './tiledGeometry';
-import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
-import { createTiledUndoPatches } from './tiledUndoPatches';
+import { createTiledUndoPatches, restoreUndoPatch, undoPatchesFitTiles } from './tiledUndoPatches';
+import { createHiddenBackingMigration, layoutLiveTiles } from './tiledLayout';
 import { createTiledMagicRecode } from './tiledMagicRecode';
 import { createTiledContextRecovery } from './tiledContextRecovery';
 import {
@@ -29,7 +29,6 @@ import {
   deferHiddenTileClear,
   ensureCrayonTileBacking,
   ensureNormalTileBacking,
-  liveTileSurfaces,
   renderHistoryBaseOp,
   restoreBlankLiveTiles,
   restoreTileContexts,
@@ -65,7 +64,7 @@ const history: StrokeGroupCommand[] = [];
 const undoPatches = createTiledUndoPatches();
 let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
-let backingMigration = { revision: 0, pending: false };
+const backingMigration = createHiddenBackingMigration(() => liveTiles);
 const isDevHarness = typeof __DEV_HARNESS__ !== 'undefined' && __DEV_HARNESS__;
 const workCounters = import.meta.env?.DEV || isDevHarness ? createDrawingWorkCounters() : null;
 const tiledContextRecovery = createTiledContextRecovery(
@@ -95,20 +94,6 @@ export function syncTiledCrayonMix(opacity: string) {
   for (const tile of liveTiles) tile.crayonTop.style.opacity = opacity;
 }
 
-function migrateHiddenBackingsAcrossFrames() {
-  const revision = backingMigration.revision + 1;
-  backingMigration = { revision, pending: true };
-  let index = 0;
-  const migrateNext = () => {
-    if (revision !== backingMigration.revision) return;
-    const tile = liveTiles[index++];
-    if (tile?.canvas.hidden) ensureNormalTileBacking(tile);
-    if (index < liveTiles.length) requestAnimationFrame(migrateNext);
-    else backingMigration.pending = false;
-  };
-  requestAnimationFrame(migrateNext);
-}
-
 export function resizeTiledRenderer(
   width: number,
   height: number,
@@ -123,50 +108,10 @@ export function resizeTiledRenderer(
   rendererWidth = width;
   rendererHeight = height;
   rendererScale = renderScale;
-  const totalCssWidth = width / renderScale;
-  const totalCssHeight = height / renderScale;
-  const deviceScale = window.devicePixelRatio || 1;
-  for (let row = 0; row < LIVE_TILE_ROWS; row++) {
-    for (let column = 0; column < LIVE_TILE_COLUMNS; column++) {
-      const tile = liveTiles[row * LIVE_TILE_COLUMNS + column];
-      if (!tile) continue;
-      tile.x = Math.floor((column * width) / LIVE_TILE_COLUMNS);
-      tile.y = Math.floor((row * height) / LIVE_TILE_ROWS);
-      const right = Math.floor(((column + 1) * width) / LIVE_TILE_COLUMNS);
-      const bottom = Math.floor(((row + 1) * height) / LIVE_TILE_ROWS);
-      const horizontal = geo.tileCssSpan(column, LIVE_TILE_COLUMNS, totalCssWidth, deviceScale);
-      const vertical = geo.tileCssSpan(row, LIVE_TILE_ROWS, totalCssHeight, deviceScale);
-      const crayonWasVisible = !tile.crayonBottom.hidden || !tile.crayonTop.hidden;
-      tile.width = right - tile.x;
-      tile.height = bottom - tile.y;
-      // The size this tile's backing store is meant to have, published for
-      // compositeVisibleLiveTiles: a hidden tile's own backing lags this by
-      // design (migrateHiddenBackingsAcrossFrames re-sizes one tile per frame),
-      // so a composite measured off the backings alone mis-sizes any row or
-      // column whose tiles are all hidden and shifts every later one. That
-      // reader is serialized into the page and can import neither the attribute
-      // name nor its units — backing pixels, which part company with CSS pixels
-      // wherever renderScale is above 1 — so `tiledRendererContract.test.ts`
-      // drives a real resize through the real composite to catch either drift.
-      tile.canvas.dataset.tileBacking = `${tile.width}x${tile.height}`;
-      tile.canvas.hidden = true;
-      tile.crayonBottom.hidden = true;
-      tile.crayonTop.hidden = true;
-      if (!deferHiddenBackings || !tile.canvas.hidden) ensureNormalTileBacking(tile);
-      for (const tileCanvas of liveTileSurfaces(tile)) {
-        tileCanvas.style.left = `${horizontal.start}px`;
-        tileCanvas.style.top = `${vertical.start}px`;
-        tileCanvas.style.width = `${horizontal.size}px`;
-        tileCanvas.style.height = `${vertical.size}px`;
-      }
-      tile.ctx.lineCap = 'round';
-      tile.ctx.lineJoin = 'round';
-      if (crayonWasVisible) ensureCrayonTileBacking(tile);
-    }
-  }
+  layoutLiveTiles(liveTiles, width, height, renderScale, deferHiddenBackings);
   if (historyBase.length > 0) ensureHistoryBase();
-  if (deferHiddenBackings) migrateHiddenBackingsAcrossFrames();
-  else backingMigration = { revision: backingMigration.revision + 1, pending: false };
+  if (deferHiddenBackings) backingMigration.start();
+  else backingMigration.cancel();
   return true;
 }
 
@@ -209,10 +154,7 @@ const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
     for (const [index, tile] of liveTiles.entries()) {
       if (!tile.canvas.hidden) undoPatches.capture(command, tile, index);
     }
-    history.push(command);
-    undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
-    enforceUndoPatchBudget();
-    scheduleTiledHistoryFold();
+    pushUndoableCommand(command);
   },
   repaint: (preserveUndoThrough) => repaintTiledRenderer(true, preserveUndoThrough),
 });
@@ -246,6 +188,13 @@ function enforceUndoPatchBudget() {
     undoPatches.delete(command);
     undoableCommands--;
   }
+}
+
+function pushUndoableCommand(command: StrokeGroupCommand) {
+  history.push(command);
+  undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
+  enforceUndoPatchBudget();
+  scheduleTiledHistoryFold();
 }
 
 const clearCapture = createProgressiveClearCapture<StrokeGroupCommand>({
@@ -418,12 +367,9 @@ export function beginTiledCommand(wasEmpty: boolean) {
 export function commitTiledCommand() {
   if (!activeCommand) return false;
   undoPatches.crop(activeCommand);
-  history.push(activeCommand);
-  undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
-  enforceUndoPatchBudget();
+  pushUndoableCommand(activeCommand);
   activeCommand = null;
   workCounters?.commit();
-  scheduleTiledHistoryFold();
   return true;
 }
 
@@ -440,25 +386,14 @@ export function undoTiledCommand(renderScale: number) {
   const pendingIndices = undone ? clearCapture.takePendingIndices(undone) : [];
   const snapshots = undone && undoPatches.get(undone);
   const snapshotsFit =
-    (snapshots || pendingIndices.length > 0) &&
-    [...(snapshots ?? [])].every(([index, snapshot]) => {
-      const tile = liveTiles[index];
-      return snapshot.tileWidth === tile?.width && snapshot.tileHeight === tile?.height;
-    });
+    (snapshots || pendingIndices.length > 0) && undoPatchesFitTiles(snapshots, liveTiles);
   if (undone?.wasEmpty && !activeCommand) {
     restoreBlankLiveTiles(liveTiles);
   } else if (snapshotsFit && !activeCommand) {
     for (const [index, snapshot] of snapshots ?? []) {
       const tile = liveTiles[index];
       prepareTileForMutation(tile, index);
-      resetCrayonStateForClear(tile.ctx);
-      tile.ctx.save();
-      tile.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      tile.ctx.clearRect(snapshot.x, snapshot.y, snapshot.canvas.width, snapshot.canvas.height);
-      tile.ctx.drawImage(snapshot.canvas, snapshot.x, snapshot.y);
-      tile.ctx.restore();
-      tile.needsClear = false;
-      tile.canvas.hidden = snapshot.hidden;
+      restoreUndoPatch(tile, snapshot);
     }
     for (const index of pendingIndices) {
       const tile = liveTiles[index];
@@ -482,10 +417,7 @@ export function undoTiledCommand(renderScale: number) {
 export function clearTiledRenderer(wasEmpty: boolean) {
   const clearCommand = recordedCommand([{ kind: 'clear' }], wasEmpty);
   const captureIndices: number[] = [];
-  history.push(clearCommand);
-  undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
-  enforceUndoPatchBudget();
-  scheduleTiledHistoryFold();
+  pushUndoableCommand(clearCommand);
   for (const [index, tile] of liveTiles.entries()) {
     const wasVisible = !tile.canvas.hidden;
     if (!wasVisible && !crayonBufferIsDirty(tile.ctx)) continue;
@@ -528,7 +460,7 @@ export function tiledHistoryDebug() {
 }
 
 export const tiledWorkDebug = () =>
-  workCounters?.debug(liveTiles, backingMigration.pending) ?? null;
+  workCounters?.debug(liveTiles, backingMigration.pending()) ?? null;
 
 export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
   return readback.captureTiledCanvasReadback({
@@ -551,7 +483,7 @@ export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
 export function detachTiledRenderer() {
   cancelHistoryFold();
   clearCapture.cancel();
-  backingMigration = { revision: backingMigration.revision + 1, pending: false };
+  backingMigration.cancel();
   tiledContextRecovery.detach();
   canvas = null;
   host = null;

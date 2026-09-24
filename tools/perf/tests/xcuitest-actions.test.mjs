@@ -1207,11 +1207,11 @@ describe('action probe selector contract', () => {
 
     expect(LIVE_SURFACE).toContain('data-live-tile');
     expect(fill).toContain("querySelectorAll('canvas[data-live-tile]')");
-    const renderer = readFileSync(
-      join(ROOT, 'web', 'src', 'lib', 'drawing', 'tiledRenderer.ts'),
+    const layout = readFileSync(
+      join(ROOT, 'web', 'src', 'lib', 'drawing', 'tiledLayout.ts'),
       'utf8'
     );
-    expect(renderer).toContain('dataset.tileBacking');
+    expect(layout).toContain('dataset.tileBacking');
     expect(fill).toContain('dataset.tileBacking');
   });
 });
