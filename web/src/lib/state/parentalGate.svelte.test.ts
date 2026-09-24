@@ -67,7 +67,7 @@ describe('parental gate', () => {
   // requirement, so the store build arms them and the web build ships with every
   // check off. This suite compiles with __IS_CAPACITOR__ true (vitest.config.ts),
   // so it can only pin the fallback's shape, not the web value — that is pinned
-  // against the real web bundle by flows-parental-gate.spec.ts, "the web build
+  // against the real web bundle by flows-parent-center.spec.ts, "the web build
   // ships every grown-up check off".
   it('starts every protected feature at the build default when nothing is stored', () => {
     localStorage.clear();
