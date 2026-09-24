@@ -31,6 +31,12 @@ Where the device sits among the harness targets:
 
 Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear where the action happens.
 
+**A person at the devices.** Real-finger captures, the secure-origin action sweep, and the
+once-per-release iPadOS check all need someone present. The epic-2210 session runs them in one
+resumable command, `npm run perf:session:person`, with spoken start/stop cues and an on-the-spot
+PASS or REDO for every capture; its runbook is
+[`scratchpad/perf/2026-09-23-epic-2210-person-session.md`](scratchpad/perf/2026-09-23-epic-2210-person-session.md).
+
 ---
 
 ## Which approach to use

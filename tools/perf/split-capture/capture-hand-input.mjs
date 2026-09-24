@@ -29,11 +29,13 @@ import { androidOpenSteps } from './lib/android-input.mjs';
 import { APP_BUNDLE_ID, writeArtifactFile } from './capture-device-frames.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
-const OPENERS = ['adb', 'devicectl', 'manual'];
+const OPENERS = ['adb', 'devicectl', 'safari', 'manual'];
+const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
 const DEFAULT_DRAW_SECONDS = 25;
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
@@ -53,6 +55,10 @@ const CONTACT_BANK_MS = 600_000;
 // A hand stroke is still committing raster work when the drawer lifts off.
 const DRAW_TAIL_MS = 1_200;
 const BUZZ_MS = 350;
+// Spoken on the Mac with `say`, for a person holding an iPad, which cannot be
+// buzzed from the host. The last seconds are counted aloud so the finger
+// lifts on the clock rather than on a glance at the terminal.
+const SPOKEN_COUNTDOWN_SECONDS = 3;
 
 const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 
@@ -68,6 +74,17 @@ function buzz(serial, times) {
     } catch {
       return;
     }
+  }
+}
+
+// Best effort, like the buzz: a Mac with no speech voice does not lose the
+// capture a person is already holding the device for.
+export function speak(words, exec = capture) {
+  try {
+    exec('say', [words]);
+  } catch (error) {
+    rethrowIfBroken(error);
+    // The terminal countdown still runs.
   }
 }
 
@@ -183,6 +200,25 @@ export function openWithDevicectl({ udid, exec = capture }) {
   ]);
 }
 
+// iPad Safari opened at this run's nonce URL, so a browser hand capture keeps
+// its page-identity proof without a person typing the address. `--payload-url`
+// hands the URL to Safari the way a tapped link would; `--terminate-existing`
+// drops Safari's other tabs' bootstraps from the foreground.
+export function openSafariWithDevicectl({ udid, pageUrl, exec = capture }) {
+  exec('xcrun', [
+    'devicectl',
+    'device',
+    'process',
+    'launch',
+    '--terminate-existing',
+    '--device',
+    udid,
+    '--payload-url',
+    pageUrl,
+    SAFARI_BUNDLE_ID,
+  ]);
+}
+
 // What silence after a devicectl launch means, in the operator's terms. First
 // contact is any request for the plan, not proof of identity — a page that asks
 // for the plan may still fail readiness — but a launch that produces NO request
@@ -200,9 +236,10 @@ export function firstContactFailure(host) {
   );
 }
 
-async function countDown(seconds) {
+async function countDown(seconds, { spoken = false } = {}) {
   for (let remaining = seconds; remaining > 0; remaining -= 1) {
     process.stdout.write(`\r  drawing — ${String(remaining).padStart(3)}s left `);
+    if (spoken && remaining <= SPOKEN_COUNTDOWN_SECONDS) speak(String(remaining));
     await sleep(1_000);
   }
   process.stdout.write('\r  drawing — done             \n');
@@ -271,6 +308,10 @@ export function handCaptureArtifact({
     // The page's own answer, not the request — see capture-device-frames.
     observedTheme: ready?.resolvedTheme ?? null,
     serviceWorkerRegistration: ready?.serviceWorkerRegistration ?? null,
+    // The page verifies its eraser fill before ready (issue 1302); kept so a
+    // finger eraser capture can prove it erased ink rather than blank paper.
+    // A hand run gets that one fill and no refills between strokes.
+    eraserFill: ready?.eraserFill ?? null,
     pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
     // The dominant variable for coalescing (issue 1303): a native WebView here
     // loads the probe host remotely, never its bundled assets.
@@ -302,6 +343,8 @@ export async function captureHandInput({
   label = argFlag('label'),
   output = argFlag('output'),
   allowForeignBuild = argFlag('allow-foreign-build'),
+  // `argFlag` matches `--name=value` only, so a bare flag is read from argv.
+  spokenCues = process.argv.includes('--speak'),
 } = {}) {
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
@@ -314,6 +357,11 @@ export async function captureHandInput({
   if (opener === 'devicectl' && !udid) fail('--device-udid= is required for --open=devicectl');
   if (opener === 'devicectl' && !nativeApp) {
     fail('--open=devicectl launches the installed app, so it requires --native-app');
+  }
+  if (opener === 'safari' && (platform !== 'ios' || nativeApp || !udid)) {
+    fail(
+      '--open=safari opens iPad Safari, so it needs --platform=ios, --device-udid=, and no --native-app'
+    );
   }
 
   const servedBuild = await assertServedBuildIsFresh(host, {
@@ -337,6 +385,9 @@ export async function captureHandInput({
     nonce,
     requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
+    // The host merges each control into its standing plan, so a seed left by
+    // an earlier driven capture would otherwise carry into this one.
+    reduceMotion: null,
     finish: false,
     reset: true,
   });
@@ -361,6 +412,10 @@ export async function captureHandInput({
     if (!contacted) fail(firstContactFailure(host));
     console.log('  The app reached the probe host; waiting for the page to report ready …');
     await sleep(PAGE_SETTLE_MS);
+  } else if (opener === 'safari') {
+    openSafariWithDevicectl({ udid, pageUrl });
+    console.log(`  Opened iPad Safari at ${pageUrl}`);
+    console.log(`  Hold the iPad in ${orientation}; the page sets its own brush and theme.`);
   } else announceManualOpen({ pageUrl, orientation, theme });
 
   const ready = await pollFor(async () => {
@@ -389,8 +444,10 @@ export async function captureHandInput({
     '  the way a toddler scribbles. Keep the finger down; lift only to start a new one.\n'
   );
   buzz(serial, 1);
-  await countDown(seconds);
+  if (spokenCues) speak('Draw now');
+  await countDown(seconds, { spoken: spokenCues });
   buzz(serial, 2);
+  if (spokenCues) speak('Stop. Lift your finger.');
   await sleep(DRAW_TAIL_MS);
   await control(host, { finish: true });
 

@@ -66,6 +66,7 @@ import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
+import { reduceMotionReadinessProblem, reduceMotionSeedProblem } from '../lib/reduce-motion.mjs';
 import { FLOOR_CONTROL_THEME, floorControlIdentity } from './serve-floor-control.mjs';
 
 const PLATFORMS = ['android', 'ios'];
@@ -331,6 +332,10 @@ export function androidDriver({
       }
       return { nativePackage };
     },
+    // Every swipe is its own down/up, so a page that recorded fewer
+    // pointerdowns than this lost touches before the page saw them (issue 2229:
+    // an overlay column dropped 20 of 160 while the capture passed).
+    dispatchedStrokes: 0,
     async dispatch({ bounds, densityScale, offset }, repeats) {
       await frontRunPage('before dispatch');
       const instructions = androidGestureInstructions(trustedGestureActions(bounds, repeats, 0), {
@@ -339,7 +344,10 @@ export function androidDriver({
       });
       for (const instruction of instructions) {
         if (instruction.kind === 'pause') await sleep(instruction.durationMs);
-        else exec(serial, swipeArgs(instruction));
+        else {
+          exec(serial, swipeArgs(instruction));
+          this.dispatchedStrokes += 1;
+        }
       }
     },
   };
@@ -535,6 +543,8 @@ export function drivenCaptureArtifact({
   requirePageIdentity = true,
   page = 'app',
   servedBuild = null,
+  reduceMotion = null,
+  dispatchedStrokes = null,
   fidelity,
   drawing,
   undo,
@@ -584,6 +594,14 @@ export function drivenCaptureArtifact({
     // already shows clears the override and leaves that field null. An artifact
     // has to be able to prove which theme it measured without re-deriving it.
     observedTheme: ready?.resolvedTheme ?? null,
+    // The Reduce Motion seed this run asked for (null: left as the origin had
+    // it) beside what the page's boot script resolved — the same
+    // request-versus-observation split as the theme.
+    requestedReduceMotion: reduceMotion,
+    observedReducedMotion: ready?.reducedMotion ?? null,
+    // Android only: one per `adb shell input swipe`, each a separate
+    // down/up. Null where the transport does not count them.
+    dispatchedStrokes,
     // 'blocked' on a secure origin, 'unsupported' on an insecure one; null
     // predates the guard. A 'stale-worker' page is refused before this.
     serviceWorkerRegistration: ready?.serviceWorkerRegistration ?? null,
@@ -625,6 +643,7 @@ async function driveOpenedCapture({
   orientation,
   nonce,
   repeats,
+  reduceMotion,
   refuse,
 }) {
   await driver.openPage();
@@ -657,6 +676,8 @@ async function driveOpenedCapture({
   if (themeProblem) await refuse(themeProblem);
   const workerProblem = staleServiceWorkerProblem(ready);
   if (workerProblem) await refuse(workerProblem);
+  const motionProblem = reduceMotionReadinessProblem(ready, reduceMotion);
+  if (motionProblem) await refuse(motionProblem);
   if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
     await refuse(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
   }
@@ -722,7 +743,10 @@ export async function captureDeviceFrames({
   // reads as absent. A capture that silently ran against Safari while reporting a
   // WebView runtime is the failure this shape produces.
   nativeApp = process.argv.includes('--native-app'),
+  reduceMotion = argFlag('reduce-motion') ?? null,
 } = {}) {
+  const reduceMotionProblem = reduceMotionSeedProblem(reduceMotion);
+  if (reduceMotionProblem) fail(reduceMotionProblem);
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
   if (!Number.isSafeInteger(repeats) || repeats < 1) {
@@ -755,6 +779,9 @@ export async function captureDeviceFrames({
     allowForeignBuild,
     nativeApp,
   });
+  if (page === FLOOR_CONTROL_PAGE && reduceMotion) {
+    fail('the floor control has no Reduce Motion setting — omit --reduce-motion');
+  }
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const hostLoadStart = sampleHostLoad();
@@ -771,6 +798,9 @@ export async function captureDeviceFrames({
     contactMs: CONTACT_BANK_MS,
     undoCount,
     undoPauseMs,
+    // Always sent: the host merges each control into the standing plan, so an
+    // omitted key would inherit the previous capture's seed.
+    reduceMotion,
     eraserRefillRequest: null,
     finish: false,
     reset: true,
@@ -810,6 +840,7 @@ export async function captureDeviceFrames({
     orientation,
     nonce,
     repeats,
+    reduceMotion,
     refuse,
   }).finally(() => driver.release?.());
   if (payload.error) fail(payload.error);
@@ -879,6 +910,8 @@ export async function captureDeviceFrames({
     requirePageIdentity,
     page,
     servedBuild,
+    reduceMotion,
+    dispatchedStrokes: driver.dispatchedStrokes ?? null,
     fidelity,
     drawing,
     undo,

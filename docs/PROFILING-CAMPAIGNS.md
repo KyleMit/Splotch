@@ -200,8 +200,10 @@ origin, which is not a secure context, so the action sweep's AI-waiting actions 
 HTTPS front (`perf:ios:secure-origin serve`, `docs/PROFILING-IPAD.md`). Claude Code's auto-mode
 permission classifier denies starting it ("Expose Local Services"), as it did on 2026-09-22. So
 schedule iPad web action sweeps for a session with the maintainer present, or fold the drawing cells
-with `--preserve-actions`. Android Chrome does not have this problem, because it loads the page at
-`localhost` through `adb reverse`, which is already a secure context.
+with `--preserve-actions`. `npm run perf:session:person` is that present session: the maintainer's
+own run starts the fronts after a confirmation, proves the name constraint on the iPad, and then
+drives the four-mode sweep unattended behind them. Android Chrome does not have this problem,
+because it loads the page at `localhost` through `adb reverse`, which is already a secure context.
 
 ## Port contention between sessions
 

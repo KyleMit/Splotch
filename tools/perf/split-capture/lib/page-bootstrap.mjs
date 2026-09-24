@@ -17,6 +17,7 @@ import {
   STALE_SERVICE_WORKER_EVICTION_SOURCE,
 } from '../../lib/service-worker-guard.mjs';
 import { STAND_DOWN_PATH } from './chrome-tabs.mjs';
+import { REDUCE_MOTION_STORAGE_KEY } from '../../lib/reduce-motion.mjs';
 import {
   COMPACT_SHELL_MARKER,
   QUICK_NIGHT_TOGGLE,
@@ -213,6 +214,27 @@ export function pageBootstrapSource() {
         return;
       }
       throw new Error('route never hydrated');
+    }
+
+    // Reduce Motion is read once, by app.html's head boot script, before this
+    // bootstrap can run — so a seed has to be written and then the page reloaded
+    // for the product to boot under it. \`motion\` on the reloaded URL marks the
+    // one reload; a page still disagreeing after it is refused rather than
+    // measured under the wrong preference.
+    if (plan.reduceMotion) {
+      const storedMotion = localStorage.getItem('${REDUCE_MOTION_STORAGE_KEY}') ?? 'system';
+      if (storedMotion !== plan.reduceMotion) {
+        const url = new URL(location.href);
+        if (url.searchParams.get('motion') === plan.reduceMotion) {
+          throw new Error('the Reduce Motion seed did not persist across a reload');
+        }
+        if (plan.reduceMotion === 'system') localStorage.removeItem('${REDUCE_MOTION_STORAGE_KEY}');
+        else localStorage.setItem('${REDUCE_MOTION_STORAGE_KEY}', plan.reduceMotion);
+        url.searchParams.set('motion', plan.reduceMotion);
+        await log({ kind: 'reduce-motion-seed', href: url.toString() });
+        location.replace(url.toString());
+        return;
+      }
     }
 
     const undoCount = plan.undoCount ?? 0;
@@ -415,6 +437,9 @@ export function pageBootstrapSource() {
       // spends the capture, rather than labelling the artifact from the request.
       resolvedTheme: resolvedTheme(),
       serviceWorkerRegistration,
+      // What the head boot script resolved, read off the attribute every
+      // reduced-motion treatment keys on — the page's answer, not the seed's.
+      reducedMotion: document.documentElement.hasAttribute('data-reduce-motion'),
       // The verified-fill evidence (issue 1302); null for every other brush.
       eraserFill,
       geometry: {
