@@ -106,8 +106,9 @@ digital content without in-app purchase, and asked for Splotch's business model 
 submission c730ff1d-1a03-40cf-831d-2804513a1830 (reviewed 2026-09-12, version 1.6.0 build 8).
 Splotch configures no in-app purchase items at all, so nothing under the literal guideline applies;
 what draws the question is the BYOK panel, which states that a key is billed to the parent's own
-OpenAI account and that OpenAI requires billing set up on that account
-(`web/src/lib/components/settings/AiKeyManager.svelte`).
+OpenAI account (`web/src/lib/components/settings/AiKeyManager.svelte`) and that OpenAI requires
+billing set up on that account (its how-to,
+`web/src/lib/components/settings/OpenAiKeyHowTo.svelte`).
 
 **Decisions.** Answer from the shape 3.1.1 already established rather than change the app. Splotch
 sells nothing through any channel and takes no revenue or affiliate share; the drawing app is free
