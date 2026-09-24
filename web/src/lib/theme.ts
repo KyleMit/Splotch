@@ -35,8 +35,9 @@ export type ThemePreference = ResolvedTheme | 'system';
 export const THEME_DEFAULT: ThemePreference = 'system';
 
 // The one spelling of the OS query for JS call sites: appearance.svelte.ts
-// subscribes to it, and app.html's boot script re-types it — app.html.test.ts
-// fails on divergence. A typo evaluates to false and pins the app to light.
+// subscribes to it, and app.html's boot script re-types it —
+// app.html.themeColor.test.ts fails on divergence. A typo evaluates to false
+// and pins the app to light.
 export const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
 
 // Light keeps app.html's original white; dark is --app-bg.
@@ -47,7 +48,8 @@ export const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
 // Rollup an edge that drags all ~90 onto the startup path — including
 // CSS-only ones no JavaScript ever reads. theme.ts is on that path via
 // state/appearance.svelte.ts. theme.tokens.test.ts fails if these drift from
-// the tokens, the same way app.html.test.ts guards app.html's copies.
+// the tokens, the same way app.html.themeColor.test.ts guards app.html's
+// copies.
 export const THEME_COLORS: Record<ResolvedTheme, string> = {
   light: '#ffffff',
   dark: '#17171d',
@@ -69,7 +71,8 @@ export function resolveTheme(preference: ThemePreference, systemDark: boolean): 
 }
 
 // The tag lives in app.html's static head, so its boot script re-types this
-// selector and the two colors below; app.html.test.ts fails on divergence.
+// selector and the two colors below; app.html.themeColor.test.ts fails on
+// divergence.
 export const THEME_COLOR_META_SELECTOR = 'meta[name="theme-color"]';
 
 // Appearance sets the resolved-theme baseline; NotchBand intentionally

@@ -14,7 +14,8 @@
 export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 // app.html's boot script re-types the attribute name, the preference values,
-// and the resolve rule; app.html.test.ts runs it and fails on divergence.
+// and the resolve rule; app.html.reduceMotion.test.ts runs it and fails on
+// divergence.
 export const REDUCE_MOTION_ATTRIBUTE = 'data-reduce-motion';
 
 // An entrance or exit cue must keep the answer it started with. Changing a
