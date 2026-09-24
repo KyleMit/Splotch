@@ -15,6 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const BOOTSTRAP_TIMEOUT_MS = 22_000;
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { REDUCE_MOTION_STORAGE_KEY } from '../lib/reduce-motion.mjs';
 
 const CANVAS_RECT = { x: 0, y: 0, width: 800, height: 600 };
 
@@ -81,13 +82,15 @@ function paintShell({ compact, startingTheme, lazySettings = false }) {
 // The bootstrap now refuses to act for a page it was not opened for, so the
 // fixture has to give the page the identity the plan names — which is the
 // behaviour under test as much as the theme is.
-function openedFor(nonce) {
-  window.happyDOM?.setURL?.(`http://probe-host.test/?probe=${encodeURIComponent(nonce)}`);
+function openedFor(nonce, extraQuery = '') {
+  window.happyDOM?.setURL?.(
+    `http://probe-host.test/?probe=${encodeURIComponent(nonce)}${extraQuery}`
+  );
 }
 
-function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
+function runBootstrap(plan, { openedWithoutProbe = false, extraQuery = '' } = {}) {
   if (openedWithoutProbe) window.happyDOM?.setURL?.('http://probe-host.test/');
-  else openedFor(plan.nonce);
+  else openedFor(plan.nonce, extraQuery);
   const posted = [];
   const currentPlan = plan;
   let readyResolve;
@@ -359,6 +362,67 @@ describe('the bootstrap actually setting the theme', () => {
 // `requirePageIdentity: false` — and nothing ever EXECUTED that exemption.
 // Fault injection restored the unconditional identity check and the suite
 // stayed green, even though those transports would stand down forever.
+describe('the Reduce Motion seed, executed', () => {
+  const plan = (reduceMotion) => ({ nonce: 'rm-run', brush: 'pen', theme: 'light', reduceMotion });
+  const seedLog = (run) =>
+    run.posted.find(({ body }) => body?.kind === 'reduce-motion-seed')?.body ?? null;
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.removeAttribute('data-reduce-motion');
+  });
+
+  it(
+    'writes the seed and reloads once before the product has booted under it',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+      const run = runBootstrap(plan('reduce'));
+      await vi.waitFor(() => expect(seedLog(run)).not.toBeNull(), { timeout: 5_000 });
+      expect(localStorage.getItem(REDUCE_MOTION_STORAGE_KEY)).toBe('reduce');
+      expect(new URL(seedLog(run).href).searchParams.get('motion')).toBe('reduce');
+      expect(run.posted.some(({ path }) => path === '/__probe/ready')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'reports the page-resolved reduced motion once the seed is in place',
+    async () => {
+      localStorage.setItem(REDUCE_MOTION_STORAGE_KEY, 'reduce');
+      document.documentElement.setAttribute('data-reduce-motion', '');
+      paintShell({ compact: true, startingTheme: 'light' });
+      const run = runBootstrap(plan('reduce'), { extraQuery: '&motion=reduce' });
+      const ready = await run.readyPosted;
+      expect(ready.reducedMotion).toBe(true);
+      expect(seedLog(run)).toBeNull();
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'clears a leftover seed back to the product default for a system arm',
+    async () => {
+      localStorage.setItem(REDUCE_MOTION_STORAGE_KEY, 'reduce');
+      paintShell({ compact: true, startingTheme: 'light' });
+      const run = runBootstrap(plan('system'));
+      await vi.waitFor(() => expect(seedLog(run)).not.toBeNull(), { timeout: 5_000 });
+      expect(localStorage.getItem(REDUCE_MOTION_STORAGE_KEY)).toBeNull();
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'refuses a page the seed did not survive a reload on, rather than reloading forever',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+      const run = runBootstrap(plan('reduce'), { extraQuery: '&motion=reduce' });
+      const error = await run.errorPosted;
+      expect(error.message).toMatch(/did not persist/);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
 describe('the page-identity exemption, executed', () => {
   it(
     'proceeds to readiness without a probe param when the plan asks for no proof',

@@ -29,7 +29,7 @@ import {
 } from '../lib/real-screen-stats.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
-import { runtimeUaProblem } from '../split-capture/capture-hand-input.mjs';
+import { runtimeUaProblem, speak } from '../split-capture/capture-hand-input.mjs';
 import {
   bundledReportPayloadProblem,
   pullBundledReportFromDevice,
@@ -625,6 +625,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'native-app',
         'bundled-report',
         'hand-input',
+        'speak',
         'seconds',
         'native-webview-class',
         'brush',
@@ -667,6 +668,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   const nativeApp = has('native-app');
   const bundledReport = has('bundled-report');
   const handInput = has('hand-input');
+  const spokenCues = has('speak');
+  if (spokenCues && !handInput) fail('--speak cues a person drawing, so it requires --hand-input');
   if (bundledReport && (!nativeApp || !deviceId || capabilitiesFile || borrowedSessionId)) {
     fail('--bundled-report requires a local --device-id= capture with --native-app');
   }
@@ -1094,8 +1097,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         await sleep(1_000);
       }
       console.log('  GO — drawing window open');
+      if (spokenCues) speak('Draw now');
       await sleep(handSeconds * 1_000);
       console.log('  window closed');
+      if (spokenCues) speak('Stop. Lift your finger.');
     } else {
       const perform = (repeats) =>
         client.request('POST', `/session/${sessionId}/actions`, {

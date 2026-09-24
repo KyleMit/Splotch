@@ -17,6 +17,12 @@ complete flag and output descriptions.
   expired, or undetermined (`lib/wda-recovery.mjs`, issue 2218). `lib/capture-readiness.mjs` holds
   the decisions as pure functions so they are testable without a device. The failures it exists to
   prevent are catalogued in [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
+* `perf:session:person` (`run-person-session.mjs`, pure half in `lib/person-session.mjs`) walks epic
+  2210's person-present tasks in one resumable session: paired driven-vs-finger iPad captures,
+  bundled-app finger captures, the secure-origin action sweeps, the phone overlay check and the
+  issue-2229 A/B, and the iPadOS update with its commit check last. It judges every capture PASS or
+  REDO on the spot and drafts each issue comment without posting. Runbook:
+  [`docs/scratchpad/perf/2026-09-23-epic-2210-person-session.md`](../../docs/scratchpad/perf/2026-09-23-epic-2210-person-session.md).
 * `perf:operator` (`run-operator-session.mjs`) is the guided session for the two capture inputs only
   a human at the devices can give: arming the iPad automation grant (the passcode prompt exists only
   during a WebDriverAgent launch — issue 1299; every attempt is appended to the tracked grant log
