@@ -330,14 +330,17 @@ function connectedAndroidSerial() {
 
 // --------------------------------------------------------------- rig bring-up
 
-async function wdaReady(url) {
+async function wdaStatus(url) {
   const response = await answers(`${url}/status`);
-  if (!response) return false;
-  const body = await response.json().catch((error) => {
+  if (!response) return null;
+  return response.json().catch((error) => {
     rethrowIfBroken(error);
     return null;
   });
-  return body?.value?.ready === true;
+}
+
+async function wdaReady(url) {
+  return (await wdaStatus(url))?.value?.ready === true;
 }
 
 function newestXctestrun() {
@@ -398,13 +401,22 @@ async function withWdaSession(url, work) {
 // holding the iPad upright still gets a landscape page (2026-09-23). The
 // finger captures set it explicitly first.
 async function setIpadOrientation(url, orientation) {
-  await withWdaSession(url, (base) =>
-    fetch(`${base}/orientation`, {
+  await withWdaSession(url, async (base) => {
+    const response = await fetch(`${base}/orientation`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ orientation }),
-    })
-  );
+    });
+    const body = await response.json().catch((error) => {
+      rethrowIfBroken(error);
+      return null;
+    });
+    if (!response.ok || body?.value?.error) {
+      throw new Error(
+        `WebDriverAgent refused ${orientation} (HTTP ${response.status}: ${body?.value?.message ?? 'no message'})`
+      );
+    }
+  });
 }
 
 // Every Safari page a finger capture opened stays inspectable, and Appium then
@@ -458,7 +470,14 @@ async function ensureWda(session, ctx, prompt) {
   ];
   const problems = [];
   for (const url of candidates) {
-    if (!(await wdaReady(url))) continue;
+    const status = await wdaStatus(url);
+    if (status?.value?.ready !== true) continue;
+    // WebDriverAgent serves one session at a time, so probing a runner that is
+    // serving one would replace another session's — the preflight's rule too.
+    if (status.sessionId ?? status.value?.sessionId) {
+      problems.push(`${url}: busy serving another session`);
+      continue;
+    }
     const problem = await wdaSessionProblem(url);
     if (!problem) {
       console.log(`  WebDriverAgent ${url} — opened and closed a session (reused; not restarted)`);
@@ -710,7 +729,6 @@ async function runIpadCapture(session, prompt, item) {
   const ctx = session.state.ctx;
   const output = captureOutput(session, item);
   const label = captureLabel(item);
-  const [script, args, env] = ipadCaptureArgs(ctx, item, output);
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     console.log(`\n--- ${label}  (attempt ${attempt}/${MAX_ATTEMPTS})`);
     if (item.kind === 'ipad-driven') {
@@ -724,7 +742,33 @@ async function runIpadCapture(session, prompt, item) {
     await prompt.ask('  Press Enter to start… ');
     await requireWda(session, prompt);
     if (item.kind === 'ipad-native-finger') terminateIpadSafari(ctx.udid, session);
-    if (item.kind === 'ipad-finger') await setIpadOrientation(ctx.wdaUrl, item.orientation);
+    if (item.kind === 'ipad-finger') {
+      const turned = await setIpadOrientation(ctx.wdaUrl, item.orientation).then(
+        () => null,
+        (error) => {
+          rethrowIfBroken(error);
+          return error.message;
+        }
+      );
+      if (turned) {
+        console.log(`  ✗ could not turn the iPad to ${item.orientation}: ${turned}`);
+        if (attempt === MAX_ATTEMPTS || !(await prompt.yes('  Try again?'))) {
+          return {
+            label,
+            arm: item.arm,
+            brush: item.brush,
+            output,
+            attempt,
+            status: 'REDO',
+            reasons: [turned],
+            metrics: {},
+          };
+        }
+        continue;
+      }
+    }
+    // Built after the WDA re-proof, which may have moved ctx.wdaUrl.
+    const [script, args, env] = ipadCaptureArgs(ctx, item, output);
     const status = runNode(script, args, { env });
     const verdict = captureVerdict(readJson(output), expectationFor(ctx, item));
     if (status !== 0 && verdict.status === 'PASS' && item.kind !== 'ipad-driven') {
@@ -958,6 +1002,29 @@ async function stepSecureActions(session) {
   }
   if (!ctx.secureUrl || session.state.steps['ipad-secure-origin']?.status !== 'done') {
     fail('the secure-origin step has not passed in this session — run --redo=ipad-secure-origin');
+  }
+  // A resume re-runs bring-up, which can move the preview; a front left from
+  // before still forwards to the old port, and after --teardown there is none.
+  const front = session.state.owned.find((entry) => entry.name === 'front-leaf');
+  const frontServes =
+    front &&
+    processAlive(front.pid) &&
+    front.args.includes(`--upstream=${ctx.previewPort}`) &&
+    spawnSync(
+      process.execPath,
+      [
+        '-e',
+        `fetch(${JSON.stringify(ctx.secureUrl)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(2))`,
+      ],
+      { env: { ...process.env, NODE_EXTRA_CA_CERTS: join(CA_DIR, 'ca.pem') } }
+    ).status === 0;
+  if (!frontServes) {
+    stopOwned(session, ['front-leaf', 'front-constraint']);
+    markStep(session, 'ipad-secure-origin', 'pending');
+    fail(
+      'the HTTPS front no longer serves this session’s preview (a resume or --teardown moved it). ' +
+        'Rerun with someone at the iPad: the secure-origin step restarts and re-proves it first.'
+    );
   }
   const outputRoot = join(session.dir, 'secure-actions');
   const modes = CAMPAIGN_MODES.map((mode) => mode.id);
