@@ -137,6 +137,9 @@ Orientation branches are covered at two layers, and the web gate cannot be reach
   platform and target, including the superseded-request ordering.
 * `web/tests/orientation-picker.spec.ts` — layout across phone widths, the absent case in a plain
   tab, and the Auto caption.
+* `web/tests/settings-quick-toggles.spec.ts` — the landscape-phone quick-toggle grid: the compact
+  Orientation picker on a touch device in fullscreen, the About cell that fills its slot on a
+  desktop browser, and the mini About cell on a lock-incapable native tablet.
 * Chromium exposes **no display-mode override**, so a spec cannot emulate the installed app. Use
   `enterFullscreen` from `web/tests/helpers.ts`, which triggers real element fullscreen from a
   keypress; pair it with `exitFullscreen` before any `setViewportSize`, because Chromium refuses to
