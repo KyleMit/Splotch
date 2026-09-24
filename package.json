@@ -521,7 +521,7 @@
     "@intellectronica/ruler": "0.3.44",
     "@playwright/test": "^1.63.0",
     "@resvg/resvg-js": "^2.6.2",
-    "@types/node": "^22.20.3",
+    "@types/node": "^22.20.4",
     "@vitest/coverage-v8": "^4.1.11",
     "@vitest/eslint-plugin": "^1.6.27",
     "dprint": "^0.57.4",
