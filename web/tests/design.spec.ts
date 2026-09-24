@@ -1,12 +1,11 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { themes, toCssVarName, type ThemeTokens } from '../src/lib/design/tokens';
 import {
-  gotoApp,
   expectContentsPanelCappedInsideViewport,
-  pinContentsRow,
   openHydratedContents,
-  openSettingsModal,
-} from './helpers';
+  pinContentsRow,
+} from './contents-helpers';
+import { gotoApp, openSettingsModal } from './helpers';
 
 // /design is the public living styleguide (ADR-0096). Axe coverage lives in
 // a11y.spec.ts; the value here is the regressions a scan can't see: the

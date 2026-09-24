@@ -42,7 +42,7 @@
   let panel = $state<HTMLElement>();
   // Test seam: flips once the delegated pick handler below is attached. The
   // panel wears it as `data-armed` only while this component's own `open` holds
-  // the panel open, so `openHydratedContents` (tests/helpers.ts) can tell a
+  // the panel open, so `openHydratedContents` (tests/contents-helpers.ts) can tell a
   // hydrated, state-backed open from a <details> the reader toggled natively
   // before hydration — which stays open in the DOM with `open` still false here,
   // so a pick's `open = false` would change nothing.
