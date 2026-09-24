@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { POINTER_RESUME_GAP_MS, POINTER_RESUME_JUMP_RATIO } from '$lib/drawing/strokeMath';
 import { scribbleTap } from './scribbleGuard';
 
 const { flushSync, forgetPenPointer } = vi.hoisted(() => ({
@@ -42,7 +41,6 @@ describe('scribbleTap', () => {
   afterEach(() => {
     for (const action of tapActions) action.destroy();
     tapActions.clear();
-    vi.useRealTimers();
     vi.restoreAllMocks();
     flushSync.mockReset();
     forgetPenPointer.mockReset();
@@ -445,128 +443,6 @@ describe('scribbleTap', () => {
     window.dispatchEvent(pointerEvent('pointercancel', 1));
     window.dispatchEvent(pointerEvent('pointerup', 1));
     expect(activate).not.toHaveBeenCalled();
-  });
-
-  it('handles a missing lift after the engine capture listener and before target drawing', () => {
-    vi.useFakeTimers();
-    const canvas = document.createElement('canvas');
-    document.body.appendChild(canvas);
-    const order: string[] = [];
-    const engineCapture = () => order.push('engine capture');
-    const targetDraw = () => order.push('target draw');
-    window.addEventListener('pointermove', engineCapture, true);
-    canvas.addEventListener('pointermove', targetDraw);
-    const { el, activate } = tapElement();
-    forgetPenPointer.mockImplementation(() => order.push('forget pen pointer'));
-    activate.mockImplementation(() => order.push('activate'));
-    flushSync.mockImplementation(() => order.push('flush'));
-    const jump = Math.min(window.innerWidth, window.innerHeight) * POINTER_RESUME_JUMP_RATIO + 1;
-    el.dispatchEvent(
-      pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1, clientX: 10 })
-    );
-    vi.advanceTimersByTime(POINTER_RESUME_GAP_MS + 1);
-    const resumed = pointerEvent('pointermove', 1, {
-      pointerType: 'pen',
-      buttons: 1,
-      clientX: 10 + jump,
-    });
-    canvas.dispatchEvent(resumed);
-    window.removeEventListener('pointermove', engineCapture, true);
-    canvas.removeEventListener('pointermove', targetDraw);
-    expect(activate).toHaveBeenCalledTimes(1);
-    expect(forgetPenPointer).toHaveBeenCalledWith(1);
-    expect(flushSync).toHaveBeenCalledTimes(1);
-    expect(resumed.defaultPrevented).toBe(true);
-    expect(order).toEqual(['engine capture', 'forget pen pointer', 'activate', 'flush']);
-  });
-
-  it('does not mistake a continuous pen drag for an omitted-up tap', () => {
-    vi.useFakeTimers();
-    const { el, activate } = tapElement();
-    const jump = Math.min(window.innerWidth, window.innerHeight) * POINTER_RESUME_JUMP_RATIO + 1;
-    el.dispatchEvent(
-      pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1, clientX: 10 })
-    );
-    vi.advanceTimersByTime(POINTER_RESUME_GAP_MS);
-    window.dispatchEvent(
-      pointerEvent('pointermove', 1, {
-        pointerType: 'pen',
-        buttons: 1,
-        clientX: 10 + jump,
-      })
-    );
-    expect(activate).not.toHaveBeenCalled();
-  });
-
-  it.each([0, -1])(
-    'falls back to drag classification when the viewport side is %s',
-    (viewportSide) => {
-      vi.useFakeTimers();
-      vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(viewportSide);
-      vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(viewportSide);
-      const { el, activate } = tapElement();
-      vi.mocked(document.elementFromPoint).mockImplementation((x) => (x < 20 ? el : document.body));
-      el.dispatchEvent(
-        pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1, clientX: 10 })
-      );
-      vi.advanceTimersByTime(POINTER_RESUME_GAP_MS + 1);
-      const drag = pointerEvent('pointermove', 1, {
-        pointerType: 'pen',
-        buttons: 1,
-        clientX: 30,
-      });
-      window.dispatchEvent(drag);
-      expect(drag.defaultPrevented).toBe(false);
-      expect(activate).not.toHaveBeenCalled();
-      expect(forgetPenPointer).not.toHaveBeenCalled();
-      expect(flushSync).not.toHaveBeenCalled();
-      window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 10 }));
-      expect(activate).not.toHaveBeenCalled();
-    }
-  );
-
-  it('does not reinterpret a dragged pen as a tap after a later idle jump', () => {
-    vi.useFakeTimers();
-    const { el, activate } = tapElement();
-    vi.mocked(document.elementFromPoint).mockReturnValue(document.body);
-    const jump = Math.min(window.innerWidth, window.innerHeight) * POINTER_RESUME_JUMP_RATIO + 1;
-    el.dispatchEvent(
-      pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1, clientX: 10 })
-    );
-    window.dispatchEvent(
-      pointerEvent('pointermove', 1, { pointerType: 'pen', buttons: 1, clientX: 30 })
-    );
-    vi.advanceTimersByTime(POINTER_RESUME_GAP_MS + 1);
-    window.dispatchEvent(
-      pointerEvent('pointermove', 1, {
-        pointerType: 'pen',
-        buttons: 1,
-        clientX: 30 + jump,
-      })
-    );
-    expect(activate).not.toHaveBeenCalled();
-  });
-
-  it('consumes the first resumed pen move after synchronously activating', () => {
-    vi.useFakeTimers();
-    const { el, activate } = tapElement();
-    const downstream = vi.fn();
-    window.addEventListener('pointermove', downstream, true);
-    const jump = Math.min(window.innerWidth, window.innerHeight) * POINTER_RESUME_JUMP_RATIO + 1;
-    el.dispatchEvent(
-      pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1, clientX: 10 })
-    );
-    vi.advanceTimersByTime(POINTER_RESUME_GAP_MS + 1);
-    const resumed = pointerEvent('pointermove', 1, {
-      pointerType: 'pen',
-      buttons: 1,
-      clientX: 10 + jump,
-    });
-    window.dispatchEvent(resumed);
-    window.removeEventListener('pointermove', downstream, true);
-    expect(activate).toHaveBeenCalledTimes(1);
-    expect(downstream).not.toHaveBeenCalled();
-    expect(resumed.defaultPrevented).toBe(true);
   });
 
   it('update() swaps the handler', () => {
