@@ -128,8 +128,8 @@ const UNPINNED_GLOBAL_SELECTOR_BASELINE = new Map(
     'lib/components/ActivePageChip.svelte': 2,
     // The prompt positions the close class forwarded into DialogHeader.
     'lib/components/AiImagePrompt.svelte': 2,
-    // The result styles classes forwarded into DialogHeader and its child Icon.
-    'lib/components/AiImageResult.svelte': 3,
+    // The result positions the close class forwarded into DialogHeader.
+    'lib/components/AiImageResult.svelte': 1,
     // The disclosure sizes and re-inks the class forwarded into its child Icon.
     'lib/components/AiResultDisclosure.svelte': 2,
     // The waiting print positions the class forwarded into its child Icon.

@@ -1,21 +1,19 @@
 <script lang="ts">
   import DialogHeader from './design/DialogHeader.svelte';
-  import Icon from './Icon.svelte';
-  import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
+  import type { ImageReportStatus } from './AiImageReport.svelte';
   import AiResultDisclosure from './AiResultDisclosure.svelte';
   import AiResultStage from './AiResultStage.svelte';
   import Button from './design/Button.svelte';
   import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
   import { closeAiResult, minimizeAiResult } from '$lib/state/aiGeneration.svelte';
   import AiResultError from './AiResultError.svelte';
+  import AiResultFooter from './AiResultFooter.svelte';
   import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
-  import { autoSaveFooter } from '$lib/ai/autoSaveCopy';
-  import '$lib/components/deferredIcons';
   import { downloadAiResult } from '$lib/ai/resultDownload';
   import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
@@ -38,7 +36,6 @@
   // there is nothing to go back to the canvas for, and minimizing a finished
   // result would be a way to lose it (ADR-0116).
   const waiting = $derived(loading && generating);
-  const footer = $derived(autoSaveFooter(result?.autoSave ?? null));
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
   let reportOrigin = $state<Origin | null>(null);
@@ -161,24 +158,14 @@
       {/if}
 
       {#if revealed && result}
-        <div class="ai-result-footer">
-          {#if footer?.kind === 'saved'}
-            <p class="ai-result-saved" use:stampMotionAtStart>✓ {footer.caption}</p>
-          {:else if footer?.kind === 'downloadButton'}
-            <button class="ai-result-download" onclick={handleDownload} use:stampMotionAtStart>
-              <Icon name="download" class="ai-result-download-icon" />
-              <span>Download</span>
-            </button>
-          {/if}
-          <AiImageReport
-            drawingUrl={aiGenerationState.previewUrl}
-            outputUrl={result.url}
-            style={aiGenerationState.style}
-            reportToken={result.reportToken}
-            origin={reportOrigin}
-            bind:status={reportStatus}
-          />
-        </div>
+        <AiResultFooter
+          {result}
+          drawingUrl={aiGenerationState.previewUrl}
+          style={aiGenerationState.style}
+          {reportOrigin}
+          ondownload={handleDownload}
+          bind:status={reportStatus}
+        />
       {/if}
     {/if}
   </div>
@@ -364,101 +351,6 @@
     border-radius: inherit;
   }
 
-  /* ── Saved caption (auto-save mode, replaces the Download button) ── */
-  .ai-result-saved {
-    margin: 0;
-    color: var(--success-text);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop);
-  }
-
-  .ai-result-footer {
-    min-height: var(--loading-caption-height);
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  /* ── Download button ── */
-  .ai-result-download {
-    height: 44px;
-    padding: 0 22px;
-    /* --brand-solid, not --brand: the fill carries its 14px bold label, and
-       --brand is only 3.4:1 against --on-brand (fails WCAG AA below
-       large-text size). */
-    background: var(--brand-solid);
-    border: none;
-    border-radius: var(--radius-pill);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--on-brand);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
-    transition:
-      transform var(--duration-fast) ease,
-      background var(--duration-base) ease;
-    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop);
-  }
-
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it sticky, leaving the button's background stuck after a tap. */
-  @media (hover: hover) {
-    .ai-result-download:hover {
-      background: var(--brand-solid-hover);
-    }
-  }
-  .ai-result-download:active {
-    transform: scale(0.95);
-  }
-
-  @keyframes downloadPop {
-    from {
-      transform: scale(0);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  /* Reduced motion: the footer still arrives a beat after the picture, so the
-     staging still reads — it fades up instead of springing open. Both footers
-     share the pop and both take the fade: the Download button, and the saved
-     caption that replaces it when auto-save is on. */
-  .ai-result-download:global([data-start-reduced-motion]),
-  .ai-result-saved:global([data-start-reduced-motion]) {
-    animation-name: downloadFadeIn;
-  }
-
-  @keyframes downloadFadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  :global(.ai-result-download-icon) {
-    width: 18px;
-    height: 18px;
-    pointer-events: none;
-  }
-
-  /* Solid white on the brand button in both themes (a filter over the themed
-     icon re-ink would drift dark in dark mode). */
-  :global(.ai-result-download-icon svg) {
-    fill: var(--on-brand);
-  }
-
   /* ── Polaroid send-off: tapping download morphs the whole modal into a
         polaroid that lingers, then sails off to the bottom-left and closes. ── */
   .ai-result-modal.polaroid-mode {
@@ -483,7 +375,7 @@
   /* Hide the controls so the card reads as a clean polaroid. The download
      button keeps its footprint, leaving the thick blank border at the bottom. */
   .ai-result-modal.polaroid-mode :global(.ai-result-close),
-  .ai-result-modal.polaroid-mode .ai-result-footer,
+  .ai-result-modal.polaroid-mode :global(.ai-result-footer),
   .ai-result-modal.polaroid-mode :global(.ai-result-disclosure) {
     opacity: 0;
     pointer-events: none;
