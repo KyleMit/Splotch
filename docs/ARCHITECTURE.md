@@ -407,12 +407,12 @@ media queries + the head-script stamp in `app.html`).
     `SoundSection`, `SavingSection`, `ColoringSection`, `ControlsSection`, `AccessibilitySection`,
     `AiKeyManager`, `ParentCenterSection`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`,
     `AboutSection`).
-    * **Hub Row** - one section per row: icon, title, and a live status subtitle
-      (`sectionSubtitle`). No chevrons. The two rows a parent flips mid-session — Appearance's
-      **Night Mode** and Sound — are split rows instead: the body still drills in, and a trailing
-      switch (`settings/ToggleSwitch.svelte`, shared with `ToggleRow`) acts on the spot, separated
-      by a hairline. Those two lead the list, and an extra gap sets them off from the drill-ins
-      below (ADR-0061 amendment).
+    * **Hub Row** - one section per row of `settings/HubList.svelte`: icon, title, and a live status
+      subtitle (`sectionSubtitle`). No chevrons. The two rows a parent flips mid-session —
+      Appearance's **Night Mode** and Sound — are split rows instead: the body still drills in, and
+      a trailing switch (`settings/ToggleSwitch.svelte`, shared with `ToggleRow`) acts on the spot,
+      separated by a hairline. Those two lead the list, and an extra gap sets them off from the
+      drill-ins below (ADR-0061 amendment).
     * **Section Activity Dot** - tiny static brand dot on a Hub Row or Sidebar icon when that
       section has never been read at its current content stamp. Seen stamps are recorded from the
       first app session, but dots stay hidden until session six; opening the phone drill-in,

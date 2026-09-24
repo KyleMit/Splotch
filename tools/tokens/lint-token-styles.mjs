@@ -146,8 +146,6 @@ const UNPINNED_GLOBAL_SELECTOR_BASELINE = new Map(
     'lib/components/ParentalGateKeypad.svelte': 3,
     // The footer sizes and re-inks the class forwarded into its child Icons.
     'lib/components/ParentalGateManageFooter.svelte': 3,
-    // The settings hub sizes and re-inks the class forwarded into SectionIcon.
-    'lib/components/SettingsModal.svelte': 2,
     // The empty ledger sizes the class forwarded into its child Icon.
     'lib/components/admin/InviteLedger.svelte': 1,
     // The row action sizes and re-inks the class forwarded into its child Icon.
@@ -158,6 +156,8 @@ const UNPINNED_GLOBAL_SELECTOR_BASELINE = new Map(
     'lib/components/settings/AiKeyManager.svelte': 2,
     // The value proposition sizes and re-inks the class forwarded into child Icons.
     'lib/components/settings/AiValueProp.svelte': 2,
+    // The settings hub sizes and re-inks the class forwarded into SectionIcon.
+    'lib/components/settings/HubList.svelte': 2,
     // The compact shell sizes classes forwarded into SplotchyIcon and Icon children.
     'lib/components/settings/CompactShell.svelte': 3,
     // The saving section sizes the class forwarded into its child Icon.
