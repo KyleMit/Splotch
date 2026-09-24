@@ -60,7 +60,7 @@ test('palette colors and custom hexagons activate from the keyboard', async ({ p
 // How far left of a hexagon's center the gap probe sits. The picker's swatches
 // are clip-path hexagons, so a point beside the first column's center is over
 // the picker background rather than any swatch, while 39px stays inside
-// ColorPicker's 40px snap radius (half the 69px hexagon height plus slop) and
+// hexSnapGesture's 40px snap radius (half the 69px hexagon height plus slop) and
 // nearer that hexagon than any other — the pencil-tip miss the snap exists for.
 const PICKER_GAP_PROBE_PX = 39;
 const STALLED_DRAWER_TRANSITION_DURATION = '100s';

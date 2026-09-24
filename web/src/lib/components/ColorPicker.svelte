@@ -4,7 +4,7 @@
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
-  import { HEX_GRID_GEOMETRY } from '$lib/design/trimGeometry';
+  import { createHexSnapGesture } from '$lib/actions/hexSnapGesture';
   import { PORTRAIT_ROWS, LANDSCAPE_ROWS, PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 
   // Both grid arrangements are rendered; CSS media queries pick one per
@@ -18,111 +18,17 @@
     { name: 'portrait', rows: PORTRAIT_ROWS },
   ];
 
-  interface HexCenter {
-    color: string;
-    cx: number;
-    cy: number;
-  }
-
-  let pickerEl: HTMLDivElement;
   let hoveredHex = $state<string | null>(null);
-  let isTrackingDrag = false;
-  let hexCenters: HexCenter[] | null = null;
+  const hexSnap = createHexSnapGesture({
+    hover: (color) => (hoveredHex = color),
+    pick: selectColor,
+  });
 
   function selectColor(hex: string) {
     pickCustomColor(hex);
     releaseAllPointers();
     colorPickerModal.hide();
-    hoveredHex = null;
-    isTrackingDrag = false;
-  }
-
-  function handlePickerDown(e: PointerEvent) {
-    // Re-snapshotted per gesture rather than lazily: the picker can reopen from a
-    // new origin, and a snapshot kept across that would snap to stale centers.
-    hexCenters = snapshotHexCenters();
-    const direct = e.target instanceof Element ? e.target.closest('.hexagon') : null;
-    const color =
-      (direct instanceof HTMLElement ? direct.dataset.color : undefined) ??
-      findHexagonInPicker(e.clientX, e.clientY);
-    if (!color) return;
-    isTrackingDrag = true;
-    hoveredHex = color;
-    // Capture so the terminating pointerup always reaches handlePickerUp, even
-    // when the drag wanders off the picker. Without capture that up is lost
-    // (pen/mouse get no implicit capture), leaving isTrackingDrag/hoveredHex
-    // stale — and a later tap in a hexagon gap would commit the old color.
-    try {
-      pickerEl.setPointerCapture(e.pointerId);
-    } catch {}
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  // A pointed Apple Pencil tip often lands in the clip-path gap between
-  // hexagons, where an element hit-test sees only the picker background. Snap
-  // to the nearest hexagon center within a radius of half the hexagon height
-  // plus this slop, so gap hits still resolve — for the pointerdown that starts
-  // the gesture (a tap in a gap otherwise selects nothing at all), the hover
-  // highlight while dragging, and the committed color alike. The slop bridges
-  // the gaps, and reaching half the height means nearest-center also covers
-  // direct hits without a DOM hit-test — which the drag path has no way to run
-  // anyway, since pointer capture retargets every move to the picker. Centers
-  // are snapshotted once per drag: per-move rect reads after each hover-class
-  // flip forced a reflow per hexagon per pointer event.
-  const HEX_SNAP_GAP_SLOP_PX = 5.5;
-
-  // Measured from the live grid rather than fixed at the base geometry: roomy
-  // viewports scale the honeycomb up (see --hex-scale), and a radius pinned to
-  // an unscaled hexagon stops reaching a scaled one's ends. Untracked on
-  // purpose — a snapshot input, nothing renders from it.
-  let hexSnapRadiusPx = HEX_GRID_GEOMETRY.firstRowPx / 2 + HEX_SNAP_GAP_SLOP_PX;
-
-  function snapshotHexCenters() {
-    const centers: HexCenter[] = [];
-    for (const hex of pickerEl.querySelectorAll<HTMLElement>('.hexagon')) {
-      const color = hex.dataset.color;
-      if (!color) continue;
-      const rect = hex.getBoundingClientRect();
-      if (rect.width === 0) continue;
-      if (centers.length === 0) hexSnapRadiusPx = rect.height / 2 + HEX_SNAP_GAP_SLOP_PX;
-      centers.push({ color, cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 });
-    }
-    return centers;
-  }
-
-  function findHexagonInPicker(x: number, y: number): string | null {
-    hexCenters ??= snapshotHexCenters();
-    let nearest: string | null = null;
-    let nearestDistance = hexSnapRadiusPx;
-    for (const { color, cx, cy } of hexCenters) {
-      const distance = Math.hypot(x - cx, y - cy);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearest = color;
-      }
-    }
-    return nearest;
-  }
-
-  function handlePickerMove(e: PointerEvent) {
-    if (!isTrackingDrag) return;
-    hoveredHex = findHexagonInPicker(e.clientX, e.clientY);
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  function handlePickerUp(e: PointerEvent) {
-    if (!isTrackingDrag) return;
-    isTrackingDrag = false;
-    // Even when the up-point is beyond the snap radius, a swatch still
-    // highlighted from this gesture is what the user sees — commit it.
-    const color = findHexagonInPicker(e.clientX, e.clientY) ?? hoveredHex;
-    if (color) {
-      selectColor(color);
-    }
-    e.preventDefault();
-    e.stopPropagation();
+    hexSnap.reset();
   }
 
   function handleHexClick(e: MouseEvent, hex: string) {
@@ -130,7 +36,7 @@
   }
 </script>
 
-<svelte:window onresize={() => (hexCenters = null)} />
+<svelte:window onresize={hexSnap.invalidateLayout} />
 
 <!-- scribbleGuard covers the hexagons AND the backdrop (backdrop events target
      the <dialog> itself): a pen tap that picks a color or dismisses the picker
@@ -145,26 +51,17 @@
     open: colorPickerModal.open,
     origin: colorPickerModal.origin,
     onRequestClose: colorPickerModal.hide,
-    onClose: () => {
-      hoveredHex = null;
-      isTrackingDrag = false;
-    },
+    onClose: hexSnap.reset,
   })}
 >
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="picker"
-    bind:this={pickerEl}
-    onpointerdown={handlePickerDown}
-    onpointermove={handlePickerMove}
-    onpointerup={handlePickerUp}
-    onpointercancel={() => {
-      isTrackingDrag = false;
-      hoveredHex = null;
-    }}
-    onpointerleave={() => {
-      if (!isTrackingDrag) hoveredHex = null;
-    }}
+    onpointerdown={hexSnap.down}
+    onpointermove={hexSnap.move}
+    onpointerup={hexSnap.up}
+    onpointercancel={hexSnap.reset}
+    onpointerleave={hexSnap.leave}
   >
     {#each GRIDS as grid (grid.name)}
       <div class="grid {grid.name}">
