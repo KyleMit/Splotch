@@ -55,7 +55,7 @@ function cssRuleBody(selector: string): string {
 // constants directly. This guard re-derives the expected literals from the
 // constants and asserts the two `min(...)` formula blocks (landscape and
 // portrait) still match, so a change to a constant can't silently leave the
-// CSS stale (issue #518); actionButtonLayout.test.ts evaluates the same
+// CSS stale (issue #518); actionButtonLayout.cssFormula.test.ts evaluates the same
 // formulas against the slider ceiling.
 const sizeFormulas = [...appCssSource.matchAll(/--action-btn-size:\s*min\(([\s\S]*?)\);/g)].map(
   (m) => m[1]
