@@ -33,7 +33,7 @@ const DOCUMENT_SCROLLER = 'document';
 const HOSTS: Record<string, readonly string[] | typeof DOCUMENT_SCROLLER> = {
   'lib/components/ColoringBook.svelte': ['.coloring-book-modal'],
   'lib/components/settings/CompactShell.svelte': ['.quick-toggles-scroll'],
-  'lib/components/styleguide/PrimitiveSections.svelte': ['.cue-scroller'],
+  'lib/components/styleguide/ScrollCueSpecimens.svelte': ['.cue-scroller'],
   'routes/beta/+page.svelte': DOCUMENT_SCROLLER,
   'routes/changelog/+page.svelte': DOCUMENT_SCROLLER,
   'routes/feedback/+page.svelte': DOCUMENT_SCROLLER,
