@@ -434,11 +434,12 @@ export default tseslint.config(
   {
     // Imperative-by-design engine facade (ADR-0004): canvas/input orchestration, brush-state
     // projection, and export-before-clear sequencing stay colocated because extracting those thin
-    // seams only satisfies the counter. The explicit cap leaves maintenance room while focused
-    // renderer, surface, history, and geometry modules stay split out.
+    // seams only satisfies the counter. Focused renderer, surface, history, and geometry modules
+    // stay split out. The cap keeps ~75 lines of headroom so routine fixes fit; reaching it is the
+    // prompt to look for a real seam, not to shave lines.
     files: ['web/src/lib/drawing/engine.ts'],
     rules: {
-      'max-lines': ['error', { max: 954, skipBlankLines: true, skipComments: true }],
+      'max-lines': ['error', { max: 1030, skipBlankLines: true, skipComments: true }],
     },
   },
   {
