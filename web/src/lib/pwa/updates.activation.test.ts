@@ -1,7 +1,8 @@
 // The apply half of the update lifecycle: silent activation when the running
 // page already matches the deployed version, and the hidden-edge apply that
-// reloads a stale page only while nobody is looking. Registration, init
-// wiring, and the version-mismatch cache-bust live in updates.test.ts.
+// reloads a stale page only while nobody is looking. Deferred registration
+// lives in updates.registration.test.ts; init wiring and the version-mismatch
+// cache-bust in updates.test.ts.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createPWAUpdates, ACTIVATION_RECOVERY_MS, WAITING_SETTLE_MS } from './updates';
