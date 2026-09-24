@@ -10,7 +10,7 @@ function sourceFile(path: string): string {
 }
 
 const appCss = sourceFile('../../app.css');
-const palette = sourceFile('../components/ColorPalette.svelte');
+const swatch = sourceFile('../components/ColorSwatch.svelte');
 
 describe('press release', () => {
   afterEach(() => document.documentElement.removeAttribute('data-reduce-motion'));
@@ -21,7 +21,7 @@ describe('press release', () => {
 
   it('names the class both pressed surfaces play the keyframes on', () => {
     expect(appCss).toContain(`.action-button.${PRESS_RELEASE_CLASS} {`);
-    expect(palette).toContain(`.color-swatch:global(.${PRESS_RELEASE_CLASS}) {`);
+    expect(swatch).toContain(`.color-swatch:global(.${PRESS_RELEASE_CLASS}) {`);
   });
 
   it('adds the release class to start a press', () => {

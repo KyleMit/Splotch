@@ -43,7 +43,7 @@
     },
     {
       name: 'Gradient Swatch',
-      file: 'ColorPicker.svelte',
+      file: 'ColorSwatch.svelte · ColorPicker.svelte',
       blurb: 'The last swatch, a honeycomb of palette hexagons that opens the hex color picker.',
       zone: 'gradient',
     },

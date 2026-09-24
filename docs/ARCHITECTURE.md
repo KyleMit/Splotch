@@ -301,10 +301,10 @@ media queries + the head-script stamp in `app.html`).
   Color, brush, and width climb the left edge; the remaining actions continue right from the
   bottom-left corner. Folding leaves color centered on the left and the chevron in the corner; swipe
   down/up on color also folds/restores the run.
-  * **Color Swatch** - Individual circular color selection button
+  * **Color Swatch** - Individual circular color selection button (`ColorSwatch.svelte`)
     * **Selection Ring** - Colored ring indicator around the active color swatch
 * **Gradient Swatch** - Last color button, a honeycomb of palette-color hexagons (the `more-colors`
-  icon) on the bar surface; opens custom color picker
+  icon) on the bar surface; opens custom color picker (`ColorSwatch.svelte`, custom variant)
   * **Color Picker Overlay** - Full-screen modal with blurred backdrop for selecting custom colors
   * **Hexagon Grid** - Honeycomb pattern of color tiles in the color picker
   * **Color Hexagon** - Individual hexagon-shaped color tile; drag across to explore, lift to select

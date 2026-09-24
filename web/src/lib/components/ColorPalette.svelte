@@ -17,27 +17,20 @@
   } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
-  import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
+  import { scribbleGuard } from '$lib/actions/scribbleGuard';
   import { colorPickerModal } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
-  import {
-    getRingColor,
-    selectionRingShadow,
-    SELECTION_RING_WIDTH_PX,
-    SELECTION_RING_GAP_PX,
-  } from '$lib/colorRing';
-  import Icon from './Icon.svelte';
+  import { getRingColor, SELECTION_RING_WIDTH_PX, SELECTION_RING_GAP_PX } from '$lib/colorRing';
+  import ColorSwatch from './ColorSwatch.svelte';
   import { prefersReducedMotion } from '$lib/platform/reducedMotion';
-  import { playPressRelease, pressRelease } from '$lib/actions/pressRelease';
-
-  let customSwatchEl: HTMLButtonElement | undefined;
 
   const dark = $derived(resolvedTheme() === 'dark');
 
   // The selection ring hides while erasing (no ink is being laid down) and
   // stays visible for every other brush, matching the pre-brush-menu behavior.
   const erasing = $derived(toolState.brush === 'eraser');
+  const customActive = $derived(!erasing && colorsState.activeSwatch === CUSTOM_SWATCH);
 
   // Track the most recent click so we can fire the confirmation ring animation
   // only on the actual selection (not on every reactivity change).
@@ -52,10 +45,10 @@
     releaseAllPointers();
   }
 
-  function selectCustomColor() {
+  function selectCustomColor(button: HTMLButtonElement) {
     selectInkBrush();
     selectCustomSwatch();
-    colorPickerModal.show(customSwatchEl ? buttonCenter(customSwatchEl) : null);
+    colorPickerModal.show(buttonCenter(button));
     releaseAllPointers();
   }
 
@@ -65,17 +58,6 @@
   }
 
   function handlePaletteUp(e: PointerEvent) {
-    e.stopPropagation();
-  }
-
-  // The press gets its own springy release instead of snapping back from the
-  // :active scale (lib/actions/pressRelease.ts).
-  function playSwatchRelease(e: PointerEvent & { currentTarget: HTMLButtonElement }) {
-    playPressRelease(e.currentTarget);
-  }
-
-  function handleSwatchCancel(e: PointerEvent) {
-    releaseAllPointers();
     e.stopPropagation();
   }
 
@@ -100,43 +82,27 @@
 >
   {#each PALETTE_COLORS as { hex, label } (hex)}
     {@const shown = themedSwatchColor(hex, dark)}
-    {@const ringColor = getRingColor(shown)}
-    <button
-      class="color-swatch"
-      class:active={!erasing && colorsState.activeSwatch === hex}
-      class:ring-animate={ringAnimateHex === hex}
-      data-start-reduced-motion={ringAnimateHex === hex && ringStartedReduced ? '' : undefined}
-      data-color={hex}
-      data-trim-rank={trimRank.get(hex)}
-      style="background-color: {shown}; {!erasing && colorsState.activeSwatch === hex
-        ? `box-shadow: ${selectionRingShadow(ringColor, 'var(--palette-surface, var(--surface))')}; --ring-color: ${ringColor};`
-        : ''}"
-      aria-label={shown === hex ? label : 'White'}
-      use:scribbleTap={() => selectSwatch(hex, shown)}
-      use:pressRelease
-      onpointerup={playSwatchRelease}
-      onpointercancel={handleSwatchCancel}
-    ></button>
+    {@const active = !erasing && colorsState.activeSwatch === hex}
+    <ColorSwatch
+      variant="flat"
+      {hex}
+      color={shown}
+      label={shown === hex ? label : 'White'}
+      trimRank={trimRank.get(hex)}
+      {active}
+      ring={active ? getRingColor(shown) : undefined}
+      animate={ringAnimateHex === hex}
+      startReduced={ringStartedReduced}
+      onselect={() => selectSwatch(hex, shown)}
+    />
   {/each}
 
-  <button
-    class="color-swatch gradient-swatch"
-    class:active={!erasing && colorsState.activeSwatch === CUSTOM_SWATCH}
-    class:ringed={!erasing &&
-      colorsState.activeSwatch === CUSTOM_SWATCH &&
-      colorsState.customColorSelected}
-    data-color="custom"
-    aria-label="Custom Color"
-    style={!erasing && colorsState.activeSwatch === CUSTOM_SWATCH && colorsState.customColorSelected
-      ? `box-shadow: ${selectionRingShadow(colorsState.customColor, 'var(--palette-surface, var(--surface))')};`
-      : ''}
-    use:scribbleTap={selectCustomColor}
-    use:pressRelease
-    onpointerup={playSwatchRelease}
-    onpointercancel={handleSwatchCancel}
-    bind:this={customSwatchEl}
-    ><Icon name="more-colors" class="more-colors-icon" aria-hidden="true" /></button
-  >
+  <ColorSwatch
+    variant="custom"
+    active={customActive}
+    ring={customActive && colorsState.customColorSelected ? colorsState.customColor : undefined}
+    onselect={selectCustomColor}
+  />
 </div>
 
 <style>
@@ -163,146 +129,6 @@
     overflow-x: visible;
     overflow-y: clip;
     touch-action: manipulation; /* Prevent iOS gesture delays */
-  }
-
-  .color-swatch {
-    display: block;
-    position: relative;
-    width: 60px;
-    height: 60px;
-    border: var(--selection-ring-gap-width) solid transparent;
-    border-radius: 50%;
-    cursor: pointer;
-    /* Orientation changes resize every swatch together. Keep those geometry
-       changes synchronous so rotation does not schedule sixteen layout
-       transitions; only interaction and theme feedback should animate. */
-    transition:
-      background-color var(--duration-base) ease,
-      border-color var(--duration-base) ease,
-      box-shadow var(--duration-base) ease,
-      transform var(--duration-base) ease;
-    /* Themed: a black drop shadow vanished on the dark bar and went flat. */
-    box-shadow: var(--float-shadow);
-    touch-action: manipulation; /* Prevent iOS gesture delays */
-  }
-
-  .color-swatch:active {
-    transform: scale(0.9);
-  }
-
-  .color-swatch:global(.releasing) {
-    animation: swatch-press var(--press-release-duration) linear;
-  }
-
-  .color-swatch.active {
-    border-color: var(--palette-surface, var(--surface));
-    /* Selection Ring is set dynamically via JavaScript to match swatch color */
-  }
-
-  /* Selection-confirmation flourish: ink blooming past the rim — a ring that
-     overshoots the resting selection-ring position as it fades, followed by a
-     thinner, fainter one. Skipped on the gradient swatch (whose confirmation is
-     the picker opening). */
-  .color-swatch:not(.gradient-swatch)::before,
-  .color-swatch:not(.gradient-swatch)::after {
-    content: '';
-    position: absolute;
-    inset: calc(-1 * var(--selection-ring-width));
-    border-radius: 50%;
-    border: var(--selection-ring-width) solid var(--ring-color, transparent);
-    box-sizing: border-box;
-    pointer-events: none;
-    opacity: 0;
-    transform: scale(0);
-  }
-
-  .color-swatch:not(.gradient-swatch)::after {
-    border-width: 3px;
-  }
-
-  .color-swatch.ring-animate:not(.gradient-swatch)::before {
-    animation: swatch-ring-expand 620ms var(--ease-glide) forwards;
-  }
-
-  .color-swatch.ring-animate:not(.gradient-swatch)::after {
-    animation: swatch-ring-trail 700ms 90ms var(--ease-glide) forwards;
-  }
-
-  @keyframes swatch-ring-expand {
-    0% {
-      transform: scale(0.34);
-      opacity: 0;
-    }
-    26% {
-      opacity: 0.95;
-    }
-    100% {
-      transform: scale(1.16);
-      opacity: 0;
-    }
-  }
-
-  @keyframes swatch-ring-trail {
-    0% {
-      transform: scale(0.5);
-      opacity: 0;
-    }
-    34% {
-      opacity: 0.4;
-    }
-    100% {
-      transform: scale(1.34);
-      opacity: 0;
-    }
-  }
-
-  /* Both rings are a transient pulse that ends at opacity 0 — the selection
-     itself is the resting ring, which stays. */
-  :global(:root[data-reduce-motion]) .color-swatch:global(.releasing),
-  .color-swatch.ring-animate:global([data-start-reduced-motion]):not(.gradient-swatch)::before,
-  .color-swatch.ring-animate:global([data-start-reduced-motion]):not(.gradient-swatch)::after {
-    animation: none;
-  }
-
-  /* The custom-color swatch is a honeycomb of palette-color dots (echoing the
-     picker's hexagon swatches) on the bar's own surface color, so it reads as
-     "more colors" beside the flat swatches and follows the theme in dark mode. */
-  .gradient-swatch {
-    --pop-scale: 1.12;
-    background: var(--palette-surface, var(--surface));
-    position: relative;
-  }
-
-  /* Centered absolutely (not via flex) so it survives the display:block/none
-     toggling on each swatch. The SVG keeps its aspect ratio. Resting size is
-     the content box divided by the selection pop, so the popped cluster lands
-     exactly on the content box — the same circle an active swatch's disc fills
-     inside the Selection Ring — giving the ringed hexagon the same width of
-     white band as a ringed round swatch (issue #310). */
-  .gradient-swatch :global(.more-colors-icon) {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: calc(100% / var(--pop-scale));
-    height: calc(100% / var(--pop-scale));
-    pointer-events: none;
-    transition: transform var(--duration-fast) ease-out;
-  }
-
-  /* Selection pop: the hexagon cluster scales toward the ring. Keyed on .ringed
-     (ring visible), not .active — tapping the swatch arms it before a color is
-     picked, and the cluster shouldn't pop ringless. Popped it spans exactly the
-     content box (52px at 60px), well inside the button, so nothing clips
-     against the portrait bar's overflow clip. */
-  .gradient-swatch.ringed :global(.more-colors-icon) {
-    transform: translate(-50%, -50%) scale(var(--pop-scale));
-  }
-
-  /* Reduced motion: the cluster still fills the ring when selected — that is
-     the selection reading — it just arrives there rather than popping. */
-  :global(:root[data-reduce-motion]) .gradient-swatch :global(.more-colors-icon) {
-    transition: none;
   }
 
   /* Landscape tablets use one column, trimming swatches as the viewport
@@ -332,12 +158,6 @@
       overflow-clip-margin: 12px;
       flex-wrap: nowrap;
     }
-
-    .color-swatch {
-      width: 55px;
-      height: 55px;
-      flex-shrink: 0;
-    }
   }
 
   /* ── Trim-by-priority ──────────────────────────────────────────────────────
@@ -354,85 +174,85 @@
 
      Every threshold is derived arithmetically; design/trimGeometry.ts is the
      executable form of the ladders, and trimGeometry.test.ts parses this
-     whole style block back out — swatch sizes and gaps as well as the thresholds
-     and the ranks each rule hides — and asserts the module still produces
-     exactly these values.
+     style block and ColorSwatch.svelte's back out — swatch sizes and gaps as
+     well as the thresholds and the ranks each rule hides — and asserts the
+     module still produces exactly these values.
 
      PORTRAIT — the palette is a full-width row of 55px swatches with 8px gaps
      inside 10px side padding, so N of them fit at width ≥ 63·N + 12 (the
      gradient swatch takes one of those slots). */
   @media (orientation: portrait) and (max-width: 1019.98px) {
-    .color-swatch[data-trim-rank='0'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='0']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 956.98px) {
-    .color-swatch[data-trim-rank='1'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='1']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 893.98px) {
-    .color-swatch[data-trim-rank='2'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='2']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 830.98px) {
-    .color-swatch[data-trim-rank='3'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='3']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 767.98px) {
-    .color-swatch[data-trim-rank='4'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='4']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 704.98px) {
-    .color-swatch[data-trim-rank='5'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='5']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 641.98px) {
-    .color-swatch[data-trim-rank='6'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='6']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 578.98px) {
-    .color-swatch[data-trim-rank='7'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='7']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 515.98px) {
-    .color-swatch[data-trim-rank='8'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='8']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 452.98px) {
-    .color-swatch[data-trim-rank='9'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='9']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 389.98px) {
-    .color-swatch[data-trim-rank='10'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='10']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 326.98px) {
-    .color-swatch[data-trim-rank='11'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='11']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 263.98px) {
-    .color-swatch[data-trim-rank='12'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='12']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 200.98px) {
-    .color-swatch[data-trim-rank='13'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='13']) {
       display: none;
     }
   }
   @media (orientation: portrait) and (max-width: 137.98px) {
-    .color-swatch[data-trim-rank='14'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='14']) {
       display: none;
     }
   }
@@ -440,42 +260,42 @@
   /* LANDSCAPE, single column (1 bar) — 60px swatches, 12px gaps, 12px side
      padding: N fit at height ≥ 72·N + 12. Floored at the layout switch. */
   @media (orientation: landscape) and (min-height: 600px) and (max-height: 1163.98px) {
-    .color-swatch[data-trim-rank='0'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='0']) {
       display: none;
     }
   }
   @media (orientation: landscape) and (min-height: 600px) and (max-height: 1091.98px) {
-    .color-swatch[data-trim-rank='1'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='1']) {
       display: none;
     }
   }
   @media (orientation: landscape) and (min-height: 600px) and (max-height: 1019.98px) {
-    .color-swatch[data-trim-rank='2'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='2']) {
       display: none;
     }
   }
   @media (orientation: landscape) and (min-height: 600px) and (max-height: 947.98px) {
-    .color-swatch[data-trim-rank='3'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='3']) {
       display: none;
     }
   }
   @media (orientation: landscape) and (min-height: 600px) and (max-height: 875.98px) {
-    .color-swatch[data-trim-rank='4'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='4']) {
       display: none;
     }
   }
   @media (orientation: landscape) and (min-height: 600px) and (max-height: 803.98px) {
-    .color-swatch[data-trim-rank='5'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='5']) {
       display: none;
     }
   }
   @media (orientation: landscape) and (min-height: 600px) and (max-height: 731.98px) {
-    .color-swatch[data-trim-rank='6'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='6']) {
       display: none;
     }
   }
   @media (orientation: landscape) and (min-height: 600px) and (max-height: 659.98px) {
-    .color-swatch[data-trim-rank='7'] {
+    .color-palette > :global(.color-swatch[data-trim-rank='7']) {
       display: none;
     }
   }
@@ -496,10 +316,6 @@
     box-shadow: none;
     align-content: space-between;
     padding: 12px 0 var(--palette-bottom);
-  }
-  :global(html[data-toolbar='bare']) .gradient-swatch {
-    background: transparent;
-    box-shadow: none;
   }
   @media (orientation: portrait) {
     :global(html[data-toolbar='bare']) .color-palette {
