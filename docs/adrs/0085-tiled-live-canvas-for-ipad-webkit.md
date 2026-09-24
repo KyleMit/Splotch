@@ -635,10 +635,10 @@ Keep Web Audio, but make lift-time teardown independent of audio-clock progress:
 
 Three repeated Magic strokes detached both nodes 0 / 0 / 1 ms after pointerup, with a 25 ms maximum
 drawing frame. A screenshot of that drawing remained at 21 ms, and a fresh-pen Undo measured 1 ms of
-engine work with a 21 ms maximum interaction frame. `drawingSound.test.ts` pins the running-clock
-declick ramp, suspended-clock synchronous mute, un-timestamped stop, both disconnects, and absence
-of an `ended` handler. Do not make teardown depend on audio-clock progress or an `ended` event, and
-do not replace Web Audio with the already-rejected media-element path.
+engine work with a 21 ms maximum interaction frame. `drawingSound.stop.test.ts` pins the
+running-clock declick ramp, suspended-clock synchronous mute, un-timestamped stop, both disconnects,
+and absence of an `ended` handler. Do not make teardown depend on audio-clock progress or an `ended`
+event, and do not replace Web Audio with the already-rejected media-element path.
 
 #### Gesture-Start Resume Amendment (2026-08)
 
