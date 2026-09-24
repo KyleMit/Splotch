@@ -30,13 +30,28 @@ sweeps then run one device at a time, and the runner stops every server it start
 
 * No other capture is running: `pgrep -fl 'run-campaign|run-operator|run-person-session'` prints
   nothing.
-* Run from the prepared checkout named in *Rig state at handoff* below, which holds the clean perf
-  build the bring-up checks (`web/build` stamped with that checkout's HEAD, `dirty: false`).
+* Run from a clean checkout at `main` after `npm run perf:build`. Bring-up refuses a `web/build`
+  whose stamp is not that checkout's HEAD with `dirty: false`.
 * iPad: charged, unlocked, **Auto-Lock Never**, rotation lock **off**, Safari on one tab, still on
   **iPadOS 26.5**. Do not install the update until visit 2.
 * Phone: unlocked on its charger. Leave Play Protect as it is.
 * Notched iPhone and its cable, if you have one (visit 2, optional).
 * Mac volume up: every capture start and stop is spoken (`say`), and so is each PASS or REDO.
+
+## If bring-up stops on WebDriverAgent
+
+Bring-up opens a real WebDriverAgent session. It does not trust `/status`, because an expired XCTest
+grant keeps answering "ready" while every session fails with "Not authorized for performing UI
+testing actions". If the only runner holding the iPad cannot open a session, bring-up stops and asks
+for:
+
+```sh
+npm run perf:session:person -- --relaunch-wda
+```
+
+Run it while you watch the iPad. It ends the stale runner, launches a fresh one, and you enter the
+passcode when "Enable UI Automation" appears. Before every iPad capture the runner opens a session
+again, and relaunches if the runner has died.
 
 ## Visit 1
 
@@ -119,4 +134,5 @@ names its session directory) and update the #2210 ledger.
 
 ## Rig state at handoff
 
-Filled in by the preparing session; re-proven by `bring-up`, never inherited.
+The preparing session recorded the rig state in the #2210 ledger comment, naming devices by alias
+only. Bring-up re-proves it; nothing is inherited.

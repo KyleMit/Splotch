@@ -44,7 +44,11 @@ import {
 } from './lib/profile-preview.mjs';
 import { BUILD_PROVENANCE_FILE } from './lib/build-provenance.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
-import { newestDeviceXctestrun, runnerHoldsDevice } from './lib/wda-recovery.mjs';
+import {
+  iproxyForwardPorts,
+  newestDeviceXctestrun,
+  runnerHoldsDevice,
+} from './lib/wda-recovery.mjs';
 import { parseInputWindows } from './lib/android-touch-occlusion.mjs';
 import { CAMPAIGN_MODES, artifactPath, campaignTarget } from './lib/campaign-plan.mjs';
 import {
@@ -76,6 +80,7 @@ const AB_ROOT = join(homedir(), '.splotch-rig', 'ab-2229');
 const CA_DIR = join(homedir(), '.splotch-rig', 'secure-origin-ca');
 const SERVER_READY_TIMEOUT_MS = 90_000;
 const WDA_READY_TIMEOUT_MS = 180_000;
+const WDA_SESSION_TIMEOUT_MS = 60_000;
 const DEFAULT_WDA_URL = 'http://127.0.0.1:8110';
 // Where this runner looks for free ports, clear of the canonical 4173–4185
 // rig ports and of Appium's 4723/4725 so it never lands on a foreign holder's.
@@ -349,27 +354,132 @@ function newestXctestrun() {
   return newestDeviceXctestrun(entries);
 }
 
-// Reuse a WebDriverAgent that already answers — the borrowed runner, most
-// often — and launch one only when none does. A second runner would end the
-// first, so a runner that holds the device but does not answer is reported,
-// never displaced.
-async function ensureWda(session, ctx, prompt) {
-  const requested = argFlag('wda-url', ctx.wdaUrl ?? DEFAULT_WDA_URL);
-  if (await wdaReady(requested)) {
-    console.log(`  WebDriverAgent ${requested} — ready (reused; not restarted)`);
-    return requested;
+// `/status` "ready" is not proof. On 2026-09-23 an expired XCTest grant left
+// the runner answering ready while every new session failed "Not authorized
+// for performing UI testing actions". A session opened and deleted is proof.
+async function wdaSessionProblem(url) {
+  try {
+    const response = await fetch(`${url}/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ capabilities: { alwaysMatch: {} } }),
+      signal: AbortSignal.timeout(WDA_SESSION_TIMEOUT_MS),
+    });
+    const body = await response.json();
+    const id = body.sessionId ?? body.value?.sessionId;
+    if (!id) return body.value?.message ?? `no session (HTTP ${response.status})`;
+    await fetch(`${url}/session/${id}`, { method: 'DELETE' });
+    return null;
+  } catch (error) {
+    rethrowIfBroken(error);
+    return error.message;
   }
-  if (runnerHoldsDevice(capture('ps', ['-axo', 'command']), ctx.udid)) {
+}
+
+async function withWdaSession(url, work) {
+  const response = await fetch(`${url}/session`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ capabilities: { alwaysMatch: {} } }),
+    signal: AbortSignal.timeout(WDA_SESSION_TIMEOUT_MS),
+  });
+  const body = await response.json();
+  const id = body.sessionId ?? body.value?.sessionId;
+  if (!id) throw new Error(`WebDriverAgent opened no session: ${body.value?.message}`);
+  try {
+    return await work(`${url}/session/${id}`);
+  } finally {
+    await fetch(`${url}/session/${id}`, { method: 'DELETE' });
+  }
+}
+
+// A driven capture turns the iPad through WebDriverAgent and hands it back in
+// the orientation it found; that override outlasts the session, so a person
+// holding the iPad upright still gets a landscape page (2026-09-23). The
+// finger captures set it explicitly first.
+async function setIpadOrientation(url, orientation) {
+  await withWdaSession(url, (base) =>
+    fetch(`${base}/orientation`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orientation }),
+    })
+  );
+}
+
+// Every Safari page a finger capture opened stays inspectable, and Appium then
+// lists two WEBVIEW contexts and refuses to guess which is the app
+// (2026-09-23). Closing Safari leaves the bundled app the only one.
+function terminateIpadSafari(udid, session) {
+  const listing = join(session.dir, 'logs', 'ipad-processes.json');
+  tryCapture('xcrun', [
+    'devicectl',
+    'device',
+    'info',
+    'processes',
+    '--device',
+    udid,
+    '--json-output',
+    listing,
+  ]);
+  const safari = (readJson(listing)?.result?.runningProcesses ?? []).find((entry) =>
+    /MobileSafari\.app\/MobileSafari$/.test(entry.executable ?? '')
+  );
+  if (safari) {
+    tryCapture('xcrun', [
+      'devicectl',
+      'device',
+      'process',
+      'terminate',
+      '--device',
+      udid,
+      '--pid',
+      String(safari.processIdentifier),
+    ]);
+  }
+}
+
+// Reuse a WebDriverAgent that opens a session — the requested URL, the last
+// one this session used, or any iproxy forward onto the iPad's WDA port — and
+// launch one only when none does. Only one XCTest runner can hold the iPad and
+// a launch ends the one holding it, so over a holder the launch needs
+// --relaunch-wda, passed while the maintainer watches for the passcode prompt.
+async function ensureWda(session, ctx, prompt) {
+  const ps = capture('ps', ['-axo', 'command']);
+  const candidates = [
+    ...new Set(
+      [
+        argFlag('wda-url'),
+        ctx.wdaUrl,
+        DEFAULT_WDA_URL,
+        ...iproxyForwardPorts(ps, ctx.udid).map((port) => `http://127.0.0.1:${port}`),
+      ].filter(Boolean)
+    ),
+  ];
+  const problems = [];
+  for (const url of candidates) {
+    if (!(await wdaReady(url))) continue;
+    const problem = await wdaSessionProblem(url);
+    if (!problem) {
+      console.log(`  WebDriverAgent ${url} — opened and closed a session (reused; not restarted)`);
+      return url;
+    }
+    problems.push(`${url}: ${problem}`);
+  }
+  if (runnerHoldsDevice(ps, ctx.udid) && !process.argv.includes('--relaunch-wda')) {
     fail(
-      `WebDriverAgent at ${requested} does not answer, but an xcodebuild runner already holds the iPad. ` +
-        'Pass --wda-url=<its forward> or stop that runner yourself; this runner will not displace it.'
+      `no WebDriverAgent opens a session${problems.length ? ` (${problems.join('; ')})` : ''}, and an ` +
+        'xcodebuild runner still holds the iPad. "Not authorized for performing UI testing actions" ' +
+        'is an expired XCTest grant. With someone watching the iPad, rerun with --relaunch-wda: the ' +
+        'fresh launch ends that runner and shows the passcode prompt.'
     );
   }
   const xctestrun = newestXctestrun();
-  if (!xctestrun)
+  if (!xctestrun) {
     fail(
       'no WebDriverAgent .xctestrun in DerivedData — run perf:preflight --verify-ios-launch once'
     );
+  }
   const port = await freePortFrom(PORT_SEARCH_FROM.wda);
   spawnOwned(session, 'iproxy-wda', 'iproxy', ['-u', ctx.udid, `${port}:8100`]);
   spawnOwned(session, 'wda-runner', 'xcodebuild', [
@@ -387,18 +497,30 @@ async function ensureWda(session, ctx, prompt) {
   const url = `http://127.0.0.1:${port}`;
   const deadline = Date.now() + WDA_READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    if (await wdaReady(url)) {
-      console.log(`  WebDriverAgent ${url} — launched and ready`);
+    if ((await wdaReady(url)) && !(await wdaSessionProblem(url))) {
+      console.log(`  WebDriverAgent ${url} — launched, and a session opened`);
       return url;
     }
     await sleep(3_000);
   }
   await prompt.ask(
-    '  WebDriverAgent never came up. Clear any prompt on the iPad, then press Enter to fail this step… '
+    '  WebDriverAgent never opened a session. Clear any prompt on the iPad, then press Enter to fail this step… '
   );
   fail(
-    `WebDriverAgent did not answer at ${url}; see ${join(session.dir, 'logs', 'wda-runner.log')}`
+    `WebDriverAgent did not open a session at ${url}; see ${join(session.dir, 'logs', 'wda-runner.log')}`
   );
+}
+
+// The first runner of 2026-09-23 exited right after a driven capture closed
+// its session, cause not established; re-proving before each capture that
+// needs WebDriverAgent turns that into a relaunch instead of a lost capture.
+async function requireWda(session, prompt) {
+  const ctx = session.state.ctx;
+  const problem = await wdaSessionProblem(ctx.wdaUrl);
+  if (!problem) return;
+  console.log(`  WebDriverAgent ${ctx.wdaUrl} stopped opening sessions (${problem}) — relaunching`);
+  ctx.wdaUrl = await ensureWda(session, ctx, prompt);
+  saveState(session);
 }
 
 async function startPreview(session, name, port, cwd) {
@@ -600,6 +722,9 @@ async function runIpadCapture(session, prompt, item) {
       console.log('  The page opens by itself. Start at "Draw now" (spoken), stop at "Stop".');
     }
     await prompt.ask('  Press Enter to start… ');
+    await requireWda(session, prompt);
+    if (item.kind === 'ipad-native-finger') terminateIpadSafari(ctx.udid, session);
+    if (item.kind === 'ipad-finger') await setIpadOrientation(ctx.wdaUrl, item.orientation);
     const status = runNode(script, args, { env });
     const verdict = captureVerdict(readJson(output), expectationFor(ctx, item));
     if (status !== 0 && verdict.status === 'PASS' && item.kind !== 'ipad-driven') {

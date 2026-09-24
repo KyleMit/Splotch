@@ -792,6 +792,21 @@ runs, and a human asked to check an idle iPad correctly reports there is no prom
 cleared it, and once with a human looking at an apparently clean device that was in exactly that
 state.
 
+**An expired grant still answers `/status` ready.** On 2026-09-23 a runner launched the day before
+kept reporting `"ready": true`, and every new session failed with
+`XCTDaemonErrorDomain Code=41 "Not authorized for performing UI testing actions"`. So a running
+WebDriverAgent is proved by opening a session, never by its status. Re-arming then needs a fresh
+launch, which ends the runner that holds the device. `perf:session:person -- --relaunch-wda` does
+this while the maintainer watches.
+
+**A WebDriverAgent orientation outlasts its session.** A driven iPad capture turns the device
+through WDA and hands it back in the orientation it found. That override stays in force after the
+session is closed, so a person holding the iPad upright still gets a landscape page, and a finger
+capture refuses it at readiness. Set the orientation through a WDA session before a finger capture.
+The same day, every Safari page a finger capture opened stayed inspectable. Appium then listed one
+WEBVIEW context per page and refused to guess which was the bundled app, so close Safari before a
+bundled-app capture.
+
 When `perf:preflight -- --verify-ios-launch` reports the automation denial, run it again with
 someone watching the device during that minute — the prompt exists then and nowhere else. A rig that
 worked yesterday can need the tap again today; `npm run perf:operator` tracks every grant attempt in
