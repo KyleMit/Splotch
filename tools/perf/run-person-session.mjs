@@ -1407,6 +1407,14 @@ export async function runPersonSession() {
   }
   const prompt = createPrompt();
   try {
+    // A resumed visit-1 session cannot trust the servers it recorded — a
+    // --teardown, a reboot, or a lost cable stops them — so it re-proves the
+    // rig before any step that needs it, as a fresh start would.
+    const resumeAt = nextStep(statuses(session));
+    if (resumeAt && resumeAt.visit === 1 && resumeAt.id !== 'bring-up') {
+      console.log('\nResuming visit 1 — re-proving the rig first:');
+      await stepBringUp(session, prompt);
+    }
     for (let step = nextStep(statuses(session)); step; step = nextStep(statuses(session))) {
       const problem = stepOrderProblem(step.id, statuses(session));
       if (problem) fail(problem);
