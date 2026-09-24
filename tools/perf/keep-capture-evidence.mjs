@@ -38,6 +38,21 @@ function isActionSuite(parsed) {
   );
 }
 
+// Where the capture host sat on its LAN — the Mac's mDNS name and its
+// private IPv4 — is machine state, not evidence: page URLs, report URLs and a
+// sweep's appUrl all carry it. Attribution reads only a URL's path and query
+// (the probe nonce), so the host is replaced with a fixed placeholder that
+// still parses as a URL host rather than removed.
+export const REDACTED_LAN_HOST = 'lan-host';
+export const REDACTED_MDNS_HOST = 'rig-mac.local';
+const MDNS_HOST = /\b[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.local\b/g;
+const PRIVATE_IPV4 =
+  /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})\b/g;
+
+export function redactHostAddresses(serialized) {
+  return serialized.replace(MDNS_HOST, REDACTED_MDNS_HOST).replace(PRIVATE_IPV4, REDACTED_LAN_HOST);
+}
+
 export function redactDeviceIdentifiers(parsed) {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return parsed;
   if (parsed.handCapture === true && typeof parsed.device === 'string') {
@@ -307,7 +322,9 @@ export async function keepCaptureEvidence({
     emitted.add(name);
     writeFileSync(
       join(destination, name),
-      JSON.stringify(redactDeviceIdentifiers(JSON.parse(readFileSync(entry.file, 'utf8'))))
+      redactHostAddresses(
+        JSON.stringify(redactDeviceIdentifiers(JSON.parse(readFileSync(entry.file, 'utf8'))))
+      )
     );
   }
   // The index is what makes the corpus readable without opening a frame table:

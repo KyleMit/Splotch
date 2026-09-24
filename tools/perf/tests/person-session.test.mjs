@@ -9,6 +9,7 @@ import {
   magicFirstLoadReading,
   navBarOverlayVerdict,
   nextStep,
+  overlaySteadilyClear,
   secureSweepProblem,
   sessionTotals,
   stepOrderProblem,
@@ -86,6 +87,21 @@ describe('navBarOverlayVerdict', () => {
   it('passes a dump with no nu.nav.bar window at all', () => {
     const verdict = navBarOverlayVerdict([]);
     expect(verdict).toMatchObject({ pass: true, windows: 0 });
+  });
+});
+
+describe('overlaySteadilyClear', () => {
+  const pass = { pass: true };
+  const fail = { pass: false };
+
+  it('refuses the 2026-09-24 blip: one clear read between two occluded ones', () => {
+    expect(overlaySteadilyClear([fail, pass])).toBe(false);
+    expect(overlaySteadilyClear([fail, pass, fail, pass, pass, pass, pass, pass])).toBe(false);
+  });
+
+  it('needs seven clear reads: six five-second intervals, thirty seconds', () => {
+    expect(overlaySteadilyClear([fail, pass, pass, pass, pass, pass, pass])).toBe(false);
+    expect(overlaySteadilyClear([fail, pass, pass, pass, pass, pass, pass, pass])).toBe(true);
   });
 });
 

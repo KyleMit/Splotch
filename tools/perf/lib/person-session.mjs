@@ -110,6 +110,7 @@ export const PERSON_SESSION_STEPS = [
     title: 'iPad Safari, portrait: paired pen and Magic, and the Magic first load',
     issues: [2235, 2232],
     person: [
+      'You never open a page: the runner opens Safari at its own address for every capture. Just press Enter here.',
       'Hold the iPad in PORTRAIT and keep it there for this whole step.',
       'During a DRIVEN capture, do not touch the iPad — WebDriverAgent draws.',
       'During a FINGER capture, draw with ONE finger from "Draw now" until "Stop".',
@@ -131,6 +132,7 @@ export const PERSON_SESSION_STEPS = [
     title: 'iPad Safari, landscape: eraser finger captures (and the #2233 pen ruling)',
     issues: [2231],
     person: [
+      'You never open a page: the runner opens Safari at its own address for every capture.',
       'Turn the iPad to LANDSCAPE and keep it there for this whole step.',
       'The page arrives already painted for the eraser: erase in long passes, never the same spot twice.',
       'At the end, turn the iPad back to PORTRAIT.',
@@ -179,7 +181,7 @@ export const PERSON_SESSION_STEPS = [
     person: [
       'On the phone: Settings → Accessibility → Installed apps (or Installed services) → NU Navigation Bar → turn it OFF, wait 3 s, turn it back ON (or leave it off).',
       'If a second overlay survives: Settings → Apps → NU Navigation Bar → Force stop, then open NU Navigation Bar once so it restarts with one window.',
-      'The runner re-reads `dumpsys input` every 5 s and says PASS as soon as the centre column takes touches.',
+      'The runner re-reads `dumpsys input` every 5 s and says PASS once the centre column has taken touches for 30 s straight.',
       'After PASS you may leave: the rest of visit 1 runs on its own.',
     ],
     done: 'PASS: no untrusted nu.nav.bar overlay sums past Android’s 0.8 obscuring limit.',
@@ -330,6 +332,17 @@ export function navBarOverlayVerdict(windows) {
       ? `${overlays.length} USE_OPACITY ${NAV_BAR_OVERLAY_PACKAGE} window(s); at (${worst.x},${worst.y}) one uid's windows combine to ${combined} (${pass ? '≤' : '>'} ${ANDROID_MAX_OBSCURING_OPACITY})`
       : `no USE_OPACITY ${NAV_BAR_OVERLAY_PACKAGE} window`,
   };
+}
+
+// One passing read is not a cleared overlay. On 2026-09-24 the rig phone's
+// nu.nav.bar windows dropped out of one `dumpsys input` read and came straight
+// back at 0.96, so the step passed and the A/B's own re-check failed. Seven
+// reads at the runner's five-second poll span six intervals: thirty seconds of
+// the column staying clear.
+export const OVERLAY_STEADY_READS = 7;
+
+export function overlaySteadilyClear(verdicts, reads = OVERLAY_STEADY_READS) {
+  return verdicts.length >= reads && verdicts.slice(-reads).every((verdict) => verdict.pass);
 }
 
 // Columns of a probe event row (tools/perf/probes/real-screen-probe.js).

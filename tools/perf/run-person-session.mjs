@@ -62,8 +62,10 @@ import {
   captureVerdict,
   draftIssueComment,
   magicFirstLoadReading,
+  OVERLAY_STEADY_READS,
   navBarOverlayVerdict,
   nextStep,
+  overlaySteadilyClear,
   secureSweepProblem,
   sessionStep,
   sessionTotals,
@@ -881,7 +883,7 @@ function draftPortrait(session, results) {
         '| --- | --- | --- | --- | --- |',
         ...magic.map(
           (r) =>
-            `| ${r.label} | ${r.metrics.lostFrameTimeShareText} | ${r.magic.worstInContactGapMs ?? 'n/a'} ms | ${r.magic.worstOnsetAfterFirstTouchMs ?? 'n/a'} ms | ${Number.isFinite(r.magic.lostFrameTimeShareWithoutWorst) ? `${Math.round(r.magic.lostFrameTimeShareWithoutWorst * 10_000) / 100}%` : 'n/a'} |`
+            `| ${r.label} | ${r.metrics.lostFrameTimeShareText} | ${r.magic.worstInContactGapMs === null ? 'none (no in-contact stall)' : `${r.magic.worstInContactGapMs} ms`} | ${r.magic.worstOnsetAfterFirstTouchMs === null ? '—' : `${r.magic.worstOnsetAfterFirstTouchMs} ms`} | ${Number.isFinite(r.magic.lostFrameTimeShareWithoutWorst) ? `${Math.round(r.magic.lostFrameTimeShareWithoutWorst * 10_000) / 100}%` : 'n/a'} |`
         ),
         '',
         'Decision for the maintainer (`needs-adr`): accepted first-use cost, a named one-off episode excluded from the gate, or a product fix (provisional sheet / idle pre-raster).',
@@ -1108,16 +1110,24 @@ async function stepSecureActions(session) {
 async function stepPhoneOverlay(session) {
   const serial = session.state.ctx.serial ?? connectedAndroidSerial();
   const deadline = Date.now() + OVERLAY_TIMEOUT_MS;
+  const verdicts = [];
   let last = null;
   while (Date.now() < deadline) {
     const verdict = readOverlayVerdict(serial);
-    if (verdict.detail !== last) {
-      console.log(
-        `  ${new Date().toLocaleTimeString()}  ${verdict.pass ? '✓ PASS' : '✗ FAIL'}  ${verdict.detail}`
-      );
-      last = verdict.detail;
+    verdicts.push(verdict);
+    const cleared = overlaySteadilyClear(verdicts);
+    const clearRun = verdicts.length - 1 - verdicts.findLastIndex((entry) => !entry.pass);
+    const mark = cleared
+      ? '✓ PASS'
+      : verdict.pass
+        ? `… clear, holding (${clearRun}/${OVERLAY_STEADY_READS})`
+        : '✗ FAIL';
+    const line = `${mark}  ${verdict.detail}`;
+    if (line !== last) {
+      console.log(`  ${new Date().toLocaleTimeString()}  ${line}`);
+      last = line;
     }
-    if (verdict.pass) {
+    if (cleared) {
       say('Phone overlay cleared. You can go.');
       markStep(session, 'phone-overlay', 'done', { verdict });
       return;
@@ -1126,7 +1136,7 @@ async function stepPhoneOverlay(session) {
   }
   markStep(session, 'phone-overlay', 'failed');
   fail(
-    'the overlay still drops touches after 20 minutes; the phone A/B cannot run until it passes'
+    'the overlay did not stay clear for 30 s within 20 minutes; the phone A/B cannot run until it does'
   );
 }
 

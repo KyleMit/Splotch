@@ -1,0 +1,41 @@
+{
+  "campaign": "2026-09-24-issue-2229-portrait-ab-head-reduce-motion",
+  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+  "capturedFrom": "perf-profiles/ab-2229-staging/head-reduce-motion",
+  "study": "issue 2229 portrait A/B, one session, three interleaved rounds per arm; foreign build served from an isolated worktree, identity proven by served-bytes fingerprint and buildDigest",
+  "kept": [
+    {
+      "file": "crayon-head-reduce-motion-r1--e3cce6e2.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/crayon-head-reduce-motion-r1.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-head-reduce-motion-r2--83e47c58.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/crayon-head-reduce-motion-r2.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-head-reduce-motion-r3--0b7e7c71.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/crayon-head-reduce-motion-r3.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}
