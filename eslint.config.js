@@ -443,6 +443,16 @@ export default tseslint.config(
     },
   },
   {
+    // The tiled renderer's remaining core is command lifecycle plus the undo window's budget
+    // accounting; moving the budget into the per-command patch store would mix two lifetimes.
+    // Layout and patch restore already live in tiledLayout.ts and tiledUndoPatches.ts. The cap
+    // keeps ~75 lines of headroom over the file.
+    files: ['web/src/lib/drawing/tiledRenderer.ts'],
+    rules: {
+      'max-lines': ['error', { max: 516, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     // composeExportPng's tiled-worker and compatibility paths share one mock and image-stub
     // harness; splitting the suite by path duplicates that setup in two files instead of
     // clarifying anything. The cap keeps ~75 lines of headroom over the file.
