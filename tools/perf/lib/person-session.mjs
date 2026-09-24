@@ -288,10 +288,11 @@ export function nextStep(statuses) {
   );
 }
 
-// PASS when no untrusted nu.nav.bar overlay can drop a touch: Android sums the
-// opacity of one uid's USE_OPACITY windows under a point, and drops the touch
-// past the obscuring limit. The rig's stacked pair shares one 1-px frame, so
-// the windows are grouped by frame.
+// PASS when no untrusted nu.nav.bar overlay can drop a touch. Android sums one
+// uid's USE_OPACITY windows under a POINT (untrustedOcclusionAt), so the
+// verdict evaluates every point where the overlays' frames begin: the worst
+// sum over any region is reached at the corner where that region's windows
+// all start.
 export function navBarOverlayVerdict(windows) {
   const overlays = windows.filter(
     (window) =>
@@ -301,24 +302,32 @@ export function navBarOverlayVerdict(windows) {
       !window.flags.has('TRUSTED_OVERLAY') &&
       window.alpha > 0
   );
-  const stacks = new Map();
-  for (const window of overlays) {
-    const { left, top, right, bottom } = window.frame;
-    const key = `${window.ownerUid}:[${left},${top}][${right},${bottom}]`;
-    stacks.set(key, 1 - (1 - (stacks.get(key) ?? 0)) * (1 - window.alpha));
+  const contains = ({ frame }, x, y) =>
+    x >= frame.left && x < frame.right && y >= frame.top && y < frame.bottom;
+  let worst = { opacity: 0, x: null, y: null };
+  for (const x of new Set(overlays.map((window) => window.frame.left))) {
+    for (const y of new Set(overlays.map((window) => window.frame.top))) {
+      const byUid = new Map();
+      for (const window of overlays.filter((candidate) => contains(candidate, x, y))) {
+        byUid.set(
+          window.ownerUid,
+          1 - (1 - (byUid.get(window.ownerUid) ?? 0)) * (1 - window.alpha)
+        );
+      }
+      for (const opacity of byUid.values()) {
+        if (opacity > worst.opacity) worst = { opacity, x, y };
+      }
+    }
   }
-  const worst = [...stacks.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
-  const combined = worst ? Math.round(worst[1] * 1000) / 1000 : 0;
+  const combined = Math.round(worst.opacity * 1000) / 1000;
   const pass = combined <= ANDROID_MAX_OBSCURING_OPACITY;
   return {
     pass,
     windows: overlays.length,
     combinedOpacity: combined,
-    frame: worst ? worst[0].split(':')[1] : null,
+    point: worst.x === null ? null : `(${worst.x},${worst.y})`,
     detail: overlays.length
-      ? `${overlays.length} USE_OPACITY ${NAV_BAR_OVERLAY_PACKAGE} window(s); worst stack ${
-          worst[0].split(':')[1]
-        } combines to ${combined} (${pass ? '≤' : '>'} ${ANDROID_MAX_OBSCURING_OPACITY})`
+      ? `${overlays.length} USE_OPACITY ${NAV_BAR_OVERLAY_PACKAGE} window(s); at (${worst.x},${worst.y}) one uid's windows combine to ${combined} (${pass ? '≤' : '>'} ${ANDROID_MAX_OBSCURING_OPACITY})`
       : `no USE_OPACITY ${NAV_BAR_OVERLAY_PACKAGE} window`,
   };
 }
@@ -424,8 +433,10 @@ export function captureVerdict(artifact, expect) {
       `product commit ${artifact.productCommit ?? 'null'} is not the expected ${expect.productCommit ?? 'null'}`
     );
   }
-  if (expect.buildEntry && artifact.buildEntry !== expect.buildEntry) {
-    reasons.push(`served entry ${artifact.buildEntry} is not the arm's ${expect.buildEntry}`);
+  if (expect.buildDigest && artifact.buildDigest !== expect.buildDigest) {
+    reasons.push(
+      `served build digest ${artifact.buildDigest} is not the one proven against the arm's worktree`
+    );
   }
   if (artifact.brush && artifact.brush !== expect.brush) {
     reasons.push(`the artifact says ${artifact.brush}, not ${expect.brush}`);
@@ -474,6 +485,10 @@ export function captureVerdict(artifact, expect) {
 // ran in a secure context. The runner already refuses a print without that
 // proof; this confirms the sweep reached them at all rather than blocking them.
 export function secureSweepProblem(actions) {
+  const blocked = actions?.actionPlan?.blocked ?? [];
+  if (blocked.length) {
+    return `blocked coverage: ${blocked.map((entry) => entry.label).join(', ')}`;
+  }
   const ai = (actions?.samples ?? []).filter((sample) => sample?.aiRun);
   if (!ai.length) return 'no AI-waiting sample carries aiRun evidence';
   const insecure = ai.filter((sample) => sample.aiRun.secureContext !== true);

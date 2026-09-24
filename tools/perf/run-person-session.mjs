@@ -34,9 +34,15 @@ import { createInterface } from 'node:readline/promises';
 import { ROOT, argFlag, capture, fail, isMain, runMain, sleep, tryCapture } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';
 import { prepareCapture } from './prepare-capture.mjs';
+import { campaignStatus } from './campaign-status.mjs';
 import { stampedBuildCommit } from './lib/build-provenance.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
-import { entryModulePath } from './lib/profile-preview.mjs';
+import {
+  entryModulePath,
+  servedBuildBinding,
+  servedBuildFingerprintProblem,
+} from './lib/profile-preview.mjs';
+import { BUILD_PROVENANCE_FILE } from './lib/build-provenance.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import { newestDeviceXctestrun, runnerHoldsDevice } from './lib/wda-recovery.mjs';
 import { parseInputWindows } from './lib/android-touch-occlusion.mjs';
@@ -90,9 +96,24 @@ async function portIsFree(port) {
   });
 }
 
+// The fetch spec's bad-ports list (4190 among them) is refused by undici here
+// and by the device browser alike, with a bare "bad port". Asking fetch itself
+// keeps the list out of this file: a closed allowed port refuses the
+// connection instead.
+async function fetchAllowsPort(port) {
+  try {
+    await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(1_000) });
+    return true;
+  } catch (error) {
+    rethrowIfBroken(error);
+    return error?.cause?.message !== 'bad port';
+  }
+}
+
 async function freePortFrom(start, taken = new Set()) {
   for (let port = start; port < start + 200; port += 1) {
-    if (!taken.has(port) && (await portIsFree(port))) return port;
+    if (taken.has(port) || !(await fetchAllowsPort(port))) continue;
+    if (await portIsFree(port)) return port;
   }
   throw new Error(`no free port in ${start}–${start + 199}`);
 }
@@ -415,6 +436,22 @@ async function startProbeHost(session, name, port, upstreamPort) {
   await waitForUrl(`http://127.0.0.1:${port}/__probe/state`, SERVER_READY_TIMEOUT_MS);
 }
 
+// postperf:build writes the stamp after the build, so any build file newer
+// than it was written by something else, and the stamp no longer names it.
+function newestFileAfterStamp(buildDir) {
+  const stampTime = statSync(join(buildDir, BUILD_PROVENANCE_FILE)).mtimeMs;
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const path = join(dir, name);
+      const stat = statSync(path);
+      const newer = stat.isDirectory() ? walk(path) : stat.mtimeMs > stampTime ? path : null;
+      if (newer) return newer;
+    }
+    return null;
+  };
+  return walk(buildDir);
+}
+
 function checkoutBuildCommit() {
   const head = capture('git', ['rev-parse', 'HEAD']).trim();
   const stamped = stampedBuildCommit();
@@ -583,9 +620,9 @@ async function runIpadCapture(session, prompt, item) {
     if (item.brush === 'magic' && verdict.scored)
       result.magic = magicFirstLoadReading(readJson(output), verdict.scored);
     if (verdict.status === 'PASS') return result;
-    if (attempt < MAX_ATTEMPTS && !(await prompt.yes('  Redo it now?'))) return result;
+    if (attempt === MAX_ATTEMPTS || !(await prompt.yes('  Redo it now?'))) return result;
   }
-  return null;
+  throw new Error('unreachable: every attempt returns');
 }
 
 async function runCaptureStep(session, prompt, step) {
@@ -599,15 +636,20 @@ async function runCaptureStep(session, prompt, step) {
       continue;
     }
     const result = await runIpadCapture(session, prompt, item);
-    if (result) {
-      const index = results.findIndex((existing) => existing.label === label);
-      if (index === -1) results.push(result);
-      else results[index] = result;
-    }
+    const index = results.findIndex((existing) => existing.label === label);
+    if (index === -1) results.push(result);
+    else results[index] = result;
     markStep(session, step.id, 'running', { results });
   }
-  const failed = results.filter((result) => result.status !== 'PASS');
-  markStep(session, step.id, failed.length ? 'failed' : 'done', { results });
+  // Done means one PASS per PLANNED capture, not "no recorded failure": a
+  // capture that never produced a result must hold the step open too.
+  const missing = step.captures
+    .map(captureLabel)
+    .filter(
+      (label) => !results.some((result) => result.label === label && result.status === 'PASS')
+    );
+  if (missing.length) console.log(`\n  Still owed in ${step.id}: ${missing.join(', ')}`);
+  markStep(session, step.id, missing.length ? 'failed' : 'done', { results });
   return results;
 }
 
@@ -829,7 +871,15 @@ async function stepSecureActions(session) {
   });
   console.table(rows);
   stopOwned(session, ['front-leaf']);
-  const passed = rows.every((row) => row.verdict === 'PASS');
+  // The campaign exits 0 whatever its cells did; its own acceptance
+  // (blocked coverage, fidelity) is what campaign-status reports.
+  const { outstanding } = await campaignStatus({
+    targetId: 'ipad-device-web',
+    outputRoot,
+    modes,
+    items: ['actions'],
+  });
+  const passed = outstanding.length === 0 && rows.every((row) => row.verdict === 'PASS');
   markStep(session, 'ipad-secure-actions', passed ? 'done' : 'failed', {
     rows,
     campaignExit: status,
@@ -905,9 +955,20 @@ async function stepPhoneAb(session) {
     const probePort = await freePortFrom(PORT_SEARCH_FROM.server, taken);
     taken.add(probePort);
     stopOwned(session, [`ab-preview-${origin}`, `ab-probe-${origin}`]);
-    const entry = await startPreview(session, `ab-preview-${origin}`, previewPort, dir);
+    const buildDir = join(dir, 'web', 'build');
+    const staleFile = newestFileAfterStamp(buildDir);
+    if (staleFile)
+      fail(`${staleFile} changed after ${arm.commit}'s build stamp — rebuild that arm`);
+    await startPreview(session, `ab-preview-${origin}`, previewPort, dir);
+    const previewUrl = `http://127.0.0.1:${previewPort}/`;
+    const bytesProblem = await servedBuildFingerprintProblem(previewUrl, { buildDir });
+    if (bytesProblem)
+      fail(`the ${origin} arm's preview is not its worktree's build: ${bytesProblem}`);
+    const { buildDigest } = await servedBuildBinding(previewUrl, {
+      verifiedAgainstCheckout: false,
+    });
     await startProbeHost(session, `ab-probe-${origin}`, probePort, previewPort);
-    origins[origin] = { entry, host: `http://${ctx.lan}:${probePort}` };
+    origins[origin] = { buildDigest, host: `http://${ctx.lan}:${probePort}` };
   }
   const results = [...(session.state.steps['phone-ab']?.results ?? [])];
   for (let round = 1; round <= AB_2229_ROUNDS; round += 1) {
@@ -945,7 +1006,7 @@ async function stepPhoneAb(session) {
           theme: 'light',
           label,
           productCommit: null,
-          buildEntry: origins[arm.origin].entry,
+          buildDigest: origins[arm.origin].buildDigest,
           reduceMotion: arm.reduceMotion,
         });
         printVerdict(label, verdict);

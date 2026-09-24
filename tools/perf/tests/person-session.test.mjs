@@ -56,7 +56,7 @@ describe('navBarOverlayVerdict', () => {
     expect(verdict.pass).toBe(false);
     expect(verdict.windows).toBe(2);
     expect(verdict.combinedOpacity).toBeGreaterThan(0.95);
-    expect(verdict.frame).toBe('[540,99][541,2340]');
+    expect(verdict.point).toBe('(540,99)');
   });
 
   it('passes once only one of the stacked windows remains', () => {
@@ -66,6 +66,21 @@ describe('navBarOverlayVerdict', () => {
     const verdict = navBarOverlayVerdict(parseInputWindows(single));
     expect(verdict.windows).toBe(1);
     expect(verdict.pass).toBe(true);
+  });
+
+  it('fails overlapping windows with different frames whose sum drops a touch', () => {
+    const window = (left, right) => ({
+      name: 'abc nu.nav.bar',
+      flags: new Set(['NOT_FOCUSABLE']),
+      alpha: 0.6,
+      frame: { left, top: 0, right, bottom: 100 },
+      ownerUid: 10334,
+      occlusionMode: 'USE_OPACITY',
+    });
+    const verdict = navBarOverlayVerdict([window(0, 10), window(5, 15)]);
+    expect(verdict.pass).toBe(false);
+    expect(verdict.combinedOpacity).toBe(0.84);
+    expect(verdict.point).toBe('(5,0)');
   });
 
   it('passes a dump with no nu.nav.bar window at all', () => {
@@ -170,6 +185,15 @@ describe('secureSweepProblem', () => {
     expect(
       secureSweepProblem({ samples: [{ label: 'x' }, { aiRun: { secureContext: true } }] })
     ).toBeNull();
+  });
+
+  it('refuses a sweep that blocked a required action even with secure AI samples', () => {
+    expect(
+      secureSweepProblem({
+        actionPlan: { blocked: [{ label: 'required action', reason: 'x' }] },
+        samples: [{ aiRun: { secureContext: true } }],
+      })
+    ).toMatch(/blocked coverage: required action/);
   });
 
   it('refuses a sweep with no AI-waiting evidence or an insecure sample', () => {
