@@ -1,6 +1,7 @@
 <script lang="ts">
   import DialogHeader from './design/DialogHeader.svelte';
   import ColoringBookHeaderActions from './ColoringBookHeaderActions.svelte';
+  import ColoringTile from './ColoringTile.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
   import { coloringBookState, setOverlayOrientation } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
@@ -201,12 +202,7 @@
     onOpen: showInitialView,
   })}
 >
-  <div
-    class="coloring-book-content"
-    class:hover-armed={hoverArmed}
-    class:retiring-after-page-selection={retiringAfterPageSelection}
-    use:armHoverOnMouseMove
-  >
+  <div class="coloring-book-content" use:armHoverOnMouseMove>
     {#if !activeBook}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
@@ -228,24 +224,18 @@
           use:cutTrailingRow
         >
           {#each books as book (book.id)}
-            {@const coverImage = coverThumbImageSource(book, pickerTheme.current)}
-            <button
-              class="coloring-tile coloring-book-tile"
-              type="button"
+            <ColoringTile
+              image={coverThumbImageSource(book, pickerTheme.current)}
+              sizes={coverThumbnailSizes}
+              shape="cover"
+              label={book.name}
+              {hoverArmed}
+              retiring={retiringAfterPageSelection}
               aria-label="{book.name} coloring book"
               onclick={(e) => swapView(book, e)}
               onpointerenter={() => prefetchImages(bookPageRequests(book))}
               onpointerdown={() => predecodeImages(bookPageRequests(book))}
-            >
-              <img
-                src={coverImage.src}
-                srcset={__IS_CAPACITOR__ ? undefined : coverImage.srcset}
-                sizes={__IS_CAPACITOR__ ? undefined : coverThumbnailSizes}
-                alt=""
-                loading="lazy"
-              />
-              <span class="coloring-book-label">{book.name}</span>
-            </button>
+            />
           {/each}
         </div>
       </div>
@@ -275,25 +265,17 @@
             use:cutTrailingRow
           >
             {#each activeBook.pages as page (page.id)}
-              {@const pageImage = pageSelectorImageSource(page, orientation, pickerTheme.current)}
-              <button
-                class="coloring-tile"
-                type="button"
+              <ColoringTile
+                image={pageSelectorImageSource(page, orientation, pickerTheme.current)}
+                sizes={COLORING_IMAGE_SIZES.pageSelector[orientation]}
+                shape={orientation}
+                {hoverArmed}
+                retiring={retiringAfterPageSelection}
                 aria-label="{page.name} coloring page"
                 onclick={(event) => pickPage(page, event.currentTarget)}
                 onpointerenter={() => prefetchPageOverlay(page)}
                 onpointerdown={() => prefetchPageOverlay(page)}
-              >
-                <img
-                  src={pageImage.src}
-                  srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
-                  sizes={__IS_CAPACITOR__
-                    ? undefined
-                    : COLORING_IMAGE_SIZES.pageSelector[orientation]}
-                  alt=""
-                  loading="lazy"
-                />
-              </button>
+              />
             {/each}
           </div>
         {/key}
@@ -381,82 +363,6 @@
     --page-cols: 3;
   }
 
-  /* Tiles are little paper cards that preview each page/cover's line art, and
-     they follow the theme so the preview matches the applied page (ADR-0052):
-     a light card with black lines in light mode, a dark card with white "chalk"
-     lines in dark mode (via the --lineart-* tokens on the img below). */
-  .coloring-tile {
-    position: relative;
-    background: var(--surface-2);
-    /* The tile is the tap target, so its edge has to read as a card and not
-       as the art's bounding box: the strong warm border clears 1.9:1 on the
-       dialog where --border managed 1.3:1, and the float lift says "press". */
-    border: 2px solid var(--border-warm-strong);
-    border-radius: var(--radius-md);
-    box-shadow: var(--float-shadow);
-    cursor: pointer;
-    overflow: hidden;
-    padding: 0;
-    aspect-ratio: 1 / 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition:
-      background-color var(--duration-fast) ease,
-      border-color var(--duration-fast) ease,
-      box-shadow var(--duration-fast) ease,
-      transform var(--duration-fast) ease;
-    touch-action: manipulation;
-  }
-
-  @media (hover: hover) {
-    .hover-armed .coloring-tile:hover {
-      border-color: var(--brand);
-      background: var(--brand-wash);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
-    }
-  }
-
-  .coloring-tile:active,
-  .coloring-tile:global(.activation-pending) {
-    transform: scale(0.96);
-  }
-
-  .retiring-after-page-selection .coloring-tile {
-    transition: none;
-  }
-
-  .coloring-tile img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: var(--space-2);
-    pointer-events: none;
-  }
-
-  /* The bottom band reserves the overlaid .coloring-book-label's box, and the
-     label fills exactly that band: snapping the reserve down risks the caption
-     covering the art, snapping it up opens a gap. Functional, not scale drift. */
-  .coloring-book-tile {
-    --cover-caption-height: 28px;
-  }
-
-  .coloring-book-tile img {
-    padding: var(--space-2) var(--space-2) var(--cover-caption-height) var(--space-2);
-    mix-blend-mode: var(--lineart-blend);
-    filter: var(--lineart-filter);
-  }
-
-  .coloring-pages-grid .coloring-tile {
-    aspect-ratio: 3 / 2;
-  }
-
-  .coloring-pages-grid.portrait-pages .coloring-tile {
-    aspect-ratio: 2 / 3;
-  }
-
   /* Keep four cover tiles at least 140px wide after the modal's content padding
      and grid gaps are accounted for. */
   @media (max-width: 740px) {
@@ -537,25 +443,5 @@
           var(--book-grid-rows-in-view) * var(--book-cols) + (var(--book-cols) - 1) * var(--space-3)
       );
     }
-  }
-
-  .coloring-book-label {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: var(--cover-caption-height);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 var(--space-2);
-    /* rgb fallback precedes the color-mix (docs/COMPATIBILITY.md); both follow
-       the theme so the caption sits on the tile's own paper tone. */
-    background: rgb(255 255 255 / 92%);
-    background: color-mix(in srgb, var(--surface-2) 92%, transparent);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text);
-    text-align: center;
   }
 </style>
