@@ -13,7 +13,7 @@ function isNativeUndoTarget(target: EventTarget | null) {
 // actionButtonLayout's data-off-undo), it doesn't disable the underlying
 // history, so the keyboard path deliberately bypasses it too. No shake here
 // on a no-op — that feedback is panel-local (targets #undoButton), and
-// ActionsPanel.svelte's click-path handleUndoClick still plays it.
+// UndoButton.svelte's click-path handleUndoClick still plays it.
 export function installUndoShortcut(): () => void {
   const onKeyDown = (e: KeyboardEvent) => {
     if (

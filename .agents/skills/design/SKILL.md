@@ -240,7 +240,7 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
 | `.white-stroke` / `.dark-stroke`                                    | Ink keylines ringing an icon's ink-colored parts so white ink reads on the                                                 |
 |                                                                     | white cards (black ring) and near-black ink reads on the dark ones                                                         |
 |                                                                     | (`--dark-ink-keyline`, inert in light mode). The brush/stroke trigger                                                      |
-|                                                                     | buttons (BrushControl, ActionsPanel), BrushMenu, StrokeWidthMenu                                                           |
+|                                                                     | buttons (BrushControl, StrokeControl), BrushMenu, StrokeWidthMenu                                                          |
 
 They stay classes for one of two reasons: dialogs and imperative DOM need them unscoped, or the
 pattern is chrome that several components share verbatim but that hasn't earned a primitive yet.

@@ -53,7 +53,7 @@ export const { setResizingActionButtons, clearRequestedSettingsSection } = uiSta
 export const SETTINGS_BUTTON_ID = 'settingsButton';
 
 // Deliberately here rather than beside the screenshot feedback that uses it.
-// ActionsPanel needs this id at startup; playScreenshotFeedback and the polaroid
+// ScreenshotButton needs this id at startup; playScreenshotFeedback and the polaroid
 // animation are save-pipeline code that must stay off the startup critical path
 // (issue #461). Sharing one module for both hands Rollup an edge from the startup
 // graph into the save pipeline, and a chunk re-partition then drags the whole

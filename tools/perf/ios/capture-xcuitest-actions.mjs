@@ -1512,7 +1512,7 @@ async function measureAiWaitingBadge(execute) {
 }
 
 // Undo at the end of history answers with the shake-and-flash instead of undoing
-// (ActionsPanel.handleUndoClick), so the cue needs an exhausted history to reach.
+// (UndoButton.handleUndoClick), so the cue needs an exhausted history to reach.
 async function exhaustUndoHistory(execute) {
   for (let attempt = 0; attempt < MAX_UNDO_EXHAUST_TAPS; attempt += 1) {
     if (await execute(`return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'true';`))

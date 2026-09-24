@@ -442,13 +442,9 @@ export default tseslint.config(
     },
   },
   {
-    // Grandfathered pre-ratchet components (~625/~633 counted lines): the toolbar drawer and the
-    // admin console each mix markup + scoped styles that resist extraction. Cap sits just above
-    // today's size — shrink over time, never grow.
-    files: [
-      'web/src/lib/components/ActionsPanel.svelte',
-      'web/src/lib/components/admin/AdminConsole.svelte',
-    ],
+    // Grandfathered pre-ratchet component: the admin console mixes markup + scoped styles that
+    // resist extraction. Cap sits just above today's size — shrink over time, never grow.
+    files: ['web/src/lib/components/admin/AdminConsole.svelte'],
     rules: {
       'max-lines': ['error', { max: 650, skipBlankLines: true, skipComments: true }],
     },

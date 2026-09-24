@@ -687,7 +687,7 @@ body {
   }
 }
 
-/* ActionsPanel and BrushControl share these paper-floating action buttons. */
+/* Every control in the Actions Panel shares these paper-floating action buttons. */
 .actions-panel .action-button {
   position: relative;
   width: var(--action-btn-size);
