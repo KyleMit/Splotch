@@ -443,14 +443,6 @@ export default tseslint.config(
     },
   },
   {
-    // Grandfathered pre-ratchet component: the admin console mixes markup + scoped styles that
-    // resist extraction. Cap sits just above today's size — shrink over time, never grow.
-    files: ['web/src/lib/components/admin/AdminConsole.svelte'],
-    rules: {
-      'max-lines': ['error', { max: 650, skipBlankLines: true, skipComments: true }],
-    },
-  },
-  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
