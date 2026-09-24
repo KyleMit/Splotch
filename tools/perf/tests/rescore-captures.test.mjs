@@ -20,6 +20,7 @@ import {
   keepCaptureEvidence,
   modeOf,
   redactDeviceIdentifiers,
+  redactHostAddresses,
   REDACTED_DEVICE_IDENTIFIER,
   selectEvidence,
 } from '../keep-capture-evidence.mjs';
@@ -971,5 +972,20 @@ describe('attribution is stamped at promotion and read by the analyzer', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('redactHostAddresses', () => {
+  it('replaces the capture Mac and its private LAN address, keeping the probe nonce', () => {
+    const serialized = JSON.stringify({
+      appUrl: 'https://Some-Mac.local:54790/',
+      report: { meta: { url: 'http://192.168.40.54:4192/?probe=run-1' } },
+      other: 'http://10.0.0.7:4173/ and 172.20.1.2 but not 172.32.0.1 or 8.8.8.8',
+    });
+    const redacted = JSON.parse(redactHostAddresses(serialized));
+    expect(redacted.appUrl).toBe('https://rig-mac.local:54790/');
+    expect(new URL(redacted.report.meta.url).searchParams.get('probe')).toBe('run-1');
+    expect(redacted.report.meta.url).toBe('http://lan-host:4192/?probe=run-1');
+    expect(redacted.other).toBe('http://lan-host:4173/ and lan-host but not 172.32.0.1 or 8.8.8.8');
   });
 });

@@ -62,6 +62,7 @@ import {
   captureVerdict,
   draftIssueComment,
   magicFirstLoadReading,
+  OVERLAY_STEADY_READS,
   navBarOverlayVerdict,
   nextStep,
   overlaySteadilyClear,
@@ -1114,13 +1115,19 @@ async function stepPhoneOverlay(session) {
   while (Date.now() < deadline) {
     const verdict = readOverlayVerdict(serial);
     verdicts.push(verdict);
-    if (verdict.detail !== last) {
-      console.log(
-        `  ${new Date().toLocaleTimeString()}  ${verdict.pass ? '✓ PASS' : '✗ FAIL'}  ${verdict.detail}`
-      );
-      last = verdict.detail;
+    const cleared = overlaySteadilyClear(verdicts);
+    const clearRun = verdicts.length - 1 - verdicts.findLastIndex((entry) => !entry.pass);
+    const mark = cleared
+      ? '✓ PASS'
+      : verdict.pass
+        ? `… clear, holding (${clearRun}/${OVERLAY_STEADY_READS})`
+        : '✗ FAIL';
+    const line = `${mark}  ${verdict.detail}`;
+    if (line !== last) {
+      console.log(`  ${new Date().toLocaleTimeString()}  ${line}`);
+      last = line;
     }
-    if (overlaySteadilyClear(verdicts)) {
+    if (cleared) {
       say('Phone overlay cleared. You can go.');
       markStep(session, 'phone-overlay', 'done', { verdict });
       return;

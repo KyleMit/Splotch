@@ -336,9 +336,10 @@ export function navBarOverlayVerdict(windows) {
 
 // One passing read is not a cleared overlay. On 2026-09-24 the rig phone's
 // nu.nav.bar windows dropped out of one `dumpsys input` read and came straight
-// back at 0.96, so the step passed and the A/B's own re-check failed. Six reads
-// at the runner's five-second poll is thirty seconds of the column staying clear.
-const OVERLAY_STEADY_READS = 6;
+// back at 0.96, so the step passed and the A/B's own re-check failed. Seven
+// reads at the runner's five-second poll span six intervals: thirty seconds of
+// the column staying clear.
+export const OVERLAY_STEADY_READS = 7;
 
 export function overlaySteadilyClear(verdicts, reads = OVERLAY_STEADY_READS) {
   return verdicts.length >= reads && verdicts.slice(-reads).every((verdict) => verdict.pass);

@@ -99,8 +99,9 @@ describe('overlaySteadilyClear', () => {
     expect(overlaySteadilyClear([fail, pass, fail, pass, pass, pass, pass, pass])).toBe(false);
   });
 
-  it('accepts the column staying clear for every one of the last reads', () => {
-    expect(overlaySteadilyClear([fail, pass, pass, pass, pass, pass, pass])).toBe(true);
+  it('needs seven clear reads: six five-second intervals, thirty seconds', () => {
+    expect(overlaySteadilyClear([fail, pass, pass, pass, pass, pass, pass])).toBe(false);
+    expect(overlaySteadilyClear([fail, pass, pass, pass, pass, pass, pass, pass])).toBe(true);
   });
 });
 
