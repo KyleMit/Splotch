@@ -28,7 +28,7 @@ close on **Escape**, and no close path handed **focus** back to the trigger — 
 pick left `document.activeElement` on `<body>` for both flyouts. Spec'd popover behavior covers both
 (light dismiss on Escape, focus restoration on hide), and they were the whole of what the
 browser-managed path did strictly better. Both are now closed directly in `ActionsPanel.svelte`,
-covered by `flows-palette-brush.spec.ts`.
+covered by `flows-actions-panel.spec.ts`.
 
 ## Support data vs. the enforced floor
 
