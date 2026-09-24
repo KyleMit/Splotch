@@ -83,9 +83,9 @@ import {
   crayonColorMix,
   warmCrayonTiles,
   cancelCrayonWarmup,
-  type CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
+import type { CrayonPassTracker } from './crayonPassTracker';
 import { paperStateMatches, type HistoryDebug, type RecordedPaperState } from './undoHistory';
 import { recordPaper, restorePaperLayout, createPaperLayoutMemory } from './paperLayout';
 import { createCanvasMeasure, createCanvasLayoutUpdater, type CanvasRect } from './canvasMeasure';

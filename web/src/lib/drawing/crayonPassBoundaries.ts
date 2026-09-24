@@ -9,7 +9,7 @@
 // engine's `renderTiledOp`/`recordCurrentOp` arrive as dependencies instead of
 // this module reaching back into the facade.
 
-import { CrayonPassTracker } from './crayonBrush';
+import { CrayonPassTracker } from './crayonPassTracker';
 import type { StrokeOp } from './strokeOps';
 
 // Bound live crayon memory without making ordinary short strokes pay a
