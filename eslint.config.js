@@ -443,6 +443,15 @@ export default tseslint.config(
     },
   },
   {
+    // composeExportPng's tiled-worker and compatibility paths share one mock and image-stub
+    // harness; splitting the suite by path duplicates that setup in two files instead of
+    // clarifying anything. The cap keeps ~75 lines of headroom over the file.
+    files: ['web/src/lib/drawing/exportDrawing.test.ts'],
+    rules: {
+      'max-lines': ['error', { max: 510, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
