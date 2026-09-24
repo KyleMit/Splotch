@@ -81,6 +81,10 @@ const SETTINGS_MODAL = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'SettingsModal.svelte'),
   'utf8'
 );
+const SETTINGS_HUB_LIST = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'components', 'settings', 'HubList.svelte'),
+  'utf8'
+);
 const SETTINGS_WIDE_SHELL = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'settings', 'WideShell.svelte'),
   'utf8'
@@ -1145,7 +1149,7 @@ describe('trusted action setup', () => {
 
   // Both harnesses address a Settings row as `button[data-section=<id>]`, and
   // the two row templates live in different files: the wide sidebar's in the
-  // shared SidebarToc, the phone hub's in SettingsModal. Matched as one opening
+  // shared SidebarToc, the phone hub's in HubList. Matched as one opening
   // tag rather than as two independent greps, so a shell that stopped rendering
   // its rows as buttons or stopped stamping the section id is caught here rather
   // than by a harness that silently finds nothing. The wide pane's own
@@ -1153,7 +1157,8 @@ describe('trusted action setup', () => {
   // which is why the tag is part of the selector.
   it('keeps a section id on the button row template of both Settings shells', () => {
     expect(SIDEBAR_TOC).toMatch(/<button\b[^<>]*data-section=\{item\.id\}/);
-    expect(SETTINGS_MODAL).toMatch(/<button\b[^<>]*data-section=\{section\.id\}/);
+    expect(SETTINGS_MODAL).toContain('<HubList');
+    expect(SETTINGS_HUB_LIST).toMatch(/<button\b[^<>]*data-section=\{section\.id\}/);
     expect(SETTINGS_WIDE_SHELL).toMatch(/id: section\.id/);
     for (const harness of [CAMPAIGN_STATE, PAGE_INVENTORY]) {
       expect(harness).toContain('button[data-section');

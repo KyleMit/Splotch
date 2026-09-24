@@ -387,7 +387,7 @@ describe('resolved theme expression', () => {
 // Every Settings selector both capture transports depend on, bound to the markup
 // that has to provide it. Two transports drive these controls — the Appium path
 // through a script channel, the split path from inside the page — and a rename in
-// SettingsModal, CompactShell or AppearanceSection would otherwise leave one
+// SettingsModal, HubList, CompactShell or AppearanceSection would otherwise leave one
 // working and the other silently timing out until a device session found it.
 //
 // The constants are the single owner; this is what makes "owned here" a fact
@@ -395,6 +395,7 @@ describe('resolved theme expression', () => {
 describe('the Settings selectors both transports share', () => {
   const source = (path) => readFileSync(join(ROOT, 'web', 'src', 'lib', path), 'utf8');
   const settingsModal = source('components/SettingsModal.svelte');
+  const hubList = source('components/settings/HubList.svelte');
   const dialogHeader = source('components/design/DialogHeader.svelte');
   const coloringBook = source('components/ColoringBook.svelte');
   const settingsButton = source('components/SettingsButton.svelte');
@@ -450,7 +451,8 @@ describe('the Settings selectors both transports share', () => {
 
   it('finds the Appearance row the sectioned shell navigates through', () => {
     expect(settingsSectionRow('appearance')).toContain('data-section="appearance"');
-    expect(settingsModal).toContain('data-section={section.id}');
+    expect(settingsModal).toContain('<HubList');
+    expect(hubList).toContain('data-section={section.id}');
     expect(sections).toContain("id: 'appearance'");
   });
 });

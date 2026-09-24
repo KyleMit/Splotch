@@ -603,7 +603,7 @@ describe('page inventory output', () => {
     // The wide shell's rows come from the shared guide rail, whose other
     // template is the anchor row /design and /changelog use.
     expect(matching('nav/SidebarToc.svelte')).toHaveLength(1);
-    expect(matching('SettingsModal.svelte')).toHaveLength(1);
+    expect(matching('settings/HubList.svelte')).toHaveLength(1);
     // The pane wrappers the section-landed wait reads, which are not rows.
     expect(matching('settings/WideShell.svelte')).toHaveLength(0);
   });
