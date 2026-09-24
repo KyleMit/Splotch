@@ -14,6 +14,8 @@
 <script lang="ts" generics="T extends string">
   import Icon from '../Icon.svelte';
   import '$lib/components/deferredIcons';
+  import { arrowDelta, nextEnabledIndex, rovingTabIndex } from './rovingRadio';
+  import { createSegmentThumb } from './segmentThumb.svelte';
 
   // Design-system picker primitive: the one owner of the selected-state
   // control pattern Button deliberately excludes — those are pickers, not
@@ -90,77 +92,26 @@
   const optionEls: HTMLElement[] = [];
   let trackEl: HTMLDivElement | undefined = $state();
 
-  // The segment skin's one raised thumb travels between cells instead of each
-  // cell painting its own fill. It is measured rather than computed from the
-  // index because cells are equal-width only under `fill`: hugging tracks and
-  // collapsed square options are not. No thumb without exactly one selection —
-  // the orientation segment can release to null, and toggle chips pass a subset.
+  // No thumb without exactly one selection — the orientation segment can
+  // release to null, and toggle chips pass a subset.
   const thumbIndex = $derived(
     variant === 'segment' && !Array.isArray(selected) && selected !== null
       ? options.findIndex((option) => option.value === selected)
       : -1
   );
-  let thumbX = $state(0);
-  let thumbWidth = $state(0);
-  // Off while the thumb is placed without travel: on first paint, and when a
-  // resize moves the cells rather than the selection.
-  let thumbTravels = $state(false);
-  let travelFrame: number | undefined;
-
-  function placeThumb(travel: boolean) {
-    const target = optionEls[thumbIndex];
-    if (!target) return;
-    const firstPlacement = thumbWidth === 0;
-    thumbX = target.offsetLeft;
-    thumbWidth = target.offsetWidth;
-    if (travel && !firstPlacement) return;
-    thumbTravels = false;
-    if (travelFrame !== undefined) cancelAnimationFrame(travelFrame);
-    travelFrame = requestAnimationFrame(() => {
-      travelFrame = undefined;
-      thumbTravels = true;
-    });
-  }
-
-  $effect(() => {
-    if (thumbIndex !== -1) placeThumb(true);
+  const thumb = createSegmentThumb({
+    track: () => trackEl,
+    cells: optionEls,
+    index: () => thumbIndex,
   });
 
-  $effect(() => {
-    if (thumbIndex === -1 || !trackEl) return;
-    const observer = new ResizeObserver(() => placeThumb(false));
-    observer.observe(trackEl);
-    for (const option of optionEls) if (option) observer.observe(option);
-    return () => {
-      observer.disconnect();
-      if (travelFrame !== undefined) cancelAnimationFrame(travelFrame);
-    };
-  });
+  const rovingIndex = $derived(rovingTabIndex(options, isSelected));
 
-  // APG radio-group pattern: the group is one tab stop. The selected option
-  // carries it — or the first enabled one while nothing is selected.
-  const rovingIndex = $derived.by(() => {
-    const selectedIndex = options.findIndex(
-      (option) => !option.disabled && isSelected(option.value)
-    );
-    return selectedIndex !== -1 ? selectedIndex : options.findIndex((option) => !option.disabled);
-  });
-
-  // Arrow keys move focus *and* selection, wrapping past either end and
-  // skipping disabled options — the other half of the APG radio-group pattern.
   function moveWithArrow(event: KeyboardEvent, from: number) {
-    const delta =
-      event.key === 'ArrowLeft' || event.key === 'ArrowUp'
-        ? -1
-        : event.key === 'ArrowRight' || event.key === 'ArrowDown'
-          ? 1
-          : 0;
+    const delta = arrowDelta(event.key);
     if (delta === 0) return;
     event.preventDefault();
-    let next = from;
-    do {
-      next = (next + delta + options.length) % options.length;
-    } while (options[next].disabled && next !== from);
+    const next = nextEnabledIndex(options, from, delta);
     onSelect(options[next].value);
     optionEls[next]?.focus();
   }
@@ -172,14 +123,14 @@
     variant,
     fill && 'fill',
     labels === 'collapsible' && 'collapsible',
-    thumbTravels && 'thumb-travels',
+    thumb.travels && 'thumb-travels',
     className,
   ]}
   role={mode === 'radio' ? 'radiogroup' : 'group'}
   aria-label={label}
   aria-describedby={describedBy}
-  style:--thumb-x={thumbIndex === -1 ? undefined : `${thumbX}px`}
-  style:--thumb-width={thumbIndex === -1 ? undefined : `${thumbWidth}px`}
+  style:--thumb-x={thumbIndex === -1 ? undefined : `${thumb.x}px`}
+  style:--thumb-width={thumbIndex === -1 ? undefined : `${thumb.width}px`}
   bind:this={trackEl}
 >
   {#if thumbIndex !== -1}
