@@ -535,7 +535,7 @@
     "knip": "^6.35.1",
     "lighthouse": "13.4.1",
     "postcss-html": "^2.0.0",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.8",
     "prettier-plugin-svelte": "^4.1.1",
     "scripts-info": "^1.0.5",
     "sharp": "^0.35.4",
