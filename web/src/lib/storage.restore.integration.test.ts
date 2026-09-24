@@ -4,20 +4,22 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // REAL persisted stores after a native WebView eviction, not just synthetic
 // vi.fn() callbacks. That only works if each store self-registers via
 // onDurableRestore() at module init AND sits in the static import graph before
-// hydrate runs. storage.test.ts proves hydrate *invokes* registered callbacks;
-// this file proves the actual store modules *are* registered — so a store that
-// forgets onDurableRestore(...), or a refactor that drops one from the boot
-// import graph, turns this test red instead of silently reintroducing the bug
-// (native values failing to restore after eviction).
+// hydrate runs. storage.hydrate.test.ts proves hydrate *invokes* registered
+// callbacks; this file proves the actual store modules *are* registered — so a
+// store that forgets onDurableRestore(...), or a refactor that drops one from
+// the boot import graph, turns this test red instead of silently reintroducing
+// the bug (native values failing to restore after eviction).
 //
-// A separate file from storage.test.ts on purpose: that suite exercises the raw
-// read*/write* helpers in isolation and never imports the state stores. Here we
-// import the real store modules (mirroring how +page.svelte -> earlyBoot pulls
-// them into the graph) and mock ONLY the platform/native + Preferences
-// boundary — the stores themselves are the thing under test, so they stay real.
+// A separate file from storage.test.ts and storage.hydrate.test.ts on purpose:
+// those suites exercise the storage helpers in isolation and never import the
+// state stores. Here we import the real store modules (mirroring how
+// +page.svelte -> earlyBoot pulls them into the graph) and mock ONLY the
+// platform/native + Preferences boundary — the stores themselves are the thing
+// under test, so they stay real.
 
 // Toggle the native/web split per test. vi.hoisted runs before the vi.mock
-// factories so they can close over this mutable state (mirrors storage.test.ts).
+// factories so they can close over this mutable state (mirrors
+// storage.hydrate.test.ts).
 const ctrl = vi.hoisted(() => ({ native: false }));
 
 // Spread the real module so only the two platform *behaviours* are faked; the
