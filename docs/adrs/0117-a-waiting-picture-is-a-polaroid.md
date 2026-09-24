@@ -87,8 +87,8 @@ lose it.
 * **−** The card owes the keep-drawing pill room while it is up. Because a generated picture is the
   shape of the canvas it came from, its height is usually what binds the card, so in practice the
   picture opens up into that room at the reveal — a size change at the moment of arrival that
-  ADR-0116's card deliberately did not have. `ai-result.spec.ts` now pins the direction and the
-  magnitude of that change rather than asserting it away.
+  ADR-0116's card deliberately did not have. `ai-result-layout.spec.ts` now pins the direction and
+  the magnitude of that change rather than asserting it away.
 * **−** A polaroid is print-white on both themes, like every other polaroid in the app, so at night
   it is the brightest thing on the canvas. `--polaroid-paper`/`--polaroid-ink` make that a stated
   decision in one place instead of three hand-copied hexes, but it is still a bright rectangle in a
