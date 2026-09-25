@@ -14,7 +14,7 @@ import { PAPER_COLORS } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
 import { drawExportOverlay, paintExportPaper, type ExportContext } from './exportCompositor';
 import type { ExportOverlaySource } from './overlay';
-import { encodeCanvasPng, encodeTiledCanvasPng } from './pngEncoder';
+import { encodeCanvasPng, encodeTiledCanvasPng, type TiledPngInput } from './pngEncoder';
 import type { TiledCanvasSnapshot } from './tiledSurfaces';
 
 type ExportCanvas = HTMLCanvasElement | OffscreenCanvas;
@@ -192,6 +192,47 @@ function closeTiledPreviewSource(preview: ExportOptions['preview']) {
   }
 }
 
+async function settleTiledExportBitmaps(
+  snapshot: TiledExportSnapshot,
+  texture: HTMLImageElement | null,
+  overlaySource: ExportOverlaySource | null
+): Promise<Pick<TiledPngInput, 'tiles' | 'texture' | 'overlay'>> {
+  const bitmapRequests: Promise<ExportBitmapResult>[] = [
+    ...snapshot.source.tiles.map(async (tile): Promise<ExportBitmapResult> => ({
+      kind: 'tile',
+      bitmap: await tile.bitmap,
+      x: tile.x,
+      y: tile.y,
+    })),
+    Promise.resolve(texture ? createImageBitmap(texture) : null).then(
+      (bitmap): ExportBitmapResult => (bitmap ? { kind: 'texture', bitmap } : null)
+    ),
+    loadExportOverlay(overlaySource)
+      .then((image) => (image ? createImageBitmap(image) : null))
+      .then((bitmap): ExportBitmapResult => (bitmap ? { kind: 'overlay', bitmap } : null)),
+  ];
+  const settledBitmaps = await Promise.allSettled(bitmapRequests);
+  const failure = settledBitmaps.find((result) => result.status === 'rejected');
+  if (failure?.status === 'rejected') {
+    for (const result of settledBitmaps) {
+      if (result.status === 'fulfilled') result.value?.bitmap.close();
+    }
+    throw failure.reason;
+  }
+  const tiles: Array<{ bitmap: ImageBitmap; x: number; y: number }> = [];
+  let textureBitmap: ImageBitmap | null = null;
+  let overlayBitmap: ImageBitmap | null = null;
+  for (const result of settledBitmaps) {
+    if (result.status !== 'fulfilled' || !result.value) continue;
+    if (result.value.kind === 'tile') {
+      const { bitmap, x, y } = result.value;
+      tiles.push({ bitmap, x, y });
+    } else if (result.value.kind === 'texture') textureBitmap = result.value.bitmap;
+    else overlayBitmap = result.value.bitmap;
+  }
+  return { tiles, texture: textureBitmap, overlay: overlayBitmap };
+}
+
 // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
 // first export. The engine calls this from its own idle warm of this module.
 export function warmPaperTexture() {
@@ -215,48 +256,14 @@ export async function composeExportPng(
 
   if ('source' in snapshot) {
     const texture = includePaperTexture ? await loadPaperTexture() : null;
-    const bitmapRequests: Promise<ExportBitmapResult>[] = [
-      ...snapshot.source.tiles.map(async (tile): Promise<ExportBitmapResult> => ({
-        kind: 'tile',
-        bitmap: await tile.bitmap,
-        x: tile.x,
-        y: tile.y,
-      })),
-      Promise.resolve(texture ? createImageBitmap(texture) : null).then(
-        (bitmap): ExportBitmapResult => (bitmap ? { kind: 'texture', bitmap } : null)
-      ),
-      loadExportOverlay(overlaySource)
-        .then((image) => (image ? createImageBitmap(image) : null))
-        .then((bitmap): ExportBitmapResult => (bitmap ? { kind: 'overlay', bitmap } : null)),
-    ];
-    const settledBitmaps = await Promise.allSettled(bitmapRequests);
-    const failure = settledBitmaps.find((result) => result.status === 'rejected');
-    if (failure?.status === 'rejected') {
-      for (const result of settledBitmaps) {
-        if (result.status === 'fulfilled') result.value?.bitmap.close();
-      }
-      throw failure.reason;
-    }
-    const tiles: Array<{ bitmap: ImageBitmap; x: number; y: number }> = [];
-    let textureBitmap: ImageBitmap | null = null;
-    let overlayBitmap: ImageBitmap | null = null;
-    for (const result of settledBitmaps) {
-      if (result.status !== 'fulfilled' || !result.value) continue;
-      if (result.value.kind === 'tile') {
-        const { bitmap, x, y } = result.value;
-        tiles.push({ bitmap, x, y });
-      } else if (result.value.kind === 'texture') textureBitmap = result.value.bitmap;
-      else overlayBitmap = result.value.bitmap;
-    }
+    const bitmaps = await settleTiledExportBitmaps(snapshot, texture, overlaySource);
     return encodeTiledCanvasPng(
       {
         sourceWidth: snapshot.source.width,
         sourceHeight: snapshot.source.height,
         sourceScale: snapshot.sourceScale,
         exportScale: renderScale,
-        tiles,
-        texture: textureBitmap,
-        overlay: overlayBitmap,
+        ...bitmaps,
         paperColor: PAPER_COLORS[theme],
         previewWidth: preview?.width,
       },
