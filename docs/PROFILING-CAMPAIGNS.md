@@ -453,8 +453,9 @@ trap. To reset a seeded setting on native, use one of these methods:
   Then install the build again and record its identity again
   ([A build that is not the build you think](#a-build-that-is-not-the-build-you-think)). On Android,
   `adb shell pm clear art.splotch.app` clears the data and keeps the installed build. Either way,
-  every other setting and all of the app's other stored state go too, so record what the next
-  capture depends on first.
+  every other setting and everything else in the app's private data go too, so record what the next
+  capture depends on first. Saved drawings are not in that data: they are in the device photo
+  library (see `docs/MOBILE/native.md`), so this is not a reset of the whole device.
 
 Writing the wanted value into `localStorage` is not a reset. At the next launch, a key present in
 both stores is left alone, so the page reads the new value. The durable copy still holds the seed,
