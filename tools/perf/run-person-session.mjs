@@ -49,7 +49,7 @@ import {
   newestDeviceXctestrun,
   runnerHoldsDevice,
 } from './lib/wda-recovery.mjs';
-import { parseInputWindows } from './lib/android-touch-occlusion.mjs';
+import { readOverlayVerdict } from './lib/android-overlay-verdict.mjs';
 import { CAMPAIGN_MODES, artifactPath, campaignTarget } from './lib/campaign-plan.mjs';
 import {
   AB_2229_ARMS,
@@ -63,7 +63,6 @@ import {
   draftIssueComment,
   magicFirstLoadReading,
   OVERLAY_STEADY_READS,
-  navBarOverlayVerdict,
   nextStep,
   overlaySteadilyClear,
   resumeBringUp,
@@ -322,13 +321,6 @@ function requireIpadOs(ctx, expected) {
   if (version !== expected) {
     fail(`the iPad reports iPadOS ${version ?? 'unknown'}, and this step needs ${expected}`);
   }
-}
-
-export function readOverlayVerdict(serial) {
-  const result = tryCapture('adb', ['-s', serial, 'shell', 'dumpsys', 'input']);
-  if (!result.ok)
-    return { pass: false, detail: `adb dumpsys input failed: ${result.stderr?.trim()}` };
-  return navBarOverlayVerdict(parseInputWindows(result.stdout));
 }
 
 function connectedAndroidSerial() {

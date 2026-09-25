@@ -44,6 +44,7 @@ import {
 import { describeGrantHistory, recordGrantAttempt } from './lib/grant-log.mjs';
 import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
 import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
+import { overlayCheck, readOverlayVerdict } from './lib/android-overlay-verdict.mjs';
 import { verifyAndroidRotation } from './split-capture/verify-android-rotation.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import {
@@ -153,6 +154,7 @@ function androidChecks({ fix }) {
     status: chrome.includes('com.android.chrome') ? 'ok' : 'blocked',
     detail: chrome ? 'installed' : 'com.android.chrome is not installed',
   });
+  checks.push(overlayCheck(readOverlayVerdict(serial)));
 
   return { checks, serial, devices };
 }

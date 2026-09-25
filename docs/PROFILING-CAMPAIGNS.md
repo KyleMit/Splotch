@@ -108,9 +108,12 @@ The rig phone runs NU Navigation Bar (`nu.nav.bar`), an accessibility service. I
 `USE_OPACITY` windows down the portrait centre column at about 0.8 alpha each. Android sums one
 uid's windows under a touch, and drops the touch past its 0.8 obscuring limit, so every touch at
 device x = 540 dies before the page sees it. A portrait capture then silently records 140 of 160
-swipes (issue 2229). `npm run perf:session:person -- --check=overlay` reads it from `dumpsys input`.
-Android split captures record `dispatchedStrokes`, and `perf:device:frames` fails a capture whose
-page recorded a different number of pointerdowns, naming both counts.
+swipes (issue 2229). `perf:preflight` reads `dumpsys input` and blocks, naming the package and the
+point, when any app's untrusted `USE_OPACITY` windows combine past that limit over the foreground
+app; that block also stops `--verify-android-input` from running.
+`npm run perf:session:person -- --check=overlay` reads the same verdict. Android split captures
+record `dispatchedStrokes`, and `perf:device:frames` fails a capture whose page recorded a different
+number of pointerdowns, naming both counts.
 
 On 2026-09-24, turning the app's **Appear on top** permission off left both windows in place at
 alpha 0, which Android ignores, and every A/B capture then recorded 160 of 160. Two things a reader
@@ -119,7 +122,8 @@ would not guess:
 * A single clear read proves nothing. The windows dropped out of one `dumpsys input` read and came
   straight back at 0.96, so the overlay step now requires 30 s of consecutive clear reads.
 * The windows are still attached at alpha 0. Anything that restores the permission restores the
-  drop. The per-capture pointerdown check is the backstop.
+  drop. The preflight reads once, at the start of a run, so the per-capture pointerdown check is the
+  backstop.
 
 ### USB automation can work while Safari cannot load the preview
 
