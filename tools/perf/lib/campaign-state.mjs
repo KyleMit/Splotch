@@ -121,15 +121,16 @@ export async function clickSetupElement(execute, selector) {
   `);
 }
 
+const settingsIsOpen = (execute) =>
+  execute(`return document.querySelector('${SETTINGS_MODAL}')?.open === true;`);
+
 async function openAppearanceSettings(execute, hint) {
   // The trigger is eager but the dialog may still be waiting on the lazy overlay
   // chunk. Clicking first latches the state-driven open request (ADR-0049), and
   // retries also cover a trigger whose hydration has not landed yet.
   const opened = await pollUntil(
     async () => {
-      if (await execute(`return document.querySelector('${SETTINGS_MODAL}')?.open === true;`)) {
-        return true;
-      }
+      if (await settingsIsOpen(execute)) return true;
       await clickSetupElement(execute, SETTINGS_BUTTON).catch((error) => {
         rethrowIfBroken(error);
       });
@@ -165,6 +166,17 @@ async function closeSettings(execute, hint) {
     `Settings to close after ${hint}`
   );
   await sleep(SETUP_SETTLE_MS);
+}
+
+// A native session attaches to the app as an interrupted run left it, so
+// Settings can still be open, drilled into whichever section that run was
+// measuring. openAppearanceSettings adopts an open dialog as its own, and that
+// section offers neither the Appearance row nor the theme picker. A fresh open
+// lands on the hub (landOnOpen in SettingsModal.svelte).
+export async function closeLeftoverSettings(execute) {
+  if (!(await settingsIsOpen(execute))) return false;
+  await closeSettings(execute, 'the Settings an earlier run left open');
+  return true;
 }
 
 export async function ensureCampaignTheme(execute, theme) {

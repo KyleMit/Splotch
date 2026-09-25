@@ -47,6 +47,7 @@ import {
 } from '../lib/undo-driver.mjs';
 import {
   PLATFORM_OWNS_ROTATION,
+  closeLeftoverSettings,
   ensureCampaignTheme,
   parseCampaignOrientation,
   parseCampaignTheme,
@@ -834,6 +835,9 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       throw new Error(
         `${nativeApp ? 'The native app' : requestedAppUrl} never showed a sized #drawingCanvas`
       );
+    }
+    if (await closeLeftoverSettings(execute)) {
+      console.log('Closed the Settings dialog an earlier run left open');
     }
     originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
     const needsRotationUnlock = nativeOrientationNeedsUnlock({

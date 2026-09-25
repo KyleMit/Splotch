@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   PLATFORM_OWNS_ROTATION,
   RESOLVED_THEME_EXPRESSION,
+  closeLeftoverSettings,
   ensureCampaignTheme,
   releaseNativeRotationLock,
   restoreNativeRotationLock,
@@ -216,6 +217,79 @@ describe('opening Settings', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+describe('a Settings dialog an interrupted run left open', () => {
+  // Models SettingsModal.svelte's phone shell: a hub of section rows, a drilled-in
+  // section that shows neither those rows nor another section's controls, and
+  // landOnOpen returning every fresh open to the hub.
+  function leftoverSettingsStub({ open, view }) {
+    const state = { open, view, clicked: [] };
+    const execute = async (script) => {
+      if (script.includes('target.click()')) {
+        const selector = clickedSelector(script);
+        state.clicked.push(selector);
+        if (selector === SETTINGS_BUTTON && !state.open) {
+          state.open = true;
+          state.view = 'hub';
+        }
+        if (selector === SETTINGS_CLOSE_BUTTON) state.open = false;
+        if (selector === settingsSectionRow('appearance')) state.view = 'appearance';
+        state.choice = clickedOrientation(selector) ?? state.choice;
+        return true;
+      }
+      if (script.includes("'#settingsModal')?.open === true")) return state.open;
+      if (script.includes("'#settingsModal')?.open !== true")) return !state.open;
+      if (script.includes(COMPACT_SHELL_MARKER)) return false;
+      if (script.includes("'#themeOption-light') !== null")) {
+        return state.open && state.view === 'appearance';
+      }
+      if (script.includes('const choices =')) {
+        return state.open && state.view === 'appearance' ? [state.choice] : null;
+      }
+      const queried = queriedOrientation(script);
+      if (queried) return state.choice === queried;
+      if (script.includes('button[data-section')) return state.open && state.view === 'hub';
+      return null;
+    };
+    state.choice = 'portrait';
+    return { execute, state };
+  }
+
+  it('reproduces the setup failure it exists to prevent', async () => {
+    const { execute } = leftoverSettingsStub({ open: true, view: 'drawing' });
+
+    await expect(releaseNativeRotationLock(execute)).rejects.toThrow(
+      'Settings did not expose the Appearance section'
+    );
+  });
+
+  it('closes a dialog left drilled into another section, so setup reopens it on the hub', async () => {
+    const { execute, state } = leftoverSettingsStub({ open: true, view: 'drawing' });
+
+    vi.useFakeTimers();
+    try {
+      const closed = closeLeftoverSettings(execute);
+      await vi.runAllTimersAsync();
+      await expect(closed).resolves.toBe(true);
+      expect(state.open).toBe(false);
+      expect(state.clicked).toEqual([SETTINGS_CLOSE_BUTTON]);
+
+      const released = releaseNativeRotationLock(execute);
+      await vi.runAllTimersAsync();
+      await expect(released).resolves.toEqual({ lockedOrientation: 'portrait' });
+      expect(state.choice).toBe('auto');
+      expect(state.clicked).toContain(settingsSectionRow('appearance'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('leaves a closed dialog alone', async () => {
+    const { execute, state } = leftoverSettingsStub({ open: false, view: 'hub' });
+
+    await expect(closeLeftoverSettings(execute)).resolves.toBe(false);
+    expect(state.clicked).toEqual([]);
   });
 });
 describe('the compact Settings shell', () => {

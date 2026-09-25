@@ -1019,6 +1019,18 @@ describe('trusted action setup', () => {
     expect(setup).toContain('initialRotationLock === PLATFORM_OWNS_ROTATION');
   });
 
+  it('closes a Settings dialog an interrupted run left open before any Settings setup', () => {
+    for (const source of [IPAD_ACTIONS, IPAD_SCREEN]) {
+      const ready = source.indexOf('if (!initialReady)');
+      const close = source.indexOf('await closeLeftoverSettings(execute)', ready);
+
+      expect(ready).toBeGreaterThan(-1);
+      expect(close).toBeGreaterThan(ready);
+      expect(source.indexOf('releaseNativeRotationLock(execute)', ready)).toBeGreaterThan(close);
+      expect(source.indexOf('ensureCampaignTheme(execute', ready)).toBeGreaterThan(close);
+    }
+  });
+
   it('rechecks live orientation after releasing a native lock', () => {
     for (const [source, unlockDecision] of [
       [IPAD_ACTIONS, 'const needsNativeRotationUnlock ='],
