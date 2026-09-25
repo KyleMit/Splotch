@@ -1,0 +1,74 @@
+{
+  "campaign": "2026-09-25-issue-2238-reduce-motion-ab",
+  "productCommit": "b2a08d2d3b72b28cce076e798c1aa20fdfc56df7",
+  "capturedFrom": "perf-profiles/2238-reduce-motion-ab",
+  "study": "Issue 2238 Reduce Motion A/B: Android web landscape light pen plus 9 undos, Reduce Motion off (system) vs on (reduce), 3 interleaved captures per arm on one build, splitting engine.undo into the undo ink-motion ghost and the restore",
+  "kept": [
+    {
+      "file": "pen-real-screen--75d9077b.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/rm-off-1/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--9f6b90c1.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/rm-off-2/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--ab403ff8.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/rm-off-3/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--d898c45c.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/rm-on-1/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--9fe714be.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/rm-on-2/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--78672ba3.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/rm-on-3/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}
