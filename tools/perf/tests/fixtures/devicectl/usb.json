@@ -1,0 +1,105 @@
+{
+  "info": {
+    "arguments": ["devicectl", "list", "devices", "--json-output", "-"],
+    "commandType": "devicectl.list.devices",
+    "environment": {},
+    "jsonVersion": 5,
+    "outcome": "success",
+    "version": "642.16"
+  },
+  "result": {
+    "devices": [
+      {
+        "connectionProperties": {
+          "authenticationType": "manualPairing",
+          "isMobileDeviceOnly": false,
+          "pairingState": "paired",
+          "transportType": "wired",
+          "tunnelState": "connected",
+          "tunnelTransportProtocol": "tcp"
+        },
+        "deviceProperties": {
+          "bootState": "booted",
+          "developerModeStatus": "enabled",
+          "osVersionNumber": "26.5",
+          "name": "Rig iPad"
+        },
+        "hardwareProperties": {
+          "deviceType": "iPad",
+          "marketingName": "iPad Pro (12.9-inch) (5th generation)",
+          "platform": "iOS",
+          "productType": "iPad13,8",
+          "reality": "physical",
+          "udid": "00008103-DEADBEEFDEADBEEF"
+        },
+        "identifier": "DEADBEEF-0000-4000-8000-000000000001",
+        "properties": {
+          "connection": {
+            "authenticationType": "manualPairing",
+            "pairingState": "paired",
+            "state": "connected",
+            "transportType": "wired",
+            "tunnelTransportProtocol": "tcp"
+          },
+          "hardware": {
+            "deviceType": "iPad",
+            "marketingName": "iPad Pro (12.9-inch) (5th generation)",
+            "platform": "iOS",
+            "productType": "iPad13,8",
+            "reality": "physical",
+            "udid": "00008103-DEADBEEFDEADBEEF"
+          },
+          "state": {
+            "bootState": "booted",
+            "name": "Rig iPad"
+          }
+        },
+        "visibilityClass": "default"
+      },
+      {
+        "connectionProperties": {
+          "authenticationType": "implicit",
+          "isMobileDeviceOnly": false,
+          "pairingState": "paired",
+          "transportType": "sameMachine",
+          "tunnelState": "disconnected"
+        },
+        "deviceProperties": {
+          "bootState": "shutdown",
+          "osVersionNumber": "26.5",
+          "name": "iPad (A16)"
+        },
+        "hardwareProperties": {
+          "deviceType": "iPad",
+          "marketingName": "iPad (A16)",
+          "platform": "iOS",
+          "productType": "iPad15,7",
+          "reality": "simulated",
+          "udid": "DEADBEEF-0000-4000-8000-000000000002"
+        },
+        "identifier": "DEADBEEF-0000-4000-8000-000000000002",
+        "properties": {
+          "connection": {
+            "authenticationType": "implicit",
+            "pairingState": "paired",
+            "state": "disconnected",
+            "transportType": "sameMachine"
+          },
+          "hardware": {
+            "deviceType": "iPad",
+            "marketingName": "iPad (A16)",
+            "platform": "iOS",
+            "productType": "iPad15,7",
+            "reality": "simulated",
+            "udid": "DEADBEEF-0000-4000-8000-000000000002"
+          },
+          "state": {
+            "bootState": "shutdown",
+            "name": "iPad (A16)"
+          }
+        },
+        "visibilityClass": "simulators"
+      }
+    ]
+  }
+}

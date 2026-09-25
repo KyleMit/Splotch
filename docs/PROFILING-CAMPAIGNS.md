@@ -45,6 +45,12 @@ with a `wired` transport label, does not prove that the USB capture transport or
 it. When the host USB check is empty, ask for a reconnect and any required Trust prompt; report the
 transport failure without claiming the iPad is unsupported or its OS recently changed.
 
+`perf:preflight` reads `xcrun devicectl list devices` whenever `idevice_id -l` is empty and names
+what CoreDevice still sees. An iPad that CoreDevice reaches only over the local network (transport
+`localNetwork`) is off its cable: usbmux, `iproxy` and WDA all fail while `devicectl` installs and
+launches without complaint. The preflight blocks with that state named. An iPad that `devicectl`
+reports wired gets the sandbox pointer above instead.
+
 After enumeration succeeds, check the RemoteXPC tunnel and then perform the real WDA launch. A
 missing root-owned tunnel is host session state; starting the documented tunnel through the system
 authorization dialog does not update the iPad. Attribute an automation-grant failure only when the
