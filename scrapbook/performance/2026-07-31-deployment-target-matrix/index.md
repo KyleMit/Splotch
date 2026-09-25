@@ -268,12 +268,15 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   0.71-0.98%. ADR-0174, as amended by the 2026-09-24 rulings, explains all three: the pen reading is
   inside the driven pen band (above 1%, up to 1.37%), and real-finger eraser captures at 8e6700d5 in
   both landscape modes (0.04% light, 0% dark) explain both eraser cells. Physical Android web
-  portrait carried six drawing reds (1.03-1.45%) at 3928cd88. In every portrait cell of that
-  capture, an accessibility overlay on the rig phone dropped 20 of 160 strokes (issue 2229). The
-  recapture at 1e3016ec delivered 160 of 160 strokes in every cell, with the overlay check passing
-  and every stroke landing where it was dispatched. All eight portrait cells now read 0.22-0.52%,
-  and the drift references read 0.38, 0.65, and 0.40%. The physical Android native row carries no
-  red cell.
+  portrait carried six drawing reds (1.03-1.45%) at 3928cd88. That capture had two rig faults. In
+  every portrait cell, an accessibility overlay on the rig phone dropped 20 of 160 strokes (issue
+  2229), and every stroke landed 48 CSS px below its planned position (issue 2271). The recapture at
+  1e3016ec corrected both at once, so it does not separate their effects. An earlier A/B cleared
+  only the overlay and kept the offset: portrait-light crayon read a 0.75% median at 3928cd88
+  against 0.72% at e5142fab. The recapture delivered 160 of 160 strokes in every cell, with the
+  overlay check passing and every stroke landing where it was dispatched. All eight portrait cells
+  now read 0.22-0.52%, and the drift references read 0.38, 0.65, and 0.40%. The physical Android
+  native row carries no red cell.
 * The physical Android web landscape-light and landscape-dark drawing and undo sections, captured at
   3928cd88, are affected by a dispatch offset. The harness counted the navigation bar beside the
   page as browser chrome, so every stroke landed 48 CSS px right of its planned position (issue
