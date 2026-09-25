@@ -319,16 +319,15 @@ describe('a hand capture against the floor control', () => {
     expect(buildGuard).not.toHaveBeenCalled();
   });
 
-  it('still holds the app probe host to the served-build guard', async () => {
+  // run-operator-session serves the web build to a native hand capture's
+  // WebView, so the guard must not demand the native export for it.
+  it('still holds the app probe host to the web served-build guard', async () => {
     await runCapture({
       nativeApp: true,
       ua: 'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Version/4.0 Chrome/126 Mobile',
       reportProbeParam: 'none',
     });
 
-    expect(buildGuard).toHaveBeenCalledWith(expect.any(String), {
-      allowForeignBuild: false,
-      nativeApp: true,
-    });
+    expect(buildGuard).toHaveBeenCalledWith(expect.any(String), { allowForeignBuild: false });
   });
 });

@@ -16,6 +16,7 @@
 // revision of the fidelity table re-reads this file rather than asking for
 // another finger. Issue 1218 is the Android half of that measurement.
 import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
@@ -335,6 +336,14 @@ export function handCaptureArtifact({
   };
 }
 
+// A native hand capture is checked against the WEB build, unlike a native
+// driven capture: run-operator-session's ensurePreview serves the web build to
+// the WebView's `server.url` and rebuilds over a native export, so requiring
+// the native export here would refuse every guided native hand capture.
+function handBuildIdentity(host, { allowForeignBuild }) {
+  return assertServedBuildIsFresh(host, { allowForeignBuild });
+}
+
 export async function captureHandInput({
   platform = argFlag('platform', 'android'),
   brush = argFlag('brush', 'pen'),
@@ -375,13 +384,17 @@ export async function captureHandInput({
   // to the served-build guard, and the floor control, which has no build to
   // guard, to its own served bytes and to the requests it can honour. A hand
   // capture never undoes, so the floor's undo refusal cannot apply.
-  const { page, servedBuild } = await assertServedPageIdentity(host, {
-    brush,
-    theme,
-    undoCount: 0,
-    allowForeignBuild: allowForeignBuild !== undefined,
-    nativeApp,
-  });
+  const { page, servedBuild } = await assertServedPageIdentity(
+    host,
+    {
+      brush,
+      theme,
+      undoCount: 0,
+      allowForeignBuild: allowForeignBuild !== undefined,
+      nativeApp,
+    },
+    { buildIdentity: handBuildIdentity }
+  );
 
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
