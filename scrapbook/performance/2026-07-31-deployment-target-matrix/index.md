@@ -252,30 +252,30 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   physical rows, except the physical Android web portrait-light and portrait-dark drawing and undo
   sections, which were recaptured at 1e3016ec407413a255e69d6eddaef2274dd3ee3a on 2026-09-25 (issue
   2229); and the portrait-light and portrait-dark action sweeps on physical iPad native and physical
-  Android web. Six more physical action sections were captured after that campaign and folded one
-  section at a time (issue 2268): all four physical iPad web sweeps at
+  Android web. The other eight physical action sections were captured after that campaign and folded
+  one section at a time (issue 2268): first, all four physical iPad web sweeps at
   8e6700d5d801eb481a4bde3d47cea69135dd71b4 over the secure-origin front (issue 2211), and both
   physical iPad native landscape sweeps at d50d73927f1835bbe231d1c2450f49fbe5803f53, the
   contentInset fix (issue 2212). Each keeps its own product commit beside its mode’s 3928cd88
   drawing, and its capture date is its fold date, because action artifacts record no capture clock.
-  The other six physical action sections are preserved from the published
-  e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 sweeps (2026-09-05 to 2026-09-07), which keep that commit
-  as their provenance and make no claim about 3928cd88.
-* Why the six preserved action sweeps have no fresh capture: physical Android web landscape sweeps
-  failed at 3928cd88 because every color swatch in the landscape compact color flyout measured zero
-  size, and physical Android native sweeps failed at 3928cd88 when the native tap on the Dark theme
-  button was not captured (portrait) and when Appium could not rotate the device to ROTATION_270
-  (landscape). Both harness failures were fixed afterwards (issues 2213, 2214, and 2215) and the
-  sweeps completed on the phone, but those raw captures were not kept and no longer exist, so these
-  sections wait for a recapture. Physical iPad web had no scoreable unattended sweep at 3928cd88
-  because its AI-waiting actions need a secure context; physical iPad native landscape sweeps failed
-  when the second Undo tap after a landscape-to-portrait rotation landed on the canvas. Both are now
-  folded from their later captures.
-* The preserved sweeps predate the 2026-09-17 ai-waiting and unavailable action groups and several
-  later action labels. Their heatmap cells for those labels render as missing, not N/A. On the
-  physical Android web and physical Android native landscape modes, which use the compact Settings
-  shell that no current sweep covers, that includes the Accessibility section and tool-drawer
-  toggles, which the compact shell may not offer at all; their tooltips say the shell is unverified.
+  Six more were recaptured on the phone at 87da0c5a3b4a789d36678a4e10c873f76a6f3c04 on 2026-09-25
+  and folded the same way (issue 2268): both physical Android web landscape sweeps over direct CDP,
+  and all four physical Android native sweeps through Appium attached to the Capacitor WebView. No
+  physical action section is preserved.
+* Why twelve physical action sweeps were folded after the campaign: physical Android web landscape
+  sweeps failed at 3928cd88 because every color swatch in the landscape compact color flyout
+  measured zero size, and physical Android native sweeps failed at 3928cd88 when the native tap on
+  the Dark theme button was not captured (portrait) and when Appium could not rotate the device to
+  ROTATION_270 (landscape). Both harness failures were fixed afterwards (issues 2213, 2214, and
+  2215); those first completed sweeps were not kept, so all six sections were recaptured at
+  87da0c5a. Physical iPad web had no scoreable unattended sweep at 3928cd88 because its AI-waiting
+  actions need a secure context; physical iPad native landscape sweeps failed when the second Undo
+  tap after a landscape-to-portrait rotation landed on the canvas. Both are now folded from their
+  later captures.
+* Every physical action section comes from a sweep that covers the current action groups, including
+  ai-waiting and unavailable. The physical Android web and physical Android native landscape modes
+  measure the compact Settings shell; its tool-drawer toggles are new labels, which render as
+  missing, not N/A, on preserved advisory rows whose older plans never offered them.
 * The physical Android native drawing and undo sections come from a probe-host server.url build
   carrying the ADR-0135 split transport. Those artifacts record pageIdentity unprovable by
   construction, because the fixed server.url carries no per-cell nonce. Its three drift references
@@ -303,8 +303,9 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
 * The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the
   physical iPad native and both physical Android rows to be current and scored before campaign
   completion. Drawing and undo were captured on all four rows at 3928cd88 (physical Android web
-  portrait since recaptured at 1e3016ec), and six physical action sections are still preserved from
-  e5142fab, so this report does not complete that requirement.
+  portrait since recaptured at 1e3016ec), and every physical action section is now current. The
+  physical Android web landscape drawing and undo sections still wait for the issue 2271 recapture,
+  so this report does not complete that requirement.
 * Simulator, emulator, and Mac rows were not recaptured in this physical release-gate campaign.
   Every section on those rows is explicitly preserved from the prior published report and makes no
   claim of currency at the final product commit.
@@ -337,12 +338,11 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   preserved before the strict regeneration.
 * 28 cells carry historical results preserved from data.json rather than re-read raw captures: The
   2026-09-23 campaign freshly captured every physical drawing and undo section and the portrait
-  action sweeps on physical iPad native and physical Android web. Six physical action sections were
-  later folded one section at a time from their own captures (issue 2268). The other six physical
-  action sections, on the physical Android web landscape and physical Android native modes, are
-  preserved from the published e5142fab sweeps, and the advisory iPad Simulator, Android Emulator,
-  and Mac desktop rows are preserved wholesale; every preserved section keeps its original product
-  commit and does not claim currency. Fresh physical evidence is promoted under
+  action sweeps on physical iPad native and physical Android web. The other eight physical action
+  sections were later folded one section at a time from their own captures (issue 2268), so no
+  physical section is preserved. The advisory iPad Simulator, Android Emulator, and Mac desktop rows
+  are preserved wholesale, and every preserved section keeps its original product commit and does
+  not claim currency. Fresh physical evidence is promoted under
   perf-profiles/evidence/2026-09-23-matrix-*-3928/. Preserved cells: iPad simulator · web ·
   portrait-light (drawing, undo, actions); iPad simulator · web · portrait-dark (drawing, undo,
   actions); iPad simulator · web · landscape-light (drawing, undo, actions); iPad simulator · web ·
