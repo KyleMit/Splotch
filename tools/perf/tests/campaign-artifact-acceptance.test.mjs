@@ -108,6 +108,25 @@ describe('inspectArtifact', () => {
   // Tolerance for an absent verdict is granted per transport: the desktop runner
   // genuinely reports none, but a runner that always writes one must have an absent
   // verdict treated as no verdict rather than as consent.
+  // Issue 2269: the split runner writes its artifact before refusing lost strokes,
+  // and a capture that lost touches passes fidelity on the ones that arrived.
+  it('refuses a capture whose page recorded fewer pointerdowns than the strokes sent', () => {
+    const pointerdown = [0, 0, 0, 0, 0, 0, 0, 0, 1];
+    const report = { events: Array.from({ length: 140 }, () => pointerdown) };
+    const options = { verdictRequired: true, expectedRefreshRegime: '60hz' };
+
+    const lost = inspectArtifact(
+      artifactAt({ ...scoreable, dispatchedStrokes: 160, report }),
+      'web',
+      options
+    );
+    expect(lost).toMatchObject({ ok: false, status: UNSCOREABLE });
+    expect(lost.deliveryProblem).toContain('140 pointerdowns for 160 dispatched strokes');
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, dispatchedStrokes: 140, report }), 'web', options)
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
   it('tolerates a missing verdict only where one is not required', () => {
     const silent = artifactAt({ transport: 'browser', summaries: { intervalMs: 17 } });
 

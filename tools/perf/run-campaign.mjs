@@ -88,6 +88,7 @@ import {
   parseLedger,
 } from './lib/campaign-ledger.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import { strokeDeliveryProblem } from './lib/stroke-delivery.mjs';
 import {
   onlyUncalibratedChecksFailed,
   runtimeHasUncalibratedChecks,
@@ -248,6 +249,10 @@ export function inspectArtifact(
         : UNSCOREABLE,
     };
   }
+  // The strokes that did reach the page were driven faithfully, so the verdict
+  // above passes a capture that lost some of them; only the count says so.
+  const deliveryProblem = strokeDeliveryProblem(artifact);
+  if (deliveryProblem) return { ok: false, status: UNSCOREABLE, deliveryProblem };
   // Checked after fidelity so the more fundamental rejection is the one reported:
   // a capture that was barely driven has a meaningless beat as well as a meaningless
   // number, and naming the regime would send the next session after the wrong thing.
@@ -697,7 +702,10 @@ export async function runCampaign(argv = process.argv.slice(2)) {
             'its remaining fidelity checks, so no retry can change the verdict'
         );
       } else if (inspected.status === UNSCOREABLE) {
-        console.log(`RETRY ${cell.id} — the capture failed input fidelity and cannot be scored`);
+        console.log(
+          `RETRY ${cell.id} — ${inspected.deliveryProblem ?? 'the capture failed input fidelity'}, ` +
+            'so it cannot be scored'
+        );
       } else if (inspected.status === OFF_REFRESH_REGIME) {
         console.log(
           `RETRY ${cell.id} — measured at ${describeRefreshRegime(inspected.regime)}, ` +

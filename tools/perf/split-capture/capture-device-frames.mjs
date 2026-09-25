@@ -67,6 +67,7 @@ import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
 import { reduceMotionReadinessProblem, reduceMotionSeedProblem } from '../lib/reduce-motion.mjs';
+import { strokeDeliveryProblem, trustedPointerdowns } from '../lib/stroke-delivery.mjs';
 import { FLOOR_CONTROL_THEME, floorControlIdentity } from './serve-floor-control.mjs';
 
 const PLATFORMS = ['android', 'ios'];
@@ -919,6 +920,13 @@ export async function captureDeviceFrames({
     payload,
   });
 
+  if (artifact.dispatchedStrokes !== null) {
+    console.log(
+      `Strokes: ${trustedPointerdowns(artifact.report)} pointerdowns for ` +
+        `${artifact.dispatchedStrokes} dispatched`
+    );
+  }
+
   androidPage.release();
   if (output) {
     console.log(`Wrote ${writeArtifactFile(output, artifact)}`);
@@ -926,11 +934,21 @@ export async function captureDeviceFrames({
   return artifact;
 }
 
+// Every reason the written artifact must not be scored. The artifact is still
+// written first: a refused capture is the evidence of what went wrong.
+export function captureRefusal(artifact) {
+  const problems = [];
+  const deliveryProblem = strokeDeliveryProblem(artifact);
+  if (deliveryProblem) problems.push(`Stroke delivery failed: ${deliveryProblem}.`);
+  if (!artifact.fidelity?.passed) {
+    problems.push('The capture failed the trusted-input fidelity gate.');
+  }
+  return problems.length ? `${problems.join(' ')} Do not score it.` : null;
+}
+
 if (isMain(import.meta.url)) {
   runMain(async () => {
-    const artifact = await captureDeviceFrames();
-    if (!artifact.fidelity.passed) {
-      fail('The capture failed the trusted-input fidelity gate; do not score it.');
-    }
+    const refusal = captureRefusal(await captureDeviceFrames());
+    if (refusal) fail(refusal);
   });
 }

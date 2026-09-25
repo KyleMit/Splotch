@@ -17,8 +17,8 @@ import {
   sessionTotals,
   stepIpadOs,
   stepOrderProblem,
-  trustedPointerdowns,
 } from '../lib/person-session.mjs';
+import { trustedPointerdowns } from '../lib/stroke-delivery.mjs';
 import { parseInputWindows } from '../lib/android-touch-occlusion.mjs';
 import { openSafariWithDevicectl } from '../split-capture/capture-hand-input.mjs';
 import {

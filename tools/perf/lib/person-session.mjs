@@ -6,6 +6,7 @@
 import { rescoreCapture } from '../rescore-captures.mjs';
 import { numberInvalidatingFailure, onlyUncalibratedChecksFailed } from './input-fidelity.mjs';
 import { ANDROID_MAX_OBSCURING_OPACITY } from './android-touch-occlusion.mjs';
+import { strokeDeliveryProblem, trustedPointerdowns } from './stroke-delivery.mjs';
 
 // The accessibility-service app on the rig phone whose stacked overlays drop
 // every touch in the portrait centre column (issue 2229).
@@ -418,14 +419,7 @@ export function overlaySteadilyClear(verdicts, reads = OVERLAY_STEADY_READS) {
 
 // Columns of a probe event row (tools/perf/probes/real-screen-probe.js).
 const EVENT_TYPE = 2;
-const EVENT_TRUSTED = 8;
 const POINTERDOWN = 0;
-
-export function trustedPointerdowns(report) {
-  return (report?.events ?? []).filter(
-    (row) => row[EVENT_TYPE] === POINTERDOWN && row[EVENT_TRUSTED] === 1
-  ).length;
-}
 
 function firstPointerdownAt(report) {
   const row = (report?.events ?? []).find((event) => event[EVENT_TYPE] === POINTERDOWN);
@@ -542,13 +536,9 @@ export function captureVerdict(artifact, expect) {
     }
   }
   if (expect.kind === 'android-driven') {
-    const downs = trustedPointerdowns(artifact.report);
-    metrics.pointerdowns = `${downs}/${artifact.dispatchedStrokes ?? '?'}`;
-    if (!Number.isInteger(artifact.dispatchedStrokes) || downs !== artifact.dispatchedStrokes) {
-      reasons.push(
-        `the page recorded ${downs} pointerdowns for ${artifact.dispatchedStrokes ?? 'an unrecorded number of'} swipes — an overlay or another window took touches`
-      );
-    }
+    metrics.pointerdowns = `${trustedPointerdowns(artifact.report)}/${artifact.dispatchedStrokes ?? '?'}`;
+    const deliveryProblem = strokeDeliveryProblem(artifact, { required: true });
+    if (deliveryProblem) reasons.push(deliveryProblem);
     if (expect.reduceMotion === 'reduce' && artifact.observedReducedMotion !== true) {
       reasons.push('Reduce Motion was seeded but the page did not resolve reduced motion');
     }
