@@ -37,33 +37,50 @@ const ADR_0174 = {
   adrPath: 'docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md',
 };
 const E5142FAB = 'e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3';
+const C3928CD88 = '3928cd88edbf441530e473a4e3c0b6767926bfc6';
 
 // Drawing lost-frame reds an owner-recorded ADR explains, keyed like the
 // exception table. This is an ANNOTATION, not a budget: the cell is still scored
 // against its gate and still renders FAIL, with the disposition beside it so a
 // reader can tell an explained red from an open one (ADR-0160's completion gate
 // counts only the open ones). A red qualifies only when every paint gate passed,
-// lost frame is its only failure, and its reading sits inside the band the ADR
-// records — inclusive, on the published four-decimal share — plus, where the ADR
-// limits the explanation to named readings, at one of the named product commits.
-// The bands are the ADR's own figures; `drawing-dispositions.test.mjs` fails if
-// the ADR text stops stating them.
+// lost frame is its only failure, and its reading sits inside the band of the
+// scope for its run's product commit — inclusive, on the published four-decimal
+// share. A scope with null productCommits holds at any commit; one naming
+// commits limits the explanation to the readings the ADR names at those commits.
+// A band whose floor is the gate itself covers every red up to its ceiling. The
+// bands are the ADR's own figures; `drawing-dispositions.test.mjs` fails if the
+// ADR text stops stating them as `dispositionBandText` words them.
 export const LOST_FRAME_DISPOSITIONS = {
   'ipad-device-web:pen': {
     ...ADR_0174,
-    band: { minShare: 0.0122, maxShare: 0.0137 },
-    productCommits: null,
+    scopes: [
+      { band: { minShare: LOST_FRAME_TIME_SHARE_GATE, maxShare: 0.0137 }, productCommits: null },
+    ],
     basis:
-      'Synthesized-touch transport cost, not product cost: real-finger pen captures read 0.04–0.06% where the driven cells read 1.22–1.37%. A driven pen red inside that band with passing paint gates is explained; a reading above it needs a real-finger capture at that commit.',
+      'Synthesized-touch transport cost, not product cost: every real-finger pen capture reads 0–0.06%, and on one commit in one session the driven arm read 1.18% and the finger 0%. A driven pen red above 1%, up to 1.37%, with passing paint gates is explained; a reading above 1.37% needs a real-finger capture at that commit.',
   },
   'ipad-device-web:eraser': {
     ...ADR_0174,
-    band: { minShare: 0.0119, maxShare: 0.0125 },
-    productCommits: [E5142FAB],
+    scopes: [
+      { band: { minShare: 0.0119, maxShare: 0.0125 }, productCommits: [E5142FAB] },
+      { band: { minShare: 0.0101, maxShare: 0.0103 }, productCommits: [C3928CD88] },
+    ],
     basis:
-      'Explained by extension from the pen band, not by measurement: no finger capture of eraser exists, so the explanation covers only the three 1.19–1.25% readings at e5142fab. A later driven eraser red needs a real-finger capture.',
+      'Explained by real-finger eraser captures in both landscape modes (0.04% light, 0% dark), which cover the named readings only: 1.19–1.25% at e5142fab and 1.01–1.03% at 3928cd88. A driven eraser red at any other commit needs a real-finger capture at that commit.',
   },
 };
+
+// How an ADR states a disposition band, and how the matrix prints it: two
+// decimals, since the cell format's one decimal would print 1.22% as 1.2%. A
+// floor at the gate reads as "above" it, because only a red is ever judged.
+export function dispositionBandText({ minShare, maxShare }) {
+  const twoDecimals = (share) => `${(share * 100).toFixed(2)}%`;
+  if (minShare === LOST_FRAME_TIME_SHARE_GATE) {
+    return `above ${Number((minShare * 100).toFixed(2))}%, up to ${twoDecimals(maxShare)}`;
+  }
+  return `${(minShare * 100).toFixed(2)}–${twoDecimals(maxShare)}`;
+}
 
 function paintGatesPassed(paint) {
   return (
@@ -81,22 +98,22 @@ export function lostFrameDispositionFor(targetId, brush, entry) {
   const runs = entry?.runs ?? [];
   if (!disposition || !aggregate || !runs.length) return null;
   if (aggregate.scoreable === false || aggregate.blankPassed !== false) return null;
-  const inBand = (share) =>
-    share >= disposition.band.minShare && share <= disposition.band.maxShare;
-  // Every failing phase of every run is judged on its own reading, not the
-  // aggregate maximum: a cell folding an in-band red with an out-of-band one
-  // holds a red the ADR does not explain, so the whole cell stays open.
-  const phases = runs.flatMap((run) => run.phases ?? []);
-  const everyRedCovered = phases.every(
-    (phase) => paintGatesPassed(phase.paint) && (phase.passed || inBand(phase.lostFrameTimeShare))
-  );
-  if (!phases.length || !everyRedCovered) return null;
-  if (
-    disposition.productCommits &&
-    !runs.every((run) => disposition.productCommits.includes(run.productCommit))
-  ) {
-    return null;
-  }
+  // Every failing phase of every run is judged on its own reading against the
+  // scope for its run's commit, not the aggregate maximum: a cell folding an
+  // in-band red with an out-of-band one holds a red the ADR does not explain, so
+  // the whole cell stays open.
+  const runCovered = (run) => {
+    const scope = disposition.scopes.find(
+      ({ productCommits }) => !productCommits || productCommits.includes(run.productCommit)
+    );
+    if (!scope) return false;
+    const inBand = (share) => share >= scope.band.minShare && share <= scope.band.maxShare;
+    return (run.phases ?? []).every(
+      (phase) => paintGatesPassed(phase.paint) && (phase.passed || inBand(phase.lostFrameTimeShare))
+    );
+  };
+  const phaseCount = runs.reduce((count, run) => count + (run.phases?.length ?? 0), 0);
+  if (!phaseCount || !runs.every(runCovered)) return null;
   return { adr: disposition.adr, adrPath: disposition.adrPath };
 }
 

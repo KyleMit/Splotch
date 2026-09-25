@@ -37,6 +37,7 @@ import {
   splitUndoEvidenceProblem,
 } from './lib/campaign-plan.mjs';
 import {
+  dispositionBandText,
   LOST_FRAME_DISPOSITIONS,
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
@@ -2323,14 +2324,14 @@ function renderLostFrameExceptionsMarkdown(exceptions) {
   return `Cells held to a different lost-frame budget, and why (ADR-0137):\n\n${lines.join('\n')}\n`;
 }
 
-function dispositionScope({ band, productCommits }) {
-  const commits = productCommits
-    ? ` at ${productCommits.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ')}`
-    : '';
-  // Two decimals, as the ADRs state their bands: the cell format's one decimal
-  // would print a 1.22–1.37% band as 1.2–1.4%.
-  const bandPercent = (share) => `${(share * 100).toFixed(2)}%`;
-  return `lost-frame reds from ${bandPercent(band.minShare)} to ${bandPercent(band.maxShare)}${commits}, paint gates passing`;
+function dispositionScope({ scopes }) {
+  const readings = scopes.map(({ band, productCommits }) => {
+    const commits = productCommits
+      ? ` at ${productCommits.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ')}`
+      : '';
+    return `${dispositionBandText(band)}${commits}`;
+  });
+  return `lost-frame reds ${readings.join(' or ')}, paint gates passing`;
 }
 
 // Every red a recorded disposition explains, and what bounds it, so an

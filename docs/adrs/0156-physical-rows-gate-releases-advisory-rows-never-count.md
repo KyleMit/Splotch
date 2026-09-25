@@ -34,10 +34,11 @@
 > [ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md):** on both
 > physical iPad rows, the release-gate verdict for drawing lost-frame share is the real-finger
 > floor, not the driven capture. The ten `ipad-device-web` pen, Magic, and eraser driven reds at
-> e5142fab are instrument artifacts. Pen and eraser are explained. Magic's own finger capture fails
-> as scored on a first-load stall, so it stays an open product red. A driven pen reading inside the
-> recorded band counts as explained. Any other new driven drawing lost-frame red on either iPad row
-> needs a real-finger capture first.
+> e5142fab are instrument artifacts. Pen and eraser are explained. Magic's first-load stall, which
+> failed its own finger capture, is recorded as not reproduced at 8e6700d5, so Magic is no longer an
+> open product red. A driven pen reading above 1%, up to 1.37%, counts as explained, and so do the
+> driven eraser reds ADR-0174 names at two commits. Any other new driven drawing lost-frame red on
+> either iPad row needs a real-finger capture first.
 
 ## Context
 

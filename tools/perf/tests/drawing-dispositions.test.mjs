@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import { normalizeMatrix, renderMarkdown, renderReport } from '../gen-performance-matrix.mjs';
 import {
+  dispositionBandText,
   LOST_FRAME_DISPOSITIONS,
   LOST_FRAME_TIME_SHARE_GATE,
   lostFrameDispositionFor,
@@ -11,7 +12,9 @@ import {
 
 const E5142FAB = 'e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3';
 const LATER_COMMIT = '3928cd88edbf441530e473a4e3c0b6767926bfc6';
+const FINGER_SESSION_COMMIT = '8e6700d5d801eb481a4bde3d47cea69135dd71b4';
 const CONTROL_CORPUS = 'perf-profiles/evidence/2026-09-22-issue-1715-driven-control';
+const MATRIX_3928_CORPUS = 'perf-profiles/evidence/2026-09-23-matrix-ipad-device-web-3928';
 
 function percent(share) {
   return `${(share * 100).toFixed(2)}%`;
@@ -46,8 +49,7 @@ function cell({
 }
 
 // The generator's bands and commits are the ADR's own figures. If ADR-0174 is
-// amended (issue 2233 asks how the pen band treats readings below it), this
-// fails until the table and the record agree again.
+// amended again, this fails until the table and the record agree.
 describe('the recorded disposition table agrees with its ADRs', () => {
   for (const [key, disposition] of Object.entries(LOST_FRAME_DISPOSITIONS)) {
     const text = readFileSync(join(ROOT, disposition.adrPath), 'utf8');
@@ -58,34 +60,34 @@ describe('the recorded disposition table agrees with its ADRs', () => {
       expect(text.startsWith(`# ${disposition.adr}:`)).toBe(true);
     });
 
-    it(`${key} uses the band ${disposition.adr} states`, () => {
-      const { minShare, maxShare } = disposition.band;
-      const band = `${(minShare * 100).toFixed(2)}–${(maxShare * 100).toFixed(2)}%`;
-      expect(text.replace(/\s+/g, ' ')).toContain(band);
+    it(`${key} uses the bands ${disposition.adr} states`, () => {
+      for (const { band } of disposition.scopes) {
+        expect(text.replace(/\s+/g, ' ')).toContain(dispositionBandText(band));
+      }
     });
 
     it(`${key} limits itself to product commits ${disposition.adr} names`, () => {
-      for (const commit of disposition.productCommits ?? []) {
-        expect(text).toContain(commit);
+      for (const { productCommits } of disposition.scopes) {
+        for (const commit of productCommits ?? []) {
+          expect(text).toContain(commit);
+        }
       }
     });
   }
 });
 
 describe('which drawing reds a recorded disposition explains', () => {
-  it('explains a driven iPad web pen red inside the ADR-0174 band at any commit', () => {
-    for (const share of [0.0122, 0.0127, 0.0137]) {
+  it('explains a driven iPad web pen red above 1%, up to 1.37%, at any commit', () => {
+    for (const share of [0.0101, 0.0113, 0.0122, 0.0127, 0.0137]) {
       expect(lostFrameDispositionFor('ipad-device-web', 'pen', cell({ share }))).toMatchObject({
         adr: 'ADR-0174',
       });
     }
   });
 
-  // Readings below the band are an open question (issue 2233), so they stay
-  // unexplained until the ADR says otherwise; readings above it need a finger
-  // capture under the ADR's own terms.
-  it('leaves a pen red outside the band open', () => {
-    for (const share of [0.0113, 0.0121, 0.0138]) {
+  // A reading above the band needs a finger capture under the ADR's own terms.
+  it('leaves a pen red above 1.37% open', () => {
+    for (const share of [0.0138, 0.0218]) {
       expect(lostFrameDispositionFor('ipad-device-web', 'pen', cell({ share }))).toBeNull();
     }
   });
@@ -120,7 +122,7 @@ describe('which drawing reds a recorded disposition explains', () => {
     };
 
     expect(
-      lostFrameDispositionFor('ipad-device-web', 'pen', folded([[phase(0.0113)], [phase(0.0127)]]))
+      lostFrameDispositionFor('ipad-device-web', 'pen', folded([[phase(0.0138)], [phase(0.0127)]]))
     ).toBeNull();
     expect(
       lostFrameDispositionFor('ipad-device-web', 'pen', folded([[phase(0.0127), phase(0.02)]]))
@@ -130,15 +132,43 @@ describe('which drawing reds a recorded disposition explains', () => {
     ).toMatchObject({ adr: 'ADR-0174' });
   });
 
-  it('explains eraser only at the e5142fab readings it was extended to', () => {
+  it('explains eraser only at the readings the ADR names at each commit', () => {
     const at = (share, productCommit) =>
       lostFrameDispositionFor('ipad-device-web', 'eraser', cell({ share, productCommit }));
 
-    expect(at(0.0119, E5142FAB)).toMatchObject({ adr: 'ADR-0174' });
-    expect(at(0.0125, E5142FAB)).toMatchObject({ adr: 'ADR-0174' });
-    expect(at(0.0103, LATER_COMMIT)).toBeNull();
-    expect(at(0.0122, LATER_COMMIT)).toBeNull();
-    expect(at(0.0103, E5142FAB)).toBeNull();
+    for (const share of [0.0119, 0.0125]) {
+      expect(at(share, E5142FAB)).toMatchObject({ adr: 'ADR-0174' });
+      expect(at(share, LATER_COMMIT)).toBeNull();
+    }
+    for (const share of [0.0101, 0.0103]) {
+      expect(at(share, LATER_COMMIT)).toMatchObject({ adr: 'ADR-0174' });
+      expect(at(share, E5142FAB)).toBeNull();
+    }
+    expect(at(0.0126, E5142FAB)).toBeNull();
+    expect(at(0.0104, LATER_COMMIT)).toBeNull();
+    expect(at(0.0103, FINGER_SESSION_COMMIT)).toBeNull();
+  });
+
+  // A cell folding runs from two commits judges each run against its own
+  // commit's range, so one run cannot borrow the other commit's band.
+  it('judges each run of an eraser cell against its own commit', () => {
+    const run = (share, productCommit) => ({ ...cell({ share, productCommit }).runs[0] });
+    const folded = (...runs) => ({ ...cell({ share: 0.0119 }), runs });
+
+    expect(
+      lostFrameDispositionFor(
+        'ipad-device-web',
+        'eraser',
+        folded(run(0.0119, E5142FAB), run(0.0102, LATER_COMMIT))
+      )
+    ).toMatchObject({ adr: 'ADR-0174' });
+    expect(
+      lostFrameDispositionFor(
+        'ipad-device-web',
+        'eraser',
+        folded(run(0.0119, E5142FAB), run(0.0119, LATER_COMMIT))
+      )
+    ).toBeNull();
   });
 
   it('explains no Magic, native, green, or unscoreable cell', () => {
@@ -235,11 +265,83 @@ describe('the ADR-0174 driven control in a matrix', () => {
     const html = renderReport(matrix);
 
     expect(markdown).toContain(
-      '**Pen on `ipad-device-web`** — lost-frame reds from 1.22% to 1.37%, paint gates passing'
+      '**Pen on `ipad-device-web`** — lost-frame reds above 1%, up to 1.37%, paint gates passing'
     );
     expect(markdown).toContain(
-      '**Eraser on `ipad-device-web`** — lost-frame reds from 1.19% to 1.25% at e5142fab8ff2, paint gates passing'
+      '**Eraser on `ipad-device-web`** — lost-frame reds 1.19–1.25% at e5142fab8ff2 or 1.01–1.03% at 3928cd88edbf, paint gates passing'
     );
     expect(html).toContain('<b>Recorded dispositions.</b>');
+  });
+});
+
+// The three iPad web drawing reds the 2026-09-23 matrix refresh carries at
+// 3928cd88 are the cells the 2026-09-24 rulings explain, so normalizing their
+// tracked copies shows the fold covers them without touching their verdicts.
+describe('the 3928cd88 iPad web landscape reds in a matrix', () => {
+  function landscapeMatrix() {
+    const portrait = [
+      { id: 'portrait-light', orientation: 'PORTRAIT', theme: 'light' },
+      { id: 'portrait-dark', orientation: 'PORTRAIT', theme: 'dark' },
+    ].map((spec) => ({ ...spec, status: 'unavailable', reason: 'not exercised' }));
+    return normalizeMatrix(
+      {
+        schemaVersion: 3,
+        recordedOn: '2026-09-23',
+        productCommit: LATER_COMMIT,
+        snapshotKind: 'test',
+        architecture: 'test',
+        sourceRoot: MATRIX_3928_CORPUS,
+        targets: [
+          {
+            id: 'ipad-device-web',
+            number: 1,
+            label: 'iPad physical · web',
+            platform: 'iPadOS',
+            deviceKind: 'physical',
+            runtime: 'web',
+            environment: 'test',
+            fidelity: 'physical-safari-gated',
+            modes: [
+              ...portrait,
+              {
+                id: 'landscape-light',
+                orientation: 'LANDSCAPE',
+                theme: 'light',
+                status: 'captured',
+                drawingProductCommit: LATER_COMMIT,
+                drawing: { eraser: ['eraser-real-screen--1963d407.json'] },
+              },
+              {
+                id: 'landscape-dark',
+                orientation: 'LANDSCAPE',
+                theme: 'dark',
+                status: 'captured',
+                drawingProductCommit: LATER_COMMIT,
+                drawing: {
+                  pen: ['pen-real-screen--e48c8074.json'],
+                  eraser: ['eraser-real-screen--aa32287a.json'],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      ROOT
+    );
+  }
+
+  it('explains each red and leaves its reading and FAIL verdict unchanged', () => {
+    const [, , landscapeLight, landscapeDark] = landscapeMatrix().targets[0].modes;
+    const cells = [
+      [landscapeLight.drawing.eraser, '1.03%'],
+      [landscapeDark.drawing.pen, '1.13%'],
+      [landscapeDark.drawing.eraser, '1.01%'],
+    ];
+
+    for (const [entry, reading] of cells) {
+      expect(entry.aggregate.blankPassed).toBe(false);
+      expect(percent(entry.aggregate.lostFrameTimeShare)).toBe(reading);
+      expect(entry.disposition).toMatchObject({ adr: 'ADR-0174' });
+    }
   });
 });
