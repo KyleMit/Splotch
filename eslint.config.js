@@ -496,6 +496,16 @@ export default tseslint.config(
     },
   },
   {
+    // What remains in createPWAUpdates is the updateReload state machine, whose transitions read and write the same reload and registration state; the stateless and self-owning pieces are already module-scope helpers and sub-factories.
+    files: ['web/src/lib/pwa/updates.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 147, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
