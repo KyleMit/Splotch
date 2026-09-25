@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
@@ -32,7 +32,9 @@ import {
   toolingLitter,
 } from '../split-capture/lib/chrome-tabs.mjs';
 import {
+  adbOrThrow,
   androidDriver,
+  driveHandingBack,
   driveSplitGesturePasses,
   iosDriver,
   requestPageEraserRefill,
@@ -1600,15 +1602,15 @@ describe('the wiring that fronts the page and judges the input', () => {
     const execCalls = [];
     const activateCalls = [];
     const litterCalls = [];
-    const forwardCalls = [];
+    const tryRunCalls = [];
     return {
       execCalls,
       activateCalls,
       litterCalls,
-      forwardCalls,
+      tryRunCalls,
       exec: (serial, args) => execCalls.push(args.join(' ')),
-      forward: (cmd, args) => {
-        forwardCalls.push(`${cmd} ${args.join(' ')}`);
+      tryRun: (cmd, args) => {
+        tryRunCalls.push(`${cmd} ${args.join(' ')}`);
         return { ok: true, stdout: '', stderr: '' };
       },
       activate: async (options) => {
@@ -1655,7 +1657,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     // forward never routes through capture(), whose failure path is
     // process.exit — the combination that once killed a preflight.
     expect(deps.execCalls.some((call) => call.startsWith('forward'))).toBe(false);
-    expect(deps.forwardCalls).toEqual([
+    expect(deps.tryRunCalls).toEqual([
       'adb -s s forward --no-rebind tcp:9224 localabstract:chrome_devtools_remote',
       'adb -s s forward --remove tcp:9224',
       'adb -s s forward --no-rebind tcp:9224 localabstract:chrome_devtools_remote',
@@ -1692,7 +1694,7 @@ describe('the wiring that fronts the page and judges the input', () => {
 
     expect(deps.activateCalls).toEqual([]);
     expect(deps.litterCalls).toEqual([]);
-    expect(deps.forwardCalls).toEqual([]);
+    expect(deps.tryRunCalls).toEqual([]);
   });
 
   it('attests the resumed package on the native path', () => {
@@ -1810,6 +1812,260 @@ describe('the wiring that fronts the page and judges the input', () => {
     expect(zeroInputProblem({ nonce: 'n', events: 517 })).toBeNull();
     expect(zeroInputProblem(null)).toBeNull();
     expect(zeroInputProblem(undefined)).toBeNull();
+  });
+});
+// Issue 2272: a landscape capture left user_rotation=1 on the phone, and the
+// next reader that assumed portrait saw the wrong geometry. The driver reads
+// both rotation settings before its first write and puts back exactly what it
+// found, deleting a setting that was never written.
+describe('the Android driver hands the rotation back as it found it', () => {
+  const fakePhone = (found, { failingRestore = null } = {}) => {
+    const settings = new Map(Object.entries(found));
+    const log = [];
+    const apply = (args) => {
+      const [shell, command, verb, namespace, key, value] = args;
+      if (shell !== 'shell' || command !== 'settings' || namespace !== 'system') return '';
+      if (verb === 'get') return `${settings.get(key) ?? 'null'}\n`;
+      if (verb === 'put') settings.set(key, value);
+      if (verb === 'delete') settings.delete(key);
+      return '';
+    };
+    return {
+      settings,
+      log,
+      exec: (_serial, args) => {
+        log.push(`exec ${args.join(' ')}`);
+        return apply(args);
+      },
+      tryRun: (_cmd, [, , ...args]) => {
+        log.push(`tryRun ${args.join(' ')}`);
+        if (failingRestore && args[1] === 'settings' && args.includes(failingRestore)) {
+          return { ok: false, stdout: '', stderr: 'device offline\n' };
+        }
+        apply(args);
+        return { ok: true, stdout: '', stderr: '' };
+      },
+    };
+  };
+  const driverOn = (phone) =>
+    androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      toolingHostnames: ['host'],
+      orientation: 'LANDSCAPE',
+      nativeApp: true,
+      cdpPort: 9224,
+      exec: phone.exec,
+      tryRun: phone.tryRun,
+    });
+  const settle = async (start) => {
+    vi.useFakeTimers();
+    try {
+      const settled = start();
+      settled.catch(() => {});
+      await vi.runAllTimersAsync();
+      return await settled;
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+  const asFound = { accelerometer_rotation: '1', user_rotation: '0' };
+
+  it('reads both settings before the first rotation write', async () => {
+    const phone = fakePhone(asFound);
+    await settle(() => driverOn(phone).openPage());
+
+    const firstPut = phone.log.findIndex((line) => line.includes('settings put'));
+    expect(phone.log.slice(0, firstPut)).toEqual([
+      'exec shell settings get system accelerometer_rotation',
+      'exec shell settings get system user_rotation',
+      'exec shell am force-stop art.splotch.app',
+    ]);
+  });
+
+  it('puts back the values a landscape capture overwrote', async () => {
+    const phone = fakePhone(asFound);
+    const driver = driverOn(phone);
+    await settle(() => driver.openPage());
+    expect(Object.fromEntries(phone.settings)).toEqual({
+      accelerometer_rotation: '0',
+      user_rotation: '1',
+    });
+
+    driver.release();
+
+    expect(Object.fromEntries(phone.settings)).toEqual(asFound);
+  });
+
+  it('deletes a setting that was never written rather than writing "null"', async () => {
+    const phone = fakePhone({ accelerometer_rotation: '0' });
+    const driver = driverOn(phone);
+    await settle(() => driver.openPage());
+
+    driver.release();
+
+    expect(Object.fromEntries(phone.settings)).toEqual({
+      accelerometer_rotation: '0',
+    });
+    expect(phone.log).toContain('tryRun shell settings delete system user_rotation');
+    expect(phone.log.some((line) => line.includes('user_rotation null'))).toBe(false);
+  });
+
+  // The capture re-opens when no page reports ready; a second read would adopt
+  // the capture's own writes as the state to restore.
+  it('restores what was found before the first open, not before a re-open', async () => {
+    const phone = fakePhone(asFound);
+    const driver = driverOn(phone);
+    await settle(() => driver.openPage());
+    await settle(() => driver.openPage());
+
+    driver.release();
+
+    expect(Object.fromEntries(phone.settings)).toEqual(asFound);
+  });
+
+  it('restores once, and not at all when the page was never opened', async () => {
+    const unopened = fakePhone(asFound);
+    driverOn(unopened).release();
+    expect(unopened.log).toEqual([]);
+
+    const phone = fakePhone(asFound);
+    const driver = driverOn(phone);
+    await settle(() => driver.openPage());
+    driver.release();
+    const afterFirst = phone.log.length;
+    driver.release();
+
+    expect(phone.log).toHaveLength(afterFirst);
+  });
+
+  it('puts one setting back even when the other cannot be, without throwing', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const phone = fakePhone(asFound, {
+        failingRestore: 'accelerometer_rotation',
+      });
+      const driver = driverOn(phone);
+      await settle(() => driver.openPage());
+
+      expect(() => driver.release()).not.toThrow();
+      expect(phone.settings.get('user_rotation')).toBe('0');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not settings put system accelerometer_rotation 1 on s')
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('hands the rotation back before a refusal exits', async () => {
+    const phone = fakePhone(asFound);
+    const driver = driverOn(phone);
+    const exits = [];
+    const exited = new Error('exited');
+
+    await expect(
+      settle(() =>
+        driveHandingBack(
+          driver,
+          async (refuse) => {
+            await driver.openPage();
+            await refuse('the page is PORTRAIT, not the requested LANDSCAPE');
+          },
+          (message) => {
+            exits.push({
+              message,
+              settings: Object.fromEntries(phone.settings),
+            });
+            throw exited;
+          }
+        )
+      )
+    ).rejects.toBe(exited);
+
+    // `fail` is process.exit, so the settings must already be back when it runs.
+    expect(exits).toEqual([
+      {
+        message: 'the page is PORTRAIT, not the requested LANDSCAPE',
+        settings: asFound,
+      },
+    ]);
+  });
+
+  // capture() exits the process on a failed adb call, which skips every
+  // `finally`; the driver's runner throws instead so the hand-back still runs.
+  it('hands the rotation back when an adb call after the rotation fails', async () => {
+    const phone = fakePhone(asFound);
+    const driver = driverOn({
+      ...phone,
+      exec: (serial, args) => {
+        if (args.join(' ') === 'shell dumpsys window displays') {
+          return adbOrThrow(serial, args, () => ({ ok: false, stdout: '', stderr: 'closed\n' }));
+        }
+        return phone.exec(serial, args);
+      },
+    });
+
+    await expect(
+      settle(() =>
+        driveHandingBack(driver, async () => {
+          await driver.openPage();
+          driver.boundsFrom(RIG_PORTRAIT_GEOMETRY);
+        })
+      )
+    ).rejects.toThrow('adb shell dumpsys window displays failed on s: closed');
+    expect(Object.fromEntries(phone.settings)).toEqual(asFound);
+  });
+
+  // Pins the production default: with the process-exiting capture() back as
+  // the driver's runner, this failure would kill the test worker instead.
+  it('throws from the default adb runner rather than exiting', () => {
+    const bin = mkdtempSync(join(tmpdir(), 'fake-adb-'));
+    try {
+      writeFileSync(join(bin, 'adb'), '#!/bin/sh\necho "fake adb offline" >&2\nexit 1\n');
+      chmodSync(join(bin, 'adb'), 0o755);
+      vi.stubEnv('PATH', `${bin}:${process.env.PATH}`);
+      const driver = androidDriver({
+        serial: 's',
+        pageUrl: 'http://host:4175/?probe=run-7',
+        toolingHostnames: ['host'],
+        orientation: 'LANDSCAPE',
+        nativeApp: true,
+        cdpPort: 9224,
+      });
+
+      expect(() => driver.boundsFrom(RIG_PORTRAIT_GEOMETRY)).toThrow(
+        'adb shell settings get system user_rotation failed on s: fake adb offline'
+      );
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(bin, { recursive: true, force: true });
+    }
+  });
+
+  it('hands the rotation back when the capture throws, and after a clean one', async () => {
+    const failing = fakePhone(asFound);
+    const failingDriver = driverOn(failing);
+    await expect(
+      settle(() =>
+        driveHandingBack(failingDriver, async () => {
+          await failingDriver.openPage();
+          throw new Error('no report was uploaded');
+        })
+      )
+    ).rejects.toThrow('no report was uploaded');
+    expect(Object.fromEntries(failing.settings)).toEqual(asFound);
+
+    const clean = fakePhone(asFound);
+    const cleanDriver = driverOn(clean);
+    const result = await settle(() =>
+      driveHandingBack(cleanDriver, async () => {
+        await cleanDriver.openPage();
+        return 'report';
+      })
+    );
+    expect(result).toBe('report');
+    expect(Object.fromEntries(clean.settings)).toEqual(asFound);
   });
 });
 

@@ -19,16 +19,7 @@ import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { dirname, isAbsolute, join } from 'node:path';
-import {
-  argFlag,
-  capture,
-  fail,
-  isMain,
-  ROOT,
-  runMain,
-  sleep,
-  tryCapture,
-} from '../../lib/proc.mjs';
+import { argFlag, fail, isMain, ROOT, runMain, sleep, tryCapture } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import {
   STROKES_PER_GESTURE_REPEAT,
@@ -61,7 +52,9 @@ import {
   androidForegroundPackage,
   androidGestureInstructions,
   androidOpenSteps,
+  androidRotationRestoreCommands,
   androidSystemInsets,
+  readAndroidRotationSettings,
   swipeArgs,
 } from './lib/android-input.mjs';
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
@@ -98,7 +91,16 @@ export const APP_BUNDLE_ID = ANDROID_NATIVE_PACKAGE;
 const WDA_SESSION_SETTLE_MS = 2_500;
 const CONTACT_BANK_MS = 600_000;
 
-const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
+// Throws where capture() would exit: once openPage has rotated the phone, a
+// failed geometry read or swipe must still reach driveHandingBack's `finally`,
+// and process.exit skips it. `run` is injectable only so a test can fail it.
+export function adbOrThrow(serial, args, run = tryCapture) {
+  const result = run('adb', ['-s', serial, ...args]);
+  if (!result.ok) {
+    throw new Error(`adb ${args.join(' ')} failed on ${serial}: ${result.stderr.trim()}`);
+  }
+  return result.stdout;
+}
 
 async function control(host, body) {
   const response = await fetch(`${host}/__probe/control`, {
@@ -237,7 +239,8 @@ export async function assertServedPageIdentity(
 // `exec` and `activate` are injected so the wiring is testable at THIS call
 // site — the openWithAdb precedent in capture-hand-input.mjs records how a
 // tested chooser with an untested call site shipped the exact bug the test
-// existed for.
+// existed for. `tryRun` is the reporting runner for every step that must not
+// exit the process: the tab guard's forward, and the rotation hand-back.
 export function androidDriver({
   serial,
   pageUrl,
@@ -245,8 +248,8 @@ export function androidDriver({
   orientation,
   nativeApp,
   cdpPort,
-  exec = adb,
-  forward = tryCapture,
+  exec = adbOrThrow,
+  tryRun = tryCapture,
   activate = activateChromePage,
   litterClearer = clearToolingLitter,
 }) {
@@ -262,7 +265,7 @@ export function androidDriver({
   // forward another session owns.
   const frontRunPage = async (moment) => {
     if (nativeApp) return;
-    const bound = forward('adb', [
+    const bound = tryRun('adb', [
       '-s',
       serial,
       'forward',
@@ -296,9 +299,13 @@ export function androidDriver({
           'a restored tab may hold the foreground; the zero-input check will catch it'
       );
     } finally {
-      forward('adb', ['-s', serial, 'forward', '--remove', `tcp:${cdpPort}`]);
+      tryRun('adb', ['-s', serial, 'forward', '--remove', `tcp:${cdpPort}`]);
     }
   };
+  // What the phone's rotation settings were before this capture wrote its own,
+  // read once — a re-open must not adopt the capture's own writes as the prior
+  // state — and cleared by `release` so the hand-back runs at most once.
+  let priorRotation = null;
   return {
     async openPage() {
       const settles = {
@@ -306,11 +313,30 @@ export function androidDriver({
         rotation: ROTATION_SETTLE_MS,
         page: PAGE_SETTLE_MS,
       };
+      priorRotation ??= readAndroidRotationSettings((args) => exec(serial, args));
       for (const step of androidOpenSteps({ nativeApp, orientation, pageUrl })) {
         exec(serial, step.args);
         if (step.settle) await sleep(settles[step.settle]);
       }
       await frontRunPage('after launch');
+    },
+    // A phone left at user_rotation=1 hands the next reader that assumes
+    // portrait the wrong geometry (issue 2272). Idempotent, and it never throws or exits: it also runs on the refusal
+    // paths, where the capture's own error is the one worth reporting, and each
+    // setting is put back whether or not the other one could be.
+    release() {
+      if (!priorRotation) return;
+      const prior = priorRotation;
+      priorRotation = null;
+      for (const command of androidRotationRestoreCommands(prior)) {
+        const restored = tryRun('adb', ['-s', serial, ...command]);
+        if (!restored.ok) {
+          console.warn(
+            `could not ${command.slice(1).join(' ')} on ${serial} (${restored.stderr.trim()}) — ` +
+              'put the rotation back by hand before the next capture'
+          );
+        }
+      }
     },
     boundsFrom(geometry) {
       const userRotation = Number.parseInt(
@@ -743,6 +769,19 @@ async function driveOpenedCapture({
   return { ready, runtimeIdentity, payload };
 }
 
+// The device is handed back — the iPad turned to the orientation it started
+// in, the phone's rotation settings put back as they were found — as soon as
+// the report is in hand, and on every refusal before that: `fail` exits the
+// process, so no `finally` would run in its place. `exit` is injectable only so
+// a test can prove the refusal path hands the device back.
+export function driveHandingBack(driver, drive, exit = fail) {
+  const refuse = async (message) => {
+    await driver.release();
+    exit(message);
+  };
+  return drive(refuse).finally(() => driver.release());
+}
+
 export async function captureDeviceFrames({
   platform = argFlag('platform', 'android'),
   brush = argFlag('brush', 'pen'),
@@ -847,24 +886,19 @@ export async function captureDeviceFrames({
         })
       : iosDriver({ wdaUrl, pageUrl, nativeApp, orientation });
 
-  // The device is handed back — the iPad turned to the orientation it started
-  // in — as soon as the report is in hand, and on every refusal before that:
-  // `fail` exits the process, so no `finally` would run in its place.
-  const refuse = async (message) => {
-    await driver.release?.();
-    fail(message);
-  };
-  const { ready, runtimeIdentity, payload } = await driveOpenedCapture({
-    driver,
-    host,
-    brush,
-    theme,
-    orientation,
-    nonce,
-    repeats,
-    reduceMotion,
-    refuse,
-  }).finally(() => driver.release?.());
+  const { ready, runtimeIdentity, payload } = await driveHandingBack(driver, (refuse) =>
+    driveOpenedCapture({
+      driver,
+      host,
+      brush,
+      theme,
+      orientation,
+      nonce,
+      repeats,
+      reduceMotion,
+      refuse,
+    })
+  );
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the gesture never reached the canvas');

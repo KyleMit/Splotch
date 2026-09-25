@@ -33,6 +33,7 @@ import {
   androidPageLaunchSteps,
   androidRotationRestoreCommands,
   androidRotationVerdict,
+  readAndroidRotationSettings,
 } from './lib/android-input.mjs';
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
@@ -47,7 +48,6 @@ const READY_TIMEOUT_MS = 60_000;
 // time. Portrait follows to prove the device comes back rather than being stuck the
 // other way, which looks identical from a single landscape sample.
 const ORIENTATIONS = ['LANDSCAPE', 'PORTRAIT'];
-const ROTATION_SETTINGS = ['accelerometer_rotation', 'user_rotation'];
 
 const SETTLE_MS = {
   appStop: APP_STOP_SETTLE_MS,
@@ -56,15 +56,6 @@ const SETTLE_MS = {
 };
 
 const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
-
-function readRotationSettings(serial) {
-  return Object.fromEntries(
-    ROTATION_SETTINGS.map((key) => [
-      key,
-      adb(serial, ['shell', 'settings', 'get', 'system', key]).trim(),
-    ])
-  );
-}
 
 async function observeOrientation(serial, state, pageUrl, orientation) {
   const nonce = `rotate-${orientation}-${process.pid}-${Math.round(performance.now())}`;
@@ -92,7 +83,7 @@ export async function verifyAndroidRotation({
   // Read before the first write, restore in the finally: this is the only check
   // besides --wake-android that changes device state, and a preflight that leaves a
   // phone rotated is a preflight that corrupts the next session's portrait cells.
-  const previous = readRotationSettings(serial);
+  const previous = readAndroidRotationSettings((args) => adb(serial, args));
   const route = await reverseToLocalhost(`http://127.0.0.1:${port}/`, adbRunner(serial));
 
   try {
