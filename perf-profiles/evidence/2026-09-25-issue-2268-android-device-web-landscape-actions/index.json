@@ -1,0 +1,30 @@
+{
+  "campaign": "2026-09-25-issue-2268-android-device-web-landscape-actions",
+  "productCommit": "87da0c5a3b4a789d36678a4e10c873f76a6f3c04",
+  "capturedFrom": "perf-profiles/2026-09-25-issue-2268-android-actions/android-device-web",
+  "study": "Physical android-device-web landscape-light and landscape-dark full action sweeps (direct CDP, 4 repeats) at 87da0c5a for issue 2268; replaces the action sections preserved from e5142fab",
+  "kept": [
+    {
+      "file": "actions--c59c94ce.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--45390d94.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

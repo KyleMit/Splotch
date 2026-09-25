@@ -656,7 +656,7 @@
           "capturedOn": {
             "drawing": "2026-09-23",
             "undo": "2026-09-23",
-            "actions": "2026-09-07"
+            "actions": "2026-09-25"
           },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.2SIk_r4j.js",
@@ -676,7 +676,13 @@
             ]
           },
           "undoSource": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/pen-real-screen.json",
-          "actionSources": "preserved"
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-09-25-issue-2268-android-actions/android-device-web/landscape-light/actions/actions.json",
+              "productCommit": "87da0c5a3b4a789d36678a4e10c873f76a6f3c04",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
@@ -686,7 +692,7 @@
           "capturedOn": {
             "drawing": "2026-09-23",
             "undo": "2026-09-23",
-            "actions": "2026-09-07"
+            "actions": "2026-09-25"
           },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.2SIk_r4j.js",
@@ -706,7 +712,13 @@
             ]
           },
           "undoSource": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/pen-real-screen.json",
-          "actionSources": "preserved"
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-09-25-issue-2268-android-actions/android-device-web/landscape-dark/actions/actions.json",
+              "productCommit": "87da0c5a3b4a789d36678a4e10c873f76a6f3c04",
+              "kind": "full"
+            }
+          ]
         }
       ]
     },
