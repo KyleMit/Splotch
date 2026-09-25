@@ -16,7 +16,6 @@
 // revision of the fidelity table re-reads this file rather than asking for
 // another finger. Issue 1218 is the Android half of that measurement.
 import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
-import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
@@ -26,7 +25,11 @@ import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
-import { APP_BUNDLE_ID, writeArtifactFile } from './capture-device-frames.mjs';
+import {
+  APP_BUNDLE_ID,
+  assertServedPageIdentity,
+  writeArtifactFile,
+} from './capture-device-frames.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
@@ -285,6 +288,7 @@ export function handCaptureArtifact({
   device,
   seconds,
   reading,
+  page = 'app',
   servedBuild = null,
   fidelity,
   summaries,
@@ -293,6 +297,9 @@ export function handCaptureArtifact({
   return {
     label: runLabel,
     handCapture: true,
+    // A floor-control hand capture is a diagnostic of the browser (ADR-0136),
+    // refused as product evidence exactly as a driven floor capture is.
+    page,
     runtime,
     platform,
     nativeApp,
@@ -364,8 +371,16 @@ export async function captureHandInput({
     );
   }
 
-  const servedBuild = await assertServedBuildIsFresh(host, {
+  // The same page routing as perf:device:frames: the app's probe host is held
+  // to the served-build guard, and the floor control, which has no build to
+  // guard, to its own served bytes and to the requests it can honour. A hand
+  // capture never undoes, so the floor's undo refusal cannot apply.
+  const { page, servedBuild } = await assertServedPageIdentity(host, {
+    brush,
+    theme,
+    undoCount: 0,
     allowForeignBuild: allowForeignBuild !== undefined,
+    nativeApp,
   });
 
   const runtime = captureRuntime(platform, nativeApp);
@@ -511,6 +526,7 @@ export async function captureHandInput({
     device: serial ?? udid ?? null,
     seconds,
     reading,
+    page,
     servedBuild,
     fidelity,
     summaries,
