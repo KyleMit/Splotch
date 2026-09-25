@@ -506,6 +506,16 @@ export default tseslint.config(
     },
   },
   {
+    // createAiGeneration is one guarded transition per generation lifecycle event over a single $state object and run owner, plus its readonly getters; no part of it owns separate state.
+    files: ['web/src/lib/state/aiGeneration.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 142, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
