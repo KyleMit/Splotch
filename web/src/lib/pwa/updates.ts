@@ -83,6 +83,145 @@ function saveDataEnabled() {
   return navigator.connection?.saveData === true;
 }
 
+function watchUpdateTriggers(
+  checkForUpdates: () => void,
+  applyPendingUpdate: () => void
+): () => void {
+  const updateCheckInterval = setInterval(checkForUpdates, UPDATE_CHECK_INTERVAL_MS);
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      checkForUpdates();
+      return;
+    }
+    applyPendingUpdate();
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('focus', checkForUpdates);
+  return () => {
+    clearInterval(updateCheckInterval);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('focus', checkForUpdates);
+  };
+}
+
+// A revalidation in flight is shared, never skipped past: registration.waiting
+// may still hold a worker from an earlier deploy while update() is fetching,
+// and the installing-outranks-waiting rule in checkForUpdates can only see that
+// once the fetch has settled. A second check joins the first instead of
+// deciding on a registration mid-update.
+function createRegistrationRevalidator() {
+  let lastUpdateCheckAt = 0;
+  let updateInFlight: Promise<unknown> | null = null;
+  return function revalidate(registration: ServiceWorkerRegistration): Promise<unknown> | null {
+    if (updateInFlight) return updateInFlight;
+    if (Date.now() - lastUpdateCheckAt < MIN_UPDATE_CHECK_GAP_MS) return null;
+    lastUpdateCheckAt = Date.now();
+    updateInFlight = registration.update().finally(() => {
+      updateInFlight = null;
+    });
+    return updateInFlight;
+  };
+}
+
+function createInstallSettleWatcher(onSettled: (waiting: ServiceWorker) => void) {
+  const observedInstallingWorkers = new WeakSet<ServiceWorker>();
+  return function watchInstallSettle(
+    registration: ServiceWorkerRegistration,
+    installing: ServiceWorker
+  ): void {
+    if (observedInstallingWorkers.has(installing)) return;
+    observedInstallingWorkers.add(installing);
+    installing.addEventListener(
+      'statechange',
+      () => {
+        if (installing.state !== 'installed') return;
+        // The settle delay is armed before `waiting` is consulted, not
+        // after. The spec populates registration.waiting on a task queued
+        // separately from the one that fires statechange, so it can still
+        // be null here — and because this listener is `once`, checking it
+        // first would spend the listener without ever arming the delay
+        // that WAITING_SETTLE_MS exists to provide, leaving the worker
+        // undecided until the next hourly check.
+        setTimeout(() => {
+          if (registration.waiting) onSettled(registration.waiting);
+        }, WAITING_SETTLE_MS);
+      },
+      { once: true }
+    );
+  };
+}
+
+function consumeCacheBustParam(): string | null {
+  const url = new URL(window.location.href);
+  const attemptedVersion = url.searchParams.get(CACHE_BUST_VERSION_PARAM);
+  if (attemptedVersion !== null) {
+    url.searchParams.delete(CACHE_BUST_VERSION_PARAM);
+    history.replaceState(history.state, '', url.toString());
+  }
+  return attemptedVersion;
+}
+
+async function fetchDeployedVersion(): Promise<string | null> {
+  try {
+    const resp = await fetch(VERSION_JSON_PATH, { cache: 'no-store' });
+    if (!resp.ok) return null;
+    const { version } = (await resp.json()) as { version?: unknown };
+    return typeof version === 'string' && version.length > 0 ? version : null;
+  } catch {
+    // offline or version.json unavailable
+    return null;
+  }
+}
+
+async function checkVersionMismatch(attemptedVersion: string | null = null) {
+  const version = await fetchDeployedVersion();
+  if (version === null) return;
+  if (version !== __APP_VERSION__ && version !== attemptedVersion) {
+    if (!canvasState.canvasEmpty) return;
+    const next = new URL(window.location.href);
+    next.searchParams.set(CACHE_BUST_VERSION_PARAM, version);
+    window.location.replace(next.toString());
+  }
+}
+
+function createDeferredRegistration(onRegistered: () => Promise<unknown>) {
+  let registrationScheduled: Promise<boolean> | null = null;
+
+  // The register() call itself still waits for an idle slot: the stroke gate
+  // fires at stroke end, and kicking off the precache in that same frame could
+  // contend with the commit fold of the stroke that tripped it.
+  function schedule(): Promise<boolean> {
+    // Save-Data users never get the offline install forced on them — offline
+    // support waits for a session without the preference set.
+    if (saveDataEnabled()) return Promise.resolve(true);
+    if (registrationScheduled) return registrationScheduled;
+    registrationScheduled = new Promise((resolve) => {
+      scheduleIdle(() => {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then(onRegistered)
+          .then(() => resolve(true))
+          .catch(() => {
+            // Share failures with the stroke gate, including an attempt started
+            // by repeat-visit initialization, so the next stroke can retry.
+            registrationScheduled = null;
+            resolve(false);
+          });
+      });
+    });
+    return registrationScheduled;
+  }
+
+  // First-visit registration, called from +page.svelte's stroke-count gate.
+  // Resolves false only when a later stroke needs to retry the registration.
+  function registerDeferredServiceWorker(): Promise<boolean> {
+    if (import.meta.env.DEV || !serviceWorkerSupported()) return Promise.resolve(true);
+    return schedule();
+  }
+
+  return { schedule, registerDeferredServiceWorker };
+}
+
 export function createPWAUpdates() {
   let initialized = false;
   // none → ready when a waiting worker is found and the page is stale (or the
@@ -98,15 +237,11 @@ export function createPWAUpdates() {
   // Held so applyPendingUpdate can reach registration.waiting synchronously
   // inside the visibilitychange handler.
   let updateRegistration: ServiceWorkerRegistration | null = null;
-  let registrationScheduled: Promise<boolean> | null = null;
-  let lastUpdateCheckAt = 0;
-  // A revalidation in flight is shared, never skipped past: registration.waiting
-  // may still hold a worker from an earlier deploy while update() is fetching,
-  // and the installing-outranks-waiting rule below can only see that once the
-  // fetch has settled. A second check joins the first instead of deciding on a
-  // registration mid-update.
-  let updateInFlight: Promise<unknown> | null = null;
-  const observedInstallingWorkers = new WeakSet<ServiceWorker>();
+  const deferredRegistration = createDeferredRegistration(() => checkForUpdates());
+  const revalidate = createRegistrationRevalidator();
+  const watchInstallSettle = createInstallSettleWatcher((waiting) => {
+    void decideWaitingActivation(waiting);
+  });
 
   function reloadForUpdate(): void {
     updateReload = 'none';
@@ -117,50 +252,13 @@ export function createPWAUpdates() {
     updateReload = 'owed';
   }
 
-  // The register() call itself still waits for an idle slot: the stroke gate
-  // fires at stroke end, and kicking off the precache in that same frame could
-  // contend with the commit fold of the stroke that tripped it.
-  function scheduleRegistration(): Promise<boolean> {
-    // Save-Data users never get the offline install forced on them — offline
-    // support waits for a session without the preference set.
-    if (saveDataEnabled()) return Promise.resolve(true);
-    if (registrationScheduled) return registrationScheduled;
-    registrationScheduled = new Promise((resolve) => {
-      scheduleIdle(() => {
-        navigator.serviceWorker
-          .register('/sw.js')
-          .then(() => checkForUpdates())
-          .then(() => resolve(true))
-          .catch(() => {
-            // Share failures with the stroke gate, including an attempt started
-            // by repeat-visit initialization, so the next stroke can retry.
-            registrationScheduled = null;
-            resolve(false);
-          });
-      });
-    });
-    return registrationScheduled;
-  }
-
-  // First-visit registration, called from +page.svelte's stroke-count gate.
-  // Resolves false only when a later stroke needs to retry the registration.
-  function registerDeferredServiceWorker() {
-    if (import.meta.env.DEV || !serviceWorkerSupported()) return Promise.resolve(true);
-    return scheduleRegistration();
-  }
-
   function initPWAUpdates(): (() => void) | undefined {
     if (import.meta.env.DEV) return;
     if (!serviceWorkerSupported()) return;
     if (initialized) return;
     initialized = true;
 
-    const url = new URL(window.location.href);
-    const attemptedVersion = url.searchParams.get(CACHE_BUST_VERSION_PARAM);
-    if (attemptedVersion !== null) {
-      url.searchParams.delete(CACHE_BUST_VERSION_PARAM);
-      history.replaceState(history.state, '', url.toString());
-    }
+    const attemptedVersion = consumeCacheBustParam();
 
     void checkForUpdates();
     void checkVersionMismatch(attemptedVersion);
@@ -170,57 +268,15 @@ export function createPWAUpdates() {
     navigator.serviceWorker
       .getRegistration()
       .then((existing) => {
-        if (existing) void scheduleRegistration();
+        if (existing) void deferredRegistration.schedule();
       })
       .catch(() => {});
 
-    const updateCheckInterval = setInterval(() => {
-      void checkForUpdates();
-    }, UPDATE_CHECK_INTERVAL_MS);
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void checkForUpdates();
-        return;
-      }
-      applyPendingUpdate();
-    };
-    const onFocus = () => {
-      void checkForUpdates();
-    };
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('focus', onFocus);
-
+    const stopTriggers = watchUpdateTriggers(() => void checkForUpdates(), applyPendingUpdate);
     return () => {
-      clearInterval(updateCheckInterval);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('focus', onFocus);
+      stopTriggers();
       initialized = false;
     };
-  }
-
-  async function fetchDeployedVersion(): Promise<string | null> {
-    try {
-      const resp = await fetch(VERSION_JSON_PATH, { cache: 'no-store' });
-      if (!resp.ok) return null;
-      const { version } = (await resp.json()) as { version?: unknown };
-      return typeof version === 'string' && version.length > 0 ? version : null;
-    } catch {
-      // offline or version.json unavailable
-      return null;
-    }
-  }
-
-  async function checkVersionMismatch(attemptedVersion: string | null = null) {
-    const version = await fetchDeployedVersion();
-    if (version === null) return;
-    if (version !== __APP_VERSION__ && version !== attemptedVersion) {
-      if (!canvasState.canvasEmpty) return;
-      const next = new URL(window.location.href);
-      next.searchParams.set(CACHE_BUST_VERSION_PARAM, version);
-      window.location.replace(next.toString());
-    }
   }
 
   // A waiting worker whose build matches the running page can take control
@@ -324,15 +380,7 @@ export function createPWAUpdates() {
       if (!registration) return;
       updateRegistration = registration;
 
-      if (updateInFlight) {
-        await updateInFlight;
-      } else if (Date.now() - lastUpdateCheckAt >= MIN_UPDATE_CHECK_GAP_MS) {
-        lastUpdateCheckAt = Date.now();
-        updateInFlight = registration.update().finally(() => {
-          updateInFlight = null;
-        });
-        await updateInFlight;
-      }
+      await revalidate(registration);
 
       // An installing worker outranks a waiting one: update() resolves as soon
       // as the new worker starts installing, so with frequent deploys the
@@ -343,26 +391,7 @@ export function createPWAUpdates() {
       // `waiting` and decide on that worker instead.
       const installing = registration.installing;
       if (installing) {
-        if (!observedInstallingWorkers.has(installing)) {
-          observedInstallingWorkers.add(installing);
-          installing.addEventListener(
-            'statechange',
-            () => {
-              if (installing.state !== 'installed') return;
-              // The settle delay is armed before `waiting` is consulted, not
-              // after. The spec populates registration.waiting on a task queued
-              // separately from the one that fires statechange, so it can still
-              // be null here — and because this listener is `once`, checking it
-              // first would spend the listener without ever arming the delay
-              // that WAITING_SETTLE_MS exists to provide, leaving the worker
-              // undecided until the next hourly check.
-              setTimeout(() => {
-                if (registration.waiting) void decideWaitingActivation(registration.waiting);
-              }, WAITING_SETTLE_MS);
-            },
-            { once: true }
-          );
-        }
+        watchInstallSettle(registration, installing);
         return;
       }
 
@@ -376,7 +405,7 @@ export function createPWAUpdates() {
 
   return {
     initPWAUpdates,
-    registerDeferredServiceWorker,
+    registerDeferredServiceWorker: deferredRegistration.registerDeferredServiceWorker,
     checkForUpdates,
     checkVersionMismatch,
     applyPendingUpdate,
