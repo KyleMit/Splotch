@@ -101,8 +101,8 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
       '@google/genai':
-        specifier: ^2.23.0
-        version: 2.23.0(supports-color@10.2.2)
+        specifier: ^2.24.0
+        version: 2.24.0(supports-color@10.2.2)
       '@intellectronica/ruler':
         specifier: 0.3.44
         version: 0.3.44
@@ -1159,8 +1159,8 @@ packages:
   '@formatjs/intl-localematcher@0.6.2':
     resolution: {integrity: sha512-XOMO2Hupl0wdd172Y06h6kLpBz6Dv+J4okPLl4LPtzbr8f66WbIoy4ev98EBuZ6ZK4h5ydTN6XneT4QVpD7cdA==}
 
-  '@google/genai@2.23.0':
-    resolution: {integrity: sha512-NFMzktoZ7jJg9AA3vUbWZocnkQP6DSGzL21ORwdVcBWkHli3k7v6B9zy07M4bTiKDAyIWfUh2J/oLYxCu0hNpQ==}
+  '@google/genai@2.24.0':
+    resolution: {integrity: sha512-bIu5eoxF1AaPWs9ivmUJGp1RpDHyapoODvWvnkzRDx2CTIW6UJXFhDdjj0BlRve3ZHMMuEkQBVrA/ALqpW4apA==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@modelcontextprotocol/sdk': ^1.25.2
@@ -6866,7 +6866,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@google/genai@2.23.0(supports-color@10.2.2)':
+  '@google/genai@2.24.0(supports-color@10.2.2)':
     dependencies:
       google-auth-library: 10.9.1(supports-color@10.2.2)
       p-retry: 4.6.2
