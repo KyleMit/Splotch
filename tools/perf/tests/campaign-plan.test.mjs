@@ -467,6 +467,18 @@ describe('campaign artifact acceptance', () => {
     ).toContain('contradicts');
   });
 
+  it('refuses an empty or orphaned split group on actions without ink-motion time', () => {
+    for (const undo of [
+      { ...validSplitUndo.undo, inkMotion: {} },
+      { ...validSplitUndo.undo, inkMotion: {}, restore: {} },
+      { ...validSplitUndo.undo, restore: { p50: 1, p95: 1, p99: 1, max: 1 } },
+    ]) {
+      expect(splitUndoEvidenceProblem({ ...validSplitUndo, undo }, UNDO_COUNT)).toContain(
+        'contradicts'
+      );
+    }
+  });
+
   it('makes campaign status reject a split pen artifact without undo proof', () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-campaign-undo-'));
     const artifact = join(directory, 'pen.json');

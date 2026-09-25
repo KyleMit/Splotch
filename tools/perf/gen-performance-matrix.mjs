@@ -764,7 +764,7 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
     productCommit,
     count: summary.count,
     engine: normalizedDistribution(summary.engine),
-    ...(summary.inkMotion
+    ...(summary.inkMotion && summary.restore
       ? {
           inkMotion: normalizedDistribution(summary.inkMotion),
           restore: normalizedDistribution(summary.restore),
