@@ -21,10 +21,84 @@ const DEFAULT_SWIPE_DURATION_MS = 200;
 
 const toDevicePixels = (value, densityScale, origin) => Math.round(origin + value * densityScale);
 
+export const ANDROID_DISPLAY_INSETS_ARGS = ['shell', 'dumpsys', 'window', 'displays'];
+
+// The inset sources that take space from an app's content. Gesture regions and
+// tappable elements overlap these without moving any content.
+const CONTENT_INSET_TYPES = new Set(['navigationBars', 'statusBars', 'displayCutout']);
+
+function defaultDisplayInsetState(dumpsys) {
+  const display =
+    dumpsys.split(/^\s*Display: mDisplayId=/m).find((chunk) => /^0\b/.test(chunk)) ?? '';
+  const state = display
+    .split(/^\s*WindowInsetsStateController\b/m)[1]
+    ?.split(/InsetsSourceProviders/)[0];
+  if (!state)
+    throw new Error('dumpsys window displays carried no inset state for the default display');
+  return state;
+}
+
+// Which display edge each visible bar or cutout occupies, in device pixels of
+// the current rotation. The page cannot report this itself: Chrome answers
+// screen.availHeight with the full display height and every safe-area inset with
+// zero, while still keeping its content clear of the navigation bar.
+//
+// Every source line is parsed field by field, because Android versions differ
+// in what surrounds the fields (an `id=` before `type=`, a `visibleFrame=`
+// before `visible=`), and a line or bar this cannot read throws: silently
+// reading no bars is the very origin error this exists to remove.
+export function androidSystemInsets(dumpsys) {
+  const state = defaultDisplayInsetState(dumpsys);
+  const display = state.match(/mDisplayFrame=Rect\((-?\d+), (-?\d+) - (-?\d+), (-?\d+)\)/);
+  if (!display) throw new Error('dumpsys window displays carried no display frame');
+  const [, displayLeft, displayTop, displayRight, displayBottom] = display.map(Number);
+  const insets = { left: 0, top: 0, right: 0, bottom: 0 };
+  let systemBars = 0;
+  for (const line of state.split('\n').filter((text) => /^\s*InsetsSource\b/.test(text))) {
+    const type = line.match(/\btype=(\w+)/)?.[1];
+    const frame = line.match(/\bframe=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]/);
+    const visible = line.match(/\bvisible=(true|false)\b/)?.[1];
+    if (!type || !frame || !visible) {
+      throw new Error(`unreadable inset source in dumpsys window displays: ${line.trim()}`);
+    }
+    if (type === 'navigationBars' || type === 'statusBars') systemBars += 1;
+    const [left, top, right, bottom] = frame.slice(1).map(Number);
+    if (!CONTENT_INSET_TYPES.has(type) || visible !== 'true') continue;
+    if (right <= left || bottom <= top) continue;
+    const spansHeight = top <= displayTop && bottom >= displayBottom;
+    const spansWidth = left <= displayLeft && right >= displayRight;
+    if (spansHeight && !spansWidth && left <= displayLeft) {
+      insets.left = Math.max(insets.left, right - displayLeft);
+    } else if (spansHeight && !spansWidth && right >= displayRight) {
+      insets.right = Math.max(insets.right, displayRight - left);
+    } else if (spansWidth && !spansHeight && top <= displayTop) {
+      insets.top = Math.max(insets.top, bottom - displayTop);
+    } else if (spansWidth && !spansHeight && bottom >= displayBottom) {
+      insets.bottom = Math.max(insets.bottom, displayBottom - top);
+    } else {
+      throw new Error(`cannot place a ${type} inset that spans no display edge: ${line.trim()}`);
+    }
+  }
+  if (systemBars === 0) {
+    throw new Error('dumpsys window displays named no status or navigation bar source');
+  }
+  return insets;
+}
+
 // Android Chrome keeps screenX/screenY at zero while adb input addresses the
-// physical display. The outer-minus-inner inset is the content origin hidden
-// by browser chrome and a rotated display cutout.
-export function androidContentOffset(geometry, { userRotation } = {}) {
+// physical display, and reports the whole display as its outer viewport. The
+// outer-minus-inner gap is therefore every edge Chrome keeps its content off:
+// its own toolbar and the status bar above, a rotated cutout to one side, and
+// the navigation bar below or beside. Only the bars that lie before the content
+// move its origin, so the ones the display reports after it — below and to the
+// right — are taken back out. Chrome's toolbar is assumed to be at the top: no
+// report distinguishes it from Chrome's optional bottom address bar, so a
+// capture proves the result instead, through the landing rule in
+// tools/perf/lib/stroke-delivery.mjs. The native WebView fills the display
+// with its navigation bar hidden, so it reports no gap and the display reports
+// no bar to take out.
+export function androidContentOffset(geometry, { userRotation, systemInsets }) {
+  if (!systemInsets) throw new Error('androidContentOffset needs the display system insets');
   const viewport = geometry.viewport ?? { width: 0, height: 0 };
   const outerViewport = geometry.outerViewport ?? viewport;
   const horizontalInset = Math.max(0, outerViewport.width - viewport.width);
@@ -33,12 +107,20 @@ export function androidContentOffset(geometry, { userRotation } = {}) {
       `Android content-offset geometry is only calibrated for user_rotation=1; received ${userRotation ?? 'unknown'}`
     );
   }
-  return {
-    x: ((geometry.screenX ?? 0) + horizontalInset) * geometry.dpr,
+  const offset = {
+    x: ((geometry.screenX ?? 0) + horizontalInset) * geometry.dpr - systemInsets.right,
     y:
       ((geometry.screenY ?? 0) + Math.max(0, outerViewport.height - viewport.height)) *
-      geometry.dpr,
+        geometry.dpr -
+      systemInsets.bottom,
   };
+  if (offset.x < 0 || offset.y < 0) {
+    throw new Error(
+      `the page's outer-minus-inner gap is narrower than the system insets after its content ` +
+        `(${JSON.stringify(systemInsets)} device px), so its content origin cannot be derived`
+    );
+  }
+  return offset;
 }
 
 // Returns an ordered instruction list — `swipe` and `pause` — rather than

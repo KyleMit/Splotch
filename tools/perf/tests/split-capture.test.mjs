@@ -12,6 +12,7 @@ import {
   androidOpenSteps,
   androidPageLaunchSteps,
   androidRotationCommands,
+  androidSystemInsets,
   CHROME_PACKAGE,
   swipeArgs,
 } from '../split-capture/lib/android-input.mjs';
@@ -20,7 +21,10 @@ import {
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
 import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
-import { fetchAcceptedProbeReport } from '../split-capture/lib/probe-host-protocol.mjs';
+import {
+  FLOOR_CONTROL_PAGE,
+  fetchAcceptedProbeReport,
+} from '../split-capture/lib/probe-host-protocol.mjs';
 import {
   activateChromePage,
   clearToolingLitter,
@@ -84,6 +88,166 @@ const stroke = [
   { type: 'pointerUp' },
 ];
 
+const NO_SYSTEM_INSETS = { left: 0, top: 0, right: 0, bottom: 0 };
+
+// `dumpsys window displays` excerpts recorded on the rig phone (1080x2340,
+// dpr 3, three-button navigation), trimmed to the lines the parser reads and
+// the neighbours that must not be mistaken for them.
+const displaysDump = ({
+  frame,
+  sources,
+}) => `WINDOW MANAGER DISPLAY CONTENTS (dumpsys window displays)
+  Display: mDisplayId=0 (organized)
+    init=1080x2340 480dpi
+  WindowInsetsStateController
+    InsetsState
+      mDisplayFrame=Rect(${frame})
+${sources.map((source) => `        InsetsSource ${source} flags= boundingRects=null`).join('\n')}
+    Control map:
+        InsetsSourceControl: {c7300001 mType=navigationBars mInsetsHint=Insets{left=0, top=0, right=144, bottom=0}}
+    InsetsSourceProviders:
+      InsetsSourceProvider
+        mSource=InsetsSource id=c7300001 type=navigationBars frame=[2196,0][2340,1080] visible=true flags=
+`;
+
+const RIG_PORTRAIT_DISPLAYS = displaysDump({
+  frame: '0, 0 - 1080, 2340',
+  sources: [
+    'id=c7300001 type=navigationBars frame=[0,2196][1080,2340] visible=true',
+    'id=c7300005 type=mandatorySystemGestures frame=[0,2196][1080,2340] visible=true',
+    'id=c7300006 type=tappableElement frame=[0,2196][1080,2340] visible=true',
+    'id=c7300004 type=systemGestures frame=[0,0][0,0] visible=true',
+    'id=3 type=ime frame=[0,0][0,0] visible=false',
+    'id=27 type=displayCutout frame=[0,0][1080,99] visible=true',
+    'id=3caa0000 type=statusBars frame=[0,0][1080,99] visible=true',
+    'id=3caa0005 type=mandatorySystemGestures frame=[0,0][1080,135] visible=true',
+  ],
+});
+
+const RIG_LANDSCAPE_DISPLAYS = displaysDump({
+  frame: '0, 0 - 2340, 1080',
+  sources: [
+    'id=c7300001 type=navigationBars frame=[2196,0][2340,1080] visible=true',
+    'id=c7300006 type=tappableElement frame=[2196,0][2340,1080] visible=true',
+    'id=7 type=displayCutout frame=[0,0][99,1080] visible=true',
+    'id=3caa0000 type=statusBars frame=[0,0][2340,90] visible=true',
+  ],
+});
+
+const RIG_NATIVE_HIDDEN_NAV_DISPLAYS = displaysDump({
+  frame: '0, 0 - 1080, 2340',
+  sources: [
+    'id=c7300001 type=navigationBars frame=[0,2196][1080,2340] visible=false',
+    'id=27 type=displayCutout frame=[0,0][1080,99] visible=true',
+    'id=3caa0000 type=statusBars frame=[0,0][1080,99] visible=true',
+  ],
+});
+
+// What the rig page reported beside those dumps; a swipe dispatched at device
+// (300, 1000) arrived at client (100, 244.33) in portrait, so the true origin
+// there is (0, 267), and (600, 500) arrived at (167, 80.67) in landscape: (99, 258).
+const RIG_PORTRAIT_GEOMETRY = {
+  viewport: { width: 360, height: 643 },
+  outerViewport: { width: 360, height: 780 },
+  screenX: 0,
+  screenY: 0,
+  dpr: 3,
+};
+const RIG_LANDSCAPE_GEOMETRY = {
+  viewport: { width: 699, height: 274 },
+  outerViewport: { width: 780, height: 360 },
+  screenX: 0,
+  screenY: 0,
+  dpr: 3,
+};
+
+describe('androidSystemInsets', () => {
+  it('reads each visible bar and cutout onto the display edge it occupies', () => {
+    expect(androidSystemInsets(RIG_PORTRAIT_DISPLAYS)).toEqual({
+      left: 0,
+      top: 99,
+      right: 0,
+      bottom: 144,
+    });
+    expect(androidSystemInsets(RIG_LANDSCAPE_DISPLAYS)).toEqual({
+      left: 99,
+      top: 90,
+      right: 144,
+      bottom: 0,
+    });
+  });
+
+  it('ignores a hidden navigation bar and the stale provider and control entries', () => {
+    expect(androidSystemInsets(RIG_NATIVE_HIDDEN_NAV_DISPLAYS)).toEqual({
+      left: 0,
+      top: 99,
+      right: 0,
+      bottom: 0,
+    });
+  });
+
+  it('reads only the default display', () => {
+    const secondary = RIG_LANDSCAPE_DISPLAYS.replace('mDisplayId=0', 'mDisplayId=2');
+    expect(androidSystemInsets(`${secondary}${RIG_PORTRAIT_DISPLAYS}`)).toEqual(
+      androidSystemInsets(RIG_PORTRAIT_DISPLAYS)
+    );
+  });
+
+  it('reads the source lines of other Android versions, field by field', () => {
+    const variants = displaysDump({
+      frame: '0, 0 - 1080, 2340',
+      sources: [
+        'type=navigationBars frame=[0,2196][1080,2340] visible=true',
+        'id=3caa0000 type=statusBars frame=[0,0][1080,99] visibleFrame=[0,0][1080,99] visible=true',
+      ],
+    });
+
+    expect(androidSystemInsets(variants)).toEqual({ left: 0, top: 99, right: 0, bottom: 144 });
+  });
+
+  it('throws on a source line it cannot read rather than dropping its bar', () => {
+    const unreadable = displaysDump({
+      frame: '0, 0 - 1080, 2340',
+      sources: [
+        'id=c7300001 type=navigationBars frame=Rect(0, 2196 - 1080, 2340) visible=true',
+        'id=3caa0000 type=statusBars frame=[0,0][1080,99] visible=true',
+      ],
+    });
+
+    expect(() => androidSystemInsets(unreadable)).toThrow('unreadable inset source');
+  });
+
+  it('throws when no status or navigation bar source is named at all', () => {
+    const renamed = displaysDump({
+      frame: '0, 0 - 1080, 2340',
+      sources: [
+        'type=ITYPE_NAVIGATION_BAR frame=[0,2196][1080,2340] visible=true',
+        'type=ITYPE_STATUS_BAR frame=[0,0][1080,99] visible=true',
+      ],
+    });
+
+    expect(() => androidSystemInsets(renamed)).toThrow('no status or navigation bar source');
+  });
+
+  it('throws on a visible bar that spans no display edge', () => {
+    const floating = displaysDump({
+      frame: '0, 0 - 1080, 2340',
+      sources: [
+        'id=c7300001 type=navigationBars frame=[300,2196][780,2340] visible=true',
+        'id=3caa0000 type=statusBars frame=[0,0][1080,99] visible=true',
+      ],
+    });
+
+    expect(() => androidSystemInsets(floating)).toThrow('spans no display edge');
+  });
+
+  it('refuses a dump with no inset state rather than assuming no bars', () => {
+    expect(() => androidSystemInsets('  Display: mDisplayId=0 (organized)\n')).toThrow(
+      'no inset state'
+    );
+  });
+});
+
 describe('androidGestureInstructions', () => {
   it('does not confuse authored strokes with Android swipe touch streams', () => {
     const actions = trustedGestureActions({ x: 0, y: 0, width: 1_000, height: 700 }, 1, 0);
@@ -105,7 +269,7 @@ describe('androidGestureInstructions', () => {
           screenY: 0,
           dpr: 3.5,
         },
-        { userRotation: 1 }
+        { userRotation: 1, systemInsets: NO_SYSTEM_INSETS }
       )
     ).toEqual({ x: 147, y: 297.5 });
   });
@@ -118,20 +282,77 @@ describe('androidGestureInstructions', () => {
           outerViewport: { width: 892, height: 412 },
           dpr: 3.5,
         },
-        { userRotation: 3 }
+        { userRotation: 3, systemInsets: NO_SYSTEM_INSETS }
       )
     ).toThrow('only calibrated for user_rotation=1');
   });
 
   it('preserves the legacy screen origin when outer geometry is absent', () => {
     expect(
-      androidContentOffset({
-        viewport: { width: 411, height: 719 },
-        screenX: 2,
-        screenY: 3,
-        dpr: 2,
-      })
+      androidContentOffset(
+        {
+          viewport: { width: 411, height: 719 },
+          screenX: 2,
+          screenY: 3,
+          dpr: 2,
+        },
+        { systemInsets: NO_SYSTEM_INSETS }
+      )
     ).toEqual({ x: 4, y: 6 });
+  });
+
+  // Issue 2271: the rig phone's navigation bar sits below the page in portrait,
+  // and every stroke landed 48 CSS px low while the whole gap was put above it.
+  it('keeps a portrait navigation bar below the page out of the top origin', () => {
+    expect(
+      androidContentOffset(RIG_PORTRAIT_GEOMETRY, {
+        userRotation: 0,
+        systemInsets: androidSystemInsets(RIG_PORTRAIT_DISPLAYS),
+      })
+    ).toEqual({ x: 0, y: 267 });
+  });
+
+  it('keeps a landscape navigation bar right of the page out of the left origin', () => {
+    expect(
+      androidContentOffset(RIG_LANDSCAPE_GEOMETRY, {
+        userRotation: 1,
+        systemInsets: androidSystemInsets(RIG_LANDSCAPE_DISPLAYS),
+      })
+    ).toEqual({ x: 99, y: 258 });
+  });
+
+  it('leaves a full-display WebView at the display origin once its bar is hidden', () => {
+    expect(
+      androidContentOffset(
+        {
+          viewport: { width: 360, height: 780 },
+          outerViewport: { width: 360, height: 780 },
+          screenX: 0,
+          screenY: 0,
+          dpr: 3,
+        },
+        { userRotation: 0, systemInsets: androidSystemInsets(RIG_NATIVE_HIDDEN_NAV_DISPLAYS) }
+      )
+    ).toEqual({ x: 0, y: 0 });
+  });
+
+  it('refuses a gap too narrow to hold the bars the display reports after the page', () => {
+    expect(() =>
+      androidContentOffset(
+        {
+          viewport: { width: 360, height: 780 },
+          outerViewport: { width: 360, height: 780 },
+          dpr: 3,
+        },
+        { userRotation: 0, systemInsets: androidSystemInsets(RIG_PORTRAIT_DISPLAYS) }
+      )
+    ).toThrow('content origin cannot be derived');
+  });
+
+  it('refuses to guess an origin without the display insets', () => {
+    expect(() => androidContentOffset(RIG_PORTRAIT_GEOMETRY, { userRotation: 0 })).toThrow(
+      'needs the display system insets'
+    );
   });
 
   it('treats the move before pointerDown as the stroke origin, not a segment', () => {
@@ -1505,6 +1726,83 @@ describe('the wiring that fronts the page and judges the input', () => {
     expect(() => driver.runtimeIdentity()).toThrow(
       'the foreground Android package is com.android.chrome, not art.splotch.app'
     );
+  });
+
+  it('derives the dispatch origin from the display insets the device reports', () => {
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      toolingHostnames: ['host'],
+      orientation: 'PORTRAIT',
+      nativeApp: false,
+      cdpPort: 9224,
+      exec: (_serial, args) =>
+        args.join(' ') === 'shell dumpsys window displays' ? RIG_PORTRAIT_DISPLAYS : '0\n',
+    });
+    const canvas = { x: 0, y: 75, width: 360, height: 568 };
+
+    expect(driver.boundsFrom({ ...RIG_PORTRAIT_GEOMETRY, canvas })).toEqual({
+      bounds: canvas,
+      densityScale: 3,
+      offset: { x: 0, y: 267 },
+    });
+  });
+
+  it('records where each swipe was planned to land, in page CSS px', async () => {
+    const deps = driverDeps();
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      toolingHostnames: ['host'],
+      orientation: 'PORTRAIT',
+      nativeApp: false,
+      cdpPort: 9224,
+      ...deps,
+    });
+    const canvas = { x: 0, y: 75, width: 360, height: 568 };
+
+    vi.useFakeTimers();
+    try {
+      const dispatched = driver.dispatch(
+        { bounds: canvas, densityScale: 3, offset: { x: 0, y: 267 } },
+        1
+      );
+      await vi.runAllTimersAsync();
+      await dispatched;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const planned = [];
+    let path = [];
+    for (const action of trustedGestureActions(canvas, 1, 0)) {
+      if (action.type === 'pointerMove') path.push([action.x, action.y]);
+      if (action.type === 'pointerUp') {
+        planned.push(...path.slice(0, -1));
+        path = [];
+      }
+    }
+    expect(driver.plannedStrokeStarts).toHaveLength(driver.dispatchedStrokes);
+    expect(driver.plannedStrokeStarts).toHaveLength(planned.length);
+    driver.plannedStrokeStarts.forEach(([x, y], index) => {
+      expect(Math.abs(x - planned[index][0])).toBeLessThanOrEqual(0.5 / 3);
+      expect(Math.abs(y - planned[index][1])).toBeLessThanOrEqual(0.5 / 3);
+    });
+  });
+
+  it('carries the planned and landed starts into an app artifact, not a floor one', () => {
+    const planned = [[10, 20]];
+    const payload = { pointerdownPositions: [[10.1, 19.9]] };
+
+    expect(drivenCaptureArtifact({ plannedStrokeStarts: planned, payload }).strokeLanding).toEqual({
+      planned,
+      recorded: [[10.1, 19.9]],
+    });
+    expect(
+      drivenCaptureArtifact({ plannedStrokeStarts: planned, payload, page: FLOOR_CONTROL_PAGE })
+        .strokeLanding
+    ).toBeNull();
+    expect(drivenCaptureArtifact({ payload }).strokeLanding).toBeNull();
   });
 
   it('fails a zero-event dispatch and lets everything else decide downstream', () => {

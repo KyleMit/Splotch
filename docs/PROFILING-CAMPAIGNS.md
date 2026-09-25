@@ -115,6 +115,16 @@ app; that block also stops `--verify-android-input` from running.
 record `dispatchedStrokes`, and `perf:device:frames` fails a capture whose page recorded a different
 number of pointerdowns, naming both counts.
 
+A stroke can also arrive in the wrong place with every count and cadence check passing. The dispatch
+origin was once the page's whole outer-minus-inner gap, which on the rig phone includes the 48 CSS
+px navigation bar below the page in portrait and beside it in landscape, so every stroke landed 48
+CSS px low or right (issue 2271). The origin now subtracts the bars `dumpsys window displays`
+reports after the page, and each split capture records `strokeLanding`: every swipe's planned start
+beside the pointerdown the page recorded. Campaign acceptance, the person session, and
+`perf:device:frames` refuse a capture whose strokes landed more than a CSS pixel off. Chrome's
+optional bottom address bar is the known layout the origin cannot see, and this refusal is what
+catches it.
+
 On 2026-09-24, turning the app's **Appear on top** permission off left both windows in place at
 alpha 0, which Android ignores, and every A/B capture then recorded 160 of 160. Two things a reader
 would not guess:
