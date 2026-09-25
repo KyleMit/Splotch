@@ -39,7 +39,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { webkit } from '@playwright/test';
 import { argFlag, fail, isMain, runMain } from '../../../../tools/lib/proc.mjs';
-import { freePort, spawnViteServer } from '../../../../tools/lib/vite-server.mjs';
+import {
+  foreignPortListeners,
+  freePort,
+  spawnViteServer,
+} from '../../../../tools/lib/vite-server.mjs';
 import { waitForUrl } from '../../../../tools/lib/net.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
@@ -151,7 +155,11 @@ export async function findGlazeWebMatch() {
     : STACK_DEPTHS;
   const outDir = argFlag('out-dir', 'perf-profiles/crayon-glaze-match');
   const port = Number.parseInt(argFlag('port', '4206'), 10);
-  await freePort(port);
+  const foreign = foreignPortListeners(port, ROOT);
+  if (foreign.length) {
+    fail(`port ${port} is held by another process (pid ${foreign.join(', ')}); pass --port=<a free port>`);
+  }
+  freePort(port);
   const server = spawnViteServer(port, { env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' } });
   const url = `http://localhost:${port}`;
   const browser = await webkit.launch();
