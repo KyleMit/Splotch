@@ -641,6 +641,13 @@ run — no separate command or workflow:
 * **Adding a surface:** add a test to `tests/a11y.spec.ts` that navigates (or opens the overlay),
   waits for a stable element, and calls `expectNoSeriousViolations(page)` — pass a CSS selector as
   the second argument to scope the scan when the surface is an overlay above toddler chrome.
+* **What axe cannot see inside a modal `<dialog>`:** its `aria-dialog-name` rule matches only
+  `[role=dialog]`, so a native `<dialog>` with no name scans green, and it reports every text node
+  inside a modal as *incomplete* (the top-layer backdrop overlaps it), so dialog text contrast goes
+  unchecked. `NAMED_DIALOGS` in the same spec opens every modal the web build can raise and asserts
+  its accessible name, then `expectTextContrast` (`tests/text-contrast.ts`) measures each one's
+  visible text against the AA floors in both themes, compositing ink over the backgrounds beneath
+  it. Its doc comment lists what it still cannot see. A new modal gets an entry there.
 * **Fixing vs suppressing:** fix violations in the app source. Only suppress (axe `disableRules` or
   an exclusion) for a genuine false positive or an unfixable-by-design case, each with a comment
   saying why.

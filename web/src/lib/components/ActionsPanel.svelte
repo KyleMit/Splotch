@@ -15,7 +15,7 @@
   import { uiState, coloringBookModal, settingsModal } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { layoutState } from '$lib/state/layout.svelte';
-  import { publishActionPanelState } from '$lib/actionButtonLayout';
+  import { DRAWER_TOGGLE_ID, publishActionPanelState } from '$lib/actionButtonLayout';
   import { isStrokeActive } from '$lib/drawing/engine';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
@@ -297,6 +297,7 @@
 
   <button
     class="drawer-toggle corner-button"
+    id={DRAWER_TOGGLE_ID}
     aria-label={settingsState.drawerOpen ? 'Collapse controls' : 'Expand controls'}
     aria-expanded={settingsState.drawerOpen}
     use:scribbleTap={toggleDrawer}

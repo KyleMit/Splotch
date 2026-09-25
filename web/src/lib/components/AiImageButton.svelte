@@ -1,7 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
-  import { isAiImageButtonVisible, isAiImageButtonShown } from '$lib/actionButtonLayout';
+  import {
+    AI_IMAGE_BUTTON_ID,
+    isAiImageButtonVisible,
+    isAiImageButtonShown,
+  } from '$lib/actionButtonLayout';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
   import { aiPromptModal, openAiSettings } from '$lib/state/ui.svelte';
@@ -97,7 +101,7 @@
   class="action-button"
   class:disabled={aiImageButtonBlocked || !aiImageButtonVisible}
   class:loading={aiGenerating && !aiGenerationState.minimized}
-  id="aiImageButton"
+  id={AI_IMAGE_BUTTON_ID}
   style:--i="4"
   aria-label={minimizedRunLabel
     ? minimizedRunLabel

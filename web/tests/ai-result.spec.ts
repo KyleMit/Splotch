@@ -255,7 +255,7 @@ test.describe('AI result modal', () => {
     const endpoint = await openAiResult(page);
     await endpoint.fail();
 
-    await expect(page.getByText(/didn't work/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /didn't work/i })).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
     await expect(page.locator('.ai-loading-caption')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Report this refusal' })).toHaveCount(0);
@@ -362,7 +362,7 @@ test.describe('AI result modal', () => {
       await expect.poll(() => stageHeightPx(page)).toBeGreaterThan(0);
 
       await endpoint.fail();
-      await expect(page.getByText(/didn't work/i)).toBeVisible();
+      await expect(page.getByRole('heading', { name: /didn't work/i })).toBeVisible();
 
       await invokeAiGeneration(page);
       await expect(page.locator('.dial')).toBeVisible();

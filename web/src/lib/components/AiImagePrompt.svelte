@@ -51,6 +51,7 @@
 
 <dialog
   class="ai-prompt-modal modal-dialog modal-fly-in modal-shell"
+  aria-labelledby="aiPromptStylesLegend"
   use:modalDialog={() => ({
     open: aiPromptModal.open,
     origin: aiPromptModal.origin,
@@ -63,7 +64,7 @@
     <DialogHeader onclose={aiPromptModal.hide} closeClass="ai-prompt-close" />
 
     <fieldset class="ai-prompt-styles">
-      <legend>Pick a style</legend>
+      <legend id="aiPromptStylesLegend">Pick a style</legend>
       <div class="ai-style-options">
         {#each STYLE_NAMES as s (s)}
           {@const thumb = styleThumbPath(s, dialogTheme.current)}
@@ -183,7 +184,7 @@
     }
 
     .ai-style-option:hover:not(:disabled) .ai-style-label {
-      color: var(--brand);
+      color: var(--brand-text);
     }
   }
 
