@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import DialogHeader from './design/DialogHeader.svelte';
   import { clearRequestedSettingsSection, settingsModal, uiState } from '$lib/state/ui.svelte';
   import SectionBody from './settings/SectionBody.svelte';
@@ -8,7 +9,11 @@
   import './SettingsModal.ai.css';
   import ScrollCue from './design/ScrollCue.svelte';
   import { SECTIONS, sectionHeading, type SectionId } from './settings/sections';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import {
+    DIALOG_CLOSING_CLASS,
+    modalDialog,
+    waitForDialogRetirement,
+  } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
   import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
@@ -53,6 +58,28 @@
     clearRequestedSettingsSection();
   }
 
+  let sectionHeadingEl = $state<HTMLHeadingElement>();
+
+  // Each phone-shell move unmounts the control that held focus — the hub row
+  // on a drill-in, the Back button on the way out — which drops a keyboard or
+  // screen-reader user on <body>. Focus lands on what replaced it instead. A
+  // Grown-Ups Only challenge still flying out restores focus to its own opener
+  // as it closes, so landing waits that exit out rather than being overwritten.
+  async function landFocus(target: () => HTMLElement | null | undefined) {
+    await tick();
+    const retiring = [
+      ...document.querySelectorAll<HTMLDialogElement>(`dialog[open].${DIALOG_CLOSING_CLASS}`),
+    ].filter((dialog) => dialog !== dialogEl);
+    await Promise.all(retiring.map(waitForDialogRetirement));
+    target()?.focus();
+  }
+
+  function drillInto(section: SectionId) {
+    markSectionSeen(section);
+    view = section;
+    void landFocus(() => sectionHeadingEl);
+  }
+
   // The landing view on each open: the deep-linked section, else the hub
   // (phone) — never wherever the last visit stopped reading. Runs from the
   // dialog action just before showModal(), so the first painted frame already
@@ -74,26 +101,22 @@
     const requested = uiState.requestedSettingsSection;
     if (!requested || !settingsModal.open || !dialogEl.open) return;
     landOn(requested);
+    void landFocus(() => sectionHeadingEl);
   });
 
   function openSection(id: SectionId, trigger: HTMLElement) {
     if (id !== 'parentCenter') {
-      markSectionSeen(id);
-      view = id;
+      drillInto(id);
       return;
     }
-    requireParentalGate(
-      'parentCenter',
-      () => {
-        markSectionSeen(id);
-        view = id;
-      },
-      buttonCenter(trigger)
-    );
+    requireParentalGate('parentCenter', () => drillInto(id), buttonCenter(trigger));
   }
 
   function backToHub() {
+    if (view === 'hub') return;
+    const from = view;
     view = 'hub';
+    void landFocus(() => dialogEl.querySelector<HTMLElement>(`button[data-section="${from}"]`));
   }
 
   // Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
@@ -117,6 +140,7 @@
   class:wide={shell.wide}
   class:compact={shell.compact}
   id="settingsModal"
+  aria-label="Settings"
   bind:this={dialogEl}
   use:modalDialog={() => ({
     open: settingsModal.open,
@@ -157,7 +181,7 @@
           onclose={settingsModal.hide}
           closeFeedback
         >
-          <h2>{sectionHeading(activeSection)}</h2>
+          <h2 tabindex="-1" bind:this={sectionHeadingEl}>{sectionHeading(activeSection)}</h2>
         </DialogHeader>
       </div>
       <ScrollCue>

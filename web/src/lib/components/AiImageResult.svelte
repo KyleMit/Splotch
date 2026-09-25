@@ -13,9 +13,15 @@
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
-  import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
+  import {
+    AI_FAILED_ANNOUNCEMENT,
+    AI_LOADING_SUBTITLE,
+    AI_LOADING_TITLE,
+    AI_READY_ANNOUNCEMENT,
+  } from '$lib/ai/loadingCopy';
   import { downloadAiResult } from '$lib/ai/resultDownload';
   import { stampMotionAtStart } from '$lib/platform/reducedMotion';
+  import { AI_IMAGE_BUTTON_ID, DRAWER_TOGGLE_ID } from '$lib/actionButtonLayout';
 
   let dialogEl: HTMLDialogElement;
 
@@ -36,6 +42,24 @@
   // there is nothing to go back to the canvas for, and minimizing a finished
   // result would be a way to lose it (ADR-0116).
   const waiting = $derived(loading && generating);
+  const shown = $derived(open && !aiGenerationState.minimized);
+
+  // The dial and the reveal are silent to a screen reader, so a status carries
+  // each state in words. It is written a frame after every change: the status
+  // becomes visible in the same flush that shows the dialog, and text that lands
+  // on a live region in that flush is swallowed rather than announced.
+  const statusMessage = $derived.by(() => {
+    if (!shown) return '';
+    if (aiError) return AI_FAILED_ANNOUNCEMENT;
+    if (revealed && result) return AI_READY_ANNOUNCEMENT;
+    return loading ? AI_LOADING_TITLE : '';
+  });
+  let announcedStatus = $state('');
+  $effect(() => {
+    const message = statusMessage;
+    const frame = requestAnimationFrame(() => (announcedStatus = message));
+    return () => cancelAnimationFrame(frame);
+  });
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
   let reportOrigin = $state<Origin | null>(null);
@@ -87,6 +111,18 @@
     exiting = true;
   }
 
+  // A closing <dialog> returns focus to whatever held it before it opened, and
+  // that was the style button of an AI Style Prompt which has since closed, so
+  // focus falls to <body>. Land it on the AI button that is the way back in; a
+  // folded drawer hides that button, and focus() on a hidden control does
+  // nothing, so the drawer toggle that reveals it takes focus instead.
+  function returnFocusToLauncher() {
+    for (const id of [AI_IMAGE_BUTTON_ID, DRAWER_TOGGLE_ID]) {
+      if (document.activeElement && document.activeElement !== document.body) return;
+      document.getElementById(id)?.focus();
+    }
+  }
+
   // Fires when the polaroid fly-out finishes. We match on target rather than
   // animation name because Svelte scopes local @keyframes names at build time
   // (e.g. "svelte-abc123-ai-polaroid-fly"), so an exact name check won't match.
@@ -101,6 +137,7 @@
 
 <dialog
   class="ai-result-modal modal-dialog modal-shell"
+  aria-label="AI Result"
   class:polaroid-mode={exiting}
   class:autosave={settingsState.autoSaveAiEnabled}
   class:errored={!!aiError}
@@ -110,7 +147,7 @@
   style={cardStyle}
   bind:this={dialogEl}
   use:modalDialog={() => ({
-    open: open && !aiGenerationState.minimized,
+    open: shown,
     // While the picture is still being made, dismissing tucks it into the corner
     // rather than throwing away an in-flight request the child can't get back
     // (ADR-0116). Once there is something to look at, dismissing means dismissing.
@@ -119,9 +156,11 @@
     // During the polaroid send-off the modal is animating away; swallow stray
     // backdrop taps without dismissing (the fly-out's end closes it).
     blockBackdropAt: () => exiting,
+    onClose: returnFocusToLauncher,
   })}
   onanimationend={handleAnimationEnd}
 >
+  <p class="visually-hidden" role="status">{announcedStatus}</p>
   <DialogHeader
     closeClass="ai-result-close"
     closeLabel={generating ? 'Keep drawing while this is made' : 'Close'}
@@ -396,5 +435,17 @@
   .ai-result-modal.polaroid-mode:global([data-start-reduced-motion]) {
     transition: none;
     animation: ai-polaroid-fly 0.4s 0.5s ease forwards;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>

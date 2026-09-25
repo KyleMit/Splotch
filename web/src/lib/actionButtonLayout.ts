@@ -291,6 +291,10 @@ const controlOffEntries = Object.entries(CONTROL_OFF_ATTRIBUTES) as [ActionPanel
 // The rest of the seeded vocabulary app.html's boot script re-types: the
 // drawer's open state, and the brush the Brush Button wears.
 export const DRAWER_OPEN_ATTRIBUTE = 'data-drawer-open';
+
+// The launchers a closing AI Result hands focus back to (AiImageResult).
+export const AI_IMAGE_BUTTON_ID = 'aiImageButton';
+export const DRAWER_TOGGLE_ID = 'drawerToggle';
 export const BRUSH_ATTRIBUTE = 'data-brush';
 export const SINGLE_BRUSH_ATTRIBUTE = 'data-single-brush';
 export const NO_ACTIONS_ATTRIBUTE = 'data-no-actions';

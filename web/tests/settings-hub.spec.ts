@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { solveParentalGate } from './flows-harness';
 import {
   gotoApp,
   openHubSection,
@@ -33,6 +34,41 @@ test('Settings hub drills into a section and back (phone layout)', async ({ page
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.hub-list')).toBeVisible();
   await expect(page.locator('#toolDrawerToggle')).toHaveCount(0);
+});
+
+// Every phone-shell move unmounts the control that held focus, so each one
+// proves focus lands on its replacement rather than falling to <body>.
+test('drilling into a section focuses its heading, and Back refocuses its row', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 460, height: 852 });
+  await gotoApp(page);
+  const modal = await openSettingsModal(page);
+
+  await openHubSection(page, 'controls', '#toolDrawerToggle');
+  await expect(modal.getByRole('heading', { name: 'Tool Drawer' })).toBeFocused();
+
+  await modal.getByRole('button', { name: 'Back' }).click();
+  await expect(modal.locator('.hub-row[data-section="controls"]')).toBeFocused();
+});
+
+test('unlocking Parent Center focuses its heading once the challenge has closed', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 460, height: 852 });
+  await gotoApp(page, '/', { gates: 'always' });
+  const modal = await openSettingsModal(page);
+
+  await expect(async () => {
+    await modal.locator('.hub-row[data-section="parentCenter"]').click({ timeout: 1000 });
+    await expect(page.locator('#parentalGate')).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+  await solveParentalGate(page);
+
+  await expect(page.locator('#parentalGate')).not.toBeVisible();
+  const heading = modal.locator('.settings-header-sub h2');
+  await expect(heading).toHaveText('Parent Center');
+  await expect(heading).toBeFocused();
 });
 
 test('the sixth session reveals dots only for sections not read during the quiet period', async ({

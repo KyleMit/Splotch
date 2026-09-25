@@ -1,15 +1,25 @@
 import AxeBuilder from '@axe-core/playwright';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import { expect, test } from './admin-helpers';
 import {
   gotoApp,
   openSettingsModal,
+  retryOpen,
   seedAiEnabled,
   seedCompletedSettingsActivitySessions,
+  settleFlyIn,
 } from './helpers';
-import { openParentalGate } from './flows-harness';
-import { openAiResult } from './ai-harness';
+import {
+  enableAiButtonWithStroke,
+  openArmedParentCenter,
+  openColoringDialog,
+  openDrawer,
+  openParentalGate,
+  policyPicker,
+} from './flows-harness';
+import { landedReportConfirm, openAiResult } from './ai-harness';
+import { expectTextContrast } from './text-contrast';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
 // /changelog, /beta, /feedback, /design, /admin (both auth states),
@@ -310,4 +320,116 @@ for (const colorScheme of ['light', 'dark'] as const) {
       4.5
     );
   });
+}
+
+// Axe's aria-dialog-name rule matches only [role=dialog], so a native <dialog>
+// with no name — announced as a bare "dialog" — scans green. Every modal the
+// web build can raise is opened here and held to its name (docs/ARCHITECTURE.md
+// records the rule and the fixed names). The same pass measures the dialog's
+// text contrast directly, since axe reports text inside a modal as incomplete.
+// The Leave Splotch Dialog is left out: only Android's system Back raises it.
+async function openAiStylePrompt(page: Page) {
+  await seedAiEnabled(page);
+  await gotoApp(page, '/?ai_access_token=test-token');
+  await enableAiButtonWithStroke(page);
+  await openDrawer(page);
+  const dialog = page.locator('dialog.ai-prompt-modal');
+  await retryOpen(dialog, () => page.locator('#aiImageButton').click({ timeout: 3000 }));
+  // The style buttons stay disabled until the drawing's preview has exported,
+  // and a disabled control is exempt from the contrast check.
+  await expect(dialog.locator('.ai-style-option').first()).toBeEnabled();
+  return dialog;
+}
+
+const NAMED_DIALOGS: { name: string; open: (page: Page) => Promise<Locator> }[] = [
+  {
+    name: 'Settings',
+    open: async (page) => {
+      await gotoApp(page);
+      return openSettingsModal(page);
+    },
+  },
+  {
+    name: 'Coloring books',
+    open: async (page) => {
+      await gotoApp(page);
+      await openDrawer(page);
+      await openColoringDialog(page);
+      return page.locator('#coloring-book-dialog');
+    },
+  },
+  {
+    name: 'Color Picker',
+    open: async (page) => {
+      await gotoApp(page);
+      const dialog = page.locator('#color-picker');
+      await retryOpen(dialog, () =>
+        page.getByRole('button', { name: 'Custom Color' }).click({ timeout: 3000 })
+      );
+      return dialog;
+    },
+  },
+  { name: 'Pick a style', open: openAiStylePrompt },
+  {
+    name: 'AI Result',
+    open: (page) => openAiResult(page).then(() => page.locator('dialog.ai-result-modal')),
+  },
+  {
+    name: 'Report this refusal',
+    open: async (page) => {
+      const endpoint = await openAiResult(page);
+      await endpoint.fail(422);
+      await page.getByRole('button', { name: 'Report this refusal' }).click();
+      return landedReportConfirm(page);
+    },
+  },
+  {
+    name: 'Grown-Ups Only',
+    open: async (page) => {
+      await seedAiEnabled(page);
+      await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
+      return openParentalGate(page);
+    },
+  },
+  {
+    name: 'Turn off the Parent Center check?',
+    open: async (page) => {
+      const settings = await openArmedParentCenter(page);
+      await policyPicker(settings, 'Opening Parent Center')
+        .getByRole('radio', { name: 'Never' })
+        .click();
+      return page.locator('dialog.unprotected-confirm');
+    },
+  },
+];
+
+for (const dialog of NAMED_DIALOGS) {
+  test(`the "${dialog.name}" dialog has its accessible name`, async ({ page }) => {
+    const opened = await dialog.open(page);
+    await expect(opened).toBeVisible();
+    await expect(page.getByRole('dialog', { name: dialog.name, exact: true })).toBeVisible();
+  });
+}
+
+// The Color Picker's only content is its hexagons, each named by aria-label, so
+// it has no text to measure.
+const TEXT_DIALOGS = NAMED_DIALOGS.filter((dialog) => dialog.name !== 'Color Picker');
+
+// The wide Settings sidebar's background is its scroll cue: --surface and
+// --border fades pinned to its top and bottom edges (WideShell.svelte), with
+// its rows laid over the plain column between them.
+const EDGE_SHADES = ['.settings-nav'];
+
+for (const dialog of TEXT_DIALOGS) {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`the "${dialog.name}" dialog text holds WCAG AA contrast in ${colorScheme} mode`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      const opened = await dialog.open(page);
+      await expect(opened).toBeVisible();
+      await settleFlyIn(opened);
+      await expectTextContrast(opened, EDGE_SHADES);
+    });
+  }
 }

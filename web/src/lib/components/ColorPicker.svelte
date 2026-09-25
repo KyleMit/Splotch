@@ -45,6 +45,7 @@
      suppressing the stylus click synthesis costs nothing here. -->
 <dialog
   id="color-picker"
+  aria-label="Color Picker"
   class="color-picker modal-dialog modal-fly-in"
   use:scribbleGuard
   use:modalDialog={() => ({

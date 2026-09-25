@@ -195,6 +195,7 @@
   bind:this={dialogEl}
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
   id="coloring-book-dialog"
+  aria-label="Coloring books"
   use:modalDialog={() => ({
     open: coloringBookModal.open,
     origin: coloringBookModal.origin,
