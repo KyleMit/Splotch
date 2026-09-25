@@ -1,0 +1,52 @@
+{
+  "campaign": "2026-09-25-issue-2268-android-device-native-actions",
+  "productCommit": "87da0c5a3b4a789d36678a4e10c873f76a6f3c04",
+  "capturedFrom": "perf-profiles/2026-09-25-issue-2268-android-actions/android-device-native",
+  "study": "Physical android-device-native full action sweeps, all four modes (Appium UiAutomator2 attached to the Capacitor WebView, 4 repeats) at 87da0c5a for issue 2268; installed instrumented Debug APK sha256 4ba906af16dddd87049b0033fdd4dcf5596a0388d604628cb498114653950d11, loaded entry start.D1aPIkBG.js; replaces the action sections preserved from e5142fab",
+  "kept": [
+    {
+      "file": "actions--c59c94ce.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--45390d94.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--8c8d5bb0.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--518e26d0.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}
