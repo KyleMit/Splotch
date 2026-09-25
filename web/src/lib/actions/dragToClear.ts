@@ -28,6 +28,70 @@ function suppress(e: Event) {
   e.stopPropagation();
 }
 
+// Exported for dragToClear.test.ts; the action is its only production caller.
+// register() is true when the tap completes a multi-tap run, in which case the
+// run restarts without the completing tap opening a new window.
+export function createTapRun() {
+  let count = 0;
+  let lastTapTime = 0;
+  return {
+    register(now: number): boolean {
+      if (now - lastTapTime < MULTI_CLICK_WINDOW_MS) {
+        count++;
+        if (count >= MULTI_CLICK_THRESHOLD) {
+          count = 0;
+          return true;
+        }
+      } else {
+        count = 1;
+      }
+      lastTapTime = now;
+      return false;
+    },
+  };
+}
+
+type TimerId = ReturnType<typeof setTimeout>;
+
+function createTimerSet() {
+  const pending = new Set<TimerId>();
+  return {
+    schedule(fn: () => void, delayMs: number): TimerId {
+      const id = setTimeout(() => {
+        pending.delete(id);
+        fn();
+      }, delayMs);
+      pending.add(id);
+      return id;
+    },
+    cancel(id: TimerId | null): void {
+      if (id === null) return;
+      pending.delete(id);
+      clearTimeout(id);
+    },
+    cancelAll(): void {
+      for (const id of pending) clearTimeout(id);
+      pending.clear();
+    },
+  };
+}
+
+// The wash is a fixed-size gradient scaled out from the dock corner, so the
+// growing preview is a compositor transform rather than a full-viewport
+// repaint on every pointermove. Progress lives on the wash alone: an
+// inherited custom property on the document root restyles every element and
+// re-rasters every paint layer per move, which the bare toolbar's glass
+// multiplies.
+function armWash(washEl: HTMLElement): void {
+  const reachPx = Math.hypot(window.innerWidth, window.innerHeight) * WASH_REACH_DIAGONAL_FRACTION;
+  washEl.style.setProperty('--clear-wash-scale', `${reachPx / washEl.offsetWidth}`);
+  setWashProgress(washEl, 0);
+}
+
+function setWashProgress(washEl: HTMLElement, progress: number): void {
+  washEl.style.setProperty('--clear-progress', `${progress}`);
+}
+
 export interface DragToClearOptions {
   containerEl: HTMLDivElement;
   acceptZoneEl: HTMLDivElement;
@@ -40,6 +104,13 @@ export interface DragToClearOptions {
   onTutorialDismiss: () => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+}
+
+// The three classes that together mark the drag as past the point of no return.
+function setThresholdReached(node: HTMLElement, o: DragToClearOptions, reached: boolean): void {
+  node.classList.toggle('delete-ready', reached);
+  o.acceptZoneEl.classList.toggle('threshold-reached', reached);
+  o.clearPreviewEl.classList.toggle('committed', reached);
 }
 
 interface ActiveDrag {
@@ -57,21 +128,10 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   let startPointerX = 0;
   let startPointerY = 0;
   let clearReady = false;
-  let holdTimer: ReturnType<typeof setTimeout> | null = null;
+  let holdTimer: TimerId | null = null;
   let acceptZoneFrame: number | null = null;
-  let clickCount = 0;
-  let lastClickTime = 0;
-
-  const resetTimers = new Set<ReturnType<typeof setTimeout>>();
-
-  function scheduleReset(fn: () => void, delay: number) {
-    const id = setTimeout(() => {
-      resetTimers.delete(id);
-      fn();
-    }, delay);
-    resetTimers.add(id);
-    return id;
-  }
+  const taps = createTapRun();
+  const timers = createTimerSet();
 
   function buttonCenter(): ClientPoint {
     const rect = node.getBoundingClientRect();
@@ -85,23 +145,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
   function dragDistance(clientX: number, clientY: number): number {
     return Math.hypot(clientX - startPointerX, clientY - startPointerY);
-  }
-
-  // True when the tap completed a multi-tap run and showed the tutorial, in which
-  // case the caller must not start a drag.
-  function registerTap(now: number, o: DragToClearOptions): boolean {
-    if (now - lastClickTime < MULTI_CLICK_WINDOW_MS) {
-      clickCount++;
-      if (clickCount >= MULTI_CLICK_THRESHOLD) {
-        o.onTutorialShow();
-        clickCount = 0;
-        return true;
-      }
-    } else {
-      clickCount = 1;
-    }
-    lastClickTime = now;
-    return false;
   }
 
   function armAcceptZone(
@@ -120,32 +163,18 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     });
   }
 
-  // The wash is a fixed-size gradient scaled out from the dock corner, so the
-  // growing preview is a compositor transform rather than a full-viewport
-  // repaint on every pointermove. Progress lives on the wash alone: an
-  // inherited custom property on the document root restyles every element and
-  // re-rasters every paint layer per move, which the bare toolbar's glass
-  // multiplies.
-  function armWash(o: DragToClearOptions): void {
-    const reachPx =
-      Math.hypot(window.innerWidth, window.innerHeight) * WASH_REACH_DIAGONAL_FRACTION;
-    o.clearWashEl.style.setProperty('--clear-wash-scale', `${reachPx / o.clearWashEl.offsetWidth}`);
-    setProgress(o, 0);
-  }
-
-  function setProgress(o: DragToClearOptions, progress: number): void {
-    o.clearWashEl.style.setProperty('--clear-progress', `${progress}`);
-  }
-
   function onPointerDown(e: PointerEvent) {
     if (activeDrag !== null) return;
 
     const o = getOptions();
-    if (registerTap(Date.now(), o)) return;
+    if (taps.register(Date.now())) {
+      o.onTutorialShow();
+      return;
+    }
 
     const clientX = e.clientX;
     const clientY = e.clientY;
-    holdTimer = scheduleReset(o.onTutorialShow, HOLD_DURATION_MS);
+    holdTimer = timers.schedule(o.onTutorialShow, HOLD_DURATION_MS);
 
     const home = buttonCenter();
     const acceptRadius = getAcceptRadius();
@@ -154,7 +183,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     startPointerX = clientX;
     startPointerY = clientY;
     clearReady = false;
-    armWash(o);
+    armWash(o.clearWashEl);
     o.clearPreviewEl.classList.remove('releasing');
 
     releaseAllPointers();
@@ -180,11 +209,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const deltaX = Math.abs(clientX - startPointerX);
     const deltaY = Math.abs(clientY - startPointerY);
     if (deltaX > MOVEMENT_THRESHOLD_PX || deltaY > MOVEMENT_THRESHOLD_PX) {
-      if (holdTimer !== null) {
-        resetTimers.delete(holdTimer);
-        clearTimeout(holdTimer);
-        holdTimer = null;
-      }
+      timers.cancel(holdTimer);
+      holdTimer = null;
       // Once the user is actually dragging, the demo has served its purpose.
       o.onTutorialDismiss();
     }
@@ -200,35 +226,22 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     // Continuous 0→1 drag progress drives the radial paper wash that previews
     // the clear (see .clear-wash).
     const normalizedDistance = distance / acceptRadius;
-    setProgress(o, Math.min(normalizedDistance, 1));
+    setWashProgress(o.clearWashEl, Math.min(normalizedDistance, 1));
     updateClearSound(normalizedDistance);
 
-    if (distance >= acceptRadius) {
-      node.classList.add('delete-ready');
-      o.acceptZoneEl.classList.add('threshold-reached');
-      o.clearPreviewEl.classList.add('committed');
-      // Fire a single tactile "click" the moment we cross the point of no return.
-      if (!clearReady) {
-        clearReady = true;
-        impactThreshold();
-      }
-    } else {
-      node.classList.remove('delete-ready');
-      o.acceptZoneEl.classList.remove('threshold-reached');
-      o.clearPreviewEl.classList.remove('committed');
-      clearReady = false;
-    }
+    const reached = distance >= acceptRadius;
+    setThresholdReached(node, o, reached);
+    // Fire a single tactile "click" the moment we cross the point of no return.
+    if (reached && !clearReady) impactThreshold();
+    clearReady = reached;
 
     suppress(e);
   }
 
   function finishDrag(drag: ActiveDrag, committed: boolean) {
     const { options: o, pointerId } = drag;
-    if (holdTimer !== null) {
-      resetTimers.delete(holdTimer);
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    }
+    timers.cancel(holdTimer);
+    holdTimer = null;
     if (acceptZoneFrame !== null) {
       cancelAnimationFrame(acceptZoneFrame);
       acceptZoneFrame = null;
@@ -237,8 +250,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     releasePointer(node, pointerId);
 
     o.acceptZoneEl.classList.remove('visible');
-    o.acceptZoneEl.classList.remove('threshold-reached');
-    scheduleReset(() => {
+    timers.schedule(() => {
       if (activeDrag === null) o.acceptZoneEl.style.display = 'none';
     }, ACCEPT_ZONE_HIDE_DELAY_MS);
 
@@ -246,11 +258,9 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     // A committed flood lets go over its own fade rather than snapping off, so the
     // departing page is what finishes the clear. Swapped in the same task so the
     // fade starts from the flood.
-    o.clearPreviewEl.classList.remove('committed');
+    setThresholdReached(node, o, false);
     if (committed) o.clearPreviewEl.classList.add('releasing');
-    setProgress(o, 0);
-
-    node.classList.remove('delete-ready');
+    setWashProgress(o.clearWashEl, 0);
   }
 
   function resetDragVisuals(o: DragToClearOptions) {
@@ -267,11 +277,11 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     node.classList.add('clearing');
     resetDragVisuals(o);
 
-    scheduleReset(() => {
+    timers.schedule(() => {
       stopDrawSound();
     }, DRAW_SOUND_STOP_DELAY_MS);
 
-    scheduleReset(() => {
+    timers.schedule(() => {
       node.classList.remove('clearing');
     }, CLEAR_SHEET_DURATION_MS);
   }
@@ -349,8 +359,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
         finishDrag(drag, false);
         cancelClearSound();
         resetDragVisuals(o);
-        // finishDrag only hides the zone on a delayed timer, and the resetTimers
-        // sweep below cancels it before it can fire.
+        // finishDrag only hides the zone on a delayed timer, and the
+        // timers.cancelAll() sweep below cancels it before it can fire.
         o.acceptZoneEl.style.display = 'none';
       }
       node.removeEventListener('pointerdown', onPointerDown);
@@ -359,8 +369,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       node.removeEventListener('pointercancel', onPointerCancel);
       node.removeEventListener('click', onClick);
       if (acceptZoneFrame !== null) cancelAnimationFrame(acceptZoneFrame);
-      for (const id of resetTimers) clearTimeout(id);
-      resetTimers.clear();
+      timers.cancelAll();
     },
   };
 }
