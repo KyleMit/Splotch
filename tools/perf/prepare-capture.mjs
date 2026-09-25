@@ -179,7 +179,10 @@ function iosChecks() {
     checks.push({
       name: 'ios device',
       status: 'blocked',
-      detail: emptyUsbListDetail(parseDevicectlListing(sh('xcrun', DEVICECTL_LIST_ARGS).out)),
+      detail: emptyUsbListDetail(
+        parseDevicectlListing(sh('xcrun', DEVICECTL_LIST_ARGS).out),
+        argFlag('ios-udid', null)
+      ),
     });
     return { checks, udid: null, udids };
   }
