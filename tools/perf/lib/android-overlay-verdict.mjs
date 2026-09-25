@@ -20,9 +20,8 @@ function windowPackage(name) {
   return name.split(' ').at(-1).split('/')[0];
 }
 
-// Android judges occlusion against the window a touch lands on, so every
-// visible activity window is content: a picture-in-picture window in front
-// must not hide an overlay over the activity behind it.
+// Every visible activity window can receive a touch: a picture-in-picture
+// window in front must not hide an overlay over the activity behind it.
 function contentWindows(windows) {
   return windows.filter(
     (window) =>
@@ -38,49 +37,80 @@ function frameContains(frame, x, y) {
 }
 
 // AOSP InputDispatcher::canBeObscuredBy, narrowed to the windows that combine
-// by opacity: another uid's visible, untrusted USE_OPACITY window. An alpha-0
-// window adds nothing to the sum, touchable or not.
-function opacityOverlays(windows, content) {
-  const above = content ? windows.slice(0, windows.indexOf(content)) : windows;
-  return above.filter(
+// by opacity: a visible, untrusted USE_OPACITY window. An alpha-0 window adds
+// nothing to the sum, touchable or not.
+function opacityOverlays(windows) {
+  return windows.filter(
     (window) =>
       window.occlusionMode === 'USE_OPACITY' &&
-      window.ownerUid !== content?.ownerUid &&
       !window.flags.has('NOT_VISIBLE') &&
       !window.flags.has('TRUSTED_OVERLAY') &&
       window.alpha > 0
   );
 }
 
+// Android judges occlusion against the window a touch lands on: the top-most
+// activity under the point. Only another uid's overlays above that window
+// count. With no activity window at all (a launcher-only screen) the whole
+// display is judged against every overlay.
+function overlaysObscuring(windows, contents, overlays, x, y) {
+  if (!contents.length) return overlays.filter((overlay) => frameContains(overlay.frame, x, y));
+  const target = contents.find((content) => frameContains(content.frame, x, y));
+  if (!target) return null;
+  const targetIndex = windows.indexOf(target);
+  return overlays.filter(
+    (overlay) =>
+      windows.indexOf(overlay) < targetIndex &&
+      overlay.ownerUid !== target.ownerUid &&
+      frameContains(overlay.frame, x, y)
+  );
+}
+
 // Android sums one uid's USE_OPACITY windows under a POINT
-// (untrustedOcclusionAt), so this evaluates every point where the overlays'
-// frames, or the content's, begin: the worst sum over any region is reached at
-// the corner where that region's windows all start. A null content (no
-// activity window, a launcher-only screen) judges the whole display.
-function worstOverContent(windows, content) {
-  const overlays = opacityOverlays(windows, content);
-  const frames = [...overlays, ...(content ? [content] : [])].map((window) => window.frame);
-  const xs = new Set(frames.map((frame) => frame.left));
-  const ys = new Set(frames.map((frame) => frame.top));
-  let worst = { opacity: 0, x: null, y: null, overlay: null, overlays, content };
-  for (const x of xs) {
-    for (const y of ys) {
-      if (content && !frameContains(content.frame, x, y)) continue;
+// (untrustedOcclusionAt). Within the grid drawn by every overlay's left/top
+// edge and every activity's edges, the touch target and the overlays present
+// only shrink moving right or down, so each cell's worst sum sits at its
+// top-left corner and those corners are the only points worth evaluating.
+function worstPoint(windows, contents, overlays) {
+  const edges = (pick) =>
+    new Set([
+      ...overlays.map((window) => window.frame[pick[0]]),
+      ...contents.flatMap((window) => pick.map((side) => window.frame[side])),
+    ]);
+  let worst = { opacity: 0, x: null, y: null, overlay: null, target: null };
+  for (const x of edges(['left', 'right'])) {
+    for (const y of edges(['top', 'bottom'])) {
+      const obscuring = overlaysObscuring(windows, contents, overlays, x, y);
+      if (!obscuring) continue;
       const byUid = new Map();
-      for (const overlay of overlays.filter((window) => frameContains(window.frame, x, y))) {
+      for (const overlay of obscuring) {
         const opacity = 1 - (1 - (byUid.get(overlay.ownerUid)?.opacity ?? 0)) * (1 - overlay.alpha);
         byUid.set(overlay.ownerUid, { opacity, overlay });
       }
       for (const { opacity, overlay } of byUid.values()) {
-        if (opacity > worst.opacity) worst = { ...worst, opacity, x, y, overlay };
+        if (opacity > worst.opacity) {
+          const target = contents.find((content) => frameContains(content.frame, x, y)) ?? null;
+          worst = { opacity, x, y, overlay, target };
+        }
       }
     }
   }
   return worst;
 }
 
-// Enough places that a sum just past the limit never prints as the limit.
+// Enough places that a sum near the limit never prints as the limit itself.
 const OPACITY_DECIMALS = 4;
+
+function displayedOpacity(opacity) {
+  let decimals = OPACITY_DECIMALS;
+  while (
+    opacity !== ANDROID_MAX_OBSCURING_OPACITY &&
+    Number(opacity.toFixed(decimals)) === ANDROID_MAX_OBSCURING_OPACITY
+  ) {
+    decimals += 1;
+  }
+  return Number(opacity.toFixed(decimals));
+}
 
 export function untrustedOverlayVerdict(windows) {
   if (!windows.length) {
@@ -94,20 +124,26 @@ export function untrustedOverlayVerdict(windows) {
     };
   }
   const contents = contentWindows(windows);
-  const readings = (contents.length ? contents : [null]).map((content) =>
-    worstOverContent(windows, content)
+  const overlays = opacityOverlays(windows).filter(
+    (overlay) =>
+      !contents.length ||
+      contents.some(
+        (content) =>
+          windows.indexOf(overlay) < windows.indexOf(content) &&
+          overlay.ownerUid !== content.ownerUid
+      )
   );
-  const worst = readings.reduce((a, b) => (b.opacity > a.opacity ? b : a));
-  const combined = Number(worst.opacity.toFixed(OPACITY_DECIMALS));
+  const worst = worstPoint(windows, contents, overlays);
+  const combined = displayedOpacity(worst.opacity);
   const pass = worst.opacity <= ANDROID_MAX_OBSCURING_OPACITY;
-  const judged = worst.overlay ? [worst.content].filter(Boolean) : contents;
+  const judged = worst.overlay ? [worst.target].filter(Boolean) : contents;
   const over = judged.length
     ? [...new Set(judged.map((content) => windowPackage(content.name)))].join(', ')
     : 'the display';
   const overlayPackage = worst.overlay ? windowPackage(worst.overlay.name) : null;
   return {
     pass,
-    windows: new Set(readings.flatMap((reading) => reading.overlays)).size,
+    windows: overlays.length,
     combinedOpacity: combined,
     point: worst.x === null ? null : `(${worst.x},${worst.y})`,
     package: overlayPackage,

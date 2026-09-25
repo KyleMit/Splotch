@@ -110,26 +110,51 @@ describe('untrustedOverlayVerdict', () => {
     expect(verdict).toMatchObject({ pass: true, windows: 1 });
   });
 
-  it('checks an activity behind a picture-in-picture window, not only the front one', () => {
+  describe('with a picture-in-picture window above Chrome', () => {
     const pip = {
       ...app,
       name: 'ghi org.example.video/org.example.video.PlayerActivity',
       frame: { left: 600, top: 1600, right: 1000, bottom: 1900 },
       ownerUid: 10500,
     };
-    const verdict = untrustedOverlayVerdict([
-      overlay({ alpha: 0.9, frame: { left: 0, top: 200, right: 100, bottom: 300 } }),
-      pip,
-      app,
-    ]);
-    expect(verdict).toMatchObject({ pass: false, point: '(0,200)' });
-    expect(verdict.detail).toContain('over com.android.chrome');
+    const insidePip = { left: 650, top: 1650, right: 700, bottom: 1700 };
+
+    it('checks Chrome behind it, not only the front window', () => {
+      const verdict = untrustedOverlayVerdict([
+        overlay({ alpha: 0.9, frame: { left: 0, top: 200, right: 100, bottom: 300 } }),
+        pip,
+        app,
+      ]);
+      expect(verdict).toMatchObject({ pass: false, point: '(0,200)' });
+      expect(verdict.detail).toContain('over com.android.chrome');
+    });
+
+    it('fails an overlay above the PiP window, over the PiP package', () => {
+      const verdict = untrustedOverlayVerdict([
+        overlay({ alpha: 0.9, frame: insidePip }),
+        pip,
+        app,
+      ]);
+      expect(verdict).toMatchObject({ pass: false, point: '(650,1650)' });
+      expect(verdict.detail).toContain('over org.example.video');
+    });
+
+    it('passes an overlay below the PiP window where the PiP takes every touch', () => {
+      const verdict = untrustedOverlayVerdict([
+        pip,
+        overlay({ alpha: 0.9, frame: insidePip }),
+        app,
+      ]);
+      expect(verdict.pass).toBe(true);
+    });
   });
 
   it('prints a sum just past the limit distinctly from the limit', () => {
     const verdict = untrustedOverlayVerdict([overlay({ alpha: 0.8002 }), app]);
     expect(verdict.pass).toBe(false);
     expect(verdict.detail).toContain('combine to 0.8002 at (0,0)');
+    const closer = untrustedOverlayVerdict([overlay({ alpha: 0.80002 }), app]);
+    expect(closer.detail).toContain('combine to 0.80002 at (0,0)');
   });
 
   it('fails a dump whose window list did not parse, rather than calling it clear', () => {
