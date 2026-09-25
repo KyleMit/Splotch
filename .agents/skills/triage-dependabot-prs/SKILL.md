@@ -170,19 +170,39 @@ git merge-tree --write-tree origin/main origin/<branch>   # CONFLICT lines = wil
 
 **Pairwise-clean does not mean sequence-clean.** Every branch can be clean against today's `main`
 and still collide once a sibling lands — adjacent lines in `package.json` and the `pnpm-lock.yaml`
-root block are a few characters apart. Simulate the whole order on a scratch branch:
+root block are a few characters apart. Simulate the whole order by chaining `merge-tree` results
+into throwaway commits — no checkout, no scratch branch to delete, and a collision leaves the
+worktree untouched:
 
 ```sh
-git checkout -B sim-merge origin/main
-for b in <branches in intended order>; do
-  git merge --no-edit -q origin/$b || { echo "collides: $b"; break; }
+head=$(git rev-parse origin/main)
+for b in <branches in intended order>; do   # zsh: use an array, unquoted $vars do not word-split
+  out=$(git merge-tree --write-tree $head origin/$b) || { echo "collides: $b"; break; }
+  head=$(git commit-tree ${out%%$'\n'*} -p $head -p origin/$b -m sim)
+  lock=$(git show $head:pnpm-lock.yaml) || { echo "no lockfile after: $b"; break; }
+  printf '%s' "$lock" | node -e '
+    let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () =>
+      require("yaml").parse(s, { uniqueKeys: true }))' || { echo "breaks lockfile: $b"; break; }
 done
-git merge --abort 2>/dev/null; git checkout - && git branch -D sim-merge   # always clean up
 ```
 
-The cleanup line is not optional: a collision is the loop *succeeding*, and it leaves the worktree
-mid-merge with conflict markers staged. Leaving it there breaks the next command you run and trips
-the stop-hook git check.
+The blob is read into a variable first because a pipe reports only the last command's status: an
+unreadable lockfile would reach the parser as empty input, which parses cleanly.
+
+**A textually clean lockfile merge can still be a broken lockfile.** Two siblings that each add the
+same `packages:`/`snapshots:` entry (one directly, one as a new transitive resolution) do so in
+hunks that don't overlap, so git keeps both copies and pnpm then refuses the file with
+`ERR_PNPM_BROKEN_LOCKFILE: duplicated mapping key` on every frozen install. The unique-key parse
+above is what catches it; a `CONFLICT`-only simulation passed a batch that broke `main` this way.
+
+If it does land, first compare the duplicate blocks. **Byte-identical copies** carry no choice, so
+delete the second of each and prove the result with `pnpm install --frozen-lockfile`; a plain
+`pnpm install` would also re-resolve unrelated packages to newer, unreviewed releases. **Copies that
+differ** (integrity, resolution, or snapshot dependencies) mean deleting either one silently picks a
+resolution. Regenerate with `pnpm install` instead and review the whole lockfile diff before
+committing, not just the versions it moves: the copies can share a version and still differ in
+integrity, tarball source, or dependencies, so confirm the surviving entry's `resolution` against
+the registry and its snapshot dependencies against what the PRs intended.
 
 Then order the real merges:
 
@@ -249,6 +269,10 @@ together. Only this step looks at the tree that actually exists.
 **It outlives the authorization gate.** Because merging waits for a go-ahead, it usually lands in a
 later turn than the investigation, and the instinct once the merges succeed is to report and stop —
 which drops this step in the seam. Owe it forward past the gate.
+
+**Run it after every merge wave, not once at the end.** A broken lockfile on `main` fails every
+frozen install downstream, including the Dependabot rebases the next wave is waiting on, so a defect
+the first wave introduced stalls the rest of the batch until it is repaired.
 
 ```sh
 git fetch origin main && git checkout -B verify-merged-main origin/main
