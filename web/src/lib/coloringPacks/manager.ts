@@ -27,6 +27,18 @@ async function fetchManifest(signal?: AbortSignal): Promise<ColoringPackManifest
   return parseColoringPackManifest(await response.json(), __APP_VERSION__);
 }
 
+// A load that may download refetches the manifest, as every run always has. One
+// that may not reuses the copy this loader holds: the manifest is named by the app
+// version, and a metered connection should pay for it once, while the store
+// scan still repeats so books another tab installed or removed are seen.
+function createColoringPackManifestLoader(downloadAllowed: () => boolean) {
+  let fetchedManifest: ColoringPackManifest | null = null;
+  return async (signal: AbortSignal): Promise<ResolvedColoringPackManifest> => {
+    if (!fetchedManifest || downloadAllowed()) fetchedManifest = await fetchManifest(signal);
+    return resolveColoringPackManifest(fetchedManifest, currentColoringPackResolution());
+  };
+}
+
 async function createStore(): Promise<ColoringPackStore> {
   return __IS_CAPACITOR__
     ? (await import('./nativeStore')).createNativeColoringPackStore()
@@ -88,21 +100,13 @@ const queueNativeRun = createNativeRunQueue();
 export function createColoringPackDownloader(downloadAllowed = automaticDownloadAllowed) {
   let stopped = false;
   let paused = false;
-  let fetchedManifest: ColoringPackManifest | null = null;
   let installing = false;
   let rerunRequested = false;
   let runPromise: Promise<void> | null = null;
   let controller: AbortController | null = null;
   let activeStore: ColoringPackStore | null = null;
 
-  // A run that may download refetches the manifest, as every run always has. One
-  // that may not reuses this downloader's copy: the manifest is named by the app
-  // version, and a metered connection should pay for it once, while the store
-  // scan still repeats so books another tab installed or removed are seen.
-  async function loadManifest(signal: AbortSignal): Promise<ResolvedColoringPackManifest> {
-    if (!fetchedManifest || downloadAllowed()) fetchedManifest = await fetchManifest(signal);
-    return resolveColoringPackManifest(fetchedManifest, currentColoringPackResolution());
-  }
+  const loadManifest = createColoringPackManifestLoader(downloadAllowed);
 
   // Discovering what is installed never waits on the download policy: a
   // metered or Save-Data connection forbids new packs, not the books already on
