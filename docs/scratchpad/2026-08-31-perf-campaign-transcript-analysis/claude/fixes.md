@@ -1,5 +1,9 @@
 # Per-fix segmentation — 2026-08 Splotch performance campaign (Claude lane)
 
+> **Archived copy (2026-09-24).** This file was copied here from the branch that produced it. The
+> per-session `reports/`, `ledgers/`, and `manifest.json` it cites were not kept, so its
+> session-line citations are historical and cannot be followed; see [the README](../README.md).
+
 Generated mechanically from git markers in the raw transcripts. Read the caveats before the table:
 they bound what these numbers can and cannot say.
 

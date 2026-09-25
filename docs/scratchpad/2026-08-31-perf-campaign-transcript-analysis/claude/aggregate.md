@@ -1,5 +1,9 @@
 # Performance-campaign transcript analysis — aggregate findings (Claude lane)
 
+> **Archived copy (2026-09-24).** This file was copied here from the branch that produced it. The
+> per-session `reports/`, `ledgers/`, and `manifest.json` it cites were not kept, so its
+> session-line citations are historical and cannot be followed; see [the README](../README.md).
+
 Corpus: the 41 transcripts of Splotch's August 2026 deployment-target performance campaign — 27 core
 sessions, 4 auxiliary planning, 10 auxiliary review — spanning 2026-08-19T19:29Z to
 2026-08-31T17:04Z. Evaluated against `origin/main` at **b41dec23750f0c446a26f70cbc15561fe1fdfc22**

@@ -1,5 +1,9 @@
 # Fix-cycle timing report
 
+> **Archived copy (2026-09-24).** This file was copied here from the branch that produced it. The
+> per-session `reports/`, `ledgers/`, and `manifest.json` it cites were not kept, so its
+> session-line citations are historical and cannot be followed; see [the README](../README.md).
+
 ## Scope and method
 
 This report uses only `manifest.json`, the 41 finished session reports, and the 41 finished
