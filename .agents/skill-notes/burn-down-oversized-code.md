@@ -45,6 +45,14 @@ Two hand-run campaigns preceded the skill, on 2026-09-24/25:
   diff — which prompted a "why so much green?" question.
 * Rival per-commit loop and log check: 2266's rival said it reviewed each commit but only printed
   titles and file lists, then read the combined diff.
+* Per-commit patch files for the rival, not a `git show` loop: the first draft of this skill told
+  the coordinator to hand the rival a `git show <sha>` loop, but the rival's own contract forbids
+  spending commands on `git show` and its packet carries only the combined diff. The rival flagged
+  the conflict reviewing this skill's own PR, so per-commit review now rides on patch files the
+  coordinator writes.
+* Runner-prefixed, dated implementer branches: the same review found that implementer branches named
+  `claude/burn-down-<mode>-<slug>` collide on a second campaign before the first campaign's
+  leftovers are pruned, and the hardcoded `claude/` was wrong from Codex anyway.
 * Anti-gaming check in the checker brief: the user asked after 2266 whether lines were cut by
   deleting comments or chaining statements; it had to be verified by hand after the fact.
 

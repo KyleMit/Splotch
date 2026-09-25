@@ -36,7 +36,8 @@ looks like:
 
 ## 1. Branch and measure
 
-Branch from fresh `origin/main` as `claude/burn-down-<mode>-<YYYY-MM-DD>`, then:
+Branch from fresh `origin/main` as `<runner-prefix>/burn-down-<mode>-<YYYY-MM-DD>` — the active
+runner's own branch prefix (`claude/`, `codex/`) — then:
 
 ```
 node .claude/skills/burn-down-oversized-code/measure.mjs <mode>
@@ -127,19 +128,21 @@ code, per-file boilerplate the moves add, new tests, the plan record) so a lopsi
 answered before anyone asks; verification. List any new unit tests an implementer added, since they
 go beyond a pure move.
 
-Then run `drive-pr-to-mergeable`. When steering the rival, give it the commit list as a
-`git show <sha>` loop and require one verdict per commit on three questions: (1) counter-driven or
-genuinely cleaner, including the gaming patterns above; (2) behaviour preserved, and on hot paths
-allocations too; (3) repo conventions. Before posting a zero-findings review, confirm from the
-rival's run log that it opened each commit's diff — reading only titles and the combined diff has
-happened. Never push while a rival round is running.
+Then run `drive-pr-to-mergeable`. The rival reads the combined diff from its review packet and is
+told not to spend commands on `git show`, so per-commit review needs per-commit input: write each
+commit's patch to its own file (`git show <sha> > <dir>/<nn>-<short-sha>.patch`) in an absolute
+directory the rival can read, and name that directory in the steering prompt. Require one verdict
+per patch on three questions: (1) counter-driven or genuinely cleaner, including the gaming patterns
+above; (2) behaviour preserved, and on hot paths allocations too; (3) repo conventions. Before
+posting a zero-findings review, confirm from the rival's run log that it read every patch file —
+reviewing only the combined diff has happened. Never push while a rival round is running.
 
 ## 8. Report
 
 The PR URL; the per-unit outcome table (split, raise, retired, and every reviewer or checker
 reversal); findings per review round; CI on the exact head SHA; and the leftover implementer
-worktrees and `claude/burn-down-*` branches — list them for the user and point at
-`prune-git-workspace`.
+worktrees and `<runner-prefix>/burn-down-<mode>-<YYYY-MM-DD>-*` branches — list them for the user
+and point at `prune-git-workspace`.
 
 ## Mode: files
 

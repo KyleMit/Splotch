@@ -44,7 +44,8 @@ Return: `verdict` (endorse | revise | reverse); `final_outcome`; `final_seams[]`
 
 > Implement the planned refactor of `<unit>` in this isolated worktree.
 >
-> 1. `git checkout -b claude/burn-down-<mode>-<slug> <plan-sha>`, then
+> 1. `git checkout -b <runner-prefix>/burn-down-<mode>-<YYYY-MM-DD>-<slug> <plan-sha>` (the
+>    campaign's date keeps the branch unique across campaigns), then
 >    `pnpm install --frozen-lockfile`.
 > 2. Read the unit's section of `<plan-path>` (with `git show <plan-sha>:<plan-path>`), then the
 >    code, its tests, and its callers.
