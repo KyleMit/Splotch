@@ -921,6 +921,258 @@ describe('campaign sources', () => {
   });
 });
 
+// Issue 2268: stranded action sweeps could not land without recapturing all four
+// brushes, because the fold took only whole modes. A section fold writes one
+// section with its own commit and date and keeps the rest exactly as published.
+describe('section folds', () => {
+  const DRAWING_COMMIT = '3928cd88edbf441530e473a4e3c0b6767926bfc6';
+  const OLD_ACTIONS_COMMIT = 'e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3';
+  const publishedMode = (overrides = {}) => ({
+    id: MODE.id,
+    orientation: MODE.orientation,
+    theme: MODE.theme,
+    status: 'captured',
+    capturedOn: { drawing: '2026-09-23', undo: '2026-09-23', actions: '2026-09-07' },
+    drawingProductCommit: DRAWING_COMMIT,
+    buildEntry: '/_app/immutable/entry/start.drawing.js',
+    buildDigest: 'drawing-digest',
+    drawing: {
+      pen: ['perf-profiles/old/pen.json'],
+      crayon: ['perf-profiles/old/crayon.json'],
+      magic: ['perf-profiles/old/magic.json'],
+      eraser: ['perf-profiles/old/eraser.json'],
+    },
+    undoSource: 'perf-profiles/old/pen.json',
+    actionSources: 'preserved',
+    ...overrides,
+  });
+  const manifestWith = (mode) => ({
+    targets: [{ id: 'android-device-web', modes: [mode] }],
+  });
+  const foldSections = (sections, options = {}) =>
+    campaignModeSources('android-device-web', {
+      outputRoot: writeCampaign('android-device-web', 'split-input-measurement', options),
+      productCommit: PRODUCT_COMMIT,
+      foldedOn: FOLDED_ON,
+      modes: [MODE.id],
+      sections,
+    });
+  const refusing = () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+    return error;
+  };
+
+  it('folds an action section onto a mode whose drawing comes from another commit', () => {
+    const entries = foldSections(['actions'], {
+      omit: ['pen-undo', 'crayon', 'magic', 'eraser'],
+    });
+    const manifest = manifestWith(publishedMode());
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    const merged = manifest.targets[0].modes[0];
+    const { actionSources, capturedOn, ...rest } = merged;
+    const { actionSources: _published, capturedOn: _dates, ...unchanged } = publishedMode();
+    expect(rest).toEqual(unchanged);
+    expect(actionSources).toEqual([
+      {
+        source: expect.stringContaining('actions.json'),
+        productCommit: PRODUCT_COMMIT,
+        kind: 'full',
+      },
+    ]);
+    expect(capturedOn).toEqual({ drawing: '2026-09-23', undo: '2026-09-23', actions: FOLDED_ON });
+    expect(
+      sectionProvenance(merged, null).map(({ section, commits, capturedOn: date }) => [
+        section,
+        commits,
+        date,
+      ])
+    ).toEqual([
+      ['drawing', [DRAWING_COMMIT], '2026-09-23'],
+      ['undo', [DRAWING_COMMIT], '2026-09-23'],
+      ['actions', [PRODUCT_COMMIT], FOLDED_ON],
+    ]);
+  });
+
+  it('needs only the cells the folded section is built from', () => {
+    const [entry] = foldSections(['actions'], { omit: ['crayon', 'magic', 'eraser'] });
+
+    expect(entry.sections).toEqual(['actions']);
+    expect(Object.keys(entry.mode)).toEqual([
+      'id',
+      'orientation',
+      'theme',
+      'status',
+      'capturedOn',
+      'actionSources',
+    ]);
+  });
+
+  it('keeps refusing a blocked-coverage sweep', () => {
+    const [entry] = foldSections(['actions'], {
+      artifactForItem: {
+        actions: { actionPlan: { blocked: [{ label: 'show AI waiting print', reason: 'x' }] } },
+      },
+    });
+
+    expect(entry.mode).toBeUndefined();
+    expect(entry.refusals).toEqual({ actions: BLOCKED_COVERAGE });
+  });
+
+  it('replaces an action-unavailable reason and a captured-untracked pin', () => {
+    const manifest = manifestWith(
+      publishedMode({
+        actionSources: 'captured-untracked',
+        actionProductCommit: OLD_ACTIONS_COMMIT,
+        actionsUnavailableReason: 'P1: transport blocked.',
+      })
+    );
+
+    applyCampaignModes(manifest, 'android-device-web', foldSections(['actions']));
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.actionSources[0].productCommit).toBe(PRODUCT_COMMIT);
+    expect(merged).not.toHaveProperty('actionProductCommit');
+    expect(merged).not.toHaveProperty('actionsUnavailableReason');
+  });
+
+  it('pins the carried undo and action commits before a drawing fold moves them', () => {
+    const manifest = manifestWith(
+      publishedMode({ actionSources: 'captured-untracked', capturedOn: undefined })
+    );
+
+    applyCampaignModes(manifest, 'android-device-web', foldSections(['drawing']));
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
+    expect(merged.drawing.pen).toEqual([expect.stringContaining('pen-real-screen')]);
+    expect(merged.undoSource).toBe('perf-profiles/old/pen.json');
+    expect(merged).not.toHaveProperty('buildEntry');
+    expect(merged).not.toHaveProperty('buildDigest');
+    expect(merged.capturedOn).toEqual({ drawing: FOLDED_ON });
+    expect(
+      sectionProvenance(merged, null).map(({ section, commits }) => [section, commits])
+    ).toEqual([
+      ['drawing', [PRODUCT_COMMIT]],
+      ['undo', [DRAWING_COMMIT]],
+      ['actions', [DRAWING_COMMIT]],
+    ]);
+  });
+
+  it('gives an undo folded alone its own commit and leaves the pen drawing', () => {
+    const manifest = manifestWith(publishedMode());
+
+    applyCampaignModes(
+      manifest,
+      'android-device-web',
+      foldSections(['undo'], { omit: ['crayon', 'magic', 'eraser', 'actions'] })
+    );
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.drawing.pen).toEqual(['perf-profiles/old/pen.json']);
+    expect(merged.undoSource).toEqual(expect.stringContaining('pen-real-screen'));
+    expect(merged.undoProductCommit).toBe(PRODUCT_COMMIT);
+    expect(merged.drawingProductCommit).toBe(DRAWING_COMMIT);
+  });
+
+  it('leaves the undo commit implicit when the drawing folds beside it', () => {
+    const manifest = manifestWith(publishedMode({ undoProductCommit: OLD_ACTIONS_COMMIT }));
+
+    applyCampaignModes(manifest, 'android-device-web', foldSections(['drawing', 'undo']));
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.undoSource).toBe(merged.drawing.pen[0]);
+    expect(merged).not.toHaveProperty('undoProductCommit');
+    expect(merged.actionSources).toBe('preserved');
+    expect(merged.capturedOn.actions).toBe('2026-09-07');
+  });
+
+  it('refuses a recorded build that contradicts the section commit', () => {
+    const error = refusing();
+
+    expect(() =>
+      foldSections(['actions'], { artifactForItem: { actions: { productCommit: 'f00' } } })
+    ).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('contradicts'));
+  });
+
+  it('takes the whole-mode path when every section is named', () => {
+    const [entry] = foldSections(['actions', 'undo', 'drawing']);
+
+    expect(entry).not.toHaveProperty('sections');
+    expect(entry.mode.actionSources).toHaveLength(1);
+    expect(Object.keys(entry.mode.drawing)).toHaveLength(4);
+  });
+
+  it('refuses to fold one section onto a mode that publishes none', () => {
+    const error = refusing();
+    const manifest = manifestWith({
+      id: MODE.id,
+      orientation: MODE.orientation,
+      theme: MODE.theme,
+      status: 'unavailable',
+      reason: 'Not captured.',
+    });
+
+    expect(() =>
+      applyCampaignModes(manifest, 'android-device-web', foldSections(['actions']))
+    ).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('Fold the whole mode'));
+  });
+
+  it.each([
+    [['brushes'], {}],
+    [[], {}],
+    [['actions'], { preserveActions: true }],
+    [['drawing'], { actionsUnavailableReason: 'blocked' }],
+    [['drawing', 'undo', 'actions'], { preserveActions: true }],
+  ])('refuses sections %j with %j', (sections, options) => {
+    refusing();
+
+    expect(() =>
+      campaignModeSources('android-device-web', {
+        outputRoot: 'unused',
+        productCommit: PRODUCT_COMMIT,
+        foldedOn: FOLDED_ON,
+        modes: [MODE.id],
+        sections,
+        ...options,
+      })
+    ).toThrow('process exited');
+  });
+
+  it('folds from the command line into the manifest it names', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse(`${FOLDED_ON}T12:00:00Z`));
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+      omit: ['pen-undo', 'crayon', 'magic', 'eraser'],
+    });
+    const manifestPath = join(dirname(outputRoot), 'sources.json');
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ recordedOn: '2026-09-23', ...manifestWith(publishedMode()) })
+    );
+
+    await runCampaignSources([
+      '--target=android-device-web',
+      `--output-root=${outputRoot}`,
+      `--product-commit=${PRODUCT_COMMIT}`,
+      `--modes=${MODE.id}`,
+      '--sections=actions',
+      `--manifest=${manifestPath}`,
+    ]);
+
+    const written = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    expect(written.recordedOn).toBe(FOLDED_ON);
+    expect(written.targets[0].modes[0].actionSources[0].productCommit).toBe(PRODUCT_COMMIT);
+    expect(written.targets[0].modes[0].drawingProductCommit).toBe(DRAWING_COMMIT);
+  });
+});
+
 // The entry shape `campaignModeSources` returns under --preserve-actions: a
 // folded drawing recapture whose mode carries no action section of its own.
 function preservingEntry(productCommit, mode = { id: MODE.id }) {

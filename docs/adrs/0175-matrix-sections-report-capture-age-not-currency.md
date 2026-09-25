@@ -88,10 +88,13 @@ Alternatives considered:
   ever makes a section look younger.
 * − The capture stamp exists only on the iOS XCUITest drawing transport. Until Android, desktop, and
   action captures record their own clock, every section they produce is dated by its fold.
-* − A preserved drawing section stays unscoreable (`PRESERVED_VERDICT_REASON`), so it is not listed
-  as an open red even when its published verdict was red. No release-gate row carries one today.
-  Per-section folding, which will let a release-gate drawing section be preserved, has to decide
-  whether that case keeps counting.
+* − A preserved drawing section stays unscoreable (`PRESERVED_VERDICT_REASON`), since its verdict
+  cannot be re-derived. On a release-gate row its published red still counts, by decision 6: it is
+  listed as an open red and rendered as red, unless its published fidelity failed a calibrated check
+  or its beat was off-regime, which asked for a recapture rather than scoring a red
+  (`preservedVerdictRed` in `tools/perf/gen-performance-matrix.mjs`; decided in issue 2268). No
+  release-gate row carries one today, and a per-section fold (`perf:campaign:sources --sections=`)
+  keeps each carried section on its existing route rather than preserving it.
 * − The page ages count to `recordedOn`, and a fold moves it, so a hand edit to the manifest that
   adds a later section without moving `recordedOn` is refused rather than aged. `recordedOn` now
   follows the latest fold, not the campaign's final commit alone.

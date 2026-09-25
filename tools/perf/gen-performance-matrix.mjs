@@ -1711,6 +1711,7 @@ const DRAWING_METRIC_KEYS = ['p95', 'p99', 'max'];
 // Every paint metric rides the cell as data attributes so the metric switcher can
 // swap the displayed number and heat color client-side without re-rendering.
 const GATE_RED_NOTE = 'counts as red on a release-gate row (ADR-0156)';
+const PRESERVED_RED_NOTE = 'published red keeps counting on a release-gate row (ADR-0175)';
 const EXPLAINED_RED_NOTE = 'red explained by a recorded disposition in';
 
 // ADR-0156 decision 1: on a release-gate row, a cell left unscoreable only by
@@ -1721,12 +1722,36 @@ const EXPLAINED_RED_NOTE = 'red explained by a recorded disposition in';
 function countsAsGateRed(role, entry) {
   const aggregate = entry?.aggregate;
   if (role !== RELEASE_GATE || aggregate?.scoreable !== false) return false;
+  if (aggregate.unscoreableReason === PRESERVED_VERDICT_REASON) return preservedVerdictRed(entry);
   if (aggregate.unscoreableReason || aggregate.offRefreshRegime) return false;
   const unscoreableRuns = (entry.runs ?? []).filter((run) => run.scoreable === false);
   return (
     unscoreableRuns.length > 0 &&
     unscoreableRuns.every((run) => onlyUncalibratedChecksFailed(run.fidelity))
   );
+}
+
+// ADR-0175 decision 6: an old red keeps counting until it is recaptured or
+// explained. A preserved drawing cell has no current verdict, but the verdict it
+// was published with is the last one anyone recorded, so on a release-gate row a
+// published red keeps counting instead of dropping out of the remainder the moment
+// the section is carried forward. A published fidelity failure on a calibrated
+// check, or an off-regime beat, was never a red: it asked for a recapture then and
+// still does. A failure confined to uncalibrated checks counts as red under
+// ADR-0156, exactly as it would on a fresh capture. A red is open only until it is
+// explained, so a published red that carries a recorded disposition is not.
+function preservedVerdictRed(entry) {
+  const aggregate = entry.aggregate;
+  if (aggregate.offRefreshRegime || entry.disposition) return false;
+  const failedRuns = (entry.runs ?? []).filter((run) => run.fidelity?.passed === false);
+  if (failedRuns.some((run) => !onlyUncalibratedChecksFailed(run.fidelity))) return false;
+  return failedRuns.length > 0 || aggregate.blankPassed === false;
+}
+
+function gateRedNote(entry) {
+  return entry.aggregate.unscoreableReason === PRESERVED_VERDICT_REASON
+    ? PRESERVED_RED_NOTE
+    : GATE_RED_NOTE;
 }
 
 function drawingOverviewCell(target, label, brush, entry, gates) {
@@ -1752,7 +1777,7 @@ function drawingOverviewCell(target, label, brush, entry, gates) {
   const disposition = explainedRedDisposition(entry);
   const explained = disposition ? ` · ${EXPLAINED_RED_NOTE} ${disposition.adr}` : '';
   const why = unscoreable
-    ? ` · unscoreable: ${unscoreableReasons(aggregate).join(', ')}${published}${gateRed ? ` · ${GATE_RED_NOTE}` : ''}`
+    ? ` · unscoreable: ${unscoreableReasons(aggregate).join(', ')}${published}${gateRed ? ` · ${gateRedNote(entry)}` : ''}`
     : ` · ${aggregate.blankPassed ? 'PASS' : 'FAIL'}${explained}`;
   const title = `${label} · ${brushLabel} · paint P95 ${fmt(aggregate.paint.p95)} / P99 ${fmt(aggregate.paint.p99)} / max ${fmt(aggregate.paint.max)} ms · lost frame time ${fmtPercent(aggregate.lostFrameTimeShare)} (budget ${fmtPercent(entry.gateShare)})${captureBasis(aggregate)}${why}`;
   const heat = unscoreable ? 'unscoreable' : heatClass(aggregate.paint.p95 / metricGates.p95);
@@ -2152,19 +2177,16 @@ function openReleaseGateReds(matrix) {
       const entry = row.drawing?.[brush];
       const aggregate = entry?.aggregate;
       if (!drawingAggregateAvailable(aggregate) || explainedRedDisposition(entry)) return [];
+      const paint = `paint P95 ${fmt(aggregate.paint.p95)} / P99 ${fmt(aggregate.paint.p99)} / max ${fmt(aggregate.paint.max)} ms · lost ${fmtPercent(aggregate.lostFrameTimeShare)} (budget ${fmtPercent(entry.gateShare)})`;
       if (countsAsGateRed(RELEASE_GATE, entry)) {
-        return [
-          red('drawing', BRUSH_LABELS[brush], 'uncalibrated instrument; counts as red (ADR-0156)'),
-        ];
+        const reading =
+          aggregate.unscoreableReason === PRESERVED_VERDICT_REASON
+            ? `preserved, published red (ADR-0175): ${paint}`
+            : 'uncalibrated instrument; counts as red (ADR-0156)';
+        return [red('drawing', BRUSH_LABELS[brush], reading)];
       }
       if (aggregate.scoreable === false || aggregate.blankPassed !== false) return [];
-      return [
-        red(
-          'drawing',
-          BRUSH_LABELS[brush],
-          `paint P95 ${fmt(aggregate.paint.p95)} / P99 ${fmt(aggregate.paint.p99)} / max ${fmt(aggregate.paint.max)} ms · lost ${fmtPercent(aggregate.lostFrameTimeShare)} (budget ${fmtPercent(entry.gateShare)})`
-        ),
-      ];
+      return [red('drawing', BRUSH_LABELS[brush], paint)];
     });
     const undo =
       row.undo?.passed === false
@@ -2378,7 +2400,7 @@ function renderMarkdown(matrix) {
           const reasons = unscoreableReasons(aggregate).join(', ');
           const role = targetRole({ id: target.targetId, deviceKind: target.deviceKind });
           return countsAsGateRed(role, target.drawing[brush])
-            ? `**unscoreable (${reasons}), ${GATE_RED_NOTE}**: ${value}`
+            ? `**unscoreable (${reasons}), ${gateRedNote(target.drawing[brush])}**: ${value}`
             : `_unscoreable (${reasons})_: ${value}`;
         }
         if (aggregate.blankPassed) return value;

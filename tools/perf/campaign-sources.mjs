@@ -10,7 +10,9 @@
 // measured. A mode is normally rewritten only when all five of its artifacts are
 // present and accepted by the campaign runner's own inspection. The explicit action-only
 // exceptions either record why actions are unavailable or preserve the published
-// action section while replacing a complete four-brush drawing capture.
+// action section while replacing a complete four-brush drawing capture. `--sections=`
+// narrows the fold to one or two sections, each written with its own product commit and
+// capture date while the mode's other sections stay exactly as published.
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
@@ -18,9 +20,17 @@ import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
 import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
 import { cellInspection } from './run-campaign.mjs';
 import { CAMPAIGN_MODES, campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
-import { isCaptureDate, sectionCapturedOn, utcDate } from './lib/capture-date.mjs';
+import { MATRIX_SECTIONS, isCaptureDate, sectionCapturedOn, utcDate } from './lib/capture-date.mjs';
 
 const BRUSH_BY_ITEM = { 'pen-undo': 'pen', crayon: 'crayon', magic: 'magic', eraser: 'eraser' };
+
+// The plan cells each section is built from. Undo is read from the pen artifact,
+// so a pen capture that folds its undo alone leaves the published pen drawing in place.
+const SECTION_ITEMS = {
+  drawing: Object.keys(BRUSH_BY_ITEM),
+  undo: ['pen-undo'],
+  actions: ['actions'],
+};
 
 function readArtifact(relativePath) {
   const full = isAbsolute(relativePath) ? relativePath : join(ROOT, relativePath);
@@ -116,11 +126,94 @@ function assertModeBuildIdentity(targetId, modeId, cells, productCommit) {
   };
 }
 
+// A section fold writes only the sections it names, each bound to this fold's
+// product commit and dated by its own artifacts, and requires only the cells those
+// sections are built from. The mode's other sections are not read here at all:
+// applyCampaignModes carries them from the manifest on the route they already
+// have, so a fresh action sweep can land on a mode whose drawing came from another
+// commit without recapturing the drawing or re-dating it.
+function sectionModeSource(targetId, target, mode, cells, { sections, productCommit, foldedOn }) {
+  const items = [...new Set(sections.flatMap((section) => SECTION_ITEMS[section]))];
+  const inspections = Object.fromEntries(
+    items.map((item) => [item, inspectCell(cells[item], target)])
+  );
+  const refusals = Object.fromEntries(
+    items
+      .filter((item) => inspections[item].artifact === null)
+      .map((item) => [BRUSH_BY_ITEM[item] ?? item, inspections[item].status])
+  );
+  const missing = Object.keys(refusals);
+  if (missing.length) return { id: mode.id, missing, refusals };
+
+  const artifactOf = (item) => inspections[item].artifact;
+  const buildIdentity = assertModeBuildIdentity(
+    targetId,
+    mode.id,
+    items.map((item) => ({ path: cells[item].artifact, artifact: artifactOf(item) })),
+    productCommit
+  );
+  const folds = (section) => sections.includes(section);
+  const capturedOn = Object.fromEntries(
+    sections.map((section) => [
+      section,
+      sectionCapturedOn(SECTION_ITEMS[section].map(artifactOf), foldedOn),
+    ])
+  );
+  return {
+    id: mode.id,
+    sections,
+    mode: {
+      id: mode.id,
+      orientation: mode.orientation,
+      theme: mode.theme,
+      status: 'captured',
+      capturedOn,
+      ...(folds('drawing')
+        ? {
+            drawingProductCommit: productCommit,
+            // The mode's recorded build identity names its drawing build, so only
+            // a fold that writes the drawing may replace it.
+            ...(buildIdentity ?? {}),
+            drawing: Object.fromEntries(
+              Object.entries(BRUSH_BY_ITEM).map(([item, brush]) => [brush, [cells[item].artifact]])
+            ),
+          }
+        : {}),
+      ...(folds('undo')
+        ? {
+            undoSource: cells['pen-undo'].artifact,
+            // Beside a drawing fold the undo commit stays implicit, exactly as a
+            // whole-mode fold writes it; alone it differs from the drawing's.
+            ...(folds('drawing') ? {} : { undoProductCommit: productCommit }),
+          }
+        : {}),
+      ...(folds('actions')
+        ? { actionSources: [{ source: cells.actions.artifact, productCommit, kind: 'full' }] }
+        : {}),
+    },
+  };
+}
+
 export function campaignModeSources(
   targetId,
-  { outputRoot, productCommit, foldedOn, modes, actionsUnavailableReason, preserveActions = false }
+  {
+    outputRoot,
+    productCommit,
+    foldedOn,
+    modes,
+    actionsUnavailableReason,
+    preserveActions = false,
+    sections,
+  }
 ) {
   if (!isCaptureDate(foldedOn)) fail(`foldedOn must be a YYYY-MM-DD date, got ${foldedOn}`);
+  if (sections !== undefined && (preserveActions || actionsUnavailableReason)) {
+    fail(
+      'A section fold writes only the sections it names and keeps the rest as published; ' +
+        'it cannot be combined with --preserve-actions or --actions-unavailable'
+    );
+  }
+  const sectionSubset = sectionFoldSubset(sections);
   const target = campaignTarget(targetId);
   const selected = modes?.length
     ? CAMPAIGN_MODES.filter((mode) => modes.includes(mode.id))
@@ -130,6 +223,13 @@ export function campaignModeSources(
     const cells = Object.fromEntries(
       planCampaign(targetId, { outputRoot, modes: [mode.id] }).map((cell) => [cell.item, cell])
     );
+    if (sectionSubset) {
+      return sectionModeSource(targetId, target, mode, cells, {
+        sections: sectionSubset,
+        productCommit,
+        foldedOn,
+      });
+    }
     const paths = Object.fromEntries(
       Object.entries(BRUSH_BY_ITEM).map(([item, brush]) => [brush, cells[item].artifact])
     );
@@ -217,6 +317,22 @@ export function campaignModeSources(
   });
 }
 
+// Naming every section is a whole-mode fold, so it takes the whole-mode path and
+// its completeness rules rather than a second route to the same result.
+function sectionFoldSubset(sections) {
+  if (sections === undefined) return null;
+  const named = [...new Set(sections)];
+  const unknown = named.filter((section) => !MATRIX_SECTIONS.includes(section));
+  if (!named.length || unknown.length) {
+    fail(
+      `--sections takes a comma-separated subset of ${MATRIX_SECTIONS.join(', ')}; got ` +
+        `${JSON.stringify(sections)}`
+    );
+  }
+  if (named.length === MATRIX_SECTIONS.length) return null;
+  return MATRIX_SECTIONS.filter((section) => named.includes(section));
+}
+
 // Preserving actions carries the PUBLISHED section, never its raw inputs. Raw
 // `actionSources` pointers are re-scored by gen:performance-matrix under current
 // rules, so a sweep that predates a FULL_ACTION_GROUPS change is refused outright
@@ -249,6 +365,45 @@ function preservedActionSection(manifest, targetId, modeId, existing) {
   return {};
 }
 
+// A section fold rewrites only its own sections' fields and keeps every other
+// field of the published mode, including each carried section's route: a raw
+// drawing stays raw and re-scored, a preserved one stays preserved. Converting a
+// carried section to preserved would freeze a release-gate drawing's verdict
+// behind PRESERVED_VERDICT_REASON for no reason but that a different section moved.
+//
+// Two carried commits are implicit — undo and captured-untracked actions fall back
+// to drawingProductCommit — so a drawing fold pins them first, or the carried
+// section would silently take the new drawing's commit.
+function foldSections(existing, entry, targetId) {
+  if (existing.status !== 'captured') {
+    fail(
+      `Cannot fold ${entry.sections.join(', ')} alone into ${targetId}/${entry.id}: the mode ` +
+        'publishes no captured sections to keep beside it. Fold the whole mode.'
+    );
+  }
+  const folds = (section) => entry.sections.includes(section);
+  const { capturedOn, ...written } = entry.mode;
+  const merged = { ...existing };
+  if (folds('drawing')) {
+    delete merged.buildEntry;
+    delete merged.buildDigest;
+    if (!folds('undo') && existing.undoSource !== undefined) {
+      merged.undoProductCommit = existing.undoProductCommit ?? existing.drawingProductCommit;
+    }
+    if (!folds('actions') && existing.actionSources === CAPTURED_UNTRACKED) {
+      merged.actionProductCommit = existing.actionProductCommit ?? existing.drawingProductCommit;
+    }
+  }
+  if (folds('undo') && folds('drawing')) delete merged.undoProductCommit;
+  if (folds('actions')) {
+    delete merged.actionProductCommit;
+    delete merged.actionsUnavailableReason;
+  }
+  return Object.assign(merged, written, {
+    capturedOn: { ...existing.capturedOn, ...capturedOn },
+  });
+}
+
 export function applyCampaignModes(manifest, targetId, entries) {
   const target = manifest.targets?.find((candidate) => candidate.id === targetId);
   if (!target) fail(`Manifest has no target ${targetId}`);
@@ -256,6 +411,10 @@ export function applyCampaignModes(manifest, targetId, entries) {
     if (!entry.mode) continue;
     const index = target.modes.findIndex((mode) => mode.id === entry.id);
     if (index === -1) fail(`Manifest target ${targetId} has no mode ${entry.id}`);
+    if (entry.sections) {
+      target.modes[index] = foldSections(target.modes[index], entry, targetId);
+      continue;
+    }
     // A transport that cannot capture a section leaves it off the entry, and the
     // mode keeps whatever it already published. Replacing the object wholesale
     // would discard that measurement without saying so.
@@ -324,18 +483,20 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
     fail('--preserve-actions and --actions-unavailable cannot be combined');
   }
 
-  const modes = flag('modes')
-    ?.split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
+  const list = (value) =>
+    value
+      ?.split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
   const foldedOn = utcDate(Date.now());
   const entries = campaignModeSources(targetId, {
     outputRoot,
     productCommit,
     foldedOn,
-    modes,
+    modes: list(flag('modes')),
     actionsUnavailableReason: flag('actions-unavailable'),
     preserveActions,
+    sections: list(flag('sections')),
   });
 
   for (const entry of entries.filter((candidate) => candidate.missing)) {
@@ -349,6 +510,12 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
         ? 'drawing folded; prior actions preserved'
         : 'drawing folded; actions recorded unavailable';
     console.log(`PARTIAL ${entry.id} — ${detail}`);
+  }
+  for (const entry of ready.filter((candidate) => candidate.sections)) {
+    const kept = MATRIX_SECTIONS.filter((section) => !entry.sections.includes(section));
+    console.log(
+      `SECTIONS ${entry.id} — ${entry.sections.join(', ')} folded; ${kept.join(', ')} kept as published`
+    );
   }
   console.log(`${targetId}: ${ready.length}/${entries.length} modes ready`);
 
