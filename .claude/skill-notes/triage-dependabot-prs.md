@@ -109,23 +109,51 @@ topping out at `8.0.2-nightly`; the top-level 8.4.1 was already outside it. Tota
 and 22 after.
 
 **A clean lockfile merge can be a broken lockfile** *(2026-09-25)*. A twelve-PR batch simulated
-clean in sequence, CONFLICT-free, and wave 1's eight merges still left `main` failing every frozen
-install with `ERR_PNPM_BROKEN_LOCKFILE: duplicated mapping key`. An earlier merge in the wave had
-written `'@types/node@22.20.4'` as a transitive resolution; \#2259, the direct `@types/node` bump,
-wrote the same key in a non-overlapping hunk, so git kept both copies in `packages:` and
-`snapshots:`. The sequence simulation now parses each step's lockfile with `uniqueKeys: true`, which
-would have flagged \#2259 before any merge. Two corollaries: verify `main` after every wave (the
-Dependabot rebases the next wave needed went unanswered while `main` was broken), and repair
-byte-identical duplicates by deleting the extra blocks rather than running `pnpm install`, which on
-that tree also re-resolved openai, `@google/genai`, and prettier to releases nobody had reviewed.
-The rival review of the skill change added two corrections: hand deletion is safe only when the
-copies are identical (differing copies mean picking a resolution silently), and piping `git show`
-straight into the parser let an unreadable lockfile pass as empty input, since a pipe reports only
-its last command's status. `yaml` itself is not a direct dependency. It resolves through the hoisted
-linker, and if it ever stops resolving the parse throws and the loop fails loudly on its first step,
-so that failure is not silent. The simulation also moved from `checkout -B` plus `branch -D` to a
+clean in sequence, CONFLICT-free, and wave 1's eight merges still left `main` failing every explicit
+`--frozen-lockfile` install with `ERR_PNPM_BROKEN_LOCKFILE: duplicated mapping key`. An earlier
+merge in the wave had written `'@types/node@22.20.4'` as a transitive resolution; \#2259, the direct
+`@types/node` bump, wrote the same key in a non-overlapping hunk, so git kept both copies in
+`packages:` and `snapshots:`. The sequence simulation now parses each step's lockfile with
+`uniqueKeys: true`, which would have flagged \#2259 before any merge. Two corollaries: verify `main`
+after every wave (the Dependabot rebases the next wave needed failed with
+`dependency_file_not_parseable` while `main` was broken), and repair byte-identical duplicates by
+deleting the extra blocks rather than running `pnpm install`, which on that tree also re-resolved
+openai, `@google/genai`, and prettier to releases nobody had reviewed. The rival review of the skill
+change added two corrections: hand deletion is safe only when the copies are identical (differing
+copies mean picking a resolution silently), and piping `git show` straight into the parser let an
+unreadable lockfile pass as empty input, since a pipe reports only its last command's status. `yaml`
+itself is not a direct dependency. It resolves through the hoisted linker, and if it ever stops
+resolving the parse throws and the loop fails loudly on its first step, so that failure is not
+silent. The simulation also moved from `checkout -B` plus `branch -D` to a
 `merge-tree`/`commit-tree` chain, because the branch delete is denied in permission-gated sessions
 and a collision left the old form mid-merge.
+
+**CI stayed green on the broken lockfile** *(2026-09-25, same batch)*. Found only after the batch
+closed. The `Tests` run on the broken `main` passed: its install logged
+`[WARN] Ignoring broken lockfile`, resolved every dependency fresh, and tested that tree. CI and the
+Netlify build both rely on the frozen-lockfile mode pnpm implies under `CI=true` (`netlify.toml`
+says so in a comment), and that implied mode skips a lockfile it cannot parse. Reproduced locally
+against the broken commit's manifests: implied mode exited 0 with the warning, explicit
+`--frozen-lockfile` exited 1 with `ERR_PNPM_BROKEN_LOCKFILE`. Step 5 now passes the flag explicitly
+and says outright that green CI on `main` does not vouch for the lockfile. Enforcing the flag in CI
+and in Netlify's `PNPM_FLAGS` would make the gap impossible rather than described. That change is
+outside this skill.
+
+**Recreate when rebase stalls** *(2026-09-25, same batch)*. The first `@dependabot rebase` requests
+on the wave-2 PRs ran while `main` was broken and failed. The second pair, sent after the repair
+merged, got 👍 reactions and then started no update job for over 15 minutes. `@dependabot recreate`
+started both jobs within about a minute, and both finished green. One observation, not a documented
+Dependabot rule, so the skill words it as "switch when no run for this PR's dependency appears" and
+not as a claim about why. The dependency qualifier came from the rival review. The `dynamic` runs
+query is repository-wide and every run's `head_branch` reads `main`, so in a multi-PR batch a
+sibling's job would otherwise satisfy "a run appeared". The run name, which carries the dependency,
+is what ties a job to its PR.
+
+**Waves from a pairwise matrix** *(2026-09-25, same batch)*. With eleven npm PRs every branch
+conflicted with at least one sibling, so "leave the conflicter last" gave no order. The pairwise
+matrix from `merge-tree` against each branch merged onto `main` produced a wave of eight with no
+conflicts among them, then eslint and knip (which conflict with svelte but not with each other),
+then svelte, which conflicted with five siblings.
 
 ## Deliberately not included
 
