@@ -3,6 +3,7 @@
 // docs/PROFILING-IPAD.md.
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
+import { stripVTControlCharacters } from 'node:util';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
@@ -13,11 +14,6 @@ const SERVE_ENTRY = join(ROOT, 'tools', 'perf', 'serve-profile-build.mjs');
 // vite's default preview port. The runbook, the console driver, and the
 // recorder snippet all point the iPad at it.
 const PREVIEW_PORT = PORT_ROLES.preview.port;
-
-// The escape byte is the point: we match vite's SGR color codes to read the
-// address lines underneath them, while forwarding the line still colored.
-// eslint-disable-next-line no-control-regex
-const stripAnsi = (line) => line.replace(/\u001B\[[0-9;]*m/g, '');
 
 export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
   if (buildDirHoldsNativeExport()) {
@@ -54,7 +50,7 @@ export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
   let pending = '';
 
   const forward = (line) => {
-    const plain = stripAnsi(line);
+    const plain = stripVTControlCharacters(line);
     if (announced && plain.includes('Network:')) return;
     process.stdout.write(`${line}\n`);
     if (announced || !addresses.length || !plain.includes('Local:')) return;

@@ -52,6 +52,16 @@ choices:
   `tools/tests/test-file-placement.test.mjs`. Naming conventions stay prose-only on purpose:
   PascalCase component files, camelCase lib modules, and dot-joined multi-aspect test names have no
   worthwhile lint spelling.
+* **An `eslint-disable` names its rules and says why** (amended 2026-09, issue 2322). Unused
+  directives are errors (`linterOptions.reportUnusedDisableDirectives`, plus
+  `svelte/comment-directive`'s opt-in equivalent for template comments), and the local
+  `disable-directives/require-disable-reason` rule (`tools/eslint-disable-directives.mjs`) requires
+  a rule list and a `--` reason. The local rule exists because
+  `@eslint-community/eslint-plugin-eslint-comments` only sees script comments, and a Svelte template
+  disable is where the defect lived: eslint-plugin-svelte splits a template directive's rule list on
+  whitespace, so four `{@html}` disables written without `--` had been suppressing each word of
+  their prose as a rule id. A rule-less disable also suppresses the rule that would report it, so
+  that shape is caught by the tracked-source scan in `tools/tests/disable-directives-lint.test.mjs`.
 * **Rejected rule candidates — measured, do not re-litigate without new evidence.** Same verdict as
   the `no-magic-numbers` rejection (~750 hits): each of these carries a violation count showing the
   codebase deliberately follows a different convention (counts as of the 2026-09 evaluation):

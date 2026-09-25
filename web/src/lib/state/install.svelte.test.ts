@@ -20,22 +20,27 @@ function setUA(ua: string, platform = '', maxTouchPoints = 0) {
 }
 
 function setStandalone(matches: boolean) {
-  window.matchMedia = ((q: string) => ({
-    matches,
-    media: q,
-    addEventListener() {},
-    removeEventListener() {},
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  })) as any;
+  window.matchMedia = (q: string) =>
+    ({
+      matches,
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }) as unknown as MediaQueryList;
+}
+
+function makeRawPromptEvent(
+  prompt: BeforeInstallPromptEvent['prompt'],
+  userChoice: BeforeInstallPromptEvent['userChoice']
+): BeforeInstallPromptEvent {
+  return Object.assign(new Event('beforeinstallprompt'), { prompt, userChoice });
 }
 
 function makePromptEvent(outcome: 'accepted' | 'dismissed') {
-  const e = new Event('beforeinstallprompt');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (e as any).prompt = vi.fn().mockResolvedValue(undefined);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (e as any).userChoice = Promise.resolve({ outcome, platform: 'web' });
-  return e;
+  return makeRawPromptEvent(
+    vi.fn().mockResolvedValue(undefined),
+    Promise.resolve({ outcome, platform: 'web' })
+  );
 }
 
 // One page load: a fresh canvas (zero strokes), fresh session counters (their
@@ -132,14 +137,14 @@ describe('initInstallPrompt — mode detection', () => {
     setUA(ANDROID_UA);
     const { captureInstallPrompt, installState, initInstallPrompt } = freshModule();
     initInstallPrompt();
-    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
+    captureInstallPrompt(makePromptEvent('accepted'));
     expect(installState.mode).toBe('oneTap');
   });
 
   it('preserves a prompt captured before init', async () => {
     setUA(ANDROID_UA);
     const { captureInstallPrompt, installState, initInstallPrompt } = freshModule();
-    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
+    captureInstallPrompt(makePromptEvent('accepted'));
     initInstallPrompt();
     expect(installState.mode).toBe('oneTap');
   });
@@ -210,7 +215,7 @@ describe('initInstallPrompt — already installed', () => {
     initInstallPrompt();
     expect(installState.mode).toBe('none');
 
-    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
+    captureInstallPrompt(makePromptEvent('accepted'));
     expect(installState.mode).toBe('oneTap');
     expect(installState.installed).toBe(false);
     expect(localStorage.getItem(STORAGE_KEYS.installCompleted)).toBe('false');
@@ -230,7 +235,7 @@ describe('promptInstall', () => {
     setUA(ANDROID_UA);
     const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
-    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
+    captureInstallPrompt(makePromptEvent('accepted'));
 
     const outcome = await promptInstall();
     expect(outcome).toBe('accepted');
@@ -243,7 +248,7 @@ describe('promptInstall', () => {
     setUA(ANDROID_UA);
     const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
-    captureInstallPrompt(makePromptEvent('dismissed') as BeforeInstallPromptEvent);
+    captureInstallPrompt(makePromptEvent('dismissed'));
 
     const outcome = await promptInstall();
     expect(outcome).toBe('dismissed');
@@ -264,7 +269,7 @@ describe('promptInstall', () => {
     setUA(ANDROID_UA);
     const { captureInstallPrompt, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
-    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
+    captureInstallPrompt(makePromptEvent('accepted'));
     expect(await promptInstall()).toBe('accepted');
     expect(await promptInstall()).toBe('unavailable');
   });
@@ -273,12 +278,12 @@ describe('promptInstall', () => {
     setUA(ANDROID_UA);
     const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
-    const e = new Event('beforeinstallprompt');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (e as any).prompt = vi.fn().mockRejectedValue(new Error('prompt went stale'));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (e as any).userChoice = Promise.resolve({ outcome: 'accepted', platform: 'web' });
-    captureInstallPrompt(e as BeforeInstallPromptEvent);
+    captureInstallPrompt(
+      makeRawPromptEvent(
+        vi.fn().mockRejectedValue(new Error('prompt went stale')),
+        Promise.resolve({ outcome: 'accepted', platform: 'web' })
+      )
+    );
 
     expect(await promptInstall()).toBe('unavailable');
     expect(installState.mode).toBe('android');
@@ -288,12 +293,8 @@ describe('promptInstall', () => {
     setUA(ANDROID_UA);
     const { captureInstallPrompt, installState, initInstallPrompt, promptInstall } = freshModule();
     initInstallPrompt();
-    const e = new Event('beforeinstallprompt');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (e as any).prompt = vi.fn().mockResolvedValue(undefined);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (e as any).userChoice = new Promise(() => {}); // dialog still open
-    captureInstallPrompt(e as BeforeInstallPromptEvent);
+    const dialogStillOpen = new Promise<never>(() => {});
+    captureInstallPrompt(makeRawPromptEvent(vi.fn().mockResolvedValue(undefined), dialogStillOpen));
 
     void promptInstall(); // consumes the one-shot event
     expect(await promptInstall()).toBe('unavailable');
@@ -337,7 +338,7 @@ describe('install completion', () => {
     const session = freshModule();
     session.initInstallPrompt();
 
-    session.captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
+    session.captureInstallPrompt(makePromptEvent('accepted'));
 
     expect(session.installState.installed).toBe(false);
     expect(session.installPromptStage()).toBe('initial');

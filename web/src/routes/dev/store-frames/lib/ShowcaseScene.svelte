@@ -61,7 +61,7 @@
       )}px;border-radius:50%;background:{paletteHex(stone.color)}"
     ></span>
   {/each}
-  <!-- eslint-disable svelte/no-at-html-tags wand and sparkle SVGs are first-party strings from lib/icons and marks.ts -->
+  <!-- eslint-disable svelte/no-at-html-tags -- wand and sparkle SVGs are first-party strings from lib/icons and marks.ts -->
   <div class="wand" style={place(spec.wand)}>{@html wandSvg}</div>
   {#each spec.sparkles as sparkle (sparkle)}
     <span class="mark" style={place(sparkle)}>{@html MARKS.sparkle(paletteHex(sparkle.color))}</span

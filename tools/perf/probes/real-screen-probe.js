@@ -1,4 +1,3 @@
-/* eslint-disable */
 // BROWSER PROBE — not a Node script. Injected into the REAL app (`/`) on a
 // physical iPad by `npm run perf:ios:webkit:frames` (tools/perf/ios/capture-webkit-frames.mjs),
 // and pasteable by hand into a Web Inspector console attached to the same page.
@@ -227,7 +226,7 @@
     // getCoalescedEvents is how many hardware samples WebKit merged into this
     // one dispatch — the difference between input the page never saw and input
     // it saw late.
-    let coalescedEvents = [];
+    let coalescedEvents;
     try {
       coalescedEvents = event.getCoalescedEvents?.() ?? [];
     } catch {

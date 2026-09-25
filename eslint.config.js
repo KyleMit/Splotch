@@ -6,6 +6,7 @@ import vitest from '@vitest/eslint-plugin';
 import playwright from 'eslint-plugin-playwright';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
+import { disableDirectivesPlugin } from './tools/eslint-disable-directives.mjs';
 
 const PLAYWRIGHT_IMPORT_RESTRICTION = {
   name: 'playwright',
@@ -198,6 +199,7 @@ export default tseslint.config(
       'web/src/lib/releases.json',
     ],
   },
+  { linterOptions: { reportUnusedDisableDirectives: 'error' } },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...svelte.configs.recommended,
@@ -242,7 +244,14 @@ export default tseslint.config(
     // already complied. Rejected candidates are recorded in ADR-0031 — don't re-litigate them
     // here without new evidence.
     files: ['**/*.{ts,mts,mjs,js,svelte}'],
+    plugins: { 'disable-directives': disableDirectivesPlugin },
     rules: {
+      // A suppression names its rules and says why, and one that suppresses nothing fails —
+      // the eslint-disable counterpart of stylelint.config.js's disable reporting. Svelte
+      // template comments are parsed by eslint-plugin-svelte, whose own unused-directive check
+      // is opt-in.
+      'disable-directives/require-disable-reason': 'error',
+      'svelte/comment-directive': ['error', { reportUnusedDisableDirectives: true }],
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       'no-var': 'error',
       'no-object-constructor': 'error',
@@ -375,12 +384,6 @@ export default tseslint.config(
         ...HISTORY_STATE_MUTATION_RESTRICTIONS,
       ],
     },
-  },
-  {
-    // Browser-console paste snippets, not Node scripts — the blanket eslint-disable at the
-    // top of each file is intentional even when currently redundant.
-    files: ['tools/perf/probes/*.js'],
-    linterOptions: { reportUnusedDisableDirectives: 'off' },
   },
   {
     // Plain-Node ESM tooling (no TypeScript to resolve identifiers). Re-enable no-undef here so a
