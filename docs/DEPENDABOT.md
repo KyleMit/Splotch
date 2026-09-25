@@ -15,13 +15,24 @@ substitute for it.
 
 **`.github/dependabot.yml`** opens PRs on two ecosystems, both weekly:
 
-| Ecosystem        | Scope                          | Grouping                                                       |
-| ---------------- | ------------------------------ | -------------------------------------------------------------- |
-| `github-actions` | Action pins in `.github/`      | One grouped PR for all minor + patch bumps; majors open singly |
-| `npm`            | Root `package.json` (ADR-0024) | Ungrouped — one PR per package                                 |
+| Ecosystem        | Scope                          | Grouping                                                                |
+| ---------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| `github-actions` | Action pins in `.github/`      | One grouped PR for all minor + patch bumps; majors open singly          |
+| `npm`            | Root `package.json` (ADR-0024) | Lockstep families grouped, majors included; the rest one PR per package |
 
 Because every action is pinned to a SHA with a version comment, Dependabot rewrites both the SHA and
 the comment together. A pin whose SHA and comment disagree is a red flag, and the review checks it.
+
+The npm groups exist because some packages cannot move alone. `@vitest/coverage-v8` peers on its
+exact `vitest` version, so a single-package PR for either can never install, and one Capacitor
+release would otherwise open a PR per `@capacitor/*` package, each superseding the last. The
+`groups` block in `.github/dependabot.yml` owns the family patterns. A group PR carries its majors
+too, so review it as the riskiest bump inside it.
+
+Two npm majors are ignored outright, each until the issue that tracks it lands: `@types/node`, whose
+major follows the Node runtime Dependabot cannot bump (issue 1624), and `typescript`, whose 7.x line
+`typescript-eslint` and `svelte-check` do not yet support (issue 602). Minor and patch updates still
+arrive for both.
 
 **`.github/workflows/dependabot-review.yml`** then runs Claude on each of those PRs and posts a
 verdict comment.
