@@ -145,6 +145,32 @@ landscape phone renders the compact Settings shell — quick toggles and a point
 of the section list — so the sweep measures that shell's own controls under compact-specific labels
 and records which shell it measured. Compare a mode against the same shell, never across two.
 
+## iPad web action sweeps need the secure origin
+
+iPad Safari's LAN origin is not a secure context, so `perf:campaign` refuses an `ipad-device-web`
+action sweep as `blocked-coverage`. Run it behind the HTTPS front (`docs/PROFILING-IPAD.md`, "A
+trusted HTTPS origin for iPad Safari"):
+
+1. Serve the instrumented preview on a free port (`npm run perf:build`, then
+   `npm run perf:serve --ignore-scripts -- --port=<preview>`).
+2. Read `ipconfig getifaddr en0`, then start the front **as a background command of its own, in
+   exactly this form, with the address typed out**:
+   `npm run perf:ios:secure-origin -- serve --listen=<address>:<tls> --upstream=<preview>`. The
+   maintainer's local allow rule matches only this form. Never bind `0.0.0.0`, never add `--http`,
+   never start the constraint-probe front, and never wrap the command in another script or a `$(…)`.
+3. `npm run perf:ios:secure-origin -- check --url=https://<mac>.local:<tls>/ --device-id=<udid>`,
+   where `<mac>` is `scutil --get LocalHostName`. When it refuses, stop the front and report its
+   reason. An iPad on an unproven iPadOS release needs a person, not a retry.
+4. `NODE_EXTRA_CA_CERTS=~/.splotch-rig/secure-origin-ca/ca.pem npm run perf:campaign -- --target=ipad-device-web --items=actions --url=https://<mac>.local:<tls>/`
+   with the session's usual `--device-id=`, `--wda-url=`, and `--appium-url=`. Every AI-waiting
+   sample must carry `secureContext: true`.
+5. Stop the front as soon as the sweep ends. `npm run perf:release` also stops one that was left
+   running.
+
+If step 2 is denied, the local rules are not installed on this Mac. Report that, and do not retry
+the start in another form. The sweep then waits for `npm run perf:session:person` with the
+maintainer present (`docs/PROFILING-CAMPAIGNS.md`).
+
 ## Apply fidelity tiers
 
 Only a hand-calibrated physical target may approve its deployment class. The physical-iPad web

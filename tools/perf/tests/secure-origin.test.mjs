@@ -3,10 +3,12 @@ import { connect } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   authorityConfig,
+  CONSTRAINT_PROVEN_IPADOS,
   createFrontHandler,
   frontDecision,
   leafExtensions,
   leafValidityDays,
+  secureOriginProblems,
 } from '../ios/secure-origin.mjs';
 
 const noBuildFiles = () => false;
@@ -138,6 +140,51 @@ describe('leafValidityDays', () => {
 
   it('ends no later than its authority', () => {
     expect(leafValidityDays(730)).toBe(729);
+  });
+});
+
+describe('secureOriginProblems', () => {
+  const safe = {
+    ipadOs: CONSTRAINT_PROVEN_IPADOS,
+    leafTrusted: true,
+    probeRefused: true,
+    pageStatus: 200,
+    deniedStatus: 403,
+  };
+
+  it('clears a front on the proven iPadOS whose trust and routes behave', () => {
+    expect(secureOriginProblems(safe)).toEqual([]);
+  });
+
+  it('refuses an iPad on a release where nobody has watched Safari refuse the probe', () => {
+    const [problem] = secureOriginProblems({ ...safe, ipadOs: '27.0' });
+    expect(problem).toContain(`proven only on ${CONSTRAINT_PROVEN_IPADOS}`);
+  });
+
+  it('refuses when the iPad version cannot be read', () => {
+    expect(secureOriginProblems({ ...safe, ipadOs: null })).toHaveLength(1);
+  });
+
+  it('refuses a root that accepts the constraint probe', () => {
+    const [problem] = secureOriginProblems({ ...safe, probeRefused: false });
+    expect(problem).toContain('Do not capture');
+  });
+
+  it('blames route restriction only when the front answered', () => {
+    const [refused] = secureOriginProblems({ ...safe, deniedStatus: 'ECONNREFUSED' });
+    const [forwarded] = secureOriginProblems({ ...safe, deniedStatus: 200 });
+    expect(refused).not.toContain('not restricting routes');
+    expect(forwarded).toContain('not restricting routes');
+  });
+
+  it('refuses a front that forwards a denied route or fails TLS', () => {
+    expect(
+      secureOriginProblems({
+        ...safe,
+        pageStatus: 'DEPTH_ZERO_SELF_SIGNED_CERT',
+        deniedStatus: 200,
+      })
+    ).toHaveLength(2);
   });
 });
 

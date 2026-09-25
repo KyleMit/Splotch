@@ -941,7 +941,7 @@ async function stepSecureOrigin(session, prompt) {
   ctx.tlsPort = await freePortFrom(PORT_SEARCH_FROM.front);
   ctx.constraintPort = await freePortFrom(PORT_SEARCH_FROM.front, new Set([ctx.tlsPort]));
   console.log(
-    `  About to start two HTTPS fronts on 0.0.0.0:${ctx.tlsPort} (leaf) and 0.0.0.0:${ctx.constraintPort} (constraint probe),`
+    `  About to start two HTTPS fronts on ${ctx.lan}:${ctx.tlsPort} (leaf) and ${ctx.lan}:${ctx.constraintPort} (constraint probe),`
   );
   console.log(
     `  forwarding GET/HEAD for the page and build files only, to the preview on ${ctx.previewPort}.`
@@ -953,7 +953,7 @@ async function stepSecureOrigin(session, prompt) {
   stopOwned(session, ['front-leaf', 'front-constraint']);
   const front = (leaf, port) => [
     'serve',
-    `--listen=0.0.0.0:${port}`,
+    `--listen=${ctx.lan}:${port}`,
     `--upstream=${ctx.previewPort}`,
     ...(leaf ? [`--leaf=${leaf}`] : []),
   ];

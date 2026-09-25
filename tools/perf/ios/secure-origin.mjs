@@ -6,15 +6,16 @@
 //
 //   make-ca  create the constrained root, a server leaf, and a constraint probe
 //   serve    the restricted HTTPS front over `npm run perf:serve`
+//   check    prove a running front is safe to capture behind with nobody at the iPad
 //
 // The procedure, including installing and removing the root on the iPad, is in
 // docs/PROFILING-IPAD.md ("A trusted HTTPS origin for iPad Safari").
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer as createHttpServer, request } from 'node:http';
-import { createServer as createHttpsServer } from 'node:https';
+import { createServer as createHttpsServer, get as httpsGet } from 'node:https';
 import { homedir } from 'node:os';
 import { join, normalize, resolve } from 'node:path';
-import { ROOT, argFlag, capture, fail, isMain, tryCapture } from '../../lib/proc.mjs';
+import { ROOT, argFlag, capture, fail, isMain, runMain, tryCapture } from '../../lib/proc.mjs';
 
 export const DEFAULT_CA_DIR = join(homedir(), '.splotch-rig', 'secure-origin-ca');
 const DEFAULT_AUTHORITY_DAYS = 730;
@@ -37,6 +38,14 @@ const UNDECODABLE_ESCAPE = /%(?![0-7][0-9a-f])/i;
 const CONSTRAINT_PROBE_OUTSIDE_NAME = 'DNS:example.com';
 // An address no rig uses (TEST-NET-3, RFC 5737). The root must refuse a leaf for it.
 const OUTSIDE_ADDRESS = '203.0.113.10';
+// The iPadOS release on which a person watched Safari refuse the constraint
+// probe (docs/scratchpad/perf/2026-09-19-ipad-secure-origin-ca/). `check` lets an
+// unattended session skip that on-device look only on this release: an iPad
+// update could change enforcement, so the probe is re-proven with someone at the
+// iPad (docs/PROFILING-IPAD.md, "Serve and verify") before this is raised.
+export const CONSTRAINT_PROVEN_IPADOS = '26.5';
+// A route the front refuses. A live 403 there proves the restriction is in force.
+const DENIED_PROBE_PATH = '/api/verify-key';
 
 export function frontDecision({ method, pathname, isBuildFile }) {
   if (!FORWARDED_METHODS.has(method)) return 'deny:method';
@@ -100,16 +109,18 @@ function issueLeaf(dir, name, subjectAltNames, days) {
   capture('openssl', ['x509', '-req', '-in', join(dir, `${name}.csr`), '-CA', join(dir, 'ca.pem'), '-CAkey', join(dir, 'ca.key'), '-CAcreateserial', '-out', join(dir, `${name}.pem`), '-days', String(days), '-extfile', join(dir, `${name}.ext`)]);
 }
 
-// Apple's own trust engine, with the new root as the only anchor: the leaf must
-// pass and the probe must fail. On macOS this is the same Security framework
-// evaluation Safari uses; the iPad still has to be checked on the device.
+// Apple's own trust engine, with the root as the only anchor. On macOS this is
+// the same Security framework evaluation Safari uses; the iPad's own enforcement
+// is proven on the device.
+const macTrusts = (dir, leaf, name) =>
+  tryCapture('security', ['verify-cert', '-c', join(dir, `${leaf}.pem`), '-r', join(dir, 'ca.pem'), '-p', 'ssl', '-s', name]).ok;
+
+// The leaf must pass and every probe must fail.
 function verifyOnMac(dir, host, ip) {
-  const verify = (leaf, name) =>
-    tryCapture('security', ['verify-cert', '-c', join(dir, `${leaf}.pem`), '-r', join(dir, 'ca.pem'), '-p', 'ssl', '-s', name]).ok;
   const names = [host, ...(ip ? [ip] : [])];
-  const leafOk = names.every((name) => verify('leaf', name));
-  const probeRefused = !verify('constraint-probe', ip ?? host);
-  const addressRefused = !verify('address-probe', OUTSIDE_ADDRESS);
+  const leafOk = names.every((name) => macTrusts(dir, 'leaf', name));
+  const probeRefused = !macTrusts(dir, 'constraint-probe', ip ?? host);
+  const addressRefused = !macTrusts(dir, 'address-probe', OUTSIDE_ADDRESS);
   console.log(`macOS trust: leaf ${leafOk ? 'accepted' : 'REFUSED'} for ${names.join(', ')}`);
   console.log(`macOS trust: constraint probe ${probeRefused ? 'refused' : 'ACCEPTED'}`);
   console.log(`macOS trust: ${OUTSIDE_ADDRESS} probe ${addressRefused ? 'refused' : 'ACCEPTED'}`);
@@ -207,9 +218,52 @@ function serveFront() {
   );
 }
 
+export function secureOriginProblems({ ipadOs, leafTrusted, probeRefused, pageStatus, deniedStatus }) {
+  return [
+    ipadOs !== CONSTRAINT_PROVEN_IPADOS &&
+      `the iPad reports iPadOS ${ipadOs ?? 'unknown'}, but the name constraint is proven only on ${CONSTRAINT_PROVEN_IPADOS}. Prove the constraint probe on the iPad with someone present (docs/PROFILING-IPAD.md, "Serve and verify"), then raise CONSTRAINT_PROVEN_IPADOS.`,
+    !leafTrusted && 'macOS trust refuses the leaf for this host; the root or leaf does not name it.',
+    !probeRefused && 'macOS trust ACCEPTS the constraint probe: the root is not name-constrained. Do not capture.',
+    pageStatus !== 200 && `the front answered ${pageStatus} for the page, not 200 with the rig CA.`,
+    deniedStatus !== 403 &&
+      `the front answered ${deniedStatus} for ${DENIED_PROBE_PATH}, not 403${typeof deniedStatus === 'number' ? ': it is not restricting routes' : ''}.`,
+  ].filter(Boolean);
+}
+
+// A transport failure is reported by its code in place of a status.
+function statusWithRigCa(url, ca) {
+  return new Promise((resolveStatus) => {
+    httpsGet(url, { ca }, (response) => {
+      response.resume();
+      resolveStatus(response.statusCode);
+    }).on('error', (error) => resolveStatus(error.code ?? error.message));
+  });
+}
+
+async function checkFront() {
+  const dir = resolve(argFlag('dir', DEFAULT_CA_DIR));
+  const url = new URL(argFlag('url') ?? fail('Pass --url=https://<mac>.local:<port>/ (the running leaf front).'));
+  const udid = argFlag('device-id') ?? fail('Pass --device-id=<iPad UDID>.');
+  const ca = readFileSync(join(dir, 'ca.pem'));
+  const version = tryCapture('ideviceinfo', ['-u', udid, '-k', 'ProductVersion']);
+  const facts = {
+    ipadOs: version.ok ? version.stdout.trim() : null,
+    leafTrusted: macTrusts(dir, 'leaf', url.hostname),
+    probeRefused: !macTrusts(dir, 'constraint-probe', url.hostname),
+    pageStatus: await statusWithRigCa(url, ca),
+    deniedStatus: await statusWithRigCa(new URL(DENIED_PROBE_PATH, url), ca),
+  };
+  const problems = secureOriginProblems(facts);
+  if (problems.length > 0) fail(problems.map((problem) => `✗ ${problem}`).join('\n'));
+  console.log(
+    `✓ iPadOS ${facts.ipadOs}; macOS trust accepts the leaf and refuses the constraint probe; ${url.href} answers 200 and ${DENIED_PROBE_PATH} 403`
+  );
+}
+
 if (isMain(import.meta.url)) {
   const command = process.argv[2];
   if (command === 'make-ca') makeAuthority();
   else if (command === 'serve') serveFront();
-  else fail('Usage: secure-origin.mjs make-ca --host=<name>.local [--ip=] [--days=] [--dir=] | serve --listen= --upstream= [--leaf=constraint-probe] [--http] [--log=] [--dir=]');
+  else if (command === 'check') runMain(checkFront);
+  else fail('Usage: secure-origin.mjs make-ca --host=<name>.local [--ip=] [--days=] [--dir=] | serve --listen=<lan address>:<port> --upstream= [--leaf=constraint-probe] [--http] [--log=] [--dir=] | check --url=https://<name>.local:<port>/ --device-id=<udid> [--dir=]');
 }

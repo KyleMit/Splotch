@@ -1,6 +1,6 @@
 ---
 name: release-capture-session
-description: Release the physical iPad and Android capture rig — stop every capture-rig process any checkout of this repo owns (previews, probe hosts, Appium, the hold-awake watcher, inspector proxies, from this session or a previous one), drop the adb forwards they left, and put the phone back to its stock state, so the next start-capture-session begins from a clean rig. Use when asked to release, tear down, clean up, or reset the capture session or capture ports, to free the rig for a fresh session, or when a previous session's servers are still holding capture ports.
+description: Release the physical iPad and Android capture rig — stop every capture-rig process any checkout of this repo owns (previews, probe hosts, iPad secure-origin fronts, Appium, the hold-awake watcher, inspector proxies, from this session or a previous one), drop the adb forwards they left, and put the phone back to its stock state, so the next start-capture-session begins from a clean rig. Use when asked to release, tear down, clean up, or reset the capture session or capture ports, to free the rig for a fresh session, or when a previous session's servers are still holding capture ports.
 ---
 
 # Release capture session
@@ -51,9 +51,10 @@ The order is deliberate. Drivers stop first (the `--hold-android-awake` watcher,
 every WebDriverAgent session is `DELETE`d so WDA exits on the iPad, then the server is signalled.
 Killing a forward under a live session once stranded a WebDriverAgent process on the device, and the
 next launch failed with an error that named neither the port nor the stale process. Then the servers
-— previews, probe hosts, floor controls, inspector proxies — each SIGTERMed as a process group and
-SIGKILLed if it does not go. Anything still alive after that is listed under `STILL RUNNING` and the
-command exits non-zero; do not report the rig released while that list is non-empty.
+— previews, probe hosts, secure-origin fronts, floor controls, inspector proxies — each SIGTERMed as
+a process group and SIGKILLed if it does not go. Anything still alive after that is listed under
+`STILL RUNNING` and the command exits non-zero; do not report the rig released while that list is
+non-empty.
 
 | Flag               | Effect                                                                                         |
 | ------------------ | ---------------------------------------------------------------------------------------------- |
