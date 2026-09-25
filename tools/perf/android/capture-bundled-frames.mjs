@@ -29,6 +29,7 @@ import {
   androidNativeLaunchSteps,
   androidRotationCommands,
   androidRotationRestoreCommands,
+  readAndroidRotationSettings,
   swipeArgs,
 } from '../split-capture/lib/android-input.mjs';
 import { runtimeUaProblem } from '../split-capture/capture-hand-input.mjs';
@@ -594,12 +595,7 @@ export async function captureBundledFrames({
   // cannot strand the others (the PR 1385 review — a stale forward or locked
   // rotation contaminates the shared rig's next capture). The app's own
   // rotation lock is restored first, while the page is still attached.
-  const previousRotation = Object.fromEntries(
-    ['accelerometer_rotation', 'user_rotation'].map((key) => [
-      key,
-      exec(serial, ['shell', 'settings', 'get', 'system', key]),
-    ])
-  );
+  const previousRotation = readAndroidRotationSettings((args) => exec(serial, args));
   const state = { browser: null, execute: null, forwarded: false, lockToRestore: null };
   const fence = createInterruptFence();
   const onSigint = () => fence.onSignal(130);

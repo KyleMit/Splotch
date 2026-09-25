@@ -280,12 +280,27 @@ export function androidOpenSteps({ nativeApp, orientation, pageUrl }) {
     : androidPageLaunchSteps(orientation, pageUrl);
 }
 
+// Every tool that turns the phone writes both of these, so every one of them
+// reads both before its first write and puts both back afterwards: a phone left
+// at user_rotation=1 hands the next portrait-assuming reader the wrong geometry.
+const ROTATION_SETTINGS = ['accelerometer_rotation', 'user_rotation'];
+
+// `read` runs one adb argument list against the device and returns its stdout.
+export function readAndroidRotationSettings(read) {
+  return Object.fromEntries(
+    ROTATION_SETTINGS.map((key) => [
+      key,
+      String(read(['shell', 'settings', 'get', 'system', key])).trim(),
+    ])
+  );
+}
+
 // The rotation settings a verification has to put back. `settings get` answers
 // `null` for a value that was never written, and writing the string "null" back
 // leaves the device with a setting it cannot parse — so an absent value is
 // restored by deleting the setting rather than by writing what was read.
 export function androidRotationRestoreCommands(previous) {
-  return ['accelerometer_rotation', 'user_rotation'].map((key) => {
+  return ROTATION_SETTINGS.map((key) => {
     const value = previous?.[key];
     return value === null || value === undefined || value === 'null'
       ? ['shell', 'settings', 'delete', 'system', key]
