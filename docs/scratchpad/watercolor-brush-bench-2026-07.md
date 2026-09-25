@@ -24,11 +24,18 @@ CPU throttle and reported draw cost, one undo rebuild, and a screenshot.
 v4 used `shadowBlur` rather than `ctx.filter` because the iOS 16.4 floor lacks `ctx.filter` until
 Safari 17.
 
-## What has changed since
+## Why a per-stroke buffer was not used, and what still stands
 
-The constraint that shaped all of this was replay determinism: undo rebuilt the page by re-running
-every op, so a translucent stroke rendered as many translucent sub-segments double-darkened at each
-join, and a per-stroke accumulation buffer was ruled out because it broke bit-identical replay.
-ADR-0066 reinstated snapshot undo and ADR-0086 moved it to tiled patches, which lifts that
-constraint. A future watercolor brush can therefore composite a whole stroke through its own buffer
-for true uniform translucency, and should re-bench from there rather than from v3.
+Every op was painted on its own, so a translucent stroke drawn as many translucent sub-segments
+double-darkened at each join; that is why all three variants approximate translucency per op. The
+alternative the draft ADR weighed, a per-stroke offscreen buffer composited once at the stroke's
+alpha, was not ruled out on determinism: replay could group each command's ops per stroke and render
+them through a matching scratch buffer. It was held in reserve because it breaks "one op, one
+immediate paint", needs that grouping pass on every replay path, and must make the live incremental
+path produce identical pixels to the buffered replay. (The option that did break bit-identity by
+design was a commit-time bake of the whole stroke into a raster.)
+
+Snapshot undo (ADR-0066, tiled by ADR-0086) removed the ordinary undo replay, but not every replay:
+a full repaint still re-renders each command op by op (`renderCommandAcrossTiles` in
+`web/src/lib/drawing/tiledRenderer.ts`). So a buffered watercolor still needs a repaint path that
+groups by stroke and reproduces the live pixels. Weigh that cost before re-benching from v3.
