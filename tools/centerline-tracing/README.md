@@ -58,7 +58,8 @@ Inputs are filled SVG artwork parseable by svgelements and Shapely. Outputs obey
 [store-drawing compiler](../store-drawings/gen-pointer-instructions.mjs) contract: a zero-origin
 viewBox, unfilled stroked groups, round caps and joins, absolute supported path commands, and
 explicit stroke widths. Piecewise widths remain the default for raster fidelity; the store-drawing
-compiler merges continuations after quantizing them to Splotch's five pen sizes.
+compiler chains continuations before quantizing each chain to Splotch's five pen sizes, so piecewise
+width costs pointer strokes only where the width genuinely changes.
 
 The manifest records each source SHA-256, normalized configuration, chosen pruning lambda, pinned
 source snapshot, fidelity/error/wobble metrics, and final output path. Results are deterministic for

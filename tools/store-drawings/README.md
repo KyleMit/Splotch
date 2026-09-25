@@ -7,8 +7,9 @@ coordinates and exports one named function per scene, including `drawHouseTall` 
 
 The supported authoring handoff is [filled SVG → centerline SVG](../centerline-tracing/README.md)
 followed by this compiler. The tracer's piecewise-width output is intentionally accepted here;
-conversion merges adjacent same-color continuations after mapping them to Splotch's five pen-size
-buckets.
+conversion chains adjacent same-color continuations first and only then maps each chain to Splotch's
+five pen-size buckets, so one drawn line stays one pointer stroke even where its traced width drifts
+across a bucket boundary.
 
 ## Layout
 
