@@ -546,6 +546,16 @@ export default tseslint.config(
     },
   },
   {
+    // toolbarGlassPanes' drawer strip and trigger read a dozen shared geometry locals; the corner controls, which depend only on the viewport, are already helpers.
+    files: ['web/src/lib/glassPanes.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 137, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
