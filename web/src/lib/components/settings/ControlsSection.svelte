@@ -48,7 +48,7 @@
 
   const focusedToolId = (): DrawingToolId | null => {
     const id = document.activeElement?.id;
-    return DRAWING_TOOLS.some((tool) => tool.id === id) ? (id as DrawingToolId) : null;
+    return DRAWING_TOOLS.find((tool) => tool.id === id)?.id ?? null;
   };
 
   // A skin change destroys the control the parent was on and mounts the other

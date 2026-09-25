@@ -15,7 +15,7 @@ type SessionCounterKind = 'settingsActivity' | 'installReprompt';
 
 const SESSION_COUNTER_LIMITS: Record<SessionCounterKind, number> = {
   settingsActivity: SETTINGS_ACTIVITY_DOTS_START_SESSION,
-  installReprompt: INSTALL_REPROMPT_SESSION_MILESTONES.at(-1)!,
+  installReprompt: Math.max(...INSTALL_REPROMPT_SESSION_MILESTONES),
 };
 
 const SESSION_COUNTER_STORAGE_KEYS: Record<SessionCounterKind, StorageKey> = {

@@ -31,10 +31,12 @@ type ImageOutputFormat = (typeof IMAGE_OUTPUT_FORMATS)[number];
  * than trusted, and defaulted to the tool's own default when absent.
  */
 function outputFormatOf(call: object): ImageOutputFormat {
-  const format = (call as { output_format?: unknown }).output_format;
-  return IMAGE_OUTPUT_FORMATS.includes(format as ImageOutputFormat)
-    ? (format as ImageOutputFormat)
-    : 'png';
+  const format = 'output_format' in call ? call.output_format : undefined;
+  return isImageOutputFormat(format) ? format : 'png';
+}
+
+function isImageOutputFormat(value: unknown): value is ImageOutputFormat {
+  return IMAGE_OUTPUT_FORMATS.some((format) => format === value);
 }
 
 // Machine-readable policy signals, in the two places the API reports one. These
@@ -134,7 +136,19 @@ export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassifi
 // model ever sees it. Treat that as a safety refusal so the UI guides the child
 // to a different drawing rather than "try again".
 export function isSafetyError(err: unknown): boolean {
-  return (err as { code?: string })?.code === 'moderation_blocked';
+  return (
+    typeof err === 'object' && err !== null && 'code' in err && err.code === 'moderation_blocked'
+  );
+}
+
+/** The HTTP status an OpenAI SDK error carries, when the thrown value has one. */
+export function errorStatus(err: unknown): number | undefined {
+  return typeof err === 'object' &&
+    err !== null &&
+    'status' in err &&
+    typeof err.status === 'number'
+    ? err.status
+    : undefined;
 }
 
 // A key that authenticates but whose organization has not completed OpenAI's
@@ -144,7 +158,7 @@ export function isSafetyError(err: unknown): boolean {
 const VERIFICATION_PATTERN = /organization must be verified|verify.{0,20}organization/i;
 
 export function isVerificationError(err: unknown): boolean {
-  const status = (err as { status?: number })?.status;
+  const status = errorStatus(err);
   const message = err instanceof Error ? err.message : String(err);
   return status === 403 && VERIFICATION_PATTERN.test(message);
 }

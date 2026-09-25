@@ -44,5 +44,5 @@ export function isLandscape(orientation: Orientation): boolean {
 }
 
 export function isOrientation(value: string | null): value is Orientation {
-  return ORIENTATIONS.includes(value as Orientation);
+  return ORIENTATIONS.some((orientation) => orientation === value);
 }

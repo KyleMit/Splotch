@@ -1,5 +1,5 @@
 import { getStore } from '@netlify/blobs';
-import { STYLE_SUFFIXES, type StyleName } from '../ai/styles';
+import { isStyleName, type StyleName } from '../ai/styles';
 import { USAGE_OUTCOMES, type UsageOutcome } from '../usageRecord';
 import { settleWithRetentionConcurrency } from './retentionSweep';
 
@@ -21,7 +21,7 @@ function isUsageOutcome(value: unknown): value is UsageOutcome {
 }
 
 function isStyle(value: unknown): value is StyleName | null {
-  return value === null || (typeof value === 'string' && Object.hasOwn(STYLE_SUFFIXES, value));
+  return value === null || isStyleName(value);
 }
 
 export function validUsage(value: unknown): value is TokenUsage {

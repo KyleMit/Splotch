@@ -103,7 +103,7 @@ export type ToolDrawerControl = (typeof TOOL_DRAWER_CONTROLS)[number];
 export type ActionPanelControl = ToolDrawerControl | 'coloringBookEnabled' | 'screenshotEnabled';
 
 function isToolDrawerControl(control: ActionPanelControl): control is ToolDrawerControl {
-  return (TOOL_DRAWER_CONTROLS as readonly ActionPanelControl[]).includes(control);
+  return TOOL_DRAWER_CONTROLS.some((drawerControl) => drawerControl === control);
 }
 
 const boolSettingEntries = () =>

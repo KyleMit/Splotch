@@ -15,6 +15,8 @@ interface EncoderWorkerScope {
   postMessage(message: EncodePngResponse, transfer?: Transferable[]): void;
 }
 
+// The app type-checks against the DOM lib, which types `self` as Window; the
+// webworker lib cannot join the same program, so the worker scope is declared here.
 const encoderWorker = self as unknown as EncoderWorkerScope;
 
 encoderWorker.onmessage = async ({ data }) => {

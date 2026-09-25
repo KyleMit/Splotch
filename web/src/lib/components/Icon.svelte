@@ -79,14 +79,14 @@
   // recursive: web/src/lib/icons/deferred/ holds the icons only lazily loaded
   // UI renders, and deferredIcons.ts registers those off the startup path
   // (ADR-0164).
-  const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
+  const modules = import.meta.glob<string>(['../icons/*.svg', '!../icons/splotchy.svg'], {
     eager: true,
     query: '?raw',
     import: 'default',
   });
 
   const icons = Object.fromEntries(
-    Object.entries(modules).map(([path, src]) => [iconNameFromPath(path), src as string])
+    Object.entries(modules).map(([path, src]) => [iconNameFromPath(path), src])
   ) as Record<CommonIconName, string>;
 
   /** Every name on the startup path, sorted — the /design styleguide pairs it with DEFERRED_ICON_NAMES. */

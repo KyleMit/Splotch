@@ -129,8 +129,11 @@ export async function deleteUsage(token: string) {
  * one token's read or expiry-delete failure is isolated from the other tokens.
  */
 export async function getUsage(tokens: string[]): Promise<Record<string, TokenUsage> | null> {
-  const keyedTokens = tokens.map((token) => ({ token, key: usageGrantKey(token) }));
-  if (keyedTokens.some(({ key }) => key === null)) {
+  const keyedTokens = tokens.flatMap((token) => {
+    const key = usageGrantKey(token);
+    return key === null ? [] : [{ token, key }];
+  });
+  if (keyedTokens.length !== tokens.length) {
     console.warn('[ai-usage] USAGE_GRANT_ID_SECRET is unset; no usage stats are available');
     return null;
   }
@@ -149,10 +152,10 @@ export async function getUsage(tokens: string[]): Promise<Record<string, TokenUs
   const entries = await Promise.all(
     keyedTokens.map(async ({ token, key }) => {
       try {
-        const usage = await store.get(key!, { type: 'json' });
+        const usage = await store.get(key, { type: 'json' });
         if (!validUsage(usage)) return null;
         if (isExpiredUsage(usage, Date.now())) {
-          await store.delete(key!);
+          await store.delete(key);
           return null;
         }
         return [token, usage] as const;

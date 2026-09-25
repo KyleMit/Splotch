@@ -84,15 +84,15 @@ export function cutTrailingRow(node: HTMLElement) {
     let top = 0;
     for (let node: HTMLElement | null = element; node && node !== scrollport;) {
       top += node.offsetTop;
-      node = node.offsetParent as HTMLElement | null;
+      node = node.offsetParent instanceof HTMLElement ? node.offsetParent : null;
     }
     return top;
   }
 
   function measure() {
     if (!scrollport || !scrollport.open) return;
-    const firstTile = node.firstElementChild as HTMLElement | null;
-    if (!firstTile) return;
+    const firstTile = node.firstElementChild;
+    if (!(firstTile instanceof HTMLElement)) return;
 
     // Measure against the natural height, not a cap left over from the last
     // layout, or each pass would budget down from the previous pass's budget.

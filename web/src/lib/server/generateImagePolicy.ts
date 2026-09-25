@@ -1,5 +1,5 @@
 import { buildPromptForStyle } from '../ai/prompt.ts';
-import { STYLE_SUFFIXES, type StyleName } from '../ai/styles.ts';
+import { STYLE_SUFFIXES, isStyleName, type StyleName } from '../ai/styles.ts';
 
 // A drawing screenshot is well under a megabyte; cap the upload so a valid-token
 // holder can't push us into a memory/DoS situation by base64-ing a huge blob.
@@ -12,7 +12,7 @@ export function isAllowedImageType(mimeType: string): boolean {
 }
 
 export function resolveGenerationStyle(style: string | null): StyleName | null {
-  return style !== null && Object.hasOwn(STYLE_SUFFIXES, style) ? (style as StyleName) : null;
+  return isStyleName(style) ? style : null;
 }
 
 export function resolveGenerationPrompt(style: StyleName | null): string {

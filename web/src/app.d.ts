@@ -87,6 +87,14 @@ declare global {
 
   interface Navigator {
     connection?: NetworkInformation;
+    // iOS Safari only: true when launched from a Home Screen web clip.
+    standalone?: boolean;
+  }
+
+  // Safari-only field, read by lib/actions/scribbleGuard.ts (Scribble only
+  // exists there). lib.dom declares it on TouchInit but not on Touch itself.
+  interface Touch {
+    readonly touchType?: TouchType;
   }
 
   interface WindowEventMap {

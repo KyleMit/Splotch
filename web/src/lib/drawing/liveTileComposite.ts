@@ -1,3 +1,4 @@
+import { require2dContext } from './canvas2d';
 /**
  * Diagnostics/test seam for `/dev/engine` and Playwright pixel readers. Playwright serializes the
  * function body into the page through `evaluateHandle`, so it cannot reference module-scope values.
@@ -60,7 +61,7 @@ export function compositeVisibleLiveTiles(root: ParentNode = document): HTMLCanv
 
   rendered.width = columnWidths.reduce((sum, width) => sum + width, 0);
   rendered.height = rowHeights.reduce((sum, height) => sum + height, 0);
-  const target = rendered.getContext('2d')!;
+  const target = require2dContext(rendered);
   for (const tile of tiles) {
     if (tile.hidden) continue;
     const column = lefts.indexOf(Number.parseFloat(tile.style.left));

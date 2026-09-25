@@ -110,7 +110,8 @@ export function toIconCssVarName(icon: string, part: string): string {
 
 /** Every declared part, flattened — what the generator emits and the drift guard walks. */
 export function iconTokenEntries(): { cssVar: string; light: string; dark: string }[] {
-  return Object.entries(iconThemes as IconThemes).flatMap(([icon, parts]) =>
+  const themes: IconThemes = iconThemes;
+  return Object.entries(themes).flatMap(([icon, parts]) =>
     Object.entries(parts ?? {}).map(([part, { light, dark }]) => ({
       cssVar: toIconCssVarName(icon, part),
       light,

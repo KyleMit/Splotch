@@ -190,7 +190,8 @@ export async function putJobInput(jobId: string, image: ArrayBuffer): Promise<vo
  * for the whole generation to no purpose.
  */
 export async function takeJobInput(jobId: string): Promise<Uint8Array | null> {
-  const bytes = (await store().get(inputKey(jobId), { type: 'arrayBuffer' })) as ArrayBuffer | null;
+  // The SDK types a missing key's arrayBuffer read as ArrayBuffer, but it resolves null.
+  const bytes: ArrayBuffer | null = await store().get(inputKey(jobId), { type: 'arrayBuffer' });
   await store().delete(inputKey(jobId));
   return bytes ? new Uint8Array(bytes) : null;
 }
@@ -242,7 +243,7 @@ export async function readJob(jobId: string, now = Date.now()): Promise<Generati
 }
 
 export async function takeJobImage(jobId: string): Promise<Uint8Array | null> {
-  const bytes = (await store().get(imageKey(jobId), { type: 'arrayBuffer' })) as ArrayBuffer | null;
+  const bytes: ArrayBuffer | null = await store().get(imageKey(jobId), { type: 'arrayBuffer' });
   return bytes ? new Uint8Array(bytes) : null;
 }
 

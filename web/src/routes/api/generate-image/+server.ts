@@ -278,10 +278,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
         url.origin,
         { free: freeSettlement(authorization, reservationId), style },
         {
-          bytes: inputBytes.buffer.slice(
-            inputBytes.byteOffset,
-            inputBytes.byteOffset + inputBytes.byteLength
-          ) as ArrayBuffer,
+          bytes: new Uint8Array(inputBytes).buffer,
           mimeType: imageMimeType,
         },
         { apiKey: authorization.effectiveKey, prompt: finalPrompt }

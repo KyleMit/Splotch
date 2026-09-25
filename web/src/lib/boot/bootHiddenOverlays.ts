@@ -68,13 +68,9 @@ export function mountBootHiddenOverlays(
   const requested = new Set<BootHiddenOverlayKey>();
   const mounted = new Set<BootHiddenOverlayKey>();
 
-  function component(key: BootHiddenOverlayKey): Component {
-    return catalog![COMPONENT_EXPORTS[key]];
-  }
-
   function mountOnce(key: BootHiddenOverlayKey) {
     if (stopped || !catalog || mounted.has(key)) return;
-    onOverlay(key, component(key));
+    onOverlay(key, catalog[COMPONENT_EXPORTS[key]]);
     mounted.add(key);
   }
 

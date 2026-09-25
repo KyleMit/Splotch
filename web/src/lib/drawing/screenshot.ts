@@ -41,7 +41,10 @@ function unsavedStatusForError(err: unknown): UnsavedStatus {
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject(reader.error ?? new Error('FileReader produced no data URL'));
+    };
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });

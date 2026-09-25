@@ -35,6 +35,8 @@ interface MagicSheetWorkerScope {
   postMessage(message: MagicSheetWorkerResponse, transfer: Transferable[]): void;
 }
 
+// The app type-checks against the DOM lib, which types `self` as Window; the
+// webworker lib cannot join the same program, so the worker scope is declared here.
 const workerScope = self as unknown as MagicSheetWorkerScope;
 
 workerScope.onmessage = async ({ data }) => {

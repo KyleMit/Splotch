@@ -47,7 +47,7 @@ const POLICY_STORAGE_KEYS = {
 } as const satisfies Record<ParentalGateFeature, StorageKey>;
 
 function isParentalGateMode(value: string | null): value is ParentalGateMode {
-  return (PARENTAL_GATE_MODES as readonly (string | null)[]).includes(value);
+  return PARENTAL_GATE_MODES.some((mode) => mode === value);
 }
 
 export function isParentalGateModeAvailable(
@@ -332,8 +332,8 @@ export function createParentalGate(): ParentalGateState {
   }
 
   function tickLockout() {
-    if (!lockoutHolds()) return;
-    const remainingMs = s.lockoutUntil! - Date.now();
+    if (!lockoutHolds() || s.lockoutUntil === null) return;
+    const remainingMs = s.lockoutUntil - Date.now();
     s.lockoutMessage = gateLockoutMessage(remainingMs);
     clearTimeout(lockoutTickTimer);
     lockoutTickTimer = setTimeout(

@@ -141,8 +141,8 @@ export function isIdentityView(view: PaperView): boolean {
 // actually rotated, as opposed to a plain viewport resize); it is also the
 // counter-rotation a glued-to-the-glass presentation would need, were that
 // alternative ever revisited (ADR-0050).
-export function rotationDelta(paperAngle: number, currentAngle: number): ViewRotation {
-  return ((((paperAngle - currentAngle) % 360) + 360) % 360) as ViewRotation;
+export function rotationDelta(paperAngle: number, currentAngle: number): number {
+  return (((paperAngle - currentAngle) % 360) + 360) % 360;
 }
 
 // Contain-fit the rotated paper into the viewport and center it. scale stays
