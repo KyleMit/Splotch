@@ -112,6 +112,7 @@ import {
   commitTiledCommand,
   detachTiledRenderer,
   hasRetainedTiledMagicOps,
+  hasUnrevealedTiledMagicOps,
   peekTiledUndoPaper,
   recordTiledOp,
   recodeTiledMagicOps,
@@ -972,8 +973,14 @@ function draw(e: PointerEvent) {
   }
 }
 
+// Magic ink recorded before its sheet was ready has no pixels for the scan to
+// find, so it holds the page non-empty until the sheet's repaint, which then
+// rescans (recodeMagicOpsToCurrentSheet).
+let emptyScanAwaitsMagicReveal = false;
+
 function scanDrawingIsEmpty() {
-  return scanTiledRendererIsEmpty(renderScale);
+  emptyScanAwaitsMagicReveal = hasUnrevealedTiledMagicOps();
+  return !emptyScanAwaitsMagicReveal && scanTiledRendererIsEmpty(renderScale);
 }
 
 const idleEmptyScan = createIdleEmptyScan({
@@ -1115,18 +1122,27 @@ export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppeara
 
 // `animateInto` is the client point the departing page shrinks into — the
 // clear button's docked centre. Without it the page clears in place.
+// A blank page records no clear: an undo step that changes nothing would light
+// Undo on an untouched page and spend a MAX_UNDO_DEPTH slot that could hold the
+// clear that removed real ink. The fresh-page resets still run, so the magic
+// brush gets a new hidden picture either way.
 export function clearCanvas({ animateInto }: { animateInto?: ClientPoint } = {}) {
   inkMotion.cancel();
   if (!canvas || !ctx) return;
+  idleEmptyScan.flush();
+  if (!canvasEmpty || isStrokeActive()) clearRecordedInk(animateInto);
+  crayonPasses.reset();
+  clearMagicGradient();
+  if (magicActive) ensureMagicSheet();
+}
+
+function clearRecordedInk(animateInto: ClientPoint | undefined) {
   if (animateInto && !isStrokeActive() && !canvasEmpty) {
     inkMotion.clear(canvas, getViewState(), renderScale, viewport, animateInto);
   }
   const state = clearTiledRenderer(canvasEmpty);
-  crayonPasses.reset();
   setCanvasEmptyState(state.empty);
   setCanUndo(state.canUndo);
-  clearMagicGradient();
-  if (magicActive) ensureMagicSheet();
 }
 
 export function isCanvasEmpty(): boolean {
@@ -1235,6 +1251,7 @@ function recodeMagicOpsToCurrentSheet() {
   const snapshot = captureMagicSheet();
   if (!snapshot) return;
   recodeTiledMagicOps(snapshot, snapshot.sourceUrl ? pageCompositionKey(snapshot.sourceUrl) : null);
+  if (emptyScanAwaitsMagicReveal) idleEmptyScan.schedule();
 }
 
 function wireMagicBrushHost(): void {

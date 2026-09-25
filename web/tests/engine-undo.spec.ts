@@ -1,6 +1,10 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
 import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 
+// Long enough past the eraser's idle empty scan that the scan runs while the
+// magic sheet is still undelivered.
+const SHEET_DELIVERY_DELAY_MS = 1100;
+
 // The resize inside undo's paper pre-restore used to trigger a full history
 // repaint whose replay runs through the clear being popped, immediately
 // overwritten by the snapshot restore (issue 1198). Measured through this exact
@@ -240,4 +244,188 @@ test('a clear during an in-flight stroke does not resurrect wiped ink', async ({
   await page.evaluate(() => window.__engine.undo());
   await expect.poll(() => count(page)).toBe(0);
   await expect.poll(async () => (await state(page)).canvasEmpty).toBe(true);
+});
+
+test('clearing a blank page records no undo step', async ({ page }) => {
+  const historyLength = () =>
+    page.evaluate(() => window.__engine.getUndoDebug().historyLength ?? 0);
+
+  await page.evaluate(() => window.__engine.clearCanvas());
+  expect((await state(page)).canUndo).toBe(false);
+  expect(await historyLength()).toBe(0);
+
+  await page.evaluate(() => {
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 200, y: 200 },
+    ]);
+    window.__engine.clearCanvas();
+  });
+  const afterInkClear = await historyLength();
+
+  await page.evaluate(() => {
+    window.__engine.clearCanvas();
+    window.__engine.clearCanvas();
+  });
+  expect(await historyLength()).toBe(afterInkClear);
+
+  await page.evaluate(() => window.__engine.undo());
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+});
+
+// Clearing is how a child asks the magic brush for a new hidden picture, so a
+// blank-page clear keeps that even though it records nothing. Each clear pins
+// the random pick to an opposite end of the gradient pool; a clear that kept
+// the held gradient would paint the same stroke identically both times.
+test('clearing a blank page still gives the magic brush a new picture', async ({ page }) => {
+  await page.evaluate(() => window.__engine.setMagicMode(true));
+
+  const pixelsAfterBlankClear = async (randomPick: number) => {
+    await page.evaluate((pick) => {
+      const random = Math.random;
+      Math.random = () => pick;
+      try {
+        window.__engine.clearCanvas();
+      } finally {
+        Math.random = random;
+      }
+    }, randomPick);
+    expect((await state(page)).canUndo).toBe(false);
+
+    await page.evaluate(() =>
+      window.__engine.strokeSync([
+        { x: 40, y: 120 },
+        { x: 360, y: 120 },
+      ])
+    );
+    const band = () => page.evaluate(() => window.__engine.pixelsIn(40, 116, 320, 8));
+    await expect.poll(async () => (await band()).some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
+    const pixels = await band();
+
+    await page.evaluate(() => window.__engine.undo());
+    await expect.poll(() => count(page)).toBe(0);
+    return pixels;
+  };
+
+  const firstPicture = await pixelsAfterBlankClear(0);
+  const secondPicture = await pixelsAfterBlankClear(0.9999);
+  expect(secondPicture).not.toEqual(firstPicture);
+});
+
+// The eraser settles canvasEmpty on an idle timer, so a clear that lands before
+// it fires has to settle it itself.
+test('clearing right after erasing to blank records no undo step', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 80, y: 60 },
+    ]);
+    window.__engine.setStrokeWidth(100);
+    window.__engine.setEraserMode(true);
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 80, y: 60 },
+    ]);
+    const before = window.__engine.getUndoDebug().historyLength;
+    window.__engine.clearCanvas();
+    return {
+      pixels: window.__engine.nonTransparentCount(),
+      before,
+      after: window.__engine.getUndoDebug().historyLength,
+    };
+  });
+
+  expect(result.pixels).toBe(0);
+  expect(result.after).toBe(result.before);
+});
+
+// A magic stroke drawn before its sheet is ready paints nothing yet, so the
+// page reads blank to a pixel scan while it still holds ink the sheet will
+// reveal. Clearing it must still record the clear, or that ink surfaces later.
+test('clearing magic ink that has not revealed yet still clears it', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    window.__engine.setMagicMode(true);
+    window.__engine.strokeSync([
+      { x: 40, y: 120 },
+      { x: 360, y: 120 },
+    ]);
+    const unrevealedPixels = window.__engine.nonTransparentCount();
+    window.__engine.setMagicMode(false);
+    window.__engine.setEraserMode(true);
+    window.__engine.strokeSync([
+      { x: 40, y: 300 },
+      { x: 80, y: 300 },
+    ]);
+    window.__engine.setEraserMode(false);
+    const before = window.__engine.getUndoDebug().historyLength ?? 0;
+    window.__engine.clearCanvas();
+    return {
+      unrevealedPixels,
+      before,
+      after: window.__engine.getUndoDebug().historyLength ?? 0,
+    };
+  });
+  expect(result.unrevealedPixels).toBe(0);
+  expect(result.after).toBe(result.before + 1);
+
+  await page.evaluate(() => {
+    window.__engine.setMagicMode(true);
+    window.__engine.strokeSync([
+      { x: 40, y: 220 },
+      { x: 360, y: 220 },
+    ]);
+  });
+  const band = (y: number) => page.evaluate((top) => window.__engine.pixelsIn(40, top, 320, 8), y);
+  await expect.poll(async () => (await band(216)).some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
+  expect((await band(116)).some((v, i) => i % 4 === 3 && v > 0)).toBe(false);
+});
+
+// The eraser's scan can come due while an erased magic stroke still waits for
+// its sheet, which holds the page non-empty; the sheet's repaint has to rescan
+// or the blank page keeps reading as inked.
+test('erasing magic ink before it reveals still settles to a blank page', async ({ page }) => {
+  await page.evaluate((delayMs) => {
+    const addListener = Worker.prototype.addEventListener;
+    Worker.prototype.addEventListener = function (
+      this: Worker,
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions
+    ) {
+      if (type !== 'message') {
+        return addListener.call(this, type, listener, options);
+      }
+      const delayed = (event: Event) =>
+        setTimeout(() => {
+          if (typeof listener === 'function') listener.call(this, event);
+          else listener.handleEvent(event);
+        }, delayMs);
+      return addListener.call(this, type, delayed, options);
+    } as typeof Worker.prototype.addEventListener;
+
+    window.__engine.setMagicMode(true);
+    window.__engine.strokeSync([
+      { x: 60, y: 120 },
+      { x: 100, y: 120 },
+    ]);
+    window.__engine.setMagicMode(false);
+    window.__engine.setStrokeWidth(100);
+    window.__engine.setEraserMode(true);
+    window.__engine.strokeSync([
+      { x: 60, y: 120 },
+      { x: 100, y: 120 },
+    ]);
+  }, SHEET_DELIVERY_DELAY_MS);
+
+  await expect
+    .poll(async () => (await state(page)).canvasEmpty, { timeout: SHEET_DELIVERY_DELAY_MS * 4 })
+    .toBe(true);
+  expect(await count(page)).toBe(0);
+
+  const history = await page.evaluate(() => {
+    const before = window.__engine.getUndoDebug().historyLength;
+    window.__engine.clearCanvas();
+    return { before, after: window.__engine.getUndoDebug().historyLength };
+  });
+  expect(history.after).toBe(history.before);
 });
