@@ -39,6 +39,78 @@ function canvasOf(width: number, height: number) {
   return canvas;
 }
 
+// The undo restore writes the very tiles the ghost has just read. Left
+// pending, WebKit resolves those reads at presentation after the write, and
+// on a physical iPad that frame overran the action-frame gate on a quarter of
+// crayon undos. Reading one pixel back resolves them now, before the write,
+// for a few milliseconds of undo time; the ghost's pixels are unchanged.
+// Android Chrome is the reason this is not unconditional: there the same
+// readback is a synchronous GPU round trip that made the first undo block for
+// over a second and every later one slower.
+// Evidence: docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/.
+function settleTileReads(target: CanvasRenderingContext2D) {
+  target.getImageData(0, 0, 1, 1);
+}
+
+// The drift is measured in client space, where the button lives, and handed to
+// the ghost in its own paper space, which the rotation lock may have turned.
+function driftTowards(
+  image: HTMLCanvasElement,
+  host: HTMLElement | null,
+  target: HTMLElement | null | undefined,
+  view: EngineViewState,
+  ghostCenter: ClientPoint
+) {
+  const targetRect = target?.getBoundingClientRect();
+  const hostRect = host?.getBoundingClientRect();
+  if (!targetRect?.width || !hostRect) return;
+  const center = paperToView(view, ghostCenter.x, ghostCenter.y);
+  const dx =
+    (targetRect.left + targetRect.width / 2 - hostRect.left - center.x) * UNDO_INK_DRIFT_FRACTION;
+  const dy =
+    (targetRect.top + targetRect.height / 2 - hostRect.top - center.y) * UNDO_INK_DRIFT_FRACTION;
+  const drift = viewToPaper(view, view.tx + dx, view.ty + dy);
+  image.style.setProperty('--ink-tx', `${drift.x}px`);
+  image.style.setProperty('--ink-ty', `${drift.y}px`);
+}
+
+// The ghost's animation is paused in app.css and starts here, one frame after
+// the one that paints it. A tile-read ghost carries a stroke-sized canvas
+// whose pixels are rasterized during that first frame — 70 ms for a
+// paper-width crayon stroke on an iPad — while a CSS animation's clock starts
+// at the frame it was created in either way, so the fade was already a quarter
+// over by the time any of it reached the screen (issue #1775). Where
+// settleTileReads runs, that raster is paid inside undo instead, and the pause
+// still covers every browser that defers it. The first callback runs at the
+// top of the painting frame, before its pixels exist; the frame after it
+// begins only once they do.
+function runWhenPainted(image: HTMLCanvasElement) {
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      if (image.isConnected) image.classList.add('undo-ink-running');
+    })
+  );
+}
+
+// The coloring page's line art stays on the page through a clear, but it sits
+// above the ink, so a sheet leaving without it would blank the art for the
+// first frame and reveal it again as the sheet shrinks.
+function paintColoringArt(target: CanvasRenderingContext2D, view: EngineViewState, scale: number) {
+  const art = document.getElementById(COLORING_OVERLAY_ID);
+  if (!(art instanceof HTMLImageElement) || art.hidden || !art.naturalWidth || !art.complete)
+    return;
+  const box = { width: view.paperCssWidth * scale, height: view.paperCssHeight * scale };
+  const fit = containFit({ width: art.naturalWidth, height: art.naturalHeight }, box);
+  target.globalCompositeOperation = 'source-over';
+  target.drawImage(
+    art,
+    fit.offsetX,
+    fit.offsetY,
+    art.naturalWidth * fit.scale,
+    art.naturalHeight * fit.scale
+  );
+}
+
 // `paint` lays the visible live tiles onto a target under its current transform;
 // both ghosts read their pixels from it rather than replaying history.
 // `settlesTileReads` says whether this browser should resolve a tile-read
@@ -99,65 +171,12 @@ export function createInkMotion(
     pendingSubtract = target;
   }
 
-  // The undo restore writes the very tiles the ghost has just read. Left
-  // pending, WebKit resolves those reads at presentation after the write, and
-  // on a physical iPad that frame overran the action-frame gate on a quarter of
-  // crayon undos. Reading one pixel back resolves them now, before the write,
-  // for a few milliseconds of undo time; the ghost's pixels are unchanged.
-  // Android Chrome is the reason this is not unconditional: there the same
-  // readback is a synchronous GPU round trip that made the first undo block for
-  // over a second and every later one slower.
-  // Evidence: docs/scratchpad/perf/2026-09-18-issue-1750-ipad-baseline/.
-  function settleTileReads(target: CanvasRenderingContext2D) {
-    target.getImageData(0, 0, 1, 1);
-  }
-
   // A crayon or magic ghost is the undone ink as it stands on the live tiles.
   // Replaying those ops re-rasterizes the whole stroke through the crayon pass
   // buffer, which is the cost the 1751 bisect measured on the undo path; the
   // tiles already hold the pixels, and a bounded number of blits reads them. A
   // pen ghost still replays: that is exact and cheap, and a five-finger drag's
   // footprint covers most of the paper, where the tile copy is the dearer path.
-  // The drift is measured in client space, where the button lives, and handed to
-  // the ghost in its own paper space, which the rotation lock may have turned.
-  function driftTowards(
-    image: HTMLCanvasElement,
-    host: HTMLElement | null,
-    target: HTMLElement | null | undefined,
-    view: EngineViewState,
-    ghostCenter: ClientPoint
-  ) {
-    const targetRect = target?.getBoundingClientRect();
-    const hostRect = host?.getBoundingClientRect();
-    if (!targetRect?.width || !hostRect) return;
-    const center = paperToView(view, ghostCenter.x, ghostCenter.y);
-    const dx =
-      (targetRect.left + targetRect.width / 2 - hostRect.left - center.x) * UNDO_INK_DRIFT_FRACTION;
-    const dy =
-      (targetRect.top + targetRect.height / 2 - hostRect.top - center.y) * UNDO_INK_DRIFT_FRACTION;
-    const drift = viewToPaper(view, view.tx + dx, view.ty + dy);
-    image.style.setProperty('--ink-tx', `${drift.x}px`);
-    image.style.setProperty('--ink-ty', `${drift.y}px`);
-  }
-
-  // The ghost's animation is paused in app.css and starts here, one frame after
-  // the one that paints it. A tile-read ghost carries a stroke-sized canvas
-  // whose pixels are rasterized during that first frame — 70 ms for a
-  // paper-width crayon stroke on an iPad — while a CSS animation's clock starts
-  // at the frame it was created in either way, so the fade was already a quarter
-  // over by the time any of it reached the screen (issue #1775). Where
-  // settleTileReads runs, that raster is paid inside undo instead, and the pause
-  // still covers every browser that defers it. The first callback runs at the
-  // top of the painting frame, before its pixels exist; the frame after it
-  // begins only once they do.
-  function runWhenPainted(image: HTMLCanvasElement) {
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        if (image.isConnected) image.classList.add('undo-ink-running');
-      })
-    );
-  }
-
   function undo(
     canvas: HTMLCanvasElement,
     command: StrokeGroupCommand | undefined,
@@ -204,29 +223,6 @@ export function createInkMotion(
     if (!target) return;
     target.globalCompositeOperation = 'destination-out';
     paint(target);
-  }
-
-  // The coloring page's line art stays on the page through a clear, but it sits
-  // above the ink, so a sheet leaving without it would blank the art for the
-  // first frame and reveal it again as the sheet shrinks.
-  function paintColoringArt(
-    target: CanvasRenderingContext2D,
-    view: EngineViewState,
-    scale: number
-  ) {
-    const art = document.getElementById(COLORING_OVERLAY_ID);
-    if (!(art instanceof HTMLImageElement) || art.hidden || !art.naturalWidth || !art.complete)
-      return;
-    const box = { width: view.paperCssWidth * scale, height: view.paperCssHeight * scale };
-    const fit = containFit({ width: art.naturalWidth, height: art.naturalHeight }, box);
-    target.globalCompositeOperation = 'source-over';
-    target.drawImage(
-      art,
-      fit.offsetX,
-      fit.offsetY,
-      art.naturalWidth * fit.scale,
-      art.naturalHeight * fit.scale
-    );
   }
 
   // The whole page — paper, ink and line art as one bitmap — scales into the
