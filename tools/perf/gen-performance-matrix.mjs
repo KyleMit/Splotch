@@ -55,6 +55,7 @@ import {
 import { FULL_ACTION_GROUPS, actionNotApplicableReason } from './lib/action-applicability.mjs';
 import { artifactFrameStampEpoch, DUAL_FRAME_STAMP_EPOCH } from './lib/frame-stamps.mjs';
 import { FLOOR_CONTROL_PAGE } from './split-capture/lib/probe-host-protocol.mjs';
+import { MATRIX_SECTIONS, captureAgeDays, isCaptureDate } from './lib/capture-date.mjs';
 
 const DEFAULT_MANIFEST = join(
   ROOT,
@@ -1123,30 +1124,7 @@ function withActionReadinessSummary(actions) {
   };
 }
 
-function countFinalProductCommitActions(results, finalProductCommit) {
-  return results.filter(
-    (result) =>
-      !ACTION_CONTROL_LABELS.has(result.label) && result.productCommit === finalProductCommit
-  ).length;
-}
-
-// A preserved action section carries the count computed for the report it came
-// from. Re-derive it against this report's product commit so historical rows
-// cannot claim current coverage.
-function withFinalProductCommitActionCount(actions, finalProductCommit, preserved) {
-  if (!preserved || !actions || typeof actions !== 'object' || !Array.isArray(actions.results)) {
-    return actions;
-  }
-  return {
-    ...actions,
-    finalProductCommitActionCount: countFinalProductCommitActions(
-      actions.results,
-      finalProductCommit
-    ),
-  };
-}
-
-function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, targetId) {
+function normalizeActions(sources, sourceDirectory, mode, targetId) {
   if (!sources?.length) return null;
   const captures = sources.map((source) =>
     normalizeActionCapture(source, sourceDirectory, mode, targetId)
@@ -1158,7 +1136,6 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, ta
     sources: captures.map(({ results: _results, ...capture }) => capture),
     fullSweepProductCommit: fullSweep?.productCommit ?? null,
     actionPlan: fullSweep?.actionPlan ?? null,
-    finalProductCommitActionCount: countFinalProductCommitActions(results, finalProductCommit),
     actionCount: results.length,
     passedActionCount: results.filter((result) => result.passed).length,
     worst: {
@@ -1183,7 +1160,38 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, ta
   };
 }
 
-function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preserved) {
+// A section's capture date travels with it into data.json so the report can show
+// its age (ADR-0175). A date that is present must be a real one; an absent date
+// is left absent for `check:matrix-staleness --strict` to name, rather than
+// refusing the whole report over one undated section.
+function normalizeCapturedOn(capturedOn, target, mode) {
+  if (capturedOn === undefined) return {};
+  if (!capturedOn || typeof capturedOn !== 'object' || Array.isArray(capturedOn)) {
+    throw new Error(`Target ${target.id} mode ${mode.id} capturedOn must map sections to dates`);
+  }
+  for (const [section, date] of Object.entries(capturedOn)) {
+    if (!MATRIX_SECTIONS.includes(section)) {
+      throw new Error(
+        `Target ${target.id} mode ${mode.id} capturedOn names unknown section ${section}`
+      );
+    }
+    if (!isCaptureDate(date)) {
+      throw new Error(
+        `Target ${target.id} mode ${mode.id} capturedOn.${section} ${date} is not YYYY-MM-DD`
+      );
+    }
+  }
+  return {
+    capturedOn: Object.fromEntries(
+      MATRIX_SECTIONS.filter((section) => section in capturedOn).map((section) => [
+        section,
+        capturedOn[section],
+      ])
+    ),
+  };
+}
+
+function normalizeMode(mode, target, sourceDirectory, preserved) {
   const normalizedMode = {
     ...mode,
     id: mode.id ?? modeKey(mode),
@@ -1218,6 +1226,7 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
   };
   return {
     ...shared,
+    ...normalizeCapturedOn(normalizedMode.capturedOn, target, normalizedMode),
     drawingProductCommit: normalizedMode.drawingProductCommit,
     undoProductCommit: normalizedMode.undoProductCommit ?? normalizedMode.drawingProductCommit,
     // Applied only to a section that actually came from preserved evidence. A
@@ -1244,22 +1253,12 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
         normalizedMode
       )
     ),
-    actions: withFinalProductCommitActionCount(
-      withActionReadinessSummary(
-        withActionControlScoreability(
-          resolveSection(normalizedMode.actionSources, 'actions', () =>
-            normalizeActions(
-              normalizedMode.actionSources,
-              finalProductCommit,
-              sourceDirectory,
-              normalizedMode,
-              target.id
-            )
-          )
+    actions: withActionReadinessSummary(
+      withActionControlScoreability(
+        resolveSection(normalizedMode.actionSources, 'actions', () =>
+          normalizeActions(normalizedMode.actionSources, sourceDirectory, normalizedMode, target.id)
         )
-      ),
-      finalProductCommit,
-      preservedSections.includes('actions')
+      )
     ),
     ...(preservedSections.length ? { preservedSections } : {}),
     ...(untrackedSections.length ? { untrackedSections } : {}),
@@ -1352,7 +1351,7 @@ function validateManifest(manifest) {
   }
 }
 
-function normalizeTarget(target, finalProductCommit, sourceDirectory, preserved) {
+function normalizeTarget(target, sourceDirectory, preserved) {
   return {
     id: target.id,
     number: target.number,
@@ -1362,9 +1361,7 @@ function normalizeTarget(target, finalProductCommit, sourceDirectory, preserved)
     runtime: target.runtime,
     environment: target.environment,
     fidelity: target.fidelity,
-    modes: target.modes.map((mode) =>
-      normalizeMode(mode, target, finalProductCommit, sourceDirectory, preserved)
-    ),
+    modes: target.modes.map((mode) => normalizeMode(mode, target, sourceDirectory, preserved)),
   };
 }
 
@@ -1537,10 +1534,30 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
         ),
       },
     },
-    targets: manifest.targets.map((target) =>
-      normalizeTarget(target, manifest.productCommit, resolvedSourceDirectory, preserved)
+    targets: assertCapturesPrecedeReport(
+      manifest.targets.map((target) => normalizeTarget(target, resolvedSourceDirectory, preserved)),
+      manifest.recordedOn
     ),
   });
+}
+
+// Ages count to recordedOn, so a section captured after it would publish a
+// negative age. The fold advances recordedOn with every fold it writes; a date
+// past it means the manifest was edited by hand without moving the report date.
+function assertCapturesPrecedeReport(targets, recordedOn) {
+  if (!isCaptureDate(recordedOn)) return targets;
+  for (const target of targets) {
+    for (const mode of target.modes) {
+      for (const [section, date] of Object.entries(mode.capturedOn ?? {})) {
+        if (date > recordedOn) {
+          throw new Error(
+            `Target ${target.id} mode ${mode.id} capturedOn.${section} ${date} is after the report's recordedOn ${recordedOn}; move recordedOn forward`
+          );
+        }
+      }
+    }
+  }
+  return targets;
 }
 
 // Preservation is a provenance claim about the evidence, so the report states it
@@ -2073,23 +2090,149 @@ function commitCode(sha) {
   return `<code title="${esc(sha)}">${esc(short)}</code>`;
 }
 
+// A committed page cannot know its reader's today, so an age counts to the
+// report's own recordedOn — the one date the page states — while the capture
+// date beside it stays true however long after the page is read (ADR-0175).
+function sectionCapture(row, section, recordedOn) {
+  const capturedOn = row.capturedOn?.[section] ?? null;
+  return { capturedOn, ageDays: captureAgeDays(capturedOn, recordedOn) };
+}
+
+function ageText({ capturedOn, ageDays }) {
+  if (!capturedOn) return 'undated';
+  if (ageDays === null) return capturedOn;
+  return `${capturedOn} · ${ageDays} day${ageDays === 1 ? '' : 's'}`;
+}
+
+function actionSourceCommits(actions) {
+  return [...new Set(actions.sources.map((source) => source.productCommit))];
+}
+
+function provenanceCell(commits, capture) {
+  return `<td>${commits.map((commit) => commitCode(commit)).join(', ')}<span class="age">${esc(ageText(capture))}</span></td>`;
+}
+
 function provenanceTable(matrix) {
   return modeRows({ ...matrix, targets: targetsInRoleOrder(matrix) })
     .map((target) => {
       if (target.status !== 'captured') {
-        return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">Unavailable: ${esc(target.reason)}</td></tr>`;
+        return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="3" class="muted">Unavailable: ${esc(target.reason)}</td></tr>`;
       }
-      const actionCommits = target.actions
-        ? [...new Set(target.actions.sources.map((source) => source.productCommit))]
-            .map((commit) => commitCode(commit))
-            .join(', ')
-        : '—';
-      const actionCoverage = target.actions
-        ? `${target.actions.finalProductCommitActionCount}/${comparableActionResults(target.actions).length}`
-        : '—';
-      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td>${commitCode(target.drawingProductCommit)}</td><td>${commitCode(target.undoProductCommit)}</td><td>${actionCoverage}</td><td>${actionCommits}</td></tr>`;
+      const capture = (section) => sectionCapture(target, section, matrix.recordedOn);
+      const undo = target.undo
+        ? provenanceCell([target.undoProductCommit], capture('undo'))
+        : '<td>—</td>';
+      const actions = target.actions
+        ? provenanceCell(actionSourceCommits(target.actions), capture('actions'))
+        : '<td>—</td>';
+      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th>${provenanceCell([target.drawingProductCommit], capture('drawing'))}${undo}${actions}</tr>`;
     })
     .join('');
+}
+
+// ADR-0175's completion gate: zero scoreable, unexplained red cells on the
+// release-gate rows, each shown with its capture age. This lists every cell the
+// release-gate section renders red that no recorded disposition explains, with
+// the date its section was captured, so an old red keeps counting — and reads as
+// old — until it is recaptured or explained. A cell an uncalibrated instrument
+// cannot score renders red there too (ADR-0156) and is listed with that reason.
+function openReleaseGateReds(matrix) {
+  const rows = modeRows({ ...matrix, targets: targetsInRole(matrix, RELEASE_GATE) }).filter(
+    (row) => row.status === 'captured'
+  );
+  const reds = rows.flatMap((row) => {
+    const red = (section, cell, reading) => ({
+      row,
+      section,
+      cell,
+      reading,
+      ...sectionCapture(row, section, matrix.recordedOn),
+    });
+    const drawing = BRUSHES.flatMap((brush) => {
+      const entry = row.drawing?.[brush];
+      const aggregate = entry?.aggregate;
+      if (!drawingAggregateAvailable(aggregate) || explainedRedDisposition(entry)) return [];
+      if (countsAsGateRed(RELEASE_GATE, entry)) {
+        return [
+          red('drawing', BRUSH_LABELS[brush], 'uncalibrated instrument; counts as red (ADR-0156)'),
+        ];
+      }
+      if (aggregate.scoreable === false || aggregate.blankPassed !== false) return [];
+      return [
+        red(
+          'drawing',
+          BRUSH_LABELS[brush],
+          `paint P95 ${fmt(aggregate.paint.p95)} / P99 ${fmt(aggregate.paint.p99)} / max ${fmt(aggregate.paint.max)} ms · lost ${fmtPercent(aggregate.lostFrameTimeShare)} (budget ${fmtPercent(entry.gateShare)})`
+        ),
+      ];
+    });
+    const undo =
+      row.undo?.passed === false
+        ? [
+            red(
+              'undo',
+              'Undo',
+              `engine P95 ${fmt(row.undo.engine.p95)} · next-frame P95 ${fmt(row.undo.nextFrame.p95)} / max ${fmt(row.undo.nextFrame.max)} ms`
+            ),
+          ]
+        : [];
+    const actions =
+      row.actions && row.actions.scoreable !== false
+        ? comparableActionResults(row.actions)
+            .filter((result) => !result.passed)
+            .map((result) =>
+              red(
+                'actions',
+                result.label,
+                `first frame P95 ${fmt(result.firstFrame?.p95)} · post-action P95 ${fmt(result.postActionFrames?.p95)} / max ${fmt(result.postActionFrames?.max)} ms`
+              )
+            )
+        : [];
+    return [...drawing, ...undo, ...actions];
+  });
+  return reds.sort((a, b) => (b.ageDays ?? Infinity) - (a.ageDays ?? Infinity));
+}
+
+function openRedsSummary(reds, matrix) {
+  if (!reds.length) {
+    return 'No release-gate row renders an unexplained red cell: the ADR-0175 completion gate holds on this report.';
+  }
+  return `${reds.length} unexplained red cell${reds.length === 1 ? '' : 's'} on the release-gate rows, oldest first. Each counts toward the ADR-0175 completion gate until it is recaptured or explained, however old it is. Ages count to this report's date, ${matrix.recordedOn}.`;
+}
+
+function openRedsHtml(matrix) {
+  const reds = openReleaseGateReds(matrix);
+  const table = reds.length
+    ? `<div class="provenance"><table><thead><tr><th>Target</th><th>Section</th><th>Cell</th><th>Reading</th><th>Captured</th></tr></thead><tbody>${reds
+        .map(
+          (red) =>
+            `<tr><th>${esc(rowLabel(red.row))}</th><td>${esc(red.section)}</td><td>${esc(red.cell)}</td><td>${esc(red.reading)}</td><td>${esc(ageText(red))}</td></tr>`
+        )
+        .join('')}</tbody></table></div>`
+    : '';
+  return noteDetails({
+    title: 'Open release-gate reds',
+    count: reds.length,
+    id: 'open-reds',
+    open: true,
+    body: `<p>${esc(openRedsSummary(reds, matrix))}</p>${table}`,
+  });
+}
+
+function openRedsMarkdown(matrix) {
+  const reds = openReleaseGateReds(matrix);
+  const summary = openRedsSummary(reds, matrix);
+  if (!reds.length) return summary;
+  return `${summary}\n\n${markdownTable(
+    ['Target', 'Section', 'Cell', 'Reading', 'Captured'],
+    reds.map((red) => [
+      `${red.row.targetNumber}. ${rowLabel(red.row)}`,
+      red.section,
+      red.cell,
+      red.reading,
+      ageText(red),
+    ])
+  )}`;
 }
 
 function markdownCell(value) {
@@ -2263,10 +2406,10 @@ function renderMarkdown(matrix) {
   const actionRows = rows.map((target) => {
     const label = `${target.targetNumber}. ${rowLabel(target)}`;
     if (target.status !== 'captured') {
-      return [label, '—', '—', '—', '—', '—', `Unavailable: ${target.reason}`];
+      return [label, '—', '—', '—', '—', `Unavailable: ${target.reason}`];
     }
     if (!target.actions) {
-      return [label, '—', '—', '—', '—', '—', 'Not measured'];
+      return [label, '—', '—', '—', '—', 'Not measured'];
     }
     const comparable = comparableActionResults(target.actions);
     const failures = comparable.filter((result) => !result.passed).map((result) => result.label);
@@ -2286,7 +2429,6 @@ function renderMarkdown(matrix) {
     return [
       label,
       `${comparable.filter((result) => result.passed).length} / ${comparable.length}${blockedScoreSuffix(target.actions)}`,
-      `${target.actions.finalProductCommitActionCount} / ${comparable.length}`,
       allFirstFramesNa ? 'N/A' : fmt(target.actions.worst.firstFrameP95),
       fmt(target.actions.worst.readyP95),
       `${fmt(target.actions.worst.postActionFrameP95)} / ${fmt(target.actions.worst.postActionFrameMax)}`,
@@ -2298,13 +2440,13 @@ function renderMarkdown(matrix) {
     if (target.status !== 'captured') {
       return [label, `Unavailable: ${target.reason}`, '—', '—'];
     }
+    const cell = (commits, section) =>
+      `${commits.join(', ')} (${ageText(sectionCapture(target, section, matrix.recordedOn))})`;
     return [
       label,
-      target.drawingProductCommit,
-      target.undo ? target.undoProductCommit : '—',
-      target.actions
-        ? [...new Set(target.actions.sources.map((source) => source.productCommit))].join(', ')
-        : '—',
+      cell([target.drawingProductCommit], 'drawing'),
+      target.undo ? cell([target.undoProductCommit], 'undo') : '—',
+      target.actions ? cell(actionSourceCommits(target.actions), 'actions') : '—',
     ];
   });
   const limitations = [...matrix.limitations, ...preservedEvidenceNotes(matrix)]
@@ -2328,6 +2470,10 @@ Regenerate the JSON, Markdown, and HTML after updating the source manifest with:
 npm run gen:performance-matrix -- \\
   scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 \`\`\`
+
+## Open release-gate reds
+
+${openRedsMarkdown(matrix)}
 
 ## Acceptance gates
 
@@ -2354,7 +2500,10 @@ ${renderCandidateActionsMarkdown(matrix.candidateActions ?? [])}
 
 ## Commit provenance
 
-${markdownTable(['Target', 'Drawing', 'Undo', 'Action source commits'], provenanceRows)}
+The product commit each section's evidence was captured at, with its capture date and its age at
+this report's date (ADR-0175).
+
+${markdownTable(['Target', 'Drawing', 'Undo', 'Actions'], provenanceRows)}
 
 ## Drawing
 
@@ -2389,7 +2538,7 @@ cross-mode failure ranking. Ready P95 is the action-specific observable completi
 \`P95 / max\` in milliseconds. Full per-action timing and provenance are available in the
 interactive matrix and normalized JSON.
 
-${markdownTable(['Target', 'Passing', 'At final commit', 'Worst first P95', 'Worst ready P95', 'Worst post P95 / max', 'Failed actions'], actionRows)}
+${markdownTable(['Target', 'Passing', 'Worst first P95', 'Worst ready P95', 'Worst post P95 / max', 'Failed actions'], actionRows)}
 
 ## Method
 
@@ -2721,6 +2870,7 @@ const EXTRA_CSS = `
 /* ---- tables (undo, provenance, candidate actions) ----------------------------- */
 .provenance{overflow-x:auto;background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-sm);padding:10px}
 .provenance code{font-size:.68rem}
+.provenance .age{display:block;font-size:.66rem;color:var(--muted);white-space:nowrap}
 table{width:100%;border-collapse:collapse;font-size:.72rem}
 th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}
 th:first-child{text-align:left}
@@ -3219,6 +3369,7 @@ ${modeToolbar(rows.length)}
 <main><div class="shell">
   <p class="matrix-intro">Product commit ${commitCode(matrix.productCommit)}, captured ${esc(matrix.recordedOn)}.${preservedSentence} ${esc(releaseGateSentence(matrix))}</p>
   <div class="matrix-links"><span>Data:</span><a href="data.json">normalized results JSON</a><a href="index.md">Markdown report</a><a href="sources.json">source manifest</a></div>
+  ${openRedsHtml(matrix)}
 
   <div class="section-head" id="results"><h2>Results by target</h2><span class="desc">Four modes per target · hover or tap any cell for the numbers behind it</span></div>
   ${metricSwitcher(matrix.gates.drawing)}
@@ -3237,7 +3388,7 @@ ${modeToolbar(rows.length)}
   ${noteDetails({ title: 'How scoring works', body: scoringNotes(matrix) })}
   ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   ${noteDetails({ title: 'Undo timing per mode', body: `<p>Engine time is the state rollback alone; next-frame adds the following rendered frame. Gates: engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, next-frame max ≤ ${matrix.gates.undo.nextFrameMaxMs} ms.</p><div class="provenance"><table><thead><tr><th>Target</th><th>Engine P95</th><th>Next P95</th><th>Next max</th><th>Gate</th></tr></thead><tbody>${undoTable(matrix)}</tbody></table></div>` })}
-  ${noteDetails({ title: 'Commit provenance', id: 'provenance', body: `<p>The product commit each cell’s evidence was captured at. “Actions at final commit” counts the action rows measured at this campaign’s final product commit.</p><div class="provenance"><table><thead><tr><th>Target</th><th>Drawing</th><th>Undo</th><th>Actions at final commit</th><th>Action source commits</th></tr></thead><tbody>${provenanceTable(matrix)}</tbody></table></div>` })}
+  ${noteDetails({ title: 'Commit provenance', id: 'provenance', body: `<p>The product commit each section’s evidence was captured at, with its capture date and its age at this report’s date (ADR-0175).</p><div class="provenance"><table><thead><tr><th>Target</th><th>Drawing</th><th>Undo</th><th>Actions</th></tr></thead><tbody>${provenanceTable(matrix)}</tbody></table></div>` })}
 </div></main>
 ${siteFooter({ home: '../../index.html' })}
 <script>${PAGE_SCRIPT}</script>`;

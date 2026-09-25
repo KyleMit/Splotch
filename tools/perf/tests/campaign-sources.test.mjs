@@ -4,11 +4,12 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  advanceRecordedOn,
   applyCampaignModes,
   campaignModeSources,
   runCampaignSources,
 } from '../campaign-sources.mjs';
-import { modeProvenance } from '../check-matrix-staleness.mjs';
+import { sectionProvenance } from '../check-matrix-staleness.mjs';
 import { normalizeMatrix } from '../gen-performance-matrix.mjs';
 import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
 import { artifactPath, campaignTarget, planCampaign } from '../lib/campaign-plan.mjs';
@@ -25,6 +26,7 @@ afterAll(() => {
 afterEach(() => vi.restoreAllMocks());
 
 const PRODUCT_COMMIT = 'ce88c8e587ac45847c419e05ef7a79d282bc747a';
+const FOLDED_ON = '2026-09-24';
 const MODE = { id: 'landscape-light', orientation: 'LANDSCAPE', theme: 'light' };
 const ITEMS = ['pen-undo', 'crayon', 'magic', 'eraser', 'actions'];
 
@@ -111,6 +113,7 @@ const sourcesFor = (targetId, outputRoot) =>
   campaignModeSources(targetId, {
     outputRoot,
     productCommit: PRODUCT_COMMIT,
+    foldedOn: FOLDED_ON,
     modes: [MODE.id],
   });
 
@@ -149,6 +152,7 @@ describe('campaign sources', () => {
     const [entry] = campaignModeSources('ipad-device-native', {
       outputRoot,
       productCommit: PRODUCT_COMMIT,
+      foldedOn: FOLDED_ON,
       modes: [MODE.id],
       actionsUnavailableReason: 'P1: blocked by #1194.',
     });
@@ -229,6 +233,7 @@ describe('campaign sources', () => {
       const [entry] = campaignModeSources('ipad-device-native', {
         outputRoot: campaignWith(BLOCKED_SWEEP),
         productCommit: PRODUCT_COMMIT,
+        foldedOn: FOLDED_ON,
         modes: [MODE.id],
         actionsUnavailableReason: 'P1: AI-waiting actions need a secure context.',
       });
@@ -241,6 +246,7 @@ describe('campaign sources', () => {
       const [entry] = campaignModeSources('ipad-device-native', {
         outputRoot: campaignWith(BLOCKED_SWEEP),
         productCommit: PRODUCT_COMMIT,
+        foldedOn: FOLDED_ON,
         modes: [MODE.id],
         preserveActions: true,
       });
@@ -256,6 +262,7 @@ describe('campaign sources', () => {
     const [entry] = campaignModeSources('android-device-web', {
       outputRoot,
       productCommit: PRODUCT_COMMIT,
+      foldedOn: FOLDED_ON,
       modes: [MODE.id],
       preserveActions: true,
     });
@@ -278,6 +285,7 @@ describe('campaign sources', () => {
       campaignModeSources('android-device-web', {
         outputRoot,
         productCommit: PRODUCT_COMMIT,
+        foldedOn: FOLDED_ON,
         modes: [MODE.id],
         preserveActions: true,
       })
@@ -312,6 +320,7 @@ describe('campaign sources', () => {
     const [entry] = campaignModeSources('ipad-device-native', {
       outputRoot,
       productCommit: PRODUCT_COMMIT,
+      foldedOn: FOLDED_ON,
       modes: [MODE.id],
       actionsUnavailableReason: 'P1: blocked by #1194.',
     });
@@ -561,6 +570,7 @@ describe('campaign sources', () => {
     const entries = campaignModeSources('android-device-web', {
       outputRoot,
       productCommit: PRODUCT_COMMIT,
+      foldedOn: FOLDED_ON,
       modes: [MODE.id],
       preserveActions: true,
     });
@@ -595,6 +605,7 @@ describe('campaign sources', () => {
     const entries = campaignModeSources('android-device-web', {
       outputRoot,
       productCommit: PRODUCT_COMMIT,
+      foldedOn: FOLDED_ON,
       modes: [MODE.id],
       preserveActions: true,
     });
@@ -619,7 +630,13 @@ describe('campaign sources', () => {
     const merged = manifest.targets[0].modes[0];
     expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
     expect(merged.actionProductCommit).toBe('aaaaaaaaaaaa');
-    expect(modeProvenance(merged)).toEqual([PRODUCT_COMMIT, 'aaaaaaaaaaaa']);
+    expect(
+      sectionProvenance(merged, null).map(({ section, commits }) => [section, commits])
+    ).toEqual([
+      ['drawing', [PRODUCT_COMMIT]],
+      ['undo', [PRODUCT_COMMIT]],
+      ['actions', ['aaaaaaaaaaaa']],
+    ]);
   });
 
   it('carries a published action-unavailable reason forward when requested', () => {
@@ -629,6 +646,7 @@ describe('campaign sources', () => {
     const entries = campaignModeSources('android-device-web', {
       outputRoot,
       productCommit: PRODUCT_COMMIT,
+      foldedOn: FOLDED_ON,
       modes: [MODE.id],
       preserveActions: true,
     });
@@ -741,9 +759,14 @@ describe('campaign sources', () => {
     const merged = manifest.targets[0].modes[0];
     expect(merged.actionSources).toBe('preserved');
     expect(merged).not.toHaveProperty('actionProductCommit');
-    // Preserved sections are exempt from the currency check, so the fold no longer
-    // hands check:matrix-staleness the old sweep's commit to fail --strict on.
-    expect(modeProvenance(merged)).not.toContain('aaaaaaaaaaaa');
+    // A preserved section's commit is the one its published report carries, so
+    // the old sweep stays traceable without the manifest restating it.
+    const publishedMode = { actions: { sources: [{ productCommit: 'aaaaaaaaaaaa' }] } };
+    expect(sectionProvenance(merged, publishedMode).at(-1)).toMatchObject({
+      section: 'actions',
+      state: 'preserved',
+      commits: ['aaaaaaaaaaaa'],
+    });
   });
 
   it('refuses to mark actions preserved when the manifest names no published report', () => {
@@ -799,21 +822,102 @@ describe('campaign sources', () => {
     expect(regenerated.targets[0].modes[0].preservedSections).toEqual(['actions']);
   });
 
-  // The one field the preserved route re-derives: coverage of the report's final
-  // product commit, so a historical sweep cannot keep claiming current coverage
-  // after the matrix moves to a new commit.
-  it('re-derives only final-commit coverage when the fold moves the product commit', async () => {
+  // The preserved route re-derives nothing: moving the report to a new product
+  // commit leaves a historical sweep exactly as published, and its capture date,
+  // not an exact-commit count, says how old it is (ADR-0175).
+  it('carries a preserved sweep unchanged when the fold moves the product commit', async () => {
     const { directory, published, rawManifest } = await publishPredatingSweep('final123');
     const folded = foldPreservingActions(rawManifest());
     folded.productCommit = 'next456';
 
     const regenerated = normalizeMatrix(folded, directory);
 
-    const publishedActions = published.targets[0].modes[0].actions;
-    expect(publishedActions.finalProductCommitActionCount).toBe(1);
-    expect(actionsJson(regenerated)).toBe(
-      JSON.stringify({ ...publishedActions, finalProductCommitActionCount: 0 }, null, 2)
+    expect(actionsJson(regenerated)).toBe(actionsJson(published));
+  });
+
+  // ADR-0175: every section the fold writes is dated by its artifacts' own
+  // clock, oldest artifact first, and only a section none of whose artifacts
+  // records one falls back to the fold date.
+  it('dates each folded section from its artifacts and falls back to the fold date', () => {
+    const stamped = (iso) => ({
+      automation: { loadedUrl: `http://<lan-host>:4173/?perf-run=${Date.parse(iso)}` },
+    });
+    const outputRoot = writeCampaign('ipad-device-native', 'native-capacitor-webview', {
+      artifactForItem: {
+        'pen-undo': stamped('2026-09-21T01:00:00Z'),
+        crayon: stamped('2026-09-20T23:59:00Z'),
+        magic: stamped('2026-09-21T02:00:00Z'),
+      },
+    });
+
+    const [entry] = sourcesFor('ipad-device-native', outputRoot);
+
+    expect(entry.mode.capturedOn).toEqual({
+      drawing: '2026-09-20',
+      undo: '2026-09-21',
+      actions: FOLDED_ON,
+    });
+  });
+
+  it('keeps the date a section already carries when the fold does not write it', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+      omit: ['actions'],
+    });
+    const entries = campaignModeSources('android-device-web', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      foldedOn: FOLDED_ON,
+      modes: [MODE.id],
+      preserveActions: true,
+    });
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              capturedOn: { drawing: '2026-09-01', undo: '2026-09-01', actions: '2026-09-07' },
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              actionSources: 'captured-untracked',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    expect(manifest.targets[0].modes[0].capturedOn).toEqual({
+      drawing: FOLDED_ON,
+      undo: FOLDED_ON,
+      actions: '2026-09-07',
+    });
+  });
+
+  // The generator counts ages to recordedOn, so a fold that left it behind
+  // would publish a negative age for every section it just wrote.
+  it('moves the report date forward to the fold date, never back', () => {
+    expect(advanceRecordedOn({ recordedOn: '2026-09-23' }, FOLDED_ON).recordedOn).toBe(FOLDED_ON);
+    expect(advanceRecordedOn({ recordedOn: '2026-09-30' }, FOLDED_ON).recordedOn).toBe(
+      '2026-09-30'
     );
+  });
+
+  it('refuses a fold without a real fold date', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+
+    expect(() =>
+      campaignModeSources('ipad-device-native', {
+        outputRoot: 'unused',
+        productCommit: PRODUCT_COMMIT,
+        modes: [MODE.id],
+      })
+    ).toThrow('process exited');
   });
 });
 

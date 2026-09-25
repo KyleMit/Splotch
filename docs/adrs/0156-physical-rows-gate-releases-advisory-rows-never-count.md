@@ -3,9 +3,15 @@
 **Status:** Active — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md),
 [ADR-0137](0137-lost-frame-gate-exceptions.md), and
 [ADR-0142](0142-rotation-actions-anchor-at-resize.md); amended by
-[ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md) and
-[ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md) **Date:**
-2026-09
+[ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md),
+[ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md), and
+[ADR-0175](0175-matrix-sections-report-capture-age-not-currency.md) **Date:** 2026-09
+
+> **Amended by [ADR-0175](0175-matrix-sections-report-capture-age-not-currency.md):** the completion
+> gate in decision 3 now reads "zero scoreable, unexplained red cells on the release-gate rows, each
+> shown with its capture age". Currency no longer qualifies a red: a section is behind the tip for
+> most of its life, so an old red keeps counting until it is recaptured or explained, and the matrix
+> lists every open release-gate red with its capture date and age.
 
 > **Amended by [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md):**
 > the completion gate in decision 3 now reads "zero current, scoreable, **unexplained** red cells on
@@ -94,8 +100,9 @@ single-sample noise instead.
    campaign remainder (ADR-0087: Playwright WebKit does not reproduce the iPad compositor).
 3. **Simulator and emulator rows are advisory and never count toward campaign completion.** They
    reject or narrow hypotheses; they cannot fail a campaign or approve one. The matrix keeps
-   rendering their red; the `improve-performance-matrix` completion gate reads "zero current,
-   scoreable red cells on the release-gate rows".
+   rendering their red; the `improve-performance-matrix` completion gate reads "zero scoreable,
+   unexplained red cells on the release-gate rows, each shown with its capture age" (as amended by
+   ADR-0160 and ADR-0175).
 4. **A post-action max breach is confirmed, not declared, by one sample.**
    `ACTION_FRAME_MAX_GATE_MS` stays 33.5 ms and the P95 stays 20 ms, but a group with warm-up
    metadata (the canonical one-warm-up-plus-three-scored sweep) fails on max only when at least

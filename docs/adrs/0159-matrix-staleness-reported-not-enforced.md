@@ -1,6 +1,12 @@
 # ADR-0159: Matrix Staleness Is Reported by Default and Enforced Only on Request
 
-**Status:** Active **Date:** 2026-09
+**Status:** Superseded by [ADR-0175](0175-matrix-sections-report-capture-age-not-currency.md)
+**Date:** 2026-09
+
+> **Superseded by [ADR-0175](0175-matrix-sections-report-capture-age-not-currency.md):** matrix
+> sections now report their capture age instead of a current-or-stale verdict, and `--strict` means
+> provenance-complete (every captured section has a `capturedOn` date and a resolvable product
+> commit) rather than "every captured row is current". The record below is kept as history.
 
 ## Context
 

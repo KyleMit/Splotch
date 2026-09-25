@@ -18,6 +18,7 @@ import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
 import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
 import { cellInspection } from './run-campaign.mjs';
 import { CAMPAIGN_MODES, campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
+import { isCaptureDate, sectionCapturedOn, utcDate } from './lib/capture-date.mjs';
 
 const BRUSH_BY_ITEM = { 'pen-undo': 'pen', crayon: 'crayon', magic: 'magic', eraser: 'eraser' };
 
@@ -117,8 +118,9 @@ function assertModeBuildIdentity(targetId, modeId, cells, productCommit) {
 
 export function campaignModeSources(
   targetId,
-  { outputRoot, productCommit, modes, actionsUnavailableReason, preserveActions = false }
+  { outputRoot, productCommit, foldedOn, modes, actionsUnavailableReason, preserveActions = false }
 ) {
+  if (!isCaptureDate(foldedOn)) fail(`foldedOn must be a YYYY-MM-DD date, got ${foldedOn}`);
   const target = campaignTarget(targetId);
   const selected = modes?.length
     ? CAMPAIGN_MODES.filter((mode) => modes.includes(mode.id))
@@ -178,6 +180,14 @@ export function campaignModeSources(
       productCommit
     );
 
+    // Each section is dated by the artifacts it is built from, so a section this
+    // fold does not write keeps the date it already carries (applyCampaignModes).
+    const capturedOn = {
+      drawing: sectionCapturedOn(Object.values(brushArtifacts), foldedOn),
+      undo: sectionCapturedOn([brushArtifacts.pen], foldedOn),
+      ...(foldingActions ? { actions: sectionCapturedOn([actionsArtifact], foldedOn) } : {}),
+    };
+
     return {
       id: mode.id,
       ...(preserveActions
@@ -190,6 +200,7 @@ export function campaignModeSources(
         orientation: mode.orientation,
         theme: mode.theme,
         status: 'captured',
+        capturedOn,
         drawingProductCommit: productCommit,
         // The binding the artifacts recorded, republished per mode so a manifest
         // reader can re-assert which build every number in the mode describes.
@@ -211,8 +222,7 @@ export function campaignModeSources(
 // rules, so a sweep that predates a FULL_ACTION_GROUPS change is refused outright
 // and any other rule change would re-derive the numbers the flag promised to keep.
 // PRESERVED is the generator's own route for copying a section from
-// `preservedEvidence.from`, re-deriving only its final-product-commit coverage
-// count. A section that is already PRESERVED or
+// `preservedEvidence.from` unchanged. A section that is already PRESERVED or
 // CAPTURED_UNTRACKED is published-section-routed already and keeps its route.
 function preservedActionSection(manifest, targetId, modeId, existing) {
   if (Array.isArray(existing.actionSources)) {
@@ -266,9 +276,17 @@ export function applyCampaignModes(manifest, targetId, entries) {
       entry.partial === 'actions-preserved'
         ? preservedActionSection(manifest, targetId, entry.id, existing)
         : {};
+    const carriesUndo = entry.mode.undoSource === undefined && existing.undoSource !== undefined;
+    const carriedDates = {
+      ...(carriesUndo && existing.capturedOn?.undo ? { undo: existing.capturedOn.undo } : {}),
+      ...(entry.partial === 'actions-preserved' && existing.capturedOn?.actions
+        ? { actions: existing.capturedOn.actions }
+        : {}),
+    };
     target.modes[index] = {
       ...entry.mode,
-      ...(entry.mode.undoSource === undefined && existing.undoSource !== undefined
+      capturedOn: { ...entry.mode.capturedOn, ...carriedDates },
+      ...(carriesUndo
         ? {
             undoSource: existing.undoSource,
             undoProductCommit: existing.undoProductCommit ?? existing.drawingProductCommit,
@@ -276,6 +294,15 @@ export function applyCampaignModes(manifest, targetId, entries) {
         : {}),
       ...preservedActions,
     };
+  }
+  return manifest;
+}
+
+// The report's date moves with every fold, since the generator counts each
+// section's age to it: a fold that left it behind would publish negative ages.
+export function advanceRecordedOn(manifest, foldedOn) {
+  if (!isCaptureDate(manifest.recordedOn) || foldedOn > manifest.recordedOn) {
+    manifest.recordedOn = foldedOn;
   }
   return manifest;
 }
@@ -301,9 +328,11 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
     ?.split(',')
     .map((entry) => entry.trim())
     .filter(Boolean);
+  const foldedOn = utcDate(Date.now());
   const entries = campaignModeSources(targetId, {
     outputRoot,
     productCommit,
+    foldedOn,
     modes,
     actionsUnavailableReason: flag('actions-unavailable'),
     preserveActions,
@@ -336,6 +365,7 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
   const full = isAbsolute(manifestPath) ? manifestPath : join(ROOT, manifestPath);
   const manifest = JSON.parse(readFileSync(full, 'utf8'));
   applyCampaignModes(manifest, targetId, ready);
+  if (ready.length) advanceRecordedOn(manifest, foldedOn);
   writeFileSync(full, `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`Updated ${manifestPath}`);
   return entries;
