@@ -516,6 +516,16 @@ export default tseslint.config(
     },
   },
   {
+    // createSettings' length is its mutator table, one entry per persisted setting over one $state object; the field tables and the persisted-settings reader already live at module scope.
+    files: ['web/src/lib/state/settings.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 142, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
