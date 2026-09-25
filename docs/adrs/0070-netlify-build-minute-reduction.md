@@ -113,4 +113,5 @@ every `tools/` script the Netlify build command and its pre/post hooks run. Stri
 those imports against `dependencies` alone, so a devDependency import reports as unlisted, and an
 entry in `dependencies` the deploy never reaches reports as unused.
 `enumerated-build-paths.test.mjs` fails when that `tools/` entry list drifts from the scripts the
-deploy actually runs.
+deploy actually runs. knip exempts itself and `typescript` from the unused report, so the same test
+pins both to `devDependencies`.
