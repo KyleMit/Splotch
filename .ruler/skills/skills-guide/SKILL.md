@@ -216,6 +216,7 @@ its own decisions under `tools/asset-gen/docs/`.
 | `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them    |
 | `reconcile-with-main`         | Merge current `main` into a long-running branch and hunt the *semantic* conflicts |
 | `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin`    |
+| `burn-down-oversized-code`    | Pay the file or function size caps back down to their soft targets, one PR        |
 | `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports       |
 | `skills-guide`                | This guide                                                                        |
 
@@ -229,6 +230,13 @@ remote branches — because each frees something the next one classifies. Its sc
 finding on an unmerged branch a durable home (an issue, an ADR via `create-adr`, a scratchpad note —
 the `self-heal` judgment) *before* the branch goes, and the remote pass still hands the user a
 deletion script rather than deleting `origin` refs itself.
+
+`burn-down-oversized-code` runs in `mode=files` (`max-lines`) or `mode=functions`
+(`max-lines-per-function`). It is user-invoked only, because invoking it authorizes a multi-agent
+fan-out: a proposer and an adversarial reviewer per unit, then an implementer per split in its own
+worktree with a fresh commit checker. Its `measure.mjs` reads every cap from `eslint.config.js`.
+Line limits are treated as smells: a unit that does not separate cleanly gets a per-file cap raise,
+never a counter-driven split.
 
 `reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
 has been open a while: it detects overlapping line edits and nothing else. The skill surveys the
