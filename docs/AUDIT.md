@@ -180,9 +180,10 @@ property).
 
 Rewrite the bullet so it separates the two cases: the prefixed `backdrop-filter` twin is required
 until the Safari/iOS floor reaches 18, and the `100vh` line is a below-floor courtesy that costs one
-declaration. Put the unprefixed Safari 18 version in the register row's Baseline cell. Consider
-anchoring the row as `` `-webkit-backdrop-filter: blur(` + `backdrop-filter: blur(` `` (it already
-is) and adding a note that the twin goes only with a Safari 18 floor.
+declaration. Put the unprefixed Safari 18 version in the register row's Baseline cell, and add a
+note to the row that the twin goes only with a Safari 18 floor. The row's
+`` `-webkit-backdrop-filter: blur(` + `backdrop-filter: blur(` `` anchor already pins both halves,
+so it needs no change.
 
 #### Verification
 
@@ -243,24 +244,27 @@ Android row, so an edit elsewhere in the table cannot satisfy it by accident.
 Temporarily change `firefox114` to `firefox115` in `web/browserTargets.ts`: today
 `npx vitest run web/src/browserFloor.test.ts` still passes; after the fix it fails naming the doc.
 
-### [Cleanup] Remove or justify two guards on APIs every supported engine has
+### [Cleanup] Remove or justify three guards on APIs every supported engine has
 
 **File(s):** `web/src/lib/drawing/magicBrush.ts` (`typeof DOMMatrix !== 'undefined'`, in the Magic
 sheet pattern transform); `web/src/lib/drawing/tiledRendererReadback.ts`
-(`typeof createImageBitmap !== 'function'`, in `captureTiledCanvasReadback`)
+(`typeof createImageBitmap !== 'function'`, in `captureTiledCanvasReadback`);
+`web/src/lib/drawing/pngEncoder.ts` (the `typeof createImageBitmap === 'function'` clause of
+`pngWorkerSupported`)
 
 #### Problem
 
-Both probe an API that every engine at the floor supports and that the happy-dom unit-test
+All three probe an API that every engine at the floor supports and that the happy-dom unit-test
 environment also provides. `DOMMatrix` is web-features `dom-geometry` (Chrome 61, Firefox 33, Safari
 11). `createImageBitmap` already has a within-floor register row (Chrome 50, Firefox 42, Safari 15);
 web-features lists `createimagebitmap` at Safari 17.2 only because it scores the complete feature,
-every option included, and a `typeof` check tests nothing but the function's existence. Neither is
-cited in the register, and neither is an SSR guard: both modules run only in the browser. The guards
-therefore never fail in any environment the code runs in, but each one quietly changes behavior if
-it ever did: the `DOMMatrix` one skips the pattern transform (a mis-registered Magic sheet), and the
-`createImageBitmap` one silently disables the readback path. A reader has to work out that neither
-branch is reachable.
+every option included, and a `typeof` check tests nothing but the function's existence. None is an
+SSR guard: all three modules run only in the browser. None is what the register records either:
+`pngEncoder.ts` is cited, but its row anchors the `OffscreenCanvas` probe, not this clause. The
+guards therefore never fail in any environment the code runs in, but each one quietly changes
+behavior if it ever did: the `DOMMatrix` one skips the pattern transform (a mis-registered Magic
+sheet), the readback one silently disables the readback path, and the `pngWorkerSupported` one sends
+PNG export to the main thread. A reader has to work out that none of these branches is reachable.
 
 By contrast, `typeof AudioContext`, `'fonts' in document`, and `typeof Worker` look the same but are
 live: happy-dom lacks all three, so those guards keep unit tests running. They are not part of this
@@ -268,14 +272,17 @@ finding.
 
 #### Proposed solution
 
-Delete both conditions (keep the transform unconditional; drop the `createImageBitmap` clause from
-the early return). If either turns out to protect a real environment (a worker context, a test file
-that stubs the global away), keep it and add a one-line comment naming that environment instead.
+Delete the three conditions (keep the transform unconditional; drop the `createImageBitmap` clause
+from the readback early return and from `pngWorkerSupported`, whose `Worker` and `OffscreenCanvas`
+clauses stay — those are live). If one turns out to protect a real environment (a worker context, a
+test file that stubs the global away), keep it and add a one-line comment naming that environment
+instead.
 
 #### Verification
 
 `git grep -n "stubGlobal('createImageBitmap'\|stubGlobal('DOMMatrix'" web/src` finds no test that
-removes either global for these modules. Delete the conditions and run
+removes either global for these modules (the existing `stubGlobal('createImageBitmap', …)` calls
+replace it with a mock, which keeps the guard true). Delete the conditions and run
 `npx vitest run web/src/lib/drawing` plus `npm run check`; both stay green.
 
 ### [Docs] Add the Cache Storage guard to the risk register
