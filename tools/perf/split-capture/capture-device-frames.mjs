@@ -56,10 +56,12 @@ import {
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
 import {
+  ANDROID_DISPLAY_INSETS_ARGS,
   androidContentOffset,
   androidForegroundPackage,
   androidGestureInstructions,
   androidOpenSteps,
+  androidSystemInsets,
   swipeArgs,
 } from './lib/android-input.mjs';
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
@@ -318,7 +320,10 @@ export function androidDriver({
       return {
         bounds: geometry.canvas,
         densityScale: geometry.dpr,
-        offset: androidContentOffset(geometry, { userRotation }),
+        offset: androidContentOffset(geometry, {
+          userRotation,
+          systemInsets: androidSystemInsets(exec(serial, ANDROID_DISPLAY_INSETS_ARGS)),
+        }),
       };
     },
     runtimeIdentity() {

@@ -21,10 +21,61 @@ const DEFAULT_SWIPE_DURATION_MS = 200;
 
 const toDevicePixels = (value, densityScale, origin) => Math.round(origin + value * densityScale);
 
+export const ANDROID_DISPLAY_INSETS_ARGS = ['shell', 'dumpsys', 'window', 'displays'];
+
+// The inset sources that take space from an app's content. Gesture regions and
+// tappable elements overlap these without moving any content.
+const CONTENT_INSET_TYPES = new Set(['navigationBars', 'statusBars', 'displayCutout']);
+
+function defaultDisplayInsetState(dumpsys) {
+  const display =
+    dumpsys.split(/^\s*Display: mDisplayId=/m).find((chunk) => /^0\b/.test(chunk)) ?? '';
+  const state = display
+    .split(/^\s*WindowInsetsStateController\b/m)[1]
+    ?.split(/InsetsSourceProviders/)[0];
+  if (!state)
+    throw new Error('dumpsys window displays carried no inset state for the default display');
+  return state;
+}
+
+// Which display edge each visible bar or cutout occupies, in device pixels of
+// the current rotation. The page cannot report this itself: Chrome answers
+// screen.availHeight with the full display height and every safe-area inset with
+// zero, while still keeping its content clear of the navigation bar.
+export function androidSystemInsets(dumpsys) {
+  const state = defaultDisplayInsetState(dumpsys);
+  const frame = state.match(/mDisplayFrame=Rect\((-?\d+), (-?\d+) - (-?\d+), (-?\d+)\)/);
+  if (!frame) throw new Error('dumpsys window displays carried no display frame');
+  const [, , , width, height] = frame.map(Number);
+  const insets = { left: 0, top: 0, right: 0, bottom: 0 };
+  const sources = state.matchAll(
+    /^\s*InsetsSource id=\S+ type=(\w+) frame=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\] visible=(\w+)/gm
+  );
+  for (const [, type, ...rest] of sources) {
+    const [left, top, right, bottom] = rest.slice(0, 4).map(Number);
+    if (!CONTENT_INSET_TYPES.has(type) || rest[4] !== 'true') continue;
+    if (right <= left || bottom <= top) continue;
+    const spansHeight = top <= 0 && bottom >= height;
+    const spansWidth = left <= 0 && right >= width;
+    if (spansHeight && !spansWidth && left <= 0) insets.left = Math.max(insets.left, right);
+    else if (spansHeight && !spansWidth) insets.right = Math.max(insets.right, width - left);
+    else if (spansWidth && !spansHeight && top <= 0) insets.top = Math.max(insets.top, bottom);
+    else if (spansWidth && !spansHeight) insets.bottom = Math.max(insets.bottom, height - top);
+  }
+  return insets;
+}
+
 // Android Chrome keeps screenX/screenY at zero while adb input addresses the
-// physical display. The outer-minus-inner inset is the content origin hidden
-// by browser chrome and a rotated display cutout.
-export function androidContentOffset(geometry, { userRotation } = {}) {
+// physical display, and reports the whole display as its outer viewport. The
+// outer-minus-inner gap is therefore every edge Chrome keeps its content off:
+// its own toolbar and the status bar above, a rotated cutout to one side, and
+// the navigation bar below or beside. Only the bars that lie before the content
+// move its origin, so the ones the display reports after it — below and to the
+// right — are taken back out. Chrome's toolbar is assumed to be at the top.
+// The native WebView fills the display with its navigation bar hidden, so it
+// reports no gap and the display reports no bar to take out.
+export function androidContentOffset(geometry, { userRotation, systemInsets }) {
+  if (!systemInsets) throw new Error('androidContentOffset needs the display system insets');
   const viewport = geometry.viewport ?? { width: 0, height: 0 };
   const outerViewport = geometry.outerViewport ?? viewport;
   const horizontalInset = Math.max(0, outerViewport.width - viewport.width);
@@ -33,12 +84,20 @@ export function androidContentOffset(geometry, { userRotation } = {}) {
       `Android content-offset geometry is only calibrated for user_rotation=1; received ${userRotation ?? 'unknown'}`
     );
   }
-  return {
-    x: ((geometry.screenX ?? 0) + horizontalInset) * geometry.dpr,
+  const offset = {
+    x: ((geometry.screenX ?? 0) + horizontalInset) * geometry.dpr - systemInsets.right,
     y:
       ((geometry.screenY ?? 0) + Math.max(0, outerViewport.height - viewport.height)) *
-      geometry.dpr,
+        geometry.dpr -
+      systemInsets.bottom,
   };
+  if (offset.x < 0 || offset.y < 0) {
+    throw new Error(
+      `the page's outer-minus-inner gap is narrower than the system insets after its content ` +
+        `(${JSON.stringify(systemInsets)} device px), so its content origin cannot be derived`
+    );
+  }
+  return offset;
 }
 
 // Returns an ordered instruction list — `swipe` and `pause` — rather than

@@ -17,8 +17,10 @@ import { trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
 import { inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import {
+  ANDROID_DISPLAY_INSETS_ARGS,
   androidContentOffset,
   androidGestureInstructions,
+  androidSystemInsets,
   swipeArgs,
 } from './lib/android-input.mjs';
 import { pollFor } from './lib/poll.mjs';
@@ -158,7 +160,10 @@ export async function verifyAndroidInput({
       trustedGestureActions(geometry.canvas, repeats, 0),
       {
         densityScale: geometry.dpr,
-        offset: androidContentOffset(geometry, { userRotation }),
+        offset: androidContentOffset(geometry, {
+          userRotation,
+          systemInsets: androidSystemInsets(adb(serial, ANDROID_DISPLAY_INSETS_ARGS)),
+        }),
       }
     );
     for (const instruction of instructions) {
