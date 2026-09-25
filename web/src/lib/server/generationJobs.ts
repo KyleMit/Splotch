@@ -79,6 +79,80 @@ const statusKey = (jobId: string) => `${jobId}/status.json`;
 const inputKey = (jobId: string) => `${jobId}/input`;
 const imageKey = (jobId: string) => `${jobId}/image`;
 
+type JobStore = ReturnType<typeof getStore>;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isStringOrNull = (value: unknown): value is string | null =>
+  value === null || typeof value === 'string';
+
+function isGenerationJobContext(value: unknown): value is GenerationJobContext {
+  if (!isRecord(value) || !isStringOrNull(value.style)) return false;
+  const { free } = value;
+  return (
+    free === null ||
+    (isRecord(free) &&
+      typeof free.installationId === 'string' &&
+      typeof free.reservationId === 'string')
+  );
+}
+
+function isGenerationJobOutcome(value: unknown): value is GenerationJobOutcome {
+  if (!isRecord(value)) return false;
+  switch (value.status) {
+    case 'image':
+      return typeof value.mimeType === 'string';
+    case 'refusal':
+    case 'error':
+      return typeof value.reason === 'string';
+    default:
+      return false;
+  }
+}
+
+function isStoredJob(value: unknown): value is StoredJob {
+  return (
+    isRecord(value) &&
+    isGenerationJobContext(value.context) &&
+    (value.outcome === null || isGenerationJobOutcome(value.outcome)) &&
+    isStringOrNull(value.claimId) &&
+    typeof value.expiresAt === 'number' &&
+    Number.isFinite(value.expiresAt)
+  );
+}
+
+// The SDK types a JSON read as `any`, and a record left by a deploy with an
+// older shape, or a partial write, would otherwise flow straight into typed
+// code. Every caller treats a record that fails the guard exactly as a missing
+// one: readJob answers `expired`, claimJob and completeJob decline to write, and
+// the purge deletes it — a job whose record cannot be read is never finishing.
+// The job id stays out of the warning: it is the capability to collect the picture.
+function storedJobOrNull(value: unknown): StoredJob | null {
+  if (value === null || value === undefined) return null;
+  if (isStoredJob(value)) return value;
+  console.warn('[generation-jobs] ignoring a malformed job record');
+  return null;
+}
+
+async function readStoredJob(jobStore: JobStore, jobId: string): Promise<StoredJob | null> {
+  const value: unknown = await jobStore.get(statusKey(jobId), { type: 'json' });
+  return storedJobOrNull(value);
+}
+
+// The etag stays optional: the local Blobs server behind `netlify dev` answers a
+// read without one, and the deployed store always sends it. Without it the
+// conditional write that follows degrades to an unconditional one, which only
+// the single-developer local server ever sees.
+async function readStoredJobVersion(
+  jobStore: JobStore,
+  jobId: string
+): Promise<{ data: StoredJob; etag: string | undefined } | null> {
+  const entry = await jobStore.getWithMetadata(statusKey(jobId), { type: 'json' });
+  const data = storedJobOrNull(entry?.data);
+  return data && entry ? { data, etag: entry.etag } : null;
+}
+
 function store() {
   return getStore({ name: GENERATION_JOB_STORE_NAME, consistency: 'strong' });
 }
@@ -152,9 +226,7 @@ export async function markJobPending(
 
 export async function claimJob(jobId: string): Promise<string | null> {
   const jobStore = store();
-  const existing = (await jobStore.getWithMetadata(statusKey(jobId), {
-    type: 'json',
-  })) as { data: StoredJob; etag: string } | null;
+  const existing = await readStoredJobVersion(jobStore, jobId);
   if (!existing || existing.data.outcome || existing.data.claimId) return null;
 
   const claimId = randomUUID();
@@ -170,7 +242,7 @@ export async function claimJob(jobId: string): Promise<string | null> {
     // that ownership keeps the claimant from abandoning work only it can do.
     let recorded: StoredJob | null;
     try {
-      recorded = (await jobStore.get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
+      recorded = await readStoredJob(jobStore, jobId);
     } catch {
       throw cause;
     }
@@ -203,9 +275,7 @@ export async function completeJob(
   image: ArrayBuffer | null
 ): Promise<void> {
   const jobStore = store();
-  const existing = (await jobStore.getWithMetadata(statusKey(jobId), {
-    type: 'json',
-  })) as { data: StoredJob; etag: string } | null;
+  const existing = await readStoredJobVersion(jobStore, jobId);
   if (!existing || existing.data.outcome || existing.data.claimId !== claimId) return;
 
   // Bytes first: a poll that saw `image` but found nothing to send would be a
@@ -226,7 +296,7 @@ export async function completeJob(
 export async function readJob(jobId: string, now = Date.now()): Promise<GenerationJobState> {
   let record: StoredJob | null;
   try {
-    record = (await store().get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
+    record = await readStoredJob(store(), jobId);
   } catch (cause) {
     // An unreachable store is not evidence the job is gone, and answering
     // "expired" would tell a child their picture is lost when it may be sitting
@@ -296,7 +366,7 @@ export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
     });
     attemptedJobs += jobIds.length;
     const outcomes = await settleWithRetentionConcurrency(jobIds, async (jobId) => {
-      const record = (await jobStore.get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
+      const record = await readStoredJob(jobStore, jobId);
       if (record && record.expiresAt >= now) return { status: 'retained' as const };
 
       let jobDeletedBlobs = 0;

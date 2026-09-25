@@ -18,6 +18,7 @@ import {
   issueWorkTicket,
   markJobPending,
   purgeExpiredGenerationJobs,
+  readJob,
   verifyWorkTicket,
 } from './generationJobs';
 import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
@@ -29,6 +30,14 @@ import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
 const SECRET = 'test-secret';
 const JOB = 'a'.repeat(64);
 const PAYLOAD = JSON.stringify({ jobId: JOB, prompt: 'draw a cat' });
+
+const storedJob = (overrides: Record<string, unknown> = {}) => ({
+  context: { free: null, style: null },
+  outcome: null,
+  claimId: null,
+  expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
+  ...overrides,
+});
 
 describe('work tickets', () => {
   it('accepts the job and payload it was issued for', () => {
@@ -101,7 +110,7 @@ describe('purgeExpiredGenerationJobs', () => {
   it('deletes every key of a job nobody ever collected', async () => {
     // The whole finding: a child closes the modal, or the app is killed, and the
     // finished picture sits there because no poll ever ran the collection path.
-    store.get.mockResolvedValue({ context: {}, outcome: null, expiresAt: 1_000 });
+    store.get.mockResolvedValue(storedJob({ expiresAt: 1_000 }));
 
     const result = await purgeExpiredGenerationJobs(2_000);
 
@@ -122,11 +131,7 @@ describe('purgeExpiredGenerationJobs', () => {
 
   it('leaves a job that is still within its lifetime alone', async () => {
     const now = 10_000;
-    store.get.mockResolvedValue({
-      context: {},
-      outcome: null,
-      expiresAt: now + GENERATION_JOB_TTL_MS,
-    });
+    store.get.mockResolvedValue(storedJob({ expiresAt: now + GENERATION_JOB_TTL_MS }));
 
     expect(await purgeExpiredGenerationJobs(now)).toEqual({
       attemptedJobs: 1,
@@ -154,8 +159,9 @@ describe('purgeExpiredGenerationJobs', () => {
     store.list.mockReturnValue(pageOf(JOB, OTHER));
     store.get.mockImplementation((key: string) =>
       Promise.resolve({
-        context: {},
+        context: { free: null, style: null },
         outcome: null,
+        claimId: null,
         expiresAt: key.startsWith(JOB) ? 1_000 : 999_000,
       })
     );
@@ -192,8 +198,9 @@ describe('purgeExpiredGenerationJobs', () => {
     store.get.mockImplementation((key: string) => {
       if (key.startsWith(readFailure)) return Promise.reject(new Error('read failed'));
       return Promise.resolve({
-        context: {},
+        context: { free: null, style: null },
         outcome: null,
+        claimId: null,
         expiresAt: key.startsWith(laterRetained) ? 999_000 : 1_000,
       });
     });
@@ -332,5 +339,185 @@ describe('purgeExpiredGenerationJobs', () => {
     await completeJob(JOB, 'claim-1', { status: 'error', reason: 'duplicate' }, null);
 
     expect(store.setJSON).not.toHaveBeenCalled();
+  });
+});
+
+// `@netlify/blobs` types a JSON read as `any`, so a record written by an older
+// deploy or cut short mid-write reaches this module unchecked. Each case pairs a
+// malformed record with a well-formed one so the test proves the guard, not a
+// call site that ignores the store entirely.
+describe('malformed job records', () => {
+  const UNKNOWN_OUTCOME = 'an outcome of an unknown shape';
+  const BARE_STRING = 'a bare string';
+  // Each builder takes the claim id the call site expects, so completeJob's
+  // claim match cannot be what rejects the record.
+  const MALFORMED = [
+    [
+      'a missing context',
+      (claimId: string | null) => ({ ...storedJob({ claimId }), context: undefined }),
+    ],
+    ['a non-numeric expiry', (claimId: string | null) => storedJob({ claimId, expiresAt: '9999' })],
+    [
+      UNKNOWN_OUTCOME,
+      (claimId: string | null) => storedJob({ claimId, outcome: { status: 'image' } }),
+    ],
+    [
+      'a free reservation without its id',
+      (claimId: string | null) => storedJob({ claimId, context: { free: {}, style: null } }),
+    ],
+    [BARE_STRING, () => 'status'],
+  ] as const;
+
+  // A site's table keeps only the cases the guard alone rejects there. claimJob
+  // and completeJob already refuse any record with an outcome, and a bare string
+  // lacks the claimId or expiresAt that the recovery, completeJob and the purge
+  // already refuse without it — so those pairs would pass with the guard gone.
+  const MALFORMED_EXCEPT = (...excluded: string[]) =>
+    MALFORMED.filter(([label]) => !excluded.includes(label));
+
+  let warnMock: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    store.get.mockReset();
+    store.getWithMetadata.mockReset();
+    store.set.mockReset().mockResolvedValue({ modified: true });
+    store.setJSON.mockReset().mockResolvedValue({ modified: true });
+    store.delete.mockReset().mockResolvedValue(undefined);
+    store.list.mockReset().mockReturnValue([{ blobs: [], directories: [JOB] }]);
+    warnMock = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    warnMock.mockClear();
+  });
+
+  describe('readJob', () => {
+    it('reports a well-formed pending record as pending', async () => {
+      store.get.mockResolvedValue(storedJob());
+
+      expect(await readJob(JOB, 5_000)).toEqual({
+        status: 'pending',
+        context: { free: null, style: null },
+      });
+      expect(warnMock).not.toHaveBeenCalled();
+    });
+
+    it.each(MALFORMED)(
+      'reports %s as expired, since the picture is not coming',
+      async (_, record) => {
+        store.get.mockResolvedValue(record(null));
+
+        expect(await readJob(JOB, 5_000)).toEqual({ status: 'expired' });
+        expect(warnMock).toHaveBeenCalledWith('[generation-jobs] ignoring a malformed job record');
+      }
+    );
+  });
+
+  describe('claimJob', () => {
+    it('claims a well-formed pending record', async () => {
+      store.getWithMetadata.mockResolvedValue({ data: storedJob(), etag: 'v1', metadata: {} });
+
+      expect(await claimJob(JOB)).toEqual(expect.any(String));
+      expect(store.setJSON).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(MALFORMED_EXCEPT(UNKNOWN_OUTCOME))('does not claim %s', async (_, record) => {
+      store.getWithMetadata.mockResolvedValue({ data: record(null), etag: 'v1', metadata: {} });
+
+      expect(await claimJob(JOB)).toBeNull();
+      expect(store.setJSON).not.toHaveBeenCalled();
+    });
+
+    it('claims a record the local Blobs server returned without an etag', async () => {
+      store.getWithMetadata.mockResolvedValue({ data: storedJob(), metadata: {} });
+
+      expect(await claimJob(JOB)).toEqual(expect.any(String));
+      expect(store.setJSON).toHaveBeenCalledWith(
+        `${JOB}/status.json`,
+        expect.objectContaining({ claimId: expect.any(String) }),
+        { onlyIfMatch: undefined }
+      );
+    });
+
+    it('recovers a lost-reply claim from a well-formed record', async () => {
+      let written: unknown;
+      store.getWithMetadata.mockResolvedValue({ data: storedJob(), etag: 'v1', metadata: {} });
+      store.setJSON.mockImplementationOnce(async (_key, value) => {
+        written = value;
+        throw new Error('reply lost');
+      });
+      store.get.mockImplementationOnce(async () => written);
+
+      expect(await claimJob(JOB)).toEqual(expect.any(String));
+    });
+
+    it.each(MALFORMED_EXCEPT(BARE_STRING))(
+      'does not recover a lost-reply claim from %s',
+      async (_, record) => {
+        let claimId: string | null = null;
+        store.getWithMetadata.mockResolvedValue({ data: storedJob(), etag: 'v1', metadata: {} });
+        store.setJSON.mockImplementationOnce(async (_key, value: { claimId: string }) => {
+          claimId = value.claimId;
+          throw new Error('reply lost');
+        });
+        // The malformed record carries the attempt's own claim id, so only the
+        // guard can be what refuses the recovery.
+        store.get.mockImplementationOnce(async () => record(claimId));
+
+        await expect(claimJob(JOB)).rejects.toThrow('reply lost');
+      }
+    );
+  });
+
+  describe('completeJob', () => {
+    const CLAIM = 'claim-1';
+    const OUTCOME = { status: 'error', reason: 'late' } as const;
+
+    it('records the outcome on a well-formed claimed record', async () => {
+      store.getWithMetadata.mockResolvedValue({
+        data: storedJob({ claimId: CLAIM }),
+        etag: 'v1',
+        metadata: {},
+      });
+
+      await completeJob(JOB, CLAIM, OUTCOME, new ArrayBuffer(1));
+
+      expect(store.set).toHaveBeenCalledTimes(1);
+      expect(store.setJSON).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(MALFORMED_EXCEPT(UNKNOWN_OUTCOME, BARE_STRING))(
+      'writes nothing over %s',
+      async (_, record) => {
+        store.getWithMetadata.mockResolvedValue({ data: record(CLAIM), etag: 'v1', metadata: {} });
+
+        await completeJob(JOB, CLAIM, OUTCOME, new ArrayBuffer(1));
+
+        expect(store.set).not.toHaveBeenCalled();
+        expect(store.setJSON).not.toHaveBeenCalled();
+      }
+    );
+  });
+
+  describe('purgeExpiredGenerationJobs', () => {
+    it('retains a well-formed record that has not expired', async () => {
+      store.get.mockResolvedValue(storedJob());
+
+      expect(await purgeExpiredGenerationJobs(5_000)).toMatchObject({
+        retainedJobs: 1,
+        purgedJobs: 0,
+      });
+      expect(store.delete).not.toHaveBeenCalled();
+    });
+
+    it.each(MALFORMED_EXCEPT(BARE_STRING))(
+      'treats %s as eligible for deletion',
+      async (_, record) => {
+        store.get.mockResolvedValue(record(null));
+
+        expect(await purgeExpiredGenerationJobs(5_000)).toMatchObject({
+          retainedJobs: 0,
+          purgedJobs: 1,
+        });
+        expect(store.delete).toHaveBeenCalledWith(`${JOB}/status.json`);
+      }
+    );
   });
 });
