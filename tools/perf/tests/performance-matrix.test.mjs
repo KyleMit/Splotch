@@ -1541,6 +1541,84 @@ describe('deployment matrix report', () => {
       );
     });
 
+    // ADR-0175 decision 6 and issue 2268: an old red keeps counting until it is
+    // recaptured or explained, and carrying a release-gate drawing section forward
+    // as preserved is neither. Its published red stays on the open-reds list.
+    describe('a preserved release-gate drawing red', () => {
+      const openRedsOf = (drawing) => {
+        const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+        temporaryDirectories.push(manifestDirectory);
+        publishReport(manifestDirectory, { drawing });
+        const source = manifest([
+          capturedManifestMode(modeSpecs[0], {
+            drawing: 'preserved',
+            capturedOn: { drawing: '2026-08-01' },
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]);
+        source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+        const matrix = normalizeMatrix(source, manifestDirectory);
+        const markdown = renderMarkdown(matrix);
+        return {
+          html: renderReport(matrix),
+          markdown,
+          openReds: markdown.slice(
+            markdown.indexOf('## Open release-gate reds'),
+            markdown.indexOf('## Acceptance gates')
+          ),
+        };
+      };
+      const withRunFidelity = (fidelity) =>
+        Object.fromEntries(
+          Object.entries(publishedDrawing).map(([brush, entry]) => [
+            brush,
+            { ...entry, runs: entry.runs.map((run) => ({ ...run, fidelity })) },
+          ])
+        );
+
+      it('keeps counting, dated by its capture', () => {
+        const { html, markdown, openReds } = openRedsOf(publishedDrawing);
+
+        expect(openReds).toContain('4 unexplained red cells on the release-gate rows');
+        expect(openReds).toContain('preserved, published red (ADR-0175): paint P95 44');
+        expect(openReds).toContain('2026-08-01 · 19 days');
+        expect(html).toContain('published red keeps counting on a release-gate row (ADR-0175)');
+        expect(markdown).toContain('published red keeps counting on a release-gate row (ADR-0175)');
+      });
+
+      it('counts one whose published verdict failed only uncalibrated checks', () => {
+        const passingDrawing = withRunFidelity({
+          passed: false,
+          checks: { coalescing: false },
+          uncalibrated: ['coalescing'],
+        });
+        for (const entry of Object.values(passingDrawing)) entry.aggregate.blankPassed = true;
+
+        expect(openRedsOf(passingDrawing).openReds).toContain('4 unexplained red cells');
+      });
+
+      it('does not count one whose published verdict failed a calibrated check', () => {
+        const { openReds } = openRedsOf(
+          withRunFidelity({ passed: false, checks: { cadence: false }, uncalibrated: [] })
+        );
+
+        expect(openReds).toContain('the ADR-0175 completion gate holds on this report');
+      });
+
+      it('does not count a published pass', () => {
+        const passed = Object.fromEntries(
+          Object.entries(publishedDrawing).map(([brush, entry]) => [
+            brush,
+            { ...entry, aggregate: { ...entry.aggregate, blankPassed: true } },
+          ])
+        );
+
+        expect(openRedsOf(passed).openReds).toContain(
+          'the ADR-0175 completion gate holds on this report'
+        );
+      });
+    });
+
     it('renders preserved action evidence that predates readiness samples', () => {
       const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
       temporaryDirectories.push(manifestDirectory);

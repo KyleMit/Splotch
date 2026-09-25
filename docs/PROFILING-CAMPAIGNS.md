@@ -917,8 +917,8 @@ loop. Every cell you do not recapture keeps its published number, because the ma
 `"preserved"` for it and the generator copies that forward.
 
 ```sh
-# 1. capture the modes you want. --items= narrows a DIAGNOSTIC run; a run whose
-#    output you intend to fold has to write the whole mode, so leave it off.
+# 1. capture the modes you want. --items= narrows the run; fold its output with the
+#    matching --sections= in step 2, or leave --items off to write the whole mode.
 npm run perf:campaign -- --target=android-device-web \
   --modes=landscape-light,landscape-dark \
   --device-id=<serial> --url=http://<lan>:<preview>/ --probe-host=http://<lan>:<probe> \
@@ -937,14 +937,24 @@ npm run gen:performance-matrix -- --strict scrapbook/performance/2026-07-31-depl
 
 Two properties of step 2 decide how small an increment can be:
 
-* **The unit is a mode, not a cell.** `perf:campaign:sources` rewrites a mode only when all four
-  brushes *and* its action sweep are present in that output root and captured through the target's
-  transport. This is deliberate — a partially captured mode is not a captured one — so a run
-  narrowed with `--items=` folds nothing and leaves the matrix unchanged unless the mode's other
-  artifacts are already sitting in the same `--output-root`. To move one brush you either recapture
-  its whole mode or point the fold at a root that already holds the rest. Omit `--manifest=` to
-  print what it *would* write: it names the missing items per mode, which is the cheapest way to
-  find out before you have edited anything. Two explicit action-only exceptions do not relax brush
+* **The unit is a mode or a section, never a cell.** By default `perf:campaign:sources` rewrites a
+  mode only when all four brushes *and* its action sweep are present in that output root and
+  captured through the target's transport. This is deliberate — a partially captured mode is not a
+  captured one — so a run narrowed with `--items=` folds nothing by default. `--sections=` narrows
+  the fold to named sections instead: `drawing` (all four brushes), `undo` (read from the pen
+  artifact), or `actions`. Each named section needs only the cells it is built from, is written with
+  this fold's `--product-commit` and its own `capturedOn` date, and the mode's other sections stay
+  exactly as published, on the route they already have: a raw drawing stays raw, a preserved one
+  stays preserved. So a recaptured action sweep lands with `--items=actions` and
+  `--sections=actions` on a mode whose drawing came from another commit, and the matrix shows each
+  section's own commit and date. A drawing fold pins the carried undo and captured-untracked action
+  commits before it moves `drawingProductCommit`, and the mode's `buildEntry`/`buildDigest` name its
+  drawing build, so only a fold that writes the drawing replaces them. A section fold needs a mode
+  that already publishes captured sections; an unavailable mode takes a whole-mode fold. It cannot
+  be combined with the two action exceptions below. One brush alone still cannot move: the drawing
+  section has one product commit, so it moves with all four brushes. Omit `--manifest=` to print
+  what it *would* write: it names the missing items per mode, which is the cheapest way to find out
+  before you have edited anything. Two explicit action-only exceptions do not relax brush
   completeness: `--actions-unavailable=<reason>` folds the four brushes and replaces the action
   section with that reason, while `--preserve-actions` folds the four brushes and carries the mode's
   published action section forward unchanged. Use the latter when the current action transport is
