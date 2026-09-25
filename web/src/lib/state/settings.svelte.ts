@@ -162,18 +162,6 @@ function readReduceMotion(fallback: ReduceMotionPreference): ReduceMotionPrefere
   return isReduceMotionPreference(raw) ? raw : fallback;
 }
 
-function readBoolSettings(): Record<BoolSettingKey, boolean> {
-  return Object.fromEntries(
-    boolSettingEntries().map(([prop, [key, def]]) => [prop, readBool(key, def)])
-  ) as Record<BoolSettingKey, boolean>;
-}
-
-function readIntSettings(): Record<IntSettingKey, number> {
-  return Object.fromEntries(
-    intSettingEntries().map(([prop, [key, def, clamp]]) => [prop, clamp(readInt(key, def))])
-  ) as Record<IntSettingKey, number>;
-}
-
 export type ToolbarStyle = 'buttons' | 'bare';
 
 // The Orientation picker's vocabulary over the two persisted lock booleans:
@@ -206,6 +194,36 @@ interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey
   // display in Settings; nothing else depends on it.
   saveFolderName: string | null;
 }
+
+type PersistedSettings = Omit<Settings, 'aiAccessToken' | 'aiUserApiKey' | 'saveFolderName'>;
+
+// Every localStorage-backed field, each falling back to `current` (the live
+// value on reload) or its default, so the initial $state and reloadSettings()
+// share one list of persisted fields.
+function readPersistedSettings(current?: PersistedSettings): PersistedSettings {
+  const bools = Object.fromEntries(
+    boolSettingEntries().map(([prop, [key, def]]) => [prop, readBool(key, current?.[prop] ?? def)])
+  ) as Record<BoolSettingKey, boolean>;
+  const ints = Object.fromEntries(
+    intSettingEntries().map(([prop, [key, def, clamp]]) => [
+      prop,
+      clamp(readInt(key, current?.[prop] ?? def)),
+    ])
+  ) as Record<IntSettingKey, number>;
+  return {
+    ...bools,
+    ...ints,
+    theme: readTheme(current?.theme ?? THEME_DEFAULT),
+    reduceMotion: readReduceMotion(current?.reduceMotion ?? REDUCE_MOTION_DEFAULT),
+    toolbarStyle: readToolbarStyle(),
+  };
+}
+
+const OPTIONAL_BRUSH_SETTING = {
+  crayon: 'crayonEnabled',
+  magic: 'magicBrushEnabled',
+  eraser: 'eraserEnabled',
+} as const satisfies Record<OptionalBrushType, BoolSettingKey>;
 
 // Extends the verification vocabulary rather than restating it, so a new
 // credential kind cannot compile in aiCredential.ts while being silently absent
@@ -257,11 +275,7 @@ export type SettingsState = Readonly<Settings> & SettingsMutators;
 
 export function createSettings(tool: ToolState): SettingsState {
   const s: Settings = $state({
-    ...readBoolSettings(),
-    ...readIntSettings(),
-    theme: readTheme(THEME_DEFAULT),
-    reduceMotion: readReduceMotion(REDUCE_MOTION_DEFAULT),
-    toolbarStyle: readToolbarStyle(),
+    ...readPersistedSettings(),
     aiAccessToken: '',
     aiUserApiKey: '',
     saveFolderName: null,
@@ -290,12 +304,6 @@ export function createSettings(tool: ToolState): SettingsState {
     return s[control] && (s.toolDrawerEnabled || !isToolDrawerControl(control));
   }
 
-  const OPTIONAL_BRUSH_SETTING = {
-    crayon: 'crayonEnabled',
-    magic: 'magicBrushEnabled',
-    eraser: 'eraserEnabled',
-  } as const satisfies Record<OptionalBrushType, BoolSettingKey>;
-
   function isOptionalBrushEnabled(brush: OptionalBrushType): boolean {
     return actionControlShown(OPTIONAL_BRUSH_SETTING[brush]);
   }
@@ -306,9 +314,14 @@ export function createSettings(tool: ToolState): SettingsState {
     }
   }
 
-  const setCrayonSetting = makeBoolSetter('crayonEnabled');
-  const setMagicBrushSetting = makeBoolSetter('magicBrushEnabled');
-  const setEraserSetting = makeBoolSetter('eraserEnabled');
+  function makeOptionalBrushSetter(brush: OptionalBrushType) {
+    const setFlag = makeBoolSetter(OPTIONAL_BRUSH_SETTING[brush]);
+    return (v: boolean) => {
+      setFlag(v);
+      if (!v) tool.fallBackFromBrush(brush);
+    };
+  }
+
   const setToolDrawerSetting = makeBoolSetter('toolDrawerEnabled');
   const setLockRotation = makeBoolSetter('lockRotationEnabled');
   const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');
@@ -327,18 +340,9 @@ export function createSettings(tool: ToolState): SettingsState {
     setScreenshot: makeBoolSetter('screenshotEnabled'),
     setUndoButton: makeBoolSetter('undoButtonEnabled'),
     setStrokeWidthControl: makeBoolSetter('strokeWidthControlEnabled'),
-    setCrayon(v) {
-      setCrayonSetting(v);
-      if (!v) tool.fallBackFromBrush('crayon');
-    },
-    setMagicBrush(v) {
-      setMagicBrushSetting(v);
-      if (!v) tool.fallBackFromBrush('magic');
-    },
-    setEraser(v) {
-      setEraserSetting(v);
-      if (!v) tool.fallBackFromBrush('eraser');
-    },
+    setCrayon: makeOptionalBrushSetter('crayon'),
+    setMagicBrush: makeOptionalBrushSetter('magic'),
+    setEraser: makeOptionalBrushSetter('eraser'),
     setColoringBook: makeBoolSetter('coloringBookEnabled'),
     setColoringPacksAllowMetered: makeBoolSetter('coloringPacksAllowMetered'),
     setAiImage: makeBoolSetter('aiImageEnabled'),
@@ -397,15 +401,7 @@ export function createSettings(tool: ToolState): SettingsState {
     // storage layer recovers values that the native WebView had evicted (see
     // hydrateDurableStorage in storage.ts). A no-op visually when nothing changed.
     reloadSettings() {
-      for (const [prop, [key]] of boolSettingEntries()) {
-        s[prop] = readBool(key, s[prop]);
-      }
-      for (const [prop, [key, , clamp]] of intSettingEntries()) {
-        s[prop] = clamp(readInt(key, s[prop]));
-      }
-      s.theme = readTheme(s.theme);
-      s.reduceMotion = readReduceMotion(s.reduceMotion);
-      s.toolbarStyle = readToolbarStyle();
+      Object.assign(s, readPersistedSettings(s));
       applyTheme(s.theme);
       normalizeDisabledBrushes();
     },
