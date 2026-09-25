@@ -1,0 +1,129 @@
+{
+  "campaign": "2026-09-25-issue-2229-android-device-web-portrait",
+  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
+  "capturedFrom": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web",
+  "study": "Physical android-device-web portrait-light and portrait-dark drawing (four brushes) plus pen-undo at 10 undos and 3 drift refs, recaptured for issue 2229 on the corrected dispatch geometry (issue 2271) with the overlay guard passing; replaces the rig-affected 3928cd88 portrait cells (140 of 160 pointerdowns)",
+  "kept": [
+    {
+      "file": "crayon-real-screen--593ad36a.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "portrait-dark/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--2c4ee83d.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "portrait-dark/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--715a110c.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "portrait-dark/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--3b61adbc.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "portrait-dark/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--8914c2df.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "portrait-light/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--d83efde2.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "portrait-light/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--8de235d3.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "portrait-light/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--3aef348d.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "portrait-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "end--e10e62c1.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "references/portrait-light/end.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "middle--6b3beb5e.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "references/portrait-light/middle.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "start--1035086a.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "references/portrait-light/start.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}
