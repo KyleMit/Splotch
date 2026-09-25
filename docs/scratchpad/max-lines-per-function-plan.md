@@ -1217,3 +1217,34 @@ functions would push theme, preview and overlaySource through two signatures wit
 function is already under 100. Merging the paint+overlay pairs is a separate dedupe decision with
 different scale and target. A raise is not warranted, because the function is under the cap and a
 clean seam exists.
+
+## Outcome
+
+Each extraction was implemented in its own worktree from the plan commit, re-judged by its
+implementer, and then reviewed by a fresh read-only checker using `git show`. All 13 checkers
+returned keep; none asked for a fix or a revert-to-raise. Implementers dropped no planned seams. The
+lengths below are measured at the branch tip.
+
+| Function                       | Before | After | Per-file cap |
+| ------------------------------ | ------ | ----- | ------------ |
+| `createParentalGate`           | 251    | 251   | 276          |
+| `dragToClear`                  | 237    | 189   | 214          |
+| `createPWAUpdates`             | 203    | 122   | 147          |
+| `createInstall`                | 164    | 111   | 136          |
+| `createInkMotion`              | 160    | 112   | 137          |
+| `scribbleTap`                  | 143    | 94    | default 125  |
+| `createSettings`               | 139    | 117   | 142          |
+| `buildEngineApi`               | 132    | 97    | default 125  |
+| `toolbarGlassPanes`            | 130    | 112   | 137          |
+| `createFreeGenerations`        | 119    | 102   | 127          |
+| `createAiGeneration`           | 117    | 117   | 142          |
+| `edgeMargins`                  | 116    | 24    | default 125  |
+| `installWebBackHandler`        | 114    | 114   | 139          |
+| `createColoringPackDownloader` | 112    | 108   | 133          |
+| `createLayout`                 | 112    | 112   | 137          |
+| `createSaveFailure`            | 108    | 99    | default 125  |
+| `composeExportPng`             | 102    | 68    | default 125  |
+
+The existing `max-lines` overrides (engine.ts, tiledRenderer.ts, exportDrawing.test.ts) each sit
+about 75 lines above their files, which is the headroom the max-lines headroom plan set on purpose,
+so none was retired.
