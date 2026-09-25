@@ -133,7 +133,7 @@
       """
 
 [[headers]]
-  for = "/manifest.webmanifest"
+  for = "/site.webmanifest"
   [headers.values]
     Content-Type = "application/manifest+json"
 
