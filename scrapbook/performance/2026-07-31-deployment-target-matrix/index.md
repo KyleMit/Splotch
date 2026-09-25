@@ -252,8 +252,8 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   physical rows, except the physical Android web portrait-light and portrait-dark drawing and undo
   sections, which were recaptured at 1e3016ec407413a255e69d6eddaef2274dd3ee3a on 2026-09-25 (issue
   2229); and the portrait-light and portrait-dark action sweeps on physical iPad native and physical
-  Android web. The other eight physical action sections were captured after that campaign and folded
-  one section at a time (issue 2268): first, all four physical iPad web sweeps at
+  Android web. The other twelve physical action sections were captured after that campaign and
+  folded one section at a time (issue 2268): first, all four physical iPad web sweeps at
   8e6700d5d801eb481a4bde3d47cea69135dd71b4 over the secure-origin front (issue 2211), and both
   physical iPad native landscape sweeps at d50d73927f1835bbe231d1c2450f49fbe5803f53, the
   contentInset fix (issue 2212). Each keeps its own product commit beside its mode’s 3928cd88
@@ -338,7 +338,7 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   preserved before the strict regeneration.
 * 28 cells carry historical results preserved from data.json rather than re-read raw captures: The
   2026-09-23 campaign freshly captured every physical drawing and undo section and the portrait
-  action sweeps on physical iPad native and physical Android web. The other eight physical action
+  action sweeps on physical iPad native and physical Android web. The other twelve physical action
   sections were later folded one section at a time from their own captures (issue 2268), so no
   physical section is preserved. The advisory iPad Simulator, Android Emulator, and Mac desktop rows
   are preserved wholesale, and every preserved section keeps its original product commit and does
