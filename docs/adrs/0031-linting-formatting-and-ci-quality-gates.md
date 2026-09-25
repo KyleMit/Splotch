@@ -63,6 +63,14 @@ choices:
   their prose as a rule id. A disable that names no rule, or names the enforcing rule, suppresses
   the report that would flag it, so `tools/tests/disable-directives-lint.test.mjs` also runs the
   rule over the tracked source with inline config off.
+* **`@typescript-eslint/no-non-null-assertion` is enforced on shipped `web/src` code only** (amended
+  2026-09, issue 2323). The 2026-09 evaluation rejected it repo-wide at 276 hits, mostly tests.
+  After the issue 2323 sweep replaced the lazy casts and assertions in production code, the rule
+  scoped to `web/src`, excluding `*.test.ts` and `*TestHarness.ts`, found 8. Six were fixed at their
+  source. Two remain as justified disables, both the Svelte `bind:this` idiom
+  `let el: T = $state()!`. Tests (183 hits in colocated `web/src` tests, 241 in `web/tests`) and
+  `tools/` (4) stay out of scope, because there `!` is the idiomatic "the fixture guarantees it".
+  The repo-wide rejection still stands for that code.
 * **Rejected rule candidates — measured, do not re-litigate without new evidence.** Same verdict as
   the `no-magic-numbers` rejection (~750 hits): each of these carries a violation count showing the
   codebase deliberately follows a different convention (counts as of the 2026-09 evaluation):
@@ -70,8 +78,7 @@ choices:
   `svelte/consistent-selector-style` 848 · `playwright/no-raw-locators` 803 ·
   `svelte/sort-attributes` 688 · `prefer-named-capture-group` 480 · `no-continue` 447 ·
   `no-underscore-dangle` 411 · `require-await` 334 · `@typescript-eslint/no-empty-function` 304 ·
-  `@typescript-eslint/no-non-null-assertion` 276 (mostly tests) · `curly` 225 ·
-  `svelte/no-unused-class-name` 151 · `prefer-template` 109 · `no-shadow` 105 ·
+  `curly` 225 · `svelte/no-unused-class-name` 151 · `prefer-template` 109 · `no-shadow` 105 ·
   `no-implicit-coercion` 105 · `svelte/no-inline-styles` 97 · `consistent-return` 46. Three carry a
   specific note: `prefer-lowercase-title` looks adoptable (its few flagged titles are all proper
   nouns and identifiers) but the real convention is "no sentence-casing", which `valid-title` with

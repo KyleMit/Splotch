@@ -430,6 +430,15 @@ export default tseslint.config(
     },
   },
   {
+    // `!` is a cast to non-null, and casts belong only at a validated boundary (CLAUDE.md,
+    // "`as` is a boundary tool"). Scoped to shipped code: tests and the *TestHarness modules
+    // use `!` as the idiomatic "the fixture guarantees it", and would carry ~420 disables.
+    // ADR-0031 records the measured adoption.
+    files: ['web/src/**/*.{ts,svelte}'],
+    ignores: ['web/src/**/*.test.ts', 'web/src/**/*TestHarness.ts'],
+    rules: { '@typescript-eslint/no-non-null-assertion': 'error' },
+  },
+  {
     // Size ratchet for app + E2E code: past 500 real lines a module is overdue for the split
     // treatment engine.ts got (ADR-0004 siblings). Grandfathered outliers below carry caps just
     // above their current size so they can only shrink.

@@ -153,6 +153,12 @@ export const COLOR_FAMILIES: ColorFamily[] = [
   },
 ];
 
+export function colorFamilyShade(name: string, shadeIndex: number): string {
+  const shade = COLOR_FAMILIES.find((family) => family.name === name)?.shades[shadeIndex];
+  if (!shade) throw new Error(`No shade ${shadeIndex} in color family "${name}"`);
+  return shade;
+}
+
 export const FAMILY_COUNT = COLOR_FAMILIES.length;
 
 export interface PickerRow {

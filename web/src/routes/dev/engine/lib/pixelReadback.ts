@@ -1,3 +1,5 @@
+import { require2dContext } from '$lib/drawing/canvas2d';
+
 // The harness draws in pure red and the paper background never is, so these
 // bounds separate stroke pixels from paper without matching an exact color.
 const STROKE_RED_MIN = 200;
@@ -24,7 +26,7 @@ export async function decodeBlobImageData(blob: Blob): Promise<ImageData> {
   const decodeCanvas = document.createElement('canvas');
   decodeCanvas.width = bitmap.width;
   decodeCanvas.height = bitmap.height;
-  const decodeCtx = decodeCanvas.getContext('2d')!;
+  const decodeCtx = require2dContext(decodeCanvas);
   decodeCtx.drawImage(bitmap, 0, 0);
   return decodeCtx.getImageData(0, 0, bitmap.width, bitmap.height);
 }

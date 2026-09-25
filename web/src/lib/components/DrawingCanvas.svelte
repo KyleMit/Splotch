@@ -45,6 +45,7 @@
   import LiveSurface from './LiveSurface.svelte';
   import PointerHalos from './PointerHalos.svelte';
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Svelte's bind:this idiom: LiveSurface's bind:canvasEl assigns it before onMount reads it
   let canvasEl: HTMLCanvasElement = $state()!;
   let pointerHalos: PointerHalos;
 

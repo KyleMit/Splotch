@@ -61,7 +61,7 @@
   style="--result-entry-blur: {MIN_BLUR_PX}px;"
   style:--stage-natural-w={decodedNaturalWidth > 0 ? `${decodedNaturalWidth}px` : undefined}
   use:pinchZoom={() => ({
-    target: zoomLayerEl!,
+    target: zoomLayerEl,
     // Only once the finished picture is on screen — the loading dial and
     // blurred preview shouldn't zoom.
     enabled: revealed && !!resultUrl && !exiting,
