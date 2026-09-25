@@ -486,6 +486,16 @@ export default tseslint.config(
     },
   },
   {
+    // dragToClear's pointer handlers share one gesture state machine (active drag, start point, clearReady, hold timer); the tap run, timers, and threshold classes already have their own homes, and splitting the handlers would thread that state through accessor bags.
+    files: ['web/src/lib/actions/dragToClear.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 214, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
