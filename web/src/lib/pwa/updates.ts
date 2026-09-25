@@ -222,6 +222,11 @@ function createDeferredRegistration(onRegistered: () => Promise<unknown>) {
   return { schedule, registerDeferredServiceWorker };
 }
 
+// Native builds drop this module only if constructing the pwaUpdates singleton
+// is provably side-effect-free, and the bundler cannot prove that through the
+// sub-factory calls on its own. tools/mobile/check-static-bundle.mjs fails the
+// native build if the web-only lifecycle survives.
+/* @__NO_SIDE_EFFECTS__ */
 export function createPWAUpdates() {
   let initialized = false;
   // none → ready when a waiting worker is found and the page is stale (or the
