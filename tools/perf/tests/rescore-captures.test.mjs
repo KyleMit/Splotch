@@ -20,7 +20,6 @@ import {
   keepCaptureEvidence,
   modeOf,
   redactDeviceIdentifiers,
-  redactHostAddresses,
   REDACTED_DEVICE_IDENTIFIER,
   selectEvidence,
 } from '../keep-capture-evidence.mjs';
@@ -29,6 +28,7 @@ import { unattributableCaptureProblem } from '../analyze-frame-capture.mjs';
 import { FLOOR_CONTROL_PAGE } from '../split-capture/lib/probe-host-protocol.mjs';
 import { buildDirHoldsNativeExport } from '../lib/build-variant.mjs';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
+import { scanForHostAddresses } from '../lib/host-addresses.mjs';
 
 // The real frame table is a tuple stream, not a record list, and phases are
 // declared separately — a fixture that gets that wrong scores as an empty run
@@ -706,6 +706,7 @@ describe('keep-capture-evidence', () => {
         ],
         orientation: 'PORTRAIT',
         theme: 'light',
+        appUrl: 'http://192.168.40.77:4193/',
         device: { name: 'hardware-id', os: '18.6', id: 'hardware-id' },
       })
     );
@@ -739,6 +740,8 @@ describe('keep-capture-evidence', () => {
         id: REDACTED_DEVICE_IDENTIFIER,
       });
       expect(promoted.samples[0].postActionFrameGapsMs).toEqual([16.7, 18.2]);
+      expect(promoted.appUrl).toBe('http://lan-host:4193/');
+      expect(scanForHostAddresses(JSON.stringify(promoted))).toEqual([]);
       expect(readFileSync(source, 'utf8')).toBe(sourceBefore);
     } finally {
       quiet.mockRestore();
@@ -972,20 +975,5 @@ describe('attribution is stamped at promotion and read by the analyzer', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
-});
-
-describe('redactHostAddresses', () => {
-  it('replaces the capture Mac and its private LAN address, keeping the probe nonce', () => {
-    const serialized = JSON.stringify({
-      appUrl: 'https://Some-Mac.local:54790/',
-      report: { meta: { url: 'http://192.168.40.54:4192/?probe=run-1' } },
-      other: 'http://10.0.0.7:4173/ and 172.20.1.2 but not 172.32.0.1 or 8.8.8.8',
-    });
-    const redacted = JSON.parse(redactHostAddresses(serialized));
-    expect(redacted.appUrl).toBe('https://rig-mac.local:54790/');
-    expect(new URL(redacted.report.meta.url).searchParams.get('probe')).toBe('run-1');
-    expect(redacted.report.meta.url).toBe('http://lan-host:4192/?probe=run-1');
-    expect(redacted.other).toBe('http://lan-host:4173/ and lan-host but not 172.32.0.1 or 8.8.8.8');
   });
 });

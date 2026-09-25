@@ -5,6 +5,12 @@ import {
   maskIdentifier,
   scanForDeviceIdentifiers,
 } from '../lib/device-identifiers.mjs';
+import {
+  REDACTED_LAN_HOST,
+  REDACTED_MDNS_HOST,
+  redactHostAddresses,
+  scanForHostAddresses,
+} from '../lib/host-addresses.mjs';
 import { checkTrackedTree } from '../check-device-identifiers.mjs';
 
 // Built by concatenation so this tracked file never contains a non-exempt
@@ -57,9 +63,52 @@ describe('scanForDeviceIdentifiers', () => {
   });
 });
 
+describe('redactHostAddresses', () => {
+  it('replaces the capture Mac and its private LAN address, keeping the probe nonce', () => {
+    const serialized = JSON.stringify({
+      appUrl: 'https://Some-Mac.local:54790/',
+      report: { meta: { url: 'http://192.168.40.54:4192/?probe=run-1' } },
+      other: 'http://10.0.0.7:4173/ and 172.20.1.2 but not 172.32.0.1 or 8.8.8.8',
+    });
+    const redacted = JSON.parse(redactHostAddresses(serialized));
+    expect(redacted.appUrl).toBe('https://rig-mac.local:54790/');
+    expect(new URL(redacted.report.meta.url).searchParams.get('probe')).toBe('run-1');
+    expect(redacted.report.meta.url).toBe('http://lan-host:4192/?probe=run-1');
+    expect(redacted.other).toBe('http://lan-host:4173/ and lan-host but not 172.32.0.1 or 8.8.8.8');
+  });
+});
+
+describe('scanForHostAddresses', () => {
+  it('detects a private IPv4 host and an mDNS name in a capture URL', () => {
+    const findings = scanForHostAddresses(
+      JSON.stringify({
+        appUrl: 'http://192.168.40.77:4193/',
+        report: { meta: { url: 'https://Some-Mac.local:54790/?probe=run-1-2' } },
+      })
+    );
+    expect(findings.map((finding) => finding.kind)).toEqual(['private-ipv4', 'mdns-host']);
+  });
+
+  it('accepts the redaction placeholders, public addresses, and loopback', () => {
+    const text = [
+      `http://${REDACTED_LAN_HOST}:4193/?probe=run-1-2`,
+      `https://${REDACTED_MDNS_HOST}:54790/`,
+      'http://127.0.0.1:4173/ and http://localhost:4173/ and 8.8.8.8 and 172.32.0.1',
+      'window.localStorage and capacitor://localhost',
+    ].join('\n');
+    expect(scanForHostAddresses(text)).toEqual([]);
+  });
+
+  it('finds nothing in text the redactor has already passed over', () => {
+    const text = 'http://10.0.0.7:4173/ http://192.168.1.2/ 172.20.1.2 Kyles-Mac.local';
+    expect(scanForHostAddresses(text)).toHaveLength(4);
+    expect(scanForHostAddresses(redactHostAddresses(text))).toEqual([]);
+  });
+});
+
 describe('tracked tree', () => {
   // Reads every tracked text file (~3 s locally, slower on CI runners).
-  it('contains no physical-device identifier', { timeout: 60_000 }, () => {
+  it('contains no physical-device identifier or evidence host address', { timeout: 60_000 }, () => {
     expect(checkTrackedTree()).toEqual([]);
   });
 });
