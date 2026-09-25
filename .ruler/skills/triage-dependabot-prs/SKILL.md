@@ -179,19 +179,28 @@ head=$(git rev-parse origin/main)
 for b in <branches in intended order>; do   # zsh: use an array, unquoted $vars do not word-split
   out=$(git merge-tree --write-tree $head origin/$b) || { echo "collides: $b"; break; }
   head=$(git commit-tree ${out%%$'\n'*} -p $head -p origin/$b -m sim)
-  git show $head:pnpm-lock.yaml | node -e '
+  lock=$(git show $head:pnpm-lock.yaml) || { echo "no lockfile after: $b"; break; }
+  printf '%s' "$lock" | node -e '
     let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () =>
       require("yaml").parse(s, { uniqueKeys: true }))' || { echo "breaks lockfile: $b"; break; }
 done
 ```
 
+The blob is read into a variable first because a pipe reports only the last command's status: an
+unreadable lockfile would reach the parser as empty input, which parses cleanly.
+
 **A textually clean lockfile merge can still be a broken lockfile.** Two siblings that each add the
 same `packages:`/`snapshots:` entry (one directly, one as a new transitive resolution) do so in
 hunks that don't overlap, so git keeps both copies and pnpm then refuses the file with
 `ERR_PNPM_BROKEN_LOCKFILE: duplicated mapping key` on every frozen install. The unique-key parse
-above is what catches it; a `CONFLICT`-only simulation passed a batch that broke `main` this way. If
-it does land, repair it by deleting the duplicate blocks by hand, not with a plain `pnpm install`,
-which also re-resolves unrelated packages to newer, unreviewed releases.
+above is what catches it; a `CONFLICT`-only simulation passed a batch that broke `main` this way.
+
+If it does land, first compare the duplicate blocks. **Byte-identical copies** carry no choice, so
+delete the second of each and prove the result with `pnpm install --frozen-lockfile`; a plain
+`pnpm install` would also re-resolve unrelated packages to newer, unreviewed releases. **Copies that
+differ** (integrity, resolution, or snapshot dependencies) mean deleting either one silently picks a
+resolution. Regenerate with `pnpm install` instead, and review every version it moves before
+committing.
 
 Then order the real merges:
 
