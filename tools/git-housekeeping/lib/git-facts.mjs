@@ -122,16 +122,13 @@ export function parseBranchRefs(text) {
 // zero ahead and zero behind because it resolves to the base. It therefore lands in
 // every "nothing new here" bucket a caller computes, and a triage pass that feeds
 // those buckets to `git push --delete` would target the remote's HEAD pointer.
-const SYMBOLIC_REMOTE_HEAD = 'refs/remotes/*/HEAD';
+// It is excluded by its exact path under the namespace rather than by a glob: a
+// remote name may contain `/`, which a `*` in `refs/remotes/*/HEAD` does not cross.
+// Under `refs/heads` the path names nothing, since git refuses a branch called HEAD.
 
 export function listBranchRefs(cwd, { base, namespace }) {
   const format = [...REF_FIELDS, `%(ahead-behind:${base})`].join('%09');
-  const args = [
-    'for-each-ref',
-    `--format=${format}`,
-    `--exclude=${SYMBOLIC_REMOTE_HEAD}`,
-    namespace,
-  ];
+  const args = ['for-each-ref', `--format=${format}`, `--exclude=${namespace}/HEAD`, namespace];
   return parseBranchRefs(git(args, { cwd }));
 }
 

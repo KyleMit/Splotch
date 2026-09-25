@@ -300,4 +300,17 @@ describe('merged-ness proofs on a real repository', () => {
     expect(refs.map((r) => r.name).sort()).toEqual(['origin/main', 'origin/shipped']);
     expect(refs.map((r) => r.name)).not.toContain('origin');
   });
+
+  it('listBranchRefs omits the HEAD pointer of a remote whose name contains a slash', () => {
+    const { sh, repo } = fixture;
+    sh(['remote', 'add', 'team/upstream', sh(['remote', 'get-url', 'origin'])]);
+    sh(['fetch', '-q', 'team/upstream']);
+    sh(['remote', 'set-head', 'team/upstream', 'main']);
+
+    const refs = listBranchRefs(repo, {
+      base: 'origin/main',
+      namespace: 'refs/remotes/team/upstream',
+    });
+    expect(refs.map((r) => r.name)).toEqual(['team/upstream/main']);
+  });
 });
