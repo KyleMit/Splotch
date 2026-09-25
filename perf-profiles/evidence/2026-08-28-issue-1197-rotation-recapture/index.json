@@ -45,7 +45,7 @@
       "sha256": "ddcb46d256c012babb9dd90b324d0ee8a267af2856d1f604c25c52632f791b6c",
       "sourceHead": "ee3e5062fb0ca25a0b463afce002c0f6e2f7af06",
       "runtime": "ios-safari",
-      "appUrl": "http://192.168.40.53:4173/",
+      "appUrl": "http://lan-host:4173/",
       "note": "Post-fix Safari sibling proof from the fresh LAN build. Portrait-to-landscape post-action p95/max is 19/20 ms with per-repeat p95 17-20 ms; landscape-to-portrait is 19/22 ms with per-repeat p95 17-22 ms. Both ink directions record zero canvas mutations and both blank directions pass. One unrelated clear-setup control straddles its first-frame/max gates at 36/37 ms; the later clear-restored control and all rotation/undo cells pass."
     },
     {
@@ -76,6 +76,6 @@
   "attribution": {
     "nativeBaseline": "The first native resize arrives before layout and screen orientation settle. The synchronous Capacitor path adopts a 641x641 transient paper, resizes 16 normal tiles plus 16 detached repaint surfaces, and triggers the 107-156 ms WebKit presentation gaps even though engine.resize itself takes 3-5 ms.",
     "retainedFix": "The shared trailing resize debounce waits out the transient native layout just as it already does on Safari. Ink keeps its paper-sized tiles through both directions, so no backing assignment or replay reaches the rotation window.",
-    "historicalNativeArtifact": "The 2026-08-25 retained artifact labeled as native used native Appium transport but appUrl http://192.168.40.53:4185/. Navigating the WebView to that web build selected the non-Capacitor debounce branch, so its zero-mutation pass did not exercise the packaged native branch corrected here."
+    "historicalNativeArtifact": "The 2026-08-25 retained artifact labeled as native used native Appium transport but appUrl http://lan-host:4185/. Navigating the WebView to that web build selected the non-Capacitor debounce branch, so its zero-mutation pass did not exercise the packaged native branch corrected here."
   }
 }

@@ -5,13 +5,13 @@
 # and the interleaved rerun the ADR quotes.
 
 ## Run 1 — sequential arms (superseded design; drift visible across runs)
-=== floor (http://192.168.40.53:4176/) ===
+=== floor (http://lan-host:4176/) ===
 to LANDSCAPE: orient->resize nullms, ff(orient) nullms, ff(resize) nullms  [no orientationchange]
 to PORTRAIT: orient->resize 12ms, ff(orient) 12ms, ff(resize) 0ms
 to LANDSCAPE: orient->resize 11ms, ff(orient) 11ms, ff(resize) 0ms
 to PORTRAIT: orient->resize 14ms, ff(orient) 14ms, ff(resize) 0ms
 to LANDSCAPE: orient->resize 13ms, ff(orient) 13ms, ff(resize) 0ms
-=== app (http://192.168.40.53:4173/) ===
+=== app (http://lan-host:4173/) ===
 to LANDSCAPE: orient->resize nullms, ff(orient) nullms, ff(resize) nullms  [no orientationchange]
 to PORTRAIT: orient->resize 26ms, ff(orient) 26ms, ff(resize) 0ms
 to LANDSCAPE: orient->resize 26ms, ff(orient) 26ms, ff(resize) 0ms
