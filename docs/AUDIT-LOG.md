@@ -112,13 +112,13 @@ which was merged into one finding.
 ## 2026-09-25 · compatibility-audit
 
 First run, by hand, for issue #2327 at 7a0a52798. Kept the floor (Chrome/Edge 111, Firefox 114,
-Safari/iOS 16.4, Android API 24): it reaches 90.24% of global users against 86.93% for Baseline
-Widely Available, and a Safari/iOS 17.4 raise would retire only the `promiseWithResolvers` helper
-while forcing the iOS app off iPhone 8/X. Staged five findings: the `-webkit-backdrop-filter` twin
-documented as optional when it is load-bearing below Safari 18, a wrong `text-wrap: pretty` Baseline
-cell, no drift guard on the documented web floor, two dead guards (`DOMMatrix`,
-`createImageBitmap`), and an unregistered Cache Storage guard. Data: caniuse-lite 1.0.30001810,
-web-features 3.39.0. Working log: `docs/scratchpad/compatibility-audit-2026-09.md`.
+Safari/iOS 16.4, Android API 24): it reaches 90.24% of global users on those engines' own browsers
+against 86.93% for Baseline Widely Available, and a Safari/iOS 17.4 raise would retire only the
+`promiseWithResolvers` helper while forcing the iOS app off iPhone 8/X. Staged five findings: the
+`-webkit-backdrop-filter` twin documented as optional when it is load-bearing below Safari 18, a
+wrong `text-wrap: pretty` Baseline cell, no drift guard on the documented web floor, two dead guards
+(`DOMMatrix`, `createImageBitmap`), and an unregistered Cache Storage guard. Data: caniuse-lite
+1.0.30001810, web-features 3.39.0. Working log: `docs/scratchpad/compatibility-audit-2026-09.md`.
 
 ## 2026-09-22 · lighthouse-audit
 

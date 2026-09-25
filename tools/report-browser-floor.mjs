@@ -312,9 +312,14 @@ const percent = (value) => `${value.toFixed(2)}%`;
 
 function printUsage(report) {
   console.log('## Usage (caniuse-lite global data — not Splotch installs)\n');
+  console.log(
+    "Shares count only the floor engines' own browsers; Samsung Internet, Opera and other\n" +
+      'Chromium derivatives that meet the floor are left out, so reach is understated and the\n' +
+      'raise costs, which compare like with like, are the figures to weigh.\n'
+  );
   console.log(`caniuse-lite ${report.caniuseLite}`);
   console.log(
-    `Declared floor: ${BROWSER_TARGETS.join(', ')} → ${percent(report.current)} of global users`
+    `Declared floor: ${BROWSER_TARGETS.join(', ')} → ${percent(report.current)} of global users on those engines`
   );
   const baseline = Object.entries(report.baselineFloor)
     .map(([engine, version]) => `${engine}${version}`)

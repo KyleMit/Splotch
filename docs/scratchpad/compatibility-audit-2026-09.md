@@ -19,7 +19,10 @@ The floor stays at Chrome/Edge 111, Firefox 114, Safari/iOS 16.4 (web) and API 2
 
 Source: `browserslist --coverage` over caniuse-lite 1.0.30001810 (installed package data dated
 2026-09-01). The percentages are shares of all tracked users, so the "reached" column cannot reach
-100% even with no floor: every version of the five floor engines together is 93.02%.
+100% even with no floor: every version of the five floor engines together is 93.02%. The query
+counts only those engines' own browsers, so Samsung Internet, Opera and other Chromium derivatives
+that meet the floor (about 2.5 points more, per the PR review) are left out: reach is understated,
+while the cost column compares like with like.
 
 Why keep:
 
