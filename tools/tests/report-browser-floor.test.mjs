@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { features } from 'web-features';
 import { BROWSER_TARGETS } from '../../web/browserTargets.ts';
 import {
   baselineWidelyAvailableFloor,
@@ -106,13 +107,30 @@ describe('register section', () => {
   });
 });
 
+// Expectations are derived from the installed web-features data rather than
+// pinned to today's engine support, so a Dependabot bump that changes a
+// feature's support cannot fail a test of the lookup logic.
+const liveFeatures = Object.entries(features).filter(([, feature]) => feature.kind === 'feature');
+
+function firstFeatureWhere(predicate) {
+  const match = liveFeatures.find(([, feature]) => predicate(feature));
+  if (!match) throw new Error('no web-features entry matches the fixture predicate');
+  return match;
+}
+
 describe('web-features lookups', () => {
-  it('marks a long-baseline feature within the floor', () => {
-    expect(featureStatus('font-loading').aboveFloor).toEqual([]);
+  it('marks a feature every floor engine shipped long ago as within the floor', () => {
+    // Baseline before the oldest floor engine's release date means every
+    // engine the floor names already supported it.
+    const [id] = firstFeatureWhere(
+      ({ status }) => status.baseline === 'high' && status.baseline_low_date < '2020-01-01'
+    );
+    expect(featureStatus(id).aboveFloor).toEqual([]);
   });
 
   it('names each engine that has never shipped a feature', () => {
-    expect(featureStatus('requestidlecallback').aboveFloor).toContain('safari never');
+    const [id] = firstFeatureWhere(({ status }) => !status.support.safari);
+    expect(featureStatus(id).aboveFloor).toContain('safari never');
   });
 
   it('flags an unknown id instead of throwing', () => {
@@ -124,7 +142,11 @@ describe('web-features lookups', () => {
   });
 
   it('suggests the feature whose compat keys name an interface', () => {
-    expect(featureStatus('DOMMatrix').suggestions).toContain('dom-geometry');
+    const [id, feature] = firstFeatureWhere(({ compat_features }) =>
+      (compat_features ?? []).some((key) => key.split('.').length === 2)
+    );
+    const iface = feature.compat_features.find((key) => key.split('.').length === 2).split('.')[1];
+    expect(featureStatus(iface).suggestions).toContain(id);
   });
 });
 
