@@ -96,25 +96,114 @@ export interface InstallState {
   dispose(): void;
 }
 
+interface InstallRepromptSchedule {
+  readonly dismissed: boolean;
+  stage(): InstallPromptStage | null;
+  recordSession(): void;
+  dismiss(): void;
+  reset(): void;
+  load(): void;
+  armAutoClear(): void;
+  disarmAutoClear(): void;
+  autoDismissIfDue(): boolean;
+}
+
+// The bounded ADR-0039 re-prompt cycle: whether the banner was dismissed, how many
+// re-prompts are spent, and the stroke countdown that auto-clears it.
+function createInstallRepromptSchedule(
+  canvas: CanvasState,
+  sessionCounters: SessionCountersState
+): InstallRepromptSchedule {
+  let dismissed = $state(false);
+  let repromptsUsed = $state(readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED));
+  // Deliberately untracked: nothing renders it.
+  let autoClearArmedAt: number | null = null;
+
+  function stage(): InstallPromptStage | null {
+    if (!dismissed) return 'initial';
+    if (repromptsUsed >= MAX_INSTALL_REPROMPTS) return null;
+
+    const milestone = INSTALL_REPROMPT_SESSION_MILESTONES[repromptsUsed];
+    if (sessionCounters.sessionCount('installReprompt') < milestone) return null;
+    return repromptsUsed === 0 ? 'returning' : 'final';
+  }
+
+  function dismiss() {
+    const current = stage();
+    sessionCounters.excludeCurrentSession('installReprompt');
+    if (current === 'returning' || current === 'final') {
+      repromptsUsed += 1;
+      writeInt(STORAGE_KEYS.installRepromptsUsed, repromptsUsed);
+    }
+    dismissed = true;
+    autoClearArmedAt = null;
+    writeBool(STORAGE_KEYS.installDismissed, true);
+  }
+
+  return {
+    get dismissed() {
+      return dismissed;
+    },
+    stage,
+    recordSession() {
+      if (
+        canvas.strokeCount < SETTLED_IN_STROKES ||
+        !dismissed ||
+        repromptsUsed >= MAX_INSTALL_REPROMPTS ||
+        stage() !== null
+      ) {
+        return;
+      }
+      sessionCounters.recordSession('installReprompt');
+    },
+    dismiss,
+    reset() {
+      dismissed = false;
+      repromptsUsed = 0;
+      autoClearArmedAt = null;
+      removeKey(STORAGE_KEYS.installDismissed);
+      removeKey(STORAGE_KEYS.installRepromptsUsed);
+      sessionCounters.clearSessionCount('installReprompt');
+    },
+    load() {
+      dismissed = readBool(STORAGE_KEYS.installDismissed, false);
+      repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED);
+    },
+    armAutoClear() {
+      autoClearArmedAt ??= canvas.strokeCount;
+    },
+    disarmAutoClear() {
+      autoClearArmedAt = null;
+    },
+    autoDismissIfDue() {
+      if (
+        autoClearArmedAt === null ||
+        canvas.strokeCount < autoClearArmedAt + STROKES_BEFORE_AUTO_CLEAR
+      ) {
+        return false;
+      }
+      dismiss();
+      return true;
+    },
+  };
+}
+
 export function createInstall(
   canvas: CanvasState,
   sessionCounters: SessionCountersState
 ): InstallState {
   const s = $state<{
     mode: InstallMode;
-    dismissed: boolean;
     installed: boolean;
   }>({
     mode: 'none',
-    dismissed: false,
     installed: false,
   });
-  let repromptsUsed = $state(readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED));
+  const schedule = createInstallRepromptSchedule(canvas, sessionCounters);
 
   // Deliberately untracked: nothing renders them.
   let deferredPrompt: BeforeInstallPromptEvent | null = null;
   let initialized = false;
-  let installAutoClearArmedAt: number | null = null;
   let listening = false;
 
   // A spent/stale one-tap prompt drops to the manual hint so the UI falls back to
@@ -123,46 +212,18 @@ export function createInstall(
     if (s.mode === 'oneTap') s.mode = manualMode();
   }
 
-  function resetInstallRepromptCycle() {
-    s.dismissed = false;
-    repromptsUsed = 0;
-    installAutoClearArmedAt = null;
-    removeKey(STORAGE_KEYS.installDismissed);
-    removeKey(STORAGE_KEYS.installRepromptsUsed);
-    sessionCounters.clearSessionCount('installReprompt');
-  }
-
-  function reloadInstallRepromptState() {
-    repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED);
-  }
-
   function installPromptStage(): InstallPromptStage | null {
-    if (s.installed) return null;
-    if (!s.dismissed) return 'initial';
-    if (repromptsUsed >= MAX_INSTALL_REPROMPTS) return null;
-
-    const milestone = INSTALL_REPROMPT_SESSION_MILESTONES[repromptsUsed];
-    if (sessionCounters.sessionCount('installReprompt') < milestone) return null;
-    return repromptsUsed === 0 ? 'returning' : 'final';
+    return s.installed ? null : schedule.stage();
   }
 
   function recordInstallRepromptSession() {
-    if (
-      canvas.strokeCount < SETTLED_IN_STROKES ||
-      !s.dismissed ||
-      s.installed ||
-      s.mode === 'none' ||
-      repromptsUsed >= MAX_INSTALL_REPROMPTS ||
-      installPromptStage() !== null
-    ) {
-      return;
-    }
-    sessionCounters.recordSession('installReprompt');
+    if (s.installed || s.mode === 'none') return;
+    schedule.recordSession();
   }
 
   function markInstalled() {
     deferredPrompt = null;
-    resetInstallRepromptCycle();
+    schedule.reset();
     s.installed = true;
     s.mode = 'none';
     writeBool(STORAGE_KEYS.installCompleted, true);
@@ -176,7 +237,7 @@ export function createInstall(
     // it outranks a stale persisted flag (installed once, later uninstalled —
     // localStorage survives a PWA uninstall).
     if (s.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
-      resetInstallRepromptCycle();
+      schedule.reset();
       s.installed = false;
       writeBool(STORAGE_KEYS.installCompleted, false);
     }
@@ -185,24 +246,12 @@ export function createInstall(
     recordInstallRepromptSession();
   }
 
-  function dismissInstall() {
-    const stage = installPromptStage();
-    sessionCounters.excludeCurrentSession('installReprompt');
-    if (stage === 'returning' || stage === 'final') {
-      repromptsUsed += 1;
-      writeInt(STORAGE_KEYS.installRepromptsUsed, repromptsUsed);
-    }
-    s.dismissed = true;
-    installAutoClearArmedAt = null;
-    writeBool(STORAGE_KEYS.installDismissed, true);
-  }
-
   return {
     get mode() {
       return s.mode;
     },
     get dismissed() {
-      return s.dismissed;
+      return schedule.dismissed;
     },
     get installed() {
       return s.installed;
@@ -220,8 +269,7 @@ export function createInstall(
       if (!browser || initialized || (__IS_CAPACITOR__ && isNative())) return;
       initialized = true;
 
-      s.dismissed = readBool(STORAGE_KEYS.installDismissed, false);
-      reloadInstallRepromptState();
+      schedule.load();
 
       // A live prompt captured before init already proved the app is installable
       // (and not installed) — the capture has set mode/installed.
@@ -262,27 +310,14 @@ export function createInstall(
         // Declined: the one-shot prompt is spent. Drop to the manual menu hint and
         // route through the same bounded re-prompt cycle as every other dismissal.
         fallBackToManualHint();
-        dismissInstall();
+        schedule.dismiss();
       }
       return outcome;
     },
-    dismissInstall,
-    disarmInstallAutoClear() {
-      installAutoClearArmedAt = null;
-    },
-    armInstallAutoClear() {
-      installAutoClearArmedAt ??= canvas.strokeCount;
-    },
-    autoDismissInstallIfDue() {
-      if (
-        installAutoClearArmedAt === null ||
-        canvas.strokeCount < installAutoClearArmedAt + STROKES_BEFORE_AUTO_CLEAR
-      ) {
-        return false;
-      }
-      dismissInstall();
-      return true;
-    },
+    dismissInstall: schedule.dismiss,
+    disarmInstallAutoClear: schedule.disarmAutoClear,
+    armInstallAutoClear: schedule.armAutoClear,
+    autoDismissInstallIfDue: schedule.autoDismissIfDue,
     // beforeinstallprompt is one-shot and can fire before the page component
     // mounts (on a repeat visit the service worker already controls the page, so
     // Chromium's installability check races hydration). Listen from module load,
