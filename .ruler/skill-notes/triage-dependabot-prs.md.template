@@ -106,6 +106,19 @@ clears it. The advisory was against a vendored 5.7.8 copy nested under `@capacit
 topping out at `8.0.2-nightly`; the top-level 8.4.1 was already outside it. Totals were 22 before
 and 22 after.
 
+**A clean lockfile merge can be a broken lockfile** *(2026-09-25)*. A twelve-PR batch simulated
+clean in sequence, CONFLICT-free, and wave 1's eight merges still left `main` failing every frozen
+install with `ERR_PNPM_BROKEN_LOCKFILE: duplicated mapping key`. An earlier merge in the wave had
+written `'@types/node@22.20.4'` as a transitive resolution; \#2259, the direct `@types/node` bump,
+wrote the same key in a non-overlapping hunk, so git kept both copies in `packages:` and
+`snapshots:`. The sequence simulation now parses each step's lockfile with `uniqueKeys: true`,
+which would have flagged \#2259 before any merge. Two corollaries: verify `main` after every wave
+(the Dependabot rebases the next wave needed went unanswered while `main` was broken), and repair by
+deleting the duplicate blocks rather than running `pnpm install`, which on that tree also
+re-resolved openai, `@google/genai`, and prettier to releases nobody had reviewed. The simulation
+also moved from `checkout -B` plus `branch -D` to a `merge-tree`/`commit-tree` chain, because the
+branch delete is denied in permission-gated sessions and a collision left the old form mid-merge.
+
 ## Deliberately not included
 
 * **A fixed merge order by ecosystem.** Tried and rejected — the right order depends on which
@@ -130,6 +143,9 @@ and 22 after.
   workflow passing `github_token`. Step 2 ran entirely unassisted. The workflow has therefore still
   never completed against a real batch. Practical consequence for the skill: treat a *missing*
   advisory comment as a broken workflow worth checking, not as a PR too new to have been reviewed.
+  **2026-09-25:** the workflow did post on all twelve PRs of that batch, every one an APPROVE. It
+  also approved the lighthouse bump whose CI then failed on the pinned page-load baseline, because it
+  reviewed before CI finished. So its verdicts stay an input, and CI is still read separately.
 * **Batch size.** The flow was exercised on nine PRs, then five. Note the two interact: the default
   `open-pull-requests-limit` of 5 caps a batch at five unless the config raises it, so nine is
   reachable only across ecosystems or with an explicit limit. A grouped github-actions PR (per
