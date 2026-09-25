@@ -263,6 +263,10 @@ non-polyfill choices:
   project to match `MIN_IOS_RELEASE`.
 * When adding a new web API, check its Baseline status against this floor and either confirm it's
   covered or feature-detect it — then add a row here.
+  `npm run report:browser-floor -- --feature <web-features id>` prints where a feature sits relative
+  to the floor.
+* The `audit-compatibility` skill revisits the floor, this register, and the runtime feature probes
+  in `web/src`, and stages what drifted in `docs/AUDIT.md`.
 * **`Where` answers "where is the guard", not "where is every use."** A site earns its own anchor
   when it carries a *distinct* guard — a second instance of the same pattern does not, and an
   exhaustive file list is inventory that nothing maintains. For a feature used across many

@@ -150,3 +150,165 @@ delaying the LCP resource.
 
 `network-requests` in a phone-first report: `nodes/1.*.js` and `ErrorScreen.*.css` appear ~950 ms
 after navigation start.
+
+## Source: Compatibility audit
+
+### [Docs] Record that the `-webkit-backdrop-filter` twin is load-bearing at the floor
+
+**File(s):** `docs/COMPATIBILITY.md` ("Polyfills & workarounds", the `backdrop-filter` register
+row); `web/src/app.css` (`.modal-dialog::backdrop`)
+
+#### Problem
+
+The "Polyfills & workarounds" bullet groups the prefixed `backdrop-filter` with the `100dvh` →
+`100vh` fallback and says both "stay even though they're within the current floor — they cost
+nothing and protect the few users between iOS 15.4 and 16.4 on the web." Neither half holds for
+`backdrop-filter`. Unprefixed `backdrop-filter` first shipped in Safari and iOS **18** (web-features
+3.39.0: `backdrop-filter`, Baseline low since 2024-09-16, `safari: 18`, `safari_ios: 18`), so on
+every supported Safari from 16.4 through 17.x the `-webkit-backdrop-filter` declaration is the only
+one that applies. It is not an optional fallback. The register row reinforces the misreading: its
+Baseline cell says "Safari 9 (`-webkit-`)" and never says when the unprefixed property arrived.
+
+The `100dvh` sentence is also muddled: `100dvh` is Baseline at Safari 15.4, so the `100vh` line
+protects engines older than 15.4 (below the floor), not users "between iOS 15.4 and 16.4".
+
+A later cleanup that trusts this bullet would delete the prefix and remove the modal scrim's blur on
+every supported Safari below 18, with no test to catch it (Chromium CI never reads the prefixed
+property).
+
+#### Proposed solution
+
+Rewrite the bullet so it separates the two cases: the prefixed `backdrop-filter` twin is required
+until the Safari/iOS floor reaches 18, and the `100vh` line is a below-floor courtesy that costs one
+declaration. Put the unprefixed Safari 18 version in the register row's Baseline cell, and add a
+note to the row that the twin goes only with a Safari 18 floor. The row's
+`` `-webkit-backdrop-filter: blur(` + `backdrop-filter: blur(` `` anchor already pins both halves,
+so it needs no change.
+
+#### Verification
+
+`npm run report:browser-floor -- --feature backdrop-filter` prints "above floor: safari 18,
+safari_ios 18". Re-read the bullet afterwards and confirm it no longer calls the prefix removable at
+the current floor.
+
+### [Docs] Correct the `text-wrap: pretty` Baseline cell in the risk register
+
+**File(s):** `docs/COMPATIBILITY.md` (the `text-wrap: pretty` register row)
+
+#### Problem
+
+The row's Baseline cell reads "Chrome 117 / Safari 17.5". web-features 3.39.0 (`text-wrap-pretty`)
+lists Chrome/Edge 117 and Safari/iOS **26**, and no Firefox support at all (Baseline `false`).
+Safari 17.5 shipped `text-wrap: balance`, not `pretty`; the cell looks copied from the row above it.
+The behavior column ("above floor; paragraphs may end on a short last line") is still right, so
+nothing ships wrong today, but a floor decision that reads this cell would believe a Safari 17.5
+floor retires the row.
+
+#### Proposed solution
+
+Change the cell to "Chrome 117 / Safari 26; not in Firefox". The Guarded and Behavior cells need no
+change.
+
+#### Verification
+
+`npm run report:browser-floor -- --feature text-wrap-pretty` prints the engine list above.
+
+### [Tests] Drift-guard the documented web floor against `BROWSER_TARGETS`
+
+**File(s):** `docs/COMPATIBILITY.md` ("Supported browsers & devices" table, "How the floor is
+enforced" table's web row); `docs/MOBILE/ios.md` (the web `build.target` note);
+`web/src/browserFloor.test.ts`
+
+#### Problem
+
+Every native floor statement has a drift guard: `iosBeta.test.ts` ties `MIN_IOS_RELEASE` to the
+Xcode project and to `docs/MOBILE/native.md`, and `android-config.test.mjs` ties `minSdkVersion` to
+this document, the `mobile` skill and the `/beta` constants. The web floor has none. The supported
+browsers table ("Chrome / Edge 111+", "Firefox 114+", "Safari 16.4+", "iOS / iPadOS Safari 16.4+")
+and the enforcement table's value cell (`chrome111, edge111, firefox114, safari16.4, ios16.4`) are
+maintained by hand. `browserFloor.test.ts` checks only that the WebKit entries in `BROWSER_TARGETS`
+stay at or below `IPHONEOS_DEPLOYMENT_TARGET`. A floor raise that edits `web/browserTargets.ts` and
+forgets the doc passes CI, and the document every future floor decision starts from then states the
+old floor.
+
+#### Proposed solution
+
+Extend `web/src/browserFloor.test.ts` (it already imports `BROWSER_TARGETS`) to read
+`docs/COMPATIBILITY.md` and assert that the enforcement table's web value cell equals
+`BROWSER_TARGETS.join(', ')`, and that each supported-browsers row states the version its engine has
+in `BROWSER_TARGETS`. Follow the context-anchored matching `android-config.test.mjs` uses for the
+Android row, so an edit elsewhere in the table cannot satisfy it by accident.
+
+#### Verification
+
+Temporarily change `firefox114` to `firefox115` in `web/browserTargets.ts`: today
+`npx vitest run web/src/browserFloor.test.ts` still passes; after the fix it fails naming the doc.
+
+### [Cleanup] Remove or justify three guards on APIs every supported engine has
+
+**File(s):** `web/src/lib/drawing/magicBrush.ts` (`typeof DOMMatrix !== 'undefined'`, in the Magic
+sheet pattern transform); `web/src/lib/drawing/tiledRendererReadback.ts`
+(`typeof createImageBitmap !== 'function'`, in `captureTiledCanvasReadback`);
+`web/src/lib/drawing/pngEncoder.ts` (the `typeof createImageBitmap === 'function'` clause of
+`pngWorkerSupported`)
+
+#### Problem
+
+All three probe an API that every engine at the floor supports and that the happy-dom unit-test
+environment also provides. `DOMMatrix` is web-features `dom-geometry` (Chrome 61, Firefox 33, Safari
+11). `createImageBitmap` already has a within-floor register row (Chrome 50, Firefox 42, Safari 15);
+web-features lists `createimagebitmap` at Safari 17.2 only because it scores the complete feature,
+every option included, and a `typeof` check tests nothing but the function's existence. None is an
+SSR guard: all three modules run only in the browser. None is what the register records either:
+`pngEncoder.ts` is cited, but its row anchors the `OffscreenCanvas` probe, not this clause. The
+guards therefore never fail in any environment the code runs in, but each one quietly changes
+behavior if it ever did: the `DOMMatrix` one skips the pattern transform (a mis-registered Magic
+sheet), the readback one silently disables the readback path, and the `pngWorkerSupported` one sends
+PNG export to the main thread. A reader has to work out that none of these branches is reachable.
+
+By contrast, `typeof AudioContext`, `'fonts' in document`, and `typeof Worker` look the same but are
+live: happy-dom lacks all three, so those guards keep unit tests running. They are not part of this
+finding.
+
+#### Proposed solution
+
+Delete the three conditions (keep the transform unconditional; drop the `createImageBitmap` clause
+from the readback early return and from `pngWorkerSupported`, whose `Worker` and `OffscreenCanvas`
+clauses stay — those are live). If one turns out to protect a real environment (a worker context, a
+test file that stubs the global away), keep it and add a one-line comment naming that environment
+instead.
+
+#### Verification
+
+`git grep -n "stubGlobal('createImageBitmap'\|stubGlobal('DOMMatrix'" web/src` finds no test that
+removes either global for these modules (the existing `stubGlobal('createImageBitmap', …)` calls
+replace it with a mock, which keeps the guard true). Delete the conditions and run
+`npx vitest run web/src/lib/drawing` plus `npm run check`; both stay green.
+
+### [Docs] Add the Cache Storage guard to the risk register
+
+**File(s):** `web/src/lib/boot/coloringPacks.ts` (`webPackStorageExists`, `typeof caches`);
+`docs/COMPATIBILITY.md` (API risk register)
+
+#### Problem
+
+`webPackStorageExists()` returns `false` when `caches` is undefined. Cache Storage is
+secure-context-only, so this branch is live on any plain-HTTP origin (a LAN dev server, a
+misconfigured host), not only on old engines. It is an optional-API guard with a distinct behavior
+(web coloring packs cannot be stored at all), which is the kind of site the register exists to
+record, but no row covers it: the Service Worker row cites `'serviceWorker' in navigator` only.
+`npm run report:browser-floor` lists it as the one feature probe whose file the register never cites
+and that is not a second instance of an existing row's pattern.
+
+#### Proposed solution
+
+Add a register row: Cache Storage (`caches`), Where
+`` `lib/boot/coloringPacks.ts` → `typeof caches === 'undefined'` ``, Baseline from web-features
+`service-workers`, which carries `api.Window.caches` ("Chrome 45 / Firefox 44 / Safari 11.1; secure
+contexts only"), Guarded "✅ feature-detected", Behavior "web coloring packs are never downloaded or
+reused on an insecure origin".
+
+#### Verification
+
+`npx vitest run tools/tests/compatibility-register.test.mjs` passes with the new anchor, and a rerun
+of `npm run report:browser-floor` shows the site as cited.

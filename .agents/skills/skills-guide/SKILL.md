@@ -74,6 +74,7 @@ unattended run. Shared rules for the producers live in `.claude/audit-convention
 | `audit-extractions`       | Inline code blocks worth extracting into named functions → `docs/AUDIT.md`         |
 | `audit-page-load`         | Page-load opportunities → `docs/AUDIT.md` (primary home: Performance)              |
 | `audit-session`           | End-of-session retrospective on repo friction → `docs/AUDIT.md`                    |
+| `audit-compatibility`     | Browser/OS floor, API risk register, and feature-probe drift → `docs/AUDIT.md`     |
 | `audit-dependency-health` | Provenance/license/maintenance review of every dependency → `docs/DEPENDENCIES.md` |
 
 ### Screening and fixing audit findings
