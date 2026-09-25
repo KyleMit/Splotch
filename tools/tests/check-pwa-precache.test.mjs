@@ -1,10 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import {
   APP_SHELL_FALLBACK_CALLBACKS,
   APP_SHELL_PRECACHE_URL_PATTERN,
   appShellFallbackLookupsFromSource,
   MAX_PWA_PRECACHE_BYTES,
+  precacheBytesOnDisk,
   precacheUrlsFromSource,
   pwaPrecacheProblems,
 } from '../check-pwa-precache.mjs';
@@ -38,6 +41,25 @@ it('reads Workbox manifest URLs without confusing the runtime route', () => {
     'registerRoute(/coloring\\/max-1152px/,async({url:a})=>fetch(a));';
 
   expect(precacheUrlsFromSource(source)).toEqual(['coloring/farm/cat.overlay.webp']);
+});
+
+it('counts a URL the manifest lists twice once toward the precache budget', () => {
+  const clientDir = mkdtempSync(join(tmpdir(), 'splotch-precache-'));
+  try {
+    writeFileSync(join(clientDir, 'favicon.ico'), Buffer.alloc(100));
+    writeFileSync(join(clientDir, 'app.js'), Buffer.alloc(40));
+    const appShellPath = join(clientDir, 'index.html');
+    writeFileSync(appShellPath, Buffer.alloc(7));
+
+    expect(
+      precacheBytesOnDisk([appShellUrl, 'favicon.ico', 'app.js', 'favicon.ico'], {
+        clientDir,
+        appShellPath,
+      })
+    ).toBe(147);
+  } finally {
+    rmSync(clientDir, { recursive: true, force: true });
+  }
 });
 
 it('accepts responsive assets only when their canonical fallback is precached within budget', () => {
