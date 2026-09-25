@@ -1,18 +1,18 @@
 {
   "schemaVersion": 3,
-  "recordedOn": "2026-09-23",
+  "recordedOn": "2026-09-25",
   "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
   "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
   "sourceRoot": "../../../",
   "limitations": [
     "This fold measures product commit 3928cd88edbf441530e473a4e3c0b6767926bfc6, main on 2026-09-23, at which all four physical release-gate rows were recaptured from scratch on 2026-09-23. At that fold, the strict staleness check of the time (ADR-0159, since superseded by ADR-0175) reported every freshly captured section current at that commit.",
-    "Freshly captured at 3928cd88: every drawing and pen-undo section in all four modes of all four physical rows, and the portrait-light and portrait-dark action sweeps on physical iPad native and physical Android web. The other twelve physical action sections could not be captured and are preserved from the published e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 sweeps (2026-09-05 to 2026-09-07), which keep that commit as their provenance and make no claim about 3928cd88.",
-    "Why each of those twelve action sweeps is missing: physical iPad web has no scoreable sweep in any mode, because its AI-waiting actions need a secure context and the HTTPS front that provides one was not available to the unattended run (its one portrait-light sweep was refused as blocked coverage and is not folded). Physical iPad native landscape sweeps failed when the second Undo tap after a landscape-to-portrait rotation landed on the canvas. Physical Android web landscape sweeps failed because every color swatch in the landscape compact color flyout measured zero size. Physical Android native portrait sweeps failed when the native tap on the Dark theme button was not captured, and its landscape sweeps failed when Appium could not rotate the device to ROTATION_270.",
+    "Freshly captured at 3928cd88: every drawing and pen-undo section in all four modes of all four physical rows, and the portrait-light and portrait-dark action sweeps on physical iPad native and physical Android web. Six more physical action sections were captured after that campaign and folded one section at a time (issue 2268): all four physical iPad web sweeps at 8e6700d5d801eb481a4bde3d47cea69135dd71b4 over the secure-origin front (issue 2211), and both physical iPad native landscape sweeps at d50d73927f1835bbe231d1c2450f49fbe5803f53, the contentInset fix (issue 2212). Each keeps its own product commit beside its mode’s 3928cd88 drawing, and its capture date is its fold date, because action artifacts record no capture clock. The other six physical action sections are preserved from the published e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 sweeps (2026-09-05 to 2026-09-07), which keep that commit as their provenance and make no claim about 3928cd88.",
+    "Why the six preserved action sweeps have no fresh capture: physical Android web landscape sweeps failed at 3928cd88 because every color swatch in the landscape compact color flyout measured zero size, and physical Android native sweeps failed at 3928cd88 when the native tap on the Dark theme button was not captured (portrait) and when Appium could not rotate the device to ROTATION_270 (landscape). Both harness failures were fixed afterwards (issues 2213, 2214, and 2215) and the sweeps completed on the phone, but those raw captures were not kept and no longer exist, so these sections wait for a recapture. Physical iPad web had no scoreable unattended sweep at 3928cd88 because its AI-waiting actions need a secure context; physical iPad native landscape sweeps failed when the second Undo tap after a landscape-to-portrait rotation landed on the canvas. Both are now folded from their later captures.",
     "The preserved sweeps predate the 2026-09-17 ai-waiting and unavailable action groups and several later action labels. Their heatmap cells for those labels render as missing, not N/A. On the physical Android web and physical Android native landscape modes, which use the compact Settings shell that no current sweep covers, that includes the Accessibility section and tool-drawer toggles, which the compact shell may not offer at all; their tooltips say the shell is unverified.",
     "The physical Android native drawing and undo sections come from a probe-host server.url build carrying the ADR-0135 split transport. Those artifacts record pageIdentity unprovable by construction, because the fixed server.url carries no per-cell nonce. Its three drift references were captured before its landscape cells, whose first attempt wrote no artifact and which were recaptured after the end reference, so the references do not bracket the landscape cells.",
     "Every physical drawing and undo cell passed its input-fidelity gate. Physical iPad web carries three drawing lost-frame reds against the 1% budget: landscape/dark pen 1.13%, landscape/light eraser 1.03%, and landscape/dark eraser 1.01%. The other seven of the ten e5142fab reds now read 0.71-0.98%. The pen reading is below the top of ADR-0174’s driven pen band (1.37%); ADR-0174 requires a real-finger capture before a driven eraser red at a later commit is explained, so both eraser cells are open. Physical Android web portrait carries six drawing reds (1.03-1.45%) against 0.40-0.75% at e5142fab, while its landscape cells read 0.20-0.54% in the same session. The physical Android native row carries no red cell.",
-    "The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the physical iPad native and both physical Android rows to be current and scored before campaign completion. Drawing and undo are current on all four rows at 3928cd88, but twelve physical action sections are preserved from e5142fab, so this fold does not complete that requirement.",
+    "The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the physical iPad native and both physical Android rows to be current and scored before campaign completion. Drawing and undo were captured on all four rows at 3928cd88, and six physical action sections are still preserved from e5142fab, so this report does not complete that requirement.",
     "Simulator, emulator, and Mac rows were not recaptured in this physical release-gate campaign. Every section on those rows is explicitly preserved from the prior published report and makes no claim of currency at the final product commit.",
     "Action cells are scored under ADR-0156: a post-action max breach counts only when two of the three scored repeats show it; a single breaching repeat is recorded as unconfirmed rather than red. Read each artifact's scoredActionFrameGaps rather than treating the pooled P95/P99/max triple as three repeats.",
     "Android physical web and native drawing use the ADR-0135 split input/measurement transport. Fresh artifacts record driving cadence, input fidelity, refresh regime, and page identity. Split-native captures also attest that art.splotch.app was the foreground package.",
@@ -143,7 +143,7 @@
           "capturedOn": {
             "drawing": "2026-09-23",
             "undo": "2026-09-23",
-            "actions": "2026-09-07"
+            "actions": "2026-09-25"
           },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
@@ -161,7 +161,13 @@
             ]
           },
           "undoSource": "perf-profiles/2026-09-23-matrix-ipad-device-web/ipad-device-web/portrait-light/pen-real-screen.json",
-          "actionSources": "preserved"
+          "actionSources": [
+            {
+              "source": "perf-profiles/person-session/2026-09-24T01-57-36/secure-actions/ipad-device-web/portrait-light/actions/actions.json",
+              "productCommit": "8e6700d5d801eb481a4bde3d47cea69135dd71b4",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "portrait-dark",
@@ -171,7 +177,7 @@
           "capturedOn": {
             "drawing": "2026-09-23",
             "undo": "2026-09-23",
-            "actions": "2026-09-07"
+            "actions": "2026-09-25"
           },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
@@ -189,7 +195,13 @@
             ]
           },
           "undoSource": "perf-profiles/2026-09-23-matrix-ipad-device-web/ipad-device-web/portrait-dark/pen-real-screen.json",
-          "actionSources": "preserved"
+          "actionSources": [
+            {
+              "source": "perf-profiles/person-session/2026-09-24T01-57-36/secure-actions/ipad-device-web/portrait-dark/actions/actions.json",
+              "productCommit": "8e6700d5d801eb481a4bde3d47cea69135dd71b4",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-light",
@@ -199,7 +211,7 @@
           "capturedOn": {
             "drawing": "2026-09-23",
             "undo": "2026-09-23",
-            "actions": "2026-09-07"
+            "actions": "2026-09-25"
           },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
@@ -217,7 +229,13 @@
             ]
           },
           "undoSource": "perf-profiles/2026-09-23-matrix-ipad-device-web/ipad-device-web/landscape-light/pen-real-screen.json",
-          "actionSources": "preserved"
+          "actionSources": [
+            {
+              "source": "perf-profiles/person-session/2026-09-24T01-57-36/secure-actions/ipad-device-web/landscape-light/actions/actions.json",
+              "productCommit": "8e6700d5d801eb481a4bde3d47cea69135dd71b4",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
@@ -227,7 +245,7 @@
           "capturedOn": {
             "drawing": "2026-09-23",
             "undo": "2026-09-23",
-            "actions": "2026-09-07"
+            "actions": "2026-09-25"
           },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
@@ -245,7 +263,13 @@
             ]
           },
           "undoSource": "perf-profiles/2026-09-23-matrix-ipad-device-web/ipad-device-web/landscape-dark/pen-real-screen.json",
-          "actionSources": "preserved"
+          "actionSources": [
+            {
+              "source": "perf-profiles/person-session/2026-09-24T01-57-36/secure-actions/ipad-device-web/landscape-dark/actions/actions.json",
+              "productCommit": "8e6700d5d801eb481a4bde3d47cea69135dd71b4",
+              "kind": "full"
+            }
+          ]
         }
       ]
     },
@@ -335,7 +359,7 @@
           "capturedOn": {
             "drawing": "2026-09-23",
             "undo": "2026-09-23",
-            "actions": "2026-09-07"
+            "actions": "2026-09-25"
           },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
@@ -353,7 +377,13 @@
             ]
           },
           "undoSource": "perf-profiles/2026-09-23-matrix-ipad-device-native/ipad-device-native/landscape-light/pen-real-screen.json",
-          "actionSources": "preserved"
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-09-23-issue-2212-ipad-native-landscape-actions/ipad-device-native/landscape-light/actions/actions.json",
+              "productCommit": "d50d73927f1835bbe231d1c2450f49fbe5803f53",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
@@ -363,7 +393,7 @@
           "capturedOn": {
             "drawing": "2026-09-23",
             "undo": "2026-09-23",
-            "actions": "2026-09-07"
+            "actions": "2026-09-25"
           },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
@@ -381,7 +411,13 @@
             ]
           },
           "undoSource": "perf-profiles/2026-09-23-matrix-ipad-device-native/ipad-device-native/landscape-dark/pen-real-screen.json",
-          "actionSources": "preserved"
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-09-23-issue-2212-ipad-native-landscape-actions/ipad-device-native/landscape-dark/actions/actions.json",
+              "productCommit": "d50d73927f1835bbe231d1c2450f49fbe5803f53",
+              "kind": "full"
+            }
+          ]
         }
       ]
     },
@@ -1176,6 +1212,6 @@
   ],
   "preservedEvidence": {
     "from": "data.json",
-    "reason": "The 2026-09-23 campaign freshly captured every physical drawing and undo section and the portrait action sweeps on physical iPad native and physical Android web. The twelve other physical action sections are preserved from the published e5142fab sweeps, and the advisory iPad Simulator, Android Emulator, and Mac desktop rows are preserved wholesale; every preserved section keeps its original product commit and does not claim currency. Fresh physical evidence is promoted under perf-profiles/evidence/2026-09-23-matrix-*-3928/."
+    "reason": "The 2026-09-23 campaign freshly captured every physical drawing and undo section and the portrait action sweeps on physical iPad native and physical Android web. Six physical action sections were later folded one section at a time from their own captures (issue 2268). The other six physical action sections, on the physical Android web landscape and physical Android native modes, are preserved from the published e5142fab sweeps, and the advisory iPad Simulator, Android Emulator, and Mac desktop rows are preserved wholesale; every preserved section keeps its original product commit and does not claim currency. Fresh physical evidence is promoted under perf-profiles/evidence/2026-09-23-matrix-*-3928/."
   }
 }

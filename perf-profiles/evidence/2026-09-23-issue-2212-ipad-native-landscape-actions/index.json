@@ -1,0 +1,30 @@
+{
+  "campaign": "2026-09-23-issue-2212-ipad-native-landscape-actions",
+  "productCommit": "d50d73927f1835bbe231d1c2450f49fbe5803f53",
+  "capturedFrom": "perf-profiles/2026-09-23-issue-2212-ipad-native-landscape-actions",
+  "study": "issue 2212: both ipad-device-native landscape action sweeps after contentInset never (PR 2249, Debug build of d50d7392), folded per section by issue 2268",
+  "kept": [
+    {
+      "file": "actions--f25cc136.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--4a0ce15d.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}
