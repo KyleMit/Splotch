@@ -19,16 +19,7 @@ import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { dirname, isAbsolute, join } from 'node:path';
-import {
-  argFlag,
-  capture,
-  fail,
-  isMain,
-  ROOT,
-  runMain,
-  sleep,
-  tryCapture,
-} from '../../lib/proc.mjs';
+import { argFlag, fail, isMain, ROOT, runMain, sleep, tryCapture } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import {
   STROKES_PER_GESTURE_REPEAT,
@@ -100,7 +91,16 @@ export const APP_BUNDLE_ID = ANDROID_NATIVE_PACKAGE;
 const WDA_SESSION_SETTLE_MS = 2_500;
 const CONTACT_BANK_MS = 600_000;
 
-const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
+// Throws where capture() would exit: once openPage has rotated the phone, a
+// failed geometry read or swipe must still reach driveHandingBack's `finally`,
+// and process.exit skips it. `run` is injectable only so a test can fail it.
+export function adbOrThrow(serial, args, run = tryCapture) {
+  const result = run('adb', ['-s', serial, ...args]);
+  if (!result.ok) {
+    throw new Error(`adb ${args.join(' ')} failed on ${serial}: ${result.stderr.trim()}`);
+  }
+  return result.stdout;
+}
 
 async function control(host, body) {
   const response = await fetch(`${host}/__probe/control`, {
@@ -248,7 +248,7 @@ export function androidDriver({
   orientation,
   nativeApp,
   cdpPort,
-  exec = adb,
+  exec = adbOrThrow,
   tryRun = tryCapture,
   activate = activateChromePage,
   litterClearer = clearToolingLitter,

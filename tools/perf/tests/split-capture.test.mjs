@@ -32,6 +32,7 @@ import {
   toolingLitter,
 } from '../split-capture/lib/chrome-tabs.mjs';
 import {
+  adbOrThrow,
   androidDriver,
   driveHandingBack,
   driveSplitGesturePasses,
@@ -1989,6 +1990,31 @@ describe('the Android driver hands the rotation back as it found it', () => {
         settings: asFound,
       },
     ]);
+  });
+
+  // capture() exits the process on a failed adb call, which skips every
+  // `finally`; the driver's runner throws instead so the hand-back still runs.
+  it('hands the rotation back when an adb call after the rotation fails', async () => {
+    const phone = fakePhone(asFound);
+    const driver = driverOn({
+      ...phone,
+      exec: (serial, args) => {
+        if (args.join(' ') === 'shell dumpsys window displays') {
+          return adbOrThrow(serial, args, () => ({ ok: false, stdout: '', stderr: 'closed\n' }));
+        }
+        return phone.exec(serial, args);
+      },
+    });
+
+    await expect(
+      settle(() =>
+        driveHandingBack(driver, async () => {
+          await driver.openPage();
+          driver.boundsFrom(RIG_PORTRAIT_GEOMETRY);
+        })
+      )
+    ).rejects.toThrow('adb shell dumpsys window displays failed on s: closed');
+    expect(Object.fromEntries(phone.settings)).toEqual(asFound);
   });
 
   it('hands the rotation back when the capture throws, and after a clean one', async () => {
