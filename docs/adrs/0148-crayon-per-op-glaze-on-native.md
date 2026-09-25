@@ -76,12 +76,13 @@ the device.
 
 **0.16 was settled by drawing on the physical iPad**, cross-checked against a sweep that measures
 each candidate's crossing colour against the web pipeline's across colour pairs and redraw depths
-(`tools/perf/find-glaze-web-match.mjs`, and the proof sheet beside it). That sweep put the
-fast-stroke optimum at 0.18 by inverting the same model — `k = ln(0.55)/ln(0.82) ≈ 3` overlapping
-ops for its stroke geometry, which independently confirms the mechanism — and showed web's first
-crossing at a blue channel of 153 against 121 for 0.10, i.e. 0.10 sat greener than the shipped web
-appearance at first contact. Treat the formula as the bracket that found the range, not as a
-derivation: recomputing it and "correcting" the constant would undo a human judgement.
+(`docs/scratchpad/perf/crayon-native2-evidence/find-glaze-web-match.mjs`, archived there unmerged,
+and the proof sheet beside it). That sweep put the fast-stroke optimum at 0.18 by inverting the same
+model — `k = ln(0.55)/ln(0.82) ≈ 3` overlapping ops for its stroke geometry, which independently
+confirms the mechanism — and showed web's first crossing at a blue channel of 153 against 121 for
+0.10, i.e. 0.10 sat greener than the shipped web appearance at first contact. Treat the formula as
+the bracket that found the range, not as a derivation: recomputing it and "correcting" the constant
+would undo a human judgement.
 
 The constant is **appearance-only**. A controlled A/B on the device measured 0.02 against 0.45 and
 found the apparent 15× difference was session drift rather than glaze — the same 0.02 build re-run

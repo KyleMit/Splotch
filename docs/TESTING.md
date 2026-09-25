@@ -164,7 +164,13 @@ Three Node smoke entry points guard the server contract:
 npm run test:unit          # one-shot, then the web-build SSR guards
 npm run test:unit:coverage # the same, with the measured coverage ratchet enforced on the first run
 npm run test:unit:watch    # watch mode (unit config only)
+node tools/run-web-tool.mjs vitest run src/lib/server/securityHeaders.test.ts  # one file, path relative to web/
+node tools/run-web-tool.mjs vitest run -t "name"  # by test name: Vitest's -t, not Playwright's -g
 ```
+
+`npm run test:unit -- <file>` does not target one file. The script chains two `vitest run`s with
+`&&`, and npm appends the arguments to the second (webSsr) run only, so the first still runs the
+whole suite.
 
 Configured in `web/vitest.config.ts`. Environment is **happy-dom** (not jsdom). Covers the pure
 logic + state modules (`colorRing`, `state/*`, `storage`, including the native dual-layer hydrate

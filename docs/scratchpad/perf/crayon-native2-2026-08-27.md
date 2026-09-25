@@ -387,10 +387,11 @@ roughly 8-12 times — reaches ~99%. Only single-op fringe pixels kept any mix.
 Solving `(1-B)^k = mix` for a hand-speed k brackets B near 0.06. That read as too green on the
 device; **0.16 was settled on the device**, after 0.10 was cross-checked against the web pipeline
 and found greener than it at first contact in the same session, using a dev-harness setter
-(`set-crayon-glaze-return.mjs`, kept on `exp/crayon-native2-d5-per-op-glaze` rather than shipped —
-its `window` setter has no production caller, and reaching for `__DEV_HARNESS__` at module scope
-broke SSR) that changes the value on the running build in about ten seconds instead of a
-three-minute rebuild-and-reinstall loop.
+(`set-crayon-glaze-return.mjs`, recoverable from main's history at
+4af577bbd21337a659d3fc5c5aad81f64839e27b and removed later rather than shipped — its `window` setter
+has no production caller, and reaching for `__DEV_HARNESS__` at module scope broke SSR) that changes
+the value on the running build in about ten seconds instead of a three-minute rebuild-and-reinstall
+loop.
 
 | Cell                        | lost % samples                   | median   |
 | --------------------------- | -------------------------------- | -------- |
@@ -439,11 +440,12 @@ identical at every value.
 
 Two tools decided it, and they agreed once their disagreement was understood:
 
-* `gen:crayon-glaze-match` scores each candidate's crossing colour against the web pipeline's across
-  colour pairs and redraw depths. Clean V, minimum at **0.18** (error 9.0 against a same-colour
-  control reading 1.0–4.2, so the noise floor is ~2). Inverting the model on that minimum gives
-  `k = ln(0.55)/ln(0.82) ≈ 3` overlapping ops per pixel for its stroke geometry — the mechanism
-  confirming itself rather than being assumed.
+* `find-glaze-web-match.mjs` (archived unmerged in `crayon-native2-evidence/`) scores each
+  candidate's crossing colour against the web pipeline's across colour pairs and redraw depths.
+  Clean V, minimum at **0.18** (error 9.0 against a same-colour control reading 1.0–4.2, so the
+  noise floor is ~2). Inverting the model on that minimum gives `k = ln(0.55)/ln(0.82) ≈ 3`
+  overlapping ops per pixel for its stroke geometry — the mechanism confirming itself rather than
+  being assumed.
 * `gen:crayon-glaze-sheet` renders the same space with the web pipeline as a reference row
   (`crayon-native2-evidence/crayon-glaze-sweep.html`). It shows what the scalar score hides: **the
   first crossing and the accumulation curve want different values.** Web's first crossing is 153;

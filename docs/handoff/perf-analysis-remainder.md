@@ -7,9 +7,8 @@
 ## Objective & non-goals
 
 The two 41-session transcript analyses (Claude lane:
-`docs/scratchpad/session-reports/2026-08-31-claude/aggregate.md` on branch
-`claude/perf-campaign-analysis-bc1098`; Codex lane: same path `…/2026-08-31-codex/` on
-`analysis/2026-08-31-codex`) were distilled into stack \#1533 — PRs \#1530–\#1532, \#1534–\#1537 —
+`docs/scratchpad/2026-08-31-perf-campaign-transcript-analysis/claude/aggregate.md`; Codex lane:
+`…/codex/aggregate.md`) were distilled into stack \#1533 — PRs \#1530–\#1532, \#1534–\#1537 —
 covering ~28 findings. This packet holds what was deliberately NOT shipped, ranked, so a later
 session can pick it up without re-reading either aggregate. Non-goals: re-fixing anything the
 2026-08-31 mitigation wave already shipped (status protocol, no-inheritance rules — untested by the
@@ -86,9 +85,9 @@ round confirmed its earlier findings addressed. Tip empirically verified on the 
 
 ## Reread first
 
-* `docs/scratchpad/session-reports/2026-08-31-claude/aggregate.md` (Claude lane, on its branch) —
+* `docs/scratchpad/2026-08-31-perf-campaign-transcript-analysis/claude/aggregate.md` (Claude lane) —
   the ranked evidence behind every item above.
-* `docs/scratchpad/session-reports/2026-08-31-codex/aggregate.md` (Codex lane, on its branch) — the
-  timing/device numbers.
+* `docs/scratchpad/2026-08-31-perf-campaign-transcript-analysis/codex/aggregate.md` (Codex lane) —
+  the timing/device numbers.
 * `docs/PROFILING-CAMPAIGNS.md` — updated by \#1530/\#1537; the A3 open question lives in the
   service-worker entry.
