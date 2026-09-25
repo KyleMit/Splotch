@@ -44,7 +44,7 @@ export function isStandalone(): boolean {
   if (!browser) return false;
   return (
     APP_LIKE_DISPLAY_MODE_QUERIES.some((query) => window.matchMedia?.(query).matches) ||
-    (window.navigator as { standalone?: boolean }).standalone === true
+    window.navigator.standalone === true
   );
 }
 

@@ -133,6 +133,7 @@ import {
 } from './tiledRenderer';
 import { createInkMotion, type ClientPoint } from './inkMotion';
 import type { DrawingWorkDebug } from './drawingWorkDebug';
+import { require2dContext } from './canvas2d';
 
 // --- Canvas, tool, and callback state -------------------------------------
 
@@ -559,7 +560,7 @@ function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) 
   let batch: Point[] = [];
   let didSplit = false;
   for (const p of points) {
-    if (ps.passTracker!.advance(p) === 'split') {
+    if (ps.passTracker?.advance(p) === 'split') {
       // A split flushes and resets the counter itself, so the moves in the
       // batch it closes cannot carry toward the next checkpoint.
       strokeSmoothSegments(ps, batch, 0);
@@ -872,7 +873,12 @@ function discardPointer(e: PointerEvent) {
 // The buffered points and the direction test stay in screen space (physical
 // edges); commitEdgeSwipe maps them to paper coordinates when they turn out
 // to be a real stroke.
-function advanceEdgeSwipeCandidate(ps: PointerState, screenPoints: Point[], e: PointerEvent) {
+function advanceEdgeSwipeCandidate(
+  ps: PointerState,
+  guard: GuardEdge,
+  screenPoints: Point[],
+  e: PointerEvent
+) {
   ps.pendingPoints.push(...screenPoints);
   const last = screenPoints[screenPoints.length - 1];
   const dx = last.x - ps.startX;
@@ -881,7 +887,7 @@ function advanceEdgeSwipeCandidate(ps: PointerState, screenPoints: Point[], e: P
   // Decided. A mostly-inward flick (within ~45° of perpendicular, toward the
   // canvas centre) is the OS gesture — discard the whole stroke. Anything else
   // is a real stroke; commit it and let the next pointermove draw normally.
-  if (edgeSwipeIsOsGesture(ps.edgeSwipeGuard!, dx, dy)) {
+  if (edgeSwipeIsOsGesture(guard, dx, dy)) {
     discardPointer(e);
   } else {
     commitEdgeSwipe(ps);
@@ -964,7 +970,7 @@ function draw(e: PointerEvent) {
     const now = Date.now();
 
     if (pointerState.edgeSwipeGuard) {
-      advanceEdgeSwipeCandidate(pointerState, screenPoints, e);
+      advanceEdgeSwipeCandidate(pointerState, pointerState.edgeSwipeGuard, screenPoints, e);
       return;
     }
 
@@ -1279,7 +1285,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // deliberately transparent canvas (the paper sheet + coloring overlay render
   // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
   // ADR-0051.
-  ctx = canvas.getContext('2d')!;
+  ctx = require2dContext(canvas);
 
   adoptTiledRenderer(canvas, {
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),

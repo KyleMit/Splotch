@@ -90,7 +90,7 @@ export function diagnose(profile: DeviceProfile, orientation: Orientation): Diag
     missesCutout:
       painted.length > 0 &&
       cutoutScreenEdge !== null &&
-      !painted.includes(cutoutScreenEdge as NotchEdge),
+      !painted.some((edge) => edge === cutoutScreenEdge),
     insetWithoutCutout: painted.length > 0 && cutoutScreenEdge === null,
   };
 }
@@ -135,7 +135,7 @@ export function bandVerdict(profile: DeviceProfile, orientation: Orientation): B
 
   const { cutoutScreenEdge: expected, bandEdges: painted } = diagnosis;
   const covered =
-    expected === null ? painted.length === 0 : painted.includes(expected as NotchEdge);
+    expected === null ? painted.length === 0 : painted.some((edge) => edge === expected);
   if (covered) return { expected, painted, cause: null };
 
   return { expected, painted, cause: classifyGap(profile, orientation, expected, insets) };
@@ -162,7 +162,7 @@ export function unreclaimedInsetPx(profile: DeviceProfile, orientation: Orientat
   const insets = appliedInsets(profile, orientation);
   if (!insets) return 0;
   const painted = diagnose(profile, orientation)?.bandEdges ?? [];
-  return SAFE_AREA_EDGES.filter((edge) => !painted.includes(edge as NotchEdge)).reduce(
+  return SAFE_AREA_EDGES.filter((edge) => !painted.some((bandEdge) => bandEdge === edge)).reduce(
     (deepest, edge) => Math.max(deepest, insets[edge]),
     0
   );

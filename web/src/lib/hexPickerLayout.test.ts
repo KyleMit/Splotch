@@ -6,6 +6,7 @@ import {
   LANDSCAPE_ROWS,
   PORTRAIT_ROWS,
   SHADE_COUNT,
+  colorFamilyShade,
 } from './hexPickerLayout';
 
 describe('COLOR_FAMILIES', () => {
@@ -17,6 +18,17 @@ describe('COLOR_FAMILIES', () => {
     }
     const all = COLOR_FAMILIES.flatMap((f) => f.shades.map((s) => s.toLowerCase()));
     expect(new Set(all).size).toBe(FAMILY_COUNT * SHADE_COUNT);
+  });
+});
+
+describe('colorFamilyShade', () => {
+  it('reads one shade of a named family', () => {
+    expect(colorFamilyShade('reds', 0)).toBe(COLOR_FAMILIES[0].shades[0]);
+  });
+
+  it('throws on a family or shade the grid does not have', () => {
+    expect(() => colorFamilyShade('plaids', 0)).toThrow('No shade 0 in color family "plaids"');
+    expect(() => colorFamilyShade('reds', SHADE_COUNT)).toThrow();
   });
 });
 

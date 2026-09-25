@@ -35,6 +35,6 @@ export function listen(
   handler: (event: Event) => void,
   options?: AddEventListenerOptions | boolean
 ) {
-  target.addEventListener(type, handler as EventListener, options);
-  removers.push(() => target.removeEventListener(type, handler as EventListener, options));
+  target.addEventListener(type, handler, options);
+  removers.push(() => target.removeEventListener(type, handler, options));
 }

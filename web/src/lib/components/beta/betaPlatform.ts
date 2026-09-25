@@ -72,7 +72,7 @@ export const BETA_PLATFORM_BOOT_SCRIPT =
   `}catch(e){}})();`;
 
 export function isBetaPlatform(value: string | null): value is BetaPlatform {
-  return BETA_PLATFORMS.includes(value as BetaPlatform);
+  return BETA_PLATFORMS.some((platform) => platform === value);
 }
 
 /** The canonical link to one platform's instructions. */

@@ -25,6 +25,10 @@ export type StyleName = keyof typeof STYLE_SUFFIXES;
 
 export const STYLE_NAMES = Object.keys(STYLE_SUFFIXES) as StyleName[];
 
+export function isStyleName(value: unknown): value is StyleName {
+  return typeof value === 'string' && Object.hasOwn(STYLE_SUFFIXES, value);
+}
+
 // Dark-theme replacements for the styles whose MEDIUM has to be described
 // differently on dark paper, not just lit differently — the shared night clause
 // in prompt.ts recolors a scene but cannot re-stage a craft. Crayon becomes wax
@@ -55,7 +59,7 @@ export const DARK_STYLE_SUFFIXES = {
 const PUNCHED_BACKGROUND_STYLES = ['Sticker'] as const satisfies readonly StyleName[];
 
 export function hasPunchedBackground(style: StyleName): boolean {
-  return (PUNCHED_BACKGROUND_STYLES as readonly StyleName[]).includes(style);
+  return PUNCHED_BACKGROUND_STYLES.some((punched) => punched === style);
 }
 
 /** The suffix map for a theme — dark overrides layered over the light set. */

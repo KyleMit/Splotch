@@ -1,4 +1,4 @@
-import { STYLE_SUFFIXES, type StyleName } from '$lib/ai/styles';
+import { isStyleName, type StyleName } from '$lib/ai/styles';
 import { AI_REPORT_KINDS, type AiReportKind } from '$lib/imageReport';
 import type { ReportTokenContext } from './reportToken';
 import { createIssue } from './github';
@@ -35,16 +35,16 @@ export type ImageReportResult =
 
 function readStyle(raw: unknown): StyleName | null | undefined {
   if (raw === '' || raw === null) return null;
-  return typeof raw === 'string' && Object.hasOwn(STYLE_SUFFIXES, raw)
-    ? (raw as StyleName)
-    : undefined;
+  return isStyleName(raw) ? raw : undefined;
 }
 
 function readReportKind(raw: unknown): AiReportKind | undefined {
   if (raw === null) return 'picture';
-  return typeof raw === 'string' && (AI_REPORT_KINDS as readonly string[]).includes(raw)
-    ? (raw as AiReportKind)
-    : undefined;
+  return isAiReportKind(raw) ? raw : undefined;
+}
+
+function isAiReportKind(value: unknown): value is AiReportKind {
+  return AI_REPORT_KINDS.some((kind) => kind === value);
 }
 
 function validImage(value: unknown): value is Blob {

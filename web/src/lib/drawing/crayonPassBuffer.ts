@@ -13,6 +13,7 @@ import {
 import { PERF_MARKS } from './perf';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
 import type { DotOp, PathOp } from './strokeOps';
+import { require2dContext } from './canvas2d';
 
 // Lay a crayon op down as textured wax: one pass per density band (widest first),
 // each filled with the paper-tooth pattern for the op's colour + seed. Opaque
@@ -296,7 +297,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
-    const g = c.getContext('2d')!;
+    const g = require2dContext(c);
     g.lineCap = 'round';
     g.lineJoin = 'round';
     buf = {
@@ -330,7 +331,7 @@ function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingCont
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
-    buf.under = c.getContext('2d')!;
+    buf.under = require2dContext(c);
   } else if (buf.under.canvas.width !== w || buf.under.canvas.height !== h) {
     buf.under.canvas.width = w;
     buf.under.canvas.height = h;

@@ -9,14 +9,14 @@ import { iconNameFromPath, type CommonIconName } from './iconTypes';
 // imports this module, so the registry is filled before the consumer renders;
 // deferredIcons.test.ts enforces that rule, and web/tests/startup-bundle.spec.ts
 // pins that no modulepreloaded chunk carries this module.
-const modules = import.meta.glob('../icons/deferred/*.svg', {
+const modules = import.meta.glob<string>('../icons/deferred/*.svg', {
   eager: true,
   query: '?raw',
   import: 'default',
 });
 
 export const deferredIcons = Object.fromEntries(
-  Object.entries(modules).map(([path, src]) => [iconNameFromPath(path), src as string])
+  Object.entries(modules).map(([path, src]) => [iconNameFromPath(path), src])
 ) as Partial<Record<CommonIconName, string>>;
 
 export const DEFERRED_ICON_NAMES = Object.keys(deferredIcons).sort() as CommonIconName[];

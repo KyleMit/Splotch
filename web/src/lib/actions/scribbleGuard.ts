@@ -20,9 +20,6 @@ const TAP_MOVEMENT_TOLERANCE_PX = 8;
 // click, so finger taps must pass through untouched for click-driven controls
 // and assistive tech. Apply to controls a pen taps right before drawing (the
 // color palette); the canvas guards itself inside the engine.
-// Safari-only field (the whole point: Scribble only exists there).
-type StylusAwareTouch = Touch & { touchType?: 'direct' | 'stylus' };
-
 interface ScribbleTapStreamHandlers {
   move: (event: PointerEvent) => void;
   up: (event: PointerEvent) => void;
@@ -107,7 +104,7 @@ function dispatcherFor(ownerWindow: Window) {
 
 export function scribbleGuard(node: HTMLElement) {
   const cancel = (e: TouchEvent) => {
-    const touches = Array.from(e.changedTouches) as StylusAwareTouch[];
+    const touches = Array.from(e.changedTouches);
     if (touches.length > 0 && touches.every((t) => t.touchType === 'stylus')) {
       e.preventDefault();
     }

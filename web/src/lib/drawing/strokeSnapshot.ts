@@ -1,5 +1,6 @@
 import type { TiledExportSnapshot } from './exportDrawing';
 import { captureTiledCanvasSnapshot } from './tiledRenderer';
+import { require2dContext } from './canvas2d';
 
 type SnapshotCanvas = HTMLCanvasElement | OffscreenCanvas;
 
@@ -27,12 +28,16 @@ export function createStrokeSnapshot(
   let target: CanvasRenderingContext2D;
   if (typeof OffscreenCanvas !== 'undefined') {
     snapshot = new OffscreenCanvas(width, height);
-    target = snapshot.getContext('2d') as unknown as CanvasRenderingContext2D;
+    const offscreenTarget = snapshot.getContext('2d');
+    if (!offscreenTarget) throw new Error('2D canvas context unavailable');
+    // lib.dom models the offscreen context as unrelated to CanvasRenderingContext2D;
+    // the render callback draws only through the 2D API surface the two share.
+    target = offscreenTarget as unknown as CanvasRenderingContext2D;
   } else {
     snapshot = document.createElement('canvas');
     snapshot.width = width;
     snapshot.height = height;
-    target = snapshot.getContext('2d')!;
+    target = require2dContext(snapshot);
   }
   target.lineCap = 'round';
   target.lineJoin = 'round';

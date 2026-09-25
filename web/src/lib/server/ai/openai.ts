@@ -1,5 +1,10 @@
 import OpenAI from 'openai';
-import { classifyOpenAiResponse, isSafetyError, isVerificationError } from './openaiSafety';
+import {
+  classifyOpenAiResponse,
+  errorStatus,
+  isSafetyError,
+  isVerificationError,
+} from './openaiSafety';
 import { imageSizeFor, readImageSize } from './imageSize';
 // Relative, not `$lib`: this module is imported by the background worker under
 // netlify/, which is built without SvelteKit's aliases (ADR-0115).
@@ -89,7 +94,7 @@ function keyCheckFailure(err: unknown): {
   kind: 'rejected' | 'unreachable';
   reason: string;
 } {
-  const status = (err as { status?: number })?.status;
+  const status = errorStatus(err);
   const kind = status && KEY_REJECTING_STATUSES.has(status) ? 'rejected' : 'unreachable';
   return { ok: false, kind, reason: firstLine(err) };
 }
@@ -153,7 +158,7 @@ export const openAiProvider: AiImageProvider = {
         deadline(deadlineMs)
       );
     } catch (err) {
-      const status = (err as { status?: number }).status;
+      const status = errorStatus(err);
       console.error(`OpenAI call failed (${status ?? 'unknown'}): ${firstLine(err)}`);
       // Platform moderation rejects some requests before the model sees them —
       // route those to the refusal path too.

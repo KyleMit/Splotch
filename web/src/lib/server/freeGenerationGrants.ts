@@ -85,19 +85,21 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
-const FAILURE_KINDS = new Set<FreeGenerationFailureKind>([
+const FAILURE_KINDS: readonly FreeGenerationFailureKind[] = [
   'abandoned',
   'daily-limit',
   'exhausted',
   'invalid-request',
   'safety',
   'upstream',
-]);
+];
+
+function isFailureKind(value: unknown): value is FreeGenerationFailureKind {
+  return FAILURE_KINDS.some((kind) => kind === value);
+}
 
 function failureKindOrNull(value: unknown): FreeGenerationFailureKind | null {
-  return typeof value === 'string' && FAILURE_KINDS.has(value as FreeGenerationFailureKind)
-    ? (value as FreeGenerationFailureKind)
-    : null;
+  return isFailureKind(value) ? value : null;
 }
 
 function normalizeGrant(value: unknown, now: Date): FreeGenerationGrant {

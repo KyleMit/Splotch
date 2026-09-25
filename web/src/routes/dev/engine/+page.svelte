@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import LiveSurface from '$lib/components/LiveSurface.svelte';
+  import { require2dContext } from '$lib/drawing/canvas2d';
   import { compositeVisibleLiveTiles } from '$lib/drawing/liveTileComposite';
   import { setCrayonDepositionForTuning } from '$lib/drawing/crayonPassBuffer';
   import {
@@ -35,6 +36,7 @@
   // after the rebuild it triggers, not in the same tick the debounce fires.
   const RESIZE_SETTLE_SLACK_MS = 50;
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Svelte's bind:this idiom: LiveSurface's bind:canvasEl assigns it before onMount reads it
   let canvasEl: HTMLCanvasElement = $state()!;
   let wrapperEl: HTMLDivElement;
   let engine: ReturnType<typeof initDrawingCanvas> | null = null;
@@ -92,7 +94,7 @@
 
   function renderedImageData() {
     const rendered = renderedCanvas();
-    return rendered.getContext('2d')!.getImageData(0, 0, rendered.width, rendered.height);
+    return require2dContext(rendered).getImageData(0, 0, rendered.width, rendered.height);
   }
 
   // Every synchronous input seam below dispatches through here, onto the canvas
@@ -181,12 +183,12 @@
 
       // [r, g, b, a] at a canvas-space pixel.
       pixelAt(x: number, y: number) {
-        const ctx = renderedCanvas().getContext('2d')!;
+        const ctx = require2dContext(renderedCanvas());
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
       },
 
       pixelsIn(x: number, y: number, width: number, height: number) {
-        const ctx = renderedCanvas().getContext('2d')!;
+        const ctx = require2dContext(renderedCanvas());
         return Array.from(ctx.getImageData(x, y, width, height).data);
       },
 

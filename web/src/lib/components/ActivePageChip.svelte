@@ -16,9 +16,8 @@
 
   let { page, preview, hoverArmed, onclear }: Props = $props();
 
-  function clearAfterPressFeedback(event: MouseEvent) {
-    const button = event.currentTarget as HTMLButtonElement;
-    void runSingleFlightActivation(button, onclear);
+  function clearAfterPressFeedback(event: MouseEvent & { currentTarget: HTMLButtonElement }) {
+    void runSingleFlightActivation(event.currentTarget, onclear);
   }
 </script>
 

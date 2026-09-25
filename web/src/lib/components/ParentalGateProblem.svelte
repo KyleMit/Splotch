@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { paletteHex } from '$lib/palette';
-  import { COLOR_FAMILIES } from '$lib/hexPickerLayout';
+  import { colorFamilyShade } from '$lib/hexPickerLayout';
   import { parentalGateState } from '$lib/state/parentalGate.svelte';
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
@@ -18,10 +18,7 @@
   // text, asserted in a11y.spec.ts): palette Purple passes at 3.40:1, but
   // palette Blue only reaches 2.67:1, so the second splat borrows the
   // picker's mid-blue (3.12:1) instead.
-  const OPERAND_FILLS = [
-    paletteHex('Purple'),
-    COLOR_FAMILIES.find((family) => family.name === 'blues')!.shades[4],
-  ];
+  const OPERAND_FILLS = [paletteHex('Purple'), colorFamilyShade('blues', 4)];
   // Organic blob shapes; plain geometry, one per operand so the pair reads as
   // two hand-made daubs rather than stamped circles.
   const OPERAND_RADII = ['58% 42% 55% 45% / 45% 58% 42% 55%', '45% 55% 48% 52% / 55% 45% 58% 42%'];

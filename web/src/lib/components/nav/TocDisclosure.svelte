@@ -84,7 +84,8 @@
   function onPanelClick(event: MouseEvent) {
     if (event.defaultPrevented || event.button !== 0) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const href = (event.target as Element).closest('a[href^="#"]')?.getAttribute('href');
+    if (!(event.target instanceof Element)) return;
+    const href = event.target.closest('a[href^="#"]')?.getAttribute('href');
     if (!href) return;
     event.preventDefault();
     void jumpTo(href);

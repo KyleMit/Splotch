@@ -52,7 +52,7 @@ export const OPTIONAL_BRUSH_TYPES: readonly OptionalBrushType[] = BRUSH_TYPES.fi
 const DEFAULT_BRUSH: BrushType = 'pen';
 
 function isBrushType(raw: string): raw is BrushType {
-  return (BRUSH_TYPES as readonly string[]).includes(raw);
+  return BRUSH_TYPES.some((brush) => brush === raw);
 }
 
 export function isInkBrush(brush: BrushType): brush is InkBrushType {

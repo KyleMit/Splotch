@@ -5,6 +5,7 @@ import { viewMatrix, viewToPaper, type PaperView } from './paperView';
 import { clearAllOf, renderOp, type StrokeOp } from './strokeOps';
 import { opPaddedUserBounds } from './opGeometry';
 import { geometryIntersectsTile, tilesIntersect, type TileBounds } from './tiledGeometry';
+import { require2dContext } from './canvas2d';
 
 export interface LiveTile extends TileBounds {
   canvas: HTMLCanvasElement;
@@ -185,11 +186,11 @@ export function createLiveTiles(canvasElement: HTMLCanvasElement): LiveTile[] {
   }
   const tiles = Array.from(elements, (tileCanvas, index) => ({
     canvas: tileCanvas,
-    ctx: tileCanvas.getContext('2d')!,
+    ctx: require2dContext(tileCanvas),
     crayonBottom: crayonBottoms[index],
-    crayonBottomCtx: crayonBottoms[index].getContext('2d')!,
+    crayonBottomCtx: require2dContext(crayonBottoms[index]),
     crayonTop: crayonTops[index],
-    crayonTopCtx: crayonTops[index].getContext('2d')!,
+    crayonTopCtx: require2dContext(crayonTops[index]),
     needsClear: false,
     x: 0,
     y: 0,
@@ -277,7 +278,7 @@ export function createHistoryBaseTiles(width: number, height: number): HistoryBa
       const baseCanvas = document.createElement('canvas');
       baseCanvas.width = right - x;
       baseCanvas.height = bottom - y;
-      const baseCtx = baseCanvas.getContext('2d')!;
+      const baseCtx = require2dContext(baseCanvas);
       baseCtx.lineCap = 'round';
       baseCtx.lineJoin = 'round';
       baseCtx.setTransform(1, 0, 0, 1, -x, -y);
