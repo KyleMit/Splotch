@@ -89,6 +89,17 @@ describe('scanForHostAddresses', () => {
     expect(findings.map((finding) => finding.kind)).toEqual(['private-ipv4', 'mdns-host']);
   });
 
+  it('matches an mDNS name in any case and across every label', () => {
+    const text = 'http://Secret-Mac.LOCAL:4173/ and http://secret.rig-mac.local:4173/';
+    expect(scanForHostAddresses(text).map((finding) => finding.kind)).toEqual([
+      'mdns-host',
+      'mdns-host',
+    ]);
+    expect(redactHostAddresses(text)).toBe(
+      `http://${REDACTED_MDNS_HOST}:4173/ and http://${REDACTED_MDNS_HOST}:4173/`
+    );
+  });
+
   it('accepts the redaction placeholders, public addresses, and loopback', () => {
     const text = [
       `http://${REDACTED_LAN_HOST}:4193/?probe=run-1-2`,

@@ -12,7 +12,9 @@ import { maskIdentifier } from './device-identifiers.mjs';
 
 export const REDACTED_LAN_HOST = 'lan-host';
 export const REDACTED_MDNS_HOST = 'rig-mac.local';
-const MDNS_HOST = /\b[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.local\b/g;
+// Every label of the name, not just the last one before `.local`, and in any
+// case: a suffix match would pass `a.rig-mac.local` as the placeholder.
+const MDNS_HOST = /\b(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+local\b/gi;
 const PRIVATE_IPV4 =
   /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})\b/g;
 
