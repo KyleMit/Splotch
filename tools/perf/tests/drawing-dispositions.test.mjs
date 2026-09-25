@@ -60,13 +60,17 @@ describe('the recorded disposition table agrees with its ADRs', () => {
       expect(text.startsWith(`# ${disposition.adr}:`)).toBe(true);
     });
 
-    it(`${key} uses the band ${disposition.adr} states`, () => {
-      expect(text.replace(/\s+/g, ' ')).toContain(dispositionBandText(disposition.band));
+    it(`${key} uses the bands ${disposition.adr} states`, () => {
+      for (const { band } of disposition.scopes) {
+        expect(text.replace(/\s+/g, ' ')).toContain(dispositionBandText(band));
+      }
     });
 
     it(`${key} limits itself to product commits ${disposition.adr} names`, () => {
-      for (const commit of disposition.productCommits ?? []) {
-        expect(text).toContain(commit);
+      for (const { productCommits } of disposition.scopes) {
+        for (const commit of productCommits ?? []) {
+          expect(text).toContain(commit);
+        }
       }
     });
   }
@@ -128,16 +132,43 @@ describe('which drawing reds a recorded disposition explains', () => {
     ).toMatchObject({ adr: 'ADR-0174' });
   });
 
-  it('explains eraser only at the two commits whose readings the finger captures cover', () => {
+  it('explains eraser only at the readings the ADR names at each commit', () => {
     const at = (share, productCommit) =>
       lostFrameDispositionFor('ipad-device-web', 'eraser', cell({ share, productCommit }));
 
-    for (const share of [0.0101, 0.0103, 0.0119, 0.0125]) {
+    for (const share of [0.0119, 0.0125]) {
       expect(at(share, E5142FAB)).toMatchObject({ adr: 'ADR-0174' });
-      expect(at(share, LATER_COMMIT)).toMatchObject({ adr: 'ADR-0174' });
+      expect(at(share, LATER_COMMIT)).toBeNull();
     }
-    expect(at(0.0126, LATER_COMMIT)).toBeNull();
+    for (const share of [0.0101, 0.0103]) {
+      expect(at(share, LATER_COMMIT)).toMatchObject({ adr: 'ADR-0174' });
+      expect(at(share, E5142FAB)).toBeNull();
+    }
+    expect(at(0.0126, E5142FAB)).toBeNull();
+    expect(at(0.0104, LATER_COMMIT)).toBeNull();
     expect(at(0.0103, FINGER_SESSION_COMMIT)).toBeNull();
+  });
+
+  // A cell folding runs from two commits judges each run against its own
+  // commit's range, so one run cannot borrow the other commit's band.
+  it('judges each run of an eraser cell against its own commit', () => {
+    const run = (share, productCommit) => ({ ...cell({ share, productCommit }).runs[0] });
+    const folded = (...runs) => ({ ...cell({ share: 0.0119 }), runs });
+
+    expect(
+      lostFrameDispositionFor(
+        'ipad-device-web',
+        'eraser',
+        folded(run(0.0119, E5142FAB), run(0.0102, LATER_COMMIT))
+      )
+    ).toMatchObject({ adr: 'ADR-0174' });
+    expect(
+      lostFrameDispositionFor(
+        'ipad-device-web',
+        'eraser',
+        folded(run(0.0119, E5142FAB), run(0.0119, LATER_COMMIT))
+      )
+    ).toBeNull();
   });
 
   it('explains no Magic, native, green, or unscoreable cell', () => {
@@ -237,7 +268,7 @@ describe('the ADR-0174 driven control in a matrix', () => {
       '**Pen on `ipad-device-web`** — lost-frame reds above 1%, up to 1.37%, paint gates passing'
     );
     expect(markdown).toContain(
-      '**Eraser on `ipad-device-web`** — lost-frame reds 1.01–1.25% at e5142fab8ff2, 3928cd88edbf, paint gates passing'
+      '**Eraser on `ipad-device-web`** — lost-frame reds 1.19–1.25% at e5142fab8ff2 or 1.01–1.03% at 3928cd88edbf, paint gates passing'
     );
     expect(html).toContain('<b>Recorded dispositions.</b>');
   });

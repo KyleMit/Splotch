@@ -147,23 +147,39 @@
         "ipad-device-web:pen": {
           "adr": "ADR-0174",
           "adrPath": "docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md",
-          "band": {
-            "minShare": 0.01,
-            "maxShare": 0.0137
-          },
-          "productCommits": null,
+          "scopes": [
+            {
+              "band": {
+                "minShare": 0.01,
+                "maxShare": 0.0137
+              },
+              "productCommits": null
+            }
+          ],
           "basis": "Synthesized-touch transport cost, not product cost: every real-finger pen capture reads 0–0.06%, and on one commit in one session the driven arm read 1.18% and the finger 0%. A driven pen red above 1%, up to 1.37%, with passing paint gates is explained; a reading above 1.37% needs a real-finger capture at that commit."
         },
         "ipad-device-web:eraser": {
           "adr": "ADR-0174",
           "adrPath": "docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md",
-          "band": {
-            "minShare": 0.0101,
-            "maxShare": 0.0125
-          },
-          "productCommits": [
-            "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
-            "3928cd88edbf441530e473a4e3c0b6767926bfc6"
+          "scopes": [
+            {
+              "band": {
+                "minShare": 0.0119,
+                "maxShare": 0.0125
+              },
+              "productCommits": [
+                "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3"
+              ]
+            },
+            {
+              "band": {
+                "minShare": 0.0101,
+                "maxShare": 0.0103
+              },
+              "productCommits": [
+                "3928cd88edbf441530e473a4e3c0b6767926bfc6"
+              ]
+            }
           ],
           "basis": "Explained by real-finger eraser captures in both landscape modes (0.04% light, 0% dark), which cover the named readings only: 1.19–1.25% at e5142fab and 1.01–1.03% at 3928cd88. A driven eraser red at any other commit needs a real-finger capture at that commit."
         }

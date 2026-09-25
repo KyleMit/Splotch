@@ -185,9 +185,10 @@ The driven capture's lost-frame share is instrument evidence. Read it as follows
 * **A driven eraser red on `ipad-device-web` is explained at two commits only, by finger capture:**
   1.19–1.25% at e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 and 1.01–1.03% at
   3928cd88edbf441530e473a4e3c0b6767926bfc6. The eraser finger captures read 0.04% landscape-light
-  and 0% landscape-dark (issue #2231). The disposition table holds the two ranges as one band,
-  1.01–1.25%, limited to those two commits. Eraser has no paired capture, so it has no band of its
-  own: a driven eraser red at any other commit needs a finger capture at that commit.
+  and 0% landscape-dark (issue #2231). The disposition table holds each range with its own commit,
+  so a reading explained at one commit is not explained at the other. Eraser has no paired capture,
+  so it has no band of its own: a driven eraser red at any other commit, or outside its commit's
+  named range, needs a finger capture at that commit.
 * **Every other new driven drawing lost-frame red on the two iPad rows needs a finger capture before
   it is explained.** That includes Magic at any commit, any native red, and any other brush. Magic's
   finger floor now passes as scored: 0–0.09% over three fresh first loads, and 0% against 0.91%
@@ -256,7 +257,7 @@ before the timed frames start. That assumption is reasonable, but nobody has mea
 > **Amended (issue #2222):** the generator now renders the disposition this section lacked. The
 > table `LOST_FRAME_DISPOSITIONS` in `tools/perf/lib/drawing-gates.mjs` lists the reds this record
 > explains, as decision 1 states them after the 2026-09-24 rulings: pen on `ipad-device-web` above
-> 1%, up to 1.37%, and eraser there only at e5142fab and 3928cd88, inside 1.01–1.25%. A red
+> 1%, up to 1.37%, and eraser there only at 1.19–1.25% at e5142fab and 1.01–1.03% at 3928cd88. A red
 > qualifies only when every paint gate passed. It is an annotation, not a scoring state: the scorer
 > and every published number are unchanged, and a covered cell still reads FAIL. The cell draws a
 > dashed red edge and links this ADR. The calibrated row's summary counts open reds apart from
@@ -334,7 +335,8 @@ Reopen this record, and treat the affected cells as product reds, if any of the 
 
 * \+ Seven of the ten reds (pen and eraser) are resolved on a measurement that could have gone the
   other way. If the finger had also read about 1.2%, this record would owe a real allowance or more
-  product work. The three Magic cells move from a transport question to a named product one.
+  product work. The three Magic cells moved from a transport question to a named product one, the
+  first-load stall, which the 2026-09-24 disposition then recorded as not reproduced.
 * \+ The 2026-09-24 session tested the record where it could have failed, and it held: the paired
   capture, eraser, and the native row all read the finger floor at or near 0%. It explains the three
   3928cd88 drawing reds on the calibrated row (landscape-dark pen, and eraser in both landscape
@@ -344,11 +346,11 @@ Reopen this record, and treat the affected cells as product reds, if any of the 
   to the finger.
 * \+ The native row's clean result is recorded as a finding in itself: the same transport costs at
   most 0.09 points there. The "transport tax" is therefore specific to Safari and to the brush.
-* − **The matrix still renders seven FAIL cells that the release process treats as explained.**
-  ADR-0160 rejected exactly this state for action cells, because the matrix then shows red that
-  releases ignore. Here the alternative is a budget that misstates what the product costs. The
-  limitation note is the mitigation. A rendered disposition marker in the generator would be the
-  real fix.
+* − **The matrix still renders FAIL cells that the release process treats as explained.** ADR-0160
+  rejected exactly this state for action cells, because the matrix then shows red that releases
+  ignore. Here the alternative is a budget that misstates what the product costs. The mitigation is
+  the rendered disposition marker (decision 4, issue #2222): each explained cell draws a dashed edge
+  that links this record, and the open-red count leaves it out.
 * − A drawing lost-frame verdict on these rows can now need a person at the iPad. The pen band keeps
   pen unattended. Any Magic or eraser red, and any pen reading above the band, cannot be settled
   overnight.
@@ -356,8 +358,8 @@ Reopen this record, and treat the affected cells as product reds, if any of the 
   2026-09-24 finger captures closed both gaps (issues #2231 and #2236), but only for eraser's two
   named commits and for one mode per brush on the native row.
 * − The Magic first-load stall (433 ms in contact, 1.13% as scored) was a product cost that the
-  driven Magic cells cannot see. It is recorded as not reproduced at 8e6700d5, not as fixed: nothing
-  in the product changed to remove it, so it can return, and the reopen condition watches for that.
+  driven Magic cells cannot see. It is recorded as not reproduced at 8e6700d5, not as fixed: no
+  change has been shown to remove it, so it can return, and the reopen condition watches for that.
 * − The pen band is a threshold derived from three measured pairs, one of them paired on one commit.
   It assumes the tax adds at least about one point and stays stable. Both assumptions rest on n = 3
   plus one control. With its floor at the gate, the band also explains a red that sits just over 1%,

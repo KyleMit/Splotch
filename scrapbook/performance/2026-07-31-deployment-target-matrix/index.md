@@ -167,8 +167,8 @@ still failed; the disposition says why the red is not an open product red:
   and on one commit in one session the driven arm read 1.18% and the finger 0%. A driven pen red
   above 1%, up to 1.37%, with passing paint gates is explained; a reading above 1.37% needs a
   real-finger capture at that commit.
-* **Eraser on `ipad-device-web`** — lost-frame reds 1.01–1.25% at e5142fab8ff2, 3928cd88edbf, paint
-  gates passing,
+* **Eraser on `ipad-device-web`** — lost-frame reds 1.19–1.25% at e5142fab8ff2 or 1.01–1.03% at
+  3928cd88edbf, paint gates passing,
   [ADR-0174](https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md).
   Explained by real-finger eraser captures in both landscape modes (0.04% light, 0% dark), which
   cover the named readings only: 1.19–1.25% at e5142fab and 1.01–1.03% at 3928cd88. A driven eraser

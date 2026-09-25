@@ -2324,11 +2324,14 @@ function renderLostFrameExceptionsMarkdown(exceptions) {
   return `Cells held to a different lost-frame budget, and why (ADR-0137):\n\n${lines.join('\n')}\n`;
 }
 
-function dispositionScope({ band, productCommits }) {
-  const commits = productCommits
-    ? ` at ${productCommits.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ')}`
-    : '';
-  return `lost-frame reds ${dispositionBandText(band)}${commits}, paint gates passing`;
+function dispositionScope({ scopes }) {
+  const readings = scopes.map(({ band, productCommits }) => {
+    const commits = productCommits
+      ? ` at ${productCommits.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ')}`
+      : '';
+    return `${dispositionBandText(band)}${commits}`;
+  });
+  return `lost-frame reds ${readings.join(' or ')}, paint gates passing`;
 }
 
 // Every red a recorded disposition explains, and what bounds it, so an
