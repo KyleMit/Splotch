@@ -15,6 +15,20 @@ function distribution(values) {
   };
 }
 
+// The ghost/restore split is diagnostic, never gated: `engine.undo` stays the scored
+// figure. It is reported only when every action carries the sub-measure, since a
+// build from before `engine.undoInkMotion` existed has none and a partial split
+// would describe a different set of undos than the engine distribution beside it.
+function inkMotionSplit(actions) {
+  if (!actions.length || !actions.every((action) => Number.isFinite(action.inkMotionMs))) {
+    return {};
+  }
+  return {
+    inkMotion: distribution(actions.map((action) => action.inkMotionMs)),
+    restore: distribution(actions.map((action) => action.engineMs - action.inkMotionMs)),
+  };
+}
+
 export function summarizeUndoActions(actions, frames) {
   const engineDurations = actions.map((action) => action.engineMs);
   const nextFrameDelays = actions.flatMap((action) => {
@@ -29,7 +43,7 @@ export function summarizeUndoActions(actions, frames) {
     engine.p95 <= UNDO_ENGINE_P95_GATE_MS &&
     nextFrame.p95 <= UNDO_NEXT_FRAME_P95_GATE_MS &&
     nextFrame.max <= UNDO_NEXT_FRAME_MAX_GATE_MS;
-  return { count: actions.length, engine, nextFrame, passed };
+  return { count: actions.length, engine, ...inkMotionSplit(actions), nextFrame, passed };
 }
 
 export function undoActionRows(summary) {
@@ -40,6 +54,12 @@ export function undoActionRows(summary) {
       'engine p95': summary.engine.p95,
       'engine p99': summary.engine.p99,
       'engine max': summary.engine.max,
+      ...(summary.inkMotion
+        ? {
+            'ink motion p95': summary.inkMotion.p95,
+            'restore p95': summary.restore.p95,
+          }
+        : {}),
       'next frame p50': summary.nextFrame.p50,
       'next frame p95': summary.nextFrame.p95,
       'next frame p99': summary.nextFrame.p99,

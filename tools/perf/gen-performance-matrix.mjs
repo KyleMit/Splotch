@@ -764,9 +764,23 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
     productCommit,
     count: summary.count,
     engine: normalizedDistribution(summary.engine),
+    ...(summary.inkMotion && summary.restore
+      ? {
+          inkMotion: normalizedDistribution(summary.inkMotion),
+          restore: normalizedDistribution(summary.restore),
+        }
+      : {}),
     nextFrame: normalizedDistribution(summary.nextFrame),
     passed: summary.passed,
   };
+}
+
+// Absent from every capture taken before the undo driver recorded the ghost
+// (issue #2238), so those cells render exactly as before.
+function undoInkMotionSplit(undo) {
+  return undo.inkMotion
+    ? ` (ink motion P95 ${fmt(undo.inkMotion.p95)} ms · restore P95 ${fmt(undo.restore.p95)} ms)`
+    : '';
 }
 
 function normalizeActionPlan(plan, source) {
@@ -1794,7 +1808,7 @@ function undoOverviewCell(label, mode, gates) {
     return tipCell('mx-cell missing', '—', `${label} · undo not measured`);
   }
   const undo = mode.undo;
-  const title = `${label} · ${undo.count} undos · engine P95 ${fmt(undo.engine.p95)} ms (gate ${gates.engineP95Ms} ms) · next-frame P95 ${fmt(undo.nextFrame.p95)} ms (gate ${gates.nextFrameP95Ms} ms) · next-frame max ${fmt(undo.nextFrame.max)} ms (gate ${gates.nextFrameMaxMs} ms) · ${undo.passed ? 'PASS' : 'FAIL'}`;
+  const title = `${label} · ${undo.count} undos · engine P95 ${fmt(undo.engine.p95)} ms (gate ${gates.engineP95Ms} ms)${undoInkMotionSplit(undo)} · next-frame P95 ${fmt(undo.nextFrame.p95)} ms (gate ${gates.nextFrameP95Ms} ms) · next-frame max ${fmt(undo.nextFrame.max)} ms (gate ${gates.nextFrameMaxMs} ms) · ${undo.passed ? 'PASS' : 'FAIL'}`;
   return tipCell(
     `mx-cell mark ${undo.passed ? 'pass' : 'hot failed'}`,
     undo.passed ? '✓' : '✕',
@@ -2101,7 +2115,7 @@ function undoTable(matrix) {
       if (!target.undo) {
         return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">No engine/next-frame probe</td></tr>`;
       }
-      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td>${fmt(target.undo.engine.p95)}</td><td>${fmt(target.undo.nextFrame.p95)}</td><td>${fmt(target.undo.nextFrame.max)}</td><td><span class="verdict ${target.undo.passed ? 'pass' : 'fail'}">${target.undo.passed ? 'Pass' : 'Fail'}</span></td></tr>`;
+      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td>${fmt(target.undo.engine.p95)}${target.undo.inkMotion ? `<small class="muted">${esc(undoInkMotionSplit(target.undo))}</small>` : ''}</td><td>${fmt(target.undo.nextFrame.p95)}</td><td>${fmt(target.undo.nextFrame.max)}</td><td><span class="verdict ${target.undo.passed ? 'pass' : 'fail'}">${target.undo.passed ? 'Pass' : 'Fail'}</span></td></tr>`;
     })
     .join('');
 }
@@ -2420,7 +2434,7 @@ function renderMarkdown(matrix) {
     return [
       label,
       target.undo
-        ? `${fmt(target.undo.engine.p95)} / ${fmt(target.undo.nextFrame.p95)} / ${fmt(target.undo.nextFrame.max)}`
+        ? `${fmt(target.undo.engine.p95)} / ${fmt(target.undo.nextFrame.p95)} / ${fmt(target.undo.nextFrame.max)}${undoInkMotionSplit(target.undo)}`
         : '—',
       target.undo ? markdownStatus(target.undo.passed) : 'Not measured',
       target.undo ? target.undo.productCommit : '—',
@@ -3410,7 +3424,7 @@ ${modeToolbar(rows.length)}
   ${noteDetails({ title: 'Capture limitations', count: limitations.length, body: `<ul class="note-list">${limitations.map((limitation) => `<li>${esc(limitation)}</li>`).join('')}</ul>` })}
   ${noteDetails({ title: 'How scoring works', body: scoringNotes(matrix) })}
   ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
-  ${noteDetails({ title: 'Undo timing per mode', body: `<p>Engine time is the state rollback alone; next-frame adds the following rendered frame. Gates: engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, next-frame max ≤ ${matrix.gates.undo.nextFrameMaxMs} ms.</p><div class="provenance"><table><thead><tr><th>Target</th><th>Engine P95</th><th>Next P95</th><th>Next max</th><th>Gate</th></tr></thead><tbody>${undoTable(matrix)}</tbody></table></div>` })}
+  ${noteDetails({ title: 'Undo timing per mode', body: `<p>Engine time is the whole undo call: the tile restore plus the undo ink-motion ghost. Where a capture recorded the ghost separately, the engine cell adds its P95 and the restore's; next-frame adds the following rendered frame. Gates: engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, next-frame max ≤ ${matrix.gates.undo.nextFrameMaxMs} ms.</p><div class="provenance"><table><thead><tr><th>Target</th><th>Engine P95</th><th>Next P95</th><th>Next max</th><th>Gate</th></tr></thead><tbody>${undoTable(matrix)}</tbody></table></div>` })}
   ${noteDetails({ title: 'Commit provenance', id: 'provenance', body: `<p>The product commit each section’s evidence was captured at, with its capture date and its age at this report’s date (ADR-0175).</p><div class="provenance"><table><thead><tr><th>Target</th><th>Drawing</th><th>Undo</th><th>Actions</th></tr></thead><tbody>${provenanceTable(matrix)}</tbody></table></div>` })}
 </div></main>
 ${siteFooter({ home: '../../index.html' })}

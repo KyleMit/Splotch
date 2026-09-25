@@ -439,6 +439,46 @@ describe('campaign artifact acceptance', () => {
     ).toContain('different pixels');
   });
 
+  it('holds a recorded ink-motion split to the raw action timings', () => {
+    const withInkMotion = {
+      ...validSplitUndo,
+      undoActions: validSplitUndo.undoActions.map((action) => ({
+        ...action,
+        inkMotionMs: 0.25,
+      })),
+    };
+    const split = {
+      inkMotion: { p50: 0.25, p95: 0.25, p99: 0.25, max: 0.25 },
+      restore: { p50: 0.75, p95: 0.75, p99: 0.75, max: 0.75 },
+    };
+
+    expect(
+      splitUndoEvidenceProblem(
+        { ...withInkMotion, undo: { ...validSplitUndo.undo, ...split } },
+        UNDO_COUNT
+      )
+    ).toBeNull();
+    expect(splitUndoEvidenceProblem(withInkMotion, UNDO_COUNT)).toContain('contradicts');
+    expect(
+      splitUndoEvidenceProblem(
+        { ...validSplitUndo, undo: { ...validSplitUndo.undo, ...split } },
+        UNDO_COUNT
+      )
+    ).toContain('contradicts');
+  });
+
+  it('refuses an empty or orphaned split group on actions without ink-motion time', () => {
+    for (const undo of [
+      { ...validSplitUndo.undo, inkMotion: {} },
+      { ...validSplitUndo.undo, inkMotion: {}, restore: {} },
+      { ...validSplitUndo.undo, restore: { p50: 1, p95: 1, p99: 1, max: 1 } },
+    ]) {
+      expect(splitUndoEvidenceProblem({ ...validSplitUndo, undo }, UNDO_COUNT)).toContain(
+        'contradicts'
+      );
+    }
+  });
+
   it('makes campaign status reject a split pen artifact without undo proof', () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-campaign-undo-'));
     const artifact = join(directory, 'pen.json');
