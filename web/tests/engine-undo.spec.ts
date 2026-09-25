@@ -241,3 +241,69 @@ test('a clear during an in-flight stroke does not resurrect wiped ink', async ({
   await expect.poll(() => count(page)).toBe(0);
   await expect.poll(async () => (await state(page)).canvasEmpty).toBe(true);
 });
+
+test('clearing a blank page records no undo step', async ({ page }) => {
+  const historyLength = () =>
+    page.evaluate(() => window.__engine.getUndoDebug().historyLength ?? 0);
+
+  await page.evaluate(() => window.__engine.clearCanvas());
+  expect((await state(page)).canUndo).toBe(false);
+  expect(await historyLength()).toBe(0);
+
+  await page.evaluate(() => {
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 200, y: 200 },
+    ]);
+    window.__engine.clearCanvas();
+  });
+  const afterInkClear = await historyLength();
+
+  await page.evaluate(() => {
+    window.__engine.clearCanvas();
+    window.__engine.clearCanvas();
+  });
+  expect(await historyLength()).toBe(afterInkClear);
+
+  await page.evaluate(() => window.__engine.undo());
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+});
+
+// Clearing is how a child asks the magic brush for a new hidden picture, so a
+// blank-page clear keeps that even though it records nothing. Each clear pins
+// the random pick to an opposite end of the gradient pool; a clear that kept
+// the held gradient would paint the same stroke identically both times.
+test('clearing a blank page still gives the magic brush a new picture', async ({ page }) => {
+  await page.evaluate(() => window.__engine.setMagicMode(true));
+
+  const pixelsAfterBlankClear = async (randomPick: number) => {
+    await page.evaluate((pick) => {
+      const random = Math.random;
+      Math.random = () => pick;
+      try {
+        window.__engine.clearCanvas();
+      } finally {
+        Math.random = random;
+      }
+    }, randomPick);
+    expect((await state(page)).canUndo).toBe(false);
+
+    await page.evaluate(() =>
+      window.__engine.strokeSync([
+        { x: 40, y: 120 },
+        { x: 360, y: 120 },
+      ])
+    );
+    const band = () => page.evaluate(() => window.__engine.pixelsIn(40, 116, 320, 8));
+    await expect.poll(async () => (await band()).some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
+    const pixels = await band();
+
+    await page.evaluate(() => window.__engine.undo());
+    await expect.poll(() => count(page)).toBe(0);
+    return pixels;
+  };
+
+  const firstPicture = await pixelsAfterBlankClear(0);
+  const secondPicture = await pixelsAfterBlankClear(0.9999);
+  expect(secondPicture).not.toEqual(firstPicture);
+});
