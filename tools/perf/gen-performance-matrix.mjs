@@ -37,6 +37,7 @@ import {
   splitUndoEvidenceProblem,
 } from './lib/campaign-plan.mjs';
 import {
+  dispositionBandText,
   LOST_FRAME_DISPOSITIONS,
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
@@ -2327,10 +2328,7 @@ function dispositionScope({ band, productCommits }) {
   const commits = productCommits
     ? ` at ${productCommits.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ')}`
     : '';
-  // Two decimals, as the ADRs state their bands: the cell format's one decimal
-  // would print a 1.22–1.37% band as 1.2–1.4%.
-  const bandPercent = (share) => `${(share * 100).toFixed(2)}%`;
-  return `lost-frame reds from ${bandPercent(band.minShare)} to ${bandPercent(band.maxShare)}${commits}, paint gates passing`;
+  return `lost-frame reds ${dispositionBandText(band)}${commits}, paint gates passing`;
 }
 
 // Every red a recorded disposition explains, and what bounds it, so an
