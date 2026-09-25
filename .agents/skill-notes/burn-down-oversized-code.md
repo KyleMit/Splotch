@@ -50,9 +50,11 @@ Two hand-run campaigns preceded the skill, on 2026-09-24/25:
   spending commands on `git show` and its packet carries only the combined diff. The rival flagged
   the conflict reviewing this skill's own PR, so per-commit review now rides on patch files the
   coordinator writes.
-* Runner-prefixed, dated implementer branches: the same review found that implementer branches named
-  `claude/burn-down-<mode>-<slug>` collide on a second campaign before the first campaign's
-  leftovers are pruned, and the hardcoded `claude/` was wrong from Codex anyway.
+* Runner-prefixed implementer branches keyed on the plan SHA: the same review found that implementer
+  branches named `claude/burn-down-<mode>-<slug>` collide on a second campaign before the first
+  campaign's leftovers are pruned, and the hardcoded `claude/` was wrong from Codex anyway. A date
+  was tried first; round two showed a same-day rerun still collides, while every run commits a fresh
+  plan whose SHA cannot repeat.
 * Anti-gaming check in the checker brief: the user asked after 2266 whether lines were cut by
   deleting comments or chaining statements; it had to be verified by hand after the fact.
 

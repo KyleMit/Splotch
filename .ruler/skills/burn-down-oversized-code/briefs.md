@@ -44,9 +44,9 @@ Return: `verdict` (endorse | revise | reverse); `final_outcome`; `final_seams[]`
 
 > Implement the planned refactor of `<unit>` in this isolated worktree.
 >
-> 1. `git checkout -b <runner-prefix>/burn-down-<mode>-<YYYY-MM-DD>-<slug> <plan-sha>` (the
->    campaign's date keeps the branch unique across campaigns), then
->    `pnpm install --frozen-lockfile`.
+> 1. `git checkout -b <runner-prefix>/burn-down-<mode>-<plan-short-sha>-<slug> <plan-sha>` (every
+>    campaign run commits a new plan, so its SHA keeps the branch unique even beside an earlier
+>    run's unpruned leftovers), then `pnpm install --frozen-lockfile`.
 > 2. Read the unit's section of `<plan-path>` (with `git show <plan-sha>:<plan-path>`), then the
 >    code, its tests, and its callers.
 > 3. Re-judge every seam against the governing rule. Drop a seam that turns out counter-driven, or

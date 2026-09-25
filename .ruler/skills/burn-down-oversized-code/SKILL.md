@@ -37,7 +37,8 @@ looks like:
 ## 1. Branch and measure
 
 Branch from fresh `origin/main` as `<runner-prefix>/burn-down-<mode>-<YYYY-MM-DD>` — the active
-runner's own branch prefix (`claude/`, `codex/`) — then:
+runner's own branch prefix (`claude/`, `codex/`), with a `-2`, `-3`, … suffix if an earlier run left
+that name behind — then:
 
 ```
 node .claude/skills/burn-down-oversized-code/measure.mjs <mode>
@@ -141,8 +142,8 @@ reviewing only the combined diff has happened. Never push while a rival round is
 
 The PR URL; the per-unit outcome table (split, raise, retired, and every reviewer or checker
 reversal); findings per review round; CI on the exact head SHA; and the leftover implementer
-worktrees and `<runner-prefix>/burn-down-<mode>-<YYYY-MM-DD>-*` branches — list them for the user
-and point at `prune-git-workspace`.
+worktrees and `<runner-prefix>/burn-down-<mode>-<plan-short-sha>-*` branches — list them for the
+user and point at `prune-git-workspace`.
 
 ## Mode: files
 
