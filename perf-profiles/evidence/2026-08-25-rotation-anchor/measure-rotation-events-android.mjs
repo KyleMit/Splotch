@@ -11,9 +11,11 @@ if (!SERIAL) throw new Error('set SERIAL to the target Android serial');
 const CDP_PORT = Number(process.env.CDP_PORT ?? 9224);
 const ROUNDS = Number(process.env.ROUNDS ?? 6);
 const PAGES = {
-  floor: process.env.FLOOR_URL ?? 'http://192.168.40.53:4176/',
-  app: process.env.APP_URL ?? 'http://192.168.40.53:4173/',
+  floor: process.env.FLOOR_URL, // the floor-control page as the device reaches it, e.g. http://<mac-lan-ip>:4176/
+  app: process.env.APP_URL, // the app preview as the device reaches it, e.g. http://<mac-lan-ip>:4173/
 };
+if (!PAGES.floor || !PAGES.app)
+  throw new Error('set FLOOR_URL and APP_URL to the pages as the device reaches them');
 const SETTLE_MS = 3500;
 
 const adb = (args) => execFileSync('adb', ['-s', SERIAL, ...args], { encoding: 'utf8' }).trim();

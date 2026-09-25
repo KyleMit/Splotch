@@ -4,7 +4,7 @@
     "os": "13",
     "id": "emulator-5554"
   },
-  "appUrl": "http://192.168.40.53:4199/",
+  "appUrl": "http://lan-host:4199/",
   "transport": "browser",
   "theme": "light",
   "gesturePlan": "fixed-geometry",
@@ -14,7 +14,7 @@
   "automation": {
     "appiumUrl": "http://127.0.0.1:4725",
     "orientation": "PORTRAIT",
-    "loadedUrl": "http://192.168.40.53:4199/?perf-run=1787733762781",
+    "loadedUrl": "http://lan-host:4199/?perf-run=1787733762781",
     "webGeometry": {
       "canvas": {
         "height": 695.2857666015625,
@@ -655,7 +655,7 @@
       "theme": null,
       "timeOriginUnixMs": 1787733761910.7,
       "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36",
-      "url": "http://192.168.40.53:4199/?perf-run=1787733762781",
+      "url": "http://lan-host:4199/?perf-run=1787733762781",
       "viewport": {
         "h": 794,
         "w": 411
