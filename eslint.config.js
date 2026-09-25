@@ -536,6 +536,16 @@ export default tseslint.config(
     },
   },
   {
+    // What remains in createInkMotion owns the overlay lifecycle and pending ink subtraction that undo, clear, and cancel share; its stateless helpers already live at module scope.
+    files: ['web/src/lib/drawing/inkMotion.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 137, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
