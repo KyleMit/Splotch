@@ -63,8 +63,10 @@ hex-grid choices are stored by their selectable hex value.
 
 Widths are mapped to the app's five levels (2, 4, 8, 14, and 22 CSS pixels). The generator computes
 the source-to-canvas scale over both real portrait or landscape store drawing surfaces and selects
-the nearest level per source path. Keeping the selected level in the generated instructions makes
-the runtime independent of both the source SVG and converter heuristics.
+one level per chain of joined same-color paths: the length-weighted nearest level, held while every
+path stays within one level step of it and split where the traced width crosses a whole step.
+Keeping the selected level in the generated instructions makes the runtime independent of both the
+source SVG and converter heuristics.
 
 ## Fidelity evaluation
 
