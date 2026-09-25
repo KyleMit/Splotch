@@ -243,7 +243,7 @@ describe('findingPriority', () => {
     expect(findingPriority('[dedupe] see the [P2] finding above')).toBeNull();
   });
 
-  // The whole-repo code-audit format tags titles by category and states the
+  // The whole-repo audit-code format tags titles by category and states the
   // priority on a body line instead. Reading only the title scored every one of
   // those findings as unknown, silently routing the entire mechanical tail to
   // the expensive model — a tiering outage nothing logs, since the tiering log

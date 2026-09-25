@@ -13,7 +13,7 @@
 !/perf-profiles/evidence/
 /.perf-state/
 
-# Lighthouse audit reports (.claude/skills/lighthouse-audit) — attach to the PR, don't commit.
+# Lighthouse audit reports (.claude/skills/audit-page-load) — attach to the PR, don't commit.
 /lighthouse-reports/
 
 # Vectorizer.AI traces (.claude/skills/vectorize-image) — promote a keeper deliberately.

@@ -27,7 +27,7 @@ export const auditFile = (env = process.env) => env.AUDIT_FILE || 'docs/AUDIT.md
 // code, renames, dedup) that a cheaper model implements fine under the same
 // adversarial review. Two staging formats carry it, so both are read: a
 // `[P3][consistency] …` title tag, and a `**Priority:** P3` line in the body
-// (the whole-repo code-audit format, which tags titles by category instead).
+// (the whole-repo audit-code format, which tags titles by category instead).
 // The title tag wins where both appear. Returns null when neither states one,
 // so the caller falls back to the safe model rather than guessing a priority
 // the finding never claimed.

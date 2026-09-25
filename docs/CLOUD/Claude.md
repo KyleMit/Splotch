@@ -140,7 +140,7 @@ tight the build-minute budget is:
 > preview unless the branch is named `feature/*`. When the mode changes, update this line.
 
 **Getting a live preview while restricted.** If a production preview is genuinely needed —
-Lighthouse profiling (see the `lighthouse-audit` skill), or the user asks to see the changes running
+Lighthouse profiling (see the `audit-page-load` skill), or the user asks to see the changes running
 live — branch off the current working branch to a `feature/*` branch, push it to `origin` to trigger
 the build, then switch back to the working branch to resume work:
 

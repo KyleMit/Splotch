@@ -139,7 +139,7 @@ becomes private). The normal `GITHUB_TOKEN` cannot update a user-owned project.
 Splotch's audit skills feed the tracker, not a standing Markdown backlog (see
 `.claude/audit-conventions.md`):
 
-1. **Producers** (`code-audit`, `extract-audit`, `lighthouse-audit`, `session-audit`) write raw
+1. **Producers** (`audit-code`, `audit-extractions`, `audit-page-load`, `audit-session`) write raw
    findings to a **transient** `docs/AUDIT.md`.
 2. **`vet-audits`** adversarially validates each finding and drains the file: it drops the ones that
    don't hold up and **files each survivor as a GitHub issue** labeled `type:audit` plus the

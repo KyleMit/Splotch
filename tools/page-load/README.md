@@ -1,7 +1,7 @@
 # Page-load performance gate
 
 This capability runs pinned Lighthouse against Splotch's production build on the same simulated Slow
-4G, 4× CPU, phone-portrait, and tablet-landscape profiles as the `lighthouse-audit` skill. Each of
+4G, 4× CPU, phone-portrait, and tablet-landscape profiles as the `audit-page-load` skill. Each of
 the four device/visit cells is measured three times and judged by its median.
 
 Both viewports intentionally keep Lighthouse's mobile form factor and Lantern model. This mirrors

@@ -836,7 +836,7 @@ it is strictly worse:
 
 Open question this leaves: the selection heuristic (shortest P4/P5 body) is a proxy for
 "mechanical", and it held up here — but every finding it picked was in the tail the whole-repo
-`/code-audit` produces. Whether it degrades on a hand-curated backlog is unvalidated.
+`/audit-code` produces. Whether it degrades on a hand-curated backlog is unvalidated.
 
 ## Rejected, and why
 

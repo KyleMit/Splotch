@@ -1,10 +1,10 @@
 # Dependency Health
 
 > Inventory and health assessment of Splotch's third-party dependencies, written by the
-> `dependency-health-audit` skill (see `.claude/audit-conventions.md`). Refreshed in place — compare
+> `audit-dependency-health` skill (see `.claude/audit-conventions.md`). Refreshed in place — compare
 > runs with `git log -p docs/DEPENDENCIES.md`. External facts are snapshots; each carries the date
 > it was checked. This file records analysis only — upgrades are applied by
-> `dependency-update-audit`, and replacements are tracked as GitHub issues.
+> `burn-down-outdated-dependencies`, and replacements are tracked as GitHub issues.
 
 **Last refresh:** 2026-07-17 at `e2812b3`, amended 2026-08-19 for the centerline-tracing toolchain ·
 21 prod + 34 dev direct · 1107 total installed (lockfile snapshots) · plus dev-lifecycle deps
@@ -333,7 +333,7 @@ Non-`keep` rows first.
   latest 3.0.10 on 2025-10-02 · monorepo last push 2026-07-17
 * **Maintenance:** active — moves as a set with `@sveltejs/kit`
 * **Concerns:** a **low** `npm audit` advisory inherited from kit's `cookie@0.6.0` (see kit entry);
-  fix is a kit bump, tracked by `dependency-update-audit`
+  fix is a kit bump, tracked by `burn-down-outdated-dependencies`
 * **Alternatives:** none needed
 * **Verdict:** keep — required for the native static target; healthy
 
@@ -503,7 +503,7 @@ Non-`keep` rows first.
   2026-07-17 · last push 2026-07-17 · 938 open issues (large active project)
 * **Maintenance:** active — core Svelte framework, near-daily activity
 * **Concerns:** a **low** `npm audit` advisory via `cookie@0.6.0` (OOB characters); fixed by a kit
-  bump — hand to `dependency-update-audit`. Part of the coordinated Svelte/Vite upgrade set.
+  bump — hand to `burn-down-outdated-dependencies`. Part of the coordinated Svelte/Vite upgrade set.
 * **Alternatives:** none needed (framework choice, ADR-0001)
 * **Verdict:** keep — the framework; healthy, one pending minor bump clears the advisory
 
@@ -792,7 +792,8 @@ Non-`keep` rows first.
 * **Maintenance:** active — Microsoft-backed
 * **Concerns:** none for health. **TS 7 (the native/Go compiler rewrite) is now latest** while the
   repo is on 6.x — a major-version update to evaluate, not a health risk. Hand to
-  `dependency-update-audit`; verify svelte-check / typescript-eslint compatibility before moving.
+  `burn-down-outdated-dependencies`; verify svelte-check / typescript-eslint compatibility before
+  moving.
 * **Alternatives:** none needed
 * **Verdict:** keep — the type system; healthy (TS7 migration is an update decision, tracked
   elsewhere)
@@ -893,7 +894,7 @@ severity-wide and dependency-class exclusions are never recorded here.
 | `uuid` bounds check (**moderate**)          | `uuid@7` ← `xcode` ← `@trapezedev/project` ← `@capacitor/assets`                | `@capacitor/assets`                   | no upstream fix                                                                                |
 | `xcode` → `uuid` (**moderate**)             | ← `@trapezedev/project` ← `@capacitor/assets`                                   | `@capacitor/assets`                   | no upstream fix                                                                                |
 | `@opentelemetry/*` memory (**moderate** ×5) | `@opentelemetry/core` ← `@netlify/otel` ← `@netlify/blobs`                      | `@netlify/blobs`                      | only fix offered is a semver-major *downgrade* to blobs 10.1.0 — not viable; wait for upstream |
-| `cookie` OOB chars (**low**)                | `cookie@0.6.0` ← `@sveltejs/kit`                                                | `@sveltejs/kit` (+ adapters)          | fixed by a kit minor bump → `dependency-update-audit`                                          |
+| `cookie` OOB chars (**low**)                | `cookie@0.6.0` ← `@sveltejs/kit`                                                | `@sveltejs/kit` (+ adapters)          | fixed by a kit minor bump → `burn-down-outdated-dependencies`                                  |
 
 **Takeaway:** the six high-severity advisories all originate from **`@capacitor/assets`** (dev-only,
 dormant, run locally) and **`@capacitor/cli`'s bundled `tar`** — none reach the shipped web/native
@@ -982,4 +983,4 @@ above are the pins as found in those files on the refresh date.
 **Phase 3 note:** The one action-required verdict (`capacitor-set-version`, investigate replacement)
 was filed as [`#332`](https://github.com/KyleMit/Splotch/issues/332) (`type:chore` + `area:infra`,
 per `docs/ISSUE-WORKFLOW.md`). The `cookie` (low) advisory under `@sveltejs/kit` is an ordinary
-version bump — hand it to `dependency-update-audit` rather than the backlog.
+version bump — hand it to `burn-down-outdated-dependencies` rather than the backlog.

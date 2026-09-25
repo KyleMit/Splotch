@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 
 const BASE_URL = 'https://api.vectorizer.ai/api/v1';
 
-// Gitignored, like the run-splotch and lighthouse-audit drivers' output dirs, so
+// Gitignored, like the run-splotch and audit-page-load drivers' output dirs, so
 // a trace never lands in the tree as a stray untracked file.
 const DEFAULT_OUT_DIR = 'vectorized';
 
