@@ -433,6 +433,38 @@ The invalid captures and successful post-unlock control are retained in
 [`2026-09-05-native-split-build-binding.md`](scratchpad/perf/2026-09-05-native-split-build-binding.md).
 If a resume reuses output paths, snapshot and hash the failed artifacts before it overwrites them.
 
+**Clearing `localStorage` does not reset a setting in the native app.** The native builds keep a
+second, durable copy of every `STORAGE_KEYS` value in Capacitor Preferences (`UserDefaults` on iOS,
+`SharedPreferences` on Android; the dual layer is described at the top of `web/src/lib/storage.ts`).
+On every launch, `hydrateDurableStorage()` restores any key that `localStorage` lacks from that
+copy, and backs up to it any key that only `localStorage` has (`reconcileStorageValues()`). A seed
+written straight into `localStorage` is therefore copied into Preferences at the next launch, unless
+Preferences already holds a value for that key. Clearing `localStorage` and relaunching brings the
+seed back, and the capture measures the seeded configuration with no error. This happened during the
+epic-2210 Reduce Motion unit: a seeded `splotch-reduce-motion` survived a clear on the iPad native
+app. A clear without a relaunch fails too, because the live `$state` stores still hold the value
+they read at boot. The web targets have no durable layer, so a browser preflight cannot show this
+trap. To reset a seeded setting on native, use one of these methods:
+
+* **Change it back through the app's own Settings control.** The setter writes both copies. This is
+  the method to use during a campaign, because it keeps the installed build and every other setting.
+* **Delete the app's data.** On iOS, uninstall the app, which deletes its data container and the
+  durable copy with it (`xcrun devicectl device uninstall app --device <UDID> art.splotch.app`).
+  Then install the build again and record its identity again
+  ([A build that is not the build you think](#a-build-that-is-not-the-build-you-think)). On Android,
+  `adb shell pm clear art.splotch.app` clears the data and keeps the installed build. Either way,
+  every other setting and all of the app's other stored state go too, so record what the next
+  capture depends on first.
+
+Writing the wanted value into `localStorage` is not a reset. At the next launch, a key present in
+both stores is left alone, so the page reads the new value. The durable copy still holds the seed,
+and it returns after any later clear or WebView eviction. To prove a reset on iOS, background and
+foreground the app so that `UserDefaults` flushes, then pull
+`Library/Preferences/art.splotch.app.plist` from the app data container as `perf:ios:bundled:frames`
+does (`pullBundledReportFromDevice()` in `tools/perf/ios/bundled-report-channel.mjs`). The plugin
+stores each key as `CapacitorStorage.<key>`, so a reset key must be absent from that file or hold
+the value you set.
+
 **An interrupted action sweep can leave the Android panel pinned at 60Hz.** The android action sweep
 pins `peak_refresh_rate`/`min_refresh_rate` for its duration (ADR-0143) and restores them in its
 `finally`, and in a process `exit` listener that covers a `fail()` on an unserved URL or a stale
@@ -1734,3 +1766,6 @@ gate-in-waiting.
    been wrong more often than it has been right.
 6. **The commit the cell was captured at**, if you are about to treat the number as a product
    problem. See above — a red cell can be a faithful measurement of a superseded build.
+7. On a native target, every setting the capture seeded or reset reads back as intended after a
+   relaunch. Clearing `localStorage` does not reset one (see
+   [Capture state that survives between runs](#capture-state-that-survives-between-runs)).
