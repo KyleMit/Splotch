@@ -16,9 +16,27 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 30
+    # Families that release in lockstep, majors included: a single-package PR
+    # for one member cannot install (@vitest/coverage-v8 peers on its exact
+    # vitest version), and one Capacitor release otherwise fans out into a PR
+    # per package that supersede each other.
+    groups:
+      capacitor:
+        patterns: ['@capacitor/*']
+      vitest:
+        patterns: ['vitest', '@vitest/*']
+        exclude-patterns: ['@vitest/eslint-plugin']
+      svelte:
+        patterns: ['svelte', '@sveltejs/*']
+      eslint:
+        patterns: ['eslint', '@eslint/*', 'typescript-eslint', '@typescript-eslint/*']
     ignore:
       # The @types/node major tracks the Node runtime major, which Dependabot
       # cannot see or bump. Pinned to the runtime's major until the upgrade
       # tracked by issue 1624 lands; remove this rule with that issue.
       - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # typescript-eslint and svelte-check do not yet support TypeScript 7;
+      # remove with the adoption tracked by issue 602.
+      - dependency-name: typescript
         update-types: ['version-update:semver-major']

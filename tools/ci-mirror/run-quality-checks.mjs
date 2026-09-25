@@ -15,6 +15,7 @@ export const QUALITY_COMMANDS = [
   'npm run gen:tokens:check',
   'npm run lint:tokens',
   'npm run lint:dead',
+  'npm run lint:deps:prod',
   'npm run check:assets:manifest',
   'npm run scrapbook:check',
   'pnpm audit --audit-level=high',

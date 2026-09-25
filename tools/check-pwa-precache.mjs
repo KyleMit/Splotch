@@ -132,6 +132,17 @@ export function pwaPrecacheProblems({
   return problems;
 }
 
+// includeAssets re-lists files globPatterns already matched, so the manifest can
+// carry same-revision duplicates. Workbox installs each URL once, so the budget
+// counts each once too.
+export function precacheBytesOnDisk(precacheUrls, { clientDir, appShellPath }) {
+  return [...new Set(precacheUrls)].reduce((total, url) => {
+    const path = APP_SHELL_PRECACHE_URL_PATTERN.test(url) ? appShellPath : join(clientDir, url);
+    if (!existsSync(path)) throw new Error(`Precached asset does not exist: ${path}`);
+    return total + statSync(path).size;
+  }, 0);
+}
+
 export async function checkPwaPrecache({
   clientDir = CLIENT_DIR,
   swPath = SW_PATH,
@@ -152,11 +163,7 @@ export async function checkPwaPrecache({
       ['coloring', relative(staticColoringDir, path).split(sep).join('/')].join('/')
     )
   );
-  const precacheBytes = precacheUrls.reduce((total, url) => {
-    const path = APP_SHELL_PRECACHE_URL_PATTERN.test(url) ? appShellPath : join(clientDir, url);
-    if (!existsSync(path)) throw new Error(`Precached asset does not exist: ${path}`);
-    return total + statSync(path).size;
-  }, 0);
+  const precacheBytes = precacheBytesOnDisk(precacheUrls, { clientDir, appShellPath });
   const manifestUrl = precacheUrls.find((url) => /^coloring\/manifest-.+\.json$/.test(url));
   const coloringManifest = manifestUrl
     ? JSON.parse(readFileSync(join(clientDir, manifestUrl), 'utf8'))
@@ -170,7 +177,7 @@ export async function checkPwaPrecache({
   });
   if (problems.length) throw new Error(problems.join('\n'));
   log(
-    `[pwa-precache] ${precacheUrls.length} entries / ${precacheBytes} bytes; ${responsiveAssetUrls.length} responsive derivatives use canonical offline fallbacks`
+    `[pwa-precache] ${new Set(precacheUrls).size} unique entries / ${precacheBytes} bytes; ${responsiveAssetUrls.length} responsive derivatives use canonical offline fallbacks`
   );
 }
 
