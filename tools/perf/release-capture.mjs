@@ -73,12 +73,16 @@ const RIG_SCRIPT_PATTERNS = [
   /run-operator-session\.mjs/,
   /serve-profile-build\.mjs/,
   /serve-probe-host\.mjs/,
+  /secure-origin\.mjs serve/,
   /run-web-tool\.mjs vite preview/,
   /(^|[\s/])appium(\s|$)/,
   /xcodebuild .*WebDriverAgent/,
   /ios_webkit_debug_proxy/,
   /tunnel-creation\.mjs/,
 ];
+
+export const isRigCommand = (command) =>
+  RIG_SCRIPT_PATTERNS.some((pattern) => pattern.test(command));
 
 const CAMPAIGN_DRIVER_PATTERN = /run-campaign\.mjs|run-operator-session\.mjs/;
 const TUNNEL_PATTERN = /tunnel-creation\.mjs/;
@@ -275,7 +279,7 @@ export function collectInventory({
     for (const pid of listenerPids(port)) record(pid, { role, port });
   }
   for (const { pid, command } of allProcesses()) {
-    if (RIG_SCRIPT_PATTERNS.some((pattern) => pattern.test(command))) record(pid, { command });
+    if (isRigCommand(command)) record(pid, { command });
   }
   return [...byPid.values()].sort((a, b) => a.pid - b.pid);
 }

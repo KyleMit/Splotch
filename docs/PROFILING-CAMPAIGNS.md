@@ -213,16 +213,23 @@ preflight launched itself is stopped when the check ends; its `ios launch` line 
 `xcodebuild test-without-building -xctestrun ~/Library/Developer/Xcode/DerivedData/WebDriverAgent-*/Build/Products/WebDriverAgentRunner_iphoneos*-arm64.xctestrun -destination id=<udid>`,
 then `iproxy -u <udid> <wda-port>:8100`.
 
-**An unattended session cannot start the iPad secure-origin front.** iPad Safari loads the LAN
-origin, which is not a secure context, so the action sweep's AI-waiting actions cannot run there and
-`perf:campaign` refuses the sweep as `blocked-coverage`. The documented fix is the name-constrained
-HTTPS front (`perf:ios:secure-origin serve`, `docs/PROFILING-IPAD.md`). Claude Code's auto-mode
-permission classifier denies starting it ("Expose Local Services"), as it did on 2026-09-22. So
-schedule iPad web action sweeps for a session with the maintainer present, or fold the drawing cells
-with `--preserve-actions`. `npm run perf:session:person` is that present session: the maintainer's
-own run starts the fronts after a confirmation, proves the name constraint on the iPad, and then
-drives the four-mode sweep unattended behind them. Android Chrome does not have this problem,
-because it loads the page at `localhost` through `adb reverse`, which is already a secure context.
+**An unattended iPad web action sweep needs the secure-origin front and a local permission.** iPad
+Safari loads the LAN origin, which is not a secure context, so the action sweep's AI-waiting actions
+cannot run there and `perf:campaign` refuses the sweep as `blocked-coverage`. The fix is the
+name-constrained HTTPS front (`perf:ios:secure-origin serve`). Claude Code's auto-mode permission
+classifier denies starting it ("Expose Local Services"), as it did on 2026-09-22, unless the
+maintainer has installed the local allow and deny rules that `docs/PROFILING-IPAD.md` ("Unattended")
+lists. With them, the session starts the leaf front on the Mac's LAN address, runs
+`perf:ios:secure-origin -- check`, and passes the `.local` URL to `perf:campaign --url=` with
+`NODE_EXTRA_CA_CERTS`. The `capture-performance-matrix` skill carries the steps. A denied start
+means the rules are missing on this Mac: do not retry it in another form. Instead, schedule the
+sweep for a session with the maintainer present, or fold the drawing cells with
+`--preserve-actions`. `npm run perf:session:person` is that present session: the maintainer's own
+run starts the fronts after a confirmation, proves the name constraint on the iPad, and then drives
+the four-mode sweep unattended behind them. After an iPad update, `check` refuses until that
+person-present proof has been repeated on the new release. Android Chrome does not have this
+problem, because it loads the page at `localhost` through `adb reverse`, which is already a secure
+context.
 
 ## Port contention between sessions
 

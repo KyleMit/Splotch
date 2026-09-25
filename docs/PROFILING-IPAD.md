@@ -467,19 +467,24 @@ is excluded.
 4. **⟨iPad⟩** Settings → General → About → **Certificate Trust Settings** → turn the root on →
    Continue. Installing the profile alone does not make Safari trust it.
 
-**Serve and verify — ⟨Mac⟩.** Start the preview, then two fronts: the leaf, and the constraint probe
-as a negative control:
+**Serve and verify — ⟨Mac⟩ + ⟨iPad⟩.** Start the preview, then two fronts: the leaf, and the
+constraint probe as a negative control. `<lan>` is `ipconfig getifaddr en0`. Bind that address,
+never `0.0.0.0`, which also listens on every VPN, Tailscale, and bridge interface.
+`perf:serve --ignore-scripts` skips the `perf:build` it normally runs first, so run
+`npm run perf:build` once in a checkout that has no build.
 
 ```sh
 npm run perf:serve --ignore-scripts -- --port=<preview>
-npm run perf:ios:secure-origin -- serve --listen=0.0.0.0:<tls> --upstream=<preview>
-npm run perf:ios:secure-origin -- serve --listen=0.0.0.0:<probe> --upstream=<preview> \
+npm run perf:ios:secure-origin -- serve --listen=<lan>:<tls> --upstream=<preview>
+npm run perf:ios:secure-origin -- serve --listen=<lan>:<probe> --upstream=<preview> \
   --leaf=constraint-probe
 ```
 
 On the iPad, `https://<mac>.local:<tls>/` must load Splotch, and `https://<mac>.local:<probe>/` must
 show "This Connection Is Not Private". If the probe loads, the device is not enforcing the
-constraint: remove the profile at once and do not capture.
+constraint: remove the profile at once and do not capture. Always connect by the `.local` name. The
+root's address entry matches only while the Mac keeps the DHCP address it had at `make-ca`, and the
+name keeps working after the address changes.
 
 **Capture — ⟨Mac⟩.** The host's served-build check fetches the same URL, so give Node the root:
 
@@ -498,6 +503,51 @@ tunnel's registry is empty, launch WebDriverAgent directly: `xcodebuild test-wit
 `iproxy -u <UDID> <wda>:8100`. Then pass `--capabilities-file=` with the usual capabilities plus
 `"appium:webDriverAgentUrl": "http://127.0.0.1:<wda>"`. Appium skips device discovery when that
 capability is set. Keep that file outside the repo; it holds the UDID.
+
+**Unattended — ⟨Mac⟩.** A campaign with nobody at the iPad starts only the leaf front, never the
+probe front. A check replaces the look at the iPad:
+
+```sh
+npm run perf:ios:secure-origin -- check --url=https://<mac>.local:<tls>/ --device-id=<UDID>
+```
+
+It refuses unless all of these hold:
+
+* The iPad runs the iPadOS release named by `CONSTRAINT_PROVEN_IPADOS` in
+  `tools/perf/ios/secure-origin.mjs`. That is the release on which a person watched Safari refuse
+  the probe.
+* The macOS trust engine accepts the leaf for that name and refuses the constraint probe.
+* The front answers 200 for the page and 403 for `/api`.
+
+The sweep then proves the iPad still trusts the root: every AI-waiting sample must report
+`secureContext: true`. After an iPad update, the check refuses until someone repeats "Serve and
+verify" at the iPad on the new release and raises the constant.
+
+Claude Code's auto-mode classifier denies an unattended LAN listener ("Expose Local Services")
+unless the maintainer pre-authorizes it. That authorization lives only on the maintainer's Mac and
+is never committed (issue #2211):
+
+* `<main checkout>/.claude/settings.local.json`, under `permissions`:
+
+  ```json
+  "allow": ["Bash(npm run perf:ios:secure-origin -- serve --listen=192.168.40.*)"],
+  "deny": ["Bash(npm run perf:ios:secure-origin * --http*)"]
+  ```
+
+  A narrow `Bash(…)` rule is resolved before the classifier, so the allow rule is what clears the
+  start. Its `*` would also match `--http`, which serves plain HTTP. The deny rule closes that,
+  because a deny wins over an allow. The rule names the home network's range rather than one
+  address, so a DHCP change does not break it. Anything else, including `0.0.0.0`, still reaches the
+  classifier and is denied.
+* `~/.claude/settings.json`, under `autoMode.allow`: a sentence that authorizes that command, bound
+  to this Mac's own address and never with `0.0.0.0` or `--http`, including in the background and
+  stopping it afterwards. The classifier reads `autoMode` only from user or managed settings, never
+  from a project's `.claude/settings*.json`.
+
+Start the front in exactly that form, as a background command of its own, with the address typed
+out. A `$(…)` substitution does not match the rule, and neither does a command wrapped in another
+script. Proven 2026-09-24: the LAN-bound start ran without a prompt, and the `0.0.0.0` and `--http`
+forms were both denied.
 
 **Remove it — ⟨iPad⟩ + ⟨Mac⟩.** **⟨iPad⟩** Settings → General → VPN & Device Management → the
 profile → Remove Profile. **⟨Mac⟩** Delete `~/.splotch-rig/secure-origin-ca/`. Remove the root

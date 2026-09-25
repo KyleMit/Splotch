@@ -3,6 +3,7 @@ import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import {
   classifyProcess,
   forwardActions,
+  isRigCommand,
   isRigForward,
   parseAdbForwards,
   planRelease,
@@ -100,6 +101,25 @@ describe('classifyProcess', () => {
       ancestors: ['npm run preview', '/bin/zsh'],
     };
     expect(classifyProcess(entry, roots).verdict).toBe('foreign');
+  });
+});
+
+describe('isRigCommand', () => {
+  it('counts the iPad secure-origin front, which a campaign session starts on the LAN', () => {
+    expect(
+      isRigCommand(
+        'node tools/perf/ios/secure-origin.mjs serve --listen=192.168.40.77:8617 --upstream=4417'
+      )
+    ).toBe(true);
+  });
+
+  it('leaves the one-shot root creation and front check alone', () => {
+    expect(isRigCommand('node tools/perf/ios/secure-origin.mjs make-ca --host=mac.local')).toBe(
+      false
+    );
+    expect(
+      isRigCommand('node tools/perf/ios/secure-origin.mjs check --url=https://mac.local:8617/')
+    ).toBe(false);
   });
 });
 

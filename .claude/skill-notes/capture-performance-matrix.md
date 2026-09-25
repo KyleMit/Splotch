@@ -1,0 +1,60 @@
+<!-- Source: .ruler/skill-notes/capture-performance-matrix.md.template -->
+
+# capture-performance-matrix — design notes
+
+Design history for the `capture-performance-matrix` skill. The skill and the code are the truth;
+this records why they are shaped as they are.
+
+## The iPad web action sweep's secure origin (issue #2211)
+
+**The problem.** iPad Safari loads the capture host over LAN `http://`, which is not a secure
+context, so the two AI-waiting actions fail before their first request. The name-constrained HTTPS
+front (`perf:ios:secure-origin serve`) fixes that, but the auto-mode classifier denied starting it
+unattended ("Expose Local Services"). After the 2026-09-22 campaign, all four iPad web action
+sections were still carried from an old commit, on the row that approves Safari.
+
+**Options weighed (ruling 2026-09-24).**
+
+* **A, a narrowly pinned local permission, chosen.** No human step, and the campaign bounds the
+  exposure to the sweep itself.
+* **B, the maintainer starts the front at preflight.** Approval per campaign, but the front stays up
+  from preflight until someone stops it, and the preflight gets heavier.
+* **C, person-present sweeps only.** Nothing standing, but the Safari row stays only as current as
+  the maintainer's calendar.
+
+What decided it: every iPad web campaign already runs the unfiltered `vite preview` on the LAN,
+which answers `/dev` routes, and the classifier allows it. The front forwards only GET/HEAD for
+build files, so it is a narrower surface than one the rig already exposes. Router NAT limits both to
+devices on the home Wi-Fi.
+
+**What the first plan got wrong, and how it was caught (all verified 2026-09-24).**
+
+* **`autoMode.allow` in `.claude/settings.local.json` is ignored.** Since Claude Code v2.1.207 the
+  classifier reads `autoMode` only from user or managed settings. An earlier Gemini-generator rule
+  in that file had been inert, and `claude auto-mode config` did not list it.
+* **A narrow `Bash(…)` allow rule skips the classifier entirely.** Only broad or interpreter
+  wildcards such as `Bash(node *)` are suspended in auto mode. So the allow rule's trailing `*` is
+  the real boundary, and it would match `--http`. The deny rule exists for that.
+* **Pin the network range, not one address.** The Mac's DHCP address moved from the address the root
+  was made with, and a rotating private Wi-Fi MAC makes a router reservation unreliable. The iPad
+  connects by the `.local` name, which the root permits, so the address never mattered to TLS. It
+  mattered only to a rule pinned to it.
+
+**Proof.** In a fresh session, the LAN-bound start ran without a prompt, `.local` HTTPS returned the
+page and `/api` 403, `0.0.0.0` was denied by the classifier, and `--http` by the deny rule. Right
+after the denied `--http` attempt, the classifier also denied a harmless `lsof`. It judges a command
+in the session's context, so a real campaign, which never tries `--http`, should not see that.
+
+**The on-iPad probe.** The person-present procedure has someone confirm that Safari refuses the
+constraint-probe leaf. For unattended runs the maintainer chose a version gate over automating the
+look through WebDriverAgent. `check` refuses unless the iPad runs `CONSTRAINT_PROVEN_IPADOS`, and
+macOS trust, the same engine Safari uses, re-proves the root still refuses the probe. The sweep's
+own `secureContext: true` proves the iPad still trusts the root. What the gate gives up is catching
+an iPad that stops enforcing the constraint without changing its version. Automating the look
+through WDA-driven Safari is the upgrade if that ever matters.
+
+**Unattended runs start no probe front.** It would be a second LAN listener, whose only purpose is
+the on-iPad look an unattended run no longer takes.
+
+**What would reopen this.** The deny rule or the classifier failing to stop a wider command, or the
+maintainer no longer wanting any standing permission, points back to B with the same LAN binding.
