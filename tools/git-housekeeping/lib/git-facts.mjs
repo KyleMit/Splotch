@@ -122,14 +122,20 @@ export function parseBranchRefs(text) {
 // zero ahead and zero behind because it resolves to the base. It therefore lands in
 // every "nothing new here" bucket a caller computes, and a triage pass that feeds
 // those buckets to `git push --delete` would target the remote's HEAD pointer.
-// It is excluded by its exact path under the namespace rather than by a glob: a
-// remote name may contain `/`, which a `*` in `refs/remotes/*/HEAD` does not cross.
-// Under `refs/heads` the path names nothing, since git refuses a branch called HEAD.
+// Symbolic refs are dropped by name after enumeration rather than by `--exclude`:
+// a glob's `*` does not cross the `/` a remote name may contain, and an exact path
+// is still a prefix match there, which would also hide a real branch like `HEAD/x`.
+const SYMBOLIC_REF_NAME_FORMAT = '%(if)%(symref)%(then)%(refname:short)%(end)';
 
 export function listBranchRefs(cwd, { base, namespace }) {
   const format = [...REF_FIELDS, `%(ahead-behind:${base})`].join('%09');
-  const args = ['for-each-ref', `--format=${format}`, `--exclude=${namespace}/HEAD`, namespace];
-  return parseBranchRefs(git(args, { cwd }));
+  const symbolic = new Set(
+    git(['for-each-ref', `--format=${SYMBOLIC_REF_NAME_FORMAT}`, namespace], { cwd })
+      .split('\n')
+      .filter(Boolean)
+  );
+  const refs = parseBranchRefs(git(['for-each-ref', `--format=${format}`, namespace], { cwd }));
+  return refs.filter((ref) => !symbolic.has(ref.name));
 }
 
 export function isAncestor(commit, base, cwd) {

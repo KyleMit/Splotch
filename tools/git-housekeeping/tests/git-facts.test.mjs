@@ -313,4 +313,16 @@ describe('merged-ness proofs on a real repository', () => {
     });
     expect(refs.map((r) => r.name)).toEqual(['team/upstream/main']);
   });
+
+  it('listBranchRefs keeps a real branch whose name starts with HEAD/', () => {
+    const { sh, commit, repo } = fixture;
+    sh(['checkout', '-q', '-b', 'HEAD/feature']);
+    commit('h.txt', 'h', 'head-prefixed work');
+    sh(['push', '-q', 'origin', 'HEAD/feature']);
+
+    const remote = listBranchRefs(repo, { base: 'origin/main', namespace: 'refs/remotes/origin' });
+    expect(remote.map((r) => r.name).sort()).toEqual(['origin/HEAD/feature', 'origin/main']);
+    const local = listBranchRefs(repo, { base: 'origin/main', namespace: 'refs/heads' });
+    expect(local.map((r) => r.name)).toContain('HEAD/feature');
+  });
 });
