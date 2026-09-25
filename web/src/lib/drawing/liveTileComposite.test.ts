@@ -73,4 +73,20 @@ describe('compositeVisibleLiveTiles', () => {
     expect(drawImage).toHaveBeenCalledWith(bottomLeft, 0, 50);
     expect(drawImage).toHaveBeenCalledWith(bottomRight, 50, 50);
   });
+
+  // Playwright's evaluateHandle ships only the function's source text into the
+  // page, so a module-scope reference inside it passes every direct call here
+  // and throws a ReferenceError in every pixel-reading E2E spec.
+  it('runs from its source text alone, the way Playwright evaluates it', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    } as never);
+    const root = document.createElement('div');
+    appendTile(root, { left: 0, top: 0, width: 50, height: 40 });
+    const serialized = new Function(
+      `return (${compositeVisibleLiveTiles.toString()})`
+    )() as typeof compositeVisibleLiveTiles;
+
+    expect(serialized(root).width).toBe(50);
+  });
 });
