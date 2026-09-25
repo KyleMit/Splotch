@@ -112,6 +112,7 @@ import {
   commitTiledCommand,
   detachTiledRenderer,
   hasRetainedTiledMagicOps,
+  hasUnrevealedTiledMagicOps,
   peekTiledUndoPaper,
   recordTiledOp,
   recodeTiledMagicOps,
@@ -972,8 +973,14 @@ function draw(e: PointerEvent) {
   }
 }
 
+// Magic ink recorded before its sheet was ready has no pixels for the scan to
+// find, so it holds the page non-empty until the sheet's repaint, which then
+// rescans (recodeMagicOpsToCurrentSheet).
+let emptyScanAwaitsMagicReveal = false;
+
 function scanDrawingIsEmpty() {
-  return scanTiledRendererIsEmpty(renderScale);
+  emptyScanAwaitsMagicReveal = hasUnrevealedTiledMagicOps();
+  return !emptyScanAwaitsMagicReveal && scanTiledRendererIsEmpty(renderScale);
 }
 
 const idleEmptyScan = createIdleEmptyScan({
@@ -1244,6 +1251,7 @@ function recodeMagicOpsToCurrentSheet() {
   const snapshot = captureMagicSheet();
   if (!snapshot) return;
   recodeTiledMagicOps(snapshot, snapshot.sourceUrl ? pageCompositionKey(snapshot.sourceUrl) : null);
+  if (emptyScanAwaitsMagicReveal) idleEmptyScan.schedule();
 }
 
 function wireMagicBrushHost(): void {

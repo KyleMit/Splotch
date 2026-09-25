@@ -1,6 +1,10 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
 import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 
+// Long enough past the eraser's idle empty scan that the scan runs while the
+// magic sheet is still undelivered.
+const SHEET_DELIVERY_DELAY_MS = 1100;
+
 // The resize inside undo's paper pre-restore used to trigger a full history
 // repaint whose replay runs through the clear being popped, immediately
 // overwritten by the snapshot restore (issue 1198). Measured through this exact
@@ -374,4 +378,54 @@ test('clearing magic ink that has not revealed yet still clears it', async ({ pa
   const band = (y: number) => page.evaluate((top) => window.__engine.pixelsIn(40, top, 320, 8), y);
   await expect.poll(async () => (await band(216)).some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
   expect((await band(116)).some((v, i) => i % 4 === 3 && v > 0)).toBe(false);
+});
+
+// The eraser's scan can come due while an erased magic stroke still waits for
+// its sheet, which holds the page non-empty; the sheet's repaint has to rescan
+// or the blank page keeps reading as inked.
+test('erasing magic ink before it reveals still settles to a blank page', async ({ page }) => {
+  await page.evaluate((delayMs) => {
+    const addListener = Worker.prototype.addEventListener;
+    Worker.prototype.addEventListener = function (
+      this: Worker,
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions
+    ) {
+      if (type !== 'message') {
+        return addListener.call(this, type, listener, options);
+      }
+      const delayed = (event: Event) =>
+        setTimeout(() => {
+          if (typeof listener === 'function') listener.call(this, event);
+          else listener.handleEvent(event);
+        }, delayMs);
+      return addListener.call(this, type, delayed, options);
+    } as typeof Worker.prototype.addEventListener;
+
+    window.__engine.setMagicMode(true);
+    window.__engine.strokeSync([
+      { x: 60, y: 120 },
+      { x: 100, y: 120 },
+    ]);
+    window.__engine.setMagicMode(false);
+    window.__engine.setStrokeWidth(100);
+    window.__engine.setEraserMode(true);
+    window.__engine.strokeSync([
+      { x: 60, y: 120 },
+      { x: 100, y: 120 },
+    ]);
+  }, SHEET_DELIVERY_DELAY_MS);
+
+  await expect
+    .poll(async () => (await state(page)).canvasEmpty, { timeout: SHEET_DELIVERY_DELAY_MS * 4 })
+    .toBe(true);
+  expect(await count(page)).toBe(0);
+
+  const history = await page.evaluate(() => {
+    const before = window.__engine.getUndoDebug().historyLength;
+    window.__engine.clearCanvas();
+    return { before, after: window.__engine.getUndoDebug().historyLength };
+  });
+  expect(history.after).toBe(history.before);
 });

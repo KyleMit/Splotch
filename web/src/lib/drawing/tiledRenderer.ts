@@ -160,6 +160,7 @@ const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
 });
 
 export const hasRetainedTiledMagicOps = magicRecode.hasRetainedOps;
+export const hasUnrevealedTiledMagicOps = magicRecode.hasUnrevealedOps;
 
 export function applyTiledView(paperView: PaperView) {
   applyLiveTileView(liveTiles, paperView);
@@ -442,7 +443,6 @@ export function clearTiledRenderer(wasEmpty: boolean) {
 }
 
 export function scanTiledRendererIsEmpty(renderScale: number) {
-  if (magicRecode.hasUnrevealedOps()) return false;
   return liveTiles.every(
     (tile) => tile.canvas.hidden || scanCanvasIsEmpty(tile.canvas, renderScale)
   );
