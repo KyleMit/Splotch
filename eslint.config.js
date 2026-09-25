@@ -462,6 +462,20 @@ export default tseslint.config(
     },
   },
   {
+    // Function-size ratchet for app code: 125 real lines is the hard cap; 100 is the soft target
+    // refactor campaigns pay down to. A function over 100 whose code does not separate cleanly
+    // gets a per-file cap below at its length + 25, with the WHY, rather than a counter-driven
+    // split. Tests are excluded because they are mostly describe() callbacks.
+    files: ['web/src/**/*.ts', 'web/src/**/*.svelte'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 125, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
