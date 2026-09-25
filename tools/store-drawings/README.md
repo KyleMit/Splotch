@@ -7,8 +7,9 @@ coordinates and exports one named function per scene, including `drawHouseTall` 
 
 The supported authoring handoff is [filled SVG → centerline SVG](../centerline-tracing/README.md)
 followed by this compiler. The tracer's piecewise-width output is intentionally accepted here;
-conversion merges adjacent same-color continuations after mapping them to Splotch's five pen-size
-buckets.
+conversion chains adjacent same-color continuations first and only then maps each chain to Splotch's
+five pen-size buckets, so one drawn line stays one pointer stroke even where its traced width drifts
+across a bucket boundary.
 
 ## Layout
 
@@ -62,8 +63,11 @@ hex-grid choices are stored by their selectable hex value.
 
 Widths are mapped to the app's five levels (2, 4, 8, 14, and 22 CSS pixels). The generator computes
 the source-to-canvas scale over both real portrait or landscape store drawing surfaces and selects
-the nearest level per source path. Keeping the selected level in the generated instructions makes
-the runtime independent of both the source SVG and converter heuristics.
+one level per chain of joined same-color paths. A chain splits into the fewest runs whose paths all
+lie within one level step of a shared level, and each run takes the shared level nearest its
+length-weighted width; widths past the thickest level's reach clamp to it. Keeping the selected
+level in the generated instructions makes the runtime independent of both the source SVG and
+converter heuristics.
 
 ## Fidelity evaluation
 

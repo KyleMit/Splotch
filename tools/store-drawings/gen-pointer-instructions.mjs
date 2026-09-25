@@ -198,15 +198,94 @@ function closestColor(hex, orientation) {
   ).instruction;
 }
 
-function closestStrokeSize(width, scale) {
-  const target = width * scale;
-  let bestIndex = 0;
-  for (let index = 1; index < STROKE_WIDTHS.length; index++) {
-    if (Math.abs(STROKE_WIDTHS[index] - target) < Math.abs(STROKE_WIDTHS[bestIndex] - target)) {
-      bestIndex = index;
+function closestStrokeSize(target, sizes) {
+  let best = sizes[0];
+  for (const size of sizes.slice(1)) {
+    if (Math.abs(STROKE_WIDTHS[size - 1] - target) < Math.abs(STROKE_WIDTHS[best - 1] - target)) {
+      best = size;
     }
   }
-  return bestIndex + 1;
+  return best;
+}
+
+function polylineLength(points) {
+  let length = 0;
+  for (let index = 2; index + 1 < points.length; index += 2) {
+    length += Math.hypot(points[index] - points[index - 2], points[index + 1] - points[index - 1]);
+  }
+  return length;
+}
+
+// The tracer emits piecewise widths, so one drawn line arrives as many segments whose widths drift.
+// Weighting by length keeps a long segment from being outvoted by the short ones around it.
+function lengthWeightedWidth(segments) {
+  let weighted = 0;
+  let total = 0;
+  for (const segment of segments) {
+    const length = segment.length || Number.EPSILON;
+    weighted += length * segment.targetWidth;
+    total += length;
+  }
+  return weighted / total;
+}
+
+// A pen reaches one pen step either side of its width. The outermost pens have no neighbour on one
+// side, so they mirror the step on the side they do have.
+function strokeSizeReach(index) {
+  const width = STROKE_WIDTHS[index];
+  const low = STROKE_WIDTHS[index - 1] ?? width - (STROKE_WIDTHS[index + 1] - width);
+  const high = STROKE_WIDTHS[index + 1] ?? width + (width - STROKE_WIDTHS[index - 1]);
+  return { low: Math.max(low, 0), high };
+}
+
+// Widths past the thickest pen's reach can only be drawn with that pen, so they are clamped to the
+// reach: equal oversized widths still share a run, and an oversized segment never drags its run
+// more than one step away from a thinner member.
+const WIDEST_TARGET_WIDTH = strokeSizeReach(STROKE_WIDTHS.length - 1).high;
+
+// A segment may take any pen that reaches its width, so widths that merely drift across a rounding
+// boundary can share a pen while a real taper, which crosses a whole step, cannot.
+function strokeSizesWithinStep(width) {
+  const sizes = [];
+  for (let index = 0; index < STROKE_WIDTHS.length; index++) {
+    const { low, high } = strokeSizeReach(index);
+    if (width >= low && width <= high) sizes.push(index + 1);
+  }
+  return sizes;
+}
+
+function joinsPrevious(previousPoints, points) {
+  return previousPoints.at(-2) === points[0] && previousPoints.at(-1) === points[1];
+}
+
+// Splits a chain of joined segments into the fewest runs that each hold one pen size, then emits
+// one stroke per run. Quantizing per run rather than per segment is what collapses a line whose
+// width straddles a pen boundary from a burst of one-dab strokes into a single pointer stroke.
+// A run keeps the pens every member allows; that set only shrinks as the run grows, so extending
+// each run as far as it goes yields the fewest runs whichever end the tracer started from.
+function strokesForChain(chain, color) {
+  const strokes = [];
+  let run = [];
+  let sizes = [];
+  const flush = () => {
+    const points = run[0].points.slice();
+    for (const segment of run.slice(1)) points.push(...segment.points.slice(2));
+    strokes.push({ color, size: closestStrokeSize(lengthWeightedWidth(run), sizes), points });
+  };
+  for (const segment of chain) {
+    const segmentSizes = strokeSizesWithinStep(segment.targetWidth);
+    const shared = sizes.filter((size) => segmentSizes.includes(size));
+    if (shared.length > 0) {
+      run.push(segment);
+      sizes = shared;
+      continue;
+    }
+    if (run.length > 0) flush();
+    run = [segment];
+    sizes = segmentSizes;
+  }
+  flush();
+  return strokes;
 }
 
 function canonicalScale(width, height, orientation) {
@@ -295,7 +374,7 @@ export function convertSvg(source, filename) {
       throw new Error(`${filename}: groups may contain only self-closing paths`);
     }
     if (pathMatches.length === 0) throw new Error(`${filename}: group contains no paths`);
-    let previousGroupStroke;
+    const chains = [];
     for (const pathMatch of pathMatches) {
       const path = parseAttributes(pathMatch[1], PATH_ATTRIBUTES, filename, 'path');
       if (!path.d || !path['stroke-width'])
@@ -306,23 +385,17 @@ export function convertSvg(source, filename) {
       }
       const points = quantizePoints(flattenSvgPath(path.d));
       if (points.length < 2) throw new Error(`${filename}: path produced no pointer coordinates`);
-      const stroke = {
-        color: colorIndexes.get(colorKey),
-        size: closestStrokeSize(strokeWidth, scale),
+      const segment = {
         points,
+        targetWidth: Math.min(strokeWidth * scale, WIDEST_TARGET_WIDTH),
+        length: polylineLength(points),
       };
-      const previousPoints = previousGroupStroke?.points;
-      const continuesPrevious =
-        previousGroupStroke?.color === stroke.color &&
-        previousGroupStroke.size === stroke.size &&
-        previousPoints.at(-2) === stroke.points[0] &&
-        previousPoints.at(-1) === stroke.points[1];
-      if (continuesPrevious) {
-        previousPoints.push(...stroke.points.slice(2));
-      } else {
-        strokes.push(stroke);
-        previousGroupStroke = stroke;
-      }
+      const openChain = chains.at(-1);
+      if (openChain && joinsPrevious(openChain.at(-1).points, points)) openChain.push(segment);
+      else chains.push([segment]);
+    }
+    for (const chain of chains) {
+      strokes.push(...strokesForChain(chain, colorIndexes.get(colorKey)));
     }
   }
   if (strokes.length === 0) throw new Error(`${filename}: no strokes found`);

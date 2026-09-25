@@ -55,8 +55,8 @@ describe('store drawing conversion', () => {
     const source =
       '<svg viewBox="0 0 100 100">' +
       '<g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">' +
-      '<path d="M0,0C10,0 20,0 30,0" stroke-width="2"/>' +
-      '<path d="M30,0C40,0 50,0 60,0" stroke-width="2"/>' +
+      '<path d="M0,0C10,0 20,0 30,0" stroke-width="1"/>' +
+      '<path d="M30,0C40,0 50,0 60,0" stroke-width="1"/>' +
       '<path d="M60,0C70,0 80,0 90,0" stroke-width="10"/>' +
       '</g></svg>';
 
@@ -66,6 +66,56 @@ describe('store drawing conversion', () => {
     expect(drawing.strokes[0].points.at(-2)).toBe(60);
     expect(drawing.strokes[0].points.at(-1)).toBe(0);
     expect(drawing.strokes[0].size).not.toBe(drawing.strokes[1].size);
+  });
+
+  it('keeps one pen across widths that only drift over a rounding boundary', () => {
+    const source =
+      '<svg viewBox="0 0 100 100">' +
+      '<g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M0,0C10,0 20,0 30,0" stroke-width="1.15"/>' +
+      '<path d="M30,0C40,0 50,0 60,0" stroke-width="1.38"/>' +
+      '</g></svg>';
+
+    const drawing = convertSvg(source, 'drift-wide.svg');
+
+    expect(drawing.strokes).toHaveLength(1);
+    expect(drawing.strokes[0].points.at(-2)).toBe(60);
+  });
+
+  it('splits a run the same way whichever end the tracer started from', () => {
+    const line = (paths) =>
+      '<svg viewBox="0 0 100 100">' +
+      '<g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">' +
+      paths.map(([d, width]) => `<path d="${d}" stroke-width="${width}"/>`).join('') +
+      '</g></svg>';
+    const forward = line([
+      ['M0,0C10,0 40,0 50,0', 0.2523],
+      ['M50,0C50,0 50.25,0 50.25,0', 0.8945],
+      ['M50.25,0C60,0 90,0 100,0', 0.8945],
+    ]);
+    const reverse = line([
+      ['M100,0C90,0 60,0 50.25,0', 0.8945],
+      ['M50.25,0C50.25,0 50,0 50,0', 0.8945],
+      ['M50,0C40,0 10,0 0,0', 0.2523],
+    ]);
+
+    const sizes = (source) => convertSvg(source, 'direction-wide.svg').strokes.map((s) => s.size);
+
+    expect(sizes(forward)).toEqual([2]);
+    expect(sizes(reverse)).toEqual([2]);
+  });
+
+  it('draws widths past the thickest pen as one thickest-pen stroke', () => {
+    const source =
+      '<svg viewBox="0 0 100 100">' +
+      '<g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M0,0C10,0 40,0 50,0" stroke-width="3.56"/>' +
+      '<path d="M50,0C60,0 90,0 100,0" stroke-width="3.56"/>' +
+      '</g></svg>';
+
+    const drawing = convertSvg(source, 'oversized-wide.svg');
+
+    expect(drawing.strokes.map(({ size }) => size)).toEqual([5]);
   });
 
   it('generates all seven named drawings as finite static instructions', () => {
