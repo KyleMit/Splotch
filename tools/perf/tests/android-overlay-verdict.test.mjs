@@ -47,7 +47,7 @@ describe('untrustedOverlayVerdict', () => {
     });
     expect(verdict.combinedOpacity).toBeGreaterThan(0.95);
     expect(verdict.detail).toBe(
-      "nu.nav.bar's USE_OPACITY windows combine to 0.96 at (540,99) over art.splotch.app (> 0.8)"
+      "nu.nav.bar's USE_OPACITY windows combine to 0.9599 at (540,99) over art.splotch.app (> 0.8)"
     );
   });
 
@@ -110,6 +110,36 @@ describe('untrustedOverlayVerdict', () => {
     expect(verdict).toMatchObject({ pass: true, windows: 1 });
   });
 
+  it('checks an activity behind a picture-in-picture window, not only the front one', () => {
+    const pip = {
+      ...app,
+      name: 'ghi org.example.video/org.example.video.PlayerActivity',
+      frame: { left: 600, top: 1600, right: 1000, bottom: 1900 },
+      ownerUid: 10500,
+    };
+    const verdict = untrustedOverlayVerdict([
+      overlay({ alpha: 0.9, frame: { left: 0, top: 200, right: 100, bottom: 300 } }),
+      pip,
+      app,
+    ]);
+    expect(verdict).toMatchObject({ pass: false, point: '(0,200)' });
+    expect(verdict.detail).toContain('over com.android.chrome');
+  });
+
+  it('prints a sum just past the limit distinctly from the limit', () => {
+    const verdict = untrustedOverlayVerdict([overlay({ alpha: 0.8002 }), app]);
+    expect(verdict.pass).toBe(false);
+    expect(verdict.detail).toContain('combine to 0.8002 at (0,0)');
+  });
+
+  it('fails a dump whose window list did not parse, rather than calling it clear', () => {
+    const verdict = untrustedOverlayVerdict(
+      parseInputWindows('Input Dispatcher State:\n  Display: 0\n    Windows: <none>\n')
+    );
+    expect(verdict).toMatchObject({ pass: false, windows: 0 });
+    expect(verdict.detail).toContain('no display-0 windows');
+  });
+
   it('judges the whole display when no activity window is in front', () => {
     const verdict = untrustedOverlayVerdict([overlay({ alpha: 0.9 })]);
     expect(verdict).toMatchObject({ pass: false, point: '(0,0)' });
@@ -122,7 +152,7 @@ describe('overlayCheck', () => {
     const check = overlayCheck(untrustedOverlayVerdict(parseInputWindows(OCCLUDED_DUMP)));
     expect(check.status).toBe('blocked');
     expect(androidVerificationBlockers({ androidChecks: [check], portChecks: [] })).toEqual([
-      "android touch overlay: nu.nav.bar's USE_OPACITY windows combine to 0.96 at (540,99) over art.splotch.app (> 0.8)",
+      "android touch overlay: nu.nav.bar's USE_OPACITY windows combine to 0.9599 at (540,99) over art.splotch.app (> 0.8)",
     ]);
   });
 
