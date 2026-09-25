@@ -199,8 +199,10 @@ If it does land, first compare the duplicate blocks. **Byte-identical copies** c
 delete the second of each and prove the result with `pnpm install --frozen-lockfile`; a plain
 `pnpm install` would also re-resolve unrelated packages to newer, unreviewed releases. **Copies that
 differ** (integrity, resolution, or snapshot dependencies) mean deleting either one silently picks a
-resolution. Regenerate with `pnpm install` instead, and review every version it moves before
-committing.
+resolution. Regenerate with `pnpm install` instead and review the whole lockfile diff before
+committing, not just the versions it moves: the copies can share a version and still differ in
+integrity, tarball source, or dependencies, so confirm the surviving entry's `resolution` against
+the registry and its snapshot dependencies against what the PRs intended.
 
 Then order the real merges:
 
