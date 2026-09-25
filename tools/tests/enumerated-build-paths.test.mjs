@@ -133,17 +133,25 @@ describe('knip production entries', () => {
     expect(entryTools.slice().sort()).toEqual([...deployTools].sort());
   });
 
+  const { dependencies, devDependencies } = JSON.parse(
+    readFileSync(join(repoRoot, 'package.json'), 'utf8')
+  );
+
   // knip hardcodes these as never-unused (IGNORED_DEPENDENCIES in its
   // dist/constants.js, which the package does not export), so lint:deps:prod
   // cannot see either one misfiled into dependencies. The deploy runs neither.
   it.each(['knip', 'typescript'])(
     'keeps %s, which knip never reports, out of dependencies',
     (name) => {
-      const { dependencies, devDependencies } = JSON.parse(
-        readFileSync(join(repoRoot, 'package.json'), 'utf8')
-      );
       expect(dependencies).not.toHaveProperty([name]);
       expect(devDependencies).toHaveProperty([name]);
     }
   );
+
+  // knip counts an @types package as used whenever production code imports
+  // what it types (node: builtins keep @types/node referenced), but the deploy
+  // never type-checks.
+  it('keeps @types packages out of dependencies', () => {
+    expect(Object.keys(dependencies).filter((name) => name.startsWith('@types/'))).toEqual([]);
+  });
 });
