@@ -170,6 +170,13 @@ describe('secureOriginProblems', () => {
     expect(problem).toContain('Do not capture');
   });
 
+  it('blames route restriction only when the front answered', () => {
+    const [refused] = secureOriginProblems({ ...safe, deniedStatus: 'ECONNREFUSED' });
+    const [forwarded] = secureOriginProblems({ ...safe, deniedStatus: 200 });
+    expect(refused).not.toContain('not restricting routes');
+    expect(forwarded).toContain('not restricting routes');
+  });
+
   it('refuses a front that forwards a denied route or fails TLS', () => {
     expect(
       secureOriginProblems({

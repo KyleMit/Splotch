@@ -225,7 +225,8 @@ export function secureOriginProblems({ ipadOs, leafTrusted, probeRefused, pageSt
     !leafTrusted && 'macOS trust refuses the leaf for this host; the root or leaf does not name it.',
     !probeRefused && 'macOS trust ACCEPTS the constraint probe: the root is not name-constrained. Do not capture.',
     pageStatus !== 200 && `the front answered ${pageStatus} for the page, not 200 with the rig CA.`,
-    deniedStatus !== 403 && `the front answered ${deniedStatus} for ${DENIED_PROBE_PATH}, not 403: it is not restricting routes.`,
+    deniedStatus !== 403 &&
+      `the front answered ${deniedStatus} for ${DENIED_PROBE_PATH}, not 403${typeof deniedStatus === 'number' ? ': it is not restricting routes' : ''}.`,
   ].filter(Boolean);
 }
 
