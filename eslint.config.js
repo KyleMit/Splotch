@@ -586,6 +586,16 @@ export default tseslint.config(
     },
   },
   {
+    // createFreeGenerations' grant state, request ownership, and refresh triggers share one $state object; the grant fetch already lives at module scope.
+    files: ['web/src/lib/state/freeGenerations.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 127, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
