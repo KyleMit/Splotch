@@ -761,7 +761,7 @@ const UNDO_SUMMARY_DISTRIBUTIONS = ['engine', 'nextFrame', 'inkMotion', 'restore
 const UNDO_SUMMARY_METRICS = ['p50', 'p95', 'p99', 'max'];
 
 function undoDistributionMatches(recorded, expected) {
-  if (!expected) return recorded === undefined;
+  if (!expected) return recorded == null;
   return UNDO_SUMMARY_METRICS.every((metric) => recorded?.[metric] === expected[metric]);
 }
 
