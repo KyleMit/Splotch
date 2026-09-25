@@ -566,6 +566,16 @@ export default tseslint.config(
     },
   },
   {
+    // createInstall is the install-availability state machine (mode, installed, deferred prompt, listeners); the re-prompt schedule is already its own sub-factory.
+    files: ['web/src/lib/state/install.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 136, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
