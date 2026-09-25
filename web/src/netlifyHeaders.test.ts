@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { VERSION_JSON_FILENAME } from './lib/pwa/versionEndpoint';
@@ -14,11 +14,24 @@ const repoRoot = resolve(process.cwd(), '..');
 const netlifyToml = readFileSync(resolve(repoRoot, 'netlify.toml'), 'utf8');
 const appHtml = readFileSync(resolve(process.cwd(), 'src', 'app.html'), 'utf8');
 const staticDir = resolve(process.cwd(), 'static');
+const routesDir = resolve(process.cwd(), 'src', 'routes');
 
 // Emitted by the build rather than committed under static/: sw.js is
 // vite-plugin-pwa's default service-worker filename, and version.json is the
 // build-version asset vite.config.ts emits.
 const BUILD_EMITTED_PATHS = new Set(['/sw.js', `/${VERSION_JSON_FILENAME}`]);
+
+// Literal segments only: a header path cannot name a route group or parameter.
+function servedByRoute(path: string): boolean {
+  const routeDir = resolve(routesDir, `.${path}`);
+  return (
+    existsSync(routeDir) && readdirSync(routeDir).some((name) => /^\+(page|server)\b/.test(name))
+  );
+}
+
+function servedByStaticFile(path: string): boolean {
+  return BUILD_EMITTED_PATHS.has(path) || existsSync(resolve(staticDir, `.${path}`));
+}
 
 interface HeaderRule {
   path: string;
@@ -44,8 +57,8 @@ describe('netlify.toml header paths', () => {
     expect(literalRules.length).toBeGreaterThan(0);
   });
 
-  it.each(literalRules.map(({ path }) => path))('%s names a served file', (path) => {
-    expect(BUILD_EMITTED_PATHS.has(path) || existsSync(resolve(staticDir, `.${path}`))).toBe(true);
+  it.each(literalRules.map(({ path }) => path))('%s names a served file or route', (path) => {
+    expect(servedByStaticFile(path) || servedByRoute(path)).toBe(true);
   });
 
   it('serves the manifest app.html links as application/manifest+json', () => {
