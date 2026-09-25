@@ -77,6 +77,7 @@ import {
   CONSTRAINT_PROBE_LOG,
   CONSTRAINT_PROBE_VERDICTS,
   constraintProbeFollowUp,
+  constraintProbeVerdict,
   recordConstraintProbe,
 } from './ios/secure-origin.mjs';
 import { openSafariWithDevicectl } from './split-capture/capture-hand-input.mjs';
@@ -629,7 +630,9 @@ function checkoutBuildCommit() {
 async function stepBringUp(session, prompt, { ipadOs, phone }) {
   const ctx = session.state.ctx;
   ctx.productCommit = checkoutBuildCommit();
-  const report = await prepareCapture(phone ? ['--wake-android'] : []);
+  const report = phone
+    ? await prepareCapture(['--wake-android'])
+    : await prepareCapture([], { android: false });
   if (!report.iosUdid) fail('no iPad enumerated — reconnect it and tap Trust');
   if (phone && !report.androidSerial) fail('no Android phone attached');
   Object.assign(ctx, {
@@ -1034,8 +1037,9 @@ async function startSecureFronts(session, prompt) {
 }
 
 // A person looks at the iPad: Safari must refuse the constraint probe, then
-// load the leaf. The probe verdict, with the iPadOS the iPad reports, becomes a
-// row in CONSTRAINT_PROBE_LOG — the evidence CONSTRAINT_PROVEN_IPADOS cites.
+// load the leaf. Only a conclusive verdict (constraintProbeVerdict), with the
+// iPadOS the iPad reports, becomes a row in CONSTRAINT_PROBE_LOG — the evidence
+// CONSTRAINT_PROVEN_IPADOS cites.
 async function proveFrontsOnIpad(session, prompt) {
   const ctx = session.state.ctx;
   const ipadOs = ipadOsVersion(ctx.udid);
@@ -1048,29 +1052,35 @@ async function proveFrontsOnIpad(session, prompt) {
   };
   const constraintUrl = `https://${ctx.macHost}:${ctx.constraintPort}/`;
   openSafariWithDevicectl({ udid: ctx.udid, pageUrl: constraintUrl });
-  const refused = await prompt.yes(
+  const probeWarned = await prompt.yes(
     `  The iPad opened ${constraintUrl}. Does it show "This Connection Is Not Private"?`
   );
-  if (!refused) {
-    record(CONSTRAINT_PROBE_VERDICTS.accepted, 'Safari did not refuse the constraint probe');
-    stopOwned(session, ['front-leaf', 'front-constraint']);
+  const probeLoaded =
+    !probeWarned && (await prompt.yes('  Did Splotch load there instead, with no warning?'));
+  let leafLoaded = false;
+  if (probeWarned) {
+    openSafariWithDevicectl({ udid: ctx.udid, pageUrl: ctx.secureUrl });
+    leafLoaded = await prompt.yes(
+      `  The iPad opened ${ctx.secureUrl}. Does Splotch load with no warning?`
+    );
+  }
+  const verdict = constraintProbeVerdict({ probeWarned, probeLoaded, leafLoaded });
+  if (verdict === CONSTRAINT_PROBE_VERDICTS.refused) {
+    record(verdict, 'the person saw Safari refuse the constraint probe, then load the leaf');
+    return { ipadOs, verdict };
+  }
+  stopOwned(session, ['front-leaf', 'front-constraint']);
+  if (verdict === CONSTRAINT_PROBE_VERDICTS.accepted) {
+    record(verdict, 'Safari loaded the constraint probe with no warning');
     fail(
       'the iPad accepted the constraint probe: it is NOT enforcing the name constraint. Remove the rig CA profile from the iPad now (docs/PROFILING-IPAD.md) and do not capture.'
     );
   }
-  openSafariWithDevicectl({ udid: ctx.udid, pageUrl: ctx.secureUrl });
-  const leafLoaded = await prompt.yes(
-    `  The iPad opened ${ctx.secureUrl}. Does Splotch load with no warning?`
+  fail(
+    probeWarned
+      ? 'the leaf did not load on the iPad, so the probe’s refusal proves nothing and was not recorded — check Certificate Trust Settings for the rig CA'
+      : 'the constraint probe neither showed the warning nor loaded, which proves nothing either way; nothing was recorded. Check the fronts’ logs in the session directory, then rerun this step.'
   );
-  record(
-    CONSTRAINT_PROBE_VERDICTS.refused,
-    `the person saw Safari refuse the constraint probe; the leaf then ${leafLoaded ? 'loaded Splotch' : 'did NOT load'}`
-  );
-  if (!leafLoaded) {
-    stopOwned(session, ['front-leaf', 'front-constraint']);
-    fail('the leaf did not load on the iPad — check Certificate Trust Settings for the rig CA');
-  }
-  return { ipadOs, verdict: CONSTRAINT_PROBE_VERDICTS.refused };
 }
 
 async function stepSecureOrigin(session, prompt) {

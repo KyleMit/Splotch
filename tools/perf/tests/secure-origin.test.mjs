@@ -9,6 +9,7 @@ import {
   CONSTRAINT_PROBE_LOG,
   CONSTRAINT_PROVEN_IPADOS,
   constraintProbeFollowUp,
+  constraintProbeVerdict,
   constraintProofProblem,
   createFrontHandler,
   frontDecision,
@@ -229,6 +230,13 @@ describe('the constraint-probe log', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('records a refusal only once the leaf loads, and nothing for a probe that neither warned nor loaded', () => {
+    expect(constraintProbeVerdict({ probeWarned: true, leafLoaded: true })).toBe('refused');
+    expect(constraintProbeVerdict({ probeWarned: true, leafLoaded: false })).toBeNull();
+    expect(constraintProbeVerdict({ probeWarned: false, probeLoaded: true })).toBe('accepted');
+    expect(constraintProbeVerdict({ probeWarned: false, probeLoaded: false })).toBeNull();
   });
 
   it('names the exact raise after a refusal on a new release, and no raise otherwise', () => {

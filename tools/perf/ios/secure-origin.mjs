@@ -250,6 +250,15 @@ export function parseConstraintProbeLog(text) {
     });
 }
 
+// What one look at the iPad proves; null means record nothing. A refusal counts
+// only once the same root's leaf loads, because an iPad that does not trust the
+// root refuses every leaf. A probe that neither warned nor loaded (a blank page,
+// a connection error) proves nothing either way.
+export function constraintProbeVerdict({ probeWarned, probeLoaded, leafLoaded }) {
+  if (probeWarned) return leafLoaded ? CONSTRAINT_PROBE_VERDICTS.refused : null;
+  return probeLoaded ? CONSTRAINT_PROBE_VERDICTS.accepted : null;
+}
+
 // A release counts as proven only while the log holds a person's refusal on it
 // and no acceptance: one acceptance means that release does not enforce the
 // constraint, whatever an earlier row said.

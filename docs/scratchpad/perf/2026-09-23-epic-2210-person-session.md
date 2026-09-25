@@ -108,8 +108,14 @@ follow-up and puts it in the #2211 draft:
 2. Raise `CONSTRAINT_PROVEN_IPADOS` in `tools/perf/ios/secure-origin.mjs` to 26.6, citing the row.
 
 `secure-origin.test.mjs` fails any constant the log does not back with a `refused` row for that
-release, or one it contradicts with an `accepted` row. If Safari *loads* the probe, the runner
-records `accepted`, stops, and asks you to remove the rig CA profile. Do not raise the constant.
+release, or one it contradicts with an `accepted` row. Only a conclusive look is recorded:
+
+* A refusal counts only once the leaf from the same root loads. An iPad that does not trust the root
+  refuses every leaf.
+* If Safari *loads* the probe, the runner records `accepted`, stops, and asks you to remove the rig
+  CA profile. Do not raise the constant.
+* A probe page that neither warned nor loaded, such as a blank page or a connection error, records
+  nothing. The step fails so you can rerun it.
 
 **The paired controls on 26.6.** The #2235 pair from visit 1, repeated on the new release, in the
 same session through one probe host. ADR-0174's finger floors were all measured on 26.5, so every

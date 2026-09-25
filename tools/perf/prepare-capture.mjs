@@ -978,9 +978,14 @@ export async function recoverStaleDiscoveryLaunch({ udid, wdaPort, verifyRotatio
   }
 }
 
-export async function prepareCapture(argv = process.argv.slice(2)) {
+// `android: false` is for a caller that needs only the iPad (the person
+// session's second visit), where a detached phone must not count as a blocker.
+export async function prepareCapture(
+  argv = process.argv.slice(2),
+  { android: withAndroid = true } = {}
+) {
   const fix = argv.includes('--wake-android');
-  const android = androidChecks({ fix });
+  const android = withAndroid ? androidChecks({ fix }) : { checks: [], serial: null, devices: [] };
   const ios = iosChecks();
   const ports = await portChecks();
   const usbProblem =
