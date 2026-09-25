@@ -70,6 +70,14 @@ observed element render delay instead of about 10 ms, which Lantern extrapolated
 second. The 5,500 ms first-visit LCP limit therefore gives both viewports equal measured headroom
 rather than treating the tablet's initially faster sample as a different performance contract.
 
+That slow mode is host-specific. The Lighthouse 13.5.0 recalibration ran on a Linux container with
+headless Chromium 141, where first-visit LCP collapses onto FCP (about 1.9–2.0 s). A control
+campaign there with 13.4.1 measured the same, and CI's `ubuntu-latest` runner on 13.4.1 measured
+about 1.86 s. The drop from the Mac's 4.4 s medians therefore comes from the host, not the
+Lighthouse upgrade. The limits were left unchanged, so local runs that hit the Mac mode still pass.
+Compare a recalibration against the host that produced the committed medians before you read a shift
+as a product or Lighthouse change.
+
 ## Failure behavior
 
 Missing reports, two consecutive runtime errors for one invocation, an even or single-sample run,
