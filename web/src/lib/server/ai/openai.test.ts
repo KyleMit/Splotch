@@ -253,9 +253,17 @@ describe('openAiProvider.verifyKey', () => {
   });
 
   it('gives the first attempt the whole key-check budget', async () => {
-    retrieve.mockResolvedValue({ id: 'gpt-image-2' });
-    await openAiProvider.verifyKey('good-key');
-    expect(construct.mock.calls[0][0].timeout).toBe(VERIFY_KEY_DEADLINE_MS);
+    // The budget is measured against Date.now(), so a real clock that ticks
+    // between the deadline stamp and the first attempt would shave a
+    // millisecond off it. A frozen clock makes "whole" exact.
+    vi.useFakeTimers();
+    try {
+      retrieve.mockResolvedValue({ id: 'gpt-image-2' });
+      await openAiProvider.verifyKey('good-key');
+      expect(construct.mock.calls[0][0].timeout).toBe(VERIFY_KEY_DEADLINE_MS);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('never lets the SDK retry, since its retry sleeps an upstream Retry-After', async () => {
