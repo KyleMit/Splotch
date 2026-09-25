@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
@@ -2015,6 +2015,32 @@ describe('the Android driver hands the rotation back as it found it', () => {
       )
     ).rejects.toThrow('adb shell dumpsys window displays failed on s: closed');
     expect(Object.fromEntries(phone.settings)).toEqual(asFound);
+  });
+
+  // Pins the production default: with the process-exiting capture() back as
+  // the driver's runner, this failure would kill the test worker instead.
+  it('throws from the default adb runner rather than exiting', () => {
+    const bin = mkdtempSync(join(tmpdir(), 'fake-adb-'));
+    try {
+      writeFileSync(join(bin, 'adb'), '#!/bin/sh\necho "fake adb offline" >&2\nexit 1\n');
+      chmodSync(join(bin, 'adb'), 0o755);
+      vi.stubEnv('PATH', `${bin}:${process.env.PATH}`);
+      const driver = androidDriver({
+        serial: 's',
+        pageUrl: 'http://host:4175/?probe=run-7',
+        toolingHostnames: ['host'],
+        orientation: 'LANDSCAPE',
+        nativeApp: true,
+        cdpPort: 9224,
+      });
+
+      expect(() => driver.boundsFrom(RIG_PORTRAIT_GEOMETRY)).toThrow(
+        'adb shell settings get system user_rotation failed on s: fake adb offline'
+      );
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(bin, { recursive: true, force: true });
+    }
   });
 
   it('hands the rotation back when the capture throws, and after a clean one', async () => {
