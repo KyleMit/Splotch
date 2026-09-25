@@ -196,4 +196,9 @@ Three campaign-earned constraints bound any rework of this path:
   pixel-mutating paths must join; a missed invalidation restores stale under-ink on the next
   overlapping pass. The pixel-contract E2E specs are the guard.
 * − The vestigial plane elements and their CSS remain until the follow-up removal, and the two-plane
-  preview description in ADR-0085 no longer matches production.
+  preview description in ADR-0085 no longer matches production. The removal is cleanup, not a
+  performance lever: deleting both elements per tile, on an experiment branch that was never merged,
+  was captured on the physical iPad on 2026-08-31 and the crayon in-contact max rose to 65 ms,
+  against 50–62 ms for the 4×4 baseline it replaced. That is one ten-repeat capture, so it rules out
+  a win rather than proving a loss; the session concluded that active surface geometry, not element
+  count, is the variable, and the 4×5 topology in the ADR-0085 amendment is what it shipped instead.
