@@ -243,10 +243,13 @@ slowest of the three signals to settle.
 
 **A 👍 on the request is not a rebase.** Dependabot acknowledges the comment and then runs an update
 job, which shows as an Actions run with `event: dynamic`
-(`gh api 'repos/<owner>/<repo>/actions/runs?event=dynamic'`). Read that run when the head does not
-move. A job that runs while `main`'s lockfile is broken fails with `dependency_file_not_parseable`.
-After such a failure, fresh `@dependabot rebase` requests have been acknowledged and then started no
-job for over 15 minutes, while `@dependabot recreate` ran within a minute. If no `dynamic` run
+(`gh api 'repos/<owner>/<repo>/actions/runs?event=dynamic'`). The query is repository-wide, and each
+run's `head_branch` reads `main`, so identify this PR's job by its name,
+`npm_and_yarn in / for <dependency> - Update #<id>`, created after your request. A sibling's run is
+not evidence that this PR's rebase started. Read that run when the head does not move. A job that
+runs while `main`'s lockfile is broken fails with `dependency_file_not_parseable`. After such a
+failure, fresh `@dependabot rebase` requests have been acknowledged and then started no job for over
+15 minutes, while `@dependabot recreate` ran within a minute. If no run for this PR's dependency
 appears within a few minutes of a rebase request, switch to `recreate`. It rebuilds the branch from
 the current `main` and drops any commits pushed to the branch by hand, which this skill never adds.
 
@@ -295,13 +298,16 @@ Between waves the lockfile check is enough, and it leaves the worktree alone. Ex
 manifests into a scratch directory and install there, lockfile only:
 
 ```sh
-git fetch origin main && rm -rf <scratch>/verify && mkdir -p <scratch>/verify
-git archive origin/main package.json pnpm-lock.yaml pnpm-workspace.yaml | tar -x -C <scratch>/verify
-(cd <scratch>/verify && pnpm install --frozen-lockfile --lockfile-only --ignore-scripts)
+v=<scratch>/verify   # outside every checkout: pnpm searches parent directories for a project
+git fetch origin main && rm -rf $v $v.tar && mkdir -p $v &&
+  git archive -o $v.tar origin/main package.json pnpm-lock.yaml pnpm-workspace.yaml &&
+  tar -xf $v.tar -C $v &&
+  (cd $v && pnpm install --frozen-lockfile --lockfile-only --ignore-scripts)
 ```
 
-Name only paths that exist on `main`. `git archive` with one missing path fails and extracts
-nothing, and the install then reports a missing `package.json`, not a lockfile problem.
+Keep it one `&&` chain, with the archive written to a file. Piped into `tar`, a failed `git archive`
+(for example, a path missing on `main`) still exits 0. `tar` then extracts nothing, and pnpm in the
+empty directory can walk up to a parent project and report success on it.
 
 After the last wave, check the whole tree. Detach instead of creating a branch, so there is nothing
 to delete afterwards (branch deletes are refused in permission-gated sessions):
