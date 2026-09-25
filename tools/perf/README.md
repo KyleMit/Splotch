@@ -11,12 +11,15 @@ complete flag and output descriptions.
   CoreDevice UUID `devicectl` prints, reuses an already-running RemoteXPC tunnel instead of asking
   for its password again, distinguishes sandbox USB denial from two detached devices, and resolves
   preview/probe ports around foreign worktrees without stopping their listeners. A probe is reused
-  only after its checkout, upstream, build, and run identity agree with the selected preview.
-  `--verify-ios-launch` recovers from a borrowed Appium whose device discovery cannot see the iPad
-  by reaching a WebDriverAgent through `appium:webDriverAgentUrl` and reporting the grant as valid,
-  expired, or undetermined (`lib/wda-recovery.mjs`, issue 2218). `lib/capture-readiness.mjs` holds
-  the decisions as pure functions so they are testable without a device. The failures it exists to
-  prevent are catalogued in [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
+  only after its checkout, upstream, build, and run identity agree with the selected preview. It
+  blocks when another app's untrusted `USE_OPACITY` overlays combine past Android's obscuring limit
+  anywhere over the phone's foreground app (`lib/android-overlay-verdict.mjs`, issue 2270), naming
+  the package and the point. `--verify-ios-launch` recovers from a borrowed Appium whose device
+  discovery cannot see the iPad by reaching a WebDriverAgent through `appium:webDriverAgentUrl` and
+  reporting the grant as valid, expired, or undetermined (`lib/wda-recovery.mjs`, issue 2218).
+  `lib/capture-readiness.mjs` holds the decisions as pure functions so they are testable without a
+  device. The failures it exists to prevent are catalogued in
+  [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
 * `perf:session:person` (`run-person-session.mjs`, pure half in `lib/person-session.mjs`) walks epic
   2210's person-present tasks in one resumable session: paired driven-vs-finger iPad captures,
   bundled-app finger captures, the secure-origin action sweeps, the phone overlay check and the

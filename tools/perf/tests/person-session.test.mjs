@@ -9,7 +9,6 @@ import {
   abSummary,
   captureVerdict,
   magicFirstLoadReading,
-  navBarOverlayVerdict,
   nextStep,
   overlaySteadilyClear,
   resumeBringUp,
@@ -19,7 +18,6 @@ import {
   stepOrderProblem,
 } from '../lib/person-session.mjs';
 import { trustedPointerdowns } from '../lib/stroke-delivery.mjs';
-import { parseInputWindows } from '../lib/android-touch-occlusion.mjs';
 import { openSafariWithDevicectl } from '../split-capture/capture-hand-input.mjs';
 import {
   REDUCE_MOTION_STORAGE_KEY,
@@ -28,12 +26,6 @@ import {
 } from '../lib/reduce-motion.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
-// The rig phone's own dump from issue 2229/2214: two stacked 0.7998-alpha
-// nu.nav.bar windows on the portrait centre column.
-const OCCLUDED_DUMP = readFileSync(
-  join(import.meta.dirname, 'fixtures', 'android-dumpsys-input-occluded.txt'),
-  'utf8'
-);
 // A tracked driven iPad capture (split transport, 10 passes) the verdict can
 // read end to end, report included.
 const DRIVEN_CAPTURE = JSON.parse(
@@ -54,45 +46,6 @@ const drivenExpectation = {
   theme: DRIVEN_CAPTURE.theme,
   productCommit: DRIVEN_CAPTURE.productCommit,
 };
-
-describe('navBarOverlayVerdict', () => {
-  it('fails the rig phone dump whose two stacked windows sum past the 0.8 limit', () => {
-    const verdict = navBarOverlayVerdict(parseInputWindows(OCCLUDED_DUMP));
-    expect(verdict.pass).toBe(false);
-    expect(verdict.windows).toBe(2);
-    expect(verdict.combinedOpacity).toBeGreaterThan(0.95);
-    expect(verdict.point).toBe('(540,99)');
-  });
-
-  it('passes once only one of the stacked windows remains', () => {
-    const single = OCCLUDED_DUMP.split('\n')
-      .filter((line) => !line.includes('name=cf92dfa nu.nav.bar'))
-      .join('\n');
-    const verdict = navBarOverlayVerdict(parseInputWindows(single));
-    expect(verdict.windows).toBe(1);
-    expect(verdict.pass).toBe(true);
-  });
-
-  it('fails overlapping windows with different frames whose sum drops a touch', () => {
-    const window = (left, right) => ({
-      name: 'abc nu.nav.bar',
-      flags: new Set(['NOT_FOCUSABLE']),
-      alpha: 0.6,
-      frame: { left, top: 0, right, bottom: 100 },
-      ownerUid: 10334,
-      occlusionMode: 'USE_OPACITY',
-    });
-    const verdict = navBarOverlayVerdict([window(0, 10), window(5, 15)]);
-    expect(verdict.pass).toBe(false);
-    expect(verdict.combinedOpacity).toBe(0.84);
-    expect(verdict.point).toBe('(5,0)');
-  });
-
-  it('passes a dump with no nu.nav.bar window at all', () => {
-    const verdict = navBarOverlayVerdict([]);
-    expect(verdict).toMatchObject({ pass: true, windows: 0 });
-  });
-});
 
 describe('overlaySteadilyClear', () => {
   const pass = { pass: true };

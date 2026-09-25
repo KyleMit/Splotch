@@ -5,12 +5,7 @@
 // run-person-session.mjs owns the processes.
 import { rescoreCapture } from '../rescore-captures.mjs';
 import { numberInvalidatingFailure, onlyUncalibratedChecksFailed } from './input-fidelity.mjs';
-import { ANDROID_MAX_OBSCURING_OPACITY } from './android-touch-occlusion.mjs';
 import { strokeDeliveryProblem, trustedPointerdowns } from './stroke-delivery.mjs';
-
-// The accessibility-service app on the rig phone whose stacked overlays drop
-// every touch in the portrait centre column (issue 2229).
-const NAV_BAR_OVERLAY_PACKAGE = 'nu.nav.bar';
 
 // #2229's A/B, fixed by the issue: the last all-160 portrait capture's commit
 // against the first 140-of-160 one, plus a Reduce Motion arm on the later one.
@@ -196,7 +191,7 @@ export const PERSON_SESSION_STEPS = [
       'The runner re-reads `dumpsys input` every 5 s and says PASS once the centre column has taken touches for 30 s straight.',
       'After PASS you may leave: the rest of visit 1 runs on its own.',
     ],
-    done: 'PASS: no untrusted nu.nav.bar overlay sums past Android’s 0.8 obscuring limit.',
+    done: 'PASS: no untrusted overlay sums past Android’s 0.8 obscuring limit over the foreground app.',
   },
   {
     id: 'phone-ab',
@@ -360,50 +355,6 @@ export function nextStep(statuses) {
   return (
     PERSON_SESSION_STEPS.find((step) => !['done', 'skipped'].includes(statuses[step.id])) ?? null
   );
-}
-
-// PASS when no untrusted nu.nav.bar overlay can drop a touch. Android sums one
-// uid's USE_OPACITY windows under a POINT (untrustedOcclusionAt), so the
-// verdict evaluates every point where the overlays' frames begin: the worst
-// sum over any region is reached at the corner where that region's windows
-// all start.
-export function navBarOverlayVerdict(windows) {
-  const overlays = windows.filter(
-    (window) =>
-      window.name.includes(NAV_BAR_OVERLAY_PACKAGE) &&
-      window.occlusionMode === 'USE_OPACITY' &&
-      !window.flags.has('NOT_VISIBLE') &&
-      !window.flags.has('TRUSTED_OVERLAY') &&
-      window.alpha > 0
-  );
-  const contains = ({ frame }, x, y) =>
-    x >= frame.left && x < frame.right && y >= frame.top && y < frame.bottom;
-  let worst = { opacity: 0, x: null, y: null };
-  for (const x of new Set(overlays.map((window) => window.frame.left))) {
-    for (const y of new Set(overlays.map((window) => window.frame.top))) {
-      const byUid = new Map();
-      for (const window of overlays.filter((candidate) => contains(candidate, x, y))) {
-        byUid.set(
-          window.ownerUid,
-          1 - (1 - (byUid.get(window.ownerUid) ?? 0)) * (1 - window.alpha)
-        );
-      }
-      for (const opacity of byUid.values()) {
-        if (opacity > worst.opacity) worst = { opacity, x, y };
-      }
-    }
-  }
-  const combined = Math.round(worst.opacity * 1000) / 1000;
-  const pass = combined <= ANDROID_MAX_OBSCURING_OPACITY;
-  return {
-    pass,
-    windows: overlays.length,
-    combinedOpacity: combined,
-    point: worst.x === null ? null : `(${worst.x},${worst.y})`,
-    detail: overlays.length
-      ? `${overlays.length} USE_OPACITY ${NAV_BAR_OVERLAY_PACKAGE} window(s); at (${worst.x},${worst.y}) one uid's windows combine to ${combined} (${pass ? '≤' : '>'} ${ANDROID_MAX_OBSCURING_OPACITY})`
-      : `no USE_OPACITY ${NAV_BAR_OVERLAY_PACKAGE} window`,
-  };
 }
 
 // One passing read is not a cleared overlay. On 2026-09-24 the rig phone's
