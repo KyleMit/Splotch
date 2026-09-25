@@ -70,6 +70,17 @@ compact. `tools/tests/bootstrap-worktree.test.mjs` pins both hook registrations,
 sequence for each worktree shape, the payload-over-process directory precedence, and both failure
 contracts.
 
+## Amendment (2026-09-25): Claude worktrees are refreshed too
+
+The "What moves `HEAD`" bullet above said that a Claude Code worktree is already branched from the
+remote default. That was only as true as the last fetch of the shared `.git`. On 2026-09-25 a
+worktree branch was cut from an `origin/main` one merge behind the remote. `needsStaleMainRefresh()`
+is now split into two shapes. The detached-at-local-`main` Codex refresh is unchanged. A
+Claude-shaped worktree, on a named branch, is fast-forwarded to a freshly fetched `origin/main`.
+This happens only when the working tree is clean, the branch was never published, and it has no
+commits of its own. A failed refresh of that shape is a warning, not a stop. `docs/WORKTREES.md`
+("Refreshing a fresh worktree") owns the guards and the failure contract.
+
 ## Consequences
 
 \+ A Claude Code worktree — including every desktop parallel session — opens with dependencies

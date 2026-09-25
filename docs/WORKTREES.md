@@ -16,17 +16,89 @@ the first model turn. It is a no-op in the primary checkout — it compares `--g
 
 In a linked worktree it:
 
-1. Refreshes the checkout **only** when it is detached at the local `main` commit — the shape a
-   fresh Codex worktree arrives in. It confirms there are no tracked changes, fetches `origin/main`
-   without tags, detaches at the fetched commit, and verifies `HEAD` landed there. A Claude Code
-   worktree arrives on its own branch already cut from the remote default (`worktree.baseRef`
-   defaults to `fresh`), so this step is skipped and `HEAD` is never moved.
+1. Brings a fresh checkout up to the latest `origin/main`, in one of two shapes (below). Any other
+   worktree is left exactly where it is.
 2. Provisions the pinned pnpm version (`corepack enable pnpm`, `corepack install`) and installs the
    frozen dependency tree (`pnpm install --frozen-lockfile --prefer-offline`).
 3. Verifies the install by running `npm run info`.
 
-Failure reporting differs because the two runners read different hook contracts, which is what
-`--runner` selects:
+The refresh runs before the install so the dependencies match the commit the session starts on.
+
+### Refreshing a fresh worktree
+
+Neither runner's worktree is reliably current when it arrives. A worktree is cut from a ref in the
+shared `.git`, and that ref is only as fresh as the last fetch any checkout made. On 2026-09-25 a
+Claude Code worktree branch was "Created from origin/main" two minutes after a PR merged, and it
+started one merge behind. The Claude default (`worktree.baseRef` is `fresh`) picks the remote
+default branch, but it does not fetch it first.
+
+The primary checkout is never touched. The refresh changes nothing in its working tree and does not
+move local `main`. The fetch updates only `refs/remotes/origin/main` in the shared `.git`, and
+`FETCH_HEAD`, which is per-worktree.
+
+**Detached at local `main`: the Codex shape.** A fresh Codex worktree is detached at whatever local
+`main` pointed to. The bootstrap confirms there are no tracked changes, fetches `origin/main`
+without tags, detaches at the fetched commit, and verifies `HEAD` landed there. Any other detached
+`HEAD` stays where it is. This includes a rival agent's review worktree pinned to a PR head, and a
+bisect.
+
+**On a named branch that carries no work: the Claude Code shape.** A fresh Claude Code worktree is
+on its own branch, cut from `origin/main` without tracking it. The bootstrap fast-forwards the
+branch only when all of these are true:
+
+* The working tree is clean. `git status --porcelain --untracked-files=normal` prints nothing, so a
+  tracked change or an untracked file blocks the refresh. Gitignored files, including the ones
+  `.worktreeinclude` copies in, do not count.
+* The branch was never published. It has no upstream, and `refs/remotes/origin/<branch>` does not
+  exist.
+* The branch has no commits of its own: every commit reachable from `HEAD` is already on
+  `origin/main` (`git merge-base --is-ancestor HEAD refs/remotes/origin/main`). This is checked
+  against the last-known `origin/main` before any fetch, so a branch that has work never pays for a
+  network call. `main` only moves forward, so the answer also holds for the fetched commit.
+
+When all three hold, the bootstrap fetches `origin/main` without tags. If the fetched commit is
+already `HEAD`, it stops. If not, it runs `git merge --ff-only <fetched commit>` and verifies that
+`HEAD` landed on that commit. The `--ff-only` merge also enforces the ancestry rule against the
+fetched commit: it refuses instead of creating a merge.
+
+When any check fails, `HEAD` stays where it is. A session started in a worktree that has real work,
+or a new session opened in an old worktree, is never moved. The one kind of branch that is moved
+without being fresh is one that sits on an old `main` commit with nothing on it. To keep a worktree
+on an old commit, detach it (`git switch --detach <sha>`).
+
+The hook matchers exclude `resume`, so a resumed session never reaches the refresh.
+
+### Rival-agent worktrees
+
+The `run-rival-agent` skill makes its disposable review worktrees with
+`git worktree add --detach <dir> <head>` (`tools/rival-agent/worktree.mjs`), which is neither
+refresh shape. The rival's own session also runs no project hooks. The Codex rival starts with the
+`hooks` feature disabled (`ISOLATION_FEATURES` in `launch-codex.mjs`). The Claude rival starts with
+`--restricted`, which ignores project settings. The bootstrap never runs in a rival worktree, and it
+would not move one if it did.
+
+### Failure reporting
+
+A failed refresh of a **named branch** is a warning. The session starts and the install still runs.
+For a stale start, the agent needs one command to recover, and a refused `--ff-only` merge leaves
+`HEAD` where it was, so there is no half-moved state to protect. Stopping the session would cost
+more than the stale commit does. The warning uses the same shape for both runners:
+
+```json
+{
+  "systemMessage": "…",
+  "hookSpecificOutput": { "hookEventName": "SessionStart", "additionalContext": "…" }
+}
+```
+
+It has no `continue: false`, so a Codex session starts too. Codex 0.156.0 validates `SessionStart`
+output against the same fields as Claude Code. The warning names the recovery commands:
+`git fetch origin main && git merge --ff-only origin/main`, then `pnpm install --frozen-lockfile`.
+If a later step fails and the bootstrap stops, the warning is added to the failure report.
+
+A failed install, and a failed refresh of the **detached Codex shape**, stop the bootstrap. How that
+is reported differs because the two runners read different hook contracts, which is what `--runner`
+selects:
 
 | Runner | On failure                                                                 | Session |
 | ------ | -------------------------------------------------------------------------- | ------- |
