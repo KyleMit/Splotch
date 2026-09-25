@@ -63,7 +63,7 @@ added anyway.
 | `scribbleTap`                  | 143   | extract  | endorse  | extract | 94        | none     |
 | `createSettings`               | 139   | extract  | endorse  | extract | 117       | 142      |
 | `buildEngineApi`               | 132   | extract  | endorse  | extract | 97        | none     |
-| `toolbarGlassPanes`            | 130   | extract  | endorse  | extract | 116       | 141      |
+| `toolbarGlassPanes`            | 130   | extract  | endorse  | extract | 112       | 137      |
 | `createFreeGenerations`        | 119   | extract  | endorse  | extract | 102       | 127      |
 | `createAiGeneration`           | 117   | raise    | endorse  | raise   | 117       | 142      |
 | `edgeMargins`                  | 116   | extract  | endorse  | extract | 22        | none     |
