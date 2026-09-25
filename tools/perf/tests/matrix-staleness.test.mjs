@@ -82,6 +82,46 @@ describe('sectionProvenance', () => {
     });
   });
 
+  // The generator copies a captured-untracked section from the published report,
+  // so the commit it shows is the one that gets aged, not the manifest's pin.
+  it('reads a captured-untracked section commit from the published report', () => {
+    const mode = { ...captured('aaa'), drawing: 'captured-untracked' };
+    const published = { drawing: { pen: { runs: [{ productCommit: 'aaa' }] } } };
+
+    expect(sectionProvenance(mode, published)[0]).toEqual({
+      section: 'drawing',
+      state: 'captured-untracked',
+      capturedOn: '2026-09-20',
+      commits: ['aaa'],
+    });
+  });
+
+  it('names a captured-untracked pin the published section contradicts', () => {
+    const mode = { ...captured('pinned1'), drawing: 'captured-untracked' };
+    const published = { drawing: { pen: { runs: [{ productCommit: 'shown2' }] } } };
+
+    const [drawing] = assess(manifestOf([mode]), { published });
+
+    expect(drawing.commits).toEqual(['shown2']);
+    expect(drawing.problems).toEqual([
+      'manifest pins pinned1 but the published section carries shown2',
+    ]);
+  });
+
+  // The generator publishes a declared action section even beside an
+  // actionsUnavailableReason, so the check must date it too.
+  it('checks a declared action section even beside an unavailable reason', () => {
+    const mode = {
+      ...captured('aaa', { drawing: '2026-09-20', undo: '2026-09-20' }),
+      actionsUnavailableReason: 'P1',
+    };
+
+    expect(assess(manifestOf([mode])).at(-1)).toMatchObject({
+      section: 'actions',
+      problems: ['no capturedOn date'],
+    });
+  });
+
   it('omits an action section the mode records as unavailable', () => {
     const mode = { ...captured('aaa'), actionSources: undefined, actionsUnavailableReason: 'P1' };
 

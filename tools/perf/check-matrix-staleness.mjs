@@ -23,7 +23,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
-import { captureAgeDays, isCaptureDate, utcDate } from './lib/capture-date.mjs';
+import { MATRIX_SECTIONS, captureAgeDays, isCaptureDate, utcDate } from './lib/capture-date.mjs';
 import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
 
 const DEFAULT_MANIFEST = 'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json';
@@ -64,62 +64,74 @@ function evidenceState(declared) {
   return declared === PRESERVED || declared === CAPTURED_UNTRACKED ? declared : 'captured';
 }
 
-function publishedDrawingCommits(publishedMode) {
-  return Object.values(publishedMode?.drawing ?? {}).flatMap((entry) =>
-    (entry?.runs ?? []).map((run) => run.productCommit)
-  );
-}
+const PUBLISHED_COMMITS = {
+  drawing: (published) =>
+    Object.values(published?.drawing ?? {}).flatMap((entry) =>
+      (entry?.runs ?? []).map((run) => run.productCommit)
+    ),
+  undo: (published) => [published?.undo?.productCommit],
+  actions: (published) => (published?.actions?.sources ?? []).map((source) => source.productCommit),
+};
 
-function actionCommits(mode, publishedMode) {
-  if (mode.actionSources === PRESERVED) {
-    return (publishedMode?.actions?.sources ?? []).map((source) => source.productCommit);
-  }
+// The manifest's own commit field for a section, which is what a freshly
+// captured section is measured at and what a captured-untracked one is pinned to.
+function manifestCommits(name, mode) {
+  if (name === 'drawing') return [mode.drawingProductCommit];
+  if (name === 'undo') return [mode.undoProductCommit ?? mode.drawingProductCommit];
   if (mode.actionSources === CAPTURED_UNTRACKED) {
     return [mode.actionProductCommit ?? mode.drawingProductCommit];
   }
-  return (mode.actionSources ?? []).map((source) => source?.productCommit);
+  return (Array.isArray(mode.actionSources) ? mode.actionSources : []).map(
+    (source) => source?.productCommit
+  );
+}
+
+// A preserved section has no commit of its own in the manifest; a
+// captured-untracked one falls back to its pin when no published report says.
+function sectionCommits(state, pinned, published) {
+  if (state === 'captured') return pinned;
+  if (published.length) return published;
+  return state === CAPTURED_UNTRACKED ? pinned : [];
 }
 
 // Every section a captured mode publishes, with the commits it was captured at.
-// A preserved section's commits are the ones it was published with, read from
-// the report it is carried from; the manifest's own commit fields describe the
-// sections this manifest captured.
+// The generator copies both a preserved and a captured-untracked section from
+// the report the manifest names (`preservedEvidence.from`), so their commits are
+// read from there: the commit the page shows is the one that gets aged. A
+// captured-untracked section also carries a manifest pin, and a pin that
+// disagrees with the published section is a provenance conflict, not a choice.
+// An action section is checked whenever one is declared — the generator
+// publishes it even beside an actionsUnavailableReason.
 export function sectionProvenance(mode, publishedMode) {
   if (mode.status !== 'captured') return [];
-  const section = (name, declared, commits) => ({
-    section: name,
-    state: evidenceState(declared),
-    capturedOn: mode.capturedOn?.[name],
-    commits: unique(commits),
-  });
-  const sections = [
-    section(
-      'drawing',
-      mode.drawing,
-      mode.drawing === PRESERVED
-        ? publishedDrawingCommits(publishedMode)
-        : [mode.drawingProductCommit]
-    ),
-  ];
-  if (mode.undoSource !== undefined) {
-    sections.push(
-      section(
-        'undo',
-        mode.undoSource,
-        mode.undoSource === PRESERVED
-          ? [publishedMode?.undo?.productCommit]
-          : [mode.undoProductCommit ?? mode.drawingProductCommit]
-      )
-    );
-  }
-  if (mode.actionSources !== undefined && !mode.actionsUnavailableReason) {
-    sections.push(section('actions', mode.actionSources, actionCommits(mode, publishedMode)));
-  }
-  return sections;
+  const declared = { drawing: mode.drawing, undo: mode.undoSource, actions: mode.actionSources };
+  return MATRIX_SECTIONS.filter((name) => name === 'drawing' || declared[name] !== undefined).map(
+    (name) => {
+      const state = evidenceState(declared[name]);
+      const pinned = unique(manifestCommits(name, mode));
+      const published = unique(PUBLISHED_COMMITS[name](publishedMode));
+      const conflict =
+        state === CAPTURED_UNTRACKED &&
+        published.length > 0 &&
+        pinned.some((commit) => !published.includes(commit));
+      return {
+        section: name,
+        state,
+        capturedOn: mode.capturedOn?.[name],
+        commits: sectionCommits(state, pinned, published),
+        ...(conflict ? { pinned } : {}),
+      };
+    }
+  );
 }
 
-function provenanceProblems({ capturedOn, commits }, isReachable) {
+function provenanceProblems({ capturedOn, commits, pinned }, isReachable) {
   const problems = [];
+  if (pinned) {
+    problems.push(
+      `manifest pins ${pinned.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ')} but the published section carries ${commits.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ')}`
+    );
+  }
   if (capturedOn === undefined) problems.push('no capturedOn date');
   else if (!isCaptureDate(capturedOn)) problems.push(`capturedOn ${capturedOn} is not YYYY-MM-DD`);
   if (!commits.length) problems.push('no product commit');
