@@ -211,9 +211,10 @@ frame P95, post-action max, activation fidelity, and the count/list of failed ac
 fidelity and the raw artifact path beside the result.
 
 Before attributing any committed red cell to the product, run
-`npm run check:matrix-staleness -- --base=origin/main` — the cell describes the commit it was
-captured at, and the check's default `--base=HEAD` counts a campaign branch's own commits as drift,
-reporting STALE wrongly from any branch that carries its own work.
+`npm run check:matrix-staleness -- --base=origin/main`. It ranks every section by capture age and
+counts the commits that landed since (ADR-0175): the cell describes the commit it was captured at.
+The check's default `--base=HEAD` counts a campaign branch's own commits as drift from any branch
+that carries its own work.
 
 When refreshing the committed matrix:
 

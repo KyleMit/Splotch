@@ -6,12 +6,12 @@ description: Drive Splotch's deployment-target performance matrix from current e
 # Improve performance matrix
 
 Run a fresh evidence-led campaign against the authoritative deployment-target matrix. The campaign
-ends only when every current, scoreable cell on a **release-gate row** is green or carries a
-recorded, evidence-backed disposition, unless the user sends a control message that explicitly
-requests a stopping point (**wrap up** or **stop at mergeable**, below). ADR-0156 defines the rows:
-the physical iPad (web and native) and the physical Android phone (web and native) are the release
-gate; Mac rows are a regression tripwire; simulator and emulator rows are advisory and never count
-toward completion. ADR-0160 defines the disposition: an ADR-recorded measured allowance or
+ends only when every scoreable cell on a **release-gate row**, however old its capture, is green or
+carries a recorded, evidence-backed disposition, unless the user sends a control message that
+explicitly requests a stopping point (**wrap up** or **stop at mergeable**, below). ADR-0156 defines
+the rows: the physical iPad (web and native) and the physical Android phone (web and native) are the
+release gate; Mac rows are a regression tripwire; simulator and emulator rows are advisory and never
+count toward completion. ADR-0160 defines the disposition: an ADR-recorded measured allowance or
 documented floor that names the cell's measured basis, its trace attribution, and the condition that
 reopens it. A red cell with one is **explained** and counts toward completion; the campaign's
 remainder is the **unexplained** reds. A disposition is a release-gate policy change the owner
@@ -53,13 +53,12 @@ capture coverage, richer metadata, another metric, or generalized tooling is not
 the product loop.
 
 Read the whole published matrix at the start, but do not block the first product experiment on
-making every stale target current. Current coverage of the release-gate rows remains part of the
-completion gate (ADR-0156); advisory rows are recaptured for breadth when the rig is free, never as
-a completion requirement. Coverage is not a prerequisite for beginning product work when a
-calibrated physical target already provides a reproducible failure. Stale advisory Simulator,
-emulator, and desktop rows cannot delay that first experiment. Recapture a stale authoritative
-target first only when its result is necessary to distinguish the selected hypothesis or establish a
-calibrated failure.
+recapturing every old section. Coverage of the release-gate rows remains part of the completion gate
+(ADR-0156); advisory rows are recaptured for breadth when the rig is free, never as a completion
+requirement. Coverage is not a prerequisite for beginning product work when a calibrated physical
+target already provides a reproducible failure. Old advisory Simulator, emulator, and desktop rows
+cannot delay that first experiment. Recapture an old authoritative section first only when its
+result is necessary to distinguish the selected hypothesis or establish a calibrated failure.
 
 Treat `tools/perf/`, matrix schemas and generators, capture transports, scorers, evidence formats,
 and profiling documentation as stable supporting infrastructure while working a product cluster. A
@@ -119,7 +118,7 @@ campaign prompt, PR body, report, or memory.
 
 Resolve the authoritative deployment-target matrix first, then inventory every published cell in its
 `data.json` before editing. This is a read-only classification pass, not a requirement to recapture
-every stale cell before product work. Classify each cell by:
+every old cell before product work. Classify each cell by:
 
 * target and deployment class;
 * web or native runtime;
@@ -129,39 +128,41 @@ every stale cell before product work. Classify each cell by:
 * scoreability and control validity;
 * capture age and exact product commit;
 * capture source, runner, input transport, and raw provenance;
-* current versus preserved capture;
+* freshly captured versus preserved section;
 * comparable versus historically invalid instrumentation.
 
 Report these categories separately:
 
-* genuine current product failures;
-* stale captures needing faithful replacement;
+* genuine product failures, each with its capture age;
+* old captures a hypothesis needs refreshed before it can be judged;
 * preserved historical captures;
 * invalid or unscoreable modes;
 * incomparable captures;
 * runner or capture-path blockers.
 
-Generate counts from live data, not prose. Before treating any red cell as a current product
-problem, run `npm run check:matrix-staleness -- --base=origin/main` — a red cell describes the
-commit it was captured at, and the product moves underneath it (the 2026-08 campaign wrote five
-candidate implementations against a gate a prior extraction had already fixed; the check needs no
-device and answers in seconds). The explicit `--base` matters: the default is `HEAD`, which from a
-campaign branch counts the branch's own commits as drift and reports STALE wrongly. Cells the check
-marks stale go in the recapture bucket, not the product bucket.
+Generate counts from live data, not prose. Before treating any red cell as a product problem, run
+`npm run check:matrix-staleness -- --base=origin/main`. It ranks every section by capture age and
+counts the engine and product commits that landed since (ADR-0175). A red cell describes the commit
+it was captured at, and the product moves underneath it: the 2026-08 campaign wrote five candidate
+implementations against a gate a prior extraction had already fixed. The check needs no device and
+answers in seconds. The explicit `--base` matters: the default is `HEAD`, which from a campaign
+branch counts the branch's own commits as drift. An old red still counts toward the gate, but when
+product commits on its measured path landed since, recapture it before building a product hypothesis
+on it.
 
 The same check applies to numbers a campaign **prompt** calls established. A prompt is written from
 the matrix and the sessions before it, so its "measured" figures carry the commit they were measured
 at, not the trunk's; on 2026-09-02 a prompt's central cause (an ~86 ms `clear coloring page` raster
 on every physical iPad cell) had been fixed on `main` the day before by a commit the prompt's author
 never saw, and a full layer was built and A/B-tested against it before a concurrent control on
-`main` showed the cell already green. Run the staleness check and one concurrent control on the
-trunk before building on a prompt's figures, however authoritative their framing.
+`main` showed the cell already green. Run the age report and one concurrent control on the trunk
+before building on a prompt's figures, however authoritative their framing.
 
 As soon as a current calibrated physical failure exists, turn the remaining genuine failures into a
 compact causal-cluster inventory with a representative cell, affected blast radius, evidence
 confidence, and next discriminating product experiment. Select one and start its product A/B.
 Prioritize a systemic cause that plausibly explains several cells over isolated tail-chasing, but
-let current evidence choose the order. Continue stale-target recapture for breadth and completion;
+let current evidence choose the order. Continue recapturing old sections for breadth and completion;
 do not use it as a blanket reason to postpone the selected experiment.
 
 ## Non-negotiable evidence rules
@@ -173,7 +174,7 @@ Never make the matrix green by:
 * skipping actions, brushes, themes, orientations, runtimes, or difficult samples;
 * publishing only a lucky retry or discarding a faithful red result;
 * copying a pass from another target or calibration tier;
-* treating stale, incomparable, or invalid evidence as current product approval.
+* treating old, incomparable, or invalid evidence as approval of the current product.
 
 Frame pacing and readiness are separate acceptance dimensions. The action scorer's `passed` verdict
 covers first response and presented-frame continuity; `readyMs` records when the action-specific
@@ -200,10 +201,11 @@ ignore the number. If a capture path cannot resolve the proposed readiness diffe
 approve that experiment; use a finer in-page mark or another faithful path immediately serving the
 named product hypothesis.
 
-Stale red cells require faithful fresh captures. Harness work follows the product-first gate above:
-repair a demonstrated measurement defect or add a targeted diagnostic or validation capability only
-when the named product experiment will use it immediately. Do not create a freestanding harness
-roadmap inside the campaign. Promote representative raw captures with
+An old red cell clears only through a faithful fresh capture or a recorded disposition. Harness work
+follows the product-first gate above: repair a demonstrated measurement defect or add a targeted
+diagnostic or validation capability only when the named product experiment will use it immediately.
+Do not create a freestanding harness roadmap inside the campaign. Promote representative raw
+captures with
 `npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name> --product-commit=<capture-product-sha>`
 so they remain rescoreable, and trial a scorer change across that preserved corpus with
 `npm run perf:rescore -- --corpus=perf-profiles/evidence/<name>` before treating it as valid.
@@ -287,10 +289,10 @@ For each cluster:
 10. Recapture complete affected modes, not only the original sample.
 11. Fold only faithful, comparable captures into the authoritative matrix. Mark every captured row
     the campaign did not recapture `preserved`, then regenerate with
-    `npm run gen:performance-matrix -- --strict <manifest>`; that command runs the staleness check
-    in-process against the manifest it resolved, and `--strict` is what turns a row left behind into
-    a failure rather than a report (ADR-0159). Validate every generator-owned output and prove
-    JSON/Markdown/HTML agreement where present.
+    `npm run gen:performance-matrix -- --strict <manifest>`. That command runs the age report
+    in-process against the manifest it resolved, and `--strict` fails any section that lacks a
+    `capturedOn` date or a resolvable product commit (ADR-0175). Validate every generator-owned
+    output and prove JSON/Markdown/HTML agreement where present.
 12. Commit and push each causally coherent verified product improvement separately, update raw
     evidence and remaining status in the campaign ledger, and proceed only from a clean tree. A
     directly useful harness change may precede it in the same cluster, but never substitutes for the
@@ -335,12 +337,12 @@ Treat these as steering inside the active campaign, not as replacements for the 
 * **status** — report the overall campaign status in commentary, including the freshly established
   baseline; product clusters and PRs already merged; product, harness-repair, and
   capture/evidence-only commits as separate lists; the product experiment each harness repair
-  served; the exact current in-flight cluster, phase, branch/PR, and latest evidence; remaining
-  current red, stale, incomparable, unavailable, and blocked cells; current runner/device blockers;
-  and the best evidence-based estimate of work left. State explicitly when no product optimization
-  has landed. Re-read live matrix, git, PR, review, and CI state where it may have changed. Do not
-  send a final response, stop tools, pause captures, or treat the question as turn-terminating.
-  Continue the in-flight campaign after answering.
+  served; the exact current in-flight cluster, phase, branch/PR, and latest evidence; remaining open
+  red cells with their capture ages, and incomparable, unavailable, and blocked cells; current
+  runner/device blockers; and the best evidence-based estimate of work left. State explicitly when
+  no product optimization has landed. Re-read live matrix, git, PR, review, and CI state where it
+  may have changed. Do not send a final response, stop tools, pause captures, or treat the question
+  as turn-terminating. Continue the in-flight campaign after answering.
 * **pause** — stop selecting new clusters, finish or safely back out the current experiment, leave
   the current branch and PR evidence coherent, push a recoverable checkpoint, and report the exact
   resume point. Do not merge or present a paused partial cluster as mergeable.
@@ -371,35 +373,37 @@ The workflow must not depend on provider-specific goal tracking. The matrix, raw
 history, merged PRs, and campaign ledger remain the durable source of truth.
 
 When Goal mode is available, use it only if the user explicitly requests Goal mode for this
-campaign. Create one objective for zero current, scoreable, unexplained red cells on the
-release-gate rows (ADR-0156, ADR-0160) and omit a token budget unless the user supplies one. Goal
-mode is useful for automatic continuation and for keeping the terminal condition visible across long
-tool runs. It is a poor fit for an ordinary campaign that may receive `pause` or `wrap up`: it
-supports completion or genuine blocking, not a wrap-up or stop-at-mergeable pause, permits only one
-active goal, and does not replace external checkpoints. Never mark the goal complete for an
-improvement, a green cluster, or a wrap-up that leaves current, scoreable, unexplained reds on a
-release-gate row.
+campaign. Create one objective for zero scoreable, unexplained red cells on the release-gate rows,
+each shown with its capture age (ADR-0156, ADR-0160, ADR-0175), and omit a token budget unless the
+user supplies one. Goal mode is useful for automatic continuation and for keeping the terminal
+condition visible across long tool runs. It is a poor fit for an ordinary campaign that may receive
+`pause` or `wrap up`: it supports completion or genuine blocking, not a wrap-up or stop-at-mergeable
+pause, permits only one active goal, and does not replace external checkpoints. Never mark the goal
+complete for an improvement, a green cluster, or a wrap-up that leaves scoreable, unexplained reds
+on a release-gate row, however old.
 
 ## Completion gate
 
 Complete the full campaign only when:
 
-* a freshly regenerated matrix has zero current, scoreable, **unexplained** red cells on the
-  release-gate rows (ADR-0156) — a red cell counts as explained only when an ADR records its
-  disposition with the measured basis, the trace attribution, and the reopen condition (ADR-0160's
-  measured allowances are the shape; the matrix renders every allowance beside its gates), and a
-  disposition granted by the campaign itself rather than recorded by the owner does not count — and
-  no release-gate cell that is unscoreable because its instrument is uncalibrated — such a cell
-  counts as red until the runtime is calibrated or recorded as uncalibratable; simulator and
-  emulator red is rendered and reported, never counted as remainder, and a Mac cell counts only when
-  it turned red on a change that was green on the trunk;
+* a freshly regenerated matrix has zero scoreable, **unexplained** red cells on the release-gate
+  rows, each shown with its capture age (ADR-0156, ADR-0175) — the matrix's **Open release-gate
+  reds** list is that count, and an old red keeps counting until it is recaptured or explained. A
+  red cell counts as explained only when an ADR records its disposition with the measured basis, the
+  trace attribution, and the reopen condition (ADR-0160's measured allowances are the shape; the
+  matrix renders every allowance beside its gates), and a disposition granted by the campaign itself
+  rather than recorded by the owner does not count — and no release-gate cell that is unscoreable
+  because its instrument is uncalibrated — such a cell counts as red until the runtime is calibrated
+  or recorded as uncalibratable; simulator and emulator red is rendered and reported, never counted
+  as remainder, and a Mac cell counts only when it turned red on a change that was green on the
+  trunk;
 * every genuine product red on a release-gate row (or a Mac cell that turned red on a change that
   was green on the trunk) that existed during the campaign has a recorded product outcome — a
   verified improvement or an empirically rejected candidate followed by the next hypothesis; a
   campaign with such reds and only harness, documentation, or capture commits is incomplete;
-* every stale or unavailable scoreable cell on a release-gate row has a faithful current
-  replacement; a stale advisory row is either recaptured or marked preserved so it stops claiming
-  currency;
+* every unavailable scoreable cell on a release-gate row has a faithful capture, and every captured
+  section has a `capturedOn` date and a resolvable product commit (`--strict`, ADR-0175); an
+  advisory row the campaign did not recapture is marked preserved;
 * capture-path blockers on release-gate rows are fixed and every affected release-gate target is
   recaptured; an advisory target's blocker is filed as an issue, and a genuinely unsupported mode
   stays explicitly unscoreable rather than being counted as a pass;

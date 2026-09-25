@@ -112,9 +112,6 @@ function normalizedActions(results) {
   return {
     actionCount: results.length,
     passedActionCount: results.filter((result) => result.passed).length,
-    finalProductCommitActionCount: results.filter(
-      (result) => result.productCommit === 'abcdef123456'
-    ).length,
     sources: [{ productCommit: 'abcdef123456' }],
     worst: {
       firstFrameP95: 1,
@@ -1388,15 +1385,44 @@ describe('deployment matrix report', () => {
       expect(renderMarkdown(matrix)).toContain('| 42 |');
     });
 
-    it('recomputes final-commit coverage for preserved actions', () => {
+    // ADR-0175: a section is read by how old its evidence is, so the date travels
+    // into data.json and every provenance cell states its age at the report date.
+    it('carries each section capture date into data.json and renders its age', () => {
       const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
       temporaryDirectories.push(manifestDirectory);
-      const actions = normalizedActions([
-        action('old action', true, 'old123'),
-        action('another old action', true, 'old123'),
+      publishReport(manifestDirectory, {
+        actions: normalizedActions([action('old action', true, 'old123')]),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], {
+          drawing: {},
+          actionSources: 'preserved',
+          capturedOn: { actions: '2026-08-01', drawing: '2026-08-19' },
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
       ]);
-      actions.finalProductCommitActionCount = actions.results.length;
-      publishReport(manifestDirectory, { actions });
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+      const markdown = renderMarkdown(matrix);
+
+      expect(matrix.targets[0].modes[0].capturedOn).toEqual({
+        drawing: '2026-08-19',
+        actions: '2026-08-01',
+      });
+      expect(markdown).toContain('abcdef123456 (2026-08-01 · 19 days)');
+      expect(markdown).toContain('final123 (2026-08-19 · 1 day)');
+      expect(renderReport(matrix)).toContain('<span class="age">2026-08-01 · 19 days</span>');
+    });
+
+    // The exact-SHA coverage count punished routine merge traffic: every product
+    // commit after a capture turned it to zero (issue 2267). Age replaces it.
+    it('drops the retired final-commit action coverage from the report', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      publishReport(manifestDirectory, {
+        actions: normalizedActions([action('old action', true, 'old123')]),
+      });
       const source = manifest([
         capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
         ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
@@ -1405,8 +1431,102 @@ describe('deployment matrix report', () => {
 
       const matrix = normalizeMatrix(source, manifestDirectory);
 
-      expect(matrix.targets[0].modes[0].actions.finalProductCommitActionCount).toBe(0);
-      expect(renderMarkdown(matrix)).toContain('| 0 / 2 |');
+      expect(matrix.targets[0].modes[0].actions).not.toHaveProperty(
+        'finalProductCommitActionCount'
+      );
+      expect(renderMarkdown(matrix)).not.toContain('At final commit');
+      expect(renderReport(matrix)).not.toContain('Actions at final commit');
+    });
+
+    it('refuses a capture date that is not a real calendar day', () => {
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { capturedOn: { drawing: '2026-02-30' } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+      expect(() => normalizeMatrix(source)).toThrow(
+        'capturedOn.drawing 2026-02-30 is not YYYY-MM-DD'
+      );
+    });
+
+    it('refuses a capture date for a section the matrix does not have', () => {
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { capturedOn: { rotation: '2026-08-01' } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+      expect(() => normalizeMatrix(source)).toThrow('capturedOn names unknown section rotation');
+    });
+
+    // The ADR-0175 gate: zero scoreable, unexplained red cells on the release-gate
+    // rows, each shown with its capture age. An old red keeps counting.
+    it('lists every open release-gate red with its capture age, oldest first', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([
+        action('idle frame control', true, 'old123'),
+        action('old failing action', false, 'old123'),
+        action('old passing action', true, 'old123'),
+      ]);
+      publishReport(manifestDirectory, { actions }, [
+        {
+          id: 'portrait-dark',
+          undo: null,
+          drawing: publishedDrawing,
+          actions: normalizedActions([
+            action('idle frame control', true, 'mid123'),
+            action('newer failing action', false, 'mid123'),
+          ]),
+        },
+      ]);
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], {
+          drawing: {},
+          actionSources: 'preserved',
+          capturedOn: { actions: '2026-08-10' },
+        }),
+        capturedManifestMode(modeSpecs[1], {
+          drawing: {},
+          actionSources: 'preserved',
+          capturedOn: { actions: '2026-07-31' },
+        }),
+        ...modeSpecs.slice(2).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const markdown = renderMarkdown(normalizeMatrix(source, manifestDirectory));
+      const openReds = markdown.slice(
+        markdown.indexOf('## Open release-gate reds'),
+        markdown.indexOf('## Acceptance gates')
+      );
+
+      expect(openReds).toContain('2 unexplained red cells on the release-gate rows');
+      expect(openReds).not.toContain('old passing action');
+      expect(openReds.indexOf('newer failing action')).toBeLessThan(
+        openReds.indexOf('old failing action')
+      );
+      expect(openReds).toContain('2026-07-31 · 20 days');
+      expect(openReds).toContain('2026-08-10 · 10 days');
+    });
+
+    it('states the completion gate holds when no release-gate red is open', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      publishReport(manifestDirectory, {
+        actions: normalizedActions([
+          action('idle frame control', true, 'old123'),
+          action('old passing action', true, 'old123'),
+        ]),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      expect(renderMarkdown(normalizeMatrix(source, manifestDirectory))).toContain(
+        'the ADR-0175 completion gate holds on this report'
+      );
     });
 
     it('renders preserved action evidence that predates readiness samples', () => {

@@ -898,7 +898,7 @@ npm run perf:campaign:sources -- --target=android-device-web \
   --manifest=scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 
 # 3. regenerate; every untouched cell keeps its preserved evidence. --strict makes this
-#    regenerate a currency claim: any captured row left behind fails it (ADR-0159)
+#    regenerate a provenance claim: any undated or uncommitted section fails it (ADR-0175)
 npm run gen:performance-matrix -- --strict scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
 
@@ -919,12 +919,12 @@ Two properties of step 2 decide how small an increment can be:
   of re-dating it to the drawing recapture. It writes `"actionSources": "preserved"` over raw sweep
   pointers, so the generator copies the published section from `preservedEvidence.from` rather than
   re-scoring an old sweep under current rules — which would refuse a sweep that predates a
-  `FULL_ACTION_GROUPS` change. The one field the copy re-derives is `finalProductCommitActionCount`:
-  when the manifest's `productCommit` moves, a historical sweep stops counting as coverage of the
-  new commit. The manifest therefore has to declare `preservedEvidence`, and the fold refuses when
-  it does not. A section already `preserved` or `captured-untracked` keeps its route and provenance.
-  The fold refuses `--preserve-actions` when that mode already has a usable action artifact in the
-  output root, so a stale runbook flag cannot discard a successful fresh sweep.
+  `FULL_ACTION_GROUPS` change. The copy re-derives nothing, and the section keeps its `capturedOn`
+  date, so its age keeps growing rather than reading as coverage of the new commit. The manifest
+  therefore has to declare `preservedEvidence`, and the fold refuses when it does not. A section
+  already `preserved` or `captured-untracked` keeps its route and provenance. The fold refuses
+  `--preserve-actions` when that mode already has a usable action artifact in the output root, so a
+  stale runbook flag cannot discard a successful fresh sweep.
 * **A cell is usable exactly when the campaign runner would accept it.** The fold judges each
   artifact with the runner's own `cellInspection` over the same plan cell that
   `perf:campaign:status` inspects, so the two cannot disagree: a sweep status reports
@@ -941,13 +941,17 @@ Run `npm run perf:campaign:status -- --target=<id> --output-root=<root>` between
 decides completion from the runner's own artifact inspection rather than by counting ledger rows,
 which is what makes it trustworthy after a resumed run.
 
-Step 3 chains `check:matrix-staleness` in process. By default it reports which captured rows are
-behind the current product surface and exits 0: rows go stale by design between campaigns, since the
-suite cannot run on every product commit (ADR-0159). Pass `--strict`
-(`npm run gen:performance-matrix -- --strict`) at the regenerate where the campaign asserts that
-every captured row is current; a stale or unreachable row then fails that regenerate rather than
-being published as current. Rows the campaign did not recapture are marked preserved before that
-assertion, not silently carried as current.
+Step 2 also dates every section it writes: `capturedOn` takes the `perf-run` stamp in the artifacts'
+`automation.loadedUrl` (the iOS XCUITest drawing transport records one), and falls back to the fold
+date when no artifact carries a stamp (ADR-0175).
+
+Step 3 chains `check:matrix-staleness` in process. It ranks every captured section by capture age,
+with the commits that landed since, and exits 0: every section is behind the tip between campaigns,
+since the suite cannot run on every product commit, and its age is what a reader needs (ADR-0175).
+Pass `--strict` (`npm run gen:performance-matrix -- --strict`) at the campaign's regenerate to
+assert provenance-complete; a section without a `capturedOn` date or a resolvable product commit
+then fails that regenerate. Rows the campaign did not recapture are marked preserved before it, so
+they keep the date and commit they were published with.
 
 Three things about `perf:campaign` that each cost a launch:
 
@@ -1649,21 +1653,20 @@ whose chunks a later rebuild has replaced (`manifest OK` fails on the entry fetc
 is yours to stop.
 
 The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
-`npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell
-currently claiming to be a measurement was taken from source that has since changed — without a
-device, and `gen:performance-matrix` runs it for you. It reports rather than fails by default;
-`--strict` turns a stale row into a failure for the one regenerate that asserts currency (ADR-0159).
+`npm run check:matrix-staleness` answers the cheaper half of the question — how old each section's
+evidence is, and how many engine and product commits have landed on top of it — without a device,
+and `gen:performance-matrix` runs it for you. It reports ages and never fails on one; `--strict`
+fails only a section without a `capturedOn` date or a resolvable product commit (ADR-0175).
 
 **Mind the check's `--base`, which defaults to `HEAD`.** Run from a campaign branch, that counts the
-branch's own commits as product drift and reports STALE for cells that are current on the trunk —
-which reads as "this cell needs a recapture" when the truthful answer is "this branch changed the
-product". For the diagnostic question above — is this red cell a measurement of source that has
-since changed on the published product? — pass `--base=origin/main` from any branch carrying its own
-commits. The `HEAD` default is the right question only at fold time, when the branch's own changes
-are exactly what the cells must be current against. On 2026-08 this false STALE cost nothing only
-because it was recognized; the inverse error — trusting a red cell that staleness would have excused
-— cost five candidate implementations written against a 50 ms gate the raster-queue extraction had
-already fixed, none of which was ever measured.
+branch's own commits as product drift, which reads as "this cell needs a recapture" when the
+truthful answer is "this branch changed the product". For the diagnostic question above — has the
+published product changed under this red cell? — pass `--base=origin/main` from any branch carrying
+its own commits. The `HEAD` default is the right question only at fold time, when the branch's own
+changes are exactly what the cells are measured against. On 2026-08 a false drift reading cost
+nothing only because it was recognized; the inverse error — trusting a red cell whose measured path
+had since changed — cost five candidate implementations written against a 50 ms gate the
+raster-queue extraction had already fixed, none of which was ever measured.
 
 ## A focused `--actions` subset is not the canonical sweep
 

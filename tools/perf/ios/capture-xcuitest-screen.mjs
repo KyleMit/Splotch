@@ -9,6 +9,7 @@ import {
 } from '../lib/eraser-fill.mjs';
 import { CAMPAIGN_TARGETS, NATIVE_TRANSPORT, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
+import { PERF_RUN_PARAM } from '../lib/capture-date.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { captureRuntime, inputFidelity } from '../lib/input-fidelity.mjs';
 import {
@@ -480,7 +481,7 @@ export async function switchToWebContext(client, sessionId) {
 
 function profilingUrl(appUrl) {
   const url = new URL(appUrl);
-  url.searchParams.set('perf-run', String(Date.now()));
+  url.searchParams.set(PERF_RUN_PARAM, String(Date.now()));
   return url.toString();
 }
 

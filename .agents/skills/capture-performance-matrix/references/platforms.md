@@ -443,8 +443,9 @@ npm run gen:performance-matrix -- --strict \
   scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
 
-`--strict` is what makes this regenerate a currency claim: the chained staleness check fails it on
-any captured row whose product surface has moved (ADR-0159). Mark the rows this campaign did not
+`--strict` makes this regenerate a provenance claim: the chained age report fails it on any captured
+section without a `capturedOn` date or a product commit this checkout can resolve (ADR-0175).
+`perf:campaign:sources` writes each folded section's date. Mark the rows this campaign did not
 recapture `preserved` first, then regenerate with the flag. Without it the check only reports, which
 is the right default between campaigns and the wrong one here.
 

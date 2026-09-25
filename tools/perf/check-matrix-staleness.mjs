@@ -1,52 +1,46 @@
-// Report when a matrix cell that CLAIMS to be a current measurement was captured
-// from product source that has since changed; fail on it only under --strict.
+// Report how old each performance-matrix section's evidence is, oldest first;
+// fail only under --strict, and then only on incomplete provenance.
 //
 //   npm run check:matrix-staleness
-//   npm run check:matrix-staleness -- --manifest=<sources.json> --base=HEAD
+//   npm run check:matrix-staleness -- --manifest=<sources.json> --base=origin/main
 //   npm run check:matrix-staleness -- --strict
 //
-// The performance matrix records the product commit each cell was captured at,
-// and nothing compared it to the branch. That gap is not theoretical: on
-// 2026-08-22 `ipad-device-web` was captured at ae674d71 and four further commits
-// to the drawing engine landed the same evening, so the published rows — and the
-// epic citing them as the one target on the corrected metric — described a build
-// nobody was running. It took a physical-device A/B to notice.
+// The matrix is refreshed by periodic campaigns while `main` takes several
+// product merges a day, so a section is almost never captured at the tip. What a
+// reader needs is how old the evidence is and how much has landed since, not a
+// current-or-stale verdict that is false for most of every section's life
+// (ADR-0175, superseding ADR-0159). Each captured section — drawing, undo, and
+// actions, preserved ones included — is reported with its `capturedOn` date, its
+// age in days, its product commit, and the commits that landed on top of it.
 //
-// Rows go stale by design between campaigns: the suite is far too expensive to
-// run on every product commit, so the matrix is refreshed periodically by a
-// campaign (ADR-0159). A STALE row is therefore the normal state of a committed
-// matrix, and the default run reports it without failing. The failure this check
-// exists to end is a campaign CITING a stale row as current, and the remedy is
-// the drift being visible at every regeneration — not a generator that is red
-// for every commit between campaigns. `--strict` is for the regenerate where a
-// campaign asserts that every captured row is current.
-//
-// A PRESERVED cell is exempt by construction: it is already labelled historical
-// evidence carried forward. A CAPTURED-UNTRACKED cell is different: its raw source
-// is absent from git, but it still claims currency and therefore remains checked.
+// `--strict` asserts provenance-complete: every captured section carries a valid
+// `capturedOn` date and a product commit this checkout can resolve. A section
+// that cannot say when or from what it was captured cannot be aged, so that is
+// the claim a campaign's regenerate makes and the one worth failing on.
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
+import { captureAgeDays, isCaptureDate, utcDate } from './lib/capture-date.mjs';
+import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
 
 const DEFAULT_MANIFEST = 'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json';
+const DISPLAY_COMMIT_CHARS = 12;
 
 // The product surface a capture actually measures. An enumerated *directory* scope
 // was tried first and missed by the margin an enumeration always does: gating on
-// `web/src/lib/drawing` reported "current" across a commit that changed
-// DrawingCanvas.svelte and drawing-audio scheduling. Widening to `web/src` alone
-// then missed the next one — 105c23bd..a347da5e has an identical `web/src` tree and
-// changes three pencil sound assets, which a drawing capture plays.
+// `web/src/lib/drawing` missed a commit that changed DrawingCanvas.svelte and
+// drawing-audio scheduling. Widening to `web/src` alone then missed the next one —
+// 105c23bd..a347da5e has an identical `web/src` tree and changes three pencil
+// sound assets, which a drawing capture plays.
 //
-// So the fingerprint spans source, the static assets served with it, and the build
-// inputs that decide what the bundle contains. Two deliberate absences, both for
-// the same reason — a check that fires on changes which cannot move a frame is one
-// people learn to ignore. `web/tests` is excluded because a spec cannot affect the
-// product. `package.json` is excluded in favour of `pnpm-lock.yaml`: the lockfile
-// moves when dependencies do, while package.json also moves for every script
-// added, which would mark every capture stale the next time the harness is
-// touched — including by this campaign's own commits.
+// So the surface spans source, the static assets served with it, and the build
+// inputs that decide what the bundle contains. `web/tests` is excluded because a
+// spec cannot affect the product. `package.json` is excluded in favour of
+// `pnpm-lock.yaml`: the lockfile moves when dependencies do, while package.json
+// also moves for every script added.
 export const MEASURED_SURFACE = [
   'web/src',
   'web/static',
@@ -56,244 +50,286 @@ export const MEASURED_SURFACE = [
 ];
 
 // `web/tests` is excluded above on the principle that a spec cannot affect the
-// product. This repo colocates unit tests beside their source, so most specs are
-// under `web/src` and that exclusion missed them — which is not a hypothetical
-// margin. On 2026-08-23 a comment edit inside `web/src/lib/icons/tokenFallback.
-// test.ts` was the entire difference between five matrix targets and the current
-// tree, marking 100 cells stale and exiting the generator 1 on every regeneration
-// from then on.
-//
-// A tree hash cannot express "except these files", so the exception is applied
-// where the hashes already differ: name the differing files and ask whether any
-// of them ships. Any real source change still reads STALE, and a commit touching
-// both a spec and a source file reads STALE on the source file.
+// product, but this repo colocates unit tests beside their source, so a consumer
+// that must ignore spec-only drift filters these names out of the surface.
 export const SPEC_FILE = /\.(test|spec)\.[^.]+$/;
 
-export function everyChangeIsASpec(paths) {
-  return paths.length > 0 && paths.every((path) => SPEC_FILE.test(path));
+// Counted separately from the measured surface because the drawing engine is the
+// narrow path most drawing sections are read for.
+const ENGINE_SURFACE = ['web/src/lib/drawing'];
+
+const unique = (values) => [...new Set(values.filter(Boolean))];
+
+function evidenceState(declared) {
+  return declared === PRESERVED || declared === CAPTURED_UNTRACKED ? declared : 'captured';
 }
 
-// Every provenance field a mode carries, so undo and action captures are held to
-// the same standard as drawing rather than going unchecked.
-export function modeProvenance(mode) {
-  const commits = new Set();
-  if (mode.drawing !== 'preserved' && mode.drawing && mode.drawingProductCommit) {
-    commits.add(mode.drawingProductCommit);
-  }
-  if (mode.undoSource !== 'preserved') {
-    if (mode.undoProductCommit) commits.add(mode.undoProductCommit);
-  }
-  if (mode.actionSources === 'captured-untracked') {
-    const actionCommit = mode.actionProductCommit ?? mode.drawingProductCommit;
-    if (actionCommit) commits.add(actionCommit);
-  } else if (Array.isArray(mode.actionSources)) {
-    for (const source of mode.actionSources) {
-      if (source?.productCommit) commits.add(source.productCommit);
-    }
-  }
-  return [...commits];
-}
-
-export function capturedCommits(target) {
-  const commits = new Set();
-  for (const mode of target.modes ?? []) {
-    for (const commit of modeProvenance(mode)) commits.add(commit);
-  }
-  return [...commits];
-}
-
-export function assessManifest(manifest, { surfaceAt, commitsSince, changedFilesSince }) {
-  const current = surfaceAt('HEAD');
-  const rows = [];
-  for (const target of manifest.targets ?? []) {
-    for (const commit of capturedCommits(target)) {
-      const surface = surfaceAt(commit);
-      const specsOnly =
-        surface && surface !== current && changedFilesSince
-          ? everyChangeIsASpec(changedFilesSince(commit))
-          : false;
-      const verdict = !surface
-        ? 'UNVERIFIABLE'
-        : surface === current || specsOnly
-          ? 'current'
-          : 'STALE';
-      rows.push({
-        target: target.id,
-        capturedAt: commit.slice(0, 12),
-        'measured surface': surface ? surface.slice(0, 12) : '(unreachable)',
-        'engine commits since': commitsSince ? commitsSince(commit) : undefined,
-        verdict: specsOnly ? 'current (specs only)' : verdict,
-      });
-    }
-  }
-  return rows;
-}
-
-function gitSurfaceReader(base) {
-  const at = (commit, path) => {
-    try {
-      return execFileSync('git', ['rev-parse', `${commit}:${path}`], {
-        cwd: ROOT,
-        encoding: 'utf8',
-      }).trim();
-    } catch (error) {
-      // A nonzero git exit means the path did not exist at that commit — a
-      // real difference in the measured surface, not an unreadable one (the
-      // commit itself was already proven reachable below). A spawn failure
-      // (no git, bad cwd) has no exit status and must not read as 'absent':
-      // two wholesale-failing reads compare equal and report the matrix
-      // current (issue 1296).
-      if (error?.status == null) throw error;
-      return 'absent';
-    }
-  };
-  return (commitOrBase) => {
-    const commit = commitOrBase === 'HEAD' ? base : commitOrBase;
-    try {
-      execFileSync('git', ['rev-parse', '--verify', '--quiet', `${commit}^{commit}`], {
-        cwd: ROOT,
-        encoding: 'utf8',
-      });
-    } catch {
-      // Unreachable is UNVERIFIABLE, never "current" — a shallow clone makes every
-      // lookup fail, and reporting the matrix current there is the failure shape
-      // this exists to end.
-      return null;
-    }
-    return MEASURED_SURFACE.map((path) => `${path}=${at(commit, path)}`).join(' ');
-  };
-}
-
-function changedFileReader(base) {
-  return (commit) => {
-    try {
-      return execFileSync(
-        'git',
-        ['diff', '--name-only', `${commit}`, base, '--', ...MEASURED_SURFACE],
-        { cwd: ROOT, encoding: 'utf8' }
-      )
-        .split('\n')
-        .filter(Boolean);
-    } catch {
-      // Unreadable is not "nothing changed": returning an empty list here would
-      // make `everyChangeIsASpec` false and leave the STALE verdict standing,
-      // which is the safe direction.
-      return [];
-    }
-  };
-}
-
-function engineCommitCounter(base) {
-  return (commit) => {
-    try {
-      return Number(
-        execFileSync(
-          'git',
-          ['rev-list', '--count', `${commit}..${base}`, '--', 'web/src/lib/drawing'],
-          { cwd: ROOT, encoding: 'utf8' }
-        ).trim()
-      );
-    } catch {
-      return undefined;
-    }
-  };
-}
-
-// The HEAD default is fold-time semantics and stays: gen-performance-matrix
-// chains this check in-process, asking whether the captures match the tree the
-// matrix is being folded from. But run from a branch carrying its own commits,
-// "current" then means current against THIS branch — not against the branch
-// point the published matrix describes — and nothing said so. The warning
-// names that ambiguity without changing the verdict or the exit code. Silent
-// when origin/main cannot be resolved: there is no branch point to diverge
-// from, and a warning about an unanswerable comparison helps nobody.
-export function implicitBaseWarning({ explicitBase, headSha, mergeBaseSha }) {
-  if (explicitBase || !headSha || !mergeBaseSha || headSha === mergeBaseSha) return null;
-  return (
-    'WARN  --base defaulted to HEAD, and HEAD carries commits origin/main lacks — a ' +
-    '"current" verdict means current against this branch, not against the published branch ' +
-    'point. Pass --base=origin/main to check the captures against it, or --base=HEAD to ' +
-    'compare against this branch deliberately.'
+function publishedDrawingCommits(publishedMode) {
+  return Object.values(publishedMode?.drawing ?? {}).flatMap((entry) =>
+    (entry?.runs ?? []).map((run) => run.productCommit)
   );
 }
 
-// Null is "this ref cannot be resolved" — a repo with no origin/main has no
-// branch point to warn about, so the caller stays silent. Broken code must
-// not read the same way, hence rethrowIfBroken.
+function actionCommits(mode, publishedMode) {
+  if (mode.actionSources === PRESERVED) {
+    return (publishedMode?.actions?.sources ?? []).map((source) => source.productCommit);
+  }
+  if (mode.actionSources === CAPTURED_UNTRACKED) {
+    return [mode.actionProductCommit ?? mode.drawingProductCommit];
+  }
+  return (mode.actionSources ?? []).map((source) => source?.productCommit);
+}
+
+// Every section a captured mode publishes, with the commits it was captured at.
+// A preserved section's commits are the ones it was published with, read from
+// the report it is carried from; the manifest's own commit fields describe the
+// sections this manifest captured.
+export function sectionProvenance(mode, publishedMode) {
+  if (mode.status !== 'captured') return [];
+  const section = (name, declared, commits) => ({
+    section: name,
+    state: evidenceState(declared),
+    capturedOn: mode.capturedOn?.[name],
+    commits: unique(commits),
+  });
+  const sections = [
+    section(
+      'drawing',
+      mode.drawing,
+      mode.drawing === PRESERVED
+        ? publishedDrawingCommits(publishedMode)
+        : [mode.drawingProductCommit]
+    ),
+  ];
+  if (mode.undoSource !== undefined) {
+    sections.push(
+      section(
+        'undo',
+        mode.undoSource,
+        mode.undoSource === PRESERVED
+          ? [publishedMode?.undo?.productCommit]
+          : [mode.undoProductCommit ?? mode.drawingProductCommit]
+      )
+    );
+  }
+  if (mode.actionSources !== undefined && !mode.actionsUnavailableReason) {
+    sections.push(section('actions', mode.actionSources, actionCommits(mode, publishedMode)));
+  }
+  return sections;
+}
+
+function provenanceProblems({ capturedOn, commits }, isReachable) {
+  const problems = [];
+  if (capturedOn === undefined) problems.push('no capturedOn date');
+  else if (!isCaptureDate(capturedOn)) problems.push(`capturedOn ${capturedOn} is not YYYY-MM-DD`);
+  if (!commits.length) problems.push('no product commit');
+  for (const commit of commits) {
+    if (!isReachable(commit))
+      problems.push(`commit ${commit.slice(0, DISPLAY_COMMIT_CHARS)} is unreachable`);
+  }
+  return problems;
+}
+
+export function assessManifest(manifest, { publishedModeFor, today, isReachable }) {
+  const sections = [];
+  for (const target of manifest.targets ?? []) {
+    for (const mode of target.modes ?? []) {
+      for (const entry of sectionProvenance(mode, publishedModeFor(target.id, mode.id))) {
+        sections.push({
+          target: target.id,
+          mode: mode.id,
+          ...entry,
+          ageDays: captureAgeDays(entry.capturedOn, today),
+          problems: provenanceProblems(entry, isReachable),
+        });
+      }
+    }
+  }
+  return sections;
+}
+
+// One row per target section that shares a date, a commit, and an evidence state,
+// oldest first; an undated section sorts ahead of every dated one, since its age
+// is the thing nobody can read.
+export function ageReportRows(sections, { commitsSince }) {
+  const groups = new Map();
+  for (const entry of sections) {
+    const key = [
+      entry.target,
+      entry.section,
+      entry.capturedOn,
+      entry.commits.join(','),
+      entry.state,
+    ].join('|');
+    const group = groups.get(key) ?? { ...entry, modes: [] };
+    group.modes.push(entry.mode);
+    groups.set(key, group);
+  }
+  return [...groups.values()]
+    .sort((a, b) => (b.ageDays ?? Infinity) - (a.ageDays ?? Infinity))
+    .map((group) => {
+      const [commit] = group.commits;
+      return {
+        target: group.target,
+        section: group.section,
+        modes: group.modes.join(', '),
+        evidence: group.state,
+        capturedOn: group.capturedOn ?? '(undated)',
+        'age (days)': group.ageDays ?? '?',
+        capturedAt:
+          group.commits.map((sha) => sha.slice(0, DISPLAY_COMMIT_CHARS)).join(', ') || '(none)',
+        'engine commits since': commit ? commitsSince(commit, ENGINE_SURFACE) : undefined,
+        'product commits since': commit ? commitsSince(commit, MEASURED_SURFACE) : undefined,
+      };
+    });
+}
+
+// The verdict-to-exit policy, kept pure so the default and --strict outcomes are
+// testable without a git repository or a process exit.
+export function provenanceOutcome({ sections, strict }) {
+  const incomplete = sections.filter((entry) => entry.problems.length);
+  const lines = [];
+  if (incomplete.length) {
+    const groups = new Map();
+    for (const entry of incomplete) {
+      const problems = entry.problems.join('; ');
+      const key = `${entry.target}|${entry.section}|${problems}`;
+      const group = groups.get(key) ?? { ...entry, problems, modes: [] };
+      group.modes.push(entry.mode);
+      groups.set(key, group);
+    }
+    const list = [...groups.values()]
+      .map(
+        (group) =>
+          `${group.target}/${group.section} [${group.modes.join(', ')}] (${group.problems})`
+      )
+      .join(', ');
+    lines.push(
+      `${strict ? 'FAIL' : 'WARN'}  ${incomplete.length} captured section(s) lack complete provenance: ${list}. ` +
+        'A shallow clone is the usual cause of an unreachable commit; a missing date needs capturedOn in the manifest.'
+    );
+  }
+  const dated = sections.filter((entry) => entry.ageDays !== null);
+  if (dated.length) {
+    const oldest = dated.reduce((a, b) => (b.ageDays > a.ageDays ? b : a));
+    lines.push(
+      `${sections.length} captured section(s); the oldest, ${oldest.target}/${oldest.mode}/${oldest.section}, ` +
+        `was captured ${oldest.capturedOn} (${oldest.ageDays} days ago). Age is reported, never failed: ` +
+        'an old red keeps counting until it is recaptured or explained (ADR-0175).'
+    );
+  }
+  const failed = strict && incomplete.length > 0;
+  if (failed) {
+    lines.push(
+      '--strict asserts provenance-complete: every captured section carries a capturedOn date and a ' +
+        'reachable product commit. Date or commit the sections above before asserting it.'
+    );
+  }
+  return { incomplete, lines, failed };
+}
+
+function commitCounter(base) {
+  const counts = new Map();
+  return (commit, pathspec) => {
+    const key = `${commit}|${pathspec.join(' ')}`;
+    if (!counts.has(key)) {
+      counts.set(key, gitCount(['rev-list', '--count', `${commit}..${base}`, '--', ...pathspec]));
+    }
+    return counts.get(key);
+  };
+}
+
+function gitCount(args) {
+  const line = gitLine(args);
+  return line === null ? undefined : Number(line);
+}
+
+function reachabilityReader() {
+  const known = new Map();
+  return (commit) => {
+    if (!known.has(commit)) {
+      known.set(
+        commit,
+        gitLine(['rev-parse', '--verify', '--quiet', `${commit}^{commit}`]) !== null
+      );
+    }
+    return known.get(commit);
+  };
+}
+
+// The HEAD default counts commits against the tree the matrix is being folded
+// from. Run from a branch carrying its own commits, the counts then include this
+// branch's work — not the drift since the published branch point — and nothing
+// said so. The warning names that ambiguity. Silent when origin/main cannot be
+// resolved: there is no branch point to diverge from.
+export function implicitBaseWarning({ explicitBase, headSha, mergeBaseSha }) {
+  if (explicitBase || !headSha || !mergeBaseSha || headSha === mergeBaseSha) return null;
+  return (
+    'WARN  --base defaulted to HEAD, and HEAD carries commits origin/main lacks — the commits-since ' +
+    'counts include this branch. Pass --base=origin/main to count against the published branch ' +
+    'point, or --base=HEAD to count against this branch deliberately.'
+  );
+}
+
+// Null is "this ref cannot be resolved" — an unreachable commit or a repo with no
+// origin/main. Broken code must not read the same way, hence rethrowIfBroken.
 function gitLine(args) {
   try {
-    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim() || null;
+    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }).trim() || null;
   } catch (error) {
     rethrowIfBroken(error);
     return null;
   }
 }
 
-// The verdict-to-exit policy, kept pure so the default and --strict outcomes are
-// testable without a git repository or a process exit. Neither mode reports an
-// UNVERIFIABLE commit as current; only --strict turns it, or a STALE row, into
-// a failure.
-export function stalenessOutcome({ rows, resolvedBase, strict }) {
-  const unverifiable = rows.filter((row) => row.verdict === 'UNVERIFIABLE');
-  const stale = rows.filter((row) => row.verdict === 'STALE');
-  const list = (subset) => subset.map((row) => `${row.target} (${row.capturedAt})`).join(', ');
-  const lines = [];
-  if (unverifiable.length) {
-    lines.push(
-      `WARN  ${unverifiable.length} capture commit(s) are not reachable from ${resolvedBase}: ` +
-        `${list(unverifiable)}. A shallow clone is the usual cause — this needs the referenced ` +
-        'commits fetched. Not reported as "current".'
-    );
-  }
-  if (stale.length) {
-    lines.push(
-      `${stale.length} target(s) publish a capture taken from a product surface that has since ` +
-        `changed: ${list(stale)}. Expected between campaigns — the next campaign recaptures ` +
-        'them, or marks those modes preserved.'
-    );
-  } else if (!unverifiable.length) {
-    lines.push(`${rows.length} captured cell group(s), all from the current product surface.`);
-  }
-  const failed = strict && (unverifiable.length > 0 || stale.length > 0);
-  if (failed) {
-    lines.push(
-      '--strict asserts that every captured row is current. Recapture the rows above, or mark ' +
-        'them preserved, before asserting it.'
-    );
-  }
-  return { stale, unverifiable, lines, failed };
+// A preserved section is carried from the report the manifest names, so its
+// commits are read from there. A manifest with no such report has no preserved
+// section to read, and any it declares reports as missing a commit.
+function publishedModeReader(manifest, manifestFullPath) {
+  const from = manifest.preservedEvidence?.from;
+  const path = from && (isAbsolute(from) ? from : resolve(dirname(manifestFullPath), from));
+  const published = path && existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
+  const byTarget = new Map(
+    (published?.targets ?? []).map((target) => [
+      target.id,
+      new Map((target.modes ?? []).map((mode) => [mode.id, mode])),
+    ])
+  );
+  return (targetId, modeId) => byTarget.get(targetId)?.get(modeId) ?? null;
 }
 
 export async function checkMatrixStaleness({
   manifestPath = argFlag('manifest', DEFAULT_MANIFEST),
   base = argFlag('base'),
   strict = process.argv.includes('--strict'),
+  today = utcDate(Date.now()),
 } = {}) {
   const explicitBase = base !== undefined;
   const resolvedBase = base ?? 'HEAD';
-  console.log(`Comparing captured surfaces against --base=${resolvedBase}`);
+  console.log(`Section ages as of ${today}; commits counted against --base=${resolvedBase}`);
   const warning = implicitBaseWarning({
     explicitBase,
     headSha: gitLine(['rev-parse', 'HEAD']),
     mergeBaseSha: gitLine(['merge-base', 'HEAD', 'origin/main']),
   });
   if (warning) console.warn(warning);
-  const manifest = JSON.parse(readFileSync(`${ROOT}/${manifestPath}`, 'utf8'));
-  const rows = assessManifest(manifest, {
-    surfaceAt: gitSurfaceReader(resolvedBase),
-    commitsSince: engineCommitCounter(resolvedBase),
-    changedFilesSince: changedFileReader(resolvedBase),
+  const manifestFullPath = isAbsolute(manifestPath) ? manifestPath : join(ROOT, manifestPath);
+  const manifest = JSON.parse(readFileSync(manifestFullPath, 'utf8'));
+  const sections = assessManifest(manifest, {
+    publishedModeFor: publishedModeReader(manifest, manifestFullPath),
+    today,
+    isReachable: reachabilityReader(),
   });
-  if (!rows.length) {
-    console.log('No current captured cells in the manifest — every target is preserved evidence.');
-    return { rows, stale: [] };
+  if (!sections.length) {
+    console.log('No captured sections in the manifest.');
+    return { sections, incomplete: [] };
   }
-  console.table(rows);
+  console.table(ageReportRows(sections, { commitsSince: commitCounter(resolvedBase) }));
 
-  const outcome = stalenessOutcome({ rows, resolvedBase, strict });
+  const outcome = provenanceOutcome({ sections, strict });
   if (outcome.failed) fail(`\n${outcome.lines.join('\n')}`);
   console.log(`\n${outcome.lines.join('\n')}`);
-  return { rows, stale: outcome.stale };
+  return { sections, incomplete: outcome.incomplete };
 }
 
 if (isMain(import.meta.url)) {

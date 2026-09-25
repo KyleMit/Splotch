@@ -6,7 +6,7 @@
   "architecture": "tiled renderer",
   "sourceRoot": "../../../",
   "limitations": [
-    "This fold measures product commit 3928cd88edbf441530e473a4e3c0b6767926bfc6, main on 2026-09-23, at which all four physical release-gate rows were recaptured from scratch on 2026-09-23. The strict staleness check reports every freshly captured section current at that commit.",
+    "This fold measures product commit 3928cd88edbf441530e473a4e3c0b6767926bfc6, main on 2026-09-23, at which all four physical release-gate rows were recaptured from scratch on 2026-09-23. At that fold, the strict staleness check of the time (ADR-0159, since superseded by ADR-0175) reported every freshly captured section current at that commit.",
     "Freshly captured at 3928cd88: every drawing and pen-undo section in all four modes of all four physical rows, and the portrait-light and portrait-dark action sweeps on physical iPad native and physical Android web. The other twelve physical action sections could not be captured and are preserved from the published e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 sweeps (2026-09-05 to 2026-09-07), which keep that commit as their provenance and make no claim about 3928cd88.",
     "Why each of those twelve action sweeps is missing: physical iPad web has no scoreable sweep in any mode, because its AI-waiting actions need a secure context and the HTTPS front that provides one was not available to the unattended run (its one portrait-light sweep was refused as blocked coverage and is not folded). Physical iPad native landscape sweeps failed when the second Undo tap after a landscape-to-portrait rotation landed on the canvas. Physical Android web landscape sweeps failed because every color swatch in the landscape compact color flyout measured zero size. Physical Android native portrait sweeps failed when the native tap on the Dark theme button was not captured, and its landscape sweeps failed when Appium could not rotate the device to ROTATION_270.",
     "The preserved sweeps predate the 2026-09-17 ai-waiting and unavailable action groups and several later action labels. Their heatmap cells for those labels render as missing, not N/A. On the physical Android web and physical Android native landscape modes, which use the compact Settings shell that no current sweep covers, that includes the Accessibility section and tool-drawer toggles, which the compact shell may not offer at all; their tooltips say the shell is unverified.",
@@ -140,6 +140,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
             "pen": [
@@ -163,6 +168,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
             "pen": [
@@ -186,6 +196,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
             "pen": [
@@ -209,6 +224,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
             "pen": [
@@ -244,6 +264,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-23"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
             "pen": [
@@ -273,6 +298,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-23"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
             "pen": [
@@ -302,6 +332,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
             "pen": [
@@ -325,6 +360,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "drawing": {
             "pen": [
@@ -360,6 +400,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-01",
+            "undo": "2026-09-01",
+            "actions": "2026-09-01"
+          },
           "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -370,6 +415,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-01",
+            "undo": "2026-09-01",
+            "actions": "2026-09-01"
+          },
           "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -380,6 +430,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-01",
+            "undo": "2026-09-01",
+            "actions": "2026-09-01"
+          },
           "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -390,6 +445,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-01",
+            "undo": "2026-09-01",
+            "actions": "2026-09-01"
+          },
           "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -412,6 +472,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-28",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -422,6 +487,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-28",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -432,6 +502,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-28",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -442,6 +517,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-28",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -464,6 +544,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-23"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.2SIk_r4j.js",
           "buildDigest": "0db8b6601e82e23af46f61838d4b23dca59609c1ebb951e30a2cc6c25233c566",
@@ -495,6 +580,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-23"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.2SIk_r4j.js",
           "buildDigest": "0db8b6601e82e23af46f61838d4b23dca59609c1ebb951e30a2cc6c25233c566",
@@ -526,6 +616,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.2SIk_r4j.js",
           "buildDigest": "0db8b6601e82e23af46f61838d4b23dca59609c1ebb951e30a2cc6c25233c566",
@@ -551,6 +646,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.2SIk_r4j.js",
           "buildDigest": "0db8b6601e82e23af46f61838d4b23dca59609c1ebb951e30a2cc6c25233c566",
@@ -588,6 +688,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.DRKrKNDY.js",
           "buildDigest": "e7ba3db899181c6112a683758edd88624aef0978e4d0145067692c9bc10c2427",
@@ -613,6 +718,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.DRKrKNDY.js",
           "buildDigest": "e7ba3db899181c6112a683758edd88624aef0978e4d0145067692c9bc10c2427",
@@ -638,6 +748,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.DRKrKNDY.js",
           "buildDigest": "e7ba3db899181c6112a683758edd88624aef0978e4d0145067692c9bc10c2427",
@@ -663,6 +778,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-23",
+            "undo": "2026-09-23",
+            "actions": "2026-09-07"
+          },
           "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
           "buildEntry": "/_app/immutable/entry/start.DRKrKNDY.js",
           "buildDigest": "e7ba3db899181c6112a683758edd88624aef0978e4d0145067692c9bc10c2427",
@@ -700,6 +820,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-21",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "actionSources": "preserved",
@@ -711,6 +836,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-21",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "actionSources": "preserved",
@@ -722,6 +852,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-21",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "actionSources": "preserved",
@@ -733,6 +868,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-21",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "actionSources": "preserved",
@@ -756,6 +896,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-21",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "actionSources": "preserved",
@@ -767,6 +912,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-08-28",
+            "undo": "2026-08-21",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "actionSources": "preserved",
@@ -778,6 +928,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-08-21",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -789,6 +944,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-08-21",
+            "actions": "2026-08-28"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -812,6 +972,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -822,6 +987,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -832,6 +1002,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -842,6 +1017,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -864,6 +1044,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -874,6 +1059,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -884,6 +1074,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -894,6 +1089,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -916,6 +1116,11 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -926,6 +1131,11 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -936,6 +1146,11 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",
@@ -946,6 +1161,11 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
+          "capturedOn": {
+            "drawing": "2026-09-03",
+            "undo": "2026-09-03",
+            "actions": "2026-09-03"
+          },
           "drawingProductCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
           "drawing": "preserved",
           "undoSource": "preserved",

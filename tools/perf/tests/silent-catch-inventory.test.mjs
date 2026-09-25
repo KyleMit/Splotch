@@ -50,11 +50,6 @@ const AUDITED_SWALLOWS = {
   // browser close failing on a dropped device must not skip the adb restores.
   'android/capture-clear-drag.mjs': ['benign-catch@70c355796ec3', 'benign-catch@f8bad8994279'],
   'campaign-sources.mjs': ['bare-catch@0c0deda10ec3'],
-  'check-matrix-staleness.mjs': [
-    'bare-catch@128f2f5c7510',
-    'bare-catch@b79fc68a609d',
-    'bare-catch@c908b42fdfff',
-  ],
   'ios/capture-xcuitest-actions.mjs': [
     'benign-catch@02b480484846',
     'benign-catch@0f2d23941df5',

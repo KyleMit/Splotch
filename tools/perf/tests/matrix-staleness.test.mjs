@@ -1,270 +1,243 @@
 import { describe, expect, it } from 'vitest';
 import {
   MEASURED_SURFACE,
+  ageReportRows,
   assessManifest,
-  capturedCommits,
   implicitBaseWarning,
-  modeProvenance,
-  everyChangeIsASpec,
-  stalenessOutcome,
+  provenanceOutcome,
+  sectionProvenance,
 } from '../check-matrix-staleness.mjs';
 
-const target = (id, modes) => ({ id, modes });
-const captured = (commit) => ({ drawing: { pen: ['a.json'] }, drawingProductCommit: commit });
-const preserved = (commit) => ({ drawing: 'preserved', drawingProductCommit: commit });
-const capturedUntracked = (commit) => ({
-  drawing: 'captured-untracked',
+const DATES = { drawing: '2026-09-20', undo: '2026-09-20', actions: '2026-09-01' };
+
+const captured = (commit, capturedOn = DATES) => ({
+  id: 'portrait-light',
+  status: 'captured',
+  capturedOn,
+  drawing: { pen: ['a.json'] },
   drawingProductCommit: commit,
-  undoSource: 'captured-untracked',
-  actionSources: 'captured-untracked',
+  undoSource: 'a.json',
+  actionSources: [{ source: 'x.json', productCommit: commit, kind: 'full' }],
 });
 
-// Surface fingerprint per commit; 'HEAD' is the branch's current surface.
-const trees = (byCommit) => (commit) => byCommit[commit] ?? null;
+const manifestOf = (modes) => ({ targets: [{ id: 't', modes }] });
 
-describe('modeProvenance', () => {
-  // A preserved cell is already labelled historical evidence carried forward, so
-  // being behind is what it says. Gating on it would make this permanently red.
-  it('ignores a preserved drawing capture', () => {
-    expect(modeProvenance(preserved('old'))).toEqual([]);
+const assess = (manifest, { published = null, reachable = () => true } = {}) =>
+  assessManifest(manifest, {
+    publishedModeFor: () => published,
+    today: '2026-09-25',
+    isReachable: reachable,
   });
 
-  // Checking only drawing let undo and action captures go stale unnoticed.
-  it('covers undo and action provenance, not only drawing', () => {
+describe('sectionProvenance', () => {
+  it('reports drawing, undo, and action sections with their own commits', () => {
     const mode = {
-      drawing: { pen: ['a.json'] },
-      drawingProductCommit: 'aaa',
-      undoSource: 'a.json',
+      ...captured('aaa'),
       undoProductCommit: 'bbb',
       actionSources: [{ source: 'x', productCommit: 'ccc' }],
     };
 
-    expect(modeProvenance(mode).sort()).toEqual(['aaa', 'bbb', 'ccc']);
+    expect(sectionProvenance(mode, null)).toEqual([
+      { section: 'drawing', state: 'captured', capturedOn: '2026-09-20', commits: ['aaa'] },
+      { section: 'undo', state: 'captured', capturedOn: '2026-09-20', commits: ['bbb'] },
+      { section: 'actions', state: 'captured', capturedOn: '2026-09-01', commits: ['ccc'] },
+    ]);
   });
 
-  it('checks captured-untracked sections because they still claim currency', () => {
-    expect(modeProvenance(capturedUntracked('current'))).toEqual(['current']);
-  });
-});
+  // Under ADR-0159 a preserved section was exempt from the currency check. Age
+  // applies to it as much as to anything: an old section is exactly what a
+  // reader needs to see, so it is reported with the commits it was published at.
+  it('reads a preserved section commit from the report it is carried from', () => {
+    const mode = {
+      ...captured('aaa'),
+      drawing: 'preserved',
+      undoSource: 'preserved',
+      actionSources: 'preserved',
+    };
+    const published = {
+      drawing: { pen: { runs: [{ productCommit: 'old1' }] } },
+      undo: { productCommit: 'old2' },
+      actions: { sources: [{ productCommit: 'old3' }, { productCommit: 'old3' }] },
+    };
 
-describe('capturedCommits', () => {
-  it('reports every distinct capture commit a target carries', () => {
     expect(
-      capturedCommits(target('t', [captured('aaa'), captured('bbb'), preserved('old')]))
-    ).toEqual(['aaa', 'bbb']);
+      sectionProvenance(mode, published).map(({ state, commits }) => [state, commits])
+    ).toEqual([
+      ['preserved', ['old1']],
+      ['preserved', ['old2']],
+      ['preserved', ['old3']],
+    ]);
+  });
+
+  it('dates captured-untracked actions by their pinned commit', () => {
+    const mode = {
+      ...captured('aaa'),
+      actionSources: 'captured-untracked',
+      actionProductCommit: 'bbb',
+    };
+
+    expect(sectionProvenance(mode, null).at(-1)).toMatchObject({
+      state: 'captured-untracked',
+      commits: ['bbb'],
+    });
+  });
+
+  it('omits an action section the mode records as unavailable', () => {
+    const mode = { ...captured('aaa'), actionSources: undefined, actionsUnavailableReason: 'P1' };
+
+    expect(sectionProvenance(mode, null).map(({ section }) => section)).toEqual([
+      'drawing',
+      'undo',
+    ]);
+  });
+
+  it('has no sections for a mode that was not captured', () => {
+    expect(sectionProvenance({ status: 'unavailable', reason: 'offline' }, null)).toEqual([]);
   });
 });
 
 describe('assessManifest', () => {
-  // The regression this covers: gating on commits under web/src/lib/drawing
-  // reported "current" across a commit that changed DrawingCanvas.svelte and the
-  // drawing-audio scheduling — both on the measured interaction path, neither in
-  // that directory. A tree digest cannot miss a file nobody thought of.
-  it('calls a capture stale when the measured tree changed outside the engine', () => {
-    const manifest = { targets: [target('ipad-device-web', [captured('410371ea')])] };
+  it('ages every section against today', () => {
+    const [drawing, , actions] = assess(manifestOf([captured('aaa')]));
 
-    const [row] = assessManifest(manifest, {
-      surfaceAt: trees({ '410371ea': 'oldtree', HEAD: 'newtree' }),
-      commitsSince: () => 0,
+    expect(drawing).toMatchObject({
+      target: 't',
+      mode: 'portrait-light',
+      ageDays: 5,
+      problems: [],
     });
-
-    expect(row.verdict).toBe('STALE');
-    expect(row['engine commits since']).toBe(0);
+    expect(actions).toMatchObject({ ageDays: 24, problems: [] });
   });
 
-  it('calls a capture current when the measured tree is unchanged', () => {
-    const manifest = { targets: [target('mac-chrome', [captured('abc')])] };
+  it('names a section with no date, a malformed date, or no commit', () => {
+    const mode = {
+      ...captured('aaa', { drawing: '2026-9-20', undo: '2026-09-20' }),
+      actionSources: [{ source: 'x.json', kind: 'full' }],
+    };
 
-    const [row] = assessManifest(manifest, {
-      surfaceAt: trees({ abc: 'sametree', HEAD: 'sametree' }),
-      commitsSince: () => 0,
-    });
-
-    expect(row.verdict).toBe('current');
+    expect(assess(manifestOf([mode])).map(({ section, problems }) => [section, problems])).toEqual([
+      ['drawing', ['capturedOn 2026-9-20 is not YYYY-MM-DD']],
+      ['undo', []],
+      ['actions', ['no capturedOn date', 'no product commit']],
+    ]);
   });
 
-  // "No error" must never read as "fine". A shallow clone makes every lookup fail,
-  // and reporting the matrix current there is the failure shape this exists to end.
-  it('reports an unreachable commit as UNVERIFIABLE, not current', () => {
-    const manifest = { targets: [target('mac-chrome', [captured('gone')])] };
-
-    const [row] = assessManifest(manifest, {
-      surfaceAt: trees({ HEAD: 'newtree' }),
-      commitsSince: () => undefined,
+  // Unreachable is not provenance: a shallow clone makes every lookup fail, and
+  // a commit nobody can resolve cannot say how much has landed on top of it.
+  it('names a section whose commit this checkout cannot resolve', () => {
+    const [drawing] = assess(manifestOf([captured('deadbeefcafe0000')]), {
+      reachable: () => false,
     });
 
-    expect(row.verdict).toBe('UNVERIFIABLE');
+    expect(drawing.problems).toEqual(['commit deadbeefcafe is unreachable']);
   });
 
-  it('reports nothing when every target is preserved', () => {
-    const manifest = { targets: [target('android-device-web', [preserved('old')])] };
+  it('marks a preserved section with no published report as missing its commit', () => {
+    const mode = { ...captured('aaa'), actionSources: 'preserved' };
 
-    expect(assessManifest(manifest, { surfaceAt: trees({}), commitsSince: () => 0 })).toEqual([]);
+    expect(assess(manifestOf([mode])).at(-1).problems).toEqual(['no product commit']);
+  });
+});
+
+describe('ageReportRows', () => {
+  const commitsSince = (commit, pathspec) => (pathspec === MEASURED_SURFACE ? 40 : 3);
+
+  it('groups a target section shared across modes and ranks the oldest first', () => {
+    const sections = assess(
+      manifestOf([captured('aaa'), { ...captured('aaa'), id: 'portrait-dark' }])
+    );
+
+    const rows = ageReportRows(sections, { commitsSince });
+
+    expect(rows.map((row) => [row.section, row.modes, row['age (days)']])).toEqual([
+      ['actions', 'portrait-light, portrait-dark', 24],
+      ['drawing', 'portrait-light, portrait-dark', 5],
+      ['undo', 'portrait-light, portrait-dark', 5],
+    ]);
+    expect(rows[0]).toMatchObject({ 'engine commits since': 3, 'product commits since': 40 });
+  });
+
+  it('ranks an undated section ahead of every dated one', () => {
+    const mode = captured('aaa', { drawing: '2026-09-20', undo: '2026-09-20' });
+
+    const [first] = ageReportRows(assess(manifestOf([mode])), { commitsSince });
+
+    expect(first).toMatchObject({ section: 'actions', capturedOn: '(undated)', 'age (days)': '?' });
   });
 });
 
 describe('the measured surface', () => {
-  // The regression this covers: gating on the `web/src` tree alone reported
-  // "current" across 105c23bd..a347da5e, whose `web/src` trees are byte-identical
-  // and which changes three pencil sound assets a drawing capture plays.
-  it('includes the static assets a capture exercises', () => {
-    expect(MEASURED_SURFACE).toContain('web/static');
-    expect(MEASURED_SURFACE).toContain('web/src');
-  });
-
-  // Both absences are deliberate: a check that fires on changes which cannot move
-  // a frame is one people learn to ignore.
-  it('excludes specs and package.json, which move without changing the product', () => {
-    expect(MEASURED_SURFACE).not.toContain('web/tests');
-    expect(MEASURED_SURFACE).not.toContain('package.json');
+  it('includes source, static assets, and the lockfile', () => {
+    expect(MEASURED_SURFACE).toEqual(expect.arrayContaining(['web/src', 'web/static']));
     expect(MEASURED_SURFACE).toContain('pnpm-lock.yaml');
   });
 
-  it('calls a capture stale when only a static asset moved', () => {
-    const manifest = { targets: [target('ipad-device-web', [captured('105c23bd')])] };
-
-    const [row] = assessManifest(manifest, {
-      surfaceAt: trees({
-        '105c23bd': 'web/src=same web/static=old',
-        HEAD: 'web/src=same web/static=new',
-      }),
-      commitsSince: () => 0,
-    });
-
-    expect(row.verdict).toBe('STALE');
-    expect(row['engine commits since']).toBe(0);
+  it('excludes specs and package.json, which move without changing the product', () => {
+    expect(MEASURED_SURFACE).not.toContain('web/tests');
+    expect(MEASURED_SURFACE).not.toContain('package.json');
   });
 });
 
-// A comment inside web/src/lib/icons/tokenFallback.test.ts was, on 2026-08-23,
-// the entire difference between five matrix targets and the current tree. It
-// marked 100 cells stale and exited the generator 1 on every regeneration from
-// then on — a checker nobody can act on is a checker nobody reads.
-describe('a spec is not the product', () => {
-  it('recognises a change set that is only specs', () => {
-    expect(everyChangeIsASpec(['web/src/lib/icons/tokenFallback.test.ts'])).toBe(true);
-    expect(everyChangeIsASpec(['web/src/a.test.ts', 'web/src/b.spec.ts'])).toBe(true);
-  });
-
-  // The dangerous direction. A commit touching a spec AND a source file must not
-  // be waved through on the strength of the spec.
-  it('refuses a change set that also touches shipping source', () => {
-    expect(everyChangeIsASpec(['web/src/a.test.ts', 'web/src/lib/drawing/engine.ts'])).toBe(false);
-    expect(everyChangeIsASpec(['web/src/lib/drawing/engine.ts'])).toBe(false);
-  });
-
-  // An empty list means the differing files could not be read, not that nothing
-  // differs — the tree hashes already said otherwise. Answering "all specs" there
-  // would clear a target on missing evidence.
-  it('answers false when there is nothing to judge', () => {
-    expect(everyChangeIsASpec([])).toBe(false);
-  });
-
-  it('keeps a target current when only its specs moved, and says so', () => {
-    const manifest = { targets: [target('mac-chrome', [captured('abc')])] };
-
-    const [row] = assessManifest(manifest, {
-      surfaceAt: trees({ abc: 'oldtree', HEAD: 'newtree' }),
-      commitsSince: () => 0,
-      changedFilesSince: () => ['web/src/lib/icons/tokenFallback.test.ts'],
-    });
-
-    expect(row.verdict).toBe('current (specs only)');
-  });
-
-  it('still calls a target stale when a source file moved with the spec', () => {
-    const manifest = { targets: [target('mac-chrome', [captured('abc')])] };
-
-    const [row] = assessManifest(manifest, {
-      surfaceAt: trees({ abc: 'oldtree', HEAD: 'newtree' }),
-      commitsSince: () => 0,
-      changedFilesSince: () => ['web/src/a.test.ts', 'web/src/lib/drawing/engine.ts'],
-    });
-
-    expect(row.verdict).toBe('STALE');
-  });
-});
-
-// The HEAD default is legitimate fold-time semantics, but run from a branch
-// carrying its own commits it quietly answers a different question — current
-// against this branch, not against the published branch point — and nothing
-// said so. The warning names the ambiguity without touching verdict or exit.
 describe('implicitBaseWarning', () => {
-  const branchAhead = { headSha: 'branch-tip', mergeBaseSha: 'branch-point' };
+  const sha = (char) => char.repeat(40);
 
   it('fires when --base was not passed and HEAD carries commits origin/main lacks', () => {
-    const warning = implicitBaseWarning({ explicitBase: false, ...branchAhead });
-
-    expect(warning).toContain('--base=origin/main');
-    expect(warning).toContain('this branch');
+    expect(
+      implicitBaseWarning({ explicitBase: false, headSha: sha('a'), mergeBaseSha: sha('b') })
+    ).toContain('--base=origin/main');
   });
 
   it('stays silent under an explicit --base, --base=HEAD included', () => {
-    expect(implicitBaseWarning({ explicitBase: true, ...branchAhead })).toBeNull();
+    expect(
+      implicitBaseWarning({ explicitBase: true, headSha: sha('a'), mergeBaseSha: sha('b') })
+    ).toBeNull();
   });
 
   it('stays silent when HEAD sits at the origin/main branch point', () => {
     expect(
-      implicitBaseWarning({ explicitBase: false, headSha: 'tip', mergeBaseSha: 'tip' })
+      implicitBaseWarning({ explicitBase: false, headSha: sha('a'), mergeBaseSha: sha('a') })
     ).toBeNull();
   });
 
   it('stays silent when origin/main cannot be resolved', () => {
     expect(
-      implicitBaseWarning({ explicitBase: false, headSha: 'tip', mergeBaseSha: null })
+      implicitBaseWarning({ explicitBase: false, headSha: sha('a'), mergeBaseSha: null })
     ).toBeNull();
   });
 });
 
-// Rows go stale by design between campaigns — the suite cannot run on every
-// product commit — so a STALE row is the committed matrix's normal state and
-// must not fail the default run. On 2026-09-02 one CSS commit after the
-// campaign's capture marked four rows stale and turned every regeneration red
-// (ADR-0159). Only the regenerate that asserts currency, --strict, fails on it.
-describe('stalenessOutcome', () => {
-  const stale = { target: 'ipad-device-web', capturedAt: '31476d91d3ec', verdict: 'STALE' };
-  const current = { target: 'mac-chrome', capturedAt: 'abc', verdict: 'current' };
-  const unverifiable = { target: 'mac-safari', capturedAt: 'gone', verdict: 'UNVERIFIABLE' };
-  const at = (rows, strict) => stalenessOutcome({ rows, resolvedBase: 'HEAD', strict });
+describe('provenanceOutcome', () => {
+  // ADR-0175: a section is never failed for being old. Between campaigns every
+  // section is behind the tip; its age is reported and its red keeps counting.
+  it('reports an old but fully dated section without failing, even under --strict', () => {
+    const sections = assess(manifestOf([captured('aaa')]));
 
-  it('reports a stale row without failing by default', () => {
-    const outcome = at([stale, current], false);
+    const outcome = provenanceOutcome({ sections, strict: true });
 
     expect(outcome.failed).toBe(false);
-    expect(outcome.stale).toEqual([stale]);
-    expect(outcome.lines.join('\n')).toContain('ipad-device-web (31476d91d3ec)');
-    expect(outcome.lines.join('\n')).toContain('Expected between campaigns');
+    expect(outcome.lines.join('\n')).toContain('was captured 2026-09-01 (24 days ago)');
   });
 
-  it('fails a stale row under --strict, and says what asserting currency needs', () => {
-    const outcome = at([stale, current], true);
+  it('warns about incomplete provenance by default without failing', () => {
+    const sections = assess(manifestOf([captured('aaa', {})]));
+
+    const outcome = provenanceOutcome({ sections, strict: false });
+
+    expect(outcome.failed).toBe(false);
+    expect(outcome.lines[0]).toMatch(/^WARN {2}3 captured section\(s\) lack complete provenance/);
+  });
+
+  it('fails incomplete provenance under --strict and names every section', () => {
+    const sections = assess(
+      manifestOf([captured('aaa', {}), { ...captured('aaa', {}), id: 'portrait-dark' }])
+    );
+
+    const outcome = provenanceOutcome({ sections, strict: true });
 
     expect(outcome.failed).toBe(true);
-    expect(outcome.lines.join('\n')).toContain('--strict');
-  });
-
-  // Neither mode may call an unreachable commit current: a shallow clone makes
-  // every lookup fail, and "current" there is the failure shape this exists to end.
-  it('warns about an unreachable commit by default and never calls it current', () => {
-    const outcome = at([unverifiable], false);
-
-    expect(outcome.failed).toBe(false);
-    expect(outcome.lines.join('\n')).toContain('WARN');
-    expect(outcome.lines.join('\n')).not.toContain('all from the current product surface');
-  });
-
-  it('fails an unreachable commit under --strict', () => {
-    expect(at([unverifiable], true).failed).toBe(true);
-  });
-
-  it('reports every row current when nothing drifted, in either mode', () => {
-    for (const strict of [false, true]) {
-      const outcome = at([current], strict);
-
-      expect(outcome.failed).toBe(false);
-      expect(outcome.lines).toEqual([
-        '1 captured cell group(s), all from the current product surface.',
-      ]);
-    }
+    expect(outcome.lines[0]).toContain(
+      't/drawing [portrait-light, portrait-dark] (no capturedOn date)'
+    );
+    expect(outcome.lines.at(-1)).toContain('--strict asserts provenance-complete');
   });
 });
