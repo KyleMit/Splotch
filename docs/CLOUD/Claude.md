@@ -238,6 +238,18 @@ engine-divergent CSS (containment as a containing block, top-layer, `:has` edge 
 tested here — check the [`docs/COMPATIBILITY.md`](../COMPATIBILITY.md) risk register instead of
 assuming a local pass covers Safari.
 
+**There is no iOS Simulator in a cloud session, and no way to get one.** CoreSimulator is a macOS
+framework, and running macOS in a VM is closed here: measured on 2026-08-24, the container has no
+`/dev/kvm`, no `vmx`/`svm` CPU flags (it is itself a Firecracker guest, so hardware virtualization
+is not passed through), and no loadable kernel modules, which also rules out Darling. What still
+works: `npm run cap:sync` runs fully on Linux, so a web-layer change can be synced into
+`ios/App/App/public` and inspected as the native tree will receive it. When you need the simulator
+itself (does the Xcode project compile, do the native plugins behave), dispatch
+[`ios-deploy.yml`](../../.github/workflows/ios-deploy.yml): it has `workflow_dispatch`, builds and
+boots an iPhone simulator on `macos-latest`, and runs the Maestro smoke, at roughly 13 minutes of
+runner time. A Linux WebKit, if one is ever installed here, is the right engine on the wrong
+platform: never read a performance number off it.
+
 > **Chromium revision must match `@playwright/test`.** The setup script derives the browser version
 > from `package.json` for exactly this reason: Playwright pins a specific Chromium *revision* (e.g.
 > `@playwright/test@1.61.x` → Chromium 1228), and a hard-coded install version (or a stale env
@@ -368,6 +380,17 @@ carries `GH_TOKEN`, but the `github.com` release page answered 403 through the p
 `gh pr view` nor the poster's review listing and creation has been exercised with that token. The
 follow-up is to find an install source the VM can reach and prove those calls before calling the PR
 path available.
+
+An earlier cloud probe (2026-08-03) got past the missing binary and found three more blockers, so
+re-probe all four before treating an installed `gh` as the remedy. `GH_TOKEN` was inert: the egress
+proxy injects the credential, so a deliberately bogus token still authenticated as the repo owner,
+while `gh auth status` misreported the token as invalid. `origin` pointed at a loopback git proxy,
+so every repo-inferring command failed with "none of the git remotes … point to a known GitHub
+host", and `GH_REPO` did not fix `gh repo view`. And the API was gated for both transports: GraphQL
+outside a pinned set of PR-review operations returned 403, which disables `gh pr list`,
+`gh pr view`, and `gh issue list`, and REST `gh api repos/KyleMit/Splotch` also returned 403. The
+REST result disagrees with the one above, so the gating varies by session or has changed; measure it
+rather than assuming either.
 
 Until then, review the range GitHub records for the PR and carry the findings onto it yourself. Read
 the PR's base branch and its base and head OIDs through the GitHub MCP tools first: `--base`

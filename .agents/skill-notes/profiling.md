@@ -153,11 +153,22 @@ JS nor lost input: the app is starving the rendering pipeline, which is exactly 
 **No synthetic input reproduces it.** Ruled out on device, all clean: 1 move/frame, 4.03 moves/frame
 at `pointerType: 'pen'` on a coloring page, the on-device HUD as a confound, accumulated
 undo-history rasters to 33.9 MB, and every CSS suppression of the blend nudge / `mix-blend-mode` /
-halos. What remains is what `dispatchEvent` cannot fake — the real iOS touch pipeline, with **iPadOS
-Scribble** the prime suspect (ADR-0038 and `scribbleGuard` exist because a stylus tap can arm it;
-recognition would be main-thread work inside the browser, invisible to every instrument here,
-present only under a real Pencil). The cheap decisive test is Settings → Apple Pencil → Scribble OFF
-followed by one hand-drawn run.
+halos. What remains is what `dispatchEvent` cannot fake: the real iOS touch pipeline.
+
+**iPadOS Scribble was the prime suspect and is not the cause.** It ranked first because recognition
+is main-thread work inside the browser that no instrument here can see, and ADR-0038's
+`scribbleGuard` exists because a stylus tap can arm it. It was retired on 2026-07-30: the probe
+records pointer `kind`, the hand runs that stalled came back `touch`, not `pen`, and Scribble is
+Pencil-only. The reasoning is kept here because it was sound and would otherwise be re-derived.
+
+The stalls were compositing at the stroke commit. A hand-recorded Web Inspector Timeline export on
+`/` (9.3 s) held 293 composites totalling 5,047 ms (max 255.9 ms) against 3 ms of paint, and each of
+15 stroke commits was followed 2–192 ms later by one long composite, *after* its `engine.commit`
+mark closed. A gate that measures marked work is structurally blind to that cost. Removing
+undo-snapshot capture cut long composites per commit from 1.0 to 0.2; pooling the patch canvases did
+not (0.9), so the cost was the readback, not allocation. The in-stroke starvation was later fixed by
+surface topology (ADR-0085). This analysis was recorded on the `experiment/no-snapshot-capture`
+branch and never merged, so this paragraph is its only copy.
 
 ### The one production seam, and why it is read-only
 
