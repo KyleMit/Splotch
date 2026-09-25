@@ -42,6 +42,11 @@ import {
   androidVerificationBlockers,
 } from './lib/capture-readiness.mjs';
 import { describeGrantHistory, recordGrantAttempt } from './lib/grant-log.mjs';
+import {
+  DEVICECTL_LIST_ARGS,
+  emptyUsbListDetail,
+  parseDevicectlListing,
+} from './lib/ios-attachment.mjs';
 import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
 import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
 import { overlayCheck, readOverlayVerdict } from './lib/android-overlay-verdict.mjs';
@@ -174,7 +179,10 @@ function iosChecks() {
     checks.push({
       name: 'ios device',
       status: 'blocked',
-      detail: 'no device from `idevice_id -l`',
+      detail: emptyUsbListDetail(
+        parseDevicectlListing(sh('xcrun', DEVICECTL_LIST_ARGS).out),
+        argFlag('ios-udid', null)
+      ),
     });
     return { checks, udid: null, udids };
   }
