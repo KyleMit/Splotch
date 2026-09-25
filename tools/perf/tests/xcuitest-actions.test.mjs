@@ -1841,15 +1841,31 @@ describe('the calibrated iPad web allowance ledger', () => {
 });
 
 // ADR-0162: the physical Android web row's one allowance, the compact-shell
-// theme flip. Its value is pinned to the committed evidence rather than typed:
-// one 0.1 ms clock quantum above the worst committed scored P95 of the cell,
-// which lands it exactly on the max gate. Pooled P95 counts gaps and max
-// confirmation counts repeats, so the allowance is at least as strict as the
-// max gate and never passes a cell the max gate would fail; the concentrated-
-// gap case below is where it is stricter.
+// theme flip. Its value is pinned to the measured basis rather than typed:
+// one 0.1 ms clock quantum above the worst scored P95 of the cell in the
+// corpora ADR-0162 sized it from, which lands it exactly on the max gate.
+// Pooled P95 counts gaps and max confirmation counts repeats, so the allowance
+// is at least as strict as the max gate and never passes a cell the max gate
+// would fail; the concentrated-gap case below is where it is stricter.
+//
+// A capture committed after the basis never re-sizes the entry: ADR-0162's
+// reopen conditions make a canonical reading past the allowance a red cell,
+// and entries only ratchet down.
 describe('the physical Android web allowance ledger', () => {
   const label = `disable ${compactSettingsActionLabel('Night Mode')}`;
   const ms = ANDROID_WEB_ACTION_GATE_ALLOWANCES.p95[label];
+  const ADR_0162_BASIS_CAMPAIGNS = new Set([
+    '2026-09-04-epic-1567-control-actions',
+    '2026-09-05-epic-1567-android-rotation-control',
+    '2026-09-05-epic-1567-final-control',
+    '2026-09-05-epic-1567-night-mode-committed',
+    '2026-09-05-epic-1567-night-mode-control-trace',
+    '2026-09-05-epic-1567-settings-shell-reviewed',
+    '2026-09-06-epic-1567-android-device-web-e514',
+    '2026-09-06-issue-1696-android-night-toggle',
+    '2026-09-07-issue-1695-android-web-landscape-light-control',
+  ]);
+  const ISSUE_2268_RECAPTURE = '2026-09-25-issue-2268-android-device-web-landscape-actions';
 
   function committedCellReadings() {
     const evidenceRoot = join(ROOT, 'perf-profiles', 'evidence');
@@ -1869,6 +1885,17 @@ describe('the physical Android web allowance ledger', () => {
     return readings;
   }
 
+  function basisReadings() {
+    return committedCellReadings().filter((reading) =>
+      ADR_0162_BASIS_CAMPAIGNS.has(reading.campaign)
+    );
+  }
+
+  it('reads its basis from committed corpora that all still exist', () => {
+    const campaigns = new Set(basisReadings().map((reading) => reading.campaign));
+    expect([...campaigns].sort()).toEqual([...ADR_0162_BASIS_CAMPAIGNS].sort());
+  });
+
   it('names exactly the one action ADR-0162 covers, on the P95 gate only', () => {
     expect(Object.keys(ANDROID_WEB_ACTION_GATE_ALLOWANCES.p95)).toEqual([label]);
     expect(ANDROID_WEB_ACTION_GATE_ALLOWANCES.max).toEqual({});
@@ -1876,8 +1903,8 @@ describe('the physical Android web allowance ledger', () => {
     expect(ANDROID_WEB_ACTION_GATE_ALLOWANCE_ENTRIES.max).toEqual({});
   });
 
-  it('sits one 0.1 ms quantum above the worst committed reading of the cell, at the max gate', () => {
-    const readings = committedCellReadings();
+  it('sits one 0.1 ms quantum above the worst basis reading of the cell, at the max gate', () => {
+    const readings = basisReadings();
     expect(readings.length).toBeGreaterThanOrEqual(3);
     const worst = Math.max(...readings.map((reading) => reading.frames.p95));
     expect(worst).toBe(33.4);
@@ -1887,13 +1914,28 @@ describe('the physical Android web allowance ledger', () => {
     expect(Math.max(...readings.map((reading) => reading.frames.max))).toBeLessThanOrEqual(ms);
   });
 
-  it('passes every committed reading under the ledger and fails the two-beat ones on the base gate', () => {
-    const readings = committedCellReadings();
+  it('passes every basis reading under the ledger and fails the two-beat ones on the base gate', () => {
+    const readings = basisReadings();
     const twoBeat = readings.filter((reading) => !reading.passed);
     expect(twoBeat.length).toBeGreaterThanOrEqual(2);
     for (const reading of readings) {
       const under = summarizeActions(reading.samples, [], ANDROID_WEB_ACTION_GATE_ALLOWANCES)[0];
       expect(under.passed, `${reading.campaign}/${reading.file}`).toBe(true);
+    }
+  });
+
+  // ADR-0162's fourth reopen condition, on committed evidence: the issue 2268
+  // landscape recapture reads a three-beat frame, a confirmed max breach the
+  // allowance does not absorb, so the cell stays red rather than raising it.
+  it('keeps a post-basis reading past the allowance red under the ledger', () => {
+    const recaptured = committedCellReadings().filter(
+      (reading) => reading.campaign === ISSUE_2268_RECAPTURE
+    );
+    expect(recaptured).toHaveLength(2);
+    for (const reading of recaptured) {
+      expect(reading.frames.max, reading.file).toBeGreaterThan(ms);
+      const under = summarizeActions(reading.samples, [], ANDROID_WEB_ACTION_GATE_ALLOWANCES)[0];
+      expect(under.passed, reading.file).toBe(false);
     }
   });
 

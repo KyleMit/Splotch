@@ -93,10 +93,14 @@ The measured basis is every committed `android-device-web` action capture in
 3c017796 through f42d0994. The re-score of all thirteen readings under the ledger is in
 `docs/scratchpad/perf/2026-09-06-adr-0162-android-night-flip-rescore.md`: the three two-beat
 readings flip to PASS and none stays red. The value is pinned to that corpus rather than typed:
-`tools/perf/tests/xcuitest-actions.test.mjs` re-scores every committed capture of the cell and fails
-if the allowance is not one 0.1 ms quantum above the worst of them, or is not the max gate; the same
-suite holds the concentrated-gap case, where the allowance fails a cell the max gate leaves
-unconfirmed and a 34 ms allowance would pass.
+`tools/perf/tests/xcuitest-actions.test.mjs` re-scores every basis capture of the cell and fails if
+the allowance is not one 0.1 ms quantum above the worst of them, or is not the max gate. The test
+names its basis campaigns: the corpora above plus the 2026-09-07 issue-1695 landscape-light control,
+which also passes. A capture committed later never re-sizes the entry. The issue 2268 landscape
+recapture at 87da0c5a read a three-beat frame (50 ms) in both modes, which is the fourth reopen
+condition below, and the test holds it red under the ledger. The same suite holds the
+concentrated-gap case, where the allowance fails a cell the max gate leaves unconfirmed and a 34 ms
+allowance would pass.
 
 **Why the allowance is granted despite the flapping.** The allowance covers a cost the trace shows
 recurring on every activation — the main thread blocked for most of two periods in all eight traced
