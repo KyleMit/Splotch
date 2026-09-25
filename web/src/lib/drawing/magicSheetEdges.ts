@@ -28,6 +28,60 @@ export interface EdgeFill {
   dh: number;
 }
 
+interface EdgeBand {
+  source: number;
+  sourceSize: number;
+  dest: number;
+  destSize: number;
+}
+
+interface AxisBands {
+  near: EdgeBand | null;
+  span: EdgeBand;
+  far: EdgeBand | null;
+}
+
+function axisBands(
+  sheetExtent: number,
+  boxOrigin: number,
+  boxExtent: number,
+  sourceExtent: number,
+  destinationInset: number
+): AxisBands {
+  const nearEdge = Math.round(boxOrigin);
+  const farEdge = Math.round(boxOrigin + boxExtent);
+  const farMargin = sheetExtent - farEdge;
+  const scale = boxExtent / sourceExtent;
+  const sourcePixel = 1 / scale;
+  const sourceInset = destinationInset / scale;
+  const sourceFar = sourceExtent - sourcePixel - sourceInset;
+  return {
+    near:
+      nearEdge > 0
+        ? { source: sourceInset, sourceSize: sourcePixel, dest: 0, destSize: nearEdge }
+        : null,
+    span: { source: 0, sourceSize: sourceExtent, dest: boxOrigin, destSize: boxExtent },
+    far:
+      farMargin > 0
+        ? { source: sourceFar, sourceSize: sourcePixel, dest: farEdge, destSize: farMargin }
+        : null,
+  };
+}
+
+function pushRegion(fills: EdgeFill[], x: EdgeBand | null, y: EdgeBand | null) {
+  if (!x || !y) return;
+  fills.push({
+    sx: x.source,
+    sy: y.source,
+    sw: x.sourceSize,
+    sh: y.sourceSize,
+    dx: x.dest,
+    dy: y.dest,
+    dw: x.destSize,
+    dh: y.destSize,
+  });
+}
+
 export function edgeMargins(
   W: number,
   H: number,
@@ -38,110 +92,18 @@ export function edgeMargins(
   sourceWidth = bw,
   sourceHeight = bh
 ): EdgeFill[] {
-  const top = Math.round(oy);
-  const left = Math.round(ox);
-  const bottom = Math.round(oy + bh);
-  const right = Math.round(ox + bw);
-  const bottomMargin = H - bottom;
-  const rightMargin = W - right;
-  const scaleX = bw / sourceWidth;
-  const scaleY = bh / sourceHeight;
-  const sourcePixelX = 1 / scaleX;
-  const sourcePixelY = 1 / scaleY;
   const destinationInset = Math.max(1, Math.round(Math.min(bw, bh) * EDGE_SAMPLE_INSET_FRACTION));
-  const sourceInsetX = destinationInset / scaleX;
-  const sourceInsetY = destinationInset / scaleY;
-  const sourceRight = sourceWidth - sourcePixelX - sourceInsetX;
-  const sourceBottom = sourceHeight - sourcePixelY - sourceInsetY;
+  const x = axisBands(W, ox, bw, sourceWidth, destinationInset);
+  const y = axisBands(H, oy, bh, sourceHeight, destinationInset);
   const fills: EdgeFill[] = [];
-  if (top > 0)
-    fills.push({
-      sx: 0,
-      sy: sourceInsetY,
-      sw: sourceWidth,
-      sh: sourcePixelY,
-      dx: ox,
-      dy: 0,
-      dw: bw,
-      dh: top,
-    });
-  if (bottomMargin > 0)
-    fills.push({
-      sx: 0,
-      sy: sourceBottom,
-      sw: sourceWidth,
-      sh: sourcePixelY,
-      dx: ox,
-      dy: bottom,
-      dw: bw,
-      dh: bottomMargin,
-    });
-  if (left > 0)
-    fills.push({
-      sx: sourceInsetX,
-      sy: 0,
-      sw: sourcePixelX,
-      sh: sourceHeight,
-      dx: 0,
-      dy: oy,
-      dw: left,
-      dh: bh,
-    });
-  if (rightMargin > 0)
-    fills.push({
-      sx: sourceRight,
-      sy: 0,
-      sw: sourcePixelX,
-      sh: sourceHeight,
-      dx: right,
-      dy: oy,
-      dw: rightMargin,
-      dh: bh,
-    });
-  if (top > 0 && left > 0)
-    fills.push({
-      sx: sourceInsetX,
-      sy: sourceInsetY,
-      sw: sourcePixelX,
-      sh: sourcePixelY,
-      dx: 0,
-      dy: 0,
-      dw: left,
-      dh: top,
-    });
-  if (top > 0 && rightMargin > 0)
-    fills.push({
-      sx: sourceRight,
-      sy: sourceInsetY,
-      sw: sourcePixelX,
-      sh: sourcePixelY,
-      dx: right,
-      dy: 0,
-      dw: rightMargin,
-      dh: top,
-    });
-  if (bottomMargin > 0 && left > 0)
-    fills.push({
-      sx: sourceInsetX,
-      sy: sourceBottom,
-      sw: sourcePixelX,
-      sh: sourcePixelY,
-      dx: 0,
-      dy: bottom,
-      dw: left,
-      dh: bottomMargin,
-    });
-  if (bottomMargin > 0 && rightMargin > 0)
-    fills.push({
-      sx: sourceRight,
-      sy: sourceBottom,
-      sw: sourcePixelX,
-      sh: sourcePixelY,
-      dx: right,
-      dy: bottom,
-      dw: rightMargin,
-      dh: bottomMargin,
-    });
+  pushRegion(fills, x.span, y.near);
+  pushRegion(fills, x.span, y.far);
+  pushRegion(fills, x.near, y.span);
+  pushRegion(fills, x.far, y.span);
+  pushRegion(fills, x.near, y.near);
+  pushRegion(fills, x.far, y.near);
+  pushRegion(fills, x.near, y.far);
+  pushRegion(fills, x.far, y.far);
   return fills;
 }
 
