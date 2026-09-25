@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   AB_2229_ARMS,
+  IPAD_SESSION_OS,
+  IPAD_UPDATE_OS,
   PERSON_SESSION_STEPS,
   abSummary,
   captureVerdict,
@@ -10,8 +12,10 @@ import {
   navBarOverlayVerdict,
   nextStep,
   overlaySteadilyClear,
+  resumeBringUp,
   secureSweepProblem,
   sessionTotals,
+  stepIpadOs,
   stepOrderProblem,
   trustedPointerdowns,
 } from '../lib/person-session.mjs';
@@ -125,6 +129,49 @@ describe('the session plan', () => {
       ).map((step) => [step.id, 'done'])
     );
     expect(stepOrderProblem('ipad-update', allDone)).toBeNull();
+  });
+
+  it('runs visit 2 as update, bring-up on the new OS, constraint probe, paired controls, commit check', () => {
+    const visitTwo = PERSON_SESSION_STEPS.filter((step) => step.visit === 2).map((step) => step.id);
+    expect(visitTwo.filter((id) => id !== 'iphone-inset')).toEqual([
+      'ipad-update',
+      'update-bring-up',
+      'ipad-constraint-probe',
+      'ipad-paired',
+      'ipad-commit-check',
+    ]);
+    expect(visitTwo.indexOf('iphone-inset')).toBeLessThan(visitTwo.indexOf('update-bring-up'));
+    expect(stepOrderProblem('ipad-paired', { 'ipad-update': 'done' })).toBeNull();
+  });
+
+  it('pairs a driven and a finger arm per brush on the updated iPadOS', () => {
+    const step = PERSON_SESSION_STEPS.find((candidate) => candidate.id === 'ipad-paired');
+    expect(stepIpadOs(step)).toBe(IPAD_UPDATE_OS);
+    expect(step.captures.every((item) => item.ipadOs === IPAD_UPDATE_OS)).toBe(true);
+    expect(step.captures.map((item) => `${item.brush}-${item.kind}-${item.arm}`)).toEqual([
+      'pen-ipad-driven-driven',
+      'pen-ipad-finger-finger',
+      'magic-ipad-driven-driven',
+      'magic-ipad-finger-finger',
+    ]);
+    const visitOnePair = PERSON_SESSION_STEPS.find((candidate) => candidate.id === 'ipad-portrait');
+    expect(stepIpadOs(visitOnePair)).toBe(IPAD_SESSION_OS);
+    expect(visitOnePair.captures.some((item) => item.ipadOs)).toBe(false);
+  });
+
+  it('re-proves the rig of the visit a resumed step needs, and only then', () => {
+    expect(resumeBringUp('bring-up')).toBeNull();
+    expect(resumeBringUp('ipad-secure-actions')).toBe('bring-up');
+    expect(resumeBringUp('ipad-update')).toBeNull();
+    expect(resumeBringUp('ipad-constraint-probe')).toBe('update-bring-up');
+    expect(resumeBringUp('ipad-paired')).toBe('update-bring-up');
+    expect(resumeBringUp('ipad-commit-check')).toBeNull();
+    const ids = PERSON_SESSION_STEPS.map((step) => step.id);
+    for (const step of PERSON_SESSION_STEPS.filter((candidate) => candidate.rig)) {
+      const bringUp = PERSON_SESSION_STEPS.find((candidate) => candidate.id === step.rig);
+      expect(bringUp.visit).toBe(step.visit);
+      expect(ids.indexOf(bringUp.id)).toBeLessThan(ids.indexOf(step.id));
+    }
   });
 
   it('resumes at the first step that is neither done nor skipped', () => {

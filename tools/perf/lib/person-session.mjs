@@ -70,6 +70,11 @@ function fingerIpadWeb(brush, orientation, theme, arm) {
     gesture: brush === 'eraser' ? gesture.eraser : gesture.scribble,
   };
 }
+// A capture taken after the iPadOS update: its label and output carry the
+// release, so it never collides with the same cell captured on the old one.
+function onIpadOs(ipadOs, item) {
+  return { ...item, ipadOs };
+}
 function fingerIpadNative(brush, orientation, theme) {
   return {
     kind: 'ipad-native-finger',
@@ -88,7 +93,8 @@ function fingerIpadNative(brush, orientation, theme) {
 // once; the phone's overlay fix comes next, and releases the person — the
 // phone A/B and the iPad web action sweeps then run on their own, one device at
 // a time. The iPadOS update is a second, short visit, and nothing before it
-// may run after it.
+// may run after it. A step's `rig` names the bring-up whose servers it uses; a
+// session resuming at that step re-runs the bring-up first.
 export const PERSON_SESSION_STEPS = [
   {
     id: 'bring-up',
@@ -106,6 +112,7 @@ export const PERSON_SESSION_STEPS = [
   {
     id: 'ipad-portrait',
     visit: 1,
+    rig: 'bring-up',
     personMinutes: 12,
     title: 'iPad Safari, portrait: paired pen and Magic, and the Magic first load',
     issues: [2235, 2232],
@@ -128,6 +135,7 @@ export const PERSON_SESSION_STEPS = [
   {
     id: 'ipad-landscape',
     visit: 1,
+    rig: 'bring-up',
     personMinutes: 5,
     title: 'iPad Safari, landscape: eraser finger captures (and the #2233 pen ruling)',
     issues: [2231],
@@ -147,6 +155,7 @@ export const PERSON_SESSION_STEPS = [
   {
     id: 'ipad-native',
     visit: 1,
+    rig: 'bring-up',
     personMinutes: 5,
     title: 'Installed iPad app: pen and Magic finger captures',
     issues: [2236],
@@ -163,6 +172,7 @@ export const PERSON_SESSION_STEPS = [
   {
     id: 'ipad-secure-origin',
     visit: 1,
+    rig: 'bring-up',
     personMinutes: 2,
     title: 'iPad secure origin: start the HTTPS fronts and prove the constraint',
     issues: [2211],
@@ -175,6 +185,7 @@ export const PERSON_SESSION_STEPS = [
   {
     id: 'phone-overlay',
     visit: 1,
+    rig: 'bring-up',
     personMinutes: 5,
     title: 'Phone: clear the NU Navigation Bar overlay',
     issues: [2229],
@@ -189,6 +200,7 @@ export const PERSON_SESSION_STEPS = [
   {
     id: 'phone-ab',
     visit: 1,
+    rig: 'bring-up',
     personMinutes: 0,
     unattendedMinutes: 25,
     title: 'Phone: #2229 portrait A/B (e5142fab vs 3928cd88, plus Reduce Motion)',
@@ -199,6 +211,7 @@ export const PERSON_SESSION_STEPS = [
   {
     id: 'ipad-secure-actions',
     visit: 1,
+    rig: 'bring-up',
     personMinutes: 0,
     unattendedMinutes: 55,
     title: 'iPad Safari action sweeps over the secure origin, all four modes',
@@ -233,15 +246,66 @@ export const PERSON_SESSION_STEPS = [
     done: 'Every check answered; failures are listed in the draft.',
   },
   {
+    id: 'update-bring-up',
+    visit: 2,
+    personMinutes: 3,
+    title: `iPad ${IPAD_UPDATE_OS}: wait for the update, then bring the rig up again`,
+    issues: [2237],
+    person: [
+      `The runner waits until the iPad reports iPadOS ${IPAD_UPDATE_OS}. Then unlock it, tap Trust if asked, and leave it on its charger.`,
+      'Watch the iPad: the update ends the WebDriverAgent runner, so an "Enter iPad Passcode for XCTest" prompt may appear — enter the passcode and allow it.',
+    ],
+    done: `iPad on iPadOS ${IPAD_UPDATE_OS}; preview, probe host, Appium and WebDriverAgent all answer; the served build is this checkout’s clean build.`,
+  },
+  {
+    id: 'ipad-constraint-probe',
+    visit: 2,
+    rig: 'update-bring-up',
+    personMinutes: 2,
+    title: `iPad ${IPAD_UPDATE_OS}: prove the secure-origin constraint probe again`,
+    issues: [2211],
+    person: [
+      'Confirm the two HTTPS listeners the runner is about to start (answer y).',
+      'Look at the iPad: the runner opens the constraint probe and then the leaf in Safari, and asks what each shows.',
+    ],
+    done: `The constraint probe shows "This Connection Is Not Private" on ${IPAD_UPDATE_OS} and the leaf loads Splotch; the verdict is a row in the committed constraint-probe log; both fronts are stopped.`,
+  },
+  {
+    id: 'ipad-paired',
+    visit: 2,
+    rig: 'update-bring-up',
+    personMinutes: 7,
+    title: `iPad Safari on ${IPAD_UPDATE_OS}, portrait: paired pen and Magic controls`,
+    issues: [2237],
+    person: [
+      'You never open a page: the runner opens Safari at its own address for every capture. Just press Enter here.',
+      'Hold the iPad in PORTRAIT and keep it there for this whole step.',
+      'During a DRIVEN capture, do not touch the iPad — WebDriverAgent draws.',
+      'During a FINGER capture, draw with ONE finger from "Draw now" until "Stop".',
+    ],
+    captures: [
+      onIpadOs(IPAD_UPDATE_OS, drivenIpadWeb('pen', 'PORTRAIT', 'light', 'driven')),
+      onIpadOs(IPAD_UPDATE_OS, fingerIpadWeb('pen', 'PORTRAIT', 'light', 'finger')),
+      onIpadOs(IPAD_UPDATE_OS, drivenIpadWeb('magic', 'PORTRAIT', 'dark', 'driven')),
+      onIpadOs(IPAD_UPDATE_OS, fingerIpadWeb('magic', 'PORTRAIT', 'dark', 'finger')),
+    ],
+    done: 'Each capture PASS: trusted touch and cadence pass, 60 Hz regime, this checkout’s product commit, enough finger-down time.',
+  },
+  {
     id: 'ipad-commit-check',
     visit: 2,
     personMinutes: 4,
-    title: 'iPad 26.6: the ADR-0173 commit check',
+    title: `iPad ${IPAD_UPDATE_OS}: the ADR-0173 commit check`,
     issues: [2237],
     person: ['Keep the iPad unlocked with Safari in front; do not touch it while the check runs.'],
     done: 'perf:ios:webkit:commit prints PASS, BREACH, or NOT EVALUATED; the release-notes lines are drafted.',
   },
 ];
+
+// The iPadOS a step's iPad work is held to: the release the visit runs on.
+export function stepIpadOs(step) {
+  return step.visit === 1 ? IPAD_SESSION_OS : IPAD_UPDATE_OS;
+}
 
 export function sessionStep(id) {
   const step = PERSON_SESSION_STEPS.find((candidate) => candidate.id === id);
@@ -282,6 +346,13 @@ export function stepOrderProblem(stepId, statuses) {
     }
   }
   return null;
+}
+
+// The bring-up a session resuming at `stepId` re-runs first. Servers it
+// recorded may be gone — a --teardown, a reboot, a lost cable — so a step that
+// needs the rig re-proves it, as a fresh start would.
+export function resumeBringUp(stepId) {
+  return sessionStep(stepId).rig ?? null;
 }
 
 export function nextStep(statuses) {

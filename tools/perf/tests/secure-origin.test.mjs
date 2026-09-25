@@ -1,13 +1,22 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { connect } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   authorityConfig,
+  CONSTRAINT_PROBE_LOG,
   CONSTRAINT_PROVEN_IPADOS,
+  constraintProbeFollowUp,
+  constraintProbeVerdict,
+  constraintProofProblem,
   createFrontHandler,
   frontDecision,
   leafExtensions,
   leafValidityDays,
+  parseConstraintProbeLog,
+  recordConstraintProbe,
   secureOriginProblems,
 } from '../ios/secure-origin.mjs';
 
@@ -185,6 +194,61 @@ describe('secureOriginProblems', () => {
         deniedStatus: 200,
       })
     ).toHaveLength(2);
+  });
+});
+
+describe('the constraint-probe log', () => {
+  it('holds CONSTRAINT_PROVEN_IPADOS to a committed refusal on that release', () => {
+    const rows = parseConstraintProbeLog(readFileSync(CONSTRAINT_PROBE_LOG, 'utf8'));
+    expect(constraintProofProblem(rows, CONSTRAINT_PROVEN_IPADOS)).toBeNull();
+  });
+
+  it('refuses a release with no refusal, and one a person saw accept the probe', () => {
+    const refused = { ipadOs: '26.6', verdict: 'refused' };
+    const accepted = { ipadOs: '26.6', verdict: 'accepted' };
+    expect(constraintProofProblem([], '26.6')).toMatch(/no person has recorded/);
+    expect(constraintProofProblem([refused], '26.6')).toBeNull();
+    expect(constraintProofProblem([refused, accepted], '26.6')).toMatch(/ACCEPT/);
+  });
+
+  it('appends a pseudonymized, single-line row a later read returns', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'constraint-probe-'));
+    const logPath = join(dir, 'operator', 'log.tsv');
+    try {
+      recordConstraintProbe(
+        { udid: 'UDID-1', ipadOs: '26.6', verdict: 'refused', detail: 'leaf\tloaded\nfine' },
+        { logPath }
+      );
+      const text = readFileSync(logPath, 'utf8');
+      expect(text).not.toContain('UDID-1');
+      const [row] = parseConstraintProbeLog(text);
+      expect(row).toMatchObject({ ipadOs: '26.6', verdict: 'refused', detail: 'leaf loaded fine' });
+      expect(row.device).toMatch(/^device-[0-9a-f]{12}$/);
+      expect(() =>
+        recordConstraintProbe({ udid: 'x', ipadOs: '26.6', verdict: 'maybe' }, { logPath })
+      ).toThrow(/unknown/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('records a refusal only once the leaf loads, and nothing for a probe that neither warned nor loaded', () => {
+    expect(constraintProbeVerdict({ probeWarned: true, leafLoaded: true })).toBe('refused');
+    expect(constraintProbeVerdict({ probeWarned: true, leafLoaded: false })).toBeNull();
+    expect(constraintProbeVerdict({ probeWarned: false, probeLoaded: true })).toBe('accepted');
+    expect(constraintProbeVerdict({ probeWarned: false, probeLoaded: false })).toBeNull();
+  });
+
+  it('names the exact raise after a refusal on a new release, and no raise otherwise', () => {
+    expect(constraintProbeFollowUp({ ipadOs: '26.6', verdict: 'refused' })).toContain(
+      `raise CONSTRAINT_PROVEN_IPADOS in tools/perf/ios/secure-origin.mjs from ${CONSTRAINT_PROVEN_IPADOS} to 26.6`
+    );
+    expect(constraintProbeFollowUp({ ipadOs: '26.6', verdict: 'accepted' })).toMatch(
+      /leave CONSTRAINT_PROVEN_IPADOS/
+    );
+    expect(
+      constraintProbeFollowUp({ ipadOs: CONSTRAINT_PROVEN_IPADOS, verdict: 'refused' })
+    ).toMatch(/already/);
   });
 });
 

@@ -66,11 +66,20 @@ import {
   navBarOverlayVerdict,
   nextStep,
   overlaySteadilyClear,
+  resumeBringUp,
   secureSweepProblem,
   sessionStep,
   sessionTotals,
+  stepIpadOs,
   stepOrderProblem,
 } from './lib/person-session.mjs';
+import {
+  CONSTRAINT_PROBE_LOG,
+  CONSTRAINT_PROBE_VERDICTS,
+  constraintProbeFollowUp,
+  constraintProbeVerdict,
+  recordConstraintProbe,
+} from './ios/secure-origin.mjs';
 import { openSafariWithDevicectl } from './split-capture/capture-hand-input.mjs';
 
 const SESSION_ROOT = join(ROOT, 'perf-profiles', 'person-session');
@@ -617,21 +626,25 @@ function checkoutBuildCommit() {
   return head;
 }
 
-async function stepBringUp(session, prompt) {
+// Visit 1 brings the phone up as well; visit 2 needs only the iPad.
+async function stepBringUp(session, prompt, { ipadOs, phone }) {
   const ctx = session.state.ctx;
   ctx.productCommit = checkoutBuildCommit();
-  const report = await prepareCapture(['--wake-android']);
+  const report = phone
+    ? await prepareCapture(['--wake-android'])
+    : await prepareCapture([], { android: false });
   if (!report.iosUdid) fail('no iPad enumerated — reconnect it and tap Trust');
-  if (!report.androidSerial) fail('no Android phone attached');
+  if (phone && !report.androidSerial) fail('no Android phone attached');
   Object.assign(ctx, {
     udid: report.iosUdid,
-    serial: report.androidSerial,
-    androidCdpPort: report.ports.androidCdp,
     lan: lanAddresses()[0],
     macHost: `${capture('scutil', ['--get', 'LocalHostName']).trim()}.local`,
   });
+  if (phone) {
+    Object.assign(ctx, { serial: report.androidSerial, androidCdpPort: report.ports.androidCdp });
+  }
   if (!ctx.lan) fail('no LAN address — the iPad cannot reach this Mac');
-  requireIpadOs(ctx, IPAD_SESSION_OS);
+  requireIpadOs(ctx, ipadOs);
   ctx.nativeInstall = readJson(NATIVE_INSTALL_RECORD);
   saveState(session);
 
@@ -652,7 +665,7 @@ async function stepBringUp(session, prompt) {
     `\n  preview ${ctx.previewPort} (${ctx.previewEntry}), probe ${ctx.probeHost}, appium ${ctx.appiumPort}, WDA ${ctx.wdaUrl}`
   );
   console.log(
-    `  product commit ${ctx.productCommit}; iPadOS ${IPAD_SESSION_OS}; phone ${ctx.serial}`
+    `  product commit ${ctx.productCommit}; iPadOS ${ipadOs}${phone ? `; phone ${ctx.serial}` : ''}`
   );
   if (ctx.nativeInstall) {
     console.log(
@@ -667,13 +680,19 @@ async function stepBringUp(session, prompt) {
 
 // -------------------------------------------------------------- captures
 
+function captureRoot(session, item) {
+  const captures = join(session.dir, 'captures');
+  return item.ipadOs ? join(captures, `ipados-${item.ipadOs}`) : captures;
+}
+
 function captureOutput(session, item) {
   const mode = `${item.orientation.toLowerCase()}-${item.theme}`;
-  return join(session.dir, 'captures', item.target, mode, `${item.brush}-${item.arm}.json`);
+  return join(captureRoot(session, item), item.target, mode, `${item.brush}-${item.arm}.json`);
 }
 
 function captureLabel(item) {
-  return `${item.target}-${item.orientation.toLowerCase()}-${item.theme}-${item.brush}-${item.arm}`;
+  const label = `${item.target}-${item.orientation.toLowerCase()}-${item.theme}-${item.brush}-${item.arm}`;
+  return item.ipadOs ? `${label}-ipados-${item.ipadOs}` : label;
 }
 
 function ipadCaptureArgs(ctx, item, output) {
@@ -806,7 +825,7 @@ async function runIpadCapture(session, prompt, item) {
 }
 
 async function runCaptureStep(session, prompt, step) {
-  requireIpadOs(session.state.ctx, IPAD_SESSION_OS);
+  requireIpadOs(session.state.ctx, stepIpadOs(step));
   const previous = session.state.steps[step.id]?.results ?? [];
   const results = [...previous];
   for (const item of step.captures) {
@@ -833,18 +852,23 @@ async function runCaptureStep(session, prompt, step) {
   return results;
 }
 
-const sessionContext = (session) =>
-  `Session \`${relative(ROOT, session.dir)}\`, product commit ${session.state.ctx.productCommit}, iPad on iPadOS ${IPAD_SESSION_OS}, captured ${new Date().toISOString().slice(0, 10)}.`;
+const sessionContext = (session, ipadOs = IPAD_SESSION_OS) =>
+  `Session \`${relative(ROOT, session.dir)}\`, product commit ${session.state.ctx.productCommit}, iPad on iPadOS ${ipadOs}, captured ${new Date().toISOString().slice(0, 10)}.`;
 
-function draftPortrait(session, results) {
-  const paired = results.filter((result) => ['driven', 'finger'].includes(result.arm));
-  const byBrush = ['pen', 'magic'].map((brush) => {
-    const driven = paired.find((r) => r.brush === brush && r.arm === 'driven');
+// One line per brush: the driven arm against the first finger arm, and the gap.
+function pairedGapLines(results) {
+  return ['pen', 'magic'].map((brush) => {
+    const driven = results.find((r) => r.brush === brush && r.arm === 'driven');
     const finger = results.find((r) => r.brush === brush && r.arm.startsWith('finger'));
     const d = driven?.metrics?.lostFrameTimeShare;
     const f = finger?.metrics?.lostFrameTimeShare;
     return `- ${brush}: driven ${driven?.metrics?.lostFrameTimeShareText ?? 'n/a'} (${driven?.metrics?.gate ?? '?'}), finger ${finger?.metrics?.lostFrameTimeShareText ?? 'n/a'} (${finger?.metrics?.gate ?? '?'}), driven − finger ${Number.isFinite(d) && Number.isFinite(f) ? `${Math.round((d - f) * 10_000) / 100} points` : 'n/a'}`;
   });
+}
+
+function draftPortrait(session, results) {
+  const paired = results.filter((result) => ['driven', 'finger'].includes(result.arm));
+  const byBrush = pairedGapLines(results);
   writeDraft(
     session,
     2235,
@@ -931,11 +955,43 @@ function draftNative(session, results) {
   );
 }
 
+function draftUpdatePaired(session, results) {
+  const before = session.state.steps['ipad-portrait']?.results ?? [];
+  const corpus = relative(
+    ROOT,
+    join(captureRoot(session, { ipadOs: IPAD_UPDATE_OS }), 'ipad-device-web')
+  );
+  writeDraft(
+    session,
+    2237,
+    'paired',
+    draftIssueComment({
+      issue: 2237,
+      title: `Paired automated-vs-finger controls on iPadOS ${IPAD_UPDATE_OS} (the ADR-0174 floor)`,
+      context: [
+        sessionContext(session, IPAD_UPDATE_OS),
+        `Visit 1's #2235 pair repeated after the update, both arms in one session through one probe host: \`perf:device:frames --platform=ios\` (WebDriverAgent W3C actions, 10 passes) against \`perf:device:hand --open=safari\`. Rescore: \`npm run perf:rescore -- --corpus=${corpus} --target=ipad-device-web\`.`,
+      ],
+      results,
+      extra: [
+        `On iPadOS ${IPAD_UPDATE_OS}:`,
+        ...pairedGapLines(results),
+        '',
+        `On iPadOS ${IPAD_SESSION_OS}, visit 1 of this session${before.length ? '' : ' (nothing recorded)'}:`,
+        ...pairedGapLines(before),
+        '',
+        `Later iPad drawing verdicts on ${IPAD_UPDATE_OS} are judged against this floor. Ruling for the maintainer: does ADR-0174 carry over to ${IPAD_UPDATE_OS}?`,
+      ],
+    })
+  );
+}
+
 // ------------------------------------------------------------ secure origin
 
-async function stepSecureOrigin(session, prompt) {
+// Starts the leaf and constraint-probe fronts once the person agrees, and
+// proves Node reaches the leaf with the rig CA. False when the person declines.
+async function startSecureFronts(session, prompt) {
   const ctx = session.state.ctx;
-  requireIpadOs(ctx, IPAD_SESSION_OS);
   if (!existsSync(join(CA_DIR, 'leaf.pem')))
     fail(`no rig CA at ${CA_DIR} — see docs/PROFILING-IPAD.md "A trusted HTTPS origin"`);
   ctx.tlsPort = await freePortFrom(PORT_SEARCH_FROM.front);
@@ -946,10 +1002,7 @@ async function stepSecureOrigin(session, prompt) {
   console.log(
     `  forwarding GET/HEAD for the page and build files only, to the preview on ${ctx.previewPort}.`
   );
-  if (!(await prompt.yes('  Start them?'))) {
-    markStep(session, 'ipad-secure-origin', 'skipped');
-    return;
-  }
+  if (!(await prompt.yes('  Start them?'))) return false;
   stopOwned(session, ['front-leaf', 'front-constraint']);
   const front = (leaf, port) => [
     'serve',
@@ -980,27 +1033,100 @@ async function stepSecureOrigin(session, prompt) {
   if (nodeCheck.status !== 0)
     fail(`Node could not load ${ctx.secureUrl} with the rig CA (exit ${nodeCheck.status})`);
   console.log(`  ✓ Node loads ${ctx.secureUrl} with the rig CA`);
+  return true;
+}
+
+// A person looks at the iPad: Safari must refuse the constraint probe, then
+// load the leaf. Only a conclusive verdict (constraintProbeVerdict), with the
+// iPadOS the iPad reports, becomes a row in CONSTRAINT_PROBE_LOG — the evidence
+// CONSTRAINT_PROVEN_IPADOS cites.
+async function proveFrontsOnIpad(session, prompt) {
+  const ctx = session.state.ctx;
+  const ipadOs = ipadOsVersion(ctx.udid);
+  const origin = `perf:session:person ${relative(ROOT, session.dir)}`;
+  const record = (verdict, detail) => {
+    recordConstraintProbe({ udid: ctx.udid, ipadOs, verdict, detail: `${origin}: ${detail}` });
+    console.log(
+      `  recorded: iPadOS ${ipadOs ?? 'unknown'}, probe ${verdict}, in ${relative(ROOT, CONSTRAINT_PROBE_LOG)}`
+    );
+  };
   const constraintUrl = `https://${ctx.macHost}:${ctx.constraintPort}/`;
   openSafariWithDevicectl({ udid: ctx.udid, pageUrl: constraintUrl });
-  const refused = await prompt.yes(
+  const probeWarned = await prompt.yes(
     `  The iPad opened ${constraintUrl}. Does it show "This Connection Is Not Private"?`
   );
-  if (!refused) {
-    stopOwned(session, ['front-leaf', 'front-constraint']);
+  const probeLoaded =
+    !probeWarned && (await prompt.yes('  Did Splotch load there instead, with no warning?'));
+  let leafLoaded = false;
+  if (probeWarned) {
+    openSafariWithDevicectl({ udid: ctx.udid, pageUrl: ctx.secureUrl });
+    leafLoaded = await prompt.yes(
+      `  The iPad opened ${ctx.secureUrl}. Does Splotch load with no warning?`
+    );
+  }
+  const verdict = constraintProbeVerdict({ probeWarned, probeLoaded, leafLoaded });
+  if (verdict === CONSTRAINT_PROBE_VERDICTS.refused) {
+    record(verdict, 'the person saw Safari refuse the constraint probe, then load the leaf');
+    return { ipadOs, verdict };
+  }
+  stopOwned(session, ['front-leaf', 'front-constraint']);
+  if (verdict === CONSTRAINT_PROBE_VERDICTS.accepted) {
+    record(verdict, 'Safari loaded the constraint probe with no warning');
     fail(
       'the iPad accepted the constraint probe: it is NOT enforcing the name constraint. Remove the rig CA profile from the iPad now (docs/PROFILING-IPAD.md) and do not capture.'
     );
   }
-  openSafariWithDevicectl({ udid: ctx.udid, pageUrl: ctx.secureUrl });
-  if (
-    !(await prompt.yes(`  The iPad opened ${ctx.secureUrl}. Does Splotch load with no warning?`))
-  ) {
-    stopOwned(session, ['front-leaf', 'front-constraint']);
-    fail('the leaf did not load on the iPad — check Certificate Trust Settings for the rig CA');
+  fail(
+    probeWarned
+      ? 'the leaf did not load on the iPad, so the probe’s refusal proves nothing and was not recorded — check Certificate Trust Settings for the rig CA'
+      : 'the constraint probe neither showed the warning nor loaded, which proves nothing either way; nothing was recorded. Check the fronts’ logs in the session directory, then rerun this step.'
+  );
+}
+
+async function stepSecureOrigin(session, prompt) {
+  const ctx = session.state.ctx;
+  requireIpadOs(ctx, IPAD_SESSION_OS);
+  if (!(await startSecureFronts(session, prompt))) {
+    markStep(session, 'ipad-secure-origin', 'skipped');
+    return;
   }
+  await proveFrontsOnIpad(session, prompt);
   stopOwned(session, ['front-constraint']);
   saveState(session);
   markStep(session, 'ipad-secure-origin', 'done', { secureUrl: ctx.secureUrl });
+}
+
+// After the update only a person can re-prove the constraint on the new
+// release. Until CONSTRAINT_PROVEN_IPADOS names it, `perf:ios:secure-origin
+// check` refuses the iPad and no unattended sweep can run (issue 2211).
+async function stepConstraintProbe(session, prompt) {
+  requireIpadOs(session.state.ctx, IPAD_UPDATE_OS);
+  if (!(await startSecureFronts(session, prompt))) {
+    console.log(
+      `  Declined: \`perf:ios:secure-origin check\` keeps refusing the iPad on ${IPAD_UPDATE_OS}.`
+    );
+    markStep(session, 'ipad-constraint-probe', 'skipped');
+    return;
+  }
+  const proof = await proveFrontsOnIpad(session, prompt);
+  stopOwned(session, ['front-leaf', 'front-constraint']);
+  const followUp = constraintProbeFollowUp(proof);
+  console.log(`\n  Follow-up: ${followUp}`);
+  markStep(session, 'ipad-constraint-probe', 'done', { ...proof, followUp });
+  writeDraft(
+    session,
+    2211,
+    'constraint-probe',
+    [
+      `## Constraint probe re-proven on iPadOS ${proof.ipadOs}`,
+      '',
+      `${sessionContext(session, proof.ipadOs)} \`perf:session:person\` started the leaf and constraint-probe fronts and opened each in iPad Safari. The person saw Safari refuse the probe ("This Connection Is Not Private") and then load the leaf.`,
+      '',
+      `Evidence: the \`${proof.verdict}\` row for iPadOS ${proof.ipadOs} in \`${relative(ROOT, CONSTRAINT_PROBE_LOG)}\`.`,
+      '',
+      `Follow-up: ${followUp}`,
+    ].join('\n')
+  );
 }
 
 async function stepSecureActions(session) {
@@ -1359,8 +1485,7 @@ async function stepIphone(session, prompt) {
   );
 }
 
-async function stepCommitCheck(session, prompt) {
-  const ctx = session.state.ctx;
+async function waitForIpadUpdate(ctx) {
   console.log(`  Waiting for the iPad to report iPadOS ${IPAD_UPDATE_OS}…`);
   const deadline = Date.now() + IPAD_UPDATE_TIMEOUT_MS;
   let version = ipadOsVersion(ctx.udid);
@@ -1373,11 +1498,23 @@ async function stepCommitCheck(session, prompt) {
   }
   if (version !== IPAD_UPDATE_OS)
     fail(`the iPad still reports ${version ?? 'nothing'} after 90 minutes`);
-  say('The iPad is on twenty six point six.');
+  say(`The iPad is on ${IPAD_UPDATE_OS}.`);
+}
+
+async function stepUpdateBringUp(session, prompt) {
+  await waitForIpadUpdate(session.state.ctx);
+  await prompt.ask('\n  Unlock the iPad and tap Trust if asked. Press Enter… ');
+  await stepBringUp(session, prompt, { ipadOs: IPAD_UPDATE_OS, phone: false });
+}
+
+async function stepCommitCheck(session, prompt) {
+  const ctx = session.state.ctx;
+  requireIpadOs(ctx, IPAD_UPDATE_OS);
+  // The commit check starts its own server and inspector; a skipped or failed
+  // paired step can leave this session's rig running, so it is released first.
+  stopOwned(session);
   checkoutBuildCommit();
-  await prompt.ask(
-    '\n  Unlock the iPad, tap Trust if asked, open Safari to one tab, leave it in front. Press Enter… '
-  );
+  await prompt.ask('\n  Unlock the iPad, open Safari to one tab, leave it in front. Press Enter… ');
   const port = await freePortFrom(PORT_SEARCH_FROM.server);
   const logPath = join(session.dir, 'logs', 'commit-check.log');
   const child = spawnSync(
@@ -1427,9 +1564,15 @@ async function stepCommitCheck(session, prompt) {
 
 // ------------------------------------------------------------------ driver
 
+const BRING_UPS = {
+  'bring-up': (session, prompt) =>
+    stepBringUp(session, prompt, { ipadOs: IPAD_SESSION_OS, phone: true }),
+  'update-bring-up': stepUpdateBringUp,
+};
+
 const STEP_RUNNERS = {
   'bring-up': (session, prompt) =>
-    stepBringUp(session, prompt).then(() => markStep(session, 'bring-up', 'done')),
+    BRING_UPS['bring-up'](session, prompt).then(() => markStep(session, 'bring-up', 'done')),
   'ipad-portrait': async (session, prompt) =>
     draftPortrait(session, await runCaptureStep(session, prompt, sessionStep('ipad-portrait'))),
   'ipad-landscape': async (session, prompt) =>
@@ -1446,14 +1589,25 @@ const STEP_RUNNERS = {
   },
   'ipad-update': stepIpadUpdate,
   'iphone-inset': stepIphone,
+  'update-bring-up': (session, prompt) =>
+    BRING_UPS['update-bring-up'](session, prompt).then(() =>
+      markStep(session, 'update-bring-up', 'done')
+    ),
+  'ipad-constraint-probe': stepConstraintProbe,
+  'ipad-paired': async (session, prompt) => {
+    draftUpdatePaired(session, await runCaptureStep(session, prompt, sessionStep('ipad-paired')));
+    console.log('\nThe paired controls are over. Stopping every server this session started:');
+    stopOwned(session);
+  },
   'ipad-commit-check': stepCommitCheck,
 };
 
 function printPlan() {
   const totals = sessionTotals();
+  const idWidth = Math.max(...PERSON_SESSION_STEPS.map((step) => step.id.length));
   for (const step of PERSON_SESSION_STEPS) {
     console.log(
-      `${`visit ${step.visit}`.padEnd(8)} ${step.id.padEnd(20)} you ~${String(step.personMinutes).padStart(2)} min` +
+      `${`visit ${step.visit}`.padEnd(8)} ${step.id.padEnd(idWidth)} you ~${String(step.personMinutes).padStart(2)} min` +
         `${step.unattendedMinutes ? `, then ~${step.unattendedMinutes} min unattended` : ''}${step.optional ? ' (optional)' : ''}  ${step.title}`
     );
   }
@@ -1493,13 +1647,11 @@ export async function runPersonSession() {
   }
   const prompt = createPrompt();
   try {
-    // A resumed visit-1 session cannot trust the servers it recorded — a
-    // --teardown, a reboot, or a lost cable stops them — so it re-proves the
-    // rig before any step that needs it, as a fresh start would.
     const resumeAt = nextStep(statuses(session));
-    if (resumeAt && resumeAt.visit === 1 && resumeAt.id !== 'bring-up') {
-      console.log('\nResuming visit 1 — re-proving the rig first:');
-      await stepBringUp(session, prompt);
+    const bringUp = resumeAt && resumeBringUp(resumeAt.id);
+    if (bringUp) {
+      console.log(`\nResuming visit ${resumeAt.visit} — re-proving the rig first (${bringUp}):`);
+      await BRING_UPS[bringUp](session, prompt);
     }
     for (let step = nextStep(statuses(session)); step; step = nextStep(statuses(session))) {
       const problem = stepOrderProblem(step.id, statuses(session));

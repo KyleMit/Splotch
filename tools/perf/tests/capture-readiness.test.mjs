@@ -15,6 +15,7 @@ import {
   probeHostReuse,
   resolvePort,
   summarize,
+  ANDROID_PORT_ROLES,
   ANDROID_VERIFICATION_PORT_ROLES,
   androidVerificationBlockers,
   PORT_ROLES,
@@ -499,6 +500,7 @@ describe('androidVerificationBlockers', () => {
 
   it('names roles the port table actually declares', () => {
     for (const role of ANDROID_VERIFICATION_PORT_ROLES) expect(PORT_ROLES).toHaveProperty(role);
+    for (const role of ANDROID_PORT_ROLES) expect(PORT_ROLES).toHaveProperty(role);
   });
 });
 

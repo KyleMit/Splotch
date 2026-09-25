@@ -17,11 +17,11 @@ The runner never posts anything. Each step writes a draft comment to
 
 ## Time
 
-| Visit                   | Your time   | Runs on its own | Devices                                                 |
-| ----------------------- | ----------- | --------------- | ------------------------------------------------------- |
-| 1                       | ~32 min     | ~80 min after   | iPad ~27 min, phone ~5 min                              |
-| 2 (any time after tail) | ~17 min     | ~25 min update  | iPad ~7 min, notched iPhone ~10 min (during the update) |
-| **Total**               | **~49 min** |                 |                                                         |
+| Visit                   | Your time   | Runs on its own | Devices                                                  |
+| ----------------------- | ----------- | --------------- | -------------------------------------------------------- |
+| 1                       | ~32 min     | ~80 min after   | iPad ~27 min, phone ~5 min                               |
+| 2 (any time after tail) | ~29 min     | ~25 min update  | iPad ~19 min, notched iPhone ~10 min (during the update) |
+| **Total**               | **~61 min** |                 |                                                          |
 
 You can leave as soon as the phone overlay check says PASS. The phone A/B and the four iPad action
 sweeps then run one device at a time, and the runner stops every server it started when they end.
@@ -83,11 +83,45 @@ It parses `adb shell dumpsys input` and prints `PASS`/`FAIL` with the number of 
 
 Nothing from visit 1 can run after this starts; the runner refuses it.
 
-| Step                | Minutes      | You do                                                                                                    | Done looks like                                                |
-| ------------------- | ------------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `ipad-update`       | 3 (+~25)     | iPad: Settings → General → Software Update → iPadOS 26.6 → Update Now; passcode.                          | Update running                                                 |
-| `iphone-inset`      | 10, optional | Plug in the iPhone; answer six look-and-tap checks (portrait, both landscapes, lower-edge taps, Privacy). | Every check answered; screenshots taken on the phone           |
-| `ipad-commit-check` | 4            | When the runner says the iPad is on 26.6: unlock, tap Trust, open Safari to one tab.                      | `perf:ios:webkit:commit` prints PASS, BREACH, or NOT EVALUATED |
+| Step                    | Minutes      | You do                                                                                                                             | Done looks like                                                                                                                    |
+| ----------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `ipad-update`           | 3 (+~25)     | iPad: Settings → General → Software Update → iPadOS 26.6 → Update Now; passcode.                                                   | Update running                                                                                                                     |
+| `iphone-inset`          | 10, optional | Plug in the iPhone; answer six look-and-tap checks (portrait, both landscapes, lower-edge taps, Privacy).                          | Every check answered; screenshots taken on the phone                                                                               |
+| `update-bring-up`       | 3            | When the runner says the iPad is on 26.6: unlock, tap Trust. Watch the iPad: enter the passcode if the WebDriverAgent launch asks. | iPad on 26.6; preview, probe host, Appium, WebDriverAgent answer; build = checkout HEAD                                            |
+| `ipad-constraint-probe` | 2            | Answer y to start the two HTTPS fronts; say what the iPad shows for each page.                                                     | The constraint probe shows "This Connection Is Not Private" on 26.6; the leaf loads Splotch; the verdict is a row in the probe log |
+| `ipad-paired`           | 7            | Hold the iPad portrait. Hands off for the 2 driven captures; draw on "Draw now" until "Stop" for the 2 finger captures.            | 4 × PASS: pen driven + finger (light), Magic driven + finger (dark), all on 26.6; the session's servers stop                       |
+| `ipad-commit-check`     | 4            | Unlock the iPad and open Safari to one tab.                                                                                        | `perf:ios:webkit:commit` prints PASS, BREACH, or NOT EVALUATED                                                                     |
+
+`update-bring-up` replaces visit 1's bring-up. The update ends every server and the WebDriverAgent
+runner, so the runner starts them again on iPadOS 26.6 and without the phone. A visit-2 session that
+resumes at the constraint probe or the paired controls re-runs it first.
+
+**The constraint probe on 26.6 (#2211).** `perf:ios:secure-origin check` lets an unattended campaign
+use the HTTPS front only on the iPadOS release that `CONSTRAINT_PROVEN_IPADOS` names (26.5). Until
+someone watches Safari refuse the probe on 26.6, #2211's unattended sweep stays blocked. This step
+runs visit 1's secure-origin procedure again on the new release, then stops both fronts. It appends
+the verdict and the iPadOS the iPad reports to
+`perf-profiles/evidence/operator/ipad-constraint-probe.tsv`, which is tracked. It also prints the
+follow-up and puts it in the #2211 draft:
+
+1. Commit that row.
+2. Raise `CONSTRAINT_PROVEN_IPADOS` in `tools/perf/ios/secure-origin.mjs` to 26.6, citing the row.
+
+`secure-origin.test.mjs` fails any constant the log does not back with a `refused` row for that
+release, or one it contradicts with an `accepted` row. Only a conclusive look is recorded:
+
+* A refusal counts only once the leaf from the same root loads. An iPad that does not trust the root
+  refuses every leaf.
+* If Safari *loads* the probe, the runner records `accepted`, stops, and asks you to remove the rig
+  CA profile. Do not raise the constant.
+* A probe page that neither warned nor loaded, such as a blank page or a connection error, records
+  nothing. The step fails so you can rerun it.
+
+**The paired controls on 26.6.** The #2235 pair from visit 1, repeated on the new release, in the
+same session through one probe host. ADR-0174's finger floors were all measured on 26.5, so every
+later iPad drawing verdict needs a floor on 26.6. The captures sit under
+`<session>/captures/ipados-26.6/`, and their labels end in `-ipados-26.6`, so they never overwrite
+visit 1's. The #2237 draft puts the 26.6 driven − finger gaps beside visit 1's 26.5 gaps.
 
 The commit check needs `ios_webkit_debug_proxy` to list Safari pages. If it lists the iPad and no
 pages on 26.6, the #2237 draft says so and names the contingency in that issue (repoint
@@ -95,20 +129,23 @@ pages on 26.6, the #2237 draft says so and names the contingency in that issue (
 
 ## Where results go
 
-| Draft                   | Issue | Contents                                                                         |
-| ----------------------- | ----- | -------------------------------------------------------------------------------- |
-| `2235-paired.md`        | #2235 | Driven vs finger, pen and Magic, one session and probe host; driven − finger gap |
-| `2232-first-load.md`    | #2232 | Per Magic finger capture: worst in-contact gap, onset, share without it          |
-| `2231-eraser.md`        | #2231 | Both landscape eraser finger captures, plus the landscape-dark pen (#2233 input) |
-| `2236-native-finger.md` | #2236 | Bundled-app pen and Magic finger captures, with the installed build's commit     |
-| `2211-secure-sweeps.md` | #2211 | The four HTTPS action sweeps and the human-present procedure that produced them  |
-| `2229-ab.md`            | #2229 | The A/B table: e5142fab, 3928cd88, 3928cd88 with Reduce Motion, n = 3 each       |
-| `2237-commit-check.md`  | #2237 | The 26.6 verdict and the release-notes figures                                   |
-| `2249-iphone.md`        | #2249 | The notched-iPhone checklist                                                     |
+| Draft                      | Issue | Contents                                                                                |
+| -------------------------- | ----- | --------------------------------------------------------------------------------------- |
+| `2235-paired.md`           | #2235 | Driven vs finger, pen and Magic, one session and probe host; driven − finger gap        |
+| `2232-first-load.md`       | #2232 | Per Magic finger capture: worst in-contact gap, onset, share without it                 |
+| `2231-eraser.md`           | #2231 | Both landscape eraser finger captures, plus the landscape-dark pen (#2233 input)        |
+| `2236-native-finger.md`    | #2236 | Bundled-app pen and Magic finger captures, with the installed build's commit            |
+| `2211-secure-sweeps.md`    | #2211 | The four HTTPS action sweeps and the human-present procedure that produced them         |
+| `2229-ab.md`               | #2229 | The A/B table: e5142fab, 3928cd88, 3928cd88 with Reduce Motion, n = 3 each              |
+| `2211-constraint-probe.md` | #2211 | The constraint probe on 26.6, its log row, and the `CONSTRAINT_PROVEN_IPADOS` follow-up |
+| `2237-paired.md`           | #2237 | Driven vs finger, pen and Magic, on 26.6, beside visit 1's 26.5 gaps                    |
+| `2237-commit-check.md`     | #2237 | The 26.6 verdict and the release-notes figures                                          |
+| `2249-iphone.md`           | #2249 | The notched-iPhone checklist                                                            |
 
 Rulings stay yours: whether ADR-0174 stands (#2235, #2231), the #2232 disposition (`needs-adr`), and
 which follow-ups to file. After posting, keep the captures with `perf:evidence:keep` (each draft
-names its session directory) and update the #2210 ledger.
+names its session directory), commit any new row in
+`perf-profiles/evidence/operator/ipad-constraint-probe.tsv`, and update the #2210 ledger.
 
 ## How the tasks map to the harness
 

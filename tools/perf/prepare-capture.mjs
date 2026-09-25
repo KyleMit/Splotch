@@ -27,6 +27,7 @@ import { join } from 'node:path';
 import { ROOT, argFlag, hasCommand, isMain, runMain } from '../lib/proc.mjs';
 import { portListenerOwners } from '../lib/vite-server.mjs';
 import {
+  ANDROID_PORT_ROLES,
   androidWakeActions,
   classifyAppiumLog,
   classifyLaunchProbe,
@@ -261,11 +262,12 @@ async function inspectedPortHolder(role, port, intendedProbeUpstream) {
   };
 }
 
-async function portChecks() {
+async function portChecks({ android }) {
   const checks = [];
   const resolved = {};
   const decisions = {};
   for (const [role, spec] of Object.entries(PORT_ROLES)) {
+    if (!android && ANDROID_PORT_ROLES.includes(role)) continue;
     if (role === 'probe' && resolved.preview === undefined) {
       throw new Error('PORT_ROLES must resolve preview before probe');
     }
@@ -978,11 +980,17 @@ export async function recoverStaleDiscoveryLaunch({ udid, wdaPort, verifyRotatio
   }
 }
 
-export async function prepareCapture(argv = process.argv.slice(2)) {
+// `android: false` is for a caller that needs only the iPad (the person
+// session's second visit): a detached phone, or a busy port only an Android
+// capture uses, must not count as a blocker.
+export async function prepareCapture(
+  argv = process.argv.slice(2),
+  { android: withAndroid = true } = {}
+) {
   const fix = argv.includes('--wake-android');
-  const android = androidChecks({ fix });
+  const android = withAndroid ? androidChecks({ fix }) : { checks: [], serial: null, devices: [] };
   const ios = iosChecks();
-  const ports = await portChecks();
+  const ports = await portChecks({ android: withAndroid });
   const usbProblem =
     Array.isArray(ios.udids) &&
     deviceAccessProblem({

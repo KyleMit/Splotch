@@ -414,6 +414,8 @@ export function classifyLaunchProbe({
 // is not one: the input verification's tab guard logs that it was skipped and
 // carries on when that forward cannot bind.
 export const ANDROID_VERIFICATION_PORT_ROLES = ['floorControl'];
+// The roles only an Android capture uses, which an iPad-only preflight skips.
+export const ANDROID_PORT_ROLES = ['androidCdp', ...ANDROID_VERIFICATION_PORT_ROLES];
 
 // The Android input verification exits the whole preflight when its page never
 // reports — a locked phone, missing Chrome, or no floor-control port — taking the
