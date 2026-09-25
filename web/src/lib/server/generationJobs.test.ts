@@ -347,6 +347,8 @@ describe('purgeExpiredGenerationJobs', () => {
 // malformed record with a well-formed one so the test proves the guard, not a
 // call site that ignores the store entirely.
 describe('malformed job records', () => {
+  const UNKNOWN_OUTCOME = 'an outcome of an unknown shape';
+  const BARE_STRING = 'a bare string';
   // Each builder takes the claim id the call site expects, so completeJob's
   // claim match cannot be what rejects the record.
   const MALFORMED = [
@@ -356,15 +358,22 @@ describe('malformed job records', () => {
     ],
     ['a non-numeric expiry', (claimId: string | null) => storedJob({ claimId, expiresAt: '9999' })],
     [
-      'an outcome of an unknown shape',
+      UNKNOWN_OUTCOME,
       (claimId: string | null) => storedJob({ claimId, outcome: { status: 'image' } }),
     ],
     [
       'a free reservation without its id',
       (claimId: string | null) => storedJob({ claimId, context: { free: {}, style: null } }),
     ],
-    ['a bare string', () => 'status'],
+    [BARE_STRING, () => 'status'],
   ] as const;
+
+  // A site's table keeps only the cases the guard alone rejects there. claimJob
+  // and completeJob already refuse any record with an outcome, and a bare string
+  // lacks the claimId or expiresAt that the recovery, completeJob and the purge
+  // already refuse without it — so those pairs would pass with the guard gone.
+  const MALFORMED_EXCEPT = (...excluded: string[]) =>
+    MALFORMED.filter(([label]) => !excluded.includes(label));
 
   let warnMock: ReturnType<typeof vi.spyOn>;
 
@@ -409,18 +418,22 @@ describe('malformed job records', () => {
       expect(store.setJSON).toHaveBeenCalledTimes(1);
     });
 
-    it.each(MALFORMED)('does not claim %s', async (_, record) => {
+    it.each(MALFORMED_EXCEPT(UNKNOWN_OUTCOME))('does not claim %s', async (_, record) => {
       store.getWithMetadata.mockResolvedValue({ data: record(null), etag: 'v1', metadata: {} });
 
       expect(await claimJob(JOB)).toBeNull();
       expect(store.setJSON).not.toHaveBeenCalled();
     });
 
-    it('does not claim a record without an etag to make the write conditional on', async () => {
+    it('claims a record the local Blobs server returned without an etag', async () => {
       store.getWithMetadata.mockResolvedValue({ data: storedJob(), metadata: {} });
 
-      expect(await claimJob(JOB)).toBeNull();
-      expect(store.setJSON).not.toHaveBeenCalled();
+      expect(await claimJob(JOB)).toEqual(expect.any(String));
+      expect(store.setJSON).toHaveBeenCalledWith(
+        `${JOB}/status.json`,
+        expect.objectContaining({ claimId: expect.any(String) }),
+        { onlyIfMatch: undefined }
+      );
     });
 
     it('recovers a lost-reply claim from a well-formed record', async () => {
@@ -435,19 +448,22 @@ describe('malformed job records', () => {
       expect(await claimJob(JOB)).toEqual(expect.any(String));
     });
 
-    it.each(MALFORMED)('does not recover a lost-reply claim from %s', async (_, record) => {
-      let claimId: string | null = null;
-      store.getWithMetadata.mockResolvedValue({ data: storedJob(), etag: 'v1', metadata: {} });
-      store.setJSON.mockImplementationOnce(async (_key, value: { claimId: string }) => {
-        claimId = value.claimId;
-        throw new Error('reply lost');
-      });
-      // The malformed record carries the attempt's own claim id, so only the
-      // guard can be what refuses the recovery.
-      store.get.mockImplementationOnce(async () => record(claimId));
+    it.each(MALFORMED_EXCEPT(BARE_STRING))(
+      'does not recover a lost-reply claim from %s',
+      async (_, record) => {
+        let claimId: string | null = null;
+        store.getWithMetadata.mockResolvedValue({ data: storedJob(), etag: 'v1', metadata: {} });
+        store.setJSON.mockImplementationOnce(async (_key, value: { claimId: string }) => {
+          claimId = value.claimId;
+          throw new Error('reply lost');
+        });
+        // The malformed record carries the attempt's own claim id, so only the
+        // guard can be what refuses the recovery.
+        store.get.mockImplementationOnce(async () => record(claimId));
 
-      await expect(claimJob(JOB)).rejects.toThrow('reply lost');
-    });
+        await expect(claimJob(JOB)).rejects.toThrow('reply lost');
+      }
+    );
   });
 
   describe('completeJob', () => {
@@ -467,14 +483,17 @@ describe('malformed job records', () => {
       expect(store.setJSON).toHaveBeenCalledTimes(1);
     });
 
-    it.each(MALFORMED)('writes nothing over %s', async (_, record) => {
-      store.getWithMetadata.mockResolvedValue({ data: record(CLAIM), etag: 'v1', metadata: {} });
+    it.each(MALFORMED_EXCEPT(UNKNOWN_OUTCOME, BARE_STRING))(
+      'writes nothing over %s',
+      async (_, record) => {
+        store.getWithMetadata.mockResolvedValue({ data: record(CLAIM), etag: 'v1', metadata: {} });
 
-      await completeJob(JOB, CLAIM, OUTCOME, new ArrayBuffer(1));
+        await completeJob(JOB, CLAIM, OUTCOME, new ArrayBuffer(1));
 
-      expect(store.set).not.toHaveBeenCalled();
-      expect(store.setJSON).not.toHaveBeenCalled();
-    });
+        expect(store.set).not.toHaveBeenCalled();
+        expect(store.setJSON).not.toHaveBeenCalled();
+      }
+    );
   });
 
   describe('purgeExpiredGenerationJobs', () => {
@@ -488,14 +507,17 @@ describe('malformed job records', () => {
       expect(store.delete).not.toHaveBeenCalled();
     });
 
-    it.each(MALFORMED)('treats %s as eligible for deletion', async (_, record) => {
-      store.get.mockResolvedValue(record(null));
+    it.each(MALFORMED_EXCEPT(BARE_STRING))(
+      'treats %s as eligible for deletion',
+      async (_, record) => {
+        store.get.mockResolvedValue(record(null));
 
-      expect(await purgeExpiredGenerationJobs(5_000)).toMatchObject({
-        retainedJobs: 0,
-        purgedJobs: 1,
-      });
-      expect(store.delete).toHaveBeenCalledWith(`${JOB}/status.json`);
-    });
+        expect(await purgeExpiredGenerationJobs(5_000)).toMatchObject({
+          retainedJobs: 0,
+          purgedJobs: 1,
+        });
+        expect(store.delete).toHaveBeenCalledWith(`${JOB}/status.json`);
+      }
+    );
   });
 });

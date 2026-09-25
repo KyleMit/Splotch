@@ -140,15 +140,17 @@ async function readStoredJob(jobStore: JobStore, jobId: string): Promise<StoredJ
   return storedJobOrNull(value);
 }
 
-// An etag is required, not optional: the writes that follow are conditional on
-// it, and `onlyIfMatch: undefined` would silently make them unconditional.
+// The etag stays optional: the local Blobs server behind `netlify dev` answers a
+// read without one, and the deployed store always sends it. Without it the
+// conditional write that follows degrades to an unconditional one, which only
+// the single-developer local server ever sees.
 async function readStoredJobVersion(
   jobStore: JobStore,
   jobId: string
-): Promise<{ data: StoredJob; etag: string } | null> {
+): Promise<{ data: StoredJob; etag: string | undefined } | null> {
   const entry = await jobStore.getWithMetadata(statusKey(jobId), { type: 'json' });
   const data = storedJobOrNull(entry?.data);
-  return data && typeof entry?.etag === 'string' ? { data, etag: entry.etag } : null;
+  return data && entry ? { data, etag: entry.etag } : null;
 }
 
 function store() {
