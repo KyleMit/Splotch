@@ -342,6 +342,9 @@ export function androidDriver({
     // pointerdowns than this lost touches before the page saw them (issue 2229:
     // an overlay column dropped 20 of 160 while the capture passed).
     dispatchedStrokes: 0,
+    // Where each swipe was meant to land, in page CSS px, for the landing rule
+    // in stroke-delivery.mjs to hold against the pointerdowns the page records.
+    plannedStrokeStarts: [],
     async dispatch({ bounds, densityScale, offset }, repeats) {
       await frontRunPage('before dispatch');
       const instructions = androidGestureInstructions(trustedGestureActions(bounds, repeats, 0), {
@@ -353,6 +356,10 @@ export function androidDriver({
         else {
           exec(serial, swipeArgs(instruction));
           this.dispatchedStrokes += 1;
+          this.plannedStrokeStarts.push([
+            (instruction.x0 - offset.x) / densityScale,
+            (instruction.y0 - offset.y) / densityScale,
+          ]);
         }
       }
     },
@@ -551,6 +558,7 @@ export function drivenCaptureArtifact({
   servedBuild = null,
   reduceMotion = null,
   dispatchedStrokes = null,
+  plannedStrokeStarts = null,
   fidelity,
   drawing,
   undo,
@@ -608,6 +616,14 @@ export function drivenCaptureArtifact({
     // Android only: one per `adb shell input swipe`, each a separate
     // down/up. Null where the transport does not count them.
     dispatchedStrokes,
+    // Android only: each swipe's planned start beside each trusted pointerdown
+    // the page recorded, both in page CSS px and in dispatch order. Null where
+    // the transport plans no screen coordinates of its own, and on the floor
+    // control, whose page does not record positions.
+    strokeLanding:
+      plannedStrokeStarts && page !== FLOOR_CONTROL_PAGE
+        ? { planned: plannedStrokeStarts, recorded: payload?.pointerdownPositions ?? null }
+        : null,
     // 'blocked' on a secure origin, 'unsupported' on an insecure one; null
     // predates the guard. A 'stale-worker' page is refused before this.
     serviceWorkerRegistration: ready?.serviceWorkerRegistration ?? null,
@@ -918,6 +934,7 @@ export async function captureDeviceFrames({
     servedBuild,
     reduceMotion,
     dispatchedStrokes: driver.dispatchedStrokes ?? null,
+    plannedStrokeStarts: driver.plannedStrokeStarts ?? null,
     fidelity,
     drawing,
     undo,

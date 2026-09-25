@@ -74,6 +74,65 @@ describe('strokeDeliveryProblem', () => {
   });
 });
 
+// Issue 2271's shape: every one of the 160 strokes arrived, each one 48 CSS px
+// below its planned start, because a navigation bar below the page was counted
+// above it.
+const NAV_BAR_CSS_PX = 48;
+const plannedStarts = Array.from({ length: 160 }, (_, index) => [
+  20 + (index % 16) * 20,
+  80 + Math.floor(index / 16) * 50,
+]);
+const landed = (dx, dy) => plannedStarts.map(([x, y]) => [x + dx, y + dy]);
+const withLanding = (recorded, planned = plannedStarts) => ({
+  ...DELIVERED,
+  strokeLanding: { planned, recorded },
+});
+
+describe('stroke landing', () => {
+  it('passes strokes that arrived within a CSS pixel of their planned starts', () => {
+    expect(strokeDeliveryProblem(withLanding(landed(0.17, -0.16)))).toBeNull();
+  });
+
+  it('fails strokes that all landed one navigation bar low, naming the offset', () => {
+    const problem = strokeDeliveryProblem(withLanding(landed(0, NAV_BAR_CSS_PX)));
+
+    expect(problem).toContain('up to 48 CSS px from their planned points');
+    expect(problem).toContain('median offset x 0, y 48');
+  });
+
+  it('fails a single stroke that landed off its plan', () => {
+    const recorded = landed(0, 0);
+    recorded[37] = [recorded[37][0] + 2, recorded[37][1]];
+
+    expect(strokeDeliveryProblem(withLanding(recorded))).toContain('up to 2 CSS px');
+  });
+
+  it('fails a planned capture whose page recorded no positions', () => {
+    expect(strokeDeliveryProblem(withLanding(null))).toMatch(/no pointerdown positions/);
+  });
+
+  it('fails when the positions and the plan disagree in length', () => {
+    expect(strokeDeliveryProblem(withLanding(landed(0, 0).slice(1)))).toContain(
+      '159 pointerdown positions for 160 planned strokes'
+    );
+  });
+
+  it('leaves the count rule to report lost strokes first', () => {
+    const problem = strokeDeliveryProblem({
+      ...withLostStrokes(DELIVERED, LOST_STROKES),
+      strokeLanding: { planned: plannedStarts, recorded: landed(0, NAV_BAR_CSS_PX).slice(20) },
+    });
+
+    expect(problem).toContain('recorded 140 pointerdowns for 160 dispatched strokes');
+  });
+
+  it('refuses the capture through captureRefusal', () => {
+    expect(captureRefusal(withLanding(landed(NAV_BAR_CSS_PX, 0)))).toMatch(
+      /Stroke delivery failed: strokes landed up to 48 CSS px/
+    );
+  });
+});
+
 describe('captureRefusal', () => {
   it('lets a delivered, faithful capture through', () => {
     expect(DELIVERED.fidelity.passed).toBe(true);

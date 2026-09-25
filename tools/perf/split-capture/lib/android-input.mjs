@@ -42,25 +42,45 @@ function defaultDisplayInsetState(dumpsys) {
 // the current rotation. The page cannot report this itself: Chrome answers
 // screen.availHeight with the full display height and every safe-area inset with
 // zero, while still keeping its content clear of the navigation bar.
+//
+// Every source line is parsed field by field, because Android versions differ
+// in what surrounds the fields (an `id=` before `type=`, a `visibleFrame=`
+// before `visible=`), and a line or bar this cannot read throws: silently
+// reading no bars is the very origin error this exists to remove.
 export function androidSystemInsets(dumpsys) {
   const state = defaultDisplayInsetState(dumpsys);
-  const frame = state.match(/mDisplayFrame=Rect\((-?\d+), (-?\d+) - (-?\d+), (-?\d+)\)/);
-  if (!frame) throw new Error('dumpsys window displays carried no display frame');
-  const [, , , width, height] = frame.map(Number);
+  const display = state.match(/mDisplayFrame=Rect\((-?\d+), (-?\d+) - (-?\d+), (-?\d+)\)/);
+  if (!display) throw new Error('dumpsys window displays carried no display frame');
+  const [, displayLeft, displayTop, displayRight, displayBottom] = display.map(Number);
   const insets = { left: 0, top: 0, right: 0, bottom: 0 };
-  const sources = state.matchAll(
-    /^\s*InsetsSource id=\S+ type=(\w+) frame=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\] visible=(\w+)/gm
-  );
-  for (const [, type, ...rest] of sources) {
-    const [left, top, right, bottom] = rest.slice(0, 4).map(Number);
-    if (!CONTENT_INSET_TYPES.has(type) || rest[4] !== 'true') continue;
+  let systemBars = 0;
+  for (const line of state.split('\n').filter((text) => /^\s*InsetsSource\b/.test(text))) {
+    const type = line.match(/\btype=(\w+)/)?.[1];
+    const frame = line.match(/\bframe=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]/);
+    const visible = line.match(/\bvisible=(true|false)\b/)?.[1];
+    if (!type || !frame || !visible) {
+      throw new Error(`unreadable inset source in dumpsys window displays: ${line.trim()}`);
+    }
+    if (type === 'navigationBars' || type === 'statusBars') systemBars += 1;
+    const [left, top, right, bottom] = frame.slice(1).map(Number);
+    if (!CONTENT_INSET_TYPES.has(type) || visible !== 'true') continue;
     if (right <= left || bottom <= top) continue;
-    const spansHeight = top <= 0 && bottom >= height;
-    const spansWidth = left <= 0 && right >= width;
-    if (spansHeight && !spansWidth && left <= 0) insets.left = Math.max(insets.left, right);
-    else if (spansHeight && !spansWidth) insets.right = Math.max(insets.right, width - left);
-    else if (spansWidth && !spansHeight && top <= 0) insets.top = Math.max(insets.top, bottom);
-    else if (spansWidth && !spansHeight) insets.bottom = Math.max(insets.bottom, height - top);
+    const spansHeight = top <= displayTop && bottom >= displayBottom;
+    const spansWidth = left <= displayLeft && right >= displayRight;
+    if (spansHeight && !spansWidth && left <= displayLeft) {
+      insets.left = Math.max(insets.left, right - displayLeft);
+    } else if (spansHeight && !spansWidth && right >= displayRight) {
+      insets.right = Math.max(insets.right, displayRight - left);
+    } else if (spansWidth && !spansHeight && top <= displayTop) {
+      insets.top = Math.max(insets.top, bottom - displayTop);
+    } else if (spansWidth && !spansHeight && bottom >= displayBottom) {
+      insets.bottom = Math.max(insets.bottom, displayBottom - top);
+    } else {
+      throw new Error(`cannot place a ${type} inset that spans no display edge: ${line.trim()}`);
+    }
+  }
+  if (systemBars === 0) {
+    throw new Error('dumpsys window displays named no status or navigation bar source');
   }
   return insets;
 }
@@ -71,9 +91,12 @@ export function androidSystemInsets(dumpsys) {
 // its own toolbar and the status bar above, a rotated cutout to one side, and
 // the navigation bar below or beside. Only the bars that lie before the content
 // move its origin, so the ones the display reports after it — below and to the
-// right — are taken back out. Chrome's toolbar is assumed to be at the top.
-// The native WebView fills the display with its navigation bar hidden, so it
-// reports no gap and the display reports no bar to take out.
+// right — are taken back out. Chrome's toolbar is assumed to be at the top: no
+// report distinguishes it from Chrome's optional bottom address bar, so a
+// capture proves the result instead, through the landing rule in
+// tools/perf/lib/stroke-delivery.mjs. The native WebView fills the display
+// with its navigation bar hidden, so it reports no gap and the display reports
+// no bar to take out.
 export function androidContentOffset(geometry, { userRotation, systemInsets }) {
   if (!systemInsets) throw new Error('androidContentOffset needs the display system insets');
   const viewport = geometry.viewport ?? { width: 0, height: 0 };

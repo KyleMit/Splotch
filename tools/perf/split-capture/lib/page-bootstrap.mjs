@@ -139,6 +139,16 @@ export function pageBootstrapSource() {
   window.addEventListener('unhandledrejection', (event) =>
     log({ kind: 'rejection', message: String(event.reason && event.reason.message || event.reason) })
   );
+  // Where each trusted touch arrived, so a driven capture can prove its
+  // dispatch origin instead of trusting the geometry it derived it from.
+  const pointerdownPositions = [];
+  window.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.isTrusted) pointerdownPositions.push([event.clientX, event.clientY]);
+    },
+    { capture: true, passive: true }
+  );
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const until = async (test, timeoutMs = ${READY_TIMEOUT_MS}) => {
     const deadline = Date.now() + timeoutMs;
@@ -575,6 +585,7 @@ export function pageBootstrapSource() {
       historyBeforeUndo,
       historyAfterUndo,
       undoVisual,
+      pointerdownPositions,
     });
   } catch (error) {
     await log({ kind: 'bootstrap', message: String(error?.message ?? error) });

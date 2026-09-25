@@ -21,7 +21,10 @@ import {
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
 import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
-import { fetchAcceptedProbeReport } from '../split-capture/lib/probe-host-protocol.mjs';
+import {
+  FLOOR_CONTROL_PAGE,
+  fetchAcceptedProbeReport,
+} from '../split-capture/lib/probe-host-protocol.mjs';
 import {
   activateChromePage,
   clearToolingLitter,
@@ -188,6 +191,54 @@ describe('androidSystemInsets', () => {
     expect(androidSystemInsets(`${secondary}${RIG_PORTRAIT_DISPLAYS}`)).toEqual(
       androidSystemInsets(RIG_PORTRAIT_DISPLAYS)
     );
+  });
+
+  it('reads the source lines of other Android versions, field by field', () => {
+    const variants = displaysDump({
+      frame: '0, 0 - 1080, 2340',
+      sources: [
+        'type=navigationBars frame=[0,2196][1080,2340] visible=true',
+        'id=3caa0000 type=statusBars frame=[0,0][1080,99] visibleFrame=[0,0][1080,99] visible=true',
+      ],
+    });
+
+    expect(androidSystemInsets(variants)).toEqual({ left: 0, top: 99, right: 0, bottom: 144 });
+  });
+
+  it('throws on a source line it cannot read rather than dropping its bar', () => {
+    const unreadable = displaysDump({
+      frame: '0, 0 - 1080, 2340',
+      sources: [
+        'id=c7300001 type=navigationBars frame=Rect(0, 2196 - 1080, 2340) visible=true',
+        'id=3caa0000 type=statusBars frame=[0,0][1080,99] visible=true',
+      ],
+    });
+
+    expect(() => androidSystemInsets(unreadable)).toThrow('unreadable inset source');
+  });
+
+  it('throws when no status or navigation bar source is named at all', () => {
+    const renamed = displaysDump({
+      frame: '0, 0 - 1080, 2340',
+      sources: [
+        'type=ITYPE_NAVIGATION_BAR frame=[0,2196][1080,2340] visible=true',
+        'type=ITYPE_STATUS_BAR frame=[0,0][1080,99] visible=true',
+      ],
+    });
+
+    expect(() => androidSystemInsets(renamed)).toThrow('no status or navigation bar source');
+  });
+
+  it('throws on a visible bar that spans no display edge', () => {
+    const floating = displaysDump({
+      frame: '0, 0 - 1080, 2340',
+      sources: [
+        'id=c7300001 type=navigationBars frame=[300,2196][780,2340] visible=true',
+        'id=3caa0000 type=statusBars frame=[0,0][1080,99] visible=true',
+      ],
+    });
+
+    expect(() => androidSystemInsets(floating)).toThrow('spans no display edge');
   });
 
   it('refuses a dump with no inset state rather than assuming no bars', () => {
@@ -1695,6 +1746,63 @@ describe('the wiring that fronts the page and judges the input', () => {
       densityScale: 3,
       offset: { x: 0, y: 267 },
     });
+  });
+
+  it('records where each swipe was planned to land, in page CSS px', async () => {
+    const deps = driverDeps();
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      toolingHostnames: ['host'],
+      orientation: 'PORTRAIT',
+      nativeApp: false,
+      cdpPort: 9224,
+      ...deps,
+    });
+    const canvas = { x: 0, y: 75, width: 360, height: 568 };
+
+    vi.useFakeTimers();
+    try {
+      const dispatched = driver.dispatch(
+        { bounds: canvas, densityScale: 3, offset: { x: 0, y: 267 } },
+        1
+      );
+      await vi.runAllTimersAsync();
+      await dispatched;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const planned = [];
+    let path = [];
+    for (const action of trustedGestureActions(canvas, 1, 0)) {
+      if (action.type === 'pointerMove') path.push([action.x, action.y]);
+      if (action.type === 'pointerUp') {
+        planned.push(...path.slice(0, -1));
+        path = [];
+      }
+    }
+    expect(driver.plannedStrokeStarts).toHaveLength(driver.dispatchedStrokes);
+    expect(driver.plannedStrokeStarts).toHaveLength(planned.length);
+    driver.plannedStrokeStarts.forEach(([x, y], index) => {
+      expect(Math.abs(x - planned[index][0])).toBeLessThanOrEqual(0.5 / 3);
+      expect(Math.abs(y - planned[index][1])).toBeLessThanOrEqual(0.5 / 3);
+    });
+  });
+
+  it('carries the planned and landed starts into an app artifact, not a floor one', () => {
+    const planned = [[10, 20]];
+    const payload = { pointerdownPositions: [[10.1, 19.9]] };
+
+    expect(drivenCaptureArtifact({ plannedStrokeStarts: planned, payload }).strokeLanding).toEqual({
+      planned,
+      recorded: [[10.1, 19.9]],
+    });
+    expect(
+      drivenCaptureArtifact({ plannedStrokeStarts: planned, payload, page: FLOOR_CONTROL_PAGE })
+        .strokeLanding
+    ).toBeNull();
+    expect(drivenCaptureArtifact({ payload }).strokeLanding).toBeNull();
   });
 
   it('fails a zero-event dispatch and lets everything else decide downstream', () => {
