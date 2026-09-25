@@ -1534,10 +1534,30 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
         ),
       },
     },
-    targets: manifest.targets.map((target) =>
-      normalizeTarget(target, resolvedSourceDirectory, preserved)
+    targets: assertCapturesPrecedeReport(
+      manifest.targets.map((target) => normalizeTarget(target, resolvedSourceDirectory, preserved)),
+      manifest.recordedOn
     ),
   });
+}
+
+// Ages count to recordedOn, so a section captured after it would publish a
+// negative age. The fold advances recordedOn with every fold it writes; a date
+// past it means the manifest was edited by hand without moving the report date.
+function assertCapturesPrecedeReport(targets, recordedOn) {
+  if (!isCaptureDate(recordedOn)) return targets;
+  for (const target of targets) {
+    for (const mode of target.modes) {
+      for (const [section, date] of Object.entries(mode.capturedOn ?? {})) {
+        if (date > recordedOn) {
+          throw new Error(
+            `Target ${target.id} mode ${mode.id} capturedOn.${section} ${date} is after the report's recordedOn ${recordedOn}; move recordedOn forward`
+          );
+        }
+      }
+    }
+  }
+  return targets;
 }
 
 // Preservation is a provenance claim about the evidence, so the report states it

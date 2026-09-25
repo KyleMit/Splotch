@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  advanceRecordedOn,
   applyCampaignModes,
   campaignModeSources,
   runCampaignSources,
@@ -893,6 +894,15 @@ describe('campaign sources', () => {
       undo: FOLDED_ON,
       actions: '2026-09-07',
     });
+  });
+
+  // The generator counts ages to recordedOn, so a fold that left it behind
+  // would publish a negative age for every section it just wrote.
+  it('moves the report date forward to the fold date, never back', () => {
+    expect(advanceRecordedOn({ recordedOn: '2026-09-23' }, FOLDED_ON).recordedOn).toBe(FOLDED_ON);
+    expect(advanceRecordedOn({ recordedOn: '2026-09-30' }, FOLDED_ON).recordedOn).toBe(
+      '2026-09-30'
+    );
   });
 
   it('refuses a fold without a real fold date', () => {

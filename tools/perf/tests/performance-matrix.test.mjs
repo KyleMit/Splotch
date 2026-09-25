@@ -1449,6 +1449,18 @@ describe('deployment matrix report', () => {
       );
     });
 
+    // Ages count to recordedOn, so a later capture date would publish a negative age.
+    it('refuses a capture date after the report date', () => {
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { capturedOn: { drawing: '2026-08-21' } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+      expect(() => normalizeMatrix(source)).toThrow(
+        "capturedOn.drawing 2026-08-21 is after the report's recordedOn 2026-08-20"
+      );
+    });
+
     it('refuses a capture date for a section the matrix does not have', () => {
       const source = manifest([
         capturedManifestMode(modeSpecs[0], { capturedOn: { rotation: '2026-08-01' } }),

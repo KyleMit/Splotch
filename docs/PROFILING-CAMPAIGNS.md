@@ -943,7 +943,8 @@ which is what makes it trustworthy after a resumed run.
 
 Step 2 also dates every section it writes: `capturedOn` takes the `perf-run` stamp in the artifacts'
 `automation.loadedUrl` (the iOS XCUITest drawing transport records one), and falls back to the fold
-date when no artifact carries a stamp (ADR-0175).
+date when no artifact carries a stamp. It also moves the manifest's `recordedOn` forward to the fold
+date, so no section ages past the report (ADR-0175).
 
 Step 3 chains `check:matrix-staleness` in process. It ranks every captured section by capture age,
 with the commits that landed since, and exits 0: every section is behind the tip between campaigns,

@@ -43,9 +43,10 @@ Alternatives considered:
    Each section is dated by the `perf-run=<epoch ms>` stamp in its artifacts'
    `automation.loadedUrl`, taking the oldest when a section has several artifacts. A section none of
    whose artifacts records the stamp falls back to the fold date. A section the fold does not write,
-   such as preserved actions or a carried undo, keeps the date it already had. The stamp parser and
-   the age arithmetic live in `tools/perf/lib/capture-date.mjs`, which also owns `PERF_RUN_PARAM`
-   for the XCUITest transport that writes the stamp.
+   such as preserved actions or a carried undo, keeps the date it already had. Every fold also moves
+   the manifest's `recordedOn` forward to the fold date, never back. The stamp parser and the age
+   arithmetic live in `tools/perf/lib/capture-date.mjs`, which also owns `PERF_RUN_PARAM` for the
+   XCUITest transport that writes the stamp.
 2. **The committed sections were backfilled the same way.** The stamp is present only in iOS
    XCUITest drawing and undo artifacts. Android, desktop, and action transports record none. Of the
    132 committed sections, 26 are dated by the stamp. The other 106 are dated by their fold date:
@@ -54,7 +55,8 @@ Alternatives considered:
    `docs/scratchpad/perf/2026-09-25-issue-2267-captured-on-backfill.md`.
 3. **The generator publishes and renders the age.** `gen:performance-matrix` validates each date,
    copies it into `data.json`, and renders every provenance cell as commit, date, and age counted to
-   the report's `recordedOn`. It removes the exact-commit action coverage column and
+   the report's `recordedOn`, and refuses a capture date later than `recordedOn`, which would
+   publish a negative age. It removes the exact-commit action coverage column and
    `finalProductCommitActionCount`. It adds an **Open release-gate reds** list: every cell the
    release-gate section renders red that no recorded disposition explains, each with its capture
    date and age, oldest first.
@@ -63,10 +65,12 @@ Alternatives considered:
    against today, the product commit, and the engine and measured-surface commits that landed since
    (`tools/perf/check-matrix-staleness.mjs`). Age is never a failure.
 5. **`--strict` means provenance-complete.** Under `--strict`, the check fails when any captured
-   section lacks a valid `capturedOn` date or a product commit this checkout can resolve. A
-   preserved section's commit is read from the report it is carried from (`preservedEvidence.from`).
-   The policy is the pure function `provenanceOutcome`, tested in
-   `tools/perf/tests/matrix-staleness.test.mjs`.
+   section lacks a valid `capturedOn` date or a product commit this checkout can resolve. The
+   generator copies both a preserved and a captured-untracked section from the report the manifest
+   names (`preservedEvidence.from`), so their commits are read from there, and a captured-untracked
+   pin that contradicts the published section is a failure too. A declared action section is checked
+   even beside an `actionsUnavailableReason`, because the generator still publishes it. The policy
+   is the pure function `provenanceOutcome`, tested in `tools/perf/tests/matrix-staleness.test.mjs`.
 6. **The completion gate reads by age.** ADR-0156's gate, and the `improve-performance-matrix`
    skill's, now reads: zero scoreable, unexplained red cells on the release-gate rows, each shown
    with its capture age. An old red keeps counting until it is recaptured or explained.
@@ -88,5 +92,6 @@ Alternatives considered:
   as an open red even when its published verdict was red. No release-gate row carries one today.
   Per-section folding, which will let a release-gate drawing section be preserved, has to decide
   whether that case keeps counting.
-* − The page ages count to `recordedOn`, so a regenerate that forgets to move `recordedOn` publishes
-  ages that are too small. The capture dates beside them stay correct.
+* − The page ages count to `recordedOn`, and a fold moves it, so a hand edit to the manifest that
+  adds a later section without moving `recordedOn` is refused rather than aged. `recordedOn` now
+  follows the latest fold, not the campaign's final commit alone.

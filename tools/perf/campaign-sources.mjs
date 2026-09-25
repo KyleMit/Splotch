@@ -298,6 +298,15 @@ export function applyCampaignModes(manifest, targetId, entries) {
   return manifest;
 }
 
+// The report's date moves with every fold, since the generator counts each
+// section's age to it: a fold that left it behind would publish negative ages.
+export function advanceRecordedOn(manifest, foldedOn) {
+  if (!isCaptureDate(manifest.recordedOn) || foldedOn > manifest.recordedOn) {
+    manifest.recordedOn = foldedOn;
+  }
+  return manifest;
+}
+
 export async function runCampaignSources(argv = process.argv.slice(2)) {
   const flag = (name, fallback) => {
     const prefix = `--${name}=`;
@@ -319,10 +328,11 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
     ?.split(',')
     .map((entry) => entry.trim())
     .filter(Boolean);
+  const foldedOn = utcDate(Date.now());
   const entries = campaignModeSources(targetId, {
     outputRoot,
     productCommit,
-    foldedOn: utcDate(Date.now()),
+    foldedOn,
     modes,
     actionsUnavailableReason: flag('actions-unavailable'),
     preserveActions,
@@ -355,6 +365,7 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
   const full = isAbsolute(manifestPath) ? manifestPath : join(ROOT, manifestPath);
   const manifest = JSON.parse(readFileSync(full, 'utf8'));
   applyCampaignModes(manifest, targetId, ready);
+  if (ready.length) advanceRecordedOn(manifest, foldedOn);
   writeFileSync(full, `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`Updated ${manifestPath}`);
   return entries;
