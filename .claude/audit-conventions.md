@@ -14,7 +14,7 @@ a shared rule, change it **here** — the skills point at this file on purpose.
 | **burn-down-outdated-dependencies** | Out-of-date dependencies, upgraded one at a time with a migration guide                                   | one commit per package                            |
 | **audit-dependency-health**         | Inventory + health of every third-party dependency (provenance, license, maintenance, keep/replace)       | `docs/DEPENDENCIES.md`, refreshed in place        |
 | **audit-session**                   | Recurring friction from the just-finished session (code traversal / execution) + the tooling fix for each | `docs/AUDIT.md`                                   |
-| **audit-agent-workflow**            | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
+| **improve-agent-workflow**          | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
 **Consumers** of `docs/AUDIT.md` (not audits themselves): `vet-audits` adversarially validates the
 list against the current code, drops what doesn't hold up, and **files each survivor as a GitHub
@@ -193,7 +193,7 @@ All times UTC; days are spread across the month so at most one audit fires per d
 | Monthly extract audit           | `audit-extractions`               | Monthly, 12th, 11:00 | `0 11 12 * *` |
 | Monthly dependency health audit | `audit-dependency-health`         | Monthly, 15th, 11:00 | `0 11 15 * *` |
 | Monthly lighthouse audit        | `audit-page-load`                 | Monthly, 19th, 11:00 | `0 11 19 * *` |
-| Monthly workflow audit          | `audit-agent-workflow`            | Monthly, 26th, 11:00 | `0 11 26 * *` |
+| Monthly workflow audit          | `improve-agent-workflow`          | Monthly, 26th, 11:00 | `0 11 26 * *` |
 
 **`audit-session` is deliberately not scheduled.** It's a retrospective on a live working session; a
 fresh scheduled session has no session history to reflect on. It stays invoke-at-end-of-session
@@ -216,9 +216,9 @@ Audits that don't stage through `docs/AUDIT.md` keep the same find → verify �
 their own shapes: **burn-down-outdated-dependencies** verifies each bump empirically (check + tests)
 and implements as one batched PR; **audit-dependency-health** refreshes `docs/DEPENDENCIES.md`, has
 a fresh subagent independently verify any new risk or replace/investigate claim before acting, then
-files issues and opens a PR with the refreshed doc; **audit-agent-workflow** writes its dated review
-doc, has a fresh subagent independently validate each recommendation (reverting any that don't hold
-up), and opens a PR with the surviving config changes.
+files issues and opens a PR with the refreshed doc; **improve-agent-workflow** writes its dated
+review doc, has a fresh subagent independently validate each recommendation (reverting any that
+don't hold up), and opens a PR with the surviving config changes.
 
 ### Unattended-run conventions
 

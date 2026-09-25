@@ -1,9 +1,9 @@
 ---
-name: audit-agent-workflow
+name: improve-agent-workflow
 description: Review the Claude Code configuration and session history, benchmark against current best practice, and recommend and apply updates for an integrated, token-efficient setup. Use when asked to audit or improve the Claude Code workflow, config, permissions, or token efficiency, or to reduce repetitive permission prompts.
 ---
 
-# Audit Agent Workflow
+# Improve Agent Workflow
 
 Review my Claude Code configuration and session history, benchmark it against current best practice,
 and recommend (and apply) updates so my setup is an integrated, token-efficient development system

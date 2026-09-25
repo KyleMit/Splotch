@@ -75,12 +75,13 @@ unattended run. Shared rules for the producers live in `.claude/audit-convention
 | `audit-page-load`         | Page-load opportunities → `docs/AUDIT.md` (primary home: Performance)              |
 | `audit-session`           | End-of-session retrospective on repo friction → `docs/AUDIT.md`                    |
 | `audit-dependency-health` | Provenance/license/maintenance review of every dependency → `docs/DEPENDENCIES.md` |
-| `audit-agent-workflow`    | Claude Code config + session-history review vs. best practice → dated review doc   |
 
 ### Screening and fixing audit findings
 
 `vet-audits` and `fix-audits` keep verb-noun names outside the three families: in both, "audits"
-means the findings, not the act.
+means the findings, not the act. `improve-agent-workflow` also stays outside: it applies the config
+changes it recommends, so `audit-*` would understate what a run does (it lives under Repo hygiene &
+meta).
 
 | Skill        | What it does                                                                    |
 | ------------ | ------------------------------------------------------------------------------- |
@@ -252,12 +253,13 @@ its own decisions under `tools/asset-gen/docs/`.
 
 ## Repo hygiene & meta
 
-| Skill                         | Use for                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------ |
-| `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them |
-| `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin` |
-| `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports    |
-| `skills-guide`                | This guide                                                                     |
+| Skill                         | Use for                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them      |
+| `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin`      |
+| `improve-agent-workflow`      | Review Claude Code config + session history vs. best practice; apply approved fixes |
+| `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports         |
+| `skills-guide`                | This guide                                                                          |
 
 `analyze-session-transcripts` has independent registered Claude and Codex packages because their
 session stores and record envelopes differ. It is user-invoked only — a batch run spawns a subagent

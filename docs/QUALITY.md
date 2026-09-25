@@ -235,6 +235,6 @@ and regenerating deterministically.
 them. `ruler:apply` and `ruler:check` keep both provider trees deterministic.
 `package-manager.test.mjs` fails if any CI, hook, or bootstrap file starts installing with npm
 instead of pnpm. `check:github-actions` and `workflow-hygiene.test.mjs` guard the workflow set.
-Skills: `audit-agent-workflow`, `audit-session`, and `self-heal` for the loop itself;
+Skills: `improve-agent-workflow`, `audit-session`, and `self-heal` for the loop itself;
 `audit-dependency-health` and `burn-down-dependabot-prs` for dependency upkeep;
 `fewer-permission-prompts` for friction.

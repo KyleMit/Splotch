@@ -92,5 +92,5 @@ the baseline, but does not make ordinary product pull requests fail before measu
 
 − Reversal is mechanical: remove the standalone workflow job and `test:lighthouse:ci` entry, then
 remove `tools/page-load/` and the pinned Lighthouse development dependency. Keep the manual
-`lighthouse-audit` workflow; it answers the production-CDN question this CI gate deliberately does
-not.
+`audit-page-load` workflow (renamed from `lighthouse-audit`); it answers the production-CDN question
+this CI gate deliberately does not.
