@@ -62,6 +62,7 @@ import {
   RESOLVED_THEME_EXPRESSION,
   clickSetupElement,
   settingsShellIsCompact as isCompactSettingsShell,
+  closeLeftoverSettings,
   ensureCampaignTheme,
   parseCampaignTheme,
   readResolvedTheme,
@@ -2729,6 +2730,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       throw new Error(
         `${nativeApp ? 'The native app' : requestedAppUrl} never showed a sized #drawingCanvas`
       );
+    }
+    if (await closeLeftoverSettings(execute)) {
+      console.log('Closed the Settings dialog an earlier run left open');
     }
     await clearDeviceWebCache(executeAsync);
     const needsNativeRotationUnlock =
