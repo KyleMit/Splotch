@@ -46,6 +46,7 @@
     "check:quality": "node tools/ci-mirror/run-quality-checks.mjs",
     "check:github-actions": "node tools/check-github-action-versions.mjs",
     "check:skill-refs": "node tools/check-skill-reference-syntax.mjs",
+    "report:browser-floor": "node tools/report-browser-floor.mjs",
     "check:coloring-pack-retention": "node tools/release/check-coloring-pack-retention.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -292,6 +293,7 @@
     "check:quality": "Run CI's Quality job locally, in its order — format, type, lint, the drift guards, the token ratchet, dead code, the asset manifest, the scrapbook index, and the dependency audit. Unlike CI it keeps going after a failure, so one run surfaces every problem instead of one per push; test:browserless mirrors the Browserless tests job. tools/ci-mirror/tests/run-quality-checks.test.mjs fails if this list drifts from the workflow",
     "check:github-actions": "Report the GitHub Actions version pins across .github/workflows and flag drift; add --check-latest to compare each against its latest upstream release (network)",
     "check:skill-refs": "Fail when shared prose spells a skill with a runner-specific sigil — Claude Code's /name or Codex's $name — instead of naming it bare; runner-owned trees and the historical records are exempt. Also run as a test by npm run test:tools",
+    "report:browser-floor": "Read-only evidence for the audit-compatibility skill: global usage the browser floor reaches vs Baseline Widely Available, every runtime feature probe in shipped web/src with whether the risk register cites it, and -- --feature <web-features id> lookups against the floor",
     "check:coloring-pack-retention": "Fail when web/static no longer serves, byte-identically, a coloring-pack file some released native app downloads by manifest path + SHA-256 (ADR-0103); reads the committed tools/release/coloring-pack-snapshots/ and prints per-release unserved/blocked counts. Every pack-shipping release is listed with its exact unserved-file count in RELEASED_PACK_BROKEN_FILES (0 when healthy), so a lost snapshot also fails. Also run as a test by npm run test:tools",
     "lint": "ESLint over the whole repo minus the ignores in eslint.config.js (flat config; enforces runes-only, no legacy stores)",
     "lint:fix": "ESLint with autofix",
@@ -526,6 +528,7 @@
     "@types/node": "^22.20.4",
     "@vitest/coverage-v8": "^4.1.11",
     "@vitest/eslint-plugin": "^1.6.27",
+    "browserslist": "4.28.8",
     "dprint": "^0.57.4",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
@@ -546,7 +549,8 @@
     "svgo": "^4.1.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "web-features": "3.39.0"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.0",

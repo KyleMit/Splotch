@@ -13,6 +13,7 @@ a shared rule, change it **here** — the skills point at this file on purpose.
 | **audit-page-load**                 | Page-load / Core Web Vitals opportunities on a throttled device                                           | `docs/AUDIT.md`                                   |
 | **burn-down-outdated-dependencies** | Out-of-date dependencies, upgraded one at a time with a migration guide                                   | one commit per package                            |
 | **audit-dependency-health**         | Inventory + health of every third-party dependency (provenance, license, maintenance, keep/replace)       | `docs/DEPENDENCIES.md`, refreshed in place        |
+| **audit-compatibility**             | Browser/OS floor keep-or-raise, risk-register drift, and feature probes the floor makes unnecessary       | `docs/AUDIT.md`                                   |
 | **audit-session**                   | Recurring friction from the just-finished session (code traversal / execution) + the tooling fix for each | `docs/AUDIT.md`                                   |
 | **improve-agent-workflow**          | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
@@ -35,8 +36,8 @@ The durable audit backlog lives in **GitHub Issues** (open issues labeled `type:
 standing Markdown file. `docs/AUDIT.md` is the transient hand-off between a producer and
 `vet-audits`:
 
-1. **Producer** (`audit-code`, `audit-extractions`, `audit-page-load`, `audit-session`) → appends
-   raw findings to `docs/AUDIT.md` (the merge rules in §1 govern this).
+1. **Producer** (`audit-code`, `audit-compatibility`, `audit-extractions`, `audit-page-load`,
+   `audit-session`) → appends raw findings to `docs/AUDIT.md` (the merge rules in §1 govern this).
 2. **`vet-audits`** → validates each finding, removes the ones that don't hold up, and promotes each
    survivor to a GitHub issue (`type:audit` + applicable `area:*`/`type:*`; add `needs-triage` when
    the finding is valid but its fix approach is unclear). It deletes `docs/AUDIT.md` once drained.
