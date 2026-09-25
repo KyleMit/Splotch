@@ -186,6 +186,13 @@ function jobs(lines) {
   return found;
 }
 
+function topLevelBlock(lines, key) {
+  const start = lines.findIndex((line) => line.startsWith(`${key}:`));
+  if (start < 0) return [];
+  const end = lines.findIndex((line, index) => index > start && /^\S/.test(line));
+  return lines.slice(start, end < 0 ? undefined : end);
+}
+
 function usesRefs(lines) {
   return lines
     .map((line) => line.match(/^\s*(?:-\s+)?uses:\s*(\S+)/)?.[1])
@@ -228,6 +235,16 @@ describe('workflow hygiene', () => {
             )
             .toBe(true);
         }
+      });
+
+      // Each label in a triage pass starts its own run; with workflow-level
+      // cancel-in-progress, the runs whose job skips cancel the one that matters.
+      it('keeps cancel-in-progress concurrency off the workflow level of a label trigger', () => {
+        const labelTriggered = /\blabeled\b/.test(topLevelBlock(lines, 'on').join('\n'));
+        const cancelsAtWorkflowLevel = topLevelBlock(lines, 'concurrency').some((line) =>
+          /^\s+cancel-in-progress:\s*true\b/.test(line)
+        );
+        expect(labelTriggered && cancelsAtWorkflowLevel).toBe(false);
       });
 
       it('keeps every step timeout shorter than its job timeout', () => {
