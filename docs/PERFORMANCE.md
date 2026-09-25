@@ -399,7 +399,7 @@ entry 87. Paths under `web/src/` unless noted.*
     *ADR-0022, ADR-0103*
 66. **Canvas-empty / hidden-page update lifecycle** — a new SW activates silently only when versions
     match; reload fires only when hidden AND the canvas is blank; hourly/focus/visibility checks;
-    one cache-bust attempt per version. `pwa/updates.ts:76-351`. *ADR-0022*
+    one cache-bust attempt per version. `pwa/updates.ts`. *ADR-0022*
 67. **Responsive-coloring SW route with canonical fallback**; **installed-pack CacheStorage-first
     route**; **`version.json` per build**; **no SW at all in native builds**.
     `pwa/coloringFallback.ts`, `pwa/coloringPackRoute.ts`. *ADR-0042/0045/0103/0022*

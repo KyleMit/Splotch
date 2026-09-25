@@ -52,6 +52,28 @@ export function installationId(): Promise<string> {
   return installationIdPromise;
 }
 
+async function fetchGrantRemaining(id: string, signal: AbortSignal): Promise<number> {
+  if (!INSTALLATION_ID_PATTERN.test(id)) throw new Error('Invalid installation identifier');
+  const response = await fetch(apiUrl('/api/free-generation-grant'), {
+    headers: { [INSTALLATION_ID_HEADER]: id },
+    signal,
+  });
+  if (!response.ok) throw new Error('Grant status unavailable');
+  const status: unknown = await response.json();
+  if (
+    typeof status !== 'object' ||
+    status === null ||
+    !('ok' in status) ||
+    status.ok !== true ||
+    !('remaining' in status) ||
+    typeof status.remaining !== 'number' ||
+    !Number.isFinite(status.remaining)
+  ) {
+    throw new Error('Invalid grant status');
+  }
+  return status.remaining;
+}
+
 interface FreeGenerationsDeps {
   settings: SettingsState;
   network: NetworkState;
@@ -124,26 +146,9 @@ export function createFreeGenerations({
     try {
       const id = await installationId();
       if (!latest.isCurrent(request.id)) return;
-      if (!INSTALLATION_ID_PATTERN.test(id)) throw new Error('Invalid installation identifier');
-      const response = await fetch(apiUrl('/api/free-generation-grant'), {
-        headers: { [INSTALLATION_ID_HEADER]: id },
-        signal: request.signal,
-      });
-      if (!response.ok) throw new Error('Grant status unavailable');
-      const status: unknown = await response.json();
-      if (
-        typeof status !== 'object' ||
-        status === null ||
-        !('ok' in status) ||
-        status.ok !== true ||
-        !('remaining' in status) ||
-        typeof status.remaining !== 'number' ||
-        !Number.isFinite(status.remaining)
-      ) {
-        throw new Error('Invalid grant status');
-      }
+      const remaining = await fetchGrantRemaining(id, request.signal);
       if (latest.isCurrent(request.id)) {
-        setFreeGenerationsRemaining(status.remaining);
+        setFreeGenerationsRemaining(remaining);
       }
     } catch {
       if (latest.isCurrent(request.id)) setFreeGenerationsUnavailable();

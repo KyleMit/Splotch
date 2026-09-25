@@ -41,6 +41,19 @@ async function pictureSignature(blob: Blob): Promise<string | null> {
   }
 }
 
+function sameContent(a: HeldPicture, b: HeldPicture): boolean {
+  return a.signature !== null && a.signature === b.signature;
+}
+
+// Identical bytes are held once, but a denial reported for either copy is kept, so Open Settings
+// stays on offer whichever order the outcomes arrive in.
+function withPicture(held: HeldPicture[], picture: HeldPicture): HeldPicture[] {
+  const index = held.findIndex((other) => sameContent(other, picture));
+  if (index === -1) return [...held, picture].slice(-UNSAVED_PICTURE_LIMIT);
+  if (picture.outcome !== 'denied' || held[index].outcome === 'denied') return held;
+  return held.map((other, i) => (i === index ? { ...other, outcome: 'denied' } : other));
+}
+
 // The save pipeline loads on demand (issue #461), and this module is on the startup path, so the
 // retry's save options stay inside it (web/tests/startup-bundle.spec.ts).
 const savePictureOnDemand: SavePicture = async ({ blob, baseName }) => {
@@ -100,19 +113,6 @@ export function createSaveFailure({
 
   function persist() {
     void enqueue(() => pictureStore.write(pictures.length > 0 ? pictures : null));
-  }
-
-  function sameContent(a: HeldPicture, b: HeldPicture): boolean {
-    return a.signature !== null && a.signature === b.signature;
-  }
-
-  // Identical bytes are held once, but a denial reported for either copy is kept, so Open Settings
-  // stays on offer whichever order the outcomes arrive in.
-  function withPicture(held: HeldPicture[], picture: HeldPicture): HeldPicture[] {
-    const index = held.findIndex((other) => sameContent(other, picture));
-    if (index === -1) return [...held, picture].slice(-UNSAVED_PICTURE_LIMIT);
-    if (picture.outcome !== 'denied' || held[index].outcome === 'denied') return held;
-    return held.map((other, i) => (i === index ? { ...other, outcome: 'denied' } : other));
   }
 
   return {

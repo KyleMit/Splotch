@@ -9,7 +9,7 @@ import {
 import { impactThreshold } from '$lib/platform/haptics';
 import { releaseAllPointers } from '$lib/drawing/engine';
 import { CLEAR_SHEET_DURATION_MS } from '$lib/drawing/inkMotion';
-import { dragToClear, type DragToClearOptions } from './dragToClear';
+import { createTapRun, dragToClear, type DragToClearOptions } from './dragToClear';
 import { ACCEPT_RADIUS_FACTOR } from './dragToClearGeometry';
 
 vi.mock('$lib/drawing/engine', () => ({ releaseAllPointers: vi.fn() }));
@@ -517,5 +517,25 @@ describe('dragToClear hold-to-show-tutorial timer', () => {
     vi.advanceTimersByTime(1000);
 
     expect(options.onTutorialShow).not.toHaveBeenCalled();
+  });
+});
+
+describe('createTapRun', () => {
+  it('completes a run on the third tap inside the window and then restarts it', () => {
+    const taps = createTapRun();
+    expect(taps.register(5000)).toBe(false);
+    expect(taps.register(5500)).toBe(false);
+    expect(taps.register(6000)).toBe(true);
+    expect(taps.register(6100)).toBe(false);
+    expect(taps.register(6200)).toBe(false);
+  });
+
+  it('starts a new run when a tap lands a full window after the last one', () => {
+    const taps = createTapRun();
+    taps.register(5000);
+    taps.register(5500);
+    expect(taps.register(6500)).toBe(false);
+    expect(taps.register(6600)).toBe(false);
+    expect(taps.register(6700)).toBe(true);
   });
 });

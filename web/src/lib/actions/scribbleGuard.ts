@@ -125,6 +125,84 @@ export function scribbleGuard(node: HTMLElement) {
   };
 }
 
+interface ScribbleTapPress {
+  pointerId: number;
+  pointerType: string;
+  startX: number;
+  startY: number;
+  lastX: number;
+  lastY: number;
+  lastTime: number;
+  dragged: boolean;
+  viewportSide: number;
+}
+
+function isMissingPenLift(press: ScribbleTapPress, e: PointerEvent, now: number): boolean {
+  if (press.pointerType !== 'pen' || e.pointerType !== 'pen' || e.buttons === 0) return false;
+  if (press.dragged || press.viewportSide <= 0) return false;
+  const jump = Math.hypot(e.clientX - press.lastX, e.clientY - press.lastY);
+  return pointerWasResumed(now - press.lastTime, jump, press.viewportSide);
+}
+
+function eventHitsControl(node: HTMLElement, e: PointerEvent): boolean {
+  const hit = node.ownerDocument.elementFromPoint(e.clientX, e.clientY);
+  return node.contains(hit);
+}
+
+// iPadOS expands touch targets: a finger landing a hair outside the control
+// still gets its whole pointer stream targeted at the control by WebKit's own
+// hit-test (observed on-device: down and up delivered 1px above the undo
+// button, with the synthesized click landing inside it — issue 1237). A raw
+// elementFromPoint at the release point vetoes that snap, so the release is
+// re-asked at the point the browser would have snapped to: the nearest point
+// inside the control's CURRENT rect, when that is within tap tolerance. The
+// hit-test still runs there, so a control that collapsed, hid, or was covered
+// mid-press — which the browser would never target — still cancels; only the
+// sub-tolerance geometric near-miss is forgiven.
+function snappedReleaseHitsControl(node: HTMLElement, e: PointerEvent): boolean {
+  const rect = node.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) return false;
+  const x = Math.min(Math.max(e.clientX, rect.left + 0.5), rect.right - 0.5);
+  const y = Math.min(Math.max(e.clientY, rect.top + 0.5), rect.bottom - 0.5);
+  if (Math.hypot(x - e.clientX, y - e.clientY) > TAP_MOVEMENT_TOLERANCE_PX) return false;
+  return node.contains(node.ownerDocument.elementFromPoint(x, y));
+}
+
+function minViewportSide(node: HTMLElement): number {
+  const root = node.ownerDocument.documentElement;
+  const view = node.ownerDocument.defaultView;
+  return Math.min(
+    root.clientWidth || view?.innerWidth || 0,
+    root.clientHeight || view?.innerHeight || 0
+  );
+}
+
+// Each pointerup-completed press consumes exactly one trailing synthesized
+// click — whether it activated or was deliberately cancelled (a drag-off) —
+// so a click can neither double-fire an activation nor resurrect a rejected
+// drag. A counter rather than a flag, so two rapid taps whose clicks both
+// arrive late are both consumed instead of the second click re-firing. Only
+// pointerup arms it: a pointercancel (or a stolen press) produces no click,
+// and arming there would swallow the next genuine near-miss click for the
+// whole window. Armed AFTER the handler runs, so a slow activation cannot
+// burn the window meant for the browser's click-synthesis delay.
+function createTrailingClickConsumer() {
+  let consumableClicks = 0;
+  let consumeClicksUntil = 0;
+  return {
+    arm() {
+      consumableClicks += 1;
+      consumeClicksUntil = performance.now() + PRESS_CLICK_CONSUME_WINDOW_MS;
+    },
+    consume(): boolean {
+      if (performance.now() >= consumeClicksUntil) consumableClicks = 0;
+      if (consumableClicks === 0) return false;
+      consumableClicks -= 1;
+      return true;
+    },
+  };
+}
+
 // Companion for click-driven controls under scribbleGuard: cancelling a stylus
 // tap's touchstart also suppresses its synthesized click, so activation moves
 // to pointerup. The press must have started on the same control with the same
@@ -137,19 +215,7 @@ export function scribbleGuard(node: HTMLElement) {
 // press consumes exactly one trailing click so nothing double-fires.
 export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
   let current = handler;
-  let press:
-    | {
-        pointerId: number;
-        pointerType: string;
-        startX: number;
-        startY: number;
-        lastX: number;
-        lastY: number;
-        lastTime: number;
-        dragged: boolean;
-        viewportSide: number;
-      }
-    | undefined;
+  let press: ScribbleTapPress | undefined;
   const ownerWindow = node.ownerDocument.defaultView;
 
   const activate = () => (typeof current === 'function' ? current() : current.activate());
@@ -158,22 +224,7 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     if (typeof current !== 'function') current.onPressCancel?.();
   };
 
-  // Each pointerup-completed press consumes exactly one trailing synthesized
-  // click — whether it activated or was deliberately cancelled (a drag-off) —
-  // so a click can neither double-fire an activation nor resurrect a rejected
-  // drag. A counter rather than a flag, so two rapid taps whose clicks both
-  // arrive late are both consumed instead of the second click re-firing. Only
-  // pointerup arms it: a pointercancel (or a stolen press) produces no click,
-  // and arming there would swallow the next genuine near-miss click for the
-  // whole window. Armed AFTER the handler runs, so a slow activation cannot
-  // burn the window meant for the browser's click-synthesis delay.
-  let consumableClicks = 0;
-  let consumeClicksUntil = 0;
-
-  function armClickConsumption() {
-    consumableClicks += 1;
-    consumeClicksUntil = performance.now() + PRESS_CLICK_CONSUME_WINDOW_MS;
-  }
+  const trailingClicks = createTrailingClickConsumer();
 
   function finishPress(shouldActivate: boolean) {
     if (!press) return;
@@ -183,35 +234,10 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     else cancelPreparation();
   }
 
-  function eventHitsControl(e: PointerEvent): boolean {
-    const hit = node.ownerDocument.elementFromPoint(e.clientX, e.clientY);
-    return node.contains(hit);
-  }
-
-  function minViewportSide(): number {
-    const root = node.ownerDocument.documentElement;
-    return Math.min(
-      root.clientWidth || ownerWindow?.innerWidth || 0,
-      root.clientHeight || ownerWindow?.innerHeight || 0
-    );
-  }
-
   function move(e: PointerEvent) {
     if (!press || e.pointerId !== press.pointerId) return;
     const now = Date.now();
-    const jump = Math.hypot(e.clientX - press.lastX, e.clientY - press.lastY);
-    let isMissingPenLift = false;
-    if (
-      press.pointerType === 'pen' &&
-      e.pointerType === 'pen' &&
-      e.buttons !== 0 &&
-      !press.dragged
-    ) {
-      isMissingPenLift =
-        press.viewportSide > 0 && pointerWasResumed(now - press.lastTime, jump, press.viewportSide);
-    }
-
-    if (isMissingPenLift) {
+    if (isMissingPenLift(press, e, now)) {
       // The engine's window-capture adopter runs first; for a control-targeted
       // stream its live-pointer gate declines adoption. Consume the resumed
       // move before target phase, then forget and flush the activated state.
@@ -226,7 +252,7 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     if (
       !press.dragged &&
       Math.hypot(e.clientX - press.startX, e.clientY - press.startY) > TAP_MOVEMENT_TOLERANCE_PX &&
-      !eventHitsControl(e)
+      !eventHitsControl(node, e)
     ) {
       press.dragged = true;
     }
@@ -235,29 +261,12 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     press.lastTime = now;
   }
 
-  // iPadOS expands touch targets: a finger landing a hair outside the control
-  // still gets its whole pointer stream targeted at the control by WebKit's own
-  // hit-test (observed on-device: down and up delivered 1px above the undo
-  // button, with the synthesized click landing inside it — issue 1237). A raw
-  // elementFromPoint at the release point vetoes that snap, so the release is
-  // re-asked at the point the browser would have snapped to: the nearest point
-  // inside the control's CURRENT rect, when that is within tap tolerance. The
-  // hit-test still runs there, so a control that collapsed, hid, or was covered
-  // mid-press — which the browser would never target — still cancels; only the
-  // sub-tolerance geometric near-miss is forgiven.
-  function snappedReleaseHitsControl(e: PointerEvent): boolean {
-    const rect = node.getBoundingClientRect();
-    if (rect.width < 1 || rect.height < 1) return false;
-    const x = Math.min(Math.max(e.clientX, rect.left + 0.5), rect.right - 0.5);
-    const y = Math.min(Math.max(e.clientY, rect.top + 0.5), rect.bottom - 0.5);
-    if (Math.hypot(x - e.clientX, y - e.clientY) > TAP_MOVEMENT_TOLERANCE_PX) return false;
-    return node.contains(node.ownerDocument.elementFromPoint(x, y));
-  }
-
   function up(e: PointerEvent) {
     if (!press || e.pointerId !== press.pointerId) return;
-    finishPress(!press.dragged && (eventHitsControl(e) || snappedReleaseHitsControl(e)));
-    armClickConsumption();
+    finishPress(
+      !press.dragged && (eventHitsControl(node, e) || snappedReleaseHitsControl(node, e))
+    );
+    trailingClicks.arm();
   }
 
   function cancel(e: PointerEvent) {
@@ -288,7 +297,7 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
       // flush, and a finger tapping a swatch is the common case on a path that
       // shares frames with a live stroke (PointerHalos documents the second
       // finger arriving mid-stroke).
-      viewportSide: e.pointerType === 'pen' ? minViewportSide() : 0,
+      viewportSide: e.pointerType === 'pen' ? minViewportSide(node) : 0,
     };
     stream?.claim(e.pointerId);
     if (typeof current !== 'function') current.onPressStart?.();
@@ -309,11 +318,7 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
       activate();
       return;
     }
-    if (performance.now() >= consumeClicksUntil) consumableClicks = 0;
-    if (consumableClicks > 0) {
-      consumableClicks -= 1;
-      return;
-    }
+    if (trailingClicks.consume()) return;
     if (press) {
       finishPress(!press.dragged);
       return;

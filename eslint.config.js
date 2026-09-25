@@ -462,6 +462,140 @@ export default tseslint.config(
     },
   },
   {
+    // Function-size ratchet for app code: 125 real lines is the hard cap; 100 is the soft target
+    // refactor campaigns pay down to. A function over 100 whose code does not separate cleanly
+    // gets a per-file cap below at its length + 25, with the WHY, rather than a counter-driven
+    // split. Tests are excluded because they are mostly describe() callbacks.
+    files: ['web/src/**/*.ts', 'web/src/**/*.svelte'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 125, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // createParentalGate is one challenge state machine: its lockout, announcement, and handoff steps share one $state object and the timers dismissGate resets together; the pure policy and lockout logic already live at module scope and in parentalGateLockout.ts.
+    files: ['web/src/lib/state/parentalGate.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 276, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // dragToClear's pointer handlers share one gesture state machine (active drag, start point, clearReady, hold timer); the tap run, timers, and threshold classes already have their own homes, and splitting the handlers would thread that state through accessor bags.
+    files: ['web/src/lib/actions/dragToClear.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 214, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // What remains in createPWAUpdates is the updateReload state machine, whose transitions read and write the same reload and registration state; the stateless and self-owning pieces are already module-scope helpers and sub-factories.
+    files: ['web/src/lib/pwa/updates.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 147, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // createAiGeneration is one guarded transition per generation lifecycle event over a single $state object and run owner, plus its readonly getters; no part of it owns separate state.
+    files: ['web/src/lib/state/aiGeneration.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 142, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // createSettings' length is its mutator table, one entry per persisted setting over one $state object; the field tables and the persisted-settings reader already live at module scope.
+    files: ['web/src/lib/state/settings.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 142, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // installWebBackHandler's dialog-stack and drawing-guard counters are written in one history callback and read in another, so splitting them would thread that state back through accessors.
+    files: ['web/src/lib/boot/webBackHandler.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 139, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // What remains in createInkMotion owns the overlay lifecycle and pending ink subtraction that undo, clear, and cancel share; its stateless helpers already live at module scope.
+    files: ['web/src/lib/drawing/inkMotion.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 137, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // toolbarGlassPanes' drawer strip and trigger read a dozen shared geometry locals; the corner controls, which depend only on the viewport, are already helpers.
+    files: ['web/src/lib/glassPanes.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 137, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // createLayout's $state seed, readonly getters, and resize/rotation closures share one set of private state, media queries, and the rotation-settle timer.
+    files: ['web/src/lib/state/layout.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 137, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // createInstall is the install-availability state machine (mode, installed, deferred prompt, listeners); the re-prompt schedule is already its own sub-factory.
+    files: ['web/src/lib/state/install.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 136, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // createColoringPackDownloader's run loop, rerun queue, pause, and policy listeners share one controller and the stopped/paused/installing flags; the manifest cache is already its own loader.
+    files: ['web/src/lib/coloringPacks/manager.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 133, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
+    // createFreeGenerations' grant state, request ownership, and refresh triggers share one $state object; the grant fetch already lives at module scope.
+    files: ['web/src/lib/state/freeGenerations.svelte.ts'],
+    rules: {
+      'max-lines-per-function': [
+        'error',
+        { max: 127, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+    },
+  },
+  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:

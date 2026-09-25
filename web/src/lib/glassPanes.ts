@@ -13,6 +13,7 @@ import { STROKE_SIZES } from './state/strokeWidth.svelte';
 import { COLOR_MENU_GEOMETRY } from './design/trimGeometry';
 import { LANDSCAPE_COLORS } from './landscapeToolbar';
 import { fullscreenState } from './state/fullscreen.svelte';
+import type { SafeAreaInsets } from './platform/safeArea';
 
 export type OpenFlyout = 'brush' | 'stroke' | 'color' | null;
 import {
@@ -131,6 +132,26 @@ function flyoutRectangle(
   );
 }
 
+function gearCornerGlass(width: number, height: number, safe: Readonly<SafeAreaInsets>): Rect {
+  return rectangle(
+    width - safe.right - CORNER_DEPTH_PX,
+    height - safe.bottom - CORNER_DEPTH_PX,
+    width + BLEED_PX,
+    height + BLEED_PX,
+    MENU_RADIUS_PX
+  );
+}
+
+function fullscreenCornerGlass(safe: Readonly<SafeAreaInsets>): Rect {
+  return rectangle(
+    safe.left - BLEED_PX,
+    safe.top - BLEED_PX,
+    safe.left + FULLSCREEN_DEPTH_PX,
+    safe.top + FULLSCREEN_DEPTH_PX,
+    FULLSCREEN_RADIUS_PX
+  );
+}
+
 export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
   const {
     viewportWidth: width,
@@ -152,12 +173,9 @@ export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
   const x = safe.left + PANEL_INSET + (compact || portrait ? 0 : BARE_RAIL_WIDTH_PX);
   const bottom = height - safe.bottom - PANEL_INSET;
   const depth = drawerOpen ? size + 2 * PANEL_INSET : DRAWER_TOGGLE_SIZE + 2 * PANEL_INSET;
-  const rowEnd =
-    x + (drawerOpen ? count * pitch - ACTION_BUTTON_GAP + PANEL_INSET : 0) + DRAWER_TOGGLE_SIZE;
-  const columnTop =
-    bottom -
-    (drawerOpen ? count * pitch - ACTION_BUTTON_GAP + PANEL_INSET : 0) -
-    DRAWER_TOGGLE_SIZE;
+  const drawerExtent = drawerOpen ? count * pitch - ACTION_BUTTON_GAP + PANEL_INSET : 0;
+  const rowEnd = x + drawerExtent + DRAWER_TOGGLE_SIZE;
+  const columnTop = bottom - drawerExtent - DRAWER_TOGGLE_SIZE;
   const brush = enabledOptionalBrushes().length > 0;
   const stroke = actionControlShown('strokeWidthControlEnabled');
   const colorTop = drawerOpen
@@ -236,25 +254,10 @@ export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
       )
     );
   }
-  const gear = rectangle(
-    width - safe.right - CORNER_DEPTH_PX,
-    height - safe.bottom - CORNER_DEPTH_PX,
-    width + BLEED_PX,
-    height + BLEED_PX,
-    MENU_RADIUS_PX
-  );
+  const gear = gearCornerGlass(width, height, safe);
   if (compact) {
     strip.push(gear);
-    if (fullscreenState.supported)
-      strip.push(
-        rectangle(
-          safe.left - BLEED_PX,
-          safe.top - BLEED_PX,
-          safe.left + FULLSCREEN_DEPTH_PX,
-          safe.top + FULLSCREEN_DEPTH_PX,
-          FULLSCREEN_RADIUS_PX
-        )
-      );
+    if (fullscreenState.supported) strip.push(fullscreenCornerGlass(safe));
   }
   const sigma = compact ? COMPACT_FEATHER_SIGMA_PX : FEATHER_SIGMA_PX;
   const panes = strip.length ? [glassPane(strip, clip, sigma)] : [];
