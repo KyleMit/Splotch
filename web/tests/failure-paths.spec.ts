@@ -127,7 +127,7 @@ test('a stalled provider lets the child keep drawing, then recovers after failur
   await endpoint.fail(502);
   await expect(page.locator('.ai-waiting-polaroid')).toContainText('Oh no');
   await page.locator('.ai-waiting-polaroid').click();
-  await expect(page.getByText(/didn't work/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /didn't work/i })).toBeVisible();
 
   const resultDialog = page.locator('dialog.ai-result-modal');
   await resultDialog.evaluate((dialog) => {
