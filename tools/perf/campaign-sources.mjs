@@ -207,13 +207,13 @@ export function campaignModeSources(
   }
 ) {
   if (!isCaptureDate(foldedOn)) fail(`foldedOn must be a YYYY-MM-DD date, got ${foldedOn}`);
-  const sectionSubset = sectionFoldSubset(sections);
-  if (sectionSubset && (preserveActions || actionsUnavailableReason)) {
+  if (sections !== undefined && (preserveActions || actionsUnavailableReason)) {
     fail(
       'A section fold writes only the sections it names and keeps the rest as published; ' +
         'it cannot be combined with --preserve-actions or --actions-unavailable'
     );
   }
+  const sectionSubset = sectionFoldSubset(sections);
   const target = campaignTarget(targetId);
   const selected = modes?.length
     ? CAMPAIGN_MODES.filter((mode) => modes.includes(mode.id))

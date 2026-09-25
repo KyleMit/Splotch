@@ -1738,10 +1738,11 @@ function countsAsGateRed(role, entry) {
 // the section is carried forward. A published fidelity failure on a calibrated
 // check, or an off-regime beat, was never a red: it asked for a recapture then and
 // still does. A failure confined to uncalibrated checks counts as red under
-// ADR-0156, exactly as it would on a fresh capture.
+// ADR-0156, exactly as it would on a fresh capture. A red is open only until it is
+// explained, so a published red that carries a recorded disposition is not.
 function preservedVerdictRed(entry) {
   const aggregate = entry.aggregate;
-  if (aggregate.offRefreshRegime) return false;
+  if (aggregate.offRefreshRegime || entry.disposition) return false;
   const failedRuns = (entry.runs ?? []).filter((run) => run.fidelity?.passed === false);
   if (failedRuns.some((run) => !onlyUncalibratedChecksFailed(run.fidelity))) return false;
   return failedRuns.length > 0 || aggregate.blankPassed === false;

@@ -1605,6 +1605,19 @@ describe('deployment matrix report', () => {
         expect(openReds).toContain('the ADR-0175 completion gate holds on this report');
       });
 
+      it('does not count one a recorded disposition explains', () => {
+        const disposed = Object.fromEntries(
+          Object.entries(publishedDrawing).map(([brush, entry]) => [
+            brush,
+            { ...entry, disposition: { adr: 'ADR-0174' } },
+          ])
+        );
+
+        expect(openRedsOf(disposed).openReds).toContain(
+          'the ADR-0175 completion gate holds on this report'
+        );
+      });
+
       it('does not count a published pass', () => {
         const passed = Object.fromEntries(
           Object.entries(publishedDrawing).map(([brush, entry]) => [

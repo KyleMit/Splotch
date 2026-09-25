@@ -1129,6 +1129,7 @@ describe('section folds', () => {
     [[], {}],
     [['actions'], { preserveActions: true }],
     [['drawing'], { actionsUnavailableReason: 'blocked' }],
+    [['drawing', 'undo', 'actions'], { preserveActions: true }],
   ])('refuses sections %j with %j', (sections, options) => {
     refusing();
 
