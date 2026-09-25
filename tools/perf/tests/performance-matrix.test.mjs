@@ -185,6 +185,30 @@ describe('split undo normalization', () => {
     expect(matrix.targets[0].modes[0].undo).toMatchObject({ count: UNDO_COUNT, passed: true });
   });
 
+  it('publishes the ink-motion split beside the gated engine time', () => {
+    const inkMotion = { p50: 0.4, p95: 0.4, p99: 0.4, max: 0.4 };
+    const restore = { p50: 0.6, p95: 0.6, p99: 0.6, max: 0.6 };
+    const capture = splitUndoCapture();
+    capture.undo = { ...capture.undo, inkMotion, restore };
+    capture.undoActions = capture.undoActions.map((action) => ({ ...action, inkMotionMs: 0.4 }));
+
+    const matrix = matrixFor(capture)();
+
+    expect(matrix.targets[0].modes[0].undo).toMatchObject({
+      engine: distribution,
+      inkMotion,
+      restore,
+    });
+    expect(renderMarkdown(matrix)).toContain('ink motion P95 0.4 ms · restore P95 0.6 ms');
+  });
+
+  it('leaves a capture without the ink-motion split unchanged', () => {
+    const matrix = matrixFor(splitUndoCapture())();
+
+    expect(matrix.targets[0].modes[0].undo).not.toHaveProperty('inkMotion');
+    expect(renderMarkdown(matrix)).not.toContain('ink motion P95');
+  });
+
   it('fails closed when the split artifact has timing but no semantic proof', () => {
     expect(matrixFor(splitUndoCapture({ undoVisual: null }))).toThrow(
       'does not prove that every undo restored different pixels'

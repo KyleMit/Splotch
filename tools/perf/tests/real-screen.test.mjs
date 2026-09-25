@@ -338,6 +338,34 @@ describe('undo action response', () => {
     expect(summary.passed).toBe(false);
   });
 
+  it('splits the ink-motion ghost from the restore without changing the gate', () => {
+    const summary = summarizeUndoActions(
+      [
+        { startedAt: 0, engineMs: 6, inkMotionMs: 4, nextFrameMs: 10 },
+        { startedAt: 50, engineMs: 3, inkMotionMs: 2.5, nextFrameMs: 10 },
+      ],
+      []
+    );
+
+    expect(summary.engine).toMatchObject({ p50: 3, p95: 6 });
+    expect(summary.inkMotion).toMatchObject({ p50: 2.5, p95: 4 });
+    expect(summary.restore).toMatchObject({ p50: 0.5, p95: 2 });
+    expect(summary.passed).toBe(true);
+  });
+
+  it('omits the split unless every action carries the ink-motion time', () => {
+    const summary = summarizeUndoActions(
+      [
+        { startedAt: 0, engineMs: 6, inkMotionMs: 4, nextFrameMs: 10 },
+        { startedAt: 50, engineMs: 3, inkMotionMs: null, nextFrameMs: 10 },
+      ],
+      []
+    );
+
+    expect(summary).not.toHaveProperty('inkMotion');
+    expect(summary).not.toHaveProperty('restore');
+  });
+
   it('uses the action-local next frame when the global probe was suspended', () => {
     const summary = summarizeUndoActions(
       [{ startedAt: 100, engineMs: 1, nextFrameMs: 12 }],

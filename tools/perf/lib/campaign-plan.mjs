@@ -753,6 +753,10 @@ function recordedHistoryDepth(history) {
   return Number.isSafeInteger(depth) && depth >= 0 ? depth : null;
 }
 
+// `inkMotion` and `restore` exist only when every action carries the ink-motion
+// sub-measure; comparing them absent-to-absent keeps older artifacts valid.
+const UNDO_SUMMARY_DISTRIBUTIONS = ['engine', 'nextFrame', 'inkMotion', 'restore'];
+
 export function splitUndoEvidenceProblem(artifact, expectedUndoCount) {
   if (artifact?.transport !== 'split-input-measurement' || expectedUndoCount === null) return null;
   if (artifact.undoCount !== expectedUndoCount) {
@@ -780,9 +784,9 @@ export function splitUndoEvidenceProblem(artifact, expectedUndoCount) {
   const summaryMatches =
     recordedSummary.count === expectedSummary.count &&
     recordedSummary.passed === expectedSummary.passed &&
-    ['engine', 'nextFrame'].every((group) =>
+    UNDO_SUMMARY_DISTRIBUTIONS.every((group) =>
       ['p50', 'p95', 'p99', 'max'].every(
-        (metric) => recordedSummary[group]?.[metric] === expectedSummary[group][metric]
+        (metric) => recordedSummary[group]?.[metric] === expectedSummary[group]?.[metric]
       )
     );
   if (!summaryMatches) {

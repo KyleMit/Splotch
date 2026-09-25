@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import {
+  UNDO_INK_MOTION_MEASURE_NAME,
+  UNDO_MEASURE_NAME,
   UNDO_MEASURE_TIMEOUT_MS,
   assertUndoAction,
   undoActionPromiseSource,
@@ -12,10 +14,18 @@ import {
 // globals it touches. This is the only place the undo metric's pairing rule —
 // exactly one new engine.undo measure, then the next painted frame — is checked
 // without a device attached.
-function evaluateUndoSource(index, { measures = [], button, nowSteps = [] } = {}) {
+function evaluateUndoSource(
+  index,
+  { measures = [], inkMotionMeasures = [], button, nowSteps = [] } = {}
+) {
   let nowIndex = 0;
   const performanceStub = {
-    getEntriesByName: () => measures,
+    getEntriesByName: (name) =>
+      name === UNDO_INK_MOTION_MEASURE_NAME
+        ? inkMotionMeasures
+        : name === UNDO_MEASURE_NAME
+          ? measures
+          : [],
     now: () => (nowIndex < nowSteps.length ? nowSteps[nowIndex++] : (nowSteps.at(-1) ?? 0)),
   };
   const documentStub = { querySelector: () => button ?? null };
@@ -62,6 +72,33 @@ describe('undo action source', () => {
       startedAt: 100,
     });
     expect(action.nextFrameMs).toBe(18);
+  });
+
+  it('sums only the ink-motion measures this undo produced', async () => {
+    const measures = [{ duration: 4 }];
+    const inkMotionMeasures = [{ duration: 50 }];
+    const button = enabledButton(() => {
+      inkMotionMeasures.push({ duration: 3 }, { duration: 0.5 });
+      measures.push({ duration: 5 });
+    });
+
+    const action = await evaluateUndoSource(0, {
+      measures,
+      inkMotionMeasures,
+      button,
+      nowSteps: [0, 9],
+    });
+
+    expect(action).toMatchObject({ engineMs: 5, inkMotionMeasures: 2, inkMotionMs: 3.5 });
+  });
+
+  it('records no ink-motion time for a build without the sub-measure', async () => {
+    const measures = [];
+    const button = enabledButton(() => measures.push({ duration: 5 }));
+
+    const action = await evaluateUndoSource(0, { measures, button, nowSteps: [0, 9] });
+
+    expect(action).toMatchObject({ engineMs: 5, inkMotionMeasures: 0, inkMotionMs: null });
   });
 
   it('clicks the undo button with a bubbling synthetic mouse event', async () => {

@@ -12,6 +12,13 @@ export const UNDO_BUTTON_READY_POLL_MS = 250;
 export const EXPAND_CONTROLS_SELECTOR = 'button[aria-label="Expand controls"]';
 export const UNDO_BUTTON_SELECTOR = '#undoButton';
 
+// `engine.undo` brackets the undo ink-motion ghost as well as the tile restore, and
+// the engine measures the ghost's share as `engine.undoInkMotion` (issue #2238).
+// Every new measure of it during one click belongs to that undo, so their sum is
+// the ghost's cost and `engineMs - inkMotionMs` is the restore.
+export const UNDO_MEASURE_NAME = 'engine.undo';
+export const UNDO_INK_MOTION_MEASURE_NAME = 'engine.undoInkMotion';
+
 export const EXPAND_CONTROLS_SOURCE = `document.querySelector(${JSON.stringify(EXPAND_CONTROLS_SELECTOR)})?.click(); return true;`;
 
 export const UNDO_BUTTON_READY_SOURCE = `const button = document.querySelector(${JSON.stringify(UNDO_BUTTON_SELECTOR)}); return !!button && !button.disabled;`;
@@ -26,13 +33,20 @@ export function undoActionFunctionSource(timeoutMs = UNDO_MEASURE_TIMEOUT_MS) {
       resolve(null);
       return;
     }
-    const beforeCount = performance.getEntriesByName('engine.undo', 'measure').length;
+    const beforeCount = performance.getEntriesByName(${JSON.stringify(UNDO_MEASURE_NAME)}, 'measure').length;
+    const beforeInkMotionCount = performance.getEntriesByName(${JSON.stringify(UNDO_INK_MOTION_MEASURE_NAME)}, 'measure').length;
     const startedAt = performance.now();
     button.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
     const finishAfterMeasure = () => {
-      const measures = performance.getEntriesByName('engine.undo', 'measure');
+      const measures = performance.getEntriesByName(${JSON.stringify(UNDO_MEASURE_NAME)}, 'measure');
       const measure = measures.at(-1);
       if (measures.length === beforeCount + 1 && Number.isFinite(measure?.duration)) {
+        const inkMotionMeasures = performance
+          .getEntriesByName(${JSON.stringify(UNDO_INK_MOTION_MEASURE_NAME)}, 'measure')
+          .slice(beforeInkMotionCount);
+        const inkMotionMs = inkMotionMeasures.length
+          ? inkMotionMeasures.reduce((total, entry) => total + entry.duration, 0)
+          : null;
         requestAnimationFrame((paintedAt) => {
           resolve({
             index,
@@ -41,6 +55,8 @@ export function undoActionFunctionSource(timeoutMs = UNDO_MEASURE_TIMEOUT_MS) {
             beforeCount,
             afterCount: measures.length,
             engineMs: measure.duration,
+            inkMotionMeasures: inkMotionMeasures.length,
+            inkMotionMs,
             nextFrameMs: paintedAt - startedAt
           });
         });
