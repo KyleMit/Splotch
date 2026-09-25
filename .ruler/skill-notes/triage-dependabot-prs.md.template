@@ -141,8 +141,11 @@ outside this skill.
 on the wave-2 PRs ran while `main` was broken and failed. The second pair, sent after the repair
 merged, got 👍 reactions and then started no update job for over 15 minutes. `@dependabot recreate`
 started both jobs within about a minute, and both finished green. One observation, not a documented
-Dependabot rule, so the skill words it as "switch when no `dynamic` run appears" and not as a claim
-about why.
+Dependabot rule, so the skill words it as "switch when no run for this PR's dependency appears" and
+not as a claim about why. The dependency qualifier came from the rival review. The `dynamic` runs
+query is repository-wide and every run's `head_branch` reads `main`, so in a multi-PR batch a
+sibling's job would otherwise satisfy "a run appeared". The run name, which carries the dependency,
+is what ties a job to its PR.
 
 **Waves from a pairwise matrix** *(2026-09-25, same batch)*. With eleven npm PRs every branch
 conflicted with at least one sibling, so "leave the conflicter last" gave no order. The pairwise
