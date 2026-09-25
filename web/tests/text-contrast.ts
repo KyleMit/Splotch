@@ -26,17 +26,21 @@ interface TextSample {
  * Each element's ink is composited over the background colors of the element
  * and its ancestors, walking up until the first opaque one (the ground), and
  * the ratio comes from the shared `colorContrast` luminance math. At each step
- * up, a sibling box whose background covers the text's center is laid in
- * between, which is how a segmented control's travelling thumb is seen under
- * its label. Disabled controls are skipped, as WCAG exempts inactive
- * components.
+ * up, a sibling box covering the text's center is ordered against the path by
+ * CSS paint order (stacking level, then tree order): one painted beneath is
+ * laid in as a layer, which is how a segmented control's travelling thumb is
+ * seen under its label, and a filled one painted over the text fails as
+ * unmeasurable rather than being read as a ground. Disabled controls are
+ * skipped, as WCAG exempts inactive components.
  *
  * What it cannot see: it detects only a `background-image` or
- * `backdrop-filter` on an ancestor up to the first opaque ground, and fails on
- * either, since it has no color to measure there. It misses a sibling image
- * laid under an overlaid label, a pseudo-element fill, and `opacity` on the
- * element or anything above the ground. A text node that sits over one of those
- * needs its own assertion.
+ * `backdrop-filter` on an ancestor or covering sibling up to the first opaque
+ * ground, and fails on either, since it has no color to measure there. Its
+ * paint order compares siblings only, as if every parent formed the stacking
+ * context, so a descendant of a sibling that escapes to a higher context is
+ * misjudged. It misses a sibling image laid under an overlaid label, a
+ * pseudo-element fill, and `opacity` on the element or anything above the
+ * ground. A text node that sits over one of those needs its own assertion.
  *
  * `edgeShades` names elements whose `background-image` is a scroll-edge shade
  * only. The caller vouches that no text is measured over the shade itself, and
@@ -71,6 +75,20 @@ export async function expectTextContrast(root: Locator, edgeShades: string[] = [
       const rect = node.getBoundingClientRect();
       return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
     };
+    // Within one stacking context: negative z-index, then in-flow boxes, then
+    // positioned boxes at z-index auto or 0, then positive z-index; ties paint
+    // in tree order.
+    const IN_FLOW_LEVEL = -0.5;
+    const stackingLevel = (node: Element) => {
+      const style = getComputedStyle(node);
+      if (style.zIndex !== 'auto') return Number(style.zIndex);
+      return style.position === 'static' ? IN_FLOW_LEVEL : 0;
+    };
+    const paintsAfter = (a: Element, b: Element) => {
+      const [levelA, levelB] = [stackingLevel(a), stackingLevel(b)];
+      if (levelA !== levelB) return levelA > levelB;
+      return (b.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    };
 
     function ground(el: Element): { ground: string | null; unmeasured: string | null } {
       const rect = el.getBoundingClientRect();
@@ -88,11 +106,17 @@ export async function expectTextContrast(root: Locator, edgeShades: string[] = [
         const siblings = [...node.parentElement!.children].filter(
           (sibling) => sibling !== node && sibling.checkVisibility() && covers(sibling, x, y)
         );
-        for (const sibling of siblings) {
+        const current = node;
+        const topmostFirst = siblings.sort((a, b) => (paintsAfter(a, b) ? -1 : 1));
+        for (const sibling of topmostFirst) {
           const siblingReason = unmeasurable(sibling);
           if (siblingReason) return { ground: null, unmeasured: siblingReason };
           const fill = rgba(getComputedStyle(sibling).backgroundColor);
-          if (fill.a > 0) layers.push(fill);
+          if (fill.a === 0) continue;
+          if (paintsAfter(sibling, current)) {
+            return { ground: null, unmeasured: `${describe(sibling)} paints over the text` };
+          }
+          layers.push(fill);
         }
         if (layers.at(-1)?.a === 1) break;
       }
