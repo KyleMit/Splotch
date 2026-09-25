@@ -248,13 +248,13 @@ implementation right now, but spin up sub agents and fan out and try to iterate 
 if there really is a single ideal solution. If there's not a single winner, come up with multiple
 possible solutions, then come up with the pros and cons for each. based on the pros and cons, rank
 the possible solutions. If there's a clear winner, pick that. If there's not or there are real
-tradeoffs that need to be considered, return a brief on the possilbe options, the pros and cons and
+tradeoffs that need to be considered, return a brief on the possible options, the pros and cons and
 where you would lean but what the tradeoffs are. The goal is that every item in the deferred backlog
-is traiged. If there's no good fix or the issue has already been resolved elsewhere, it's okay to
+is triaged. If there's no good fix or the issue has already been resolved elsewhere, it's okay to
 drain the audit finding, but do so with an explanation as to why it doesn't need to be worked on.
 
 You don't need to commit any code changes in a PR - this is a decision doc that will allow us to
-confidently move forward with each option. If you do have a strong beed on the implemenation, you
+confidently move forward with each option. If you do have a strong bead on the implementation, you
 can scaffold it out, but it's not meant to be code complete or thorough - just as a way to
 illustrate your point. Figure out a good place to store the decisions (could be another markdown
 doc, could be separate md docs for each deferred audit, could be github issues - just pick one and
