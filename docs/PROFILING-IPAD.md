@@ -521,7 +521,10 @@ It refuses unless all of these hold:
 
 The sweep then proves the iPad still trusts the root: every AI-waiting sample must report
 `secureContext: true`. After an iPad update, the check refuses until someone repeats "Serve and
-verify" at the iPad on the new release and raises the constant.
+verify" at the iPad on the new release and raises the constant. `npm run perf:session:person` does
+that look in its second visit and appends the verdict, with the iPadOS the iPad reports, to the
+tracked `perf-profiles/evidence/operator/ipad-constraint-probe.tsv`. A raise cites that row, and
+`tools/perf/tests/secure-origin.test.mjs` fails a constant the log does not back.
 
 Claude Code's auto-mode classifier denies an unattended LAN listener ("Expose Local Services")
 unless the maintainer pre-authorizes it. That authorization lives only on the maintainer's Mac and

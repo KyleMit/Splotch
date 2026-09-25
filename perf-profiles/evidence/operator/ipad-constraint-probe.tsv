@@ -1,0 +1,2 @@
+timestamp	device	ipados	verdict	detail
+2026-09-24	device-003f826c172a	26.5	refused	backfilled from visit 1 of perf:session:person, session 2026-09-24T01-57-36: bring-up required iPadOS 26.5, and the person saw Safari refuse the constraint probe and then load the leaf (https://github.com/KyleMit/Splotch/issues/2211#issuecomment-5812502007)

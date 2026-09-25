@@ -20,8 +20,11 @@ complete flag and output descriptions.
 * `perf:session:person` (`run-person-session.mjs`, pure half in `lib/person-session.mjs`) walks epic
   2210's person-present tasks in one resumable session: paired driven-vs-finger iPad captures,
   bundled-app finger captures, the secure-origin action sweeps, the phone overlay check and the
-  issue-2229 A/B, and the iPadOS update with its commit check last. It judges every capture PASS or
-  REDO on the spot and drafts each issue comment without posting. Runbook:
+  issue-2229 A/B; then, in a second visit, the iPadOS update, the constraint probe and the paired
+  controls on the new release, and the commit check last. It judges every capture PASS or REDO on
+  the spot and drafts each issue comment without posting. Each constraint-probe verdict a person
+  gives is appended to the tracked `perf-profiles/evidence/operator/ipad-constraint-probe.tsv`, the
+  evidence a raise of `perf:ios:secure-origin`'s proven iPadOS cites. Runbook:
   [`docs/scratchpad/perf/2026-09-23-epic-2210-person-session.md`](../../docs/scratchpad/perf/2026-09-23-epic-2210-person-session.md).
 * `perf:operator` (`run-operator-session.mjs`) is the guided session for the two capture inputs only
   a human at the devices can give: arming the iPad automation grant (the passcode prompt exists only

@@ -16,6 +16,7 @@ import { createServer as createHttpsServer, get as httpsGet } from 'node:https';
 import { homedir } from 'node:os';
 import { join, normalize, resolve } from 'node:path';
 import { ROOT, argFlag, capture, fail, isMain, runMain, tryCapture } from '../../lib/proc.mjs';
+import { grantLogDevice } from '../lib/grant-log.mjs';
 
 export const DEFAULT_CA_DIR = join(homedir(), '.splotch-rig', 'secure-origin-ca');
 const DEFAULT_AUTHORITY_DAYS = 730;
@@ -43,7 +44,14 @@ const OUTSIDE_ADDRESS = '203.0.113.10';
 // unattended session skip that on-device look only on this release: an iPad
 // update could change enforcement, so the probe is re-proven with someone at the
 // iPad (docs/PROFILING-IPAD.md, "Serve and verify") before this is raised.
+// secure-origin.test.mjs holds it to a `refused` row in CONSTRAINT_PROBE_LOG.
 export const CONSTRAINT_PROVEN_IPADOS = '26.5';
+// Every on-iPad constraint-probe verdict a person gave, one row each. Tracked
+// (perf-profiles/evidence is the one un-gitignored perf path), because it is the
+// committed evidence a raise of CONSTRAINT_PROVEN_IPADOS cites.
+export const CONSTRAINT_PROBE_LOG = join(ROOT, 'perf-profiles', 'evidence', 'operator', 'ipad-constraint-probe.tsv');
+const CONSTRAINT_PROBE_LOG_HEADER = 'timestamp\tdevice\tipados\tverdict\tdetail\n';
+export const CONSTRAINT_PROBE_VERDICTS = { refused: 'refused', accepted: 'accepted' };
 // A route the front refuses. A live 403 there proves the restriction is in force.
 const DENIED_PROBE_PATH = '/api/verify-key';
 
@@ -218,10 +226,61 @@ function serveFront() {
   );
 }
 
+// Fields are flattened to single-line cells so a person's note cannot break the TSV.
+export function constraintProbeLine({ timestamp, device, ipadOs, verdict, detail }) {
+  const cell = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
+  return `${[timestamp, device, ipadOs, verdict, detail].map(cell).join('\t')}\n`;
+}
+
+export function recordConstraintProbe({ udid, ipadOs, verdict, detail }, { logPath = CONSTRAINT_PROBE_LOG } = {}) {
+  if (!Object.values(CONSTRAINT_PROBE_VERDICTS).includes(verdict)) throw new Error(`unknown constraint-probe verdict "${verdict}"`);
+  mkdirSync(join(logPath, '..'), { recursive: true });
+  if (!existsSync(logPath)) appendFileSync(logPath, CONSTRAINT_PROBE_LOG_HEADER);
+  appendFileSync(logPath, constraintProbeLine({ timestamp: new Date().toISOString(), device: grantLogDevice(udid), ipadOs, verdict, detail }));
+}
+
+export function parseConstraintProbeLog(text) {
+  return text
+    .split('\n')
+    .slice(1)
+    .filter(Boolean)
+    .map((line) => {
+      const [timestamp, device, ipadOs, verdict, detail] = line.split('\t');
+      return { timestamp, device, ipadOs, verdict, detail };
+    });
+}
+
+// A release counts as proven only while the log holds a person's refusal on it
+// and no acceptance: one acceptance means that release does not enforce the
+// constraint, whatever an earlier row said.
+export function constraintProofProblem(rows, ipadOs) {
+  const onRelease = rows.filter((row) => row.ipadOs === ipadOs);
+  if (onRelease.some((row) => row.verdict === CONSTRAINT_PROBE_VERDICTS.accepted)) {
+    return `a person saw iPadOS ${ipadOs} ACCEPT the constraint probe: that release does not enforce the name constraint`;
+  }
+  if (!onRelease.some((row) => row.verdict === CONSTRAINT_PROBE_VERDICTS.refused)) {
+    return `no person has recorded iPadOS ${ipadOs} refusing the constraint probe`;
+  }
+  return null;
+}
+
+// What to do with a verdict a person just recorded: raise the constant from the
+// committed row, or keep the unattended check refusing.
+export function constraintProbeFollowUp({ ipadOs, verdict, logPath = CONSTRAINT_PROBE_LOG }) {
+  const log = logPath.startsWith(ROOT) ? logPath.slice(ROOT.length + 1) : logPath;
+  if (verdict === CONSTRAINT_PROBE_VERDICTS.accepted) {
+    return `iPadOS ${ipadOs} accepted the constraint probe. Commit the row in ${log}, remove the rig CA profile from the iPad, and leave CONSTRAINT_PROVEN_IPADOS at ${CONSTRAINT_PROVEN_IPADOS}.`;
+  }
+  if (ipadOs === CONSTRAINT_PROVEN_IPADOS) {
+    return `iPadOS ${ipadOs} is already CONSTRAINT_PROVEN_IPADOS; commit the row in ${log} as a repeat proof.`;
+  }
+  return `Commit the row in ${log}, then raise CONSTRAINT_PROVEN_IPADOS in tools/perf/ios/secure-origin.mjs from ${CONSTRAINT_PROVEN_IPADOS} to ${ipadOs}, citing that row (secure-origin.test.mjs fails a raise the log does not back). Until then \`perf:ios:secure-origin check\` refuses this iPad.`;
+}
+
 export function secureOriginProblems({ ipadOs, leafTrusted, probeRefused, pageStatus, deniedStatus }) {
   return [
     ipadOs !== CONSTRAINT_PROVEN_IPADOS &&
-      `the iPad reports iPadOS ${ipadOs ?? 'unknown'}, but the name constraint is proven only on ${CONSTRAINT_PROVEN_IPADOS}. Prove the constraint probe on the iPad with someone present (docs/PROFILING-IPAD.md, "Serve and verify"), then raise CONSTRAINT_PROVEN_IPADOS.`,
+      `the iPad reports iPadOS ${ipadOs ?? 'unknown'}, but the name constraint is proven only on ${CONSTRAINT_PROVEN_IPADOS}. Prove the constraint probe on the iPad with someone present (perf:session:person visit 2 records the verdict in the constraint-probe log; docs/PROFILING-IPAD.md, "Serve and verify"), then raise CONSTRAINT_PROVEN_IPADOS citing that row.`,
     !leafTrusted && 'macOS trust refuses the leaf for this host; the root or leaf does not name it.',
     !probeRefused && 'macOS trust ACCEPTS the constraint probe: the root is not name-constrained. Do not capture.',
     pageStatus !== 200 && `the front answered ${pageStatus} for the page, not 200 with the rig CA.`,
