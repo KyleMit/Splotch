@@ -1,4 +1,3 @@
-/* eslint-disable */
 // BROWSER CONSOLE SNIPPET — not a Node script. Paste the whole file into the
 // Safari Web Inspector JS console that is remote-debugging an iPad which has
 // /dev/engine open (on a PERF_MARKS + PUBLIC_ENABLE_DEV_HARNESS build). It drives

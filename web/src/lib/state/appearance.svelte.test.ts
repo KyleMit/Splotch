@@ -49,8 +49,7 @@ function installMatchMedia() {
   const factory = vi.fn((wanted: string) =>
     wanted === REDUCED_MOTION_QUERY ? motionQuery : query
   );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  window.matchMedia = factory as any;
+  window.matchMedia = factory as unknown as typeof window.matchMedia;
   return factory;
 }
 

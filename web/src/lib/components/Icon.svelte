@@ -114,7 +114,7 @@
 <!-- data-icon exposes the icon identity to the DOM: the SVG goes in via {@html}, so
      the name is otherwise invisible to tests (and to the {@html} hydration caveat in
      .claude/rules/svelte.md). -->
-<!-- eslint-disable svelte/no-at-html-tags markup is a first-party SVG string from the build-generated icon map -->
+<!-- eslint-disable svelte/no-at-html-tags -- markup is a first-party SVG string from the build-generated icon map -->
 <span class={[className, COLOR_ICONS.has(name) && 'icon-color']} {...rest} data-icon={name}
   >{@html markup}</span
 >

@@ -1,4 +1,3 @@
-/* eslint-disable */
 // BROWSER CONSOLE SNIPPET — runtime A/B kill-switches for the "first pen stroke
 // after a color tap doesn't show" bug. Paste into the Safari Web Inspector
 // console attached to the iPad (like tools/perf/probes/input-recorder.js).

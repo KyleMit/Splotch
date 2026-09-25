@@ -22,7 +22,7 @@
 </svelte:head>
 
 <div class="error-screen" role="alert">
-  <!-- eslint-disable svelte/no-at-html-tags markup is a first-party SVG imported at build time -->
+  <!-- eslint-disable svelte/no-at-html-tags -- markup is a first-party SVG imported at build time -->
   <!-- Inline dimensions keep the SVG bounded if the component stylesheet fails. -->
   <div
     class="error-dottie"

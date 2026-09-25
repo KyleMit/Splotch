@@ -100,7 +100,7 @@
 </script>
 
 <div class="page" style={rootVars}>
-  <!-- eslint-disable svelte/no-at-html-tags mark SVGs and titles are first-party strings from marks.ts / pages.ts -->
+  <!-- eslint-disable svelte/no-at-html-tags -- mark SVGs and titles are first-party strings from marks.ts / pages.ts -->
   {#each renderedMarks as mark, index (index)}
     {#if mark.html}
       <span class="mark" style={mark.style}>{@html mark.html}</span>

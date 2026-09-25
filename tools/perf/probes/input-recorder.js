@@ -1,4 +1,3 @@
-/* eslint-disable */
 // BROWSER CONSOLE SNIPPET — not a Node script. Paste into the Safari Web
 // Inspector console attached to the iPad running the REAL app (e.g.
 // http://<mac-lan-ip>:4173/). It records EVERY pointer event on the page —
@@ -112,10 +111,19 @@
       ...(extra || {}),
     });
   };
-  const onWinResize = () => (recEnv('window-resize'), checkCanvasSize());
-  const onVvResize = () => (recEnv('visualViewport-resize'), checkCanvasSize());
+  const onWinResize = () => {
+    recEnv('window-resize');
+    checkCanvasSize();
+  };
+  const onVvResize = () => {
+    recEnv('visualViewport-resize');
+    checkCanvasSize();
+  };
   const onVvScroll = () => recEnv('visualViewport-scroll');
-  const onOrientation = () => (recEnv('orientationchange'), checkCanvasSize());
+  const onOrientation = () => {
+    recEnv('orientationchange');
+    checkCanvasSize();
+  };
   const onScroll = () => recEnv('window-scroll');
   const onVisibility = () => recEnv(`visibility-${document.visibilityState}`);
   const onFocusIn = (e) => recEnv('focusin', { on: describeTarget(e.target) });
