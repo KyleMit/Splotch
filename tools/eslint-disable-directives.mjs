@@ -7,6 +7,13 @@
 // nodes. That parser splits the rule list on whitespace, so a disable written without the ` -- `
 // separator does not read as a description — each word of the prose becomes one more rule id
 // to suppress.
+//
+// A directive that names no rule, or names this one, suppresses the report that would flag it.
+// tools/tests/disable-directives-lint.test.mjs therefore also runs this rule over the tracked
+// source with inline config off, where no directive can suppress anything.
+export const DISABLE_DIRECTIVES_PLUGIN_NAME = 'disable-directives';
+const RULE_NAME = 'require-disable-reason';
+export const REQUIRE_DISABLE_REASON_RULE_ID = `${DISABLE_DIRECTIVES_PLUGIN_NAME}/${RULE_NAME}`;
 const DIRECTIVE = /^\s*(eslint-disable(?:-next-line|-line)?)(?=\s|$)(.*)$/su;
 const DESCRIPTION_SEPARATOR = /\s-{2,}\s/u;
 
@@ -14,9 +21,11 @@ function parseDisable(text) {
   const match = DIRECTIVE.exec(text);
   if (!match) return null;
   const [ruleList, ...description] = match[2].split(DESCRIPTION_SEPARATOR);
+  const ruleIds = ruleList.split(/[\s,]+/u).filter(Boolean);
   return {
     kind: match[1],
-    namesRules: ruleList.trim().length > 0,
+    namesRules: ruleIds.length > 0,
+    namesSelf: ruleIds.includes(REQUIRE_DISABLE_REASON_RULE_ID),
     hasDescription: description.join(' ').trim().length > 0,
   };
 }
@@ -31,6 +40,7 @@ const requireDisableReason = {
     messages: {
       missingRules: '{{kind}} must name the rules it suppresses.',
       missingDescription: "{{kind}} must say why after ' -- '.",
+      disablesSelf: '{{kind}} must not suppress {{self}}.',
     },
   },
   create(context) {
@@ -39,6 +49,13 @@ const requireDisableReason = {
       if (!directive) return;
       const data = { kind: directive.kind };
       if (!directive.namesRules) context.report({ loc: node.loc, messageId: 'missingRules', data });
+      if (directive.namesSelf) {
+        context.report({
+          loc: node.loc,
+          messageId: 'disablesSelf',
+          data: { ...data, self: REQUIRE_DISABLE_REASON_RULE_ID },
+        });
+      }
       if (!directive.hasDescription) {
         context.report({ loc: node.loc, messageId: 'missingDescription', data });
       }
@@ -55,5 +72,5 @@ const requireDisableReason = {
 };
 
 export const disableDirectivesPlugin = {
-  rules: { 'require-disable-reason': requireDisableReason },
+  rules: { [RULE_NAME]: requireDisableReason },
 };
