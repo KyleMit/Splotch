@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "include": ["dependencies", "unlisted", "unresolved", "binaries"],
+  "entry": [
+    "web/src/routes/**/+{page,layout,server,error}*.{ts,svelte}!",
+    "web/src/hooks*.ts!",
+    "web/svelte.config.js!",
+    "web/vite.config.ts!",
+    "netlify/functions/*.ts!",
+    "tools/run-web-tool.mjs!",
+    "tools/icons/gen-icon-names.mjs!",
+    "tools/release/gen-release-notes.mjs!",
+    "tools/check-release-seams.mjs!",
+    "tools/check-build-version.mjs!",
+    "tools/check-pwa-precache.mjs!",
+    "tools/mobile/check-static-bundle.mjs!",
+    "tools/check-bundle-budgets.mjs!",
+    "tools/stage-netlify-functions.mjs!"
+  ],
+  "paths": {
+    "$lib/*": ["web/src/lib/*"]
+  },
+  "ignoreUnresolved": ["^\\$app/", "^\\$env/"],
+  "eslint": false,
+  "github-actions": false,
+  "playwright": false,
+  "prettier": false,
+  "stylelint": false,
+  "svgo": false,
+  "vitest": false,
+  "capacitor": false
+}

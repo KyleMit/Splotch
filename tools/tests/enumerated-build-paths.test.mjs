@@ -42,6 +42,21 @@ function knipEnumeratedFolders() {
   return braced.slice('tools/{'.length, braced.indexOf('}')).split(',');
 }
 
+const netlifyToml = readFileSync(join(repoRoot, 'netlify.toml'), 'utf8');
+
+/** prebuild/build/postbuild with every `npm run <name>` they delegate to expanded in place. */
+function buildPhaseScripts() {
+  const { scripts } = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
+  const expand = (name, seen = new Set()) => {
+    if (seen.has(name) || !scripts[name]) return '';
+    seen.add(name);
+    const body = scripts[name];
+    const nested = [...body.matchAll(/npm run ([\w:-]+)/g)].map((match) => match[1]);
+    return [body, ...nested.map((child) => expand(child, seen))].join(' ');
+  };
+  return ['prebuild', 'build', 'postbuild'].map((name) => expand(name)).join(' ');
+}
+
 describe('knip project enumeration', () => {
   it('lists every tools/ capability folder', () => {
     expect(knipEnumeratedFolders().slice().sort()).toEqual(capabilityFolders.slice().sort());
@@ -49,9 +64,7 @@ describe('knip project enumeration', () => {
 });
 
 describe('netlify deploy-skip filter', () => {
-  const ignore = readFileSync(join(repoRoot, 'netlify.toml'), 'utf8')
-    .split('\n')
-    .find((line) => line.trimStart().startsWith('ignore ='));
+  const ignore = netlifyToml.split('\n').find((line) => line.trimStart().startsWith('ignore ='));
 
   // A plain Git pathspec's '*' crosses directory separators, so an unmagicked
   // 'tools/*.mjs' silently matches every .mjs under tools/ and rebuilds on any
@@ -69,19 +82,7 @@ describe('netlify deploy-skip filter', () => {
   });
 
   it('watches every tools/ path the production build actually runs', () => {
-    const { scripts } = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
-
-    // The build phases delegate through `npm run <name>`, so a literal scan of
-    // prebuild/build/postbuild misses everything they call. Expand transitively.
-    const expand = (name, seen = new Set()) => {
-      if (seen.has(name) || !scripts[name]) return '';
-      seen.add(name);
-      const body = scripts[name];
-      const nested = [...body.matchAll(/npm run ([\w:-]+)/g)].map((match) => match[1]);
-      return [body, ...nested.map((child) => expand(child, seen))].join(' ');
-    };
-
-    const buildPhase = ['prebuild', 'build', 'postbuild'].map((name) => expand(name)).join(' ');
+    const buildPhase = buildPhaseScripts();
 
     // Walk the import graph too: the build reaches tools/lib/ only through the
     // entry points' imports, so a text scan alone would let a shared-helper
@@ -109,5 +110,26 @@ describe('netlify deploy-skip filter', () => {
         `tools/${folder}`
       );
     }
+  });
+});
+
+// lint:deps:prod analyzes only what knip.production.json names as entries, so a
+// build tool missing from that list could import a devDependency and the gate
+// would stay green while Netlify's --prod install breaks the deploy.
+describe('knip production entries', () => {
+  it('name exactly the tools/ scripts the Netlify deploy runs', () => {
+    const buildCommand = netlifyToml.match(/^\s*command = "(.+)"$/m)?.[1];
+    expect(buildCommand).toContain('npm run build');
+    const deployText = `${buildCommand} ${buildPhaseScripts()}`;
+    const deployTools = new Set(
+      [...deployText.matchAll(/(tools\/[\w./-]+\.mjs)/g)].map((match) => match[1])
+    );
+    const knipProduction = JSON.parse(readFileSync(join(repoRoot, 'knip.production.json'), 'utf8'));
+    const entryTools = knipProduction.entry
+      .filter((glob) => glob.startsWith('tools/'))
+      .map((glob) => glob.replace(/!$/, ''));
+
+    expect(deployTools.size).toBeGreaterThan(0);
+    expect(entryTools.slice().sort()).toEqual([...deployTools].sort());
   });
 });

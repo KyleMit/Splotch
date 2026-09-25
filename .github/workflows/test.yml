@@ -124,6 +124,13 @@ jobs:
       - name: Dead-code check
         run: npm run lint:dead
 
+      # ADR-0070 dependency split: Netlify installs with --prod, so a package the
+      # deploy imports but package.json files under devDependencies breaks only
+      # the deploy, after merge. knip.production.json's entries are what the
+      # deploy executes.
+      - name: Production dependency check
+        run: npm run lint:deps:prod
+
       # Asset byte-stability guard: fails if any committed art asset (coloring
       # pages, style covers, fill-src raws) changed without regenerating
       # tools/asset-gen/golden/asset-manifest.sha256 — turns silent binary churn

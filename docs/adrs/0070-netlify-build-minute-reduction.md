@@ -102,3 +102,15 @@ That removes the asymmetry the entry existed to explain — every remaining `dep
 either a runtime import or part of the Vite/SvelteKit build itself. The split and its rationale are
 otherwise unchanged, and the question to ask when adding a dependency is still "does the Netlify web
 build import or execute this?"
+
+## Amendment (2026-09-25): a pre-merge gate checks the split
+
+The consequence above — a build-needed package mislabeled into `devDependencies` breaks only the
+deploy, after merge — now fails CI's Quality job instead. `npm run lint:deps:prod` runs
+`knip --production --strict` over `knip.production.json`, whose entries are what the deploy
+executes: the SvelteKit routes and hooks, the Svelte and Vite configs, the Netlify functions, and
+every `tools/` script the Netlify build command and its pre/post hooks run. Strict mode resolves
+those imports against `dependencies` alone, so a devDependency import reports as unlisted, and an
+entry in `dependencies` the deploy never reaches reports as unused.
+`enumerated-build-paths.test.mjs` fails when that `tools/` entry list drifts from the scripts the
+deploy actually runs.
