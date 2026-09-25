@@ -26,11 +26,16 @@ vi.mock('../../lib/proc.mjs', async (importOriginal) => {
   };
 });
 
+const buildGuard = vi.fn(async () => {});
+
 vi.mock('../lib/profile-preview.mjs', () => ({
-  assertServedBuildIsFresh: async () => {},
+  assertServedBuildIsFresh: (...args) => buildGuard(...args),
 }));
 
 const { captureHandInput } = await import('../split-capture/capture-hand-input.mjs');
+const { closeFloorControlHost, createFloorControlHost } =
+  await import('../split-capture/serve-floor-control.mjs');
+const { FLOOR_CONTROL_PAGE } = await import('../split-capture/lib/probe-host-protocol.mjs');
 
 const FRAME_COUNT = 120;
 const BEAT_MS = 16.67;
@@ -132,14 +137,17 @@ function startProbeHost({ ua, reportProbeParam }) {
 }
 
 const servers = [];
+const floorServers = [];
 const argvBaseline = [...process.argv];
 
 afterEach(async () => {
   for (const { server } of servers.splice(0)) {
     await new Promise((resolve) => server.close(resolve));
   }
+  for (const server of floorServers.splice(0)) await closeFloorControlHost(server);
   process.argv = [...argvBaseline];
   captureCalls.length = 0;
+  buildGuard.mockClear();
 });
 
 async function runCapture({ nativeApp, ua, reportProbeParam }) {
@@ -219,5 +227,107 @@ describe('captureHandInput’s production dispatch', () => {
         reportProbeParam: 'none',
       })
     ).rejects.toThrow('open the exact printed URL');
+  });
+});
+
+// Issue 2276: the hand capture ran the SvelteKit served-build guard against
+// every host, so a finger could never be measured on the floor control, which
+// has no build. It now routes the host the way perf:device:frames does. The
+// floor host here is the real one; the loop below stands in for the device
+// page a person would be drawing on.
+const IPAD_SAFARI_UA =
+  'Mozilla/5.0 (iPad; CPU OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) ' +
+  'Version/18.6 Mobile/15E148 Safari/604.1';
+
+async function startFloorHost() {
+  const { server, state } = createFloorControlHost({ log: () => {} });
+  floorServers.push(server);
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  return { host: `http://127.0.0.1:${server.address().port}`, state };
+}
+
+async function drawOnFloorPage(host) {
+  const plan = () => fetch(`${host}/__probe/plan`).then((response) => response.json());
+  const post = (path, body) =>
+    fetch(`${host}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  const wait = () => new Promise((resolve) => setTimeout(resolve, 5));
+  let current = await plan();
+  while (!current.nonce) {
+    await wait();
+    current = await plan();
+  }
+  const { nonce } = current;
+  await post('/__probe/ready', {
+    nonce,
+    resolvedTheme: 'light',
+    geometry: { orientation: 'PORTRAIT' },
+  });
+  while (!(await plan()).finish) await wait();
+  const url = `${host}/?probe=${encodeURIComponent(nonce)}`;
+  await post('/__probe/report', { nonce, report: probeReport({ url, ua: IPAD_SAFARI_UA }) });
+}
+
+const floorHandRequest = (host, overrides = {}) => ({
+  platform: 'ios',
+  brush: 'pen',
+  orientation: 'PORTRAIT',
+  theme: 'light',
+  seconds: 0,
+  host,
+  opener: 'manual',
+  ...overrides,
+});
+
+describe('a hand capture against the floor control', () => {
+  it('proves the floor by its served bytes and records a floor artifact', async () => {
+    const { host } = await startFloorHost();
+
+    const [artifact] = await Promise.all([
+      captureHandInput(floorHandRequest(host)),
+      drawOnFloorPage(host),
+    ]);
+
+    expect(buildGuard).not.toHaveBeenCalled();
+    expect(artifact).toMatchObject({
+      page: FLOOR_CONTROL_PAGE,
+      handCapture: true,
+      runtime: 'ios-safari',
+      productCommit: null,
+      buildEntry: null,
+      pageIdentity: 'proven-by-url',
+    });
+    expect(artifact.buildDigest).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('refuses a request the floor cannot honour before posting a plan', async () => {
+    const { host, state } = await startFloorHost();
+
+    await expect(captureHandInput(floorHandRequest(host, { brush: 'crayon' }))).rejects.toThrow(
+      /--brush=pen/
+    );
+    await expect(captureHandInput(floorHandRequest(host, { theme: 'dark' }))).rejects.toThrow(
+      /--theme=light/
+    );
+    await expect(
+      captureHandInput(floorHandRequest(host, { platform: 'android', nativeApp: true }))
+    ).rejects.toThrow(/--native-app/);
+    expect(state.plan.nonce).toBeUndefined();
+    expect(buildGuard).not.toHaveBeenCalled();
+  });
+
+  // run-operator-session serves the web build to a native hand capture's
+  // WebView, so the guard must not demand the native export for it.
+  it('still holds the app probe host to the web served-build guard', async () => {
+    await runCapture({
+      nativeApp: true,
+      ua: 'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Version/4.0 Chrome/126 Mobile',
+      reportProbeParam: 'none',
+    });
+
+    expect(buildGuard).toHaveBeenCalledWith(expect.any(String), { allowForeignBuild: false });
   });
 });

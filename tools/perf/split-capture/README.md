@@ -98,6 +98,17 @@ light, undo — before touching the device. The artifact records `page: 'floor-c
 `buildDigest`, and no `productCommit`, so the matrix fold refuses it: a floor capture is a
 diagnostic, never a cell.
 
+`perf:device:hand` takes the same `--host` and runs the same identity check, so a person can draw on
+the floor in place of injected touch — the finger measurement of the browser's floor that ADR-0136's
+credited charge rests on. The iPad runs it in Safari:
+
+```sh
+npm run perf:device:hand -- --platform=ios --open=safari --device-udid=<udid> \
+  --host=http://<lan-ip>:4177 --brush=pen --theme=light --speak
+```
+
+The hand artifact records `page: 'floor-control'` too, and evidence promotion refuses it.
+
 ## Inputs and outputs
 
 `--host` is the probe host URL **as the device sees it** — a LAN address, not `127.0.0.1`. Android

@@ -26,7 +26,11 @@ import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
-import { APP_BUNDLE_ID, writeArtifactFile } from './capture-device-frames.mjs';
+import {
+  APP_BUNDLE_ID,
+  assertServedPageIdentity,
+  writeArtifactFile,
+} from './capture-device-frames.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
@@ -285,6 +289,7 @@ export function handCaptureArtifact({
   device,
   seconds,
   reading,
+  page = 'app',
   servedBuild = null,
   fidelity,
   summaries,
@@ -293,6 +298,9 @@ export function handCaptureArtifact({
   return {
     label: runLabel,
     handCapture: true,
+    // A floor-control hand capture is a diagnostic of the browser (ADR-0136),
+    // refused as product evidence exactly as a driven floor capture is.
+    page,
     runtime,
     platform,
     nativeApp,
@@ -326,6 +334,14 @@ export function handCaptureArtifact({
     report: payload?.report,
     topology: payload?.topology ?? null,
   };
+}
+
+// A native hand capture is checked against the WEB build, unlike a native
+// driven capture: run-operator-session's ensurePreview serves the web build to
+// the WebView's `server.url` and rebuilds over a native export, so requiring
+// the native export here would refuse every guided native hand capture.
+function handBuildIdentity(host, { allowForeignBuild }) {
+  return assertServedBuildIsFresh(host, { allowForeignBuild });
 }
 
 export async function captureHandInput({
@@ -364,9 +380,21 @@ export async function captureHandInput({
     );
   }
 
-  const servedBuild = await assertServedBuildIsFresh(host, {
-    allowForeignBuild: allowForeignBuild !== undefined,
-  });
+  // The same page routing as perf:device:frames: the app's probe host is held
+  // to the served-build guard, and the floor control, which has no build to
+  // guard, to its own served bytes and to the requests it can honour. A hand
+  // capture never undoes, so the floor's undo refusal cannot apply.
+  const { page, servedBuild } = await assertServedPageIdentity(
+    host,
+    {
+      brush,
+      theme,
+      undoCount: 0,
+      allowForeignBuild: allowForeignBuild !== undefined,
+      nativeApp,
+    },
+    { buildIdentity: handBuildIdentity }
+  );
 
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
@@ -511,6 +539,7 @@ export async function captureHandInput({
     device: serial ?? udid ?? null,
     seconds,
     reading,
+    page,
     servedBuild,
     fidelity,
     summaries,

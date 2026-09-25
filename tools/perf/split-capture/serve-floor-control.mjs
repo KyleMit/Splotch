@@ -23,8 +23,9 @@
 //
 // The DOM shape (#drawingCanvas, .paper-view) is what the probe requires.
 //
-// Drive a capture against it with `perf:device:frames --host=<this host>`. The
-// capture recognises the floor by `/__probe/state`'s `page` and, in place of the
+// Drive a capture against it with `perf:device:frames --host=<this host>`, or
+// draw on it by hand with `perf:device:hand --host=<this host>`. Either capture
+// recognises the floor by `/__probe/state`'s `page` and, in place of the
 // SvelteKit build guard the floor can never satisfy, proves the served bytes are
 // this checkout's floor (`floorControlIdentity`).
 import { createHash } from 'node:crypto';
