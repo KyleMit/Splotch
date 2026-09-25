@@ -86,15 +86,15 @@ own clearly-messaged commit when the session's branch is already spoken for.
 
 Close cousins, split by what happens to the finding:
 
-* **`session-audit`** — recurring repo friction whose fix deserves adversarial vetting, isn't
+* **`audit-session`** — recurring repo friction whose fix deserves adversarial vetting, isn't
   obvious, or is bigger than this session can land: stage it into the audit pipeline instead. Rule
-  of thumb: self-heal when you know the fix and its home and can land it now; `session-audit` when
+  of thumb: self-heal when you know the fix and its home and can land it now; `audit-session` when
   the finding needs vetting, aggregation, or a later fix agent.
 * **The audit skills' shared §3** (`.claude/audit-conventions.md`) — method knowledge about the
   audit that just ran folds into that skill's own file. That is the in-file special case of this
   sweep, and audit runs keep doing it inline.
-* **`create-adr` / `update-adrs`** — a significant decision with real alternatives is an ADR, not a
-  note.
+* **`create-adr` / `reconcile-adrs`** — a significant decision with real alternatives is an ADR, not
+  a note.
 * **`create-handoff`** — in-flight work to continue is a transfer packet, not a lesson.
 
 ## Report

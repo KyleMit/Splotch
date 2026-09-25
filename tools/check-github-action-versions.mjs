@@ -1,6 +1,6 @@
 // Surveys the GitHub Actions pinned across .github/workflows/ and reports
 // version drift — the GHA half of the dependency-update flow (issue #231), so
-// the dependency-update-audit skill can bump outdated Action pins alongside the
+// the burn-down-outdated-dependencies skill can bump outdated Action pins alongside the
 // npm packages `npm outdated` surfaces.
 //
 //   node tools/check-github-action-versions.mjs                 offline: inventory + flag pins

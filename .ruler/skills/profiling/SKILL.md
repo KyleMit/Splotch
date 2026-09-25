@@ -46,5 +46,5 @@ Two things to check before drawing a conclusion:
   `performance.memory` stays flat while real memory grows; `perf:web:undo` reports the true cost
   analytically.
 
-For page-load / Core Web Vitals work on a throttled device, use `lighthouse-audit` instead. For the
+For page-load / Core Web Vitals work on a throttled device, use `audit-page-load` instead. For the
 cross-platform snapshot, `capture-performance-matrix`.

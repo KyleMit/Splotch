@@ -25,7 +25,7 @@ negotiable knobs:
 backlog (tens of findings), stay with the standard lifecycle — `/vet-audits` files survivors as
 `type:audit` issues and `/fix-audits` clears them interactively with subagents. This skill is the
 bulk path for a backlog where filing one GitHub issue per finding is impractical (hundreds of
-findings, e.g. a whole-codebase `/code-audit` pass). It replaces both vet and fix: its verifier
+findings, e.g. a whole-codebase `/audit-code` pass). It replaces both vet and fix: its verifier
 subprocess *is* the adversarial vet, applied per finding at HEAD.
 
 ### The hand-driven cherry-pick — when the ask is "the easy ones"
@@ -180,7 +180,7 @@ as possible:
   minute finding. Two worth calling out because their failure mode is not obvious:
 
   * **`npm run lint:dead` (knip)** is the highest-value addition for an audit backlog specifically.
-    A `/code-audit` tail is mostly extraction, dedup, and dead-code findings, and removing the last
+    A `/audit-code` tail is mostly extraction, dedup, and dead-code findings, and removing the last
     caller of an export is exactly what turns knip red — a fix that is *correct* and still breaks
     CI. It is also the one gate where a red result may be pre-existing rather than caused by the
     finding, since knip reports repo-wide: run it at the base commit first, and if it starts
@@ -830,7 +830,7 @@ state in the conversation:
 
   **A checkpoint you find is not necessarily about the run you are starting.** These packets outlive
   their run: a handoff whose PR already merged still sits in `docs/handoff/` describing a backlog
-  that no longer exists, and a fresh `/code-audit` re-stages `docs/AUDIT.md` from scratch — so its
+  that no longer exists, and a fresh `/audit-code` re-stages `docs/AUDIT.md` from scratch — so its
   branch, PR, and "N remaining" can all be confidently, invisibly wrong. On 2026-07-28 the packet on
   disk said 183 findings remained while preflight counted 642, because the packet's PR had merged
   the day before and a new audit had since staged a whole new backlog. **Reconcile before trusting
@@ -954,7 +954,7 @@ Notes from real runs — set these before a large run rather than discovering th
   on the re-run. `BUDGET_IMPL` learned the same lesson on the 2026-08-05 canary: a three-component
   extraction hit exactly `$4.0036` on its fix round with the work finished and every gate green,
   while every other role call stayed under `$2` — the default is now `7.00`, sized for the
-  multi-file extraction fix rounds a `/code-audit` tail is full of. The turn caps have the same
+  multi-file extraction fix rounds a `/audit-code` tail is full of. The turn caps have the same
   failure shape as the dollar caps and no knob: both turn-cap deferrals on that run landed on
   sweeping multi-file findings, so expect the deferral pile to skew toward the widest findings and
   triage them as budget casualties, not hard problems.
@@ -995,13 +995,13 @@ Notes from real runs — set these before a large run rather than discovering th
   so pinning the id is what actually puts impl/review on Opus 5; `sonnet` already resolves to Sonnet
   5, so verify stays on the alias. When a newer opus lands, re-probe
   (`claude -p --model <id> --output-format json 'ok'` → check `modelUsage`) and bump the pin.
-* **Impl-model tiering is on by default, scoped to P4/P5.** Much of a `/code-audit` backlog is
+* **Impl-model tiering is on by default, scoped to P4/P5.** Much of a `/audit-code` backlog is
   trivially mechanical (P4/P5 dead-code, rename, dedup), so the driver routes those findings to
   `MODEL_IMPL_MINOR` (default `sonnet`) and keeps P1–P3 on `MODEL_IMPL`. The Opus review still gates
   every fix, so the cheaper model buys wall-clock at a sliver of impl-correctness margin exactly
   where the stakes are lowest. `findingPriority` in `lib/burndown-core.mjs` (unit-tested) reads the
   priority from either staging format — a leading `[P<n>]` **title** tag, or a `**Priority:** P4`
-  **body** line, which is what the whole-repo code-audit writes while tagging titles by category
+  **body** line, which is what the whole-repo audit-code writes while tagging titles by category
   (`[Maintainability] …`). A finding stating neither is unknown and stays on the stronger model. Set
   `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where correctness dominates.
   Bigger throughput (parallel git worktrees per finding) is a real redesign, not a knob.

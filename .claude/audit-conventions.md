@@ -6,15 +6,15 @@ a shared rule, change it **here** — the skills point at this file on purpose.
 
 ## Inventory
 
-| Audit                       | What it finds                                                                                             | Writes to                                         |
-| --------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| **code-audit**              | Prioritized perf / readability / maintainability / architecture improvements across the repo              | `docs/AUDIT.md`                                   |
-| **extract-audit**           | Inline code blocks worth extracting into standalone, named, testable functions                            | `docs/AUDIT.md`                                   |
-| **lighthouse-audit**        | Page-load / Core Web Vitals opportunities on a throttled device                                           | `docs/AUDIT.md`                                   |
-| **dependency-update-audit** | Out-of-date dependencies, upgraded one at a time with a migration guide                                   | one commit per package                            |
-| **dependency-health-audit** | Inventory + health of every third-party dependency (provenance, license, maintenance, keep/replace)       | `docs/DEPENDENCIES.md`, refreshed in place        |
-| **session-audit**           | Recurring friction from the just-finished session (code traversal / execution) + the tooling fix for each | `docs/AUDIT.md`                                   |
-| **workflow-audit**          | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
+| Audit                               | What it finds                                                                                             | Writes to                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **audit-code**                      | Prioritized perf / readability / maintainability / architecture improvements across the repo              | `docs/AUDIT.md`                                   |
+| **audit-extractions**               | Inline code blocks worth extracting into standalone, named, testable functions                            | `docs/AUDIT.md`                                   |
+| **audit-page-load**                 | Page-load / Core Web Vitals opportunities on a throttled device                                           | `docs/AUDIT.md`                                   |
+| **burn-down-outdated-dependencies** | Out-of-date dependencies, upgraded one at a time with a migration guide                                   | one commit per package                            |
+| **audit-dependency-health**         | Inventory + health of every third-party dependency (provenance, license, maintenance, keep/replace)       | `docs/DEPENDENCIES.md`, refreshed in place        |
+| **audit-session**                   | Recurring friction from the just-finished session (code traversal / execution) + the tooling fix for each | `docs/AUDIT.md`                                   |
+| **improve-agent-workflow**          | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
 **Consumers** of `docs/AUDIT.md` (not audits themselves): `vet-audits` adversarially validates the
 list against the current code, drops what doesn't hold up, and **files each survivor as a GitHub
@@ -35,8 +35,8 @@ The durable audit backlog lives in **GitHub Issues** (open issues labeled `type:
 standing Markdown file. `docs/AUDIT.md` is the transient hand-off between a producer and
 `vet-audits`:
 
-1. **Producer** (`code-audit`, `extract-audit`, `lighthouse-audit`, `session-audit`) → appends raw
-   findings to `docs/AUDIT.md` (the merge rules in §1 govern this).
+1. **Producer** (`audit-code`, `audit-extractions`, `audit-page-load`, `audit-session`) → appends
+   raw findings to `docs/AUDIT.md` (the merge rules in §1 govern this).
 2. **`vet-audits`** → validates each finding, removes the ones that don't hold up, and promotes each
    survivor to a GitHub issue (`type:audit` + applicable `area:*`/`type:*`; add `needs-triage` when
    the finding is valid but its fix approach is unclear). It deletes `docs/AUDIT.md` once drained.
@@ -186,16 +186,16 @@ values. If a routine is added, retired, or rescheduled, update this table in the
 
 All times UTC; days are spread across the month so at most one audit fires per day.
 
-| Routine                         | Skill                     | Cadence              | Cron (UTC)    |
-| ------------------------------- | ------------------------- | -------------------- | ------------- |
-| Monthly dependency update audit | `dependency-update-audit` | Monthly, 1st, 12:00  | `0 12 1 * *`  |
-| Monthly code audit              | `code-audit`              | Monthly, 5th, 11:00  | `0 11 5 * *`  |
-| Monthly extract audit           | `extract-audit`           | Monthly, 12th, 11:00 | `0 11 12 * *` |
-| Monthly dependency health audit | `dependency-health-audit` | Monthly, 15th, 11:00 | `0 11 15 * *` |
-| Monthly lighthouse audit        | `lighthouse-audit`        | Monthly, 19th, 11:00 | `0 11 19 * *` |
-| Monthly workflow audit          | `workflow-audit`          | Monthly, 26th, 11:00 | `0 11 26 * *` |
+| Routine                         | Skill                             | Cadence              | Cron (UTC)    |
+| ------------------------------- | --------------------------------- | -------------------- | ------------- |
+| Monthly dependency update audit | `burn-down-outdated-dependencies` | Monthly, 1st, 12:00  | `0 12 1 * *`  |
+| Monthly code audit              | `audit-code`                      | Monthly, 5th, 11:00  | `0 11 5 * *`  |
+| Monthly extract audit           | `audit-extractions`               | Monthly, 12th, 11:00 | `0 11 12 * *` |
+| Monthly dependency health audit | `audit-dependency-health`         | Monthly, 15th, 11:00 | `0 11 15 * *` |
+| Monthly lighthouse audit        | `audit-page-load`                 | Monthly, 19th, 11:00 | `0 11 19 * *` |
+| Monthly workflow audit          | `improve-agent-workflow`          | Monthly, 26th, 11:00 | `0 11 26 * *` |
 
-**`session-audit` is deliberately not scheduled.** It's a retrospective on a live working session; a
+**`audit-session` is deliberately not scheduled.** It's a retrospective on a live working session; a
 fresh scheduled session has no session history to reflect on. It stays invoke-at-end-of-session
 only.
 
@@ -213,19 +213,19 @@ so the orchestrating session keeps only concise phase summaries in context:
    skipped, so back-to-back routines don't redo in-flight work.
 
 Audits that don't stage through `docs/AUDIT.md` keep the same find → verify → implement spirit with
-their own shapes: **dependency-update-audit** verifies each bump empirically (check + tests) and
-implements as one batched PR; **dependency-health-audit** refreshes `docs/DEPENDENCIES.md`, has a
-fresh subagent independently verify any new risk or replace/investigate claim before acting, then
-files issues and opens a PR with the refreshed doc; **workflow-audit** writes its dated review doc,
-has a fresh subagent independently validate each recommendation (reverting any that don't hold up),
-and opens a PR with the surviving config changes.
+their own shapes: **burn-down-outdated-dependencies** verifies each bump empirically (check + tests)
+and implements as one batched PR; **audit-dependency-health** refreshes `docs/DEPENDENCIES.md`, has
+a fresh subagent independently verify any new risk or replace/investigate claim before acting, then
+files issues and opens a PR with the refreshed doc; **improve-agent-workflow** writes its dated
+review doc, has a fresh subagent independently validate each recommendation (reverting any that
+don't hold up), and opens a PR with the surviving config changes.
 
 ### Unattended-run conventions
 
 These apply to every scheduled (or otherwise user-absent) audit run:
 
 * **Skip every `AskUserQuestion` gate** and apply that skill's documented defaults instead. For
-  `dependency-update-audit` (its Phase 2 gate): minor/patch bumps only; defer majors and the
+  `burn-down-outdated-dependencies` (its Phase 2 gate): minor/patch bumps only; defer majors and the
   coordinated families (list them in the report); `npm run check` + unit tests per package, with the
   full `npm test` once at the end.
 * **One PR per run.** Per-item commits are preserved inside it. A bump or fix that fails

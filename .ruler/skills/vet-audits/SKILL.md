@@ -55,7 +55,7 @@ with `search_issues` to avoid duplicates — enrich an existing issue rather tha
   "Resize is slow").
 * **Body** — carry the sharpened finding over in full, keeping the `#### Problem` /
   `#### Proposed solution` / `#### Verification` sections so the fix agent has everything without
-  re-deriving it. Note which audit surfaced it (e.g. "Surfaced by `code-audit`."). Escape any bare
+  re-deriving it. Note which audit surfaced it (e.g. "Surfaced by `audit-code`."). Escape any bare
   `#`-number that isn't a deliberate issue reference (see `docs/ISSUE-WORKFLOW.md`).
 * **Labels** — always `type:audit`. Add the applicable `area:*` and the substantive `type:*`
   (`type:perf`, `type:chore`, …) when they're clear — an audit issue may carry `type:audit` *and* a

@@ -95,7 +95,7 @@ since, at every regeneration, and fails only a section missing its date or commi
 (ADR-0175). The WebKit commit gates and the undo commit-P95 gate. `check-bundle-budgets.mjs` holds
 the startup, lazy-chunk, and native-export sizes; `check-pwa-precache.mjs` holds precache integrity.
 Skills: `profiling`, `capture-performance-matrix`, `start-capture-session` before physical-device
-work, and `lighthouse-audit` for page load.
+work, and `audit-page-load` for page load.
 
 ## Resilience
 
@@ -178,7 +178,7 @@ on it lands.
 
 **Backed by.** The records in `docs/adrs/`, `check:adrs`, and the `adr-integrity` workflow. Skills:
 `architecture` for the source map and route table, `adrs` for the index, `create-adr` and
-`update-adrs` for writing and reconciling them.
+`reconcile-adrs` for writing and reconciling them.
 
 ## Code Quality
 
@@ -188,7 +188,7 @@ duplicate declarations.
 **Backed by.** `check:quality` runs the whole set in one pass and reports every failure rather than
 the first - format, svelte-check, eslint, ruler drift, token lint, knip, asset manifest, scrapbook
 index, and audit. The `format-edited-file.sh` hook routes each edited file through Prettier or
-dprint. Skills: `code-audit` and `extract-audit` to find work, `vet-audits` to prune it,
+dprint. Skills: `audit-code` and `audit-extractions` to find work, `vet-audits` to prune it,
 `fix-audits` and `burn-down-audits` to clear it, `simplify` and `code-review` on a working diff.
 
 ## Testing
@@ -235,6 +235,6 @@ and regenerating deterministically.
 them. `ruler:apply` and `ruler:check` keep both provider trees deterministic.
 `package-manager.test.mjs` fails if any CI, hook, or bootstrap file starts installing with npm
 instead of pnpm. `check:github-actions` and `workflow-hygiene.test.mjs` guard the workflow set.
-Skills: `workflow-audit`, `session-audit`, and `self-heal` for the loop itself;
-`dependency-health-audit` and `triage-dependabot-prs` for dependency upkeep;
+Skills: `improve-agent-workflow`, `audit-session`, and `self-heal` for the loop itself;
+`audit-dependency-health` and `burn-down-dependabot-prs` for dependency upkeep;
 `fewer-permission-prompts` for friction.

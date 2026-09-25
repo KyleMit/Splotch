@@ -66,7 +66,7 @@ through a live repo.
 
 * The Step 4 trap list is repo-specific and will rot as the repo changes. It is written as
   "check these by name" rather than "these are the only ones", but nothing enforces that it stays
-  current — a candidate for a `session-audit` finding if a merge ever goes wrong in a way Step 4
+  current — a candidate for a `audit-session` finding if a merge ever goes wrong in a way Step 4
   should have named.
 * `survey.mjs` reports renames and deletions but not signature changes, which are the highest-value
   and hardest-to-detect class in the Step 3 table. Detecting them properly means diffing exported

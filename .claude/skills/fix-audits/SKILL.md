@@ -24,12 +24,12 @@ The `type:audit` backlog mixes two shapes of issue, and "validate → fix → ve
 different for each. Read the issue's labels and body (which name the audit that surfaced it) to tell
 them apart before you delegate:
 
-* **Product-code issues** — surfaced by `code-audit`, `extract-audit`, `lighthouse-audit` (typically
-  carry `type:perf`/`type:bug`/`type:chore` + an `area:*`). The fix changes app source under
-  `web/src/` (or a build / perf path). Validate empirically (a failing test, a profile, a query) and
-  verify with `npm run check` + the tests covering the touched files, exactly as the per-item loop
-  describes.
-* **Tooling issues** — surfaced by `session-audit` and any issue whose fix is a change to Splotch's
+* **Product-code issues** — surfaced by `audit-code`, `audit-extractions`, `audit-page-load`
+  (typically carry `type:perf`/`type:bug`/`type:chore` + an `area:*`). The fix changes app source
+  under `web/src/` (or a build / perf path). Validate empirically (a failing test, a profile, a
+  query) and verify with `npm run check` + the tests covering the touched files, exactly as the
+  per-item loop describes.
+* **Tooling issues** — surfaced by `audit-session` and any issue whose fix is a change to Splotch's
   **Claude Code tooling and cloud-session workflow** rather than to production code: a skill under
   `.ruler/skills/`, a path-scoped rule in `.claude/rules/`, an instruction note in the `.ruler/`
   sources (regenerate `CLAUDE.md`/`AGENTS.md` with `npm run ruler:apply`, ADR-0058), a `docs/*`

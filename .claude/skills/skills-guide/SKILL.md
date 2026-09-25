@@ -28,7 +28,6 @@ Standalone lookups; none depend on another skill.
 | `adrs`                  | Entry point: index of all ADRs; read before proposing any architectural change |
 | `walk-through-decision` | Weigh an open decision in plain language: stakes, real options, one pick       |
 | `create-adr`            | Document a significant decision just made — adds a new ADR                     |
-| `update-adrs`           | End-of-session sweep: verify existing ADRs still match reality, amend drift    |
 
 `adrs` stays first for architectural decisions, and the ordering is not a formality: what has
 already been decided is an input to weighing anything, which is why `walk-through-decision`'s own
@@ -38,7 +37,8 @@ weighing.
 
 `walk-through-decision` then runs *before* a decision exists: it explains one and recommends an
 option, and deliberately stops there. It writes nothing and implements nothing, so recording the
-outcome stays an explicit later ask to `create-adr`.
+outcome stays an explicit later ask to `create-adr`. The last link of the chain, `reconcile-adrs`,
+lives with the other reconcile skills under Recurring maintenance.
 
 ## Performance — interaction matrices and page load
 
@@ -49,31 +49,81 @@ outcome stays an explicit later ask to `create-adr`.
 | `profiling`                  | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)                       |
 | `capture-performance-matrix` | Serial cross-target drawing, undo, and discrete-action capture across web/native targets                       |
 | `improve-performance-matrix` | Freshly inventory the matrix, improve current scoreable reds, and ship causal clusters as reviewed stacked PRs |
-| `lighthouse-audit`           | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer                      |
+| `audit-page-load`            | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer                      |
 
 `capture-performance-matrix` is the capture and refresh workflow. `improve-performance-matrix`
 consumes that evidence and owns the sustained improvement campaign through zero current, scoreable,
 unexplained reds on the release-gate rows (a red cell with an ADR-recorded, evidence-backed
 disposition counts as explained — ADR-0160) or a user-requested merge-ready wrap-up.
 
-## Audit lifecycle — produce → vet → fix
+## Recurring maintenance — audit → vet → burn down / fix, reconcile
 
-The pipeline behind `docs/AUDIT.md`; shared rules live in `.claude/audit-conventions.md`. Producers
-stage findings, `vet-audits` promotes survivors to `type:audit` GitHub issues and deletes the
-staging file, `fix-audits` burns the issues down.
+Recurring maintenance skills are named by family, so the prefix says what a run does (the naming
+standard in the root `CLAUDE.md`): **`audit-*`** finds work and changes no code, **`burn-down-*`**
+shrinks a measured count toward a target, **`reconcile-*`** brings an artifact back in line with
+current reality. The audit cycle chains them: audit producers stage findings in `docs/AUDIT.md`,
+`vet-audits` promotes survivors to `type:audit` GitHub issues and deletes the staging file, and
+`fix-audits` works the issues — or `burn-down-audits` vets and fixes a huge staged backlog in one
+unattended run. Shared rules for the producers live in `.claude/audit-conventions.md`.
 
-| Stage      | Skill                     | What it does                                                                       |
-| ---------- | ------------------------- | ---------------------------------------------------------------------------------- |
-| Produce    | `code-audit`              | Broad perf/readability/maintainability/architecture sweep → `docs/AUDIT.md`        |
-| Produce    | `extract-audit`           | Inline code blocks worth extracting into named functions → `docs/AUDIT.md`         |
-| Produce    | `lighthouse-audit`        | Page-load opportunities → `docs/AUDIT.md` (also listed under Performance)          |
-| Produce    | `session-audit`           | End-of-session retrospective on repo friction → `docs/AUDIT.md`                    |
-| Vet        | `vet-audits`              | Adversarially validate findings; file survivors as `type:audit` issues             |
-| Fix        | `fix-audits`              | Autonomously clear open `type:audit` issues, one commit each, on its own branch    |
-| Vet + fix  | `burn-down-audits`        | Iteratively clears a huge `docs/AUDIT.md` with durable progress and run controls   |
-| Standalone | `dependency-update-audit` | Upgrade dependencies one at a time with migration guides (user-invoke only)        |
-| Standalone | `dependency-health-audit` | Provenance/license/maintenance review of every dependency → `docs/DEPENDENCIES.md` |
-| Standalone | `workflow-audit`          | Claude Code config + session-history review vs. best practice → dated review doc   |
+### `audit-*` — find work, change no code
+
+| Skill                     | What it finds                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `audit-code`              | Broad perf/readability/maintainability/architecture sweep → `docs/AUDIT.md`        |
+| `audit-extractions`       | Inline code blocks worth extracting into named functions → `docs/AUDIT.md`         |
+| `audit-page-load`         | Page-load opportunities → `docs/AUDIT.md` (primary home: Performance)              |
+| `audit-session`           | End-of-session retrospective on repo friction → `docs/AUDIT.md`                    |
+| `audit-dependency-health` | Provenance/license/maintenance review of every dependency → `docs/DEPENDENCIES.md` |
+
+### Screening and fixing audit findings
+
+`vet-audits` and `fix-audits` keep verb-noun names outside the three families: in both, "audits"
+means the findings, not the act. `improve-agent-workflow` also stays outside: it applies the config
+changes it recommends, so `audit-*` would understate what a run does (it lives under Repo hygiene &
+meta).
+
+| Skill        | What it does                                                                    |
+| ------------ | ------------------------------------------------------------------------------- |
+| `vet-audits` | Adversarially validate findings; file survivors as `type:audit` issues          |
+| `fix-audits` | Autonomously clear open `type:audit` issues, one commit each, on its own branch |
+
+### `burn-down-*` — shrink a count toward its target
+
+| Skill                             | The count it shrinks                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| `burn-down-audits`                | Staged `docs/AUDIT.md` findings — vets and fixes a huge backlog with run controls       |
+| `burn-down-outdated-dependencies` | Outdated dependencies — upgraded one at a time with migration guides (user-invoke only) |
+| `burn-down-dependabot-prs`        | Open Dependabot PRs — verify, sequence the merges, close the rest                       |
+| `burn-down-oversized-code`        | Files or functions over the size caps — paid back down to their soft targets, one PR    |
+
+### `reconcile-*` — bring an artifact back in line with reality
+
+| Skill                 | What it reconciles                                                             |
+| --------------------- | ------------------------------------------------------------------------------ |
+| `reconcile-adrs`      | Existing ADRs against the current code and recent decisions — amends drift     |
+| `reconcile-with-main` | A long-running branch against current `main`, hunting the *semantic* conflicts |
+
+`burn-down-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
+(`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
+[ADR-0081 on the Dependabot review workflow](../../../docs/adrs/0081-dependabot-claude-review-workflow.md)),
+which posts an advisory verdict but never merges. It pairs with `burn-down-outdated-dependencies`
+and the two do not overlap: that skill picks packages the repo is behind on and drives the bumps
+itself, this one triages PRs Dependabot has already opened.
+
+`burn-down-oversized-code` runs in `mode=files` (`max-lines`) or `mode=functions`
+(`max-lines-per-function`). It is user-invoked only, because invoking it authorizes a multi-agent
+fan-out: a proposer and an adversarial reviewer per unit, then an implementer per split in its own
+worktree with a fresh commit checker. Its `measure.mjs` reads every cap from `eslint.config.js`.
+Line limits are treated as smells: a unit that does not separate cleanly gets a per-file cap raise,
+never a counter-driven split.
+
+`reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
+has been open a while: it detects overlapping line edits and nothing else. The skill surveys the
+incoming commits before merging (the range vanishes once `main` is an ancestor), then checks them
+against the branch's own changes for stranded call sites, changed contracts, and duplicated work.
+Reach for it before `address-pr-review` on a stale PR — reviewer comments written against a
+pre-merge diff are hard to triage until the branch is current.
 
 ## Cross-agent execution
 
@@ -99,7 +149,6 @@ These augment the built-in PR flows rather than replacing them.
 | `ship-issue`              | **Shipping** one issue or task end to end — implement, PR, rival review, address, drive to mergeable; merges too under `mode=autonomous` |
 | `ship-campaign`           | **Campaigning** through a queue of issues unattended — each shipped and merged via `ship-issue` before the next starts from fresh `main` |
 | `orchestrate-sessions`    | **Coordinating** human-relayed worker sessions — batch work, emit prompts, verify reports and evidence preservation before advancing     |
-| `triage-dependabot-prs`   | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest                                                       |
 
 `create-stacked-prs` decides the *shape* of a chain before any single PR exists, and every later
 skill in the group respects that shape while a chain is open. Stacks are opt-in: a multi-issue
@@ -152,13 +201,6 @@ preserved evidence before choosing a follow-up for that worker or the next batch
 implements or launches workers itself, and a merged PR does not discharge an outstanding
 preservation obligation.
 
-`triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
-(`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
-[ADR-0081 on the Dependabot review workflow](../../../docs/adrs/0081-dependabot-claude-review-workflow.md)),
-which posts an advisory verdict but never merges. It pairs with `dependency-update-audit` in the
-audit table above and the two do not overlap: that skill picks packages the repo is behind on and
-drives the bumps itself, this one triages PRs Dependabot has already opened.
-
 ## Session continuity — pause ↔ resume, keep the lessons
 
 | Skill            | Direction                                                                                               |
@@ -169,10 +211,10 @@ drives the bumps itself, this one triages PRs Dependabot has already opened.
 
 End-of-session reflexes divide by what survives the session: in-flight *work* goes into a handoff
 packet; a *lesson* with a clear fix and home is applied on the spot by `self-heal`; recurring
-*friction* that needs adversarial vetting or a later fix agent is staged by `session-audit` (audit
-table above); a *decision* that drifted is `update-adrs`' job (ADR group). `self-heal` is also the
-general form of the audit skills' shared §3 — folding a run's method learnings back into the skill
-that ran is its in-file special case.
+*friction* that needs adversarial vetting or a later fix agent is staged by `audit-session`; a
+*decision* that drifted is `reconcile-adrs`' job (both under Recurring maintenance). `self-heal` is
+also the general form of the audit skills' shared §3 — folding a run's method learnings back into
+the skill that ran is its in-file special case.
 
 ## Running & previewing the app
 
@@ -211,14 +253,13 @@ its own decisions under `tools/asset-gen/docs/`.
 
 ## Repo hygiene & meta
 
-| Skill                         | Use for                                                                           |
-| ----------------------------- | --------------------------------------------------------------------------------- |
-| `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them    |
-| `reconcile-with-main`         | Merge current `main` into a long-running branch and hunt the *semantic* conflicts |
-| `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin`    |
-| `burn-down-oversized-code`    | Pay the file or function size caps back down to their soft targets, one PR        |
-| `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports       |
-| `skills-guide`                | This guide                                                                        |
+| Skill                         | Use for                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them      |
+| `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin`      |
+| `improve-agent-workflow`      | Review Claude Code config + session history vs. best practice; apply approved fixes |
+| `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports         |
+| `skills-guide`                | This guide                                                                          |
 
 `analyze-session-transcripts` has independent registered Claude and Codex packages because their
 session stores and record envelopes differ. It is user-invoked only — a batch run spawns a subagent
@@ -231,24 +272,10 @@ finding on an unmerged branch a durable home (an issue, an ADR via `create-adr`,
 the `self-heal` judgment) *before* the branch goes, and the remote pass still hands the user a
 deletion script rather than deleting `origin` refs itself.
 
-`burn-down-oversized-code` runs in `mode=files` (`max-lines`) or `mode=functions`
-(`max-lines-per-function`). It is user-invoked only, because invoking it authorizes a multi-agent
-fan-out: a proposer and an adversarial reviewer per unit, then an implementer per split in its own
-worktree with a fresh commit checker. Its `measure.mjs` reads every cap from `eslint.config.js`.
-Line limits are treated as smells: a unit that does not separate cleanly gets a per-file cap raise,
-never a counter-driven split.
-
-`reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
-has been open a while: it detects overlapping line edits and nothing else. The skill surveys the
-incoming commits before merging (the range vanishes once `main` is an ancestor), then checks them
-against the branch's own changes for stranded call sites, changed contracts, and duplicated work.
-Reach for it before `address-pr-review` on a stale PR — reviewer comments written against a
-pre-merge diff are hard to triage until the branch is current.
-
 ## Keeping this guide current
 
 Every skill must appear here in exactly one primary group (cross-reference a second group in prose
-when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are generated from
+when a skill genuinely spans two, as `audit-page-load` does). Most skills are generated from
 `.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
 `tools/ruler/lib/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
 implementations, as do `analyze-session-transcripts` and `run-rival-agent` (each package launching
@@ -261,5 +288,7 @@ rather than forcing it into one.
 
 Naming: workflow skills (perform a procedure with side effects) get verb-noun names (`create-adr`,
 `fix-audits`); reference skills (only load knowledge) get plain noun names (`architecture`, `adrs`).
-The name alone should tell you whether invoking the skill is passive or starts a procedure — see the
-skill-authoring guidance in the root `CLAUDE.md`.
+A recurring maintenance skill takes a family prefix — `audit-*`, `burn-down-*`, or `reconcile-*` —
+only when that prefix is honest about what its run does. The name alone should tell you whether
+invoking the skill is passive or starts a procedure — see the skill-naming standard in the root
+`CLAUDE.md`.

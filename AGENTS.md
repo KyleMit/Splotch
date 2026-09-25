@@ -302,7 +302,7 @@ the authoritative registry.
 | `mobile`                                | touching anything Android/iOS/Capacitor, or store-release work                                                                                                                                                                                                                                     |
 | `testing`                               | writing/running tests beyond the basics, or debugging CI failures                                                                                                                                                                                                                                  |
 | `profiling`                             | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                                                                                                                                                                      |
-| `lighthouse-audit`                      | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                                                                                                                                                                         |
+| `audit-page-load`                       | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                                                                                                                                                                         |
 | `adrs`                                  | proposing or discussing any architectural approach                                                                                                                                                                                                                                                 |
 | `run-rival-agent`                       | pairing this session, as the native handler, with the other vendor's CLI as a read-only rival agent for an independent review or question — the rival asks you to run commands through a broker, and its findings post to the PR verbatim; from Claude the rival is Codex, from Codex it is Claude |
 | `pr-screenshots`                        | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                                                                                                                                                                     |
@@ -334,6 +334,25 @@ verb-noun names, so the name reads as the action it kicks off. **Reference skill
 load knowledge into context (`architecture`, `adrs`, `testing`, `skills-guide`) — get plain noun
 names; a verb name on a reference skill would falsely promise an action. Scanning the skill list,
 the name alone should tell you whether invoking it is passive or starts a procedure.
+
+**Recurring maintenance skills take a family prefix** that says what a run does:
+
+| Prefix        | Meaning                                    | A run…                                                                                 |
+| ------------- | ------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `audit-*`     | finds work                                 | writes findings for later work and changes no code                                     |
+| `burn-down-*` | shrinks a count toward a target            | fixes items, or records why an item stays, until the measured count reaches its target |
+| `reconcile-*` | brings something back in line with reality | checks an artifact against the current code or state and fixes each mismatch           |
+
+* **The noun names what the prefix acts on.** `burn-down-*` takes a countable plural
+  (`burn-down-dependabot-prs`, `burn-down-oversized-code`); `reconcile-*` takes the artifact being
+  checked (`reconcile-adrs`).
+* **A skill joins a family only if the prefix is honest about what its run does.** If none of the
+  three describes it, keep a plain verb-noun name: `prune-git-workspace` stays outside because
+  "prune" already says dead worktrees and branches are deleted, and `vet-audits`/`fix-audits` are
+  the screening and fixing steps of the audit cycle, where "audits" means the findings.
+* **One-off and product skills are out of scope.** The families cover recurring maintenance only.
+* **"Grooming" is ruled out as a family verb.** It has a child-safety meaning, and Splotch is an app
+  for toddlers.
 
 **Where a skill's content lives (ADR-0107).** Every skill is stored three times — the `.ruler/`
 source plus a generated `.claude/` and `.agents/` copy — so one line of skill prose is three lines
@@ -382,7 +401,7 @@ Remaining `docs/`:
 | `docs/WORKTREES.md`              | How a linked agent worktree gets provisioned — the shared `SessionStart` bootstrap hook, the per-runner failure contracts, and what `.worktreeinclude` carries in; read before changing worktree setup for either runner                                                                                                                                                                                                                                              |
 | `docs/CONTRIBUTING.md`           | Human onboarding doc — keep in sync when conventions change                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `docs/ISSUE-WORKFLOW.md`         | How the GitHub issue tracker is organized — issue format, label glossary (`type:*`/`area:*`/`priority:*`/meta), and the triage + won't-do flow                                                                                                                                                                                                                                                                                                                        |
-| `docs/AUDIT.md`                  | Transient staging for audit-skill findings (the `code-audit`, `extract-audit`, `lighthouse-audit`, and `session-audit` skills); `vet-audits` drains it into `type:audit` GitHub issues, which `fix-audits` burns down — or, for a backlog of hundreds, the `burn-down-audits` skill clears it in bulk. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions                                                                        |
+| `docs/AUDIT.md`                  | Transient staging for audit-skill findings (the `audit-code`, `audit-extractions`, `audit-page-load`, and `audit-session` skills); `vet-audits` drains it into `type:audit` GitHub issues, which `fix-audits` burns down — or, for a backlog of hundreds, the `burn-down-audits` skill clears it in bulk. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions                                                                     |
 | `docs/AUDIT-LOG.md`              | Committable history of every audit-skill run (index table of date · audit, linking to a per-run summary section)                                                                                                                                                                                                                                                                                                                                                      |
 | `docs/audit-deferred/decisions/` | **Standing index of decision records for findings that were triaged rather than staged** — one doc per finding with the options weighed and the verdict reached. The verdicts are MIXED: today five DROP and one FIX, so read the README's status table and follow the individual record rather than assuming any of them means "leave this alone". Distinct from `docs/AUDIT-DEFERRED.md`, the transient triage inbox they were drained out of                       |
 | `docs/DEPENDABOT.md`             | How dependency bumps arrive and get reviewed — the Dependabot config, the Claude auto-review workflow, its one-time secret setup, and why Dependabot-triggered runs fail silently when misconfigured                                                                                                                                                                                                                                                                  |
@@ -433,7 +452,7 @@ decision is significant if it chose one approach over real alternatives, has non
 consequences, or encodes a constraint a future contributor would want to understand.
 
 **At the end of any session that touched architecture, testing, infrastructure, or build tooling:**
-briefly consider running the `update-adrs` skill to catch anything that changed.
+briefly consider running the `reconcile-adrs` skill to catch anything that changed.
 
 ADRs live in the repo and are committed alongside the code they describe. They are not internal
 memory — they're part of the project.
