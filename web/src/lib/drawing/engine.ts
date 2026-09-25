@@ -14,6 +14,7 @@
 //   crayonPassBuffer.ts the crayon pass's accumulation buffers + glaze stamp
 //   tiledRenderer.ts    live surfaces + vector-tail undo (ADR-0085)
 //   tiledSurfaces.ts    allocation and lifecycle of each tile's canvas surfaces
+//   tiledLayout.ts      tile grid geometry + one-hidden-tile-per-frame backing migration
 //   undoHistory.ts      the shared undo depth and debug contracts
 //   strokeMath.ts       pure gesture math (edge swipes, resume detection, speed)
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
@@ -82,9 +83,9 @@ import {
   crayonColorMix,
   warmCrayonTiles,
   cancelCrayonWarmup,
-  type CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
+import type { CrayonPassTracker } from './crayonPassTracker';
 import { paperStateMatches, type HistoryDebug, type RecordedPaperState } from './undoHistory';
 import { recordPaper, restorePaperLayout, createPaperLayoutMemory } from './paperLayout';
 import { createCanvasMeasure, createCanvasLayoutUpdater, type CanvasRect } from './canvasMeasure';

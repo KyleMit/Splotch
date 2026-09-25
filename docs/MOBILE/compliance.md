@@ -106,8 +106,9 @@ digital content without in-app purchase, and asked for Splotch's business model 
 submission c730ff1d-1a03-40cf-831d-2804513a1830 (reviewed 2026-09-12, version 1.6.0 build 8).
 Splotch configures no in-app purchase items at all, so nothing under the literal guideline applies;
 what draws the question is the BYOK panel, which states that a key is billed to the parent's own
-OpenAI account and that OpenAI requires billing set up on that account
-(`web/src/lib/components/settings/AiKeyManager.svelte`).
+OpenAI account (`web/src/lib/components/settings/AiKeyManager.svelte`) and that OpenAI requires
+billing set up on that account (its how-to,
+`web/src/lib/components/settings/OpenAiKeyHowTo.svelte`).
 
 **Decisions.** Answer from the shape 3.1.1 already established rather than change the app. Splotch
 sells nothing through any channel and takes no revenue or affiliate share; the drawing app is free
@@ -443,10 +444,11 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 
 **Enforced by tests:** `web/src/lib/state/parentalGate.svelte.test.ts`,
 `web/src/lib/state/parentalGate.mash.test.ts`, `web/src/lib/state/parentalGate.lockout.test.ts`,
-`web/tests/flows-parental-gate.spec.ts`, `web/tests/flows-parental-gate-lockout.spec.ts`,
-`web/tests/flows-parent-center-warning.spec.ts`, `web/tests/ai-report.spec.ts`,
-`web/src/nativeExcludedRoutes.test.ts`, `tools/mobile/tests/static-bundle.test.mjs`,
-`web/tests/admin.spec.ts`, `web/tests/feedback.spec.ts`, `web/tests/beta.spec.ts`.
+`web/tests/flows-parental-gate.spec.ts`, `web/tests/flows-parent-center.spec.ts`,
+`web/tests/flows-parental-gate-lockout.spec.ts`, `web/tests/flows-parent-center-warning.spec.ts`,
+`web/tests/ai-report.spec.ts`, `web/src/nativeExcludedRoutes.test.ts`,
+`tools/mobile/tests/static-bundle.test.mjs`, `web/tests/admin.spec.ts`,
+`web/tests/feedback.spec.ts`, `web/tests/beta.spec.ts`.
 
 **Machine-checked consistency.** `tools/mobile/privacy-permission-inventory.json` declares the
 permissions, data categories, ephemeral-by-default / 30-day-on-confirmed-report boundary, and

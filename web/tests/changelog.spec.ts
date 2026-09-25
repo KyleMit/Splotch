@@ -8,7 +8,7 @@ import {
   expectContentsPanelCappedInsideViewport,
   openHydratedContents,
   pinContentsRow,
-} from './helpers';
+} from './contents-helpers';
 
 test.describe('short touch screens', () => {
   test.use({ hasTouch: true });

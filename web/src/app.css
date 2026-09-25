@@ -653,7 +653,7 @@ body {
    many buttons the panel lays out. One formula for first paint and for the
    hydrated panel, so the two agree by construction (ADR-0040); every literal
    mirrors actionButtonLayout.ts and is drift-guarded by its fallback test, and
-   actionButtonLayout.test.ts evaluates the formula against the Button Size
+   actionButtonLayout.cssFormula.test.ts evaluates the formula against the Button Size
    slider's ceiling. The phone-landscape block below replaces it. */
 .actions-panel {
   --action-btn-gap-total: calc((var(--action-btn-count) - 1) * 12px);
@@ -687,7 +687,7 @@ body {
   }
 }
 
-/* ActionsPanel and BrushControl share these paper-floating action buttons. */
+/* Every control in the Actions Panel shares these paper-floating action buttons. */
 .actions-panel .action-button {
   position: relative;
   width: var(--action-btn-size);

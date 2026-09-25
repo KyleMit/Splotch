@@ -44,8 +44,9 @@ type AiPhase =
       details: AiFailureDetails | null;
     };
 
-// The phase the result card's error section renders; exported for its props.
+// The phases the result card's error section and footer render; exported for their props.
 export type AiErrorPhase = Extract<AiPhase, { kind: 'error' }>;
+export type AiResultPhase = Extract<AiPhase, { kind: 'result' }>;
 
 export interface AiResultState {
   readonly phase: DeepReadonly<AiPhase>;

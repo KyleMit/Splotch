@@ -5,7 +5,7 @@ import {
   expectContentsPanelCappedInsideViewport,
   openHydratedContents,
   pinContentsRow,
-} from './helpers';
+} from './contents-helpers';
 
 // The privacy policy's contents rail and disclosure reuse the changelog's
 // treatment; these specs cover the wiring this page owns — that the contents

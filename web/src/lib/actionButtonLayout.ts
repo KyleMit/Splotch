@@ -5,8 +5,8 @@
 // Button Size slider in Settings caps its range so a parent can't even pick a
 // size the current screen can't fit. The CSS bakes these constants as literals
 // because it owns first paint (ADR-0040); actionButtonLayout.fallback.test.ts
-// holds the literals to the constants and actionButtonLayout.test.ts evaluates
-// the formula against availablePerButton.
+// holds the literals to the constants and actionButtonLayout.cssFormula.test.ts
+// evaluates the formula against availablePerButton.
 import {
   settingsState,
   ACTION_BUTTON_SCALE_MIN,
@@ -58,7 +58,7 @@ export const ACTION_BUTTON_BASE_PROPERTY = '--action-btn-base';
 // back, so the same step there would cost touch target and buy no room. Above
 // the floor an option squares with the button that opened it. app.css owns the
 // rendered size (see .flyout-option); actionButtonLayout.fallback.test.ts holds
-// the two together, and actionButtonLayout.test.ts pins what a parent's smallest
+// the two together, and actionButtonLayout.touchTargets.test.ts pins what a parent's smallest
 // Button Size leaves of it.
 export const FLYOUT_OPTION_MIN_BASE_PX = 60;
 
@@ -185,7 +185,7 @@ function fixedRowCost(
 // The space one button may occupy on the current screen, in px, before the row
 // (landscape: up to the reserve for the Settings Button) or the column (portrait:
 // up to the palette bar) runs out. The app.css --action-btn-size formula is the
-// same budget in CSS; actionButtonLayout.test.ts evaluates it against this.
+// same budget in CSS; actionButtonLayout.cssFormula.test.ts evaluates it against this.
 // Exported only so that test can hold the formula to this number;
 // maxActionButtonScale is the production caller.
 export function availablePerButton(buttonCount: number): number {

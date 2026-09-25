@@ -293,7 +293,7 @@ entry 87. Paths under `web/src/` unless noted.*
     paint; removed 40–50 ms of theme switches compositing 48 transparent canvases.
     `tiledRenderer.ts:269-278`. *ADR-0087*
 35. **Lazy tile backing allocation + one-tile-per-frame migration** on blank-canvas resize.
-    `tiledRenderer.ts:104-176`. *commits 846acd60, 657d87b3*
+    `tiledLayout.ts`. *commits 846acd60, 657d87b3*
 36. **Deferred hidden-tile clear (two presented frames)** — post-clear wipes never land in the
     gesture's frames. `tiledSurfaces.ts:259-266`. *ADR-0086*
 37. **CSS-presented paper view + permanent `will-change: transform`** — rotation with ink never

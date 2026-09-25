@@ -7,7 +7,7 @@ import { openArmedParentCenter, policyPicker } from './flows-harness';
 // policy on the device editable by whoever is holding it. That one choice is
 // confirmed before it persists, and warned about for as long as it holds —
 // never forbidden. The rest of Parent Center's behaviour is
-// flows-parental-gate.spec.ts.
+// flows-parent-center.spec.ts.
 
 const UNPROTECTED_CONFIRM = 'dialog.unprotected-confirm';
 const UNPROTECTED_CONSEQUENCE = /Anyone using this device can open Parent Center/;

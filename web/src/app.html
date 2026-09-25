@@ -94,7 +94,8 @@
          drawing surface is on screen (data-app-surface) because NotchBand tints
          the same tag with the active drawing color there. The colors mirror
          THEME_COLORS and the resolution mirrors resolveTheme(), both in
-         lib/theme.ts; app.html.test.ts runs this script and fails on divergence.
+         lib/theme.ts; app.html.themeColor.test.ts runs this script and fails on
+         divergence.
 
          The script body is pinned by its SHA-256 in the CSP script-src
          (APP_TEMPLATE_SCRIPT_HASH in securityPolicy.ts): any edit to it, even

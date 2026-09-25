@@ -50,10 +50,11 @@ documented decision. Open work lives in GitHub issues, not here.
 A two-year-old can draw without adult help. Every control is reachable one-handed, forgiving of
 imprecise contact, and wordless.
 
-**Backed by.** The `flows-*` Playwright specs, `multitouch.spec.ts`, and
-`engine-pointer-recovery.spec.ts` cover the interaction paths; `dialogTabletScaling.test.ts` covers
-reach on tablet. The `run-splotch` skill drives the real app when a change needs eyes on it rather
-than an assertion, and `critique-page-inventory` reviews the captured surface inventory.
+**Backed by.** The `flows-*` Playwright specs, `multitouch.spec.ts`,
+`engine-pointer-recovery.spec.ts`, and `engine-edge-swipe.spec.ts` cover the interaction paths;
+`dialogTabletScaling.test.ts` covers reach on tablet. The `run-splotch` skill drives the real app
+when a change needs eyes on it rather than an assertion, and `critique-page-inventory` reviews the
+captured surface inventory.
 
 ## Design System
 

@@ -2,8 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { aiOutputFor } from './artifacts/ai-output-fixtures.ts';
 import { drawCommittedStroke, gotoApp, seedAiEnabled, settleFlyIn } from './helpers';
 
-// Shared harness for the AI generation flow, used by ai-result.spec.ts (the
-// result modal's presentation) and ai-report.spec.ts (the report flow). The
+// Shared harness for the AI generation flow, used by the ai-*.spec.ts files. The
 // endpoint is mocked below the client pipeline, so a spec built on this still
 // covers canvas export, upload encoding, response parsing, and response
 // application without a live model provider.
@@ -274,4 +273,36 @@ export function resolvedStageLengthPx(page: Page, property: string) {
     probe.remove();
     return width;
   }, property);
+}
+
+// Big enough that the picture's height, not the card, is what limits it — the
+// case the fixed-width card used to leave mostly empty.
+export const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
+
+// A phone-sized viewport with room for a cutout at the top and a home
+// indicator at the bottom (ADR-0026); ai-result-layout.spec.ts emulates both.
+export const NOTCHED_PHONE_VIEWPORT = { width: 390, height: 844 };
+
+// Resolves length expressions to real pixels by letting the engine compute them
+// on a throwaway probe inside `host`. getComputedStyle hands back an unresolved
+// token stream for an unregistered custom property, so a `clamp()` of vmin — or
+// an `env()` — can only be read back through something that actually used it.
+// The probe is taken out of flow so measuring the card never moves it.
+export function resolveLengths(page: Page, host: string, expressions: string[]) {
+  return page.evaluate(
+    ({ host, expressions }) => {
+      const parent = document.querySelector(host);
+      if (!parent) throw new Error(`No host for the length probe: ${host}`);
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden';
+      parent.append(probe);
+      const resolved = expressions.map((expression) => {
+        probe.style.paddingTop = expression;
+        return parseFloat(getComputedStyle(probe).paddingTop);
+      });
+      probe.remove();
+      return resolved;
+    },
+    { host, expressions }
+  );
 }

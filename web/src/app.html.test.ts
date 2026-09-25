@@ -5,7 +5,14 @@
 // even to say it is absent, applies it — vitest reads that annotation from any
 // leading comment, sentence or not.
 import { existsSync, readFileSync } from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import {
+  bootLiteral,
+  bootScript,
+  bootStringLiteral,
+  runBootScript,
+  sourceFile,
+} from './appHtmlBootTestHarness';
 import {
   AI_SLOT_ATTRIBUTE,
   BRUSH_ATTRIBUTE,
@@ -16,24 +23,9 @@ import {
 } from './lib/actionButtonLayout';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import { PORTRAIT_QUERY } from './lib/breakpoints';
-import {
-  EXPLICIT_REDUCE_MOTION_PREFERENCES,
-  REDUCE_MOTION_ATTRIBUTE,
-  REDUCE_MOTION_DEFAULT,
-  REDUCED_MOTION_QUERY,
-  resolveReducedMotion,
-} from './lib/platform/reducedMotion';
 import { STORAGE_KEYS } from './lib/storage';
 import { FREE_GENERATION_LIMIT } from './lib/freeGenerations';
-import {
-  DARK_SCHEME_QUERY,
-  RESOLVED_THEMES,
-  resolveTheme,
-  THEME_COLOR_META_SELECTOR,
-  THEME_COLORS,
-  THEME_DEFAULT,
-  type ThemePreference,
-} from './lib/theme';
+import { RESOLVED_THEMES } from './lib/theme';
 import {
   ACTION_BUTTON_SCALE_DEFAULT,
   ACTION_BUTTON_SCALE_MAX,
@@ -53,47 +45,10 @@ import { BRUSH_TYPES, OPTIONAL_BRUSH_TYPES } from './lib/state/tool.svelte';
 // Boolean defaults are parsed as text because BOOL_SETTINGS itself is
 // module-private.
 
-// The path stays a parameter: Vite rewrites a `new URL('./literal',
-// import.meta.url)` into the served asset's http URL, which readFileSync
-// rejects (precedent: lib/design/trimGeometry.test.ts).
-function sourceFile(path: string): string {
-  return readFileSync(new URL(path, import.meta.url), 'utf8');
-}
-
-const html = sourceFile('./app.html');
 const webBackHandlerSource = sourceFile('./lib/boot/webBackHandler.ts');
 const svelteKitConstantsSource = sourceFile(
   '../../node_modules/@sveltejs/kit/src/runtime/client/constants.js'
 );
-
-const bootScript = (() => {
-  const match = html.match(/<script>([\s\S]*?)<\/script>/);
-  expect(match, 'app.html has an inline boot <script>').not.toBeNull();
-  return match![1];
-})();
-
-const themeColorMetaMarkup = (() => {
-  const match = html.match(/<meta name="theme-color"[^>]*>/);
-  expect(match, 'app.html has a theme-color meta').not.toBeNull();
-  return match![0];
-})();
-
-// A value no theme resolves to, so a boot script that throws before it paints
-// (its IIFE swallows the error) fails every case instead of passing the ones
-// whose expected color happens to be what the tag already shipped with.
-const UNPAINTED = 'unpainted';
-
-// The boot script repaints app.html's theme-color tag unconditionally, so every
-// fixture that executes the script owns seeding that tag. A fixture that runs
-// the script against whatever head a previous test left behind passes only in
-// declaration order, and throws on a null tag the moment it runs first.
-function runBootScript(): void {
-  document.head.innerHTML = themeColorMetaMarkup.replace(
-    /content="[^"]*"/,
-    `content="${UNPAINTED}"`
-  );
-  new Function(bootScript)();
-}
 
 const settingsSource = sourceFile('./lib/state/settings.svelte.ts');
 const registryKeys = new Set(Object.values(STORAGE_KEYS));
@@ -118,221 +73,6 @@ const boolDefaults: Map<string, boolean> = new Map(
     return key ? [[key, m[2] === 'true'] as const] : [];
   })
 );
-
-function bootLiteral(pattern: RegExp): number {
-  const match = bootScript.match(pattern);
-  expect(match, `app.html's boot script matches ${pattern}`).not.toBeNull();
-  return Number(match![1]);
-}
-
-function bootStringLiteral(pattern: RegExp): string {
-  const match = bootScript.match(pattern);
-  expect(match, `app.html's boot script matches ${pattern}`).not.toBeNull();
-  return match![1];
-}
-
-describe("app.html's prerendered head mirrors the theme module", () => {
-  it('seeds theme-color with THEME_COLORS.light', () => {
-    const match = html.match(/<meta name="theme-color" content="([^"]*)" \/>/);
-    expect(match, 'app.html has a theme-color meta').not.toBeNull();
-    expect(match![1]).toBe(THEME_COLORS.light);
-  });
-});
-
-// Routes other than the drawing page and /design rely on the boot script
-// to put browser chrome on the resolved theme, with its own copy of
-// THEME_COLORS and of resolveTheme's three-state
-// rule. Reading those back out of the source would only prove the hexes match,
-// so this runs the shipped script against the shipped tag instead: every
-// preference the app can resolve, under both OS preferences.
-describe("app.html's boot script paints theme-color like the theme module", () => {
-  type OsChangeListener = (event: { matches: boolean }) => void;
-
-  function boot(preference: ThemePreference, systemDark: boolean) {
-    localStorage.clear();
-    if (preference !== THEME_DEFAULT) localStorage.setItem(STORAGE_KEYS.theme, preference);
-
-    const osListeners: OsChangeListener[] = [];
-    window.matchMedia = ((query: string) => ({
-      matches: query === DARK_SCHEME_QUERY && systemDark,
-      addEventListener: (_type: string, listener: OsChangeListener) => {
-        if (query === DARK_SCHEME_QUERY) osListeners.push(listener);
-      },
-    })) as unknown as typeof window.matchMedia;
-
-    runBootScript();
-
-    return {
-      // Read through theme.ts's selector, against a head seeded from app.html's
-      // own markup: the tag the app repaints has to be the tag the script found.
-      painted: () =>
-        document.querySelector(THEME_COLOR_META_SELECTOR)?.getAttribute('content') ?? null,
-      osListeners,
-      onDrawingSurface: (on: boolean) =>
-        document.documentElement.toggleAttribute('data-app-surface', on),
-    };
-  }
-
-  for (const preference of [...RESOLVED_THEMES, THEME_DEFAULT]) {
-    for (const systemDark of [false, true]) {
-      it(`${preference} preference with the OS in ${systemDark ? 'dark' : 'light'} mode`, () => {
-        expect(boot(preference, systemDark).painted()).toBe(
-          THEME_COLORS[resolveTheme(preference, systemDark)]
-        );
-      });
-    }
-  }
-
-  it('paints the OS theme when storage refuses every read', () => {
-    const refusedRead = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
-      throw new DOMException('The operation is insecure.', 'SecurityError');
-    });
-    try {
-      expect(boot(THEME_DEFAULT, true).painted()).toBe(THEME_COLORS.dark);
-    } finally {
-      refusedRead.mockRestore();
-    }
-  });
-
-  it('follows OS theme changes when storage refuses every read', () => {
-    const refusedRead = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
-      throw new DOMException('The operation is insecure.', 'SecurityError');
-    });
-    try {
-      const session = boot(THEME_DEFAULT, false);
-      session.onDrawingSurface(false);
-      expect(session.painted()).toBe(THEME_COLORS.light);
-      expect(session.osListeners).toHaveLength(1);
-
-      session.osListeners[0]({ matches: true });
-      expect(session.painted()).toBe(THEME_COLORS.dark);
-      session.osListeners[0]({ matches: false });
-      expect(session.painted()).toBe(THEME_COLORS.light);
-
-      session.onDrawingSurface(true);
-      session.osListeners[0]({ matches: true });
-      expect(session.painted()).toBe(THEME_COLORS.light);
-    } finally {
-      refusedRead.mockRestore();
-    }
-  });
-
-  it('subscribes to the OS scheme by the query theme.ts declares', () => {
-    expect(bootStringLiteral(/var darkQuery = window\.matchMedia\('([^']*)'\)/)).toBe(
-      DARK_SCHEME_QUERY
-    );
-  });
-
-  it('reaches the tag by the selector theme.ts uses', () => {
-    expect(bootScript).toContain(THEME_COLOR_META_SELECTOR);
-  });
-
-  it('follows a later OS switch, the way appearance.svelte.ts does for the app', () => {
-    const session = boot(THEME_DEFAULT, false);
-    session.onDrawingSurface(false);
-    expect(session.osListeners.length).toBe(1);
-
-    session.osListeners[0]({ matches: true });
-    expect(session.painted()).toBe(THEME_COLORS.dark);
-    session.osListeners[0]({ matches: false });
-    expect(session.painted()).toBe(THEME_COLORS.light);
-  });
-
-  // NotchBand tints this tag with the active drawing color while the drawing
-  // surface is up, so an OS switch there must not repaint over it.
-  it('leaves the tag alone while the drawing surface owns it', () => {
-    const session = boot(THEME_DEFAULT, false);
-    session.onDrawingSurface(true);
-
-    session.osListeners[0]({ matches: true });
-    expect(session.painted()).toBe(THEME_COLORS.light);
-  });
-
-  // An explicit choice doesn't move with the OS, so there is nothing to listen for.
-  it('subscribes to the OS preference only in system mode', () => {
-    for (const preference of RESOLVED_THEMES) {
-      expect(boot(preference, false).osListeners).toEqual([]);
-    }
-  });
-});
-
-// Every reduced-motion CSS treatment keys off the attribute this stamps, so the
-// script carries its own copy of the storage key, the attribute name, the query
-// and resolveReducedMotion's three-state rule. Running it against the module's
-// exports fails on a drift in any of the four.
-describe("app.html's boot script stamps reduce-motion like the platform module", () => {
-  function boot(stored: string | null, systemReduce: boolean) {
-    localStorage.clear();
-    if (stored !== null) localStorage.setItem(STORAGE_KEYS.reduceMotion, stored);
-    document.documentElement.removeAttribute(REDUCE_MOTION_ATTRIBUTE);
-
-    const os = { reduce: systemReduce };
-    const osListeners: (() => void)[] = [];
-    window.matchMedia = ((query: string) => ({
-      get matches() {
-        return query === REDUCED_MOTION_QUERY && os.reduce;
-      },
-      addEventListener: (_type: string, listener: () => void) => {
-        if (query === REDUCED_MOTION_QUERY) osListeners.push(listener);
-      },
-    })) as unknown as typeof window.matchMedia;
-
-    runBootScript();
-
-    return {
-      stamped: () => document.documentElement.hasAttribute(REDUCE_MOTION_ATTRIBUTE),
-      switchOs(reduce: boolean) {
-        os.reduce = reduce;
-        for (const listener of osListeners) listener();
-      },
-    };
-  }
-
-  for (const preference of [...EXPLICIT_REDUCE_MOTION_PREFERENCES, REDUCE_MOTION_DEFAULT]) {
-    for (const systemReduce of [false, true]) {
-      it(`${preference} preference with the OS at ${systemReduce ? 'reduce' : 'no-preference'}`, () => {
-        const stored = preference === REDUCE_MOTION_DEFAULT ? null : preference;
-        expect(boot(stored, systemReduce).stamped()).toBe(
-          resolveReducedMotion(preference, systemReduce)
-        );
-      });
-    }
-  }
-
-  it('treats an unrecognized stored value as the default, as readReduceMotion does', () => {
-    expect(boot('sometimes', true).stamped()).toBe(
-      resolveReducedMotion(REDUCE_MOTION_DEFAULT, true)
-    );
-  });
-
-  it('follows a later OS switch in system mode', () => {
-    const session = boot(null, false);
-    session.switchOs(true);
-    expect(session.stamped()).toBe(true);
-    session.switchOs(false);
-    expect(session.stamped()).toBe(false);
-  });
-
-  // The listener re-reads storage, so a preference Settings wrote after boot
-  // still overrides the OS on a route with no appearance state.
-  it('resolves a later OS switch against the preference stored by then', () => {
-    const session = boot(null, false);
-    localStorage.setItem(STORAGE_KEYS.reduceMotion, 'full');
-    session.switchOs(true);
-    expect(session.stamped()).toBe(false);
-  });
-
-  it('stamps the OS answer when storage refuses every read', () => {
-    const refusedRead = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
-      throw new DOMException('The operation is insecure.', 'SecurityError');
-    });
-    try {
-      expect(boot(null, true).stamped()).toBe(true);
-    } finally {
-      refusedRead.mockRestore();
-    }
-  });
-});
 
 describe("app.html's boot script mirrors the state modules", () => {
   const bootKeys = [...new Set([...bootScript.matchAll(/'(splotch-[\w-]+)'/g)].map((m) => m[1]))];

@@ -13,9 +13,9 @@
   import { stampMotionAtStart } from '$lib/platform/reducedMotion';
   import { flyoutExit } from './flyoutExit';
 
-  // Presentational Stroke Width popover: the parent (ActionsPanel) owns the
-  // trigger, the open/close coordination, and the outside-click handling. It
-  // passes the active tool's current size and the erasing/keyline flags; this
+  // Presentational Stroke Width popover: the parent (StrokeControl) owns the
+  // trigger, and ActionsPanel the open/close coordination and the outside-click
+  // handling. StrokeControl passes the active tool's current size and the erasing/keyline flags; this
   // renders the size entries and reports a pick back through onpick.
   let {
     open,

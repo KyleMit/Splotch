@@ -40,7 +40,7 @@ Alternatives considered:
 running in a browser under `dev || __DEV_HARNESS__` **and** `window.__storeCapture === true`;
 `tools/marketing-assets/gen-store-assets.mjs` sets that flag in `enableCaptureMode()` via
 `page.addInitScript` before navigation, so it is true by the app's first paint. Every scene goes
-through `prepareCapture()`, which pairs it with the grant mock. `ActionsPanel.svelte` reads it once
+through `prepareCapture()`, which pairs it with the grant mock. `AiImageButton.svelte` reads it once
 at component init and drops the `.free-count` span from the wand button.
 
 The seam is an **input**, which inspection seams are not, so it carries its own rule: capture mode
@@ -72,6 +72,6 @@ a release client.
   images, so the gap is presentational — but it is a gap.
 * − The "presentation only, never behavior" limit is enforced by review alone. Nothing mechanical
   stops a later flag reader from changing what the app does under capture mode.
-* − `ActionsPanel.svelte` — a startup-path component — now imports a module that exists for the
+* − `AiImageButton.svelte` — a startup-path component — now imports a module that exists for the
   marketing pipeline. It compiles out of release bundles, and `web/tests/startup-bundle.spec.ts`
   still pins the chunk boundary, but app code is carrying the seam.

@@ -240,7 +240,7 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
 | `.white-stroke` / `.dark-stroke`                                    | Ink keylines ringing an icon's ink-colored parts so white ink reads on the                                                 |
 |                                                                     | white cards (black ring) and near-black ink reads on the dark ones                                                         |
 |                                                                     | (`--dark-ink-keyline`, inert in light mode). The brush/stroke trigger                                                      |
-|                                                                     | buttons (BrushControl, ActionsPanel), BrushMenu, StrokeWidthMenu                                                           |
+|                                                                     | buttons (BrushControl, StrokeControl), BrushMenu, StrokeWidthMenu                                                          |
 
 They stay classes for one of two reasons: dialogs and imperative DOM need them unscoped, or the
 pattern is chrome that several components share verbatim but that hasn't earned a primitive yet.
@@ -266,7 +266,8 @@ component table above when you do.
 Every standalone page — the link-shareable parent pages (`/privacy`, `/changelog`, `/beta`,
 `/feedback`) and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
 **`web/src/lib/components/page/`**. The `/design` styleguide is the one standalone page with its own
-shell (sticky header + scrollspy TOC, in its route file); it still signs itself with `BrandMark`:
+shell (the sticky `StyleguideHeader`, plus a scrollspy TOC in its route file); it still signs itself
+with `BrandMark`:
 
 | Component            | Use for                                                                                     |
 | -------------------- | ------------------------------------------------------------------------------------------- |
@@ -343,10 +344,10 @@ with System stays with the app Settings) and a scrollspy-driven table of content
 `SidebarToc` rail on wide screens, and on narrow ones the `TocDisclosure` row that opens onto that
 same rail, its collapsed state naming the section being read. Each part's sections are partials in
 `lib/components/styleguide/` (`ColorSections` + `TypeSections` + `ScaleSections` + `AssetSections` +
-`RecipeSections`, `PrimitiveSections` + `ChromeSections`, `VoiceSections`); because everything is
-imported from `tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the
-implementation. `prerender = false` keeps the page out of the native static export — no native
-surface links to it — and serves it via SSR on the web. Use it to:
+`RecipeSections`, `PrimitiveSections` + `ChromeSections` (which renders `NamedChromeSection`),
+`VoiceSections`); because everything is imported from `tokens.ts`, `palette.ts`, and the icon glob,
+the page cannot drift from the implementation. `prerender = false` keeps the page out of the native
+static export — no native surface links to it — and serves it via SSR on the web. Use it to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
   `pr-screenshots` skill);

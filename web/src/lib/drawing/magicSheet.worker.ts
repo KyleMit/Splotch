@@ -5,20 +5,12 @@ import {
   runWithCanvasContextRecovery,
 } from './canvasContextRecovery';
 import { paintRainbowGradient, type RainbowGradient } from './magicSheetGradient';
+import type { EdgeFill } from './magicSheetEdges';
 
 interface MagicSheetImageSource {
   imageUrl: string;
   fit: { x: number; y: number; width: number; height: number };
-  edgeFills: Array<{
-    sx: number;
-    sy: number;
-    sw: number;
-    sh: number;
-    dx: number;
-    dy: number;
-    dw: number;
-    dh: number;
-  }>;
+  edgeFills: EdgeFill[];
 }
 
 interface MagicSheetGradientSource {

@@ -131,6 +131,7 @@ function trimStep(rule: MediaRule, threshold: 'max-width' | 'max-height'): TrimS
 
 describe('ColorPalette', () => {
   const css = styleBlock('../components/ColorPalette.svelte');
+  const swatchCss = styleBlock('../components/ColorSwatch.svelte');
   const rules = mediaRules(css);
   const colorCount = PALETTE_COLORS.length;
 
@@ -165,7 +166,7 @@ describe('ColorPalette', () => {
 
   it('restates the landscape column geometry', () => {
     const palette = blockAfter(css, '.color-palette {');
-    const swatch = blockAfter(css, '.color-swatch {');
+    const swatch = blockAfter(swatchCss, '.color-swatch {');
     expect(PALETTE_COLUMN_GEOMETRY.swatchPx).toBe(px(swatch, 'width'));
     expect(px(swatch, 'height')).toBe(px(swatch, 'width'));
     expect(PALETTE_COLUMN_GEOMETRY.gapPx).toBe(px(palette, 'gap'));
@@ -173,9 +174,14 @@ describe('ColorPalette', () => {
   });
 
   it('restates the portrait row geometry', () => {
-    const portrait = blockAfter(css, '@media (orientation: portrait) {');
-    const palette = blockAfter(portrait, '.color-palette {');
-    const swatch = blockAfter(portrait, '.color-swatch {');
+    const palette = blockAfter(
+      blockAfter(css, '@media (orientation: portrait) {'),
+      '.color-palette {'
+    );
+    const swatch = blockAfter(
+      blockAfter(swatchCss, '@media (orientation: portrait) {'),
+      '.color-swatch {'
+    );
     expect(PALETTE_ROW_GEOMETRY.swatchPx).toBe(px(swatch, 'width'));
     expect(px(swatch, 'height')).toBe(px(swatch, 'width'));
     expect(PALETTE_ROW_GEOMETRY.gapPx).toBe(px(palette, 'gap'));
@@ -183,7 +189,7 @@ describe('ColorPalette', () => {
   });
 
   it('keeps orientation-driven swatch geometry out of interaction transitions', () => {
-    const swatch = blockAfter(css, '.color-swatch {');
+    const swatch = blockAfter(swatchCss, '.color-swatch {');
     expect(swatch).not.toMatch(/transition:\s*all\b/);
     expect(swatch).not.toMatch(/\b(?:width|height)\s+var\(--duration-/);
     expect(swatch).toContain('transform var(--duration-base) ease');

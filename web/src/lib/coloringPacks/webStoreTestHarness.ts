@@ -1,5 +1,6 @@
-import { vi } from 'vitest';
-import type { ResolvedColoringPackBookManifest } from './manifest';
+import { afterEach, beforeEach, vi } from 'vitest';
+import { coloringPackCacheName } from './cacheKeys';
+import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } from './manifest';
 
 const ORIGIN = 'https://splotch.test';
 export const DIGESTS = {
@@ -30,7 +31,7 @@ type Interceptor = (operation: CacheOperation, path?: string) => void | Promise<
 // across all of them; a single shared mock would hide a deleted namespace.
 // The interceptor runs before each write, and after keys() has taken its
 // snapshot, so a test can fail, hold, or never finish (a closed tab) any step.
-export function createFakeCacheStorage() {
+function createFakeCacheStorage() {
   const stores = new Map<string, Map<string, CachedEntry>>();
   const hooks: { intercept: Interceptor } = { intercept: () => {} };
   const cacheFor = (entries: Map<string, CachedEntry>) => ({
@@ -96,4 +97,86 @@ export function book(id: string, pages: [name: string, content: Content][]) {
       sha256: DIGESTS[content],
     })),
   } satisfies ResolvedColoringPackBookManifest;
+}
+
+export function openNewTab() {
+  vi.stubGlobal('navigator', { locks: createFakeLockManager() });
+}
+
+export const released: ResolvedColoringPackManifest = {
+  appVersion: '1.2.3-test',
+  resolution: 'compact',
+  starterBookId: 'farm',
+  books: [
+    book('dinosaur', [
+      ['first', 'a'],
+      ['second', 'b'],
+    ]),
+    book('space', [['rocket', 'a']]),
+  ],
+};
+export const [dinosaur] = released.books;
+export const dinosaurChanged = book('dinosaur', [
+  ['first', 'a'],
+  ['second', 'c'],
+]);
+export const LEGACY_CACHE_NAME = 'coloring-packs-v1-1.2.3-test-compact';
+export const currentCache = coloringPackCacheName(released);
+
+export function installedIds(packs: { id: string }[]): string[] {
+  return packs.map((pack) => pack.id);
+}
+
+// Registers per-test hooks, so each test file calls it once at its top level
+// and reads `fake` through the returned getter to see that test's instance.
+export function useWebStoreWorld() {
+  let fake: ReturnType<typeof createFakeCacheStorage>;
+  let served = new Map<string, Content>();
+
+  function serve(manifest: ResolvedColoringPackManifest) {
+    const contentByDigest = new Map<string, Content>(
+      Object.entries(DIGESTS).map(([content, digest]) => [digest, content as Content])
+    );
+    served = new Map(
+      manifest.books.flatMap((entry) =>
+        entry.files.map((file) => [file.downloadPath, contentByDigest.get(file.sha256)!] as const)
+      )
+    );
+  }
+
+  beforeEach(() => {
+    fake = createFakeCacheStorage();
+    vi.stubGlobal('caches', fake.storage);
+    openNewTab();
+    serve(released);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) =>
+        served.has(path) ? new Response(served.get(path)) : new Response(null, { status: 404 })
+      )
+    );
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  return {
+    get fake() {
+      return fake;
+    },
+    deploy(books: ResolvedColoringPackBookManifest[]): ResolvedColoringPackManifest {
+      const manifest = { ...released, appVersion: '1.2.4-test', books };
+      serve(manifest);
+      return manifest;
+    },
+    async seedCache(name: string, entries: Record<string, string>) {
+      const cache = await fake.storage.open(name);
+      for (const [path, body] of Object.entries(entries)) await cache.put(path, new Response(body));
+    },
+    cachedPaths(name: string): string[] {
+      return [...(fake.entries(name)?.keys() ?? [])];
+    },
+    async servedByWorker(path: string): Promise<string | undefined> {
+      return (await fake.storage.match(path))?.text();
+    },
+  };
 }

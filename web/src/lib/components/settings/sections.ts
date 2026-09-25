@@ -13,7 +13,7 @@ import '$lib/components/deferredIcons';
 // drift, and the nav order is the pane's stacking order.
 //
 // Ordered by what a visit does: the two sections the phone hub answers inline
-// with a switch lead (see HUB_TOGGLES in SettingsModal), then the drill-ins by
+// with a switch lead (see HUB_TOGGLES in HubList), then the drill-ins by
 // how often a parent goes configuring, then the reference sections. Saving sits
 // below the feature sections because it is set once and left alone.
 export const SECTIONS = [
@@ -86,7 +86,7 @@ const ALL_TOOLS_SHOWING = 'Pen, crayon, magic brush & more';
 // The one-line status shown under each row in the phone hub. Reads live
 // `settingsState`, so it stays reactive wherever it's rendered in a component.
 //
-// A row the hub answers with an inline switch (HUB_TOGGLES in SettingsModal)
+// A row the hub answers with an inline switch (HUB_TOGGLES in HubList)
 // drops the on/off word from its subtitle and names the boolean instead — the
 // switch beside it is what says which way that boolean is set.
 export function sectionSubtitle(id: SectionId): string {

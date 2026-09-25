@@ -117,6 +117,19 @@ export async function gotoAppWithAllColoringBooksInstalled(page: Page) {
   );
 }
 
+export const MANIFEST_REQUEST = /\/coloring\/manifest-.+\.json$/;
+
+// Every /coloring/ request path the page makes from now on, the manifest
+// included.
+export function recordColoringRequests(page: Page): string[] {
+  const paths: string[] = [];
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname.startsWith('/coloring/')) paths.push(pathname);
+  });
+  return paths;
+}
+
 export async function opaqueCanvasPixelCount(page: Page) {
   const canvas = await renderedCanvasHandle(page);
   try {

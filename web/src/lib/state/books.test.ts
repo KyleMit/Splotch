@@ -28,6 +28,10 @@ const coloringBookComponent = readFileSync(
   new URL('../components/ColoringBook.svelte', import.meta.url),
   'utf8'
 );
+const coloringTileComponent = readFileSync(
+  new URL('../components/ColoringTile.svelte', import.meta.url),
+  'utf8'
+);
 const activePageChipComponent = readFileSync(
   new URL('../components/ActivePageChip.svelte', import.meta.url),
   'utf8'
@@ -277,9 +281,9 @@ describe('responsive image sources', () => {
     expect(suppressRetiringTransitionsAt).toBeLessThan(hideAt);
     expect(hideAt).toBeLessThan(applyAt);
     expect(coloringBookComponent).toContain('retiringAfterPageSelection = false');
-    const retiringRule = coloringBookComponent.slice(
-      coloringBookComponent.indexOf('.retiring-after-page-selection .coloring-tile {'),
-      coloringBookComponent.indexOf('.coloring-tile img {')
+    const retiringRule = coloringTileComponent.slice(
+      coloringTileComponent.indexOf('.coloring-tile.retiring {'),
+      coloringTileComponent.indexOf('.coloring-tile img {')
     );
     expect(retiringRule).toContain('transition: none');
     expect(coloringBookComponent).toContain('COLORING_IMAGE_SIZES.pageSelector[orientation]');
