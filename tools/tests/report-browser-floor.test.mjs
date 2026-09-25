@@ -142,10 +142,16 @@ describe('web-features lookups', () => {
   });
 
   it('suggests the feature whose compat keys name an interface', () => {
+    // An interface name that is also a feature id (`console`) resolves as a
+    // feature instead of falling back to suggestions, so it can't be the probe.
+    const interfaceKey = (key) => {
+      const parts = key.split('.');
+      return parts.length === 2 && parts[0] === 'api' && !(parts[1] in features);
+    };
     const [id, feature] = firstFeatureWhere(({ compat_features }) =>
-      (compat_features ?? []).some((key) => key.split('.').length === 2)
+      (compat_features ?? []).some(interfaceKey)
     );
-    const iface = feature.compat_features.find((key) => key.split('.').length === 2).split('.')[1];
+    const iface = feature.compat_features.find(interfaceKey).split('.')[1];
     expect(featureStatus(iface).suggestions).toContain(id);
   });
 });
