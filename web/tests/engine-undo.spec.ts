@@ -307,3 +307,71 @@ test('clearing a blank page still gives the magic brush a new picture', async ({
   const secondPicture = await pixelsAfterBlankClear(0.9999);
   expect(secondPicture).not.toEqual(firstPicture);
 });
+
+// The eraser settles canvasEmpty on an idle timer, so a clear that lands before
+// it fires has to settle it itself.
+test('clearing right after erasing to blank records no undo step', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 80, y: 60 },
+    ]);
+    window.__engine.setStrokeWidth(100);
+    window.__engine.setEraserMode(true);
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 80, y: 60 },
+    ]);
+    const before = window.__engine.getUndoDebug().historyLength;
+    window.__engine.clearCanvas();
+    return {
+      pixels: window.__engine.nonTransparentCount(),
+      before,
+      after: window.__engine.getUndoDebug().historyLength,
+    };
+  });
+
+  expect(result.pixels).toBe(0);
+  expect(result.after).toBe(result.before);
+});
+
+// A magic stroke drawn before its sheet is ready paints nothing yet, so the
+// page reads blank to a pixel scan while it still holds ink the sheet will
+// reveal. Clearing it must still record the clear, or that ink surfaces later.
+test('clearing magic ink that has not revealed yet still clears it', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    window.__engine.setMagicMode(true);
+    window.__engine.strokeSync([
+      { x: 40, y: 120 },
+      { x: 360, y: 120 },
+    ]);
+    const unrevealedPixels = window.__engine.nonTransparentCount();
+    window.__engine.setMagicMode(false);
+    window.__engine.setEraserMode(true);
+    window.__engine.strokeSync([
+      { x: 40, y: 300 },
+      { x: 80, y: 300 },
+    ]);
+    window.__engine.setEraserMode(false);
+    const before = window.__engine.getUndoDebug().historyLength ?? 0;
+    window.__engine.clearCanvas();
+    return {
+      unrevealedPixels,
+      before,
+      after: window.__engine.getUndoDebug().historyLength ?? 0,
+    };
+  });
+  expect(result.unrevealedPixels).toBe(0);
+  expect(result.after).toBe(result.before + 1);
+
+  await page.evaluate(() => {
+    window.__engine.setMagicMode(true);
+    window.__engine.strokeSync([
+      { x: 40, y: 220 },
+      { x: 360, y: 220 },
+    ]);
+  });
+  const band = (y: number) => page.evaluate((top) => window.__engine.pixelsIn(40, top, 320, 8), y);
+  await expect.poll(async () => (await band(216)).some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
+  expect((await band(116)).some((v, i) => i % 4 === 3 && v > 0)).toBe(false);
+});

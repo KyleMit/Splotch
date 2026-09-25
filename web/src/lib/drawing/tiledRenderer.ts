@@ -442,6 +442,7 @@ export function clearTiledRenderer(wasEmpty: boolean) {
 }
 
 export function scanTiledRendererIsEmpty(renderScale: number) {
+  if (magicRecode.hasUnrevealedOps()) return false;
   return liveTiles.every(
     (tile) => tile.canvas.hidden || scanCanvasIsEmpty(tile.canvas, renderScale)
   );

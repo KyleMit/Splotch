@@ -37,6 +37,19 @@ export function createTiledMagicRecode<TBase>(host: TiledMagicRecodeHost<TBase>)
     return retainedCommands().some((command) => magicOps(command).length > 0);
   }
 
+  // A magic op recorded before its sheet was ready painted nothing, so a pixel
+  // scan misses it, yet the repaint that follows the sheet reveals it. Only ops
+  // after the last clear are on the page.
+  function hasUnrevealedOps() {
+    const commands = retainedCommands();
+    const lastClear = commands.findLastIndex((command) =>
+      command.ops.some((op) => op.kind === 'clear')
+    );
+    return commands
+      .slice(lastClear + 1)
+      .some((command) => magicOps(command).some((op) => !op.magicSheet));
+  }
+
   function rebuildBase() {
     if (baseline.length > 0) host.rebuildBase(baseline, foldedTail);
   }
@@ -109,6 +122,7 @@ export function createTiledMagicRecode<TBase>(host: TiledMagicRecodeHost<TBase>)
     beforeFold,
     beginUndo,
     hasRetainedOps,
+    hasUnrevealedOps,
     recode,
     restore,
   };

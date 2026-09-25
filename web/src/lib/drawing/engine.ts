@@ -1122,6 +1122,7 @@ export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppeara
 export function clearCanvas({ animateInto }: { animateInto?: ClientPoint } = {}) {
   inkMotion.cancel();
   if (!canvas || !ctx) return;
+  idleEmptyScan.flush();
   if (!canvasEmpty || isStrokeActive()) clearRecordedInk(animateInto);
   crayonPasses.reset();
   clearMagicGradient();

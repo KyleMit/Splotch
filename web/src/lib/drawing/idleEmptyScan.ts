@@ -3,9 +3,10 @@
 // The scan reads back every live tile, and on a physical Android phone it
 // measured 4.5 ms average and 12.3 ms maximum against an 8.3 ms budget, once per
 // eraser lift, landing in the frames that are already the eraser's worst.
-// Nothing needs the answer that fast — it only enables or disables Undo, Clear,
-// and the screenshot control — so it waits for the child to stop, the same
-// discipline ADR-0085 gave history folding.
+// Most consumers don't need the answer that fast — it enables or disables Undo,
+// Clear, and the screenshot control — so it waits for the child to stop, the
+// same discipline ADR-0085 gave history folding. A clear does need it, to tell a
+// page erased to blank from one with ink, so it settles the scan early.
 const EMPTY_SCAN_IDLE_MS = 400;
 
 export type IdleEmptyScanDeps = {
@@ -38,5 +39,11 @@ export function createIdleEmptyScan(deps: IdleEmptyScanDeps) {
     }, EMPTY_SCAN_IDLE_MS);
   }
 
-  return { cancel, schedule };
+  function flush() {
+    if (timer === null || deps.isDrawing()) return;
+    cancel();
+    deps.run();
+  }
+
+  return { cancel, flush, schedule };
 }
