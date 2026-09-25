@@ -527,7 +527,7 @@
     "dprint": "^0.57.4",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-playwright": "^2.11.0",
+    "eslint-plugin-playwright": "^2.12.0",
     "eslint-plugin-svelte": "^3.23.0",
     "fit-curve": "^0.2.0",
     "globals": "^17.12.0",
