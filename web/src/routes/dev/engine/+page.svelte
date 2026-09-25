@@ -24,6 +24,12 @@
     RESIZE_SETTLE_MS,
     type EngineViewState,
   } from '$lib/drawing/engine';
+  import {
+    countOpaquePixels,
+    countStrokeRedPixels,
+    decodeBlobImageData,
+    opaqueBounds,
+  } from './lib/pixelReadback';
 
   // Added to the engine's own `RESIZE_SETTLE_MS` debounce so `resizeTo` resolves
   // after the rebuild it triggers, not in the same tick the debounce fires.
@@ -82,6 +88,11 @@
 
   function renderedCanvas() {
     return compositeVisibleLiveTiles(wrapperEl);
+  }
+
+  function renderedImageData() {
+    const rendered = renderedCanvas();
+    return rendered.getContext('2d')!.getImageData(0, 0, rendered.width, rendered.height);
   }
 
   // Every synchronous input seam below dispatches through here, onto the canvas
@@ -149,59 +160,23 @@
         wireEngine();
       },
 
-      // Decode an exported blob and count its stroke pixels. The harness draws
-      // in pure red; the paper background never is, so a red count > 0 means
-      // the drawing made it into the export.
+      // Decode an exported blob and count its stroke pixels: a red count > 0
+      // means the drawing made it into the export.
       async blobRedPixelCount(blob: Blob | null) {
         if (!blob) return -1;
-        const bitmap = await createImageBitmap(blob);
-        const decodeCanvas = document.createElement('canvas');
-        decodeCanvas.width = bitmap.width;
-        decodeCanvas.height = bitmap.height;
-        const decodeCtx = decodeCanvas.getContext('2d')!;
-        decodeCtx.drawImage(bitmap, 0, 0);
-        const { data } = decodeCtx.getImageData(0, 0, bitmap.width, bitmap.height);
-        let n = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i] > 200 && data[i + 1] < 100 && data[i + 2] < 100) n++;
-        }
-        return n;
+        return countStrokeRedPixels(await decodeBlobImageData(blob));
       },
 
       // Count of non-transparent pixels across the composited live tiles.
       nonTransparentCount() {
-        const rendered = renderedCanvas();
-        const { data } = rendered
-          .getContext('2d')!
-          .getImageData(0, 0, rendered.width, rendered.height);
-        let n = 0;
-        for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) n++;
-        return n;
+        return countOpaquePixels(renderedImageData());
       },
 
       // Bounding box (backing-store px) of the non-transparent pixels, so a spec
       // can assert a stroke's extent survives a rebuild (resize, remount).
       // Empty canvas → null.
       inkBounds() {
-        const rendered = renderedCanvas();
-        const ctx = rendered.getContext('2d')!;
-        const { width, height } = rendered;
-        const { data } = ctx.getImageData(0, 0, width, height);
-        let minX = width,
-          minY = height,
-          maxX = -1,
-          maxY = -1;
-        for (let y = 0; y < height; y++) {
-          for (let x = 0; x < width; x++) {
-            if (data[(y * width + x) * 4 + 3] !== 0) {
-              if (x < minX) minX = x;
-              if (x > maxX) maxX = x;
-              if (y < minY) minY = y;
-              if (y > maxY) maxY = y;
-            }
-          }
-        }
-        return maxX < 0 ? null : { minX, minY, maxX, maxY };
+        return opaqueBounds(renderedImageData());
       },
 
       // [r, g, b, a] at a canvas-space pixel.
