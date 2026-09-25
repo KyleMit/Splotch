@@ -121,6 +121,13 @@ not the same as an artifact that can be scored. The campaign runner reads the `f
 artifact carries for exactly this reason, and records a fidelity failure as `failed-input-fidelity`
 rather than banking the cell.
 
+An Android capture also exits non-zero, the same way, when the page's trusted pointerdowns differ
+from `dispatchedStrokes`, the count of `adb shell input swipe` calls. A touch an overlay drops never
+reaches the page, and the strokes that did arrive still pass fidelity, so the count is the only
+witness (issue 2229). The message names both counts. `../lib/stroke-delivery.mjs` holds the one
+rule; campaign acceptance records such a capture as `failed-input-fidelity`, and the person
+session's verdict asks for a redo.
+
 ## The Android fidelity gate, and how it was closed
 
 This transport fixes the defect that made Android cells meaningless — measured **116.6 contact moves
