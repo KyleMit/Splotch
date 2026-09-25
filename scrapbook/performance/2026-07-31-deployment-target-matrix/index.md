@@ -19,114 +19,108 @@ npm run gen:performance-matrix -- \
 
 ## Open release-gate reds
 
-102 unexplained red cells on the release-gate rows, oldest first. Each counts toward the ADR-0175
+96 unexplained red cells on the release-gate rows, oldest first. Each counts toward the ADR-0175
 completion gate until it is recaptured or explained, however old it is. Ages count to this report's
 date, 2026-09-25.
 
-| Target                                        | Section | Cell                                              | Reading                                                       | Captured             |
-| --------------------------------------------- | ------- | ------------------------------------------------- | ------------------------------------------------------------- | -------------------- |
-| 5. Android physical · web · Landscape · Light | actions | empty after clear: LANDSCAPE to PORTRAIT rotation | first frame P95 43.9 · post-action P95 16.8 / max 16.8 ms     | 2026-09-07 · 18 days |
-| 2. iPad physical · native · Portrait · Light  | actions | select Magic brush                                | first frame P95 2 · post-action P95 18 / max 80 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Light  | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 26 / max 36 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Light  | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 28 / max 37 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Light  | actions | enable drawing sounds                             | first frame P95 11 · post-action P95 21 / max 21 ms           | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Light  | actions | select coloring page                              | first frame P95 8 · post-action P95 25 / max 82 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Light  | actions | clear coloring page                               | first frame P95 3 · post-action P95 24 / max 35 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Light  | actions | show AI waiting print                             | first frame P95 8 · post-action P95 17 / max 42 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Dark   | actions | select Magic brush                                | first frame P95 7 · post-action P95 17 / max 84 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Dark   | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 30 / max 36 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Dark   | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 25 / max 36 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Dark   | actions | select coloring page                              | first frame P95 4 · post-action P95 17 / max 84 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Dark   | actions | clear coloring page                               | first frame P95 6 · post-action P95 24 / max 30 ms            | 2026-09-23 · 2 days  |
-| 2. iPad physical · native · Portrait · Dark   | actions | show AI waiting print                             | first frame P95 6 · post-action P95 17 / max 41 ms            | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Light  | drawing | Crayon                                            | paint P95 7.7 / P99 8.2 / max 24.2 ms · lost 1.2% (budget 1%) | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Light  | drawing | Magic                                             | paint P95 7.7 / P99 8.2 / max 15.1 ms · lost 1.1% (budget 1%) | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Light  | drawing | Eraser                                            | paint P95 7.8 / P99 8.2 / max 16.5 ms · lost 1.1% (budget 1%) | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Light  | actions | switch dark theme to light                        | first frame P95 12.4 · post-action P95 16.9 / max 50.1 ms     | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Light  | actions | switch light theme to dark                        | first frame P95 12.7 · post-action P95 16.8 / max 50 ms       | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Dark   | drawing | Pen                                               | paint P95 7.8 / P99 8.2 / max 16.1 ms · lost 1.0% (budget 1%) | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Dark   | drawing | Crayon                                            | paint P95 7.9 / P99 8.3 / max 24.8 ms · lost 1.5% (budget 1%) | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Dark   | drawing | Magic                                             | paint P95 7.9 / P99 8.2 / max 16.4 ms · lost 1.0% (budget 1%) | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Dark   | actions | switch dark theme to light                        | first frame P95 13 · post-action P95 16.8 / max 50.1 ms       | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Dark   | actions | switch light theme to dark                        | first frame P95 12.6 · post-action P95 16.8 / max 50.1 ms     | 2026-09-23 · 2 days  |
-| 5. Android physical · web · Portrait · Dark   | actions | clear coloring page                               | first frame P95 15 · post-action P95 33.3 / max 33.5 ms       | 2026-09-23 · 2 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | select custom color                               | first frame P95 10 · post-action P95 23 / max 39 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | select Magic brush                                | first frame P95 3 · post-action P95 17 / max 76 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | open Settings section: AI Art                     | first frame P95 3 · post-action P95 17 / max 43 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 33 / max 37 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 34 / max 38 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | disable drawing sounds                            | first frame P95 4 · post-action P95 24 / max 28 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | enable drawing sounds                             | first frame P95 10 · post-action P95 38 / max 40 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | enable auto-save on delete                        | first frame P95 2 · post-action P95 27 / max 30 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | disable auto-save on delete                       | first frame P95 10 · post-action P95 30 / max 34 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | enable tool drawer                                | first frame P95 12 · post-action P95 17 / max 38 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | disable screenshot action button                  | first frame P95 4 · post-action P95 26 / max 30 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | enable screenshot action button                   | first frame P95 8 · post-action P95 33 / max 35 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | close Settings                                    | first frame P95 3 · post-action P95 26 / max 40 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | open coloring book                                | first frame P95 10 · post-action P95 28 / max 28 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | select coloring page                              | first frame P95 10 · post-action P95 20 / max 77 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | clear coloring page                               | first frame P95 8 · post-action P95 33 / max 35 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Light     | actions | show AI waiting print                             | first frame P95 25 · post-action P95 23 / max 46 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | select custom color                               | first frame P95 12 · post-action P95 26 / max 45 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | select Magic brush                                | first frame P95 5 · post-action P95 17 / max 91 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | switch dark theme to light                        | first frame P95 9 · post-action P95 44 / max 53 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 35 / max 39 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | disable drawing sounds                            | first frame P95 9 · post-action P95 23 / max 41 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | enable drawing sounds                             | first frame P95 9 · post-action P95 22 / max 31 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | disable auto-save on delete                       | first frame P95 10 · post-action P95 33 / max 35 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | disable tool drawer                               | first frame P95 6 · post-action P95 36 / max 37 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | enable tool drawer                                | first frame P95 13 · post-action P95 17 / max 39 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | enable screenshot action button                   | first frame P95 11 · post-action P95 33 / max 36 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | close Settings                                    | first frame P95 4 · post-action P95 26 / max 37 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | reopen coloring books                             | first frame P95 13 · post-action P95 21 / max 24 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | open coloring book                                | first frame P95 10 · post-action P95 24 / max 24 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | clear coloring page                               | first frame P95 8 · post-action P95 34 / max 53 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Portrait · Dark      | actions | show AI waiting print                             | first frame P95 28 · post-action P95 17 / max 72 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | select custom color                               | first frame P95 11 · post-action P95 20 / max 37 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | select Magic brush                                | first frame P95 5 · post-action P95 17 / max 81 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | open Settings section: AI Art                     | first frame P95 2 · post-action P95 17 / max 48 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 36 / max 37 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | switch light theme to dark                        | first frame P95 7 · post-action P95 36 / max 38 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | disable drawing sounds                            | first frame P95 9 · post-action P95 36 / max 42 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | enable drawing sounds                             | first frame P95 8 · post-action P95 37 / max 41 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | enable auto-save on delete                        | first frame P95 7 · post-action P95 25 / max 25 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | disable auto-save on delete                       | first frame P95 11 · post-action P95 28 / max 30 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | disable tool drawer                               | first frame P95 6 · post-action P95 34 / max 34 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | enable tool drawer                                | first frame P95 12 · post-action P95 17 / max 38 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | disable screenshot action button                  | first frame P95 5 · post-action P95 23 / max 27 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | enable screenshot action button                   | first frame P95 8 · post-action P95 29 / max 31 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | close Settings                                    | first frame P95 4 · post-action P95 25 / max 38 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | open coloring book                                | first frame P95 10 · post-action P95 22 / max 29 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Light    | actions | clear coloring page                               | first frame P95 8 · post-action P95 32 / max 35 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | select custom color                               | first frame P95 10 · post-action P95 23 / max 40 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | select Magic brush                                | first frame P95 5 · post-action P95 17 / max 84 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | open Settings section: AI Art                     | first frame P95 2 · post-action P95 18 / max 42 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 35 / max 40 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 33 / max 37 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | disable drawing sounds                            | first frame P95 7 · post-action P95 36 / max 40 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | enable drawing sounds                             | first frame P95 7 · post-action P95 22 / max 26 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | enable auto-save on delete                        | first frame P95 6 · post-action P95 25 / max 25 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | disable auto-save on delete                       | first frame P95 8 · post-action P95 29 / max 31 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | disable tool drawer                               | first frame P95 7 · post-action P95 32 / max 35 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | enable tool drawer                                | first frame P95 11 · post-action P95 17 / max 38 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | disable screenshot action button                  | first frame P95 5 · post-action P95 25 / max 25 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | enable screenshot action button                   | first frame P95 5 · post-action P95 30 / max 34 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | close Settings                                    | first frame P95 5 · post-action P95 27 / max 40 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | open coloring book                                | first frame P95 11 · post-action P95 21 / max 26 ms           | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | clear coloring page                               | first frame P95 8 · post-action P95 31 / max 36 ms            | 2026-09-25 · 0 days  |
-| 1. iPad physical · web · Landscape · Dark     | actions | show AI waiting print                             | first frame P95 25 · post-action P95 17 / max 45 ms           | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Light | actions | select Magic brush                                | first frame P95 5 · post-action P95 17 / max 86 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Light | actions | switch dark theme to light                        | first frame P95 5 · post-action P95 25 / max 33 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Light | actions | switch light theme to dark                        | first frame P95 4 · post-action P95 26 / max 33 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Light | actions | select coloring page                              | first frame P95 2 · post-action P95 25 / max 87 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Light | actions | clear coloring page                               | first frame P95 6 · post-action P95 26 / max 27 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Light | actions | show AI waiting print                             | first frame P95 3 · post-action P95 18 / max 35 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Dark  | actions | select Magic brush                                | first frame P95 6 · post-action P95 17 / max 85 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Dark  | actions | switch dark theme to light                        | first frame P95 9 · post-action P95 30 / max 33 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Dark  | actions | switch light theme to dark                        | first frame P95 4 · post-action P95 25 / max 35 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Dark  | actions | select coloring page                              | first frame P95 5 · post-action P95 24 / max 87 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Dark  | actions | clear coloring page                               | first frame P95 7 · post-action P95 26 / max 28 ms            | 2026-09-25 · 0 days  |
-| 2. iPad physical · native · Landscape · Dark  | actions | show AI waiting print                             | first frame P95 4 · post-action P95 17 / max 38 ms            | 2026-09-25 · 0 days  |
+| Target                                        | Section | Cell                                              | Reading                                                   | Captured             |
+| --------------------------------------------- | ------- | ------------------------------------------------- | --------------------------------------------------------- | -------------------- |
+| 5. Android physical · web · Landscape · Light | actions | empty after clear: LANDSCAPE to PORTRAIT rotation | first frame P95 43.9 · post-action P95 16.8 / max 16.8 ms | 2026-09-07 · 18 days |
+| 2. iPad physical · native · Portrait · Light  | actions | select Magic brush                                | first frame P95 2 · post-action P95 18 / max 80 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Light  | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 26 / max 36 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Light  | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 28 / max 37 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Light  | actions | enable drawing sounds                             | first frame P95 11 · post-action P95 21 / max 21 ms       | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Light  | actions | select coloring page                              | first frame P95 8 · post-action P95 25 / max 82 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Light  | actions | clear coloring page                               | first frame P95 3 · post-action P95 24 / max 35 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Light  | actions | show AI waiting print                             | first frame P95 8 · post-action P95 17 / max 42 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Dark   | actions | select Magic brush                                | first frame P95 7 · post-action P95 17 / max 84 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Dark   | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 30 / max 36 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Dark   | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 25 / max 36 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Dark   | actions | select coloring page                              | first frame P95 4 · post-action P95 17 / max 84 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Dark   | actions | clear coloring page                               | first frame P95 6 · post-action P95 24 / max 30 ms        | 2026-09-23 · 2 days  |
+| 2. iPad physical · native · Portrait · Dark   | actions | show AI waiting print                             | first frame P95 6 · post-action P95 17 / max 41 ms        | 2026-09-23 · 2 days  |
+| 5. Android physical · web · Portrait · Light  | actions | switch dark theme to light                        | first frame P95 12.4 · post-action P95 16.9 / max 50.1 ms | 2026-09-23 · 2 days  |
+| 5. Android physical · web · Portrait · Light  | actions | switch light theme to dark                        | first frame P95 12.7 · post-action P95 16.8 / max 50 ms   | 2026-09-23 · 2 days  |
+| 5. Android physical · web · Portrait · Dark   | actions | switch dark theme to light                        | first frame P95 13 · post-action P95 16.8 / max 50.1 ms   | 2026-09-23 · 2 days  |
+| 5. Android physical · web · Portrait · Dark   | actions | switch light theme to dark                        | first frame P95 12.6 · post-action P95 16.8 / max 50.1 ms | 2026-09-23 · 2 days  |
+| 5. Android physical · web · Portrait · Dark   | actions | clear coloring page                               | first frame P95 15 · post-action P95 33.3 / max 33.5 ms   | 2026-09-23 · 2 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | select custom color                               | first frame P95 10 · post-action P95 23 / max 39 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | select Magic brush                                | first frame P95 3 · post-action P95 17 / max 76 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | open Settings section: AI Art                     | first frame P95 3 · post-action P95 17 / max 43 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 33 / max 37 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 34 / max 38 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | disable drawing sounds                            | first frame P95 4 · post-action P95 24 / max 28 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | enable drawing sounds                             | first frame P95 10 · post-action P95 38 / max 40 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | enable auto-save on delete                        | first frame P95 2 · post-action P95 27 / max 30 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | disable auto-save on delete                       | first frame P95 10 · post-action P95 30 / max 34 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | enable tool drawer                                | first frame P95 12 · post-action P95 17 / max 38 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | disable screenshot action button                  | first frame P95 4 · post-action P95 26 / max 30 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | enable screenshot action button                   | first frame P95 8 · post-action P95 33 / max 35 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | close Settings                                    | first frame P95 3 · post-action P95 26 / max 40 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | open coloring book                                | first frame P95 10 · post-action P95 28 / max 28 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | select coloring page                              | first frame P95 10 · post-action P95 20 / max 77 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | clear coloring page                               | first frame P95 8 · post-action P95 33 / max 35 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Light     | actions | show AI waiting print                             | first frame P95 25 · post-action P95 23 / max 46 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | select custom color                               | first frame P95 12 · post-action P95 26 / max 45 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | select Magic brush                                | first frame P95 5 · post-action P95 17 / max 91 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | switch dark theme to light                        | first frame P95 9 · post-action P95 44 / max 53 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 35 / max 39 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | disable drawing sounds                            | first frame P95 9 · post-action P95 23 / max 41 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | enable drawing sounds                             | first frame P95 9 · post-action P95 22 / max 31 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | disable auto-save on delete                       | first frame P95 10 · post-action P95 33 / max 35 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | disable tool drawer                               | first frame P95 6 · post-action P95 36 / max 37 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | enable tool drawer                                | first frame P95 13 · post-action P95 17 / max 39 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | enable screenshot action button                   | first frame P95 11 · post-action P95 33 / max 36 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | close Settings                                    | first frame P95 4 · post-action P95 26 / max 37 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | reopen coloring books                             | first frame P95 13 · post-action P95 21 / max 24 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | open coloring book                                | first frame P95 10 · post-action P95 24 / max 24 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | clear coloring page                               | first frame P95 8 · post-action P95 34 / max 53 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Portrait · Dark      | actions | show AI waiting print                             | first frame P95 28 · post-action P95 17 / max 72 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | select custom color                               | first frame P95 11 · post-action P95 20 / max 37 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | select Magic brush                                | first frame P95 5 · post-action P95 17 / max 81 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | open Settings section: AI Art                     | first frame P95 2 · post-action P95 17 / max 48 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 36 / max 37 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | switch light theme to dark                        | first frame P95 7 · post-action P95 36 / max 38 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | disable drawing sounds                            | first frame P95 9 · post-action P95 36 / max 42 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | enable drawing sounds                             | first frame P95 8 · post-action P95 37 / max 41 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | enable auto-save on delete                        | first frame P95 7 · post-action P95 25 / max 25 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | disable auto-save on delete                       | first frame P95 11 · post-action P95 28 / max 30 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | disable tool drawer                               | first frame P95 6 · post-action P95 34 / max 34 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | enable tool drawer                                | first frame P95 12 · post-action P95 17 / max 38 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | disable screenshot action button                  | first frame P95 5 · post-action P95 23 / max 27 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | enable screenshot action button                   | first frame P95 8 · post-action P95 29 / max 31 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | close Settings                                    | first frame P95 4 · post-action P95 25 / max 38 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | open coloring book                                | first frame P95 10 · post-action P95 22 / max 29 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Light    | actions | clear coloring page                               | first frame P95 8 · post-action P95 32 / max 35 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | select custom color                               | first frame P95 10 · post-action P95 23 / max 40 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | select Magic brush                                | first frame P95 5 · post-action P95 17 / max 84 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | open Settings section: AI Art                     | first frame P95 2 · post-action P95 18 / max 42 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | switch dark theme to light                        | first frame P95 8 · post-action P95 35 / max 40 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | switch light theme to dark                        | first frame P95 8 · post-action P95 33 / max 37 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | disable drawing sounds                            | first frame P95 7 · post-action P95 36 / max 40 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | enable drawing sounds                             | first frame P95 7 · post-action P95 22 / max 26 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | enable auto-save on delete                        | first frame P95 6 · post-action P95 25 / max 25 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | disable auto-save on delete                       | first frame P95 8 · post-action P95 29 / max 31 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | disable tool drawer                               | first frame P95 7 · post-action P95 32 / max 35 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | enable tool drawer                                | first frame P95 11 · post-action P95 17 / max 38 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | disable screenshot action button                  | first frame P95 5 · post-action P95 25 / max 25 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | enable screenshot action button                   | first frame P95 5 · post-action P95 30 / max 34 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | close Settings                                    | first frame P95 5 · post-action P95 27 / max 40 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | open coloring book                                | first frame P95 11 · post-action P95 21 / max 26 ms       | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | clear coloring page                               | first frame P95 8 · post-action P95 31 / max 36 ms        | 2026-09-25 · 0 days  |
+| 1. iPad physical · web · Landscape · Dark     | actions | show AI waiting print                             | first frame P95 25 · post-action P95 17 / max 45 ms       | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Light | actions | select Magic brush                                | first frame P95 5 · post-action P95 17 / max 86 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Light | actions | switch dark theme to light                        | first frame P95 5 · post-action P95 25 / max 33 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Light | actions | switch light theme to dark                        | first frame P95 4 · post-action P95 26 / max 33 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Light | actions | select coloring page                              | first frame P95 2 · post-action P95 25 / max 87 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Light | actions | clear coloring page                               | first frame P95 6 · post-action P95 26 / max 27 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Light | actions | show AI waiting print                             | first frame P95 3 · post-action P95 18 / max 35 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Dark  | actions | select Magic brush                                | first frame P95 6 · post-action P95 17 / max 85 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Dark  | actions | switch dark theme to light                        | first frame P95 9 · post-action P95 30 / max 33 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Dark  | actions | switch light theme to dark                        | first frame P95 4 · post-action P95 25 / max 35 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Dark  | actions | select coloring page                              | first frame P95 5 · post-action P95 24 / max 87 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Dark  | actions | clear coloring page                               | first frame P95 7 · post-action P95 26 / max 28 ms        | 2026-09-25 · 0 days  |
+| 2. iPad physical · native · Landscape · Dark  | actions | show AI waiting print                             | first frame P95 4 · post-action P95 17 / max 38 ms        | 2026-09-25 · 0 days  |
 
 ## Acceptance gates
 
@@ -236,9 +230,11 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   fold, the strict staleness check of the time (ADR-0159, since superseded by ADR-0175) reported
   every freshly captured section current at that commit.
 * Freshly captured at 3928cd88: every drawing and pen-undo section in all four modes of all four
-  physical rows, and the portrait-light and portrait-dark action sweeps on physical iPad native and
-  physical Android web. Six more physical action sections were captured after that campaign and
-  folded one section at a time (issue 2268): all four physical iPad web sweeps at
+  physical rows, except the physical Android web portrait-light and portrait-dark drawing and undo
+  sections, which were recaptured at 1e3016ec407413a255e69d6eddaef2274dd3ee3a on 2026-09-25 (issue
+  2229); and the portrait-light and portrait-dark action sweeps on physical iPad native and physical
+  Android web. Six more physical action sections were captured after that campaign and folded one
+  section at a time (issue 2268): all four physical iPad web sweeps at
   8e6700d5d801eb481a4bde3d47cea69135dd71b4 over the secure-origin front (issue 2211), and both
   physical iPad native landscape sweeps at d50d73927f1835bbe231d1c2450f49fbe5803f53, the
   contentInset fix (issue 2212). Each keeps its own product commit beside its mode’s 3928cd88
@@ -272,12 +268,24 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   0.71-0.98%. ADR-0174, as amended by the 2026-09-24 rulings, explains all three: the pen reading is
   inside the driven pen band (above 1%, up to 1.37%), and real-finger eraser captures at 8e6700d5 in
   both landscape modes (0.04% light, 0% dark) explain both eraser cells. Physical Android web
-  portrait carries six drawing reds (1.03-1.45%) against 0.40-0.75% at e5142fab, while its landscape
-  cells read 0.20-0.54% in the same session. The physical Android native row carries no red cell.
+  portrait carried six drawing reds (1.03-1.45%) at 3928cd88. That capture had two rig faults. In
+  every portrait cell, an accessibility overlay on the rig phone dropped 20 of 160 strokes (issue
+  2229), and every stroke landed 48 CSS px below its planned position (issue 2271). The recapture at
+  1e3016ec corrected both at once, so it does not separate their effects. An earlier A/B cleared
+  only the overlay and kept the offset: portrait-light crayon read a 0.75% median at 3928cd88
+  against 0.72% at e5142fab. The recapture delivered 160 of 160 strokes in every cell, with the
+  overlay check passing and every stroke landing where it was dispatched. All eight portrait cells
+  now read 0.22-0.52%, and the drift references read 0.38, 0.65, and 0.40%. The physical Android
+  native row carries no red cell.
+* The physical Android web landscape-light and landscape-dark drawing and undo sections, captured at
+  3928cd88, are affected by a dispatch offset. The harness counted the navigation bar beside the
+  page as browser chrome, so every stroke landed 48 CSS px right of its planned position (issue
+  2271, fixed by PR 2295). These sections are still published as scoreable. A recapture is pending.
 * The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the
   physical iPad native and both physical Android rows to be current and scored before campaign
-  completion. Drawing and undo were captured on all four rows at 3928cd88, and six physical action
-  sections are still preserved from e5142fab, so this report does not complete that requirement.
+  completion. Drawing and undo were captured on all four rows at 3928cd88 (physical Android web
+  portrait since recaptured at 1e3016ec), and six physical action sections are still preserved from
+  e5142fab, so this report does not complete that requirement.
 * Simulator, emulator, and Mac rows were not recaptured in this physical release-gate campaign.
   Every section on those rows is explicitly preserved from the prior published report and makes no
   claim of currency at the final product commit.
@@ -374,8 +382,8 @@ this report's date (ADR-0175).
 | 2. iPad physical · native · Portrait · Dark      | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  |
 | 2. iPad physical · native · Landscape · Light    | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | d50d73927f1835bbe231d1c2450f49fbe5803f53 (2026-09-25 · 0 days)  |
 | 2. iPad physical · native · Landscape · Dark     | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | d50d73927f1835bbe231d1c2450f49fbe5803f53 (2026-09-25 · 0 days)  |
-| 5. Android physical · web · Portrait · Light     | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  |
-| 5. Android physical · web · Portrait · Dark      | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  |
+| 5. Android physical · web · Portrait · Light     | 1e3016ec407413a255e69d6eddaef2274dd3ee3a (2026-09-25 · 0 days)  | 1e3016ec407413a255e69d6eddaef2274dd3ee3a (2026-09-25 · 0 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  |
+| 5. Android physical · web · Portrait · Dark      | 1e3016ec407413a255e69d6eddaef2274dd3ee3a (2026-09-25 · 0 days)  | 1e3016ec407413a255e69d6eddaef2274dd3ee3a (2026-09-25 · 0 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  |
 | 5. Android physical · web · Landscape · Light    | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 (2026-09-07 · 18 days) |
 | 5. Android physical · web · Landscape · Dark     | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 (2026-09-07 · 18 days) |
 | 6. Android physical · native · Portrait · Light  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | 3928cd88edbf441530e473a4e3c0b6767926bfc6 (2026-09-23 · 2 days)  | e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 (2026-09-07 · 18 days) |
@@ -437,8 +445,8 @@ campaign-end recapture, on a quiet host.
 | 2. iPad physical · native · Portrait · Dark      | 16 / 16 / 34 · L0.0%                                                                                                                                                                                                 | 15 / 16 / 32 · L0.0%                                                      | 15 / 17 / 27 · L0.0%                                                       | 15 / 17 / 38 · L0.0%                                                                                                                                                                                                 |
 | 2. iPad physical · native · Landscape · Light    | 15 / 16 / 25 · L0.0%                                                                                                                                                                                                 | 15 / 16 / 42 · L0.1%                                                      | 15 / 16 / 23 · L0%                                                         | 15 / 16 / 40 · L0.1%                                                                                                                                                                                                 |
 | 2. iPad physical · native · Landscape · Dark     | 15 / 16 / 24 · L0.0%                                                                                                                                                                                                 | 15 / 16 / 23 · L0%                                                        | 15 / 16 / 23 · L0%                                                         | 16 / 16 / 45 · L0.1%                                                                                                                                                                                                 |
-| 5. Android physical · web · Portrait · Light     | 8 / 8.2 / 16 · L0.9%                                                                                                                                                                                                 | **FAIL 7.7 / 8.2 / 24.2 · L1.2%**                                         | **FAIL 7.7 / 8.2 / 15.1 · L1.1%**                                          | **FAIL 7.8 / 8.2 / 16.5 · L1.1%**                                                                                                                                                                                    |
-| 5. Android physical · web · Portrait · Dark      | **FAIL 7.8 / 8.2 / 16.1 · L1.0%**                                                                                                                                                                                    | **FAIL 7.9 / 8.3 / 24.8 · L1.5%**                                         | **FAIL 7.9 / 8.2 / 16.4 · L1.0%**                                          | 7.8 / 8.2 / 16.4 · L1%                                                                                                                                                                                               |
+| 5. Android physical · web · Portrait · Light     | 7.7 / 8.2 / 14.4 · L0.3%                                                                                                                                                                                             | 7.8 / 8.2 / 16 · L0.5%                                                    | 7.9 / 8.2 / 15.3 · L0.4%                                                   | 7.7 / 8.2 / 14.3 · L0.4%                                                                                                                                                                                             |
+| 5. Android physical · web · Portrait · Dark      | 7.9 / 8.2 / 13.4 · L0.3%                                                                                                                                                                                             | 7.8 / 8.2 / 16.5 · L0.4%                                                  | 7.8 / 8.2 / 14.3 · L0.2%                                                   | 7.9 / 8.2 / 13 · L0.3%                                                                                                                                                                                               |
 | 5. Android physical · web · Landscape · Light    | 7.9 / 8.2 / 15.1 · L0.4%                                                                                                                                                                                             | 7.6 / 8.2 / 15.9 · L0.5%                                                  | 7.7 / 8.2 / 14.4 · L0.4%                                                   | 7.8 / 8.2 / 16.4 · L0.3%                                                                                                                                                                                             |
 | 5. Android physical · web · Landscape · Dark     | 8 / 8.2 / 13.9 · L0.3%                                                                                                                                                                                               | 7.9 / 8.2 / 14.9 · L0.3%                                                  | 7.9 / 8.2 / 15.1 · L0.2%                                                   | 7.8 / 8.2 / 12.7 · L0.3%                                                                                                                                                                                             |
 | 6. Android physical · native · Portrait · Light  | 7.7 / 7.9 / 8.3 · L0.0%                                                                                                                                                                                              | 7.8 / 8 / 8.3 · L0%                                                       | 7.6 / 7.8 / 26.1 · L0.1%                                                   | 7.8 / 7.9 / 8.5 · L0%                                                                                                                                                                                                |
@@ -478,52 +486,52 @@ campaign-end recapture, on a quiet host.
 
 Undo timing is `engine P95 / next-frame P95 / next-frame max` in milliseconds.
 
-| Target                                           | Timing            | Result | Product commit                           |
-| ------------------------------------------------ | ----------------- | ------ | ---------------------------------------- |
-| 1. iPad physical · web · Portrait · Light        | 2 / 11 / 11       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 1. iPad physical · web · Portrait · Dark         | 2 / 10 / 10       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 1. iPad physical · web · Landscape · Light       | 2 / 10 / 10       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 1. iPad physical · web · Landscape · Dark        | 2 / 11 / 11       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 2. iPad physical · native · Portrait · Light     | 3 / 13 / 13       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 2. iPad physical · native · Portrait · Dark      | 2 / 12 / 12       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 2. iPad physical · native · Landscape · Light    | 3 / 12 / 12       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 2. iPad physical · native · Landscape · Dark     | 2 / 13 / 13       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 5. Android physical · web · Portrait · Light     | 5.7 / 13.7 / 13.7 | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 5. Android physical · web · Portrait · Dark      | 5.7 / 13.8 / 13.8 | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 5. Android physical · web · Landscape · Light    | 6.3 / 21.5 / 21.5 | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 5. Android physical · web · Landscape · Dark     | 5.6 / 13.9 / 13.9 | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 6. Android physical · native · Portrait · Light  | 4.1 / 5.7 / 5.7   | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 6. Android physical · native · Portrait · Dark   | 5.4 / 6 / 6       | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 6. Android physical · native · Landscape · Light | 6.5 / 6.1 / 6.1   | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 6. Android physical · native · Landscape · Dark  | 5.2 / 6.2 / 6.2   | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
-| 9. Mac · Chrome · Portrait · Light               | 0.4 / 7.5 / 7.5   | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 9. Mac · Chrome · Portrait · Dark                | 0.4 / 6.9 / 6.9   | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 9. Mac · Chrome · Landscape · Light              | 0.3 / 6.4 / 6.4   | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 9. Mac · Chrome · Landscape · Dark               | 0.5 / 7.3 / 7.3   | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 10. Mac · Safari · Portrait · Light              | 1 / 12 / 12       | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 10. Mac · Safari · Portrait · Dark               | 1 / 10 / 10       | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 10. Mac · Safari · Landscape · Light             | 1 / 9 / 9         | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 10. Mac · Safari · Landscape · Dark              | 1 / 11 / 11       | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 11. Mac · Firefox · Portrait · Light             | 5 / 7.5 / 7.5     | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 11. Mac · Firefox · Portrait · Dark              | 5 / 6.9 / 6.9     | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 11. Mac · Firefox · Landscape · Light            | 4 / 7.6 / 7.6     | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 11. Mac · Firefox · Landscape · Dark             | 2 / 10.1 / 10.1   | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
-| 3. iPad simulator · web · Portrait · Light       | 1 / 14 / 14       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
-| 3. iPad simulator · web · Portrait · Dark        | 1 / 16 / 16       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
-| 3. iPad simulator · web · Landscape · Light      | 1 / 15 / 15       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
-| 3. iPad simulator · web · Landscape · Dark       | 1 / 12 / 12       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
-| 4. iPad simulator · native · Portrait · Light    | 0 / 15 / 15       | Pass   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
-| 4. iPad simulator · native · Portrait · Dark     | 1 / 14 / 14       | Pass   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
-| 4. iPad simulator · native · Landscape · Light   | 1 / 14 / 14       | Pass   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
-| 4. iPad simulator · native · Landscape · Dark    | 1 / 14 / 14       | Pass   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
-| 7. Android emulator · web · Portrait · Light     | 0.2 / 14.8 / 14.8 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
-| 7. Android emulator · web · Portrait · Dark      | 0.3 / 14.4 / 14.4 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
-| 7. Android emulator · web · Landscape · Light    | 0.8 / 14.9 / 14.9 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
-| 7. Android emulator · web · Landscape · Dark     | 0.2 / 15.6 / 15.6 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
-| 8. Android emulator · native · Portrait · Light  | 0.3 / 14.9 / 14.9 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
-| 8. Android emulator · native · Portrait · Dark   | 0.3 / 13.9 / 13.9 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
-| 8. Android emulator · native · Landscape · Light | 0.3 / 14.2 / 14.2 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
-| 8. Android emulator · native · Landscape · Dark  | 0.2 / 14.7 / 14.7 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
+| Target                                           | Timing                                                         | Result | Product commit                           |
+| ------------------------------------------------ | -------------------------------------------------------------- | ------ | ---------------------------------------- |
+| 1. iPad physical · web · Portrait · Light        | 2 / 11 / 11                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 1. iPad physical · web · Portrait · Dark         | 2 / 10 / 10                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 1. iPad physical · web · Landscape · Light       | 2 / 10 / 10                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 1. iPad physical · web · Landscape · Dark        | 2 / 11 / 11                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 2. iPad physical · native · Portrait · Light     | 3 / 13 / 13                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 2. iPad physical · native · Portrait · Dark      | 2 / 12 / 12                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 2. iPad physical · native · Landscape · Light    | 3 / 12 / 12                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 2. iPad physical · native · Landscape · Dark     | 2 / 13 / 13                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 5. Android physical · web · Portrait · Light     | 5.7 / 14.5 / 14.5 (ink motion P95 4.3 ms · restore P95 1.4 ms) | Pass   | 1e3016ec407413a255e69d6eddaef2274dd3ee3a |
+| 5. Android physical · web · Portrait · Dark      | 6.1 / 14.2 / 14.2 (ink motion P95 4.1 ms · restore P95 2 ms)   | Pass   | 1e3016ec407413a255e69d6eddaef2274dd3ee3a |
+| 5. Android physical · web · Landscape · Light    | 6.3 / 21.5 / 21.5                                              | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 5. Android physical · web · Landscape · Dark     | 5.6 / 13.9 / 13.9                                              | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 6. Android physical · native · Portrait · Light  | 4.1 / 5.7 / 5.7                                                | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 6. Android physical · native · Portrait · Dark   | 5.4 / 6 / 6                                                    | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 6. Android physical · native · Landscape · Light | 6.5 / 6.1 / 6.1                                                | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 6. Android physical · native · Landscape · Dark  | 5.2 / 6.2 / 6.2                                                | Pass   | 3928cd88edbf441530e473a4e3c0b6767926bfc6 |
+| 9. Mac · Chrome · Portrait · Light               | 0.4 / 7.5 / 7.5                                                | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 9. Mac · Chrome · Portrait · Dark                | 0.4 / 6.9 / 6.9                                                | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 9. Mac · Chrome · Landscape · Light              | 0.3 / 6.4 / 6.4                                                | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 9. Mac · Chrome · Landscape · Dark               | 0.5 / 7.3 / 7.3                                                | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 10. Mac · Safari · Portrait · Light              | 1 / 12 / 12                                                    | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 10. Mac · Safari · Portrait · Dark               | 1 / 10 / 10                                                    | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 10. Mac · Safari · Landscape · Light             | 1 / 9 / 9                                                      | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 10. Mac · Safari · Landscape · Dark              | 1 / 11 / 11                                                    | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 11. Mac · Firefox · Portrait · Light             | 5 / 7.5 / 7.5                                                  | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 11. Mac · Firefox · Portrait · Dark              | 5 / 6.9 / 6.9                                                  | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 11. Mac · Firefox · Landscape · Light            | 4 / 7.6 / 7.6                                                  | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 11. Mac · Firefox · Landscape · Dark             | 2 / 10.1 / 10.1                                                | Pass   | d17100cb8e9cbd157960f352020e21a7a523fddd |
+| 3. iPad simulator · web · Portrait · Light       | 1 / 14 / 14                                                    | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 3. iPad simulator · web · Portrait · Dark        | 1 / 16 / 16                                                    | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 3. iPad simulator · web · Landscape · Light      | 1 / 15 / 15                                                    | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 3. iPad simulator · web · Landscape · Dark       | 1 / 12 / 12                                                    | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 4. iPad simulator · native · Portrait · Light    | 0 / 15 / 15                                                    | Pass   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
+| 4. iPad simulator · native · Portrait · Dark     | 1 / 14 / 14                                                    | Pass   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
+| 4. iPad simulator · native · Landscape · Light   | 1 / 14 / 14                                                    | Pass   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
+| 4. iPad simulator · native · Landscape · Dark    | 1 / 14 / 14                                                    | Pass   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
+| 7. Android emulator · web · Portrait · Light     | 0.2 / 14.8 / 14.8                                              | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
+| 7. Android emulator · web · Portrait · Dark      | 0.3 / 14.4 / 14.4                                              | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
+| 7. Android emulator · web · Landscape · Light    | 0.8 / 14.9 / 14.9                                              | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
+| 7. Android emulator · web · Landscape · Dark     | 0.2 / 15.6 / 15.6                                              | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
+| 8. Android emulator · native · Portrait · Light  | 0.3 / 14.9 / 14.9                                              | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
+| 8. Android emulator · native · Portrait · Dark   | 0.3 / 13.9 / 13.9                                              | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
+| 8. Android emulator · native · Landscape · Light | 0.3 / 14.2 / 14.2                                              | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
+| 8. Android emulator · native · Landscape · Dark  | 0.2 / 14.7 / 14.7                                              | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
 
 ## Discrete actions
 

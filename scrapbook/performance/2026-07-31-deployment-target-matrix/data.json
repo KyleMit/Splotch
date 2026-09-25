@@ -6,12 +6,13 @@
   "architecture": "tiled renderer",
   "limitations": [
     "This fold measures product commit 3928cd88edbf441530e473a4e3c0b6767926bfc6, main on 2026-09-23, at which all four physical release-gate rows were recaptured from scratch on 2026-09-23. At that fold, the strict staleness check of the time (ADR-0159, since superseded by ADR-0175) reported every freshly captured section current at that commit.",
-    "Freshly captured at 3928cd88: every drawing and pen-undo section in all four modes of all four physical rows, and the portrait-light and portrait-dark action sweeps on physical iPad native and physical Android web. Six more physical action sections were captured after that campaign and folded one section at a time (issue 2268): all four physical iPad web sweeps at 8e6700d5d801eb481a4bde3d47cea69135dd71b4 over the secure-origin front (issue 2211), and both physical iPad native landscape sweeps at d50d73927f1835bbe231d1c2450f49fbe5803f53, the contentInset fix (issue 2212). Each keeps its own product commit beside its mode’s 3928cd88 drawing, and its capture date is its fold date, because action artifacts record no capture clock. The other six physical action sections are preserved from the published e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 sweeps (2026-09-05 to 2026-09-07), which keep that commit as their provenance and make no claim about 3928cd88.",
+    "Freshly captured at 3928cd88: every drawing and pen-undo section in all four modes of all four physical rows, except the physical Android web portrait-light and portrait-dark drawing and undo sections, which were recaptured at 1e3016ec407413a255e69d6eddaef2274dd3ee3a on 2026-09-25 (issue 2229); and the portrait-light and portrait-dark action sweeps on physical iPad native and physical Android web. Six more physical action sections were captured after that campaign and folded one section at a time (issue 2268): all four physical iPad web sweeps at 8e6700d5d801eb481a4bde3d47cea69135dd71b4 over the secure-origin front (issue 2211), and both physical iPad native landscape sweeps at d50d73927f1835bbe231d1c2450f49fbe5803f53, the contentInset fix (issue 2212). Each keeps its own product commit beside its mode’s 3928cd88 drawing, and its capture date is its fold date, because action artifacts record no capture clock. The other six physical action sections are preserved from the published e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 sweeps (2026-09-05 to 2026-09-07), which keep that commit as their provenance and make no claim about 3928cd88.",
     "Why the six preserved action sweeps have no fresh capture: physical Android web landscape sweeps failed at 3928cd88 because every color swatch in the landscape compact color flyout measured zero size, and physical Android native sweeps failed at 3928cd88 when the native tap on the Dark theme button was not captured (portrait) and when Appium could not rotate the device to ROTATION_270 (landscape). Both harness failures were fixed afterwards (issues 2213, 2214, and 2215) and the sweeps completed on the phone, but those raw captures were not kept and no longer exist, so these sections wait for a recapture. Physical iPad web had no scoreable unattended sweep at 3928cd88 because its AI-waiting actions need a secure context; physical iPad native landscape sweeps failed when the second Undo tap after a landscape-to-portrait rotation landed on the canvas. Both are now folded from their later captures.",
     "The preserved sweeps predate the 2026-09-17 ai-waiting and unavailable action groups and several later action labels. Their heatmap cells for those labels render as missing, not N/A. On the physical Android web and physical Android native landscape modes, which use the compact Settings shell that no current sweep covers, that includes the Accessibility section and tool-drawer toggles, which the compact shell may not offer at all; their tooltips say the shell is unverified.",
     "The physical Android native drawing and undo sections come from a probe-host server.url build carrying the ADR-0135 split transport. Those artifacts record pageIdentity unprovable by construction, because the fixed server.url carries no per-cell nonce. Its three drift references were captured before its landscape cells, whose first attempt wrote no artifact and which were recaptured after the end reference, so the references do not bracket the landscape cells.",
-    "Every physical drawing and undo cell passed its input-fidelity gate. Physical iPad web carries three drawing lost-frame reds against the 1% budget: landscape/dark pen 1.13%, landscape/light eraser 1.03%, and landscape/dark eraser 1.01%. The other seven of the ten e5142fab reds now read 0.71-0.98%. ADR-0174, as amended by the 2026-09-24 rulings, explains all three: the pen reading is inside the driven pen band (above 1%, up to 1.37%), and real-finger eraser captures at 8e6700d5 in both landscape modes (0.04% light, 0% dark) explain both eraser cells. Physical Android web portrait carries six drawing reds (1.03-1.45%) against 0.40-0.75% at e5142fab, while its landscape cells read 0.20-0.54% in the same session. The physical Android native row carries no red cell.",
-    "The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the physical iPad native and both physical Android rows to be current and scored before campaign completion. Drawing and undo were captured on all four rows at 3928cd88, and six physical action sections are still preserved from e5142fab, so this report does not complete that requirement.",
+    "Every physical drawing and undo cell passed its input-fidelity gate. Physical iPad web carries three drawing lost-frame reds against the 1% budget: landscape/dark pen 1.13%, landscape/light eraser 1.03%, and landscape/dark eraser 1.01%. The other seven of the ten e5142fab reds now read 0.71-0.98%. ADR-0174, as amended by the 2026-09-24 rulings, explains all three: the pen reading is inside the driven pen band (above 1%, up to 1.37%), and real-finger eraser captures at 8e6700d5 in both landscape modes (0.04% light, 0% dark) explain both eraser cells. Physical Android web portrait carried six drawing reds (1.03-1.45%) at 3928cd88. That capture had two rig faults. In every portrait cell, an accessibility overlay on the rig phone dropped 20 of 160 strokes (issue 2229), and every stroke landed 48 CSS px below its planned position (issue 2271). The recapture at 1e3016ec corrected both at once, so it does not separate their effects. An earlier A/B cleared only the overlay and kept the offset: portrait-light crayon read a 0.75% median at 3928cd88 against 0.72% at e5142fab. The recapture delivered 160 of 160 strokes in every cell, with the overlay check passing and every stroke landing where it was dispatched. All eight portrait cells now read 0.22-0.52%, and the drift references read 0.38, 0.65, and 0.40%. The physical Android native row carries no red cell.",
+    "The physical Android web landscape-light and landscape-dark drawing and undo sections, captured at 3928cd88, are affected by a dispatch offset. The harness counted the navigation bar beside the page as browser chrome, so every stroke landed 48 CSS px right of its planned position (issue 2271, fixed by PR 2295). These sections are still published as scoreable. A recapture is pending.",
+    "The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the physical iPad native and both physical Android rows to be current and scored before campaign completion. Drawing and undo were captured on all four rows at 3928cd88 (physical Android web portrait since recaptured at 1e3016ec), and six physical action sections are still preserved from e5142fab, so this report does not complete that requirement.",
     "Simulator, emulator, and Mac rows were not recaptured in this physical release-gate campaign. Every section on those rows is explicitly preserved from the prior published report and makes no claim of currency at the final product commit.",
     "Action cells are scored under ADR-0156: a post-action max breach counts only when two of the three scored repeats show it; a single breaching repeat is recorded as unconfirmed rather than red. Read each artifact's scoredActionFrameGaps rather than treating the pooled P95/P99/max triple as three repeats.",
     "Android physical web and native drawing use the ADR-0135 split input/measurement transport. Fresh artifacts record driving cadence, input fidelity, refresh regime, and page identity. Split-native captures also attest that art.splotch.app was the foreground package.",
@@ -42653,22 +42654,22 @@
           "status": "captured",
           "fidelity": "physical-web-advisory",
           "capturedOn": {
-            "drawing": "2026-09-23",
-            "undo": "2026-09-23",
+            "drawing": "2026-09-25",
+            "undo": "2026-09-25",
             "actions": "2026-09-23"
           },
-          "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-          "undoProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+          "drawingProductCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
+          "undoProductCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
           "drawing": {
             "pen": {
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 8,
+                  "p95": 7.7,
                   "p99": 8.2,
-                  "max": 16
+                  "max": 14.4
                 },
-                "lostFrameTimeShare": 0.0092,
+                "lostFrameTimeShare": 0.0027,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -42679,8 +42680,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-light/pen-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-light/pen-real-screen.json",
+                  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -42716,28 +42717,28 @@
                     "after": {
                       "surfaces": 20,
                       "digests": [
+                        3320893232,
+                        1507024084,
                         946445765,
                         946445765,
+                        3652116862,
+                        1221249931,
+                        1836736093,
                         946445765,
                         946445765,
-                        1762767567,
-                        3977212055,
+                        3082885067,
+                        2382347820,
+                        2208345087,
+                        741594176,
+                        974988650,
+                        604930092,
+                        181513500,
                         946445765,
                         946445765,
-                        946445765,
-                        1550725096,
-                        3684524300,
-                        3068719953,
-                        1108046294,
-                        487770755,
-                        1075427575,
-                        3845876518,
-                        946445765,
-                        2777334372,
                         946445765,
                         946445765
                       ],
-                      "inkedSamples": 3556
+                      "inkedSamples": 4458
                     }
                   },
                   "trust": [
@@ -42776,7 +42777,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.2/core over 10 cores (start 1.96, end 1.69) vs 0.5/core"
+                      "detail": "worst load 0.19/core over 10 cores (start 1.93, end 1.88) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -42804,7 +42805,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 4668
+                      "frames": 6482
                     },
                     "matched": true,
                     "scoreable": true
@@ -42815,12 +42816,12 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 4.9,
-                        "p95": 8,
+                        "p50": 3.9,
+                        "p95": 7.7,
                         "p99": 8.2,
-                        "max": 16
+                        "max": 14.4
                       },
-                      "lostFrameTimeShare": 0.0092,
+                      "lostFrameTimeShare": 0.0027,
                       "passed": true
                     }
                   ],
@@ -42832,13 +42833,13 @@
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.7,
+                  "p95": 7.8,
                   "p99": 8.2,
-                  "max": 24.2
+                  "max": 16
                 },
-                "lostFrameTimeShare": 0.0118,
-                "blankPassed": false,
-                "allPhasesPassed": false,
+                "lostFrameTimeShare": 0.0052,
+                "blankPassed": true,
+                "allPhasesPassed": true,
                 "scoreable": true,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
@@ -42847,8 +42848,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-light/crayon-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-light/crayon-real-screen.json",
+                  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -42884,28 +42885,28 @@
                     "after": {
                       "surfaces": 20,
                       "digests": [
+                        460451573,
+                        589517807,
                         946445765,
                         946445765,
+                        3811677280,
+                        1105496107,
+                        1386172904,
                         946445765,
                         946445765,
-                        117638427,
-                        2152051190,
+                        250951918,
+                        2087917100,
+                        2340240019,
+                        1769168059,
+                        2809159250,
+                        2760292046,
+                        2827119792,
                         946445765,
                         946445765,
-                        946445765,
-                        3097005893,
-                        2088495378,
-                        3272158424,
-                        3906504892,
-                        3782373702,
-                        793180089,
-                        3673864178,
-                        946445765,
-                        2698712168,
                         946445765,
                         946445765
                       ],
-                      "inkedSamples": 3568
+                      "inkedSamples": 4472
                     }
                   },
                   "trust": [
@@ -42944,7 +42945,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.2/core over 10 cores (start 1.69, end 2.04) vs 0.5/core"
+                      "detail": "worst load 0.19/core over 10 cores (start 1.88, end 1.92) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -42972,7 +42973,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 4655
+                      "frames": 6445
                     },
                     "matched": true,
                     "scoreable": true
@@ -42983,16 +42984,16 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 4.5,
-                        "p95": 7.7,
+                        "p50": 4,
+                        "p95": 7.8,
                         "p99": 8.2,
-                        "max": 24.2
+                        "max": 16
                       },
-                      "lostFrameTimeShare": 0.0118,
-                      "passed": false
+                      "lostFrameTimeShare": 0.0052,
+                      "passed": true
                     }
                   ],
-                  "passed": false
+                  "passed": true
                 }
               ]
             },
@@ -43000,13 +43001,13 @@
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.7,
+                  "p95": 7.9,
                   "p99": 8.2,
-                  "max": 15.1
+                  "max": 15.3
                 },
-                "lostFrameTimeShare": 0.0109,
-                "blankPassed": false,
-                "allPhasesPassed": false,
+                "lostFrameTimeShare": 0.004,
+                "blankPassed": true,
+                "allPhasesPassed": true,
                 "scoreable": true,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
@@ -43015,8 +43016,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-light/magic-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-light/magic-real-screen.json",
+                  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -43052,28 +43053,28 @@
                     "after": {
                       "surfaces": 20,
                       "digests": [
+                        3580982326,
+                        1358043700,
                         946445765,
                         946445765,
+                        2814804731,
+                        3232583877,
+                        3026734401,
                         946445765,
                         946445765,
-                        1311029447,
-                        2143728333,
+                        3292785520,
+                        421433475,
+                        1972644351,
+                        1400022731,
+                        867043997,
+                        4103385160,
+                        461387110,
                         946445765,
                         946445765,
-                        946445765,
-                        4138915901,
-                        1253937237,
-                        2882644243,
-                        4219057327,
-                        643739049,
-                        2017226999,
-                        2135886219,
-                        946445765,
-                        3323953910,
                         946445765,
                         946445765
                       ],
-                      "inkedSamples": 3558
+                      "inkedSamples": 4459
                     }
                   },
                   "trust": [
@@ -43112,7 +43113,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.2/core over 10 cores (start 2.04, end 1.88) vs 0.5/core"
+                      "detail": "worst load 0.2/core over 10 cores (start 1.92, end 1.98) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -43140,7 +43141,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 4663
+                      "frames": 6468
                     },
                     "matched": true,
                     "scoreable": true
@@ -43151,16 +43152,16 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 3.7,
-                        "p95": 7.7,
+                        "p50": 4.1,
+                        "p95": 7.9,
                         "p99": 8.2,
-                        "max": 15.1
+                        "max": 15.3
                       },
-                      "lostFrameTimeShare": 0.0109,
-                      "passed": false
+                      "lostFrameTimeShare": 0.004,
+                      "passed": true
                     }
                   ],
-                  "passed": false
+                  "passed": true
                 }
               ]
             },
@@ -43168,13 +43169,13 @@
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.8,
+                  "p95": 7.7,
                   "p99": 8.2,
-                  "max": 16.5
+                  "max": 14.3
                 },
-                "lostFrameTimeShare": 0.0113,
-                "blankPassed": false,
-                "allPhasesPassed": false,
+                "lostFrameTimeShare": 0.004,
+                "blankPassed": true,
+                "allPhasesPassed": true,
                 "scoreable": true,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
@@ -43183,8 +43184,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-light/eraser-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-light/eraser-real-screen.json",
+                  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry-refilled",
                   "anomalousEraserRefills": [],
@@ -43220,28 +43221,28 @@
                     "after": {
                       "surfaces": 20,
                       "digests": [
+                        2295769906,
+                        503982348,
                         1761607109,
                         1761607109,
+                        1355343986,
+                        4148748954,
+                        2030185846,
                         1761607109,
                         1761607109,
-                        134163965,
-                        1160859482,
-                        457913896,
+                        4122810887,
+                        330114775,
+                        451546396,
+                        3364766022,
+                        2373537566,
+                        3690660862,
+                        2130459278,
                         1761607109,
-                        1761607109,
-                        1143424491,
-                        759902377,
-                        1828846259,
-                        1009651172,
-                        1571999977,
-                        1554859136,
-                        1224304036,
-                        1761607109,
-                        4216654592,
+                        3372968974,
                         1761607109,
                         1761607109
                       ],
-                      "inkedSamples": 76072
+                      "inkedSamples": 74962
                     }
                   },
                   "trust": [
@@ -43284,7 +43285,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.19/core over 10 cores (start 1.88, end 1.78) vs 0.5/core"
+                      "detail": "worst load 0.2/core over 10 cores (start 1.98, end 1.63) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -43312,7 +43313,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 4655
+                      "frames": 6466
                     },
                     "matched": true,
                     "scoreable": true
@@ -43323,35 +43324,47 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 4,
-                        "p95": 7.8,
+                        "p50": 3.4,
+                        "p95": 7.7,
                         "p99": 8.2,
-                        "max": 16.5
+                        "max": 14.3
                       },
-                      "lostFrameTimeShare": 0.0113,
-                      "passed": false
+                      "lostFrameTimeShare": 0.004,
+                      "passed": true
                     }
                   ],
-                  "passed": false
+                  "passed": true
                 }
               ]
             }
           },
           "undo": {
-            "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-light/pen-real-screen.json",
-            "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+            "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-light/pen-real-screen.json",
+            "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
             "count": 10,
             "engine": {
-              "p50": 2.7,
+              "p50": 2.8,
               "p95": 5.7,
               "p99": 5.7,
               "max": 5.7
             },
+            "inkMotion": {
+              "p50": 2,
+              "p95": 4.3,
+              "p99": 4.3,
+              "max": 4.3
+            },
+            "restore": {
+              "p50": 0.7,
+              "p95": 1.4,
+              "p99": 1.4,
+              "max": 1.4
+            },
             "nextFrame": {
-              "p50": 9.9,
-              "p95": 13.7,
-              "p99": 13.7,
-              "max": 13.7
+              "p50": 10.3,
+              "p95": 14.5,
+              "p99": 14.5,
+              "max": 14.5
             },
             "passed": true
           },
@@ -46129,24 +46142,24 @@
           "status": "captured",
           "fidelity": "physical-web-advisory",
           "capturedOn": {
-            "drawing": "2026-09-23",
-            "undo": "2026-09-23",
+            "drawing": "2026-09-25",
+            "undo": "2026-09-25",
             "actions": "2026-09-23"
           },
-          "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-          "undoProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+          "drawingProductCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
+          "undoProductCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
           "drawing": {
             "pen": {
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.8,
+                  "p95": 7.9,
                   "p99": 8.2,
-                  "max": 16.1
+                  "max": 13.4
                 },
-                "lostFrameTimeShare": 0.0103,
-                "blankPassed": false,
-                "allPhasesPassed": false,
+                "lostFrameTimeShare": 0.0033,
+                "blankPassed": true,
+                "allPhasesPassed": true,
                 "scoreable": true,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
@@ -46155,8 +46168,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-dark/pen-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-dark/pen-real-screen.json",
+                  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -46192,28 +46205,28 @@
                     "after": {
                       "surfaces": 20,
                       "digests": [
+                        3320893232,
+                        1507024084,
                         946445765,
                         946445765,
+                        147835830,
+                        3994211373,
+                        2322472259,
                         946445765,
                         946445765,
-                        1762767567,
-                        3201275725,
+                        881102481,
+                        12230869,
+                        4175882534,
+                        741594176,
+                        3843802529,
+                        604930092,
+                        429471592,
                         946445765,
                         946445765,
-                        946445765,
-                        3577410502,
-                        3465370584,
-                        2621307460,
-                        1108046294,
-                        1194092483,
-                        2700492346,
-                        3044276585,
-                        946445765,
-                        2777334372,
                         946445765,
                         946445765
                       ],
-                      "inkedSamples": 3555
+                      "inkedSamples": 4459
                     }
                   },
                   "trust": [
@@ -46252,7 +46265,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.24/core over 10 cores (start 1.98, end 2.41) vs 0.5/core"
+                      "detail": "worst load 0.18/core over 10 cores (start 1.78, end 1.59) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -46280,7 +46293,343 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 4661
+                      "frames": 6464
+                    },
+                    "matched": true,
+                    "scoreable": true
+                  },
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 3.9,
+                        "p95": 7.9,
+                        "p99": 8.2,
+                        "max": 13.4
+                      },
+                      "lostFrameTimeShare": 0.0033,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "crayon": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 7.8,
+                  "p99": 8.2,
+                  "max": 16.5
+                },
+                "lostFrameTimeShare": 0.0043,
+                "blankPassed": true,
+                "allPhasesPassed": true,
+                "scoreable": true,
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
+              },
+              "gateShare": 0.01,
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-dark/crayon-real-screen.json",
+                  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
+                  "gestureRepeats": 10,
+                  "gesturePlan": "fixed-geometry",
+                  "anomalousEraserRefills": null,
+                  "eraserRefillShortfall": null,
+                  "paintedOutput": {
+                    "changed": true,
+                    "before": {
+                      "surfaces": 20,
+                      "digests": [
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765
+                      ],
+                      "inkedSamples": 0
+                    },
+                    "after": {
+                      "surfaces": 20,
+                      "digests": [
+                        2492093189,
+                        2503970848,
+                        946445765,
+                        946445765,
+                        3434940959,
+                        1934450479,
+                        3755337435,
+                        946445765,
+                        946445765,
+                        419124832,
+                        3368225304,
+                        3852598297,
+                        219933642,
+                        4008837450,
+                        3320887170,
+                        1539260903,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765
+                      ],
+                      "inkedSamples": 4471
+                    }
+                  },
+                  "trust": [
+                    {
+                      "name": "inputFidelity",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "refreshRegime",
+                      "state": "verified",
+                      "detail": "120hz"
+                    },
+                    {
+                      "name": "gestureRepeats",
+                      "state": "verified",
+                      "detail": "10"
+                    },
+                    {
+                      "name": "gesturePlan",
+                      "state": "verified",
+                      "detail": "fixed-geometry"
+                    },
+                    {
+                      "name": "pageIdentity",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "paintedOutput",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "captureRuntime",
+                      "state": "verified",
+                      "detail": "android-chrome"
+                    },
+                    {
+                      "name": "hostQuiet",
+                      "state": "verified",
+                      "detail": "worst load 0.16/core over 10 cores (start 1.59, end 1.48) vs 0.5/core"
+                    }
+                  ],
+                  "fidelity": {
+                    "runtime": "android-chrome",
+                    "passed": true,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": true
+                    },
+                    "uncalibrated": [],
+                    "notApplicable": [
+                      "coalescing",
+                      "pressure",
+                      "contactGeometry"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 8.3,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "mixture": {
+                      "observedRegime": "120hz",
+                      "minorityRegime": "60hz",
+                      "slowerThanObserved": true,
+                      "sustainedMinorityShare": 0,
+                      "runMinFrames": 3,
+                      "frames": 6460
+                    },
+                    "matched": true,
+                    "scoreable": true
+                  },
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 3.8,
+                        "p95": 7.8,
+                        "p99": 8.2,
+                        "max": 16.5
+                      },
+                      "lostFrameTimeShare": 0.0043,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "magic": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 7.8,
+                  "p99": 8.2,
+                  "max": 14.3
+                },
+                "lostFrameTimeShare": 0.0022,
+                "blankPassed": true,
+                "allPhasesPassed": true,
+                "scoreable": true,
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
+              },
+              "gateShare": 0.01,
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-dark/magic-real-screen.json",
+                  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
+                  "gestureRepeats": 10,
+                  "gesturePlan": "fixed-geometry",
+                  "anomalousEraserRefills": null,
+                  "eraserRefillShortfall": null,
+                  "paintedOutput": {
+                    "changed": true,
+                    "before": {
+                      "surfaces": 20,
+                      "digests": [
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765
+                      ],
+                      "inkedSamples": 0
+                    },
+                    "after": {
+                      "surfaces": 20,
+                      "digests": [
+                        2473930273,
+                        3785797352,
+                        946445765,
+                        946445765,
+                        3084186288,
+                        2552753130,
+                        3323923480,
+                        946445765,
+                        946445765,
+                        2713886613,
+                        1124048248,
+                        2002422534,
+                        2552586766,
+                        73907074,
+                        3119937337,
+                        1977873722,
+                        946445765,
+                        946445765,
+                        946445765,
+                        946445765
+                      ],
+                      "inkedSamples": 4457
+                    }
+                  },
+                  "trust": [
+                    {
+                      "name": "inputFidelity",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "refreshRegime",
+                      "state": "verified",
+                      "detail": "120hz"
+                    },
+                    {
+                      "name": "gestureRepeats",
+                      "state": "verified",
+                      "detail": "10"
+                    },
+                    {
+                      "name": "gesturePlan",
+                      "state": "verified",
+                      "detail": "fixed-geometry"
+                    },
+                    {
+                      "name": "pageIdentity",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "paintedOutput",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "captureRuntime",
+                      "state": "verified",
+                      "detail": "android-chrome"
+                    },
+                    {
+                      "name": "hostQuiet",
+                      "state": "verified",
+                      "detail": "worst load 0.21/core over 10 cores (start 1.48, end 2.07) vs 0.5/core"
+                    }
+                  ],
+                  "fidelity": {
+                    "runtime": "android-chrome",
+                    "passed": true,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": true
+                    },
+                    "uncalibrated": [],
+                    "notApplicable": [
+                      "coalescing",
+                      "pressure",
+                      "contactGeometry"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 8.3,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "mixture": {
+                      "observedRegime": "120hz",
+                      "minorityRegime": "60hz",
+                      "slowerThanObserved": true,
+                      "sustainedMinorityShare": 0,
+                      "runMinFrames": 3,
+                      "frames": 6479
                     },
                     "matched": true,
                     "scoreable": true
@@ -46294,349 +46643,13 @@
                         "p50": 4.3,
                         "p95": 7.8,
                         "p99": 8.2,
-                        "max": 16.1
+                        "max": 14.3
                       },
-                      "lostFrameTimeShare": 0.0103,
-                      "passed": false
+                      "lostFrameTimeShare": 0.0022,
+                      "passed": true
                     }
                   ],
-                  "passed": false
-                }
-              ]
-            },
-            "crayon": {
-              "aggregate": {
-                "runCount": 1,
-                "paint": {
-                  "p95": 7.9,
-                  "p99": 8.3,
-                  "max": 24.8
-                },
-                "lostFrameTimeShare": 0.0145,
-                "blankPassed": false,
-                "allPhasesPassed": false,
-                "scoreable": true,
-                "failedFidelityChecks": [],
-                "refreshRegime": "120hz",
-                "offRefreshRegime": false
-              },
-              "gateShare": 0.01,
-              "runs": [
-                {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-dark/crayon-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-                  "gestureRepeats": 10,
-                  "gesturePlan": "fixed-geometry",
-                  "anomalousEraserRefills": null,
-                  "eraserRefillShortfall": null,
-                  "paintedOutput": {
-                    "changed": true,
-                    "before": {
-                      "surfaces": 20,
-                      "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765
-                      ],
-                      "inkedSamples": 0
-                    },
-                    "after": {
-                      "surfaces": 20,
-                      "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        3739759136,
-                        4090344322,
-                        946445765,
-                        946445765,
-                        946445765,
-                        2037271117,
-                        3313808420,
-                        3192429768,
-                        4030717876,
-                        323475503,
-                        984257754,
-                        2955028107,
-                        946445765,
-                        1070459877,
-                        946445765,
-                        946445765
-                      ],
-                      "inkedSamples": 3564
-                    }
-                  },
-                  "trust": [
-                    {
-                      "name": "inputFidelity",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "refreshRegime",
-                      "state": "verified",
-                      "detail": "120hz"
-                    },
-                    {
-                      "name": "gestureRepeats",
-                      "state": "verified",
-                      "detail": "10"
-                    },
-                    {
-                      "name": "gesturePlan",
-                      "state": "verified",
-                      "detail": "fixed-geometry"
-                    },
-                    {
-                      "name": "pageIdentity",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "paintedOutput",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "captureRuntime",
-                      "state": "verified",
-                      "detail": "android-chrome"
-                    },
-                    {
-                      "name": "hostQuiet",
-                      "state": "verified",
-                      "detail": "worst load 0.24/core over 10 cores (start 2.41, end 2.02) vs 0.5/core"
-                    }
-                  ],
-                  "fidelity": {
-                    "runtime": "android-chrome",
-                    "passed": true,
-                    "checks": {
-                      "trustedTouch": true,
-                      "cadence": true
-                    },
-                    "uncalibrated": [],
-                    "notApplicable": [
-                      "coalescing",
-                      "pressure",
-                      "contactGeometry"
-                    ]
-                  },
-                  "refreshRegime": {
-                    "intervalMs": 8.3,
-                    "observed": "120hz",
-                    "expected": "120hz",
-                    "verdict": "in-regime",
-                    "mixture": {
-                      "observedRegime": "120hz",
-                      "minorityRegime": "60hz",
-                      "slowerThanObserved": true,
-                      "sustainedMinorityShare": 0.0006,
-                      "runMinFrames": 3,
-                      "frames": 4635
-                    },
-                    "matched": true,
-                    "scoreable": true
-                  },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
-                  "phases": [
-                    {
-                      "phase": "blank",
-                      "paint": {
-                        "p50": 4.4,
-                        "p95": 7.9,
-                        "p99": 8.3,
-                        "max": 24.8
-                      },
-                      "lostFrameTimeShare": 0.0145,
-                      "passed": false
-                    }
-                  ],
-                  "passed": false
-                }
-              ]
-            },
-            "magic": {
-              "aggregate": {
-                "runCount": 1,
-                "paint": {
-                  "p95": 7.9,
-                  "p99": 8.2,
-                  "max": 16.4
-                },
-                "lostFrameTimeShare": 0.0103,
-                "blankPassed": false,
-                "allPhasesPassed": false,
-                "scoreable": true,
-                "failedFidelityChecks": [],
-                "refreshRegime": "120hz",
-                "offRefreshRegime": false
-              },
-              "gateShare": 0.01,
-              "runs": [
-                {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-dark/magic-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-                  "gestureRepeats": 10,
-                  "gesturePlan": "fixed-geometry",
-                  "anomalousEraserRefills": null,
-                  "eraserRefillShortfall": null,
-                  "paintedOutput": {
-                    "changed": true,
-                    "before": {
-                      "surfaces": 20,
-                      "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765
-                      ],
-                      "inkedSamples": 0
-                    },
-                    "after": {
-                      "surfaces": 20,
-                      "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        3469870944,
-                        4160538499,
-                        946445765,
-                        946445765,
-                        946445765,
-                        3171072179,
-                        3792252412,
-                        3617031560,
-                        2921198605,
-                        3115339467,
-                        1699289118,
-                        3252544908,
-                        946445765,
-                        3880528265,
-                        946445765,
-                        946445765
-                      ],
-                      "inkedSamples": 3555
-                    }
-                  },
-                  "trust": [
-                    {
-                      "name": "inputFidelity",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "refreshRegime",
-                      "state": "verified",
-                      "detail": "120hz"
-                    },
-                    {
-                      "name": "gestureRepeats",
-                      "state": "verified",
-                      "detail": "10"
-                    },
-                    {
-                      "name": "gesturePlan",
-                      "state": "verified",
-                      "detail": "fixed-geometry"
-                    },
-                    {
-                      "name": "pageIdentity",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "paintedOutput",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "captureRuntime",
-                      "state": "verified",
-                      "detail": "android-chrome"
-                    },
-                    {
-                      "name": "hostQuiet",
-                      "state": "verified",
-                      "detail": "worst load 0.2/core over 10 cores (start 2.02, end 1.99) vs 0.5/core"
-                    }
-                  ],
-                  "fidelity": {
-                    "runtime": "android-chrome",
-                    "passed": true,
-                    "checks": {
-                      "trustedTouch": true,
-                      "cadence": true
-                    },
-                    "uncalibrated": [],
-                    "notApplicable": [
-                      "coalescing",
-                      "pressure",
-                      "contactGeometry"
-                    ]
-                  },
-                  "refreshRegime": {
-                    "intervalMs": 8.3,
-                    "observed": "120hz",
-                    "expected": "120hz",
-                    "verdict": "in-regime",
-                    "mixture": {
-                      "observedRegime": "120hz",
-                      "minorityRegime": "60hz",
-                      "slowerThanObserved": true,
-                      "sustainedMinorityShare": 0,
-                      "runMinFrames": 3,
-                      "frames": 4661
-                    },
-                    "matched": true,
-                    "scoreable": true
-                  },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
-                  "phases": [
-                    {
-                      "phase": "blank",
-                      "paint": {
-                        "p50": 4.4,
-                        "p95": 7.9,
-                        "p99": 8.2,
-                        "max": 16.4
-                      },
-                      "lostFrameTimeShare": 0.0103,
-                      "passed": false
-                    }
-                  ],
-                  "passed": false
+                  "passed": true
                 }
               ]
             },
@@ -46644,11 +46657,11 @@
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.8,
+                  "p95": 7.9,
                   "p99": 8.2,
-                  "max": 16.4
+                  "max": 13
                 },
-                "lostFrameTimeShare": 0.01,
+                "lostFrameTimeShare": 0.003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -46659,8 +46672,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-dark/eraser-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-dark/eraser-real-screen.json",
+                  "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry-refilled",
                   "anomalousEraserRefills": [],
@@ -46696,28 +46709,28 @@
                     "after": {
                       "surfaces": 20,
                       "digests": [
+                        2501257147,
+                        3847377454,
                         1761607109,
                         1761607109,
+                        4272076472,
+                        617883752,
+                        1487059023,
                         1761607109,
                         1761607109,
-                        320644377,
-                        3838564625,
-                        457913896,
+                        658148161,
+                        2208720546,
+                        1484445006,
+                        3257863671,
+                        94790276,
+                        3690660862,
+                        469491154,
                         1761607109,
-                        1761607109,
-                        3497195600,
-                        58392563,
-                        876705257,
-                        1458632672,
-                        2300660755,
-                        3899977144,
-                        856893904,
-                        1761607109,
-                        2637666382,
+                        1489148390,
                         1761607109,
                         1761607109
                       ],
-                      "inkedSamples": 76069
+                      "inkedSamples": 74958
                     }
                   },
                   "trust": [
@@ -46760,7 +46773,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.2/core over 10 cores (start 1.99, end 1.8) vs 0.5/core"
+                      "detail": "worst load 0.26/core over 10 cores (start 2.07, end 2.6) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -46788,7 +46801,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 4677
+                      "frames": 6466
                     },
                     "matched": true,
                     "scoreable": true
@@ -46799,12 +46812,12 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 4.5,
-                        "p95": 7.8,
+                        "p50": 3.9,
+                        "p95": 7.9,
                         "p99": 8.2,
-                        "max": 16.4
+                        "max": 13
                       },
-                      "lostFrameTimeShare": 0.01,
+                      "lostFrameTimeShare": 0.003,
                       "passed": true
                     }
                   ],
@@ -46814,20 +46827,32 @@
             }
           },
           "undo": {
-            "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/portrait-dark/pen-real-screen.json",
-            "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+            "source": "perf-profiles/2026-09-25-issue-2229-android-web-portrait/android-device-web/portrait-dark/pen-real-screen.json",
+            "productCommit": "1e3016ec407413a255e69d6eddaef2274dd3ee3a",
             "count": 10,
             "engine": {
-              "p50": 2.8,
-              "p95": 5.7,
-              "p99": 5.7,
-              "max": 5.7
+              "p50": 3,
+              "p95": 6.1,
+              "p99": 6.1,
+              "max": 6.1
+            },
+            "inkMotion": {
+              "p50": 2.5,
+              "p95": 4.1,
+              "p99": 4.1,
+              "max": 4.1
+            },
+            "restore": {
+              "p50": 0.5,
+              "p95": 2,
+              "p99": 2,
+              "max": 2
             },
             "nextFrame": {
-              "p50": 10.1,
-              "p95": 13.8,
-              "p99": 13.8,
-              "max": 13.8
+              "p50": 9.7,
+              "p95": 14.2,
+              "p99": 14.2,
+              "max": 14.2
             },
             "passed": true
           },
