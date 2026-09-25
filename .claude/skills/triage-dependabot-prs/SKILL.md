@@ -211,6 +211,13 @@ Then order the real merges:
    are independent and can go in any order.
 3. **Leave the known conflicter last**, so it needs exactly one rebase instead of one per sibling.
 
+With more than a handful of PRs, "the conflicter" is rarely one branch. Build the pairwise matrix
+(merge each branch onto `main` as a throwaway `commit-tree`, then `merge-tree` every sibling against
+it) and pick the largest set with no conflict between any two of its members as wave 1. What's left
+needs one Dependabot rebase each. Split it into later waves the same way, since two leftovers can
+also conflict with each other. An eleven-PR batch came out as 8 merged directly, then 2, then 1
+last.
+
 Match the repo's merge style — `git log --merges` shows merge commits, so use
 `merge_method: "merge"`.
 
@@ -233,6 +240,15 @@ use a background `until` loop on `git merge-tree` — never a foreground `sleep`
 Confirm the rebase by the **head SHA moving**, not by the PR looking different; then read the check
 runs on that new SHA. `mergeable_state` reads `unknown` for a while after each merge and is the
 slowest of the three signals to settle.
+
+**A 👍 on the request is not a rebase.** Dependabot acknowledges the comment and then runs an update
+job, which shows as an Actions run with `event: dynamic`
+(`gh api 'repos/<owner>/<repo>/actions/runs?event=dynamic'`). Read that run when the head does not
+move. A job that runs while `main`'s lockfile is broken fails with `dependency_file_not_parseable`.
+After such a failure, fresh `@dependabot rebase` requests have been acknowledged and then started no
+job for over 15 minutes, while `@dependabot recreate` ran within a minute. If no `dynamic` run
+appears within a few minutes of a rebase request, switch to `recreate`. It rebuilds the branch from
+the current `main` and drops any commits pushed to the branch by hand, which this skill never adds.
 
 ## 4. Handle the ones that can't just be merged
 
@@ -270,22 +286,49 @@ together. Only this step looks at the tree that actually exists.
 later turn than the investigation, and the instinct once the merges succeed is to report and stop —
 which drops this step in the seam. Owe it forward past the gate.
 
-**Run it after every merge wave, not once at the end.** A broken lockfile on `main` fails every
-frozen install downstream, including the Dependabot rebases the next wave is waiting on, so a defect
-the first wave introduced stalls the rest of the batch until it is repaired.
+**Run it after every merge wave, not once at the end.** A broken lockfile on `main` fails the
+Dependabot update jobs the next wave's rebases need (`dependency_file_not_parseable`), so a defect
+the first wave introduced stalls the rest of the batch until it is repaired. CI will not flag it for
+you; see **Pass `--frozen-lockfile` explicitly** below.
+
+Between waves the lockfile check is enough, and it leaves the worktree alone. Extract `main`'s
+manifests into a scratch directory and install there, lockfile only:
 
 ```sh
-git fetch origin main && git checkout -B verify-merged-main origin/main
+git fetch origin main && rm -rf <scratch>/verify && mkdir -p <scratch>/verify
+git archive origin/main package.json pnpm-lock.yaml pnpm-workspace.yaml | tar -x -C <scratch>/verify
+(cd <scratch>/verify && pnpm install --frozen-lockfile --lockfile-only --ignore-scripts)
+```
+
+Name only paths that exist on `main`. `git archive` with one missing path fails and extracts
+nothing, and the install then reports a missing `package.json`, not a lockfile problem.
+
+After the last wave, check the whole tree. Detach instead of creating a branch, so there is nothing
+to delete afterwards (branch deletes are refused in permission-gated sessions):
+
+```sh
+git fetch origin main && git switch --detach origin/main
 pnpm install --frozen-lockfile   # proves package.json ↔ pnpm-lock.yaml agree post-merge
 npm run check
 ```
 
-Use a **named scratch branch**, not the branch you were working on: `-B` force-moves whatever you
-name onto `origin/main` and discards anything on it. Delete it when done, or keep it — it holds no
-commits of its own.
+Commit or set aside anything on the current branch first: the switch carries uncommitted changes
+along.
 
-Then confirm CI on `main`. Two traps when reading it:
+**Pass `--frozen-lockfile` explicitly; the implied mode does not check.** Under `CI=true`, pnpm
+implies frozen-lockfile, but only for a lockfile it can parse. A broken one is skipped with
+`[WARN] Ignoring broken lockfile`, every dependency resolves fresh, and the install succeeds. CI
+installs this way, so a `main` with a duplicated lockfile key stayed **green** while testing
+versions nobody reviewed. The explicit flag fails with `ERR_PNPM_BROKEN_LOCKFILE` instead. Green CI
+on `main` is therefore not evidence the lockfile holds; the checks above are.
 
+Then confirm CI on `main`. Traps when reading it:
+
+* **Query runs by commit, not by branch.** `gh run list --branch main` has returned runs more than a
+  week old while the current ones were queued. Ask for the exact merge commits instead:
+  `gh api "repos/<owner>/<repo>/actions/runs?head_sha=<sha>"`. `Tests` runs on successive merges
+  queue as `pending` behind one concurrency group, so a burst of merges leaves the newest waiting
+  for the oldest to finish.
 * **`cancelled` is usually the concurrency group, not a failure.** Rapid merges supersede each
   other's runs. Find the commit that superseded it and read the newest run instead — and don't
   report a run as "still running" without re-checking, since it may have already been cancelled.
