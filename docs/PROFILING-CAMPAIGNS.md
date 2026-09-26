@@ -946,6 +946,22 @@ captured until they are captured again on the capture host. **A matrix number an
 the same cell can legitimately disagree by more than the gate**; find out which one you are reading
 before treating a difference as a regression.
 
+### A recapture is never the goal
+
+A capture's age alone is no reason to repeat it: never re-audit folded cells just to see them again.
+A product fix brings its own fresh capture of the cells it moves. A change that may invalidate a
+finding gets flagged where the next capture session will read it, rather than rushed. Device time
+goes to product fixes of real reds.
+
+Two recaptures are still required, and this rule does not waive them:
+
+* **Before building a fix for an old red**, confirm it still reproduces at the current commit. See
+  [A red cell describes the commit it was captured at](#a-red-cell-describes-the-commit-it-was-captured-at-not-the-product),
+  and `improve-performance-matrix`, which requires it once product commits have landed on the
+  measured path.
+* **A release-gate section past the age limit** (ADR-0175) is recaptured before a campaign can
+  finish, even if no fix touched it.
+
 ### The generator preserves from its own output
 
 `preservedEvidence.from` is `data.json` — **the matrix generator's preservation source is its own
@@ -1645,6 +1661,10 @@ The host drives the input dispatch. A test suite, a build, or a second campaign 
 changes the input cadence — which is the variable that corrupted the Android cells in the first
 place. Sequence the work: captures, then builds, then tests.
 
+Another agent session on the same host counts. So does another worktree's `npm run check` or `lint`,
+not only a build or a test suite. An unattended campaign that runs device-free units beside a
+capture unit serializes them with a rig lock (the `ship-campaign` skill's performance reference).
+
 ## Metric traps
 
 Each is worth recognizing in a number.
@@ -1700,6 +1720,14 @@ study index's `source` value `android-browser-gesture-diagnostic/actions.json` i
 Absence of the field in historical evidence does not identify its delivery. Historical serial-input
 captures are not equivalent measurements of the corrected gesture. Do not generalize this finding to
 a different action or replace drawing/clear input without its own evidence.
+
+## A change you could not capture on every device it runs on
+
+Most product code runs on every deployment target. When a fix is proven on the devices you could
+capture, but also runs on one you could not, name the cells it may move on the missing device as
+unvalidated, both in the PR and on the issue. Keep the issue open with `Refs` until that device's
+capture lands. Until then the missing device's cells still show their old values, and the
+unvalidated note is the only thing that says they may have moved.
 
 ## A red cell describes the commit it was captured at, not the product
 

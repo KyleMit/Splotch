@@ -30,7 +30,10 @@ The input names the queue and, optionally, a deadline:
 * **`backlog`** (optionally `backlog=<count>`) — the newest open issues nobody has claimed, picked
   one at a time so that parallel sessions each pick a different issue (see step 1).
 * **`until=<time>`** or **`hours=<n>`** — the deadline and deadline reserve described in step 5.
-* **`profile=performance`** — the unit is a causal performance cluster; see the last section.
+* **`profile=performance`** — the queue carries performance or physical-device work. Read
+  [`references/performance.md`](references/performance.md) before preflight. Apply the profile
+  yourself when any queued unit needs the device rig or is a performance cluster, even if the caller
+  did not name it; otherwise never load that file.
 
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
 branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
@@ -84,11 +87,8 @@ fix done before declaring the campaign started.
   `ship-issue` step 5 requires. The latest `main` commit's CI is green; a red trunk fails every
   unit's gate.
 * **Baseline.** `npm run check` and `npm run lint` pass on the fresh worktree.
-* **Devices — only when a queued unit needs the rig.** Run `start-capture-session`, the
-  `perf:preflight` it names, and one known-good control capture, all while the user can unlock a
-  device or grant an automation prompt. Grants expire overnight; ask the user to set the devices to
-  stay awake and unlocked. Units that need a device the preflight could not prove move out of the
-  queue now.
+* **Devices.** When any queued unit needs the rig, the performance profile's device preflight
+  applies.
 * **Ports.** Choose an unused Playwright port and pass it to every unit.
 * **Open the ledger** (below) with the resolved queue.
 
@@ -113,7 +113,9 @@ For each unit, finish every step before starting the next:
    branch.
 2. **Re-check the unit.** It is still open and unclaimed — another session may have taken it since
    preflight. For `backlog`, this is where you pick: the newest open issue without `in-progress`,
-   `wont-do`, or a `needs-*` label, which you have not already quarantined in this campaign.
+   `wont-do`, or a `needs-*` label, which you have not already quarantined or skipped in this
+   campaign. Decide at that moment whether the pick needs the device rig. If it does and no device
+   preflight ran with the user present, leave it unclaimed, record it as skipped, and pick again.
 3. **Ship it.** Run `ship-issue <n> mode=autonomous` — or, for a free-form unit (a performance
    cluster, a trunk repair, a gate repair), `ship-issue mode=autonomous` with the unit's written
    spec in place of an issue number — with the authorization block, the assigned port, and the
@@ -258,23 +260,3 @@ for the user), merge SHA, review rounds, and CI. Then:
 
 Run `git rev-parse --verify --quiet "<sha>^{commit}"` over every SHA in the report before sending
 it. Then run `self-heal` on the campaign's friction.
-
-## Performance campaigns — `profile=performance`
-
-`improve-performance-matrix` owns what a performance unit is: one causal product cluster, proven
-with faithful A/B evidence on the release-gate rows, under its evidence and physical-device rules.
-This skill supplies the queue, the merge-as-you-go loop, and the ledger around it. Each cluster is a
-free-form unit: its spec is the cluster's hypothesis and target cells, it has no issue to claim or
-close, and the performance tracking issue carries the ledger. Three rules are added for unattended
-performance work:
-
-* **The device preflight is mandatory**, with the user present, including the control capture.
-* **Device loss ends device work.** When the rig drops and the documented non-human recovery does
-  not restore it, stop capturing. Continue with queued units that need no device, or wrap up.
-  Evidence-only or harness-only PRs are never a substitute for the product work the rig was meant to
-  measure.
-* **One gate gets a bounded share of the night.** After about eight hours on the same release-gate
-  cell without it passing, record the best measured version as that cell's outcome and move on;
-  further marginal tuning belongs to a later campaign that starts with a new hypothesis.
-* **The ledger separates product, harness, and evidence commits**, and the morning report says
-  plainly when no product change landed.
