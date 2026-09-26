@@ -123,9 +123,9 @@ describe('appiumAndroidSdkState', () => {
   it('reads the loopback server listening on the Appium port', () => {
     const ports = [];
     const state = appiumAndroidSdkState('http://127.0.0.1:4733', {
-      pidFor: (port) => {
+      pidsFor: (port) => {
         ports.push(port);
-        return '4242';
+        return ['4242'];
       },
       environmentOf: environmentOf(['PATH=/bin', 'ANDROID_HOME=/sdk']),
     });
@@ -136,7 +136,7 @@ describe('appiumAndroidSdkState', () => {
 
   it('refuses a server started without the SDK', () => {
     const state = appiumAndroidSdkState('http://localhost:4723', {
-      pidFor: () => '4242',
+      pidsFor: () => ['4242'],
       environmentOf: environmentOf(['PATH=/bin', 'HOME=/Users/me']),
     });
 
@@ -152,22 +152,39 @@ describe('appiumAndroidSdkState', () => {
     };
     expect(
       appiumAndroidSdkState('https://hub.example.com/wd/hub', {
-        pidFor: neverRead,
+        pidsFor: neverRead,
         environmentOf: neverRead,
       })
     ).toBe('unknown');
     expect(
       appiumAndroidSdkState('http://127.0.0.1:4723', {
-        pidFor: () => null,
+        pidsFor: () => [],
         environmentOf: neverRead,
       })
     ).toBe('unknown');
     expect(
       appiumAndroidSdkState('http://127.0.0.1:4723', {
-        pidFor: () => '4242',
+        pidsFor: () => ['4242'],
         environmentOf: environmentOf([]),
       })
     ).toBe('unknown');
+  });
+
+  it('refuses only when every process listening on the port lacks the SDK', () => {
+    const environments = {
+      4242: ['PATH=/bin', 'HOME=/Users/me'],
+      4343: ['PATH=/bin', 'ANDROID_HOME=/sdk'],
+      4444: ['PATH=/bin', 'HOME=/Users/other'],
+    };
+    const stateFor = (pids) =>
+      appiumAndroidSdkState('http://localhost:4723', {
+        pidsFor: () => pids,
+        environmentOf: (pid) => environments[pid],
+      });
+
+    expect(stateFor(['4242', '4343'])).toBe('unknown');
+    expect(stateFor(['4343', '4242'])).toBe('unknown');
+    expect(stateFor(['4242', '4444'])).toBe('missing');
   });
 
   it('warns on unknown and stays silent once the SDK is present', () => {

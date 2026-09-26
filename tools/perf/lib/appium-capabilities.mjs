@@ -93,10 +93,12 @@ function processEnvironmentEntries(pid) {
     : [];
 }
 
-function listenerPid(port) {
+function listenerPids(port) {
   const listing = tryCapture('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN']);
-  const pid = listing.ok ? listing.stdout.trim().split('\n')[0] : '';
-  return /^\d+$/.test(pid) ? pid : null;
+  if (!listing.ok) return [];
+  return [...new Set(listing.stdout.split('\n').map((pid) => pid.trim()))].filter((pid) =>
+    /^\d+$/.test(pid)
+  );
 }
 
 function appiumPort(url) {
@@ -108,16 +110,21 @@ function appiumPort(url) {
 // variables, so a campaign that did not check first spent each cell's every
 // attempt on the same refusal (issue 2341). Only a loopback server's process
 // can be read; anything else is 'unknown', which warns rather than refuses.
-// `pidFor` and `environmentOf` are seams kept for tests.
+// `lsof` matches the port on every local address, so separate processes on
+// 127.0.0.1 and ::1 are both candidates: they must agree, or the answer is
+// 'unknown' rather than a refusal based on the wrong process.
+// `pidsFor` and `environmentOf` are seams kept for tests.
 export function appiumAndroidSdkState(
   appiumUrl,
-  { pidFor = listenerPid, environmentOf = processEnvironmentEntries } = {}
+  { pidsFor = listenerPids, environmentOf = processEnvironmentEntries } = {}
 ) {
   const url = new URL(appiumUrl);
   if (!LOOPBACK_HOSTNAMES.has(url.hostname)) return 'unknown';
-  const pid = pidFor(appiumPort(url));
-  if (!pid) return 'unknown';
-  const state = androidSdkEnvironmentState(environmentOf(pid));
+  const states = new Set(
+    pidsFor(appiumPort(url)).map((pid) => androidSdkEnvironmentState(environmentOf(pid)))
+  );
+  if (states.size !== 1) return 'unknown';
+  const [state] = states;
   return state === 'unreadable' ? 'unknown' : state;
 }
 
