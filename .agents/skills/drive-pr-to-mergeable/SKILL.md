@@ -99,11 +99,13 @@ cut its next layer on top of it; it stops adding layers and reports the blocker.
 ## 3. Address the feedback
 
 Run `address-pr-review` with `mode=autonomous` against the PR, restricted to this single PR as
-"Where the fixes commit" requires. What that flag buys is a triage pass that decides ordinary
-product ambiguity instead of parking it — every such decision comes back as a record for the PR body
-and the verdict. Its own autonomous contract withholds merging, which is correct here. Its rival
-handling is load-bearing: the review posts through your GitHub account, so it looks self-authored,
-and the skill identifies it by the `<!-- splotch-rival-review:` marker in the review body.
+"Where the fixes commit" requires. What that flag buys is a triage pass that settles, through
+`walk-through-decision`'s autonomous mode, the questions it would otherwise have escalated — the
+agent's own calls locked after a rival concurs, the user's parked — and every resulting record comes
+back for the PR body and the verdict. Its own autonomous contract withholds merging, which is
+correct here. Its rival handling is load-bearing: the review posts through your GitHub account, so
+it looks self-authored, and the skill identifies it by the `<!-- splotch-rival-review:` marker in
+the review body.
 
 The findings are an outside opinion, not a verdict. Verify each against the current code, fix the
 real ones, and reply-then-resolve the ones that do not hold up with the reasoning. Push the fixes.
