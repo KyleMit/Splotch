@@ -1,6 +1,6 @@
 ---
 name: walk-through-decision
-description: Walk through a decision in plain language — what is actually being decided, what is at stake, the real options with honest pros and cons, a table of what stays the same and what differs, and one recommended approach — tagging each decision as the agent's to make or the user's. `mode=autonomous` makes the agent's own calls instead of asking, each locked after a rival agent reviews it (a still-split high-stakes call is held for the user). Use when asked to walk through, think through, or talk through a decision, to weigh options or trade-offs, to compare approaches, or when the question is "which of these should I pick?" and the reasoning matters as much as the answer; and with `mode=autonomous` whenever unattended work reaches a question it would otherwise stop to ask the user.
+description: Walk through a decision in plain language — what is actually being decided, what is at stake, the real options with honest pros and cons, a table of what stays the same and what differs, and one recommended approach — tagging each decision as the agent's to make or the user's. `mode=autonomous` makes the agent's own calls instead of asking, each locked after a rival agent reviews it — or, on a low-stakes call when no rival can run, locked and marked unreviewed; a still-split high-stakes call is held for the user. Use when asked to walk through, think through, or talk through a decision, to weigh options or trade-offs, to compare approaches, or when the question is "which of these should I pick?" and the reasoning matters as much as the answer; and with `mode=autonomous` whenever unattended work reaches a question it would otherwise stop to ask the user.
 ---
 
 # Walk through a decision
@@ -269,8 +269,10 @@ you can accept, including either side's second choice.
 Neither side digs in over direction-picking. The user would rather a low-stakes call be made and
 explained than have one decision stall an overnight run or quarantine something that matters.
 
-If the rival cannot run — at the first question or at the reconciliation question — a low-stakes
-pick is locked and recorded as **unreviewed**, and a high-stakes one is held.
+If the rival cannot run before it has answered, a low-stakes pick is locked and recorded as
+**unreviewed**, and a high-stakes one is held. If it answered DISAGREE and then cannot run for the
+reconciliation question, treat the first answer as final: a low-stakes pick locks as **split,
+reconciliation unavailable** with the rival's position kept, and a high-stakes one is held.
 
 ### 4. The decision record
 
@@ -279,7 +281,8 @@ and into a campaign's morning report:
 
 * The question, tagged, and the options in one line each.
 * The pick, and why it wins, citing the criteria rule.
-* The rival outcome: agreed, converged after reconciliation, split (low stakes), or unreviewed.
+* The rival outcome: agreed, converged after reconciliation, split (low stakes), split with
+  reconciliation unavailable, or unreviewed — with the rival's position whenever it gave one.
 * How to reverse it.
 
 A parked or held decision returns its full walkthrough instead, ready for the user to answer by

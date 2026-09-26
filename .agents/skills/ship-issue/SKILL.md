@@ -29,12 +29,12 @@ passes in full. Naming the mode is what grants that — merging is irreversible 
 it is authorized by the invocation or not at all; never infer it from a run that merely looks
 unattended. The mode also changes how ambiguity is handled: a question the run would otherwise have
 stopped to ask the user goes through `walk-through-decision` in `mode=autonomous` instead — the
-agent's own calls get decided and locked after a rival review, the user's (anything a parent or
-child sees, among others) are parked — and every resulting record goes into the PR body and the
-final report. A small ambiguity with an obvious answer is just decided and noted. It does **not**
-authorize the blockers — crossing a security boundary, weakening a test or a protection to get
-green, bypassing branch protection, closing anything, or acting outside the named unit of work.
-Those still stop the run.
+agent's own calls get decided and locked after a rival review (marked unreviewed if none can run),
+the user's (anything a parent or child sees, among others) are parked — and every resulting record
+goes into the PR body and the final report. A small ambiguity with an obvious answer is just decided
+and noted. It does **not** authorize the blockers — crossing a security boundary, weakening a test
+or a protection to get green, bypassing branch protection, closing anything, or acting outside the
+named unit of work. Those still stop the run.
 
 Two things the autonomous mode deliberately does not take over. It does not skip the review loop —
 an unattended run needs the outside opinion *more* than a supervised one, and a merge with no
