@@ -948,11 +948,19 @@ before treating a difference as a regression.
 
 ### A recapture is never the goal
 
-When a cell was captured does not matter, so never spend device time on a capture whose only purpose
-is to refresh or re-verify cells that are already folded. A product fix brings its own fresh capture
-of the cells it moves. A change that may invalidate a finding gets flagged where the next capture
-session will read it, rather than rushed. The release-gate age limit (ADR-0175) catches the rest.
-Device time goes to product fixes of real reds.
+A capture's age alone is no reason to repeat it: never re-audit folded cells just to see them again.
+A product fix brings its own fresh capture of the cells it moves. A change that may invalidate a
+finding gets flagged where the next capture session will read it, rather than rushed. Device time
+goes to product fixes of real reds.
+
+Two recaptures are still required, and this rule does not waive them:
+
+* **Before building a fix for an old red**, confirm it still reproduces at the current commit. See
+  [A red cell describes the commit it was captured at](#a-red-cell-describes-the-commit-it-was-captured-at-not-the-product),
+  and `improve-performance-matrix`, which requires it once product commits have landed on the
+  measured path.
+* **A release-gate section past the age limit** (ADR-0175) is recaptured before a campaign can
+  finish, even if no fix touched it.
 
 ### The generator preserves from its own output
 

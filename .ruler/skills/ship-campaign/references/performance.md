@@ -29,9 +29,14 @@ a device-free lane, but only behind one rig lock, because no capture may overlap
 
 Use one lock directory outside every worktree, such as the session's scratch directory:
 
-* Acquire with an uncapped `until mkdir "$L" 2>/dev/null; do sleep 20; done`, and write an owner
-  line only after that `mkdir` succeeds.
+* Acquire with an uncapped `until mkdir "$L" 2>/dev/null; do sleep 20; done`. Only after that
+  `mkdir` succeeds, write an owner line naming the unit, the purpose, and the time.
 * Release with `rm "$L/owner"; rmdir "$L"`, on every path, failures included.
+* **Only the orchestrator reclaims a stale lock, and never a waiter.** A unit killed mid-window
+  leaves the directory behind, and the uncapped loop would then wait forever. Whenever a unit ends,
+  however it ends (a report, a quarantine, or a crash), check the lock. If its owner line still
+  names that unit, remove it. A waiter cannot tell a crashed holder from a long capture, so it keeps
+  waiting.
 * A device unit holds the lock per capture window (a native build counts), and a device-free unit
   per heavy command (`check`, `lint`, a test suite, a build). Nobody holds it across a CI or
   reviewer wait.
