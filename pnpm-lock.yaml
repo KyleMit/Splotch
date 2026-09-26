@@ -61,8 +61,8 @@ importers:
         specifier: ^7.3.0
         version: 7.3.0(svelte@5.57.1(@typescript-eslint/types@8.70.1))(vite@8.3.0(@types/node@22.20.4)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.1))
       openai:
-        specifier: ^7.21.0
-        version: 7.21.0(ws@8.21.3)(zod@4.6.5)
+        specifier: ^7.22.0
+        version: 7.22.0(ws@8.21.3)(zod@4.6.5)
       svelte:
         specifier: ^5.57.1
         version: 5.57.1(@typescript-eslint/types@8.70.1)
@@ -4402,8 +4402,8 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
-  openai@7.21.0:
-    resolution: {integrity: sha512-APwDcMhduWCSkKDLF4VZtAC5MGLRdJ0l+PUirz2fuSPXo/LNfEe8OuJVWOk8iJbO55sd8F5aOXvx8cfR5Eax1g==}
+  openai@7.22.0:
+    resolution: {integrity: sha512-C4bv09YtQQb1qcFrEAENJXkuCZA72kGRwws6QIXgf0oJW6pDOmDC2WaZpQVII3Rl+RNE3Z+TQI92uNfetGwY3w==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
@@ -10024,7 +10024,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@7.21.0(ws@8.21.3)(zod@4.6.5):
+  openai@7.22.0(ws@8.21.3)(zod@4.6.5):
     optionalDependencies:
       ws: 8.21.3
       zod: 4.6.5
