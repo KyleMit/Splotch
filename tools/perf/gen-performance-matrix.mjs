@@ -2593,7 +2593,7 @@ when this report is generated; stored derived summaries are not trusted. ${relea
 // either in a fixed sentence lets the report contradict its own tables.
 const GATE_FIDELITY = 'physical-safari-gated';
 
-const RELEASE_GATE = 'release-gate';
+export const RELEASE_GATE = 'release-gate';
 const REGRESSION_TRIPWIRE = 'regression-tripwire';
 const ADVISORY = 'advisory';
 

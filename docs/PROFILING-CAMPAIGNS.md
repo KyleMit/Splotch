@@ -1015,7 +1015,10 @@ since the suite cannot run on every product commit, and its age is what a reader
 Pass `--strict` (`npm run gen:performance-matrix -- --strict`) at the campaign's regenerate to
 assert provenance-complete; a section without a `capturedOn` date or a resolvable product commit
 then fails that regenerate. Rows the campaign did not recapture are marked preserved before it, so
-they keep the date and commit they were published with.
+they keep the date and commit they were published with. The report also warns about every
+release-gate section older than `RELEASE_GATE_MAX_AGE_DAYS`, and a campaign may not finish while one
+remains: `npm run check:matrix-staleness -- --release-gate-age` fails on it, and is the age clause
+of the completion gate (ADR-0175, as amended).
 
 Three things about `perf:campaign` that each cost a launch:
 
@@ -1719,8 +1722,10 @@ is yours to stop.
 The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
 `npm run check:matrix-staleness` answers the cheaper half of the question — how old each section's
 evidence is, and how many engine and product commits have landed on top of it — without a device,
-and `gen:performance-matrix` runs it for you. It reports ages and never fails on one; `--strict`
-fails only a section without a `capturedOn` date or a resolvable product commit (ADR-0175).
+and `gen:performance-matrix` runs it for you. By default it reports ages and never fails on one;
+`--strict` fails only a section without a `capturedOn` date or a resolvable product commit, and
+`--release-gate-age` fails only a release-gate section older than `RELEASE_GATE_MAX_AGE_DAYS`
+(ADR-0175).
 
 **Mind the check's `--base`, which defaults to `HEAD`.** Run from a campaign branch, that counts the
 branch's own commits as product drift, which reads as "this cell needs a recapture" when the

@@ -1,9 +1,11 @@
 // Report how old each performance-matrix section's evidence is, oldest first;
-// fail only under --strict, and then only on incomplete provenance.
+// fail only under --strict (incomplete provenance) or --release-gate-age (a
+// release-gate section past its age limit).
 //
 //   npm run check:matrix-staleness
 //   npm run check:matrix-staleness -- --manifest=<sources.json> --base=origin/main
 //   npm run check:matrix-staleness -- --strict
+//   npm run check:matrix-staleness -- --release-gate-age
 //
 // The matrix is refreshed by periodic campaigns while `main` takes several
 // product merges a day, so a section is almost never captured at the tip. What a
@@ -17,14 +19,31 @@
 // `capturedOn` date and a product commit this checkout can resolve. A section
 // that cannot say when or from what it was captured cannot be aged, so that is
 // the claim a campaign's regenerate makes and the one worth failing on.
+//
+// `--release-gate-age` asserts the age clause of a campaign's completion gate:
+// no release-gate section is older than RELEASE_GATE_MAX_AGE_DAYS (ADR-0175,
+// as amended). The default run names every such section as a warning and exits
+// 0: the calendar alone must not turn a routine run red, so only a campaign's
+// completion claim fails on age.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
-import { MATRIX_SECTIONS, captureAgeDays, isCaptureDate, utcDate } from './lib/capture-date.mjs';
-import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
+import {
+  MATRIX_SECTIONS,
+  RELEASE_GATE_MAX_AGE_DAYS,
+  captureAgeDays,
+  isCaptureDate,
+  utcDate,
+} from './lib/capture-date.mjs';
+import {
+  CAPTURED_UNTRACKED,
+  PRESERVED,
+  RELEASE_GATE,
+  targetRole,
+} from './gen-performance-matrix.mjs';
 
 const DEFAULT_MANIFEST = 'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json';
 const DISPLAY_COMMIT_CHARS = 12;
@@ -145,11 +164,13 @@ function provenanceProblems({ capturedOn, commits, pinned }, isReachable) {
 export function assessManifest(manifest, { publishedModeFor, today, isReachable }) {
   const sections = [];
   for (const target of manifest.targets ?? []) {
+    const role = targetRole(target);
     for (const mode of target.modes ?? []) {
       for (const entry of sectionProvenance(mode, publishedModeFor(target.id, mode.id))) {
         sections.push({
           target: target.id,
           mode: mode.id,
+          role,
           ...entry,
           ageDays: captureAgeDays(entry.capturedOn, today),
           problems: provenanceProblems(entry, isReachable),
@@ -196,26 +217,46 @@ export function ageReportRows(sections, { commitsSince }) {
     });
 }
 
-// The verdict-to-exit policy, kept pure so the default and --strict outcomes are
-// testable without a git repository or a process exit.
-export function provenanceOutcome({ sections, strict }) {
+// An undated release-gate section is overdue too: an age nobody can read cannot
+// show the section is inside the limit, and a completion claim needs it to be.
+export function overdueReleaseGateSections(sections) {
+  return sections.filter(
+    (entry) =>
+      entry.role === RELEASE_GATE &&
+      (entry.ageDays === null || entry.ageDays > RELEASE_GATE_MAX_AGE_DAYS)
+  );
+}
+
+// One entry per target section sharing a detail, naming every mode it covers.
+function groupedSectionList(entries, detail) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const text = detail(entry);
+    const key = `${entry.target}|${entry.section}|${text}`;
+    const group = groups.get(key) ?? { ...entry, text, modes: [] };
+    group.modes.push(entry.mode);
+    groups.set(key, group);
+  }
+  return [...groups.values()]
+    .map((group) => `${group.target}/${group.section} [${group.modes.join(', ')}] (${group.text})`)
+    .join(', ');
+}
+
+function ageDetail({ capturedOn, ageDays }) {
+  return ageDays === null
+    ? `captured ${capturedOn ?? '(undated)'}, age unknown`
+    : `captured ${capturedOn}, ${ageDays} days old`;
+}
+
+// The verdict-to-exit policy, kept pure so the default, --strict, and
+// --release-gate-age outcomes are testable without a repository or a process
+// exit.
+export function provenanceOutcome({ sections, strict, releaseGateAge = false }) {
   const incomplete = sections.filter((entry) => entry.problems.length);
+  const overdue = overdueReleaseGateSections(sections);
   const lines = [];
   if (incomplete.length) {
-    const groups = new Map();
-    for (const entry of incomplete) {
-      const problems = entry.problems.join('; ');
-      const key = `${entry.target}|${entry.section}|${problems}`;
-      const group = groups.get(key) ?? { ...entry, problems, modes: [] };
-      group.modes.push(entry.mode);
-      groups.set(key, group);
-    }
-    const list = [...groups.values()]
-      .map(
-        (group) =>
-          `${group.target}/${group.section} [${group.modes.join(', ')}] (${group.problems})`
-      )
-      .join(', ');
+    const list = groupedSectionList(incomplete, (entry) => entry.problems.join('; '));
     lines.push(
       `${strict ? 'FAIL' : 'WARN'}  ${incomplete.length} captured section(s) lack complete provenance: ${list}. ` +
         'A shallow clone is the usual cause of an unreachable commit; a missing date needs capturedOn in the manifest.'
@@ -226,18 +267,33 @@ export function provenanceOutcome({ sections, strict }) {
     const oldest = dated.reduce((a, b) => (b.ageDays > a.ageDays ? b : a));
     lines.push(
       `${sections.length} captured section(s); the oldest, ${oldest.target}/${oldest.mode}/${oldest.section}, ` +
-        `was captured ${oldest.capturedOn} (${oldest.ageDays} days ago). Age is reported, never failed: ` +
-        'an old red keeps counting until it is recaptured or explained (ADR-0175).'
+        `was captured ${oldest.capturedOn} (${oldest.ageDays} days ago). An old red keeps counting ` +
+        'until it is recaptured or explained. Age fails only under --release-gate-age, and only a ' +
+        `release-gate section older than ${RELEASE_GATE_MAX_AGE_DAYS} days (ADR-0175).`
     );
   }
-  const failed = strict && incomplete.length > 0;
-  if (failed) {
+  if (overdue.length) {
+    lines.push(
+      `${releaseGateAge ? 'FAIL' : 'WARN'}  ${overdue.length} release-gate section(s) are older than ` +
+        `${RELEASE_GATE_MAX_AGE_DAYS} days or undated: ${groupedSectionList(overdue, ageDetail)}. ` +
+        'A performance campaign may not finish until each is recaptured (ADR-0175).'
+    );
+  }
+  const strictFailed = strict && incomplete.length > 0;
+  if (strictFailed) {
     lines.push(
       '--strict asserts provenance-complete: every captured section carries a capturedOn date and a ' +
         'reachable product commit. Date or commit the sections above before asserting it.'
     );
   }
-  return { incomplete, lines, failed };
+  const ageFailed = releaseGateAge && overdue.length > 0;
+  if (ageFailed) {
+    lines.push(
+      `--release-gate-age asserts that no release-gate section is older than ${RELEASE_GATE_MAX_AGE_DAYS} ` +
+        'days or undated. Recapture the sections above before a campaign claims completion.'
+    );
+  }
+  return { incomplete, overdue, lines, failed: strictFailed || ageFailed };
 }
 
 function commitCounter(base) {
@@ -314,6 +370,7 @@ export async function checkMatrixStaleness({
   manifestPath = argFlag('manifest', DEFAULT_MANIFEST),
   base = argFlag('base'),
   strict = process.argv.includes('--strict'),
+  releaseGateAge = process.argv.includes('--release-gate-age'),
   today = utcDate(Date.now()),
 } = {}) {
   const explicitBase = base !== undefined;
@@ -334,14 +391,14 @@ export async function checkMatrixStaleness({
   });
   if (!sections.length) {
     console.log('No captured sections in the manifest.');
-    return { sections, incomplete: [] };
+    return { sections, incomplete: [], overdue: [] };
   }
   console.table(ageReportRows(sections, { commitsSince: commitCounter(resolvedBase) }));
 
-  const outcome = provenanceOutcome({ sections, strict });
+  const outcome = provenanceOutcome({ sections, strict, releaseGateAge });
   if (outcome.failed) fail(`\n${outcome.lines.join('\n')}`);
   console.log(`\n${outcome.lines.join('\n')}`);
-  return { sections, incomplete: outcome.incomplete };
+  return { sections, incomplete: outcome.incomplete, overdue: outcome.overdue };
 }
 
 if (isMain(import.meta.url)) {
