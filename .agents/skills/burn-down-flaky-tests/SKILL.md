@@ -53,10 +53,12 @@ explicit port. Higher worker counts can amplify a race but do not become the com
 Fix the reachable product defect in product code; otherwise make the spec await the durable outcome
 it needs. Preserve the failing pre-fix state as a negative control when changing behavior. Do not
 raise retries, lengthen a sleep, or relax an assertion without evidence that it still catches the
-defect. Run `npm run check`, a targeted retries-off amplifier, and at least three full-suite sweep
-reps at the original worker count after the fixes. Record executions and failures; a clean streak is
-not proof of a zero underlying rate. Commit each spec's fix separately, including the product files
-that fix that spec.
+defect. When adding a retry, include every state the assertion measures in its exit condition; a
+transient theme color or partly scrolled panel can make a weaker retry pass too early. Run
+`npm run check`, a targeted retries-off amplifier, and at least three full-suite sweep reps at the
+original worker count after the fixes. Record executions and failures; a clean streak is not proof
+of a zero underlying rate. Commit each spec's fix separately, including the product files that fix
+that spec.
 
 Quarantine only a **confirmed current** flake that cannot be fixed in this run and is consuming CI
 retries or blocking reliable results. First open a tracking issue with the exact test, CI run and
