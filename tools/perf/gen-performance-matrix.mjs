@@ -57,6 +57,7 @@ import { FULL_ACTION_GROUPS, actionNotApplicableReason } from './lib/action-appl
 import { artifactFrameStampEpoch, DUAL_FRAME_STAMP_EPOCH } from './lib/frame-stamps.mjs';
 import { FLOOR_CONTROL_PAGE } from './split-capture/lib/probe-host-protocol.mjs';
 import { MATRIX_SECTIONS, captureAgeDays, isCaptureDate } from './lib/capture-date.mjs';
+import { strokeDeliveryProblem } from './lib/stroke-delivery.mjs';
 
 const DEFAULT_MANIFEST = join(
   ROOT,
@@ -298,6 +299,17 @@ function validateCaptureMode(profile, mode, source) {
   }
 }
 
+// Campaign acceptance refuses a driven capture that lost strokes, but a
+// hand-written manifest reaches the fold without it, and the strokes that did
+// arrive pass the fidelity verdict (issue 2342). A drawing capture is also an
+// undo source, so both readers ask.
+function refuseLostStrokes(profile, source) {
+  const problem = strokeDeliveryProblem(profile);
+  if (problem) {
+    throw new Error(`${source} failed stroke delivery: ${problem}. Recapture the cell.`);
+  }
+}
+
 // The verdict a capture recorded is the one its runner computed on the day, from
 // whatever expectations that checkout held. The matrix already re-scores every
 // drawing table with the current gates for exactly that reason, and leaving the
@@ -482,6 +494,7 @@ function normalizeDrawingRun(
 ) {
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
+  refuseLostStrokes(profile, source);
   const summaries = profile.report ? summarizeRun(profile.report) : profile.summaries;
   const phases = summaries?.phases;
   const scored = scoreDrawingRun(phases ?? [], gateShare);
@@ -753,6 +766,7 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
   if (!source) return null;
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
+  refuseLostStrokes(profile, source);
   const splitEvidenceProblem = splitUndoEvidenceProblem(profile, UNDO_COUNT);
   if (splitEvidenceProblem) {
     throw new Error(`${source} cannot supply undo evidence: ${splitEvidenceProblem}`);

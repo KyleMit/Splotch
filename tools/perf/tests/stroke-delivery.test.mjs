@@ -1,6 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { normalizeMatrix } from '../gen-performance-matrix.mjs';
 import { strokeDeliveryProblem, trustedPointerdowns } from '../lib/stroke-delivery.mjs';
 import { captureRefusal } from '../split-capture/capture-device-frames.mjs';
 
@@ -162,5 +164,100 @@ describe('captureRefusal', () => {
 
     expect(captureRefusal(ipad)).toBeNull();
     expect(captureRefusal({ ...ipad, fidelity: { passed: false } })).toMatch(/fidelity gate/);
+  });
+});
+
+// A tracked pen capture from the same campaign, which also drove the undo pass,
+// so the fold can read it as a mode's undo source.
+const UNDO_DELIVERED = JSON.parse(
+  readFileSync(
+    join(
+      ROOT,
+      'perf-profiles/evidence/2026-09-25-issue-2229-android-device-web-portrait/pen-real-screen--3aef348d.json'
+    ),
+    'utf8'
+  )
+);
+
+// Issue 2342: campaign acceptance refused the 140/160 capture, but a manifest
+// naming it directly folded it as a scoreable cell with verified fidelity.
+describe('the performance-matrix fold', () => {
+  const directories = [];
+  afterEach(() => {
+    for (const directory of directories.splice(0)) rmSync(directory, { recursive: true });
+  });
+
+  function fold({ crayon = null, undo = null }) {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-stroke-delivery-'));
+    directories.push(directory);
+    const captured = {
+      id: 'portrait-light',
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      status: 'captured',
+      drawing: {},
+    };
+    if (crayon) {
+      writeFileSync(join(directory, 'crayon.json'), JSON.stringify(crayon));
+      captured.drawing.crayon = ['crayon.json'];
+    }
+    if (undo) {
+      writeFileSync(join(directory, 'pen.json'), JSON.stringify(undo));
+      captured.undoSource = 'pen.json';
+    }
+    const unavailable = [
+      { id: 'portrait-dark', orientation: 'PORTRAIT', theme: 'dark' },
+      { id: 'landscape-light', orientation: 'LANDSCAPE', theme: 'light' },
+      { id: 'landscape-dark', orientation: 'LANDSCAPE', theme: 'dark' },
+    ].map((spec) => ({ ...spec, status: 'unavailable', reason: 'not exercised here' }));
+    const matrix = normalizeMatrix(
+      {
+        schemaVersion: 3,
+        recordedOn: '2026-09-25',
+        productCommit: '0000000000000000000000000000000000000000',
+        snapshotKind: 'test',
+        architecture: 'test',
+        targets: [
+          {
+            id: 'android-device-web',
+            label: 'android-device-web',
+            fidelity: 'advisory',
+            modes: [captured, ...unavailable],
+          },
+        ],
+      },
+      directory
+    );
+    return matrix.targets[0].modes[0];
+  }
+
+  it('folds a capture whose page recorded every dispatched stroke as scoreable', () => {
+    const mode = fold({ crayon: DELIVERED });
+
+    expect(mode.drawing.crayon.aggregate.scoreable).toBe(true);
+    expect(mode.drawing.crayon.runs[0].trust).toContainEqual({
+      name: 'inputFidelity',
+      state: 'verified',
+    });
+  });
+
+  it('refuses a drawing capture that lost strokes, naming both counts', () => {
+    expect(() => fold({ crayon: withLostStrokes(DELIVERED, LOST_STROKES) })).toThrow(
+      /crayon\.json failed stroke delivery: the page recorded 140 pointerdowns for 160 dispatched strokes/
+    );
+  });
+
+  it('folds a delivered undo source and refuses one that lost strokes', () => {
+    expect(trustedPointerdowns(UNDO_DELIVERED.report)).toBe(UNDO_DELIVERED.dispatchedStrokes);
+    expect(fold({ undo: UNDO_DELIVERED }).undo).toMatchObject({ source: 'pen.json' });
+    expect(() => fold({ undo: withLostStrokes(UNDO_DELIVERED, LOST_STROKES) })).toThrow(
+      /pen\.json failed stroke delivery: the page recorded 140 pointerdowns for 160/
+    );
+  });
+
+  it('folds a transport that records no dispatched count as before', () => {
+    const uncounted = { ...withLostStrokes(DELIVERED, LOST_STROKES), dispatchedStrokes: null };
+
+    expect(fold({ crayon: uncounted }).drawing.crayon.aggregate.scoreable).toBe(true);
   });
 });
