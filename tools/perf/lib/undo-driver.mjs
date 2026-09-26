@@ -23,6 +23,12 @@ export const EXPAND_CONTROLS_SOURCE = `document.querySelector(${JSON.stringify(E
 
 export const UNDO_BUTTON_READY_SOURCE = `const button = document.querySelector(${JSON.stringify(UNDO_BUTTON_SELECTOR)}); return !!button && !button.disabled;`;
 
+// Two clocks close each action (issue #2338). `nextFrameMs` reads the rAF
+// timestamp, which is the frame's vsync time: a busy main thread can run that
+// callback after the click while stamping it before, so the scored figure can be
+// negative. `callbackMs` reads `performance.now()` inside the same callback — when
+// the frame actually ran. It is diagnostic only; the undo gates score `nextFrameMs`.
+//
 // A promise-valued expression rather than a statement body: WebDriver's
 // executeAsync hands the result to a trailing callback while Playwright awaits a
 // returned promise, and an expression adapts to both without restating the body.
@@ -48,16 +54,18 @@ export function undoActionFunctionSource(timeoutMs = UNDO_MEASURE_TIMEOUT_MS) {
           ? inkMotionMeasures.reduce((total, entry) => total + entry.duration, 0)
           : null;
         requestAnimationFrame((paintedAt) => {
+          const endedAt = performance.now();
           resolve({
             index,
             startedAt,
-            endedAt: performance.now(),
+            endedAt,
             beforeCount,
             afterCount: measures.length,
             engineMs: measure.duration,
             inkMotionMeasures: inkMotionMeasures.length,
             inkMotionMs,
-            nextFrameMs: paintedAt - startedAt
+            nextFrameMs: paintedAt - startedAt,
+            callbackMs: endedAt - startedAt
           });
         });
         return;

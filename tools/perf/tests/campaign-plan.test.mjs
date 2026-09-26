@@ -467,6 +467,43 @@ describe('campaign artifact acceptance', () => {
     ).toContain('contradicts');
   });
 
+  it('holds a recorded callback clock to the raw action timings', () => {
+    const timed = validSplitUndo.undoActions.map((action, index) => ({
+      ...action,
+      startedAt: index * 100,
+      endedAt: index * 100 + 12,
+    }));
+    const named = timed.map((action) => ({ ...action, callbackMs: 12 }));
+    const callback = { p50: 12, p95: 12, p99: 12, max: 12 };
+    const summarized = { ...validSplitUndo.undo, callback };
+
+    expect(
+      splitUndoEvidenceProblem({ ...validSplitUndo, undoActions: timed }, UNDO_COUNT)
+    ).toBeNull();
+    expect(
+      splitUndoEvidenceProblem(
+        { ...validSplitUndo, undoActions: named, undo: summarized },
+        UNDO_COUNT
+      )
+    ).toBeNull();
+    expect(
+      splitUndoEvidenceProblem({ ...validSplitUndo, undoActions: named }, UNDO_COUNT)
+    ).toContain('contradicts');
+    expect(
+      splitUndoEvidenceProblem(
+        {
+          ...validSplitUndo,
+          undoActions: named,
+          undo: { ...summarized, callback: { ...callback, max: 13 } },
+        },
+        UNDO_COUNT
+      )
+    ).toContain('contradicts');
+    expect(splitUndoEvidenceProblem({ ...validSplitUndo, undo: summarized }, UNDO_COUNT)).toContain(
+      'contradicts'
+    );
+  });
+
   it('refuses an empty or orphaned split group on actions without ink-motion time', () => {
     for (const undo of [
       { ...validSplitUndo.undo, inkMotion: {} },

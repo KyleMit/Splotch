@@ -1203,10 +1203,19 @@ when only time passed.** A cell captured by a tool that has since been fixed is 
 different instrument. The campaign now records that distinction instead of leaving it in the
 operator's head (issue 1293): an `instrument.json` beside the ledger fingerprints the modules that
 decide what a capture measures (the bootstrap, probe host, both capture drivers, the probe, the
-eraser fill), and a resume across a change is refused with the changed files named. Start clean to
-recapture under the current instrument, or pass `--accept-instrument-change` to keep the banked
-cells deliberately, on record. Scorers and fidelity tables are outside the fingerprint on purpose —
-they re-derive at fold time, so changing them re-scores banked cells rather than invalidating them.
+eraser fill, the undo driver), and a resume across a change is refused with the changed files named.
+Start clean to recapture under the current instrument, or pass `--accept-instrument-change` to keep
+the banked cells deliberately, on record. Scorers and fidelity tables are outside the fingerprint on
+purpose — they re-derive at fold time, so changing them re-scores banked cells rather than
+invalidating them.
+
+A change that only adds a diagnostic field to what the instrument records still changes the
+fingerprint. Issue 2338 is the example: the undo driver's per-action record gained `callbackMs`
+beside the scored `nextFrameMs`, which flags every `perf:device:frames` and
+`perf:ios:xcuitest:screen` resume. The banked cells measured the same thing, so
+`--accept-instrument-change` is the expected answer there; the cells banked before the change lack
+the field, and the undo summary still derives the callback figure from their `startedAt` and
+`endedAt`.
 
 The campaign also names every cell's server source (issue 1301) — the dry run prints it per cell,
 and a real run WARNS about `guarded-default` cells: an Appium or CDP child given no `--url` reuses
