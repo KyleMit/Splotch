@@ -249,19 +249,20 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   fold, the strict staleness check of the time (ADR-0159, since superseded by ADR-0175) reported
   every freshly captured section current at that commit.
 * Freshly captured at 3928cd88: every drawing and pen-undo section in all four modes of all four
-  physical rows, except the physical Android web portrait-light and portrait-dark drawing and undo
-  sections, which were recaptured at 1e3016ec407413a255e69d6eddaef2274dd3ee3a on 2026-09-25 (issue
-  2229); and the portrait-light and portrait-dark action sweeps on physical iPad native and physical
-  Android web. The other twelve physical action sections were captured after that campaign and
-  folded one section at a time (issue 2268): first, all four physical iPad web sweeps at
-  8e6700d5d801eb481a4bde3d47cea69135dd71b4 over the secure-origin front (issue 2211), and both
-  physical iPad native landscape sweeps at d50d73927f1835bbe231d1c2450f49fbe5803f53, the
-  contentInset fix (issue 2212). Each keeps its own product commit beside its mode’s 3928cd88
-  drawing, and its capture date is its fold date, because action artifacts record no capture clock.
-  Six more were recaptured on the phone at 87da0c5a3b4a789d36678a4e10c873f76a6f3c04 on 2026-09-25
-  and folded the same way (issue 2268): both physical Android web landscape sweeps over direct CDP,
-  and all four physical Android native sweeps through Appium attached to the Capacitor WebView. No
-  physical action section is preserved.
+  physical rows, except the physical Android web drawing and undo sections: portrait-light and
+  portrait-dark were recaptured at 1e3016ec407413a255e69d6eddaef2274dd3ee3a on 2026-09-25 (issue
+  2229), and landscape-light and landscape-dark at 8a6ef42bc7a233abe9ca35cb6998daac60e0aa91 on
+  2026-09-26 (issue 2337); and the portrait-light and portrait-dark action sweeps on physical iPad
+  native and physical Android web. The other twelve physical action sections were captured after
+  that campaign and folded one section at a time (issue 2268): first, all four physical iPad web
+  sweeps at 8e6700d5d801eb481a4bde3d47cea69135dd71b4 over the secure-origin front (issue 2211), and
+  both physical iPad native landscape sweeps at d50d73927f1835bbe231d1c2450f49fbe5803f53, the
+  contentInset fix (issue 2212). Each keeps its own product commit beside its mode’s drawing commit,
+  and its capture date is its fold date, because action artifacts record no capture clock. Six more
+  were recaptured on the phone at 87da0c5a3b4a789d36678a4e10c873f76a6f3c04 on 2026-09-25 and folded
+  the same way (issue 2268): both physical Android web landscape sweeps over direct CDP, and all
+  four physical Android native sweeps through Appium attached to the Capacitor WebView. No physical
+  action section is preserved.
 * Why twelve physical action sweeps were folded after the campaign: physical Android web landscape
   sweeps failed at 3928cd88 because every color swatch in the landscape compact color flyout
   measured zero size, and physical Android native sweeps failed at 3928cd88 when the native tap on
@@ -306,10 +307,10 @@ and why (ADR-0162); every target without a ledger scores them at the base gates:
   pixels.
 * The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the
   physical iPad native and both physical Android rows to be current and scored before campaign
-  completion. Drawing and undo were captured on all four rows at 3928cd88 (physical Android web
-  portrait since recaptured at 1e3016ec), and every physical action section is now current. The
-  physical Android web landscape drawing and undo sections still wait for the issue 2271 recapture,
-  so this report does not complete that requirement.
+  completion. Drawing and undo were captured on all four rows at 3928cd88, and physical Android web
+  has since been recaptured on the corrected geometry: portrait at 1e3016ec and landscape at
+  8a6ef42b. Every physical action section is now current, and no physical section still waits for
+  the issue 2271 recapture.
 * Simulator, emulator, and Mac rows were not recaptured in this physical release-gate campaign.
   Every section on those rows is explicitly preserved from the prior published report and makes no
   claim of currency at the final product commit.
