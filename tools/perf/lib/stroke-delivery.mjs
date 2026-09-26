@@ -7,9 +7,9 @@
 // 160 swipes, and the capture still passed fidelity, because the strokes that
 // did arrive were driven perfectly. The count is the only witness.
 //
-// The one rule for perf:device:frames' exit, campaign acceptance, and the
-// person session's REDO verdict, so none of them can bank a capture another
-// refuses.
+// The one rule for perf:device:frames' exit, campaign acceptance, the
+// performance-matrix fold, and the person session's REDO verdict, so none of
+// them can bank a capture another refuses.
 
 // A dispatched swipe's start is rounded to a whole device pixel, and Android
 // reports the touch back at sub-pixel precision; anything past one CSS pixel is

@@ -119,15 +119,16 @@ point, when any app's untrusted `USE_OPACITY` windows combine past that limit ov
 app; that block also stops `--verify-android-input` from running.
 `npm run perf:session:person -- --check=overlay` reads the same verdict. Android split captures
 record `dispatchedStrokes`, and `perf:device:frames` fails a capture whose page recorded a different
-number of pointerdowns, naming both counts.
+number of pointerdowns, naming both counts. Campaign acceptance and the performance-matrix fold
+refuse the same capture, so a manifest that names it directly cannot publish it (issue 2342).
 
 A stroke can also arrive in the wrong place with every count and cadence check passing. The dispatch
 origin was once the page's whole outer-minus-inner gap, which on the rig phone includes the 48 CSS
 px navigation bar below the page in portrait and beside it in landscape, so every stroke landed 48
 CSS px low or right (issue 2271). The origin now subtracts the bars `dumpsys window displays`
 reports after the page, and each split capture records `strokeLanding`: every swipe's planned start
-beside the pointerdown the page recorded. Campaign acceptance, the person session, and
-`perf:device:frames` refuse a capture whose strokes landed more than a CSS pixel off. Chrome's
+beside the pointerdown the page recorded. Campaign acceptance, the person session, the matrix fold,
+and `perf:device:frames` refuse a capture whose strokes landed more than a CSS pixel off. Chrome's
 optional bottom address bar is the known layout the origin cannot see, and this refusal is what
 catches it.
 
