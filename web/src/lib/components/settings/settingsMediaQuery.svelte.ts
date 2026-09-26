@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import { scheduleIdle } from '$lib/idle';
 import { uiState, settingsModal } from '$lib/state/ui.svelte';
 
 // Read both breakpoints in one flush: independent updates transiently mount the
@@ -15,8 +14,9 @@ export function createSettingsMediaQueries(queries: { wide: string; compact: str
   // staged mount watermarks next door exist to keep under a frame budget.
   const foreground = () => settingsModal.open || uiState.resizingActionButtons;
 
-  // Cancellation is lifecycle bookkeeping, deliberately untracked.
-  let cancelPending: (() => void) | undefined;
+  // Whether a change arrived while the pane was in the background. Lifecycle
+  // bookkeeping, deliberately untracked.
+  let stale = false;
 
   $effect(() => {
     if (typeof matchMedia === 'undefined') return;
@@ -26,40 +26,35 @@ export function createSettingsMediaQueries(queries: { wide: string; compact: str
       wide = wideQuery.matches;
       compact = compactQuery.matches;
     };
+    // A closed pane is not swapped at all: its shell is invisible, and a
+    // rotation is exactly when a change arrives, so remounting it then (even
+    // from an idle callback, which mounts synchronously past its deadline) put
+    // a section view's mount inside the rotation's scored frames. The swap
+    // waits for the pane to come forward instead.
     const apply = () => {
-      cancelPending?.();
-      cancelPending = undefined;
       // Read when the change arrives rather than when the effect ran, which is
       // what lets the subscription outlive a change of foreground.
       if (foreground()) {
+        stale = false;
         update();
         return;
       }
-      // The handle is cleared by the callback itself as well as by whoever
-      // cancels it: a handle left behind after the update already ran reads as
-      // outstanding work, and the foreground effect below would then redo it.
-      cancelPending = scheduleIdle(() => {
-        cancelPending = undefined;
-        update();
-      });
+      stale = true;
     };
     update();
     wideQuery.addEventListener('change', apply);
     compactQuery.addEventListener('change', apply);
     return () => {
-      cancelPending?.();
       wideQuery.removeEventListener('change', apply);
       compactQuery.removeEventListener('change', apply);
     };
   });
 
-  // Coming to the foreground with an idle update still pending: apply it now
-  // rather than leaving the pane a frame behind the viewport it is opening
-  // into. This was previously a side effect of resubscribing.
+  // Coming to the foreground after a change landed in the background: apply it
+  // now, in the open flush, so the pane opens into the shell its viewport picks.
   $effect(() => {
-    if (!foreground() || !cancelPending) return;
-    cancelPending();
-    cancelPending = undefined;
+    if (!foreground() || !stale) return;
+    stale = false;
     wide = matchMedia(queries.wide).matches;
     compact = matchMedia(queries.compact).matches;
   });
