@@ -58,11 +58,6 @@ const ERASER_FILL_SETTLE_MS = 400;
 // The probe's own row accessors page through its ring buffers; this is the slice
 // size, not a cap on the capture.
 const REPORT_SLICE_ROWS = 5_000;
-// Each drawing surface is downscaled into a scratch this many pixels on a side
-// before its pixels are hashed. The same sampler proves whole-pass output and
-// that each undo changed rendered pixels; 64 px keeps a narrow pen stroke visible
-// while the reads stay outside both measured windows.
-const CANVAS_DELTA_GRID_PX = 64;
 // FNV-1a's offset basis and prime — algorithm constants, not tuning.
 const FNV_OFFSET_BASIS = 2166136261;
 const FNV_PRIME = 16777619;
@@ -71,12 +66,16 @@ const FNV_PRIME = 16777619;
 // passed every one of them (capture 7c37d255: blank output, fidelity PASS,
 // ~3790 measures). This proves the canvas CHANGED during the pass — any pixel
 // delta, which covers the eraser's removals as well as the brushes' additions —
-// by hashing a downscale of every drawing surface before contact banking starts
-// and again after drawing ends, before any optional undo. The reads go through a small
-// willReadFrequently scratch (the product's emptyScan.ts pattern, same as the
-// eraser fill's verifier) so the accelerated tiles are never read back directly:
-// a check must not change the thing being measured, and both samples run outside
-// the measured window anyway.
+// by hashing every pixel of every drawing surface before contact banking starts
+// and again after drawing ends, before any optional undo. The same sampler proves
+// that each undo changed rendered pixels, and it hashes at each surface's own
+// backing resolution because undoing one of ten identical overlapping pen
+// strokes can change only a dozen antialiased fringe pixels: a 64 px downscale
+// lost exactly that delta on a landscape phone (issue 2337). The reads go
+// through a willReadFrequently scratch (the product's emptyScan.ts pattern, same
+// as the eraser fill's verifier) so the accelerated tiles are never read back
+// directly: a check must not change the thing being measured, and every sample
+// runs outside the measured windows anyway.
 export function canvasDeltaFunctionSource() {
   return `function sampleCanvasDelta() {
     try {
@@ -87,18 +86,19 @@ export function canvasDeltaFunctionSource() {
       }
       if (!surfaces.length) return { error: 'no drawing surfaces to sample' };
       const scratch = document.createElement('canvas');
-      scratch.width = ${CANVAS_DELTA_GRID_PX};
-      scratch.height = ${CANVAS_DELTA_GRID_PX};
       const context = scratch.getContext('2d', { willReadFrequently: true });
       if (!context) return { error: 'no 2d scratch context to sample through' };
       const digests = [];
       let inkedSamples = 0;
       for (const canvas of surfaces) {
-        context.clearRect(0, 0, ${CANVAS_DELTA_GRID_PX}, ${CANVAS_DELTA_GRID_PX});
-        context.drawImage(canvas, 0, 0, ${CANVAS_DELTA_GRID_PX}, ${CANVAS_DELTA_GRID_PX});
-        const data = context.getImageData(
-          0, 0, ${CANVAS_DELTA_GRID_PX}, ${CANVAS_DELTA_GRID_PX}
-        ).data;
+        const { width, height } = canvas;
+        if (scratch.width !== width || scratch.height !== height) {
+          scratch.width = width;
+          scratch.height = height;
+        }
+        context.clearRect(0, 0, width, height);
+        context.drawImage(canvas, 0, 0);
+        const data = context.getImageData(0, 0, width, height).data;
         let hash = ${FNV_OFFSET_BASIS};
         for (let i = 0; i < data.length; i++) {
           hash = Math.imul(hash ^ data[i], ${FNV_PRIME}) >>> 0;
