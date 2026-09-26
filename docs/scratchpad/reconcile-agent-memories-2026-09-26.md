@@ -45,11 +45,12 @@ before editing. The directory now holds 30 entries, each indexed exactly once.
 ## Mechanical checks and judgment
 
 Mechanical checks found the broken wiki link, the retired npm script, the missing test path, and the
-old skill names. The checker built in phase 2 covers index membership, frontmatter names, wiki
-links, npm scripts, and advisory repo paths, possible skills, and flags. The post-edit run reports
-zero errors. Paths to local ignored files and tool flags are advisory: `web/.env` and the canonical
-checkout's local settings can exist outside Git, while a flag belongs to its command, not to the
-repo's script list. `fix-then-recapture` and `release-gate` are prose compounds, not skills.
+old skill names. The checker built in phase 2 covers index membership, missing frontmatter names,
+wiki links, npm scripts, and advisory display names, unscanned entries, repo paths, possible skills,
+and flags. The post-edit run reports zero errors. Paths to local ignored files and tool flags are
+advisory: `web/.env` and the canonical checkout's local settings can exist outside Git, while a flag
+belongs to its command, not to the repo's script list. `fix-then-recapture` and `release-gate` are
+prose compounds, not skills.
 
 Judgment was needed to distinguish a durable lesson from a run snapshot, to verify PR and epic
 states on GitHub, and to avoid preserving an old permission or merge claim as current authority. The

@@ -5,12 +5,11 @@ import { parseArgs } from 'node:util';
 import { createIndex, extractReferences, resolveReference } from './check-doc-references.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
-const WIKI_LINK = /\[\[([\w-]+)\]\]/g;
-const INDEX_LINK = /\]\(([^)]+\.md)\)/g;
+const WIKI_LINK = /\[\[([^\]]+)\]\]/g;
+const INDEX_ENTRY = /^\s*[-*]\s+\[[^\]]+\]\(([^)]+)\)/gm;
 const FRONTMATTER_NAME = /^name:\s*(.+)$/m;
 const FLAG = /(?<![\w-])--[a-z][\w-]*/g;
-const SKILL_NAME =
-  /\b(?:address|audit|burn-down|create|drive|fix|implement|improve|orchestrate|reconcile|release|run|ship|start|update)-[a-z0-9-]+\b/g;
+const URL_SCHEME = /^[a-z][a-z+.-]*:/i;
 
 function trackedFiles(root) {
   const result = spawnSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' });
@@ -45,16 +44,23 @@ function namesUnder(root, subdir) {
 export function scanAgentMemory({ memoryDir, root = ROOT, files = trackedFiles(root) }) {
   const directory = resolve(memoryDir);
   const entries = readdirSync(directory, { withFileTypes: true });
+  const errors = [];
+  const advisory = entries
+    .filter(
+      (entry) => entry.isDirectory() || (entry.isSymbolicLink() && entry.name.endsWith('.md'))
+    )
+    .map((entry) => ({ file: entry.name, kind: 'unscanned entry', ref: entry.name }));
   const memoryFiles = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith('.md') && entry.name !== 'MEMORY.md')
     .map((entry) => entry.name)
     .sort();
   const knownFiles = new Set(memoryFiles);
   const knownStems = new Set(memoryFiles.map((name) => name.slice(0, -3)));
-  const errors = [];
-  const advisory = [];
   const indexText = readFileSync(join(directory, 'MEMORY.md'), 'utf8');
-  const indexLinks = [...indexText.matchAll(INDEX_LINK)].map((match) => match[1]);
+  const indexLinks = [...indexText.matchAll(INDEX_ENTRY)]
+    .map((match) => match[1])
+    .filter((target) => !URL_SCHEME.test(target))
+    .map((target) => target.replace(/[?#].*$/, '').replace(/^\.\//, ''));
   for (const name of memoryFiles) {
     const count = indexLinks.filter((link) => link === name).length;
     if (count !== 1)
@@ -75,13 +81,21 @@ export function scanAgentMemory({ memoryDir, root = ROOT, files = trackedFiles(r
     ...namesUnder(root, '.claude/skills'),
     ...namesUnder(root, '.agents/skills'),
   ]);
+  const prefixes = new Set([...skills].map((skill) => skill.split('-')[0]));
+  prefixes.add('implement');
+  prefixes.add('update');
+  const skillName = new RegExp(`\\b(?:${[...prefixes].join('|')})-[a-z0-9-]+\\b`, 'g');
   for (const file of memoryFiles) {
     const content = readFileSync(join(directory, file), 'utf8');
-    const name = content.match(FRONTMATTER_NAME)?.[1]?.trim();
-    if (name !== file.slice(0, -3))
-      errors.push({ file, kind: 'name', ref: name ?? '', detail: 'does not match filename' });
+    const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1] ?? '';
+    const name = frontmatter.match(FRONTMATTER_NAME)?.[1]?.trim();
+    if (!name) errors.push({ file, kind: 'name', ref: '', detail: 'missing frontmatter name' });
+    else if (name !== file.slice(0, -3))
+      advisory.push({ file, kind: 'name', ref: name, detail: 'differs from filename' });
     for (const match of content.matchAll(WIKI_LINK)) {
-      if (!knownStems.has(match[1]))
+      const target = match[1].split(/[|#]/, 1)[0].trim().replace(/\.md$/, '');
+      const slug = target.toLowerCase().replace(/\s+/g, '-');
+      if (!knownStems.has(target) && !knownStems.has(slug))
         errors.push({ file, kind: 'wiki link', ref: match[1], detail: 'target missing' });
     }
     for (const reference of extractReferences(content, index)) {
@@ -91,7 +105,7 @@ export function scanAgentMemory({ memoryDir, root = ROOT, files = trackedFiles(r
       if (reference.kind === 'script') errors.push(finding);
       else advisory.push(finding);
     }
-    for (const match of content.matchAll(SKILL_NAME)) {
+    for (const match of content.matchAll(skillName)) {
       if (!skills.has(match[0])) advisory.push({ file, kind: 'possible skill', ref: match[0] });
     }
     for (const match of content.matchAll(FLAG))
@@ -123,4 +137,7 @@ export function checkAgentMemoryReferences(argv = process.argv.slice(2)) {
   return result.errors.length ? 1 : 0;
 }
 
-if (isMain(import.meta.url)) runMain(async () => checkAgentMemoryReferences());
+if (isMain(import.meta.url))
+  runMain(async () => {
+    process.exitCode = checkAgentMemoryReferences();
+  });

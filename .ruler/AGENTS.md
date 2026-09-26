@@ -7,7 +7,8 @@
 > the output. Direct provider packages registered in `tools/ruler/lib/direct-provider-skills.mjs`
 > are the exceptions: `burn-down-audits`, `analyze-session-transcripts`, and `run-rival-agent` have
 > independent Claude and Codex implementations (each `run-rival-agent` package launches the *other*
-> vendor's CLI). Edit only the registered provider package and note you intend to change; never
+> vendor's CLI); `reconcile-agent-memories` has only a Claude package for Claude Code's indexed
+> memory store. Edit only the registered provider package and note you intend to change; never
 > manufacture a missing provider by copying another one.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):

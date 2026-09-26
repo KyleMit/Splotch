@@ -9,7 +9,8 @@
 > the output. Direct provider packages registered in `tools/ruler/lib/direct-provider-skills.mjs`
 > are the exceptions: `burn-down-audits`, `analyze-session-transcripts`, and `run-rival-agent` have
 > independent Claude and Codex implementations (each `run-rival-agent` package launches the *other*
-> vendor's CLI). Edit only the registered provider package and note you intend to change; never
+> vendor's CLI); `reconcile-agent-memories` has only a Claude package for Claude Code's indexed
+> memory store. Edit only the registered provider package and note you intend to change; never
 > manufacture a missing provider by copying another one.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
@@ -54,8 +55,10 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   per provider, each launching the *other* vendor's local CLI (the Claude package runs Codex, the
   Codex package runs Claude), so that one skill name works from either runner;
   `analyze-session-transcripts` has independent provider packages because Claude Code and Codex
-  persist different transcript formats. Edit registered packages and notes directly, never through
-  `.ruler/`, and never create an undeclared provider by copying one.
+  persist different transcript formats. `reconcile-agent-memories` has a Claude-only package for
+  Claude Code's indexed project memory; no Codex equivalent has been verified. Edit registered
+  packages and notes directly, never through `.ruler/`, and never create an undeclared provider by
+  copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
@@ -289,8 +292,9 @@ support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/
 from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
 `burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
 `analyze-session-transcripts` with format-specific implementations and `run-rival-agent`, whose two
-packages each launch the *other* vendor's CLI. See `tools/ruler/lib/direct-provider-skills.mjs` for
-the authoritative registry.
+packages each launch the *other* vendor's CLI. `reconcile-agent-memories` has only a Claude package
+for Claude Code's indexed project memory. See `tools/ruler/lib/direct-provider-skills.mjs` for the
+authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                                                                                                    |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

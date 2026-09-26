@@ -107,7 +107,7 @@ meta).
 | Skill                      | What it reconciles                                                                                                                       |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `reconcile-adrs`           | Existing ADRs against the current code and recent decisions — amends drift                                                               |
-| `reconcile-agent-memories` | Claude Code project memory and its index against the current repo and GitHub state — fixes or retires drift                              |
+| `reconcile-agent-memories` | Claude Code project memory (Claude-only) and its index against the current repo and GitHub state — fixes or retires drift                |
 | `reconcile-code-map`       | `docs/CODE-MAP.md` against the current tree — regenerates tables, rewrites prose                                                         |
 | `reconcile-docs-with-code` | Living docs, skills, and rules against the code — stale identifiers, prose about renamed or deleted things, and doc-reference exemptions |
 | `reconcile-with-main`      | A long-running branch against current `main`, hunting the *semantic* conflicts                                                           |

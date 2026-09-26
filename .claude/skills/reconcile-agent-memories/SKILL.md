@@ -19,14 +19,14 @@ From the repo root, run:
 npm run check:agent-memories -- --memory-dir=<absolute-memory-directory>
 ```
 
-The read-only check fails on missing or duplicate index entries, frontmatter names that differ from
-filenames, broken `[[wiki links]]`, and nonexistent `npm run` targets. It prints repo paths,
-possible skill names, and flags for review. Treat these as leads, not automatic edits: ignored local
-files, output paths, historical counterexamples, prose compounds, and flags owned by external
-commands are common false positives. Check real skill names against `.claude/skills/`, paths against
-the current tree, and flags against the command's source or help without executing a command that
-changes state. A renamed concept may appear in plain prose without any syntax the checker catches;
-search for names removed since the last pass.
+The read-only check fails on missing or duplicate index entries, missing frontmatter names, broken
+`[[wiki links]]`, and nonexistent `npm run` targets. It prints differing display names, entries it
+could not scan, repo paths, possible skill names, and flags for review. Treat these as leads, not
+automatic edits: ignored local files, output paths, historical counterexamples, prose compounds, and
+flags owned by external commands are common false positives. Check real skill names against
+`.claude/skills/`, paths against the current tree, and flags against the command's source or help
+without executing a command that changes state. A renamed concept may appear in plain prose without
+any syntax the checker catches; search for names removed since the last pass.
 
 ## Reconcile meaning
 

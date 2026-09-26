@@ -18,10 +18,11 @@ format and access rules before adding a provider package or moving to a managed 
 
 The initial 44 entries had a complete index, yet still contained a broken wiki link, a retired
 script, renamed skill text, and many expired PR and epic states. Index consistency alone is weak.
-The deterministic checker gates only index membership, names, wiki targets, and npm scripts. Paths,
-possible skill names, and flags remain advisory because local ignored files, historical examples,
-prose compounds, and external CLI flags cannot be classified safely by syntax. The first pass
-retired 14 entries and corrected 12, leaving 30 indexed memories and zero mechanical errors.
+The deterministic checker gates only index membership, missing frontmatter names, wiki targets, and
+npm scripts. Differing display names, unscanned entries, paths, possible skill names, and flags
+remain advisory because local ignored files, historical examples, prose compounds, and external CLI
+flags cannot be classified safely by syntax. The first pass retired 14 entries and corrected 12,
+leaving 30 indexed memories and zero mechanical errors.
 
 The most consequential judgment was retiring completed run plans rather than updating every stale
 line in them. The completed work is preserved on GitHub and in historical notes; keeping a
