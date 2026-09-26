@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "recordedOn": "2026-09-25",
+  "recordedOn": "2026-09-26",
   "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
   "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
@@ -12,7 +12,7 @@
     "Every physical action section comes from a sweep that covers the current action groups, including ai-waiting and unavailable. The physical Android web and physical Android native landscape modes measure the compact Settings shell; its tool-drawer toggles are new labels, which render as missing, not N/A, on preserved advisory rows whose older plans never offered them.",
     "The physical Android native drawing and undo sections come from a probe-host server.url build carrying the ADR-0135 split transport. Those artifacts record pageIdentity unprovable by construction, because the fixed server.url carries no per-cell nonce. Its three drift references were captured before its landscape cells, whose first attempt wrote no artifact and which were recaptured after the end reference, so the references do not bracket the landscape cells.",
     "Every physical drawing and undo cell passed its input-fidelity gate. Physical iPad web carries three drawing lost-frame reds against the 1% budget: landscape/dark pen 1.13%, landscape/light eraser 1.03%, and landscape/dark eraser 1.01%. The other seven of the ten e5142fab reds now read 0.71-0.98%. ADR-0174, as amended by the 2026-09-24 rulings, explains all three: the pen reading is inside the driven pen band (above 1%, up to 1.37%), and real-finger eraser captures at 8e6700d5 in both landscape modes (0.04% light, 0% dark) explain both eraser cells. Physical Android web portrait carried six drawing reds (1.03-1.45%) at 3928cd88. That capture had two rig faults. In every portrait cell, an accessibility overlay on the rig phone dropped 20 of 160 strokes (issue 2229), and every stroke landed 48 CSS px below its planned position (issue 2271). The recapture at 1e3016ec corrected both at once, so it does not separate their effects. An earlier A/B cleared only the overlay and kept the offset: portrait-light crayon read a 0.75% median at 3928cd88 against 0.72% at e5142fab. The recapture delivered 160 of 160 strokes in every cell, with the overlay check passing and every stroke landing where it was dispatched. All eight portrait cells now read 0.22-0.52%, and the drift references read 0.38, 0.65, and 0.40%. The physical Android native row carries no red cell.",
-    "The physical Android web landscape-light and landscape-dark drawing and undo sections, captured at 3928cd88, are affected by a dispatch offset. The harness counted the navigation bar beside the page as browser chrome, so every stroke landed 48 CSS px right of its planned position (issue 2271, fixed by PR 2295). These sections are still published as scoreable. A recapture is pending.",
+    "The physical Android web landscape-light and landscape-dark drawing and undo sections captured at 3928cd88 were affected by a dispatch offset. The harness counted the navigation bar beside the page as browser chrome, so every stroke landed 48 CSS px right of its planned position (issue 2271, fixed by PR 2295). On the corrected geometry, every landscape pen capture then failed its undo check, because a 64 px downscale lost the 12 pixels that undo 10 changed (issue 2337). The check now hashes every pixel, and both sections were recaptured at 8a6ef42b. Every cell delivered 160 of 160 strokes, each landing where it was dispatched, and all ten undos restored different pixels.",
     "The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the physical iPad native and both physical Android rows to be current and scored before campaign completion. Drawing and undo were captured on all four rows at 3928cd88 (physical Android web portrait since recaptured at 1e3016ec), and every physical action section is now current. The physical Android web landscape drawing and undo sections still wait for the issue 2271 recapture, so this report does not complete that requirement.",
     "Simulator, emulator, and Mac rows were not recaptured in this physical release-gate campaign. Every section on those rows is explicitly preserved from the prior published report and makes no claim of currency at the final product commit.",
     "Action cells are scored under ADR-0156: a post-action max breach counts only when two of the three scored repeats show it; a single breaching repeat is recorded as unconfirmed rather than red. Read each artifact's scoredActionFrameGaps rather than treating the pooled P95/P99/max triple as three repeats.",
@@ -654,35 +654,35 @@
           "theme": "light",
           "status": "captured",
           "capturedOn": {
-            "drawing": "2026-09-23",
-            "undo": "2026-09-23",
+            "drawing": "2026-09-26",
+            "undo": "2026-09-26",
             "actions": "2026-09-25"
           },
-          "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-          "buildEntry": "/_app/immutable/entry/start.2SIk_r4j.js",
-          "buildDigest": "0db8b6601e82e23af46f61838d4b23dca59609c1ebb951e30a2cc6c25233c566",
+          "drawingProductCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
           "drawing": {
             "pen": [
-              "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/pen-real-screen.json"
+              "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/crayon-real-screen.json"
+              "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/magic-real-screen.json"
+              "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/eraser-real-screen.json"
+              "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/pen-real-screen.json",
           "actionSources": [
             {
               "source": "perf-profiles/2026-09-25-issue-2268-android-actions/android-device-web/landscape-light/actions/actions.json",
               "productCommit": "87da0c5a3b4a789d36678a4e10c873f76a6f3c04",
               "kind": "full"
             }
-          ]
+          ],
+          "buildEntry": "/_app/immutable/entry/start.Dx1JZe5N.js",
+          "buildDigest": "ca96b82167bd893d5f6587dacf8737e09c82a7c06277b95a07b36dbf59df60de"
         },
         {
           "id": "landscape-dark",
@@ -690,35 +690,35 @@
           "theme": "dark",
           "status": "captured",
           "capturedOn": {
-            "drawing": "2026-09-23",
-            "undo": "2026-09-23",
+            "drawing": "2026-09-26",
+            "undo": "2026-09-26",
             "actions": "2026-09-25"
           },
-          "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-          "buildEntry": "/_app/immutable/entry/start.2SIk_r4j.js",
-          "buildDigest": "0db8b6601e82e23af46f61838d4b23dca59609c1ebb951e30a2cc6c25233c566",
+          "drawingProductCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
           "drawing": {
             "pen": [
-              "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/pen-real-screen.json"
+              "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/crayon-real-screen.json"
+              "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/magic-real-screen.json"
+              "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/eraser-real-screen.json"
+              "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/pen-real-screen.json",
           "actionSources": [
             {
               "source": "perf-profiles/2026-09-25-issue-2268-android-actions/android-device-web/landscape-dark/actions/actions.json",
               "productCommit": "87da0c5a3b4a789d36678a4e10c873f76a6f3c04",
               "kind": "full"
             }
-          ]
+          ],
+          "buildEntry": "/_app/immutable/entry/start.Dx1JZe5N.js",
+          "buildDigest": "ca96b82167bd893d5f6587dacf8737e09c82a7c06277b95a07b36dbf59df60de"
         }
       ]
     },

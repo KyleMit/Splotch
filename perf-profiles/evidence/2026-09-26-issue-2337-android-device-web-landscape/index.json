@@ -1,0 +1,129 @@
+{
+  "campaign": "2026-09-26-issue-2337-android-device-web-landscape",
+  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
+  "capturedFrom": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web",
+  "study": "Physical android-device-web landscape-light and landscape-dark drawing (four brushes) plus pen-undo at 10 undos and 3 drift refs, recaptured for issue 2337 with the full-resolution undo pixel check on the corrected dispatch geometry (issue 2271); replaces the 3928cd88 landscape cells whose strokes landed 48 CSS px right",
+  "kept": [
+    {
+      "file": "crayon-real-screen--c499d2d4.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--aa32287a.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--5bd3088e.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--e48c8074.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--e0746f32.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "landscape-light/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--1963d407.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "landscape-light/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--645f9a71.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "landscape-light/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--33c73d27.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "landscape-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "end--1768ff38.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "references/landscape-light/end.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "middle--559421d4.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "references/landscape-light/middle.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "start--0ff4454c.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "references/landscape-light/start.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}

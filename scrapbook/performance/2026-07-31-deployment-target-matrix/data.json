@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "recordedOn": "2026-09-25",
+  "recordedOn": "2026-09-26",
   "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
   "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
@@ -11,7 +11,7 @@
     "Every physical action section comes from a sweep that covers the current action groups, including ai-waiting and unavailable. The physical Android web and physical Android native landscape modes measure the compact Settings shell; its tool-drawer toggles are new labels, which render as missing, not N/A, on preserved advisory rows whose older plans never offered them.",
     "The physical Android native drawing and undo sections come from a probe-host server.url build carrying the ADR-0135 split transport. Those artifacts record pageIdentity unprovable by construction, because the fixed server.url carries no per-cell nonce. Its three drift references were captured before its landscape cells, whose first attempt wrote no artifact and which were recaptured after the end reference, so the references do not bracket the landscape cells.",
     "Every physical drawing and undo cell passed its input-fidelity gate. Physical iPad web carries three drawing lost-frame reds against the 1% budget: landscape/dark pen 1.13%, landscape/light eraser 1.03%, and landscape/dark eraser 1.01%. The other seven of the ten e5142fab reds now read 0.71-0.98%. ADR-0174, as amended by the 2026-09-24 rulings, explains all three: the pen reading is inside the driven pen band (above 1%, up to 1.37%), and real-finger eraser captures at 8e6700d5 in both landscape modes (0.04% light, 0% dark) explain both eraser cells. Physical Android web portrait carried six drawing reds (1.03-1.45%) at 3928cd88. That capture had two rig faults. In every portrait cell, an accessibility overlay on the rig phone dropped 20 of 160 strokes (issue 2229), and every stroke landed 48 CSS px below its planned position (issue 2271). The recapture at 1e3016ec corrected both at once, so it does not separate their effects. An earlier A/B cleared only the overlay and kept the offset: portrait-light crayon read a 0.75% median at 3928cd88 against 0.72% at e5142fab. The recapture delivered 160 of 160 strokes in every cell, with the overlay check passing and every stroke landing where it was dispatched. All eight portrait cells now read 0.22-0.52%, and the drift references read 0.38, 0.65, and 0.40%. The physical Android native row carries no red cell.",
-    "The physical Android web landscape-light and landscape-dark drawing and undo sections, captured at 3928cd88, are affected by a dispatch offset. The harness counted the navigation bar beside the page as browser chrome, so every stroke landed 48 CSS px right of its planned position (issue 2271, fixed by PR 2295). These sections are still published as scoreable. A recapture is pending.",
+    "The physical Android web landscape-light and landscape-dark drawing and undo sections captured at 3928cd88 were affected by a dispatch offset. The harness counted the navigation bar beside the page as browser chrome, so every stroke landed 48 CSS px right of its planned position (issue 2271, fixed by PR 2295). On the corrected geometry, every landscape pen capture then failed its undo check, because a 64 px downscale lost the 12 pixels that undo 10 changed (issue 2337). The check now hashes every pixel, and both sections were recaptured at 8a6ef42b. Every cell delivered 160 of 160 strokes, each landing where it was dispatched, and all ten undos restored different pixels.",
     "The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the physical iPad native and both physical Android rows to be current and scored before campaign completion. Drawing and undo were captured on all four rows at 3928cd88 (physical Android web portrait since recaptured at 1e3016ec), and every physical action section is now current. The physical Android web landscape drawing and undo sections still wait for the issue 2271 recapture, so this report does not complete that requirement.",
     "Simulator, emulator, and Mac rows were not recaptured in this physical release-gate campaign. Every section on those rows is explicitly preserved from the prior published report and makes no claim of currency at the final product commit.",
     "Action cells are scored under ADR-0156: a post-action max breach counts only when two of the three scored repeats show it; a single breaching repeat is recorded as unconfirmed rather than red. Read each artifact's scoredActionFrameGaps rather than treating the pooled P95/P99/max triple as three repeats.",
@@ -49809,12 +49809,12 @@
           "status": "captured",
           "fidelity": "physical-web-advisory",
           "capturedOn": {
-            "drawing": "2026-09-23",
-            "undo": "2026-09-23",
+            "drawing": "2026-09-26",
+            "undo": "2026-09-26",
             "actions": "2026-09-25"
           },
-          "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-          "undoProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+          "drawingProductCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
+          "undoProductCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
           "drawing": {
             "pen": {
               "aggregate": {
@@ -49822,9 +49822,9 @@
                 "paint": {
                   "p95": 7.9,
                   "p99": 8.2,
-                  "max": 15.1
+                  "max": 12.5
                 },
-                "lostFrameTimeShare": 0.0041,
+                "lostFrameTimeShare": 0.0035,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -49835,8 +49835,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/pen-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/pen-real-screen.json",
+                  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -49846,54 +49846,54 @@
                     "before": {
                       "surfaces": 20,
                       "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165
                       ],
                       "inkedSamples": 0
                     },
                     "after": {
                       "surfaces": 20,
                       "digests": [
-                        1429208602,
-                        882118910,
-                        946445765,
-                        946445765,
-                        1973734778,
-                        251691433,
-                        771296116,
-                        946445765,
-                        3077532605,
-                        927627722,
-                        4081524848,
-                        4076579885,
-                        946445765,
-                        842804234,
-                        2050099311,
-                        690650933,
-                        946445765,
-                        1271958692,
-                        946445765,
-                        794737154
+                        2022779633,
+                        4172828859,
+                        466053269,
+                        3467453605,
+                        3353211467,
+                        3795100445,
+                        2209282729,
+                        3928508165,
+                        106106173,
+                        4153335098,
+                        4273034586,
+                        1013688232,
+                        4158551427,
+                        2219379263,
+                        1441166023,
+                        2008596335,
+                        1976649637,
+                        665894824,
+                        1976649637,
+                        720340962
                       ],
-                      "inkedSamples": 6101
+                      "inkedSamples": 53536
                     }
                   },
                   "trust": [
@@ -49932,7 +49932,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.28/core over 10 cores (start 2.31, end 2.77) vs 0.5/core"
+                      "detail": "worst load 0.36/core over 10 cores (start 3.6, end 2.64) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -49960,7 +49960,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 7061
+                      "frames": 7079
                     },
                     "matched": true,
                     "scoreable": true
@@ -49971,12 +49971,12 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 3.9,
+                        "p50": 4.1,
                         "p95": 7.9,
                         "p99": 8.2,
-                        "max": 15.1
+                        "max": 12.5
                       },
-                      "lostFrameTimeShare": 0.0041,
+                      "lostFrameTimeShare": 0.0035,
                       "passed": true
                     }
                   ],
@@ -49988,11 +49988,11 @@
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.6,
+                  "p95": 7.8,
                   "p99": 8.2,
-                  "max": 15.9
+                  "max": 12.5
                 },
-                "lostFrameTimeShare": 0.0054,
+                "lostFrameTimeShare": 0.0023,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -50003,8 +50003,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/crayon-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/crayon-real-screen.json",
+                  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -50014,54 +50014,54 @@
                     "before": {
                       "surfaces": 20,
                       "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165
                       ],
                       "inkedSamples": 0
                     },
                     "after": {
                       "surfaces": 20,
                       "digests": [
-                        40971567,
-                        3857174660,
-                        946445765,
-                        946445765,
-                        844890765,
-                        3768217800,
-                        2898422799,
-                        946445765,
-                        2675561184,
-                        3256199130,
-                        4214720167,
-                        518691719,
-                        946445765,
-                        544991815,
-                        3542152845,
-                        3818746212,
-                        946445765,
-                        2602545159,
-                        946445765,
-                        3233949712
+                        2089502388,
+                        3111441104,
+                        466053269,
+                        3467453605,
+                        1222546591,
+                        1210100881,
+                        3530792174,
+                        3928508165,
+                        2144134996,
+                        1840389170,
+                        1547292156,
+                        4233846824,
+                        1862545486,
+                        3936123472,
+                        2225603168,
+                        3954739123,
+                        1976649637,
+                        2037161731,
+                        1976649637,
+                        1175238257
                       ],
-                      "inkedSamples": 6151
+                      "inkedSamples": 54116
                     }
                   },
                   "trust": [
@@ -50100,7 +50100,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.28/core over 10 cores (start 2.77, end 2.06) vs 0.5/core"
+                      "detail": "worst load 0.32/core over 10 cores (start 2.64, end 3.18) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -50128,7 +50128,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 7032
+                      "frames": 7070
                     },
                     "matched": true,
                     "scoreable": true
@@ -50139,12 +50139,12 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 3.5,
-                        "p95": 7.6,
+                        "p50": 4,
+                        "p95": 7.8,
                         "p99": 8.2,
-                        "max": 15.9
+                        "max": 12.5
                       },
-                      "lostFrameTimeShare": 0.0054,
+                      "lostFrameTimeShare": 0.0023,
                       "passed": true
                     }
                   ],
@@ -50156,11 +50156,11 @@
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.7,
+                  "p95": 7.8,
                   "p99": 8.2,
-                  "max": 14.4
+                  "max": 9.8
                 },
-                "lostFrameTimeShare": 0.0038,
+                "lostFrameTimeShare": 0.0023,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -50171,8 +50171,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/magic-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/magic-real-screen.json",
+                  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -50182,54 +50182,54 @@
                     "before": {
                       "surfaces": 20,
                       "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165
                       ],
                       "inkedSamples": 0
                     },
                     "after": {
                       "surfaces": 20,
                       "digests": [
-                        2286969844,
-                        633342636,
-                        946445765,
-                        946445765,
-                        1299916938,
-                        3280817764,
-                        901477144,
-                        946445765,
-                        279126846,
-                        1283808248,
-                        3163983644,
-                        3814089061,
-                        946445765,
-                        1751065433,
-                        4050178426,
-                        4197761051,
-                        946445765,
-                        1436051130,
-                        946445765,
-                        164781676
+                        3998747752,
+                        1587857899,
+                        466053269,
+                        3467453605,
+                        4139238614,
+                        3348640831,
+                        1179920109,
+                        3928508165,
+                        2091127712,
+                        3779837726,
+                        1950677625,
+                        1450305187,
+                        2009774226,
+                        1710559054,
+                        1806323958,
+                        1443267365,
+                        1976649637,
+                        3471306297,
+                        1976649637,
+                        451268735
                       ],
-                      "inkedSamples": 6102
+                      "inkedSamples": 53538
                     }
                   },
                   "trust": [
@@ -50268,7 +50268,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.22/core over 10 cores (start 2.06, end 2.19) vs 0.5/core"
+                      "detail": "worst load 0.32/core over 10 cores (start 3.18, end 2.71) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -50296,7 +50296,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 7060
+                      "frames": 7081
                     },
                     "matched": true,
                     "scoreable": true
@@ -50307,12 +50307,12 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 3.5,
-                        "p95": 7.7,
+                        "p50": 4.5,
+                        "p95": 7.8,
                         "p99": 8.2,
-                        "max": 14.4
+                        "max": 9.8
                       },
-                      "lostFrameTimeShare": 0.0038,
+                      "lostFrameTimeShare": 0.0023,
                       "passed": true
                     }
                   ],
@@ -50324,11 +50324,11 @@
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.8,
+                  "p95": 7.9,
                   "p99": 8.2,
-                  "max": 16.4
+                  "max": 8.4
                 },
-                "lostFrameTimeShare": 0.0033,
+                "lostFrameTimeShare": 0.0027,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -50339,8 +50339,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/eraser-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/eraser-real-screen.json",
+                  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry-refilled",
                   "anomalousEraserRefills": [],
@@ -50350,54 +50350,54 @@
                     "before": {
                       "surfaces": 20,
                       "digests": [
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109
+                        563848632,
+                        2591003529,
+                        563848632,
+                        2591003529,
+                        3719148265,
+                        56061533,
+                        3719148265,
+                        56061533,
+                        563848632,
+                        2591003529,
+                        563848632,
+                        2591003529,
+                        3719148265,
+                        56061533,
+                        3719148265,
+                        56061533,
+                        3719148265,
+                        56061533,
+                        3719148265,
+                        56061533
                       ],
-                      "inkedSamples": 81920
+                      "inkedSamples": 766104
                     },
                     "after": {
                       "surfaces": 20,
                       "digests": [
-                        800975433,
-                        2798876600,
-                        1761607109,
-                        1761607109,
-                        4261664743,
-                        2097731260,
-                        3548745097,
-                        2376820336,
-                        2307112809,
-                        813527477,
-                        442582821,
-                        1915790991,
-                        1761607109,
-                        1278774765,
-                        3393279127,
-                        1664398030,
-                        1761607109,
-                        2548141816,
-                        1761607109,
-                        4242356157
+                        199745415,
+                        2524501932,
+                        563848632,
+                        2591003529,
+                        2869546488,
+                        2251019403,
+                        687969549,
+                        1837043622,
+                        400055256,
+                        2452903963,
+                        2264717861,
+                        3000566338,
+                        2687794862,
+                        2636977773,
+                        4012187487,
+                        2864815108,
+                        3719148265,
+                        3319472594,
+                        4077295646,
+                        288782721
                       ],
-                      "inkedSamples": 72137
+                      "inkedSamples": 670954
                     }
                   },
                   "trust": [
@@ -50440,7 +50440,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.22/core over 10 cores (start 2.19, end 2.06) vs 0.5/core"
+                      "detail": "worst load 0.27/core over 10 cores (start 2.71, end 2.41) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -50468,7 +50468,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 7074
+                      "frames": 7084
                     },
                     "matched": true,
                     "scoreable": true
@@ -50479,12 +50479,12 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 3.6,
-                        "p95": 7.8,
+                        "p50": 4.1,
+                        "p95": 7.9,
                         "p99": 8.2,
-                        "max": 16.4
+                        "max": 8.4
                       },
-                      "lostFrameTimeShare": 0.0033,
+                      "lostFrameTimeShare": 0.0027,
                       "passed": true
                     }
                   ],
@@ -50494,20 +50494,32 @@
             }
           },
           "undo": {
-            "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-light/pen-real-screen.json",
-            "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+            "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-light/pen-real-screen.json",
+            "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
             "count": 10,
             "engine": {
-              "p50": 3.1,
-              "p95": 6.3,
-              "p99": 6.3,
-              "max": 6.3
+              "p50": 3.2,
+              "p95": 5.9,
+              "p99": 5.9,
+              "max": 5.9
+            },
+            "inkMotion": {
+              "p50": 2.5,
+              "p95": 3.8,
+              "p99": 3.8,
+              "max": 3.8
+            },
+            "restore": {
+              "p50": 0.8,
+              "p95": 2.1,
+              "p99": 2.1,
+              "max": 2.1
             },
             "nextFrame": {
-              "p50": 11.1,
-              "p95": 21.5,
-              "p99": 21.5,
-              "max": 21.5
+              "p50": 9,
+              "p95": 12.9,
+              "p99": 12.9,
+              "max": 12.9
             },
             "passed": true
           },
@@ -52709,190 +52721,22 @@
           "status": "captured",
           "fidelity": "physical-web-advisory",
           "capturedOn": {
-            "drawing": "2026-09-23",
-            "undo": "2026-09-23",
+            "drawing": "2026-09-26",
+            "undo": "2026-09-26",
             "actions": "2026-09-25"
           },
-          "drawingProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-          "undoProductCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+          "drawingProductCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
+          "undoProductCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
           "drawing": {
             "pen": {
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 8,
-                  "p99": 8.2,
-                  "max": 13.9
-                },
-                "lostFrameTimeShare": 0.0029,
-                "blankPassed": true,
-                "allPhasesPassed": true,
-                "scoreable": true,
-                "failedFidelityChecks": [],
-                "refreshRegime": "120hz",
-                "offRefreshRegime": false
-              },
-              "gateShare": 0.01,
-              "runs": [
-                {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/pen-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
-                  "gestureRepeats": 10,
-                  "gesturePlan": "fixed-geometry",
-                  "anomalousEraserRefills": null,
-                  "eraserRefillShortfall": null,
-                  "paintedOutput": {
-                    "changed": true,
-                    "before": {
-                      "surfaces": 20,
-                      "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765
-                      ],
-                      "inkedSamples": 0
-                    },
-                    "after": {
-                      "surfaces": 20,
-                      "digests": [
-                        1429208602,
-                        882118910,
-                        946445765,
-                        946445765,
-                        75829278,
-                        248342828,
-                        2815007294,
-                        946445765,
-                        3077532605,
-                        3233825197,
-                        2424690692,
-                        1438600420,
-                        946445765,
-                        23644398,
-                        1982522474,
-                        1930674805,
-                        946445765,
-                        1201963885,
-                        946445765,
-                        46187037
-                      ],
-                      "inkedSamples": 6103
-                    }
-                  },
-                  "trust": [
-                    {
-                      "name": "inputFidelity",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "refreshRegime",
-                      "state": "verified",
-                      "detail": "120hz"
-                    },
-                    {
-                      "name": "gestureRepeats",
-                      "state": "verified",
-                      "detail": "10"
-                    },
-                    {
-                      "name": "gesturePlan",
-                      "state": "verified",
-                      "detail": "fixed-geometry"
-                    },
-                    {
-                      "name": "pageIdentity",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "paintedOutput",
-                      "state": "verified"
-                    },
-                    {
-                      "name": "captureRuntime",
-                      "state": "verified",
-                      "detail": "android-chrome"
-                    },
-                    {
-                      "name": "hostQuiet",
-                      "state": "verified",
-                      "detail": "worst load 0.18/core over 10 cores (start 1.84, end 1.77) vs 0.5/core"
-                    }
-                  ],
-                  "fidelity": {
-                    "runtime": "android-chrome",
-                    "passed": true,
-                    "checks": {
-                      "trustedTouch": true,
-                      "cadence": true
-                    },
-                    "uncalibrated": [],
-                    "notApplicable": [
-                      "coalescing",
-                      "pressure",
-                      "contactGeometry"
-                    ]
-                  },
-                  "refreshRegime": {
-                    "intervalMs": 8.3,
-                    "observed": "120hz",
-                    "expected": "120hz",
-                    "verdict": "in-regime",
-                    "mixture": {
-                      "observedRegime": "120hz",
-                      "minorityRegime": "60hz",
-                      "slowerThanObserved": true,
-                      "sustainedMinorityShare": 0,
-                      "runMinFrames": 3,
-                      "frames": 7072
-                    },
-                    "matched": true,
-                    "scoreable": true
-                  },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
-                  "phases": [
-                    {
-                      "phase": "blank",
-                      "paint": {
-                        "p50": 4.1,
-                        "p95": 8,
-                        "p99": 8.2,
-                        "max": 13.9
-                      },
-                      "lostFrameTimeShare": 0.0029,
-                      "passed": true
-                    }
-                  ],
-                  "passed": true
-                }
-              ]
-            },
-            "crayon": {
-              "aggregate": {
-                "runCount": 1,
-                "paint": {
                   "p95": 7.9,
                   "p99": 8.2,
-                  "max": 14.9
+                  "max": 8.3
                 },
-                "lostFrameTimeShare": 0.0033,
+                "lostFrameTimeShare": 0.0013,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -52903,8 +52747,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/crayon-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/pen-real-screen.json",
+                  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -52914,54 +52758,54 @@
                     "before": {
                       "surfaces": 20,
                       "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165
                       ],
                       "inkedSamples": 0
                     },
                     "after": {
                       "surfaces": 20,
                       "digests": [
-                        40971567,
-                        3187722,
-                        946445765,
-                        946445765,
-                        3320985167,
-                        3348286391,
-                        287247326,
-                        946445765,
-                        2202930266,
-                        875638454,
-                        4115263707,
-                        1400680147,
-                        946445765,
-                        3441016481,
-                        1894500221,
-                        2019512345,
-                        946445765,
-                        1773948935,
-                        946445765,
-                        3016624182
+                        2022779633,
+                        4172828859,
+                        466053269,
+                        3467453605,
+                        985101049,
+                        3916294425,
+                        4261875944,
+                        3928508165,
+                        3585493360,
+                        2960545714,
+                        513832263,
+                        601434964,
+                        2970106603,
+                        296663328,
+                        3296168371,
+                        2306986299,
+                        1976649637,
+                        1641328684,
+                        1976649637,
+                        3832452869
                       ],
-                      "inkedSamples": 6152
+                      "inkedSamples": 53525
                     }
                   },
                   "trust": [
@@ -53000,7 +52844,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.21/core over 10 cores (start 1.77, end 2.14) vs 0.5/core"
+                      "detail": "worst load 0.34/core over 10 cores (start 2.5, end 3.35) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -53028,7 +52872,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 7061
+                      "frames": 7094
                     },
                     "matched": true,
                     "scoreable": true
@@ -53042,9 +52886,9 @@
                         "p50": 4.2,
                         "p95": 7.9,
                         "p99": 8.2,
-                        "max": 14.9
+                        "max": 8.3
                       },
-                      "lostFrameTimeShare": 0.0033,
+                      "lostFrameTimeShare": 0.0013,
                       "passed": true
                     }
                   ],
@@ -53052,15 +52896,15 @@
                 }
               ]
             },
-            "magic": {
+            "crayon": {
               "aggregate": {
                 "runCount": 1,
                 "paint": {
                   "p95": 7.9,
                   "p99": 8.2,
-                  "max": 15.1
+                  "max": 23.6
                 },
-                "lostFrameTimeShare": 0.002,
+                "lostFrameTimeShare": 0.003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -53071,8 +52915,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/magic-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/crayon-real-screen.json",
+                  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry",
                   "anomalousEraserRefills": null,
@@ -53082,54 +52926,54 @@
                     "before": {
                       "surfaces": 20,
                       "digests": [
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765,
-                        946445765
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165
                       ],
                       "inkedSamples": 0
                     },
                     "after": {
                       "surfaces": 20,
                       "digests": [
-                        3457653701,
-                        2091848393,
-                        946445765,
-                        946445765,
-                        4283573250,
-                        1917074350,
-                        3070518465,
-                        946445765,
-                        2462050783,
-                        2915653356,
-                        1995124115,
-                        3728704534,
-                        946445765,
-                        3868046798,
-                        3936611576,
-                        2522969058,
-                        946445765,
-                        1828722691,
-                        946445765,
-                        1341249621
+                        3525958491,
+                        2690778002,
+                        466053269,
+                        3467453605,
+                        4932756,
+                        3271828486,
+                        2436473381,
+                        3928508165,
+                        3177558514,
+                        2382267381,
+                        2190417096,
+                        329042538,
+                        1856407536,
+                        1220110965,
+                        386604418,
+                        2540688157,
+                        1976649637,
+                        1271873981,
+                        1976649637,
+                        4259901206
                       ],
-                      "inkedSamples": 6104
+                      "inkedSamples": 54122
                     }
                   },
                   "trust": [
@@ -53168,7 +53012,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.21/core over 10 cores (start 2.14, end 2.11) vs 0.5/core"
+                      "detail": "worst load 0.34/core over 10 cores (start 3.35, end 2.42) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -53196,7 +53040,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 7081
+                      "frames": 7078
                     },
                     "matched": true,
                     "scoreable": true
@@ -53207,12 +53051,180 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 4.5,
+                        "p50": 4.6,
                         "p95": 7.9,
                         "p99": 8.2,
-                        "max": 15.1
+                        "max": 23.6
                       },
-                      "lostFrameTimeShare": 0.002,
+                      "lostFrameTimeShare": 0.003,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "magic": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 7.8,
+                  "p99": 8.2,
+                  "max": 24.2
+                },
+                "lostFrameTimeShare": 0.0019,
+                "blankPassed": true,
+                "allPhasesPassed": true,
+                "scoreable": true,
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
+              },
+              "gateShare": 0.01,
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/magic-real-screen.json",
+                  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
+                  "gestureRepeats": 10,
+                  "gesturePlan": "fixed-geometry",
+                  "anomalousEraserRefills": null,
+                  "eraserRefillShortfall": null,
+                  "paintedOutput": {
+                    "changed": true,
+                    "before": {
+                      "surfaces": 20,
+                      "digests": [
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        466053269,
+                        3467453605,
+                        466053269,
+                        3467453605,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165,
+                        1976649637,
+                        3928508165
+                      ],
+                      "inkedSamples": 0
+                    },
+                    "after": {
+                      "surfaces": 20,
+                      "digests": [
+                        3489177033,
+                        999572157,
+                        466053269,
+                        3467453605,
+                        241176122,
+                        941738052,
+                        2956162676,
+                        3928508165,
+                        3974134396,
+                        781600733,
+                        3835884419,
+                        1582542422,
+                        2884994317,
+                        2853126778,
+                        2943022986,
+                        950087028,
+                        1976649637,
+                        3679570981,
+                        1976649637,
+                        1866893709
+                      ],
+                      "inkedSamples": 53505
+                    }
+                  },
+                  "trust": [
+                    {
+                      "name": "inputFidelity",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "refreshRegime",
+                      "state": "verified",
+                      "detail": "120hz"
+                    },
+                    {
+                      "name": "gestureRepeats",
+                      "state": "verified",
+                      "detail": "10"
+                    },
+                    {
+                      "name": "gesturePlan",
+                      "state": "verified",
+                      "detail": "fixed-geometry"
+                    },
+                    {
+                      "name": "pageIdentity",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "paintedOutput",
+                      "state": "verified"
+                    },
+                    {
+                      "name": "captureRuntime",
+                      "state": "verified",
+                      "detail": "android-chrome"
+                    },
+                    {
+                      "name": "hostQuiet",
+                      "state": "verified",
+                      "detail": "worst load 0.28/core over 10 cores (start 2.42, end 2.8) vs 0.5/core"
+                    }
+                  ],
+                  "fidelity": {
+                    "runtime": "android-chrome",
+                    "passed": true,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": true
+                    },
+                    "uncalibrated": [],
+                    "notApplicable": [
+                      "coalescing",
+                      "pressure",
+                      "contactGeometry"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 8.3,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "mixture": {
+                      "observedRegime": "120hz",
+                      "minorityRegime": "60hz",
+                      "slowerThanObserved": true,
+                      "sustainedMinorityShare": 0,
+                      "runMinFrames": 3,
+                      "frames": 7078
+                    },
+                    "matched": true,
+                    "scoreable": true
+                  },
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 4.2,
+                        "p95": 7.8,
+                        "p99": 8.2,
+                        "max": 24.2
+                      },
+                      "lostFrameTimeShare": 0.0019,
                       "passed": true
                     }
                   ],
@@ -53224,11 +53236,11 @@
               "aggregate": {
                 "runCount": 1,
                 "paint": {
-                  "p95": 7.8,
+                  "p95": 7.9,
                   "p99": 8.2,
-                  "max": 12.7
+                  "max": 16.5
                 },
-                "lostFrameTimeShare": 0.0025,
+                "lostFrameTimeShare": 0.003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
@@ -53239,8 +53251,8 @@
               "gateShare": 0.01,
               "runs": [
                 {
-                  "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/eraser-real-screen.json",
-                  "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+                  "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/eraser-real-screen.json",
+                  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
                   "gestureRepeats": 10,
                   "gesturePlan": "fixed-geometry-refilled",
                   "anomalousEraserRefills": [],
@@ -53250,54 +53262,54 @@
                     "before": {
                       "surfaces": 20,
                       "digests": [
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109,
-                        1761607109
+                        563848632,
+                        2591003529,
+                        563848632,
+                        2591003529,
+                        3719148265,
+                        56061533,
+                        3719148265,
+                        56061533,
+                        563848632,
+                        2591003529,
+                        563848632,
+                        2591003529,
+                        3719148265,
+                        56061533,
+                        3719148265,
+                        56061533,
+                        3719148265,
+                        56061533,
+                        3719148265,
+                        56061533
                       ],
-                      "inkedSamples": 81920
+                      "inkedSamples": 766104
                     },
                     "after": {
                       "surfaces": 20,
                       "digests": [
-                        800975433,
-                        503630391,
-                        1761607109,
-                        1761607109,
-                        431881086,
-                        1635798597,
-                        3985931023,
-                        2376820336,
-                        1247820507,
-                        1814028740,
-                        713544148,
-                        4283817178,
-                        1761607109,
-                        1245495334,
-                        1217509200,
-                        2797864509,
-                        1761607109,
-                        3890593717,
-                        1761607109,
-                        4242356157
+                        199745415,
+                        1697251830,
+                        563848632,
+                        2591003529,
+                        1802872563,
+                        579790615,
+                        2296668041,
+                        1937826571,
+                        3982251305,
+                        2033607949,
+                        2584400196,
+                        1987852064,
+                        3006813280,
+                        824387219,
+                        3826923335,
+                        3086936420,
+                        3719148265,
+                        3353464198,
+                        2137077212,
+                        1015168320
                       ],
-                      "inkedSamples": 72133
+                      "inkedSamples": 670962
                     }
                   },
                   "trust": [
@@ -53340,7 +53352,7 @@
                     {
                       "name": "hostQuiet",
                       "state": "verified",
-                      "detail": "worst load 0.21/core over 10 cores (start 2.11, end 1.81) vs 0.5/core"
+                      "detail": "worst load 0.28/core over 10 cores (start 2.8, end 2.42) vs 0.5/core"
                     }
                   ],
                   "fidelity": {
@@ -53368,7 +53380,7 @@
                       "slowerThanObserved": true,
                       "sustainedMinorityShare": 0,
                       "runMinFrames": 3,
-                      "frames": 7081
+                      "frames": 7083
                     },
                     "matched": true,
                     "scoreable": true
@@ -53379,12 +53391,12 @@
                     {
                       "phase": "blank",
                       "paint": {
-                        "p50": 3.5,
-                        "p95": 7.8,
+                        "p50": 4.1,
+                        "p95": 7.9,
                         "p99": 8.2,
-                        "max": 12.7
+                        "max": 16.5
                       },
-                      "lostFrameTimeShare": 0.0025,
+                      "lostFrameTimeShare": 0.003,
                       "passed": true
                     }
                   ],
@@ -53394,20 +53406,32 @@
             }
           },
           "undo": {
-            "source": "perf-profiles/2026-09-23-matrix-android-device-web/android-device-web/landscape-dark/pen-real-screen.json",
-            "productCommit": "3928cd88edbf441530e473a4e3c0b6767926bfc6",
+            "source": "perf-profiles/2026-09-26-issue-2337-android-web-landscape/android-device-web/landscape-dark/pen-real-screen.json",
+            "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
             "count": 10,
             "engine": {
-              "p50": 2.8,
-              "p95": 5.6,
-              "p99": 5.6,
-              "max": 5.6
+              "p50": 3.1,
+              "p95": 5.3,
+              "p99": 5.3,
+              "max": 5.3
+            },
+            "inkMotion": {
+              "p50": 2.4,
+              "p95": 3.4,
+              "p99": 3.4,
+              "max": 3.4
+            },
+            "restore": {
+              "p50": 0.7,
+              "p95": 1.9,
+              "p99": 1.9,
+              "max": 1.9
             },
             "nextFrame": {
-              "p50": 12.6,
-              "p95": 13.9,
-              "p99": 13.9,
-              "max": 13.9
+              "p50": 9.6,
+              "p95": 13,
+              "p99": 13,
+              "max": 13
             },
             "passed": true
           },
