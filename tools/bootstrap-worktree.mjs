@@ -13,6 +13,8 @@ const REF_MISSING_EXIT = 1;
 // Git writes these reflog subjects untranslated when it creates or renames a branch; any other
 // entry — a commit, merge, reset, or pull — means the ref has moved since it was cut.
 const CREATION_REFLOG_PREFIXES = ['branch: Created from ', 'Branch: renamed '];
+// Marks each reflog line so a blank subject survives output trimming as an entry of its own.
+const REFLOG_ENTRY_MARK = 'entry:';
 
 export const RUNNERS = ['claude', 'codex'];
 
@@ -165,18 +167,36 @@ function isPublished(runCommand, repoRoot, branch) {
   throw new Error(`Could not look up origin/${branch}: ${failureDetail(remoteBranch)}`);
 }
 
+function isAtRemoteMain(runCommand, repoRoot) {
+  const [head, remoteMain] = requireCommand(
+    runCommand,
+    'git',
+    ['rev-parse', 'HEAD', REMOTE_MAIN_REF],
+    repoRoot,
+    `Could not compare HEAD with ${REMOTE_MAIN_REF}`
+  ).split('\n');
+  return head === remoteMain;
+}
+
+/**
+ * The desktop app creates a session branch without writing any reflog entry, so an empty reflog
+ * is the normal fresh shape — but it is also what an expired reflog or
+ * `core.logAllRefUpdates=false` leaves behind. An empty reflog is therefore trusted only while
+ * HEAD sits exactly on the last-known `origin/main`, where a default-base worktree is cut.
+ */
 function hasNeverMoved(runCommand, repoRoot, branch) {
   const reflog = requireCommand(
     runCommand,
     'git',
-    ['reflog', 'show', '--format=%gs', `refs/heads/${branch}`],
+    ['reflog', 'show', `--format=${REFLOG_ENTRY_MARK}%gs`, `refs/heads/${branch}`],
     repoRoot,
     'Could not read the branch reflog'
   );
-  return reflog
-    .split('\n')
-    .filter(Boolean)
-    .every((entry) => CREATION_REFLOG_PREFIXES.some((prefix) => entry.startsWith(prefix)));
+  if (!reflog) return isAtRemoteMain(runCommand, repoRoot);
+  return reflog.split('\n').every((line) => {
+    const subject = line.slice(REFLOG_ENTRY_MARK.length);
+    return CREATION_REFLOG_PREFIXES.some((prefix) => subject.startsWith(prefix));
+  });
 }
 
 function isAncestorOfRemoteMain(runCommand, repoRoot) {

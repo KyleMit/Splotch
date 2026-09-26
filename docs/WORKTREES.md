@@ -56,7 +56,11 @@ branch only when all of these are true:
   untouched, and a later push is rejected as non-fast-forward.
 * The branch ref has not moved since it was created. Every entry in its reflog
   (`git reflog show refs/heads/<branch>`) is a `branch: Created from …` or `Branch: renamed …`
-  entry, or the reflog is empty. A commit, merge, reset, or pull disqualifies it.
+  entry. A commit, merge, reset, pull, or an entry with no message (`update-ref` without `-m`)
+  disqualifies it. An **empty** reflog is accepted only while `HEAD` is exactly the last-known
+  `origin/main`. The desktop app creates each session's branch without writing any reflog entry, so
+  an empty reflog is the normal fresh shape. But an expired reflog, or
+  `core.logAllRefUpdates=false`, leaves the same empty reflog on a branch that has moved.
 * `HEAD` is already on `origin/main` (`git merge-base --is-ancestor HEAD refs/remotes/origin/main`),
   so the branch was cut from `main` and not from some other ref.
 
@@ -74,9 +78,10 @@ When any check fails, `HEAD` stays where it is. A worktree that has real work is
 neither is an old worktree whose branch has moved even once. That includes one the bootstrap already
 refreshed, so only a worktree's first session is brought up to date. The one kind of branch that is
 moved without being fresh is one created directly at an old `main` commit and never touched since.
-To keep a worktree there, move the branch once (`git reset --keep <sha>` writes a reflog entry), or
-detach it at that commit (`git switch --detach <sha>`). Detaching does not protect a worktree
-detached at local `main`; see the Codex shape above.
+To keep a worktree where it is, give its branch an upstream
+(`git branch --set-upstream-to=origin/main`). A branch with any upstream is never moved. Detaching
+does not protect a worktree detached at local `main` (see the Codex shape above). Keep that one on a
+branch with an upstream instead.
 
 The hook matchers exclude `resume`, so a resumed session never reaches the refresh.
 

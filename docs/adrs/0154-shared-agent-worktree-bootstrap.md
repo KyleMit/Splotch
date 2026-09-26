@@ -78,9 +78,10 @@ worktree branch was cut from an `origin/main` one merge behind the remote. `need
 is now split into two shapes. The detached-at-local-`main` Codex refresh is unchanged. A
 Claude-shaped worktree, on a named branch, is fast-forwarded to a freshly fetched `origin/main`.
 This happens only when the working tree is clean, the branch was never published, its reflog shows
-it has not moved since it was created, and `HEAD` is already on `origin/main`. A failed refresh of
-that shape is a warning, not a stop. `docs/WORKTREES.md` ("Refreshing a fresh worktree") owns the
-guards and the failure contract.
+it has not moved since it was created, and `HEAD` is already on `origin/main`. An empty reflog,
+which is the desktop app's fresh shape, counts only when `HEAD` is exactly on `origin/main`. A
+failed refresh of that shape is a warning, not a stop. `docs/WORKTREES.md` ("Refreshing a fresh
+worktree") owns the guards and the failure contract.
 
 ## Consequences
 

@@ -266,7 +266,7 @@ const UNWORKED_BRANCH_CHECKS = [
   'git status --porcelain --untracked-files=normal',
   `git for-each-ref --format=%(upstream) refs/heads/${BRANCH}`,
   `git rev-parse --verify --quiet refs/remotes/origin/${BRANCH}`,
-  `git reflog show --format=%gs refs/heads/${BRANCH}`,
+  `git reflog show --format=entry:%gs refs/heads/${BRANCH}`,
   'git merge-base --is-ancestor HEAD refs/remotes/origin/main',
 ];
 const FAST_FORWARD = [
@@ -290,8 +290,8 @@ function unworkedBranchScript() {
     commandKey('git', ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${BRANCH}`]),
     [failure('')]
   );
-  script.set(commandKey('git', ['reflog', 'show', '--format=%gs', `refs/heads/${BRANCH}`]), [
-    success('branch: Created from origin/main'),
+  script.set(commandKey('git', ['reflog', 'show', '--format=entry:%gs', `refs/heads/${BRANCH}`]), [
+    success('entry:branch: Created from origin/main'),
   ]);
   script.set(
     commandKey('git', ['merge-base', '--is-ancestor', 'HEAD', 'refs/remotes/origin/main']),
@@ -348,8 +348,8 @@ describe('worktree bootstrap on a named branch', () => {
     },
     {
       name: 'a ref that moved after creation',
-      command: ['git', 'reflog', 'show', '--format=%gs', `refs/heads/${BRANCH}`],
-      result: success('commit: real work\nbranch: Created from origin/main'),
+      command: ['git', 'reflog', 'show', '--format=entry:%gs', `refs/heads/${BRANCH}`],
+      result: success('entry:commit: real work\nentry:branch: Created from origin/main'),
       checksRun: 8,
     },
     {
@@ -476,7 +476,7 @@ describe('worktree bootstrap against a real repository', () => {
 
   // The primary checkout's origin/main is left one merge behind the remote, the state a Claude
   // Code worktree was cut from on 2026-09-25.
-  function createStaleWorktree({ track = false } = {}) {
+  function createStaleWorktree({ track = false, reflog = true } = {}) {
     const fixture = createTempRepo();
     fixtures.push(fixture);
     const staleMain = fixture.sh(['rev-parse', 'HEAD']);
@@ -488,6 +488,7 @@ describe('worktree bootstrap against a real repository', () => {
     fixture.sh(['push', '-q', 'origin', 'main'], { cwd: elsewhere });
     const worktree = join(fixture.root, 'worktree');
     fixture.sh([
+      ...(reflog ? [] : ['-c', 'core.logAllRefUpdates=false']),
       'worktree',
       'add',
       '-q',
@@ -543,6 +544,46 @@ describe('worktree bootstrap against a real repository', () => {
 
     expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
     expect(repo.head()).toBe(ownCommit);
+  });
+
+  // The desktop app's own session branches were observed with no reflog entry at all, so an
+  // empty reflog is trusted only while HEAD is exactly the last-known origin/main.
+  it('fast-forwards a fresh branch created without a reflog entry', () => {
+    const repo = createStaleWorktree({ reflog: false });
+
+    expect(repo.sh(['reflog', 'show', `refs/heads/${BRANCH}`])).toBe('');
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.freshMain);
+  });
+
+  it('leaves a merged-then-reverted branch in place once its reflog has expired', () => {
+    const repo = createStaleWorktree();
+    const ownCommit = repo.commit('work.txt', 'work\n', 'real work', { cwd: repo.worktree });
+    repo.sh(['merge', '-q', '--ff-only', ownCommit]);
+    repo.sh(['revert', '--no-edit', 'HEAD']);
+    repo.sh(['push', '-q', '--force', 'origin', 'main']);
+    repo.sh(['reflog', 'expire', '--expire=now', '--all']);
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(ownCommit);
+  });
+
+  // `update-ref` without `-m` writes an entry with an empty subject; the ref still moved.
+  it('leaves a branch whose reflog has a blank entry in place', () => {
+    const repo = createStaleWorktree();
+    const side = repo.sh([
+      'commit-tree',
+      '-p',
+      repo.staleMain,
+      '-m',
+      'side',
+      `${repo.staleMain}^{tree}`,
+    ]);
+    repo.sh(['update-ref', `refs/heads/${BRANCH}`, side]);
+    repo.sh(['update-ref', `refs/heads/${BRANCH}`, repo.staleMain]);
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.staleMain);
   });
 
   it('fast-forwards a fresh branch that was renamed after creation', () => {
