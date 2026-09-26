@@ -158,9 +158,11 @@ merges, closes, and pushes nothing: the skill's authorization gate holds, so mer
 follow-up in which you run the skill yourself and approve the order.
 
 Why the slots are in UTC: routine cron is always UTC, so a Dependabot slot in a DST-observing zone
-would drift an hour against the routine twice a year. An hour covers the batch: Dependabot opens it
-within about five minutes, and every check on a twelve-PR batch finished within half an hour of the
-first PR.
+would drift an hour against the routine twice a year. The hour is an expected gap, not a deadline:
+`schedule.time` is when Dependabot starts checking, not when its last PR lands. It has held so far —
+a twelve-PR batch opened within five minutes and its checks all finished within half an hour — and a
+PR that lands late, or whose checks are still running, is not lost: every run triages all open
+Dependabot PRs, re-evaluating the ones it already commented on, so the next Friday picks it up.
 
 Routines have no as-code form — they are created and edited at
 [claude.ai/code/routines](https://claude.ai/code/routines) or through `/schedule`. So the routine
@@ -168,7 +170,9 @@ stores only a pointer to
 [`.claude/cloud/routines/dependabot-triage.md`](../.claude/cloud/routines/dependabot-triage.md),
 which holds the full prompt; change behavior there, through a PR. The schedule, model, and cloud
 environment live only in the routine. Moving the Dependabot slot means updating the routine's cron
-to match — nothing checks the two against each other.
+to match. No repository check can compare them, because the cron is not in the repository; instead
+the prompt has each run compare its own start time against the slot in `.github/dependabot.yml` and
+put a **Schedule drift** warning on every comment when they disagree.
 
 Routines cannot be deleted from the CLI; pause or remove this one at
 [claude.ai/code/routines](https://claude.ai/code/routines).
