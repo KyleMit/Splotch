@@ -2,7 +2,7 @@
 
 <!-- code-map:generated:start snapshot -->
 
-> **Snapshot of db2e4be3e308 (2026-09-25).** Every table in this map is generated from that commit
+> **Snapshot of 348c1234a0b5 (2026-09-25).** Every table in this map is generated from that commit
 > by `npm run gen:code-map`; the prose around them is maintained by the `reconcile-code-map` skill.
 > Counts drift as the code changes — regenerate rather than hand-edit.
 
@@ -50,9 +50,9 @@ boundaries are judgment calls even though every total is exact.
 
 | Disposition                    | Files |
 | ------------------------------ | ----: |
-| Measured and categorized       | 2,518 |
-| Explicitly excluded            | 4,738 |
-| **All tracked files**          | 7,256 |
+| Measured and categorized       | 2,527 |
+| Explicitly excluded            | 4,742 |
+| **All tracked files**          | 7,269 |
 | Unassigned or multiply counted |     0 |
 
 | Exclusion class                                  | Files |
@@ -60,7 +60,7 @@ boundaries are judgment calls even though every total is exact.
 | Binary media / archives                          | 3,189 |
 | Generated measurement data                       |   857 |
 | Vector art assets / traced samples               |   291 |
-| Generated / provider agent delivery trees        |   198 |
+| Generated / provider agent delivery trees        |   202 |
 | Generated audit / ranking text and captured logs |   125 |
 | Archived payloads / hashes                       |    50 |
 | Generated report / proof-sheet HTML              |    23 |
@@ -68,26 +68,26 @@ boundaries are judgment calls even though every total is exact.
 | Code map output                                  |     1 |
 | Dependency lockfile                              |     1 |
 | Publishing marker                                |     1 |
-| **Total explicitly excluded**                    | 4,738 |
+| **Total explicitly excluded**                    | 4,742 |
 
 <!-- code-map:generated:end coverage -->
 
 <!-- code-map:generated:start totals -->
 
-## Grand total: **413,384 LOC across 2,518 measured files**
+## Grand total: **414,667 LOC across 2,527 measured files**
 
 | Area                                               |     LOC | Files |
 | -------------------------------------------------- | ------: | ----: |
-| **tools (excluding asset-gen)** — repo automation  | 155,653 |   676 |
+| **tools (excluding asset-gen)** — repo automation  | 156,746 |   683 |
 | **web/src** — the app                              | 106,270 |   850 |
 | **docs** — ADRs & guides                           |  66,890 |   381 |
 | **tools/asset-gen** — art pipeline                 |  29,946 |   207 |
 | **web/tests** — E2E + integration                  |  25,572 |   125 |
-| **.ruler** — agent-instruction sources             |  11,672 |    83 |
+| **.ruler** — agent-instruction sources             |  11,860 |    85 |
 | android + ios + fastlane + Maestro — native shells |   3,857 |    69 |
 | scrapbook — run-artifact prose                     |   3,568 |     7 |
 | .github — CI and issue config                      |   2,428 |    25 |
-| root config / README / shared assets               |   2,369 |    20 |
+| root config / README / shared assets               |   2,371 |    20 |
 | web/\* — build/test config and static text         |   2,121 |    29 |
 | .claude / .codex — agent runtime config            |   1,868 |    23 |
 | store-assets — listing text                        |     410 |     3 |
@@ -101,7 +101,7 @@ boundaries are judgment calls even though every total is exact.
 
 ## Splits for every measured area over 3,000 LOC
 
-### tools excluding asset-gen (155,653) — by subtree
+### tools excluding asset-gen (156,746) — by subtree
 
 | Sub-bucket         |    LOC | Files |
 | ------------------ | -----: | ----: |
@@ -125,6 +125,7 @@ boundaries are judgment calls even though every total is exact.
 | marketing-assets   |  1,303 |    10 |
 | elevenlabs         |  1,239 |     5 |
 | ruler              |  1,160 |    10 |
+| code-map           |  1,093 |     7 |
 | icons              |    951 |     9 |
 | adrs               |    835 |     4 |
 | redteam            |    775 |     7 |
@@ -225,12 +226,12 @@ token surface remain in their own domains.
 | artifacts                |     54 |     1 |
 | instruction source       |     26 |     1 |
 
-### .ruler (11,672) — by subtree
+### .ruler (11,860) — by subtree
 
 | Sub-bucket                |   LOC | Files |
 | ------------------------- | ----: | ----: |
-| skill sources             | 9,083 |    59 |
-| skill notes               | 2,110 |    17 |
+| skill sources             | 9,193 |    60 |
+| skill notes               | 2,188 |    18 |
 | root instruction / config |   479 |     7 |
 
 ### native shells (3,857) — by subtree
@@ -259,7 +260,7 @@ generator reproduces that commit's area and exclusion counts exactly, apart from
 Method changes: this map no longer counts itself, and JSON under a `fixtures/` directory counts as
 measurement data.
 
-* **The repository nearly doubled in five weeks** — about 227k to 413k measured LOC. The growth is
+* **The repository nearly doubled in five weeks** — about 227k to 415k measured LOC. The growth is
   concentrated in repository automation and working notes rather than in the shipped app.
 * **Performance tooling is now the largest single subsystem.** `tools/perf` grew from 15.8k to
   roughly 68k LOC, and about 29k of that is its own test suite. `tools` excluding asset-gen now
