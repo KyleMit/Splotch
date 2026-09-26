@@ -30,7 +30,10 @@ The input names the queue and, optionally, a deadline:
 * **`backlog`** (optionally `backlog=<count>`) — the newest open issues nobody has claimed, picked
   one at a time so that parallel sessions each pick a different issue (see step 1).
 * **`until=<time>`** or **`hours=<n>`** — the deadline and deadline reserve described in step 5.
-* **`profile=performance`** — the unit is a causal performance cluster; see the last section.
+* **`profile=performance`** — the queue carries performance or physical-device work. Read
+  [`references/performance.md`](references/performance.md) before preflight. Apply the profile
+  yourself when any queued unit needs the device rig or is a performance cluster, even if the caller
+  did not name it; otherwise never load that file.
 
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
 branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
@@ -84,11 +87,8 @@ fix done before declaring the campaign started.
   `ship-issue` step 5 requires. The latest `main` commit's CI is green; a red trunk fails every
   unit's gate.
 * **Baseline.** `npm run check` and `npm run lint` pass on the fresh worktree.
-* **Devices — only when a queued unit needs the rig.** Run `start-capture-session`, the
-  `perf:preflight` it names, and one known-good control capture, all while the user can unlock a
-  device or grant an automation prompt. Grants expire overnight; ask the user to set the devices to
-  stay awake and unlocked. Units that need a device the preflight could not prove move out of the
-  queue now.
+* **Devices.** When any queued unit needs the rig, the performance profile's device preflight
+  applies.
 * **Ports.** Choose an unused Playwright port and pass it to every unit.
 * **Open the ledger** (below) with the resolved queue.
 
@@ -258,33 +258,3 @@ for the user), merge SHA, review rounds, and CI. Then:
 
 Run `git rev-parse --verify --quiet "<sha>^{commit}"` over every SHA in the report before sending
 it. Then run `self-heal` on the campaign's friction.
-
-## Performance campaigns — `profile=performance`
-
-`improve-performance-matrix` owns what a performance unit is: one causal product cluster, proven
-with faithful A/B evidence on the release-gate rows, under its evidence and physical-device rules.
-This skill supplies the queue, the merge-as-you-go loop, and the ledger around it. Each cluster is a
-free-form unit: its spec is the cluster's hypothesis and target cells, it has no issue to claim or
-close, and the performance tracking issue carries the ledger. These rules are added for unattended
-performance work:
-
-* **The device preflight is mandatory**, with the user present, including the control capture.
-* **Device loss ends device work.** When the rig drops and the documented non-human recovery does
-  not restore it, stop capturing. Continue with queued units that need no device, or wrap up.
-  Evidence-only or harness-only PRs are never a substitute for the product work the rig was meant to
-  measure.
-* **One gate gets a bounded share of the night.** After about eight hours on the same release-gate
-  cell without it passing, record the best measured version as that cell's outcome and move on;
-  further marginal tuning belongs to a later campaign that starts with a new hypothesis.
-* **The ledger separates product, harness, and evidence commits**, and the morning report says
-  plainly when no product change landed.
-* **A device-free lane may run beside the device lane only behind one rig lock.** A capture measures
-  input cadence on a quiet host, so a parallel unit's `check`, `lint`, test suite, or build must
-  never overlap a capture window. Use one lock directory outside every worktree: acquire with an
-  uncapped `until mkdir "$L" 2>/dev/null; do sleep 20; done`, write an owner line only after that
-  `mkdir` succeeds, and release with `rm "$L/owner"; rmdir "$L"`. A device unit holds it per capture
-  window, and a device-free unit per heavy command; nobody holds it across a CI or reviewer wait. On
-  2026-09-25 one unit's capped retry loop wrote its owner line without acquiring the lock, then
-  removed the directory, releasing a capture unit's lock mid-sweep: 34 minutes of Android sweeps ran
-  beside host checks, and the one red they produced had to be recaptured. Tell every unit that a
-  device unit may hold the lock for an hour, so a lane-A unit plans for that wait.
