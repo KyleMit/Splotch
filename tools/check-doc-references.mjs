@@ -449,10 +449,12 @@ const DIRECTORY_PROBE = '.probe';
 
 // Build outputs and local-only files (`web/build/`, `web/.env.local`) are
 // named in docs on purpose and never tracked; the repo's own ignore rules are
-// the authority on which paths those are.
-function ignoredAmong(root, paths) {
+// the authority on which paths those are. Only a pattern from a tracked
+// .gitignore counts: a developer's global excludes or `.git/info/exclude`
+// would otherwise pass a path locally that fails in CI.
+function ignoredAmong(root, paths, tracked) {
   if (!paths.length) return new Set();
-  const result = spawnSync('git', ['check-ignore', '--no-index', '--stdin', '-z'], {
+  const result = spawnSync('git', ['check-ignore', '--no-index', '--stdin', '-z', '-v'], {
     cwd: root,
     input: paths.flatMap((path) => [path, `${path}/${DIRECTORY_PROBE}`]).join('\0'),
     encoding: 'utf8',
@@ -460,12 +462,21 @@ function ignoredAmong(root, paths) {
   if (result.status !== 0 && result.status !== 1) {
     throw new Error(`git check-ignore failed: ${result.stderr}`);
   }
-  return new Set(
-    result.stdout
-      .split('\0')
-      .filter(Boolean)
-      .map((path) => path.replace(`/${DIRECTORY_PROBE}`, ''))
-  );
+  return ignoredByTrackedRules(result.stdout, tracked);
+}
+
+// Parses `git check-ignore -v -z` records (source, line, pattern, path). A
+// negated pattern is reported as the last match too, and un-ignores its path.
+export function ignoredByTrackedRules(output, tracked) {
+  const fields = output.split('\0');
+  const ignored = new Set();
+  for (let i = 0; i + 3 < fields.length; i += 4) {
+    const [source, , pattern, path] = fields.slice(i, i + 4);
+    if (!tracked.has(source) || posix.basename(source) !== '.gitignore') continue;
+    if (pattern.startsWith('!')) continue;
+    ignored.add(path.replace(`/${DIRECTORY_PROBE}`, ''));
+  }
+  return ignored;
 }
 
 export function scan({ root = ROOT, identifiers = false } = {}) {
@@ -496,7 +507,7 @@ export function scan({ root = ROOT, identifiers = false } = {}) {
       }
     }
   }
-  index.ignoredPaths = ignoredAmong(root, [...unresolvedPaths]);
+  index.ignoredPaths = ignoredAmong(root, [...unresolvedPaths], index.tracked);
   return {
     findings: findUnresolved({ docs, read, index, identifiers }),
     stale: staleAllowances({ docs, read, index }),

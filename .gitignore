@@ -254,6 +254,10 @@ ios/local.xcconfig
 # ignore-surfaces.test.mjs fails when one of the four drops it.
 .claude/worktrees/
 
+# Claude Code's per-developer permission overrides. Claude Code also adds this to a
+# user's global git excludes, but CI and other contributors have no such file.
+.claude/settings.local.json
+
 # Working state of the scripted audit burndown (npm run audit:burndown, the
 # burn-down-audits skill): per-call Claude JSON / Codex JSONL envelopes, run
 # log, completed list, schemas, STOP sentinel. Durable state is docs/AUDIT.md + git.

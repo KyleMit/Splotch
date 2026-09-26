@@ -106,6 +106,15 @@ The Codex review reproduced three holes the first draft's own suite missed, all 
   `architecture.md`, still listing `geminiSafety.ts`. The contract line was fixed; the directory
   stays excluded, for the same reason `docs/adrs/` is.
 
+## CI caught a machine-dependent pass
+
+After round 2, the Browserless job failed on three `.claude/settings.local.json` references that
+passed locally. `git check-ignore` honors the developer's global excludes, and Claude Code writes
+`**/.claude/settings.local.json` there; CI has no such file. The scanner now keeps only matches whose
+source is a tracked `.gitignore` (parsed from `check-ignore -v`), so a local run reproduces CI, and
+`.gitignore` itself now lists `.claude/settings.local.json`, which protects contributors who lack
+the global rule anyway.
+
 ## Open questions
 
 * Extensionless references under inner folder names (`drawing/earlyBoot`, a module specifier) are

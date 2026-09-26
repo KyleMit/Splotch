@@ -4,6 +4,7 @@ import {
   createIndex,
   extractReferences,
   findUnresolved,
+  ignoredByTrackedRules,
   isScannedDoc,
   pathCandidate,
   report,
@@ -165,6 +166,26 @@ describe('resolution', () => {
   it('leaves a gitignored path alone', () => {
     const ignoredPaths = new Set(['web/build']);
     expect(unresolved('docs/TESTING.md', '`web/build`', { ignoredPaths })).toEqual([]);
+  });
+
+  // A developer's global excludes would pass a path locally that CI, with no
+  // such file, reports — the gate has to agree across machines.
+  it('trusts only ignore patterns from a tracked .gitignore', () => {
+    const tracked = new Set(['.gitignore', 'web/.gitignore']);
+    const record = (source, pattern, path) => [source, '1', pattern, path].join('\0');
+    const output = [
+      record('.gitignore', 'build/', 'web/build/.probe'),
+      record('web/.gitignore', '.env.*', 'web/.env.local'),
+      record(
+        '/home/dev/.config/git/ignore',
+        '**/settings.local.json',
+        '.claude/settings.local.json'
+      ),
+      record('.git/info/exclude', 'scratch/', 'scratch/.probe'),
+      record('.gitignore', '!.ruler/skills/build/', '.ruler/skills/build'),
+      '',
+    ].join('\0');
+    expect([...ignoredByTrackedRules(output, tracked)]).toEqual(['web/build', 'web/.env.local']);
   });
 
   it('never reads a reference inside a fenced block as a path', () => {
