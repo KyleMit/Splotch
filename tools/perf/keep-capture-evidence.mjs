@@ -175,14 +175,12 @@ export function failedRepresentativeProblem(selected, { allowFailed } = {}) {
 // A campaign lays a target out as <campaign>/<target-id>/<mode>/<brush>.json, so
 // promoting one target's directory leaves no target segment in the paths
 // relative to it — and every capture fell through to `unknown` (issue 2343).
-// The corpus path's innermost known-target segment is that directory's target.
+// The corpus directory's own name is its target when it names one. Only the
+// last segment counts: a target id higher up (perf-profiles/mac-chrome/run-3)
+// says where the directory sits, not what run-3 captured.
 export function corpusRootTarget(corpus) {
-  return (
-    corpus
-      .split(/[\\/]/)
-      .filter((segment) => isKnownTarget(segment))
-      .at(-1) ?? null
-  );
+  const name = corpus.split(/[\\/]/).findLast((segment) => segment !== '');
+  return isKnownTarget(name) ? name : null;
 }
 
 // The run-wide fallback for captures whose artifact and corpus-relative path
@@ -211,12 +209,14 @@ export function promotionFallbackTarget({ corpus, target }) {
 // The artifact's declared target and in-corpus path segments win over the
 // fallback: they are per capture, the fallback is per run. A hand capture has
 // no campaign target — its runtime is the label that says what it calibrates,
-// matching the 2026-08-23-hand corpus naming. `null` means unresolved.
+// matching the 2026-08-23-hand corpus naming — so the campaign fallback never
+// relabels one, and one without a runtime stays unresolved. `null` means
+// unresolved.
 export function promotionTargetOf(parsed, relativePath, fallback) {
-  return (
-    targetOf(parsed, relativePath, fallback) ??
-    (parsed?.handCapture === true ? (parsed.runtime ?? null) : null)
-  );
+  if (parsed?.handCapture === true) {
+    return targetOf(parsed, relativePath, null) ?? parsed.runtime ?? null;
+  }
+  return targetOf(parsed, relativePath, fallback);
 }
 
 const UNRESOLVED_TARGET_EXAMPLES = 5;

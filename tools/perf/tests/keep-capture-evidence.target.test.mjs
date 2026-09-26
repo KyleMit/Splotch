@@ -41,10 +41,14 @@ describe('corpusRootTarget', () => {
     );
   });
 
-  it('takes the innermost known target and ignores campaign names', () => {
-    expect(corpusRootTarget('perf-profiles/mac-chrome/ipad-device-web/extra')).toBe(
-      'ipad-device-web'
-    );
+  it('tolerates a trailing separator', () => {
+    expect(corpusRootTarget('perf-profiles/run/mac-safari/')).toBe('mac-safari');
+  });
+
+  // The round-one review's reproduction: a target id ABOVE the root says where
+  // the directory sits, not what it captured.
+  it('ignores a target id above the corpus directory', () => {
+    expect(corpusRootTarget('perf-profiles/mac-chrome/run-3')).toBeNull();
     expect(corpusRootTarget('perf-profiles/2026-09-25-run')).toBeNull();
   });
 });
@@ -106,6 +110,17 @@ describe('promotionTargetOf', () => {
     expect(
       promotionTargetOf({ handCapture: true, runtime: 'ios-capacitor-webview' }, 'hand.json', null)
     ).toBe('ios-capacitor-webview');
+  });
+
+  it('never relabels a hand capture with the run-wide fallback', () => {
+    expect(
+      promotionTargetOf(
+        { handCapture: true, runtime: 'ios-capacitor-webview' },
+        'hand.json',
+        'ipad-device-web'
+      )
+    ).toBe('ios-capacitor-webview');
+    expect(promotionTargetOf({ handCapture: true }, 'hand.json', 'ipad-device-web')).toBeNull();
   });
 
   it('returns null rather than a label when nothing resolves', () => {
@@ -172,6 +187,15 @@ describe('promoting a corpus whose root is the target directory', () => {
     return relative(ROOT, join(campaignDir, targetDir));
   };
 
+  const stageHand = (targetDir, name, fields) => {
+    mkdirSync(join(campaignDir, targetDir), { recursive: true });
+    writeFileSync(
+      join(campaignDir, targetDir, name),
+      JSON.stringify({ handCapture: true, brush: 'pen', fidelity: passing, report, ...fields })
+    );
+    return relative(ROOT, join(campaignDir, targetDir));
+  };
+
   const promote = (options) =>
     keepCaptureEvidence({
       campaign: 'root-target-test',
@@ -213,6 +237,33 @@ describe('promoting a corpus whose root is the target directory', () => {
     const message = errors.mock.calls.flat().join('\n');
     expect(message).toMatch(/no campaign target for 1 capture\(s\)/);
     expect(message).toMatch(/--target=<target-id>/);
+    expect(existsSync(join(evidenceDir, 'root-target-test'))).toBe(false);
+  });
+
+  it('refuses rather than borrowing a target id from above the corpus root', async () => {
+    const corpus = stage(join('mac-chrome', 'run-3'));
+    await expect(promote({ corpus })).rejects.toThrow('exit');
+    expect(errors.mock.calls.flat().join('\n')).toMatch(/no campaign target/);
+  });
+
+  it('accepts --target under a corpus whose parent names another target', async () => {
+    const corpus = stage(join('mac-chrome', 'run-3'));
+    await promote({ corpus, target: 'ipad-device-web' });
+    expect(keptTargets()).toEqual(['ipad-device-web']);
+  });
+
+  it('keeps a hand capture on its runtime under a target-named corpus root', async () => {
+    const corpus = stageHand('ipad-device-web', 'hand-pen.json', {
+      runtime: 'ios-capacitor-webview',
+    });
+    await promote({ corpus });
+    expect(keptTargets()).toEqual(['ios-capacitor-webview']);
+  });
+
+  it('refuses a hand capture with no runtime under a target-named corpus root', async () => {
+    const corpus = stageHand('ipad-device-web', 'hand-pen.json', {});
+    await expect(promote({ corpus })).rejects.toThrow('exit');
+    expect(errors.mock.calls.flat().join('\n')).toMatch(/hand-pen\.json/);
     expect(existsSync(join(evidenceDir, 'root-target-test'))).toBe(false);
   });
 });
