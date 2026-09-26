@@ -1,6 +1,7 @@
 # ADR-0171: Theme Changes Crossfade Through a View Transition
 
-**Status:** Active **Date:** 2026-09
+**Status:** Active (amended 2026-09-26: a veil on the card replaces the view transition) **Date:**
+2026-09
 
 ## Context
 
@@ -53,3 +54,60 @@ and `app.css` gives `::view-transition-old(root)` / `::view-transition-new(root)
 * − ADR-0087 measured theme changes on a physical iPad at the frame-gap gate. The crossfade adds two
   full-screen snapshot textures for its duration; that path needs a hardware recapture before its
   cell is trusted again.
+
+## Amendment (2026-09-26): a veil on the card, not a whole-screen snapshot
+
+The hardware recapture this record asked for came back red on both release-gate engines (#2225):
+
+* **Android Chrome:** the first frame after the tap became a 50 ms three-beat gap. Starting a view
+  transition captures the old screen and holds rendering until the update callback has run.
+* **iPad native WKWebView:** a new 31–37 ms frame landed about 350 ms after the tap, where the 320
+  ms crossfade ends and the snapshot tree is torn down.
+
+With Reduce Motion on, which swaps without a transition, every one of those cells passed on both
+devices. So the snapshot was the cost, not the theme change.
+
+**Decision.** `applyTheme` now stamps `data-theme` at once, without a view transition. Before the
+stamp it reads each open modal card's surface color (`.modal-shell[open]`). After it, it lays a
+`.theme-veil` of that previous color over the card and fades it from opacity 1 to 0 over the same
+320 ms with `ease`, then removes it. Parents only change the theme from Settings (Appearance, or
+Night Mode in the landscape phone's compact shell), so the card is where they are looking. Opacity
+on one card-sized layer is compositor work, with nothing to capture or tear down. The rest of the
+screen sits under the dialog's 60% black, blurred scrim and swaps at once. A veil there would change
+what the backdrop blur reads on every frame of the fade, and ADR-0157 measured that kind of repaint
+under the blur as a frame cost on the iPad. A change mid-fade replaces the veil with one in the
+surface the card has just reached. Reduced motion, a restamp that changes nothing, and a change with
+no card open still swap at once, as before.
+
+What the parent sees changes in two ways. The card's surface still eases from the old color to the
+new one. Its text and controls now fade in over the new surface instead of crossfading from the old
+ink. And the scrimmed room behind the card cuts under the scrim instead of fading. Engines without
+View Transitions (Safari 16.4–17.x, Firefox 114–143) now get the veil too, because it needs only the
+Web Animations API, which is below the floor.
+
+**Measured (Android physical, `--actions=theme`).** Against an unchanged-`main` control from the
+same harness on the same phone: Chrome arms interleaved, native arms back to back with each build
+installed in turn. Each sweep is one warm-up and three scored repeats:
+
+| Cell (post-action max per scored repeat) | `main` (view transition)     | This change (veil)      |
+| ---------------------------------------- | ---------------------------- | ----------------------- |
+| Web portrait-light, dark to light        | n = 9, 3 over 33.5, max 50.1 | n = 9, 0 over, max 33.3 |
+| Web portrait-light, light to dark        | n = 9, 3 over 33.5, max 50.0 | n = 9, 0 over, max 17.4 |
+| Web landscape-light, enable Night Mode   | n = 6, 6 over 33.5, max 50.1 | n = 6, 0 over, max 33.5 |
+| Web landscape-light, disable Night Mode  | n = 6, 2 over 33.5, max 50.0 | n = 6, 0 over, max 16.8 |
+| Native portrait-light, dark to light     | n = 9, 4 over 33.5, max 41.7 | n = 9, 0 over, max 25.0 |
+| Native portrait-light, light to dark     | n = 9, 5 over 33.5, max 42.8 | n = 9, 0 over, max 25.0 |
+
+The canonical full sweeps of all four modes, on both Android rows, are recorded on the PR that made
+this change. Readiness is not slower. `data-theme` now flips inside the tap's own task, where the
+view transition flipped it only after the capture. In every arm the ready predicate already holds at
+the runner's first poll, so the readiness figures measure when that poll lands. They differ between
+arms by less than the 50 ms poll interval, except `light to dark` on Chrome, where the view
+transition's P50 was about 100 ms against about 45 ms now.
+
+**Not validated on the iPad.** The same code runs in iPad Safari and the iPad native app, whose
+theme-switch cells (all four modes of both iPad rows) are red at the view-transition build. Nothing
+in this amendment measures them. They stay red until an iPad recapture, which #2225 tracks.
+
+**Reopen** if an iPad recapture shows the veil's fade or removal costing a frame, or if a theme
+control becomes reachable outside a modal card, where no veil is laid.
