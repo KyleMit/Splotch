@@ -4,7 +4,7 @@
 //     --campaign=2026-08-android --product-commit=$(git rev-parse HEAD)
 //
 // Each capture's target comes from its artifact, then its path under --corpus,
-// then the corpus root itself (--corpus=perf-profiles/<campaign>/<target-id>),
+// then the corpus directory's own name (--corpus=perf-profiles/<campaign>/<target-id>),
 // then --target. A capture none of those resolve is refused, never filed as
 // `unknown` (see promotionFallbackTarget and unresolvedTargetProblem).
 //
@@ -207,16 +207,19 @@ export function promotionFallbackTarget({ corpus, target }) {
 }
 
 // The artifact's declared target and in-corpus path segments win over the
-// fallback: they are per capture, the fallback is per run. A hand capture has
-// no campaign target — its runtime is the label that says what it calibrates,
-// matching the 2026-08-23-hand corpus naming — so the campaign fallback never
-// relabels one, and one without a runtime stays unresolved. `null` means
-// unresolved.
+// fallback: they are per capture, the fallback is per run. Hand captures follow
+// the same order, because a person session files them under the matrix cell
+// they measured (the 2026-09-24-epic-2210-person-* corpora index them by
+// target, and perf:rescore gates on that index target) — and the corpus
+// directory's name is the same layout fact as an in-corpus segment, so where
+// --corpus points must not change the label. A hand capture nothing places on a
+// target keeps its runtime, the label that says what it calibrates (the
+// 2026-08-23-hand corpus naming). `null` means unresolved.
 export function promotionTargetOf(parsed, relativePath, fallback) {
-  if (parsed?.handCapture === true) {
-    return targetOf(parsed, relativePath, null) ?? parsed.runtime ?? null;
-  }
-  return targetOf(parsed, relativePath, fallback);
+  return (
+    targetOf(parsed, relativePath, fallback) ??
+    (parsed?.handCapture === true ? (parsed.runtime ?? null) : null)
+  );
 }
 
 const UNRESOLVED_TARGET_EXAMPLES = 5;

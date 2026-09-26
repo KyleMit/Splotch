@@ -106,21 +106,22 @@ describe('promotionTargetOf', () => {
     expect(promotionTargetOf({}, 'portrait-light/pen.json', 'mac-chrome')).toBe('mac-chrome');
   });
 
-  it('keeps a hand capture on its runtime label', () => {
+  it('keeps a hand capture on its runtime label when nothing names a target', () => {
     expect(
       promotionTargetOf({ handCapture: true, runtime: 'ios-capacitor-webview' }, 'hand.json', null)
     ).toBe('ios-capacitor-webview');
   });
 
-  it('never relabels a hand capture with the run-wide fallback', () => {
-    expect(
-      promotionTargetOf(
-        { handCapture: true, runtime: 'ios-capacitor-webview' },
-        'hand.json',
-        'ipad-device-web'
-      )
-    ).toBe('ios-capacitor-webview');
-    expect(promotionTargetOf({ handCapture: true }, 'hand.json', 'ipad-device-web')).toBeNull();
+  // A person session files hand captures under the matrix cell they measured,
+  // and perf:rescore gates on the index target — so the layout labels them.
+  it('labels a hand capture by the same layout target as any other capture', () => {
+    const hand = { handCapture: true, runtime: 'ios-safari' };
+    expect(promotionTargetOf(hand, 'ipad-device-web/portrait-light/hand.json', null)).toBe(
+      'ipad-device-web'
+    );
+    expect(promotionTargetOf(hand, 'portrait-light/hand.json', 'ipad-device-web')).toBe(
+      'ipad-device-web'
+    );
   });
 
   it('returns null rather than a label when nothing resolves', () => {
@@ -252,16 +253,26 @@ describe('promoting a corpus whose root is the target directory', () => {
     expect(keptTargets()).toEqual(['ipad-device-web']);
   });
 
-  it('keeps a hand capture on its runtime under a target-named corpus root', async () => {
-    const corpus = stageHand('ipad-device-web', 'hand-pen.json', {
-      runtime: 'ios-capacitor-webview',
+  // A person session's layout: <captures>/<target-id>/hand-*.json. Pointing
+  // --corpus at either level must file the capture under the same target.
+  it('labels a hand capture the same whichever level --corpus names', async () => {
+    const targetCorpus = stageHand(join('captures', 'ipad-device-web'), 'hand-pen.json', {
+      runtime: 'ios-safari',
     });
+    await promote({ corpus: targetCorpus });
+    expect(keptTargets()).toEqual(['ipad-device-web']);
+    await promote({ corpus: relative(ROOT, join(campaignDir, 'captures')), force: true });
+    expect(keptTargets()).toEqual(['ipad-device-web']);
+  });
+
+  it('keeps a hand capture on its runtime when nothing names a target', async () => {
+    const corpus = stageHand('hand-run', 'hand-pen.json', { runtime: 'ios-capacitor-webview' });
     await promote({ corpus });
     expect(keptTargets()).toEqual(['ios-capacitor-webview']);
   });
 
-  it('refuses a hand capture with no runtime under a target-named corpus root', async () => {
-    const corpus = stageHand('ipad-device-web', 'hand-pen.json', {});
+  it('refuses a hand capture with neither a target nor a runtime', async () => {
+    const corpus = stageHand('hand-run', 'hand-pen.json', {});
     await expect(promote({ corpus })).rejects.toThrow('exit');
     expect(errors.mock.calls.flat().join('\n')).toMatch(/hand-pen\.json/);
     expect(existsSync(join(evidenceDir, 'root-target-test'))).toBe(false);

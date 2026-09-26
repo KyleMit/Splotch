@@ -1288,11 +1288,12 @@ Two habits avoid it, and the second also fixes the target:
   resolves the target from a path segment that names a known target, so a campaign-specific
   directory name alone leaves it unresolved — and an unresolved target is scored against the default
   gate rather than the one that cell is actually held to. `perf:evidence:keep` resolves each capture
-  from the artifact, then its path under `--corpus`, then the corpus root itself, so
+  from the artifact, then its path under `--corpus`, then the corpus directory's own name, so
   `--corpus=perf-profiles/<campaign>/<target-id>` files every capture under that target without
   `--target`. `--target=<id>` supplies the target when the corpus root is not a target directory;
   one that contradicts a target-named corpus root is refused, and so is any capture none of those
-  resolve — it is never filed as `unknown`. Hand captures keep their runtime label.
+  resolve — it is never filed as `unknown`. Hand captures follow the same order, and one nothing
+  places on a target keeps its runtime label.
 * **Check what `perf:evidence:keep` says it kept.** It prints `<target>/<brush>` per retained
   capture. A `pen` brush on a crayon cell means the brush was guessed, the corpus will be misread by
   the next rescore, and the fix is to restage the paths and re-promote with `--force`.
