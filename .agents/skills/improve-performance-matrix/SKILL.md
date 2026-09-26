@@ -209,9 +209,10 @@ diagnostic or validation capability only when the named product experiment will 
 Do not create a freestanding harness roadmap inside the campaign. Promote representative raw
 captures with
 `npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name> --product-commit=<capture-product-sha>`
-so they remain rescoreable, and trial a scorer change across that preserved corpus with
-`npm run perf:rescore -- --corpus=perf-profiles/evidence/<name>` before treating it as valid.
-Preserve or strengthen coverage and add a regression test for the exact measurement failure.
+(the campaign directory or one `<campaign>/<target-id>` directory; add `--target=<id>` only when no
+path names the target) so they remain rescoreable, and trial a scorer change across that preserved
+corpus with `npm run perf:rescore -- --corpus=perf-profiles/evidence/<name>` before treating it as
+valid. Preserve or strengthen coverage and add a regression test for the exact measurement failure.
 
 Preserve drawing output, undo semantics, coloring selection and clearing, settings and persistence,
 rotation restoration, export fidelity, native/web parity, accessibility, and toddler-facing visual
