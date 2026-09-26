@@ -61,8 +61,10 @@ public class PhotoLibraryPlugin extends Plugin {
     // Matches ACCESS_DENIED_ERROR_CODE in web/src/lib/drawing/screenshot.ts, drift-guarded there.
     private static final String ERROR_ACCESS_DENIED = "accessDenied";
 
-    // A save's upload lands in well under a second, so an upload this old belongs to a page that
-    // reloaded or died mid-save and will never call saveImage or discardImage for it.
+    // A save's upload lands in well under a second, so an upload still receiving slices at this
+    // age belongs to a page that reloaded or died mid-save and will never call saveImage or
+    // discardImage for it. A submitted upload is exempt: on API 24-28 saveImage can hold it for as
+    // long as the storage-permission prompt stays open, and the prompt's result then writes it.
     private static final long STALE_UPLOAD_MS = 60_000;
 
     // Keyed by upload id. Plugin methods run on the bridge's plugin thread and the permission
@@ -73,12 +75,14 @@ public class PhotoLibraryPlugin extends Plugin {
     private static final class Upload {
         final long startedAt = SystemClock.elapsedRealtime();
         final StringBuilder data = new StringBuilder();
+        volatile boolean submitted;
     }
 
     @PluginMethod
     public void beginImage(PluginCall call) {
         long now = SystemClock.elapsedRealtime();
-        uploads.values().removeIf(upload -> now - upload.startedAt > STALE_UPLOAD_MS);
+        uploads.values()
+                .removeIf(upload -> !upload.submitted && now - upload.startedAt > STALE_UPLOAD_MS);
         String uploadId = UUID.randomUUID().toString();
         uploads.put(uploadId, new Upload());
         JSObject result = new JSObject();
@@ -137,7 +141,9 @@ public class PhotoLibraryPlugin extends Plugin {
     private ImageSave parseOrReject(PluginCall call) {
         try {
             Upload upload = uploads.get(call.getString("uploadId", ""));
-            return ImageSave.from(call, upload == null ? null : upload.data);
+            ImageSave image = ImageSave.from(call, upload == null ? null : upload.data);
+            upload.submitted = true;
+            return image;
         } catch (IllegalArgumentException error) {
             uploads.remove(call.getString("uploadId", ""));
             call.reject(error.getMessage(), ERROR_INVALID_ARGUMENT, error);
