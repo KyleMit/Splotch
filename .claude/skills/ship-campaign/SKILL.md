@@ -248,8 +248,11 @@ for the user), merge SHA, review rounds, and CI. Then:
 * **What a user would notice** — the product-facing change of each merged unit, in plain words,
   separate from any speed gain.
 * Quarantined and skipped units, each with its reason and next step.
-* The questions parked for the user, as a numbered decision list.
-* The autonomous decisions each unit made.
+* The questions parked or held for the user, as a numbered decision list, each with its walkthrough.
+* **Decisions made in autonomous mode** — every `walk-through-decision` record the units produced,
+  each laid out briefly: the question, the pick, why it wins, and the rival outcome (agreed,
+  converged, split on a low-stakes call, or unreviewed, with the rival's position whenever it gave
+  one). The user reads this list to catch a call they would have made differently.
 * Follow-ups the units drafted, for the user to file; the campaign files none.
 * The final state of `main` CI, and the device rig: released, or left running as the user asked.
 

@@ -37,8 +37,11 @@ weighing.
 
 `walk-through-decision` then runs *before* a decision exists: it explains one and recommends an
 option, and deliberately stops there. It writes nothing and implements nothing, so recording the
-outcome stays an explicit later ask to `create-adr`. The last link of the chain, `reconcile-adrs`,
-lives with the other reconcile skills under Recurring maintenance.
+outcome stays an explicit later ask to `create-adr`. Its `mode=autonomous` is how the unattended
+skills (`ship-issue`, `address-pr-review`, `ship-campaign`) answer a question they would otherwise
+have stopped to ask: the agent's own calls are locked after a `run-rival-agent` review (marked
+unreviewed if none can run), and the user's are parked for them. The last link of the chain,
+`reconcile-adrs`, lives with the other reconcile skills under Recurring maintenance.
 
 ## Performance — interaction matrices and page load
 
