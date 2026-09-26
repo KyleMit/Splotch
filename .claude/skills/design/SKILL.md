@@ -166,6 +166,16 @@ rather than taste.
 | Celebration    | own timing, ≤2 s          | `linear` + per-keyframe curves                        | 0.7 s fade, or hidden   |
 | Ambient loop   | 0.8–2.8 s                 | `linear` / `ease-in-out`                              | slow, or hold one frame |
 
+**The undo ghost's cost is accepted.** The ghost is built inside the undo call, so it counts toward
+the gated `engine.undo` time: on a Galaxy S21 FE in Android Chrome, about 2 ms median and 4 ms P95
+per pen undo (`engine.undoInkMotion`, Reduce Motion off against on; the restore barely moved, and
+every undo gate passed). Keep it synchronous rather than trimming it or deferring it to the next
+frame. Deferral would buy back time no gate needs, and only part of it: a crayon or magic ghost
+reads the live tiles before the restore overwrites them, and whatever moves lands in the frame after
+the undo, where the A/B could not settle its effect. Evidence:
+[#2238's device A/B](https://github.com/KyleMit/Splotch/issues/2238#issuecomment-5828881795); the
+rationale sits on `undo` in `web/src/lib/drawing/inkMotion.ts`.
+
 ## Primitives
 
 Shared UI primitives live in **`web/src/lib/components/design/`**. They style themselves entirely
