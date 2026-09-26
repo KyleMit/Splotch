@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
 import {
   ledgerKey,
@@ -10,7 +11,7 @@ import {
   recordRound,
   removeLedgerRecord,
 } from './ledger.mjs';
-import { readPullRequest } from './post-review.mjs';
+import { readPullRequest, REPOSITORY } from './post-review.mjs';
 import { buildRivalPrompt, readPromptFile } from './prompt.mjs';
 import {
   createSessionDirectory,
@@ -30,6 +31,14 @@ import {
 } from './worktree.mjs';
 
 const EFFORTS = new Set(['low', 'medium', 'high']);
+// GitHub can report a PR's previous headRefOid for a while after a push has already moved the branch
+// ref (PR 2303: a round launched right after a push reviewed the old head, and the poster then
+// refused the finished review). The launcher polls until the two agree, within this bound.
+export const PR_HEAD_SETTLE_TIMEOUT_MS = 60_000;
+export const PR_HEAD_POLL_INTERVAL_MS = 5_000;
+const OID_PATTERN = /^[0-9a-f]{40}$/;
+const SCP_GITHUB_REMOTE = /^git@github\.com:(.+)$/i;
+const GITHUB_URL_PROTOCOLS = new Set(['https:', 'ssh:']);
 const DEFAULT_BASE_REF = 'main';
 const USAGE =
   'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
@@ -140,9 +149,81 @@ function resolveRepoRoot(cwd) {
   return root;
 }
 
-function resolveLaunchScope(repoRoot, scope) {
+// The branch tip is evidence about the PR only when it comes from the repository `gh pr view` reads:
+// a local or mirror origin lagging behind GitHub would make an old head look settled.
+export function assertOriginIsPullRequestRepository(repoRoot) {
+  const url = git(repoRoot, ['remote', 'get-url', 'origin']);
+  if (githubRepositoryOf(url) !== REPOSITORY.toLowerCase()) {
+    throw new Error(
+      `--pr reads ${REPOSITORY} through gh, but this checkout's origin is ${redactUserInfo(url)}; launch from a checkout whose origin is ${REPOSITORY}`
+    );
+  }
+}
+
+// The scp-style `git@github.com:owner/repo` form, or any https/ssh URL on github.com with or
+// without user information; undefined for anything else.
+function githubRepositoryOf(url) {
+  const scp = SCP_GITHUB_REMOTE.exec(url);
+  let path = scp?.[1];
+  if (!scp) {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return undefined;
+    }
+    if (!GITHUB_URL_PROTOCOLS.has(parsed.protocol) || parsed.hostname !== 'github.com') {
+      return undefined;
+    }
+    path = parsed.pathname.slice(1);
+  }
+  return path
+    .replace(/\/$/, '')
+    .replace(/\.git$/i, '')
+    .toLowerCase();
+}
+
+// An https origin can carry a token as its user information; the refusal is printed to a log.
+function redactUserInfo(url) {
+  return url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^/@]*@/i, '$1[REDACTED]@');
+}
+
+export function readRemoteBranchHead(repoRoot, branch) {
+  const ref = `refs/heads/${branch}`;
+  // ls-remote matches a pattern against trailing path components rather than the whole ref name.
+  const oid = git(repoRoot, ['ls-remote', '--heads', 'origin', ref])
+    .split('\n')
+    .map((line) => line.split('\t'))
+    .find(([, name]) => name === ref)?.[0];
+  if (!OID_PATTERN.test(oid ?? '')) throw new Error(`origin has no branch named ${branch}`);
+  return oid;
+}
+
+// `readPr`, `wait` and `now` are seams kept for tests, which stand in for GitHub and the clock.
+export async function readSettledPullRequest(
+  number,
+  { readBranchHead, readPr = readPullRequest, wait = sleep, now = Date.now }
+) {
+  const deadline = now() + PR_HEAD_SETTLE_TIMEOUT_MS;
+  for (;;) {
+    const metadata = readPr(number);
+    const branchHead = readBranchHead(metadata.headRefName);
+    if (metadata.headRefOid === branchHead) return metadata;
+    if (now() >= deadline) {
+      throw new Error(
+        `pull request ${number} still reports head ${metadata.headRefOid} but origin/${metadata.headRefName} is at ${branchHead} after ${PR_HEAD_SETTLE_TIMEOUT_MS / 1000}s; nothing was launched. Relaunch once \`gh pr view ${number} --json headRefOid\` reports the pushed head.`
+      );
+    }
+    await wait(PR_HEAD_POLL_INTERVAL_MS);
+  }
+}
+
+async function resolveLaunchScope(repoRoot, scope) {
   if (scope.kind !== 'pr') return resolveScope(repoRoot, scope);
-  const metadata = readPullRequest(scope.number);
+  assertOriginIsPullRequestRepository(repoRoot);
+  const metadata = await readSettledPullRequest(scope.number, {
+    readBranchHead: (branch) => readRemoteBranchHead(repoRoot, branch),
+  });
   git(repoRoot, ['fetch', '--no-tags', 'origin', metadata.baseRefOid, metadata.headRefOid]);
   return resolveScope(repoRoot, { ...scope, ...metadata });
 }
@@ -215,7 +296,7 @@ export async function launch(
     ? planRound(undefined)
     : planRound(readLedgerRecord(recordPath), { fresh: options.fresh, rival: vendor.rival });
 
-  const scope = resolveLaunchScope(repoRoot, options.scope);
+  const scope = await resolveLaunchScope(repoRoot, options.scope);
   scope.range = `${scope.base}...${scope.head}`;
   const id = randomUUID();
   const session = createSessionDirectory(id);

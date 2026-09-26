@@ -87,8 +87,12 @@ objective evidence; the native handler decides whether the rival understood it.
 
 Every CLI prints one JSON document on stdout and diagnostics on stderr, and exits nonzero on any
 failure. The stream watchdog terminates the rival's whole process group after ten minutes with
-neither a stream event nor broker traffic. The poster refuses a head or base that moved since the
-review and never posts twice for one range.
+neither a stream event nor broker traffic. Before pinning a PR scope, the launcher waits up to
+`PR_HEAD_SETTLE_TIMEOUT_MS` for the PR's `headRefOid` to match the branch tip `git ls-remote`
+reports on `origin`, and refuses with both commit ids when GitHub has not caught up with a push by
+then. It refuses a PR scope outright when `origin` is not the GitHub repository `gh` reads, since a
+local or mirror remote could make an old head look settled. The poster refuses a head or base that
+moved since the review and never posts twice for one range.
 
 ## Sensitive findings and safe manual recovery
 
