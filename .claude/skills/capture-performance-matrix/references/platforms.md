@@ -19,6 +19,8 @@ immediately rather than subtly:
   `sdk.dir=<android-sdk-path>` into it, or export `ANDROID_HOME`.
 * Appium's UiAutomator2 driver reads `ANDROID_HOME` from the **server's** environment, not the
   client's, so start Appium with it exported or every Android session fails to create.
+  `perf:campaign` reads a loopback Appium's environment before an Android native action queue and
+  refuses a server started without it; it only warns when it cannot read the server.
 * `ios/local.xcconfig` does not exist, so every physical-iPad runner stops on "No signing config".
   Copy it from the main checkout; it holds only a `DEVELOPMENT_TEAM` id.
 
@@ -40,8 +42,8 @@ The server prints localhost and LAN URLs. A device must use a reachable LAN/prov
 the Mac’s localhost. Keep the server running and pass `--no-serve` plus the URL to device runners.
 
 Start Appium 3 only for Appium targets and confirm its driver for the platform is installed. Use a
-capability file for simulators, Android, retained sessions, or hosted providers; do not commit the
-file if it contains IDs or credentials.
+capability file for simulators, retained sessions, or hosted providers; do not commit the file if it
+contains IDs or credentials. Physical Android native needs only the serial (below).
 
 **Run one target at a time, and do not chain them on a process check.** Waiting for the previous
 campaign by polling `pgrep` looks obvious and fails twice over: it races at launch, because the
@@ -343,12 +345,19 @@ phone is the one the committed `android-device-*` rows were measured on. Check t
 PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true ANDROID_SERIAL=<serial> npm run android:run
 ```
 
-Then use Appium with a capability file — the Android session is UiAutomator2, which the iOS runner's
-built-in capabilities cannot express:
+Then pass the serial. For an Android native target, `perf:campaign` passes the action runner
+`--platform=android`, which builds the UiAutomator2 capabilities from `--device-id=<serial>` (issue
+2341), so the serial is never read as an iPad udid:
 
 ```sh
---capabilities-file=<capabilities.json> --native-app --native-webview-class=android.webkit.WebView
+npm run perf:campaign -- --target=android-device-native --items=actions --device-id=<serial> \
+  --appium-url=<appium-url>
 ```
+
+The campaign refuses an Android native action queue with neither `--device-id` nor
+`--capabilities-file`, and refuses a capabilities file that does not name a UiAutomator2 session. A
+direct `perf:ios:xcuitest:actions` run takes
+`--platform=android --device-id=<serial> --native-app --native-webview-class=android.webkit.WebView`.
 
 **A tap that records `eventType: uncaptured` never reached the WebView.** Two causes are known, and
 the actions runner now handles both. With `noReset`, UiAutomator2 does not launch an app that is
@@ -380,19 +389,11 @@ adb -s <serial> shell dumpsys webviewupdate | grep "Current WebView package"
 Record that version — it moves independently of the app and of Chrome, and a row whose cells were
 captured across a WebView update is not internally comparable.
 
-The file names the platform, the driver, the serial, and the Capacitor package:
-
-```json
-{
-  "platformName": "Android",
-  "appium:automationName": "UiAutomator2",
-  "appium:udid": "<serial>",
-  "appium:appPackage": "art.splotch.app",
-  "appium:appActivity": ".MainActivity",
-  "appium:noReset": true,
-  "appium:newCommandTimeout": 600
-}
-```
+The built set is the file the issue-2268 and issue-2225 native sweeps were captured with:
+`uiAutomator2Capabilities` in `tools/perf/lib/appium-capabilities.mjs` owns it, including its own
+`systemPort` and `chromedriverPort`. `--capabilities-file=` still overrides it whole, for a
+different port or package, but must carry `platformName: Android` and
+`appium:automationName: UiAutomator2`.
 
 Capture four brushes, pen undo, and the four-repeat action suite. Keep the physical Android
 calibration advisory until native/web hand input establishes expected cadence and contact geometry.

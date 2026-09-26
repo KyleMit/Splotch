@@ -8,6 +8,7 @@ import {
   eraserFillFunctionSource,
 } from '../lib/eraser-fill.mjs';
 import { CAMPAIGN_TARGETS, NATIVE_TRANSPORT, gesturePlanFor } from '../lib/campaign-plan.mjs';
+import { DEFAULT_APPIUM_URL, capabilitiesFromFile } from '../lib/appium-capabilities.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { PERF_RUN_PARAM } from '../lib/capture-date.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
@@ -59,7 +60,6 @@ import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-
 
 const APP_PATH = '/';
 const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
-const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
 // The bundle a native capture attaches to is the one Capacitor builds, so it is
@@ -407,11 +407,6 @@ export function createWebDriverClient(baseUrl) {
     return result.value;
   };
   return { request };
-}
-
-export function capabilitiesFromFile(path) {
-  const parsed = JSON.parse(readFileSync(path, 'utf8'));
-  return parsed.capabilities?.alwaysMatch ?? parsed.alwaysMatch ?? parsed;
 }
 
 export function isWebContext(context) {

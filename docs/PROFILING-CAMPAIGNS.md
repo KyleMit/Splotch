@@ -303,6 +303,16 @@ provenance). The port-occupied ledger rows are all `missing-or-invalid-json` wit
 clearing the ledger and rerunning is safe (see *Recapturing matrix cells*). This bit the 2026-09-06
 iPad-native recapture: 69 cells P1 on 8100 before the caps file, then 20/20 clean on 8110.
 
+**Android native action cells need only the serial.** `perf:campaign` passes the action runner
+`--platform=android` for an Android native target, and the runner builds UiAutomator2 capabilities
+from `--device-id=<serial>` — the set the 2026-09-25 native sweeps ran with, systemPort and
+chromedriverPort included. Without that flag a bare serial became an XCUITest udid and every cell
+failed with `Unknown device or simulator UDID` (issue 2341), so older notes that call for a
+hand-written UiAutomator2 file describe a workaround. A file still overrides the built set, and the
+campaign refuses one that does not name UiAutomator2. Before the queue it also reads a loopback
+Appium's environment and refuses a server started without `ANDROID_HOME`, which UiAutomator2 reads
+from the server rather than the client; it warns when it cannot read the server.
+
 ## A build that is not the build you think
 
 **`pkill -f serve-profile-build` does not stop the preview server.** It kills the wrapper; the vite

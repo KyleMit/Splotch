@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   ACTION_FRAME_MAX_GATE_MS,
@@ -29,6 +30,8 @@ import {
   coloringScrollTransport,
   coloringSelectionSteps,
   createActionSession,
+  parseSessionPlatform,
+  sessionCapabilities,
   customColorSelectionEventTypes,
   largestNativeRect,
   nativeAccessibilityFallbackWarning,
@@ -59,6 +62,7 @@ import {
   aiRunEvidenceProblem,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { DEVICE_CLASSES } from '../lib/campaign-plan.mjs';
+import { uiAutomator2Capabilities } from '../lib/appium-capabilities.mjs';
 import {
   desktopActionsArtifact,
   hasMinimumActionRepeats,
@@ -2005,5 +2009,115 @@ describe('the physical Android web allowance ledger', () => {
       expect(actionGateAllowancesFor(target), target).toEqual({});
     }
     expect(actionGateAllowancesFor(undefined)).toEqual({});
+  });
+});
+
+// Issue 2341: an Android serial must never become an XCUITest udid.
+describe('sessionCapabilities', () => {
+  const SERIAL = 'R5CFAKESER1';
+  const withScratch = (run) => {
+    const scratch = mkdtempSync(join(tmpdir(), 'session-capabilities-'));
+    try {
+      return run(scratch);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  };
+  const capabilitiesFile = (scratch, capabilities) => {
+    const path = join(scratch, 'capabilities.json');
+    writeFileSync(path, JSON.stringify({ alwaysMatch: capabilities }));
+    return path;
+  };
+
+  it('builds UiAutomator2 capabilities for an Android native target from the serial', () => {
+    const capabilities = sessionCapabilities({
+      platform: 'android',
+      deviceId: SERIAL,
+      nativeApp: true,
+    });
+
+    expect(capabilities).toStrictEqual(uiAutomator2Capabilities({ deviceId: SERIAL }));
+    expect(capabilities['appium:automationName']).toBe('UiAutomator2');
+  });
+
+  it('lets a UiAutomator2 capabilities file override the built set', () => {
+    withScratch((scratch) => {
+      const handWritten = {
+        ...uiAutomator2Capabilities({ deviceId: SERIAL }),
+        'appium:systemPort': 8263,
+      };
+      const file = capabilitiesFile(scratch, handWritten);
+
+      expect(
+        sessionCapabilities({ platform: 'android', deviceId: SERIAL, nativeApp: true, file })
+      ).toStrictEqual(handWritten);
+    });
+  });
+
+  it('refuses an XCUITest capabilities file for an Android target', () => {
+    withScratch((scratch) => {
+      const file = capabilitiesFile(scratch, {
+        platformName: 'iOS',
+        'appium:automationName': 'XCUITest',
+        'appium:udid': SERIAL,
+      });
+
+      expect(() =>
+        sessionCapabilities({ platform: 'android', deviceId: SERIAL, nativeApp: true, file })
+      ).toThrow(/needs a UiAutomator2 session/);
+    });
+  });
+
+  it('refuses Android without a serial, without the app, or with a WebDriverAgent', () => {
+    expect(() => sessionCapabilities({ platform: 'android', nativeApp: true })).toThrow(
+      '--device-id=<serial>'
+    );
+    expect(() => sessionCapabilities({ platform: 'android', deviceId: SERIAL })).toThrow(
+      'direct CDP'
+    );
+    expect(() =>
+      sessionCapabilities({
+        platform: 'android',
+        deviceId: SERIAL,
+        nativeApp: true,
+        webDriverAgentUrl: 'http://127.0.0.1:8100',
+      })
+    ).toThrow('--wda-url');
+  });
+
+  it('builds the same XCUITest capabilities for an iPad as before the Android path existed', () => {
+    withScratch((scratch) => {
+      const xcodeConfigFile = join(scratch, 'local.xcconfig');
+      writeFileSync(xcodeConfigFile, 'DEVELOPMENT_TEAM = TEAM\n');
+      const capabilities = sessionCapabilities({
+        deviceId: 'IPAD-UDID-FIXTURE',
+        xcodeConfigFile,
+        wdaBundleId: 'art.splotch.WebDriverAgentRunner',
+        allowProvisioning: false,
+        nativeApp: true,
+        webDriverAgentUrl: 'http://127.0.0.1:8100',
+      });
+
+      expect(JSON.stringify(capabilities)).toBe(
+        JSON.stringify({
+          'appium:bundleId': JSON.parse(readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8'))
+            .appId,
+          platformName: 'iOS',
+          'appium:automationName': 'XCUITest',
+          'appium:udid': 'IPAD-UDID-FIXTURE',
+          'appium:xcodeConfigFile': xcodeConfigFile,
+          'appium:updatedWDABundleId': 'art.splotch.WebDriverAgentRunner',
+          'appium:wdaLaunchTimeout': 180_000,
+          'appium:wdaStartupRetries': 1,
+          'appium:webDriverAgentUrl': 'http://127.0.0.1:8100',
+        })
+      );
+    });
+  });
+
+  it('reads the platform flag strictly', () => {
+    expect(parseSessionPlatform()).toBe('ios');
+    expect(parseSessionPlatform('Android')).toBe('android');
+    expect(() => parseSessionPlatform('windows')).toThrow('--platform must be one of ios, android');
   });
 });
