@@ -487,6 +487,19 @@ does (`pullBundledReportFromDevice()` in `tools/perf/ios/bundled-report-channel.
 stores each key as `CapacitorStorage.<key>`, so a reset key must be absent from that file or hold
 the value you set.
 
+**A setting the sweep toggles still decides what a later action measures.** The action sweep
+measures each Settings switch as a round trip and then puts the switch back the way it found it
+(`runToggleRoundTrip`). That keeps the sweep from changing the device, and it also means the sweep
+never chooses the state. On the rig phone, **Auto-save on delete** was on in the native app, so
+every clear in its native sweeps also exported the drawing and saved it to the gallery. The web
+targets and a freshly installed app leave that switch off, and there a clear only animates. Issue
+2340 traced the native clear cells' 75–134 ms maximum to that save. The capture was valid, and the
+cost was real product work. But whether the matrix sees it depends on a persisted switch that no
+artifact records. Before comparing a clear cell across targets or devices, read
+`splotch-save-on-delete` on each device (in the page's `localStorage`, or in Capacitor Preferences
+on native), and name the state beside the number. Each save also adds a picture to the phone's
+`Pictures/Splotch`, so a long native campaign with the switch on leaves hundreds of files there.
+
 **An interrupted action sweep can leave the Android panel pinned at 60Hz.** The android action sweep
 pins `peak_refresh_rate`/`min_refresh_rate` for its duration (ADR-0143) and restores them in its
 `finally`, and in a process `exit` listener that covers a `fail()` on an unserved URL or a stale
