@@ -323,7 +323,7 @@ describe('release-gate age limit', () => {
       ['actions', 15],
     ]);
     expect(outcome.lines.find((line) => line.includes('release-gate section(s)'))).toMatch(
-      /^WARN {2}3 release-gate section\(s\) are older than 14 days: t\/drawing \[portrait-light\] \(captured 2026-09-10, 15 days old\)/
+      /^WARN {2}3 release-gate section\(s\) are older than 14 days or undated: t\/drawing \[portrait-light\] \(captured 2026-09-10, 15 days old\)/
     );
   });
 
@@ -339,7 +339,7 @@ describe('release-gate age limit', () => {
 
     expect(outcome.failed).toBe(true);
     expect(outcome.lines.join('\n')).toContain(
-      'FAIL  6 release-gate section(s) are older than 14 days: t/drawing [portrait-light, portrait-dark] (captured 2026-09-10, 15 days old)'
+      'FAIL  6 release-gate section(s) are older than 14 days or undated: t/drawing [portrait-light, portrait-dark] (captured 2026-09-10, 15 days old)'
     );
     expect(outcome.lines.at(-1)).toContain('--release-gate-age asserts');
   });

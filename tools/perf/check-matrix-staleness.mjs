@@ -275,7 +275,7 @@ export function provenanceOutcome({ sections, strict, releaseGateAge = false }) 
   if (overdue.length) {
     lines.push(
       `${releaseGateAge ? 'FAIL' : 'WARN'}  ${overdue.length} release-gate section(s) are older than ` +
-        `${RELEASE_GATE_MAX_AGE_DAYS} days: ${groupedSectionList(overdue, ageDetail)}. ` +
+        `${RELEASE_GATE_MAX_AGE_DAYS} days or undated: ${groupedSectionList(overdue, ageDetail)}. ` +
         'A performance campaign may not finish until each is recaptured (ADR-0175).'
     );
   }
@@ -290,7 +290,7 @@ export function provenanceOutcome({ sections, strict, releaseGateAge = false }) 
   if (ageFailed) {
     lines.push(
       `--release-gate-age asserts that no release-gate section is older than ${RELEASE_GATE_MAX_AGE_DAYS} ` +
-        'days. Recapture the sections above before a campaign claims completion.'
+        'days or undated. Recapture the sections above before a campaign claims completion.'
     );
   }
   return { incomplete, overdue, lines, failed: strictFailed || ageFailed };
