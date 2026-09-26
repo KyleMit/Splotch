@@ -24,9 +24,10 @@ or deletion shows up.
 ## Inputs and outputs
 
 * **Input:** the blobs of one commit, listed with `git ls-tree -r` and read with
-  `git cat-file --batch`. The working tree is never read, so the same ref always regenerates the
-  same tables and a dirty checkout cannot leak into the counts. Commit first, then regenerate from
-  that commit.
+  `git cat-file --batch`, so file contents never come from the working tree. The rules do, so
+  writing the map refuses to run when `tools/code-map/` differs from the counted commit: commit rule
+  changes first, then regenerate from that commit. `--assignments` skips that check, so the current
+  rules can be tried against an older ref.
 * **Output:** the four marked blocks of `docs/CODE-MAP.md` — `snapshot`, `coverage`, `totals`, and
   `splits`, each between `<!-- code-map:generated:start NAME -->` and
   `<!-- code-map:generated:end NAME -->`. Everything outside the markers is prose the generator

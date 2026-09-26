@@ -5,7 +5,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import { isMain, parseOrFail, ROOT, runMain } from '../lib/proc.mjs';
@@ -47,6 +47,20 @@ function formatMarkdown(path) {
   }
 }
 
+// The rules run from this checkout while the blobs come from the ref, so the
+// map may only be written when the two agree; otherwise its snapshot line would
+// name a commit whose rules did not produce it. `--assignments` stays usable
+// against any ref, which is how the rules are calibrated on an old snapshot.
+function assertRulesMatchCommit(sha) {
+  const rulesDirectory = relative(ROOT, import.meta.dirname);
+  const diff = spawnSync('git', ['diff', '--quiet', sha, '--', rulesDirectory], { cwd: ROOT });
+  if (diff.status !== 0) {
+    throw new Error(
+      `${rulesDirectory}/ differs from ${sha.slice(0, 12)}: commit the rules, then regenerate from that commit`
+    );
+  }
+}
+
 export function generateCodeMap(argv = process.argv.slice(2)) {
   const options = readOptions(argv);
   if (options.help) {
@@ -54,6 +68,7 @@ export function generateCodeMap(argv = process.argv.slice(2)) {
     return;
   }
   const commit = resolveCommit(options.ref);
+  if (!options.assignments) assertRulesMatchCommit(commit.sha);
   const blobs = listTrackedBlobs(commit.sha);
   const assignments = assignFiles(blobs.map((blob) => blob.path));
   const measured = new Set(

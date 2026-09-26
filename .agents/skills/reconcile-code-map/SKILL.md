@@ -12,9 +12,10 @@ landed, fix the rules, regenerate again, then rewrite the prose.
 
 ## 1. Start from committed main
 
-1. Work on a fresh branch from the latest `origin/main`. The generator reads a commit, not the
-   working tree, so a dirty checkout cannot leak into the counts, but rule edits must be committed
-   before the map that uses them is generated.
+1. Work on a fresh branch from the latest `origin/main`. The generator reads file contents from a
+   commit, not the working tree, but runs the rules from the checkout — so it refuses to write the
+   map while `tools/code-map/` differs from the counted commit. Commit rule edits before generating
+   the map that uses them.
 2. Record the previous snapshot commit from the map's header line (`Snapshot of <sha> (<date>)`).
    Every comparison below is against that commit.
 
