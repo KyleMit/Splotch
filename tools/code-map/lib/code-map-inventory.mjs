@@ -45,13 +45,30 @@ export function countLinesByOid(oids) {
   if (unique.length === 0) return lines;
   const output = git(['cat-file', '--batch'], `${unique.join('\n')}\n`);
   let offset = 0;
-  while (offset < output.length) {
-    const headerEnd = output.indexOf(NEWLINE, offset);
-    const [oid, , size] = output.subarray(offset, headerEnd).toString().split(' ');
-    const contentStart = headerEnd + 1;
-    const contentEnd = contentStart + Number(size);
-    lines.set(oid, countNewlines(output, contentStart, contentEnd));
+  for (const requested of unique) {
+    const { contentStart, contentEnd } = readBatchEntry(output, offset, requested);
+    lines.set(requested, countNewlines(output, contentStart, contentEnd));
     offset = contentEnd + 1;
   }
+  if (offset !== output.length) throw new Error('git cat-file --batch returned unexpected output');
   return lines;
+}
+
+// One `<oid> blob <size>\n<content>\n` entry. A `<oid> missing` reply, a
+// non-blob, or a short read fails the run: a silently skipped blob would
+// undercount the map without any sign.
+function readBatchEntry(output, offset, requested) {
+  const headerEnd = output.indexOf(NEWLINE, offset);
+  if (headerEnd === -1) throw new Error(`git cat-file --batch ended before ${requested}`);
+  const header = output.subarray(offset, headerEnd).toString();
+  const match = /^([0-9a-f]+) blob (\d+)$/.exec(header);
+  if (!match || match[1] !== requested) {
+    throw new Error(`git cat-file --batch: expected blob ${requested}, got "${header}"`);
+  }
+  const contentStart = headerEnd + 1;
+  const contentEnd = contentStart + Number(match[2]);
+  if (contentEnd >= output.length || output[contentEnd] !== NEWLINE) {
+    throw new Error(`git cat-file --batch: truncated content for ${requested}`);
+  }
+  return { contentStart, contentEnd };
 }
