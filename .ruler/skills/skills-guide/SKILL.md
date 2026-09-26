@@ -37,8 +37,11 @@ weighing.
 
 `walk-through-decision` then runs *before* a decision exists: it explains one and recommends an
 option, and deliberately stops there. It writes nothing and implements nothing, so recording the
-outcome stays an explicit later ask to `create-adr`. The last link of the chain, `reconcile-adrs`,
-lives with the other reconcile skills under Recurring maintenance.
+outcome stays an explicit later ask to `create-adr`. Its `mode=autonomous` is how the unattended
+skills (`ship-issue`, `address-pr-review`, `ship-campaign`) answer a question they would otherwise
+have stopped to ask: the agent's own calls are locked after a `run-rival-agent` review (marked
+unreviewed if none can run), and the user's are parked for them. The last link of the chain,
+`reconcile-adrs`, lives with the other reconcile skills under Recurring maintenance.
 
 ## Performance — interaction matrices and page load
 
@@ -100,11 +103,12 @@ meta).
 
 ### `reconcile-*` — bring an artifact back in line with reality
 
-| Skill                 | What it reconciles                                                               |
-| --------------------- | -------------------------------------------------------------------------------- |
-| `reconcile-adrs`      | Existing ADRs against the current code and recent decisions — amends drift       |
-| `reconcile-code-map`  | `docs/CODE-MAP.md` against the current tree — regenerates tables, rewrites prose |
-| `reconcile-with-main` | A long-running branch against current `main`, hunting the *semantic* conflicts   |
+| Skill                      | What it reconciles                                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `reconcile-adrs`           | Existing ADRs against the current code and recent decisions — amends drift                                                               |
+| `reconcile-code-map`       | `docs/CODE-MAP.md` against the current tree — regenerates tables, rewrites prose                                                         |
+| `reconcile-docs-with-code` | Living docs, skills, and rules against the code — stale identifiers, prose about renamed or deleted things, and doc-reference exemptions |
+| `reconcile-with-main`      | A long-running branch against current `main`, hunting the *semantic* conflicts                                                           |
 
 `burn-down-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
@@ -124,6 +128,11 @@ never a counter-driven split.
 tables, and the skill teaches the rules about new areas and misplaced files and rewrites the prose.
 It finds work rather than doing it — sharp growth becomes an issue. `audit-code` uses the map to
 shard an exhaustive whole-repo pass, so refresh it first when it is weeks behind.
+
+`reconcile-docs-with-code` is the judgment half of a split: `npm run check:doc-refs` already fails
+CI on a living doc naming a repo path or npm script that does not resolve, so the PR that renames a
+file fixes the docs naming it. The skill sorts the advisory identifier list that check prints,
+follows renames and deletions into prose no path check can see, and re-justifies the exemptions.
 
 `reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
 has been open a while: it detects overlapping line edits and nothing else. The skill surveys the

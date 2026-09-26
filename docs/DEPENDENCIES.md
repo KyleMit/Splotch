@@ -38,7 +38,7 @@ Non-`keep` rows first.
 | @capacitor/screen-orientation       | prod     | keep                               |
 | @capacitor/status-bar               | prod     | keep                               |
 | @fontsource-variable/quicksand      | prod     | keep                               |
-| @google/genai                       | prod     | keep                               |
+| @google/genai                       | dev      | keep                               |
 | @netlify/blobs                      | prod     | keep                               |
 | @sveltejs/adapter-static            | prod     | keep                               |
 | @dprint/json                        | dev      | keep                               |
@@ -289,10 +289,11 @@ Non-`keep` rows first.
 
 ### @google/genai
 
-* **Version:** `^2.10.0` declared · 2.10.0 locked (latest 2.12.0) · prod
-* **Used for:** Gemini image generation and safety checks — the `/api/generate-image` server path
-  and the asset-gen/model-eval tooling. Used in `web/src/lib/server/ai/gemini.ts`,
-  `geminiSafety.ts`, `tools/model-eval/*.mjs`.
+* **Version:** `^2.24.0` declared · 2.24.0 locked · dev
+* **Used for:** Gemini image generation and safety classification in the asset-gen and model-eval
+  tooling; the app's `/api/generate-image` path moved to OpenAI (ADR-0113). Used in
+  `tools/asset-gen/lib/gemini.mjs`, `tools/asset-gen/lib/gemini-response.ts`,
+  `tools/model-eval/lib/image-providers.mjs`.
 * **Source:** npm · [github.com/googleapis/js-genai](https://github.com/googleapis/js-genai) ·
   published by Google
 * **License:** Apache-2.0
@@ -908,8 +909,8 @@ any of the 50 direct packages).
 
 ### Packages with install scripts (`hasInstallScript`)
 
-Supply-chain-relevant subset from the lockfile: `@google/genai` (direct prod), `dprint` (direct
-dev), `sharp` (direct dev), `esbuild` (under `@sveltejs/adapter-netlify`), `protobufjs` (under
+Supply-chain-relevant subset from the lockfile: `@google/genai` (direct dev), `dprint` (direct dev),
+`sharp` (direct dev), `esbuild` (under `@sveltejs/adapter-netlify`), `protobufjs` (under
 `@google/genai`), `fsevents` (macOS-only, under `vite`), and `yarn` (transitive tooling copy). All
 are well-known, org- or foundation-backed packages; none are anomalous.
 
