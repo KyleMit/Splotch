@@ -303,12 +303,15 @@ immediately if that probe is absent.
 The artifact reports the input-fidelity verdict plus cumulative lost-frame time and long-gap
 forensics. With undo enabled it also reports engine P50/P95/P99/max, action-to-next-frame
 P50/P95/P99/max, the pass/fail verdict, every raw action, and history bytes before undo. The
-ADR-0086 gates are engine P95 ≤20 ms, next-frame P95 ≤33 ms, and next-frame max ≤50 ms. A forensic
-episode is a frame gap over four presentation budgets. Trusted-move count and engine share stay
-visible even when either would once have discarded the episode, and marked engine time is subtracted
-from its unexplained duration. Lead with **lost frame %** and **worst gap**, then use
-episodes/commit for attribution: the 1.5x mitigation split the baseline's large freezes into more,
-smaller episodes, so episode count alone inverted the result.
+ADR-0086 gates are engine P95 ≤20 ms, next-frame P95 ≤33 ms, and next-frame max ≤50 ms. The
+next-frame figure is the frame's `requestAnimationFrame` stamp, its vsync time, so a busy main
+thread can report it before the click. The summary's `callback` distribution (each action's
+`callbackMs`, read with `performance.now()` inside that callback) says when the frame actually ran.
+It is diagnostic and never gated. A forensic episode is a frame gap over four presentation budgets.
+Trusted-move count and engine share stay visible even when either would once have discarded the
+episode, and marked engine time is subtracted from its unexplained duration. Lead with **lost frame
+%** and **worst gap**, then use episodes/commit for attribution: the 1.5x mitigation split the
+baseline's large freezes into more, smaller episodes, so episode count alone inverted the result.
 
 For a system-level attribution run, start Apple's **Animation Hitches** template in one terminal:
 

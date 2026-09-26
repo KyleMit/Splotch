@@ -16,7 +16,7 @@ import {
 // without a device attached.
 function evaluateUndoSource(
   index,
-  { measures = [], inkMotionMeasures = [], button, nowSteps = [] } = {}
+  { measures = [], inkMotionMeasures = [], button, nowSteps = [], frameStamps = [] } = {}
 ) {
   let nowIndex = 0;
   const performanceStub = {
@@ -29,7 +29,10 @@ function evaluateUndoSource(
     now: () => (nowIndex < nowSteps.length ? nowSteps[nowIndex++] : (nowSteps.at(-1) ?? 0)),
   };
   const documentStub = { querySelector: () => button ?? null };
-  const requestAnimationFrame = (callback) => setTimeout(() => callback(performanceStub.now()), 0);
+  // A frame stamp is the vsync time, which a busy main thread can run well after;
+  // `frameStamps` models that, and without it each frame is stamped when it runs.
+  const requestAnimationFrame = (callback) =>
+    setTimeout(() => callback(frameStamps.length ? frameStamps.shift() : performanceStub.now()), 0);
   class MouseEvent {
     constructor(type, options) {
       Object.assign(this, { type }, options);
@@ -72,6 +75,22 @@ describe('undo action source', () => {
       startedAt: 100,
     });
     expect(action.nextFrameMs).toBe(18);
+  });
+
+  it('records the callback time beside a next-frame stamp from before the click', async () => {
+    const measures = [];
+    const button = enabledButton(() => measures.push({ duration: 4 }));
+
+    const action = await evaluateUndoSource(0, {
+      measures,
+      button,
+      nowSteps: [100, 131.6],
+      frameStamps: [98],
+    });
+
+    expect(action).toMatchObject({ startedAt: 100, endedAt: 131.6, nextFrameMs: -2 });
+    expect(action.callbackMs).toBeCloseTo(31.6, 6);
+    expect(action.callbackMs).toBe(action.endedAt - action.startedAt);
   });
 
   it('sums only the ink-motion measures this undo produced', async () => {

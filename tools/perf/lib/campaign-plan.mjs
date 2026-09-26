@@ -757,12 +757,42 @@ function recordedHistoryDepth(history) {
 // sub-measure. Presence is compared before the metrics, so an older artifact
 // without them stays valid while an empty or orphaned group is a contradiction
 // rather than a vacuous undefined-equals-undefined match.
-const UNDO_SUMMARY_DISTRIBUTIONS = ['engine', 'nextFrame', 'inkMotion', 'restore'];
+const UNDO_SUMMARY_DISTRIBUTIONS = ['engine', 'nextFrame', 'inkMotion', 'restore', 'callback'];
 const UNDO_SUMMARY_METRICS = ['p50', 'p95', 'p99', 'max'];
 
 function undoDistributionMatches(recorded, expected) {
   if (!expected) return recorded == null;
   return UNDO_SUMMARY_METRICS.every((metric) => recorded?.[metric] === expected[metric]);
+}
+
+const recordsNamedCallback = (action) => action.callbackMs !== undefined;
+
+// An artifact written after the driver named `callbackMs` names it on every action,
+// and each value is exactly the timestamp difference it was computed as — so the
+// callback summary it must then carry covers every undo, not a subset.
+function namedCallbackProblem(actions) {
+  if (!actions.some(recordsNamedCallback)) return null;
+  const inconsistent = actions.findIndex(
+    (action) =>
+      !Number.isFinite(action.startedAt) ||
+      !Number.isFinite(action.endedAt) ||
+      action.callbackMs !== action.endedAt - action.startedAt
+  );
+  return inconsistent === -1
+    ? null
+    : `the split artifact's undo action ${inconsistent + 1} records no callback time consistent with its timestamps`;
+}
+
+// `callback` re-derives from the timestamps every driver-recorded action carries,
+// so re-summarizing an artifact written before the driver named `callbackMs` adds
+// a group its recorded summary never had. That absence is historical only while no
+// action carries the named field; once one does, the summary must carry the group.
+function undoSummaryGroups(artifact) {
+  const historicalCallback =
+    artifact.undo.callback === undefined && !artifact.undoActions.some(recordsNamedCallback);
+  return historicalCallback
+    ? UNDO_SUMMARY_DISTRIBUTIONS.filter((group) => group !== 'callback')
+    : UNDO_SUMMARY_DISTRIBUTIONS;
 }
 
 export function splitUndoEvidenceProblem(artifact, expectedUndoCount) {
@@ -786,13 +816,15 @@ export function splitUndoEvidenceProblem(artifact, expectedUndoCount) {
       return `the split artifact's undo action ${index + 1} is incomplete`;
     }
   }
+  const callbackProblem = namedCallbackProblem(artifact.undoActions);
+  if (callbackProblem) return callbackProblem;
 
   const expectedSummary = summarizeUndoActions(artifact.undoActions, []);
   const recordedSummary = artifact.undo;
   const summaryMatches =
     recordedSummary.count === expectedSummary.count &&
     recordedSummary.passed === expectedSummary.passed &&
-    UNDO_SUMMARY_DISTRIBUTIONS.every((group) =>
+    undoSummaryGroups(artifact).every((group) =>
       undoDistributionMatches(recordedSummary[group], expectedSummary[group])
     );
   if (!summaryMatches) {

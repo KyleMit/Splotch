@@ -16,6 +16,7 @@ import {
   renderReport,
 } from '../gen-performance-matrix.mjs';
 import { GESTURE_REPEATS, UNDO_COUNT } from '../lib/campaign-plan.mjs';
+import { summarizeUndoActions } from '../lib/undo-action-stats.mjs';
 import { FULL_ACTION_GROUPS, compactSettingsActionLabel } from '../lib/action-applicability.mjs';
 
 const temporaryDirectories = [];
@@ -202,11 +203,37 @@ describe('split undo normalization', () => {
     expect(renderMarkdown(matrix)).toContain('ink motion P95 0.4 ms · restore P95 0.6 ms');
   });
 
+  it('publishes the unscored callback clock beside the next-frame figure', () => {
+    const callbackTimes = [11.9, 17.3, 31.6];
+    const capture = splitUndoCapture();
+    capture.undoActions = capture.undoActions.map((action, index) => {
+      const startedAt = index * 1000;
+      const endedAt = startedAt + callbackTimes[index % 3];
+      return { ...action, startedAt, endedAt, callbackMs: endedAt - startedAt };
+    });
+    const { callback } = summarizeUndoActions(capture.undoActions, []);
+    capture.undo = { ...capture.undo, callback };
+
+    const matrix = matrixFor(capture)();
+
+    expect(matrix.targets[0].modes[0].undo).toMatchObject({
+      nextFrame: capture.undo.nextFrame,
+      callback: { p50: 17.3, p95: 31.6, p99: 31.6, max: 31.6 },
+      passed: true,
+    });
+    expect(renderMarkdown(matrix)).toContain(
+      'callback P50 17.3 · P95 31.6 · max 31.6 ms, unscored'
+    );
+    expect(renderReport(matrix)).toContain('callback P50 17.3 · P95 31.6 · max 31.6 ms, unscored');
+  });
+
   it('leaves a capture without the ink-motion split unchanged', () => {
     const matrix = matrixFor(splitUndoCapture())();
 
     expect(matrix.targets[0].modes[0].undo).not.toHaveProperty('inkMotion');
     expect(renderMarkdown(matrix)).not.toContain('ink motion P95');
+    expect(matrix.targets[0].modes[0].undo).not.toHaveProperty('callback');
+    expect(renderMarkdown(matrix)).not.toContain('callback P50');
   });
 
   it('fails closed when the split artifact has timing but no semantic proof', () => {

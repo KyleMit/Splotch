@@ -467,6 +467,80 @@ describe('campaign artifact acceptance', () => {
     ).toContain('contradicts');
   });
 
+  it('holds a recorded callback clock to the raw action timings', () => {
+    const timed = validSplitUndo.undoActions.map((action, index) => ({
+      ...action,
+      startedAt: index * 100,
+      endedAt: index * 100 + 12,
+    }));
+    const named = timed.map((action) => ({ ...action, callbackMs: 12 }));
+    const callback = { p50: 12, p95: 12, p99: 12, max: 12 };
+    const summarized = { ...validSplitUndo.undo, callback };
+
+    expect(
+      splitUndoEvidenceProblem({ ...validSplitUndo, undoActions: timed }, UNDO_COUNT)
+    ).toBeNull();
+    expect(
+      splitUndoEvidenceProblem(
+        { ...validSplitUndo, undoActions: named, undo: summarized },
+        UNDO_COUNT
+      )
+    ).toBeNull();
+    expect(
+      splitUndoEvidenceProblem({ ...validSplitUndo, undoActions: named }, UNDO_COUNT)
+    ).toContain('contradicts');
+    expect(
+      splitUndoEvidenceProblem(
+        {
+          ...validSplitUndo,
+          undoActions: named,
+          undo: { ...summarized, callback: { ...callback, max: 13 } },
+        },
+        UNDO_COUNT
+      )
+    ).toContain('contradicts');
+    expect(splitUndoEvidenceProblem({ ...validSplitUndo, undo: summarized }, UNDO_COUNT)).toContain(
+      'contradicts'
+    );
+  });
+
+  it('refuses a named callback time that is partial or contradicts its timestamps', () => {
+    const named = validSplitUndo.undoActions.map((action, index) => ({
+      ...action,
+      startedAt: index * 100,
+      endedAt: index * 100 + 12,
+      callbackMs: 12,
+    }));
+    const summarized = {
+      ...validSplitUndo.undo,
+      callback: { p50: 12, p95: 12, p99: 12, max: 12 },
+    };
+    const partial = named.map((action, index) =>
+      index === 0
+        ? action
+        : {
+            index: action.index,
+            beforeCount: action.beforeCount,
+            afterCount: action.afterCount,
+            engineMs: action.engineMs,
+            nextFrameMs: action.nextFrameMs,
+          }
+    );
+    const contradicting = named.map((action, index) =>
+      index === 3 ? { ...action, callbackMs: 123 } : action
+    );
+
+    expect(
+      splitUndoEvidenceProblem({ ...validSplitUndo, undoActions: partial }, UNDO_COUNT)
+    ).toContain('undo action 2 records no callback time consistent with its timestamps');
+    expect(
+      splitUndoEvidenceProblem(
+        { ...validSplitUndo, undoActions: contradicting, undo: summarized },
+        UNDO_COUNT
+      )
+    ).toContain('undo action 4 records no callback time consistent with its timestamps');
+  });
+
   it('refuses an empty or orphaned split group on actions without ink-motion time', () => {
     for (const undo of [
       { ...validSplitUndo.undo, inkMotion: {} },

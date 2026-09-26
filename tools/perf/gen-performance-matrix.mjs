@@ -785,6 +785,7 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
         }
       : {}),
     nextFrame: normalizedDistribution(summary.nextFrame),
+    ...(summary.callback ? { callback: normalizedDistribution(summary.callback) } : {}),
     passed: summary.passed,
   };
 }
@@ -794,6 +795,15 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
 function undoInkMotionSplit(undo) {
   return undo.inkMotion
     ? ` (ink motion P95 ${fmt(undo.inkMotion.p95)} ms · restore P95 ${fmt(undo.restore.p95)} ms)`
+    : '';
+}
+
+// Unscored beside the stamp-based next frame (issue #2338): when the frame ran,
+// not the vsync time it was stamped with. Absent from a capture whose summary
+// predates it, so those cells render exactly as before.
+function undoCallbackNote(undo) {
+  return undo.callback
+    ? ` (callback P50 ${fmt(undo.callback.p50)} · P95 ${fmt(undo.callback.p95)} · max ${fmt(undo.callback.max)} ms, unscored)`
     : '';
 }
 
@@ -1822,7 +1832,7 @@ function undoOverviewCell(label, mode, gates) {
     return tipCell('mx-cell missing', '—', `${label} · undo not measured`);
   }
   const undo = mode.undo;
-  const title = `${label} · ${undo.count} undos · engine P95 ${fmt(undo.engine.p95)} ms (gate ${gates.engineP95Ms} ms)${undoInkMotionSplit(undo)} · next-frame P95 ${fmt(undo.nextFrame.p95)} ms (gate ${gates.nextFrameP95Ms} ms) · next-frame max ${fmt(undo.nextFrame.max)} ms (gate ${gates.nextFrameMaxMs} ms) · ${undo.passed ? 'PASS' : 'FAIL'}`;
+  const title = `${label} · ${undo.count} undos · engine P95 ${fmt(undo.engine.p95)} ms (gate ${gates.engineP95Ms} ms)${undoInkMotionSplit(undo)} · next-frame P95 ${fmt(undo.nextFrame.p95)} ms (gate ${gates.nextFrameP95Ms} ms) · next-frame max ${fmt(undo.nextFrame.max)} ms (gate ${gates.nextFrameMaxMs} ms)${undoCallbackNote(undo)} · ${undo.passed ? 'PASS' : 'FAIL'}`;
   return tipCell(
     `mx-cell mark ${undo.passed ? 'pass' : 'hot failed'}`,
     undo.passed ? '✓' : '✕',
@@ -2129,7 +2139,7 @@ function undoTable(matrix) {
       if (!target.undo) {
         return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">No engine/next-frame probe</td></tr>`;
       }
-      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td>${fmt(target.undo.engine.p95)}${target.undo.inkMotion ? `<small class="muted">${esc(undoInkMotionSplit(target.undo))}</small>` : ''}</td><td>${fmt(target.undo.nextFrame.p95)}</td><td>${fmt(target.undo.nextFrame.max)}</td><td><span class="verdict ${target.undo.passed ? 'pass' : 'fail'}">${target.undo.passed ? 'Pass' : 'Fail'}</span></td></tr>`;
+      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td>${fmt(target.undo.engine.p95)}${target.undo.inkMotion ? `<small class="muted">${esc(undoInkMotionSplit(target.undo))}</small>` : ''}</td><td>${fmt(target.undo.nextFrame.p95)}${target.undo.callback ? `<small class="muted">${esc(undoCallbackNote(target.undo))}</small>` : ''}</td><td>${fmt(target.undo.nextFrame.max)}</td><td><span class="verdict ${target.undo.passed ? 'pass' : 'fail'}">${target.undo.passed ? 'Pass' : 'Fail'}</span></td></tr>`;
     })
     .join('');
 }
@@ -2448,7 +2458,7 @@ function renderMarkdown(matrix) {
     return [
       label,
       target.undo
-        ? `${fmt(target.undo.engine.p95)} / ${fmt(target.undo.nextFrame.p95)} / ${fmt(target.undo.nextFrame.max)}${undoInkMotionSplit(target.undo)}`
+        ? `${fmt(target.undo.engine.p95)} / ${fmt(target.undo.nextFrame.p95)} / ${fmt(target.undo.nextFrame.max)}${undoInkMotionSplit(target.undo)}${undoCallbackNote(target.undo)}`
         : '—',
       target.undo ? markdownStatus(target.undo.passed) : 'Not measured',
       target.undo ? target.undo.productCommit : '—',

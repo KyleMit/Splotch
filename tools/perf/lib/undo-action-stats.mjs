@@ -29,6 +29,22 @@ function inkMotionSplit(actions) {
   };
 }
 
+// The callback clock (issue #2338) is diagnostic, never gated: `nextFrameMs` stays
+// the scored figure. The timestamps are its one definition — the driver's named
+// `callbackMs` is the same difference, and every action recorded before that field
+// existed carries both timestamps — so older evidence re-summarizes to the same
+// figure and a named value cannot publish something its timestamps contradict.
+// Reported only when every action has it, for the same reason the ink-motion split is.
+function undoCallbackMs(action) {
+  return action.endedAt - action.startedAt;
+}
+
+function callbackDistribution(actions) {
+  const callbackTimes = actions.map(undoCallbackMs);
+  if (!callbackTimes.length || !callbackTimes.every(Number.isFinite)) return {};
+  return { callback: distribution(callbackTimes) };
+}
+
 export function summarizeUndoActions(actions, frames) {
   const engineDurations = actions.map((action) => action.engineMs);
   const nextFrameDelays = actions.flatMap((action) => {
@@ -43,7 +59,14 @@ export function summarizeUndoActions(actions, frames) {
     engine.p95 <= UNDO_ENGINE_P95_GATE_MS &&
     nextFrame.p95 <= UNDO_NEXT_FRAME_P95_GATE_MS &&
     nextFrame.max <= UNDO_NEXT_FRAME_MAX_GATE_MS;
-  return { count: actions.length, engine, ...inkMotionSplit(actions), nextFrame, passed };
+  return {
+    count: actions.length,
+    engine,
+    ...inkMotionSplit(actions),
+    nextFrame,
+    ...callbackDistribution(actions),
+    passed,
+  };
 }
 
 export function undoActionRows(summary) {
@@ -64,6 +87,13 @@ export function undoActionRows(summary) {
       'next frame p95': summary.nextFrame.p95,
       'next frame p99': summary.nextFrame.p99,
       'next frame max': summary.nextFrame.max,
+      ...(summary.callback
+        ? {
+            'callback p50': summary.callback.p50,
+            'callback p95': summary.callback.p95,
+            'callback max': summary.callback.max,
+          }
+        : {}),
       verdict: summary.passed ? 'PASS' : 'FAIL',
     },
   ];
