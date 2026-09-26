@@ -1,0 +1,63 @@
+{
+  "campaign": "2026-09-26-issue-2225-ab-android-device-web-control",
+  "productCommit": "cb6e51eb3dfa64c47c4c2161a9dff0a0ae961e3e",
+  "capturedFrom": "perf-profiles/2026-09-26-issue-2225-ab-ctl/android-device-web",
+  "study": "A/B control arm (unchanged main, view-transition crossfade), --actions=theme, interleaved with the treatment arm; served from a detached worktree with --allow-foreign-build",
+  "kept": [
+    {
+      "file": "actions--c1233e38.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "landscape-light-ctl-1/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--f4cb9ef8.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "landscape-light-ctl-2/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--6a9e66f7.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light-ctl-1/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--ae6b4fdd.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light-ctl-2/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--4e3b9331.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light-ctl-3/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

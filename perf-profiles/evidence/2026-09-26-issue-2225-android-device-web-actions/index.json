@@ -1,0 +1,52 @@
+{
+  "campaign": "2026-09-26-issue-2225-android-device-web-actions",
+  "productCommit": "9993b68445ca19f8ab24d0f11c70c1bd5a8ae54e",
+  "capturedFrom": "perf-profiles/2026-09-26-issue-2225/android-device-web",
+  "study": "Canonical full action sweeps, all four modes, Android Chrome over direct CDP, perf:build of 9993b68445ca19f8ab24d0f11c70c1bd5a8ae54e (theme veil, issue 2225), served on its own preview; landscape-light recaptured under the rig lock after an unlocked first sweep",
+  "kept": [
+    {
+      "file": "actions--c59c94ce.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--45390d94.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--8c8d5bb0.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--518e26d0.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

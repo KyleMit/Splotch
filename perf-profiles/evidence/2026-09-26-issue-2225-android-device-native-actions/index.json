@@ -1,0 +1,52 @@
+{
+  "campaign": "2026-09-26-issue-2225-android-device-native-actions",
+  "productCommit": "9993b68445ca19f8ab24d0f11c70c1bd5a8ae54e",
+  "capturedFrom": "perf-profiles/2026-09-26-issue-2225/android-device-native",
+  "study": "Canonical full action sweeps, all four modes, Appium UiAutomator2 attached to the Capacitor WebView; instrumented Debug APK of 9993b68445ca19f8ab24d0f11c70c1bd5a8ae54e (theme veil, issue 2225), sha256 b3a1fdb41ba2a876d1f006eb4604e32b72bbb9831b6248610467dd4952b850b9",
+  "kept": [
+    {
+      "file": "actions--c59c94ce.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--45390d94.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--8c8d5bb0.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--518e26d0.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}
