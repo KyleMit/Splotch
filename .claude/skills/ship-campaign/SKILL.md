@@ -265,7 +265,7 @@ it. Then run `self-heal` on the campaign's friction.
 with faithful A/B evidence on the release-gate rows, under its evidence and physical-device rules.
 This skill supplies the queue, the merge-as-you-go loop, and the ledger around it. Each cluster is a
 free-form unit: its spec is the cluster's hypothesis and target cells, it has no issue to claim or
-close, and the performance tracking issue carries the ledger. Three rules are added for unattended
+close, and the performance tracking issue carries the ledger. These rules are added for unattended
 performance work:
 
 * **The device preflight is mandatory**, with the user present, including the control capture.
@@ -278,3 +278,13 @@ performance work:
   further marginal tuning belongs to a later campaign that starts with a new hypothesis.
 * **The ledger separates product, harness, and evidence commits**, and the morning report says
   plainly when no product change landed.
+* **A device-free lane may run beside the device lane only behind one rig lock.** A capture measures
+  input cadence on a quiet host, so a parallel unit's `check`, `lint`, test suite, or build must
+  never overlap a capture window. Use one lock directory outside every worktree: acquire with an
+  uncapped `until mkdir "$L" 2>/dev/null; do sleep 20; done`, write an owner line only after that
+  `mkdir` succeeds, and release with `rm "$L/owner"; rmdir "$L"`. A device unit holds it per capture
+  window, and a device-free unit per heavy command; nobody holds it across a CI or reviewer wait. On
+  2026-09-25 one unit's capped retry loop wrote its owner line without acquiring the lock, then
+  removed the directory, releasing a capture unit's lock mid-sweep: 34 minutes of Android sweeps ran
+  beside host checks, and the one red they produced had to be recaptured. Tell every unit that a
+  device unit may hold the lock for an hour, so a lane-A unit plans for that wait.

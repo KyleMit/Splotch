@@ -24,6 +24,12 @@ In a linked worktree it:
 
 The refresh runs before the install so the dependencies match the commit the session starts on.
 
+The bootstrap does not generate SvelteKit's `web/.svelte-kit/` files. Until something runs
+`svelte-kit sync`, `npm run test:tools` fails about 25 files with
+`web/.svelte-kit/tsconfig.json not found`, which reads like a real regression. Run `npm run check`
+once (it syncs first) before trusting a tools-test failure in a new worktree. A unit of the
+2026-09-25 campaign lost a run to it.
+
 ### Refreshing a fresh worktree
 
 Neither runner's worktree is reliably current when it arrives. A worktree is cut from a ref in the
