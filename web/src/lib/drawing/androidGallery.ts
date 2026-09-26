@@ -4,10 +4,11 @@ export const ANDROID_GALLERY_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/we
 export type AndroidGalleryImageType = (typeof ANDROID_GALLERY_IMAGE_TYPES)[number];
 
 // WebView hands every bridge message to Capacitor on the Android UI thread, the thread that also
-// schedules the WebView's frames, and that handoff costs about 16 ms per MB of payload on the
-// SM-G990U1. A whole drawing in one message (4–6 MB of base64) froze a clear's sheet animation for
-// 75–134 ms (issue 2340). A 256 KiB slice keeps each message near 4 ms, inside one 120 Hz frame.
-// A multiple of 4 so that no slice splits a base64 quantum.
+// schedules the WebView's frames, so that thread is busy for as long as one message takes to land.
+// A whole drawing in one message (2–3 million base64 characters) held it for 69–97 ms on the
+// SM-G990U1 and froze a clear's sheet animation for 75–134 ms (issue 2340). A slice of this size
+// measured 9–14 ms there, so the worst frame during a save is 25 ms. A multiple of 4 so that no
+// slice splits a base64 quantum.
 export const ANDROID_GALLERY_CHUNK_CHARS = 256 * 1024;
 
 function androidGalleryImageType(blobType: string): AndroidGalleryImageType {
