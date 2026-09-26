@@ -14,10 +14,12 @@ This is the receiving side of [`leave-pr-review`](../leave-pr-review/SKILL.md) �
 authors and posts review comments; this one works through them.
 
 An orchestrator may invoke this skill with `mode=autonomous`. The default remains interactive. In
-autonomous mode, an ordinary ambiguity or product choice must not wait for the user: enumerate the
-viable options, state the pros and cons, rank them, choose the best reversible option, proceed, and
-return that decision record to the orchestrator for the PR body or comment. This mode does not
-authorize crossing a security boundary, merging or closing a PR, weakening tests or protections,
+autonomous mode, a question you would otherwise have asked the user goes through
+`walk-through-decision` in `mode=autonomous` — **the autonomous-decision rule** below. It locks the
+agent's own calls after a rival concurs and parks the user's (anything a parent or child sees, among
+others); return every resulting record to the orchestrator for the PR body or comment. A thread with
+an obvious answer is just addressed; the rule is for what you would have escalated. This mode does
+not authorize crossing a security boundary, merging or closing a PR, weakening tests or protections,
 destructive data changes, spending money, or acting outside the named PR; those remain blockers.
 
 ## Setup
@@ -108,8 +110,8 @@ it top to bottom:
 
 1. **Ambiguous / scope-changing comments first.** In the default mode, anything that will need an
    `AskUserQuestion` (see Triage) goes to the front — ask early so the answer arrives while you work
-   the rest. In `mode=autonomous`, decide it using the ranked-options rule above before dependent
-   fixes.
+   the rest. In `mode=autonomous`, settle it with the autonomous-decision rule above before
+   dependent fixes.
 2. **Broad before narrow.** A comment questioning an approach, an abstraction, or a file's whole
    structure comes before line-level comments *inside* that structure — a restructure can moot or
    relocate the nits, and fixing the nits first means fixing them twice.
@@ -148,9 +150,9 @@ For each remaining comment, read the code it points at **as it exists now** and 
 * **Ambiguous or architecturally significant** — the comment could be read multiple ways, the fix
   would ripple beyond the PR's scope, or valid-vs-invalid genuinely depends on a product call. → Ask
   the user with `AskUserQuestion` before acting, with enough context to answer without scrolling
-  back. In `mode=autonomous`, instead use the ranked-options rule, choose the smallest reversible
-  in-scope interpretation, and explicitly record what was chosen and rejected. Never resolve a
-  thread you still cannot classify safely.
+  back. In `mode=autonomous`, instead apply the autonomous-decision rule and record what was chosen
+  and rejected. A thread whose decision is parked for the user stays open with a reply saying so.
+  Never resolve a thread you still cannot classify safely.
 
 ### The verify pass — empirical, not rhetorical
 
@@ -217,6 +219,5 @@ reviewer sees a verdict that was checked, not asserted.
    **replied-and-resolved** (rationale in one line), **answered**, or **escalated to the user** —
    plus the overall check/test result. Every comment fetched in Setup must appear; a comment with no
    disposition means the sweep isn't done.
-4. In `mode=autonomous`, include every autonomous decision as: question, ranked options with brief
-   pros/cons, chosen option and rationale, alternatives ruled out, and how to reverse it. The
-   orchestrator must copy this record to the PR even when no code change resulted.
+4. In `mode=autonomous`, include every `walk-through-decision` decision record and every parked
+   decision. The orchestrator must copy them to the PR even when no code change resulted.

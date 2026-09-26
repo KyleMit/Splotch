@@ -71,3 +71,66 @@ then audit every imperative in the body against it.
   codebase. What is unvalidated is whether an agent reliably picks the right branch — the failure to
   watch for is a repo search performed to look rigorous about a decision the repo cannot speak to,
   which is why that sentence is stated outright rather than left implied.
+
+## `mode=autonomous` and the criteria file (2026-09-25)
+
+Requested as: tell apart decisions that need making from decisions *the user* needs to make; let the
+agent pick its own calls when there is a clear favorite; write the weighing criteria down ahead of
+time; and send every agent-made decision to a rival before proceeding. The user's framing: simpler
+is better and YAGNI applies, but never shy from the better, cleaner approach just because its main
+con is one-time development cost — "let's burn the tokens and do the dev"; code decisions are mostly
+the agent's, product and user-facing decisions keep the user's hand on the wheel.
+
+### How the criteria were derived
+
+`criteria.md` was inferred from transcripts, then played back and tuned by the user. Method: every
+assistant message in the local Claude transcripts that presented options or a recommendation was
+paired with the user's next reply (101 pairs, 36 sessions), plus every `AskUserQuestion` with its
+answer (52 questions, 26 sessions), 2026-08-24 to 2026-09-26. Four isolated subagents ledgered them;
+Codex transcripts held only rival-agent runs, no user decisions. About 150 real decisions; the user
+took the agent's recommendation about 55% of the time.
+
+The load-bearing finding is where the other 45% landed. **Zero overrides** of a code-architecture or
+measurement recommendation anchored to an existing ADR, repo rule, spec, or measurement. Overrides
+clustered in naming (skill families, role names, a `groom` veto on child-safety grounds, a settings
+label taken through six rounds), user-facing behavior (a picker hidden rather than hinted, an
+Android Back rule the user wrote), facts only the user had (their commit rate, home network, being
+the only admin user), new machinery (a drift guard, a batch limit, permission rungs, a DHCP
+reservation — all declined), declaring done or exempting a measurement, and wrong premises. Those
+clusters became part A. Part B's ordering comes from the stated tie-breaks — the 2026-08-26 "burn
+the tokens" quote, "that's just a crazy high bar", "is 1 the clearly better stat and we are just
+apprehensive about cutting over?" — and from the two code overrides (`State` suffix everywhere,
+stylelint over a bespoke guard), both of which B2–B4 reproduce.
+
+A 2026-09-24 session is the empirical case for the rival step: the user, handed eight confident
+recommendations, ordered a rival per walkthrough instead of ruling, and the rival flipped or
+corrected five of them.
+
+### Choices the user made in the playback
+
+| Question | Chosen | Rejected |
+| --- | --- | --- |
+| Naming line | Internal code names are the agent's (B3); names the user talks in are theirs | All naming to the user — costs a stop on every identifier |
+| Rival disagrees | One reconciliation round; low stakes proceeds on the handler's pick even split; hold only high stakes with no option both accept | Escalate every disagreement — one decision would stall or quarantine an overnight run |
+| `ship-issue` / `address-pr-review` | Their "pick the best reversible option" rule is replaced by this mode, but only where the run would otherwise have asked the user ("ask yourself first") | A rival walkthrough for every ambiguity — one Codex run per trivial call |
+| Redirecting effort (A7) | The user's only when it reaches beyond the unit in hand | Every sequencing call |
+
+The same playback asked that a campaign's morning report lay out each autonomous decision briefly
+and why the pick won, which is now in `ship-campaign`'s report.
+
+### Why the boundary still holds
+
+The skill still implements nothing: autonomous mode ends at a locked decision record and the calling
+work acts on it. Keeping that line means the skill stays a thinking aid and the side effects stay in
+the skills that already own them.
+
+### Open / unvalidated
+
+* **The high/low stakes line is a guess** — "cannot be undone by reverting the unit's own commits,
+  or more than about a day to unpick, or other decisions wait on it". Watch the morning reports:
+  a low-stakes lock the user reverses is evidence the line is too loose.
+* **Criteria drift.** `criteria.md` is a snapshot of one month of decisions. When the user overrides
+  an autonomous record, that override is new evidence; fold it into the criteria rather than into
+  memory.
+* **Rival cost per decision is unmeasured.** Each consult is a fresh rival process; if campaigns
+  start spending noticeable time here, the trigger ("would have asked the user") is the knob.

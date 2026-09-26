@@ -27,11 +27,14 @@ the user the merge and post-merge claim cleanup.
 **`mode=autonomous`.** Everything above, plus the authority to **merge the PR** once step 5's gate
 passes in full. Naming the mode is what grants that — merging is irreversible and outward-facing, so
 it is authorized by the invocation or not at all; never infer it from a run that merely looks
-unattended. The mode also changes how ordinary ambiguity is handled: instead of stopping to ask,
-enumerate the options, pick the best reversible one, proceed, and carry the decision record into the
-PR body and the final report. It does **not** authorize the blockers — crossing a security boundary,
-weakening a test or a protection to get green, bypassing branch protection, closing anything, or
-acting outside the named unit of work. Those still stop the run.
+unattended. The mode also changes how ambiguity is handled: a question the run would otherwise have
+stopped to ask the user goes through `walk-through-decision` in `mode=autonomous` instead — the
+agent's own calls get decided and locked after a rival concurs, the user's (anything a parent or
+child sees, among others) are parked — and every resulting record goes into the PR body and the
+final report. A small ambiguity with an obvious answer is just decided and noted. It does **not**
+authorize the blockers — crossing a security boundary, weakening a test or a protection to get
+green, bypassing branch protection, closing anything, or acting outside the named unit of work.
+Those still stop the run.
 
 Two things the autonomous mode deliberately does not take over. It does not skip the review loop —
 an unattended run needs the outside opinion *more* than a supervised one, and a merge with no
@@ -74,9 +77,10 @@ explain itself entirely on its own. Do not open an issue just to have one to clo
 Either way — for the free-form path, where there is no issue to check, the clean-tree condition
 above still applies. If the spec is ambiguous enough that two readings produce materially different
 software, ask the one question that resolves it rather than picking a reading and building it; in
-`mode=autonomous` there is nobody to ask, so pick the reading that is easiest to reverse, say so in
-the PR body, and treat the other reading as an action item. A spec too ambiguous for even that — one
-where the wrong pick ships the wrong software — is a blocked unit in either mode.
+`mode=autonomous` there is nobody to ask, so put the choice of reading through
+`walk-through-decision` in `mode=autonomous`, record the outcome in the PR body, and treat the other
+reading as an action item. A reading that decision parks or holds for the user — one where the wrong
+pick ships the wrong software — is a blocked unit in either mode.
 
 ## 2. Implement
 
@@ -125,9 +129,9 @@ What this skill adds on top of that loop:
   falls back to a same-runner subagent, `mode=autonomous` may keep going, but the PR finishes as an
   open PR with the verdict, for the user to merge. Downgrading the reviewer and then merging on the
   downgraded review would quietly convert the one guarantee the mode rests on into a formality.
-* **Autonomous decisions come home.** Every ordinary ambiguity the loop decided under
-  `mode=autonomous` — the inner skill's decision records — belongs in the PR body and the final
-  report, not only in a thread.
+* **Autonomous decisions come home.** Every decision record the run produced under `mode=autonomous`
+  — its own and the inner skills' — belongs in the PR body and the final report, not only in a
+  thread, and so does every decision parked for the user.
 * **Leftovers are drafted, never filed**, in both modes: the verdict's action items become drafted
   issues the user reviews. In `mode=autonomous` the drafts would otherwise evaporate with the
   branch, so before merging, post them as one comment on the PR so they survive on the merged
