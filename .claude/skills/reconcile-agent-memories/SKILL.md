@@ -65,3 +65,38 @@ from the checker implementation, map each retired memory to its canonical source
 reason, and name local-only exceptions. Separate mechanical drift from judgments and say which live
 sources resolved dated claims. A clean check proves link and script consistency; it does not prove
 the memories are true.
+
+## Findings promoted in the 2026-09-26 Splotch pass
+
+This is a digest for finding the maintained rules, not a second authority for their exact wording.
+The [reconciliation record](../../../docs/scratchpad/reconcile-agent-memories-2026-09-26.md) maps
+each retired memory to its destination or expiration reason.
+
+* **GitHub work:** Open a draft PR early for long work, commit reviewable steps, use `gh -R` outside
+  the checkout, verify copied SHAs, and avoid negated closing keywords. Read issue comments before
+  implementation and judge review and CI state against the live PR. See
+  [GitHub rules](../../../.ruler/github.md), [ship-issue](../ship-issue/SKILL.md), and
+  [drive-pr-to-mergeable](../drive-pr-to-mergeable/SKILL.md).
+* **Checks and tests:** Use process exit codes, format before linting, run the applicable checks and
+  full test tier before pushing, and inspect unexpectedly slow commands. Recover Linux visual
+  baselines from CI artifacts; check dead exports after deletions, the CSP hash after boot-script
+  edits, and repo-script references after spec changes. Keep tool tests away from performance
+  captures. See [commands](../../../.ruler/commands.md) and [testing](../../../docs/TESTING.md).
+* **Worktrees and evidence:** Give each worktree its own install and server port. Capture before and
+  after UI shots from one installed worktree, verify the current branch in a PR stack, and check
+  ignored log paths before committing evidence. See [worktrees](../../../docs/WORKTREES.md),
+  [PR screenshots](../pr-screenshots/SKILL.md), [stacked PRs](../create-stacked-prs/SKILL.md), and
+  [conventions](../../../.ruler/conventions.md).
+* **Decisions and presentation:** Put agent-tooling decisions in skill notes or tool notes; show
+  Splotch UI options visually before asking for a choice; write public copy plainly and with the
+  app's real UI terms. See [create-adr](../create-adr/SKILL.md),
+  [walk-through-decision](../walk-through-decision/SKILL.md), and [design](../design/SKILL.md).
+* **Capture and secrets:** Verify an Android build's installed identity after an interrupted
+  install, fix measured product bottlenecks before recapturing, and pass only the API key a
+  generator needs. See [Android profiling](../../../docs/PROFILING-ANDROID.md),
+  [performance campaigns](../../../docs/PROFILING-CAMPAIGNS.md), and
+  [asset-generator instructions](../../../tools/asset-gen/.ruler/AGENTS.md).
+* **Local authority:** Host permissions and device access can change. Read live settings and capture
+  instructions instead of committing a permission snapshot; never promote credentials or private
+  device identifiers. See [iPad profiling](../../../docs/PROFILING-IPAD.md) and the
+  [reconciliation record](../../../docs/scratchpad/reconcile-agent-memories-2026-09-26.md).
