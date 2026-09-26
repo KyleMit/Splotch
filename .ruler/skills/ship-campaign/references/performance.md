@@ -35,7 +35,9 @@ Use one lock directory outside every worktree, such as the session's scratch dir
 * **Only the orchestrator reclaims a stale lock, and never a waiter.** A unit killed mid-window
   leaves the directory behind, and the uncapped loop would then wait forever. Whenever a unit ends,
   however it ends (a report, a quarantine, or a crash), check the lock. If its owner line still
-  names that unit, remove it. A waiter cannot tell a crashed holder from a long capture, so it keeps
+  names that unit, remove it. A directory with no owner line means a holder died between its `mkdir`
+  and writing the owner line, which it does immediately. If it still has no owner line a minute
+  later, remove it too. A waiter cannot tell a crashed holder from a long capture, so it keeps
   waiting.
 * A device unit holds the lock per capture window (a native build counts), and a device-free unit
   per heavy command (`check`, `lint`, a test suite, a build). Nobody holds it across a CI or

@@ -113,9 +113,9 @@ For each unit, finish every step before starting the next:
    branch.
 2. **Re-check the unit.** It is still open and unclaimed — another session may have taken it since
    preflight. For `backlog`, this is where you pick: the newest open issue without `in-progress`,
-   `wont-do`, or a `needs-*` label, which you have not already quarantined in this campaign. Decide
-   at that moment whether the pick needs the device rig. If it does and no device preflight ran with
-   the user present, leave it unclaimed, record it as skipped, and pick again.
+   `wont-do`, or a `needs-*` label, which you have not already quarantined or skipped in this
+   campaign. Decide at that moment whether the pick needs the device rig. If it does and no device
+   preflight ran with the user present, leave it unclaimed, record it as skipped, and pick again.
 3. **Ship it.** Run `ship-issue <n> mode=autonomous` — or, for a free-form unit (a performance
    cluster, a trunk repair, a gate repair), `ship-issue mode=autonomous` with the unit's written
    spec in place of an issue number — with the authorization block, the assigned port, and the
