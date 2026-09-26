@@ -98,9 +98,11 @@ the allowance is not one 0.1 ms quantum above the worst of them, or is not the m
 names its basis campaigns: the corpora above plus the 2026-09-07 issue-1695 landscape-light control,
 which also passes. A capture committed later never re-sizes the entry. The issue 2268 landscape
 recapture at 87da0c5a read a three-beat frame (50 ms) in both modes, which is the fourth reopen
-condition below, and the test holds it red under the ledger. The same suite holds the
-concentrated-gap case, where the allowance fails a cell the max gate leaves unconfirmed and a 34 ms
-allowance would pass.
+condition below, and the test holds it red under the ledger. Issue #2339 attributed that frame to
+ADR-0171's view transition, which PR #2359 removed; the reopen record below gives the evidence, and
+the same suite pins it to the committed A/B captures. The same suite holds the concentrated-gap
+case, where the allowance fails a cell the max gate leaves unconfirmed and a 34 ms allowance would
+pass.
 
 **Why the allowance is granted despite the flapping.** The allowance covers a cost the trace shows
 recurring on every activation — the main thread blocked for most of two periods in all eight traced
@@ -153,6 +155,69 @@ first-frame, and max gates. The probe's frame-stamp semantics (issue #1704), the
 dark-mode toggles (issue #1694), and the drawing lost-frame budgets held for the real-finger check
 (issue #1693) are each their own decision. The published matrix keeps its product commit
 (9af487b3745c0c1237644c92d5a243b1825911d7) until the android-device-native row lands (issue #1563).
+
+## Reopen record (2026-09-26): the three-beat frame, issue #2339
+
+**What reopened the entry.** The issue 2268 recapture at 87da0c5a
+(`perf-profiles/evidence/2026-09-25-issue-2268-android-device-web-landscape-actions/`) read a max of
+50 ms in three landscape cells: `enable` and `disable Night Mode in the compact shell` in
+landscape-light, and `disable` in landscape-dark. That meets the fourth condition. Two things had
+changed since the basis: the app, where ADR-0171 put the theme flip inside a view transition
+(2026-09-22), and the browser, where the phone's Chrome moved to 153. The attribution had to
+separate them.
+
+**The paired test.** Issue #2225's A/B (PR #2359) held the phone and its browser install fixed and
+changed only the view transition. The control arm is unchanged `main` at cb6e51eb (view transition),
+and the treatment arm is 9993b684 (a veil fading over the open card, no view transition). The two
+arms were served from two previews and interleaved in one session, with 6 scored repeats per cell
+per arm. Evidence:
+`perf-profiles/evidence/2026-09-26-issue-2225-ab-android-device-web-{control,treatment}/`.
+
+| Landscape-light cell (repeats over 33.5 ms, worst max) | View transition | Veil         |
+| ------------------------------------------------------ | --------------- | ------------ |
+| `enable Night Mode in the compact shell`               | 6 of 6, 50.1 ms | 0 of 6, 33.5 |
+| `disable Night Mode in the compact shell`              | 2 of 6, 50.0 ms | 0 of 6, 16.8 |
+
+**The recapture.** The canonical four-mode sweep at 9993b684
+(`perf-profiles/evidence/2026-09-26-issue-2225-android-device-web-actions/`, folded into the matrix
+with actions captured on 2026-09-26) reads all three cells green:
+
+| Cell                        | 87da0c5a (P95 / max) | 9993b684 (P95 / max) | Verdict at 9993b684                          |
+| --------------------------- | -------------------- | -------------------- | -------------------------------------------- |
+| landscape-light · `enable`  | 33.2 / 50.0          | 16.8 / 33.2          | PASS on the base gate (no allowance applies) |
+| landscape-light · `disable` | 16.9 / 50.0          | 16.7 / 16.8          | PASS                                         |
+| landscape-dark · `disable`  | 16.9 / 50.1          | 16.9 / 33.4          | PASS, no confirmed max breach                |
+
+**Attribution.** The third beat was app-owned: the view transition, which captures the old screen
+and holds rendering until its update callback has run. Removing it on the same browser removed the
+beat in every repeat. Chrome 153 did not add a beat to the flip itself. Without the view transition
+the cell reads the shape the basis recorded on the earlier browser. ADR-0163's callback clock also
+still shows the two-beat restyle this entry covers: at 9993b684 the landscape-dark `disable` cell
+reads an actual-clock max of 33.6 ms with one hidden overrun. The landscape-dark cell was not in the
+A/B. It is attributed by its code path, which is the same toggle and the same `applyTheme`, and by
+its before-and-after canonical readings above.
+
+**How each reopen condition reads on this evidence.**
+
+* **First (an avoidable component of the restyle):** not met. The view transition was added on top
+  of the flip after the basis, and it is not part of the token restyle. Removing it does not shrink
+  `UpdateLayoutTree`.
+* **Second (a browser update):** not taken as removal. Read literally, the landscape-dark control's
+  P95 of 16.9 ms is under the base gate. But ten basis captures on the earlier browser read the same
+  16.7–17.1 ms, and the callback clock shows the second beat still recurring. This condition catches
+  a browser that changed the flip's cost, and the A/B shows that this one did not.
+* **Third (a product change to the transition):** not triggered. PR #2359 still swaps `data-theme`
+  on the whole document. It removed only the view transition that came after the basis, which
+  returns the flip to the shape the basis measured, plus a card-sized opacity layer. The veil
+  captures read inside the basis range (P95 16.7–16.9 ms, max at most 33.5 ms), so the entry is not
+  re-measured.
+* **Fourth (a reading past the allowance):** resolved by a product fix. The reading belonged to the
+  view-transition build, and the cells are green at 9993b684 under the unchanged allowance.
+
+The entry keeps its 33.5 ms value and its named basis. The A/B arms and the recapture do not join
+the basis. `tools/perf/tests/xcuitest-actions.test.mjs` checks that the view-transition arm fails
+under the ledger in both directions and that every veil capture passes with no confirmed max breach.
+It still holds the issue 2268 readings red as the faithful reading of the view-transition build.
 
 ## Consequences
 
