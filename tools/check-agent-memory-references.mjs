@@ -2,11 +2,17 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { createIndex, extractReferences, resolveReference } from './check-doc-references.mjs';
+import {
+  createIndex,
+  extractReferences,
+  proseOnly,
+  resolveReference,
+  stripInlineCode,
+} from './check-doc-references.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 const WIKI_LINK = /\[\[([^\]]+)\]\]/g;
-const INDEX_ENTRY = /^\s*[-*]\s+\[[^\]]+\]\(([^)]+)\)/gm;
+const INDEX_ENTRY = /^\s*(?:[-*+]|\d+[.)])\s+\[[^\]]+\]\(([^)]+)\)/gm;
 const FRONTMATTER_NAME = /^name:\s*(.+)$/m;
 const FLAG = /(?<![\w-])--[a-z][\w-]*/g;
 const URL_SCHEME = /^[a-z][a-z+.-]*:/i;
@@ -92,7 +98,7 @@ export function scanAgentMemory({ memoryDir, root = ROOT, files = trackedFiles(r
     if (!name) errors.push({ file, kind: 'name', ref: '', detail: 'missing frontmatter name' });
     else if (name !== file.slice(0, -3))
       advisory.push({ file, kind: 'name', ref: name, detail: 'differs from filename' });
-    for (const match of content.matchAll(WIKI_LINK)) {
+    for (const match of stripInlineCode(proseOnly(content)).matchAll(WIKI_LINK)) {
       const target = match[1].split(/[|#]/, 1)[0].trim().replace(/\.md$/, '');
       const slug = target.toLowerCase().replace(/\s+/g, '-');
       if (!knownStems.has(target) && !knownStems.has(slug))

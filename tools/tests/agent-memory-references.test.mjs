@@ -60,16 +60,18 @@ it('keeps uncertain repo paths and flags advisory while accepting real reference
 
 it('accepts index anchors and extra links while reporting nonregular entries and title names', () => {
   const memoryDir = memoryFixture(
-    '- [one](./one.md#top) — see [ADR](https://github.com/KyleMit/Splotch/blob/main/docs/adrs/README.md)\n- [two](two.md?view=1)\n',
+    '- [one](./one.md#top) — see [ADR](https://github.com/KyleMit/Splotch/blob/main/docs/adrs/README.md)\n1. [two](two.md?view=1)\n+ [three](three.md)\n',
     {
-      'one.md': '---\nname: A display title\n---\nSee [[two.md]] and [[two|alias]].\n',
+      'one.md':
+        '---\nname: A display title\n---\nSee [[two.md]] and [[two|alias]]. Inline example: `[[missing]]`.\n```bash\nif [[ -n "$CI" ]]; then exit 0; fi\n```\n',
       'two.md': '---\nname: two\n---\n',
+      'three.md': '---\nname: three\n---\n',
     }
   );
   mkdirSync(join(memoryDir, 'archive'));
   symlinkSync(join(memoryDir, 'two.md'), join(memoryDir, 'linked.md'));
   const { errors, advisory, checked } = scanAgentMemory({ memoryDir });
-  expect(checked).toBe(2);
+  expect(checked).toBe(3);
   expect(errors).toEqual([]);
   expect(advisory).toEqual(
     expect.arrayContaining([
