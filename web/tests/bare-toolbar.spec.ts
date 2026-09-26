@@ -404,7 +404,6 @@ test('Bare hides stale pane geometry until rotation layout settles', async ({ pa
   await page.addInitScript((key) => localStorage.setItem(key, 'bare'), STORAGE_KEYS.toolbarStyle);
   await gotoApp(page);
   await openDrawer(page);
-  await page.clock.install();
   await page.clock.pauseAt(new Date());
   await page.evaluate(() => window.dispatchEvent(new Event('orientationchange')));
   await page.setViewportSize({ width: 390, height: 844 });

@@ -71,6 +71,6 @@ export async function expectBottomedPanelScrollsRowToPin(page: Page, contents: L
     expect(
       await panel.evaluate((node) => node.getBoundingClientRect().bottom - window.innerHeight)
     ).toBeLessThanOrEqual(0);
+    await expect(contents.getByRole('link').last()).toBeInViewport({ timeout: 1000 });
   }).toPass();
-  await expect(contents.getByRole('link').last()).toBeInViewport();
 }

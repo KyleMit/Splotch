@@ -145,6 +145,14 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(button).toHaveCSS('width', '44px');
       await expect(button).toHaveCSS('height', '44px');
     }
+    // Contrast belongs to the settled theme colors, not an interpolated transition frame.
+    await specimen.evaluate((root) =>
+      Promise.all(
+        root
+          .getAnimations({ subtree: true })
+          .map((animation) => animation.finished.catch(() => undefined))
+      )
+    );
     const controls = await specimen.locator('button').evaluateAll((buttons) =>
       buttons.map((button) => {
         const style = getComputedStyle(button);

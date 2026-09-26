@@ -99,6 +99,7 @@ meta).
 | `burn-down-audits`                | Staged `docs/AUDIT.md` findings — vets and fixes a huge backlog with run controls       |
 | `burn-down-outdated-dependencies` | Outdated dependencies — upgraded one at a time with migration guides (user-invoke only) |
 | `burn-down-dependabot-prs`        | Open Dependabot PRs — verify, sequence the merges, close the rest                       |
+| `burn-down-flaky-tests`           | Masked Playwright retry events — fix current flakes or track a narrow quarantine        |
 | `burn-down-oversized-code`        | Files or functions over the size caps — paid back down to their soft targets, one PR    |
 
 ### `reconcile-*` — bring an artifact back in line with reality
