@@ -1866,8 +1866,20 @@ describe('the physical Android web allowance ledger', () => {
     '2026-09-07-issue-1695-android-web-landscape-light-control',
   ]);
   const ISSUE_2268_RECAPTURE = '2026-09-25-issue-2268-android-device-web-landscape-actions';
+  const ISSUE_2225_VIEW_TRANSITION_ARM = '2026-09-26-issue-2225-ab-android-device-web-control';
+  const ISSUE_2225_VEIL_CAPTURES = new Set([
+    '2026-09-26-issue-2225-ab-android-device-web-treatment',
+    '2026-09-26-issue-2225-android-device-web-actions',
+  ]);
+  const enableLabel = `enable ${compactSettingsActionLabel('Night Mode')}`;
+  // Three vsync periods at the shortest interval these captures stamp (16.6 ms),
+  // so a two-beat 33.x ms reading can never satisfy it.
+  const THREE_BEAT_FLOOR_MS = 3 * 16.6;
+  // Scored repeats of the view-transition arm whose max crossed the gate, as
+  // PR 2359's A/B table and ADR-0162's reopen record report them.
+  const VIEW_TRANSITION_OVER_GATE_REPEATS = { [enableLabel]: 6, [label]: 2 };
 
-  function committedCellReadings() {
+  function committedCellReadings(cellLabel = label) {
     const evidenceRoot = join(ROOT, 'perf-profiles', 'evidence');
     const readings = [];
     for (const campaign of readdirSync(evidenceRoot)) {
@@ -1877,7 +1889,7 @@ describe('the physical Android web allowance ledger', () => {
       for (const entry of kept) {
         if (entry.target !== 'android-device-web' || entry.brush !== 'actions') continue;
         const capture = JSON.parse(readFileSync(join(evidenceRoot, campaign, entry.file), 'utf8'));
-        const samples = (capture.samples ?? []).filter((sample) => sample.label === label);
+        const samples = (capture.samples ?? []).filter((sample) => sample.label === cellLabel);
         if (samples.length === 0) continue;
         readings.push({ campaign, file: entry.file, samples, ...summarizeActions(samples)[0] });
       }
@@ -1927,6 +1939,8 @@ describe('the physical Android web allowance ledger', () => {
   // ADR-0162's fourth reopen condition, on committed evidence: the issue 2268
   // landscape recapture reads a three-beat frame, a confirmed max breach the
   // allowance does not absorb, so the cell stays red rather than raising it.
+  // It is the faithful reading of the view-transition build; the issue 2339
+  // attribution below is what cleared the cell, not a re-scoring of this one.
   it('keeps a post-basis reading past the allowance red under the ledger', () => {
     const recaptured = committedCellReadings().filter(
       (reading) => reading.campaign === ISSUE_2268_RECAPTURE
@@ -1936,6 +1950,50 @@ describe('the physical Android web allowance ledger', () => {
       expect(reading.frames.max, reading.file).toBeGreaterThan(ms);
       const under = summarizeActions(reading.samples, [], ANDROID_WEB_ACTION_GATE_ALLOWANCES)[0];
       expect(under.passed, reading.file).toBe(false);
+    }
+  });
+
+  // Issue 2339's attribution, on committed evidence (ADR-0162's reopen record):
+  // the issue 2225 A/B held the phone and its browser fixed and toggled only
+  // ADR-0171's view transition. The view-transition arm carries the three-beat
+  // frame in both directions; no capture of the veil build reads past the
+  // allowance or confirms a max breach. The third beat was app-owned, and
+  // neither arm joins the basis the entry is sized from.
+  it('attributes the three-beat frame to the view transition the veil removed', () => {
+    for (const cellLabel of [label, enableLabel]) {
+      const readings = committedCellReadings(cellLabel);
+      const scored = (reading) =>
+        summarizeActions(reading.samples, [], ANDROID_WEB_ACTION_GATE_ALLOWANCES)[0];
+
+      const viewTransition = readings.filter(
+        (reading) => reading.campaign === ISSUE_2225_VIEW_TRANSITION_ARM
+      );
+      expect(viewTransition, cellLabel).toHaveLength(2);
+      const overGateRepeats = viewTransition.reduce(
+        (sum, reading) => sum + reading.frames.maxBreachSamples,
+        0
+      );
+      expect(overGateRepeats, cellLabel).toBe(VIEW_TRANSITION_OVER_GATE_REPEATS[cellLabel]);
+      const threeBeat = viewTransition.filter((reading) => reading.frames.max > ms);
+      expect(threeBeat.length, cellLabel).toBeGreaterThanOrEqual(1);
+      for (const reading of threeBeat) {
+        expect(reading.frames.max, `${cellLabel} ${reading.file}`).toBeGreaterThanOrEqual(
+          THREE_BEAT_FLOOR_MS
+        );
+        expect(scored(reading).passed, `${cellLabel} ${reading.file}`).toBe(false);
+      }
+
+      const veil = readings.filter((reading) => ISSUE_2225_VEIL_CAPTURES.has(reading.campaign));
+      expect(veil, cellLabel).toHaveLength(4);
+      for (const reading of veil) {
+        const verdict = scored(reading);
+        expect(verdict.frames.maxBreachSamples, `${cellLabel} ${reading.file}`).toBe(0);
+        expect(verdict.frames.p95, `${cellLabel} ${reading.file}`).toBeLessThan(ms);
+        expect(verdict.passed, `${cellLabel} ${reading.file}`).toBe(true);
+      }
+    }
+    for (const campaign of [ISSUE_2225_VIEW_TRANSITION_ARM, ...ISSUE_2225_VEIL_CAPTURES]) {
+      expect(ADR_0162_BASIS_CAMPAIGNS.has(campaign), campaign).toBe(false);
     }
   });
 
