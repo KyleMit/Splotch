@@ -25,11 +25,17 @@ export async function saveToAndroidGallery(dataUrl: string, blobType: string, ba
   const { PhotoLibrary } = await import('$lib/plugins/photoLibrary');
   const data = dataUrl.slice(dataUrl.indexOf(',') + 1);
   const { uploadId } = await PhotoLibrary.beginImage();
-  for (let start = 0; start < data.length; start += ANDROID_GALLERY_CHUNK_CHARS) {
-    await PhotoLibrary.appendImageData({
-      uploadId,
-      data: data.slice(start, start + ANDROID_GALLERY_CHUNK_CHARS),
-    });
+  try {
+    for (let start = 0; start < data.length; start += ANDROID_GALLERY_CHUNK_CHARS) {
+      await PhotoLibrary.appendImageData({
+        uploadId,
+        data: data.slice(start, start + ANDROID_GALLERY_CHUNK_CHARS),
+      });
+    }
+  } catch (error) {
+    // The plugin holds the slices until saveImage or discardImage; the save's own error wins.
+    await PhotoLibrary.discardImage({ uploadId }).catch(() => undefined);
+    throw error;
   }
   await PhotoLibrary.saveImage({
     uploadId,

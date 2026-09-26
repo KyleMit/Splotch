@@ -7,6 +7,7 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.util.Base64;
 
@@ -60,14 +61,26 @@ public class PhotoLibraryPlugin extends Plugin {
     // Matches ACCESS_DENIED_ERROR_CODE in web/src/lib/drawing/screenshot.ts, drift-guarded there.
     private static final String ERROR_ACCESS_DENIED = "accessDenied";
 
+    // A save's upload lands in well under a second, so an upload this old belongs to a page that
+    // reloaded or died mid-save and will never call saveImage or discardImage for it.
+    private static final long STALE_UPLOAD_MS = 60_000;
+
     // Keyed by upload id. Plugin methods run on the bridge's plugin thread and the permission
-    // callback on the main thread, so the map is concurrent; saveImage's outcome removes the entry.
-    private final Map<String, StringBuilder> uploads = new ConcurrentHashMap<>();
+    // callback on the main thread, so the map is concurrent. saveImage's outcome or discardImage
+    // removes an entry, and beginImage drops any that went stale.
+    private final Map<String, Upload> uploads = new ConcurrentHashMap<>();
+
+    private static final class Upload {
+        final long startedAt = SystemClock.elapsedRealtime();
+        final StringBuilder data = new StringBuilder();
+    }
 
     @PluginMethod
     public void beginImage(PluginCall call) {
+        long now = SystemClock.elapsedRealtime();
+        uploads.values().removeIf(upload -> now - upload.startedAt > STALE_UPLOAD_MS);
         String uploadId = UUID.randomUUID().toString();
-        uploads.put(uploadId, new StringBuilder());
+        uploads.put(uploadId, new Upload());
         JSObject result = new JSObject();
         result.put("uploadId", uploadId);
         call.resolve(result);
@@ -75,13 +88,19 @@ public class PhotoLibraryPlugin extends Plugin {
 
     @PluginMethod
     public void appendImageData(PluginCall call) {
-        StringBuilder upload = uploads.get(call.getString("uploadId", ""));
+        Upload upload = uploads.get(call.getString("uploadId", ""));
         String data = call.getString("data");
         if (upload == null || data == null) {
             call.reject("appendImageData needs a begun uploadId and data", ERROR_INVALID_ARGUMENT);
             return;
         }
-        upload.append(data);
+        upload.data.append(data);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void discardImage(PluginCall call) {
+        uploads.remove(call.getString("uploadId", ""));
         call.resolve();
     }
 
@@ -117,7 +136,8 @@ public class PhotoLibraryPlugin extends Plugin {
 
     private ImageSave parseOrReject(PluginCall call) {
         try {
-            return ImageSave.from(call, uploads.get(call.getString("uploadId", "")));
+            Upload upload = uploads.get(call.getString("uploadId", ""));
+            return ImageSave.from(call, upload == null ? null : upload.data);
         } catch (IllegalArgumentException error) {
             uploads.remove(call.getString("uploadId", ""));
             call.reject(error.getMessage(), ERROR_INVALID_ARGUMENT, error);

@@ -11,6 +11,7 @@ import {
 const plugin = vi.hoisted(() => ({
   beginImage: vi.fn(),
   appendImageData: vi.fn(),
+  discardImage: vi.fn(),
   saveImage: vi.fn(),
 }));
 const { saveImage } = plugin;
@@ -35,6 +36,7 @@ beforeEach(() => {
   for (const method of Object.values(plugin)) method.mockReset();
   plugin.beginImage.mockResolvedValue({ uploadId: UPLOAD_ID });
   plugin.appendImageData.mockResolvedValue(undefined);
+  plugin.discardImage.mockResolvedValue(undefined);
   saveImage.mockResolvedValue(undefined);
 });
 
@@ -79,14 +81,31 @@ describe('saveToAndroidGallery', () => {
     expect(ANDROID_GALLERY_CHUNK_CHARS % 4).toBe(0);
   });
 
-  it('does not save an upload whose slice the plugin refused', async () => {
+  it('discards, and does not save, an upload whose slice the plugin refused', async () => {
     const failure = new Error('appendImageData needs a begun uploadId and data');
     plugin.appendImageData.mockRejectedValue(failure);
 
     await expect(
       saveToAndroidGallery('data:image/png;base64,QUJD', 'image/png', 'splotch')
     ).rejects.toBe(failure);
+    expect(plugin.discardImage).toHaveBeenCalledWith({ uploadId: UPLOAD_ID });
     expect(saveImage).not.toHaveBeenCalled();
+  });
+
+  it('reports the append failure even when the discard also fails', async () => {
+    const failure = new Error('appendImageData needs a begun uploadId and data');
+    plugin.appendImageData.mockRejectedValue(failure);
+    plugin.discardImage.mockRejectedValue(new Error('bridge gone'));
+
+    await expect(
+      saveToAndroidGallery('data:image/png;base64,QUJD', 'image/png', 'splotch')
+    ).rejects.toBe(failure);
+  });
+
+  it('leaves a completed upload to saveImage rather than discarding it', async () => {
+    await saveToAndroidGallery('data:image/png;base64,QUJD', 'image/png', 'splotch');
+
+    expect(plugin.discardImage).not.toHaveBeenCalled();
   });
 
   it('reads the MIME essence from a type that carries parameters', async () => {

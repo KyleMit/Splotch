@@ -494,11 +494,13 @@ never chooses the state. On the rig phone, **Auto-save on delete** was on in the
 every clear in its native sweeps also exported the drawing and saved it to the gallery. The web
 targets and a freshly installed app leave that switch off, and there a clear only animates. Issue
 2340 traced the native clear cells' 75–134 ms maximum to that save. The capture was valid, and the
-cost was real product work. But whether the matrix sees it depends on a persisted switch that no
-artifact records. Before comparing a clear cell across targets or devices, read
-`splotch-save-on-delete` on each device (in the page's `localStorage`, or in Capacitor Preferences
-on native), and name the state beside the number. Each save also adds a picture to the phone's
-`Pictures/Splotch`, so a long native campaign with the switch on leaves hundreds of files there.
+cost was real product work. But whether the matrix sees it depends on a persisted switch that the
+action artifact does not record: the sweep's samples carry no switch state, so only a hand-written
+note says which state a corpus ran in, as the issue-2340 evidence indexes do in their `study` line.
+Before comparing a clear cell across targets or devices, read `splotch-save-on-delete` on each
+device (in the page's `localStorage`, or in Capacitor Preferences on native), and name the state
+beside the number. Each save also adds a picture to the phone's `Pictures/Splotch`, so a long native
+campaign with the switch on leaves hundreds of files there.
 
 **An interrupted action sweep can leave the Android panel pinned at 60Hz.** The android action sweep
 pins `peak_refresh_rate`/`min_refresh_rate` for its duration (ADR-0143) and restores them in its
