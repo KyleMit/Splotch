@@ -16,6 +16,7 @@ import {
   renderReport,
 } from '../gen-performance-matrix.mjs';
 import { GESTURE_REPEATS, UNDO_COUNT } from '../lib/campaign-plan.mjs';
+import { summarizeUndoActions } from '../lib/undo-action-stats.mjs';
 import { FULL_ACTION_GROUPS, compactSettingsActionLabel } from '../lib/action-applicability.mjs';
 
 const temporaryDirectories = [];
@@ -205,20 +206,19 @@ describe('split undo normalization', () => {
   it('publishes the unscored callback clock beside the next-frame figure', () => {
     const callbackTimes = [11.9, 17.3, 31.6];
     const capture = splitUndoCapture();
-    capture.undoActions = capture.undoActions.map((action, index) => ({
-      ...action,
-      startedAt: index * 100,
-      endedAt: index * 100 + callbackTimes[index % 3],
-      callbackMs: callbackTimes[index % 3],
-    }));
-    const callback = { p50: 17.3, p95: 31.6, p99: 31.6, max: 31.6 };
+    capture.undoActions = capture.undoActions.map((action, index) => {
+      const startedAt = index * 1000;
+      const endedAt = startedAt + callbackTimes[index % 3];
+      return { ...action, startedAt, endedAt, callbackMs: endedAt - startedAt };
+    });
+    const { callback } = summarizeUndoActions(capture.undoActions, []);
     capture.undo = { ...capture.undo, callback };
 
     const matrix = matrixFor(capture)();
 
     expect(matrix.targets[0].modes[0].undo).toMatchObject({
       nextFrame: capture.undo.nextFrame,
-      callback,
+      callback: { p50: 17.3, p95: 31.6, p99: 31.6, max: 31.6 },
       passed: true,
     });
     expect(renderMarkdown(matrix)).toContain(

@@ -56,23 +56,23 @@ describe('undo callback time', () => {
   it('shows a negative next-frame stamp beside the later callback it belongs to', () => {
     const action = {
       startedAt: 1000,
-      endedAt: 1031.6,
+      endedAt: 1032,
       engineMs: 4,
       nextFrameMs: -2,
-      callbackMs: 31.6,
+      callbackMs: 32,
     };
 
     const summary = summarizeUndoActions([action], []);
 
     expect(summary.nextFrame).toMatchObject({ p50: -2, max: -2 });
-    expect(summary.callback).toMatchObject({ p50: 31.6, max: 31.6 });
+    expect(summary.callback).toMatchObject({ p50: 32, max: 32 });
     expect(summary.passed).toBe(true);
     expect(undoActionRows(summary)[0]).toMatchObject({
       'next frame p50': -2,
       'next frame max': -2,
-      'callback p50': 31.6,
-      'callback p95': 31.6,
-      'callback max': 31.6,
+      'callback p50': 32,
+      'callback p95': 32,
+      'callback max': 32,
       verdict: 'PASS',
     });
   });
@@ -88,9 +88,9 @@ describe('undo callback time', () => {
     expect(withoutCallback(lateSummary)).toStrictEqual(withoutCallback(onTimeSummary));
   });
 
-  it('prefers the named callback time over the timestamps', () => {
+  it('derives the callback time from the timestamps, not the named field', () => {
     const summary = summarizeUndoActions(
-      [{ startedAt: 0, endedAt: 50, callbackMs: 12, engineMs: 1, nextFrameMs: 8 }],
+      [{ startedAt: 0, endedAt: 12, callbackMs: 123, engineMs: 1, nextFrameMs: 8 }],
       []
     );
 

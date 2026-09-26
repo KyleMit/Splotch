@@ -30,12 +30,13 @@ function inkMotionSplit(actions) {
 }
 
 // The callback clock (issue #2338) is diagnostic, never gated: `nextFrameMs` stays
-// the scored figure. The driver's `callbackMs` is `endedAt - startedAt`, and every
-// action it recorded before naming that field carries both timestamps, so older
-// evidence re-summarizes to the same figure. Reported only when every action has
-// it, for the same reason the ink-motion split is.
+// the scored figure. The timestamps are its one definition — the driver's named
+// `callbackMs` is the same difference, and every action recorded before that field
+// existed carries both timestamps — so older evidence re-summarizes to the same
+// figure and a named value cannot publish something its timestamps contradict.
+// Reported only when every action has it, for the same reason the ink-motion split is.
 function undoCallbackMs(action) {
-  return Number.isFinite(action.callbackMs) ? action.callbackMs : action.endedAt - action.startedAt;
+  return action.endedAt - action.startedAt;
 }
 
 function callbackDistribution(actions) {
