@@ -533,6 +533,17 @@ runner, and it checks more (2026-09-19; before that it never filled at all while
   across that boundary, and treat the matrix's pre-refill eraser column as superseded once the
   recapture lands.
 
+**Identical geometry also makes an undo nearly invisible.** The split capture proves that each of
+its ten undos changed the rendered pixels. Those undos remove the tenth pass, whose strokes lie on
+nine identical copies, so an undo can change only the antialiased fringe. On the rig phone in
+landscape, undo 10 changed 12 pixels by at most 10 levels, and the other nine changed 71–107. The
+check once hashed a 64 px downscale of each tile, which lost those 12 pixels. Every landscape pen
+capture then failed with `undo action 10 did not restore different pixels`, although history depth
+and a full-resolution diff both showed that the undo worked (issue 2337). The sampler now hashes
+every pixel at each surface's backing resolution. An undo that restores nothing still fails. Do not
+reduce the sampler's resolution to save time, because a downscale again sets a minimum change size
+that one undo can fall below.
+
 **A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
 First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and
 amortise across the remaining passes, so the repeat count decides how much of a cell is first-touch

@@ -167,29 +167,58 @@ function runBootstrap(plan, { openedWithoutProbe = false, extraQuery = '' } = {}
   };
 }
 
-function paintUndoShell() {
+// A tile-shaped backing, the shape the rig phone's landscape tiles have. The
+// sampler's scratch resamples it the way a downscaling drawImage does — one
+// nearest source pixel per destination pixel — so a delta a downscale skips is
+// a delta this fixture really hides from a downscaling sampler (issue 2337).
+const UNDO_SURFACE_BACKING_PX = { width: 350, height: 110 };
+
+function resample(source, sourceWidth, sourceHeight, targetWidth, targetHeight) {
+  const target = new Uint8ClampedArray(targetWidth * targetHeight * 4);
+  for (let y = 0; y < targetHeight; y++) {
+    const sourceY = Math.floor(((y + 0.5) * sourceHeight) / targetHeight);
+    for (let x = 0; x < targetWidth; x++) {
+      const sourceX = Math.floor(((x + 0.5) * sourceWidth) / targetWidth);
+      const from = (sourceY * sourceWidth + sourceX) * 4;
+      target.set(source.subarray(from, from + 4), (y * targetWidth + x) * 4);
+    }
+  }
+  return target;
+}
+
+function repaint(canvas, value) {
+  canvas.pixels.fill(value);
+}
+
+function setPixel(canvas, [x, y], value) {
+  const offset = (y * canvas.width + x) * 4;
+  canvas.pixels.fill(value, offset, offset + 4);
+}
+
+// `undoPaints(click, canvas)` is what one undo click does to the pixels; the
+// default repaints the whole surface, which every sampler registers.
+function paintUndoShell({ undoPaints = (click, canvas) => repaint(canvas, 100 - click) } = {}) {
   paintShell({ compact: true, startingTheme: 'light' });
   const canvas = document.querySelector('#drawingCanvas');
-  canvas.width = 800;
-  canvas.height = 600;
-  canvas.pixelVersion = 3;
+  canvas.width = UNDO_SURFACE_BACKING_PX.width;
+  canvas.height = UNDO_SURFACE_BACKING_PX.height;
+  canvas.pixels = new Uint8ClampedArray(canvas.width * canvas.height * 4);
+  repaint(canvas, 3);
 
   const createElement = document.createElement.bind(document);
   document.createElement = (tag) => {
     const element = createElement(tag);
     if (tag === 'canvas') {
-      let sampledVersion = 0;
+      let drawn = null;
       element.getContext = () => ({
         clearRect() {
-          sampledVersion = 0;
+          drawn = null;
         },
-        drawImage(source) {
-          sampledVersion = source.pixelVersion ?? 0;
+        drawImage(source, x, y, width = source.width, height = source.height) {
+          drawn = resample(source.pixels, source.width, source.height, width, height);
         },
-        getImageData() {
-          const data = new Uint8ClampedArray(64 * 64 * 4);
-          data.fill(sampledVersion);
-          return { data };
+        getImageData(x, y, width, height) {
+          return { data: drawn ?? new Uint8ClampedArray(width * height * 4) };
         },
       });
     }
@@ -217,7 +246,7 @@ function paintUndoShell() {
     undoClicks += 1;
     historyLength -= undoClicks === 1 ? 3 : 1;
     snapshots -= 1;
-    canvas.pixelVersion -= 1;
+    undoPaints(undoClicks, canvas);
     measures.push({ duration: 2 });
   });
   document.body.append(undo);
@@ -244,7 +273,7 @@ describe('the bootstrap actually capturing undo', () => {
       });
 
       await run.readyPosted;
-      canvas.pixelVersion = 4;
+      repaint(canvas, 4);
       run.finish();
       const payload = await run.reportPosted;
 
@@ -264,6 +293,75 @@ describe('the bootstrap actually capturing undo', () => {
       expect(payload.undoVisual.samples).toHaveLength(3);
       expect(payload.report.paintedOutput).toMatchObject({ changed: true });
       expect(probeFinishedAtUndo).toEqual([true, true]);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The rig phone's landscape undo 10 changed 12 fringe pixels, by at most 10
+  // levels, and the 64 px downscale reported no change (issue 2337). These
+  // pixels sit between the sample points a 64 px downscale of this backing reads.
+  it(
+    'registers an undo whose only change is a few pixels a downscale would skip',
+    async () => {
+      const fringePixels = [
+        [1, 1],
+        [3, 1],
+      ];
+      const { canvas } = paintUndoShell({
+        undoPaints: (click, surface) => setPixel(surface, fringePixels[click - 1], 13),
+      });
+      const run = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'fringe-undo',
+        undoCount: 2,
+        undoPauseMs: 0,
+      });
+
+      await run.readyPosted;
+      repaint(canvas, 4);
+      run.finish();
+      const payload = await Promise.race([
+        run.reportPosted,
+        run.errorPosted.then((error) => ({ error })),
+      ]);
+
+      expect(payload.error).toBeUndefined();
+      expect(payload.undoVisual).toMatchObject({
+        changedEveryStep: true,
+        steps: [
+          { index: 0, changed: true },
+          { index: 1, changed: true },
+        ],
+      });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The negative control: sampling every pixel must not make an undo that
+  // restores nothing pass.
+  it(
+    'still refuses an undo that restores no pixels',
+    async () => {
+      const { canvas } = paintUndoShell({
+        undoPaints: (click, surface) => {
+          if (click === 1) setPixel(surface, [1, 1], 13);
+        },
+      });
+      const run = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'noop-undo',
+        undoCount: 2,
+        undoPauseMs: 0,
+      });
+
+      await run.readyPosted;
+      repaint(canvas, 4);
+      run.finish();
+      const error = await run.errorPosted;
+
+      expect(error.message).toBe('undo action 2 did not restore different pixels');
     },
     BOOTSTRAP_TIMEOUT_MS
   );

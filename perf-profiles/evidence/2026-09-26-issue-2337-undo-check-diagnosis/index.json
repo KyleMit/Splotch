@@ -1,0 +1,30 @@
+{
+  "campaign": "2026-09-26-issue-2337-undo-check-diagnosis",
+  "productCommit": "8a6ef42bc7a233abe9ca35cb6998daac60e0aa91",
+  "capturedFrom": "perf-profiles/b1-2337/diag/android-device-web",
+  "study": "Issue 2337 diagnosis, landscape-light pen with 10 undos at 8a6ef42b. diag-1 ran an uncommitted bootstrap that recorded, per undo, the 64 px downscale verdict beside a full-resolution pixel diff (undoVisual.diagnostic): undo 10 changed 12 pixels by at most 10 levels and the downscale saw no change. fix-verify-1 is the committed full-resolution check passing all ten undos. The main-arm reproduction failed at undo 10 and wrote no artifact. Diagnostic evidence only, not matrix cells",
+  "kept": [
+    {
+      "file": "pen-real-screen--cf838442.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "diag-1/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--771f5e0d.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "fix-verify-1/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}
