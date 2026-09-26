@@ -180,13 +180,15 @@ export const ALLOWED_REFERENCES = [
   },
 ];
 
-export function isScannedDoc(file, firstLine = '') {
+// `readFirstLine` is deferred so only candidate docs are read: the tree holds
+// megabytes of evidence JSON that reading up front would cost seconds.
+export function isScannedDoc(file, readFirstLine = () => '') {
   if (!DOC_EXTENSIONS.some((ext) => file.endsWith(ext))) return false;
   if (HISTORY_PREFIXES.some((prefix) => file.startsWith(prefix))) return false;
   if (HISTORY_FILE.test(file)) return false;
   const isDirect = DIRECT_PROVIDER_PATHS.some((path) => file.startsWith(`${path}/`));
   if (!isDirect && GENERATED_COPY_PREFIXES.some((prefix) => file.startsWith(prefix))) return false;
-  return !GENERATED_MARKER.test(firstLine);
+  return !GENERATED_MARKER.test(readFirstLine());
 }
 
 // Blanks fenced blocks, keeping their line breaks, so path and identifier
@@ -486,7 +488,7 @@ export function scan({ root = ROOT, identifiers = false } = {}) {
     if (!cache.has(file)) cache.set(file, readFileSync(join(root, file), 'utf8'));
     return cache.get(file);
   };
-  const docs = files.filter((file) => isScannedDoc(file, read(file).split('\n', 1)[0]));
+  const docs = files.filter((file) => isScannedDoc(file, () => read(file).split('\n', 1)[0]));
   const index = createIndex({
     files,
     packages: readPackages(root, files),

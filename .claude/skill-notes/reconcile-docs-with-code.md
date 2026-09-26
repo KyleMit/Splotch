@@ -82,7 +82,7 @@ examples, and counter-examples. A 1-in-79 hit rate cannot gate CI, and no rule t
 
 ## CI gate instead of most of the skill
 
-The path and script half runs in about two seconds with zero findings and needs no judgment, so it
+The path and script half runs in well under a second with zero findings and needs no judgment, so it
 gates CI the way `check:skill-refs` does: `tools/tests/doc-references.test.mjs` asserts the whole
 repo is clean, inside `npm run test:tools`. That turns the backlog problem into a per-PR problem:
 the PR that renames a file fixes the docs naming it. The skill covers only what the gate cannot
@@ -119,6 +119,10 @@ passed locally. `git check-ignore` honors the developer's global excludes, and C
 whose source is a tracked `.gitignore` (parsed from `check-ignore -v`), so a local run reproduces
 CI, and `.gitignore` itself now lists `.claude/settings.local.json`, which protects contributors who
 lack the global rule anyway.
+
+The first CI run of the gate then timed out at vitest's 5 s default: the scan read every tracked
+file to check the first line for Ruler's marker, megabytes of evidence JSON included. Deferring that
+read until a file passes the path rules took a local run from about 2 s to 0.15 s.
 
 ## Open questions
 
