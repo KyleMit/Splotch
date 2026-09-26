@@ -107,6 +107,7 @@ test('a fresh install opens the Farm pages directly before packs arrive', async 
   const pages = dialog.getByRole('button', { name: / coloring page$/i });
   await expect(pages).toHaveCount(6);
 
+  await settleFlyIn(dialog);
   await pages.first().click();
   await expect(dialog).toBeHidden();
   await expect(page.locator('#coloringOverlay')).toBeVisible();
