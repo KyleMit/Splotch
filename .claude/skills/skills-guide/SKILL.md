@@ -100,11 +100,12 @@ meta).
 
 ### `reconcile-*` — bring an artifact back in line with reality
 
-| Skill                 | What it reconciles                                                               |
-| --------------------- | -------------------------------------------------------------------------------- |
-| `reconcile-adrs`      | Existing ADRs against the current code and recent decisions — amends drift       |
-| `reconcile-code-map`  | `docs/CODE-MAP.md` against the current tree — regenerates tables, rewrites prose |
-| `reconcile-with-main` | A long-running branch against current `main`, hunting the *semantic* conflicts   |
+| Skill                      | What it reconciles                                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `reconcile-adrs`           | Existing ADRs against the current code and recent decisions — amends drift                                                               |
+| `reconcile-code-map`       | `docs/CODE-MAP.md` against the current tree — regenerates tables, rewrites prose                                                         |
+| `reconcile-docs-with-code` | Living docs, skills, and rules against the code — stale identifiers, prose about renamed or deleted things, and doc-reference exemptions |
+| `reconcile-with-main`      | A long-running branch against current `main`, hunting the *semantic* conflicts                                                           |
 
 `burn-down-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
@@ -124,6 +125,11 @@ never a counter-driven split.
 tables, and the skill teaches the rules about new areas and misplaced files and rewrites the prose.
 It finds work rather than doing it — sharp growth becomes an issue. `audit-code` uses the map to
 shard an exhaustive whole-repo pass, so refresh it first when it is weeks behind.
+
+`reconcile-docs-with-code` is the judgment half of a split: `npm run check:doc-refs` already fails
+CI on a living doc naming a repo path or npm script that does not resolve, so the PR that renames a
+file fixes the docs naming it. The skill sorts the advisory identifier list that check prints,
+follows renames and deletions into prose no path check can see, and re-justifies the exemptions.
 
 `reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
 has been open a while: it detects overlapping line edits and nothing else. The skill surveys the

@@ -43,17 +43,15 @@ the raws. Edit or regenerate a raw, then re-punch; never hand-edit a shipped fil
 ### The one coupling to the app
 
 The AI generators reuse the app's single source of truth rather than duplicating
-prompts/safety/catalog/theme. This is the **entire** sanctioned import surface from `web/src` — keep
-it to these five modules (ADR-0047 keeps `geminiSafety.ts` dependency-free precisely so this stays
-clean):
+prompts/catalog/theme. This is the **entire** sanctioned import surface from `web/src` — keep it to
+these four modules:
 
-| Import                                  | Used by                |
-| --------------------------------------- | ---------------------- |
-| `web/src/lib/ai/styles.ts`              | `gen-style-covers`     |
-| `web/src/lib/ai/prompt.ts`              | `gen-style-covers`     |
-| `web/src/lib/theme.ts`                  | `gen-style-covers`     |
-| `web/src/lib/server/ai/geminiSafety.ts` | every Gemini generator |
-| `web/src/lib/state/books.ts`            | `gen-book-proof-sheet` |
+| Import                       | Used by                |
+| ---------------------------- | ---------------------- |
+| `web/src/lib/ai/styles.ts`   | `gen-style-covers`     |
+| `web/src/lib/ai/prompt.ts`   | `gen-style-covers`     |
+| `web/src/lib/theme.ts`       | `gen-style-covers`     |
+| `web/src/lib/state/books.ts` | `gen-book-proof-sheet` |
 
 A module on this list must be importable by bare Node under `--experimental-strip-types`, which —
 unlike Vite — will not resolve an extensionless specifier. So each one spells its own imports with

@@ -157,6 +157,15 @@ and on a `tools/lib/` module that reaches back into a capability folder.
   demanding whitespace before the sigil — is the tempting shortcut, and it silently drops every
   message that opens the name with punctuation instead, which is how the release tooling's
   parenthesized errors read before this change.
+* `tools/check-doc-references.mjs` (`npm run check:doc-refs`, and
+  `tools/tests/doc-references.test.mjs` in the CI tools tier) fails when a living doc, skill, or
+  rule names a repo path or npm script that does not resolve. It resolves against `git ls-files`
+  rather than the working tree, lets the repo's ignore rules pass build outputs and local-only
+  files, and skips history records, skill notes, and Ruler-generated copies. Classes of false
+  positive are rules in the module; a single deliberately unresolvable reference is an
+  `ALLOWED_REFERENCES` entry with its reason, and an entry that stops matching fails the check.
+  Identifiers print under `--identifiers` and never fail it — the `reconcile-docs-with-code` skill
+  judges them.
 * The app-driving generators — `gen:store-assets` (`tools/marketing-assets/gen-store-assets.mjs`),
   `gen:promotional-image` (`tools/marketing-assets/gen-promotional-image.mjs`), and the
   evaluation/review entries at the `tools/store-drawings/` root (`evaluate-drawing-fidelity.mjs`,

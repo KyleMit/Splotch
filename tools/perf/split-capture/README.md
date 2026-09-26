@@ -178,7 +178,7 @@ skipping benignly when the devtools socket or the page cannot be reached.
 * `lib/android-input.mjs` — replaying a W3C pointer plan as `input swipe` segments, and the rotation
   settings. Pure; this is where the interesting mistakes live.
 * `lib/page-bootstrap.mjs` — the script injected into the page. Takes its brush selectors from
-  `../../ios/capture-xcuitest-screen.mjs` rather than duplicating them.
+  `../ios/capture-xcuitest-screen.mjs` rather than duplicating them.
 * `lib/probe-host.mjs` — the proxying HTTP host, its report endpoints, and the inert
   `/__probe/stand-down` husk page stale bootstraps park themselves on.
 * `lib/report-store.mjs` — which of two uploaded reports to keep.
