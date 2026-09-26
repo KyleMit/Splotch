@@ -1,115 +1,180 @@
 # Code Map — lines of code by domain
 
-> **Snapshot as of 2026-08-19 at d3dad50b, plus this document.** These are point-in-time counts of
-> tracked source and will drift as the code changes. Re-run the pass (see [Method](#method)) to
-> refresh. This is a sibling to `docs/DEPENDENCIES.md`: a "state of the codebase" inventory, not a
-> maintained-in-lockstep truth.
+<!-- code-map:generated:start snapshot -->
+
+> **Snapshot of db2e4be3e308 (2026-09-25).** Every table in this map is generated from that commit
+> by `npm run gen:code-map`; the prose around them is maintained by the `reconcile-code-map` skill.
+> Counts drift as the code changes — regenerate rather than hand-edit.
+
+<!-- code-map:generated:end snapshot -->
+
+A "state of the codebase" inventory, sibling to `docs/DEPENDENCIES.md`. It is a point-in-time
+snapshot, not kept in lockstep with the code.
 
 ## Method
 
-Counts are newline counts over the `git ls-files` inventory. The pass assigns every tracked file to
-exactly one measured area or one explicit exclusion class:
+`npm run gen:code-map` counts newlines (`wc -l` semantics) in every blob of one commit's tree, read
+straight from git, so the same commit always regenerates the same tables. The rules that place each
+file live in `tools/code-map/lib/code-map-rules.mjs`, and `tools/code-map/README.md` explains how to
+change them. Every tracked file lands in exactly one measured area or one explicit exclusion class;
+`tools/code-map/tests/` fails if a path matches none, or more than one.
 
 * **Measured:** source code (including tracked generated source used at runtime), authored Markdown,
-  SVG/XML/project files, shell/config files, store listing text, and authoritative `.ruler/**`
-  sources — including nested `.ruler` instruction sources.
-* **Binary media / archives:** PNG, WebP, JPG/JPEG, MP3, ICO, and JAR.
-* **Generated or bulky data:** `pnpm-lock.yaml`; asset-gen and scrapbook measurement JSON; generated
-  asset-gen and scrapbook report/proof-sheet HTML; generated ranking/audit text; patch, encrypted,
-  and hash payloads; and the scrapbook publishing marker.
+  hand-authored SVG, XML and project files, shell/config files, store listing text, test fixtures,
+  scripts inside evidence packages, and authoritative `.ruler/**` sources. A nested `.ruler`
+  instruction source counts in the area it describes.
+* **Binary media / archives:** images, audio, fonts, JARs, and gzip/zip archives.
+* **Vector art assets / traced samples:** coloring-page outlines under `web/static/coloring/`, and
+  the traced SVG corpora of `model-eval`, `centerline-tracing`, and the `vectorize` pilot.
+  Hand-authored icons in `web/src` stay measured.
+* **Generated measurement data:** JSON, JSONL, TSV, CSV, and `.out` files under the evidence roots
+  (`perf-profiles/`, `scrapbook/`, `docs/scratchpad/`, `docs/investigations/`, `tools/asset-gen/`,
+  and the `centerline-tracing` benchmark), plus captured logs and ranking text there.
+* **Generated report HTML, payloads, and lockfile:** scrapbook and asset-gen report pages; patch,
+  diff, encrypted, and hash payloads; `pnpm-lock.yaml`; the scrapbook publishing marker.
 * **Agent dedup:** generated `CLAUDE.md` / `AGENTS.md`, `.claude/skills/**`,
   `.claude/skill-notes/**`, and `.agents/**`. This also leaves direct-maintained provider packages
   out of the LOC total, preserving the provider-tree exclusion.
-* **Repository metadata outside LOC scope:** `LICENSE` and `.git-blame-ignore-revs`.
+* **Outside LOC scope:** `LICENSE`, `.git-blame-ignore-revs`, and this map, which would otherwise
+  count itself.
 
 Grouping is one file → one area and, where shown, one sub-bucket. Cross-cutting files sit in a
-single bucket by convention; co-located tests follow the subject they test. Totals are exact even
-though a few functional boundaries are judgment calls.
+single bucket by convention; co-located tests and test harnesses follow the module they exercise.
+`web/src` domains are an ordered first-match rule list whose directory-wide fallbacks place a new
+file somewhere plausible until a reconcile pass gives it a precise rule, so a few functional
+boundaries are judgment calls even though every total is exact.
 
 ### Coverage check
 
+<!-- code-map:generated:start coverage -->
+
 | Disposition                    | Files |
 | ------------------------------ | ----: |
-| Measured and categorized       | 1,582 |
-| Explicitly excluded            | 3,734 |
-| **All tracked files**          | 5,316 |
+| Measured and categorized       | 2,518 |
+| Explicitly excluded            | 4,738 |
+| **All tracked files**          | 7,256 |
 | Unassigned or multiply counted |     0 |
 
-| Exclusion class                           | Files |
-| ----------------------------------------- | ----: |
-| Binary media / archives                   | 3,433 |
-| Generated / provider agent delivery trees |   147 |
-| Generated measurement data                |    89 |
-| Archived payloads / hashes                |    30 |
-| Generated report / proof-sheet HTML       |    22 |
-| Generated audit / ranking text            |     9 |
-| Repository metadata outside LOC scope     |     2 |
-| Dependency lockfile                       |     1 |
-| Publishing marker                         |     1 |
-| **Total explicitly excluded**             | 3,734 |
+| Exclusion class                                  | Files |
+| ------------------------------------------------ | ----: |
+| Binary media / archives                          | 3,189 |
+| Generated measurement data                       |   857 |
+| Vector art assets / traced samples               |   291 |
+| Generated / provider agent delivery trees        |   198 |
+| Generated audit / ranking text and captured logs |   125 |
+| Archived payloads / hashes                       |    50 |
+| Generated report / proof-sheet HTML              |    23 |
+| Repository metadata outside LOC scope            |     2 |
+| Code map output                                  |     1 |
+| Dependency lockfile                              |     1 |
+| Publishing marker                                |     1 |
+| **Total explicitly excluded**                    | 4,738 |
 
-## Grand total: **227,140 LOC across 1,582 measured files**
+<!-- code-map:generated:end coverage -->
 
-| Area                                               |    LOC | Files |
-| -------------------------------------------------- | -----: | ----: |
-| **web/src** — the app                              | 72,825 |   594 |
-| **tools (excluding asset-gen)** — repo automation  | 63,567 |   313 |
-| **tools/asset-gen** — art pipeline                 | 29,064 |   205 |
-| **docs** — ADRs & guides                           | 28,070 |   166 |
-| **web/tests** — E2E + integration                  | 15,908 |    73 |
-| **.ruler** — agent-instruction sources             |  6,273 |    55 |
-| android + ios + fastlane + Maestro — native shells |  2,966 |    62 |
-| .github — CI and issue config                      |  1,965 |    23 |
-| web/\* — build/test config and static text         |  1,606 |    25 |
-| root config / README / shared assets               |  1,515 |    18 |
-| scrapbook — run-artifact prose                     |  1,357 |    13 |
-| .claude / .codex — agent runtime config            |  1,262 |    19 |
-| store-assets — listing text                        |    410 |     3 |
-| releases — release notes                           |    216 |     8 |
-| netlify — edge functions and config                |    136 |     5 |
+<!-- code-map:generated:start totals -->
 
-## Splits for every measured area over 3k LOC
+## Grand total: **413,384 LOC across 2,518 measured files**
 
-### web/src (72,825) — functional domains
+| Area                                               |     LOC | Files |
+| -------------------------------------------------- | ------: | ----: |
+| **tools (excluding asset-gen)** — repo automation  | 155,653 |   676 |
+| **web/src** — the app                              | 106,270 |   850 |
+| **docs** — ADRs & guides                           |  66,890 |   381 |
+| **tools/asset-gen** — art pipeline                 |  29,946 |   207 |
+| **web/tests** — E2E + integration                  |  25,572 |   125 |
+| **.ruler** — agent-instruction sources             |  11,672 |    83 |
+| android + ios + fastlane + Maestro — native shells |   3,857 |    69 |
+| scrapbook — run-artifact prose                     |   3,568 |     7 |
+| .github — CI and issue config                      |   2,428 |    25 |
+| root config / README / shared assets               |   2,369 |    20 |
+| web/\* — build/test config and static text         |   2,121 |    29 |
+| .claude / .codex — agent runtime config            |   1,868 |    23 |
+| store-assets — listing text                        |     410 |     3 |
+| perf-profiles — committed profiling evidence       |     357 |     6 |
+| releases — release notes                           |     258 |     9 |
+| netlify — edge functions and config                |     145 |     5 |
+
+<!-- code-map:generated:end totals -->
+
+<!-- code-map:generated:start splits -->
+
+## Splits for every measured area over 3,000 LOC
+
+### tools excluding asset-gen (155,653) — by subtree
+
+| Sub-bucket         |    LOC | Files |
+| ------------------ | -----: | ----: |
+| perf               | 67,937 |   204 |
+| tests              | 10,662 |    67 |
+| centerline-tracing |  7,484 |    43 |
+| store-drawings     |  6,875 |    21 |
+| rival-agent        |  6,219 |    57 |
+| model-eval         |  6,110 |    15 |
+| scrapbook          |  5,978 |    13 |
+| audit-burndown     |  5,053 |    22 |
+| page-inventory     |  4,719 |    12 |
+| vectorize          |  4,704 |    18 |
+| (root)             |  4,219 |    25 |
+| release            |  4,214 |    25 |
+| mobile             |  3,633 |    34 |
+| git-housekeeping   |  2,803 |    18 |
+| flaky-digest       |  1,974 |     9 |
+| api-smoke          |  1,846 |     9 |
+| e2e-tuning         |  1,637 |     4 |
+| marketing-assets   |  1,303 |    10 |
+| elevenlabs         |  1,239 |     5 |
+| ruler              |  1,160 |    10 |
+| icons              |    951 |     9 |
+| adrs               |    835 |     4 |
+| redteam            |    775 |     7 |
+| page-load          |    671 |     4 |
+| tokens             |    649 |     4 |
+| app-driver         |    565 |     4 |
+| lib                |    500 |    10 |
+| sounds             |    476 |     4 |
+| ci-mirror          |    293 |     8 |
+| instruction source |    169 |     1 |
+
+### web/src (106,270) — functional domains
 
 | Domain                                 |    LOC | Files |
 | -------------------------------------- | -----: | ----: |
-| Drawing / canvas engine                | 13,236 |    80 |
-| AI image generation                    | 12,432 |    84 |
-| Design system, styleguide + icons      |  6,728 |   113 |
-| Settings surface                       |  6,232 |    32 |
-| Routes / app shell / dev surfaces      |  5,803 |    48 |
-| Core UI controls                       |  3,648 |    19 |
-| Gestures / Svelte actions              |  3,217 |    20 |
-| Admin console + token backend          |  3,163 |    19 |
-| Coloring books + pack delivery         |  2,982 |    22 |
-| PWA / installation                     |  2,619 |    13 |
-| Platform / device integration          |  1,939 |    26 |
-| Color palette & picker                 |  1,770 |    11 |
-| Server / API backend                   |  1,681 |    22 |
-| Storage / persistence                  |  1,600 |    13 |
-| App state (runes)                      |  1,447 |    17 |
-| Beta onboarding                        |  1,374 |    15 |
-| Focused utilities / generated app data |  1,152 |    30 |
-| Feedback / reporting                   |  1,078 |     7 |
-| Audio                                  |    724 |     3 |
+| Drawing / canvas engine                | 18,554 |   122 |
+| AI image generation                    | 15,859 |   102 |
+| Routes / app shell / dev surfaces      | 11,170 |    81 |
+| Design system, styleguide + icons      |  9,502 |   151 |
+| Settings surface                       |  8,179 |    47 |
+| Core UI controls                       |  5,674 |    44 |
+| Gestures / Svelte actions              |  5,231 |    36 |
+| Coloring books + pack delivery         |  5,025 |    34 |
+| PWA / installation                     |  3,697 |    21 |
+| Platform / device integration          |  3,665 |    38 |
+| Admin console + token backend          |  3,421 |    24 |
+| Storage / persistence                  |  3,146 |    21 |
+| App state (runes)                      |  2,897 |    29 |
+| Server / API backend                   |  2,862 |    25 |
+| Color palette & picker                 |  2,127 |    13 |
+| Audio                                  |  1,628 |     6 |
+| Beta onboarding                        |  1,422 |    16 |
+| Focused utilities / generated app data |  1,321 |    34 |
+| Feedback / reporting                   |    890 |     6 |
 
-#### Drawing / canvas engine (13,236) — defined subdomains
+#### Drawing / canvas engine (18,554) — defined subdomains
 
 The drawing domain contains `lib/drawing/**` except the AI-generation and polaroid modules, plus
 `DrawingCanvas.svelte`, `LiveSurface.svelte`, `state/canvas.svelte.ts`, and `routes/dev/engine/**`.
-Every one of those 80 files lands in exactly one subdomain below.
 
 | Subdomain                                 |    LOC | Files |
 | ----------------------------------------- | -----: | ----: |
-| Stroke model & brush rendering            |  3,758 |    15 |
-| Engine orchestration & canvas integration |  3,307 |    19 |
-| Tiled renderer, retained history & undo   |  2,856 |    22 |
-| Export, saving & screenshot pipeline      |  2,704 |    18 |
-| Paper view & coloring integration         |    611 |     6 |
-| **Drawing / canvas engine total**         | 13,236 |    80 |
+| Stroke model & brush rendering            |  6,433 |    35 |
+| Engine orchestration & canvas integration |  4,207 |    26 |
+| Tiled renderer, retained history & undo   |  3,680 |    30 |
+| Export, saving & screenshot pipeline      |  3,435 |    25 |
+| Paper view & coloring integration         |    799 |     6 |
+| **Drawing / canvas engine total**         | 18,554 |   122 |
 
-#### AI image generation (12,432) — defined subdomains
+#### AI image generation (15,859) — defined subdomains
 
 This vertical includes generation-specific client code, state, components, server modules, and the
 four public generation/reporting API routes. General-purpose server infrastructure and the admin
@@ -117,95 +182,102 @@ token surface remain in their own domains.
 
 | Subdomain                                       |    LOC | Files |
 | ----------------------------------------------- | -----: | ----: |
-| Server authorization, jobs, storage & endpoints |  5,760 |    36 |
-| Client pipeline, state & shared contracts       |  3,782 |    33 |
-| Generation, result & reporting UI               |  2,890 |    15 |
-| **AI image generation total**                   | 12,432 |    84 |
+| Server authorization, jobs, storage & endpoints |  7,731 |    42 |
+| Client pipeline, state & shared contracts       |  5,286 |    44 |
+| Generation, result & reporting UI               |  2,842 |    16 |
+| **AI image generation total**                   | 15,859 |   102 |
 
-### tools excluding asset-gen (63,567) — by subtree
-
-| Sub-bucket         |    LOC | Files |
-| ------------------ | -----: | ----: |
-| perf               | 15,836 |    64 |
-| store-drawings     |  9,848 |    21 |
-| tests              |  6,540 |    48 |
-| audit-burndown     |  5,053 |    22 |
-| model-eval         |  4,177 |    12 |
-| page-inventory     |  3,647 |    10 |
-| mobile             |  3,053 |    27 |
-| (root)             |  2,221 |    18 |
-| release            |  1,733 |    13 |
-| api-smoke          |  1,661 |     8 |
-| vectorize          |  1,430 |     6 |
-| e2e-tuning         |  1,268 |     4 |
-| scrapbook          |  1,164 |     6 |
-| icons              |    965 |     8 |
-| marketing-assets   |    935 |     7 |
-| ruler              |    858 |    10 |
-| adrs               |    834 |     4 |
-| redteam            |    775 |     7 |
-| app-driver         |    555 |     4 |
-| tokens             |    437 |     4 |
-| lib                |    408 |     9 |
-| instruction source |    169 |     1 |
-
-### tools/asset-gen (29,064) — by subtree
-
-| Sub-bucket                       |    LOC | Files |
-| -------------------------------- | -----: | ----: |
-| ideas-exploration (R&D scratch)  | 12,054 |    88 |
-| tests                            |  4,116 |    31 |
-| lib (pipeline core)              |  4,052 |    34 |
-| coloring (pipeline CLIs)         |  3,161 |    18 |
-| docs (pipeline records)          |  1,679 |    13 |
-| style-covers                     |  1,650 |     3 |
-| crayon-reference                 |    786 |     7 |
-| legacy                           |    542 |     3 |
-| coloring-book-proof-sheet-assets |    472 |     2 |
-| (root)                           |    406 |     5 |
-| instruction source               |    146 |     1 |
-
-### docs (28,070) — by subtree
+### docs (66,890) — by subtree
 
 | Sub-bucket     |    LOC | Files |
 | -------------- | -----: | ----: |
-| adrs           | 17,237 |   125 |
-| (root docs)    |  6,283 |    14 |
-| scratchpad     |  1,816 |    10 |
-| MOBILE         |  1,364 |     4 |
-| audit-deferred |    620 |     7 |
-| CLOUD          |    396 |     2 |
-| handoff        |    344 |     3 |
+| scratchpad     | 27,114 |   163 |
+| adrs           | 24,519 |   172 |
+| (root docs)    | 11,037 |    23 |
+| MOBILE         |  1,569 |     4 |
+| investigations |    765 |     3 |
+| handoff        |    677 |     6 |
+| audit-deferred |    637 |     7 |
+| CLOUD          |    562 |     2 |
 | assets         |     10 |     1 |
 
-### web/tests (15,908) — by subtree
+### tools/asset-gen (29,946) — by subtree
+
+| Sub-bucket                       |    LOC | Files |
+| -------------------------------- | -----: | ----: |
+| ideas-exploration (R&D scratch)  | 12,049 |    88 |
+| tests                            |  4,396 |    33 |
+| lib (pipeline core)              |  4,182 |    35 |
+| coloring (pipeline CLIs)         |  3,129 |    17 |
+| docs (pipeline records)          |  1,719 |    13 |
+| style-covers                     |  1,650 |     3 |
+| crayon-reference                 |  1,213 |     7 |
+| legacy                           |    540 |     3 |
+| coloring-book-proof-sheet-assets |    472 |     2 |
+| (root)                           |    450 |     5 |
+| instruction source               |    146 |     1 |
+
+### web/tests (25,572) — by subtree
 
 | Sub-bucket               |    LOC | Files |
 | ------------------------ | -----: | ----: |
-| (root) E2E / integration | 15,827 |    71 |
+| (root) E2E / integration | 25,492 |   123 |
 | artifacts                |     54 |     1 |
-| instruction source       |     27 |     1 |
+| instruction source       |     26 |     1 |
 
-### .ruler (6,273) — by subtree
+### .ruler (11,672) — by subtree
 
 | Sub-bucket                |   LOC | Files |
 | ------------------------- | ----: | ----: |
-| skill sources             | 5,237 |    43 |
-| skill notes               |   629 |     5 |
-| root instruction / config |   407 |     7 |
+| skill sources             | 9,083 |    59 |
+| skill notes               | 2,110 |    17 |
+| root instruction / config |   479 |     7 |
+
+### native shells (3,857) — by subtree
+
+| Sub-bucket |   LOC | Files |
+| ---------- | ----: | ----: |
+| android    | 2,109 |    36 |
+| ios        | 1,579 |    23 |
+| fastlane   |   137 |     9 |
+| .maestro   |    32 |     1 |
+
+### scrapbook (3,568) — by subtree
+
+| Sub-bucket   |   LOC | Files |
+| ------------ | ----: | ----: |
+| sound-design | 1,965 |     1 |
+| performance  | 1,456 |     5 |
+| (root)       |   147 |     1 |
+
+<!-- code-map:generated:end splits -->
 
 ## Notes worth carrying forward
 
-* **The drawing engine and AI generation are now peer-sized verticals** — 13.2k and 12.4k LOC,
-  together 35% of `web/src`. Drawing's largest piece is brush rendering; AI's is its server-side
-  authorization, job, storage, and endpoint layer.
-* **Repository automation is nearly app-sized:** `tools` excluding asset-gen is 63.6k LOC versus
-  72.8k in `web/src`. Performance tooling alone is 15.8k, while `store-drawings` is 9.8k including
-  the tracked generated replay program.
-* **The art pipeline remains a separate substantial system** at 29.1k LOC. Its frozen
-  `ideas-exploration` archive is 12.1k; the active `coloring` + `lib` core is about 7.2k, backed by
-  4.1k of tests.
-* **ADRs are 17.2k LOC across 125 files** — comfortably the largest part of `docs` and a major part
-  of the repository's maintained knowledge.
-* **Tests are intentionally distributed:** the 15.9k `web/tests` area covers E2E/integration tests,
-  while co-located unit tests are counted with the app or tool domain they exercise.
+The notes compare this snapshot with the previous one, taken at d3dad50b5404 (2026-08-19). The
+generator reproduces that commit's area and exclusion counts exactly, apart from two deliberate
+Method changes: this map no longer counts itself, and JSON under a `fixtures/` directory counts as
+measurement data.
+
+* **The repository nearly doubled in five weeks** — about 227k to 413k measured LOC. The growth is
+  concentrated in repository automation and working notes rather than in the shipped app.
+* **Performance tooling is now the largest single subsystem.** `tools/perf` grew from 15.8k to
+  roughly 68k LOC, and about 29k of that is its own test suite. `tools` excluding asset-gen now
+  outweighs `web/src`.
+* **`web/src` grew by about half**, to 106k LOC across 850 files. Drawing (18.6k) and AI generation
+  (15.9k) remain the two largest verticals. Routes, app shell, and dev surfaces doubled to 11.2k,
+  mostly the `/dev` harnesses (store frames, notch simulator, engine probe) and `lib/boot`.
+* **`docs/scratchpad` went from 1.8k to 27.1k LOC** and is now larger than the ADRs. That count is
+  the authored part only: the hundreds of captured JSON, log, and gzip files in its evidence
+  packages are excluded as measurement data.
+* **ADRs grew from 125 to 172 files** (17.2k to 24.5k LOC). They are still the bulk of the
+  maintained knowledge outside the scratchpad.
+* **New since the last snapshot:** the `perf-profiles/` evidence tree (651 of its 657 files are
+  excluded data), `docs/investigations`, and the `centerline-tracing`, `rival-agent`,
+  `git-housekeeping`, `flaky-digest`, `elevenlabs`, `page-load`, `sounds`, and `ci-mirror` tool
+  subtrees. Coloring-page outlines now ship as SVG under `web/static/coloring/`, so vector art
+  became its own exclusion class.
+* **The art pipeline is flat** at about 30k LOC, and its frozen `ideas-exploration` archive is still
+  12k of that.
+* **Tests remain distributed:** `web/tests` grew to 25.6k LOC of E2E and integration specs, while
+  co-located unit tests count with the app or tool domain they exercise.

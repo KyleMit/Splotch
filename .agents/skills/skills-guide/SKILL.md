@@ -100,10 +100,11 @@ meta).
 
 ### `reconcile-*` — bring an artifact back in line with reality
 
-| Skill                 | What it reconciles                                                             |
-| --------------------- | ------------------------------------------------------------------------------ |
-| `reconcile-adrs`      | Existing ADRs against the current code and recent decisions — amends drift     |
-| `reconcile-with-main` | A long-running branch against current `main`, hunting the *semantic* conflicts |
+| Skill                 | What it reconciles                                                               |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `reconcile-adrs`      | Existing ADRs against the current code and recent decisions — amends drift       |
+| `reconcile-code-map`  | `docs/CODE-MAP.md` against the current tree — regenerates tables, rewrites prose |
+| `reconcile-with-main` | A long-running branch against current `main`, hunting the *semantic* conflicts   |
 
 `burn-down-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
@@ -118,6 +119,11 @@ fan-out: a proposer and an adversarial reviewer per unit, then an implementer pe
 worktree with a fresh commit checker. Its `measure.mjs` reads every cap from `eslint.config.js`.
 Line limits are treated as smells: a unit that does not separate cleanly gets a per-file cap raise,
 never a counter-driven split.
+
+`reconcile-code-map` keeps the lines-of-code snapshot current: `npm run gen:code-map` owns the
+tables, and the skill teaches the rules about new areas and misplaced files and rewrites the prose.
+It finds work rather than doing it — sharp growth becomes an issue. `audit-code` uses the map to
+shard an exhaustive whole-repo pass, so refresh it first when it is weeks behind.
 
 `reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
 has been open a while: it detects overlapping line edits and nothing else. The skill surveys the
