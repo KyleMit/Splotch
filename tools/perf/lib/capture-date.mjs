@@ -9,6 +9,13 @@
 
 export const MATRIX_SECTIONS = ['drawing', 'undo', 'actions'];
 
+// The maintainer's 2026-09-25 ruling on epic 2210 (issue 2347, ADR-0175's
+// amendment): a performance campaign may finish only when every release-gate
+// section is at most this old. When a cell is recaptured does not matter, and a
+// campaign should not loop re-auditing cells; a fix brings a fresh capture for
+// free, and this limit catches the rest. Tripwire and advisory rows have none.
+export const RELEASE_GATE_MAX_AGE_DAYS = 14;
+
 // The iOS XCUITest drawing transport stamps the URL it loads with the wall clock
 // in epoch milliseconds, so every relaunch is a fresh navigation. That stamp is
 // recorded as `automation.loadedUrl`, which makes it the one capture time an

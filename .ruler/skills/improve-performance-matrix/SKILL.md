@@ -54,7 +54,9 @@ the product loop.
 
 Read the whole published matrix at the start, but do not block the first product experiment on
 recapturing every old section. Coverage of the release-gate rows remains part of the completion gate
-(ADR-0156); advisory rows are recaptured for breadth when the rig is free, never as a completion
+(ADR-0156), and so does their age: none may be older than `RELEASE_GATE_MAX_AGE_DAYS` when the
+campaign finishes (ADR-0175), so an old release-gate section waits for completion, not for the first
+experiment; advisory rows are recaptured for breadth when the rig is free, never as a completion
 requirement. Coverage is not a prerequisite for beginning product work when a calibrated physical
 target already provides a reproducible failure. Old advisory Simulator, emulator, and desktop rows
 cannot delay that first experiment. Recapture an old authoritative section first only when its
@@ -375,13 +377,14 @@ history, merged PRs, and campaign ledger remain the durable source of truth.
 
 When Goal mode is available, use it only if the user explicitly requests Goal mode for this
 campaign. Create one objective for zero scoreable, unexplained red cells on the release-gate rows,
-each shown with its capture age (ADR-0156, ADR-0160, ADR-0175), and omit a token budget unless the
-user supplies one. Goal mode is useful for automatic continuation and for keeping the terminal
-condition visible across long tool runs. It is a poor fit for an ordinary campaign that may receive
-`pause` or `wrap up`: it supports completion or genuine blocking, not a wrap-up or stop-at-mergeable
-pause, permits only one active goal, and does not replace external checkpoints. Never mark the goal
-complete for an improvement, a green cluster, or a wrap-up that leaves scoreable, unexplained reds
-on a release-gate row, however old.
+each shown with its capture age, and no release-gate section older than `RELEASE_GATE_MAX_AGE_DAYS`
+(ADR-0156, ADR-0160, ADR-0175), and omit a token budget unless the user supplies one. Goal mode is
+useful for automatic continuation and for keeping the terminal condition visible across long tool
+runs. It is a poor fit for an ordinary campaign that may receive `pause` or `wrap up`: it supports
+completion or genuine blocking, not a wrap-up or stop-at-mergeable pause, permits only one active
+goal, and does not replace external checkpoints. Never mark the goal complete for an improvement, a
+green cluster, or a wrap-up that leaves scoreable, unexplained reds on a release-gate row, however
+old.
 
 ## Completion gate
 
@@ -405,6 +408,11 @@ Complete the full campaign only when:
 * every unavailable scoreable cell on a release-gate row has a faithful capture, and every captured
   section has a `capturedOn` date and a resolvable product commit (`--strict`, ADR-0175); an
   advisory row the campaign did not recapture is marked preserved;
+* every release-gate section is at most `RELEASE_GATE_MAX_AGE_DAYS` old
+  (`tools/perf/lib/capture-date.mjs`): `npm run check:matrix-staleness -- --release-gate-age` exits
+  0 (ADR-0175, as amended). Recapture each section it names; a product fix brings a fresh capture
+  for free, so this catches only the sections no cluster touched. Tripwire and advisory rows have no
+  age limit;
 * capture-path blockers on release-gate rows are fixed and every affected release-gate target is
   recaptured; an advisory target's blocker is filed as an issue, and a genuinely unsupported mode
   stays explicitly unscoreable rather than being counted as a pass;

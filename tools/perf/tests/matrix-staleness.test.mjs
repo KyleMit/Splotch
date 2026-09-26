@@ -4,9 +4,11 @@ import {
   ageReportRows,
   assessManifest,
   implicitBaseWarning,
+  overdueReleaseGateSections,
   provenanceOutcome,
   sectionProvenance,
 } from '../check-matrix-staleness.mjs';
+import { RELEASE_GATE_MAX_AGE_DAYS } from '../lib/capture-date.mjs';
 
 const DATES = { drawing: '2026-09-20', undo: '2026-09-20', actions: '2026-09-01' };
 
@@ -20,7 +22,9 @@ const captured = (commit, capturedOn = DATES) => ({
   actionSources: [{ source: 'x.json', productCommit: commit, kind: 'full' }],
 });
 
-const manifestOf = (modes) => ({ targets: [{ id: 't', modes }] });
+const manifestOf = (modes, deviceKind = 'physical') => ({
+  targets: [{ id: 't', deviceKind, modes }],
+});
 
 const assess = (manifest, { published = null, reachable = () => true } = {}) =>
   assessManifest(manifest, {
@@ -247,8 +251,9 @@ describe('implicitBaseWarning', () => {
 });
 
 describe('provenanceOutcome', () => {
-  // ADR-0175: a section is never failed for being old. Between campaigns every
-  // section is behind the tip; its age is reported and its red keeps counting.
+  // ADR-0175: --strict never fails a section for being old. Between campaigns
+  // every section is behind the tip; its age is reported and its red keeps
+  // counting. Only --release-gate-age fails on age.
   it('reports an old but fully dated section without failing, even under --strict', () => {
     const sections = assess(manifestOf([captured('aaa')]));
 
@@ -280,4 +285,87 @@ describe('provenanceOutcome', () => {
     );
     expect(outcome.lines.at(-1)).toContain('--strict asserts provenance-complete');
   });
+});
+
+// Issue 2347's ruling (ADR-0175, as amended): a campaign may finish only when
+// every release-gate section is at most RELEASE_GATE_MAX_AGE_DAYS old. The
+// fixtures' today is fixed at 2026-09-25, so the boundary never moves with the
+// calendar.
+describe('release-gate age limit', () => {
+  const datedAll = (date) => ({ drawing: date, undo: date, actions: date });
+  const atLimit = datedAll('2026-09-11');
+  const pastLimit = datedAll('2026-09-10');
+
+  it('pins the limit the maintainer ruled', () => {
+    expect(RELEASE_GATE_MAX_AGE_DAYS).toBe(14);
+  });
+
+  it('passes a release-gate section exactly at the limit', () => {
+    const sections = assess(manifestOf([captured('aaa', atLimit)]));
+
+    expect(sections.map(({ ageDays }) => ageDays)).toEqual([14, 14, 14]);
+    expect(overdueReleaseGateSections(sections)).toEqual([]);
+    expect(provenanceOutcome({ sections, strict: true, releaseGateAge: true })).toMatchObject({
+      failed: false,
+      overdue: [],
+    });
+  });
+
+  it('warns by default about a release-gate section one day past the limit', () => {
+    const sections = assess(manifestOf([captured('aaa', pastLimit)]));
+
+    const outcome = provenanceOutcome({ sections, strict: true });
+
+    expect(outcome.failed).toBe(false);
+    expect(outcome.overdue.map(({ section, ageDays }) => [section, ageDays])).toEqual([
+      ['drawing', 15],
+      ['undo', 15],
+      ['actions', 15],
+    ]);
+    expect(outcome.lines.find((line) => line.includes('release-gate section(s)'))).toMatch(
+      /^WARN {2}3 release-gate section\(s\) are older than 14 days: t\/drawing \[portrait-light\] \(captured 2026-09-10, 15 days old\)/
+    );
+  });
+
+  it('fails a release-gate section past the limit under --release-gate-age', () => {
+    const sections = assess(
+      manifestOf([
+        captured('aaa', pastLimit),
+        { ...captured('aaa', pastLimit), id: 'portrait-dark' },
+      ])
+    );
+
+    const outcome = provenanceOutcome({ sections, strict: false, releaseGateAge: true });
+
+    expect(outcome.failed).toBe(true);
+    expect(outcome.lines.join('\n')).toContain(
+      'FAIL  6 release-gate section(s) are older than 14 days: t/drawing [portrait-light, portrait-dark] (captured 2026-09-10, 15 days old)'
+    );
+    expect(outcome.lines.at(-1)).toContain('--release-gate-age asserts');
+  });
+
+  it('fails an undated release-gate section under --release-gate-age', () => {
+    const sections = assess(manifestOf([captured('aaa', { ...atLimit, actions: undefined })]));
+
+    const outcome = provenanceOutcome({ sections, strict: false, releaseGateAge: true });
+
+    expect(outcome.failed).toBe(true);
+    expect(outcome.overdue.map(({ section }) => section)).toEqual(['actions']);
+    expect(outcome.lines.join('\n')).toContain(
+      't/actions [portrait-light] (captured (undated), age unknown)'
+    );
+  });
+
+  it.each(['desktop', 'simulator', 'emulator'])(
+    'never flags an old %s section, which is not a release-gate row',
+    (deviceKind) => {
+      const sections = assess(manifestOf([captured('aaa', datedAll('2026-07-01'))], deviceKind));
+
+      const outcome = provenanceOutcome({ sections, strict: true, releaseGateAge: true });
+
+      expect(sections[0].ageDays).toBe(86);
+      expect(outcome).toMatchObject({ failed: false, overdue: [] });
+      expect(outcome.lines.join('\n')).not.toContain('release-gate section(s)');
+    }
+  );
 });

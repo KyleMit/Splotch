@@ -1,7 +1,8 @@
 # ADR-0175: Matrix Sections Report Their Capture Age, Not a Currency Verdict
 
 **Status:** Active — supersedes [ADR-0159](0159-matrix-staleness-reported-not-enforced.md); amends
-[ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md) **Date:** 2026-09
+[ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md); amended 2026-09 for the
+release-gate age limit (see the amendment at the end) **Date:** 2026-09
 
 ## Context
 
@@ -63,7 +64,9 @@ Alternatives considered:
 4. **`check:matrix-staleness` is a report ranked by age.** It lists every captured section,
    preserved ones included, grouped per target section. Each row has the date, the age in days
    against today, the product commit, and the engine and measured-surface commits that landed since
-   (`tools/perf/check-matrix-staleness.mjs`). Age is never a failure.
+   (`tools/perf/check-matrix-staleness.mjs`). Age is never a failure of the report itself: the
+   default run and `--strict` exit 0 however old a section is. The one exception is the opt-in
+   `--release-gate-age` assertion that decision 6's completion gate runs (see the amendment).
 5. **`--strict` means provenance-complete.** Under `--strict`, the check fails when any captured
    section lacks a valid `capturedOn` date or a product commit this checkout can resolve. The
    generator copies both a preserved and a captured-untracked section from the report the manifest
@@ -73,7 +76,9 @@ Alternatives considered:
    is the pure function `provenanceOutcome`, tested in `tools/perf/tests/matrix-staleness.test.mjs`.
 6. **The completion gate reads by age.** ADR-0156's gate, and the `improve-performance-matrix`
    skill's, now reads: zero scoreable, unexplained red cells on the release-gate rows, each shown
-   with its capture age. An old red keeps counting until it is recaptured or explained.
+   with its capture age. An old red keeps counting until it is recaptured or explained. And no
+   release-gate section may be older than `RELEASE_GATE_MAX_AGE_DAYS` (14 days) when a campaign
+   finishes, asserted by `npm run check:matrix-staleness -- --release-gate-age` (see the amendment).
 
 ## Consequences
 
@@ -98,3 +103,45 @@ Alternatives considered:
 * − The page ages count to `recordedOn`, and a fold moves it, so a hand edit to the manifest that
   adds a later section without moving `recordedOn` is refused rather than aged. `recordedOn` now
   follows the latest fold, not the campaign's final commit alone.
+
+## Amendment (2026-09, issue #2347): release-gate sections expire after 14 days
+
+Decision 6 bounded how many reds a finished campaign may leave but not how old the evidence behind
+the green cells may be. A campaign could finish on release-gate sections captured months earlier.
+The maintainer ruled on 2026-09-25 (epic 2210, ruling Q1, option B) that a performance campaign may
+finish only when every release-gate section is at most 14 days old. The principle given with the
+ruling: when a cell is recaptured does not matter, and a campaign should not loop re-auditing the
+same cells. A product fix brings a fresh capture for free, and the age limit catches the rest.
+
+* **The limit is one constant.** `RELEASE_GATE_MAX_AGE_DAYS = 14` lives in
+  `tools/perf/lib/capture-date.mjs` beside the age arithmetic, and every reader imports it. A
+  section is overdue when its age in days against today exceeds the limit, so a section exactly 14
+  days old passes and one 15 days old does not. Only release-gate rows have the limit: the row's
+  role comes from `targetRole` in `tools/perf/gen-performance-matrix.mjs` (ADR-0156). Mac tripwire
+  rows and simulator and emulator advisory rows are never flagged for age.
+* **An undated release-gate section counts as overdue.** An age nobody can read cannot show that the
+  section is inside the limit, and the completion claim needs that. `--strict` names the same
+  section for its missing date.
+* **The default run warns; `--release-gate-age` fails.** Every run of `check:matrix-staleness`,
+  including the one `gen:performance-matrix` chains, prints a `WARN` line naming each overdue
+  release-gate section with its capture date and age, and still exits 0. Only
+  `npm run check:matrix-staleness -- --release-gate-age` exits non-zero on an overdue section. That
+  flag is the age clause of the completion gate in decision 6 and in the
+  `improve-performance-matrix` skill. `--strict` keeps its single meaning, provenance-complete. It
+  runs at every per-cluster regenerate, where sections the cluster did not recapture may
+  legitimately be old.
+* **Decision 4 still holds for the report.** Age never fails the default run or `--strict`, so the
+  calendar alone cannot turn a routine regenerate red. No CI job runs the check, and the flag is
+  opt-in, so no wall-clock-dependent failure reaches CI. The policy stays in the pure function
+  `provenanceOutcome`, and its tests freeze today at a fixed date on both sides of the boundary
+  (`tools/perf/tests/matrix-staleness.test.mjs`).
+
+Alternatives considered:
+
+* **Fail `--strict` on age.** Rejected: `--strict` runs at each cluster's regenerate, before the
+  campaign has had a chance to recapture every release-gate row. That would make a mid-campaign fold
+  fail for sections it never touched.
+* **Render the limit on the committed page.** Rejected for the reason the Context gives for ages
+  counted against the reader's today. The page is read long after it is generated, and whether a
+  section is overdue depends on the day it is read. The console report is where the live verdict
+  belongs.
