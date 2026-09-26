@@ -1,0 +1,30 @@
+{
+  "campaign": "2026-09-26-issue-2340-ab-android-device-native-candidate",
+  "productCommit": "b453e90c525b290b55d8ef431c583ea09f335bbd",
+  "capturedFrom": "perf-profiles/2026-09-26-issue-2340-ab-cand/android-device-native",
+  "study": "A/B candidate arm (sliced gallery save), --actions=clear,rotation, portrait-light, interleaved with the control arm; instrumented Debug APK of b453e90c525b290b55d8ef431c583ea09f335bbd sha256 ce75d985d5d1cd8be75bef3ee1e0c2fd6d62d8f9de54280200750baf16c66b3a; Auto-save on delete on",
+  "kept": [
+    {
+      "file": "actions--27ffd54a.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light-1/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--a031542c.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light-2/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

@@ -7,11 +7,13 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.util.Base64;
 
 import androidx.annotation.RequiresApi;
 
+import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -24,6 +26,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Saves a drawing into the shared Pictures/Splotch folder, where it belongs to the photo library
@@ -36,6 +41,10 @@ import java.io.OutputStream;
  * that copy is removed with the app, which is the trade the denial asked for. Only when that
  * fallback write also fails does the call reject as {@code accessDenied} rather than
  * {@code writeFailed}, because granting the permission is then the parent's way to a working save.
+ *
+ * <p>The image arrives as base64 slices appended to an upload rather than in one call:
+ * WebView delivers each bridge message on the UI thread, and one multi-megabyte message there
+ * stalls the WebView's frames (androidGallery.ts carries the measurement).
  */
 @CapacitorPlugin(
         name = "PhotoLibrary",
@@ -51,6 +60,53 @@ public class PhotoLibraryPlugin extends Plugin {
     private static final String ERROR_WRITE_FAILED = "writeFailed";
     // Matches ACCESS_DENIED_ERROR_CODE in web/src/lib/drawing/screenshot.ts, drift-guarded there.
     private static final String ERROR_ACCESS_DENIED = "accessDenied";
+
+    // A save's upload lands in well under a second, so an upload still receiving slices at this
+    // age belongs to a page that reloaded or died mid-save and will never call saveImage or
+    // discardImage for it. A submitted upload is exempt: on API 24-28 saveImage can hold it for as
+    // long as the storage-permission prompt stays open, and the prompt's result then writes it.
+    private static final long STALE_UPLOAD_MS = 60_000;
+
+    // Keyed by upload id. Plugin methods run on the bridge's plugin thread and the permission
+    // callback on the main thread, so the map is concurrent. saveImage's outcome or discardImage
+    // removes an entry, and beginImage drops any that went stale.
+    private final Map<String, Upload> uploads = new ConcurrentHashMap<>();
+
+    private static final class Upload {
+        final long startedAt = SystemClock.elapsedRealtime();
+        final StringBuilder data = new StringBuilder();
+        volatile boolean submitted;
+    }
+
+    @PluginMethod
+    public void beginImage(PluginCall call) {
+        long now = SystemClock.elapsedRealtime();
+        uploads.values()
+                .removeIf(upload -> !upload.submitted && now - upload.startedAt > STALE_UPLOAD_MS);
+        String uploadId = UUID.randomUUID().toString();
+        uploads.put(uploadId, new Upload());
+        JSObject result = new JSObject();
+        result.put("uploadId", uploadId);
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void appendImageData(PluginCall call) {
+        Upload upload = uploads.get(call.getString("uploadId", ""));
+        String data = call.getString("data");
+        if (upload == null || data == null) {
+            call.reject("appendImageData needs a begun uploadId and data", ERROR_INVALID_ARGUMENT);
+            return;
+        }
+        upload.data.append(data);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void discardImage(PluginCall call) {
+        uploads.remove(call.getString("uploadId", ""));
+        call.resolve();
+    }
 
     @PluginMethod
     public void saveImage(PluginCall call) {
@@ -82,10 +138,14 @@ public class PhotoLibraryPlugin extends Plugin {
                 () -> writeToDirectory(granted ? sharedPicturesDirectory() : appMediaDirectory(), image));
     }
 
-    private static ImageSave parseOrReject(PluginCall call) {
+    private ImageSave parseOrReject(PluginCall call) {
         try {
-            return ImageSave.from(call);
+            Upload upload = uploads.get(call.getString("uploadId", ""));
+            ImageSave image = ImageSave.from(call, upload == null ? null : upload.data);
+            upload.submitted = true;
+            return image;
         } catch (IllegalArgumentException error) {
+            uploads.remove(call.getString("uploadId", ""));
             call.reject(error.getMessage(), ERROR_INVALID_ARGUMENT, error);
             return null;
         }
@@ -95,12 +155,14 @@ public class PhotoLibraryPlugin extends Plugin {
         void run() throws IOException;
     }
 
-    private static void write(PluginCall call, String errorCode, ImageWrite imageWrite) {
+    private void write(PluginCall call, String errorCode, ImageWrite imageWrite) {
         try {
             imageWrite.run();
             call.resolve();
         } catch (IOException | RuntimeException error) {
             call.reject("Saving the image to the photo library failed", errorCode, error);
+        } finally {
+            uploads.remove(call.getString("uploadId", ""));
         }
     }
 
@@ -206,10 +268,11 @@ public class PhotoLibraryPlugin extends Plugin {
             this.base64Data = base64Data;
         }
 
-        static ImageSave from(PluginCall call) {
+        static ImageSave from(PluginCall call, StringBuilder upload) {
             String mimeType = call.getString("mimeType");
             String displayName = call.getString("displayName");
-            String base64Data = call.getString("data");
+            if (upload == null) throw new IllegalArgumentException("uploadId names no begun upload");
+            String base64Data = upload.toString();
             String extension = extensionForMimeType(mimeType);
             if (displayName == null
                     || !displayName.matches("[A-Za-z0-9_-]+\\." + extension)) {

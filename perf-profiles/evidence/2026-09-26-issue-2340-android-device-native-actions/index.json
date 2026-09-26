@@ -1,0 +1,52 @@
+{
+  "campaign": "2026-09-26-issue-2340-android-device-native-actions",
+  "productCommit": "b453e90c525b290b55d8ef431c583ea09f335bbd",
+  "capturedFrom": "perf-profiles/2026-09-26-issue-2340/android-device-native",
+  "study": "Canonical full action sweeps, all four modes, Appium UiAutomator2 attached to the Capacitor WebView; instrumented Debug APK of b453e90c525b290b55d8ef431c583ea09f335bbd (sliced gallery save, issue 2340) sha256 ce75d985d5d1cd8be75bef3ee1e0c2fd6d62d8f9de54280200750baf16c66b3a; Auto-save on delete on, as the app had it",
+  "kept": [
+    {
+      "file": "actions--c59c94ce.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--45390d94.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--8c8d5bb0.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--518e26d0.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}
