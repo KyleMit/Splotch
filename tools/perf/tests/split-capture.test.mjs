@@ -2227,24 +2227,29 @@ describe('the Android driver hands the rotation back as it found it', () => {
     // while the final hand-back's own child runs: removing the listeners first
     // let Node's default kill the hand-back halfway, and removing them straight
     // after it dropped the queued signal so the capture carried on to exit 0.
+    const killProcessGroup = (pid) => {
+      try {
+        process.kill(-pid, 'SIGKILL');
+      } catch (error) {
+        if (error.code !== 'ESRCH') throw error;
+      }
+    };
+
     it('finishes the hand-back and exits 130 on a Ctrl-C during it', async () => {
       const dir = mkdtempSync(join(tmpdir(), 'hand-back-signal-'));
       const marker = join(dir, 'handing-back');
+      const child = spawn(
+        process.execPath,
+        [fileURLToPath(new URL('./fixtures/signal-during-hand-back.mjs', import.meta.url)), marker],
+        { detached: true, stdio: ['ignore', 'pipe', 'pipe'] }
+      );
+      let stdout = '';
+      child.stdout.on('data', (chunk) => (stdout += chunk));
+      child.stderr.resume();
+      const exited = new Promise((resolve) =>
+        child.on('exit', (code, signal) => resolve({ code, signal }))
+      );
       try {
-        const child = spawn(
-          process.execPath,
-          [
-            fileURLToPath(new URL('./fixtures/signal-during-hand-back.mjs', import.meta.url)),
-            marker,
-          ],
-          { detached: true, stdio: ['ignore', 'pipe', 'pipe'] }
-        );
-        let stdout = '';
-        child.stdout.on('data', (chunk) => (stdout += chunk));
-        child.stderr.resume();
-        const exited = new Promise((resolve) =>
-          child.on('exit', (code, signal) => resolve({ code, signal }))
-        );
         await vi.waitFor(() => expect(existsSync(marker)).toBe(true), { timeout: 10_000 });
 
         process.kill(-child.pid, 'SIGINT');
@@ -2253,6 +2258,9 @@ describe('the Android driver hands the rotation back as it found it', () => {
         expect(stdout).toContain('hand-back ended SIGINT');
         expect(stdout).not.toContain('capture carried on');
       } finally {
+        // The fixture's `sleep` outlives a failed assertion; reap the group.
+        killProcessGroup(child.pid);
+        await exited;
         rmSync(dir, { recursive: true, force: true });
       }
     });
