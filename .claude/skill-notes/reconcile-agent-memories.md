@@ -29,6 +29,14 @@ line in them. The completed work is preserved on GitHub and in historical notes;
 present-tense queue in recall would invite a new session to act on it. Permission and merge memories
 also needed a live source check before their advice could be narrowed to current authority.
 
+The first pass checked truth and staleness but left 30 useful memories without checking whether
+their durable advice belonged in shared repo documentation. A user follow-up prompted that second
+pass: portable guidance moved into `.ruler/` sources, generated for both agents, and live docs;
+entries already covered were mapped to their canonical source; local permission snapshots were
+retired against live configuration. The skill therefore requires a memory-to-source map and a
+concrete PR summary of documentation changes before deleting duplicates. Agents may still collect
+memory during ordinary work; extraction happens at reconciliation.
+
 The checker is deliberately an on-demand CLI, with tests over temporary fixtures but no CI scan of
 the personal memory directory. That directory is not part of a clone, so a CI gate would test the
 wrong machine or no memory at all.

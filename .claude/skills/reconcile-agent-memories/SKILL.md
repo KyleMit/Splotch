@@ -1,6 +1,6 @@
 ---
 name: reconcile-agent-memories
-description: Reconcile a Claude Code project's persistent MEMORY.md index and memory files with the current repository and GitHub state. Use for a periodic memory cleanup or after skill, file, script, or workflow renames; this is not a transcript analysis or a repository documentation pass.
+description: Reconcile a Claude Code project's persistent MEMORY.md index and memory files with the current repository and GitHub state, promoting durable lessons into shared repo guidance. Use for a periodic memory cleanup or after skill, file, script, or workflow renames; this is not a transcript analysis.
 ---
 
 # Reconcile agent memories
@@ -34,14 +34,34 @@ Read every memory and its index line. For each `project` memory, verify present-
 epic, branch, CI, device, and permission claims against live sources before retaining its advice.
 Use GitHub's issue and PR metadata and full comments for GitHub state; for an epic, enumerate the
 actual sub-issues. Follow live docs and config for procedures and permissions. Preserve a dated
-observation as history only when it still teaches a distinct lesson. Delete run snapshots whose
-premise is finished or whose lesson now lives in a maintained skill or doc. Merge duplicates only
-after checking neither contains unique evidence. Update the index alongside every edit and do not
-put secrets, credentials, or private device identifiers into a committed log.
+observation as history only when it still teaches a distinct lesson. Merge duplicates only after
+checking neither contains unique evidence. Do not put secrets, credentials, or private device
+identifiers into a committed log.
+
+## Promote durable lessons before retiring memory
+
+Memory collection during ordinary work is useful. Reconciliation is when a durable lesson gets a
+reviewable home. For **every** memory, decide whether its advice is already in a maintained repo
+source, is a new durable lesson, or describes transient/local state. Do not treat a clean mechanical
+check or a committed list of filenames as proof that the lessons themselves were preserved.
+
+For a new durable lesson, verify it against current code and sources, then put the smallest useful
+rule in the source future agents will actually read: `.ruler/` for shared instructions and skills,
+`docs/` for human-readable runbooks, or the owning code and its tests for an invariant. Edit a
+registered direct-provider package only when the lesson truly belongs to one runner. Apply Ruler
+when its sources changed and verify the resulting Claude and Codex copies. Link the exact repo
+source in the reconciliation record. Prefer one authoritative rule with pointers from other places
+over repeated prose.
+
+Retire a memory only after its durable lesson is committed and its destination verified, when the
+same guidance is already maintained elsewhere, or when its premise expired. Keep genuinely useful
+local-only context in memory if live configuration cannot replace it; verify it on each pass and
+never copy credentials or private device details into Git. Update `MEMORY.md` alongside every edit.
 
 Memory is outside CI and can be changed by another session. Back up the directory before a large
 pass, edit only the selected project memory directory, then rerun the check and compare the index
-with its files. Record each correction or deletion with its reason in the task's existing issue, PR,
-or scratchpad. Separate mechanical drift from judgments and say which live sources resolved the
-dated claims. A clean check proves link and script consistency; it does not prove the memories are
-true.
+with its files. In the task's PR and scratchpad, show the concrete documentation fixes separately
+from the checker implementation, map each retired memory to its canonical source or expiration
+reason, and name local-only exceptions. Separate mechanical drift from judgments and say which live
+sources resolved dated claims. A clean check proves link and script consistency; it does not prove
+the memories are true.
