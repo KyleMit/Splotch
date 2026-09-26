@@ -619,9 +619,29 @@ function desktopArgs(target, mode, item, host) {
 // That capability also skips Appium's device discovery, the stale part of a
 // borrowed server (issue 2218). Android Appium cells have no WebDriverAgent.
 const isIosTarget = (target) => target.captureRuntime?.startsWith('ios-') ?? false;
+// An Android target's Appium cells are the native action sweeps. Named so the
+// runner builds UiAutomator2 capabilities from the serial rather than reading it
+// as an iPad udid (issue 2341).
+const isAndroidAppiumTarget = (target) => target.captureRuntime?.startsWith('android-') ?? false;
+const ANDROID_PLATFORM_ARG = '--platform=android';
+
+export const androidAppiumCells = (cells) =>
+  cells.filter(
+    (cell) => cell.command === ACTIONS_APPIUM_COMMAND && cell.args.includes(ANDROID_PLATFORM_ARG)
+  );
+
+// Refused before the queue for the reason splitTransportIdentityProblem is: the
+// child would otherwise fail every attempt of every cell on the same missing flag.
+export function androidAppiumIdentityProblem(cells, host) {
+  if (!cells.length || host?.deviceId || host?.capabilitiesFile) return null;
+  return (
+    `${cells[0].targetId}'s action cells open a UiAutomator2 session and need the phone's ` +
+    'serial. Pass --device-id=<serial>, or a UiAutomator2 --capabilities-file=.'
+  );
+}
 
 function transportArgs(target, host) {
-  const args = [];
+  const args = isAndroidAppiumTarget(target) ? [ANDROID_PLATFORM_ARG] : [];
   if (host.appiumUrl) args.push(`--appium-url=${host.appiumUrl}`);
   if (host.capabilitiesFile) args.push(`--capabilities-file=${host.capabilitiesFile}`);
   if (host.deviceId) args.push(`--device-id=${host.deviceId}`);

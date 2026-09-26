@@ -9,6 +9,8 @@ import {
   CAMPAIGN_TARGETS,
   UNDO_COUNT,
   SPLIT_SCREEN_COMMAND,
+  androidAppiumCells,
+  androidAppiumIdentityProblem,
   desktopViewport,
   artifactMatchesRuntime,
   artifactPassedFidelity,
@@ -1649,5 +1651,72 @@ describe('an iPad Appium target given a running WebDriverAgent', () => {
         host: { ...wdaHost, capabilitiesFile: '/tmp/caps.json' },
       })
     ).toThrow('not both');
+  });
+});
+
+// Issue 2341: the Appium action runner built iPad capabilities from a bare
+// serial, so every Android native action cell failed before its session opened.
+describe('Android Appium action cells', () => {
+  const actionCell = (targetId, host = SPLIT_HOST) =>
+    planCampaign(targetId, {
+      outputRoot: 'out',
+      host,
+      modes: ['portrait-light'],
+      items: ['actions'],
+    })[0];
+
+  it('asks the runner for an Android session on both native Android targets', () => {
+    for (const targetId of ['android-device-native', 'android-emulator-native']) {
+      const cell = actionCell(targetId);
+
+      expect(cell.command, targetId).toBe('perf:ios:xcuitest:actions');
+      expect(cell.args, targetId).toContain('--platform=android');
+      expect(cell.args, targetId).toContain('--device-id=R5CFAKESER1');
+      expect(androidAppiumCells([cell]), targetId).toEqual([cell]);
+    }
+  });
+
+  it('keeps an explicit capabilities file as the override', () => {
+    const cell = actionCell('android-device-native', {
+      ...SPLIT_HOST,
+      capabilitiesFile: '/tmp/uiautomator2.json',
+    });
+
+    expect(cell.args).toContain('--platform=android');
+    expect(cell.args).toContain('--capabilities-file=/tmp/uiautomator2.json');
+  });
+
+  it('leaves every iPad action cell exactly as it was', () => {
+    for (const targetId of Object.keys(CAMPAIGN_TARGETS).filter((id) => id.startsWith('ipad-'))) {
+      const cell = actionCell(targetId, HOST);
+
+      expect(
+        cell.args.some((arg) => arg.startsWith('--platform')),
+        targetId
+      ).toBe(false);
+      expect(androidAppiumCells([cell]), targetId).toEqual([]);
+    }
+  });
+
+  it('selects no drawing or CDP cell, though split drawing cells also name Android', () => {
+    const cells = planCampaign('android-device-native', {
+      outputRoot: 'out',
+      host: SPLIT_HOST,
+      modes: ['portrait-light'],
+      items: ['crayon'],
+    });
+    const webActions = actionCell('android-device-web');
+
+    expect(cells[0].args).toContain('--platform=android');
+    expect(androidAppiumCells([...cells, webActions])).toEqual([]);
+  });
+
+  it('refuses before the queue when neither a serial nor a file names the phone', () => {
+    const cells = [actionCell('android-device-native', {})];
+
+    expect(androidAppiumIdentityProblem(cells, {})).toContain('--device-id=<serial>');
+    expect(androidAppiumIdentityProblem(cells, { deviceId: 'R5CFAKESER1' })).toBeNull();
+    expect(androidAppiumIdentityProblem(cells, { capabilitiesFile: '/tmp/c.json' })).toBeNull();
+    expect(androidAppiumIdentityProblem([], {})).toBeNull();
   });
 });

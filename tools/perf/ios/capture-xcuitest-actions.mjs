@@ -20,6 +20,13 @@ import {
 } from '../lib/campaign-plan.mjs';
 import { readAndroidInputWindows, unoccludedTapPoint } from '../lib/android-touch-occlusion.mjs';
 import {
+  ANDROID_PLATFORM,
+  DEFAULT_APPIUM_URL,
+  androidCapabilitiesProblem,
+  capabilitiesFromFile,
+  uiAutomator2Capabilities,
+} from '../lib/appium-capabilities.mjs';
+import {
   pinDisplayToUserRotation,
   readDisplayRotationMode,
   restoreDisplayRotationMode,
@@ -31,7 +38,6 @@ import {
   WDA_URL_WITH_CAPABILITIES_FILE_ERROR,
   appiumCapabilities,
   borrowedSessionDescriptor,
-  capabilitiesFromFile,
   capturedDeviceId,
   blockServiceWorkerRegistrationForMeasurement,
   clearDeviceWebCache,
@@ -83,7 +89,6 @@ import {
 const APP_PATH = '/';
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
 const ACTION_PANEL_STATE_TARGET = `(document.querySelector('.actions-panel[data-action-panel-live]') ?? document.documentElement)`;
-const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
 const DEFAULT_NATIVE_WEBVIEW_CLASS = 'XCUIElementTypeWebView';
@@ -230,7 +235,37 @@ function actionPanelDatasetEquals(key, value) {
   return `${ACTION_PANEL_STATE_TARGET}.dataset[${JSON.stringify(key)}] === ${JSON.stringify(value)}`;
 }
 
-function sessionCapabilities({
+const SESSION_PLATFORMS = ['ios', ANDROID_PLATFORM];
+
+export function parseSessionPlatform(value = 'ios') {
+  const platform = String(value).toLowerCase();
+  if (!SESSION_PLATFORMS.includes(platform)) {
+    throw new Error(`--platform must be one of ${SESSION_PLATFORMS.join(', ')}`);
+  }
+  return platform;
+}
+
+// A capabilities file still wins on Android, but it must describe a UiAutomator2
+// session: an Android target handed XCUITest capabilities would otherwise fail
+// every attempt on an "Unknown device" the phone never sees (issue 2341).
+function androidSessionCapabilities({ deviceId, file, nativeApp, webDriverAgentUrl }) {
+  if (!nativeApp) {
+    throw new Error(
+      '--platform=android drives the installed app; Android web actions run over direct CDP'
+    );
+  }
+  if (webDriverAgentUrl) throw new Error('--wda-url is an iOS WebDriverAgent; drop it for Android');
+  if (!file && !deviceId) {
+    throw new Error('Pass --device-id=<serial> or a UiAutomator2 --capabilities-file= for Android');
+  }
+  const capabilities = file ? capabilitiesFromFile(file) : uiAutomator2Capabilities({ deviceId });
+  const problem = androidCapabilitiesProblem(capabilities);
+  if (problem) throw new Error(`${file}: ${problem}`);
+  return capabilities;
+}
+
+export function sessionCapabilities({
+  platform = 'ios',
   deviceId,
   xcodeConfigFile,
   wdaBundleId,
@@ -239,6 +274,9 @@ function sessionCapabilities({
   nativeApp,
   webDriverAgentUrl,
 }) {
+  if (platform === ANDROID_PLATFORM) {
+    return androidSessionCapabilities({ deviceId, file, nativeApp, webDriverAgentUrl });
+  }
   if (file && webDriverAgentUrl) fail(WDA_URL_WITH_CAPABILITIES_FILE_ERROR);
   if (file) return capabilitiesFromFile(file);
   if (!deviceId) fail('Pass --device-id= for a local iPad or --capabilities-file= for a cloud one');
@@ -2524,6 +2562,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       extra: [
         'url',
         'device-id',
+        'platform',
         'device-class',
         'appium-url',
         'xcode-config',
@@ -2569,6 +2608,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   const capabilitiesFile = flag('capabilities-file');
   validateBorrowedActionSession(sessionId, capabilitiesFile);
   const capabilities = sessionCapabilities({
+    platform: parseSessionPlatform(flag('platform')),
     deviceId: flag('device-id'),
     xcodeConfigFile: flag('xcode-config', DEFAULT_XCODE_CONFIG),
     wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),

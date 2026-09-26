@@ -64,24 +64,25 @@ and one of `--device-id=`, `--capabilities-file=`, or `--session-id=`. It also t
 `--no-serve`. Free-draw capture belongs to `perf:ios:webkit:frames`, whose visible HUD lets the
 operator start and stop the timed window. `perf:ios:xcuitest:actions` shares the Appium, capability,
 session, native-app, and signing flags and also takes `--orientation=` / `--webdriver-clicks` /
-`--actions=` / `--repeats=N` / `--report-only`. Use `--native-webview-class=android.webkit.WebView`
-for Android native sessions. A native rotation sweep uses the real Settings toggle to unlock and
-restore Splotch's orientation preference. `perf:android:browser:actions` takes `--device-id=` /
-`--cdp-port=N` / `--orientation=` / `--actions=` / `--repeats=N` / `--label=` / `--output=` /
-`--url=` / `--report-only` / `--no-serve`; skip its build pre-hook with `--ignore-scripts` when an
-instrumented preview is already running. `perf:web:frames` takes `--viewport=WIDTHxHEIGHT` /
-`--device-scale-factor=N` / `--headed` / `--url=` / `--brush=pen|crayon|magic|eraser` in addition to
-its engine, throttle, phase, and drive flags. `perf:web:actions` takes
-`--engine=webkit|chromium|firefox` plus those viewport, DPR, headed, and URL flags plus `--actions=`
-/ `--repeats=N` / `--label=` / `--output=` / `--report-only` / `--no-build`. Interaction runs write
-`perf-profiles/<timestamp>-<target>-…/` with `trace.json`, `metrics.json`, `summary.json`,
-`report.md`, and `screenshot.png`; `perf:web:undo` also writes `undo-scenarios.json` /
-`undo-scenarios.md` (the per-scenario tiled-history/undo-cost/memory tables). `perf:web:mount`
-initially writes only `trace.json` and `mount-summary.json`; running `perf:analyze:chrome` on that
-trace adds `summary.json` and `report.md`. The raw mount trace does not retain the harness settings
-metadata, so the regenerated report's Settings table can say `n/a` / `none`; use the command and
-output-directory suffix (for example, `mount-phone-4x`) for the actual capture profile.
-`perf-profiles/` is gitignored.
+`--actions=` / `--repeats=N` / `--report-only`. For an Android native session pass
+`--platform=android` (it builds UiAutomator2 capabilities from the `--device-id=` serial, or checks
+a `--capabilities-file=` names UiAutomator2) and `--native-webview-class=android.webkit.WebView`. A
+native rotation sweep uses the real Settings toggle to unlock and restore Splotch's orientation
+preference. `perf:android:browser:actions` takes `--device-id=` / `--cdp-port=N` / `--orientation=`
+/ `--actions=` / `--repeats=N` / `--label=` / `--output=` / `--url=` / `--report-only` /
+`--no-serve`; skip its build pre-hook with `--ignore-scripts` when an instrumented preview is
+already running. `perf:web:frames` takes `--viewport=WIDTHxHEIGHT` / `--device-scale-factor=N` /
+`--headed` / `--url=` / `--brush=pen|crayon|magic|eraser` in addition to its engine, throttle,
+phase, and drive flags. `perf:web:actions` takes `--engine=webkit|chromium|firefox` plus those
+viewport, DPR, headed, and URL flags plus `--actions=` / `--repeats=N` / `--label=` / `--output=` /
+`--report-only` / `--no-build`. Interaction runs write `perf-profiles/<timestamp>-<target>-…/` with
+`trace.json`, `metrics.json`, `summary.json`, `report.md`, and `screenshot.png`; `perf:web:undo`
+also writes `undo-scenarios.json` / `undo-scenarios.md` (the per-scenario
+tiled-history/undo-cost/memory tables). `perf:web:mount` initially writes only `trace.json` and
+`mount-summary.json`; running `perf:analyze:chrome` on that trace adds `summary.json` and
+`report.md`. The raw mount trace does not retain the harness settings metadata, so the regenerated
+report's Settings table can say `n/a` / `none`; use the command and output-directory suffix (for
+example, `mount-phone-4x`) for the actual capture profile. `perf-profiles/` is gitignored.
 
 **Undo memory caveat:** tiled history's patch and folded-base rasters live in **canvas backing
 stores, not the JS heap** — so `performance.memory` / the heap table can't see them and stay flat.

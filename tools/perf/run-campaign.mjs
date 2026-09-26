@@ -38,6 +38,8 @@ import {
   CAMPAIGN_TARGETS,
   MAX_ATTEMPTS,
   SPLIT_SCREEN_COMMAND,
+  androidAppiumCells,
+  androidAppiumIdentityProblem,
   artifactMatchesRuntime,
   anomalousEraserRefills,
   artifactPassedFidelity,
@@ -55,6 +57,13 @@ import {
   splitTransportIdentityProblem,
   splitUndoEvidenceProblem,
 } from './lib/campaign-plan.mjs';
+import {
+  DEFAULT_APPIUM_URL,
+  androidCapabilitiesProblem,
+  appiumAndroidSdkMessage,
+  appiumAndroidSdkState,
+  capabilitiesFromFile,
+} from './lib/appium-capabilities.mjs';
 import { campaignReferenceReport, campaignReferenceWarning } from './lib/campaign-reference.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import {
@@ -383,6 +392,23 @@ function list(value) {
     : [];
 }
 
+// Checked once before the queue: each of these otherwise fails every attempt of
+// every Android action cell on the same refusal (issue 2341).
+function androidAppiumHostProblem(cells, host) {
+  const identityProblem = androidAppiumIdentityProblem(cells, host);
+  if (identityProblem) return identityProblem;
+  if (host.capabilitiesFile) {
+    const problem = androidCapabilitiesProblem(capabilitiesFromFile(host.capabilitiesFile));
+    if (problem) return `${host.capabilitiesFile}: ${problem}`;
+  }
+  const appiumUrl = host.appiumUrl ?? DEFAULT_APPIUM_URL;
+  const sdkState = appiumAndroidSdkState(appiumUrl);
+  const sdkMessage = appiumAndroidSdkMessage(appiumUrl, sdkState);
+  if (sdkState === 'missing') return sdkMessage;
+  if (sdkMessage) console.log(`WARN  ${sdkMessage}`);
+  return null;
+}
+
 export async function runCampaign(argv = process.argv.slice(2)) {
   const captureSession = randomUUID();
   const flag = (name, fallback) => {
@@ -482,6 +508,12 @@ export async function runCampaign(argv = process.argv.slice(2)) {
           "Start or restart it with `npm run perf:device:serve` and pass this host's LAN address"
       );
     }
+  }
+
+  const androidActionCells = androidAppiumCells(queue);
+  if (!has('dry-run') && androidActionCells.length) {
+    const problem = androidAppiumHostProblem(androidActionCells, host);
+    if (problem) fail(problem);
   }
 
   if (has('dry-run')) {
