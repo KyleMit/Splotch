@@ -38,9 +38,9 @@ move local `main`. The fetch updates only `refs/remotes/origin/main` in the shar
 
 **Detached at local `main`: the Codex shape.** A fresh Codex worktree is detached at whatever local
 `main` pointed to. The bootstrap confirms there are no tracked changes, fetches `origin/main`
-without tags, detaches at the fetched commit, and verifies `HEAD` landed there. Any other detached
-`HEAD` stays where it is. This includes a rival agent's review worktree pinned to a PR head, and a
-bisect.
+without tags, detaches at the fetched commit, and verifies `HEAD` landed there. A detached `HEAD` at
+any other commit stays where it is. A detached `HEAD` that happens to equal local `main` is moved,
+whatever put it there.
 
 **On a named branch that carries no work: the Claude Code shape.** A fresh Claude Code worktree is
 on its own branch, cut from `origin/main` without tracking it. The bootstrap fast-forwards the
@@ -50,32 +50,46 @@ branch only when all of these are true:
   tracked change or an untracked file blocks the refresh. Gitignored files, including the ones
   `.worktreeinclude` copies in, do not count.
 * The branch was never published. It has no upstream, and `refs/remotes/origin/<branch>` does not
-  exist.
-* The branch has no commits of its own: every commit reachable from `HEAD` is already on
-  `origin/main` (`git merge-base --is-ancestor HEAD refs/remotes/origin/main`). This is checked
-  against the last-known `origin/main` before any fetch, so a branch that has work never pays for a
-  network call. `main` only moves forward, so the answer also holds for the fetched commit.
+  exist. This reads local refs only. A branch of the same name pushed from another clone, and never
+  fetched here, is not seen. Asking the remote would add a second network call to every fresh
+  session. Moving the branch then loses nothing: it holds no commit of its own, the remote branch is
+  untouched, and a later push is rejected as non-fast-forward.
+* The branch ref has not moved since it was created. Every entry in its reflog
+  (`git reflog show refs/heads/<branch>`) is a `branch: Created from …` or `Branch: renamed …`
+  entry, or the reflog is empty. A commit, merge, reset, or pull disqualifies it.
+* `HEAD` is already on `origin/main` (`git merge-base --is-ancestor HEAD refs/remotes/origin/main`),
+  so the branch was cut from `main` and not from some other ref.
 
-When all three hold, the bootstrap fetches `origin/main` without tags. If the fetched commit is
+The reflog check is what makes the ancestry check safe. Ancestry alone cannot tell a fresh branch
+from one whose commit reached `main` and was then reverted there. Every check is local and runs
+against the last-known `origin/main` before any fetch, so a branch that has work never pays for a
+network call. `main` only moves forward, so the ancestry answer also holds for the fetched commit.
+
+When all four hold, the bootstrap fetches `origin/main` without tags. If the fetched commit is
 already `HEAD`, it stops. If not, it runs `git merge --ff-only <fetched commit>` and verifies that
 `HEAD` landed on that commit. The `--ff-only` merge also enforces the ancestry rule against the
 fetched commit: it refuses instead of creating a merge.
 
-When any check fails, `HEAD` stays where it is. A session started in a worktree that has real work,
-or a new session opened in an old worktree, is never moved. The one kind of branch that is moved
-without being fresh is one that sits on an old `main` commit with nothing on it. To keep a worktree
-on an old commit, detach it (`git switch --detach <sha>`).
+When any check fails, `HEAD` stays where it is. A worktree that has real work is never moved, and
+neither is an old worktree whose branch has moved even once. That includes one the bootstrap already
+refreshed, so only a worktree's first session is brought up to date. The one kind of branch that is
+moved without being fresh is one created directly at an old `main` commit and never touched since.
+To keep a worktree there, move the branch once (`git reset --keep <sha>` writes a reflog entry), or
+detach it at that commit (`git switch --detach <sha>`). Detaching does not protect a worktree
+detached at local `main`; see the Codex shape above.
 
 The hook matchers exclude `resume`, so a resumed session never reaches the refresh.
 
 ### Rival-agent worktrees
 
 The `run-rival-agent` skill makes its disposable review worktrees with
-`git worktree add --detach <dir> <head>` (`tools/rival-agent/worktree.mjs`), which is neither
-refresh shape. The rival's own session also runs no project hooks. The Codex rival starts with the
-`hooks` feature disabled (`ISOLATION_FEATURES` in `launch-codex.mjs`). The Claude rival starts with
-`--restricted`, which ignores project settings. The bootstrap never runs in a rival worktree, and it
-would not move one if it did.
+`git worktree add --detach <dir> <head>` (`tools/rival-agent/worktree.mjs`). What protects them is
+that the rival's session runs no project hooks, so the bootstrap never runs there. The Codex rival
+starts with the `hooks` feature disabled (`ISOLATION_FEATURES` in `launch-codex.mjs`). The Claude
+rival starts with `--restricted`, which ignores project settings. Being detached is not enough on
+its own. A rival worktree pinned to a head that equals local `main` matches the Codex shape, and the
+bootstrap would move it if it ran there. Keep the rival launchers' hook isolation in place for that
+reason.
 
 ### Failure reporting
 

@@ -266,6 +266,7 @@ const UNWORKED_BRANCH_CHECKS = [
   'git status --porcelain --untracked-files=normal',
   `git for-each-ref --format=%(upstream) refs/heads/${BRANCH}`,
   `git rev-parse --verify --quiet refs/remotes/origin/${BRANCH}`,
+  `git reflog show --format=%gs refs/heads/${BRANCH}`,
   'git merge-base --is-ancestor HEAD refs/remotes/origin/main',
 ];
 const FAST_FORWARD = [
@@ -289,6 +290,9 @@ function unworkedBranchScript() {
     commandKey('git', ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${BRANCH}`]),
     [failure('')]
   );
+  script.set(commandKey('git', ['reflog', 'show', '--format=%gs', `refs/heads/${BRANCH}`]), [
+    success('branch: Created from origin/main'),
+  ]);
   script.set(
     commandKey('git', ['merge-base', '--is-ancestor', 'HEAD', 'refs/remotes/origin/main']),
     [success()]
@@ -343,10 +347,16 @@ describe('worktree bootstrap on a named branch', () => {
       checksRun: 7,
     },
     {
+      name: 'a ref that moved after creation',
+      command: ['git', 'reflog', 'show', '--format=%gs', `refs/heads/${BRANCH}`],
+      result: success('commit: real work\nbranch: Created from origin/main'),
+      checksRun: 8,
+    },
+    {
       name: 'commits of its own',
       command: ['git', 'merge-base', '--is-ancestor', 'HEAD', 'refs/remotes/origin/main'],
       result: { status: 1, stdout: '', stderr: '' },
-      checksRun: 8,
+      checksRun: 9,
     },
   ])(
     'provisions without fetching or moving a branch with $name',
@@ -520,6 +530,27 @@ describe('worktree bootstrap against a real repository', () => {
 
     expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
     expect(repo.head()).toBe(ownCommit);
+  });
+
+  // Ancestry alone cannot tell a fresh branch from one whose commit reached main and was
+  // reverted there: HEAD is an ancestor of origin/main either way.
+  it('leaves a branch whose commit was merged to main and reverted in place', () => {
+    const repo = createStaleWorktree();
+    const ownCommit = repo.commit('work.txt', 'work\n', 'real work', { cwd: repo.worktree });
+    repo.sh(['merge', '-q', '--ff-only', ownCommit]);
+    repo.sh(['revert', '--no-edit', 'HEAD']);
+    repo.sh(['push', '-q', '--force', 'origin', 'main']);
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(ownCommit);
+  });
+
+  it('fast-forwards a fresh branch that was renamed after creation', () => {
+    const repo = createStaleWorktree();
+    repo.sh(['branch', '-m', BRANCH, 'claude/renamed'], { cwd: repo.worktree });
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.freshMain);
   });
 
   it('leaves a branch with an untracked file in place', () => {

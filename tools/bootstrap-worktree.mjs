@@ -10,6 +10,9 @@ const IS_ANCESTOR_EXIT = 0;
 const NOT_ANCESTOR_EXIT = 1;
 const REF_EXISTS_EXIT = 0;
 const REF_MISSING_EXIT = 1;
+// Git writes these reflog subjects untranslated when it creates or renames a branch; any other
+// entry — a commit, merge, reset, or pull — means the ref has moved since it was cut.
+const CREATION_REFLOG_PREFIXES = ['branch: Created from ', 'Branch: renamed '];
 
 export const RUNNERS = ['claude', 'codex'];
 
@@ -162,6 +165,20 @@ function isPublished(runCommand, repoRoot, branch) {
   throw new Error(`Could not look up origin/${branch}: ${failureDetail(remoteBranch)}`);
 }
 
+function hasNeverMoved(runCommand, repoRoot, branch) {
+  const reflog = requireCommand(
+    runCommand,
+    'git',
+    ['reflog', 'show', '--format=%gs', `refs/heads/${branch}`],
+    repoRoot,
+    'Could not read the branch reflog'
+  );
+  return reflog
+    .split('\n')
+    .filter(Boolean)
+    .every((entry) => CREATION_REFLOG_PREFIXES.some((prefix) => entry.startsWith(prefix)));
+}
+
 function isAncestorOfRemoteMain(runCommand, repoRoot) {
   const result = runCommand(
     'git',
@@ -177,10 +194,12 @@ function isAncestorOfRemoteMain(runCommand, repoRoot) {
  * A Claude Code worktree arrives on its own branch cut from `origin/main` as the shared repository
  * last fetched it, which can already be behind the remote. The branch may move only while it
  * provably carries no work, so a resumed session or a worktree with real work stays where it is:
- * nothing uncommitted (untracked files included), never published, and no commit of its own —
- * every commit reachable from HEAD is already on `origin/main`. Checked against the last-known
- * `origin/main` so a branch with work never pays for a fetch; `main` only moves forward, so the
- * answer holds for the fetched commit too, and the `--ff-only` merge refuses if it ever does not.
+ * nothing uncommitted (untracked files included), never published, a ref that has not moved since
+ * it was created, and HEAD already on `origin/main`. Ancestry alone is not enough — a commit that
+ * reached `main` and was reverted there still passes it — so the reflog supplies the provenance.
+ * Every check is local and runs against the last-known `origin/main`, so a branch with work never
+ * pays for a fetch; `main` only moves forward, and the `--ff-only` merge refuses if it ever does
+ * not.
  */
 function isUnworkedBranch(runCommand, repoRoot, branch) {
   const changes = requireCommand(
@@ -192,6 +211,7 @@ function isUnworkedBranch(runCommand, repoRoot, branch) {
   );
   if (changes) return false;
   if (isPublished(runCommand, repoRoot, branch)) return false;
+  if (!hasNeverMoved(runCommand, repoRoot, branch)) return false;
   return isAncestorOfRemoteMain(runCommand, repoRoot);
 }
 
