@@ -209,7 +209,7 @@ Read in this order:
    wall is dominated by the scenario's pacing sleeps). Its **Compositor commit** column totals the
    `Commit` events in the phase — the raster/damage push of the high-DPR canvas (the ADR-0015 cost).
    A phase whose long tasks are commit-dominated is paying for pixel area (full-canvas damage, e.g.
-   `repaintAll`), not JS.
+   `repaintTiledRenderer`), not JS.
 5. **Long tasks attributed** — each top >50 ms task tagged with its phase and its largest nested
    trace events, so the jank names itself: `Commit` = compositor raster;
    `EventDispatch (pointerup)` = the stroke-end pipeline (check `engine.commit`); `MajorGC` =
