@@ -355,7 +355,7 @@ export const WEB_SRC_DOMAIN_RULES = [
   [D.design, /^lib\/(design|icons)\//],
   [
     D.design,
-    /^lib\/components\/(Icon|SectionIcon|SplotchyIcon|InkOrMagicIcon|iconRegistry|iconTypes|deferredIcons)$/,
+    /^lib\/components\/(Icon|SectionIcon|SplotchyIcon|InkOrMagicIcon|iconRegistry|iconTypes|icon-names|icon-orphans|deferredIcons)$/,
   ],
   [D.design, /^routes\/design\//],
   [D.design, /^tokens\.css$/],
