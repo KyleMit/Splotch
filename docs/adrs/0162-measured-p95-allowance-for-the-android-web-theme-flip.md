@@ -197,20 +197,34 @@ reads an actual-clock max of 33.6 ms with one hidden overrun. The landscape-dark
 A/B. It is attributed by its code path, which is the same toggle and the same `applyTheme`, and by
 its before-and-after canonical readings above.
 
+The attribution rests on a paired A/B capture, not a Chrome trace. The A/B is the causal test: it
+held the browser fixed and removed one app component. A trace would show where the view transition
+spent its time, which is the mechanism of code that no longer ships. It would not change which side
+owned the beat. No capture records the Chrome version, so "the same browser" means the same phone
+and install, interleaved within one session.
+
 **How each reopen condition reads on this evidence.**
 
 * **First (an avoidable component of the restyle):** not met. The view transition was added on top
   of the flip after the basis, and it is not part of the token restyle. Removing it does not shrink
   `UpdateLayoutTree`.
-* **Second (a browser update):** not taken as removal. Read literally, the landscape-dark control's
-  P95 of 16.9 ms is under the base gate. But ten basis captures on the earlier browser read the same
-  16.7–17.1 ms, and the callback clock shows the second beat still recurring. This condition catches
-  a browser that changed the flip's cost, and the A/B shows that this one did not.
-* **Third (a product change to the transition):** not triggered. PR #2359 still swaps `data-theme`
-  on the whole document. It removed only the view transition that came after the basis, which
-  returns the flip to the shape the basis measured, plus a card-sized opacity layer. The veil
-  captures read inside the basis range (P95 16.7–16.9 ms, max at most 33.5 ms), so the entry is not
-  re-measured.
+* **Second (a browser update) and third (a product change to the transition):** read literally, both
+  point at the entry on this evidence, and this record does not apply either one.
+  * The second condition says a canonical landscape control after a browser update that reads under
+    the base gate removes the entry. The landscape-dark control at 9993b684 reads P95 16.9 ms.
+  * The third condition asks for re-measurement after a product change alters the transition. PR
+    #2359 replaced the view transition with a veil. The four veil captures read P95 16.7–16.9 ms and
+    max at most 33.5 ms, and sizing from those alone would remove the entry.
+  * Against acting on either: ten of the thirteen basis captures, on the earlier browser and without
+    a view transition, read the same one-beat P95. This record's own reading rule says that is the
+    optimistic reading of a frame that did not fit. ADR-0163's callback clock shows the second beat
+    still recurring at 9993b684. And PR #2359 still swaps `data-theme` on the whole document, which
+    is the restyle the entry measures. On that evidence the A/B shows that neither the browser nor
+    the veil changed the flip's cost, which is what both conditions exist to catch.
+  * The conditions as written do not require that comparison. Whether to remove the entry on their
+    literal reading, or to amend them to require it, is the maintainer's ruling. It was left open
+    here rather than decided by the unattended run that wrote this record. Until that ruling the
+    entry stands at its basis value.
 * **Fourth (a reading past the allowance):** resolved by a product fix. The reading belonged to the
   view-transition build, and the cells are green at 9993b684 under the unchanged allowance.
 

@@ -1872,6 +1872,12 @@ describe('the physical Android web allowance ledger', () => {
     '2026-09-26-issue-2225-android-device-web-actions',
   ]);
   const enableLabel = `enable ${compactSettingsActionLabel('Night Mode')}`;
+  // Three vsync periods at the shortest interval these captures stamp (16.6 ms),
+  // so a two-beat 33.x ms reading can never satisfy it.
+  const THREE_BEAT_FLOOR_MS = 3 * 16.6;
+  // Scored repeats of the view-transition arm whose max crossed the gate, as
+  // PR 2359's A/B table and ADR-0162's reopen record report them.
+  const VIEW_TRANSITION_OVER_GATE_REPEATS = { [enableLabel]: 6, [label]: 2 };
 
   function committedCellReadings(cellLabel = label) {
     const evidenceRoot = join(ROOT, 'perf-profiles', 'evidence');
@@ -1963,9 +1969,17 @@ describe('the physical Android web allowance ledger', () => {
         (reading) => reading.campaign === ISSUE_2225_VIEW_TRANSITION_ARM
       );
       expect(viewTransition, cellLabel).toHaveLength(2);
+      const overGateRepeats = viewTransition.reduce(
+        (sum, reading) => sum + reading.frames.maxBreachSamples,
+        0
+      );
+      expect(overGateRepeats, cellLabel).toBe(VIEW_TRANSITION_OVER_GATE_REPEATS[cellLabel]);
       const threeBeat = viewTransition.filter((reading) => reading.frames.max > ms);
       expect(threeBeat.length, cellLabel).toBeGreaterThanOrEqual(1);
       for (const reading of threeBeat) {
+        expect(reading.frames.max, `${cellLabel} ${reading.file}`).toBeGreaterThanOrEqual(
+          THREE_BEAT_FLOOR_MS
+        );
         expect(scored(reading).passed, `${cellLabel} ${reading.file}`).toBe(false);
       }
 
