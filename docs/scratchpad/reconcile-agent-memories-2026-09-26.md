@@ -59,10 +59,12 @@ completed epic details and rival experiments remain in their GitHub discussions,
 and skill notes. The live #2210 epic remains open, so later runs must re-read it.
 
 The checker cannot gate CI because the memory directory is outside the repository and absent on
-other machines. This host has no comparable Codex project memory directory under `~/.codex`; its
+other machines. This host has no comparable Codex project memory directory under `~/.codex`. A
+read-only inspection of `~/.codex/memories_1.sqlite` found zero `stage1_outputs` rows, zero `jobs`
+rows, and zero consolidation progress, so there were no Codex memories to fold into the repo. Its
 persisted threads and goals are different from Claude Code's indexed memory files. The skill should
 therefore be a Claude-only direct provider package for the observed store. Add a Codex package only
-after a concrete Codex memory format and location can be tested.
+after populated Codex memory data and its access rules can be tested.
 
 ## Follow-up: move the remaining lessons into the repo
 

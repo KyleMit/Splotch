@@ -6,10 +6,12 @@ judgment log are in `docs/scratchpad/reconcile-agent-memories-2026-09-26.md`.
 ## Provider decision
 
 The observed Splotch memory store is Claude Code's `MEMORY.md` plus one Markdown file per entry.
-This host's `~/.codex` has no analogous project memory directory to reconcile. Codex persists
-threads and other state, but no tested indexed memory format was found here. A shared skill would
-promise Codex behavior we cannot verify; a paired managed fork would manufacture a second workflow
-with no input. Register a Claude-only direct provider package under
+This host's `~/.codex` has no analogous project memory directory to reconcile. It does have a
+`memories_1.sqlite` database, but a read-only inspection found zero rows in `stage1_outputs` and
+`jobs`, and its consolidation progress was zero. There are no Codex memory entries to promote from
+this host. Codex also persists threads and goals, which are separate from indexed project memories.
+A shared skill would promise behavior we cannot yet verify; a paired managed fork would manufacture
+a second workflow with no input. Register a Claude-only direct provider package under
 `tools/ruler/lib/direct-provider-skills.mjs`, as ADR-0058 permits. This package and note are edited
 directly; `npm run ruler:apply` preserves them. If Codex gains a concrete memory store, inspect its
 format and access rules before adding a provider package or moving to a managed fork.
