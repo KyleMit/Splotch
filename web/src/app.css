@@ -198,18 +198,15 @@ body {
   }
 }
 
-/* A theme change crossfades one snapshot of the whole screen (applyTheme in
-   lib/theme.ts). Opacity only, and long enough to read as the room dimming
-   rather than a cut. The ::view-transition tree inherits from <html>, which is
-   where the duration is read. */
-:root {
-  --theme-crossfade-duration: 320ms;
-}
-
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: var(--theme-crossfade-duration);
-  animation-timing-function: ease;
+/* The fading copy of a modal card's previous surface that applyTheme in
+   lib/theme.ts lays over the card when the theme changes. Last in the card and
+   positioned, so it paints over everything the card holds; it never takes a
+   tap meant for the controls under it. */
+.theme-veil {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 /* Shared dialog open animation — anchored at a per-dialog --origin-x/y so

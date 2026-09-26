@@ -87,24 +87,78 @@ export function updateThemeColorMeta(resolved: ResolvedTheme) {
   setThemeColorMeta(THEME_COLORS[resolved]);
 }
 
-// A theme change repaints every surface at once — ~45 tokens per theme, half of
-// them behind a prefers-color-scheme block no transition can reach — so it
-// crossfades one snapshot of the whole screen instead of transitioning
-// properties (ADR-0171). A restamp that changes nothing (hydration, the boot
-// fallback) never starts one, so first paint stays instant. Engines without
-// View Transitions, and reduced motion, swap at once.
+// A theme change repaints every surface at once, so an open modal card —
+// where the parent is looking when Appearance or Night Mode flips it — fades a
+// veil of its previous surface color off the new theme instead of cutting.
+// Opacity on one small layer is compositor work only. A whole-screen view
+// transition read the same but cost frames on both release-gate engines: its
+// snapshot capture held Android Chrome's first frame to 50 ms and its teardown
+// put a 31–37 ms frame at the end of the fade on the iPad (ADR-0171, #2225).
+// The room behind the card stays under its scrim and swaps at once. A restamp
+// that changes nothing (hydration, the boot fallback) veils nothing, so first
+// paint stays instant, and reduced motion swaps at once.
+export const THEME_VEIL_CLASS = 'theme-veil';
+const THEME_VEIL_HOSTS = '.modal-shell[open]';
+// ADR-0171's crossfade length: long enough to read as the room dimming rather
+// than a cut.
+const THEME_VEIL_FADE_MS = 320;
+
 export function applyTheme(preference: ThemePreference) {
   if (typeof document === 'undefined') return;
   const el = document.documentElement;
   const wanted = preference === 'system' ? null : preference;
-  if (el.getAttribute('data-theme') === wanted) return;
-  const swap = () => {
-    if (wanted === null) el.removeAttribute('data-theme');
-    else el.setAttribute('data-theme', wanted);
-  };
-  if (prefersReducedMotion() || typeof document.startViewTransition !== 'function') {
-    swap();
-    return;
-  }
-  document.startViewTransition(swap);
+  const current = el.getAttribute('data-theme');
+  if (current === wanted) return;
+  const hosts =
+    prefersReducedMotion() || !appearanceChanges(current, wanted)
+      ? []
+      : Array.from(document.querySelectorAll<HTMLElement>(THEME_VEIL_HOSTS));
+  const shownSurfaces = hosts.map(shownSurface);
+  if (wanted === null) el.removeAttribute('data-theme');
+  else el.setAttribute('data-theme', wanted);
+  hosts.forEach((host, i) => fadeVeil(host, shownSurfaces[i]));
+}
+
+// Light to System on a light OS restamps the attribute without changing a
+// pixel, so it veils nothing.
+function appearanceChanges(current: string | null, wanted: ResolvedTheme | null): boolean {
+  if (current !== null && wanted !== null) return true;
+  const systemDark = matchMedia(DARK_SCHEME_QUERY).matches;
+  const resolve = (stamp: string | null) =>
+    stamp === 'light' || stamp === 'dark' ? stamp : resolveTheme('system', systemDark);
+  return resolve(current) !== resolve(wanted);
+}
+
+// What the card shows now: its surface or, mid-fade, that surface seen through
+// the veil still fading off it. A reversal then restarts from where the card
+// stands rather than from the veil's own color.
+function shownSurface(host: HTMLElement): string {
+  const surface = getComputedStyle(host).backgroundColor;
+  const veil = host.querySelector<HTMLElement>(`:scope > .${THEME_VEIL_CLASS}`);
+  if (!veil) return surface;
+  const veilStyle = getComputedStyle(veil);
+  return blendOver(veilStyle.backgroundColor, surface, Number(veilStyle.opacity)) ?? surface;
+}
+
+const RGB_CHANNELS = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/;
+
+function blendOver(top: string, bottom: string, alpha: number): string | null {
+  const over = RGB_CHANNELS.exec(top);
+  const under = RGB_CHANNELS.exec(bottom);
+  if (!over || !under || !Number.isFinite(alpha)) return null;
+  const channel = (i: number) =>
+    Math.round(Number(over[i]) * alpha + Number(under[i]) * (1 - alpha));
+  return `rgb(${channel(1)}, ${channel(2)}, ${channel(3)})`;
+}
+
+function fadeVeil(host: HTMLElement, color: string) {
+  for (const stale of host.querySelectorAll(`:scope > .${THEME_VEIL_CLASS}`)) stale.remove();
+  const veil = document.createElement('div');
+  veil.className = THEME_VEIL_CLASS;
+  veil.style.backgroundColor = color;
+  host.append(veil);
+  const retire = () => veil.remove();
+  veil
+    .animate({ opacity: [1, 0] }, { duration: THEME_VEIL_FADE_MS, easing: 'ease' })
+    .finished.then(retire, retire);
 }

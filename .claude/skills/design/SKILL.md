@@ -147,8 +147,10 @@ rather than taste.
 4. **Interruptible by construction.** A cue that can reverse mid-flight restarts or reverses from
    the current state (the swatch press rewinds with `currentTime = 0`; a dialog reopened mid-exit
    drops its closing class and restarts the fly-in) rather than cutting to an end state.
-5. **Whole-screen state changes swap layers, not properties.** A theme change crossfades one
-   snapshot with `document.startViewTransition`; engines without it swap at once (ADR-0171).
+5. **Whole-screen state changes swap layers, not properties.** A theme change swaps every token at
+   once and fades a veil of the open card's previous surface off the new one — opacity on one small
+   layer, never a whole-screen snapshot, whose capture and teardown each cost a frame on the
+   release-gate devices (ADR-0171).
 6. **Frame budget on a 60 Hz beat.** WebKit hands web content 60 Hz even on a 120 Hz iPad: no cue
    under 120 ms unless it follows the finger, keyframe stops at least two frames (33 ms) apart, and
    a stagger capped so the last item lands within 1.3× the single-item duration.
