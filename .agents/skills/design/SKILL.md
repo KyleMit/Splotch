@@ -168,9 +168,11 @@ rather than taste.
 
 **The undo ghost's cost is accepted.** The ghost is built inside the undo call, so it counts toward
 the gated `engine.undo` time: on a Galaxy S21 FE in Android Chrome, about 2 ms median and 4 ms P95
-per pen undo (`engine.undoInkMotion`, Reduce Motion off against on; the restore is unchanged). Do
-not trim it or defer it to the next frame: its tile read must precede the restore, and the rest
-would only move into the frame the next-frame gate measures. Evidence:
+per pen undo (`engine.undoInkMotion`, Reduce Motion off against on; the restore barely moved, and
+every undo gate passed). Keep it synchronous rather than trimming it or deferring it to the next
+frame. Deferral would buy back time no gate needs, and only part of it: a crayon or magic ghost
+reads the live tiles before the restore overwrites them, and whatever moves lands in the frame after
+the undo, where the A/B could not settle its effect. Evidence:
 [#2238's device A/B](https://github.com/KyleMit/Splotch/issues/2238#issuecomment-5828881795); the
 rationale sits on `undo` in `web/src/lib/drawing/inkMotion.ts`.
 

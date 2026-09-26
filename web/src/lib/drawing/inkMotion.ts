@@ -182,11 +182,15 @@ export function createInkMotion(
   // accepted price of the cue rather than an overrun to trim. On a Galaxy S21 FE
   // in Android Chrome a pen undo spends about 2 ms median and 4 ms P95 here,
   // measured as engine.undoInkMotion with Reduce Motion off against on, while
-  // the tile restore stays under 2 ms P95 (issue #2238, issuecomment-5828881795).
-  // Deferring the build to the next frame was rejected: the tile read must stay
-  // ahead of undoTiledCommand, so only the DOM insert and the layout reads in
-  // driftTowards could move, and they would land in the frame the next-frame
-  // gate measures instead.
+  // the tile restore's pooled P95 barely moved, 1.7 ms against 2.0 ms (issue
+  // #2238, issuecomment-5828881795). Every undo gate passed with the ghost on,
+  // so deferring the build to the next frame was rejected as buying back time
+  // no gate needs. The saving would be partial besides: a crayon or magic ghost
+  // reads the live tiles, which must happen before undoTiledCommand overwrites
+  // them, so only its DOM insert and the layout reads in driftTowards could
+  // move. A pen ghost's replay could move whole, but deferred work lands in the
+  // frame after the undo, and the A/B could not settle whether the ghost delays
+  // that frame.
   function undo(
     canvas: HTMLCanvasElement,
     command: StrokeGroupCommand | undefined,
