@@ -32,11 +32,14 @@ async function openPickerAt(page: Page, width: number, height: number): Promise<
   const customSwatch = phoneLandscape
     ? page.locator('.color-menu').getByRole('button', { name: 'Custom Color' })
     : swatch(page, CUSTOM_SWATCH_COLOR);
+  const picker = page.locator('#color-picker');
   await expect(async () => {
-    if (phoneLandscape && !(await customSwatch.isVisible()))
-      await page.locator('#colorButton').click();
-    await customSwatch.click({ timeout: 1000 });
-    await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });
+    if (!(await picker.isVisible())) {
+      if (phoneLandscape && !(await customSwatch.isVisible()))
+        await page.locator('#colorButton').click();
+      await customSwatch.click({ timeout: 1000 });
+    }
+    await expect(picker).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 10_000 });
   // Let the fly-in land before measuring geometry by awaiting the dialog's
   // own animations (the modal-fly-in dialogFlyFromOrigin — hover transitions
