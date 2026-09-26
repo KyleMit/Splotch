@@ -107,6 +107,7 @@ meta).
 | Skill                      | What it reconciles                                                                                                                       |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `reconcile-adrs`           | Existing ADRs against the current code and recent decisions — amends drift                                                               |
+| `reconcile-agent-memories` | Claude Code project memory and its index against the current repo and GitHub state — fixes or retires drift                              |
 | `reconcile-code-map`       | `docs/CODE-MAP.md` against the current tree — regenerates tables, rewrites prose                                                         |
 | `reconcile-docs-with-code` | Living docs, skills, and rules against the code — stale identifiers, prose about renamed or deleted things, and doc-reference exemptions |
 | `reconcile-with-main`      | A long-running branch against current `main`, hunting the *semantic* conflicts                                                           |
@@ -134,6 +135,11 @@ shard an exhaustive whole-repo pass, so refresh it first when it is weeks behind
 CI on a living doc naming a repo path or npm script that does not resolve, so the PR that renames a
 file fixes the docs naming it. The skill sorts the advisory identifier list that check prints,
 follows renames and deletions into prose no path check can see, and re-justifies the exemptions.
+
+`reconcile-agent-memories` covers the Claude Code project memory directory outside the repo. Its
+checker runs on demand because CI has no access to personal memories. The skill is a Claude-only
+direct provider package: this host has no tested Codex indexed-memory store to give a second
+implementation. See its provider note for the first hand-run and the split decision.
 
 `reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
 has been open a while: it detects overlapping line edits and nothing else. The skill surveys the
