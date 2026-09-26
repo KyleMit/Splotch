@@ -2,9 +2,13 @@ import { registerPlugin } from '@capacitor/core';
 import type { AndroidGalleryImageType } from '$lib/drawing/androidGallery';
 
 export interface PhotoLibraryPlugin {
-  // Android-only (PhotoLibraryPlugin.java): writes the image into shared Pictures/Splotch.
+  // Android-only (PhotoLibraryPlugin.java). The image crosses the bridge as base64 slices appended
+  // to an upload (androidGallery.ts says why), then saveImage writes the upload into shared
+  // Pictures/Splotch and discards it, whether the write succeeds or not.
+  beginImage(): Promise<{ uploadId: string }>;
+  appendImageData(options: { uploadId: string; data: string }): Promise<void>;
   saveImage(options: {
-    data: string;
+    uploadId: string;
     mimeType: AndroidGalleryImageType;
     displayName: string;
   }): Promise<void>;
