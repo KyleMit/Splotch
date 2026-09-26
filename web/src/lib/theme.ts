@@ -87,24 +87,46 @@ export function updateThemeColorMeta(resolved: ResolvedTheme) {
   setThemeColorMeta(THEME_COLORS[resolved]);
 }
 
-// A theme change repaints every surface at once — ~45 tokens per theme, half of
-// them behind a prefers-color-scheme block no transition can reach — so it
-// crossfades one snapshot of the whole screen instead of transitioning
-// properties (ADR-0171). A restamp that changes nothing (hydration, the boot
-// fallback) never starts one, so first paint stays instant. Engines without
-// View Transitions, and reduced motion, swap at once.
+// A theme change repaints every surface at once, so an open modal card —
+// where the parent is looking when Appearance or Night Mode flips it — fades a
+// veil of its previous surface color off the new theme instead of cutting.
+// Opacity on one small layer is compositor work only. A whole-screen view
+// transition read the same but cost frames on both release-gate engines: its
+// snapshot capture held Android Chrome's first frame to 50 ms and its teardown
+// put a 31–37 ms frame at the end of the fade on the iPad (ADR-0171, #2225).
+// The room behind the card stays under its scrim and swaps at once. A restamp
+// that changes nothing (hydration, the boot fallback) veils nothing, so first
+// paint stays instant, and reduced motion swaps at once.
+export const THEME_VEIL_CLASS = 'theme-veil';
+const THEME_VEIL_HOSTS = '.modal-shell[open]';
+// ADR-0171's crossfade length: long enough to read as the room dimming rather
+// than a cut.
+const THEME_VEIL_FADE_MS = 320;
+
 export function applyTheme(preference: ThemePreference) {
   if (typeof document === 'undefined') return;
   const el = document.documentElement;
   const wanted = preference === 'system' ? null : preference;
   if (el.getAttribute('data-theme') === wanted) return;
-  const swap = () => {
-    if (wanted === null) el.removeAttribute('data-theme');
-    else el.setAttribute('data-theme', wanted);
-  };
-  if (prefersReducedMotion() || typeof document.startViewTransition !== 'function') {
-    swap();
-    return;
-  }
-  document.startViewTransition(swap);
+  const hosts = prefersReducedMotion()
+    ? []
+    : Array.from(document.querySelectorAll<HTMLElement>(THEME_VEIL_HOSTS));
+  const previousSurfaces = hosts.map((host) => getComputedStyle(host).backgroundColor);
+  if (wanted === null) el.removeAttribute('data-theme');
+  else el.setAttribute('data-theme', wanted);
+  hosts.forEach((host, i) => fadeVeil(host, previousSurfaces[i]));
+}
+
+// A second change mid-fade replaces the veil with one in the surface the card
+// had just reached, so the fade restarts from where the card now stands.
+function fadeVeil(host: HTMLElement, color: string) {
+  for (const stale of host.querySelectorAll(`:scope > .${THEME_VEIL_CLASS}`)) stale.remove();
+  const veil = document.createElement('div');
+  veil.className = THEME_VEIL_CLASS;
+  veil.style.backgroundColor = color;
+  host.append(veil);
+  const retire = () => veil.remove();
+  veil
+    .animate({ opacity: [1, 0] }, { duration: THEME_VEIL_FADE_MS, easing: 'ease' })
+    .finished.then(retire, retire);
 }
