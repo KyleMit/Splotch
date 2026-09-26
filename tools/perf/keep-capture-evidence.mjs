@@ -3,6 +3,11 @@
 //   npm run perf:evidence:keep -- --corpus=perf-profiles/campaign \
 //     --campaign=2026-08-android --product-commit=$(git rev-parse HEAD)
 //
+// Each capture's target comes from its artifact, then its path under --corpus,
+// then the corpus root itself (--corpus=perf-profiles/<campaign>/<target-id>),
+// then --target. A capture none of those resolve is refused, never filed as
+// `unknown` (see promotionFallbackTarget and unresolvedTargetProblem).
+//
 // ADR-0138: raw captures are otherwise gitignored, so a metric correction cannot
 // be applied to any number already published — it can only be recaptured on
 // hardware, which is what left ten of eleven matrix targets on a superseded
@@ -21,7 +26,13 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { createHash } from 'node:crypto';
 import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
-import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
+import {
+  brushOf,
+  findCaptureFiles,
+  isKnownTarget,
+  rawReportOf,
+  targetOf,
+} from './rescore-captures.mjs';
 import { numberInvalidatingFailure } from './lib/input-fidelity.mjs';
 import { attributionOf } from './lib/capture-attribution.mjs';
 import { FLOOR_CONTROL_PAGE } from './split-capture/lib/probe-host-protocol.mjs';
@@ -161,6 +172,72 @@ export function failedRepresentativeProblem(selected, { allowFailed } = {}) {
   );
 }
 
+// A campaign lays a target out as <campaign>/<target-id>/<mode>/<brush>.json, so
+// promoting one target's directory leaves no target segment in the paths
+// relative to it — and every capture fell through to `unknown` (issue 2343).
+// The corpus path's innermost known-target segment is that directory's target.
+export function corpusRootTarget(corpus) {
+  return (
+    corpus
+      .split(/[\\/]/)
+      .filter((segment) => isKnownTarget(segment))
+      .at(-1) ?? null
+  );
+}
+
+// The run-wide fallback for captures whose artifact and corpus-relative path
+// name no target; --target supplies it when the corpus root is not a target
+// directory. A --target naming a DIFFERENT target than the corpus root is
+// refused rather than preferred: one of the two is wrong, and whichever won,
+// the captures would be scored against another target's gates. Returns
+// `{ fallback }` or `{ problem }` so the policy is testable without the exit.
+export function promotionFallbackTarget({ corpus, target }) {
+  const fromRoot = corpusRootTarget(corpus);
+  if (target === undefined) return { fallback: fromRoot };
+  if (!isKnownTarget(target)) {
+    return { problem: `--target=${target} is not a campaign target id (see CAMPAIGN_TARGETS).` };
+  }
+  if (fromRoot && fromRoot !== target) {
+    return {
+      problem:
+        `--target=${target} contradicts --corpus=${corpus}, which is the ${fromRoot} target ` +
+        `directory. Drop --target to file under ${fromRoot}, or point --corpus at the ` +
+        `${target} captures.`,
+    };
+  }
+  return { fallback: target };
+}
+
+// The artifact's declared target and in-corpus path segments win over the
+// fallback: they are per capture, the fallback is per run. A hand capture has
+// no campaign target — its runtime is the label that says what it calibrates,
+// matching the 2026-08-23-hand corpus naming. `null` means unresolved.
+export function promotionTargetOf(parsed, relativePath, fallback) {
+  return (
+    targetOf(parsed, relativePath, fallback) ??
+    (parsed?.handCapture === true ? (parsed.runtime ?? null) : null)
+  );
+}
+
+const UNRESOLVED_TARGET_EXAMPLES = 5;
+
+// An unresolved capture used to be filed as `unknown`, and an `unknown` target
+// is scored against the default gate rather than the one its cell is held to.
+// Returns the refusal message, or null when every capture has a target.
+export function unresolvedTargetProblem(unresolved) {
+  if (!unresolved.length) return null;
+  const shown = unresolved.slice(0, UNRESOLVED_TARGET_EXAMPLES).join(', ');
+  const more =
+    unresolved.length > UNRESOLVED_TARGET_EXAMPLES
+      ? ` and ${unresolved.length - UNRESOLVED_TARGET_EXAMPLES} more`
+      : '';
+  return (
+    `no campaign target for ${unresolved.length} capture(s): ${shown}${more}. Neither the ` +
+    'artifact, its path under --corpus, nor the corpus root names one. Pass ' +
+    '--target=<target-id>, point --corpus at the <target-id> directory, or narrow with --filter.'
+  );
+}
+
 // A campaign capture is filed by the cell it measured; a hand capture has no
 // cell, and two of them can share a runtime, brush, and even label across
 // sessions — so the name carries the basename for a human and a digest of the
@@ -207,9 +284,15 @@ export async function keepCaptureEvidence({
         'what this set measures.'
     );
   }
+  const { fallback: fallbackTarget, problem: targetProblem } = promotionFallbackTarget({
+    corpus,
+    target,
+  });
+  if (targetProblem) fail(targetProblem);
   const root = join(ROOT, corpus);
 
   const candidates = [];
+  const unresolved = [];
   for (const file of findCaptureFiles(root)) {
     // One campaign directory can hold several targets, including ones captured on
     // an earlier run against a different product. --filter keeps a promotion scoped
@@ -234,16 +317,15 @@ export async function keepCaptureEvidence({
     if (!rawReportOf(parsed) && !actionSuite) continue;
     const promoted = redactDeviceIdentifiers(parsed);
     const relativePath = relative(root, file);
+    const captureTarget = promotionTargetOf(parsed, relativePath, fallbackTarget);
+    if (!captureTarget) {
+      unresolved.push(relativePath);
+      continue;
+    }
     candidates.push({
       file,
       relativePath,
-      // `null` means "no gate applies" to the rescorer; the index wants a label.
-      // A hand capture has no campaign target — its runtime is the label that
-      // says what it calibrates, matching the 2026-08-23-hand corpus naming.
-      target:
-        targetOf(parsed, relativePath, target) ??
-        (parsed.handCapture === true ? parsed.runtime : null) ??
-        'unknown',
+      target: captureTarget,
       handCapture: parsed.handCapture === true,
       brush: actionSuite ? 'actions' : brushOf(parsed, relativePath),
       mode: modeOf(parsed),
@@ -267,6 +349,8 @@ export async function keepCaptureEvidence({
         : {}),
     });
   }
+  const noTarget = unresolvedTargetProblem(unresolved);
+  if (noTarget) fail(noTarget);
   if (!candidates.length) fail(`no drawing capture or action suite under ${corpus}`);
 
   const selected = selectEvidence(candidates, { keepAll });
