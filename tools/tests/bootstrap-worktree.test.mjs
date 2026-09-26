@@ -1,10 +1,17 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { bootstrapWorktree, readHookCwd, reportFailure } from '../bootstrap-worktree.mjs';
+import {
+  bootstrapWorktree,
+  readHookCwd,
+  reportFailure,
+  reportOutcome,
+  reportWarning,
+} from '../bootstrap-worktree.mjs';
+import { createTempRepo } from '../git-housekeeping/tests/fixtures/temp-repo.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const scriptPath = join(repoRoot, 'tools', 'bootstrap-worktree.mjs');
@@ -174,25 +181,6 @@ describe('worktree bootstrap', () => {
     ]);
   });
 
-  // The shape every Claude Code worktree arrives in: its own branch, already cut from the remote
-  // default. Nothing about HEAD may move, but the checkout still has no node_modules.
-  it('provisions an attached linked worktree without touching HEAD', () => {
-    const script = defaultScript();
-    script.set(commandKey('git', ['rev-parse', '--abbrev-ref', 'HEAD']), [
-      success('claude/worktree-example'),
-    ]);
-    const runner = createRunner(script);
-
-    expect(bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
-    expect(commandNames(runner.calls)).toEqual([
-      'git rev-parse --path-format=absolute --git-dir',
-      'git rev-parse --path-format=absolute --git-common-dir',
-      'git rev-parse --show-toplevel',
-      'git rev-parse --abbrev-ref HEAD',
-      ...PROVISIONING,
-    ]);
-  });
-
   it('stops before fetching when tracked changes are present', () => {
     const script = defaultScript();
     script.set(commandKey('git', ['status', '--porcelain', '--untracked-files=no']), [
@@ -269,6 +257,378 @@ describe('worktree bootstrap', () => {
   });
 });
 
+const BRANCH = 'claude/worktree-example';
+const UNWORKED_BRANCH_CHECKS = [
+  'git rev-parse --path-format=absolute --git-dir',
+  'git rev-parse --path-format=absolute --git-common-dir',
+  'git rev-parse --show-toplevel',
+  'git rev-parse --abbrev-ref HEAD',
+  'git status --porcelain --untracked-files=normal',
+  `git for-each-ref --format=%(upstream) refs/heads/${BRANCH}`,
+  `git rev-parse --verify --quiet refs/remotes/origin/${BRANCH}`,
+  `git reflog show --format=entry:%gs refs/heads/${BRANCH}`,
+  'git merge-base --is-ancestor HEAD refs/remotes/origin/main',
+];
+const FAST_FORWARD = [
+  'git rev-parse HEAD',
+  'git fetch --no-tags origin main',
+  'git rev-parse FETCH_HEAD',
+  `git merge --ff-only ${FETCHED_HEAD}`,
+  'git rev-parse HEAD',
+];
+
+// The shape every Claude Code worktree arrives in: its own branch, cut from origin/main as the
+// shared repository last fetched it, with nothing committed, changed, or pushed.
+function unworkedBranchScript() {
+  const script = defaultScript();
+  script.set(commandKey('git', ['rev-parse', '--abbrev-ref', 'HEAD']), [success(BRANCH)]);
+  script.set(commandKey('git', ['status', '--porcelain', '--untracked-files=normal']), [success()]);
+  script.set(commandKey('git', ['for-each-ref', '--format=%(upstream)', `refs/heads/${BRANCH}`]), [
+    success(),
+  ]);
+  script.set(
+    commandKey('git', ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${BRANCH}`]),
+    [failure('')]
+  );
+  script.set(commandKey('git', ['reflog', 'show', '--format=entry:%gs', `refs/heads/${BRANCH}`]), [
+    success('entry:branch: Created from origin/main'),
+  ]);
+  script.set(
+    commandKey('git', ['merge-base', '--is-ancestor', 'HEAD', 'refs/remotes/origin/main']),
+    [success()]
+  );
+  script.set(commandKey('git', ['merge', '--ff-only', FETCHED_HEAD]), [success()]);
+  return script;
+}
+
+function runBootstrap(script) {
+  const runner = createRunner(script);
+  const warnings = [];
+  const failed = bootstrapWorktree({
+    cwd: SESSION_CWD,
+    runCommand: runner.runCommand,
+    onWarning: (warning) => warnings.push(warning),
+  });
+  return { failed, warnings, commands: commandNames(runner.calls) };
+}
+
+describe('worktree bootstrap on a named branch', () => {
+  it('fast-forwards an unworked branch to the fetched origin/main before installing', () => {
+    const { failed, warnings, commands } = runBootstrap(unworkedBranchScript());
+
+    expect(failed).toBeNull();
+    expect(warnings).toEqual([]);
+    expect(commands).toEqual([...UNWORKED_BRANCH_CHECKS, ...FAST_FORWARD, ...PROVISIONING]);
+  });
+
+  it.each([
+    {
+      name: 'a tracked change',
+      command: ['git', 'status', '--porcelain', '--untracked-files=normal'],
+      result: success(' M tracked.txt'),
+      checksRun: 5,
+    },
+    {
+      name: 'an untracked file',
+      command: ['git', 'status', '--porcelain', '--untracked-files=normal'],
+      result: success('?? notes.md'),
+      checksRun: 5,
+    },
+    {
+      name: 'an upstream',
+      command: ['git', 'for-each-ref', '--format=%(upstream)', `refs/heads/${BRANCH}`],
+      result: success(`refs/remotes/origin/${BRANCH}`),
+      checksRun: 6,
+    },
+    {
+      name: 'a pushed remote branch',
+      command: ['git', 'rev-parse', '--verify', '--quiet', `refs/remotes/origin/${BRANCH}`],
+      result: success(INITIAL_HEAD),
+      checksRun: 7,
+    },
+    {
+      name: 'a ref that moved after creation',
+      command: ['git', 'reflog', 'show', '--format=entry:%gs', `refs/heads/${BRANCH}`],
+      result: success('entry:commit: real work\nentry:branch: Created from origin/main'),
+      checksRun: 8,
+    },
+    {
+      name: 'commits of its own',
+      command: ['git', 'merge-base', '--is-ancestor', 'HEAD', 'refs/remotes/origin/main'],
+      result: { status: 1, stdout: '', stderr: '' },
+      checksRun: 9,
+    },
+  ])(
+    'provisions without fetching or moving a branch with $name',
+    ({ command, result, checksRun }) => {
+      const script = unworkedBranchScript();
+      script.set(commandKey(command[0], command.slice(1)), [result]);
+
+      const { failed, warnings, commands } = runBootstrap(script);
+
+      expect(failed).toBeNull();
+      expect(warnings).toEqual([]);
+      expect(commands).toEqual([...UNWORKED_BRANCH_CHECKS.slice(0, checksRun), ...PROVISIONING]);
+    }
+  );
+
+  it('leaves a branch already at the fetched origin/main where it is', () => {
+    const script = unworkedBranchScript();
+    script.set(commandKey('git', ['rev-parse', 'FETCH_HEAD']), [success(INITIAL_HEAD)]);
+
+    const { failed, warnings, commands } = runBootstrap(script);
+
+    expect(failed).toBeNull();
+    expect(warnings).toEqual([]);
+    expect(commands).toEqual([
+      ...UNWORKED_BRANCH_CHECKS,
+      ...FAST_FORWARD.slice(0, 3),
+      ...PROVISIONING,
+    ]);
+  });
+
+  it.each([
+    {
+      name: 'fetch',
+      command: ['git', 'fetch', '--no-tags', 'origin', 'main'],
+      result: failure('simulated failure'),
+      message: 'Could not fetch origin/main',
+      commandsRun: 2,
+    },
+    {
+      name: 'fast-forward',
+      command: ['git', 'merge', '--ff-only', FETCHED_HEAD],
+      result: failure('simulated failure'),
+      message: 'Could not fast-forward the branch',
+      commandsRun: 4,
+    },
+    {
+      name: 'remote branch lookup',
+      command: ['git', 'rev-parse', '--verify', '--quiet', `refs/remotes/origin/${BRANCH}`],
+      result: { status: 128, stdout: '', stderr: 'simulated failure' },
+      message: 'Could not look up origin/',
+      checksRun: 7,
+      commandsRun: 0,
+    },
+    {
+      name: 'ancestry check',
+      command: ['git', 'merge-base', '--is-ancestor', 'HEAD', 'refs/remotes/origin/main'],
+      result: { status: 128, stdout: '', stderr: 'simulated failure' },
+      message: 'Could not compare HEAD',
+      commandsRun: 0,
+    },
+  ])(
+    'warns and still provisions when the $name fails',
+    ({ command, result, message, checksRun = UNWORKED_BRANCH_CHECKS.length, commandsRun }) => {
+      const script = unworkedBranchScript();
+      script.set(commandKey(command[0], command.slice(1)), [result]);
+
+      const { failed, warnings, commands } = runBootstrap(script);
+
+      expect(failed).toBeNull();
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain(message);
+      expect(warnings[0]).toContain('simulated failure');
+      expect(warnings[0]).toContain('git merge --ff-only origin/main');
+      expect(commands).toEqual([
+        ...UNWORKED_BRANCH_CHECKS.slice(0, checksRun),
+        ...FAST_FORWARD.slice(0, commandsRun),
+        ...PROVISIONING,
+      ]);
+    }
+  );
+
+  it('warns when HEAD does not land on the fetched commit', () => {
+    const script = unworkedBranchScript();
+    script.set(commandKey('git', ['rev-parse', 'HEAD']), [
+      success(INITIAL_HEAD),
+      success(INITIAL_HEAD),
+    ]);
+
+    const { failed, warnings, commands } = runBootstrap(script);
+
+    expect(failed).toBeNull();
+    expect(warnings).toEqual([expect.stringContaining('fast-forward verification failed')]);
+    expect(commands.slice(-4)).toEqual(PROVISIONING);
+  });
+
+  // A rival agent reviews in a worktree detached at the PR head. Only the detached-at-local-main
+  // shape is refreshed, so that worktree is provisioned and never moved.
+  it('never moves a worktree detached at a commit other than local main', () => {
+    const script = defaultScript();
+    script.set(commandKey('git', ['rev-parse', 'HEAD']), [success(INITIAL_HEAD)]);
+    script.set(commandKey('git', ['rev-parse', 'refs/heads/main']), [success(FETCHED_HEAD)]);
+
+    const { failed, warnings, commands } = runBootstrap(script);
+
+    expect(failed).toBeNull();
+    expect(warnings).toEqual([]);
+    expect(commands).not.toContain('git fetch --no-tags origin main');
+    expect(commands.slice(-4)).toEqual(PROVISIONING);
+  });
+});
+
+describe('worktree bootstrap against a real repository', () => {
+  const fixtures = [];
+  afterEach(() => {
+    for (const fixture of fixtures.splice(0)) fixture.cleanup();
+  });
+
+  // The primary checkout's origin/main is left one merge behind the remote, the state a Claude
+  // Code worktree was cut from on 2026-09-25.
+  function createStaleWorktree({ track = false, reflog = true } = {}) {
+    const fixture = createTempRepo();
+    fixtures.push(fixture);
+    const staleMain = fixture.sh(['rev-parse', 'HEAD']);
+    const elsewhere = join(fixture.root, 'elsewhere');
+    fixture.sh(['clone', '-q', fixture.origin, elsewhere], { cwd: fixture.root });
+    const freshMain = fixture.commit('merged.txt', 'merged\n', 'merged elsewhere', {
+      cwd: elsewhere,
+    });
+    fixture.sh(['push', '-q', 'origin', 'main'], { cwd: elsewhere });
+    const worktree = join(fixture.root, 'worktree');
+    fixture.sh([
+      ...(reflog ? [] : ['-c', 'core.logAllRefUpdates=false']),
+      'worktree',
+      'add',
+      '-q',
+      track ? '--track' : '--no-track',
+      '-b',
+      BRANCH,
+      worktree,
+      'origin/main',
+    ]);
+    const runCommand = (command, args, cwd) =>
+      command === 'git'
+        ? spawnSync('git', args, { cwd, encoding: 'utf8', env: fixture.env })
+        : success();
+    const bootstrap = () => {
+      const warnings = [];
+      const failed = bootstrapWorktree({
+        cwd: worktree,
+        runCommand,
+        onWarning: (warning) => warnings.push(warning),
+      });
+      return { failed, warnings };
+    };
+    const head = () => fixture.sh(['rev-parse', 'HEAD'], { cwd: worktree });
+    return { ...fixture, staleMain, freshMain, worktree, bootstrap, head };
+  }
+
+  it('fast-forwards a fresh branch without touching local main or the primary checkout', () => {
+    const repo = createStaleWorktree();
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.freshMain);
+    expect(repo.sh(['rev-parse', 'refs/heads/main'])).toBe(repo.staleMain);
+    expect(repo.sh(['status', '--porcelain'])).toBe('');
+    expect(repo.sh(['rev-parse', 'refs/remotes/origin/main'])).toBe(repo.freshMain);
+  });
+
+  it('leaves a branch with a commit of its own in place', () => {
+    const repo = createStaleWorktree();
+    const ownCommit = repo.commit('work.txt', 'work\n', 'real work', { cwd: repo.worktree });
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(ownCommit);
+  });
+
+  // Ancestry alone cannot tell a fresh branch from one whose commit reached main and was
+  // reverted there: HEAD is an ancestor of origin/main either way.
+  it('leaves a branch whose commit was merged to main and reverted in place', () => {
+    const repo = createStaleWorktree();
+    const ownCommit = repo.commit('work.txt', 'work\n', 'real work', { cwd: repo.worktree });
+    repo.sh(['merge', '-q', '--ff-only', ownCommit]);
+    repo.sh(['revert', '--no-edit', 'HEAD']);
+    repo.sh(['push', '-q', '--force', 'origin', 'main']);
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(ownCommit);
+  });
+
+  // The desktop app's own session branches were observed with no reflog entry at all, so an
+  // empty reflog is trusted only while HEAD is exactly the last-known origin/main.
+  it('fast-forwards a fresh branch created without a reflog entry', () => {
+    const repo = createStaleWorktree({ reflog: false });
+
+    expect(repo.sh(['reflog', 'show', `refs/heads/${BRANCH}`])).toBe('');
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.freshMain);
+  });
+
+  it('leaves a merged-then-reverted branch in place once its reflog has expired', () => {
+    const repo = createStaleWorktree();
+    const ownCommit = repo.commit('work.txt', 'work\n', 'real work', { cwd: repo.worktree });
+    repo.sh(['merge', '-q', '--ff-only', ownCommit]);
+    repo.sh(['revert', '--no-edit', 'HEAD']);
+    repo.sh(['push', '-q', '--force', 'origin', 'main']);
+    repo.sh(['reflog', 'expire', '--expire=now', '--all']);
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(ownCommit);
+  });
+
+  // `update-ref` without `-m` writes an entry with an empty subject; the ref still moved.
+  it('leaves a branch whose reflog has a blank entry in place', () => {
+    const repo = createStaleWorktree();
+    const side = repo.sh([
+      'commit-tree',
+      '-p',
+      repo.staleMain,
+      '-m',
+      'side',
+      `${repo.staleMain}^{tree}`,
+    ]);
+    repo.sh(['update-ref', `refs/heads/${BRANCH}`, side]);
+    repo.sh(['update-ref', `refs/heads/${BRANCH}`, repo.staleMain]);
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.staleMain);
+  });
+
+  it('fast-forwards a fresh branch that was renamed after creation', () => {
+    const repo = createStaleWorktree();
+    repo.sh(['branch', '-m', BRANCH, 'claude/renamed'], { cwd: repo.worktree });
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.freshMain);
+  });
+
+  it('leaves a branch with an untracked file in place', () => {
+    const repo = createStaleWorktree();
+    writeFileSync(join(repo.worktree, 'notes.md'), 'draft\n');
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.staleMain);
+  });
+
+  it('leaves a branch tracking an upstream in place', () => {
+    const repo = createStaleWorktree({ track: true });
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.staleMain);
+  });
+
+  it('leaves a branch pushed without an upstream in place', () => {
+    const repo = createStaleWorktree();
+    repo.sh(['push', '-q', 'origin', BRANCH], { cwd: repo.worktree });
+
+    expect(repo.bootstrap()).toEqual({ failed: null, warnings: [] });
+    expect(repo.head()).toBe(repo.staleMain);
+  });
+
+  it('warns and leaves the branch in place when the fetch fails', () => {
+    const repo = createStaleWorktree();
+    repo.sh(['remote', 'set-url', 'origin', join(repo.root, 'missing.git')]);
+
+    const { failed, warnings } = repo.bootstrap();
+
+    expect(failed).toBeNull();
+    expect(warnings).toEqual([expect.stringContaining('Could not fetch origin/main')]);
+    expect(repo.head()).toBe(repo.staleMain);
+  });
+});
+
 describe('hook payload handling', () => {
   it('reads the worktree root out of a hook payload', () => {
     expect(readHookCwd(JSON.stringify({ cwd: WORKTREE_ROOT }))).toBe(WORKTREE_ROOT);
@@ -318,6 +678,38 @@ describe('runner-specific failure reporting', () => {
   // the exit code rather than report an error, so a non-zero exit would buy nothing and mislead.
   it('exits zero for Claude so the structured body is the whole contract', () => {
     expect(reportFailure('claude', 'boom').exitCode).toBe(0);
+  });
+
+  // A stale start is recoverable in-session, so a refresh warning must never carry Codex's
+  // `continue: false` — that would stop a session over a branch that is merely behind.
+  it('hands both runners a refresh warning without stopping the session', () => {
+    const report = reportWarning('behind');
+
+    expect(report.stdout.continue).toBeUndefined();
+    expect(report.stdout.systemMessage).toContain('behind');
+    expect(report.stdout.hookSpecificOutput).toEqual({
+      hookEventName: 'SessionStart',
+      additionalContext: expect.stringContaining('behind'),
+    });
+    expect(report.exitCode).toBe(0);
+  });
+
+  it.each(['claude', 'codex'])('reports nothing for %s when the bootstrap is clean', (runner) => {
+    expect(reportOutcome(runner, { failure: null, warning: null })).toBeNull();
+  });
+
+  it.each(['claude', 'codex'])('reports a lone refresh warning to %s as a warning', (runner) => {
+    expect(reportOutcome(runner, { failure: null, warning: 'behind' })).toEqual(
+      reportWarning('behind')
+    );
+  });
+
+  it('keeps the refresh warning when a later step stops the bootstrap', () => {
+    const report = reportOutcome('codex', { failure: 'install failed', warning: 'behind' });
+
+    expect(report.stdout.continue).toBe(false);
+    expect(report.stdout.stopReason).toContain('install failed');
+    expect(report.stdout.stopReason).toContain('behind');
   });
 });
 

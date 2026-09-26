@@ -16,17 +16,108 @@ the first model turn. It is a no-op in the primary checkout — it compares `--g
 
 In a linked worktree it:
 
-1. Refreshes the checkout **only** when it is detached at the local `main` commit — the shape a
-   fresh Codex worktree arrives in. It confirms there are no tracked changes, fetches `origin/main`
-   without tags, detaches at the fetched commit, and verifies `HEAD` landed there. A Claude Code
-   worktree arrives on its own branch already cut from the remote default (`worktree.baseRef`
-   defaults to `fresh`), so this step is skipped and `HEAD` is never moved.
+1. Brings a fresh checkout up to the latest `origin/main`, in one of two shapes (below). Any other
+   worktree is left exactly where it is.
 2. Provisions the pinned pnpm version (`corepack enable pnpm`, `corepack install`) and installs the
    frozen dependency tree (`pnpm install --frozen-lockfile --prefer-offline`).
 3. Verifies the install by running `npm run info`.
 
-Failure reporting differs because the two runners read different hook contracts, which is what
-`--runner` selects:
+The refresh runs before the install so the dependencies match the commit the session starts on.
+
+### Refreshing a fresh worktree
+
+Neither runner's worktree is reliably current when it arrives. A worktree is cut from a ref in the
+shared `.git`, and that ref is only as fresh as the last fetch any checkout made. On 2026-09-25 a
+Claude Code worktree branch was "Created from origin/main" two minutes after a PR merged, and it
+started one merge behind. The Claude default (`worktree.baseRef` is `fresh`) picks the remote
+default branch, but it does not fetch it first.
+
+The primary checkout is never touched. The refresh changes nothing in its working tree and does not
+move local `main`. The fetch updates only `refs/remotes/origin/main` in the shared `.git`, and
+`FETCH_HEAD`, which is per-worktree.
+
+**Detached at local `main`: the Codex shape.** A fresh Codex worktree is detached at whatever local
+`main` pointed to. The bootstrap confirms there are no tracked changes, fetches `origin/main`
+without tags, detaches at the fetched commit, and verifies `HEAD` landed there. A detached `HEAD` at
+any other commit stays where it is. A detached `HEAD` that happens to equal local `main` is moved,
+whatever put it there.
+
+**On a named branch that carries no work: the Claude Code shape.** A fresh Claude Code worktree is
+on its own branch, cut from `origin/main` without tracking it. The bootstrap fast-forwards the
+branch only when all of these are true:
+
+* The working tree is clean. `git status --porcelain --untracked-files=normal` prints nothing, so a
+  tracked change or an untracked file blocks the refresh. Gitignored files, including the ones
+  `.worktreeinclude` copies in, do not count.
+* The branch was never published. It has no upstream, and `refs/remotes/origin/<branch>` does not
+  exist. This reads local refs only. A branch of the same name pushed from another clone, and never
+  fetched here, is not seen. Asking the remote would add a second network call to every fresh
+  session. Moving the branch then loses nothing: it holds no commit of its own, the remote branch is
+  untouched, and a later push is rejected as non-fast-forward.
+* The branch ref has not moved since it was created. Every entry in its reflog
+  (`git reflog show refs/heads/<branch>`) is a `branch: Created from …` or `Branch: renamed …`
+  entry. A commit, merge, reset, pull, or an entry with no message (`update-ref` without `-m`)
+  disqualifies it. An **empty** reflog is accepted only while `HEAD` is exactly the last-known
+  `origin/main`. The desktop app creates each session's branch without writing any reflog entry, so
+  an empty reflog is the normal fresh shape. But an expired reflog, or
+  `core.logAllRefUpdates=false`, leaves the same empty reflog on a branch that has moved.
+* `HEAD` is already on `origin/main` (`git merge-base --is-ancestor HEAD refs/remotes/origin/main`),
+  so the branch was cut from `main` and not from some other ref.
+
+The reflog check is what makes the ancestry check safe. Ancestry alone cannot tell a fresh branch
+from one whose commit reached `main` and was then reverted there. Every check is local and runs
+against the last-known `origin/main` before any fetch, so a branch that has work never pays for a
+network call. `main` only moves forward, so the ancestry answer also holds for the fetched commit.
+
+When all four hold, the bootstrap fetches `origin/main` without tags. If the fetched commit is
+already `HEAD`, it stops. If not, it runs `git merge --ff-only <fetched commit>` and verifies that
+`HEAD` landed on that commit. The `--ff-only` merge also enforces the ancestry rule against the
+fetched commit: it refuses instead of creating a merge.
+
+When any check fails, `HEAD` stays where it is. A worktree that has real work is never moved, and
+neither is an old worktree whose branch has moved even once. That includes one the bootstrap already
+refreshed, so only a worktree's first session is brought up to date. The one kind of branch that is
+moved without being fresh is one created directly at an old `main` commit and never touched since.
+To keep a worktree where it is, give its branch an upstream
+(`git branch --set-upstream-to=origin/main`). A branch with any upstream is never moved. Detaching
+does not protect a worktree detached at local `main` (see the Codex shape above). Keep that one on a
+branch with an upstream instead.
+
+The hook matchers exclude `resume`, so a resumed session never reaches the refresh.
+
+### Rival-agent worktrees
+
+The `run-rival-agent` skill makes its disposable review worktrees with
+`git worktree add --detach <dir> <head>` (`tools/rival-agent/worktree.mjs`). What protects them is
+that the rival's session runs no project hooks, so the bootstrap never runs there. The Codex rival
+starts with the `hooks` feature disabled (`ISOLATION_FEATURES` in `launch-codex.mjs`). The Claude
+rival starts with `--restricted`, which ignores project settings. Being detached is not enough on
+its own. A rival worktree pinned to a head that equals local `main` matches the Codex shape, and the
+bootstrap would move it if it ran there. Keep the rival launchers' hook isolation in place for that
+reason.
+
+### Failure reporting
+
+A failed refresh of a **named branch** is a warning. The session starts and the install still runs.
+For a stale start, the agent needs one command to recover, and a refused `--ff-only` merge leaves
+`HEAD` where it was, so there is no half-moved state to protect. Stopping the session would cost
+more than the stale commit does. The warning uses the same shape for both runners:
+
+```json
+{
+  "systemMessage": "…",
+  "hookSpecificOutput": { "hookEventName": "SessionStart", "additionalContext": "…" }
+}
+```
+
+It has no `continue: false`, so a Codex session starts too. Codex 0.156.0 validates `SessionStart`
+output against the same fields as Claude Code. The warning names the recovery commands:
+`git fetch origin main && git merge --ff-only origin/main`, then `pnpm install --frozen-lockfile`.
+If a later step fails and the bootstrap stops, the warning is added to the failure report.
+
+A failed install, and a failed refresh of the **detached Codex shape**, stop the bootstrap. How that
+is reported differs because the two runners read different hook contracts, which is what `--runner`
+selects:
 
 | Runner | On failure                                                                 | Session |
 | ------ | -------------------------------------------------------------------------- | ------- |
