@@ -2,7 +2,7 @@
 
 <!-- code-map:generated:start snapshot -->
 
-> **Snapshot of 348c1234a0b5 (2026-09-25).** Every table in this map is generated from that commit
+> **Snapshot of 9afa78cf0da1 (2026-09-25).** Every table in this map is generated from that commit
 > by `npm run gen:code-map`; the prose around them is maintained by the `reconcile-code-map` skill.
 > Counts drift as the code changes — regenerate rather than hand-edit.
 
@@ -50,9 +50,9 @@ boundaries are judgment calls even though every total is exact.
 
 | Disposition                    | Files |
 | ------------------------------ | ----: |
-| Measured and categorized       | 2,527 |
+| Measured and categorized       | 2,528 |
 | Explicitly excluded            | 4,742 |
-| **All tracked files**          | 7,269 |
+| **All tracked files**          | 7,270 |
 | Unassigned or multiply counted |     0 |
 
 | Exclusion class                                  | Files |
@@ -74,16 +74,16 @@ boundaries are judgment calls even though every total is exact.
 
 <!-- code-map:generated:start totals -->
 
-## Grand total: **414,667 LOC across 2,527 measured files**
+## Grand total: **414,725 LOC across 2,528 measured files**
 
 | Area                                               |     LOC | Files |
 | -------------------------------------------------- | ------: | ----: |
-| **tools (excluding asset-gen)** — repo automation  | 156,746 |   683 |
+| **tools (excluding asset-gen)** — repo automation  | 156,803 |   684 |
 | **web/src** — the app                              | 106,270 |   850 |
 | **docs** — ADRs & guides                           |  66,890 |   381 |
 | **tools/asset-gen** — art pipeline                 |  29,946 |   207 |
 | **web/tests** — E2E + integration                  |  25,572 |   125 |
-| **.ruler** — agent-instruction sources             |  11,860 |    85 |
+| **.ruler** — agent-instruction sources             |  11,861 |    85 |
 | android + ios + fastlane + Maestro — native shells |   3,857 |    69 |
 | scrapbook — run-artifact prose                     |   3,568 |     7 |
 | .github — CI and issue config                      |   2,428 |    25 |
@@ -101,7 +101,7 @@ boundaries are judgment calls even though every total is exact.
 
 ## Splits for every measured area over 3,000 LOC
 
-### tools excluding asset-gen (156,746) — by subtree
+### tools excluding asset-gen (156,803) — by subtree
 
 | Sub-bucket         |    LOC | Files |
 | ------------------ | -----: | ----: |
@@ -125,7 +125,7 @@ boundaries are judgment calls even though every total is exact.
 | marketing-assets   |  1,303 |    10 |
 | elevenlabs         |  1,239 |     5 |
 | ruler              |  1,160 |    10 |
-| code-map           |  1,093 |     7 |
+| code-map           |  1,150 |     8 |
 | icons              |    951 |     9 |
 | adrs               |    835 |     4 |
 | redteam            |    775 |     7 |
@@ -144,9 +144,9 @@ boundaries are judgment calls even though every total is exact.
 | Drawing / canvas engine                | 18,554 |   122 |
 | AI image generation                    | 15,859 |   102 |
 | Routes / app shell / dev surfaces      | 11,170 |    81 |
-| Design system, styleguide + icons      |  9,502 |   151 |
+| Design system, styleguide + icons      |  9,708 |   153 |
 | Settings surface                       |  8,179 |    47 |
-| Core UI controls                       |  5,674 |    44 |
+| Core UI controls                       |  5,468 |    42 |
 | Gestures / Svelte actions              |  5,231 |    36 |
 | Coloring books + pack delivery         |  5,025 |    34 |
 | PWA / installation                     |  3,697 |    21 |
@@ -226,11 +226,11 @@ token surface remain in their own domains.
 | artifacts                |     54 |     1 |
 | instruction source       |     26 |     1 |
 
-### .ruler (11,860) — by subtree
+### .ruler (11,861) — by subtree
 
 | Sub-bucket                |   LOC | Files |
 | ------------------------- | ----: | ----: |
-| skill sources             | 9,193 |    60 |
+| skill sources             | 9,194 |    60 |
 | skill notes               | 2,188 |    18 |
 | root instruction / config |   479 |     7 |
 
