@@ -1,6 +1,8 @@
+import { spawn } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { connect } from 'node:net';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -1820,7 +1822,7 @@ describe('the wiring that fronts the page and judges the input', () => {
 // both rotation settings before its first write and puts back exactly what it
 // found, deleting a setting that was never written.
 describe('the Android driver hands the rotation back as it found it', () => {
-  const fakePhone = (found, { failingRestore = null } = {}) => {
+  const fakePhone = (found, { failingRestore = null, killedOnce = null } = {}) => {
     const settings = new Map(Object.entries(found));
     const log = [];
     const apply = (args) => {
@@ -1842,6 +1844,10 @@ describe('the Android driver hands the rotation back as it found it', () => {
         log.push(`tryRun ${args.join(' ')}`);
         if (failingRestore && args[1] === 'settings' && args.includes(failingRestore)) {
           return { ok: false, stdout: '', stderr: 'device offline\n' };
+        }
+        if (killedOnce && args[1] === 'settings' && args.includes(killedOnce)) {
+          killedOnce = null;
+          return { ok: false, stdout: '', stderr: '' };
         }
         apply(args);
         return { ok: true, stdout: '', stderr: '' };
@@ -2173,6 +2179,20 @@ describe('the Android driver hands the rotation back as it found it', () => {
         ]);
       }));
 
+    // A terminal Ctrl-C reaches the adb child writing a setting as well as Node,
+    // so the write it interrupted is tried again rather than left undone.
+    it('retries a restore write the signal killed', async () =>
+      quietly(async (warn) => {
+        const phone = fakePhone(asFound, { killedOnce: 'user_rotation' });
+        const driver = driverOn(phone);
+        await settle(() => driver.openPage());
+
+        driver.release();
+
+        expect(Object.fromEntries(phone.settings)).toEqual(asFound);
+        expect(warn).not.toHaveBeenCalled();
+      }));
+
     // Pins the production wiring: the listeners land on the real process and
     // come off again, so a signal after the hand-back gets Node's default.
     it('listens on the process only while the device is out', async () =>
@@ -2202,6 +2222,40 @@ describe('the Android driver hands the rotation back as it found it', () => {
         expect(exits).toEqual([{ code: 143, settings: asFound }]);
         expect(process.listenerCount('SIGTERM')).toBe(baseline);
       }));
+
+    // A real signal to the whole process group, as a terminal sends it, landing
+    // while the final hand-back's own child runs: removing the listeners first
+    // let Node's default kill the hand-back halfway, and removing them straight
+    // after it dropped the queued signal so the capture carried on to exit 0.
+    it('finishes the hand-back and exits 130 on a Ctrl-C during it', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'hand-back-signal-'));
+      const marker = join(dir, 'handing-back');
+      try {
+        const child = spawn(
+          process.execPath,
+          [
+            fileURLToPath(new URL('./fixtures/signal-during-hand-back.mjs', import.meta.url)),
+            marker,
+          ],
+          { detached: true, stdio: ['ignore', 'pipe', 'pipe'] }
+        );
+        let stdout = '';
+        child.stdout.on('data', (chunk) => (stdout += chunk));
+        child.stderr.resume();
+        const exited = new Promise((resolve) =>
+          child.on('exit', (code, signal) => resolve({ code, signal }))
+        );
+        await vi.waitFor(() => expect(existsSync(marker)).toBe(true), { timeout: 10_000 });
+
+        process.kill(-child.pid, 'SIGINT');
+
+        expect(await exited).toEqual({ code: 130, signal: null });
+        expect(stdout).toContain('hand-back ended SIGINT');
+        expect(stdout).not.toContain('capture carried on');
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
   });
 });
 

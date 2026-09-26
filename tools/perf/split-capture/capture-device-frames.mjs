@@ -324,13 +324,17 @@ export function androidDriver({
     // A phone left at user_rotation=1 hands the next reader that assumes
     // portrait the wrong geometry (issue 2272). Idempotent, and it never throws or exits: it also runs on the refusal
     // paths, where the capture's own error is the one worth reporting, and each
-    // setting is put back whether or not the other one could be.
+    // setting is put back whether or not the other one could be. Each write gets
+    // a second attempt because a terminal Ctrl-C also kills the adb child
+    // writing it (issue 2346).
     release() {
       if (!priorRotation) return;
       const prior = priorRotation;
       priorRotation = null;
+      const restore = (command) => tryRun('adb', ['-s', serial, ...command]);
       for (const command of androidRotationRestoreCommands(prior)) {
-        const restored = tryRun('adb', ['-s', serial, ...command]);
+        let restored = restore(command);
+        if (!restored.ok) restored = restore(command);
         if (!restored.ok) {
           console.warn(
             `could not ${command.slice(1).join(' ')} on ${serial} (${restored.stderr.trim()}) — ` +
@@ -786,10 +790,10 @@ export function driveHandingBack(driver, drive, { exit = fail, signals = null } 
     await driver.release();
     exit(message);
   };
-  const stopListening = signals ? handBackOnSignal(driver, signals) : () => {};
-  return drive(refuse).finally(() => {
-    stopListening();
-    return driver.release();
+  const stopListening = signals ? handBackOnSignal(driver, signals) : async () => {};
+  return drive(refuse).finally(async () => {
+    await driver.release();
+    await stopListening();
   });
 }
 
@@ -811,10 +815,18 @@ function handBackOnSignal(driver, { on, off, exit }) {
     on(signal, handler);
     return { signal, handler };
   });
-  return () => {
+  // A signal that lands during the final hand-back's own adb calls is queued
+  // until the event loop next polls; removing the listeners before that poll
+  // drops it, and the capture carries on to exit 0. Two turns guarantee a poll
+  // phase between the hand-back and the removal, whichever phase this runs in.
+  return async () => {
+    await nextTurn();
+    await nextTurn();
     for (const { signal, handler } of listeners) off(signal, handler);
   };
 }
+
+const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
 
 export async function captureDeviceFrames({
   platform = argFlag('platform', 'android'),
