@@ -37,7 +37,8 @@ const EFFORTS = new Set(['low', 'medium', 'high']);
 export const PR_HEAD_SETTLE_TIMEOUT_MS = 60_000;
 export const PR_HEAD_POLL_INTERVAL_MS = 5_000;
 const OID_PATTERN = /^[0-9a-f]{40}$/;
-const GITHUB_REMOTE_PREFIXES = ['https://github.com/', 'git@github.com:', 'ssh://git@github.com/'];
+const SCP_GITHUB_REMOTE = /^git@github\.com:(.+)$/i;
+const GITHUB_URL_PROTOCOLS = new Set(['https:', 'ssh:']);
 const DEFAULT_BASE_REF = 'main';
 const USAGE =
   'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
@@ -152,16 +153,39 @@ function resolveRepoRoot(cwd) {
 // a local or mirror origin lagging behind GitHub would make an old head look settled.
 export function assertOriginIsPullRequestRepository(repoRoot) {
   const url = git(repoRoot, ['remote', 'get-url', 'origin']);
-  const path = url
+  if (githubRepositoryOf(url) !== REPOSITORY.toLowerCase()) {
+    throw new Error(
+      `--pr reads ${REPOSITORY} through gh, but this checkout's origin is ${redactUserInfo(url)}; launch from a checkout whose origin is ${REPOSITORY}`
+    );
+  }
+}
+
+// The scp-style `git@github.com:owner/repo` form, or any https/ssh URL on github.com with or
+// without user information; undefined for anything else.
+function githubRepositoryOf(url) {
+  const scp = SCP_GITHUB_REMOTE.exec(url);
+  let path = scp?.[1];
+  if (!scp) {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return undefined;
+    }
+    if (!GITHUB_URL_PROTOCOLS.has(parsed.protocol) || parsed.hostname !== 'github.com') {
+      return undefined;
+    }
+    path = parsed.pathname.slice(1);
+  }
+  return path
     .replace(/\/$/, '')
     .replace(/\.git$/i, '')
     .toLowerCase();
-  const expected = REPOSITORY.toLowerCase();
-  if (!GITHUB_REMOTE_PREFIXES.some((prefix) => path === `${prefix}${expected}`)) {
-    throw new Error(
-      `--pr reads ${REPOSITORY} through gh, but this checkout's origin is ${url}; launch from a checkout whose origin is ${REPOSITORY}`
-    );
-  }
+}
+
+// An https origin can carry a token as its user information; the refusal is printed to a log.
+function redactUserInfo(url) {
+  return url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^/@]*@/i, '$1[REDACTED]@');
 }
 
 export function readRemoteBranchHead(repoRoot, branch) {

@@ -231,11 +231,37 @@ describe('reading the pushed branch head', () => {
       'git@github.com:KyleMit/Splotch.git',
       'https://github.com/KyleMit/Splotch',
       'ssh://git@github.com/kylemit/splotch.git',
+      'https://someone@github.com/KyleMit/Splotch.git',
     ]) {
       run(['-C', clone, 'remote', 'set-url', 'origin', url]);
       expect(() => assertOriginIsPullRequestRepository(clone)).not.toThrow();
     }
     run(['-C', clone, 'remote', 'set-url', 'origin', 'git@github.com:someone/Splotch.git']);
     expect(() => assertOriginIsPullRequestRepository(clone)).toThrow(/someone\/Splotch/);
+  });
+
+  // Also from PR 2360's review: the refusal reaches the launch log, so user information that can
+  // hold a token must not.
+  it('keeps user information out of the refusal', () => {
+    root = mkdtempSync(join(tmpdir(), 'rival-launch-test-'));
+    const clone = join(root, 'clone');
+    run(['init', '-q', clone]);
+    const dummySecret = 'not-a-real-secret-value';
+    run([
+      '-C',
+      clone,
+      'remote',
+      'add',
+      'origin',
+      `https://someone:${dummySecret}@example.com/KyleMit/Splotch.git`,
+    ]);
+    let message = '';
+    try {
+      assertOriginIsPullRequestRepository(clone);
+    } catch (error) {
+      message = error.message;
+    }
+    expect(message).toContain('https://[REDACTED]@example.com/KyleMit/Splotch.git');
+    expect(message).not.toContain(dummySecret);
   });
 });
