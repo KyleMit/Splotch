@@ -21,6 +21,10 @@ function openCard() {
   return card;
 }
 
+function stubSystemDark(matches: boolean) {
+  vi.spyOn(window, 'matchMedia').mockReturnValue({ matches } as MediaQueryList);
+}
+
 function veilsOf(card: HTMLElement) {
   return Array.from(card.querySelectorAll<HTMLElement>(`:scope > .${THEME_VEIL_CLASS}`));
 }
@@ -42,6 +46,7 @@ describe('applyTheme', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     delete (HTMLElement.prototype as { animate?: unknown }).animate;
     sheet.remove();
     document.body.replaceChildren();
@@ -67,13 +72,31 @@ describe('applyTheme', () => {
     expect(veilsOf(card)).toHaveLength(0);
   });
 
-  it('restarts from the surface the card just reached when the theme changes mid-fade', () => {
+  it('restarts a reversal mid-fade from the surface the card is showing', () => {
     const card = openCard();
     applyTheme('dark');
+    veilsOf(card)[0].style.opacity = '0.5';
     applyTheme('light');
     const veils = veilsOf(card);
     expect(veils).toHaveLength(1);
-    expect(veils[0].style.backgroundColor).toBe(DARK_SURFACE);
+    expect(veils[0].style.backgroundColor).toBe('rgb(145, 145, 149)');
+  });
+
+  it('veils nothing when System resolves to the appearance already shown', () => {
+    const card = openCard();
+    root.setAttribute('data-theme', 'light');
+    stubSystemDark(false);
+    applyTheme('system');
+    expect(root.hasAttribute('data-theme')).toBe(false);
+    expect(veilsOf(card)).toHaveLength(0);
+  });
+
+  it('veils a change to System that flips the appearance', () => {
+    const card = openCard();
+    root.setAttribute('data-theme', 'dark');
+    stubSystemDark(false);
+    applyTheme('system');
+    expect(veilsOf(card)[0].style.backgroundColor).toBe(DARK_SURFACE);
   });
 
   it('veils nothing for a restamp that changes nothing', () => {
