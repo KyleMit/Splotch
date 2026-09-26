@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -32,6 +40,14 @@ function sh(args, cwd = repo) {
       GIT_COMMITTER_EMAIL: 't@t',
     },
   }).trim();
+}
+
+// Compares whole paths because the mkdtemp root's random suffix can contain any substring.
+function worktreePaths() {
+  return sh(['worktree', 'list', '--porcelain'])
+    .split('\n')
+    .filter((line) => line.startsWith('worktree '))
+    .map((line) => line.slice('worktree '.length));
 }
 
 beforeEach(() => {
@@ -148,6 +164,7 @@ describe('disposable worktree and packet', () => {
     const scope = resolveScope(repo, { kind: 'base', base: 'main' });
     const directory = join(root, 'wt');
     createDisposableWorktree(repo, scope.head, directory, { install: false });
+    expect(worktreePaths()).toEqual([realpathSync(repo), realpathSync(directory)]);
     expect(readFileSync(join(directory, 'a.txt'), 'utf8')).toBe('one\ntwo\n');
     expect(git(directory, ['rev-parse', 'HEAD'])).toBe(scope.head);
     expect(git(directory, ['rev-parse', '--abbrev-ref', 'HEAD'])).toBe('HEAD');
@@ -169,7 +186,7 @@ describe('disposable worktree and packet', () => {
 
     removeDisposableWorktree(repo, directory);
     expect(existsSync(directory)).toBe(false);
-    expect(sh(['worktree', 'list'])).not.toContain('wt');
+    expect(worktreePaths()).toEqual([realpathSync(repo)]);
   });
 
   // The rival's second real round found this: a developer's diff.context widened the packet past
