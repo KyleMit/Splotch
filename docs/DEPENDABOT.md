@@ -13,7 +13,8 @@ substitute for it.
 
 ## What's configured
 
-**`.github/dependabot.yml`** opens PRs on two ecosystems, both weekly:
+**`.github/dependabot.yml`** opens PRs on two ecosystems, both in one weekly slot (Friday 10:00
+UTC):
 
 | Ecosystem        | Scope                          | Grouping                                                                |
 | ---------------- | ------------------------------ | ----------------------------------------------------------------------- |
@@ -146,6 +147,35 @@ on CI, and making it wait would spend runner minutes and subscription usage to r
 already visible on the PR. The prompt tells Claude to report the status it actually saw and never to
 treat pending as passing. If you want a verdict informed by CI, re-read the PR after checks land —
 that's a human step by design.
+
+## Weekly triage routine
+
+The per-PR review above reads one bump at a time. A Claude Code routine named **Dependabot triage**
+reads the whole batch: every Friday at 11:00 UTC, an hour after the Dependabot slot, it runs the
+`burn-down-dependabot-prs` skill in a cloud session and posts one **MERGE** / **HOLD** / **CLOSE**
+comment on each open Dependabot PR, each naming its place in the conflict-aware merge order. It
+merges, closes, and pushes nothing: the skill's authorization gate holds, so merging stays a
+follow-up in which you run the skill yourself and approve the order.
+
+Why the slots are in UTC: routine cron is always UTC, so a Dependabot slot in a DST-observing zone
+would drift an hour against the routine twice a year. The hour is an expected gap, not a deadline:
+`schedule.time` is when Dependabot starts checking, not when its last PR lands. It has held so far —
+a twelve-PR batch opened within five minutes and its checks all finished within half an hour — and a
+PR that lands late, or whose checks are still running, is not lost: every run triages all open
+Dependabot PRs, re-evaluating the ones it already commented on, so the next Friday picks it up.
+
+Routines have no as-code form — they are created and edited at
+[claude.ai/code/routines](https://claude.ai/code/routines) or through `/schedule`. So the routine
+stores only a pointer to
+[`.claude/cloud/routines/dependabot-triage.md`](../.claude/cloud/routines/dependabot-triage.md),
+which holds the full prompt; change behavior there, through a PR. The schedule, model, and cloud
+environment live only in the routine. Moving the Dependabot slot means updating the routine's cron
+to match. No repository check can compare them, because the cron is not in the repository; instead
+the prompt has each run compare its own start time against the slot in `.github/dependabot.yml` and
+put a **Schedule drift** warning on every comment when they disagree.
+
+Routines cannot be deleted from the CLI; pause or remove this one at
+[claude.ai/code/routines](https://claude.ai/code/routines).
 
 ## Troubleshooting
 

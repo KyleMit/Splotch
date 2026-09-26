@@ -357,7 +357,8 @@ Repo conventions that apply to everything posted:
   prose becomes a link to an unrelated PR.
 * **Leave commit SHAs bare, never in backticks** — GitHub auto-links a plain SHA; a code span kills
   the link.
-* **End every GitHub comment with the attribution footer** (see the root `CLAUDE.md`).
+* **End every GitHub comment with an attribution footer** — the one your runner prescribes for pull
+  request descriptions.
 
 Close the chat reply with a table of every PR and its end state, the security posture change, and
 what remains open for the user to decide.

@@ -1,9 +1,14 @@
 version: 2
+# Both ecosystems share one weekly slot, in UTC (Dependabot's default zone) so the
+# Dependabot triage routine (docs/DEPENDABOT.md) stays an hour behind it
+# through DST changes.
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: friday
+      time: '10:00'
     open-pull-requests-limit: 10
     groups:
       github-actions:
@@ -15,6 +20,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: friday
+      time: '10:00'
     open-pull-requests-limit: 30
     # Families that release in lockstep, majors included: a single-package PR
     # for one member cannot install (@vitest/coverage-v8 peers on its exact
