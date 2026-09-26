@@ -67,6 +67,12 @@ attached. Run it with the Bash tool's background mode: a review takes minutes an
 alive until the rival finishes. Its first stderr line is `session: <dir>` — that directory is the
 handle for everything below.
 
+For a PR scope it pins the head only once `gh pr view` agrees with the branch tip on `origin`:
+GitHub can report the previous head for a while after a push, and a round pinned there finishes
+unpostable (PR 2303). It waits up to `PR_HEAD_SETTLE_TIMEOUT_MS` (`tools/rival-agent/launch.mjs`)
+and otherwise refuses, naming both commit ids, before creating a session; relaunch once
+`gh pr view <n> --json headRefOid` shows the pushed head.
+
 ## Serve the broker loop
 
 The rival asks for commands one at a time. Each call blocks until a request arrives, the rival
