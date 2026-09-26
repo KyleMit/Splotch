@@ -208,6 +208,10 @@ export function proseOnly(text) {
     .join('\n');
 }
 
+export function stripInlineCode(text) {
+  return text.replace(INLINE_CODE, (span) => ' '.repeat(span.length));
+}
+
 function lineStarts(text) {
   const starts = [0];
   for (let i = 0; i < text.length; i += 1) if (text.charCodeAt(i) === 10) starts.push(i + 1);
@@ -279,7 +283,7 @@ export function extractReferences(text, { topLevelNames, dirNames, identifiers =
   }
 
   // Link syntax quoted inside a code span (`![](url)`) is an example, not a link.
-  const linkText = prose.replace(INLINE_CODE, (span) => ' '.repeat(span.length));
+  const linkText = stripInlineCode(prose);
   for (const match of linkText.matchAll(MARKDOWN_LINK)) {
     const target = linkTarget(match[1]);
     if (target) refs.push({ kind: 'link', ref: target, line: lineOf(proseStarts, match.index) });

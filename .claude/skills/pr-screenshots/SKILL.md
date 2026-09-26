@@ -14,6 +14,12 @@ the [`run-splotch`](../run-splotch/SKILL.md) skill's driver to take screenshots;
 (Android/iOS) use the [`mobile`](../mobile/SKILL.md) skill. If a change genuinely has no visible
 surface, say so in the PR body rather than silently omitting visuals.
 
+For before and after shots from a local Vite server, keep one installed worktree and server: capture
+the changed branch, detach that clean worktree at `origin/main`, wait for reload, capture the prior
+state on the same port, then return to the branch. A second scratch worktree with a symlinked
+`node_modules` can make Vite reject font files outside its allowlist and silently render the prior
+state in a fallback font. Use a second worktree only with its own `pnpm install`.
+
 ## Getting the images into the PR body (fully automated)
 
 Markdown image syntax needs a **hosted URL** — GitHub renders `![](…)` by fetching that URL, it does

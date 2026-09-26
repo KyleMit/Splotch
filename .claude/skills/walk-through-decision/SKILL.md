@@ -13,10 +13,10 @@ system this happens to touch.
 
 ## Boundaries
 
-This skill **explains a decision. It does not act on one.** It writes no files, opens no PRs,
-changes no code, and does not implement whatever gets chosen. It ends at the recommendation and the
-first step. If the user picks an option and wants it built, or wants it written down, that is a new
-request — wait to be asked.
+This skill **explains a decision. It does not act on one.** It can make a visual comparison artifact
+to explain UI options, but writes no repo files, opens no PRs, changes no product code, and does not
+implement whatever gets chosen. It ends at the recommendation and the first step. If the user picks
+an option and wants it built or recorded in the repo, that is a new request — wait to be asked.
 
 `mode=autonomous` moves who picks, not where the skill stops. It ends at a **locked decision
 record** instead of a recommendation; the work that invoked it proceeds on that record. The mode
@@ -150,12 +150,10 @@ Rules:
 **Skip the table** when two options differ along one axis — a sentence is better, and a two-row
 table is a costume for a sentence.
 
-**Offer an artifact** — one line, and only build it if asked — when either holds:
-
-* the decision is **visual** (layout, spacing, a UI arrangement), where mocking both up beats
-  describing them; or
-* there are **three or more options across many dimensions**, where a chat table stops being
-  readable.
+For a Splotch UI or layout choice, build a side-by-side visual before asking the user to choose.
+Show the actual spatial difference, using the project's tokens; include motion when the choice is
+about a transition. For a nonvisual decision with three or more options across many dimensions,
+offer an artifact in one line and build it only if asked.
 
 ## Plain language
 

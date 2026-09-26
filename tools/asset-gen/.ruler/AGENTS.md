@@ -121,7 +121,9 @@ carve-out):
   classes are gate-blind and only caught by composite review); when you fix or discover one, close
   or file an issue in the same task.
 * **Manual/on-demand only** — the Gemini generators need `GEMINI_API_KEY` and are never run in CI
-  (real API cost). The app never runs any of this at build time.
+  (real API cost). The app never runs any of this at build time. If the key is in a local env file
+  with other secrets, pass only that variable to a generator; do not load the whole file into its
+  process. Keep temporary env files gitignored and remove them when the run ends.
 * **The coloring-book proof sheet is the single asset-review surface — read
   `docs/coloring-book-proof-sheet.md` before modifying `coloring/gen-book-proof-sheet.mjs` or
   anything under `coloring-book-proof-sheet-assets/`.** It holds the CLI contract, the

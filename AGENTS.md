@@ -11,7 +11,8 @@
 > the output. Direct provider packages registered in `tools/ruler/lib/direct-provider-skills.mjs`
 > are the exceptions: `burn-down-audits`, `analyze-session-transcripts`, and `run-rival-agent` have
 > independent Claude and Codex implementations (each `run-rival-agent` package launches the *other*
-> vendor's CLI). Edit only the registered provider package and note you intend to change; never
+> vendor's CLI); `reconcile-agent-memories` has only a Claude package for Claude Code's indexed
+> memory store. Edit only the registered provider package and note you intend to change; never
 > manufacture a missing provider by copying another one.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
@@ -56,8 +57,10 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   per provider, each launching the *other* vendor's local CLI (the Claude package runs Codex, the
   Codex package runs Claude), so that one skill name works from either runner;
   `analyze-session-transcripts` has independent provider packages because Claude Code and Codex
-  persist different transcript formats. Edit registered packages and notes directly, never through
-  `.ruler/`, and never create an undeclared provider by copying one.
+  persist different transcript formats. `reconcile-agent-memories` has a Claude-only package for
+  Claude Code's indexed project memory; no Codex equivalent has been verified. Edit registered
+  packages and notes directly, never through `.ruler/`, and never create an undeclared provider by
+  copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
@@ -114,6 +117,13 @@ Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:va
 (`dev:*`, `test:e2e:*`, `gen:*`, `android:*`, …), and every new or renamed script gets a matching
 one-line entry in the `scripts-info` block of `package.json`.
 
+Judge checks by their exit codes, not a grep over output; `svelte-check --fail-on-warnings` can
+print uppercase `WARNING` lines. Format edited files before linting, then run `npm run check` and
+`npm run lint` for each reviewable code commit. Before pushing, run the applicable full test tier:
+some guard tests inspect files outside the directory you edited. A normally fast command that
+exceeds its timeout needs immediate process and output inspection. For work with an active-time
+budget, read the clock at decision points instead of estimating elapsed time from effort.
+
 ## Concurrent worktrees
 
 Agent-managed worktrees — Claude Code's and Codex's alike — share host ports and machine capacity. A
@@ -127,6 +137,9 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
 * Full `npm test`/Playwright E2E suites, fixed-port Netlify workflows, performance runs, tunnels,
   and native-device runs are host-exclusive. ADR-0078 establishes that one Playwright suite already
   sizes itself to available CPU capacity; concurrent full suites invalidate that capacity model.
+* Do not run `npm run test:tools` alongside a performance build or capture. The host load and port
+  contention can make tool tests fail spuriously; rerun an observed failure alone before assigning
+  it to the code change.
 
 <!-- Source: .ruler/conventions.md -->
 
@@ -218,6 +231,12 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   that's the most common reason a fresh PR is red. The cloud-only `session-start.sh` and
   `cloud-branch-preview.sh` SessionStart hooks run only when `CLAUDE_CODE_REMOTE=true`; see
   `docs/CLOUD/Claude.md` for details.
+* ESLint's `max-lines` counts CSS comment lines inside a Svelte `<style>` block, even with
+  `skipComments: true`. After editing a large style block, run `npm run lint` and shorten or extract
+  code when it crosses its configured cap.
+* Evidence packages can lose files to `.gitignore`: `logs/` directories and `*.log` files are
+  ignored anywhere in the tree. Store captured logs as `controls/*.log.txt`, run `git check-ignore`
+  on the package, and compare its tracked file list with the manifest before committing.
 
 <!-- Source: .ruler/github.md -->
 
@@ -227,6 +246,11 @@ For every GitHub task, **use the native GitHub skill and its MCP/app tools first
 `gh` CLI after that native path fails to perform the required operation. The sandbox cannot use the
 host's macOS Keychain-backed `gh` credentials, so `gh` authentication failures there are expected;
 never try to repair them by re-authenticating from the sandbox.
+
+When `gh` is needed from a scratch directory outside this checkout, pass `-R KyleMit/Splotch` and
+verify any expected downloaded files exist. For long-running work, open a draft PR early, commit
+reviewable steps as they finish, and keep the reasoning in a committed note so progress survives a
+session handoff.
 
 GitHub auto-links a `#` followed by digits (`#12`) into a reference to the issue or pull request
 with that number. So a plain list like "#1 done, #2 pass" in a PR body or comment silently turns
@@ -276,6 +300,12 @@ already posted, check your available tools for a comment-update capability first
 comment in place; fall back to a correction comment only when there is none, since that leaves the
 wrong SHA on the thread and costs every later reader a cross-reference.
 
+**A negated closing keyword can still close an issue.** GitHub may interpret “does not close \#123”
+as a closing reference, even with the hash escaped. When an issue must remain open, write “Issue
+\#123 stays open” or “Refs \#123” with no `fix`, `close`, or `resolve` near the number. Inspect the
+PR's `closingIssuesReferences` and its commit messages before merging; a closing keyword in a commit
+message can also close the issue.
+
 <!-- Source: .ruler/knowledge-map.md -->
 
 ## Where knowledge lives
@@ -291,8 +321,9 @@ support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/
 from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
 `burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
 `analyze-session-transcripts` with format-specific implementations and `run-rival-agent`, whose two
-packages each launch the *other* vendor's CLI. See `tools/ruler/lib/direct-provider-skills.mjs` for
-the authoritative registry.
+packages each launch the *other* vendor's CLI. `reconcile-agent-memories` has only a Claude package
+for Claude Code's indexed project memory. See `tools/ruler/lib/direct-provider-skills.mjs` for the
+authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                                                                                                    |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -381,6 +412,8 @@ TODO by opening an issue, not by editing a Markdown list. The issue format, the 
 and the triage/won't-do flow live in `docs/ISSUE-WORKFLOW.md`. After completing an issue review
 pass, apply `reviewed` only when the issue is clear, actionable, and correctly labeled; automation
 then moves it to the project's `ToDo` status.
+
+The `create-adr` skill owns the boundary between numbered ADRs and agent-tooling design notes.
 
 Remaining `docs/`:
 

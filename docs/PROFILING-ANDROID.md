@@ -218,3 +218,7 @@ Do this **before** quoting a Perfetto-traced capture as a performance result, no
   (ADR-0145). Never widen either to make a transport pass.
 * **Never run heavy host work during a capture.** The host drives input dispatch, and contention
   changes cadence.
+* **An interrupted install does not prove which build is installed.** A Play Protect prompt can
+  block `adb install` and the phone may complete the install after its client is killed. Chain
+  install and capture with `&&`, then verify the installed APK identity against the intended build
+  immediately before capture. Do not approve a protection prompt as part of an unattended run.

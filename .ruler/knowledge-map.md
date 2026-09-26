@@ -11,8 +11,9 @@ support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/
 from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
 `burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
 `analyze-session-transcripts` with format-specific implementations and `run-rival-agent`, whose two
-packages each launch the *other* vendor's CLI. See `tools/ruler/lib/direct-provider-skills.mjs` for
-the authoritative registry.
+packages each launch the *other* vendor's CLI. `reconcile-agent-memories` has only a Claude package
+for Claude Code's indexed project memory. See `tools/ruler/lib/direct-provider-skills.mjs` for the
+authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                                                                                                    |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -101,6 +102,8 @@ TODO by opening an issue, not by editing a Markdown list. The issue format, the 
 and the triage/won't-do flow live in `docs/ISSUE-WORKFLOW.md`. After completing an issue review
 pass, apply `reviewed` only when the issue is clear, actionable, and correctly labeled; automation
 then moves it to the project's `ToDo` status.
+
+The `create-adr` skill owns the boundary between numbered ADRs and agent-tooling design notes.
 
 Remaining `docs/`:
 

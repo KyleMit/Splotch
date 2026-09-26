@@ -34,6 +34,12 @@ Vitest tiers plus `test:api:smoke`, about a minute locally. A tools test per scr
 steps out of `test.yml` and fails on drift. The hosted deploy smoke runs separately against real
 deployments; its narrower `test:blobs:smoke` diagnostic is manual.
 
+Before pushing a deletion that may leave an export unused, run `npm run lint:dead`. An edit to the
+inline boot script in `web/src/app.html` also needs its CSP hash checked through
+`web/securityPolicy.test.ts`; take the new hash from the test output rather than typing it. After
+adding or renaming a Playwright spec, run the repo-script tier too: it scans spec files outside the
+touched directory.
+
 `npm test` runs the first five (`test:unit:coverage` + `test:asset-gen` + `test:store-drawings` +
 `test:tools` + `test:e2e`). It is not a mirror of any one CI job: it adds the Playwright suite and
 omits `test:api:smoke`, and `test:unit` alone runs only the first tier. The native smoke tests are
@@ -301,6 +307,12 @@ surface on purpose, as is any non-Markdown source, whose spec names are indistin
 synthetic ones the `tools/tests/` fixtures feed their reporters.
 
 ## E2E web tests — Playwright
+
+Visual baselines with a `-chromium-linux.png` suffix must come from CI's Linux render, not from a
+Mac update run. Download the failing shard's `playwright-report-shard-N` artifact and inspect its
+`index.html` template named `playwrightReportBase64`; its embedded zip maps each `*-actual.png`
+attachment to a `data/<hash>.png` file. Copy the actual image only after verifying the failing
+snapshot name and platform. A local `--update-snapshots` updates the Darwin baseline instead.
 
 ```bash
 npm run test:e2e           # headless — whole suite
