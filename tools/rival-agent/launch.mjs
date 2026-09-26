@@ -11,7 +11,7 @@ import {
   recordRound,
   removeLedgerRecord,
 } from './ledger.mjs';
-import { readPullRequest } from './post-review.mjs';
+import { readPullRequest, REPOSITORY } from './post-review.mjs';
 import { buildRivalPrompt, readPromptFile } from './prompt.mjs';
 import {
   createSessionDirectory,
@@ -37,6 +37,7 @@ const EFFORTS = new Set(['low', 'medium', 'high']);
 export const PR_HEAD_SETTLE_TIMEOUT_MS = 60_000;
 export const PR_HEAD_POLL_INTERVAL_MS = 5_000;
 const OID_PATTERN = /^[0-9a-f]{40}$/;
+const GITHUB_REMOTE_PREFIXES = ['https://github.com/', 'git@github.com:', 'ssh://git@github.com/'];
 const DEFAULT_BASE_REF = 'main';
 const USAGE =
   'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
@@ -147,6 +148,22 @@ function resolveRepoRoot(cwd) {
   return root;
 }
 
+// The branch tip is evidence about the PR only when it comes from the repository `gh pr view` reads:
+// a local or mirror origin lagging behind GitHub would make an old head look settled.
+export function assertOriginIsPullRequestRepository(repoRoot) {
+  const url = git(repoRoot, ['remote', 'get-url', 'origin']);
+  const path = url
+    .replace(/\/$/, '')
+    .replace(/\.git$/i, '')
+    .toLowerCase();
+  const expected = REPOSITORY.toLowerCase();
+  if (!GITHUB_REMOTE_PREFIXES.some((prefix) => path === `${prefix}${expected}`)) {
+    throw new Error(
+      `--pr reads ${REPOSITORY} through gh, but this checkout's origin is ${url}; launch from a checkout whose origin is ${REPOSITORY}`
+    );
+  }
+}
+
 export function readRemoteBranchHead(repoRoot, branch) {
   const ref = `refs/heads/${branch}`;
   // ls-remote matches a pattern against trailing path components rather than the whole ref name.
@@ -179,6 +196,7 @@ export async function readSettledPullRequest(
 
 async function resolveLaunchScope(repoRoot, scope) {
   if (scope.kind !== 'pr') return resolveScope(repoRoot, scope);
+  assertOriginIsPullRequestRepository(repoRoot);
   const metadata = await readSettledPullRequest(scope.number, {
     readBranchHead: (branch) => readRemoteBranchHead(repoRoot, branch),
   });

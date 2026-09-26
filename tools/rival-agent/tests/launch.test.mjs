@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  assertOriginIsPullRequestRepository,
   isRetryableResumeFailure,
   ledgerKeyFor,
   logPathForAttempt,
@@ -215,5 +216,26 @@ describe('reading the pushed branch head', () => {
 
     expect(readRemoteBranchHead(clone, 'feature')).toBe(pushed);
     expect(() => readRemoteBranchHead(clone, 'missing')).toThrow(/no branch named missing/);
+  });
+
+  // Found by the rival on PR 2360: a local origin left at the old commit made a stale PR head look
+  // settled, because `gh pr view` and `git ls-remote origin` were reading different repositories.
+  it('refuses an origin that is not the repository gh reads', () => {
+    root = mkdtempSync(join(tmpdir(), 'rival-launch-test-'));
+    const clone = join(root, 'clone');
+    run(['init', '-q', clone]);
+    run(['-C', clone, 'remote', 'add', 'origin', join(root, 'mirror.git')]);
+    expect(() => assertOriginIsPullRequestRepository(clone)).toThrow(/origin is .*mirror\.git/);
+
+    for (const url of [
+      'git@github.com:KyleMit/Splotch.git',
+      'https://github.com/KyleMit/Splotch',
+      'ssh://git@github.com/kylemit/splotch.git',
+    ]) {
+      run(['-C', clone, 'remote', 'set-url', 'origin', url]);
+      expect(() => assertOriginIsPullRequestRepository(clone)).not.toThrow();
+    }
+    run(['-C', clone, 'remote', 'set-url', 'origin', 'git@github.com:someone/Splotch.git']);
+    expect(() => assertOriginIsPullRequestRepository(clone)).toThrow(/someone\/Splotch/);
   });
 });
