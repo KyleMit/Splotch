@@ -1,6 +1,8 @@
+import { spawn } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { connect } from 'node:net';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -37,6 +39,7 @@ import {
   driveHandingBack,
   driveSplitGesturePasses,
   iosDriver,
+  processSignals,
   requestPageEraserRefill,
   windowOrientation,
   zeroInputProblem,
@@ -1819,7 +1822,7 @@ describe('the wiring that fronts the page and judges the input', () => {
 // both rotation settings before its first write and puts back exactly what it
 // found, deleting a setting that was never written.
 describe('the Android driver hands the rotation back as it found it', () => {
-  const fakePhone = (found, { failingRestore = null } = {}) => {
+  const fakePhone = (found, { failingRestore = null, killedOnce = null } = {}) => {
     const settings = new Map(Object.entries(found));
     const log = [];
     const apply = (args) => {
@@ -1841,6 +1844,10 @@ describe('the Android driver hands the rotation back as it found it', () => {
         log.push(`tryRun ${args.join(' ')}`);
         if (failingRestore && args[1] === 'settings' && args.includes(failingRestore)) {
           return { ok: false, stdout: '', stderr: 'device offline\n' };
+        }
+        if (killedOnce && args[1] === 'settings' && args.includes(killedOnce)) {
+          killedOnce = null;
+          return { ok: false, stdout: '', stderr: '' };
         }
         apply(args);
         return { ok: true, stdout: '', stderr: '' };
@@ -1972,12 +1979,14 @@ describe('the Android driver hands the rotation back as it found it', () => {
             await driver.openPage();
             await refuse('the page is PORTRAIT, not the requested LANDSCAPE');
           },
-          (message) => {
-            exits.push({
-              message,
-              settings: Object.fromEntries(phone.settings),
-            });
-            throw exited;
+          {
+            exit: (message) => {
+              exits.push({
+                message,
+                settings: Object.fromEntries(phone.settings),
+              });
+              throw exited;
+            },
           }
         )
       )
@@ -2066,6 +2075,195 @@ describe('the Android driver hands the rotation back as it found it', () => {
     );
     expect(result).toBe('report');
     expect(Object.fromEntries(clean.settings)).toEqual(asFound);
+  });
+  // Issue 2346: a signal runs no `finally`, so Ctrl-C during a landscape
+  // capture left user_rotation=1 on the phone.
+  describe('on SIGINT or SIGTERM', () => {
+    const fakeSignals = (phone) => {
+      const handlers = new Map();
+      const exits = [];
+      return {
+        handlers,
+        exits,
+        raise: (signal) => handlers.get(signal)(),
+        on: (signal, handler) => handlers.set(signal, handler),
+        off: (signal, handler) => {
+          if (handlers.get(signal) === handler) handlers.delete(signal);
+        },
+        exit: (code) => exits.push({ code, settings: Object.fromEntries(phone.settings) }),
+      };
+    };
+    const restoreWrites = (phone) =>
+      phone.log.filter((line) => /^tryRun shell settings (put|delete)/.test(line));
+    const quietly = async (run) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        return await run(warn);
+      } finally {
+        warn.mockRestore();
+      }
+    };
+
+    it.each([
+      ['SIGINT', 130],
+      ['SIGTERM', 143],
+    ])('hands the rotation back once on %s mid-capture, then exits %i', async (signal, code) =>
+      quietly(async () => {
+        const phone = fakePhone(asFound);
+        const driver = driverOn(phone);
+        const signals = fakeSignals(phone);
+
+        await settle(() =>
+          driveHandingBack(
+            driver,
+            async () => {
+              await driver.openPage();
+              signals.raise(signal);
+            },
+            { signals }
+          )
+        );
+
+        expect(signals.exits).toEqual([{ code, settings: asFound }]);
+        expect(restoreWrites(phone)).toHaveLength(2);
+        expect(signals.handlers.size).toBe(0);
+      })
+    );
+
+    it('hands the rotation back once when the capture completes unsignalled', async () => {
+      const phone = fakePhone(asFound);
+      const driver = driverOn(phone);
+      const signals = fakeSignals(phone);
+
+      const result = await settle(() =>
+        driveHandingBack(
+          driver,
+          async () => {
+            await driver.openPage();
+            expect([...signals.handlers.keys()]).toEqual(['SIGINT', 'SIGTERM']);
+            return 'report';
+          },
+          { signals }
+        )
+      );
+
+      expect(result).toBe('report');
+      expect(signals.exits).toEqual([]);
+      expect(restoreWrites(phone)).toHaveLength(2);
+      expect(Object.fromEntries(phone.settings)).toEqual(asFound);
+      expect(signals.handlers.size).toBe(0);
+    });
+
+    it('reports a restore that fails and still exits with the signal code', async () =>
+      quietly(async (warn) => {
+        const phone = fakePhone(asFound, { failingRestore: 'user_rotation' });
+        const driver = driverOn(phone);
+        const signals = fakeSignals(phone);
+
+        await settle(() =>
+          driveHandingBack(
+            driver,
+            async () => {
+              await driver.openPage();
+              signals.raise('SIGINT');
+            },
+            { signals }
+          )
+        );
+
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('could not settings put system user_rotation 0 on s')
+        );
+        expect(signals.exits).toEqual([
+          { code: 130, settings: { accelerometer_rotation: '1', user_rotation: '1' } },
+        ]);
+      }));
+
+    // A terminal Ctrl-C reaches the adb child writing a setting as well as Node,
+    // so the write it interrupted is tried again rather than left undone.
+    it('retries a restore write the signal killed', async () =>
+      quietly(async (warn) => {
+        const phone = fakePhone(asFound, { killedOnce: 'user_rotation' });
+        const driver = driverOn(phone);
+        await settle(() => driver.openPage());
+
+        driver.release();
+
+        expect(Object.fromEntries(phone.settings)).toEqual(asFound);
+        expect(warn).not.toHaveBeenCalled();
+      }));
+
+    // Pins the production wiring: the listeners land on the real process and
+    // come off again, so a signal after the hand-back gets Node's default.
+    it('listens on the process only while the device is out', async () =>
+      quietly(async () => {
+        const phone = fakePhone(asFound);
+        const driver = driverOn(phone);
+        const exits = [];
+        const baseline = process.listenerCount('SIGTERM');
+
+        await settle(() =>
+          driveHandingBack(
+            driver,
+            async () => {
+              await driver.openPage();
+              expect(process.listenerCount('SIGTERM')).toBe(baseline + 1);
+              process.emit('SIGTERM');
+            },
+            {
+              signals: {
+                ...processSignals,
+                exit: (code) => exits.push({ code, settings: Object.fromEntries(phone.settings) }),
+              },
+            }
+          )
+        );
+
+        expect(exits).toEqual([{ code: 143, settings: asFound }]);
+        expect(process.listenerCount('SIGTERM')).toBe(baseline);
+      }));
+
+    // A real signal to the whole process group, as a terminal sends it, landing
+    // while the final hand-back's own child runs: removing the listeners first
+    // let Node's default kill the hand-back halfway, and removing them straight
+    // after it dropped the queued signal so the capture carried on to exit 0.
+    const killProcessGroup = (pid) => {
+      try {
+        process.kill(-pid, 'SIGKILL');
+      } catch (error) {
+        if (error.code !== 'ESRCH') throw error;
+      }
+    };
+
+    it('finishes the hand-back and exits 130 on a Ctrl-C during it', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'hand-back-signal-'));
+      const marker = join(dir, 'handing-back');
+      const child = spawn(
+        process.execPath,
+        [fileURLToPath(new URL('./fixtures/signal-during-hand-back.mjs', import.meta.url)), marker],
+        { detached: true, stdio: ['ignore', 'pipe', 'pipe'] }
+      );
+      let stdout = '';
+      child.stdout.on('data', (chunk) => (stdout += chunk));
+      child.stderr.resume();
+      const exited = new Promise((resolve) =>
+        child.on('exit', (code, signal) => resolve({ code, signal }))
+      );
+      try {
+        await vi.waitFor(() => expect(existsSync(marker)).toBe(true), { timeout: 10_000 });
+
+        process.kill(-child.pid, 'SIGINT');
+
+        expect(await exited).toEqual({ code: 130, signal: null });
+        expect(stdout).toContain('hand-back ended SIGINT');
+        expect(stdout).not.toContain('capture carried on');
+      } finally {
+        // The fixture's `sleep` outlives a failed assertion; reap the group.
+        killProcessGroup(child.pid);
+        await exited;
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
   });
 });
 

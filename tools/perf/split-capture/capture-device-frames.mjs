@@ -14,6 +14,7 @@
 // contact moves per second against a 100-170 fidelity band, so cells captured
 // through it cannot be scored. This path clears the band.
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { constants as osConstants } from 'node:os';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
@@ -323,13 +324,17 @@ export function androidDriver({
     // A phone left at user_rotation=1 hands the next reader that assumes
     // portrait the wrong geometry (issue 2272). Idempotent, and it never throws or exits: it also runs on the refusal
     // paths, where the capture's own error is the one worth reporting, and each
-    // setting is put back whether or not the other one could be.
+    // setting is put back whether or not the other one could be. Each write gets
+    // a second attempt because a terminal Ctrl-C also kills the adb child
+    // writing it (issue 2346).
     release() {
       if (!priorRotation) return;
       const prior = priorRotation;
       priorRotation = null;
+      const restore = (command) => tryRun('adb', ['-s', serial, ...command]);
       for (const command of androidRotationRestoreCommands(prior)) {
-        const restored = tryRun('adb', ['-s', serial, ...command]);
+        let restored = restore(command);
+        if (!restored.ok) restored = restore(command);
         if (!restored.ok) {
           console.warn(
             `could not ${command.slice(1).join(' ')} on ${serial} (${restored.stderr.trim()}) — ` +
@@ -774,13 +779,54 @@ async function driveOpenedCapture({
 // the report is in hand, and on every refusal before that: `fail` exits the
 // process, so no `finally` would run in its place. `exit` is injectable only so
 // a test can prove the refusal path hands the device back.
-export function driveHandingBack(driver, drive, exit = fail) {
+//
+// A signal runs no `finally` either, so with `signals` a SIGINT or SIGTERM hands
+// the device back and then exits with the signal's conventional code (issue
+// 2346). The hand-back runs inside the handler, so it must be synchronous:
+// anything it awaited would let the capture's own device writes resume first —
+// the race createInterruptFence exists to prevent in the bundled capture.
+export function driveHandingBack(driver, drive, { exit = fail, signals = null } = {}) {
   const refuse = async (message) => {
     await driver.release();
     exit(message);
   };
-  return drive(refuse).finally(() => driver.release());
+  const stopListening = signals ? handBackOnSignal(driver, signals) : async () => {};
+  return drive(refuse).finally(async () => {
+    await driver.release();
+    await stopListening();
+  });
 }
+
+const HAND_BACK_SIGNALS = ['SIGINT', 'SIGTERM'];
+
+export const processSignals = {
+  on: (signal, handler) => process.on(signal, handler),
+  off: (signal, handler) => process.off(signal, handler),
+  exit: (code) => process.exit(code),
+};
+
+function handBackOnSignal(driver, { on, off, exit }) {
+  const listeners = HAND_BACK_SIGNALS.map((signal) => {
+    const handler = () => {
+      console.warn(`${signal}: handing the device back before exiting`);
+      driver.release();
+      exit(128 + osConstants.signals[signal]);
+    };
+    on(signal, handler);
+    return { signal, handler };
+  });
+  // A signal that lands during the final hand-back's own adb calls is queued
+  // until the event loop next polls; removing the listeners before that poll
+  // drops it, and the capture carries on to exit 0. Two turns guarantee a poll
+  // phase between the hand-back and the removal, whichever phase this runs in.
+  return async () => {
+    await nextTurn();
+    await nextTurn();
+    for (const { signal, handler } of listeners) off(signal, handler);
+  };
+}
+
+const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
 
 export async function captureDeviceFrames({
   platform = argFlag('platform', 'android'),
@@ -886,18 +932,23 @@ export async function captureDeviceFrames({
         })
       : iosDriver({ wdaUrl, pageUrl, nativeApp, orientation });
 
-  const { ready, runtimeIdentity, payload } = await driveHandingBack(driver, (refuse) =>
-    driveOpenedCapture({
-      driver,
-      host,
-      brush,
-      theme,
-      orientation,
-      nonce,
-      repeats,
-      reduceMotion,
-      refuse,
-    })
+  // Only the phone's hand-back is synchronous adb; the iPad's is a chain of WDA
+  // requests a signal handler could not finish before the capture's own resumed.
+  const { ready, runtimeIdentity, payload } = await driveHandingBack(
+    driver,
+    (refuse) =>
+      driveOpenedCapture({
+        driver,
+        host,
+        brush,
+        theme,
+        orientation,
+        nonce,
+        repeats,
+        reduceMotion,
+        refuse,
+      }),
+    { signals: platform === 'android' ? processSignals : null }
   );
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
