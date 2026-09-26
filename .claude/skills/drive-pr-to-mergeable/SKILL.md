@@ -101,7 +101,7 @@ cut its next layer on top of it; it stops adding layers and reports the blocker.
 Run `address-pr-review` with `mode=autonomous` against the PR, restricted to this single PR as
 "Where the fixes commit" requires. What that flag buys is a triage pass that settles, through
 `walk-through-decision`'s autonomous mode, the questions it would otherwise have escalated — the
-agent's own calls locked after a rival concurs, the user's parked — and every resulting record comes
+agent's own calls locked after a rival review, the user's parked — and every resulting record comes
 back for the PR body and the verdict. Its own autonomous contract withholds merging, which is
 correct here. Its rival handling is load-bearing: the review posts through your GitHub account, so
 it looks self-authored, and the skill identifies it by the `<!-- splotch-rival-review:` marker in
@@ -176,9 +176,11 @@ cannot merge. Inside a stack, "its base" is the branch below, and the mid-stack-
 
 **Shippable** means all four: the complete expected CI set registered and finished on the current
 head, green with any evidenced pre-existing red named; the PR mergeable and conflict-free, every
-review thread ended in a fix or a reasoned rebuttal, and no open finding you would want fixed before
-merge. Say so plainly and name the PR URL. Merging is the caller's decision — and, for a
-human-driven run, the user's.
+review thread ended in a fix or a reasoned rebuttal, no open finding you would want fixed before
+merge, and no decision affecting this PR parked or held for the user — whether it arose in an inline
+thread, a review summary, or a conversation comment. A parked decision makes the PR not shippable,
+so an autonomous caller cannot merge past it. Say so plainly and name the PR URL. Merging is the
+caller's decision — and, for a human-driven run, the user's.
 
 **Not shippable, or shippable with leftovers:** list every open action item, each with what it is,
 why it was not done in this PR (out of scope, needs a decision, larger than it reads), and whether

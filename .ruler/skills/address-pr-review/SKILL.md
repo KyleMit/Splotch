@@ -16,7 +16,7 @@ authors and posts review comments; this one works through them.
 An orchestrator may invoke this skill with `mode=autonomous`. The default remains interactive. In
 autonomous mode, a question you would otherwise have asked the user goes through
 `walk-through-decision` in `mode=autonomous` — **the autonomous-decision rule** below. It locks the
-agent's own calls after a rival concurs and parks the user's (anything a parent or child sees, among
+agent's own calls after a rival review and parks the user's (anything a parent or child sees, among
 others); return every resulting record to the orchestrator for the PR body or comment. A thread with
 an obvious answer is just addressed; the rule is for what you would have escalated. This mode does
 not authorize crossing a security boundary, merging or closing a PR, weakening tests or protections,

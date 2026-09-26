@@ -62,9 +62,10 @@ In priority order. An earlier rule beats a later one when they pull apart.
    hypothetical scale. **Child safety is an absolute veto** whatever the data says (a top-ranked
    verb was dropped for its predatory connotation). Parent usability and platform convention come
    before maximal toddler-proofing, with the child's drawing still protected.
-8. **Ceremony matches size.** A small, clear fix is a quick PR, no issue. ADRs are for product
-   decisions; tooling decisions go in skill notes. Open-ended work becomes a detailed issue an
-   independent session can pick up.
+8. **Ceremony matches size.** A small, clear fix is a quick PR, no issue. Decisions about agent
+   tooling — skills, the rival agent, the harness — go in skill notes, not ADRs; significant
+   architecture, product and build tooling alike, still gets an ADR under `create-adr`'s bar.
+   Open-ended work becomes a detailed issue an independent session can pick up.
 9. **When still tied, prefer what can be undone** — and never take an irreversible step on an
    unverified signal (roll forward on a possibly flaky red rather than auto-revert).
 

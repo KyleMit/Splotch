@@ -1,6 +1,6 @@
 ---
 name: walk-through-decision
-description: Walk through a decision in plain language — what is actually being decided, what is at stake, the real options with honest pros and cons, a table of what stays the same and what differs, and one recommended approach — tagging each decision as the agent's to make or the user's. `mode=autonomous` makes the agent's own calls instead of asking, locked only after a rival agent concurs. Use when asked to walk through, think through, or talk through a decision, to weigh options or trade-offs, to compare approaches, or when the question is "which of these should I pick?" and the reasoning matters as much as the answer; and with `mode=autonomous` whenever unattended work reaches a question it would otherwise stop to ask the user.
+description: Walk through a decision in plain language — what is actually being decided, what is at stake, the real options with honest pros and cons, a table of what stays the same and what differs, and one recommended approach — tagging each decision as the agent's to make or the user's. `mode=autonomous` makes the agent's own calls instead of asking, each locked after a rival agent reviews it (a still-split high-stakes call is held for the user). Use when asked to walk through, think through, or talk through a decision, to weigh options or trade-offs, to compare approaches, or when the question is "which of these should I pick?" and the reasoning matters as much as the answer; and with `mode=autonomous` whenever unattended work reaches a question it would otherwise stop to ask the user.
 ---
 
 # Walk through a decision
@@ -208,6 +208,10 @@ their autonomous modes — or when the user asks the agent to make its own calls
 A small ambiguity with an obvious answer, one you were never going to raise, is just decided and
 noted by the calling skill; routing it through here buys a rival run it did not need.
 
+**Several decisions** are taken in dependency order without waiting between them: the one-at-a-time
+stop in [Several decisions at once](#several-decisions-at-once) is for a user who is answering. A
+decision that depends on a parked one is parked with it.
+
 ### 1. Classify
 
 Tag the decision with part A of [criteria.md](criteria.md). **The user's decision is never made
@@ -239,8 +243,10 @@ path outside the checkout, holding the full walkthrough, the pick, the stakes ca
 > under part A? Then answer AGREE or DISAGREE with the pick. If DISAGREE, give your pick, the
 > criteria rule behind it, and whether you could accept the handler's pick as a second choice.
 
-Launch it through `run-rival-agent` with `--question-file`; the answer arrives in the session's
-`findings.json` `summary`. Read the answer and verify it, as you would a review:
+Launch it through `run-rival-agent` with `--uncommitted --question-file`. The question flag alone
+scopes the rival's worktree to committed `main`, which would miss this branch's work, any
+uncommitted edit the decision turns on, and a criteria change still in flight. The answer arrives in
+the session's `findings.json` `summary`. Read the answer and verify it, as you would a review:
 
 * **The rival reclassifies it as the user's** → park it. Two agents disagreeing about whether the
   user should see something resolves toward the user seeing it.
@@ -263,8 +269,8 @@ you can accept, including either side's second choice.
 Neither side digs in over direction-picking. The user would rather a low-stakes call be made and
 explained than have one decision stall an overnight run or quarantine something that matters.
 
-If the rival cannot run at all, a low-stakes pick is locked and recorded as **unreviewed**, and a
-high-stakes one is held.
+If the rival cannot run — at the first question or at the reconciliation question — a low-stakes
+pick is locked and recorded as **unreviewed**, and a high-stakes one is held.
 
 ### 4. The decision record
 
