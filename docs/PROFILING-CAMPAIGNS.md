@@ -1286,11 +1286,17 @@ Two habits avoid it, and the second also fixes the target:
 * **Put the brush and the target in the capture path**, not just in a descriptive label:
   `--output=perf-profiles/<campaign>/ipad-device-native/<cell>/crayon-real-screen.json`. `targetOf`
   resolves the target from a path segment that names a known target, so a campaign-specific
-  directory name alone leaves it `unknown` — and an `unknown` target is scored against the default
-  gate rather than the one that cell is actually held to.
+  directory name alone leaves it unresolved — and an unresolved target is scored against the default
+  gate rather than the one that cell is actually held to. `perf:evidence:keep` resolves each capture
+  from the artifact, then its path under `--corpus`, then the corpus directory's own name, so
+  `--corpus=perf-profiles/<campaign>/<target-id>` files every capture under that target without
+  `--target`. `--target=<id>` supplies the target when the corpus root is not a target directory;
+  one that contradicts a target-named corpus root is refused, and so is any capture none of those
+  resolve — it is never filed as `unknown`. Hand captures follow the same order, and one nothing
+  places on a target keeps its runtime label.
 * **Check what `perf:evidence:keep` says it kept.** It prints `<target>/<brush>` per retained
-  capture. `unknown` on either side means the corpus will be misread by the next rescore, and the
-  fix is to restage the paths and re-promote with `--force`.
+  capture. A `pen` brush on a crayon cell means the brush was guessed, the corpus will be misread by
+  the next rescore, and the fix is to restage the paths and re-promote with `--force`.
 
 ## Keep the evidence before the scratch is gone
 
@@ -1300,6 +1306,10 @@ Two habits avoid it, and the second also fixes the target:
 npm run perf:evidence:keep -- --corpus=perf-profiles/campaign --campaign=<name> \
   --product-commit=<capture-product-sha>
 ```
+
+Point `--corpus` at the campaign directory (targets as its subdirectories) or at one
+`<campaign>/<target-id>` directory; either names the target, so `--target` is needed only for a
+corpus laid out without a target directory.
 
 `perf-profiles/` is gitignored, so everything a campaign captured disappears from a clean checkout.
 Promotion requires the exact capture product SHA and stamps it into `index.json`; copy that SHA from
