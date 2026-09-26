@@ -82,9 +82,11 @@ Structure:
   `gen:*`, and `update:*` namespaces; they just point at `tools/asset-gen/…`.
 
 **The shared-module contract.** The generators import exactly four modules from `web/src` —
-`ai/styles.ts`, `ai/prompt.ts`, `server/ai/geminiSafety.ts`, `state/books.ts` — the app's single
-source of truth for styles/prompts/safety/ catalog. That set is the entire sanctioned import surface
-(documented in `tools/asset-gen/CLAUDE.md`); the pipeline reaches into nothing else under `web/src`.
+`ai/styles.ts`, `ai/prompt.ts`, `theme.ts`, `state/books.ts` — the app's single source of truth for
+styles/prompts/theme/catalog. Gemini response classification moved into `lib/gemini-response.ts`
+once the app stopped calling Gemini (amended 2026-09). That set is the entire sanctioned import
+surface (documented in `tools/asset-gen/CLAUDE.md`); the pipeline reaches into nothing else under
+`web/src`.
 
 ## Consequences
 

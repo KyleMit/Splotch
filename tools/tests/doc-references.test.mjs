@@ -123,9 +123,43 @@ describe('resolution', () => {
   it('reads relative Markdown links as paths', () => {
     expect(unresolved('docs/TESTING.md', '[perf](../tools/perf/README.md)')).toEqual([]);
     expect(unresolved('docs/TESTING.md', '[gone](../tools/perf/GONE.md)')).toEqual([
-      'path ../tools/perf/GONE.md',
+      'link ../tools/perf/GONE.md',
     ]);
     expect(unresolved('docs/TESTING.md', '[site](https://splotch.art/a/b.md)')).toEqual([]);
+  });
+
+  it('checks a single-file link beside the doc', () => {
+    expect(unresolved('tools/perf/README.md', '[docs](../../docs/TESTING.md)')).toEqual([]);
+    expect(unresolved('tools/perf/ios/NOTES2.md', '[up](../README.md)')).toEqual([]);
+    expect(unresolved('tools/perf/ios/x.md', '[local](README.md)')).toEqual(['link README.md']);
+  });
+
+  // A link is followed from where the doc sits; retrying it against each
+  // ancestor would pass a link that is broken for every reader.
+  it('resolves a link only from the doc folder', () => {
+    expect(unresolved('tools/perf/ios/x.md', '[readme](./README.md)')).toEqual([
+      'link ./README.md',
+    ]);
+  });
+
+  it('follows a Ruler orientation source link from its generated location', () => {
+    expect(unresolved('tools/.ruler/AGENTS.md', '[perf](perf/README.md)')).toEqual([]);
+    expect(unresolved('.ruler/conventions.md', '[testing](docs/TESTING.md)')).toEqual([]);
+  });
+
+  it('ignores link syntax quoted in a code span', () => {
+    expect(unresolved('docs/TESTING.md', 'write `[x](gone.md)` for a link')).toEqual([]);
+  });
+
+  it('refuses a path tail two tracked paths share', () => {
+    const files = [...FILES, 'tools/perf/docs/pipeline.md', 'tools/asset-gen/docs/pipeline.md'];
+    const shared = createIndex({ files, packages: PACKAGES });
+    const findings = findUnresolved({
+      docs: ['docs/TESTING.md'],
+      read: () => '`docs/pipeline.md`',
+      index: shared,
+    });
+    expect(findings.map(({ ref }) => ref)).toEqual(['docs/pipeline.md']);
   });
 
   it('leaves a gitignored path alone', () => {

@@ -242,6 +242,21 @@ export function pathCandidate(raw, { topLevelNames, dirNames }) {
   return HAS_EXTENSION.test(text) && dirNames.has(segments[0]) ? text : null;
 }
 
+// A Markdown link target is an explicit file reference, so a single filename
+// counts and nothing about its shape has to vouch for it.
+export function linkTarget(raw) {
+  const target = raw.replace(/[?#].*$/, '');
+  if (!target || URL_SCHEME.test(target) || target.startsWith('/')) return null;
+  let decoded;
+  try {
+    decoded = decodeURI(target);
+  } catch {
+    return null;
+  }
+  if (/[<>{}*]|…|\.\.\./.test(decoded) || PLACEHOLDER.test(decoded)) return null;
+  return decoded.replace(/\/$/, '');
+}
+
 export function extractReferences(text, { topLevelNames, dirNames, identifiers = false }) {
   const refs = [];
   const prose = proseOnly(text);
@@ -261,11 +276,11 @@ export function extractReferences(text, { topLevelNames, dirNames, identifiers =
     if (identifier) refs.push({ kind: 'identifier', ref: identifier[1], line });
   }
 
-  for (const match of prose.matchAll(MARKDOWN_LINK)) {
-    const target = match[1].replace(/#.*$/, '');
-    if (!target || URL_SCHEME.test(target) || target.startsWith('/')) continue;
-    const path = pathCandidate(decodeURI(target), { topLevelNames, dirNames });
-    if (path) refs.push({ kind: 'path', ref: path, line: lineOf(proseStarts, match.index) });
+  // Link syntax quoted inside a code span (`![](url)`) is an example, not a link.
+  const linkText = prose.replace(INLINE_CODE, (span) => ' '.repeat(span.length));
+  for (const match of linkText.matchAll(MARKDOWN_LINK)) {
+    const target = linkTarget(match[1]);
+    if (target) refs.push({ kind: 'link', ref: target, line: lineOf(proseStarts, match.index) });
   }
 
   for (const match of text.matchAll(NPM_RUN)) {
@@ -277,7 +292,23 @@ export function extractReferences(text, { topLevelNames, dirNames, identifiers =
   return refs;
 }
 
-// A doc resolves a relative path against its own folder or any folder above
+// Where a reader follows a link from: beside the doc, except for a Ruler
+// orientation source, whose text renders in the CLAUDE.md/AGENTS.md generated
+// next to its `.ruler/` folder. Skill sources keep their own folder, since the
+// generated skill copies sit at the same depth.
+function linkBase(file) {
+  const dir = posix.dirname(file);
+  if (file.startsWith('.ruler/skills/')) return dir;
+  if (dir === '.ruler') return '';
+  if (dir.endsWith('/.ruler')) return posix.dirname(dir);
+  return dir;
+}
+
+function linkPath(file, ref) {
+  return posix.normalize(posix.join(linkBase(file), ref));
+}
+
+// A doc resolves a relative path in prose against its own folder or any folder above
 // it: skills write paths relative to their package, nested orientation docs
 // relative to their area, and most docs relative to the repo root.
 function candidatePaths(file, ref) {
@@ -291,6 +322,8 @@ function candidatePaths(file, ref) {
   return paths;
 }
 
+const AMBIGUOUS_TAIL = Symbol('ambiguous tail');
+
 export function createIndex({
   files,
   packages,
@@ -301,15 +334,20 @@ export function createIndex({
   const dirs = new Set();
   const dirNames = new Set();
   const topLevelNames = new Set();
-  // Every in-tree tail of two or more segments, so a doc may name a file by
-  // the unambiguous end of its path (`lib/drawing/engine.ts`, written from a
-  // doc about web/src) the way the prose around it does.
-  const tails = new Set();
+  // Every in-tree tail of two or more segments, mapped to the one path it
+  // ends, so a doc may name a file by the end of its path
+  // (`lib/drawing/engine.ts`, written from a doc about web/src) the way the
+  // prose around it does. A tail two paths share (`docs/pipeline.md`) names
+  // neither, since either could vanish while the reference kept passing.
+  const tails = new Map();
   for (const file of files) {
     const segments = file.split('/');
     for (let start = 1; start < segments.length - 1; start += 1) {
       for (let end = start + 2; end <= segments.length; end += 1) {
-        tails.add(segments.slice(start, end).join('/'));
+        const tail = segments.slice(start, end).join('/');
+        const owner = segments.slice(0, end).join('/');
+        const known = tails.get(tail);
+        tails.set(tail, known === undefined || known === owner ? owner : AMBIGUOUS_TAIL);
       }
     }
     topLevelNames.add(segments[0]);
@@ -336,9 +374,17 @@ export function resolveReference(file, { kind, ref }, index) {
     return found ? 'resolved' : 'missing';
   }
   if (kind === 'identifier') return index.sourceWords.has(ref) ? 'resolved' : 'missing';
+  if (kind === 'link') {
+    const path = linkPath(file, ref);
+    if (index.tracked.has(path) || index.dirs.has(path)) return 'resolved';
+    return index.ignoredPaths.has(path) ? 'ignored' : 'missing';
+  }
   const candidates = candidatePaths(file, ref);
   if (candidates.some((path) => index.tracked.has(path) || index.dirs.has(path))) return 'resolved';
-  if (!NAVIGATION_SEGMENT.test(ref.split('/')[0]) && index.tails.has(ref)) return 'resolved';
+  const tailOwner = index.tails.get(ref);
+  if (!NAVIGATION_SEGMENT.test(ref.split('/')[0]) && typeof tailOwner === 'string') {
+    return 'resolved';
+  }
   if (candidates.some((path) => index.ignoredPaths.has(path))) return 'ignored';
   return 'missing';
 }
@@ -439,9 +485,13 @@ export function scan({ root = ROOT, identifiers = false } = {}) {
   const unresolvedPaths = new Set();
   for (const file of docs) {
     for (const reference of extractReferences(read(file), index)) {
-      if (reference.kind !== 'path') continue;
+      if (reference.kind === 'script' || reference.kind === 'identifier') continue;
       if (resolveReference(file, reference, index) !== 'missing') continue;
-      for (const path of candidatePaths(file, reference.ref)) {
+      const paths =
+        reference.kind === 'link'
+          ? [linkPath(file, reference.ref)]
+          : candidatePaths(file, reference.ref);
+      for (const path of paths) {
         if (!path.startsWith('..')) unresolvedPaths.add(path);
       }
     }
@@ -455,6 +505,7 @@ export function scan({ root = ROOT, identifiers = false } = {}) {
 
 const KIND_LABELS = {
   path: 'path',
+  link: 'link',
   script: 'npm script',
   identifier: 'identifier',
 };

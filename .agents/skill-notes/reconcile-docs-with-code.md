@@ -91,11 +91,28 @@ decide.
 The allowlist has its own drift check: an entry that no longer matches a live unresolved reference
 fails the gate, so a doc that gets fixed cannot leave an exemption behind to hide the next miss.
 
+## Review round 1 (rival, PR 2336)
+
+The Codex review reproduced three holes the first draft's own suite missed, all fixed:
+
+* **Links were read like prose.** A Markdown link target went through the prose rules, so a
+  single-file link (`[x](README.md)`) was never checked, and a relative link was retried against
+  every ancestor folder — `./README.md` in `tools/vectorize/docs/` passed on `tools/vectorize/`'s
+  README, though every reader following it would hit a 404. Links are now their own kind: any
+  segment count, resolved once from where the doc renders. A Ruler orientation source renders in the
+  `CLAUDE.md` beside its `.ruler/` folder, so its links resolve from there; a skill source's copies
+  sit at the same depth as the source, so its own folder serves. Link syntax quoted inside a code
+  span is skipped. Zero new hits after the change.
+* **Path tails were accepted when shared.** `docs/pipeline.md` resolved on two different files.
+  Tails now map to the one path they end, and a shared tail resolves nothing.
+* **`tools/asset-gen/docs/` exclusion.** The review argued these "in force" records are living.
+  Including them surfaced 7 hits: 6 were rename and migration narrative ("`twin-src/` →
+  `fill-src/`", "since retired") and one was the present-tense shared-module contract in
+  `architecture.md`, still listing `geminiSafety.ts`. The contract line was fixed; the directory
+  stays excluded, for the same reason `docs/adrs/` is.
+
 ## Open questions
 
-* Resolving by path tail anywhere in the tree is lenient: a stale `lib/idb.ts` in a doc about
-  `tools/` would pass because `web/src/lib/idb.ts` exists. No such case turned up, and scoping tails
-  to an area would need every doc to declare its area.
 * Extensionless references under inner folder names (`drawing/earlyBoot`, a module specifier) are
   not checked at all. Resolving them by stem would catch stale module names, but coloring page ids
   and GitHub actions have the same shape.
