@@ -2,7 +2,8 @@
 
 Issue #2328 phase 1 was run against the Claude Code project memory directory for Splotch. It held 44
 entries plus `MEMORY.md`; the index initially named all 44 exactly once. A local backup was made
-before editing. The directory now holds 30 entries, each indexed exactly once.
+before editing. This first pass left 30 entries, each indexed exactly once; the follow-up below
+retired those copies after moving their durable guidance into the repo.
 
 ## Retired entries
 
@@ -67,8 +68,9 @@ after a concrete Codex memory format and location can be tested.
 
 The first pass preserved 30 memories because it checked whether each was *true*, not whether its
 lesson had one canonical home. A second pass compared every survivor with the current repository.
-The durable guidance is now owned by the following maintained sources; the external memory copies
-can be retired without losing those instructions.
+The durable guidance is now owned by the following maintained sources. After committing those
+changes, the 30 external files were backed up byte-for-byte and removed; `MEMORY.md` was emptied.
+The mechanical checker then reported zero files, errors, and advisory references.
 
 | Canonical source                                    | Retired memory entries                                                                                                                                                                  |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
