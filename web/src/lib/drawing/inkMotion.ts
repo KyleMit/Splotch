@@ -177,6 +177,16 @@ export function createInkMotion(
   // tiles already hold the pixels, and a bounded number of blits reads them. A
   // pen ghost still replays: that is exact and cheap, and a five-finger drag's
   // footprint covers most of the paper, where the tile copy is the dearer path.
+  //
+  // The ghost is built synchronously inside engine.undo, and its cost is an
+  // accepted price of the cue rather than an overrun to trim. On a Galaxy S21 FE
+  // in Android Chrome a pen undo spends about 2 ms median and 4 ms P95 here,
+  // measured as engine.undoInkMotion with Reduce Motion off against on, while
+  // the tile restore stays under 2 ms P95 (issue #2238, issuecomment-5828881795).
+  // Deferring the build to the next frame was rejected: the tile read must stay
+  // ahead of undoTiledCommand, so only the DOM insert and the layout reads in
+  // driftTowards could move, and they would land in the frame the next-frame
+  // gate measures instead.
   function undo(
     canvas: HTMLCanvasElement,
     command: StrokeGroupCommand | undefined,
