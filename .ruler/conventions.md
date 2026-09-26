@@ -86,3 +86,9 @@
   that's the most common reason a fresh PR is red. The cloud-only `session-start.sh` and
   `cloud-branch-preview.sh` SessionStart hooks run only when `CLAUDE_CODE_REMOTE=true`; see
   `docs/CLOUD/Claude.md` for details.
+* ESLint's `max-lines` counts CSS comment lines inside a Svelte `<style>` block, even with
+  `skipComments: true`. After editing a large style block, run `npm run lint` and shorten or extract
+  code when it crosses its configured cap.
+* Evidence packages can lose files to `.gitignore`: `logs/` directories and `*.log` files are
+  ignored anywhere in the tree. Store captured logs as `controls/*.log.txt`, run `git check-ignore`
+  on the package, and compare its tracked file list with the manifest before committing.

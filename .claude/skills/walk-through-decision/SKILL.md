@@ -150,12 +150,16 @@ Rules:
 **Skip the table** when two options differ along one axis — a sentence is better, and a two-row
 table is a costume for a sentence.
 
-**Offer an artifact** — one line, and only build it if asked — when either holds:
+**Offer an artifact** — one line — when either holds:
 
 * the decision is **visual** (layout, spacing, a UI arrangement), where mocking both up beats
   describing them; or
 * there are **three or more options across many dimensions**, where a chat table stops being
   readable.
+
+For a Splotch UI or layout choice, build the side-by-side visual before asking the user to choose.
+Show the actual spatial difference, using the project's tokens; include motion when the choice is
+about a transition. For a nonvisual choice, build an offered artifact only if the user asks.
 
 ## Plain language
 

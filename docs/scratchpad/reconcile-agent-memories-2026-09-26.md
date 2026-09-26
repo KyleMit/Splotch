@@ -62,3 +62,36 @@ other machines. This host has no comparable Codex project memory directory under
 persisted threads and goals are different from Claude Code's indexed memory files. The skill should
 therefore be a Claude-only direct provider package for the observed store. Add a Codex package only
 after a concrete Codex memory format and location can be tested.
+
+## Follow-up: move the remaining lessons into the repo
+
+The first pass preserved 30 memories because it checked whether each was *true*, not whether its
+lesson had one canonical home. A second pass compared every survivor with the current repository.
+The durable guidance is now owned by the following maintained sources; the external memory copies
+can be retired without losing those instructions.
+
+| Canonical source                                    | Retired memory entries                                                                                                                                                                  |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create-adr` skill and `tools/rival-agent/NOTES.md` | `adrs-product-only-tooling-in-skill-notes`                                                                                                                                              |
+| `pr-screenshots` skill                              | `before-after-screenshots-detached-checkout`                                                                                                                                            |
+| `docs/PROFILING-ANDROID.md`                         | `chained-device-commands-continue-after-kill`                                                                                                                                           |
+| `walk-through-decision` skill                       | `decisions-one-at-a-time-with-options`, `show-design-tradeoffs-visually`                                                                                                                |
+| `.ruler/conventions.md`                             | `evidence-package-gitignore-traps`, `max-lines-counts-svelte-style-comments`, `shell-edits-bypass-format-hook`                                                                          |
+| Asset-generator instructions and live local config  | `gemini-key-and-classifier-permissions`                                                                                                                                                 |
+| `.ruler/github.md`                                  | `gh-needs-repo-flag-outside-checkout`, `long-session-pr-and-commit-cadence`, `negated-closing-keyword-still-closes`, `never-type-shas-interpolate-them`                                 |
+| `drive-pr-to-mergeable` skill                       | `gh-pr-checks-watch-exits-early-after-push`                                                                                                                                             |
+| `.ruler/commands.md`                                | `investigate-timeouts-on-fast-commands`, `judge-npm-run-check-by-exit-code`, `read-the-clock-for-budgeted-units`, `run-check-before-every-commit`, `tools-tests-flake-under-perf-build` |
+| `docs/TESTING.md`                                   | `linux-snapshot-baselines-from-ci-artifact`, `pre-push-checks-after-deletions-and-app-html-edits`                                                                                       |
+| `docs/PROFILING-CAMPAIGNS.md`                       | `perf-recapture-is-not-the-goal`                                                                                                                                                        |
+| `ship-issue` skill                                  | `read-issue-comments-before-implementing`, `rival-reviewed-prs-are-merge-authorized`                                                                                                    |
+| `create-stacked-prs` skill                          | `stacked-pr-branch-hygiene`                                                                                                                                                             |
+| `design` skill                                      | `user-facing-copy-no-ai-isms`                                                                                                                                                           |
+| `docs/WORKTREES.md`                                 | `worktree-needs-own-pnpm-install`                                                                                                                                                       |
+
+The other three entries described this host's changeable permission setup:
+`history-rewrites-denied-in-permission-mode`, `ipad-secure-origin-unattended-permission`, and
+`subagent-worktree-write-and-branch-delete-limits`. Their authority is the live local settings and
+permission decision, not a committed snapshot. The iPad setup procedure remains in
+`docs/PROFILING-IPAD.md`. The asset-generator entry above had the same local-state problem; only its
+portable secret-isolation rule was moved into the repo. No credential value or local permission rule
+was committed.

@@ -55,6 +55,10 @@ privacy — is plain, professional, and direct ("We never keep a copy of your ke
 * **"You" is the parent, "they"/"kids" is the child.** First-person-plural "we" for the maker's
   promises.
 * **Honest about tradeoffs** — copy explains *why* ("so playtime stays in Splotch").
+* **Cut stock AI phrasing.** Review drafts for formulaic lead-ins, repeated bold leads, contrast
+  formulas, and chains of em dashes. Use short active sentences and one term per concept, with the
+  app's actual UI names. Describe routine mechanics as calm promises while preserving required
+  privacy and permission facts. Critique and revise important public copy before publishing.
 
 ## Token vocabulary
 

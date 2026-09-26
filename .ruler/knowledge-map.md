@@ -103,6 +103,8 @@ and the triage/won't-do flow live in `docs/ISSUE-WORKFLOW.md`. After completing 
 pass, apply `reviewed` only when the issue is clear, actionable, and correctly labeled; automation
 then moves it to the project's `ToDo` status.
 
+The `create-adr` skill owns the boundary between numbered ADRs and agent-tooling design notes.
+
 Remaining `docs/`:
 
 | File                             | When to read it                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
