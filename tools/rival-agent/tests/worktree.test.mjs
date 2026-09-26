@@ -42,10 +42,11 @@ function sh(args, cwd = repo) {
   }).trim();
 }
 
-// Compares whole paths because the mkdtemp root's random suffix can contain any substring.
+// Compares whole paths because the mkdtemp root's random suffix can contain any substring, and
+// splits on NUL because a TMPDIR may legally contain a newline.
 function worktreePaths() {
-  return sh(['worktree', 'list', '--porcelain'])
-    .split('\n')
+  return sh(['worktree', 'list', '--porcelain', '-z'])
+    .split('\0')
     .filter((line) => line.startsWith('worktree '))
     .map((line) => line.slice('worktree '.length));
 }
