@@ -318,7 +318,11 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
         Buffer.from(result.data, 'base64'),
         result.mimeType
       );
-    } catch {
+    } catch (cause) {
+      console.warn(
+        '[generate-image] Sticker image rejected:',
+        cause instanceof Error ? cause.message : cause
+      );
       throw error(502, 'The sticker picture could not be used. Please try again.');
     }
 

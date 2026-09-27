@@ -144,7 +144,11 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   let prepared: Awaited<ReturnType<typeof prepareGeneratedImage>>;
   try {
     prepared = await prepareGeneratedImage(job.context.style, image, job.mimeType);
-  } catch {
+  } catch (cause) {
+    console.warn(
+      '[generation-result] Sticker image rejected:',
+      cause instanceof Error ? cause.message : cause
+    );
     await settleFreeGeneration(job.context, false, 'upstream');
     await discardJob(jobId);
     throw error(502, 'The sticker picture could not be used. Please try again.');

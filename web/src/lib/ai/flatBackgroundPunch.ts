@@ -1,9 +1,8 @@
 // Cuts a subject out of a deliberately flat, uniform backdrop and returns it as
 // RGBA with the backdrop transparent for Sticker covers and live generations.
 //
-// The fill is seeded from the border and spreads only through connected
-// background, so a matching color INSIDE the artwork is never cut away — a global color
-// match would punch holes in the picture.
+// The generic cover cut is seeded from the border. Sticker mode also clears
+// enclosed magenta gaps, since its prompt forbids magenta inside the artwork.
 import sharp from 'sharp';
 
 // Squared euclidean RGB distance under which a pixel counts as backdrop. Sized
@@ -16,15 +15,26 @@ const BACKDROP_TOLERANCE_SQ = 34 * 34 * 3;
 // than leaving a magenta halo around the cutout.
 const RIM_BLEED_PX = 2;
 
+// A usable render loses most of its field but keeps a substantial subject.
+// Outside this band the backdrop was missed or the whole image was eaten.
 const MIN_PUNCHED_FRACTION = 0.05;
 const MAX_PUNCHED_FRACTION = 0.95;
 const MAGENTA_MIN_CHANNEL = 150;
 const MAGENTA_MAX_GREEN = 125;
+const STICKER_EDGE_BAND_PX = 6;
+const MAGENTA_SPILL_DELTA = 8;
 
 interface Rgb {
   r: number;
   g: number;
   b: number;
+}
+
+function matchesBackdrop(data: Buffer, index: number, backdrop: Rgb): boolean {
+  const dr = data[index] - backdrop.r;
+  const dg = data[index + 1] - backdrop.g;
+  const db = data[index + 2] - backdrop.b;
+  return dr * dr + dg * dg + db * db <= BACKDROP_TOLERANCE_SQ;
 }
 
 function dominantBorderColor(data: Buffer, width: number, height: number, channels: number): Rgb {
@@ -67,10 +77,7 @@ function floodFillBackdrop(
     const p = y * width + x;
     if (mask[p]) return;
     const i = p * channels;
-    const dr = data[i] - backdrop.r;
-    const dg = data[i + 1] - backdrop.g;
-    const db = data[i + 2] - backdrop.b;
-    if (dr * dr + dg * dg + db * db > BACKDROP_TOLERANCE_SQ) return;
+    if (!matchesBackdrop(data, i, backdrop)) return;
     mask[p] = 1;
     stack.push(p);
   };
@@ -118,7 +125,8 @@ function growMask(mask: Uint8Array, width: number, height: number, radius: numbe
 }
 
 export async function punchFlatBackground(
-  input: Buffer | Uint8Array
+  input: Buffer | Uint8Array,
+  mode: 'flat' | 'sticker' = 'flat'
 ): Promise<{ buffer: Buffer; punchedFraction: number; backdrop: Rgb }> {
   const { data, info } = await sharp(input)
     .ensureAlpha()
@@ -133,6 +141,12 @@ export async function punchFlatBackground(
     height,
     RIM_BLEED_PX
   );
+  if (mode === 'sticker') {
+    for (let p = 0; p < width * height; p++) {
+      if (matchesBackdrop(data, p * channels, backdrop)) mask[p] = 1;
+    }
+  }
+  const edgeBand = mode === 'sticker' ? growMask(mask, width, height, STICKER_EDGE_BAND_PX) : null;
 
   // An explicit interleaved RGBA buffer, never joinChannel: sharp tags a joined
   // 4th band as a generic extra channel and the encoder silently flattens it
@@ -150,6 +164,20 @@ export async function punchFlatBackground(
       punched++;
     } else {
       rgba[dst + 3] = channels === 4 ? data[src + 3] : 255;
+      if (
+        edgeBand?.[p] &&
+        data[src] - data[src + 1] > MAGENTA_SPILL_DELTA &&
+        data[src + 2] - data[src + 1] > MAGENTA_SPILL_DELTA
+      ) {
+        const alpha = Math.max(
+          0,
+          Math.min(1, (data[src + 1] - backdrop.g) / Math.max(1, 255 - backdrop.g))
+        );
+        rgba[dst] = 255;
+        rgba[dst + 1] = 255;
+        rgba[dst + 2] = 255;
+        rgba[dst + 3] = Math.round(rgba[dst + 3] * alpha);
+      }
     }
   }
 
@@ -165,7 +193,7 @@ export async function punchFlatBackground(
 export async function keyStickerBackground(
   input: Buffer | Uint8Array
 ): Promise<{ buffer: Buffer; punchedFraction: number }> {
-  const { buffer, punchedFraction, backdrop } = await punchFlatBackground(input);
+  const { buffer, punchedFraction, backdrop } = await punchFlatBackground(input, 'sticker');
   const isMagenta =
     backdrop.r >= MAGENTA_MIN_CHANNEL &&
     backdrop.b >= MAGENTA_MIN_CHANNEL &&
@@ -175,7 +203,9 @@ export async function keyStickerBackground(
     punchedFraction < MIN_PUNCHED_FRACTION ||
     punchedFraction > MAX_PUNCHED_FRACTION
   ) {
-    throw new Error('The sticker picture did not have a usable magenta backdrop');
+    throw new Error(
+      `Sticker key rejected: backdrop rgb(${Math.round(backdrop.r)}, ${Math.round(backdrop.g)}, ${Math.round(backdrop.b)}), keyed ${(punchedFraction * 100).toFixed(1)}% (expected magenta and ${MIN_PUNCHED_FRACTION * 100}–${MAX_PUNCHED_FRACTION * 100}% keyed)`
+    );
   }
   return { buffer, punchedFraction };
 }

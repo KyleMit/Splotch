@@ -39,11 +39,6 @@ const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
 const THEMES = RESOLVED_THEMES;
 
-// A keyed cover should lose most of its field but keep a substantial subject.
-// Outside this band the model gave us a shadowed or textured backdrop the flood
-// fill could only nibble at, or a flat image it ate whole. Either way the render
-// is unusable, so it is rejected BEFORE the write — anything that reaches disk is
-// something a human will review and ship.
 export class CoverFailuresError extends Error {
   constructor(count) {
     super(`${count} cover(s) failed.`);

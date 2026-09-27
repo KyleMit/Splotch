@@ -34,13 +34,16 @@ function pnpmOverrides() {
 
 describe('pnpm overrides', () => {
   const overrides = pnpmOverrides();
-  const { devDependencies } = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
+  const { dependencies, devDependencies } = JSON.parse(
+    readFileSync(join(repoRoot, 'package.json'), 'utf8')
+  );
 
   it('parses the block it is guarding', () => {
     expect(Object.keys(overrides)).toContain(SHARP_OVERRIDE_KEY);
   });
 
   it('pins @capacitor/assets to the sharp range package.json declares', () => {
-    expect(overrides[SHARP_OVERRIDE_KEY]).toBe(devDependencies.sharp);
+    expect(overrides[SHARP_OVERRIDE_KEY]).toBe(dependencies.sharp);
+    expect(devDependencies.sharp).toBeUndefined();
   });
 });

@@ -59,7 +59,7 @@ Non-`keep` rows first.
 | happy-dom                           | dev      | keep                               |
 | prettier                            | dev      | keep                               |
 | prettier-plugin-svelte              | dev      | keep                               |
-| sharp                               | dev      | keep                               |
+| sharp                               | prod     | keep                               |
 | svelte                              | dev      | keep                               |
 | svelte-check                        | dev      | keep                               |
 | svgo                                | dev      | keep                               |
@@ -725,9 +725,10 @@ Non-`keep` rows first.
 
 ### sharp
 
-* **Version:** `^0.35.2` declared · 0.35.2 locked (latest 0.35.3) · dev
-* **Used for:** Image processing in the asset-gen pipeline, and the override target that pins
-  `@capacitor/assets`' transitive sharp (proxy-blocked libvips download in cloud sessions).
+* **Version:** `^0.35.4` declared · 0.35.4 locked · prod
+* **Used for:** Sticker chroma-key processing in the hosted AI endpoints and asset-gen pipeline, and
+  the override target that pins `@capacitor/assets`' transitive sharp (proxy-blocked libvips
+  download in cloud sessions).
 * **Source:** npm · [github.com/lovell/sharp](https://github.com/lovell/sharp) · published by Lovell
   Fuller (lovell)
 * **License:** Apache-2.0
@@ -910,7 +911,7 @@ any of the 50 direct packages).
 ### Packages with install scripts (`hasInstallScript`)
 
 Supply-chain-relevant subset from the lockfile: `@google/genai` (direct dev), `dprint` (direct dev),
-`sharp` (direct dev), `esbuild` (under `@sveltejs/adapter-netlify`), `protobufjs` (under
+`sharp` (direct prod), `esbuild` (under `@sveltejs/adapter-netlify`), `protobufjs` (under
 `@google/genai`), `fsevents` (macOS-only, under `vite`), and `yarn` (transitive tooling copy). All
 are well-known, org- or foundation-backed packages; none are anomalous.
 

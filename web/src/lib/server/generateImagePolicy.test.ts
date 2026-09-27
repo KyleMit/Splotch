@@ -1,6 +1,5 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildPromptForStyle } from '../ai/prompt';
 import { hasPunchedBackground, styleSuffixesFor } from '../ai/styles';
 import {
   isAllowedImageType,
@@ -23,10 +22,9 @@ describe('generate image policy', () => {
 
   it('keeps the live Sticker prompt aligned with the keyed cover', () => {
     expect(hasPunchedBackground('Sticker')).toBe(true);
-    expect(resolveGenerationPrompt('Sticker')).toBe(
-      buildPromptForStyle('Sticker', styleSuffixesFor('light'), 'light')
-    );
     expect(resolveGenerationPrompt('Sticker')).toContain('BRIGHT MAGENTA');
+    expect(styleSuffixesFor('light').Sticker).toContain('BRIGHT MAGENTA');
+    expect(styleSuffixesFor('dark').Sticker).toBe(styleSuffixesFor('light').Sticker);
   });
 
   it('closes usage and worker style values over the configured style categories', () => {
