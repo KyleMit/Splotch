@@ -22,8 +22,10 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   per provider, each launching the *other* vendor's local CLI (the Claude package runs Codex, the
   Codex package runs Claude), so that one skill name works from either runner;
   `analyze-session-transcripts` has independent provider packages because Claude Code and Codex
-  persist different transcript formats. Edit registered packages and notes directly, never through
-  `.ruler/`, and never create an undeclared provider by copying one.
+  persist different transcript formats. `reconcile-agent-memories` has a Claude-only package for
+  Claude Code's indexed project memory; no Codex equivalent has been verified. Edit registered
+  packages and notes directly, never through `.ruler/`, and never create an undeclared provider by
+  copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's

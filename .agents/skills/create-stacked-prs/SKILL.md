@@ -116,6 +116,10 @@ whole thing (a native tool takes the body as a parameter and has no such hazard)
 full summary `ship-issue` step 3 describes — what changed and why, the notable edits, the approach
 and alternatives, the commands run, and caveats — plus its position in the stack.
 
+Check `git branch --show-current` before each stack commit and new branch. Checkout commands used to
+open a PR can leave the next change on the wrong layer. Do not delete a remote branch while its PR
+is open: GitHub can close that PR and refuse to reopen it after the branch is recreated.
+
 Verify the chain after creating each PR — read every open PR's head and base branch, natively or
 with the CLI. A wrong base is easy to miss and expensive later:
 

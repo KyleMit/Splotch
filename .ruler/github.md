@@ -5,6 +5,11 @@ For every GitHub task, **use the native GitHub skill and its MCP/app tools first
 host's macOS Keychain-backed `gh` credentials, so `gh` authentication failures there are expected;
 never try to repair them by re-authenticating from the sandbox.
 
+When `gh` is needed from a scratch directory outside this checkout, pass `-R KyleMit/Splotch` and
+verify any expected downloaded files exist. For long-running work, open a draft PR early, commit
+reviewable steps as they finish, and keep the reasoning in a committed note so progress survives a
+session handoff.
+
 GitHub auto-links a `#` followed by digits (`#12`) into a reference to the issue or pull request
 with that number. So a plain list like "#1 done, #2 pass" in a PR body or comment silently turns
 into links to unrelated issues/PRs.
@@ -52,3 +57,9 @@ expose an update-comment call, others only a create. So when you do find a bad S
 already posted, check your available tools for a comment-update capability first and edit the
 comment in place; fall back to a correction comment only when there is none, since that leaves the
 wrong SHA on the thread and costs every later reader a cross-reference.
+
+**A negated closing keyword can still close an issue.** GitHub may interpret “does not close \#123”
+as a closing reference, even with the hash escaped. When an issue must remain open, write “Issue
+\#123 stays open” or “Refs \#123” with no `fix`, `close`, or `resolve` near the number. Inspect the
+PR's `closingIssuesReferences` and its commit messages before merging; a closing keyword in a commit
+message can also close the issue.

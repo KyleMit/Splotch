@@ -22,12 +22,14 @@ AGENTS.md              linguist-generated=true
 .agents/skills/burn-down-audits/**             linguist-generated=false
 .claude/skills/run-rival-agent/**              linguist-generated=false
 .agents/skills/run-rival-agent/**              linguist-generated=false
+.claude/skills/reconcile-agent-memories/**     linguist-generated=false
 .claude/skills/analyze-session-transcripts/**  linguist-generated=false
 .agents/skills/analyze-session-transcripts/**  linguist-generated=false
 .claude/skill-notes/burn-down-audits.md              linguist-generated=false
 .agents/skill-notes/burn-down-audits.md              linguist-generated=false
 .claude/skill-notes/run-rival-agent.md               linguist-generated=false
 .agents/skill-notes/run-rival-agent.md               linguist-generated=false
+.claude/skill-notes/reconcile-agent-memories.md      linguist-generated=false
 .claude/skill-notes/analyze-session-transcripts.md   linguist-generated=false
 .agents/skill-notes/analyze-session-transcripts.md   linguist-generated=false
 

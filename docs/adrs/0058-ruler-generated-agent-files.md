@@ -66,8 +66,10 @@ directly:
   Claude Code process through fixed permission-reviewed wrappers, and the Claude package launches a
   read-only Codex process (see the 2026-09 amendment below). A registered skill may also exist for
   one provider only (the Codex-only `implement-issue-stack` did, until it was retired in favor of
-  the shared `ship-campaign`). The registry declares exactly which providers exist; changing one
-  never implies creating or syncing another provider.
+  the shared `ship-campaign`). `reconcile-agent-memories` is Claude-only because Claude Code's
+  indexed project memory is the observed store and no comparable Codex store has been verified. The
+  registry declares exactly which providers exist; changing one never implies creating or syncing
+  another provider.
 * **Config:** `.ruler/ruler.toml` — `default_agents = ["claude", "codex"]`, gitignore/MCP/backup all
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
 * **Skill design notes:** shared notes in `.ruler/skill-notes/` are mirrored to both agents. A

@@ -19,13 +19,16 @@ An ADR is warranted when a decision:
 Skip trivial implementation details, stylistic choices, and decisions that are self-evident from
 reading the code.
 
-## Asset-gen carve-out
+## Tooling carve-outs
+
+Agent workflow, skill, and harness decisions belong in the relevant skill note or a `NOTES.md`
+beside shared tooling, not a numbered ADR. Existing tooling ADRs remain historical records.
 
 Decisions about the **asset-generation pipeline** (line art, coloring fills, the tools under
 `tools/asset-gen/`) do NOT become numbered ADRs — they live as un-numbered decision records in
 `tools/asset-gen/docs/` (same Context/Decision/Consequences structure, a descriptive kebab-case
-filename, no number). Everything below about numbering and the index applies only to app/infra
-decisions in `docs/adrs/`.
+filename, no number). Everything below about numbering and the index applies only to product, app,
+and infrastructure decisions in `docs/adrs/`.
 
 ## Process
 
