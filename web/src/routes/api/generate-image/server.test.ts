@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import sharp from 'sharp';
 
 const mocks = vi.hoisted(() => ({
   authorize: vi.fn(),
@@ -66,6 +67,22 @@ function post(style?: string) {
   );
 }
 
+async function stickerPng(subject: boolean): Promise<Buffer> {
+  const background = sharp({
+    create: { width: 64, height: 64, channels: 3, background: '#f604f9' },
+  });
+  if (!subject) return background.png().toBuffer();
+  const sticker = await sharp({
+    create: { width: 32, height: 32, channels: 3, background: '#ffffff' },
+  })
+    .png()
+    .toBuffer();
+  return background
+    .composite([{ input: sticker, left: 16, top: 16 }])
+    .png()
+    .toBuffer();
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.authorize.mockResolvedValue({
@@ -84,6 +101,50 @@ beforeEach(() => {
 });
 
 describe('POST /api/generate-image', () => {
+  it('keys a live Sticker image before delivery and charges the free creation', async () => {
+    mocks.reserveDaily.mockResolvedValue({ reserved: true, remaining: 400 });
+    mocks.completeGrant.mockResolvedValue({ remaining: 9 });
+    mocks.generateImage.mockResolvedValue({
+      kind: 'image',
+      data: (await stickerPng(true)).toString('base64'),
+      mimeType: 'image/png',
+    });
+
+    const response = await post('Sticker');
+    const { data, info } = await sharp(Buffer.from(await response.arrayBuffer()))
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('image/png');
+    expect(data[3]).toBe(0);
+    expect(data[(32 * info.width + 32) * info.channels + 3]).toBe(255);
+    expect(mocks.completeGrant).toHaveBeenCalledExactlyOnceWith('a'.repeat(64), 'reservation-1');
+  });
+
+  it('rejects a blank Sticker image and releases the free creation', async () => {
+    mocks.reserveDaily.mockResolvedValue({ reserved: true, remaining: 400 });
+    mocks.generateImage.mockResolvedValue({
+      kind: 'image',
+      data: (await stickerPng(false)).toString('base64'),
+      mimeType: 'image/png',
+    });
+
+    const response = await post('Sticker');
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'The sticker picture could not be used. Please try again.',
+    });
+    expect(mocks.failGrant).toHaveBeenCalledExactlyOnceWith(
+      'a'.repeat(64),
+      'upstream',
+      'reservation-1'
+    );
+    expect(mocks.completeGrant).not.toHaveBeenCalled();
+  });
+
   it('keeps the legacy multipart request contract', async () => {
     mocks.authorize.mockResolvedValue({
       authorized: true,

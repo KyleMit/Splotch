@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
-import { punchFlatBackground } from '../lib/flat-background-punch.mjs';
+import { keyStickerBackground, punchFlatBackground } from '../lib/flat-background-punch.mjs';
 
 const SIZE = 64;
 const BACKDROP = { r: 128, g: 128, b: 132 };
@@ -78,5 +78,18 @@ describe('punchFlatBackground', () => {
     const { punchedFraction } = await punchFlatBackground(solid);
 
     expect(punchedFraction).toBe(1);
+  });
+});
+
+describe('keyStickerBackground', () => {
+  it('rejects a flat magenta result and a non-magenta field', async () => {
+    const flat = await sharp({
+      create: { width: SIZE, height: SIZE, channels: 3, background: '#f604f9' },
+    })
+      .png()
+      .toBuffer();
+
+    await expect(keyStickerBackground(flat)).rejects.toThrow('usable magenta backdrop');
+    await expect(keyStickerBackground(await scene())).rejects.toThrow('usable magenta backdrop');
   });
 });

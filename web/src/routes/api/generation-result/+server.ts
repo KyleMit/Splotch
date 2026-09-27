@@ -12,6 +12,7 @@ import { GENERATION_UNAVAILABLE_CODE, type GenerationUnavailable } from '$lib/ai
 import { rateLimit } from '$lib/server/rateLimit';
 import { generationResultBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
+import { prepareGeneratedImage } from '$lib/server/generatedImage';
 import {
   discardJob,
   readJob,
@@ -140,11 +141,20 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   // is the blob expiring between the two reads. Retryable, not a refusal.
   if (!image) throw error(502, 'That creation could not be collected');
 
+  let prepared: Awaited<ReturnType<typeof prepareGeneratedImage>>;
+  try {
+    prepared = await prepareGeneratedImage(job.context.style, image, job.mimeType);
+  } catch {
+    await settleFreeGeneration(job.context, false, 'upstream');
+    await discardJob(jobId);
+    throw error(502, 'The sticker picture could not be used. Please try again.');
+  }
+
   const freeRemaining = await settleFreeGeneration(job.context, true, 'upstream');
   await discardJob(jobId);
 
   const headers: Record<string, string> = {
-    'Content-Type': job.mimeType,
+    'Content-Type': prepared.mimeType,
     'Cache-Control': 'no-store',
   };
   if (freeRemaining !== null) headers[FREE_GENERATIONS_REMAINING_HEADER] = String(freeRemaining);
@@ -152,7 +162,7 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
     const reportToken = issueReportToken(binding);
     if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
   }
-  return new Response(Buffer.from(image), { headers });
+  return new Response(Buffer.from(prepared.bytes), { headers });
 };
 
 export const GET: RequestHandler = apiHandler(collect);

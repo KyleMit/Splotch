@@ -63,6 +63,9 @@ importers:
       openai:
         specifier: ^7.22.0
         version: 7.22.0(ws@8.21.3)(zod@4.6.5)
+      sharp:
+        specifier: ^0.35.4
+        version: 0.35.4(@types/node@22.20.4)
       svelte:
         specifier: ^5.57.1
         version: 5.57.1(@typescript-eslint/types@8.70.1)
@@ -166,9 +169,6 @@ importers:
       scripts-info:
         specifier: ^1.0.5
         version: 1.0.5
-      sharp:
-        specifier: ^0.35.4
-        version: 0.35.4(@types/node@22.20.4)
       stylelint:
         specifier: ^17.15.0
         version: 17.15.0(supports-color@10.2.2)(typescript@6.0.3)

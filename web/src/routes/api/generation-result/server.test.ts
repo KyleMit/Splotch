@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import sharp from 'sharp';
 
 const mocks = vi.hoisted(() => ({
   rateLimit: vi.fn(),
@@ -41,6 +42,22 @@ const freeContext = { free: { installationId, reservationId }, style: 'Crayon' }
 const paidContext = { free: null, style: null };
 const pictureBytes = new Uint8Array([137, 80, 78, 71]);
 
+async function stickerPng(subject: boolean): Promise<Buffer> {
+  const background = sharp({
+    create: { width: 64, height: 64, channels: 3, background: '#f604f9' },
+  });
+  if (!subject) return background.png().toBuffer();
+  const sticker = await sharp({
+    create: { width: 32, height: 32, channels: 3, background: '#ffffff' },
+  })
+    .png()
+    .toBuffer();
+  return background
+    .composite([{ input: sticker, left: 16, top: 16 }])
+    .png()
+    .toBuffer();
+}
+
 function get(headers: Record<string, string> = {}, job = jobId) {
   const request = new Request(
     `http://localhost/api/generation-result?job=${encodeURIComponent(job)}`,
@@ -78,6 +95,48 @@ afterEach(() => {
 });
 
 describe('GET /api/generation-result', () => {
+  it('keys a collected Sticker image before returning and settling it', async () => {
+    mocks.readJob.mockResolvedValue({
+      status: 'image',
+      mimeType: 'image/png',
+      context: { ...freeContext, style: 'Sticker' },
+    });
+    mocks.takeJobImage.mockResolvedValue(await stickerPng(true));
+
+    const response = await get();
+    const { data, info } = await sharp(Buffer.from(await response.arrayBuffer()))
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    expect(response.status).toBe(200);
+    expect(data[3]).toBe(0);
+    expect(data[(32 * info.width + 32) * info.channels + 3]).toBe(255);
+    expect(mocks.completeFreeGeneration).toHaveBeenCalledExactlyOnceWith(
+      installationId,
+      reservationId
+    );
+  });
+
+  it('rejects a blank collected Sticker image without spending its reservation', async () => {
+    mocks.readJob.mockResolvedValue({
+      status: 'image',
+      mimeType: 'image/png',
+      context: { ...freeContext, style: 'Sticker' },
+    });
+    mocks.takeJobImage.mockResolvedValue(await stickerPng(false));
+
+    const response = await get();
+
+    expect(response.status).toBe(502);
+    expect(mocks.failFreeGeneration).toHaveBeenCalledExactlyOnceWith(
+      installationId,
+      'upstream',
+      reservationId
+    );
+    expect(mocks.completeFreeGeneration).not.toHaveBeenCalled();
+    expect(mocks.discardJob).toHaveBeenCalledExactlyOnceWith(jobId);
+  });
+
   it('returns the shared safety refusal status for a background result', async () => {
     const response = await get({ [API_KEY_HEADER]: 'parent-key' });
 
