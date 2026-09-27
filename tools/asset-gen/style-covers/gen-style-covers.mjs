@@ -32,20 +32,12 @@ import {
 } from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
 import { PAPER_COLORS, RESOLVED_THEMES } from '../../../web/src/lib/theme.ts';
-import { punchFlatBackground } from '../lib/flat-background-punch.mjs';
+import { keyStickerBackground } from '../lib/flat-background-punch.mjs';
 
 const THUMB_SIZE = 448;
 // Display-sized cover thumbnails hide q75 artifacts, so favor download bytes over source fidelity.
 const WEBP_QUALITY = 75;
 const THEMES = RESOLVED_THEMES;
-
-// A keyed cover should lose most of its field but keep a substantial subject.
-// Outside this band the model gave us a shadowed or textured backdrop the flood
-// fill could only nibble at, or a flat image it ate whole. Either way the render
-// is unusable, so it is rejected BEFORE the write — anything that reaches disk is
-// something a human will review and ship.
-export const MIN_PUNCHED_FRACTION = 0.05;
-export const MAX_PUNCHED_FRACTION = 0.95;
 
 export class CoverFailuresError extends Error {
   constructor(count) {
@@ -64,14 +56,7 @@ async function generateStyledImage(ai, { imageBytes, mimeType, style, theme, tem
 
 // Cut the flat field off a cutout style, rejecting a key that plainly missed.
 async function punchOrReject(bytes) {
-  const { buffer, punchedFraction } = await punchFlatBackground(bytes);
-  if (punchedFraction < MIN_PUNCHED_FRACTION || punchedFraction > MAX_PUNCHED_FRACTION) {
-    throw new Error(
-      `keyed ${(punchedFraction * 100).toFixed(0)}% of the frame, outside the ` +
-        `${MIN_PUNCHED_FRACTION * 100}-${MAX_PUNCHED_FRACTION * 100}% band — the model ` +
-        `probably ignored the flat backdrop; re-roll`
-    );
-  }
+  const { buffer, punchedFraction } = await keyStickerBackground(bytes);
   return { buffer, note: ` (punched ${(punchedFraction * 100).toFixed(0)}%)` };
 }
 

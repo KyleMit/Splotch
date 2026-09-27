@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
-import { punchFlatBackground } from '../lib/flat-background-punch.mjs';
+import { keyStickerBackground, punchFlatBackground } from '../lib/flat-background-punch.mjs';
 
 const SIZE = 64;
 const BACKDROP = { r: 128, g: 128, b: 132 };
@@ -34,6 +34,12 @@ async function scene({ enclosedPocket = false, noise = 0 } = {}) {
 async function alphaAt(buffer, x, y) {
   const { data, info } = await sharp(buffer).raw().toBuffer({ resolveWithObject: true });
   return data[(y * info.width + x) * info.channels + 3];
+}
+
+async function pixelAt(buffer, x, y) {
+  const { data, info } = await sharp(buffer).raw().toBuffer({ resolveWithObject: true });
+  const i = (y * info.width + x) * info.channels;
+  return [...data.subarray(i, i + info.channels)];
 }
 
 describe('punchFlatBackground', () => {
@@ -78,5 +84,93 @@ describe('punchFlatBackground', () => {
     const { punchedFraction } = await punchFlatBackground(solid);
 
     expect(punchedFraction).toBe(1);
+  });
+});
+
+describe('keyStickerBackground', () => {
+  it('clears magenta enclosed by the sticker silhouette', async () => {
+    const raw = Buffer.alloc(SIZE * SIZE * 3);
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const i = (y * SIZE + x) * 3;
+        const inSticker = x >= 12 && x < 52 && y >= 12 && y < 52;
+        const inGap = x >= 28 && x < 36 && y >= 28 && y < 36;
+        const color = inSticker && !inGap ? [255, 255, 255] : [246, 4, 249];
+        raw[i] = color[0];
+        raw[i + 1] = color[1];
+        raw[i + 2] = color[2];
+      }
+    }
+    const input = await sharp(raw, { raw: { width: SIZE, height: SIZE, channels: 3 } })
+      .png()
+      .toBuffer();
+
+    const { buffer } = await keyStickerBackground(input);
+
+    expect(await alphaAt(buffer, 32, 32)).toBe(0);
+    expect(await alphaAt(buffer, 20, 20)).toBe(255);
+  });
+
+  it('removes the magenta fringe from a soft sticker edge', async () => {
+    const sticker = await sharp({
+      create: { width: 36, height: 36, channels: 3, background: '#ffffff' },
+    })
+      .png()
+      .toBuffer();
+    const input = await sharp({
+      create: { width: SIZE, height: SIZE, channels: 3, background: '#f604f9' },
+    })
+      .composite([{ input: sticker, left: 14, top: 14 }])
+      .blur(2)
+      .png()
+      .toBuffer();
+
+    const { buffer } = await keyStickerBackground(input);
+    const { data, info } = await sharp(buffer).raw().toBuffer({ resolveWithObject: true });
+    let opaquePinkPixels = 0;
+    for (let p = 0; p < info.width * info.height; p++) {
+      const i = p * info.channels;
+      if (data[i + 3] === 255 && data[i + 1] < 235 && data[i] > data[i + 1] + 8) {
+        opaquePinkPixels++;
+      }
+    }
+
+    expect(opaquePinkPixels).toBe(0);
+  });
+
+  it('keeps violet artwork beside an enclosed magenta gap', async () => {
+    const raw = Buffer.alloc(SIZE * SIZE * 3);
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const i = (y * SIZE + x) * 3;
+        const inSticker = x >= 12 && x < 52 && y >= 12 && y < 52;
+        const inViolet = x >= 24 && x < 40 && y >= 24 && y < 40;
+        const inGap = x >= 28 && x < 36 && y >= 28 && y < 36;
+        const color =
+          inGap || !inSticker ? [246, 4, 249] : inViolet ? [138, 43, 226] : [255, 255, 255];
+        raw[i] = color[0];
+        raw[i + 1] = color[1];
+        raw[i + 2] = color[2];
+      }
+    }
+    const input = await sharp(raw, { raw: { width: SIZE, height: SIZE, channels: 3 } })
+      .png()
+      .toBuffer();
+
+    const { buffer } = await keyStickerBackground(input);
+
+    expect(await pixelAt(buffer, 27, 32)).toEqual([138, 43, 226, 255]);
+    expect(await alphaAt(buffer, 32, 32)).toBe(0);
+  });
+
+  it('rejects a flat magenta result and a non-magenta field', async () => {
+    const flat = await sharp({
+      create: { width: SIZE, height: SIZE, channels: 3, background: '#f604f9' },
+    })
+      .png()
+      .toBuffer();
+
+    await expect(keyStickerBackground(flat)).rejects.toThrow('keyed 100.0%');
+    await expect(keyStickerBackground(await scene())).rejects.toThrow('backdrop rgb(128');
   });
 });

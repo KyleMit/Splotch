@@ -53,7 +53,7 @@ export const DARK_STYLE_SUFFIXES = {
  * Styles generated on a flat field that the pipeline keys out, so the picker's
  * own surface shows through the cover instead of a baked plate. Their suffix
  * must describe that field as flat and unshadowed — see
- * tools/asset-gen/lib/flat-background-punch.mjs, which flood-fills it from the
+ * flatBackgroundPunch.ts, which flood-fills it from the
  * border, and the drop shadow AiImagePrompt draws in CSS to replace the baked one.
  */
 const PUNCHED_BACKGROUND_STYLES = ['Sticker'] as const satisfies readonly StyleName[];

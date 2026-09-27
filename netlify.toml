@@ -41,7 +41,7 @@
 
 [build.environment]
   # dependencies == what this Netlify build needs; devDependencies == local/CI-only
-  # tooling (Playwright, dprint, sharp, eslint, the Capacitor CLIs, ...). The
+  # tooling (Playwright, dprint, eslint, the Capacitor CLIs, ...). The
   # inverted split + --prod halves the install (ADR-0070). GitHub Actions and local
   # dev run a plain `pnpm install` and are unaffected. --prod is pnpm's --omit=dev;
   # npm's --no-audit/--no-fund have no pnpm equivalent because pnpm does neither on

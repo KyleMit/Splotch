@@ -18,6 +18,7 @@ import {
 } from '$lib/freeGenerations';
 import { recordByokUsage, recordTokenUsage } from '$lib/server/usage';
 import { aiProvider } from '$lib/server/ai/provider';
+import { prepareGeneratedImage } from '$lib/server/generatedImage';
 import {
   authorizeGenerationRequest,
   type GenerationAuthorization,
@@ -310,6 +311,21 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     }
     if (result.kind === 'error') throw error(502, result.reason);
 
+    let prepared: Awaited<ReturnType<typeof prepareGeneratedImage>>;
+    try {
+      prepared = await prepareGeneratedImage(
+        style,
+        Buffer.from(result.data, 'base64'),
+        result.mimeType
+      );
+    } catch (cause) {
+      console.warn(
+        '[generate-image] Sticker image rejected:',
+        cause instanceof Error ? cause.message : cause
+      );
+      throw error(502, 'The sticker picture could not be used. Please try again.');
+    }
+
     recordGenerationUsage(authorization, style, 'succeeded', platform);
     usageRecorded = true;
 
@@ -321,7 +337,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     }
 
     const headers: Record<string, string> = {
-      'Content-Type': result.mimeType,
+      'Content-Type': prepared.mimeType,
       'Cache-Control': 'no-store',
     };
     if (freeRemaining !== null) {
@@ -334,7 +350,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       const reportToken = issueReportToken(reportTokenBinding(authorization));
       if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
     }
-    return new Response(Buffer.from(result.data, 'base64'), { headers });
+    return new Response(Buffer.from(prepared.bytes), { headers });
   } catch (cause) {
     if (usageAttempted && !usageRecorded) {
       recordGenerationUsage(authorization, usageStyle, 'failed', platform);
