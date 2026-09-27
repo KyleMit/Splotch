@@ -14,11 +14,16 @@ function parsePort(value, name) {
   return port;
 }
 
-export function probePort(port, host = '127.0.0.1') {
+function probeAddress(port, host, allowUnavailable) {
   return new Promise((resolve, reject) => {
     const server = createServer();
     server.once('error', (error) => {
       if (error.code === 'EADDRINUSE' || error.code === 'EACCES') resolve(false);
+      else if (
+        allowUnavailable &&
+        (error.code === 'EADDRNOTAVAIL' || error.code === 'EAFNOSUPPORT')
+      )
+        resolve(true);
       else reject(error);
     });
     server.listen({ port, host }, () => {
@@ -27,10 +32,19 @@ export function probePort(port, host = '127.0.0.1') {
   });
 }
 
+export async function probePort(port, host = 'localhost') {
+  const addresses = host === 'localhost' ? ['127.0.0.1', '::1'] : [host];
+  for (const address of addresses) {
+    if (!(await probeAddress(port, address, host === 'localhost' && address === '::1')))
+      return false;
+  }
+  return true;
+}
+
 export async function findFreePort({
   from = DEFAULT_FROM_PORT,
   to = DEFAULT_TO_PORT,
-  host = '127.0.0.1',
+  host = 'localhost',
   probe = probePort,
 } = {}) {
   if (from > to) throw new Error('--from must be no greater than --to');

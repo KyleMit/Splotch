@@ -304,7 +304,7 @@
     "report:browser-floor": "Read-only evidence for the audit-compatibility skill: global usage the browser floor reaches vs Baseline Widely Available, every runtime feature probe in shipped web/src with whether the risk register cites it, and -- --feature <web-features id> lookups against the floor",
     "show:pr-state": "Read-only PR snapshot from gh: current head, merge metadata, registered checks, and paginated review threads; -- <number> [--repo owner/name] [--json]. Check expected CI registration separately",
     "show:epic-children": "Read-only inventory of an epic's nested GitHub sub-issues, with per-parent and unique counts; -- <number> [--repo owner/name] [--json]. Read comments before classifying children",
-    "show:free-port": "Print one currently free local TCP port without stopping any listener; -- [--from 5300] [--to 5399] [--host 127.0.0.1]. Retry on EADDRINUSE when starting the server",
+    "show:free-port": "Print one currently free local TCP port without stopping any listener; -- [--from 5300] [--to 5399] [--host localhost]. Retry on EADDRINUSE when starting the server",
     "check:coloring-pack-retention": "Fail when web/static no longer serves, byte-identically, a coloring-pack file some released native app downloads by manifest path + SHA-256 (ADR-0103); reads the committed tools/release/coloring-pack-snapshots/ and prints per-release unserved/blocked counts. Every pack-shipping release is listed with its exact unserved-file count in RELEASED_PACK_BROKEN_FILES (0 when healthy), so a lost snapshot also fails. Also run as a test by npm run test:tools",
     "lint": "ESLint over the whole repo minus the ignores in eslint.config.js (flat config; enforces runes-only, no legacy stores)",
     "lint:fix": "ESLint with autofix",

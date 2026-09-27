@@ -1,6 +1,9 @@
 import { spawnSync } from 'node:child_process';
 
-export function runGitHub(args, { cwd = process.cwd(), allowedExitCodes = [0] } = {}) {
+export function runGitHub(
+  args,
+  { cwd = process.cwd(), allowedExitCodes = [0], includeResult = false } = {}
+) {
   const result = spawnSync('gh', args, { cwd, encoding: 'utf8' });
   if (result.error) throw new Error(`Cannot run gh: ${result.error.message}`);
   if (!allowedExitCodes.includes(result.status)) {
@@ -8,7 +11,9 @@ export function runGitHub(args, { cwd = process.cwd(), allowedExitCodes = [0] } 
       `gh ${args.slice(0, 2).join(' ')} failed: ${result.stderr.trim() || `exit ${result.status}`}`
     );
   }
-  return result.stdout;
+  return includeResult
+    ? { status: result.status, stdout: result.stdout, stderr: result.stderr }
+    : result.stdout;
 }
 
 export function parseGitHubJson(output, context) {

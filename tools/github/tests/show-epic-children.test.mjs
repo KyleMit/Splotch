@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { collectEpicChildren, formatEpicChildren } from '../show-epic-children.mjs';
 
-function child(number, title, state = 'open') {
+function child(number, title, state = 'open', repository = 'KyleMit/Splotch') {
   return {
     number,
     title,
     state,
-    labels: [{ name: 'type:chore' }],
+    labels: ['type:chore'],
     assignees: [],
-    html_url: `https://github.com/KyleMit/Splotch/issues/${number}`,
+    html_url: `https://github.com/${repository}/issues/${number}`,
+    repository_url: `https://api.github.com/repos/${repository}`,
   };
 }
 
@@ -29,15 +30,47 @@ describe('show-epic-children', () => {
     };
     const inventory = collectEpicChildren({ number: 10, repository: 'KyleMit/Splotch', run });
     expect(inventory.parents).toEqual([
-      { number: 10, count: 2 },
-      { number: 11, count: 1 },
-      { number: 12, count: 1 },
-      { number: 13, count: 0 },
+      { repository: 'KyleMit/Splotch', number: 10, count: 2 },
+      { repository: 'KyleMit/Splotch', number: 11, count: 1 },
+      { repository: 'KyleMit/Splotch', number: 12, count: 1 },
+      { repository: 'KyleMit/Splotch', number: 13, count: 0 },
     ]);
     expect(inventory.children.map((issue) => issue.number)).toEqual([11, 12, 13]);
-    expect(inventory.duplicates).toEqual([{ number: 13, parent: 12, firstParent: 11 }]);
+    expect(inventory.duplicates).toEqual([
+      {
+        number: 13,
+        repository: 'KyleMit/Splotch',
+        parent: 12,
+        parentRepository: 'KyleMit/Splotch',
+        firstParent: 11,
+        firstParentRepository: 'KyleMit/Splotch',
+      },
+    ]);
     expect(calls.filter((args) => args.includes('--paginate'))).toHaveLength(4);
     expect(formatEpicChildren(inventory)).toContain('Unique descendants: 3');
+  });
+
+  it('keeps same-numbered issues in different repositories distinct', () => {
+    const calls = [];
+    const run = (args) => {
+      calls.push(args);
+      const path = args[1];
+      if (path === 'repos/KyleMit/Splotch/issues/10')
+        return JSON.stringify({ number: 10, title: 'Epic' });
+      if (path === 'repos/KyleMit/Splotch/issues/10/sub_issues')
+        return [child(11, 'Local'), child(11, 'Remote', 'closed', 'KyleMit/Other')]
+          .map((issue) => JSON.stringify({ ...issue, state_reason: 'not_planned' }))
+          .join('\n');
+      if (path.endsWith('/11/sub_issues')) return '';
+      throw new Error(`Unexpected gh call: ${args.join(' ')}`);
+    };
+    const inventory = collectEpicChildren({ number: 10, repository: 'KyleMit/Splotch', run });
+    expect(inventory.children.map((issue) => issue.repository)).toEqual([
+      'KyleMit/Splotch',
+      'KyleMit/Other',
+    ]);
+    expect(calls.some((args) => args[1] === 'repos/KyleMit/Other/issues/11/sub_issues')).toBe(true);
+    expect(formatEpicChildren(inventory)).toContain('KyleMit/Other#11 [closed/not_planned]');
   });
 
   it('fails on an incomplete child instead of silently dropping it', () => {
@@ -46,7 +79,7 @@ describe('show-epic-children', () => {
         ? JSON.stringify({ number: 11, title: 'Missing state' })
         : JSON.stringify({ number: 10, title: 'Epic' });
     expect(() => collectEpicChildren({ number: 10, repository: 'KyleMit/Splotch', run })).toThrow(
-      'Sub-issue response for parent 10 is incomplete'
+      'Sub-issue response for parent KyleMit/Splotch#10 is incomplete'
     );
   });
 });

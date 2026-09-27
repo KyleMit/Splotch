@@ -14,7 +14,12 @@ const basePr = {
   reviewDecision: null,
 };
 
-function fakeGh({ moved = false, malformedChecks = false, missingPageInfo = false } = {}) {
+function fakeGh({
+  moved = false,
+  malformedChecks = false,
+  missingPageInfo = false,
+  checkError,
+} = {}) {
   const calls = [];
   let viewCount = 0;
   const run = (args, options) => {
@@ -26,11 +31,14 @@ function fakeGh({ moved = false, malformedChecks = false, missingPageInfo = fals
       );
     }
     if (args[0] === 'pr' && args[1] === 'checks') {
-      return malformedChecks
+      const stdout = malformedChecks
         ? 'not JSON'
         : JSON.stringify([
             { name: 'Quality', state: 'SUCCESS', bucket: 'pass', workflow: 'Quality' },
           ]);
+      return checkError
+        ? { status: 1, stdout: '', stderr: checkError }
+        : { status: 0, stdout, stderr: '' };
     }
     if (args[0] === 'api' && args[1] === 'graphql') {
       const after = args.find((arg) => arg.startsWith('after='));
@@ -83,6 +91,7 @@ describe('show-pr-state', () => {
     expect(gh.calls.filter(({ args }) => args[0] === 'pr' && args[1] === 'view')).toHaveLength(2);
     expect(gh.calls.find(({ args }) => args[1] === 'checks').options).toEqual({
       allowedExitCodes: [0, 1, 8],
+      includeResult: true,
     });
     expect(formatPrState(state)).toContain('1 unresolved');
   });
@@ -99,6 +108,20 @@ describe('show-pr-state', () => {
     expect(() =>
       collectPrState({ number: 42, repository: 'KyleMit/Splotch', run: gh.run })
     ).toThrow('gh pr checks did not return JSON');
+  });
+
+  it('reports zero registered checks while CI is still registering', () => {
+    const gh = fakeGh({ checkError: "no checks reported on the 'feature' branch" });
+    const state = collectPrState({ number: 42, repository: 'KyleMit/Splotch', run: gh.run });
+    expect(state.checks).toEqual([]);
+    expect(formatPrState(state)).toContain('Registered checks: 0');
+  });
+
+  it('preserves a real gh checks error', () => {
+    const gh = fakeGh({ checkError: 'error connecting to api.github.com' });
+    expect(() =>
+      collectPrState({ number: 42, repository: 'KyleMit/Splotch', run: gh.run })
+    ).toThrow('error connecting to api.github.com');
   });
 
   it('rejects a review response without pagination metadata', () => {

@@ -64,12 +64,20 @@ export function collectPrState({ number, repository, run = runGitHub }) {
   );
   if (pr.number !== number || !pr.headRefOid) throw new Error('PR response is incomplete');
 
-  const checks = parseGitHubJson(
-    run(['pr', 'checks', String(number), '-R', repo, '--json', 'name,state,bucket,workflow,link'], {
-      allowedExitCodes: [0, 1, 8],
-    }),
-    'gh pr checks'
+  const checksResult = run(
+    ['pr', 'checks', String(number), '-R', repo, '--json', 'name,state,bucket,workflow,link'],
+    { allowedExitCodes: [0, 1, 8], includeResult: true }
   );
+  const noChecks =
+    checksResult.status === 1 &&
+    !checksResult.stdout.trim() &&
+    /no checks reported on the .* branch/i.test(checksResult.stderr);
+  const checks = noChecks
+    ? []
+    : parseGitHubJson(
+        checksResult.stdout,
+        `gh pr checks${checksResult.stderr.trim() ? `: ${checksResult.stderr.trim()}` : ''}`
+      );
   if (!Array.isArray(checks)) throw new Error('Checks response is incomplete');
   const threads = reviewThreads(number, repo, run);
   const latest = parseGitHubJson(

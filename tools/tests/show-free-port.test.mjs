@@ -10,11 +10,11 @@ afterEach(async () => {
   );
 });
 
-function occupyPort() {
+function occupyPort(host = '127.0.0.1') {
   return new Promise((resolve, reject) => {
     const server = createServer();
     server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => {
+    server.listen(0, host, () => {
       servers.push(server);
       resolve(server.address().port);
     });
@@ -24,6 +24,12 @@ function occupyPort() {
 describe('show-free-port', () => {
   it('recognizes a held local port and leaves its listener running', async () => {
     const port = await occupyPort();
+    expect(await probePort(port)).toBe(false);
+    expect(servers[0].listening).toBe(true);
+  });
+
+  it('recognizes a port held on IPv6 localhost', async () => {
+    const port = await occupyPort('::1');
     expect(await probePort(port)).toBe(false);
     expect(servers[0].listening).toBe(true);
   });
