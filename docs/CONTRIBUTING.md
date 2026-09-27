@@ -176,7 +176,7 @@ manual deploy also works via the Netlify CLI: `netlify deploy --prod`.
 
 ```bash
 npm run check          # Svelte and TypeScript checks, including Netlify functions
-npm run check:watch    # watch mode
+npm run check:watch    # web/ Svelte and TypeScript checks only; no Netlify functions
 ```
 
 ## Testing
