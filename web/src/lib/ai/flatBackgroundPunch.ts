@@ -23,6 +23,7 @@ const MAGENTA_MIN_CHANNEL = 150;
 const MAGENTA_MAX_GREEN = 125;
 const STICKER_EDGE_BAND_PX = 6;
 const MAGENTA_SPILL_DELTA = 8;
+const STICKER_EDGE_BLEND_TOLERANCE = 20;
 
 interface Rgb {
   r: number;
@@ -173,10 +174,17 @@ export async function punchFlatBackground(
           0,
           Math.min(1, (data[src + 1] - backdrop.g) / Math.max(1, 255 - backdrop.g))
         );
-        rgba[dst] = 255;
-        rgba[dst + 1] = 255;
-        rgba[dst + 2] = 255;
-        rgba[dst + 3] = Math.round(rgba[dst + 3] * alpha);
+        const expectedRed = alpha * 255 + (1 - alpha) * backdrop.r;
+        const expectedBlue = alpha * 255 + (1 - alpha) * backdrop.b;
+        if (
+          Math.abs(data[src] - expectedRed) <= STICKER_EDGE_BLEND_TOLERANCE &&
+          Math.abs(data[src + 2] - expectedBlue) <= STICKER_EDGE_BLEND_TOLERANCE
+        ) {
+          rgba[dst] = 255;
+          rgba[dst + 1] = 255;
+          rgba[dst + 2] = 255;
+          rgba[dst + 3] = Math.round(rgba[dst + 3] * alpha);
+        }
       }
     }
   }

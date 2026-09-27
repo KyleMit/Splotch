@@ -36,6 +36,12 @@ async function alphaAt(buffer, x, y) {
   return data[(y * info.width + x) * info.channels + 3];
 }
 
+async function pixelAt(buffer, x, y) {
+  const { data, info } = await sharp(buffer).raw().toBuffer({ resolveWithObject: true });
+  const i = (y * info.width + x) * info.channels;
+  return [...data.subarray(i, i + info.channels)];
+}
+
 describe('punchFlatBackground', () => {
   it('emits real alpha rather than a silently flattened extra channel', async () => {
     const { buffer } = await punchFlatBackground(await scene());
@@ -130,6 +136,31 @@ describe('keyStickerBackground', () => {
     }
 
     expect(opaquePinkPixels).toBe(0);
+  });
+
+  it('keeps violet artwork beside an enclosed magenta gap', async () => {
+    const raw = Buffer.alloc(SIZE * SIZE * 3);
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const i = (y * SIZE + x) * 3;
+        const inSticker = x >= 12 && x < 52 && y >= 12 && y < 52;
+        const inViolet = x >= 24 && x < 40 && y >= 24 && y < 40;
+        const inGap = x >= 28 && x < 36 && y >= 28 && y < 36;
+        const color =
+          inGap || !inSticker ? [246, 4, 249] : inViolet ? [138, 43, 226] : [255, 255, 255];
+        raw[i] = color[0];
+        raw[i + 1] = color[1];
+        raw[i + 2] = color[2];
+      }
+    }
+    const input = await sharp(raw, { raw: { width: SIZE, height: SIZE, channels: 3 } })
+      .png()
+      .toBuffer();
+
+    const { buffer } = await keyStickerBackground(input);
+
+    expect(await pixelAt(buffer, 27, 32)).toEqual([138, 43, 226, 255]);
+    expect(await alphaAt(buffer, 32, 32)).toBe(0);
   });
 
   it('rejects a flat magenta result and a non-magenta field', async () => {
