@@ -102,16 +102,19 @@ which would file design history inside the very skill it is kept out of. See
 
 ## Commands
 
-| Command                       | Purpose                                                                               |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `npm run info`                | List **every** npm script with its description — run this before guessing at a script |
-| `npm run dev`                 | Dev server at `localhost:5173` (no `/api` functions)                                  |
-| `npm run dev:netlify`         | Dev server **with** the `/api/*` serverless functions                                 |
-| `npm run check`               | svelte-check / type checking                                                          |
-| `npm test`                    | Run the CI test tiers declared by the `package.json` test entry                       |
-| `npm run check:quality`       | Mirror CI's Quality job locally, reporting every failed step                          |
-| `npm run test:browserless`    | Mirror CI's Browserless tests job (Vitest tiers + API smoke, no Playwright)           |
-| `npm run build` / `build:cap` | Web build / native static build                                                       |
+| Command                             | Purpose                                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------------------- |
+| `npm run info`                      | List **every** npm script with its description — run this before guessing at a script |
+| `npm run dev`                       | Dev server at `localhost:5173` (no `/api` functions)                                  |
+| `npm run dev:netlify`               | Dev server **with** the `/api/*` serverless functions                                 |
+| `npm run check`                     | svelte-check / type checking                                                          |
+| `npm test`                          | Run the CI test tiers declared by the `package.json` test entry                       |
+| `npm run check:quality`             | Mirror CI's Quality job locally, reporting every failed step                          |
+| `npm run show:pr-state -- <n>`      | Read current PR head, registered checks, merge state, and review threads              |
+| `npm run show:epic-children -- <n>` | Read every nested GitHub sub-issue with reconciled parent counts                      |
+| `npm run show:free-port`            | Find an unused local TCP port without stopping another session's listener             |
+| `npm run test:browserless`          | Mirror CI's Browserless tests job (Vitest tiers + API smoke, no Playwright)           |
+| `npm run build` / `build:cap`       | Web build / native static build                                                       |
 
 Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:variant` names
 (`dev:*`, `test:e2e:*`, `gen:*`, `android:*`, …), and every new or renamed script gets a matching
@@ -129,7 +132,8 @@ budget, read the clock at decision points instead of estimating elapsed time fro
 Agent-managed worktrees — Claude Code's and Codex's alike — share host ports and machine capacity. A
 new worktree provisions itself; see `docs/WORKTREES.md` before changing that setup.
 
-* Select an explicit unused port for every server. Run targeted Playwright checks as
+* Select an explicit unused port for every server (`npm --silent run show:free-port` can find one).
+  Run targeted Playwright checks as
   `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`.
 * Treat `EADDRINUSE` as a request to select another port and retry. Never run `npm run dev:stop` or
   `kill-port`, and never terminate a listener merely because it occupies a desired port. Stop only a

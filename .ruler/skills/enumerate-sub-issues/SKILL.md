@@ -17,6 +17,14 @@ The scrape had missed 13, including five of the six issues that campaign went on
 Use the native GitHub tooling's sub-issue listing where it exists; the CLI fallback is:
 
 ```sh
+npm run show:epic-children -- <epic-number>
+```
+
+The command walks nested children, prints each parent's direct count and the unique descendant
+count, and supports `--json` for structured output. Read every child's body and full comment thread
+in step 2 before classifying it. The underlying one-parent CLI query is:
+
+```sh
 gh api repos/{owner}/{repo}/issues/<epic-number>/sub_issues --paginate \
   --jq '.[] | "\(.number)\t\(.state)\t\(.title)"'
 ```

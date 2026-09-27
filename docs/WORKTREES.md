@@ -245,3 +245,6 @@ at once; leave it.
 Agent-managed worktrees share host ports and machine capacity, whichever runner cut them. The rules
 for that — explicit ports, `EADDRINUSE` handling, and which suites are host-exclusive — are in the
 root `CLAUDE.md`/`AGENTS.md` under "Concurrent worktrees".
+
+`npm --silent run show:free-port` prints one currently unused loopback port. It does not reserve the
+port, so pass it to the server immediately and choose another if startup reports `EADDRINUSE`.

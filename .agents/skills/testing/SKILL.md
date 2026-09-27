@@ -25,8 +25,9 @@ The two rules worth carrying before you open it:
   need an emulator/simulator and are deliberately excluded; `test:blobs:smoke` runs against a real
   deploy, not locally.
 * **Concurrent worktrees share the host.** Run targeted specs with an explicit port —
-  `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1` — and treat a full suite as
-  host-exclusive (root `CLAUDE.md`, ADR-0078).
+  `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`.
+  `npm --silent run show:free-port` prints a candidate without touching other listeners; retry with
+  another on `EADDRINUSE`. Treat a full suite as host-exclusive (root `CLAUDE.md`, ADR-0078).
 
 `.claude/rules/testing.md` loads automatically when you edit test files and carries the authoring
 rules.
