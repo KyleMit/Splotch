@@ -5,6 +5,8 @@ import { IMAGE_REPORT_RETENTION_DAYS, IMAGE_REPORT_REVIEW_HOURS } from '$lib/ima
 vi.mock('$lib/ai/credentials', () => ({ aiCredentialHeaders: async () => ({}) }));
 
 import AiImageReport from './AiImageReport.svelte';
+import { createImageReportFlow } from './imageReportFlow.svelte';
+import { closeAiResult, startAiGeneration } from '$lib/state/aiGeneration.svelte';
 
 let mounted: ReturnType<typeof mount> | null = null;
 
@@ -14,15 +16,17 @@ let mounted: ReturnType<typeof mount> | null = null;
 function openConfirmation(kind: 'picture' | 'false-positive-refusal') {
   const target = document.createElement('div');
   document.body.append(target);
+  // The report sends the run's drawing, which the generation state holds.
+  startAiGeneration('blob:drawing');
+  const report = createImageReportFlow();
+  report.request({ x: 0, y: 0 });
   mounted = mount(AiImageReport, {
     target,
     props: {
       kind,
-      drawingUrl: 'blob:drawing',
       outputUrl: kind === 'picture' ? 'blob:output' : null,
-      style: null,
       reportToken: null,
-      status: 'confirm',
+      report,
     },
   });
   flushSync();
@@ -56,6 +60,7 @@ beforeEach(() => {
 afterEach(async () => {
   if (mounted) await unmount(mounted);
   mounted = null;
+  closeAiResult();
   document.body.replaceChildren();
   vi.unstubAllGlobals();
 });

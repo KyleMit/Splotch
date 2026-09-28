@@ -10,6 +10,7 @@ vi.mock('$lib/drawing/engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob
 vi.mock('$lib/drawing/aiUploadEncoding', () => ({ encodeWebpUpload: async () => null }));
 
 import AiResultError from './AiResultError.svelte';
+import { createImageReportFlow } from './imageReportFlow.svelte';
 import { generateAiImage } from '$lib/drawing/aiImage';
 import { aiGenerationState, closeAiResult } from '$lib/state/aiGeneration.svelte';
 import { settingsState } from '$lib/state/settings.svelte';
@@ -32,11 +33,8 @@ function renderedFailure() {
     props: {
       error: phase,
       previewUrl: 'blob:drawing',
-      style: null,
-      attempts: aiGenerationState.consecutiveFailures,
-      reportOrigin: null,
+      report: createImageReportFlow(),
       onRequestReport: () => {},
-      status: 'idle',
     },
   });
   flushSync();
