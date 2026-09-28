@@ -239,9 +239,11 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     // Taps on the content fall through to the dialog's own controls.
     if (isInsideDialog(e.clientX, e.clientY)) return;
     // Tap landed on the backdrop. Always swallow it so it can't leak to the
-    // canvas underneath, then decide whether it also dismisses.
+    // canvas underneath, then decide whether it also dismisses. Only the
+    // primary button dismisses (ADR-0002).
     e.preventDefault();
     e.stopPropagation();
+    if (e.button !== 0) return;
     const o = getOptions();
     if (o.blockBackdropAt?.(e.clientX, e.clientY)) return;
     if (!dismissAllowed(o)) return;
