@@ -3,6 +3,8 @@ import {
   KEY_CHECK_UNAVAILABLE_CODE,
   looksLikeApiKey,
   looksLikeRetiredGeminiKey,
+  type VerifyAccessCodeRequestBody,
+  type VerifyKeyRequestBody,
 } from '$lib/ai/keyFormat';
 import type { VerifyAccessCodeResponse } from '../../routes/api/verify-access-code/+server';
 import type { VerifyKeyResponse } from '../../routes/api/verify-key/+server';
@@ -46,7 +48,10 @@ export async function verifyCredential(
 
   const kind: VerifiedCredentialKind = looksLikeApiKey(value) ? 'apiKey' : 'accessCode';
   const endpoint = kind === 'apiKey' ? '/api/verify-key' : '/api/verify-access-code';
-  const body = kind === 'apiKey' ? { apiKey: value } : { code: value };
+  const body =
+    kind === 'apiKey'
+      ? ({ apiKey: value } satisfies VerifyKeyRequestBody)
+      : ({ code: value } satisfies VerifyAccessCodeRequestBody);
 
   const res = await fetch(apiUrl(endpoint), {
     method: 'POST',

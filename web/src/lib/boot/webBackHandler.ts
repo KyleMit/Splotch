@@ -46,6 +46,7 @@ function stackFromMarker(marker: NonNullable<ReturnType<typeof currentMarker>>):
 
 export function installWebBackHandler(): WebBackHandler {
   const session = sessionId();
+  const installedPath = location.pathname;
   const drawingGuardEligible = isStandalone() || matchMedia(COARSE_POINTER_QUERY).matches;
   const initialMarker = currentMarker();
   let current = BASE_STACK;
@@ -151,6 +152,10 @@ export function installWebBackHandler(): WebBackHandler {
         return;
       }
       if (current.dialogs === 0) return;
+      // A navigation to another route unmounts the page's open dialogs once the
+      // new URL is current, while page.state can still read the old entry.
+      // Stepping back from there would undo the navigation.
+      if (location.pathname !== installedPath) return;
       controlledBacksPending += 1;
       history.back();
     },

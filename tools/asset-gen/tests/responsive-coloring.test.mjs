@@ -1,6 +1,7 @@
 import { join } from 'node:path';
-import { readFile, stat } from 'node:fs/promises';
-import { describe, expect, it } from 'vitest';
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Resvg } from '@resvg/resvg-js';
 import sharp from 'sharp';
 import {
@@ -12,6 +13,7 @@ import {
 import { WEB_STATIC } from '../lib/asset-paths.mjs';
 import {
   RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION,
+  generateResponsiveColoringAssets,
   renderResponsiveColoringAsset,
   responsiveSavingsFraction,
 } from '../lib/responsive-coloring.mjs';
@@ -155,5 +157,77 @@ describe('responsive coloring catalog', () => {
 
   it('fails closed when no compressible source bytes were measured', () => {
     expect(() => responsiveSavingsFraction(0, 0)).toThrow('no source bytes');
+  });
+});
+
+describe('responsive coloring generation', () => {
+  const TRACKED_BYTES = 'tracked derivative';
+  let staticDir;
+
+  const fillAsset = (name, widthPx) => ({
+    source: `book/${name}.light.png`,
+    target: `max-400px/book/${name}.light.webp`,
+    maxEdgePx: 400,
+    widthPx,
+    encoding: 'fill',
+  });
+
+  async function addSource(asset) {
+    const noisyPortrait = await sharp({
+      create: {
+        width: 600,
+        height: 800,
+        channels: 3,
+        background: '#808080',
+        noise: { type: 'gaussian', mean: 128, sigma: 30 },
+      },
+    })
+      .png()
+      .toBuffer();
+    await writeFile(join(staticDir, asset.source), noisyPortrait);
+  }
+
+  async function addTrackedTarget(asset) {
+    await mkdir(join(staticDir, 'max-400px/book'), { recursive: true });
+    await writeFile(join(staticDir, asset.target), TRACKED_BYTES);
+  }
+
+  beforeEach(async () => {
+    staticDir = await mkdtemp(join(tmpdir(), 'splotch-responsive-coloring-'));
+    await mkdir(join(staticDir, 'book'), { recursive: true });
+  });
+
+  afterEach(async () => {
+    await rm(staticDir, { recursive: true, force: true });
+  });
+
+  it('replaces tracked derivatives once every derivative passes its checks', async () => {
+    const asset = fillAsset('ok', 300);
+    await addSource(asset);
+    await addTrackedTarget(asset);
+
+    const result = await generateResponsiveColoringAssets(staticDir, [asset]);
+
+    const written = await readFile(join(staticDir, asset.target));
+    expect(written.toString()).not.toBe(TRACKED_BYTES);
+    expect(await sharp(written).metadata()).toMatchObject({ width: 300, height: 400 });
+    expect(result).toMatchObject({ count: 1, outputBytes: written.length });
+  });
+
+  it('leaves every tracked derivative untouched when any derivative fails a check', async () => {
+    const passing = fillAsset('ok', 300);
+    const wrongWidth = fillAsset('wrong-width', 123);
+    for (const asset of [passing, wrongWidth]) {
+      await addSource(asset);
+      await addTrackedTarget(asset);
+    }
+
+    await expect(
+      generateResponsiveColoringAssets(staticDir, [passing, wrongWidth])
+    ).rejects.toThrow(`${wrongWidth.target} generated at 300x400; expected width 123px`);
+
+    for (const asset of [passing, wrongWidth]) {
+      await expect(readFile(join(staticDir, asset.target), 'utf8')).resolves.toBe(TRACKED_BYTES);
+    }
   });
 });

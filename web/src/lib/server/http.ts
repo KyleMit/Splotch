@@ -163,7 +163,8 @@ export function throttled(retryAfter: number) {
  * handleError, whose console record is the only trace of an unexpected /api
  * failure, so the same-format log line is emitted here instead. csp-report is
  * the one unwrapped endpoint: its responses are deliberately bodyless
- * (browsers ignore them).
+ * (browsers ignore them). eslint.config.js's API_HANDLER_WRAPPED rejects any
+ * other /api method handler exported without this wrapper.
  */
 export function apiHandler<Event extends { url: { pathname: string } }>(
   handler: (event: Event) => Response | Promise<Response>

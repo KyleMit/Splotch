@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { SETTINGS_WIDE_MIN_WIDTH_PX } from '../src/lib/breakpoints';
+import { openArmedParentCenter, policyPicker } from './flows-harness';
 import { ANDROID_UA, drawCommittedStroke, gotoApp, openSettingsModal, retryOpen } from './helpers';
 
 declare global {
@@ -132,6 +134,29 @@ test('Back closes nested dialogs from the top down', async ({ page }) => {
   await expect(settings).toBeVisible();
   await expectBackLayer(page, { guard: false, dialogs: 1 });
 
+  await page.goBack();
+  await expect(settings).not.toBeVisible();
+  await expectBackLayer(page, null);
+});
+
+// Narrowing the viewport past SETTINGS_WIDE_MIN_WIDTH_PX swaps the Settings
+// shell, which unmounts Parent Center and the confirm it has open, with no
+// `close` event for that confirm.
+test('a dialog unmounted while open leaves no stray Back layer', async ({ page }) => {
+  const settings = await openArmedParentCenter(page);
+  await expectBackLayer(page, { guard: false, dialogs: 1 });
+  await policyPicker(settings, 'Opening Parent Center')
+    .getByRole('radio', { name: 'Never' })
+    .click();
+  const confirm = page.locator('dialog.unprotected-confirm');
+  await expect(confirm).toBeVisible();
+  await expectBackLayer(page, { guard: false, dialogs: 2 });
+
+  await page.setViewportSize({ width: SETTINGS_WIDE_MIN_WIDTH_PX - 1, height: 900 });
+
+  await expect(confirm).toHaveCount(0);
+  await expect(settings).toBeVisible();
+  await expectBackLayer(page, { guard: false, dialogs: 1 });
   await page.goBack();
   await expect(settings).not.toBeVisible();
   await expectBackLayer(page, null);

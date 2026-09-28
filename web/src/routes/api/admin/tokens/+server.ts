@@ -12,9 +12,10 @@ import type { MutationFailure } from '$lib/server/tokens';
 import { apiHandler, readJsonBody, stringField } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
-// JSON twin of the /admin console's token management, for clients that can't
-// run the server-rendered page — i.e. the native apps, whose static bundle has
-// no server. The web console does NOT go through here; it calls the same
+// JSON twin of the /admin console's token management, driven by the API smoke
+// tests (tools/api-smoke/lib/admin-client.mjs), which is how the deploy
+// contract proves Blobs persistence; no in-product client calls it (ADR-0101).
+// The web console does NOT go through here; it calls the same
 // $lib/server functions directly in its form actions, so the already-running
 // server never loops back through its own HTTP layer.
 //

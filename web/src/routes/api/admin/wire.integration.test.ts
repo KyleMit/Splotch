@@ -57,7 +57,7 @@ beforeEach(() => {
   removeToken.mockReset();
 });
 
-describe('native admin API wire responses', () => {
+describe('admin JSON API wire responses', () => {
   it('returns the login success body', async () => {
     const response = await loginRequest('203.0.113.21', SECRET);
 

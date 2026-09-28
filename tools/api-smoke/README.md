@@ -23,8 +23,10 @@ layers rather than in the request client.
 
 `run-local-contract.mjs` needs no external credentials. It starts a Vite dev server on `SMOKE_PORT`
 (default `5199`) with explicit safe test values, exercises CORS, authentication, validation, rate
-limits, reporting, and public-oracle behavior, then tears the server down. It prints pass/fail
-diagnostics and writes no artifact. The process exits nonzero on any failed check or startup error.
+limits, reporting, and public-oracle behavior, then tears the server down. Every non-`OPTIONS`
+`/api/*` response either entry point's checks receive must carry `Cache-Control: no-store`;
+`lib/api-caching.mjs` records them at the fetch boundary. It prints pass/fail diagnostics and writes
+no artifact. The process exits nonzero on any failed check or startup error.
 
 Keep its server environment in agreement with every private environment variable read by the web
 app. `tools/tests/e2e-server-env.test.mjs` enforces that agreement so a developer's `web/.env`
@@ -43,12 +45,12 @@ The URL may instead be passed as `--url=https://…`.
 
 It checks `/`, `/privacy`, and the SSR-rendered `/admin`, their full security-header set, an
 immutable app asset, `version.json` and its no-cache policy, both Capacitor-origin preflights,
-representative canonical API failures that stop before any model call, and the persistent admin
-token contract. Production asserts `persistent: true` through a read-only token snapshot; a preview
-also adds, reads back, and removes a unique token. The deployed version must exactly match the
-ADR-0030 version derived from the checker's current git commit. Run a manual preview check from the
-same branch/ref that Netlify built; pointing a different ref at that preview is intentionally
-reported as stale.
+representative canonical API failures that stop before any model call, `no-store` on every
+non-`OPTIONS` `/api/*` response, and the persistent admin token contract. Production asserts
+`persistent: true` through a read-only token snapshot; a preview also adds, reads back, and removes
+a unique token. The deployed version must exactly match the ADR-0030 version derived from the
+checker's current git commit. Run a manual preview check from the same branch/ref that Netlify
+built; pointing a different ref at that preview is intentionally reported as stale.
 
 The dependency-free workflow checks production daily without mutating Blobs. Manual dispatch accepts
 an optional URL so it can check either production by default or an intended Netlify preview.
