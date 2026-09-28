@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { sha256Hex } from '$lib/digestHex';
+import { blobSha256OrNull } from '$lib/digestHex';
 import { onDurableRestore } from '$lib/storage';
 import { isUnsaved, type SaveResult, type UnsavedStatus } from '$lib/saveNaming';
 import {
@@ -33,14 +33,6 @@ export interface SaveFailureState {
   restoreUnsavedPictures(): Promise<void>;
 }
 
-async function pictureSignature(blob: Blob): Promise<string | null> {
-  try {
-    return await sha256Hex(await blob.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
-
 function sameContent(a: HeldPicture, b: HeldPicture): boolean {
   return a.signature !== null && a.signature === b.signature;
 }
@@ -58,7 +50,7 @@ function withPicture(held: HeldPicture[], picture: HeldPicture): HeldPicture[] {
 // retry's save options stay inside it (web/tests/startup-bundle.spec.ts).
 const savePictureOnDemand: SavePicture = async ({ blob, baseName }) => {
   try {
-    const { retryImageSave } = await import('$lib/drawing/screenshot');
+    const { retryImageSave } = await import('$lib/drawing/imageSave');
     return await retryImageSave(blob, baseName);
   } catch (err) {
     console.error('Retrying the save failed:', err);
@@ -128,7 +120,7 @@ export function createSaveFailure({
 
     async reportSaveFailure(outcome, picture) {
       const reportGeneration = generation;
-      const signature = picture ? await pictureSignature(picture.blob) : null;
+      const signature = picture ? await blobSha256OrNull(picture.blob) : null;
       if (reportGeneration !== generation) return;
       if (picture) {
         pictures = withPicture(pictures, { ...picture, outcome, signature });

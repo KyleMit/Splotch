@@ -13,10 +13,10 @@ import {
   statSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ROOT } from '../lib/proc.mjs';
+import { ROOT, isMain } from '../lib/proc.mjs';
 import { assertDprintPlugins } from '../check-dprint-plugins.mjs';
 import { sharedNoteSource } from './mirror-skill-notes.mjs';
 import {
@@ -207,7 +207,7 @@ function main() {
   runStep('dprint', ['fmt']);
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try {
     main();
   } catch (error) {

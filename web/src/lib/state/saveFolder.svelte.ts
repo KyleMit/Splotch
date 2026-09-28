@@ -5,7 +5,7 @@ import { settingsState } from './settings.svelte';
 // listener: a save that discovers the chosen folder is gone (moved/deleted)
 // drops the stored handle itself, and this mirror keeps the folder pill in Settings
 // from naming a folder that no longer receives saves. Saves reach folderSave
-// through the same module instance (screenshot.ts's static import), and on any
+// through the same module instance (imageSave.ts's static import), and on any
 // platform that can save to a folder the boot hydration below has already run
 // this loader — so the listener is armed before a save can fire it.
 let folderSaveModule: Promise<typeof import('$lib/drawing/folderSave')> | null = null;

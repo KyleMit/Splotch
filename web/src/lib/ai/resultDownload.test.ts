@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AI_IMAGE_BASENAME, extensionForImageType } from '$lib/saveNaming';
+import { AI_IMAGE_BASENAME } from '$lib/saveNaming';
+import { extensionForImageType } from '$lib/savedFile';
 import { aiResultFileName } from './resultDownload';
 
 describe('aiResultFileName', () => {

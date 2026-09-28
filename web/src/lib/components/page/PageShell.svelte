@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { createHydratedFlag } from '$lib/hydration.svelte';
+  import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
   import BackLink from './BackLink.svelte';
   import BrandMark from './BrandMark.svelte';
 
@@ -38,7 +39,7 @@
       <BackLink />
       <!-- The mark is the masthead's second way home; the strip is decorative
            (aria-hidden), so the wordmark is the link's whole accessible name. -->
-      <a class="brand" href="/">
+      <a class="brand" href={DRAWING_ROUTE}>
         <BrandMark {wordmark} />
       </a>
     </div>

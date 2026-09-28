@@ -1,8 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  isMain,
   parseNonNegative,
   parsePngToWebpOptions,
   parsePositiveInt,
@@ -96,6 +106,36 @@ describe('parseNonNegative', () => {
       'page via notes.json',
       `--threshold must be a non-negative number, got "${raw}" (page via notes.json)`
     );
+  });
+});
+
+describe('isMain', () => {
+  // A comparison against the unresolved argv[1] silently skips the CLI when the
+  // entry is launched through a symlinked path, such as macOS's /tmp.
+  it('recognizes a symlinked main module', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-asset-is-main-'));
+    const sourcePath = join(fixtureDir, 'source.mjs');
+    const symlinkPath = join(fixtureDir, 'entry.mjs');
+    const assetCliUrl = new URL('../lib/asset-cli.mjs', import.meta.url).href;
+
+    try {
+      writeFileSync(
+        sourcePath,
+        `import { isMain } from ${JSON.stringify(assetCliUrl)};\n` +
+          'process.stdout.write(String(isMain(import.meta.url)));\n'
+      );
+      symlinkSync(sourcePath, symlinkPath);
+      const result = spawnSync(process.execPath, [symlinkPath], { encoding: 'utf8' });
+
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toBe('true');
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true });
+    }
+  });
+
+  it('throws on import.meta rather than silently never matching', () => {
+    expect(() => isMain(import.meta)).toThrow(/import\.meta\.url/);
   });
 });
 

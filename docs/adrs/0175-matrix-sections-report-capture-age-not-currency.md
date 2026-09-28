@@ -117,7 +117,7 @@ same cells. A product fix brings a fresh capture for free, and the age limit cat
   `tools/perf/lib/capture-date.mjs` beside the age arithmetic, and every reader imports it. A
   section is overdue when its age in days against today exceeds the limit, so a section exactly 14
   days old passes and one 15 days old does not. Only release-gate rows have the limit: the row's
-  role comes from `targetRole` in `tools/perf/gen-performance-matrix.mjs` (ADR-0156). Mac tripwire
+  role comes from `targetRole` in `tools/perf/lib/matrix-vocabulary.mjs` (ADR-0156). Mac tripwire
   rows and simulator and emulator advisory rows are never flagged for age.
 * **An undated release-gate section counts as overdue.** An age nobody can read cannot show that the
   section is inside the limit, and the completion claim needs that. `--strict` names the same

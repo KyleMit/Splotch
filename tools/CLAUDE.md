@@ -91,12 +91,15 @@ release frontmatter/semver parsing; `tools/api-smoke/lib/admin-client.mjs` the `
 token-CRUD request plumbing; `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
 
 Check both before writing new glue. A new helper joins the purpose-named module that owns its
-concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag.
+concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag. A helper
+that an entry script defines and another tool needs moves into a `lib/` module; a `lib/` module
+never imports an entry script.
 
 Moving a tool between depths is the operation that breaks this tree quietly: a stale `vi.mock()`
 path mocks nothing without erroring, and a repo-root walk with the wrong number of `..` still
-resolves — just somewhere else. `tools/tests/tool-specifier-resolution.test.mjs` fails on either,
-and on a `tools/lib/` module that reaches back into a capability folder.
+resolves — just somewhere else. `tools/tests/tool-specifier-resolution.test.mjs` fails on either, on
+a `tools/lib/` module that reaches back into a capability folder, and on a new `lib/` import of an
+entry script.
 
 ## Writing a tool
 

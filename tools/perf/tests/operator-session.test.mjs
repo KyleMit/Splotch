@@ -6,7 +6,8 @@ import {
   runHandItem,
 } from '../run-operator-session.mjs';
 import { grantLogLine } from '../lib/grant-log.mjs';
-import { openWithDevicectl, runtimeUaProblem } from '../split-capture/capture-hand-input.mjs';
+import { openWithDevicectl } from '../split-capture/capture-hand-input.mjs';
+import { runtimeUaProblem } from '../lib/input-fidelity.mjs';
 
 // Real user agents from tracked captures: the Safari one is from the mislabeled
 // 2026-08-24 hand capture this check exists to refuse, the WKWebView one from

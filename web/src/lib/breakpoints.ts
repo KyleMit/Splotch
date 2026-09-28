@@ -15,7 +15,11 @@
 // disagree on the same device.
 export const TABLET_MIN_SIDE_PX = 600;
 
-export const PHONE_LANDSCAPE_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 0.02}px)`;
+// A `max-*` bound sits just below the threshold it excludes, so a fractional
+// viewport side between the two doesn't fall through both queries.
+export const BREAKPOINT_EPSILON_PX = 0.02;
+
+export const PHONE_LANDSCAPE_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - BREAKPOINT_EPSILON_PX}px)`;
 
 // The orientation query layout.svelte.ts subscribes to. app.html's boot script
 // re-types it for the data-orientation stamp; app.html.test.ts fails on

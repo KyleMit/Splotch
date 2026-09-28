@@ -115,6 +115,44 @@ describe('tools/lib is the dependency foundation', () => {
   );
 });
 
+describe('capability libraries import no entry script', () => {
+  // A `lib/` module is a dependency; an entry script is the top of a dependency
+  // graph. Importing one loads a whole CLI into every consumer of the library, and
+  // the perf matrix and split-capture import cycles both ran through such edges.
+  // The remaining edges are listed so the list can only shrink.
+  const KNOWN_LIB_TO_ENTRY_IMPORTS = [
+    'tools/perf/lib/person-session.mjs -> tools/perf/rescore-captures.mjs',
+    'tools/perf/lib/profile-artifacts.mjs -> tools/perf/analyze-chrome-trace.mjs',
+    'tools/perf/lib/profile-device-session.mjs -> tools/perf/serve-profile-build.mjs',
+    'tools/rival-agent/bench/lib/handler.mjs -> tools/rival-agent/broker.mjs',
+  ];
+  // Import forms only: a library may name an entry script's path to spawn it.
+  const IMPORT_SPECIFIER = /(?:from\s*|import\s*\(\s*|import\s*)(['"])(\.\.?\/[^'"]*)\1/g;
+  const ENTRY_GATE = /\b(?:isMain|isEntryPoint)\(import\.meta\.url\)/;
+  const isEntryScript = (path) => existsSync(join(repoRoot, path)) && ENTRY_GATE.test(code(path));
+
+  const libToEntryImports = toolFiles
+    .filter((file) => /\/lib\/[^/]+\.mjs$/.test(file))
+    .flatMap((file) =>
+      [...code(file).matchAll(IMPORT_SPECIFIER)]
+        .map((match) => normalize(join(dirname(file), match[2])))
+        .filter(isEntryScript)
+        .map((target) => `${file} -> ${target}`)
+    );
+
+  it('adds no library import of an entry script', () => {
+    expect(libToEntryImports.filter((edge) => !KNOWN_LIB_TO_ENTRY_IMPORTS.includes(edge))).toEqual(
+      []
+    );
+  });
+
+  it('lists only known edges that still exist', () => {
+    expect(KNOWN_LIB_TO_ENTRY_IMPORTS.filter((edge) => !libToEntryImports.includes(edge))).toEqual(
+      []
+    );
+  });
+});
+
 describe('repo-root walks under tools/', () => {
   // `package.json` naming the app is the marker: any wrong number of '..' lands
   // somewhere without it (or outside the repo entirely).

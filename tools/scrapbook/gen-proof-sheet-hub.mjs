@@ -1,7 +1,7 @@
 import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
-import { ROOT } from '../lib/proc.mjs';
+import { dirname, join } from 'node:path';
+import { ROOT, isMain } from '../lib/proc.mjs';
 import { chromeStyle, compactTopbar, siteFooter } from './lib/scrapbook-chrome.mjs';
 
 export const PROOF_SHEET_HUB_PATH = join(
@@ -169,7 +169,7 @@ export function writeColoringBookProofSheetHub() {
   writeFileSync(PROOF_SHEET_HUB_PATH, buildColoringBookProofSheetHub());
 }
 
-if (resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   writeColoringBookProofSheetHub();
   console.log(`Rebuilt ${PROOF_SHEET_HUB_PATH}`);
 }

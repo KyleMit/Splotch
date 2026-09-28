@@ -14,6 +14,7 @@ function expectPhase(
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
+  encodeWebpUpload: vi.fn(async (_png: Blob): Promise<Blob | null> => null),
   saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveResult> => ({
     status: 'downloads',
   })),
@@ -29,7 +30,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
-vi.mock('./screenshot', () => ({
+vi.mock('./aiUploadEncoding', () => ({ encodeWebpUpload: mocks.encodeWebpUpload }));
+vi.mock('./imageSave', () => ({
   saveImageBlob: mocks.saveImageBlob,
 }));
 vi.mock('$lib/state/settings.svelte', () => ({ settingsState: mocks.settings }));
@@ -73,19 +75,7 @@ describe('generateAiImage request ownership', () => {
       const webpEncoding = Promise.withResolvers<Blob | null>();
       const request = Promise.withResolvers<Response>();
       mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
-      // The capability gate must report a WebP encoder or the deferred toBlob
-      // stub below is skipped and never awaited.
-      vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/webp,probe');
-      vi.stubGlobal(
-        'createImageBitmap',
-        vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
-      );
-      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-        drawImage: vi.fn(),
-      } as unknown as CanvasRenderingContext2D);
-      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
-        void webpEncoding.promise.then(callback);
-      });
+      mocks.encodeWebpUpload.mockReturnValueOnce(webpEncoding.promise);
       vi.stubGlobal('fetch', vi.fn().mockReturnValue(request.promise));
 
       const { generateAiImage } = await import('./aiImage');
@@ -332,29 +322,6 @@ describe('generateAiImage response handling', () => {
     expect(settingsModal.open).toBe(true);
   });
 
-  it('saves the child drawing once across re-rolls of the same unchanged drawing', async () => {
-    mocks.settings.autoSaveAiEnabled = true;
-    // Same drawing bytes on every roll → the signature matches, so the drawing
-    // copy dedupes while each fresh AI image still saves.
-    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['same-drawing']));
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce(okResponse(new Blob(['result-1'])))
-        .mockResolvedValueOnce(okResponse(new Blob(['result-2'])))
-    );
-
-    const { generateAiImage } = await import('./aiImage');
-
-    await generateAiImage();
-    await generateAiImage();
-
-    const tags = mocks.saveImageBlob.mock.calls.map((call) => call[1]);
-    expect(tags.filter((tag) => tag === 'splotch-ai')).toHaveLength(2);
-    expect(tags.filter((tag) => tag === 'splotch')).toHaveLength(1);
-  });
-
   it('commits and auto-saves only an image response', async () => {
     mocks.settings.autoSaveAiEnabled = true;
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
@@ -370,66 +337,6 @@ describe('generateAiImage response handling', () => {
 
     expectPhase(aiGenerationState, { kind: 'result', url: 'blob:test-2', type: 'image/webp' });
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
-  });
-
-  it('reports saving until the AI picture save settles, then the folder it landed in', async () => {
-    mocks.settings.autoSaveAiEnabled = true;
-    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
-    const aiSave = Promise.withResolvers<SaveResult>();
-    mocks.saveImageBlob.mockReturnValueOnce(aiSave.promise);
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
-
-    const { generateAiImage } = await import('./aiImage');
-    const { aiGenerationState } = await import('$lib/state/aiGeneration.svelte');
-
-    const run = generateAiImage();
-    await vi.waitFor(() => expect(mocks.saveImageBlob).toHaveBeenCalledOnce());
-    expectPhase(aiGenerationState, { kind: 'result', autoSave: { status: 'saving' } });
-
-    aiSave.resolve({ status: 'chosenFolder', folderName: 'Drawings' });
-    await run;
-
-    expectPhase(aiGenerationState, {
-      kind: 'result',
-      autoSave: { status: 'chosenFolder', folderName: 'Drawings' },
-    });
-  });
-
-  it.each([
-    ['returns failed', () => Promise.resolve<SaveResult>({ status: 'failed' })],
-    ['throws', () => Promise.reject(new Error('download blocked'))],
-  ])(
-    'keeps the picture and reports failed when the AI picture save %s',
-    async (_label, failingSave) => {
-      mocks.settings.autoSaveAiEnabled = true;
-      mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
-      mocks.saveImageBlob
-        .mockImplementationOnce(failingSave)
-        .mockResolvedValueOnce({ status: 'photos' });
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      const { generateAiImage } = await import('./aiImage');
-      const { aiGenerationState } = await import('$lib/state/aiGeneration.svelte');
-
-      await generateAiImage();
-
-      expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
-      expectPhase(aiGenerationState, { kind: 'result', autoSave: { status: 'failed' } });
-    }
-  );
-});
-
-describe('createDrawingDeduper', () => {
-  it('dedupes a repeated signature but not against a fresh instance', async () => {
-    const { createDrawingDeduper } = await import('./aiImage');
-    const deduper = createDrawingDeduper();
-    expect(deduper.isDuplicate('sig-a')).toBe(false);
-    deduper.record('sig-a');
-    expect(deduper.isDuplicate('sig-a')).toBe(true);
-    expect(deduper.isDuplicate('sig-b')).toBe(false);
-
-    expect(createDrawingDeduper().isDuplicate('sig-a')).toBe(false);
   });
 });
 

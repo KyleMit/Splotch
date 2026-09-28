@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { createHash } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
-import { sha256Hex } from './digestHex';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { blobSha256OrNull, sha256Hex } from './digestHex';
 
 const EMPTY_DIGEST = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 const ABC_DIGEST = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
@@ -51,5 +51,21 @@ describe('sha256Hex', () => {
     const buffer = new ArrayBuffer(bytes.byteLength);
     new Uint8Array(buffer).set(bytes);
     await expect(sha256Hex(buffer)).resolves.toBe(ABC_DIGEST);
+  });
+});
+
+describe('blobSha256OrNull', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('digests the blob bytes', async () => {
+    await expect(blobSha256OrNull(new Blob(['abc']))).resolves.toBe(ABC_DIGEST);
+  });
+
+  it('yields null when the platform cannot compute the digest', async () => {
+    vi.spyOn(crypto.subtle, 'digest').mockRejectedValue(new Error('digest unavailable'));
+
+    await expect(blobSha256OrNull(new Blob(['abc']))).resolves.toBeNull();
   });
 });

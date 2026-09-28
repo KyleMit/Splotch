@@ -56,7 +56,7 @@ import { PALETTE_COLORS } from '../palette';
 // tooth at `coverage` (fraction opaque). Passes are drawn widest-first so the
 // dense narrow core lands on top of the sparse full-width rim, giving the
 // crayon's centre-dense / edge-broken falloff.
-export interface CrayonPass {
+interface CrayonPass {
   widthScale: number;
   coverage: number;
 }
@@ -332,14 +332,6 @@ export function setCrayonOptions(next: Partial<CrayonOptions>) {
   patternCache = new WeakMap();
 }
 
-export function getCrayonOptions(): CrayonOptions {
-  return clone(opts);
-}
-
-export function getCrayonPasses(): CrayonPass[] {
-  return opts.passes.map((p) => ({ ...p }));
-}
-
 // Glaze strength ceiling: past this the two-blit stamp reads as paint blending,
 // not wax (see the colorMix note in CRAYON_DEFAULTS).
 export const MAX_CRAYON_MIX = 0.9;
@@ -356,10 +348,9 @@ export function getCrayonMix(): number {
   return Math.min(MAX_CRAYON_MIX, Math.max(0, opts.colorMix));
 }
 
-// Non-cloning read accessors for internal hot-path callers. getCrayonPasses /
-// getCrayonOptions clone (the public/test API); paintCrayon runs up to 3× per op
-// on the drawing hot path and only needs these scalar reads, so it goes through
-// these instead of allocating a throwaway pass array every call.
+// Non-cloning scalar read accessors: paintCrayon runs up to 3× per op on the
+// drawing hot path, so it reads single fields instead of allocating a throwaway
+// copy of the pass array every call.
 export function crayonPassCount(): number {
   return opts.passes.length;
 }

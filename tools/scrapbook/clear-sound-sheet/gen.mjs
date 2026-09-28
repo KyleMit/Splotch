@@ -16,10 +16,10 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { masthead, page, siteFooter } from '../lib/scrapbook-chrome.mjs';
 import { esc } from '../../lib/html.mjs';
+import { ROOT } from '../../lib/proc.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO = resolve(HERE, '../../..');
-const OUT_DIR = join(REPO, 'scrapbook/sound-design/clear-sound-contact-sheet');
+const OUT_DIR = join(ROOT, 'scrapbook/sound-design/clear-sound-contact-sheet');
 const ASSET_DIR = join(OUT_DIR, 'assets');
 
 const PAGE_TITLE = 'Drag-to-clear sound options';

@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { isMain } from './lib/proc.mjs';
 import {
   assertSubscriptionAuth,
   AUTH_PATH,
@@ -233,7 +234,7 @@ function defaultCodexInstalled() {
 
 // SessionStart stdout becomes session context, so the message is what the agent relays to the
 // user. The hook never fails: a missing or stale login costs one skill, not the session.
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (isMain(import.meta.url)) {
   try {
     const { message } = seedCodexAuth();
     if (message) process.stdout.write(`${message}\n`);
