@@ -21,8 +21,10 @@ import { isStyleName, type StyleName } from '../ai/styles';
 //
 // So the input is written here and taken by the worker in one read-and-delete:
 // it is at rest for the handoff and no longer. The finished picture is at rest
-// until the poll that hands it over deletes it. A generation answered in-line
-// keeps nothing at all, so only this handoff stores either, and /privacy says so.
+// until the poll that hands it over deletes it, and /privacy tells parents so.
+// A generation answered in-line without a handoff stores nothing here; one
+// whose handoff failed discards its job before answering in-line, and the
+// scheduled purge is the backstop when that cleanup fails too.
 
 export const GENERATION_JOB_STORE_NAME = 'ai-generation-jobs';
 
