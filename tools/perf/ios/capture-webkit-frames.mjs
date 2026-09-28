@@ -140,7 +140,6 @@ function printHandInstructions(phases, contactSeconds) {
 export async function runIpadFrames(argv = process.argv.slice(2)) {
   const { flag, numberFlag, has, port } = parsePerfArgs(
     {
-      entry: true,
       extra: [
         'url',
         'phases',

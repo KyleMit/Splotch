@@ -244,7 +244,6 @@ export function rotationFor(orientation) {
 export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   const { flag, numberFlag, has, port } = parsePerfArgs(
     {
-      entry: true,
       extra: [
         'url',
         'device-id',

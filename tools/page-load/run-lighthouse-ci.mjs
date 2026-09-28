@@ -6,7 +6,17 @@ import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
-import { ROOT, TCP_PORT, argFlag, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
+import {
+  ROOT,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  argSwitch,
+  fail,
+  isMain,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import { MEASURED_SURFACE, SPEC_FILE } from '../perf/check-matrix-staleness.mjs';
 import { buildAndPreview } from '../perf/lib/profile-preview.mjs';
 
@@ -276,8 +286,8 @@ export async function runLighthouseCi({
   out = argFlag('out', DEFAULT_OUT),
   port = argNumber('port', DEFAULT_PORT, TCP_PORT),
   samples = argNumber('samples', DEFAULT_SAMPLES, { integer: true, min: 3 }),
-  build = !process.argv.includes('--no-build'),
-  reportOnly = process.argv.includes('--report-only'),
+  build = !argSwitch('no-build'),
+  reportOnly = argSwitch('report-only'),
 } = {}) {
   if (!Number.isInteger(port) || port <= 0) fail('--port must be a positive integer');
   if (!Number.isInteger(samples) || samples < 3 || samples % 2 === 0) {
@@ -357,5 +367,6 @@ export async function runLighthouseCi({
 }
 
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['baseline', 'out', 'port', 'samples', 'no-build', 'report-only']);
   runMain(runLighthouseCi);
 }

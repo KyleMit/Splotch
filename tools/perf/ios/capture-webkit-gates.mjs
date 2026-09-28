@@ -61,7 +61,7 @@ export function runOverridesScript({ scenarios, strokes, ops }) {
 
 export async function runIpadProfile(argv = process.argv.slice(2)) {
   const { flag, numberFlag, has, port } = parsePerfArgs(
-    { entry: true, extra: ['url', 'scenarios', 'strokes', 'ops', 'device-id', 'no-serve'] },
+    { extra: ['url', 'scenarios', 'strokes', 'ops', 'device-id', 'no-serve'] },
     argv
   );
   const strokes = numberFlag('strokes', undefined, POSITIVE_INTEGER);

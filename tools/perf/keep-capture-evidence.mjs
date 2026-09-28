@@ -25,7 +25,15 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { basename, join, relative } from 'node:path';
-import { ROOT, argFlag, argSwitch, fail, isMain, runMain } from '../lib/proc.mjs';
+import {
+  ROOT,
+  argFlag,
+  argSwitch,
+  fail,
+  isMain,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import {
   brushOf,
   findCaptureFiles,
@@ -478,6 +486,17 @@ export async function keepCaptureEvidence({
 }
 
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags([
+    'corpus',
+    'campaign',
+    'product-commit',
+    'target',
+    'filter',
+    'force',
+    'keep-all',
+    'study',
+    'allow-failed',
+  ]);
   runMain(async () => {
     await keepCaptureEvidence();
   });

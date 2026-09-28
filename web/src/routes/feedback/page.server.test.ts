@@ -43,6 +43,22 @@ describe('/feedback form action', () => {
     );
   });
 
+  // With JavaScript off the device opt-in stays rendered after the native radio
+  // switches to an idea, so the post carries a ticked box and no snapshot. An
+  // idea never carries device info, so it must not claim the browser failed to
+  // collect some.
+  it('files an idea posted with the device box still ticked without a device note', async () => {
+    await submit({
+      kind: 'feature',
+      message: 'Add a glitter brush',
+      includeDevice: 'on',
+      device: '',
+    }).catch((thrown: unknown) => thrown);
+
+    expect(createIssue).toHaveBeenCalledOnce();
+    expect(createIssue.mock.calls[0][0].body).not.toContain('device info');
+  });
+
   // The radio group always sends one of REPORT_KINDS, so any other value is a
   // crafted post. It gets the JSON endpoint's refusal instead of being filed as
   // a bug; the echo still needs a kind the picker can render.

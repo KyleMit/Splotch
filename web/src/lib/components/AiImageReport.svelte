@@ -13,7 +13,11 @@
   import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
   import type { StyleName } from '$lib/ai/styles';
   import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
-  import { IMAGE_REPORT_RETENTION_DAYS, type AiReportKind } from '$lib/imageReport';
+  import {
+    IMAGE_REPORT_RETENTION_DAYS,
+    IMAGE_REPORT_REVIEW_HOURS,
+    type AiReportKind,
+  } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
   import { postFeedbackReport, postImageReport, readReportReply } from '$lib/reportClient';
   import type { Origin } from '$lib/state/modal.svelte';
@@ -45,6 +49,10 @@
   }: Props = $props();
 
   const REPORT_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
+  // Short enough to keep the confirmation's promise on one template line. The
+  // formatter wraps the full name, and a wrap leaves a newline run in the
+  // rendered sentence (AiImageReport.copy.test.ts compares it as rendered).
+  const reviewHours = IMAGE_REPORT_REVIEW_HOURS;
   const problem = $derived(kind === 'generation-error');
   const diagnosticRows = $derived(failureReportRows(failure, attempts, style));
   let includeDevice = $state(false);
@@ -141,7 +149,7 @@
         status = 'success';
         message =
           'reportId' in reply
-            ? `Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: ${reply.reportId}`
+            ? `Thanks. We'll review it within ${reviewHours} hours. Keep this report reference if you want it deleted sooner: ${reply.reportId}`
             : 'Thanks. Your problem report was sent to our private support tracker.';
       } else {
         status = 'error';
@@ -209,7 +217,7 @@
           The AI picture, drawing behind it, selected art style, and exact instruction sent to the
           AI go to a grown-up at Splotch.
         {/if}
-        {#if !problem}We look within 24 hours, and the report is deleted after {IMAGE_REPORT_RETENTION_DAYS}
+        {#if !problem}We look within {reviewHours} hours, and the report is deleted after {IMAGE_REPORT_RETENTION_DAYS}
           days.{/if}
       </p>
     </div>

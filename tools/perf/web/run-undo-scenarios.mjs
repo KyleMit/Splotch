@@ -60,29 +60,12 @@ import {
 } from '../lib/undo-commit-gate.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 
-const entry = isMain(import.meta.url);
-
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
 // patch and base-raster bytes come directly from getUndoDebug(), because tiled
 // history does not retain one full-paper square per undo entry.
-const { flag, numberFlag, throttle, port, build } = parsePerfArgs({
-  throttleDefault: 4,
-  extra: [
-    'history-settle-timeout-ms',
-    'engine',
-    'hz',
-    'long-seconds',
-    'long-ops',
-    'multi-seconds',
-    'fast-set-history',
-    'strokes',
-    'scenarios',
-    'suite',
-  ],
-  entry,
-});
+
 // Bounds the wait for tiled history to reach the idle steady state its fold
 // loop leaves behind (TILE_HISTORY_FOLD_IDLE_MS between folds, one command per
 // fold, until history.length <= undoableCommands). The deepest backlog a
@@ -94,11 +77,6 @@ const { flag, numberFlag, throttle, port, build } = parsePerfArgs({
 // commit samples the gate scores are complete before this wait begins.
 // tools/perf/tests/history-settle-deadline.test.mjs holds it to that derivation.
 const DEFAULT_HISTORY_SETTLE_TIMEOUT_MS = 45_000;
-const HISTORY_SETTLE_TIMEOUT_MS = numberFlag(
-  'history-settle-timeout-ms',
-  DEFAULT_HISTORY_SETTLE_TIMEOUT_MS,
-  POSITIVE_NUMBER
-);
 const FAST_SET_HISTORY_SEED_PATH = fileURLToPath(
   new URL('../fixtures/undo-fast-set-history.seed.json', import.meta.url)
 );
@@ -149,39 +127,15 @@ const ENGINES = {
       `milliseconds — read them as coarse magnitudes, never as sub-ms comparisons.`,
   },
 };
-const engineName = flag('engine', 'chromium');
-const engine = ENGINES[engineName];
-if (!engine) {
-  fail(
-    `--engine=${engineName} is not a known engine — expected one of ${Object.keys(ENGINES).join(', ')}`
-  );
-}
-
-// Op volume = refresh rate × stroke duration. A 120 Hz ProMotion iPad Pro
-// captures ~120 ops/second, so a sustained multi-second scribble is
-// ~1,000–2,400 ops in ONE undo command. Default to a ~10 s single-finger
-// scribble at 120 Hz; override to explore. This is the data volume the
-// harness MUST reproduce — it's what made the replay era's stroke-end
-// keyframe builds hitch, and what the commit fold now absorbs.
-const HZ = numberFlag('hz', 120, POSITIVE_NUMBER);
-// One frame at the target refresh — 8.3 ms on a 120 Hz ProMotion iPad. ADR-0066
-// states the commit gate in these terms ("commit max ≈ one 120 Hz frame").
-const FRAME_BUDGET_MS = 1000 / HZ;
-const LONG_SECONDS = numberFlag('long-seconds', 10, POSITIVE_NUMBER);
-const LONG_OPS = numberFlag('long-ops', Math.round(HZ * LONG_SECONDS), POSITIVE_INTEGER); // ≈1200
-// A multi-finger gesture is a SINGLE undo unit accumulating every finger's ops.
-// 5 fingers × a ~4 s drag at 120 Hz ≈ this many ops in one command — the
-// heaviest single commit fold.
+// The finger count of one multi-finger gesture (see multiOpsPerFinger).
 const MULTI_FINGERS = 5;
-const MULTI_SECONDS = numberFlag('multi-seconds', 4, POSITIVE_NUMBER);
-const MULTI_OPS_PER_FINGER = Math.round(HZ * MULTI_SECONDS);
 
 const MARGIN = 160; // keep stroke starts away from the edge-swipe guard band
 
 // A long, multi-second squiggle: one dense sine sweep across the canvas interior.
-// `points` dispatched moves → ~points ops, so at the default LONG_OPS each of
+// `points` dispatched moves → ~points ops, so at the default longOps each of
 // these is a real 120 Hz scribble.
-function longSquiggle(row, width, height, points = LONG_OPS) {
+function longSquiggle(row, width, height, points) {
   const x0 = MARGIN;
   const x1 = width - MARGIN;
   const span = x1 - x0;
@@ -200,7 +154,7 @@ function longSquiggle(row, width, height, points = LONG_OPS) {
 // canonical toddler fill gesture. Drawn with the crayon, every reversal re-covers
 // the just-laid strip, so the pass tracker splits mid-stroke and records a
 // crayonFlush stamp per sweep; drawn with the pen it's the shape-matched control.
-function scribble(row, width, height, points = LONG_OPS) {
+function scribble(row, width, height, points) {
   const sweeps = 8;
   const x0 = MARGIN;
   const span = width - 2 * MARGIN;
@@ -217,9 +171,9 @@ function scribble(row, width, height, points = LONG_OPS) {
 
 // A tap (1 point → a dot op) or a short dash (4 points → 3 ops) — the cheap
 // end of the commit-cost spectrum.
-function shortMark(i, width, height) {
+function shortMark(i, width, height, strokes) {
   const cols = 4;
-  const rows = Math.ceil(STROKES / cols);
+  const rows = Math.ceil(strokes / cols);
   const x = MARGIN + ((width - 2 * MARGIN) * (i % cols)) / (cols - 1);
   // Clamp the divisor: a single-row run (--strokes ≤ 4) would otherwise be 0/0.
   const y = MARGIN + ((height - 2 * MARGIN) * Math.floor(i / cols)) / Math.max(rows - 1, 1);
@@ -231,7 +185,7 @@ function shortMark(i, width, height) {
 // the engine records them into ONE command (one undo unit, one snapshot), so its
 // op list is fingers × points. Shaped as { multi: [{pointerId, points}] } for
 // multiStrokeSync.
-function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER) {
+function multiFingerGesture(gi, width, height, perFinger) {
   const fingers = [];
   for (let f = 0; f < MULTI_FINGERS; f++) {
     const cy = MARGIN + ((height - 2 * MARGIN) * (f + 0.5)) / MULTI_FINGERS;
@@ -255,36 +209,103 @@ const MAX_UNDO_STEPS = 60;
 // Named so the settle deadline's drift guard can read the scenario volume the
 // deadline was derived from (tools/perf/tests/history-settle-deadline.test.mjs).
 const DEFAULT_SCENARIO_STROKES = MAX_UNDO_DEPTH + 2;
-const STROKES = numberFlag('strokes', DEFAULT_SCENARIO_STROKES, POSITIVE_INTEGER);
 
-function buildScenarios(width, height) {
-  const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));
-  const shorts = Array.from({ length: STROKES }, (_, i) => shortMark(i, width, height));
-  // Alternating long/short.
-  const mixed = Array.from({ length: STROKES }, (_, i) =>
-    i % 2 === 0 ? longSquiggle(i % 6, width, height) : shortMark(i, width, height)
+// Every knob a run takes from argv, read once when the run starts and handed to
+// the helpers that use it, so importing this module reads no command line.
+function parseUndoKnobs(argv) {
+  const { flag, numberFlag, throttle, port, build } = parsePerfArgs(
+    {
+      throttleDefault: 4,
+      extra: [
+        'history-settle-timeout-ms',
+        'engine',
+        'hz',
+        'long-seconds',
+        'long-ops',
+        'multi-seconds',
+        'fast-set-history',
+        'strokes',
+        'scenarios',
+        'suite',
+      ],
+    },
+    argv
   );
-  const multi = Array.from({ length: STROKES }, (_, i) => multiFingerGesture(i, width, height));
-  const scribbles = Array.from({ length: STROKES }, (_, i) => scribble(i % 6, width, height));
+  const engineName = flag('engine', 'chromium');
+  const engine = ENGINES[engineName];
+  if (!engine) {
+    fail(
+      `--engine=${engineName} is not a known engine — expected one of ${Object.keys(ENGINES).join(', ')}`
+    );
+  }
+  // Op volume = refresh rate × stroke duration. A 120 Hz ProMotion iPad Pro
+  // captures ~120 ops/second, so a sustained multi-second scribble is
+  // ~1,000–2,400 ops in ONE undo command. Default to a ~10 s single-finger
+  // scribble at 120 Hz; override to explore. This is the data volume the
+  // harness MUST reproduce — it's what made the replay era's stroke-end
+  // keyframe builds hitch, and what the commit fold now absorbs.
+  const hz = numberFlag('hz', 120, POSITIVE_NUMBER);
+  const longSeconds = numberFlag('long-seconds', 10, POSITIVE_NUMBER);
+  const longOps = numberFlag('long-ops', Math.round(hz * longSeconds), POSITIVE_INTEGER); // ≈1200
+  // A multi-finger gesture is a SINGLE undo unit accumulating every finger's ops.
+  // 5 fingers × a ~4 s drag at 120 Hz ≈ this many ops in one command — the
+  // heaviest single commit fold.
+  const multiSeconds = numberFlag('multi-seconds', 4, POSITIVE_NUMBER);
+  const suite = flag('suite', 'full');
+  return {
+    throttle,
+    port,
+    build,
+    historySettleTimeoutMs: numberFlag(
+      'history-settle-timeout-ms',
+      DEFAULT_HISTORY_SETTLE_TIMEOUT_MS,
+      POSITIVE_NUMBER
+    ),
+    engineName,
+    engine,
+    hz,
+    // One frame at the target refresh — 8.3 ms on a 120 Hz ProMotion iPad. ADR-0066
+    // states the commit gate in these terms ("commit max ≈ one 120 Hz frame").
+    frameBudgetMs: 1000 / hz,
+    longOps,
+    multiOpsPerFinger: Math.round(hz * multiSeconds),
+    strokes: numberFlag('strokes', DEFAULT_SCENARIO_STROKES, POSITIVE_INTEGER),
+    suite,
+    // The post-merge fast tier divides crayon commit time by the same-run draw
+    // slowdown (evaluateCommitTiming); full runs score raw timing.
+    normalizeSharedRunnerCrayon: suite === 'fast',
+    only: flag('scenarios', ''),
+    fastSetHistory: flag('fast-set-history', ''),
+  };
+}
+
+function buildScenarios({ strokes, longOps, hz, multiOpsPerFinger }, width, height) {
+  const each = (make) => Array.from({ length: strokes }, (_, i) => make(i));
+  const longs = each((i) => longSquiggle(i % 6, width, height, longOps));
+  const shorts = each((i) => shortMark(i, width, height, strokes));
+  // Alternating long/short.
+  const mixed = each((i) => (i % 2 === 0 ? longs[i] : shorts[i]));
+  const multi = each((i) => multiFingerGesture(i, width, height, multiOpsPerFinger));
+  const scribbles = each((i) => scribble(i % 6, width, height, longOps));
   return [
     {
       key: UNDO_SCENARIO_KEYS.longSquiggles,
-      label: `${STROKES} long squiggles (~${LONG_OPS} ops each @ ${HZ}Hz), then undo all`,
+      label: `${strokes} long squiggles (~${longOps} ops each @ ${hz}Hz), then undo all`,
       strokes: longs,
     },
     {
       key: UNDO_SCENARIO_KEYS.shortMarks,
-      label: `${STROKES} short dot/dash strokes, then undo all`,
+      label: `${strokes} short dot/dash strokes, then undo all`,
       strokes: shorts,
     },
     {
       key: UNDO_SCENARIO_KEYS.mixed,
-      label: `${STROKES} mixed long+short strokes, then undo all`,
+      label: `${strokes} mixed long+short strokes, then undo all`,
       strokes: mixed,
     },
     {
       key: UNDO_SCENARIO_KEYS.multiFinger,
-      label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_OPS_PER_FINGER} ops/command), then undo all`,
+      label: `${strokes} five-finger drags (~${MULTI_FINGERS * multiOpsPerFinger} ops/command), then undo all`,
       strokes: multi,
     },
     // The crayon rows (ADR-0065): same input volume, but every pass close
@@ -292,18 +313,18 @@ function buildScenarios(width, height) {
     // render. The pen scribble is the shape-matched control.
     {
       key: UNDO_SCENARIO_KEYS.scribbles,
-      label: `${STROKES} pen back-and-forth scribbles (~${LONG_OPS} ops each), then undo all`,
+      label: `${strokes} pen back-and-forth scribbles (~${longOps} ops each), then undo all`,
       strokes: scribbles,
     },
     {
       key: UNDO_SCENARIO_KEYS.crayonSquiggles,
-      label: `${STROKES} crayon long squiggles (~${LONG_OPS} ops each), then undo all`,
+      label: `${strokes} crayon long squiggles (~${longOps} ops each), then undo all`,
       strokes: longs,
       crayon: true,
     },
     {
       key: UNDO_SCENARIO_KEYS.crayonScribbles,
-      label: `${STROKES} crayon back-and-forth scribbles (mid-stroke pass splits), then undo all`,
+      label: `${strokes} crayon back-and-forth scribbles (mid-stroke pass splits), then undo all`,
       strokes: scribbles,
       crayon: true,
     },
@@ -461,7 +482,7 @@ const formatSettleTrace = (trace) => trace.map(formatSettleSample).join('; ');
 // polls themselves are what spend the budget — each read round trip queues
 // behind whatever the host is doing — and a scenario whose commit samples are
 // already complete has lost nothing the gate scores.
-async function settleHistory(page, sinceMs, timeoutMs = HISTORY_SETTLE_TIMEOUT_MS) {
+async function settleHistory(page, sinceMs, timeoutMs) {
   const t0 = Date.now();
   const trace = [];
   let prev = null;
@@ -511,12 +532,7 @@ async function settleHistory(page, sinceMs, timeoutMs = HISTORY_SETTLE_TIMEOUT_M
   }
 }
 
-export async function runUndoScenario(
-  page,
-  base,
-  sc,
-  historySettleTimeoutMs = HISTORY_SETTLE_TIMEOUT_MS
-) {
+export async function runUndoScenario(page, base, sc, historySettleTimeoutMs) {
   console.log(`\n▶ ${sc.label}`);
   await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
   // Reload drops the rAF FPS sampler injected before the trace; re-inject so
@@ -622,7 +638,8 @@ export async function runUndoScenario(
   return result;
 }
 
-function buildUndoSettings({ throttle, build, t0, browser }) {
+function buildUndoSettings(knobs, { t0, browser }) {
+  const { engine, engineName, throttle, build, frameBudgetMs } = knobs;
   return {
     target: `web/dev-engine (${engine.label})`,
     engine: engineName,
@@ -638,14 +655,14 @@ function buildUndoSettings({ throttle, build, t0, browser }) {
     // WebKit exposes no CPU-throttling control, so a WebKit run is always
     // unthrottled regardless of --throttle (see the warning in runUndoScenarios).
     throttle: engine.hasCdp ? throttle.forSettings : 0,
-    refreshHz: HZ,
-    frameBudgetMs: FRAME_BUDGET_MS,
-    longOps: LONG_OPS,
+    refreshHz: knobs.hz,
+    frameBudgetMs,
+    longOps: knobs.longOps,
     buildMode: build ? 'production-preview' : 'production-preview (reused build)',
     captureMode: engine.hasCdp ? 'cdp-trace' : 'user-timing (no CDP on WebKit)',
     // Baked in rather than re-derived at render time, so the report stays a pure
     // function of the summary and regenerates identically from the JSON.
-    fidelity: engine.fidelity({ frameBudgetMs: FRAME_BUDGET_MS }),
+    fidelity: engine.fidelity({ frameBudgetMs }),
     startedAt: new Date(t0).toISOString(),
     durationMs: Date.now() - t0,
   };
@@ -693,20 +710,20 @@ function aggregateObservers(results) {
   };
 }
 
-export async function runUndoScenarios() {
+export async function runUndoScenarios(argv = process.argv.slice(2)) {
+  const knobs = parseUndoKnobs(argv);
+  const { engine, engineName, throttle, suite, only, historySettleTimeoutMs } = knobs;
   // /dev/engine is gated by PUBLIC_ENABLE_DEV_HARNESS ($env/dynamic/public, read
   // at runtime), so the preview server spawned by buildAndPreview must inherit it.
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
   warnIfNoPerfMarks(engine.script);
 
-  const suite = flag('suite', 'full');
   const suiteKeys = NAMED_SUITE_KEYS[suite];
   if (suite !== 'full' && !suiteKeys) {
     throw new Error(
       `--suite=${suite} is not known — expected full, ${Object.keys(NAMED_SUITE_KEYS).join(', or ')}`
     );
   }
-  const only = flag('scenarios', '');
   if (suiteKeys && only) {
     throw new Error(`--suite=${suite} cannot be combined with --scenarios`);
   }
@@ -721,7 +738,7 @@ export async function runUndoScenarios() {
   const outDir = profilePath('undo-scenarios', engineName, throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
-  const { base, stop } = await buildAndPreview(port, { build });
+  const { base, stop } = await buildAndPreview(knobs.port, { build: knobs.build });
   const browser = await engine.launcher.launch(engine.launchOptions());
   const t0 = Date.now();
   try {
@@ -749,7 +766,7 @@ export async function runUndoScenarios() {
     await injectObservers(page);
     const events = cdp ? await startTrace(cdp) : null;
     // --scenarios=key1,key2 runs a subset (fast iteration on one question).
-    const scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height).filter((scenario) =>
+    const scenarios = buildScenarios(knobs, IPAD_PRO.width, IPAD_PRO.height).filter((scenario) =>
       requestedKeys.includes(scenario.key)
     );
     const results = [];
@@ -761,7 +778,7 @@ export async function runUndoScenarios() {
 
     for (const sc of scenarios) {
       try {
-        results.push(await runUndoScenario(page, base, sc));
+        results.push(await runUndoScenario(page, base, sc, historySettleTimeoutMs));
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`Skipping undo scenario ${sc.key}: ${message}`);
@@ -794,7 +811,7 @@ export async function runUndoScenarios() {
 
     // Standard trace artifacts (engine hot paths, frame health) via the shared
     // analyzer, plus the bespoke per-scenario undo summary.
-    const settings = buildUndoSettings({ throttle, build, t0, browser });
+    const settings = buildUndoSettings(knobs, { t0, browser });
     await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
     const metrics = buildMetrics({
       settings,
@@ -813,20 +830,11 @@ export async function runUndoScenarios() {
     // two adjacent slow commits set it — which is what a scheduling stall on a
     // shared runner produces, and it does not reproduce. Re-running costs one
     // scenario and only happens on the path that would otherwise turn main red.
-    const confirmations = await confirmBreaches({
-      page,
-      base,
-      results,
-      scenarios,
-      timeline,
-      normalizeSharedRunnerCrayon: suite === 'fast',
-      enforcesCoverage: engine.gated,
-    });
-    const gate = reportCommitGate(results, {
-      normalizeSharedRunnerCrayon: suite === 'fast',
-      enforcesCoverage: engine.gated,
-      confirmations,
-    });
+    const confirmations = await confirmBreaches(
+      { page, base, results, scenarios, timeline },
+      knobs
+    );
+    const gate = reportCommitGate(results, confirmations, knobs);
     const fullRun =
       requestedKeys.length === ALL_UNDO_SCENARIO_KEYS.length &&
       ALL_UNDO_SCENARIO_KEYS.every((key) => requestedKeys.includes(key));
@@ -836,7 +844,7 @@ export async function runUndoScenarios() {
             results,
             settings,
             outDir,
-            historyPath: flag('fast-set-history', ''),
+            historyPath: knobs.fastSetHistory,
           })
         : null;
     const gateSummary = {
@@ -965,7 +973,7 @@ function formatCompletedBreaches(breaches, timings) {
 // Every absent measure reads like a very fast commit. This can happen when
 // --no-build reuses a bundle built without PERF_MARKS, so sample count is a
 // coverage assertion rather than a timing value.
-function reportMissingCommitSamples(measured) {
+function reportMissingCommitSamples(measured, engineName) {
   if (measured.length > 0 && measured.some((scenario) => scenario.draw.commitCount > 0))
     return null;
   process.exitCode = 1;
@@ -973,7 +981,7 @@ function reportMissingCommitSamples(measured) {
     `\n✗ Commit gate NOT EVALUATED on ${engineName}: no engine.commit samples in any of ` +
       `${measured.length} scenario(s).\n` +
       `  The served bundle carries no engine.* marks, so every duration reads 0 ms and a\n` +
-      `  pass would mean nothing. Rebuild with marks — \`${engine.script}\` without\n` +
+      `  pass would mean nothing. Rebuild with marks — \`${ENGINES[engineName].script}\` without\n` +
       `  --no-build — and re-run.\n`
   );
   return { breaches: [], evaluated: false };
@@ -986,16 +994,9 @@ function reportMissingCommitSamples(measured) {
 // The re-run goes through the same `runUndoScenario` the first pass used, on the
 // same page and the same build, so the two measurements differ in nothing except
 // when they were taken — which is the whole question being asked.
-async function confirmBreaches({
-  page,
-  base,
-  results,
-  scenarios,
-  timeline,
-  normalizeSharedRunnerCrayon,
-  enforcesCoverage,
-}) {
-  if (!enforcesCoverage) return new Map();
+async function confirmBreaches({ page, base, results, scenarios, timeline }, knobs) {
+  const { engine, normalizeSharedRunnerCrayon, historySettleTimeoutMs } = knobs;
+  if (!engine.gated) return new Map();
   const suspects = results.filter(
     (result) =>
       !result.skipped && evaluateCommitTiming(result, { normalizeSharedRunnerCrayon }).breached
@@ -1006,7 +1007,7 @@ async function confirmBreaches({
     if (!scenario) continue;
     console.log(`Re-measuring ${suspect.key}: its first pass breached, confirming before failing.`);
     try {
-      const second = await runUndoScenario(page, base, scenario);
+      const second = await runUndoScenario(page, base, scenario, historySettleTimeoutMs);
       confirmations.set(suspect.key, second);
     } catch (error) {
       // A re-run that could not complete is not a confirmation and not an
@@ -1030,16 +1031,10 @@ async function confirmBreaches({
   return confirmations;
 }
 
-function reportCommitGate(
-  results,
-  {
-    normalizeSharedRunnerCrayon = false,
-    enforcesCoverage = engine.gated,
-    confirmations = new Map(),
-  } = {}
-) {
+function reportCommitGate(results, confirmations, knobs) {
+  const { engineName, normalizeSharedRunnerCrayon } = knobs;
   const budgetMs = COMMIT_GATE_MS;
-  const { gated } = engine;
+  const { gated } = knobs.engine;
   const measured = results.filter((s) => !s.skipped);
   const skipped = results.filter((s) => s.skipped);
   const scenarioTimings = measured.map((scenario) =>
@@ -1112,7 +1107,7 @@ function reportCommitGate(
 
   // Ordered most-specific-cause-first, so a run that never completed a scenario
   // is not reported as a marks-less bundle.
-  if (enforcesCoverage && skipped.length > 0) {
+  if (gated && skipped.length > 0) {
     process.exitCode = 1;
     console.error(
       `\n✗ Commit gate NOT EVALUATED on ${engineName}: ${skipped.length} requested ` +
@@ -1124,10 +1119,10 @@ function reportCommitGate(
     return { ...base, evaluated: false, skipped: skipped.length };
   }
 
-  const vacuous = reportMissingCommitSamples(measured);
+  const vacuous = reportMissingCommitSamples(measured, engineName);
   if (vacuous) return { ...base, ...vacuous };
 
-  if (!enforcesCoverage) {
+  if (!gated) {
     console.log(
       `Commit gate: timing not evaluated on ${engineName} — its absolute ms are advisory ` +
         `(see COMMIT_GATE_MS). Run \`${ENGINES.webkit.script}\` for the gated engine.`

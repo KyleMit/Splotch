@@ -10,7 +10,7 @@
     NETWORK_ERROR_MESSAGE,
     type SubmitStatus,
   } from '$lib/latestRequest';
-  import { REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
+  import { attachesDevice, REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
   import { postFeedbackReport, readReportReply } from '$lib/reportClient';
 
   interface Props {
@@ -57,7 +57,7 @@
     const text = message.trim();
     if (!text || submitting) return;
 
-    const attachDevice = kind === 'bug' && includeDevice;
+    const attachDevice = attachesDevice(kind, includeDevice);
     const payload = {
       kind,
       message: text,

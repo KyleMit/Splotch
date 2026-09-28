@@ -79,7 +79,7 @@ export function createHexSnapGesture({ hover, pick }: HexSnapCallbacks) {
 
   return {
     down(e: PointerEvent) {
-      if (!(e.currentTarget instanceof HTMLElement)) return;
+      if (e.button !== 0 || !(e.currentTarget instanceof HTMLElement)) return;
       picker = e.currentTarget;
       // Re-snapshotted per gesture rather than lazily: the picker can reopen from a
       // new origin, and a snapshot kept across that would snap to stale centers.
