@@ -86,6 +86,15 @@ describe('chooseVersionCode', () => {
     expect(() => choose('-1')).toThrow(/whole number/);
   });
 
+  // Number('9007199254740993') is 9007199254740992, so an oversized pin would
+  // write a different code into Gradle than the release file records.
+  it('rejects a pin above the largest code Play accepts', () => {
+    expect(choose('2100000000')).toEqual({ versionCode: 2100000000, pinned: true });
+    expect(() => choose('2100000001')).toThrow(/whole number up to 2100000000/);
+    expect(() => choose('9007199254740993')).toThrow(/whole number up to/);
+    expect(() => choose('9'.repeat(400))).toThrow(/whole number up to/);
+  });
+
   it('rejects a Gradle file without a versionCode', () => {
     expect(() =>
       chooseVersionCode({ pin: '', version: '1.7.0', gradleCode: NaN, gradleVersionName: '1.6.0' })

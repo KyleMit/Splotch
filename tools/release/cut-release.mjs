@@ -119,6 +119,10 @@ function releasePath(version) {
   return file;
 }
 
+// The largest versionCode Google Play accepts. A pin above it, or one too long for
+// Number to hold exactly, would write a different code into Gradle than the file pins.
+const PLAY_MAX_VERSION_CODE = 2_100_000_000;
+
 // Play rejects an upload whose versionCode does not move past the last one, and
 // only after this script has tagged, pushed, and created the GitHub Release, so a
 // bad pin fails here instead. A blank `androidVersionCode:` is unpinned. A pin
@@ -129,10 +133,13 @@ export function chooseVersionCode({ pin, version, gradleCode, gradleVersionName 
     throw new Error('android/app/build.gradle has no versionCode line');
   }
   if (!pin) return { versionCode: gradleCode + 1, pinned: false };
-  if (!/^\d+$/.test(pin)) {
-    throw new Error(`${version}.md: androidVersionCode must be a whole number, got "${pin}"`);
-  }
   const versionCode = Number(pin);
+  if (!/^\d+$/.test(pin) || versionCode > PLAY_MAX_VERSION_CODE) {
+    throw new Error(
+      `${version}.md: androidVersionCode must be a whole number up to ` +
+        `${PLAY_MAX_VERSION_CODE}, got "${pin}"`
+    );
+  }
   const rerun = versionCode === gradleCode && gradleVersionName === version;
   if (versionCode <= gradleCode && !rerun) {
     throw new Error(
