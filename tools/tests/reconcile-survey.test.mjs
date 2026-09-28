@@ -137,10 +137,10 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
     // which reads specifier-shaped text in every tools file, doesn't take them
     // for real relative imports of this test.
     const rel = (...parts) => parts.join('/');
-    const verdict = (upstream, local, localSources, reexporters = []) => {
+    const verdict = (upstream, local, localSources, reexporters = [], intermediates = []) => {
       const up = parseNameStatus(upstream);
       const { bothSides } = classifyChanges(up, parseNameStatus(local));
-      return relate({ upstream: up, bothSides, localSources, reexporters });
+      return relate({ upstream: up, bothSides, localSources, reexporters, intermediates });
     };
 
     it('reads static, side-effect, re-export, and dynamic import specifiers', () => {
@@ -252,6 +252,54 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
       );
 
       expect(result.relation).toBe('coupled');
+    });
+
+    // The repo's own shape again: tool.svelte.ts imports storage.ts, which
+    // imports nativePlugin.ts. One hop behind a direct import is followed; the
+    // bound stops there, because deeper paths fan out through hub modules.
+    it('follows one hop of ordinary imports behind a direct import', () => {
+      const result = verdict(
+        'M\tweb/src/lib/nativePlugin.ts',
+        'M\tweb/src/lib/state/tool.svelte.ts',
+        [
+          {
+            path: 'web/src/lib/state/tool.svelte.ts',
+            source: "import { read } from '$lib/storage';",
+          },
+        ],
+        [],
+        [
+          {
+            path: 'web/src/lib/storage.ts',
+            source: `import { plugin } from '${rel('.', 'nativePlugin')}';`,
+          },
+        ]
+      );
+
+      expect(result.relation).toBe('adjacent');
+      expect(result.reasons[0].why).toContain('imports web/src/lib/storage.ts, which imports');
+    });
+
+    it('stops after one hop, so a change two hops behind stays unrelated', () => {
+      const result = verdict(
+        'M\tweb/src/lib/deep.ts',
+        'M\tweb/src/lib/state/tool.svelte.ts',
+        [
+          {
+            path: 'web/src/lib/state/tool.svelte.ts',
+            source: "import { read } from '$lib/storage';",
+          },
+        ],
+        [],
+        [
+          {
+            path: 'web/src/lib/storage.ts',
+            source: `import { plugin } from '${rel('.', 'nativePlugin')}';`,
+          },
+        ]
+      );
+
+      expect(result.relation).toBe('unrelated');
     });
 
     it('keeps a deleted component distinct from an edited namesake module', () => {

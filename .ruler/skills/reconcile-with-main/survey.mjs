@@ -90,13 +90,13 @@ export function classifyChanges(upstream, local) {
 // files, a stranded rename, or a convention change; run the whole skill.
 //
 // Dependencies are found through direct imports, re-exporting barrels,
-// `import.meta.glob` patterns, and query-suffixed asset imports. Ordinary
-// transitive imports are deliberately not followed: they fan out through hub
-// modules (settings, storage, platform), so for any module whose imports reach
-// the app's main graph, most merges would read as `adjacent` and the noise the
-// verdict exists to remove would return. A change behind an unchanged
-// intermediate module keeps that module's interface, which the type check
-// verifies, and its behaviour is covered by the tests every path runs.
+// `import.meta.glob` patterns, query-suffixed asset imports, and one hop of
+// ordinary imports behind a direct import. Deeper ordinary imports are
+// deliberately not followed: they fan out through hub modules (settings,
+// storage, platform), so for any module whose imports reach the app's main
+// graph, most merges would read as `adjacent` and the noise the verdict exists
+// to remove would return. The type check verifies the interfaces along a deeper
+// path, and the tests every path runs cover its behaviour.
 export const RELATIONS = ['unrelated', 'adjacent', 'coupled'];
 
 // Repo-wide sources whose change can make untouched branch code wrong or
@@ -212,7 +212,15 @@ const describeHit = (importer, { entry, via }) => {
   return `${importer} imports ${route}, which upstream ${change}`;
 };
 
-export function relate({ upstream, bothSides, localSources, reexporters = [] }) {
+// `intermediates` are the merge target's copies of the modules the branch
+// imports directly; a change one hop behind them reads as `adjacent`.
+export function relate({
+  upstream,
+  bothSides,
+  localSources,
+  reexporters = [],
+  intermediates = [],
+}) {
   const reasons = [];
   if (bothSides.length > 0) {
     reasons.push({ relation: 'coupled', why: `${bothSides.length} file(s) changed on both sides` });
@@ -228,14 +236,33 @@ export function relate({ upstream, bothSides, localSources, reexporters = [] }) 
   const upstreamPaths = upstream.flatMap((entry) =>
     changedPaths(entry).map((path) => ({ path, entry }))
   );
+  const intermediatesByKey = new Map();
+  for (const file of intermediates) {
+    const key = moduleKey(file.path);
+    intermediatesByKey.set(key, [...(intermediatesByKey.get(key) ?? []), file]);
+  }
+  const oneHopHits = (intermediate) =>
+    importSpecifiers(intermediate.source).flatMap((specifier) => {
+      const resolved = resolveSpecifier(specifier, intermediate.path);
+      return (resolved && modules.get(moduleKey(resolved))) || [];
+    });
   for (const { path, source } of localSources) {
     for (const specifier of importSpecifiers(source)) {
       const resolved = resolveSpecifier(specifier, path);
-      for (const hit of (resolved && modules.get(moduleKey(resolved))) || []) {
+      if (!resolved) continue;
+      for (const hit of modules.get(moduleKey(resolved)) || []) {
         reasons.push({
           relation: strandedBy(hit.entry) ? 'coupled' : 'adjacent',
           why: describeHit(path, hit),
         });
+      }
+      for (const intermediate of intermediatesByKey.get(moduleKey(resolved)) || []) {
+        for (const hit of oneHopHits(intermediate)) {
+          reasons.push({
+            relation: 'adjacent',
+            why: `${path} imports ${intermediate.path}, which imports ${hit.entry.from}, changed upstream`,
+          });
+        }
       }
     }
     for (const pattern of globPatterns(source)) {
@@ -253,8 +280,9 @@ export function relate({ upstream, bothSides, localSources, reexporters = [] }) 
     }
   }
 
-  const rank = Math.max(0, ...reasons.map((reason) => RELATIONS.indexOf(reason.relation)));
-  return { relation: RELATIONS[rank], reasons };
+  const unique = [...new Map(reasons.map((reason) => [reason.why, reason])).values()];
+  const rank = Math.max(0, ...unique.map((reason) => RELATIONS.indexOf(reason.relation)));
+  return { relation: RELATIONS[rank], reasons: unique };
 }
 
 // A single-line `export … from` and the closing line of a multi-line block;
@@ -298,6 +326,28 @@ function reexportersOn(ref) {
   return readManyAt(ref, listed)
     .map(({ path, source }) => ({ path, specifiers: reexportSpecifiers(source) }))
     .filter((file) => file.specifiers.length > 0);
+}
+
+const CODE_FILE = /\.(m?[jt]s|svelte)$/;
+
+// The merge target's copies of every module the branch's changed files import
+// directly, for the one-hop check.
+function directImportsOn(ref, localSources) {
+  const directKeys = new Set(
+    localSources.flatMap(({ path, source }) =>
+      importSpecifiers(source)
+        .map((specifier) => resolveSpecifier(specifier, path))
+        .filter(Boolean)
+        .map(moduleKey)
+    )
+  );
+  const onRef = lines(
+    git('ls-tree', '-r', '--name-only', ref, '--', 'web/src', 'tools', 'netlify')
+  );
+  return readManyAt(
+    ref,
+    onRef.filter((path) => CODE_FILE.test(path) && directKeys.has(moduleKey(path)))
+  );
 }
 
 function readAtHead(path) {
@@ -348,6 +398,7 @@ function survey({ doFetch }) {
       bothSides: classified.bothSides,
       localSources,
       reexporters: incoming.length > 0 ? reexportersOn(BASE_REF) : [],
+      intermediates: incoming.length > 0 ? directImportsOn(BASE_REF, localSources) : [],
     }),
   };
 }

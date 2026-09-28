@@ -42,7 +42,10 @@ The relation decides how much of this skill the merge needs:
 | `unrelated` | No shared file, no imported upstream change, no convention change                                                                                                                                                                            | Step 2, then Step 5 with `npm run check`, `npm run lint`, and the branch's own tests. Step 6 reports buckets 2 and 3 as "none", quoting the survey's verdict as the reason                                                                                                        |
 
 A dependency is found through any of these: a direct import, a re-export through an unchanged
-barrel, an `import.meta.glob` pattern, or an asset import with a `?raw`-style suffix.
+barrel, an `import.meta.glob` pattern, an asset import with a `?raw`-style suffix, or one hop of
+ordinary imports behind a direct import. Deeper ordinary imports are not followed. They fan out
+through hub modules, so following them would bring the noise back; the type check and the tests
+cover them.
 
 The verdict is evidence, not a waiver. When a fast path's checks fail, or when reading the merge
 turns up a link the survey couldn't see (a shared string, an event name, a storage key), treat the

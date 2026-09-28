@@ -67,11 +67,18 @@ took in the PR body.
 The orchestrator handles ready PRs one at a time:
 
 1. Run `git fetch origin main`.
-2. If `origin/main` is still the gated commit, merge with
+2. Re-read the PR's live state against `ship-issue` step 5's merge gate, because a review can land
+   after the worker reported ready without either SHA moving. Check that:
+   * the PR isn't a draft;
+   * no review or thread is newer than the ready report, and no blocking thread is unresolved;
+   * every applicable check on the head is finished and green.
+
+   If any fails, resume the worker with what failed, and move on to the next ready PR.
+3. If `origin/main` is still the gated commit, merge with
    `gh pr merge <n> --merge --delete-branch --match-head-commit <head>`, then verify it from live
    state (the live-state check in `ship-campaign` step 2). The `--match-head-commit` flag refuses a
    PR whose head moved after its gate.
-3. If `main` moved, resume that worker with the new `main` commit. The worker repeats the gate
+4. If `main` moved, resume that worker with the new `main` commit. The worker repeats the gate
    against it, and the orchestrator moves on to the next ready PR. When the survey says `unrelated`,
    the worker may run a local trial merge (`git merge --no-commit --no-ff origin/main`, then
    `npm run check`, `npm run lint`, and its targeted tests) instead of a CI round. It then aborts
