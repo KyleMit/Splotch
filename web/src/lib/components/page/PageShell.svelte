@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
+  import Icon from '../Icon.svelte';
   import BackLink from './BackLink.svelte';
   import BrandMark from './BrandMark.svelte';
 
@@ -56,8 +57,12 @@
               aria-controls={ledeId}
               onclick={() => (ledeOpen = !ledeOpen)}
             >
-              Why we ask
-              <span class="lede-chevron" class:open={ledeOpen} aria-hidden="true">›</span>
+              About this page
+              <!-- An icon, not a "›" glyph: the glyph sat on the label's
+                   baseline and read smaller than BackLink's chevron above it. -->
+              <span class="lede-chevron" class:open={ledeOpen} aria-hidden="true">
+                <Icon name="chevron-right" class="lede-chevron-icon" />
+              </span>
             </button>
           {/if}
           <p class="lede" id={ledeId} class:collapsed={hydration.hydrated && !ledeOpen}>
@@ -248,9 +253,23 @@
     cursor: pointer;
   }
 
+  /* The negative margin hands back the glyph's side bearing, so the toggle's
+     right edge is the chevron's ink rather than empty icon box. */
   .lede-chevron {
-    font-size: var(--font-size-lg);
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    margin-right: -4px;
     transition: transform var(--duration-base) ease;
+  }
+
+  .lede-chevron :global(.lede-chevron-icon) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .lede-chevron :global(.lede-chevron-icon svg) {
+    fill: currentColor;
   }
 
   .lede-chevron.open {
