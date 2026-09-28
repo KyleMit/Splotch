@@ -51,34 +51,36 @@ describe('parsePerfArgs', () => {
     expect(parsed.throttle).toEqual({ rate: 0, active: false, tag: 'raw', forSettings: 0 });
   });
 
-  it('yields no throttle when throttleDefault is omitted', () => {
-    const parsed = parsePerfArgs({}, ['--throttle=6']);
+  it('yields no throttle, and refuses --throttle, when throttleDefault is omitted', () => {
+    expect(parsePerfArgs({}, []).throttle).toBeUndefined();
 
-    expect(parsed.throttle).toBeUndefined();
+    const { error } = spyOnExit();
+    expect(() => parsePerfArgs({}, ['--throttle=6'])).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('Unknown flag --throttle=6'));
   });
 
   it('keeps an = inside a flag value', () => {
     const url = 'http://192.168.1.5:4173/?perf=1&dev=harness';
 
-    expect(parsePerfArgs({}, [`--url=${url}`]).flag('url')).toBe(url);
+    expect(parsePerfArgs({ extra: ['url'] }, [`--url=${url}`]).flag('url')).toBe(url);
   });
 
   it('parses a numeric flag by the rule its caller names', () => {
-    const { numberFlag } = parsePerfArgs({}, ['--repeats=6']);
+    const { numberFlag } = parsePerfArgs({ extra: ['repeats', 'cycles'] }, ['--repeats=6']);
 
     expect(numberFlag('repeats', 4, POSITIVE_INTEGER)).toBe(6);
     expect(numberFlag('cycles', 3, POSITIVE_INTEGER)).toBe(3);
   });
 
-  it('rejects an unknown flag for direct entry and ignores it for a library import', () => {
+  it('rejects an unknown flag, naming the flags it does take', () => {
     const { error, exit } = spyOnExit();
-    const argv = ['--tubro', '--turbo', 'positional'];
 
-    parsePerfArgs({ extra: ['turbo'] }, argv);
-    expect(exit).not.toHaveBeenCalled();
-
-    expect(() => parsePerfArgs({ extra: ['turbo'], entry: true }, argv)).toThrow('process exited');
-    expect(error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Unknown flag --tubro'));
+    expect(() => parsePerfArgs({ extra: ['turbo'] }, ['--tubro', '--turbo', 'positional'])).toThrow(
+      'process exited'
+    );
+    expect(error).toHaveBeenCalledExactlyOnceWith(
+      'Unknown flag --tubro — known flags: device, no-build, port, turbo'
+    );
     expect(exit).toHaveBeenCalledWith(1);
   });
 
@@ -91,29 +93,16 @@ describe('parsePerfArgs', () => {
   ])('exits for a value flag %s written without =', (name, argv) => {
     const { error, exit } = spyOnExit();
 
-    expect(() => parsePerfArgs({ throttleDefault: 4, entry: true }, argv)).toThrow(
-      'process exited'
-    );
+    expect(() => parsePerfArgs({ throttleDefault: 4 }, argv)).toThrow('process exited');
     expect(error).toHaveBeenCalledWith(`${name} takes a value: write ${name}=<value>`);
     expect(exit).toHaveBeenCalledWith(1);
-  });
-
-  it('throws for a value flag written without = when not entry', () => {
-    const { exit } = spyOnExit();
-
-    expect(() => parsePerfArgs({}, ['--device', 'tablet'])).toThrow(
-      '--device takes a value: write --device=<value>'
-    );
-    expect(exit).not.toHaveBeenCalled();
   });
 
   // `--throttle=` read as rate 0 — an unthrottled run labelled as the default.
   it.each(['--throttle=', '--port='])('exits for an empty %s', (arg) => {
     const { error, exit } = spyOnExit();
 
-    expect(() => parsePerfArgs({ throttleDefault: 4, entry: true }, [arg])).toThrow(
-      'process exited'
-    );
+    expect(() => parsePerfArgs({ throttleDefault: 4 }, [arg])).toThrow('process exited');
     expect(error).toHaveBeenCalledWith(`${arg} is empty: give it a value or leave it out`);
     expect(exit).toHaveBeenCalledWith(1);
   });
@@ -123,35 +112,21 @@ describe('parsePerfArgs', () => {
     ['--port=abc', '--port must be an integer >= 1 and <= 65535, got "abc"'],
     ['--throttle=abc', '--throttle must be a number >= 0, got "abc"'],
     ['--throttle=-2', '--throttle must be a number >= 0, got "-2"'],
-  ])('exits for a malformed number in %s for direct entry', (arg, message) => {
+  ])('exits for a malformed number in %s', (arg, message) => {
     const { error, exit } = spyOnExit();
 
-    expect(() => parsePerfArgs({ throttleDefault: 4, entry: true }, [arg])).toThrow(
-      'process exited'
-    );
+    expect(() => parsePerfArgs({ throttleDefault: 4 }, [arg])).toThrow('process exited');
     expect(error).toHaveBeenCalledWith(message);
     expect(exit).toHaveBeenCalledWith(1);
-  });
-
-  it('throws for a malformed number without exiting when not entry', () => {
-    const { exit } = spyOnExit();
-
-    expect(() => parsePerfArgs({ throttleDefault: 4 }, ['--port=abc'])).toThrow(
-      '--port must be an integer >= 1 and <= 65535, got "abc"'
-    );
-    expect(() => parsePerfArgs({ throttleDefault: 4 }, ['--throttle=abc'])).toThrow(
-      '--throttle must be a number >= 0, got "abc"'
-    );
-    expect(exit).not.toHaveBeenCalled();
   });
 
   // `--no-throttle=true` read as absent, so the run stayed throttled at 4×.
   it('exits for a switch written with a value', () => {
     const { error, exit } = spyOnExit();
 
-    expect(() =>
-      parsePerfArgs({ throttleDefault: 4, entry: true }, ['--no-throttle=true'])
-    ).toThrow('process exited');
+    expect(() => parsePerfArgs({ throttleDefault: 4 }, ['--no-throttle=true'])).toThrow(
+      'process exited'
+    );
     expect(error).toHaveBeenCalledWith(
       '--no-throttle is a switch: write --no-throttle with no value'
     );
@@ -159,8 +134,11 @@ describe('parsePerfArgs', () => {
   });
 
   it('reports a malformed --throttle even when --no-throttle wins', () => {
+    const { error } = spyOnExit();
+
     expect(() =>
       parsePerfArgs({ throttleDefault: 4 }, ['--throttle=abc', '--no-throttle'])
-    ).toThrow('--throttle must be a number >= 0, got "abc"');
+    ).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith('--throttle must be a number >= 0, got "abc"');
   });
 });

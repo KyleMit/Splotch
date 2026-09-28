@@ -612,7 +612,6 @@ export function handCaptureSecondsProblem(seconds) {
 export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   const { flag, numberFlag, has, port } = parsePerfArgs(
     {
-      entry: true,
       extra: [
         'url',
         'device-id',

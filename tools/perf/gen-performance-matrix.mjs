@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { esc } from '../lib/html.mjs';
 import { checkMatrixStaleness } from './check-matrix-staleness.mjs';
-import { ROOT, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argSwitch, isMain, rejectUnknownFlags, runMain } from '../lib/proc.mjs';
 import { masthead, page, siteFooter } from '../scrapbook/lib/scrapbook-chrome.mjs';
 import {
   ACTION_FIRST_FRAME_GATE_MS,
@@ -3469,13 +3469,9 @@ const positionalArguments = () => process.argv.slice(2).filter((arg) => !arg.sta
 
 export async function generateDeploymentMatrixReport(
   manifestArg = positionalArguments()[0],
-  { strict = process.argv.includes('--strict') } = {}
+  { strict = argSwitch('strict') } = {}
 ) {
-  const manifestPath = manifestArg
-    ? isAbsolute(manifestArg)
-      ? manifestArg
-      : join(ROOT, manifestArg)
-    : DEFAULT_MANIFEST;
+  const manifestPath = manifestArg ? resolve(ROOT, manifestArg) : DEFAULT_MANIFEST;
   const outputDir = dirname(manifestPath);
   const matrix = normalizeMatrix(readJson(manifestPath), outputDir);
   writeFileSync(join(outputDir, 'data.json'), `${JSON.stringify(matrix, null, 2)}\n`);
@@ -3489,6 +3485,11 @@ export async function generateDeploymentMatrixReport(
   await checkMatrixStaleness({ manifestPath: relative(ROOT, manifestPath), strict });
 }
 
-if (isMain(import.meta.url)) runMain(generateDeploymentMatrixReport);
+// Refusing unknown flags covers `--manifest=`, the staleness checker's spelling:
+// ignored, it would regenerate the DEFAULT manifest and exit 0.
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['strict']);
+  runMain(generateDeploymentMatrixReport);
+}
 
 export { mergeActionResults, normalizeMatrix, renderMarkdown, renderReport };

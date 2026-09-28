@@ -56,13 +56,6 @@ const SHELLS = {
 // stays quick.
 const TAIL_SETTLE_MS = 1500;
 
-const { throttle, port, build, numberFlag } = parsePerfArgs({
-  throttleDefault: 4,
-  extra: ['repeats'],
-  entry: isMain(import.meta.url),
-});
-const repeats = numberFlag('repeats', 3, POSITIVE_INTEGER);
-
 // A beat between closing the dialog and the reopen tap, so the close frame and
 // any tail long task it reports land outside the reopen's measured window.
 const REOPEN_SETTLE_MS = 500;
@@ -187,7 +180,12 @@ const cycleMedians = (cycles) => ({
   medianLongestTaskMs: round(median(cycles.map(longestTask))),
 });
 
-export async function runSettingsOpenProfile() {
+export async function runSettingsOpenProfile(argv = process.argv.slice(2)) {
+  const { throttle, port, build, numberFlag } = parsePerfArgs(
+    { throttleDefault: 4, extra: ['repeats'] },
+    argv
+  );
+  const repeats = numberFlag('repeats', 3, POSITIVE_INTEGER);
   const outDir = profilePath('settings-open', throttle.tag);
   mkdirSync(outDir, { recursive: true });
 

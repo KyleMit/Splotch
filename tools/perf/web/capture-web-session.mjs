@@ -17,12 +17,8 @@ import { driveSession } from '../lib/toddler-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 
-const { deviceName, device, throttle, port, build } = parsePerfArgs({
-  throttleDefault: 4,
-  entry: isMain(import.meta.url),
-});
-
-export async function runWebScenario() {
+export async function runWebScenario(argv = process.argv.slice(2)) {
+  const { deviceName, device, throttle, port, build } = parsePerfArgs({ throttleDefault: 4 }, argv);
   warnIfNoPerfMarks('npm run perf:web');
 
   const outDir = profilePath('web', deviceName, throttle.tag);

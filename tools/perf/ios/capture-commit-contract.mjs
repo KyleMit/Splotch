@@ -129,7 +129,7 @@ async function runArm(device, harnessUrl, arm) {
 
 export async function runCommitContract(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
-    { entry: true, extra: ['url', 'device-id', 'no-serve'] },
+    { extra: ['url', 'device-id', 'no-serve'] },
     argv
   );
   requireInspectorProxy();
