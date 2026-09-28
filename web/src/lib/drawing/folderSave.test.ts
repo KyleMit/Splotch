@@ -324,4 +324,25 @@ describe('saveBlobToFolder', () => {
     expect(cleared).toHaveBeenCalledOnce();
     expect(await folderSave.getSaveFolderName()).toBeNull();
   });
+
+  it('keeps a folder chosen while a save into the missing old folder was running', async () => {
+    const { handle: oldHandle } = makeHandle('granted', 'Old Folder');
+    const missing = Promise.withResolvers<never>();
+    oldHandle.getFileHandle = vi.fn(() => missing.promise);
+    const { handle: newHandle } = makeHandle('granted', 'New Folder');
+    seedFolder(oldHandle);
+    setPicker(vi.fn(async () => newHandle));
+    const cleared = vi.fn();
+    folderSave.setSaveFolderClearedListener(cleared);
+
+    const save = folderSave.saveBlobToFolder(blob, 'f.png', { allowPrompt: false });
+    await vi.waitFor(() => expect(oldHandle.getFileHandle).toHaveBeenCalled());
+    expect(await folderSave.chooseSaveFolder()).toBe('New Folder');
+    missing.reject(new DOMException('gone', 'NotFoundError'));
+
+    expect(await save).toBeNull();
+    expect(cleared).not.toHaveBeenCalled();
+    expect(store.get('saveDir')).toBe(newHandle);
+    expect(await folderSave.getSaveFolderName()).toBe('New Folder');
+  });
 });
