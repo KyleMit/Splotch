@@ -17,7 +17,7 @@
   import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
   import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
   import { scheduleIdle } from '$lib/idle';
-  import { IMAGE_REPORT_RETENTION_DAYS } from '$lib/imageReport';
+  import { IMAGE_REPORT_RETENTION_DAYS, IMAGE_REPORT_REVIEW_HOURS } from '$lib/imageReport';
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import { USAGE_RECORD_RETENTION_DAYS } from '$lib/usageRecord';
   import { SECTIONS, SPY_LINE_PX, watchReadingPosition } from './contents';
@@ -228,7 +228,7 @@
             our server wrote for the generator, the chosen art style, the report time, and the AI
             picture — privately, on Splotch's Netlify account. A private GitHub support issue tells
             us where to look; it carries report details, never the images. We investigate and
-            respond within 24 hours. A daily cleanup deletes the report after
+            respond within {IMAGE_REPORT_REVIEW_HOURS} hours. A daily cleanup deletes the report after
             <strong>{IMAGE_REPORT_RETENTION_DAYS} days</strong>. To ask us to delete one sooner, use
             the {@render feedbackLink()} and include the reference shown after sending.
           </p>
