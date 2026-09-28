@@ -1,19 +1,28 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import type { completeFreeGeneration, failFreeGeneration } from '$lib/server/freeGenerationGrants';
+import type { discardJob, readJob, readJobImage } from '$lib/server/generationJobs';
+import type { rateLimit } from '$lib/server/rateLimit';
+import type { issueReportToken } from '$lib/server/reportToken';
 
+// Typed against the functions they replace, so a changed server result shape
+// fails type-check here instead of these tests feeding the route a stale one.
 const mocks = vi.hoisted(() => ({
-  rateLimit: vi.fn(),
-  readJob: vi.fn(),
-  discardJob: vi.fn(),
-  readJobImage: vi.fn(),
-  completeFreeGeneration: vi.fn(),
-  failFreeGeneration: vi.fn(),
-  issueReportToken: vi.fn(),
+  rateLimit: vi.fn<typeof rateLimit>(),
+  readJob: vi.fn<typeof readJob>(),
+  discardJob: vi.fn<typeof discardJob>(),
+  readJobImage: vi.fn<typeof readJobImage>(),
+  completeFreeGeneration: vi.fn<typeof completeFreeGeneration>(),
+  failFreeGeneration: vi.fn<typeof failFreeGeneration>(),
+  issueReportToken: vi.fn<typeof issueReportToken>(),
 }));
 
 vi.mock('$lib/server/rateLimit', () => ({ rateLimit: mocks.rateLimit }));
-vi.mock('$lib/server/generationJobs', () => ({
+// The id-shape check stays real, so the malformed-id cases below exercise the
+// validator that sits beside the code minting ids.
+vi.mock('$lib/server/generationJobs', async (importOriginal) => ({
+  isJobId: (await importOriginal<typeof import('$lib/server/generationJobs')>()).isJobId,
   readJob: mocks.readJob,
   discardJob: mocks.discardJob,
   readJobImage: mocks.readJobImage,
@@ -344,8 +353,8 @@ describe('GET /api/generation-result', () => {
     });
 
     it.each([
-      ['refusal', SAFETY_REFUSAL_STATUS, { status: 'refusal', reason: 'IMAGE_SAFETY' }],
-      ['error', 502, { status: 'error', reason: 'upstream' }],
+      ['refusal', SAFETY_REFUSAL_STATUS, { status: 'refusal', reason: 'IMAGE_SAFETY' } as const],
+      ['error', 502, { status: 'error', reason: 'upstream' } as const],
     ])(
       'still answers the %s and discards the job when the release cannot be recorded',
       async (_label, status, outcome) => {
@@ -415,8 +424,8 @@ describe('GET /api/generation-result', () => {
     });
 
     it.each([
-      ['refusal', { status: 'refusal', reason: 'IMAGE_SAFETY' }],
-      ['error', { status: 'error', reason: 'upstream' }],
+      ['refusal', { status: 'refusal', reason: 'IMAGE_SAFETY' } as const],
+      ['error', { status: 'error', reason: 'upstream' } as const],
     ])('settles nothing on a %s', async (_label, outcome) => {
       mocks.readJob.mockResolvedValue({ ...outcome, context: paidContext });
 

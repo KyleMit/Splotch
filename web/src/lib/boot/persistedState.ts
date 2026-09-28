@@ -27,8 +27,7 @@ async function hydrateSettingsStores(): Promise<void> {
   recordSession('settingsActivity');
   if (restored) {
     void applyDeviceOrientationPreference(
-      settingsState.lockRotationEnabled,
-      settingsState.forceLandscapeOrientation,
+      settingsState.orientationChoice(),
       fullscreenState.active
     );
   }

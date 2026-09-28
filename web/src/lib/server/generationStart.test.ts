@@ -83,6 +83,19 @@ describe('startBackgroundGeneration', () => {
     expect(discardJob).not.toHaveBeenCalled();
   });
 
+  it('keeps the job id out of the logs when a store error names the job key', async () => {
+    const jobId = 'a'.repeat(64);
+    putJobInput.mockRejectedValue(new Error(`put ${jobId}/input failed`));
+    claimJob.mockRejectedValue(new Error(`read ${jobId}/status.json failed`));
+
+    await start();
+
+    const logged = vi.mocked(console.error).mock.calls.flat().map(String);
+    expect(logged).toContainEqual(expect.stringContaining('/input failed'));
+    expect(logged).toContainEqual(expect.stringContaining('/status.json failed'));
+    expect(logged.join('\n')).not.toContain(jobId);
+  });
+
   it('still falls back when the cleanup itself fails', async () => {
     // The fallback is what the child experiences; the purge is the backstop for
     // the bytes. A failed delete must not turn a recoverable handoff failure

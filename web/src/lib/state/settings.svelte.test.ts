@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { tick } from 'svelte';
 import { STORAGE_KEYS } from '../storage';
+import type { OrientationChoice } from '$lib/platform';
 
 import {
   settingsState,
@@ -188,6 +190,33 @@ describe('orientation choice', () => {
     expect(settingsState.lockRotationEnabled).toBe(false);
     expect(settingsState.forceLandscapeOrientation).toBe(true);
     expect(localStorage.getItem(STORAGE_KEYS.lockRotation)).toBe('false');
+  });
+
+  // The drawing route's device-lock $effect reads only orientationChoice(), so
+  // it must re-run whenever the lock or the locked side changes — a restore
+  // from durable storage included.
+  it('re-runs an effect that reads it on every lock and side change', async () => {
+    setOrientationChoice('portrait');
+    const seen: OrientationChoice[] = [];
+    const stop = $effect.root(() => {
+      $effect(() => {
+        seen.push(orientationChoice());
+      });
+    });
+    await tick();
+
+    setOrientationChoice('landscape');
+    await tick();
+    setOrientationChoice('auto');
+    await tick();
+    setOrientationChoice('portrait');
+    await tick();
+    localStorage.setItem(STORAGE_KEYS.forceLandscape, 'true');
+    reloadSettings();
+    await tick();
+    stop();
+
+    expect(seen).toEqual(['portrait', 'landscape', 'auto', 'portrait', 'landscape']);
   });
 });
 

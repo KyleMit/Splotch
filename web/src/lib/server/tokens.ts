@@ -37,10 +37,7 @@ const SEED_CONFIRMATION_ATTEMPTS = 3;
 // Backoff before each confirmation reread. A `modified: false` means the write
 // landed on a replica this one hasn't caught up to yet, so rereading instantly
 // just re-hits the same lag; a short, growing pause gives eventual consistency a
-// moment to converge. A strong-consistency read would confirm deterministically,
-// but it throws BlobsConsistencyError in this SSR Blobs context (ADR-0025) — which
-// would make every lost seed race fail to confirm, strictly worse than pacing
-// eventual reads — so we stay on eventual and just space the attempts.
+// moment to converge.
 const SEED_CONFIRMATION_BACKOFF_MS = 50;
 
 function seedFromEnv(): string[] {
@@ -57,7 +54,9 @@ function seedFromEnv(): string[] {
 function openStore(): TokenStore | null {
   if (blobsUnavailable) return null;
   try {
-    return getStore(STORE_NAME);
+    // Eventual reads suffice because no request here depends on reading its own
+    // write (ADR-0025); a store whose requests do reads strongly (ADR-0105).
+    return getStore({ name: STORE_NAME, consistency: 'eventual' });
   } catch (err) {
     const detail = err instanceof Error ? err.message : err;
     console.warn('[tokens] Netlify Blobs unavailable, using in-memory reads:', detail);
@@ -107,11 +106,10 @@ async function readStore(): Promise<StoreRead> {
   const store = openStore();
   if (store) {
     try {
-      // Eventual consistency (the default) is sufficient here and sidesteps the
-      // strong-read context requirements entirely (ADR-0025). Its one cost: a
-      // replica lagging the latest write can report the key as absent and trip
-      // the seed-on-empty branch below — which the `onlyIfNew` write makes atomic
-      // so it can never clobber an existing list.
+      // The one cost of an eventual read here: a replica lagging the latest
+      // write can report the key as absent and trip the seed-on-empty branch
+      // below — which the `onlyIfNew` write makes atomic so it can never
+      // clobber an existing list.
       const existing = await store.getWithMetadata(KEY, { type: 'json' });
       if (existing && Array.isArray(existing.data)) {
         return { source: 'blobs', store, list: existing.data, etag: existing.etag };

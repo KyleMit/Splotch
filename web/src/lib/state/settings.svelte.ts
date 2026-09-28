@@ -17,7 +17,7 @@ import {
 } from '$lib/platform/reducedMotion';
 import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import type { VerifiedCredentialKind } from '$lib/ai/verifyCredential';
-import type { Orientation } from '$lib/platform';
+import type { OrientationChoice } from '$lib/platform';
 import {
   OPTIONAL_BRUSH_TYPES,
   toolState,
@@ -163,12 +163,6 @@ function readReduceMotion(fallback: ReduceMotionPreference): ReduceMotionPrefere
 }
 
 export type ToolbarStyle = 'buttons' | 'bare';
-
-// The Orientation picker's vocabulary over the two persisted lock booleans:
-// a locked side, or 'auto' for no in-app lock. 'auto' leaves
-// forceLandscapeOrientation as it was, so the side a parent last locked to is
-// still there when they lock again.
-export type OrientationChoice = Orientation | 'auto';
 
 function readToolbarStyle(): ToolbarStyle {
   return readString(STORAGE_KEYS.toolbarStyle, 'buttons') === 'bare' ? 'bare' : 'buttons';
@@ -357,6 +351,8 @@ export function createSettings(tool: ToolState): SettingsState {
       if (!v) normalizeDisabledBrushes();
     },
     setDrawerOpen: makeBoolSetter('drawerOpen'),
+    // 'auto' leaves forceLandscapeOrientation as it was, so the side a parent
+    // last locked to is still there when they lock again.
     setOrientationChoice(v) {
       if (v !== 'auto') setForceLandscapeOrientation(v === 'landscape');
       setLockRotation(v !== 'auto');

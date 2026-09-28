@@ -1,10 +1,7 @@
 <script lang="ts">
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
-  import {
-    orientationChoice,
-    setOrientationChoice,
-    type OrientationChoice,
-  } from '$lib/state/settings.svelte';
+  import type { OrientationChoice } from '$lib/platform';
+  import { orientationChoice, setOrientationChoice } from '$lib/state/settings.svelte';
   import '$lib/components/deferredIcons';
 
   const options: SegmentedPickerOption<OrientationChoice>[] = [
