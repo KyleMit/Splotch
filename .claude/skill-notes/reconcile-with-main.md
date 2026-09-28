@@ -64,6 +64,45 @@ repo.
   value is entirely in the review pass, which cannot be scripted — so the helper deliberately stops
   at gathering facts and never moves a ref.
 
+## The relation verdict (2026-09-28)
+
+The survey grades the incoming commits `unrelated`, `adjacent`, or `coupled` before the merge. The
+user asked for this after a 64-PR campaign, noting that the full pass "can also sometimes be a bit
+noisy if the changes are genuinely unrelated". `ship-campaign`'s parallel mode uses the verdict at
+every catch-up merge.
+
+**How far to follow imports.** A rival review asked for ordinary transitive imports to be followed.
+Measured against the campaign's 65 merges into `main`, on 61 sampled `web/src/lib` modules, this is
+the share of merges that would read as `adjacent`:
+
+| Imports followed                    | Share of merges flagged `adjacent` |
+| ----------------------------------- | ---------------------------------- |
+| Direct imports only                 | 3.0%                               |
+| Plus one hop behind a direct import | 6.1%                               |
+| The full transitive closure         | 14.4%                              |
+
+Hub-reaching modules are where the full closure hurts. `aiAutoSave.ts` has 288 modules in its
+closure, and 48 of 65 merges touched it, against 9 at one hop and 4 at direct imports only.
+
+**Chosen: one hop.** It catches the rival's concrete case (`tool.svelte.ts` imports `storage.ts`,
+which imports `nativePlugin.ts`) and roughly doubles the rate over direct imports only. Following
+the full closure would turn three-quarters of a hub module's merges into `adjacent`, each with a
+long reading list: the noise the verdict exists to remove.
+
+Deeper paths keep each intermediate's interface, which the type check verifies, and their behaviour
+is covered by the tests every path runs. What remains is a known limit: a new call through two
+unchanged intermediates whose behaviour upstream changed indirectly. It is left to the tests, and to
+the rule that a failing check escalates the merge to `coupled`.
+
+**Rival findings adopted:**
+
+* the dependency forms (barrels, followed transitively; `import.meta.glob`; `?raw` suffixes);
+* keeping a deleted `Foo.svelte` distinct from an edited `Foo.svelte.ts`;
+* accumulating every changed target of a barrel, even one that itself changed;
+* the one-hop bound;
+* the orchestrator re-reading a PR's live review state before it merges (in `ship-campaign`'s
+  parallel mode).
+
 ## Open
 
 * The Step 4 trap list is repo-specific and will rot as the repo changes. It is written as "check

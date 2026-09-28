@@ -9,7 +9,8 @@
 // Usage:
 //   node .claude/skills/reconcile-with-main/survey.mjs [--no-fetch] [--json]
 //
-// Prints four sections: the incoming commits; the upstream renames and
+// Prints the relation verdict (unrelated / adjacent / coupled, with reasons),
+// then four sections: the incoming commits; the upstream renames and
 // deletions most likely to strand a call site; the files both sides changed
 // (where a clean textual merge is least likely to mean a coherent result); and
 // the upstream-only files. It never merges, never writes, and never moves a
@@ -20,6 +21,7 @@
 // and merge another.
 
 import { execFileSync } from 'node:child_process';
+import { posix } from 'node:path';
 import { isMain } from '../../../tools/lib/proc.mjs';
 
 const FILE_LIST_LIMIT = 40;
@@ -78,6 +80,284 @@ export function classifyChanges(upstream, local) {
   };
 }
 
+// How far the full semantic pass is warranted. "unrelated": nothing the
+// branch changed shares a file with upstream, imports an upstream-changed
+// module, or is governed by a changed repo-wide convention; a trial merge plus
+// the type check and the branch's tests is enough. "adjacent": the branch
+// imports a module upstream changed; the type check catches a renamed or
+// reshaped export, and the listed upstream diffs are read for the contract
+// changes types cannot see (a default, a return meaning). "coupled": shared
+// files, a stranded rename, or a convention change; run the whole skill.
+//
+// Dependencies are found through direct imports, re-exporting barrels,
+// `import.meta.glob` patterns, query-suffixed asset imports, and one hop of
+// ordinary imports behind a direct import. Deeper ordinary imports are
+// deliberately not followed: they fan out through hub modules (settings,
+// storage, platform), so for any module whose imports reach the app's main
+// graph, most merges would read as `adjacent` and the noise the verdict exists
+// to remove would return. The type check verifies the interfaces along a deeper
+// path, and the tests every path runs cover its behaviour.
+export const RELATIONS = ['unrelated', 'adjacent', 'coupled'];
+
+// Repo-wide sources whose change can make untouched branch code wrong or
+// non-compliant without a single shared file.
+const CONVENTION_SOURCES = [
+  /^eslint\.config\.js$/,
+  /^(web\/)?tsconfig[^/]*\.json$/,
+  /^package\.json$/,
+  /^pnpm-lock\.yaml$/,
+  /^web\/(svelte|vite)\.config\.[jt]s$/,
+  /^\.ruler\/conventions\.md$/,
+  /^docs\/CODING-STANDARDS\.md$/,
+  /^(\.stylelintrc[^/]*|\.prettierrc[^/]*|dprint\.json)$/,
+];
+
+const IMPORT_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g;
+const REEXPORT_SPECIFIER =
+  /\bexport\s+(?:type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s*from\s*(['"])([^'"\n]+)\1/g;
+const GLOB_CALL = /\bimport\.meta\.glob\s*(?:<[^>]*>)?\s*\(\s*(\[[^\]]*\]|(['"])[^'"\n]+\2)/g;
+const QUOTED = /(['"])([^'"\n]+)\1/g;
+const QUERY_SUFFIX = /[?#].*$/;
+const MODULE_SUFFIX = /(\.svelte)?\.(m?[jt]s|svelte)$/;
+
+const quotedStrings = (text) => [...text.matchAll(QUOTED)].map((match) => match[2]);
+
+// A `?raw` or `?url` suffix names the same file; Vite strips it to resolve.
+export const importSpecifiers = (source) =>
+  [...source.matchAll(IMPORT_SPECIFIER)].map((match) => match[2].replace(QUERY_SUFFIX, ''));
+
+export const reexportSpecifiers = (source) =>
+  [...source.matchAll(REEXPORT_SPECIFIER)].map((match) => match[2].replace(QUERY_SUFFIX, ''));
+
+// Negated patterns are dropped, so a glob matches a superset of what Vite
+// loads: a false "depends" costs a read, a false "unrelated" costs a pass.
+export const globPatterns = (source) =>
+  [...source.matchAll(GLOB_CALL)]
+    .flatMap((match) => quotedStrings(match[1]))
+    .filter((pattern) => !pattern.startsWith('!'));
+
+// Resolves the specifiers that can name a repo file; bare package names and
+// other aliases return null and are covered by the package.json convention
+// source instead. Vite reads a leading `/` from the web project root.
+export function resolveSpecifier(specifier, importerPath) {
+  if (specifier.startsWith('$lib/')) return `web/src/lib/${specifier.slice('$lib/'.length)}`;
+  if (specifier.startsWith('/')) return posix.normalize(`web${specifier}`);
+  if (specifier.startsWith('.')) {
+    return posix.normalize(posix.join(posix.dirname(importerPath), specifier));
+  }
+  return null;
+}
+
+export function globToRegExp(resolvedPattern) {
+  let body = '';
+  for (let i = 0; i < resolvedPattern.length; i += 1) {
+    const char = resolvedPattern[i];
+    if (char === '*' && resolvedPattern[i + 1] === '*') {
+      const slash = resolvedPattern[i + 2] === '/';
+      body += slash ? '(?:.*/)?' : '.*';
+      i += slash ? 2 : 1;
+    } else if (char === '*') body += '[^/]*';
+    else if (char === '?') body += '[^/]';
+    else if (char === '{') body += '(?:';
+    else if (char === '}') body += ')';
+    else if (char === ',') body += '|';
+    else body += char.replace(/[.+^$()|[\]\\]/g, '\\$&');
+  }
+  return new RegExp(`^${body}$`);
+}
+
+// Extension and `/index` are dropped so `./foo`, `./foo.ts`, and `./foo/index.ts`
+// all name one module. `foo.svelte` and `foo.svelte.ts` share a key on purpose:
+// `./foo.svelte` can name either, so a match on the key reads as a match on both.
+export const moduleKey = (path) => path.replace(MODULE_SUFFIX, '').replace(/\/index$/, '');
+
+const strandedBy = (entry) => MOVED_OR_DELETED_STATUS.test(entry.status);
+
+// Upstream changes indexed by module key, keeping every entry that shares a key
+// so a deletion is never hidden behind an edit of its namesake. A barrel that
+// re-exports a changed module (transitively) gains that module's entries, from
+// every target it re-exports and even when the barrel itself also changed, since
+// importing the barrel imports the changed code. Each entry is recorded once per
+// key, which also bounds the fixpoint.
+function changedModules(upstream, reexporters) {
+  const index = new Map();
+  const recorded = new Set();
+  const add = (key, hit) => {
+    const id = [key, hit.entry.status, hit.entry.from, hit.entry.to].join('\0');
+    if (recorded.has(id)) return false;
+    recorded.add(id);
+    index.set(key, [...(index.get(key) ?? []), hit]);
+    return true;
+  };
+  for (const entry of upstream) {
+    for (const path of changedPaths(entry)) add(moduleKey(path), { entry, via: null });
+  }
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const { path, specifiers } of reexporters) {
+      for (const specifier of specifiers) {
+        const resolved = resolveSpecifier(specifier, path);
+        for (const hit of (resolved && index.get(moduleKey(resolved))) || []) {
+          if (add(moduleKey(path), { entry: hit.entry, via: path })) grew = true;
+        }
+      }
+    }
+  }
+  return index;
+}
+
+const describeHit = (importer, { entry, via }) => {
+  const change = strandedBy(entry) ? 'moved or deleted' : 'changed';
+  const route = via ? `${via}, which re-exports ${entry.from}` : entry.from;
+  return `${importer} imports ${route}, which upstream ${change}`;
+};
+
+// `intermediates` are the merge target's copies of the modules the branch
+// imports directly; a change one hop behind them reads as `adjacent`.
+export function relate({
+  upstream,
+  bothSides,
+  localSources,
+  reexporters = [],
+  intermediates = [],
+}) {
+  const reasons = [];
+  if (bothSides.length > 0) {
+    reasons.push({ relation: 'coupled', why: `${bothSides.length} file(s) changed on both sides` });
+  }
+  for (const entry of upstream) {
+    const convention = changedPaths(entry).find((path) =>
+      CONVENTION_SOURCES.some((pattern) => pattern.test(path))
+    );
+    if (convention) reasons.push({ relation: 'coupled', why: `convention source ${convention}` });
+  }
+
+  const modules = changedModules(upstream, reexporters);
+  const upstreamPaths = upstream.flatMap((entry) =>
+    changedPaths(entry).map((path) => ({ path, entry }))
+  );
+  const intermediatesByKey = new Map();
+  for (const file of intermediates) {
+    const key = moduleKey(file.path);
+    intermediatesByKey.set(key, [...(intermediatesByKey.get(key) ?? []), file]);
+  }
+  const oneHopHits = (intermediate) =>
+    importSpecifiers(intermediate.source).flatMap((specifier) => {
+      const resolved = resolveSpecifier(specifier, intermediate.path);
+      return (resolved && modules.get(moduleKey(resolved))) || [];
+    });
+  for (const { path, source } of localSources) {
+    for (const specifier of importSpecifiers(source)) {
+      const resolved = resolveSpecifier(specifier, path);
+      if (!resolved) continue;
+      for (const hit of modules.get(moduleKey(resolved)) || []) {
+        reasons.push({
+          relation: strandedBy(hit.entry) ? 'coupled' : 'adjacent',
+          why: describeHit(path, hit),
+        });
+      }
+      for (const intermediate of intermediatesByKey.get(moduleKey(resolved)) || []) {
+        for (const hit of oneHopHits(intermediate)) {
+          reasons.push({
+            relation: 'adjacent',
+            why: `${path} imports ${intermediate.path}, which imports ${hit.entry.from}, changed upstream`,
+          });
+        }
+      }
+    }
+    for (const pattern of globPatterns(source)) {
+      const resolved = resolveSpecifier(pattern, path);
+      if (!resolved) continue;
+      const matcher = globToRegExp(resolved);
+      for (const { path: changed, entry } of upstreamPaths.filter((item) =>
+        matcher.test(item.path)
+      )) {
+        reasons.push({
+          relation: strandedBy(entry) ? 'coupled' : 'adjacent',
+          why: `${path} globs ${pattern}, which matches ${changed}, changed upstream`,
+        });
+      }
+    }
+  }
+
+  const unique = [...new Map(reasons.map((reason) => [reason.why, reason])).values()];
+  const rank = Math.max(0, ...unique.map((reason) => RELATIONS.indexOf(reason.relation)));
+  return { relation: RELATIONS[rank], reasons: unique };
+}
+
+// A single-line `export … from` and the closing line of a multi-line block;
+// POSIX ERE, so no `\s`.
+const REEXPORT_LINE_PATTERNS = ['export[^;]*from', '^[[:space:]]*}[[:space:]]*from'];
+const CAT_FILE_MAX_BUFFER_BYTES = 256 * 1024 * 1024;
+
+// Reads every `ref:path` blob through one `git cat-file --batch` process, since
+// the candidate list runs to hundreds of files.
+function readManyAt(ref, paths) {
+  if (paths.length === 0) return [];
+  const out = execFileSync('git', ['cat-file', '--batch'], {
+    input: `${paths.map((path) => `${ref}:${path}`).join('\n')}\n`,
+    maxBuffer: CAT_FILE_MAX_BUFFER_BYTES,
+  });
+  const sources = [];
+  let offset = 0;
+  for (const path of paths) {
+    const headerEnd = out.indexOf(0x0a, offset);
+    const [, type, size] = out.subarray(offset, headerEnd).toString('utf8').split(' ');
+    offset = headerEnd + 1;
+    if (type !== 'blob') continue;
+    sources.push({ path, source: out.subarray(offset, offset + Number(size)).toString('utf8') });
+    offset += Number(size) + 1;
+  }
+  return sources;
+}
+
+// Every file on the merge target that re-exports another module, so a barrel
+// between the branch and a changed module still links them.
+function reexportersOn(ref) {
+  const patterns = REEXPORT_LINE_PATTERNS.flatMap((pattern) => ['-e', pattern]);
+  let listed = [];
+  try {
+    listed = lines(
+      git('grep', '-l', '-E', ...patterns, ref, '--', 'web/src', 'tools', 'netlify')
+    ).map((line) => line.slice(ref.length + 1));
+  } catch {
+    // git grep exits 1 when nothing matches.
+  }
+  return readManyAt(ref, listed)
+    .map(({ path, source }) => ({ path, specifiers: reexportSpecifiers(source) }))
+    .filter((file) => file.specifiers.length > 0);
+}
+
+const CODE_FILE = /\.(m?[jt]s|svelte)$/;
+
+// The merge target's copies of every module the branch's changed files import
+// directly, for the one-hop check.
+function directImportsOn(ref, localSources) {
+  const directKeys = new Set(
+    localSources.flatMap(({ path, source }) =>
+      importSpecifiers(source)
+        .map((specifier) => resolveSpecifier(specifier, path))
+        .filter(Boolean)
+        .map(moduleKey)
+    )
+  );
+  const onRef = lines(
+    git('ls-tree', '-r', '--name-only', ref, '--', 'web/src', 'tools', 'netlify')
+  );
+  return readManyAt(
+    ref,
+    onRef.filter((path) => CODE_FILE.test(path) && directKeys.has(moduleKey(path)))
+  );
+}
+
+function readAtHead(path) {
+  try {
+    return git('show', `HEAD:${path}`);
+  } catch {
+    return null;
+  }
+}
+
 function survey({ doFetch }) {
   if (doFetch) {
     process.stderr.write(`Fetching ${BASE_REF}…\n`);
@@ -97,6 +377,13 @@ function survey({ doFetch }) {
 
   const changes = (from, to) =>
     parseNameStatus(git('diff', '--name-status', '--find-renames', from, to));
+  const upstream = changes(mergeBase, BASE_REF);
+  const local = changes(mergeBase, 'HEAD');
+  const classified = classifyChanges(upstream, local);
+  const localSources = local
+    .filter((entry) => !entry.status.startsWith('D'))
+    .map((entry) => ({ path: entry.to, source: readAtHead(entry.to) }))
+    .filter((file) => file.source !== null);
 
   return {
     branch,
@@ -105,7 +392,14 @@ function survey({ doFetch }) {
     dirtyWorkingTree,
     localCommits: Number(git('rev-list', '--count', `${mergeBase}..HEAD`)),
     incoming,
-    ...classifyChanges(changes(mergeBase, BASE_REF), changes(mergeBase, 'HEAD')),
+    ...classified,
+    ...relate({
+      upstream,
+      bothSides: classified.bothSides,
+      localSources,
+      reexporters: incoming.length > 0 ? reexportersOn(BASE_REF) : [],
+      intermediates: incoming.length > 0 ? directImportsOn(BASE_REF, localSources) : [],
+    }),
   };
 }
 
@@ -140,6 +434,14 @@ function report(result) {
   if (result.incoming.length === 0) {
     console.log(`\nAlready up to date with ${result.base}. Nothing to reconcile.`);
     return;
+  }
+
+  section(`Relation: ${result.relation}`);
+  if (result.reasons.length === 0) {
+    console.log('  no shared file, no imported upstream change, no convention change');
+  }
+  for (const reason of result.reasons.slice(0, FILE_LIST_LIMIT)) {
+    console.log(`  [${reason.relation}] ${reason.why}`);
   }
 
   section('Incoming commits (oldest last)');

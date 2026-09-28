@@ -127,4 +127,213 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
       ]);
     });
   });
+
+  // The relation verdict decides whether a merge gets the full semantic pass.
+  // Its value is a quiet "unrelated" when nothing links the two sides, so each
+  // way of being linked must raise it, and an unlinked pair must not.
+  describe('relate', () => {
+    const { relate, importSpecifiers, resolveSpecifier, moduleKey } = module;
+    // Fixture import lines are assembled so tool-specifier-resolution's scan,
+    // which reads specifier-shaped text in every tools file, doesn't take them
+    // for real relative imports of this test.
+    const rel = (...parts) => parts.join('/');
+    const verdict = (upstream, local, localSources, reexporters = [], intermediates = []) => {
+      const up = parseNameStatus(upstream);
+      const { bothSides } = classifyChanges(up, parseNameStatus(local));
+      return relate({ upstream: up, bothSides, localSources, reexporters, intermediates });
+    };
+
+    it('reads static, side-effect, re-export, and dynamic import specifiers', () => {
+      const source = [
+        "import { a } from '$lib/a';",
+        `import '${rel('.', 'side.css')}';`,
+        `export { b } from '${rel('..', 'b.ts')}';`,
+        `const c = await import('${rel('.', 'c')}');`,
+      ].join('\n');
+
+      expect(importSpecifiers(source)).toEqual([
+        '$lib/a',
+        rel('.', 'side.css'),
+        rel('..', 'b.ts'),
+        rel('.', 'c'),
+      ]);
+    });
+
+    it('resolves $lib and relative specifiers to repo paths and ignores packages', () => {
+      expect(resolveSpecifier('$lib/state/x.svelte', 'web/src/routes/+page.svelte')).toBe(
+        'web/src/lib/state/x.svelte'
+      );
+      expect(resolveSpecifier('../lib/y', 'web/src/routes/page.ts')).toBe('web/src/lib/y');
+      expect(resolveSpecifier('svelte', 'web/src/routes/page.ts')).toBeNull();
+    });
+
+    it('names one module whatever extension or index form a path uses', () => {
+      expect(moduleKey('web/src/lib/a.svelte.ts')).toBe('web/src/lib/a');
+      expect(moduleKey('web/src/lib/b/index.ts')).toBe('web/src/lib/b');
+      expect(moduleKey('web/src/lib/C.svelte')).toBe('web/src/lib/C');
+    });
+
+    it('calls disjoint changes with no shared import or convention unrelated', () => {
+      const result = verdict('M\tweb/src/lib/a.ts', 'M\tweb/src/lib/b.ts', [
+        { path: 'web/src/lib/b.ts', source: `import { c } from '${rel('.', 'c')}';` },
+      ]);
+
+      expect(result).toEqual({ relation: 'unrelated', reasons: [] });
+    });
+
+    it('calls a branch that imports an upstream-changed module adjacent', () => {
+      const result = verdict('M\tweb/src/lib/a.ts', 'M\tweb/src/lib/b.ts', [
+        { path: 'web/src/lib/b.ts', source: "import { a } from '$lib/a';" },
+      ]);
+
+      expect(result.relation).toBe('adjacent');
+      expect(result.reasons[0].why).toContain('imports web/src/lib/a.ts');
+    });
+
+    it('calls a branch that imports a module upstream moved or deleted coupled', () => {
+      const result = verdict('R100\tweb/src/lib/a.ts\tweb/src/lib/z.ts', 'M\tweb/src/lib/b.ts', [
+        { path: 'web/src/lib/b.ts', source: `import { a } from '${rel('.', 'a')}';` },
+      ]);
+
+      expect(result.relation).toBe('coupled');
+    });
+
+    it('calls a shared file or a changed convention source coupled', () => {
+      expect(verdict('M\tweb/src/lib/a.ts', 'M\tweb/src/lib/a.ts', []).relation).toBe('coupled');
+      expect(verdict('M\teslint.config.js', 'M\tweb/src/lib/b.ts', []).relation).toBe('coupled');
+    });
+
+    // The repo's own shape: storage.ts re-exports STORAGE_KEYS from
+    // storageKeys.ts, so a consumer of $lib/storage depends on storageKeys.ts
+    // without importing it.
+    it('follows an unchanged barrel to the changed module it re-exports', () => {
+      const result = verdict(
+        'M\tweb/src/lib/storageKeys.ts',
+        'M\tweb/src/lib/c.ts',
+        [{ path: 'web/src/lib/c.ts', source: "import { STORAGE_KEYS } from '$lib/storage';" }],
+        [{ path: 'web/src/lib/storage.ts', specifiers: [rel('.', 'storageKeys')] }]
+      );
+
+      expect(result.relation).toBe('adjacent');
+      expect(result.reasons[0].why).toContain('re-exports web/src/lib/storageKeys.ts');
+    });
+
+    it('follows barrels transitively and carries a deletion through them', () => {
+      const result = verdict(
+        'D\tweb/src/lib/deep.ts',
+        'M\tweb/src/lib/c.ts',
+        [{ path: 'web/src/lib/c.ts', source: "import { x } from '$lib/outer';" }],
+        [
+          { path: 'web/src/lib/outer.ts', specifiers: [rel('.', 'inner')] },
+          { path: 'web/src/lib/inner.ts', specifiers: [rel('.', 'deep')] },
+        ]
+      );
+
+      expect(result.relation).toBe('coupled');
+    });
+
+    it('carries every changed target of a barrel, so a deletion is not masked by an edit', () => {
+      const result = verdict(
+        'M\tweb/src/lib/a.ts\nD\tweb/src/lib/b.ts',
+        'M\tweb/src/lib/c.ts',
+        [{ path: 'web/src/lib/c.ts', source: "import { b } from '$lib/barrel';" }],
+        [{ path: 'web/src/lib/barrel.ts', specifiers: [rel('.', 'a'), rel('.', 'b')] }]
+      );
+
+      expect(result.relation).toBe('coupled');
+    });
+
+    it('follows a barrel that itself changed to a target upstream deleted', () => {
+      const result = verdict(
+        'M\tweb/src/lib/barrel.ts\nD\tweb/src/lib/b.ts',
+        'M\tweb/src/lib/c.ts',
+        [{ path: 'web/src/lib/c.ts', source: "import { b } from '$lib/barrel';" }],
+        [{ path: 'web/src/lib/barrel.ts', specifiers: [rel('.', 'b')] }]
+      );
+
+      expect(result.relation).toBe('coupled');
+    });
+
+    // The repo's own shape again: tool.svelte.ts imports storage.ts, which
+    // imports nativePlugin.ts. One hop behind a direct import is followed; the
+    // bound stops there, because deeper paths fan out through hub modules.
+    it('follows one hop of ordinary imports behind a direct import', () => {
+      const result = verdict(
+        'M\tweb/src/lib/nativePlugin.ts',
+        'M\tweb/src/lib/state/tool.svelte.ts',
+        [
+          {
+            path: 'web/src/lib/state/tool.svelte.ts',
+            source: "import { read } from '$lib/storage';",
+          },
+        ],
+        [],
+        [
+          {
+            path: 'web/src/lib/storage.ts',
+            source: `import { plugin } from '${rel('.', 'nativePlugin')}';`,
+          },
+        ]
+      );
+
+      expect(result.relation).toBe('adjacent');
+      expect(result.reasons[0].why).toContain('imports web/src/lib/storage.ts, which imports');
+    });
+
+    it('stops after one hop, so a change two hops behind stays unrelated', () => {
+      const result = verdict(
+        'M\tweb/src/lib/deep.ts',
+        'M\tweb/src/lib/state/tool.svelte.ts',
+        [
+          {
+            path: 'web/src/lib/state/tool.svelte.ts',
+            source: "import { read } from '$lib/storage';",
+          },
+        ],
+        [],
+        [
+          {
+            path: 'web/src/lib/storage.ts',
+            source: `import { plugin } from '${rel('.', 'nativePlugin')}';`,
+          },
+        ]
+      );
+
+      expect(result.relation).toBe('unrelated');
+    });
+
+    it('keeps a deleted component distinct from an edited namesake module', () => {
+      const result = verdict(
+        'D\tweb/src/lib/Foo.svelte\nM\tweb/src/lib/Foo.svelte.ts',
+        'M\tweb/src/lib/c.ts',
+        [{ path: 'web/src/lib/c.ts', source: `import Foo from '${rel('.', 'Foo.svelte')}';` }]
+      );
+
+      expect(result.relation).toBe('coupled');
+    });
+
+    it('matches an import.meta.glob pattern, ignoring negations, against upstream changes', () => {
+      const glob = `import.meta.glob(['${rel('..', 'icons', '*.svg')}', '!${rel('..', 'icons', 'x.svg')}'])`;
+      const importer = 'web/src/lib/components/Icon.svelte';
+
+      expect(
+        verdict('D\tweb/src/lib/icons/star.svg', 'M\t' + importer, [
+          { path: importer, source: glob },
+        ]).relation
+      ).toBe('coupled');
+      expect(
+        verdict('M\tweb/src/lib/icons/sub/star.svg', 'M\t' + importer, [
+          { path: importer, source: glob },
+        ]).relation
+      ).toBe('unrelated');
+    });
+
+    it('resolves a query-suffixed asset import to the file it names', () => {
+      const result = verdict('M\tweb/src/lib/icons/wand.svg', 'M\tweb/src/lib/c.ts', [
+        { path: 'web/src/lib/c.ts', source: "import wand from '$lib/icons/wand.svg?raw';" },
+      ]);
+
+      expect(result.relation).toBe('adjacent');
+    });
+  });
 });

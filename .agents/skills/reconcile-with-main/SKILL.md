@@ -28,10 +28,28 @@ this whole skill reasons over are only cheap to collect on this side of the merg
 node .claude/skills/reconcile-with-main/survey.mjs
 ```
 
-It fetches `origin/main`, then prints the incoming commits, the upstream renames and deletions, the
-files **both** sides changed, and the files only upstream changed. `--json` for machine-readable
-output, `--no-fetch` to skip the network on a re-run. The base is fixed at `origin/main` — see
-Notes.
+It fetches `origin/main`, then prints a **relation** verdict with its reasons, the incoming commits,
+the upstream renames and deletions, the files **both** sides changed, and the files only upstream
+changed. `--json` gives machine-readable output; `--no-fetch` skips the network on a re-run. The
+base is fixed at `origin/main` (see Notes).
+
+The relation decides how much of this skill the merge needs:
+
+| Relation    | What the survey found                                                                                                                                                                                                                        | What to run                                                                                                                                                                                                                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `coupled`   | Any of: a file changed on both sides; a branch dependency on a module upstream moved or deleted; a changed repo-wide convention source (lint, TypeScript or build config, dependencies, `.ruler/conventions.md`, `docs/CODING-STANDARDS.md`) | Every step below                                                                                                                                                                                                                                                                  |
+| `adjacent`  | No shared file, but a branch file depends on a module upstream changed                                                                                                                                                                       | Step 2, then Step 3 limited to reading the upstream diff of each listed module for contract changes the type check can't see (a default, a return value's meaning, an ordering). Then Step 5 with `npm run check`, `npm run lint`, and the branch's own tests, and a short Step 6 |
+| `unrelated` | No shared file, no imported upstream change, no convention change                                                                                                                                                                            | Step 2, then Step 5 with `npm run check`, `npm run lint`, and the branch's own tests. Step 6 reports buckets 2 and 3 as "none", quoting the survey's verdict as the reason                                                                                                        |
+
+A dependency is found through any of these: a direct import, a re-export through an unchanged
+barrel, an `import.meta.glob` pattern, an asset import with a `?raw`-style suffix, or one hop of
+ordinary imports behind a direct import. Deeper ordinary imports are not followed. They fan out
+through hub modules, so following them would bring the noise back; the type check and the tests
+cover them.
+
+The verdict is evidence, not a waiver. When a fast path's checks fail, or when reading the merge
+turns up a link the survey couldn't see (a shared string, an event name, a storage key), treat the
+merge as `coupled` and run the full pass.
 
 A file renamed on one side and edited on the other is still one file, so it is listed under both
 sides as `new/path  (renamed from old/path)`. Read it at its **new** path; that is where the merge

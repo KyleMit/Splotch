@@ -101,6 +101,7 @@ meta).
 | `burn-down-dependabot-prs`        | Open Dependabot PRs — verify, sequence the merges, close the rest                       |
 | `burn-down-flaky-tests`           | Masked Playwright retry events — fix current flakes or track a narrow quarantine        |
 | `burn-down-oversized-code`        | Files or functions over the size caps — paid back down to their soft targets, one PR    |
+| `burn-down-code-smells`           | Verified code-smell findings — audited in waves, each fixed in its own merged PR        |
 
 ### `reconcile-*` — bring an artifact back in line with reality
 
@@ -125,6 +126,18 @@ fan-out: a proposer and an adversarial reviewer per unit, then an implementer pe
 worktree with a fresh commit checker. Its `measure.mjs` reads every cap from `eslint.config.js`.
 Line limits are treated as smells: a unit that does not separate cleanly gets a per-file cap raise,
 never a counter-driven split.
+
+`burn-down-code-smells` is the time-boxed, unattended code-quality campaign. It is user-invoked
+only, for the same fan-out reason. The run:
+
+* audits in waves with parallel read-only auditors: principles first, then the repo's own
+  conventions, the component layer and test quality, then one pass per uncovered area;
+* clusters the verified findings into small file-disjoint units, and ships each as a rival-reviewed,
+  merged PR through `ship-campaign parallel=<n>`;
+* ends by folding the rules it earned into `docs/CODING-STANDARDS.md`.
+
+Unlike the audit cycle above, it stages nothing in `docs/AUDIT.md`: it finds and fixes in one
+sitting.
 
 `reconcile-code-map` keeps the lines-of-code snapshot current: `npm run gen:code-map` owns the
 tables, and the skill teaches the rules about new areas and misplaced files and rewrites the prose.
@@ -215,7 +228,16 @@ time. Every unit merges before the next branches from the new `main`, so the riv
 change as it lands instead of a premise compounding through a stack. What it adds is the campaign's
 own discipline: a preflight run while the user is still present, quarantining a stuck unit instead
 of stalling the queue, never ending the turn to ask, and a morning report verified against GitHub.
-`profile=performance` wraps `improve-performance-matrix`'s causal-cluster unit.
+`profile=performance` wraps `improve-performance-matrix`'s causal-cluster unit. `parallel=<n>` runs
+up to `n` file-disjoint units at once, with the session as orchestrator:
+
+* it admits a unit only when that unit shares no files and no import dependency with any unit in
+  flight;
+* it performs every merge itself, one at a time, only against a `main` the unit has gated;
+* it broadcasts contract changes to units still running.
+
+When `main` moves under a unit, the `reconcile-with-main` survey's relation verdict decides between
+a trial merge (`unrelated` or `adjacent`) and the full semantic pass (`coupled`).
 
 `orchestrate-sessions` is the attended counterpart: it maintains a durable plan and gives the user
 one prompt at a time to carry to separate Claude or Codex workers. Workers use `ship-issue` or

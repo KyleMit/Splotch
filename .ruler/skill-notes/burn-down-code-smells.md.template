@@ -1,0 +1,93 @@
+# burn-down-code-smells — design notes
+
+## Why the skill exists
+
+On 2026-09-27 the user had a reconciled clean-code review of the repo (now
+`docs/scratchpad/clean-code-principles-review-2026-09-27.md`). They asked for a 10-hour unattended
+run to audit the codebase practice by practice and fix what it found, never harming performance,
+readability or maintainability. The run was later extended by five hours. Tracking issue #2376
+holds the ledger and the morning report.
+
+The run merged 64 PRs (#2377–#2441). Each had an independent Codex review and green CI, and each
+was verified on `main` after merging. It also produced `docs/CODING-STANDARDS.md` (#2423), which the
+user approved. The user then asked for the run to be repeatable as a skill; this is that skill.
+
+## Shape, and what each piece bought
+
+**Audit, then ship, in one sitting.** The existing audit lifecycle (`audit-code` → `vet-audits` →
+`fix-audits`) stages findings in `docs/AUDIT.md` and issues. For a time-boxed unattended run, that
+staging is overhead: every finding here was re-verified by the implementer anyway. The user chose
+one tracking issue plus free-form PRs over one issue per finding.
+
+**Auditors write to files and reply in 25 lines.** Fourteen auditors ran in five waves; the finding
+counts per auditor were 11, 9, 15, 9, 12, 6 / 8, 10, 10 / 12, 8, 10, 8, 8. The orchestrator read a
+finding's full text only when it scheduled it. Its context survived 64 merges plus the unit reports.
+
+**The waves:**
+
+* **Principle waves** found the shared-rule and type problems.
+* **Practice waves** (conventions, components, tests) found what the principles missed. Examples:
+  two release-gate tests that passed with their deciding input removed (#2414); a hand-typed
+  24-hour review promise in 9 places (#2411); right-drag clearing the canvas (#2408).
+* **Area passes** found area-specific bugs. Examples: AI auto-save marking failed saves as saved
+  (#2430); a stalled GitHub call with no timeout (#2425); a regen that left rejected images tracked
+  (#2435).
+
+Each wave had diminishing but still real returns.
+
+**Parallel lanes.** Most unit time is waiting on rival review and CI, about 20–60 minutes per unit,
+so five to seven disjoint lanes turned about 13 hours of wall time into 64 merges. The campaign
+improvised the lanes and its trial-merge rule, and both now live in `ship-campaign`'s
+`parallel=<n>` mode. Its design history, including the user's conditions for adopting it, is in the
+ship-campaign skill note. This skill invokes the mode rather than restating it. Audit clusters
+make admission easy, because findings arrive already grouped by the files they touch.
+
+**The rival earned its place.** Blocking findings it caught that the implementer had missed:
+* a bad-shape job left pending forever (#2383);
+* a flattened guard that announced mid-shake (#2390);
+* a release-only startup chunk that the instrumented build hid (#2404);
+* commented-out native registrations passing a guard (#2402);
+* a dynamic `import()` escaping an import guard (#2406);
+* an empty implementation path skipping a privacy check (#2411);
+* a backslash re-arming escaped Markdown (#2427);
+* stop-cue headroom for a capture bound (#2433);
+* alternate helper `return`s escaping a payload guard (#2436).
+
+## Failures that earned rules
+
+* **A startup chunk slipped in.** #2391 added a runtime import from a startup module into a module
+  that lazy code also imports. That made a new 158 B startup chunk, and no test noticed. It was
+  found only by rebuilding all 23 merges. Fixed in #2404, which added the exact modulepreload pin;
+  #2418 pinned native. Step 5 of the skill leans on those pins instead of repeating the bisect.
+* **API usage limit, twice.** Every running agent died at once, about 04:40–06:10 and 09:25–11:10,
+  with six or seven agents running. The first time, resuming each agent via `SendMessage` with its
+  budget restated worked well, because agents keep their context. The second hit landed inside the
+  deadline reserve and cost three units that hadn't opened PRs. Step 6 is the result. An open
+  question: whether fewer lanes late in a run would avoid the second hit.
+* **Copy decisions.** The rule "anything a parent or child sees is parked" held, with two
+  exceptions the orchestrator authorised and reported. Settings' iPad Share step reused the
+  banner's ADR-0039 wording, and the privacy "Last updated" date was corrected per git. Both were
+  facts already decided elsewhere, not new product calls. That is the line the skill draws.
+
+## Rejected or deferred during the run
+
+These are the "Considered and not adopted" list in `docs/CODING-STANDARDS.md`:
+* a Blobs abstraction layer;
+* moving env reads into `config.ts`;
+* web fallbacks for native-only plugins;
+* a shared typed platform fake;
+* renaming colorSheet/magicSheet;
+* tree-wide `@ts-check`;
+* `max-lines-per-function` for `tools/`;
+* an engine factory;
+* a `StrokeOp` brush discriminant, deferred because it needs a quiet-host perf run.
+
+## Unvalidated
+
+* A second run. The waves' yields on an already-campaigned codebase are unknown. Expect later waves
+  to find less, and consider starting at the area passes that weren't covered.
+* The lane count under the usage limit. Six to seven was sustainable for about 6.5 hours of agent
+  time before the first limit hit.
+* Whether the skill should also stage its rejected findings into
+  `docs/audit-deferred/decisions/`. This run recorded them only in the tracking issue and the
+  standards doc.
