@@ -85,7 +85,7 @@ interface FreeGenerationsDeps {
 // hydration, connectivity, or the request in flight; `inactive` is AI switched
 // off with no credential, when no grant is requested (ADR-0127); `unavailable`
 // is a saved credential or a grant that could not be read.
-export type FreeGenerationGrant =
+type FreeGenerationGrant =
   | { status: 'loading' }
   | { status: 'inactive' }
   | { status: 'unavailable' }
