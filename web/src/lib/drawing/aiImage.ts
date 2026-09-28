@@ -206,7 +206,7 @@ function buildRequest(
   credentialHeaders: Record<string, string>
 ): { endpoint: string; headers: Record<string, string>; body: Blob } {
   const headers: Record<string, string> = {
-    'Content-Type': uploadBlob.type || 'image/png',
+    'Content-Type': uploadBlob.type,
     // Declares that a job ticket is an acceptable answer. The server still
     // decides — it answers in-line wherever it has no background worker to hand
     // the drawing to (ADR-0115).
