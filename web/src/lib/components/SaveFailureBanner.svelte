@@ -14,14 +14,11 @@
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { getPlatform } from '$lib/platform';
   import { saveFailureCopy } from '$lib/drawing/saveFailureCopy';
+  import { BANNER_ENTER_MS, BANNER_EXIT_MS, BANNER_FLY_PX } from './bannerMotion';
   import '$lib/components/deferredIcons';
 
-  const BANNER_FLY_Y = 120;
-  const BANNER_ENTER_MS = 420;
-  const BANNER_EXIT_MS = 300;
-
-  const bannerEnter = calm(fly, { y: -BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut });
-  const bannerExit = calm(fly, { y: -BANNER_FLY_Y, duration: BANNER_EXIT_MS });
+  const bannerEnter = calm(fly, { y: -BANNER_FLY_PX, duration: BANNER_ENTER_MS, easing: backOut });
+  const bannerExit = calm(fly, { y: -BANNER_FLY_PX, duration: BANNER_EXIT_MS });
 
   const platform = getPlatform();
   const outcome = $derived(saveFailureState.outcome);

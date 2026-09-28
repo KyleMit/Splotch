@@ -4,6 +4,7 @@
   import AiResultDisclosure from './AiResultDisclosure.svelte';
   import AiResultStage from './AiResultStage.svelte';
   import Button from './design/Button.svelte';
+  import VisuallyHidden from './design/VisuallyHidden.svelte';
   import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
   import { closeAiResult, minimizeAiResult } from '$lib/state/aiGeneration.svelte';
   import AiResultError from './AiResultError.svelte';
@@ -151,7 +152,7 @@
   })}
   onanimationend={handleAnimationEnd}
 >
-  <p class="visually-hidden" role="status">{announcedStatus}</p>
+  <VisuallyHidden as="p" role="status">{announcedStatus}</VisuallyHidden>
   <DialogHeader
     closeClass="ai-result-close"
     closeLabel={generating ? 'Keep drawing while this is made' : 'Close'}
@@ -422,17 +423,5 @@
   .ai-result-modal.polaroid-mode:global([data-start-reduced-motion]) {
     transition: none;
     animation: ai-polaroid-fly 0.4s 0.5s ease forwards;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 </style>

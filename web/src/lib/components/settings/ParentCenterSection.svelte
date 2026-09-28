@@ -358,7 +358,8 @@
 
     /* The column heading names the mode, so each option shows a radio mark
        instead of repeating it. The label stays in the DOM — it is still the
-       option's accessible name — just out of view. */
+       option's accessible name — just out of view. It is SegmentedPicker's own
+       element, so it is hidden here rather than wrapped in VisuallyHidden. */
     .policy-card :global(.policy-picker .option-label) {
       position: absolute;
       width: 1px;
