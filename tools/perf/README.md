@@ -47,17 +47,17 @@ complete flag and output descriptions.
   `planRelease` are pure so the ownership judgement is tested without a rig.
 * Root analyzers consume existing evidence: `perf:analyze:chrome`, `perf:analyze:web-inspector`, and
   `perf:analyze:frames`.
-* `perf:rescore` (`rescore-captures.mjs`) re-derives a whole corpus of captures from their raw frame
-  tables, offline. It is the tool that turns "the gate is wrong" from an assertion into a table —
-  the campaign found three independent defects in its own metric, and each time the first question
-  was what the correction does to every number already taken. It reads `report` and never the
-  `summaries` a capture was written with, because those were computed by whichever estimator the
-  branch had at capture time, and it imports the scoring maths from the shipped modules so the
-  answer is what the gate says rather than what a private copy says. Trialling a *new* charge is the
-  same operation: change the shipped charge on a branch and re-run. Captures whose corpus index
-  marks `cellAttributable: false` (issue 1315) are refused by default; `--include-unattributable`
-  re-admits them deliberately, visibly marked, for questions about the instrument rather than the
-  cell.
+* `perf:rescore` (`rescore-captures.mjs`, per-capture half in `lib/capture-rescore.mjs`) re-derives
+  a whole corpus of captures from their raw frame tables, offline. It is the tool that turns "the
+  gate is wrong" from an assertion into a table — the campaign found three independent defects in
+  its own metric, and each time the first question was what the correction does to every number
+  already taken. It reads `report` and never the `summaries` a capture was written with, because
+  those were computed by whichever estimator the branch had at capture time, and it imports the
+  scoring maths from the shipped modules so the answer is what the gate says rather than what a
+  private copy says. Trialling a *new* charge is the same operation: change the shipped charge on a
+  branch and re-run. Captures whose corpus index marks `cellAttributable: false` (issue 1315) are
+  refused by default; `--include-unattributable` re-admits them deliberately, visibly marked, for
+  questions about the instrument rather than the cell.
 * `perf:campaign` drives one deployment-target capture campaign to completion and is resumable:
   rerunning the same command skips cells whose artifacts already parse, retries failed ones, and
   records exhausted ones as P1s while the queue continues. `lib/campaign-plan.mjs` owns which cells

@@ -356,12 +356,12 @@ export function readScreenSize(serial) {
 }
 
 export async function measureProbeOverhead({
-  serial = argFlag('device-serial'),
-  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
-  upstream = argFlag('upstream', DEFAULT_UPSTREAM),
-  probeHost = argFlag('probe-host', DEFAULT_PROBE_HOST),
-  samples = argNumber('samples', SAMPLES_PER_ARM, POSITIVE_INTEGER),
-  brush = argFlag('brush', 'pen'),
+  serial,
+  port = DEFAULT_PORT,
+  upstream = DEFAULT_UPSTREAM,
+  probeHost = DEFAULT_PROBE_HOST,
+  samples = SAMPLES_PER_ARM,
+  brush = 'pen',
 } = {}) {
   if (!serial) fail('--device-serial= is required');
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
@@ -418,7 +418,14 @@ async function shutDown(serial, server, probeHost) {
 
 if (isMain(import.meta.url)) {
   runMain(async () => {
-    const rows = await measureProbeOverhead();
+    const rows = await measureProbeOverhead({
+      serial: argFlag('device-serial'),
+      port: argNumber('port', undefined, TCP_PORT),
+      upstream: argFlag('upstream'),
+      probeHost: argFlag('probe-host'),
+      samples: argNumber('samples', undefined, POSITIVE_INTEGER),
+      brush: argFlag('brush'),
+    });
     console.table(rows);
     for (const arm of ARMS) {
       const perSecond = rows.filter((row) => row.arm === arm).map((row) => row.perSecond);

@@ -375,10 +375,10 @@ function publishedModeReader(manifest, manifestFullPath) {
 }
 
 export async function checkMatrixStaleness({
-  manifestPath = argFlag('manifest', DEFAULT_MANIFEST),
-  base = argFlag('base'),
-  strict = argSwitch('strict'),
-  releaseGateAge = argSwitch('release-gate-age'),
+  manifestPath = DEFAULT_MANIFEST,
+  base,
+  strict = false,
+  releaseGateAge = false,
   today = utcDate(Date.now()),
 } = {}) {
   const explicitBase = base !== undefined;
@@ -412,6 +412,11 @@ export async function checkMatrixStaleness({
 if (isMain(import.meta.url)) {
   rejectUnknownFlags(['manifest', 'base', 'strict', 'release-gate-age']);
   runMain(async () => {
-    await checkMatrixStaleness();
+    await checkMatrixStaleness({
+      manifestPath: argFlag('manifest'),
+      base: argFlag('base'),
+      strict: argSwitch('strict'),
+      releaseGateAge: argSwitch('release-gate-age'),
+    });
   });
 }

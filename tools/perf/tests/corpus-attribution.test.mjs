@@ -8,7 +8,7 @@ import {
   nonceAttributableToLabel,
   reportNonce,
 } from '../lib/capture-attribution.mjs';
-import { evidenceIndexEntries } from '../rescore-captures.mjs';
+import { evidenceIndexEntries } from '../lib/capture-rescore.mjs';
 
 // Issue 1315: the tracked 2026-08-23-android-split corpus is cross-run
 // contaminated — every report's ?probe= nonce names a different cell than its

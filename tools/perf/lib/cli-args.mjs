@@ -29,7 +29,7 @@ const COMMON_FLAGS = ['device', 'port', 'no-build'];
 // Bad input, an unknown flag included, is a one-line exit. So a caller parses
 // inside its exported run function, taking argv as a parameter, and never at
 // module scope, where importing it would judge the importer's argv.
-export function parsePerfArgs({ throttleDefault, extra = [] } = {}, argv = process.argv.slice(2)) {
+export function parsePerfArgs({ throttleDefault, extra = [] }, argv) {
   const flag = (name, fallback) => parseOrFail(() => readValueFlag(argv, name)) ?? fallback;
   const numberFlag = (name, fallback, rule) => {
     const raw = flag(name);
