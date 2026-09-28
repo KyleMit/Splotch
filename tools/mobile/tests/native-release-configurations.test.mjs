@@ -9,6 +9,12 @@ const androidWorkflow = read('.github/workflows/android-deploy.yml');
 const iosWorkflow = read('.github/workflows/ios-deploy.yml');
 const iosSmokeRunner = read('tools/mobile/ios/run-simulator-smoke-test.mjs');
 
+const jobBlocks = (workflow) =>
+  workflow
+    .split(/^jobs:\n/m)[1]
+    .split(/^(?= {2}[\w-]+:\n)/m)
+    .map((text) => ({ id: text.match(/^ {2}([\w-]+):/)[1], text }));
+
 describe('native release configuration gates', () => {
   it('builds and boots a test-signed optimized Android release APK', () => {
     expect(packageJson.scripts['android:apk:release']).toBe(
@@ -64,6 +70,28 @@ describe('native release configuration gates', () => {
     expect(smokeStep).toContain('MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000');
     expect(smokeStep).toContain('timeout-minutes: 20');
     expect(read('.maestro/smoke.yaml')).toContain('timeout: 30000');
+  });
+
+  // A job cut off by its timeout runs none of its own failure() steps, so a
+  // gate that files from inside the job it reports on files nothing on a hang.
+  // A reporter that checks out and installs would also hand issues: write to
+  // every dependency's install scripts.
+  it.each([
+    ['android-deploy.yml', androidWorkflow],
+    ['ios-deploy.yml', iosWorkflow],
+  ])('%s files its failure from a downstream job that builds nothing', (_name, workflow) => {
+    const jobs = jobBlocks(workflow);
+    const filers = jobs.filter(({ text }) => /^ {6}issues: write$/m.test(text));
+    expect(filers.map(({ id }) => id)).toEqual(['report-failure']);
+
+    const [reporter] = filers;
+    expect(reporter.text).toMatch(/^ {4}needs: /m);
+    expect(reporter.text).toContain("!cancelled() && github.event_name == 'push'");
+    expect(reporter.text).toContain(".result != 'success'");
+    expect(reporter.text).not.toContain('failure()');
+    expect(reporter.text).not.toContain('actions/checkout');
+    expect(reporter.text).not.toContain('setup-pnpm');
+    expect(reporter.text).toContain('- name: File the failure');
   });
 
   it('retains XCTest startup diagnostics alongside Maestro flow evidence', () => {

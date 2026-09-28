@@ -1,0 +1,80 @@
+# Compiles the native shells on the pull requests that can break them, so a
+# Java or Swift compile error fails its own PR instead of the next release tag.
+# The deploy smokes (android-deploy.yml, ios-deploy.yml) stay tag-only because
+# booting an emulator or simulator is what costs; compiling does not
+# (ADR-0008's 2026-09-28 amendment).
+#
+# A separate path-filtered workflow rather than a job in test.yml: nothing
+# waits on it, so it adds no wall clock to a merge, and it never starts on a PR
+# that touches no native input. No branch rule requires it, so a PR it skips is
+# not left waiting on a check that will never report.
+name: Native compile
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'ios/**'
+      - 'capacitor.config.json'
+      - 'pnpm-lock.yaml'
+      - 'tools/mobile/android/run-gradle.mjs'
+      - '.github/workflows/native-compile.yml'
+  # Main runs keep the Gradle cache that pull requests restore from: a cache
+  # saved on a pull request is visible only to that pull request.
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'ios/**'
+      - 'capacitor.config.json'
+      - 'pnpm-lock.yaml'
+      - 'tools/mobile/android/run-gradle.mjs'
+      - '.github/workflows/native-compile.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || '' }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android release Java compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # After checkout, so the cache key hashes the committed Gradle files; before
+      # the install, so node_modules' own Gradle files stay out of it.
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - name: Compile Android release Java
+        run: npm run android:compile
+
+  ios:
+    name: iOS release simulator compile
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      # The same command the iOS tag gate compiles with. Xcode copies the
+      # generated public/ and capacitor.config.json as bundle resources, so this
+      # one needs the real cap sync rather than Android's empty stand-in.
+      - name: Compile iOS Release app without store signing
+        run: npm run ios:build:release

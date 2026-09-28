@@ -70,3 +70,31 @@ critical-path smoke subset, and reserves Maestro native launch smoke for release
 ADR-0124 keeps the native behavior tier as a boot-only Maestro smoke while adding configuration
 coverage to its tag workflows: Android boots a disposable-key-signed Release APK, and iOS compiles a
 Release simulator app without store signing before its established Debug boot smoke.
+
+## Amendment (2026-09-28): the native shells compile on pull requests
+
+The boot smokes stay tag-only; compiling the native shells no longer waits for a tag. No PR job
+compiled the Java or Swift plugins, so a native compile error merged green and first failed on the
+release tag, when a fix costs most. ADR-0120 and the 2026-08-17 amendment made the emulator and
+simulator boot tag-only for cost; no record had decided the compile must wait too.
+`web/src/lib/plugins/registration.test.ts` guards plugin registration and method names from source
+text, but not a type error or a wrong Capacitor API.
+
+`.github/workflows/native-compile.yml` compiles both shells on pull requests and `main` pushes that
+touch a native input: `android/**`, `ios/**`, `capacitor.config.json`, `pnpm-lock.yaml`, the Gradle
+helper, or the workflow. The user set the constraint: minutes are acceptable on this public repo,
+merge wall clock is not.
+
+* It is its own workflow, with no `needs:` edge into or out of `test.yml`, and no branch rule
+  requires it, so a PR its path filter skips waits on nothing.
+* Android runs `npm run android:compile`: `cap update android` against an empty web assets
+  directory, then `:app:compileReleaseJavaWithJavac` for the app and every plugin module. There is
+  no web build and no emulator. A `setup-java` Gradle cache is seeded by the `main` runs, because a
+  cache saved on a pull request is visible only to that pull request.
+* iOS runs the tag gate's `ios:build:release` on macOS. That includes the web build, because Xcode
+  bundles the synced `public/` and `capacitor.config.json`.
+* R8 and resource shrinking stay with the tag gate's `assembleRelease`.
+
+Rejected: a job inside `test.yml` gated by a changed-files step, which starts a runner on every PR
+and couples the native toolchains to the web suite's workflow; and a required check, which a path
+filter would leave pending on every PR it skips.
