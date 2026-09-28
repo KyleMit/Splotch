@@ -7,11 +7,9 @@
 > `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
 > the output. Direct provider packages registered in `tools/ruler/lib/direct-provider-skills.mjs`
-> are the exceptions: `burn-down-audits`, `analyze-session-transcripts`, and `run-rival-agent` have
-> independent Claude and Codex implementations (each `run-rival-agent` package launches the *other*
-> vendor's CLI); `reconcile-agent-memories` has only a Claude package for Claude Code's indexed
-> memory store. Edit only the registered provider package and note you intend to change; never
-> manufacture a missing provider by copying another one.
+> are the exceptions (see "Agent instruction files" below). Edit only the registered provider
+> package and note you intend to change; never manufacture a missing provider by copying another
+> one.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
@@ -64,15 +62,16 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
   recursive rule loader concatenates every `.md` under `.ruler/` into the root instruction files, so
   a plain `.md` note would land in every session's context — exactly what this tree exists to avoid.
-  The mirror script refuses to run if it finds one. A forked skill's independent note instead lives
-  under `.ruler/skill-forks/<runner>/skill-notes/` and must be absent from the shared note tree. The
-  registered direct notes stay beside their direct provider trees. Notes are deliberately *not* part
-  of a skill — see below.
-* `npm run ruler:apply` snapshots every path in the direct-provider registry, runs Ruler, mirrors
-  shared skill notes, applies managed skill forks, restores the direct paths even on failure, and
-  dprint-formats the output. `npm run ruler:check` repeats that pipeline and fails if generated
-  output changed — the CI drift gate. `npm run ruler:dry-run` previews Ruler's shared output only;
-  it does not preview the post-apply layers.
+  `ruler:apply` refuses one before Ruler writes anything. A forked skill's independent note instead
+  lives under `.ruler/skill-forks/<runner>/skill-notes/` and must be absent from the shared note
+  tree. The registered direct notes stay beside their direct provider trees. Notes are deliberately
+  *not* part of a skill — see below.
+* `npm run ruler:apply` validates the note and fork sources, snapshots every path in the
+  direct-provider registry, runs Ruler, mirrors shared skill notes, applies managed skill forks,
+  restores the direct paths even on failure, and dprint-formats the output. `npm run ruler:check`
+  repeats that pipeline and fails if generated output changed — the CI drift gate.
+  `npm run ruler:dry-run` previews Ruler's shared output only; it does not preview the post-apply
+  layers.
 
 `ruler:apply` rewrites both `.claude/` and `.agents/`. In a filesystem sandbox that makes either
 provider tree read-only, run it with host/escalated write access from the first attempt. An `EPERM`
@@ -342,12 +341,8 @@ that runner owns, because one file here generates both providers' copies. `npm r
 (also `tools/tests/skill-reference-syntax.test.mjs`) fails on the wrong one. Agents without skill
 support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/` (or
 `.claude/skills/<name>/`). Most are generated from `.ruler/`; managed runner forks may be produced
-from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
-`burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
-`analyze-session-transcripts` with format-specific implementations and `run-rival-agent`, whose two
-packages each launch the *other* vendor's CLI. `reconcile-agent-memories` has only a Claude package
-for Claude Code's indexed project memory. See `tools/ruler/lib/direct-provider-skills.mjs` for the
-authoritative registry.
+from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are maintained in their
+provider trees instead; `tools/ruler/lib/direct-provider-skills.mjs` is the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                                                                                                    |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -428,7 +423,8 @@ that must not be missed — invariants, footguns, the thing that makes a wrong r
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
 `testing.md`, `ipad-profiling-docs.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`,
-`web/tests/`, `android/`, `tools/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`web/tests/`, `android/`, `tools/`, `tools/asset-gen/`, `tools/store-drawings/`, and `docs/handoff/`
+cover those areas.
 
 The **live backlog is GitHub Issues** — when asked what to work on next, list the open issues and
 filter by label (`area:*`, `type:*`, `priority:*`); don't look for a backlog file. Capture a durable
