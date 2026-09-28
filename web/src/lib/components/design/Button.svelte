@@ -98,9 +98,11 @@
     transform: scale(0.96);
   }
 
+  /* The label takes --text, not --text-soft: --disabled-opacity already dims
+     the whole control, and pre-dimmed ink under it lands near 2:1. */
   .btn:disabled:not([aria-busy='true']) {
     background: var(--control-track);
-    color: var(--text-soft);
+    color: var(--text);
     opacity: var(--disabled-opacity);
     cursor: default;
     transform: none;
@@ -202,8 +204,7 @@
     }
 
     .danger:hover:not(:disabled) {
-      background: var(--danger-text);
-      color: var(--danger-wash);
+      background: var(--danger-wash-hover);
     }
   }
 </style>

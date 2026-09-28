@@ -52,7 +52,7 @@
     <code>wash</code> is secondary or selected; <code>outline</code> is the quiet secondary for
     dense rows and toolbars; <code>danger</code> confirms something destructive. Disabled drops
     every variant to the same neutral treatment (<code>--control-track</code> fill,
-    <code>--text-soft</code>
+    <code>--text</code>
     label at <code>--disabled-opacity</code>; outline keeps a <code>--border</code> hairline
     instead), so a parked button cannot be mistaken for a live one on either paper. Busy is the
     <code>busy</code>
@@ -175,8 +175,7 @@
     background: var(--brand-wash);
   }
   .states :global(.preview-hover.danger) {
-    background: var(--danger-text);
-    color: var(--danger-wash);
+    background: var(--danger-wash-hover);
   }
   .states :global(.preview-pressed) {
     transform: scale(0.96);
