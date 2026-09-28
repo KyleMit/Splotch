@@ -155,10 +155,11 @@ the paper shows through in the result and the downloaded image retains transpare
 render without a usable magenta border and substantial subject returns the retryable `502` failure
 for every credential type, including paid keys. A failed paid generation still incurs the upstream
 model charge; a free-grant reservation is released. The same check runs for synchronous and
-collected results. A free-grant response also carries `X-Free-Generations-Remaining` and
-`X-Report-Token` — the latter the signed proof this AI attempt ran here, which `/api/report-image`
-requires before it will accept a free-tier report. Exhaustion is `403` with
-`{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
+collected results: both routes build the picture, this `502`, and the safety refusal below through
+`web/src/lib/server/generationDelivery.ts`. A free-grant response also carries
+`X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this AI attempt
+ran here, which `/api/report-image` requires before it will accept a free-tier report. Exhaustion is
+`403` with `{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
 already-parent-gated client flow to BYOK setup. Failure modes are split so the client can guide the
 child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with
 `{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
