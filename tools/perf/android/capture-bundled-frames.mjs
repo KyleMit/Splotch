@@ -51,7 +51,15 @@ import {
   inputFidelity,
   runtimeUaProblem,
 } from '../lib/input-fidelity.mjs';
-import { summarizeRun } from '../lib/real-screen-stats.mjs';
+import {
+  EVENT_ON_CANVAS,
+  EVENT_TRUSTED,
+  EVENT_TYPE,
+  POINTER_CANCEL,
+  POINTER_DOWN,
+  POINTER_UP,
+  summarizeRun,
+} from '../lib/real-screen-stats.mjs';
 import { LOST_FRAME_TIME_SHARE_GATE, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import {
@@ -103,14 +111,6 @@ const ERASER_FILL_POLL_MS = 100;
 // the final `input swipe` returns; the swipe call itself blocks until it ends.
 const PASS_LIFTS_TIMEOUT_MS = 3_000;
 const PASS_LIFTS_POLL_MS = 100;
-// The probe's events row layout (real-screen-probe.js): type, onCanvas, and
-// trusted columns, and the type codes for down, up, and cancel.
-const EVENT_TYPE = 2;
-const EVENT_ON_CANVAS = 6;
-const EVENT_TRUSTED = 8;
-const POINTER_DOWN = 0;
-const POINTER_UP = 2;
-const POINTER_CANCEL = 3;
 
 // How often an interrupted capture notices the signal while it waits — a
 // 20 s hand window must not hold the rig unrestored until it ends.
