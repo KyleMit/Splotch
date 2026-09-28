@@ -66,12 +66,12 @@ export const STORAGE_KEYS = {
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
 
 // Keys only the web build writes: the PWA install prompt, the web
-// free-generation identity (native derives its own from Device.getId()), the
-// File System Access folder flag, and the web vault's known-absent list. Native
-// durable hydration neither fetches nor forgets them (storage.ts), so a value
-// native wrote under one would not survive a WebView eviction.
-// storageKeys.webOnly.test.ts holds every writer to the guard that keeps it off
-// native.
+// free-generation identity (native derives its own from Device.getId()), and
+// the web vault's known-absent list. Native durable hydration neither fetches
+// nor forgets them (storage.ts), so a value native wrote under one would not
+// survive a WebView eviction. storageKeys.webOnly.test.ts holds every writer to
+// the guard that keeps it off native. saveFolderChosen stays out: only a
+// runtime showDirectoryPicker probe keeps its writer off native.
 //
 // Listed by value, which the StorageKey annotation checks, rather than as
 // STORAGE_KEYS reads: the bundler keeps a module-level property read even when
@@ -82,6 +82,5 @@ export const WEB_ONLY_STORAGE_KEYS: readonly StorageKey[] = [
   'splotch-install-reprompt-session-count',
   'splotch-install-reprompts-used',
   'splotch-free-generation-installation-v1',
-  'splotch-save-folder-chosen',
   'splotch-secure-vault-empty',
 ];
