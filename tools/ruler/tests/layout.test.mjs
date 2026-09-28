@@ -1,17 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROVIDERS, RULER_SOURCE, instructionsFile, notesDir, skillsDir } from '../lib/layout.mjs';
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
 
+// Ruler's own TOML parser, resolved through Ruler, so the runner list is read
+// exactly as `ruler apply` reads it — comments, multi-line arrays and all.
+const rulerRequire = createRequire(import.meta.resolve('@intellectronica/ruler/package.json'));
+const { parse: parseToml } = rulerRequire('@iarna/toml');
+
 function defaultAgents() {
-  const toml = readFileSync(join(repoRoot, RULER_SOURCE, 'ruler.toml'), 'utf8');
-  const list = toml.match(/^default_agents\s*=\s*\[([^\]]*)\]/m)?.[1];
-  if (list === undefined) throw new Error('ruler.toml declares no default_agents');
-  return [...list.matchAll(/"([^"]+)"/g)].map(([, agent]) => agent);
+  const config = parseToml(readFileSync(join(repoRoot, RULER_SOURCE, 'ruler.toml'), 'utf8'));
+  if (!Array.isArray(config.default_agents)) {
+    throw new Error('ruler.toml declares no default_agents');
+  }
+  return config.default_agents;
 }
 
 function linguistGenerated(paths) {

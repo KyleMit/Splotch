@@ -38,7 +38,11 @@ export function planSkillNotes(root = ROOT) {
   const sourceDir = join(root, SHARED_NOTES_SOURCE);
   const entries = existsSync(sourceDir) ? readdirSync(sourceDir) : [];
 
-  const stray = entries.filter((file) => file.endsWith('.md'));
+  // Recursive because Ruler's loader is: a plain .md in a subdirectory, which
+  // this mirror never copies, would still be concatenated.
+  const stray = existsSync(sourceDir)
+    ? readdirSync(sourceDir, { recursive: true }).filter((file) => file.endsWith('.md'))
+    : [];
   if (stray.length) {
     throw new Error(
       `Skill notes must end in ${SHARED_NOTE_SUFFIX}, or ruler concatenates them into CLAUDE.md ` +

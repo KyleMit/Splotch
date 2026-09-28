@@ -84,17 +84,21 @@ describe('mirrorSkillNotes', () => {
     ).toBe(true);
   });
 
-  it('rejects a plain .md note before writing any provider tree', () => {
-    const root = makeRoot();
-    write(root, join(SHARED_NOTES_SOURCE, sharedNoteSource('shared')), 'note\n');
-    write(root, join(SHARED_NOTES_SOURCE, 'stray.md'), 'note\n');
-    write(root, join(notesDir(PROVIDERS[0]), 'old.md'), 'orphan\n');
+  // Ruler's rule loader walks .ruler/ recursively, so depth does not hide a note.
+  it.each(['stray.md', join('nested', 'stray.md')])(
+    'rejects a plain .md note (%s) before writing any provider tree',
+    (stray) => {
+      const root = makeRoot();
+      write(root, join(SHARED_NOTES_SOURCE, sharedNoteSource('shared')), 'note\n');
+      write(root, join(SHARED_NOTES_SOURCE, stray), 'note\n');
+      write(root, join(notesDir(PROVIDERS[0]), 'old.md'), 'orphan\n');
 
-    expect(() => mirrorSkillNotes(root)).toThrow(`${SHARED_NOTES_SOURCE}/stray.md`);
+      expect(() => mirrorSkillNotes(root)).toThrow(join(SHARED_NOTES_SOURCE, stray));
 
-    expect(existsSync(noteIn(root, PROVIDERS[0], 'old.md'))).toBe(true);
-    for (const provider of PROVIDERS) {
-      expect(existsSync(noteIn(root, provider, 'shared.md'))).toBe(false);
+      expect(existsSync(noteIn(root, PROVIDERS[0], 'old.md'))).toBe(true);
+      for (const provider of PROVIDERS) {
+        expect(existsSync(noteIn(root, provider, 'shared.md'))).toBe(false);
+      }
     }
-  });
+  );
 });
