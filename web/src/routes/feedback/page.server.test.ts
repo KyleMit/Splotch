@@ -14,6 +14,7 @@ vi.mock('$lib/server/github', async (original) => ({
   createIssue,
 }));
 
+import { REPORT_FORM_FIELDS } from '$lib/report';
 import { actions } from './+page.server';
 
 async function submit(fields: Record<string, string>) {
@@ -57,6 +58,36 @@ describe('/feedback form action', () => {
 
     expect(createIssue).toHaveBeenCalledOnce();
     expect(createIssue.mock.calls[0][0].body).not.toContain('device info');
+  });
+
+  // The trap only works while a caught bot cannot tell it was caught, so the
+  // form door's answers are held against a real submission's rather than a
+  // literal: a redirect that differed in any part would name the trap field.
+  it('answers a honeypot submission with the same redirect as a real one and files nothing', async () => {
+    const fields = { kind: 'bug', message: 'The crayon draws green' };
+
+    const caught = await submit({
+      ...fields,
+      [REPORT_FORM_FIELDS.honeypot]: 'a bot filled this',
+    }).catch((thrown: unknown) => thrown);
+    expect(createIssue).not.toHaveBeenCalled();
+    const real = await submit(fields).catch((thrown: unknown) => thrown);
+
+    expect(createIssue).toHaveBeenCalledOnce();
+    expect(isRedirect(real)).toBe(true);
+    expect(caught).toEqual(real);
+  });
+
+  it.each([
+    ['an unusable kind', { kind: 'nonsense', message: 'The crayon draws green' }],
+    ['an empty message', { kind: 'bug', message: '   ' }],
+  ])('answers %s the same whether or not the honeypot is filled', async (_label, fields) => {
+    const caught = await submit({ ...fields, [REPORT_FORM_FIELDS.honeypot]: 'a bot filled this' });
+    const real = await submit(fields);
+
+    expect(real).toMatchObject({ status: 400 });
+    expect(caught).toEqual(real);
+    expect(createIssue).not.toHaveBeenCalled();
   });
 
   // The radio group always sends one of REPORT_KINDS, so any other value is a

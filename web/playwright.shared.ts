@@ -154,7 +154,7 @@ const NOWHERE_ISSUE_REPO = 'splotch-tests/nowhere';
 
 /**
  * A key the provider refuses. Non-empty on purpose: with no key at all the managed-code
- * path answers 500 from the authorization step, before the request guards the
+ * path answers 503 from the authorization step, before the request guards the
  * generate-image specs are there to exercise — so they would keep passing while
  * asserting nothing about the guards. No spec reaches the model call with it.
  */

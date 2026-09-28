@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 const envState = vi.hoisted(() => ({}) as Record<string, string | undefined>);
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
 
+import { GITHUB_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { createIssue, escapeIssueMarkdown } from './github';
 
 describe('escapeIssueMarkdown', () => {
@@ -57,6 +58,8 @@ describe('createIssue', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('POSTs the issue with the full header/body contract', async () => {
@@ -110,6 +113,42 @@ describe('createIssue', () => {
     );
 
     await expect(createIssue(input)).rejects.toThrow('GitHub issue creation failed (500): ');
+  });
+
+  // A stalled GitHub must fail as the caller's own error path, which deletes
+  // stored AI-report evidence, before the platform kills the function and skips
+  // that cleanup.
+  it('gives up on a GitHub call that never answers at its own deadline', async () => {
+    vi.useFakeTimers();
+    // AbortSignal.timeout runs on Node's internal timers, which fake timers
+    // cannot advance, so this stand-in keeps its behaviour on the faked clock.
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(new DOMException('timed out', 'TimeoutError')), ms);
+      return controller.signal;
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+          })
+      )
+    );
+
+    let settled = false;
+    const outcome = createIssue(input)
+      .catch((reason: unknown) => reason)
+      .finally(() => {
+        settled = true;
+      });
+
+    await vi.advanceTimersByTimeAsync(GITHUB_REQUEST_TIMEOUT_MS - 1);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(settled).toBe(true);
+    expect(await outcome).toMatchObject({ name: 'TimeoutError' });
   });
 
   it('rejects without calling fetch when no token is configured', async () => {
