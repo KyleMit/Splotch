@@ -81,9 +81,9 @@
         {#if credentialKind === 'accessCode'}
           AI art is on us with your access code — no OpenAI key needed.
         {:else if credentialKind === 'apiKey'}
-          Your key stays saved on this device only.
+          Your key stays saved securely on your device.
         {:else}
-          After that, use your own OpenAI key — saved on this device only.
+          After that, use your own OpenAI key — saved securely on your device.
         {/if}
       </span>
     </li>

@@ -13,6 +13,8 @@ if (!globalThis.crypto?.subtle) vi.stubGlobal('crypto', webcrypto);
 
 const platform = vi.hoisted(() => ({ native: false }));
 const nativeRows = vi.hoisted(() => new Map<string, string>());
+// The iOS options each native write carried: sync and Keychain access.
+const nativeWriteOptions = vi.hoisted((): { sync?: boolean; access?: number }[] => []);
 
 vi.mock('$lib/platform', () => ({
   isNative: () => platform.native,
@@ -33,9 +35,20 @@ vi.mock('@capacitor/preferences', () => ({
   },
 }));
 
-vi.mock('@aparajita/capacitor-secure-storage', () => ({
+vi.mock('@aparajita/capacitor-secure-storage', async (importOriginal) => ({
+  KeychainAccess: (await importOriginal<typeof import('@aparajita/capacitor-secure-storage')>())
+    .KeychainAccess,
   SecureStorage: {
-    set: async (name: string, value: string) => void nativeRows.set(name, value),
+    set: async (
+      name: string,
+      value: string,
+      _convertDate?: boolean,
+      sync?: boolean,
+      access?: number
+    ) => {
+      nativeWriteOptions.push({ sync, access });
+      nativeRows.set(name, value);
+    },
     get: async (name: string) => nativeRows.get(name),
     remove: async (name: string) => void nativeRows.delete(name),
   },
@@ -171,6 +184,7 @@ let secureStorage: SecureStorage;
 beforeEach(async () => {
   ctrl.reset();
   nativeRows.clear();
+  nativeWriteOptions.length = 0;
   preferencesCalls.length = 0;
   localStorage.clear();
   platform.native = false;
@@ -267,6 +281,22 @@ describe('native save/load round trip', () => {
     expect(ctrl.rows.has(ACCESS_CODE_ROW)).toBe(false);
     await expect(secureStorage.loadApiKey()).resolves.toBe('native-key');
     await expect(secureStorage.loadAccessCode()).resolves.toBe('native-code');
+  });
+
+  // A parent's key restores onto a new iPhone or iPad from an encrypted backup
+  // and never syncs through iCloud Keychain. Each write states that itself, so
+  // a plugin default changing cannot move the key somewhere else.
+  it('writes each Keychain item unsynced with whenUnlocked access', async () => {
+    platform.native = true;
+    const { KeychainAccess } = await vi.importActual<
+      typeof import('@aparajita/capacitor-secure-storage')
+    >('@aparajita/capacitor-secure-storage');
+
+    await secureStorage.saveApiKey('native-key');
+    await secureStorage.saveAccessCode('native-code');
+
+    const pinned = { sync: false, access: KeychainAccess.whenUnlocked };
+    expect(nativeWriteOptions).toEqual([pinned, pinned]);
   });
 
   // The known-absent list only describes the web vault, so native has no copy

@@ -9,17 +9,27 @@ const answered = vi.hoisted(() => {
 
 vi.mock('$lib/state/freeGenerations.svelte', () => ({ freeGenerationsState: answered }));
 
+import { settingsState } from '$lib/state/settings.svelte';
 import AiValueProp from './AiValueProp.svelte';
+
+function claims(): string[] {
+  const list = /<ul class="ai-value-prop-claims[^>]*>([\s\S]*?)<\/ul>/.exec(
+    render(AiValueProp).body
+  )?.[1];
+  return (list ?? '')
+    .split('</li>')
+    .slice(0, -1)
+    .map((claim) =>
+      claim
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    );
+}
 
 function allowanceClaim(lastGrantRemaining: number | null): string | undefined {
   answered.lastGrantRemaining = lastGrantRemaining;
-  const firstClaim = /<ul class="ai-value-prop-claims[^>]*>([\s\S]*?)<\/li>/.exec(
-    render(AiValueProp).body
-  )?.[1];
-  return firstClaim
-    ?.replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return claims()[0];
 }
 
 // The value prop shows only while AI is off, when no grant is followed, so it
@@ -34,5 +44,25 @@ describe('AiValueProp free-allowance claim', () => {
     [0, 'Your 10 free pictures are used up.'],
   ])('with a last answered count of %s reads "%s"', (lastGrantRemaining, claim) => {
     expect(allowanceClaim(lastGrantRemaining)).toBe(claim);
+  });
+});
+
+// Shown on every platform, so it states only what holds on each: on iPhone
+// and iPad the saved key can also move to a new device inside an encrypted
+// backup, which the Settings key note says where it applies.
+describe('AiValueProp key-storage claim', () => {
+  it('reads "After that, use your own OpenAI key — saved securely on your device." with no credential', () => {
+    expect(claims()[1]).toBe(
+      'After that, use your own OpenAI key — saved securely on your device.'
+    );
+  });
+
+  it('reads "Your key stays saved securely on your device." once a key is saved', () => {
+    settingsState.mirrorAiUserApiKey('sk-test');
+    try {
+      expect(claims()[1]).toBe('Your key stays saved securely on your device.');
+    } finally {
+      settingsState.mirrorAiUserApiKey('');
+    }
   });
 });

@@ -26,6 +26,13 @@ const POLICY_REVISIONS: readonly { lastUpdated: string; textSha256: Record<Build
       native: 'd57893d5775d8b96cbcbfff0527a05ed45a09e56b58cdba32d8e9094c5934255',
     },
   },
+  {
+    lastUpdated: 'September 28, 2026',
+    textSha256: {
+      web: '36fd5395b8ed3c72b054d47b8fb07ceec0d2975f390f40ab4d45a55c5c4e5bab',
+      native: 'b0b8e9a7c95149a43cae7f14767f6131946faf75e0c6a277adb8821dbcf0339c',
+    },
+  },
 ];
 
 // Each policy block as what a parent reads, not how the source is laid out:

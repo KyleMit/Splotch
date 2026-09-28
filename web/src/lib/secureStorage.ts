@@ -10,8 +10,13 @@ import { STORAGE_KEYS } from './storageKeys';
 // key (BYOK) and managed access code.
 //
 //  • Native (iOS/Android): secrets are handed to @aparajita/capacitor-secure-storage,
-//    which stores them in the iOS Keychain / Android Keystore — hardware-backed and
-//    persistent until the app is deleted.
+//    which stores them in the iOS Keychain / Android Keystore, both hardware-backed.
+//    An iOS Keychain item survives app deletion and moves to a new iPhone or iPad only
+//    inside an encrypted backup (iCloud, or an encrypted computer backup); it is never
+//    synced through iCloud Keychain. That is a product decision: a parent who restores
+//    onto a new device keeps AI working without re-entering the key; selectBackend pins
+//    it. The Android Keystore copy is never backed up (android:allowBackup="false") and
+//    is removed with the app.
 //
 //  • Web: there's no hardware vault, so the next best thing — the raw value is never
 //    written in plaintext. It's AES-GCM encrypted with a *non-extractable* CryptoKey
@@ -223,9 +228,14 @@ interface SecureBackend {
 // a runtime check it can't tree-shake.
 async function selectBackend(): Promise<SecureBackend> {
   if (__IS_CAPACITOR__ && isNative()) {
-    const { SecureStorage } = await getPlugin();
+    const { SecureStorage, KeychainAccess } = await getPlugin();
     return {
-      save: (name, value) => SecureStorage.set(name, value),
+      // No iCloud Keychain sync and `whenUnlocked` access, passed on every write
+      // rather than inherited from the plugin's defaults so an upgrade cannot
+      // change where a parent's saved key can travel (see the header). Android
+      // ignores both; `undefined` keeps the plugin's own date handling.
+      save: (name, value) =>
+        SecureStorage.set(name, value, undefined, false, KeychainAccess.whenUnlocked),
       load: async (name) => {
         const value = await SecureStorage.get(name);
         return typeof value === 'string' ? value : null;

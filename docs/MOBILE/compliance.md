@@ -230,6 +230,15 @@ ten-creation free allowance; the feedback device snapshot is opt-in and off-by-d
 reports require an explicit gated confirmation that names the evidence being sent (ADR-0104). The
 gate protects action boundaries and is not itself legal consent.
 
+**Stored AI credentials on iOS travel in encrypted backups, by choice.** A saved access code or
+OpenAI key is a Keychain item with `whenUnlocked` access and iCloud Keychain sync off, both passed
+on every write in `web/src/lib/secureStorage.ts` rather than inherited from the plugin. Such an item
+is never synced through iCloud Keychain, survives app deletion, and moves to a new iPhone or iPad
+only inside an encrypted backup (iCloud, or an encrypted computer backup). The user chose this on
+2026-09-28 over `whenUnlockedThisDeviceOnly`: a parent who restores onto a new iPhone should find AI
+still working, and the key stays encrypted in between. `/privacy` and the iOS Settings key note say
+so. Android differs on purpose (see the Families data-practices entry).
+
 ### 5.1.4 Kids
 
 > "Apps in the Kids Category or those that collect, transmit, or have the capability to share
@@ -316,9 +325,10 @@ ADR-0094's 2026-09-12 amendment records both models and the longer-horizon figur
 location permission. The free-allowance installation pseudonym was designed against this rule: an
 app-purpose SHA-256 hash, never the raw device identifier, never combined with IP, account,
 advertising ID, or fingerprint (ADR-0105). `android:allowBackup="false"` keeps settings and stored
-credentials out of cloud backup. Collection that does happen (the allowance pseudonym and
-accounting, drawings on tap, reports, and feedback) is disclosed in `/privacy` and the Data safety
-form.
+credentials out of cloud backup, so an Android credential stays on the device it was entered on; the
+iOS build lets it move in an encrypted backup on purpose (see Apple 5.1.1). Collection that does
+happen (the allowance pseudonym and accounting, drawings on tap, reports, and feedback) is disclosed
+in `/privacy` and the Data safety form.
 
 ### Families policy — APIs and SDKs
 
