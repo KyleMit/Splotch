@@ -93,6 +93,34 @@ export function captureRuntime(platformName, nativeApp) {
   return nativeApp ? 'android-capacitor-webview' : 'android-chrome';
 }
 
+// The runtime is the one mode dimension the page can answer for itself, and the
+// one the hand-input capture used to copy from the request: a hand capture labelled
+// `ios-capacitor-webview` was recorded in Safari because Safari happened to be
+// foregrounded, and nothing noticed (PR 1314's review). Safari stamps a
+// `Version/… Safari/…` token a WKWebView never emits; the Android System
+// WebView stamps `; wv` / `Version/4.0` where Chrome has neither. Returns the
+// refusal message, or null when the UA is consistent with the labelled runtime.
+export function runtimeUaProblem(runtime, ua) {
+  const agent = String(ua ?? '');
+  if (!agent) return `the report carries no user agent, so the ${runtime} label is unverifiable`;
+  const safariToken = / Version\/[\d.]+.* Safari\//.test(agent);
+  const androidWebviewToken = agent.includes('; wv') || agent.includes('Version/4.0');
+  const problems = {
+    'ios-safari': safariToken ? null : 'no Safari Version token — this is not Safari',
+    'ios-capacitor-webview': safariToken
+      ? 'the Safari Version token is present — this page ran in Safari, not the WKWebView'
+      : null,
+    'android-chrome': androidWebviewToken
+      ? 'the Android WebView token is present — this page ran in a WebView, not Chrome'
+      : null,
+    'android-capacitor-webview': androidWebviewToken
+      ? null
+      : 'no Android WebView token — this page ran in a browser, not the WebView',
+  };
+  const problem = problems[runtime] ?? null;
+  return problem ? `the page's user agent contradicts ${runtime}: ${problem} (ua: ${agent})` : null;
+}
+
 const trustedTouch = (input) => input.kinds === 'touch' && input.trust?.share === 1;
 
 // Every measurement must be FINITE, which the retired ceiling used to enforce

@@ -178,7 +178,8 @@ skipping benignly when the devtools socket or the page cannot be reached.
 * `lib/android-input.mjs` — replaying a W3C pointer plan as `input swipe` segments, and the rotation
   settings. Pure; this is where the interesting mistakes live.
 * `lib/page-bootstrap.mjs` — the script injected into the page. Takes its brush selectors from
-  `../ios/capture-xcuitest-screen.mjs` rather than duplicating them.
+  `../lib/brush-buttons.mjs` rather than duplicating them.
+* `lib/spoken-cues.mjs` — the best-effort `say` cues for a person drawing during a hand capture.
 * `lib/probe-host.mjs` — the proxying HTTP host, its report endpoints, and the inert
   `/__probe/stand-down` husk page stale bootstraps park themselves on.
 * `lib/report-store.mjs` — which of two uploaded reports to keep.
@@ -191,10 +192,10 @@ skipping benignly when the devtools socket or the page cannot be reached.
   preview pages. Activation alone was tried first and lost the session-restore race while reporting
   success.
 
-`nativeCanvasBounds`, `trustedGestureActions` and `inputFidelity` are imported from
-`../ios/capture-xcuitest-screen.mjs`. They are not iOS-specific despite living there; moving them to
-`tools/perf/lib/` would be the tidier home and has not been done because that module is large and
-well covered where it is.
+`nativeCanvasBounds` and the gesture plan (`trustedGestureActions`, `driveTrustedGesturePasses`) are
+imported from `../ios/capture-xcuitest-screen.mjs`. They are not iOS-specific despite living there;
+moving them to `tools/perf/lib/` would be the tidier home and has not been done because that module
+is large and well covered where it is.
 
 Tests live in `tools/perf/tests/split-capture.test.mjs` rather than a nested `tests/` directory, so
 Vitest's existing include glob keeps collecting them.

@@ -42,14 +42,15 @@ import {
   readAndroidRotationSettings,
   swipeArgs,
 } from '../split-capture/lib/android-input.mjs';
-import { runtimeUaProblem } from '../split-capture/capture-hand-input.mjs';
-import {
-  BRUSH_BUTTON_BY_MODE,
-  STROKES_PER_GESTURE_REPEAT,
-  trustedGestureActions,
-} from '../ios/capture-xcuitest-screen.mjs';
+import { STROKES_PER_GESTURE_REPEAT, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import { BRUSH_BUTTON_BY_MODE } from '../lib/brush-buttons.mjs';
 import { probeConfigScript } from '../ios/capture-webkit-frames.mjs';
-import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
+import {
+  captureRuntime,
+  describeFidelityFailures,
+  inputFidelity,
+  runtimeUaProblem,
+} from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import { LOST_FRAME_TIME_SHARE_GATE, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';

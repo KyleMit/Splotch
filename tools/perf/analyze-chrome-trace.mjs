@@ -11,8 +11,7 @@
 
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { fail } from '../lib/proc.mjs';
+import { fail, isMain } from '../lib/proc.mjs';
 import { LONG_TASK_MS } from './lib/performance-thresholds.mjs';
 import { toMiB } from './lib/performance-units.mjs';
 
@@ -556,4 +555,4 @@ function main() {
   console.log(`\nWrote ${join(dir, 'summary.json')} and ${join(dir, 'report.md')}`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+if (isMain(import.meta.url)) main();

@@ -8,10 +8,8 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { fail, isMain, runMain } from '../../lib/proc.mjs';
+import { ROOT, fail, isMain, runMain } from '../../lib/proc.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const APPIUM = process.env.APPIUM_URL ?? 'http://127.0.0.1:4723';
 const UDID =
   process.env.IOS_UDID ??

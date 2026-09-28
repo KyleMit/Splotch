@@ -21,7 +21,8 @@ import { DEFAULT_APPIUM_URL, capabilitiesFromFile } from '../lib/appium-capabili
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { PERF_RUN_PARAM } from '../lib/capture-date.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
-import { captureRuntime, inputFidelity } from '../lib/input-fidelity.mjs';
+import { captureRuntime, inputFidelity, runtimeUaProblem } from '../lib/input-fidelity.mjs';
+import { BRUSH_BUTTON_BY_MODE } from '../lib/brush-buttons.mjs';
 import {
   describeRefreshRegime,
   refreshRegimeRefusal,
@@ -40,7 +41,7 @@ import {
 } from '../lib/real-screen-stats.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
-import { runtimeUaProblem, speak } from '../split-capture/capture-hand-input.mjs';
+import { speak } from '../split-capture/lib/spoken-cues.mjs';
 import {
   bundledReportPayloadProblem,
   pullBundledReportFromDevice,
@@ -94,12 +95,6 @@ export const BORROWED_SESSION_CAPABILITIES_ERROR =
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
 const ROTATION_SETTLE_TIMEOUT_MS = 10_000;
 const INSTALL_DISMISSED_STORAGE_KEY = 'splotch-install-dismissed';
-export const BRUSH_BUTTON_BY_MODE = {
-  pen: '#penBrushButton',
-  crayon: '#crayonBrushButton',
-  magic: '#magicBrushButton',
-  eraser: '#eraserButton',
-};
 
 // One interpolated native move emits digitizer-like samples without making WDA
 // serialize hundreds of tiny action commands.

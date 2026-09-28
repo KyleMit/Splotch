@@ -1,4 +1,5 @@
-// Physical-device identifier detection for tracked files (issue #1645).
+// Physical-device identifier shapes: detection in tracked files (issue #1645),
+// and whether a device id names physical Apple hardware.
 //
 // The rig's hardware identifiers (an iPad hardware UDID, Samsung Android
 // serials) are host-local operator state: promoted evidence redacts them
@@ -10,6 +11,13 @@
 // shape `idevice_id -l` prints and Appium's `appium:udid` wants (see
 // capture-readiness.mjs). CoreDevice UUIDs (8-4-4-4-12) do not match.
 const APPLE_HARDWARE_UDID = /[0-9A-Fa-f]{8}-[0-9A-Fa-f]{16}/g;
+
+// A whole device id, so it also accepts the legacy 40-hex hardware UDID, which
+// the tracked-file scan above cannot: embedded in prose, 40 hex chars are as
+// likely a commit SHA.
+export function isPhysicalAppleUdid(value) {
+  return /^(?:[0-9a-f]{8}-[0-9a-f]{16}|[0-9a-f]{40})$/i.test(String(value ?? ''));
+}
 
 // Samsung device serials as `adb devices` prints them for this rig's phones:
 // literal "R5C" then 8 uppercase alphanumerics. Other vendors' serial shapes
