@@ -1,11 +1,11 @@
-import { hasPunchedBackground, isStyleName } from '../ai/styles';
+import { hasPunchedBackground, type StyleName } from '../ai/styles';
 
 export async function prepareGeneratedImage(
-  style: string | null,
+  style: StyleName | null,
   bytes: Uint8Array,
   mimeType: string
 ): Promise<{ bytes: Uint8Array; mimeType: string }> {
-  if (!isStyleName(style) || !hasPunchedBackground(style)) return { bytes, mimeType };
+  if (style === null || !hasPunchedBackground(style)) return { bytes, mimeType };
   const { keyStickerBackground } = await import('./ai/flatBackgroundPunch');
   const { buffer } = await keyStickerBackground(bytes);
   return { bytes: buffer, mimeType: 'image/png' };

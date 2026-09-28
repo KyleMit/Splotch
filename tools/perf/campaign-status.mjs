@@ -14,7 +14,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argFlag, fail, isMain, rejectUnknownFlags, runMain } from '../lib/proc.mjs';
 import {
   campaignQueue,
   campaignTarget,
@@ -107,6 +107,7 @@ export async function campaignStatus({
 }
 
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['target', 'output-root', 'ledger', 'modes', 'items']);
   runMain(async () => {
     await campaignStatus();
   });

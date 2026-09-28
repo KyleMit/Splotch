@@ -6,6 +6,7 @@ import {
   parseOrFail,
   readSwitch,
   readValueFlag,
+  rejectUnknownFlags,
 } from '../../lib/proc.mjs';
 import { PORT_ROLES } from './capture-readiness.mjs';
 
@@ -25,47 +26,29 @@ const describeThrottle = (rate) => {
 
 const COMMON_FLAGS = ['device', 'port', 'no-build'];
 
-function rejectUnknownFlags(argv, known) {
-  const unknown = argv.filter((arg) => {
-    const name = /^--([^=]+)/.exec(arg)?.[1];
-    return name && !known.has(name);
-  });
-  if (unknown.length) {
-    fail(`Unknown flag ${unknown.join(' ')} — known flags: ${[...known].sort().join(', ')}`);
-  }
-}
-
-// `entry` is set by a real CLI invocation, where bad input is a one-line exit
-// and an unknown flag is fatal. A library import leaves it unset: the perf entry
-// modules parse at module scope but are also imported by the vitest script
-// suites, where argv is vitest's own — so unknown flags pass, and a malformed
-// value throws rather than exiting the importing test run.
-export function parsePerfArgs(
-  { throttleDefault, extra = [], entry = false } = {},
-  argv = process.argv.slice(2)
-) {
-  const report = entry ? parseOrFail : (parse) => parse();
-  const flag = (name, fallback) => report(() => readValueFlag(argv, name)) ?? fallback;
+// Bad input, an unknown flag included, is a one-line exit. So a caller parses
+// inside its exported run function, taking argv as a parameter, and never at
+// module scope, where importing it would judge the importer's argv.
+export function parsePerfArgs({ throttleDefault, extra = [] } = {}, argv = process.argv.slice(2)) {
+  const flag = (name, fallback) => parseOrFail(() => readValueFlag(argv, name)) ?? fallback;
   const numberFlag = (name, fallback, rule) => {
     const raw = flag(name);
-    return raw === undefined ? fallback : report(() => parseNumberFlag(name, raw, rule));
+    return raw === undefined ? fallback : parseOrFail(() => parseNumberFlag(name, raw, rule));
   };
-  const has = (name) => report(() => readSwitch(argv, name));
+  const has = (name) => parseOrFail(() => readSwitch(argv, name));
 
-  if (entry) {
-    rejectUnknownFlags(
-      argv,
-      new Set([
-        ...COMMON_FLAGS,
-        ...(throttleDefault === undefined ? [] : ['throttle', 'no-throttle']),
-        ...extra,
-      ])
-    );
-  }
+  rejectUnknownFlags(
+    [
+      ...COMMON_FLAGS,
+      ...(throttleDefault === undefined ? [] : ['throttle', 'no-throttle']),
+      ...extra,
+    ],
+    argv
+  );
 
   const deviceName = flag('device', 'phone');
   const device = resolveDevice(deviceName);
-  if (entry && !device) {
+  if (!device) {
     fail(`Unknown --device=${deviceName} — known: ${Object.keys(DEVICES).join(', ')}`);
   }
 

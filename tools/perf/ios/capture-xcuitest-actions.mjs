@@ -2557,7 +2557,6 @@ export async function runActionSweep({
 export async function runIpadActions(argv = process.argv.slice(2)) {
   const { flag, numberFlag, has, port } = parsePerfArgs(
     {
-      entry: true,
       extra: [
         'url',
         'device-id',

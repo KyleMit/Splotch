@@ -17,6 +17,7 @@ import {
   parseNumberFlag,
   readSwitch,
   readValueFlag,
+  rejectUnknownFlags,
 } from '../lib/proc.mjs';
 
 const argumentsToPreserve = [
@@ -238,6 +239,38 @@ describe('argFlag', () => {
       'process exited'
     );
     expect(error).toHaveBeenCalledWith('--port takes a value: write --port=<value>');
+    expect(exit).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('rejectUnknownFlags', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('accepts every declared flag in either form and leaves positionals alone', () => {
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+
+    rejectUnknownFlags(['strict', 'base'], ['--strict', '--base=origin/main', 'sources.json']);
+    expect(exit).not.toHaveBeenCalled();
+  });
+
+  // A near-miss spelling used to run a different job than the one asked for:
+  // `--manifest=` on the generator regenerated the default matrix and exited 0.
+  it('names every unknown flag and the declared set in one line', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+
+    expect(() =>
+      rejectUnknownFlags(['strict', 'base'], ['--stict', '--manifest=x.json', '--base=main'])
+    ).toThrow('process exited');
+    expect(error).toHaveBeenCalledExactlyOnceWith(
+      'Unknown flag --stict --manifest=x.json — known flags: base, strict'
+    );
     expect(exit).toHaveBeenCalledWith(1);
   });
 });

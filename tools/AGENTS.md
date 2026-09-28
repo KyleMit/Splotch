@@ -112,7 +112,11 @@ entry script.
   Xcode) must fail fast with a clear message elsewhere.
 * Every CLI script gates execution behind `isMain(import.meta.url)` (`tools/lib/proc.mjs`) and
   exports a distinctly named entry function.
-* Script options are flags via `parseArgs`; an env var is at most a documented fallback.
+* Script options are flags via `parseArgs`; an env var is at most a documented fallback. An entry
+  that reads flags one at a time through `argFlag`/`argNumber`/`argSwitch` (`tools/lib/proc.mjs`)
+  declares its whole set with `rejectUnknownFlags` in its `isMain` branch, so a mistyped flag fails
+  instead of being ignored; `parsePerfArgs` does the same for the perf capture entries, which parse
+  inside their exported run function, never at module scope.
 * `max-lines` caps `tools/**/*.{mjs,js,ts}` at the same default as `web/src` (`eslint.config.js`).
   The files already past it are frozen at their size in `TOOLS_GRANDFATHERED_MAX_LINES`: growing one
   means cutting lines elsewhere in it, splitting it, or raising its number there, in the diff.

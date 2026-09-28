@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { engineMeasuresIn, runUndoScenarios } from '../web/run-undo-scenarios.mjs';
 
 const state = vi.hoisted(() => ({
   browser: null,
@@ -76,8 +77,12 @@ const HEAP_BYTES_PER_SCENARIO = 1000;
 const unmatchedEvaluateSources = [];
 
 let fixtureDir;
-let originalArgv;
 let originalExitCode;
+
+// Enough budget for quiescent history to produce its consecutive identical
+// samples (Date.now is mocked to tick once per call, sleep is a no-op), while
+// still expiring for the scenario whose history never stops changing.
+const argvWith = (...flags) => ['--history-settle-timeout-ms=20', ...flags];
 
 beforeEach(() => {
   unmatchedEvaluateSources.length = 0;
@@ -110,21 +115,12 @@ beforeEach(() => {
       heapBytes: HEAP_BYTES_PER_SCENARIO * observed,
     };
   };
-  originalArgv = process.argv;
   // The gate signals a breach through process.exitCode, which would otherwise
   // outlive the test and fail the whole vitest run.
   originalExitCode = process.exitCode;
-  // Enough budget for quiescent history to produce its consecutive identical
-  // samples (Date.now is mocked to tick once per call, sleep is a no-op), while
-  // still expiring for the scenario whose history never stops changing.
-  process.argv = [...process.argv, '--history-settle-timeout-ms=20'];
-  // The entry module reads argv at module scope, so each test needs its own
-  // evaluation rather than the first test's flags.
-  vi.resetModules();
 });
 
 afterEach(() => {
-  process.argv = originalArgv;
   process.exitCode = originalExitCode;
   vi.restoreAllMocks();
   rmSync(fixtureDir, { recursive: true, force: true });
@@ -268,7 +264,6 @@ describe('undo scenario profiling', () => {
       { name: 'unrelated', startTime: 12, duration: 700 },
     ]);
     const page = { evaluate: async (fn, args) => fn(args) };
-    const { engineMeasuresIn } = await import('../web/run-undo-scenarios.mjs');
 
     expect(await engineMeasuresIn(page, 10, 20)).toEqual({
       'engine.undoPatchCrop': { count: 2, total: 11, max: 7, durationsMs: [4, 7] },
@@ -277,7 +272,6 @@ describe('undo scenario profiling', () => {
   });
 
   it('preserves nested phase distributions in both passes without discounting commit timing', async () => {
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const crop = { count: 2, total: 110, max: 60, durationsMs: [50, 60] };
     fakeBrowser(
       fakePage({ commitMaxMs: 60, additionalMeasures: { 'engine.undoPatchCrop': crop } }),
@@ -286,8 +280,7 @@ describe('undo scenario profiling', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    await runUndoScenarios();
+    await runUndoScenarios(argvWith('--engine=webkit', '--scenarios=multi-finger'));
 
     const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
     expect(report.scenarios[0].draw.measures['engine.undoPatchCrop']).toEqual(crop);
@@ -324,8 +317,7 @@ describe('undo scenario profiling', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    await runUndoScenarios();
+    await runUndoScenarios(argvWith());
 
     const jsonPath = join(fixtureDir, 'undo-scenarios.json');
     const markdownPath = join(fixtureDir, 'undo-scenarios.md');
@@ -363,15 +355,13 @@ describe('undo scenario profiling', () => {
     // Which side of the folds a reading lands on used to depend only on host
     // speed. The settle now waits until nothing is left to fold and confirms
     // that reading once, so every host reports the same steady state.
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const page = fakePage({ foldsPending: 3 });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    await runUndoScenarios();
+    await runUndoScenarios(argvWith('--engine=webkit', '--scenarios=multi-finger'));
 
     const summary = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
     const [scenario] = summary.scenarios;
@@ -401,7 +391,6 @@ describe('undo scenario profiling', () => {
     // being waited on, so the wall clock expires after two or three reads when
     // four are needed to see quiescence at all. A clock that jumps several
     // budgets per read is a poll that slow.
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const page = fakePage();
     fakeBrowser(page, { withCdp: false });
     const SLOW_POLL_TICK_MS = 100;
@@ -410,8 +399,7 @@ describe('undo scenario profiling', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(argvWith('--engine=webkit', '--scenarios=multi-finger'));
 
     const summary = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
     expect(summary.scenarios[0]).not.toHaveProperty('skipped');
@@ -428,14 +416,12 @@ describe('engine selection', () => {
     // The WebKit run's whole reason to exist is the engine, so the assertion is
     // that it reached the WebKit launcher — and that it never asked for a CDP
     // session, which would throw on a real WebKit context.
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
     const page = fakePage();
     const { context } = fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    await runUndoScenarios();
+    await runUndoScenarios(argvWith('--engine=webkit', '--scenarios=short-marks'));
 
     expect(state.launched).toEqual(['webkit']);
     expect(context.newCDPSession).toBeUndefined();
@@ -452,17 +438,13 @@ describe('engine selection', () => {
     // API entries. Collecting once at the end would leave trace.json — and every
     // trace-derived section of report.md — describing the final scenario while
     // labelled as the whole run.
-    process.argv = [
-      ...process.argv,
-      '--engine=webkit',
-      '--scenarios=short-marks,mixed,multi-finger',
-    ];
     fakeBrowser(fakePage(), { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    await runUndoScenarios();
+    await runUndoScenarios(
+      argvWith('--engine=webkit', '--scenarios=short-marks,mixed,multi-finger')
+    );
 
     const { traceEvents } = JSON.parse(readFileSync(join(fixtureDir, 'trace.json'), 'utf8'));
     expect(traceEvents.map((e) => e.name)).toEqual([
@@ -479,17 +461,13 @@ describe('engine selection', () => {
     // Same hazard as the trace above: each reload wipes window.__perf, so a
     // single reading at the end would put one scenario's frame health under the
     // "Avg FPS (whole session)" heading.
-    process.argv = [
-      ...process.argv,
-      '--engine=webkit',
-      '--scenarios=short-marks,mixed,multi-finger',
-    ];
     fakeBrowser(fakePage(), { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    await runUndoScenarios();
+    await runUndoScenarios(
+      argvWith('--engine=webkit', '--scenarios=short-marks,mixed,multi-finger')
+    );
 
     const metrics = JSON.parse(readFileSync(join(fixtureDir, 'metrics.json'), 'utf8'));
     const frames = FRAMES_PER_SCENARIO * (1 + 2 + 3);
@@ -518,13 +496,11 @@ describe('engine selection', () => {
   });
 
   it('derives and persists fast-set evidence after a complete WebKit run', async () => {
-    process.argv = [...process.argv, '--engine=webkit'];
     fakeBrowser(fakePage(), { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(argvWith('--engine=webkit'));
 
     expect(gate.fastSetEvaluation).toMatchObject({
       evaluated: true,
@@ -551,14 +527,14 @@ describe('engine selection', () => {
     const historyPath = join(fixtureDir, 'restored-history.json');
     const invalidHistory = '{"schemaVersion":0,"runs":[]}';
     writeFileSync(historyPath, invalidHistory);
-    process.argv = [...process.argv, '--engine=webkit', `--fast-set-history=${historyPath}`];
     fakeBrowser(fakePage(), { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(
+      argvWith('--engine=webkit', `--fast-set-history=${historyPath}`)
+    );
 
     expect(gate.fastSetEvaluation).toMatchObject({ evaluated: true, historyWindowRuns: 2 });
     expect(warning).toHaveBeenCalledWith(
@@ -574,14 +550,14 @@ describe('engine selection', () => {
 
   it('does not append a full run when a scenario has no commit samples', async () => {
     const historyPath = join(fixtureDir, 'zero-sample-history.json');
-    process.argv = [...process.argv, '--engine=webkit', `--fast-set-history=${historyPath}`];
     fakeBrowser(fakePage({ commitCount: 0 }), { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(
+      argvWith('--engine=webkit', `--fast-set-history=${historyPath}`)
+    );
 
     expect(gate).toMatchObject({ evaluated: false });
     expect(gate.fastSetEvaluation).toMatchObject({
@@ -593,13 +569,11 @@ describe('engine selection', () => {
   });
 
   it('resolves the fast suite through the exported membership constant', async () => {
-    process.argv = [...process.argv, '--engine=webkit', '--suite=fast'];
     fakeBrowser(fakePage(), { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    await runUndoScenarios();
+    await runUndoScenarios(argvWith('--engine=webkit', '--suite=fast'));
 
     const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
     expect(report.scenarios.map((scenario) => scenario.key)).toEqual([
@@ -617,38 +591,28 @@ describe('engine selection', () => {
   });
 
   it('rejects a named suite combined with an explicit scenario subset', async () => {
-    process.argv = [...process.argv, '--suite=fast', '--scenarios=multi-finger'];
-
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-
-    await expect(runUndoScenarios()).rejects.toThrow(
-      '--suite=fast cannot be combined with --scenarios'
-    );
+    await expect(
+      runUndoScenarios(argvWith('--suite=fast', '--scenarios=multi-finger'))
+    ).rejects.toThrow('--suite=fast cannot be combined with --scenarios');
   });
 
   it('rejects an unknown engine instead of silently falling back to Chromium', async () => {
-    process.argv = [...process.argv, '--engine=firefox'];
-    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    await import('../web/run-undo-scenarios.mjs');
+    await expect(runUndoScenarios(argvWith('--engine=firefox'))).rejects.toThrow('process exited');
 
     expect(error).toHaveBeenCalledWith(expect.stringContaining('--engine=firefox is not a known'));
     expect(exit).toHaveBeenCalledWith(1);
+    expect(state.launched).toEqual([]);
   });
 
   it('rejects every unknown requested scenario before launching a browser', async () => {
-    process.argv = [
-      ...process.argv,
-      '--engine=webkit',
-      '--scenarios=multi-finger,crayon-scribblesTYPO',
-    ];
-
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-
-    await expect(runUndoScenarios()).rejects.toThrow(
-      '--scenarios contains unknown key(s): crayon-scribblesTYPO'
-    );
+    await expect(
+      runUndoScenarios(argvWith('--engine=webkit', '--scenarios=multi-finger,crayon-scribblesTYPO'))
+    ).rejects.toThrow('--scenarios contains unknown key(s): crayon-scribblesTYPO');
     expect(state.launched).toEqual([]);
   });
 });
@@ -659,15 +623,15 @@ describe('the commit gate', () => {
   // Only the flag is replaced; every other export stays real, because the scoring
   // this test asserts on is exactly what a stub would have to reimplement.
   async function importWithEnforcement(enforced) {
+    vi.resetModules();
     vi.doMock('../lib/undo-commit-gate.mjs', async (importOriginal) => ({
       ...(await importOriginal()),
       COMMIT_GATE_ENFORCED: enforced,
     }));
-    return import('../web/run-undo-scenarios.mjs');
+    return (await import('../web/run-undo-scenarios.mjs')).runUndoScenarios;
   }
 
   it('fails the WebKit run when commit latency repeatedly exceeds the budget', async () => {
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const page = fakePage({
       commitDurationsMs: [...Array(REALISTIC_COMMIT_SAMPLE_COUNT - 2).fill(8), 55, 56],
     });
@@ -676,8 +640,8 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await importWithEnforcement(true);
-    const gate = await runUndoScenarios();
+    const runEnforced = await importWithEnforcement(true);
+    const gate = await runEnforced(argvWith('--engine=webkit', '--scenarios=multi-finger'));
 
     expect(gate).toMatchObject({
       engine: 'webkit',
@@ -709,7 +673,6 @@ describe('the commit gate', () => {
   // "advisory" would quietly mean "unmeasured", which is the thing an advisory gate
   // must not become.
   it('reports a confirmed breach without failing the run while the gate is advisory', async () => {
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const page = fakePage({
       commitDurationsMs: [...Array(REALISTIC_COMMIT_SAMPLE_COUNT - 2).fill(8), 55, 56],
     });
@@ -718,8 +681,8 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await importWithEnforcement(false);
-    const gate = await runUndoScenarios();
+    const runAdvisory = await importWithEnforcement(false);
+    const gate = await runAdvisory(argvWith('--engine=webkit', '--scenarios=multi-finger'));
 
     expect(process.exitCode).toBe(originalExitCode);
     expect(gate).toMatchObject({ engine: 'webkit', gated: true, enforced: false });
@@ -739,15 +702,13 @@ describe('the commit gate', () => {
   });
 
   it('retains but does not fail one isolated shared-runner outlier', async () => {
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const commitDurationsMs = [...Array(REALISTIC_COMMIT_SAMPLE_COUNT - 1).fill(8), 56];
     const page = fakePage({ commitDurationsMs });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(argvWith('--engine=webkit', '--scenarios=multi-finger'));
 
     expect(gate.breaches).toEqual([]);
     expect(gate).toMatchObject({ percentile: 0.95 });
@@ -762,14 +723,12 @@ describe('the commit gate', () => {
   });
 
   it('passes the WebKit run when commits stay inside the budget', async () => {
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
     const page = fakePage({ commitMaxMs: 8 });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(argvWith('--engine=webkit', '--scenarios=short-marks'));
 
     expect(gate.breaches).toEqual([]);
     expect(process.exitCode).toBe(originalExitCode);
@@ -778,15 +737,13 @@ describe('the commit gate', () => {
   it('fails rather than certifies a run whose bundle carries no engine marks', async () => {
     // Every measure absent reads as 0 ms, which is indistinguishable from a very
     // fast commit, so sample count is the only reliable coverage signal.
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
     const page = fakePage({ commitMaxMs: 0, commitCount: 0 });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(argvWith('--engine=webkit', '--scenarios=short-marks'));
 
     expect(gate).toMatchObject({ evaluated: false, breaches: [] });
     // Carried on the no-samples path too, for the same reason.
@@ -798,7 +755,6 @@ describe('the commit gate', () => {
   });
 
   it('fails rather than certifies a WebKit run with skipped scenarios', async () => {
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     // The scenario's own navigation is the second: the run resets the engine
     // once before any scenario.
     const page = fakePage({ navigationFails: 2 });
@@ -808,8 +764,7 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(argvWith('--engine=webkit', '--scenarios=multi-finger'));
 
     expect(gate).toMatchObject({ evaluated: false, skipped: 1, breaches: [] });
     expect(process.exitCode).toBe(1);
@@ -818,11 +773,6 @@ describe('the commit gate', () => {
   });
 
   it('reports completed breaches alongside skipped scenarios', async () => {
-    process.argv = [
-      ...process.argv,
-      '--engine=webkit',
-      '--scenarios=multi-finger,crayon-scribbles',
-    ];
     const page = fakePage({ commitMaxMs: 30, navigationFails: 3 });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
@@ -830,8 +780,9 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(
+      argvWith('--engine=webkit', '--scenarios=multi-finger,crayon-scribbles')
+    );
 
     expect(gate).toMatchObject({ evaluated: false, skipped: 1 });
     expect(gate.breaches.map((scenario) => scenario.key)).toEqual(['multi-finger']);
@@ -842,14 +793,12 @@ describe('the commit gate', () => {
   });
 
   it('reports the gate as not evaluated on Chromium', async () => {
-    process.argv = [...process.argv, '--scenarios=short-marks'];
     const page = fakePage({ commitMaxMs: 999 });
     fakeBrowser(page);
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
-    const gate = await runUndoScenarios();
+    const gate = await runUndoScenarios(argvWith('--scenarios=short-marks'));
 
     // Chromium cannot measure the cost this gate is about, so a hot commit here
     // must not fail the run — see COMMIT_GATE_MS.

@@ -2,7 +2,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
-import { ROOT, argFlag, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argFlag, isMain, rejectUnknownFlags, runMain } from '../lib/proc.mjs';
 import {
   ADR_DIR,
   adrNumber,
@@ -169,4 +169,7 @@ export function checkAdrIntegrity() {
   process.exit(1);
 }
 
-if (isMain(import.meta.url)) runMain(async () => checkAdrIntegrity());
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['base']);
+  runMain(async () => checkAdrIntegrity());
+}

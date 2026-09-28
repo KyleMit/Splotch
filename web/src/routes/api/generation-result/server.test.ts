@@ -2,7 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import type { completeFreeGeneration, failFreeGeneration } from '$lib/server/freeGenerationGrants';
-import type { discardJob, readJob, readJobImage } from '$lib/server/generationJobs';
+import type {
+  discardJob,
+  GenerationJobContext,
+  readJob,
+  readJobImage,
+} from '$lib/server/generationJobs';
 import type { rateLimit } from '$lib/server/rateLimit';
 import type { issueReportToken } from '$lib/server/reportToken';
 
@@ -46,8 +51,11 @@ import { GET } from './+server';
 const jobId = 'a'.repeat(64);
 const installationId = 'c'.repeat(64);
 const reservationId = 'reservation-1';
-const freeContext = { free: { installationId, reservationId }, style: 'Crayon' };
-const paidContext = { free: null, style: null };
+const freeContext: GenerationJobContext = {
+  free: { installationId, reservationId },
+  style: 'Crayon',
+};
+const paidContext: GenerationJobContext = { free: null, style: null };
 const pictureBytes = new Uint8Array([137, 80, 78, 71]);
 
 async function stickerPng(subject: boolean): Promise<Buffer> {

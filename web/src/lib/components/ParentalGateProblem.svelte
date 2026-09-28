@@ -144,7 +144,7 @@
   }
 
   /* Narrow enough to share the landscape card with the keypad beside it. */
-  @media (orientation: landscape) and (max-height: 599px) {
+  @media (orientation: landscape) and (max-height: 599.98px) {
     .gate-equation {
       gap: 6px;
     }

@@ -37,15 +37,13 @@ import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 export const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
 const MAX_IDLE_GAP_MS = 250;
 
-const { flag, has, throttle, port, build } = parsePerfArgs({
-  throttleDefault: 0,
-  extra: ['recording', 'turbo'],
-  entry: isMain(import.meta.url),
-});
-const recordingPath = flag('recording', null);
-const turbo = has('turbo');
-
-export async function runReplayScenario() {
+export async function runReplayScenario(argv = process.argv.slice(2)) {
+  const { flag, has, throttle, port, build } = parsePerfArgs(
+    { throttleDefault: 0, extra: ['recording', 'turbo'] },
+    argv
+  );
+  const recordingPath = flag('recording', null);
+  const turbo = has('turbo');
   if (!recordingPath) {
     console.error(
       'Usage: npm run perf:web:replay -- --recording=<recording.json> [--turbo] [--throttle=N]'
