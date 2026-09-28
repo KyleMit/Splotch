@@ -26,6 +26,10 @@ const IOS_SOURCE_DIR = '../../../../ios/App/App/';
 // SystemBackPlugin.java does.
 const BASE_PLUGIN_METHODS: ReadonlySet<string> = new Set(['addListener']);
 
+// Java and Swift share comment syntax, and commented-out native code must count as absent. String
+// literals match first so a `//` inside one is not read as a comment.
+const COMMENT_OR_STRING = /("(?:\\.|[^"\\\n])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
+
 interface ProxyDeclaration {
   jsName: string;
   methods: string[];
@@ -36,9 +40,22 @@ interface NativeDeclaration extends ProxyDeclaration {
   className: string;
 }
 
+interface IosDeclaration extends NativeDeclaration {
+  // Capacitor calls a declared method through the `<name>:` Objective-C selector.
+  objcMethods: string[];
+}
+
 // The path stays a parameter so Vite leaves the URL alone (see app.html.test.ts).
 function sourceFile(path: string): string {
   return readFileSync(new URL(path, import.meta.url), 'utf8');
+}
+
+function withoutComments(code: string): string {
+  return code.replace(COMMENT_OR_STRING, (_match, string: string | undefined) => string ?? ' ');
+}
+
+function nativeSourceFile(path: string): string {
+  return withoutComments(sourceFile(path));
 }
 
 function sourceFiles(dir: string, extension: string): { file: string; text: string }[] {
@@ -86,16 +103,17 @@ function proxyDeclaration(
       `${file}: registerPlugin needs an interface from its own module as the type argument and a string-literal name`
     );
   }
-  return {
-    jsName: nameArgument.text,
-    methods: pluginInterface.members
-      .filter(ts.isMethodSignature)
-      .map((member) => member.name.getText(source)),
-  };
+  // The proxy turns every member access into a native call, so a property counts as a method.
+  const methods = pluginInterface.members.map((member) => {
+    if (!member.name) throw new Error(`${file}: every plugin interface member needs a name`);
+    return member.name.getText(source);
+  });
+  return { jsName: nameArgument.text, methods };
 }
 
 function androidDeclarations(): NativeDeclaration[] {
-  return sourceFiles(ANDROID_SOURCE_DIR, '.java').flatMap(({ file, text }) => {
+  return sourceFiles(ANDROID_SOURCE_DIR, '.java').flatMap(({ file, text: rawText }) => {
+    const text = withoutComments(rawText);
     const annotations = text.match(/@CapacitorPlugin\b/g) ?? [];
     if (annotations.length === 0) return [];
     const plugin = /@CapacitorPlugin\(\s*name = "(\w+)"[\s\S]*?\bclass (\w+) extends Plugin\b/.exec(
@@ -114,8 +132,9 @@ function androidDeclarations(): NativeDeclaration[] {
   });
 }
 
-function iosDeclarations(): NativeDeclaration[] {
-  return sourceFiles(IOS_SOURCE_DIR, '.swift').flatMap(({ file, text }) => {
+function iosDeclarations(): IosDeclaration[] {
+  return sourceFiles(IOS_SOURCE_DIR, '.swift').flatMap(({ file, text: rawText }) => {
+    const text = withoutComments(rawText);
     const classes = [...text.matchAll(/\bclass (\w+):[^{]*\bCAPBridgedPlugin\b/g)];
     if (classes.length === 0) return [];
     const jsName = /\blet jsName = "(\w+)"/.exec(text);
@@ -125,7 +144,10 @@ function iosDeclarations(): NativeDeclaration[] {
     const methods = [...text.matchAll(/CAPPluginMethod\(name: "(\w+)"/g)].map(
       ([, method]) => method
     );
-    return [{ file, jsName: jsName[1], className: classes[0][1], methods }];
+    const objcMethods = [
+      ...text.matchAll(/@objc\s+(?:\w+\s+)*?func (\w+)\(_ \w+: CAPPluginCall\)/g),
+    ].map(([, method]) => method);
+    return [{ file, jsName: jsName[1], className: classes[0][1], methods, objcMethods }];
   });
 }
 
@@ -154,7 +176,7 @@ function jsNames(plugins: readonly { jsName: string }[]): string[] {
 }
 
 function ownMethods(methods: readonly string[]): string[] {
-  return methods.filter((method) => !BASE_PLUGIN_METHODS.has(method)).sort();
+  return [...new Set(methods)].filter((method) => !BASE_PLUGIN_METHODS.has(method)).sort();
 }
 
 const proxies = proxyDeclarations();
@@ -186,7 +208,7 @@ describe('the native plugin table', () => {
 describe.each(ANDROID_PLUGINS)('the $jsName plugin on Android', ({ jsName }) => {
   it('is registered before BridgeActivity starts the bridge', () => {
     const plugin = declarationOf(androidPlugins, jsName);
-    const activity = sourceFile(`${ANDROID_SOURCE_DIR}MainActivity.java`);
+    const activity = nativeSourceFile(`${ANDROID_SOURCE_DIR}MainActivity.java`);
     const bridgeStart = activity.indexOf('super.onCreate(');
 
     expect(bridgeStart).toBeGreaterThan(0);
@@ -203,7 +225,7 @@ describe.each(ANDROID_PLUGINS)('the $jsName plugin on Android', ({ jsName }) => 
 describe.each(IOS_PLUGINS)('the $jsName plugin on iOS', ({ jsName }) => {
   it('is registered on the bridge', () => {
     const plugin = declarationOf(iosPlugins, jsName);
-    const controller = sourceFile(`${IOS_SOURCE_DIR}MainViewController.swift`);
+    const controller = nativeSourceFile(`${IOS_SOURCE_DIR}MainViewController.swift`);
 
     expect(iosRegisteredClasses(controller)).toContain(plugin.className);
   });
@@ -219,5 +241,11 @@ describe.each(IOS_PLUGINS)('the $jsName plugin on iOS', ({ jsName }) => {
     expect(ownMethods(declarationOf(iosPlugins, jsName).methods)).toEqual(
       ownMethods(declarationOf(proxies, jsName).methods)
     );
+  });
+
+  it('backs every declared method with an @objc func the bridge can call', () => {
+    const plugin = declarationOf(iosPlugins, jsName);
+
+    expect([...plugin.objcMethods].sort()).toEqual([...plugin.methods].sort());
   });
 });
