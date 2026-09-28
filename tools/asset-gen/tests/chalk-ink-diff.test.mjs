@@ -18,7 +18,6 @@ import {
   chalkDiffRetainedSolid,
 } from './fixtures/synthetic.mjs';
 
-const REAL_FIXTURE_TIMEOUT_MS = 10_000;
 const NEW_PAGE_CATALOG_QUANTILE = 0.9;
 
 function lowerQuantile(values, quantile) {
@@ -86,36 +85,32 @@ describe('chalk ink diff', () => {
     );
   });
 
-  it(
-    'flags a shipped ringed-pupil regression while the repaired invented-face page is a negative control',
-    async () => {
-      async function scorePage(page) {
-        const pen = await rasterizeLineArt(join(COLORING_DIR, `${page}.overlay.svg`));
-        const chalk = await rasterizeLineArt(join(COLORING_DIR, `${page}.dark.overlay.svg`));
-        return scoreChalkInkDiff(chalk, await prepareChalkInkDiff(pen));
-      }
+  it('flags a shipped ringed-pupil regression while the repaired invented-face page is a negative control', async () => {
+    async function scorePage(page) {
+      const pen = await rasterizeLineArt(join(COLORING_DIR, `${page}.overlay.svg`));
+      const chalk = await rasterizeLineArt(join(COLORING_DIR, `${page}.dark.overlay.svg`));
+      return scoreChalkInkDiff(chalk, await prepareChalkInkDiff(pen));
+    }
 
-      const broken = await scorePage('nature/caterpillar-wide');
-      const repaired = await scorePage('space/ship-tall');
-      const pen = await prepareChalkInkDiff(
-        await rasterizeLineArt(join(COLORING_DIR, 'nature/caterpillar-wide.overlay.svg'))
-      );
-      const shipped = await rasterizeLineArt(
-        join(COLORING_DIR, 'nature/caterpillar-wide.dark.overlay.svg')
-      );
-      const regenerated = await scoreChalkInkDiff(shipped, pen, { baseline: broken });
-      const tightened = await scoreChalkInkDiff(shipped, pen, {
-        baseline: broken,
-        maxInkPx: 0,
-      });
+    const broken = await scorePage('nature/caterpillar-wide');
+    const repaired = await scorePage('space/ship-tall');
+    const pen = await prepareChalkInkDiff(
+      await rasterizeLineArt(join(COLORING_DIR, 'nature/caterpillar-wide.overlay.svg'))
+    );
+    const shipped = await rasterizeLineArt(
+      join(COLORING_DIR, 'nature/caterpillar-wide.dark.overlay.svg')
+    );
+    const regenerated = await scoreChalkInkDiff(shipped, pen, { baseline: broken });
+    const tightened = await scoreChalkInkDiff(shipped, pen, {
+      baseline: broken,
+      maxInkPx: 0,
+    });
 
-      expect(broken.addedInkPx).toBe(37);
-      expect(regenerated.passes).toBe(true);
-      expect(tightened.passes).toBe(false);
-      expect(tightened.absolutePasses).toBe(false);
-      expect(repaired.absolutePasses).toBe(true);
-      expect(repaired.addedInkPx).toBe(0);
-    },
-    REAL_FIXTURE_TIMEOUT_MS
-  );
+    expect(broken.addedInkPx).toBe(37);
+    expect(regenerated.passes).toBe(true);
+    expect(tightened.passes).toBe(false);
+    expect(tightened.absolutePasses).toBe(false);
+    expect(repaired.absolutePasses).toBe(true);
+    expect(repaired.addedInkPx).toBe(0);
+  });
 });

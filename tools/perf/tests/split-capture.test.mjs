@@ -1399,15 +1399,23 @@ describe('the probe host refusing a stale run over HTTP', () => {
 // reachable: passing `nativeApp: false` at this call opens Chrome while the
 // artifact is still labelled android-capacitor-webview, and every test passed.
 describe('the hand capture opening what its flag asked for', () => {
+  // The opener waits out a real device's settles between steps; fake timers skip them.
   const commands = async (nativeApp) => {
     const calls = [];
-    await openWithAdb({
-      serial: 'SERIAL',
-      pageUrl: 'http://host/?probe=n',
-      orientation: 'PORTRAIT',
-      nativeApp,
-      exec: (serial, args) => calls.push([serial, ...args].join(' ')),
-    });
+    vi.useFakeTimers();
+    try {
+      const opened = openWithAdb({
+        serial: 'SERIAL',
+        pageUrl: 'http://host/?probe=n',
+        orientation: 'PORTRAIT',
+        nativeApp,
+        exec: (serial, args) => calls.push([serial, ...args].join(' ')),
+      });
+      await vi.runAllTimersAsync();
+      await opened;
+    } finally {
+      vi.useRealTimers();
+    }
     return calls.join(' | ');
   };
 
@@ -1416,18 +1424,18 @@ describe('the hand capture opening what its flag asked for', () => {
 
     expect(issued).toContain('art.splotch.app/.MainActivity');
     expect(issued).not.toContain(CHROME_PACKAGE);
-  }, 20_000);
+  });
 
   it('reaches the browser when it was not', async () => {
     const issued = await commands(false);
 
     expect(issued).toContain(CHROME_PACKAGE);
     expect(issued).not.toContain('.MainActivity');
-  }, 20_000);
+  });
 
   it('sends every command to the serial it was given', async () => {
     expect(await commands(true)).toContain('SERIAL');
-  }, 20_000);
+  });
 });
 
 describe('fronting the run page', () => {

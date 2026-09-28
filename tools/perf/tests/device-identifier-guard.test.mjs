@@ -118,7 +118,7 @@ describe('scanForHostAddresses', () => {
 });
 
 describe('tracked tree', () => {
-  // Reads every tracked text file (~3 s locally, slower on CI runners).
+  // Reads every tracked text file, which runs well past Vitest's default timeout.
   it('contains no physical-device identifier or evidence host address', { timeout: 60_000 }, () => {
     expect(checkTrackedTree()).toEqual([]);
   });

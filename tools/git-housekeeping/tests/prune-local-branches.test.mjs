@@ -9,7 +9,7 @@ import {
   plannedOutcome,
   protectedBranchName,
 } from '../prune-local-branches.mjs';
-import { createTempRepo } from './fixtures/temp-repo.mjs';
+import { createTempRepo, REAL_REPO_TEST_OPTIONS } from './fixtures/temp-repo.mjs';
 
 describe('parsePruneBranchesArgs', () => {
   it('defaults to a fetching dry run against origin/main', () => {
@@ -203,7 +203,7 @@ describe('classifyLocalBranch', () => {
   });
 });
 
-describe("deleteApprovedBranch — the judgment pass's deletion", () => {
+describe("deleteApprovedBranch — the judgment pass's deletion", REAL_REPO_TEST_OPTIONS, () => {
   let fixture;
 
   beforeEach(() => {
@@ -248,7 +248,7 @@ describe("deleteApprovedBranch — the judgment pass's deletion", () => {
   });
 });
 
-describe('planning and deleting on a real repository', () => {
+describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, () => {
   let fixture;
 
   beforeEach(() => {
