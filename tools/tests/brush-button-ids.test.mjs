@@ -22,10 +22,36 @@ const APP_BUTTON_ID_BY_BRUSH = Object.fromEntries(
     ([, brush, id]) => [brush, id]
   )
 );
-const APP_BUTTON_IDS = new Set(Object.values(APP_BUTTON_ID_BY_BRUSH));
+const BRUSH_BY_APP_BUTTON_ID = Object.fromEntries(
+  Object.entries(APP_BUTTON_ID_BY_BRUSH).map(([brush, id]) => [id, brush])
+);
+const APP_BUTTON_IDS = new Set(Object.keys(BRUSH_BY_APP_BUTTON_ID));
 
 const BUTTON_ID_TOKEN = /\b(?:[a-z]+BrushButton|eraserButton)\b/g;
-const BRUSH_SELECTOR_PAIR = /\b(pen|crayon|magic|eraser): '#(\w+)'/g;
+// A brush named on the same line as one button id — as a map key
+// (`crayon: '#crayonBrushButton'`) or a quoted literal (the input recorder's
+// `el.id === 'crayonBrushButton') recAction('brush', 'crayon')`) — is the brush
+// that line takes the button to select.
+const BRUSH_NAME = /\b(pen|crayon|magic|eraser):|'(pen|crayon|magic|eraser)'/g;
+
+function buttonIdProblems(rel, source) {
+  const problems = [];
+  for (const line of source.split('\n')) {
+    const ids = line.match(BUTTON_ID_TOKEN) ?? [];
+    for (const id of ids) {
+      if (!APP_BUTTON_IDS.has(id)) problems.push(`${rel}: #${id} is not a BRUSH_OPTIONS id`);
+    }
+    if (ids.length !== 1 || !APP_BUTTON_IDS.has(ids[0])) continue;
+    const owner = BRUSH_BY_APP_BUTTON_ID[ids[0]];
+    for (const [, key, literal] of line.matchAll(BRUSH_NAME)) {
+      const brush = key ?? literal;
+      if (brush !== owner) {
+        problems.push(`${rel}: pairs ${brush} with #${ids[0]}, the app's ${owner} button`);
+      }
+    }
+  }
+  return problems;
+}
 
 // Tracked files only, as in palette-source.test.mjs: a filesystem walk would
 // also read gitignored run output.
@@ -48,22 +74,26 @@ describe('brush button ids in tools match the app', () => {
     );
   });
 
+  it('flags a brush paired with another brush’s button, as a key or a literal', () => {
+    const { crayon, eraser } = APP_BUTTON_ID_BY_BRUSH;
+
+    expect(buttonIdProblems('a', `  crayon: '#${crayon}',`)).toEqual([]);
+    expect(buttonIdProblems('a', `  magic: '#${eraser}',`)).toHaveLength(1);
+    expect(
+      buttonIdProblems('a', `else if (el.id === '${crayon}') recAction('brush', 'crayon');`)
+    ).toEqual([]);
+    expect(
+      buttonIdProblems('a', `else if (el.id === '${crayon}') recAction('brush', 'pen');`)
+    ).toHaveLength(1);
+  });
+
   it('names only real button ids, each paired with its own brush', () => {
     const problems = [];
     const filesNamingIds = [];
     for (const rel of toolsSources()) {
       const source = readFileSync(join(repoRoot, rel), 'utf8');
-      const ids = source.match(BUTTON_ID_TOKEN) ?? [];
-      if (ids.length) filesNamingIds.push(rel);
-      for (const id of ids) {
-        if (!APP_BUTTON_IDS.has(id)) problems.push(`${rel}: #${id} is not a BRUSH_OPTIONS id`);
-      }
-      for (const [, brush, id] of source.matchAll(BRUSH_SELECTOR_PAIR)) {
-        const expected = APP_BUTTON_ID_BY_BRUSH[brush];
-        if (APP_BUTTON_IDS.has(id) && id !== expected) {
-          problems.push(`${rel}: ${brush} selects #${id}, but the app's ${brush} is #${expected}`);
-        }
-      }
+      if (source.match(BUTTON_ID_TOKEN)) filesNamingIds.push(rel);
+      problems.push(...buttonIdProblems(rel, source));
     }
 
     expect(problems).toEqual([]);
