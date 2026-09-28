@@ -71,6 +71,19 @@ class ControllableWorker {
   }
 }
 
+function tiledInput(tile: ImageBitmap) {
+  return {
+    sourceWidth: 400,
+    sourceHeight: 300,
+    sourceScale: 2,
+    exportScale: 2,
+    tiles: [{ bitmap: tile, x: 0, y: 0 }],
+    texture: null,
+    overlay: null,
+    paperColor: '#fff',
+  };
+}
+
 beforeEach(() => {
   vi.resetModules();
   ControllableWorker.instances.length = 0;
@@ -320,5 +333,69 @@ describe('encodeCanvasPng', () => {
     expect(ControllableWorker.instances).toHaveLength(2);
     ControllableWorker.instances[1].resolve(expected);
     await expect(third).resolves.toBe(expected);
+  });
+
+  it('settles only the tiled request whose encode failed and keeps the worker for the other', async () => {
+    const failedTile = { close: vi.fn() } as unknown as ImageBitmap;
+    const expected = new Blob(['worker'], { type: 'image/png' });
+    vi.stubGlobal('Worker', ControllableWorker);
+    const { encodeTiledCanvasPng } = await import('./pngEncoder');
+
+    const failed = encodeTiledCanvasPng(tiledInput(failedTile));
+    const concurrent = encodeTiledCanvasPng(
+      tiledInput({ close: vi.fn() } as unknown as ImageBitmap)
+    );
+    const worker = ControllableWorker.instances[0];
+    worker.send({ id: worker.posted[0].message.id, error: 'Error: PNG encoding failed' });
+    await expect(failed).resolves.toBeNull();
+    worker.send({ id: worker.posted[1].message.id, blob: expected });
+
+    await expect(concurrent).resolves.toBe(expected);
+    expect(worker.terminated).toBe(false);
+    expect(failedTile.close).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the worker for an in-flight tiled export when a canvas bitmap cannot be created', async () => {
+    const fallback = new Blob(['fallback'], { type: 'image/png' });
+    const expected = new Blob(['worker'], { type: 'image/png' });
+    vi.stubGlobal('Worker', ControllableWorker);
+    vi.stubGlobal('OffscreenCanvas', class {});
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => {
+        throw new Error('bitmap allocation failed');
+      })
+    );
+    const canvas = document.createElement('canvas');
+    vi.spyOn(canvas, 'toBlob').mockImplementation((callback) => callback(fallback));
+    const { encodeCanvasPng, encodeTiledCanvasPng } = await import('./pngEncoder');
+
+    const tiled = encodeTiledCanvasPng(tiledInput({ close: vi.fn() } as unknown as ImageBitmap));
+    await expect(encodeCanvasPng(canvas)).resolves.toBe(fallback);
+    const worker = ControllableWorker.instances[0];
+    worker.send({ id: worker.posted[0].message.id, blob: expected });
+
+    await expect(tiled).resolves.toBe(expected);
+    expect(worker.terminated).toBe(false);
+  });
+
+  it('falls back to the main thread for a non-PNG reply without retiring the worker', async () => {
+    const fallback = new Blob(['fallback'], { type: 'image/png' });
+    vi.stubGlobal('Worker', ControllableWorker);
+    vi.stubGlobal('OffscreenCanvas', class {});
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => ({ close: vi.fn() }) as unknown as ImageBitmap)
+    );
+    const canvas = document.createElement('canvas');
+    vi.spyOn(canvas, 'toBlob').mockImplementation((callback) => callback(fallback));
+    const { encodeCanvasPng } = await import('./pngEncoder');
+
+    const encoded = encodeCanvasPng(canvas);
+    await vi.waitFor(() => expect(ControllableWorker.instances[0]?.posted).toHaveLength(1));
+    ControllableWorker.instances[0].resolve(new Blob(['webp'], { type: 'image/webp' }));
+
+    await expect(encoded).resolves.toBe(fallback);
+    expect(ControllableWorker.instances[0].terminated).toBe(false);
   });
 });
