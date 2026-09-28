@@ -181,10 +181,11 @@
   }
 
   /* Three radii on the page, one family: the sheet on xl, the buttons, fields,
-     and the kind control on md, its nested options one step in on sm. The
-     picker primitive already lands on that family; these two don't. */
+     the error banner, and the kind control on md, its nested options one step
+     in on sm. The picker primitive already lands on that family; these don't. */
   .card :global(.report-textarea),
-  .card :global(.report-device-details) {
+  .card :global(.report-device-details),
+  .card :global(.status-message) {
     border-radius: var(--radius-md);
   }
 

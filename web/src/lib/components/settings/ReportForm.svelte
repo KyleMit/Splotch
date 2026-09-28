@@ -114,7 +114,7 @@
   </div>
 
   {#if feedback}
-    <StatusMessage status={status === 'error' ? 'error' : 'success'}>
+    <StatusMessage status={status === 'error' ? 'error' : 'success'} class="report-status">
       {feedback}
     </StatusMessage>
   {/if}
@@ -141,5 +141,9 @@
   /* Chrome comes from the Button primitive; the call site only places it. */
   .report-card :global(.report-submit) {
     align-self: flex-start;
+  }
+
+  .setting-group :global(.report-status) {
+    margin-top: var(--space-3);
   }
 </style>

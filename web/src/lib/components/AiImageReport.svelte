@@ -269,10 +269,6 @@
     gap: var(--space-2);
   }
 
-  .ai-image-report :global(p.status-message) {
-    margin-top: 0;
-  }
-
   /* ── Confirm dialog ─────────────────────────────────────────────────────── */
 
   .ai-report-thumbs {

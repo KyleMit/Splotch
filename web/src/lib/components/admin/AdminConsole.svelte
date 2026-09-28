@@ -367,10 +367,6 @@
     gap: var(--space-5);
   }
 
-  .block :global(.status-message) {
-    margin: 0;
-  }
-
   .grant-metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));

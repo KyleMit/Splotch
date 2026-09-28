@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import type { HTMLAttributes } from 'svelte/elements';
 
   // Design-system status-message primitive (ADR-0071): the wash-filled banner a
   // form shows after a submit resolves. Render it only when there is a message
@@ -7,16 +8,20 @@
   //
   // Errors take role="alert" (interrupt) while successes and warnings take role="status"
   // (queue behind whatever is speaking).
+  //
+  // No outer margin: a banner set in a gap container would stack it on the
+  // gap. A host that is not one places the banner through `class`.
   interface Props {
     status: 'success' | 'error' | 'warning';
+    class?: HTMLAttributes<HTMLParagraphElement>['class'];
     children: Snippet;
   }
 
-  let { status, children }: Props = $props();
+  let { status, class: className, children }: Props = $props();
 </script>
 
 <p
-  class={['status-message', status]}
+  class={['status-message', status, className]}
   role={status === 'error' ? 'alert' : 'status'}
   aria-live={status === 'error' ? 'assertive' : 'polite'}
 >
@@ -25,7 +30,7 @@
 
 <style>
   .status-message {
-    margin: var(--space-3) 0 0 0;
+    margin: 0;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-sm);
