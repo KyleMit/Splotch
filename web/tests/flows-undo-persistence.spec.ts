@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { draw, firstOpaquePixel, gotoApp } from './helpers';
+import { draw, drawCommittedStroke, firstOpaquePixel, gotoApp } from './helpers';
 
 import { openBrushMenu, openDrawer, openStrokeMenu, pickBrush } from './flows-harness';
 
@@ -104,7 +104,7 @@ test('Ctrl+Z still undoes while the button is hidden, and plays no cue', async (
   // settings.undoButtonEnabled only hides the button (data-off-undo is a CSS-only
   // toggle) — it does not disable undo history, so the keyboard shortcut
   // deliberately bypasses it too (installUndoShortcut, lib/boot/undoShortcut.ts).
-  await draw(page, [
+  await drawCommittedStroke(page, [
     { x: 120, y: 120 },
     { x: 260, y: 200 },
   ]);

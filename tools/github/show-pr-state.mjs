@@ -11,7 +11,7 @@ const REVIEW_PAGE_SIZE = 100;
 
 function reviewThreads(number, repository, run) {
   const [owner, name] = repository.split('/');
-  const query = `query($owner:String!,$name:String!,$number:Int!,$after:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:${REVIEW_PAGE_SIZE},after:$after){pageInfo{hasNextPage endCursor} nodes{id isResolved path line comments(first:1){totalCount}}}}}}`;
+  const query = `query($owner:String!,$name:String!,$number:Int!,$after:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:${REVIEW_PAGE_SIZE},after:$after){pageInfo{hasNextPage endCursor} nodes{id isResolved path line}}}}}`;
   const threads = [];
   let cursor;
   let hasNextPage;
@@ -90,7 +90,7 @@ export function collectPrState({ number, repository, run = runGitHub }) {
     );
   }
 
-  return { repository: repo, pr, checks, threads, checksMayStillRegister: true };
+  return { repository: repo, pr, checks, threads };
 }
 
 export function formatPrState({ repository, pr, checks, threads }) {

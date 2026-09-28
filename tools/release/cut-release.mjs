@@ -77,7 +77,7 @@ export const findStrayReleasePaths = (status) =>
     .filter((path) => !isReleasePath(path));
 
 const RELEASE_USAGE =
-  'Usage: node tools/release/cut-release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0';
+  'Usage: node tools/release/cut-release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0, with no prerelease suffix';
 
 // Strict parsing is the safety here: a mistyped --dry-run must not fall through
 // to the real publish path, so an unknown flag is rejected rather than ignored.
@@ -119,19 +119,55 @@ function releasePath(version) {
   return file;
 }
 
+// The largest versionCode Google Play accepts. A pin above it, or one too long for
+// Number to hold exactly, would write a different code into Gradle than the file pins.
+const PLAY_MAX_VERSION_CODE = 2_100_000_000;
+
+// Play rejects an upload whose versionCode does not move past the last one, and
+// only after this script has tagged, pushed, and created the GitHub Release, so a
+// bad pin fails here instead. A blank `androidVersionCode:` is unpinned. A pin
+// equal to the Gradle code is a re-run of this version after an earlier cut or
+// dry run already bumped Gradle to it.
+export function chooseVersionCode({ pin, version, gradleCode, gradleVersionName }) {
+  if (!Number.isInteger(gradleCode)) {
+    throw new Error('android/app/build.gradle has no versionCode line');
+  }
+  if (!pin) return { versionCode: gradleCode + 1, pinned: false };
+  const versionCode = Number(pin);
+  if (!/^\d+$/.test(pin) || versionCode > PLAY_MAX_VERSION_CODE) {
+    throw new Error(
+      `${version}.md: androidVersionCode must be a whole number up to ` +
+        `${PLAY_MAX_VERSION_CODE}, got "${pin}"`
+    );
+  }
+  const rerun = versionCode === gradleCode && gradleVersionName === version;
+  if (versionCode <= gradleCode && !rerun) {
+    throw new Error(
+      `${version}.md pins androidVersionCode ${versionCode}, which does not move past ` +
+        `versionCode ${gradleCode} (versionName ${gradleVersionName}) in android/app/build.gradle`
+    );
+  }
+  return { versionCode, pinned: true };
+}
+
 function resolveVersionCode(releaseFile, version) {
   const gradle = readFileSync(join(ROOT, 'android', 'app', 'build.gradle'), 'utf8');
-  const currentCode = Number(gradle.match(/versionCode\s+(\d+)/)?.[1] ?? 0);
   const parsed = parseFrontmatter(readFileSync(releaseFile, 'utf8'));
   if (!parsed) fail(`${releaseFile}: malformed frontmatter`);
   let { frontmatter } = parsed;
   const { body } = parsed;
-  const pinned = Number(parsed.meta.androidVersionCode);
-  const versionCode = Number.isInteger(pinned) ? pinned : currentCode + 1;
+  const { versionCode, pinned } = parseOrFail(() =>
+    chooseVersionCode({
+      pin: parsed.meta.androidVersionCode,
+      version,
+      gradleCode: Number(gradle.match(/^\s*versionCode\s+(\d+)\s*$/m)?.[1]),
+      gradleVersionName: gradle.match(/^\s*versionName\s+"([^"]*)"\s*$/m)?.[1],
+    })
+  );
 
-  if (!Number.isInteger(pinned)) {
-    frontmatter = /androidVersionCode:/.test(frontmatter)
-      ? frontmatter.replace(/androidVersionCode:.*/i, `androidVersionCode: ${versionCode}`)
+  if (!pinned) {
+    frontmatter = /^androidVersionCode:/m.test(frontmatter)
+      ? frontmatter.replace(/^androidVersionCode:.*$/m, `androidVersionCode: ${versionCode}`)
       : `${frontmatter}\nandroidVersionCode: ${versionCode}`;
     writeFileSync(releaseFile, renderReleaseFile(frontmatter, body));
     console.log(`Pinned androidVersionCode: ${versionCode} in ${version}.md`);

@@ -5,9 +5,9 @@ import { join } from 'node:path';
 
 const OID_PATTERN = /^[0-9a-f]{40}$/;
 const GIT_OUTPUT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
-export const SCOPE_KINDS = Object.freeze(['uncommitted', 'base', 'commit', 'pr']);
 
-export function git(repoRoot, args, { env, allowFailure = false } = {}) {
+// `raw` keeps the output byte-exact: a patch's last context line can be a lone space.
+export function git(repoRoot, args, { env, allowFailure = false, raw = false } = {}) {
   const result = spawnSync('git', ['-C', repoRoot, ...args], {
     encoding: 'utf8',
     env: env ? { ...process.env, ...env } : process.env,
@@ -23,7 +23,7 @@ export function git(repoRoot, args, { env, allowFailure = false } = {}) {
     if (allowFailure) return undefined;
     throw new Error(`git ${args.join(' ')} exited ${result.status}: ${result.stderr.trim()}`);
   }
-  return result.stdout.trim();
+  return raw ? result.stdout : result.stdout.trim();
 }
 
 function requireOid(value, what) {
@@ -151,7 +151,7 @@ export function writeReviewPacket(repoRoot, { base, head, description }, directo
   const range = `${base}...${head}`;
   writeFileSync(
     join(directory, PACKET_FILES.diff),
-    `${git(repoRoot, ['diff', `--unified=${DIFF_CONTEXT_LINES}`, range])}\n`
+    git(repoRoot, ['diff', `--unified=${DIFF_CONTEXT_LINES}`, range], { raw: true })
   );
   writeFileSync(
     join(directory, PACKET_FILES.commits),

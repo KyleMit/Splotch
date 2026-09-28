@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { ANDROID_UA, draw, gotoApp } from './helpers';
+import {
+  ANDROID_UA,
+  BANNER_MOUNT_TIMEOUT_MS,
+  INSTALL_BANNER_AUTO_CLEAR_STROKES,
+  INSTALL_BANNER_EARNING_STROKES,
+  drawInstallBannerStrokes,
+  gotoApp,
+} from './helpers';
 
 test.use({
   userAgent: ANDROID_UA,
@@ -20,13 +27,6 @@ test.use({
 // that the failure it predicts), against ~20x for every assertion around it.
 const PARTING_EXIT_TIMEOUT_MS = 20_000;
 
-// The banner prewarms near the end of the interaction-quiet overlay pump. If
-// three strokes beat it, the earned state demands it in the same flush that
-// releases deferred service-worker registration (routes/+page.svelte). The
-// demand path keeps that network work from delaying the visible banner, while
-// this timeout still covers a loaded worker's component import and rendering.
-const BANNER_MOUNT_TIMEOUT_MS = 20_000;
-
 test('the install banner parts after five additional strokes', async ({ page }) => {
   // Eight strokes plus that fixed ~4.6s exit measured 17.7s at 8 workers, so the
   // default 30s per-test budget is the tightest bound in the spec once latency
@@ -35,30 +35,15 @@ test('the install banner parts after five additional strokes', async ({ page }) 
   await gotoApp(page);
   const banner = page.locator('.install-banner');
 
-  for (let stroke = 0; stroke < 2; stroke += 1) {
-    const y = 120 + stroke * 40;
-    await draw(page, [
-      { x: 100, y },
-      { x: 280, y: y + 20 },
-    ]);
-  }
+  await drawInstallBannerStrokes(page, INSTALL_BANNER_EARNING_STROKES - 1);
   await expect(banner).toHaveCount(0);
 
-  await draw(page, [
-    { x: 100, y: 200 },
-    { x: 280, y: 220 },
-  ]);
+  await drawInstallBannerStrokes(page, 1);
   await expect(banner).toContainText('Add Splotch to your home screen', {
     timeout: BANNER_MOUNT_TIMEOUT_MS,
   });
 
-  for (let stroke = 3; stroke < 8; stroke += 1) {
-    const y = 120 + stroke * 40;
-    await draw(page, [
-      { x: 100, y },
-      { x: 280, y: y + 20 },
-    ]);
-  }
+  await drawInstallBannerStrokes(page, INSTALL_BANNER_AUTO_CLEAR_STROKES);
 
   await expect(banner.locator('.install-parting')).toContainText(
     'No rush — these steps are always in Settings.'
@@ -85,13 +70,7 @@ test('the fifth qualifying session re-shows the banner with return-aware copy', 
   await gotoApp(page);
   const banner = page.locator('.install-banner');
 
-  for (let stroke = 0; stroke < 3; stroke += 1) {
-    const y = 120 + stroke * 40;
-    await draw(page, [
-      { x: 100, y },
-      { x: 280, y: y + 20 },
-    ]);
-  }
+  await drawInstallBannerStrokes(page);
 
   await expect(banner).toContainText('Welcome back! Add Splotch to your home screen', {
     timeout: BANNER_MOUNT_TIMEOUT_MS,
@@ -127,13 +106,7 @@ test('the final re-prompt points parents back to Settings', async ({ page }) => 
   await gotoApp(page);
   const banner = page.locator('.install-banner');
 
-  for (let stroke = 0; stroke < 3; stroke += 1) {
-    const y = 120 + stroke * 40;
-    await draw(page, [
-      { x: 100, y },
-      { x: 280, y: y + 20 },
-    ]);
-  }
+  await drawInstallBannerStrokes(page);
 
   await expect(banner).toContainText('One last reminder — install Splotch', {
     timeout: BANNER_MOUNT_TIMEOUT_MS,
