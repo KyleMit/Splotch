@@ -27,8 +27,8 @@ import {
 } from '$lib/state/freeGenerations.svelte';
 import { openAiSettings } from '$lib/state/ui.svelte';
 import { exportCanvasBlob } from './engine';
-import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
-import { awaitGeneration, generationResultUrl } from './aiGenerationPoll';
+import { readAiImageResponse } from './aiImageResponse';
+import { awaitGeneration, generationResultUrl, type SettledGeneration } from './aiGenerationPoll';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { THROTTLED_STATUS } from '$lib/ai/generationResult';
 import { autoSaveImages } from './aiAutoSave';
@@ -101,22 +101,11 @@ function buildRequest(
 // the image landed and the run still owns the UI, proving it is safe to auto-save.
 function applyResponse(
   runId: number,
-  response: AiImageResponse,
+  response: SettledGeneration,
   reportToken: string | null,
   endpoint: AiFailureDetails['endpoint']
 ): { committedBlob: Blob } | null {
   switch (response.kind) {
-    case 'started':
-    case 'pending':
-      // A ticket is always collected before this, so 'started' never arrives.
-      // 'pending' can: a start response that accepted the work without a
-      // readable ticket. Either way no picture came back, and the same drawing
-      // may work.
-      failAiGeneration(runId, {
-        errorKind: 'retry',
-        details: { status: null, endpoint, message: 'The server did not finish the picture.' },
-      });
-      return null;
     case 'safety':
       failAiGeneration(runId, { errorKind: 'safety', reportToken });
       return null;
@@ -176,7 +165,7 @@ async function collectGeneration(
   pollAfterMs: number,
   signal: AbortSignal,
   credentialHeaders: Record<string, string>
-): Promise<{ response: AiImageResponse; headers: Headers }> {
+): Promise<{ response: SettledGeneration; headers: Headers }> {
   let headers = new Headers();
   const response = await awaitGeneration(jobId, pollAfterMs, signal, {
     // The poll's signal, not the caller's: it carries the wait deadline as well
@@ -258,6 +247,19 @@ export async function generateAiImage({
           )
         : { response: started, headers: res.headers };
     applyFreeRemaining(settledHeaders);
+    // A start response that accepted the work without a readable ticket: no
+    // picture came back, and the same drawing may work.
+    if (response.kind === 'pending') {
+      failAiGeneration(runId, {
+        errorKind: 'retry',
+        details: {
+          status: null,
+          endpoint: failureEndpoint,
+          message: 'The server did not finish the picture.',
+        },
+      });
+      return;
+    }
     const committed = applyResponse(
       runId,
       response,
