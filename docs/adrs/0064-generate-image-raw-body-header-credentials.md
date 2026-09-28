@@ -3,6 +3,10 @@
 **Status:** Active\
 **Date:** 2026-07-18
 
+**Amended 2026-09-27:** a missing `Content-Type` (or a legacy multipart `image` part with no type)
+is refused with `415` rather than defaulted to PNG. The server does not sniff the bytes, so a
+default would forward unidentified bytes to the paid provider; every shipped client sends a type.
+
 ## Context
 
 `/api/generate-image` originally accepted `multipart/form-data`: the PNG in an `image` field, the
@@ -28,7 +32,7 @@ input is the `style` **enum key**, which the server maps through an allowlist in
 The **client** contract for `POST /api/generate-image` is:
 
 * **Body:** the raw image bytes. `Content-Type: image/png | image/jpeg | image/webp` carries the
-  type (an absent type defaults to PNG); the server validates it against the same allowlist and
+  type; the server validates it against the same allowlist, refusing a missing type as `415`, and
   reads the bytes through the shared size-capped stream reader.
 * **Credentials — in headers, never the query string:** `X-Access-Token: <managed token>` **or**
   `X-Api-Key: <BYO Gemini key>` (mutually exclusive; a key takes the BYOK path). Request headers are

@@ -6,8 +6,9 @@ import { STYLE_SUFFIXES, isStyleName, type StyleName } from '../ai/styles.ts';
 export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+export type AllowedImageType = (typeof ALLOWED_IMAGE_TYPES)[number];
 
-export function isAllowedImageType(mimeType: string): boolean {
+export function isAllowedImageType(mimeType: string): mimeType is AllowedImageType {
   return ALLOWED_IMAGE_TYPES.some((allowedType) => allowedType === mimeType);
 }
 

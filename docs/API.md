@@ -58,15 +58,15 @@ generate-image's managed path, valid traffic is deliberately keyed per token, no
 
 Generates a stylized image from a drawing. The current contract is the **raw image bytes as the
 body** — the client uploads a high-quality **WebP** (`Content-Type: image/webp`) to keep the payload
-small; the allowlist is `image/png`, `image/jpeg`, `image/webp`, and an absent type defaults to PNG.
-There is no multipart envelope for the buffered function to parse and copy (ADR-0064). The
-credential rides in a header, **never** the query string, because both are secrets that would
-otherwise leak into access logs, browser history, and `Referer`: send
+small; the allowlist is `image/png`, `image/jpeg`, `image/webp`, and the type is required because
+the server never sniffs the bytes. There is no multipart envelope for the buffered function to parse
+and copy (ADR-0064). The credential rides in a header, **never** the query string, because both are
+secrets that would otherwise leak into access logs, browser history, and `Referer`: send
 `X-Access-Token: <allow-listed access token>` **or** `X-Api-Key: <BYO OpenAI key>` (mutually
 exclusive; a key takes the BYOK path). The non-secret style enum is the one field in the URL —
 `?style=Magical` (any value not in `STYLE_SUFFIXES` is ignored and the base prompt is used). The
-body is capped at 15 MiB (`413`); a present, non-allow-listed `Content-Type` is `415`; an empty body
-is `400`.
+body is capped at 15 MiB (`413`); a missing or non-allow-listed `Content-Type` is
+`415 "Unsupported image type"`, checked before the body is read; an empty body is `400`.
 
 A client that sends `X-Async-Generation: 1` is saying it can collect the picture in a later request.
 When a background worker is reachable, the response is then **`202`** with
