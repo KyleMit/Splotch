@@ -16,7 +16,7 @@ import {
   type ReduceMotionPreference,
 } from '$lib/platform/reducedMotion';
 import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
-import type { CredentialKind } from '$lib/aiCredential';
+import type { VerifiedCredentialKind } from '$lib/ai/verifyCredential';
 import type { Orientation } from '$lib/platform';
 import {
   OPTIONAL_BRUSH_TYPES,
@@ -226,10 +226,11 @@ const OPTIONAL_BRUSH_SETTING = {
 } as const satisfies Record<OptionalBrushType, BoolSettingKey>;
 
 // Extends the verification vocabulary rather than restating it, so a new
-// credential kind cannot compile in aiCredential.ts while being silently absent
-// from persisted-state classification. 'none' is this module's own addition:
-// verification always has a kind, but stored state may have neither credential.
-type AiCredentialKind = CredentialKind | 'none';
+// credential kind cannot verify in verifyCredential.ts while being silently
+// absent from persisted-state classification. Only kinds that pass verification
+// can be held. 'none' is this module's own addition: verification always has a
+// kind, but stored state may have neither credential.
+type AiCredentialKind = VerifiedCredentialKind | 'none';
 
 interface SettingsMutators {
   setSound(v: boolean): void;
@@ -388,6 +389,8 @@ export function createSettings(tool: ToolState): SettingsState {
     },
     // Which AI credential is "active" when both happen to be set (nothing clears
     // one when the other is submitted): a BYOK key wins over an access code.
+    // The only owner of that rule — the request headers in ai/credentials.ts and
+    // every "has a credential" check ask this instead of reading the raw fields.
     aiCredentialKind() {
       if (s.aiUserApiKey) return 'apiKey';
       if (s.aiAccessToken) return 'accessCode';

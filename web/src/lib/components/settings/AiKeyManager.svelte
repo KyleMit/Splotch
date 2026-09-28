@@ -14,8 +14,9 @@
   import {
     verifyCredential,
     type CredentialKind,
+    type VerifiedCredentialKind,
     type VerifyCredentialResult,
-  } from '$lib/aiCredential';
+  } from '$lib/ai/verifyCredential';
   import {
     createLatestRequest,
     NETWORK_ERROR_MESSAGE,
@@ -27,11 +28,13 @@
   import '$lib/components/deferredIcons';
 
   // The copy for every kind-dependent outcome of a submission, so each terminal
-  // branch of `submitKey` is a single lookup rather than an inline ternary.
-  const KEY_MESSAGES: Record<
-    'invalid' | 'saveFailed' | 'accepted',
-    Record<CredentialKind, string>
-  > = {
+  // branch of `submitKey` is a single lookup rather than an inline ternary. Only
+  // a verified kind reaches saving, so only those carry save and accept copy.
+  const KEY_MESSAGES: {
+    invalid: Record<CredentialKind, string>;
+    saveFailed: Record<VerifiedCredentialKind, string>;
+    accepted: Record<VerifiedCredentialKind, string>;
+  } = {
     invalid: {
       apiKey: "That key didn't work. Double-check it and try again.",
       accessCode: "That doesn't look like a valid key or access code. Please try again.",
@@ -51,15 +54,10 @@
         'Your key works, but could not be saved securely on this device. Close and reopen Splotch, then try again.',
       accessCode:
         'Your credential works, but could not be saved securely. Close and reopen Splotch, then try again.',
-      // Unreachable: neither of these verifies, so neither reaches saving.
-      retiredGeminiKey: 'That key could not be saved securely on this device.',
-      checkUnavailable: 'That key could not be saved securely on this device.',
     },
     accepted: {
       apiKey: 'Your key works and has been accepted!',
       accessCode: 'Access granted! You have special access — no API key needed.',
-      retiredGeminiKey: '',
-      checkUnavailable: '',
     },
   };
 
@@ -74,7 +72,7 @@
     apiKey: 'Your key could not be removed securely. Close and reopen Splotch, then try again.',
     accessCode:
       'Your access code could not be removed securely. Close and reopen Splotch, then try again.',
-  } satisfies Record<'apiKey' | 'accessCode', string>;
+  } satisfies Record<VerifiedCredentialKind, string>;
 
   interface Props {
     // `open` flips true when the Settings modal opens; we use it to clear
@@ -126,7 +124,7 @@
   // Throws when the credential could not be stored; returns false when a newer
   // submitKey superseded this one and its outcome should be discarded.
   async function persistCredential(
-    result: VerifyCredentialResult,
+    result: Extract<VerifyCredentialResult, { ok: true }>,
     value: string,
     id: number
   ): Promise<boolean> {
@@ -134,7 +132,7 @@
     const persisted =
       result.kind === 'apiKey'
         ? await setAiUserApiKey(value, ownsRequest)
-        : await setUserSubmittedAiAccessToken(result.accessCode || value, ownsRequest);
+        : await setUserSubmittedAiAccessToken(result.accessCode, ownsRequest);
     // A write the coordinator refused while this request was still current is
     // a storage failure the parent must hear about, not a superseded request.
     if (!persisted && ownsRequest()) throw new Error('Credential write refused');
@@ -183,7 +181,7 @@
     }
   }
 
-  async function forgetCredential(kind: 'apiKey' | 'accessCode', clear: () => Promise<boolean>) {
+  async function forgetCredential(kind: VerifiedCredentialKind, clear: () => Promise<boolean>) {
     try {
       const forgotten = await clear();
       if (!forgotten) throw new Error('Credential write refused');
