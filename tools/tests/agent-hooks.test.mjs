@@ -51,40 +51,44 @@ function hookCommands(config) {
   );
 }
 
-function closingParen(command, from) {
-  let depth = 1;
-  for (let i = from; i < command.length; i++) {
-    if (command[i] === '(') depth++;
-    else if (command[i] === ')' && --depth === 0) return i;
-  }
-  return command.length;
-}
-
-// A command substitution opens a fresh quoting context, so its body is scanned on its own: the
-// quotes around "$(dirname $DIR)" do not protect the $DIR inside it.
-function unquotedExpansions(command) {
+// A command substitution opens a fresh quoting context, so its body is scanned by a recursive call
+// with its own quote state: the quotes around "$(dirname $DIR)" do not protect the $DIR inside it,
+// and a quoted `)` inside the body does not close it.
+function scanExpansions(command, start, inSubstitution) {
   const found = [];
   let quote = null;
-  for (let i = 0; i < command.length; i++) {
+  let depth = 0;
+  for (let i = start; i < command.length; i++) {
     const char = command[i];
     if (quote === "'") {
       if (char === "'") quote = null;
     } else if (char === '\\') {
       i++;
     } else if (command.startsWith('$(', i)) {
-      const end = closingParen(command, i + 2);
-      if (!quote) found.push(command.slice(i, end + 1));
-      found.push(...unquotedExpansions(command.slice(i + 2, end)));
-      i = end;
+      const body = scanExpansions(command, i + 2, true);
+      if (!quote) found.push(command.slice(i, body.end + 1));
+      found.push(...body.found);
+      i = body.end;
     } else if (char === '"') {
       quote = quote ? null : '"';
-    } else if (char === "'" && !quote) {
+    } else if (quote) {
+      continue;
+    } else if (char === "'") {
       quote = "'";
-    } else if (char === '$' && !quote) {
+    } else if (char === '$') {
       found.push(/^\$(\{[^}]*\}|\w+)/.exec(command.slice(i))?.[0] ?? '$');
+    } else if (char === '(') {
+      depth++;
+    } else if (char === ')' && inSubstitution) {
+      if (depth === 0) return { found, end: i };
+      depth--;
     }
   }
-  return found;
+  return { found, end: command.length };
+}
+
+function unquotedExpansions(command) {
+  return scanExpansions(command, 0, false).found;
 }
 
 function writeExecutable(path, body) {
@@ -151,6 +155,10 @@ describe('agent hook commands', () => {
       '$CLAUDE_PROJECT_DIR',
     ]);
     expect(unquotedExpansions('node "$(dirname "$CLAUDE_PROJECT_DIR")/tools/x.mjs"')).toEqual([]);
+    expect(
+      unquotedExpansions(`node "$(printf ')'; dirname $CLAUDE_PROJECT_DIR)/tools/x.mjs"`)
+    ).toEqual(['$CLAUDE_PROJECT_DIR']);
+    expect(unquotedExpansions('node "$( (cd "$CLAUDE_PROJECT_DIR"; pwd) )/x.mjs"')).toEqual([]);
     expect(unquotedExpansions('"$CLAUDE_PROJECT_DIR"/.claude/hooks/x.sh')).toEqual([]);
     expect(unquotedExpansions('node "$CLAUDE_PROJECT_DIR/x.mjs" --runner=claude')).toEqual([]);
     expect(unquotedExpansions(`echo '$HOME' \\$HOME`)).toEqual([]);
