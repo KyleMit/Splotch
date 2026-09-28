@@ -209,7 +209,8 @@
   <p class="sub-intro">
     Text a screen reader announces and the page never shows, such as the word an icon stands in for
     or what a badge means. It renders a <code>span</code>; a <code>role="status"</code> announcement
-    takes <code>as="p"</code>.
+    takes <code>as="p"</code>, and a field shown with only a placeholder takes
+    <code>as="label"</code> with <code>for</code>.
   </p>
   <p class="hidden-demo">
     Open the <Icon name="more-vert" class="hidden-demo-icon" aria-hidden="true" /><VisuallyHidden
