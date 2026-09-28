@@ -26,6 +26,10 @@ import {
 let root;
 let repo;
 const LARGE_GIT_OUTPUT_BYTES = 2 * 1024 * 1024;
+// The pnpmfile test launches pnpm three times and installs nothing (the fixture has no
+// dependencies), so its runtime is process launch alone: about 0.6 s on a Mac, 2.7–3.0 s on a
+// CI runner, and 5.57 s on a loaded one, which failed Vitest's default 5 s timeout.
+const PNPM_LAUNCHES_TIMEOUT_MS = 20_000;
 
 function sh(args, cwd = repo) {
   return execFileSync('git', args, {
@@ -130,36 +134,40 @@ describe('disposable worktree and packet', () => {
 
   // `--ignore-scripts` alone left pnpmfile hooks running at launch; the control run proves the
   // marker would appear without the pin, so the assertion is not vacuous.
-  it('installs without running a PR-controlled pnpmfile hook', () => {
-    const project = join(root, 'pnpmfile-project');
-    mkdirSync(project);
-    writeFileSync(
-      join(project, 'package.json'),
-      JSON.stringify({ name: 'probe', private: true, version: '0.0.0' })
-    );
-    writeFileSync(
-      join(project, '.pnpmfile.cjs'),
-      'const fs = require("node:fs");\nmodule.exports = { hooks: { readPackage(pkg) { fs.writeFileSync("hook.marker", "ran"); return pkg; } } };\n'
-    );
-    const pnpm = (args) =>
-      spawnSync('pnpm', args, {
-        cwd: project,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-    const marker = join(project, 'hook.marker');
-    expect(pnpm(['install', '--lockfile-only', '--ignore-scripts']).status).toBe(0);
-    rmSync(marker, { force: true });
+  it(
+    'installs without running a PR-controlled pnpmfile hook',
+    { timeout: PNPM_LAUNCHES_TIMEOUT_MS },
+    () => {
+      const project = join(root, 'pnpmfile-project');
+      mkdirSync(project);
+      writeFileSync(
+        join(project, 'package.json'),
+        JSON.stringify({ name: 'probe', private: true, version: '0.0.0' })
+      );
+      writeFileSync(
+        join(project, '.pnpmfile.cjs'),
+        'const fs = require("node:fs");\nmodule.exports = { hooks: { readPackage(pkg) { fs.writeFileSync("hook.marker", "ran"); return pkg; } } };\n'
+      );
+      const pnpm = (args) =>
+        spawnSync('pnpm', args, {
+          cwd: project,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+      const marker = join(project, 'hook.marker');
+      expect(pnpm(['install', '--lockfile-only', '--ignore-scripts']).status).toBe(0);
+      rmSync(marker, { force: true });
 
-    const withoutPin = WORKTREE_INSTALL_ARGS.filter((arg) => arg !== '--ignore-pnpmfile');
-    expect(pnpm(withoutPin).status).toBe(0);
-    expect(existsSync(marker)).toBe(true);
-    rmSync(marker, { force: true });
-    rmSync(join(project, 'node_modules'), { recursive: true, force: true });
+      const withoutPin = WORKTREE_INSTALL_ARGS.filter((arg) => arg !== '--ignore-pnpmfile');
+      expect(pnpm(withoutPin).status).toBe(0);
+      expect(existsSync(marker)).toBe(true);
+      rmSync(marker, { force: true });
+      rmSync(join(project, 'node_modules'), { recursive: true, force: true });
 
-    pnpm([...WORKTREE_INSTALL_ARGS]);
-    expect(existsSync(marker)).toBe(false);
-  });
+      pnpm([...WORKTREE_INSTALL_ARGS]);
+      expect(existsSync(marker)).toBe(false);
+    }
+  );
 
   it('checks the head out detached, writes the packet, and removes cleanly', () => {
     const scope = resolveScope(repo, { kind: 'base', base: 'main' });
