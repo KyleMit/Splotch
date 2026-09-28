@@ -6,6 +6,7 @@ import {
   GENERATION_JOB_TTL_MS,
   GENERATION_POLL_TIMEOUT_MS,
   GENERATE_DEADLINE_MS,
+  GITHUB_REQUEST_TIMEOUT_MS,
   NETLIFY_SYNC_TIMEOUT_MS,
   VERIFY_KEY_DEADLINE_MS,
 } from './limits';
@@ -18,6 +19,14 @@ describe('AI deadline ladder (ADR-0063)', () => {
 
   it('keeps the key probe well under the generation deadline', () => {
     expect(VERIFY_KEY_DEADLINE_MS).toBeLessThan(GENERATE_DEADLINE_MS);
+  });
+
+  it('leaves a BYOK image report room to check the key, open the issue, and clean up', () => {
+    // The key probe and the issue call run back to back in one invocation; the
+    // evidence write and its delete on failure need the headroom that is left.
+    expect(VERIFY_KEY_DEADLINE_MS + GITHUB_REQUEST_TIMEOUT_MS).toBeLessThan(
+      NETLIFY_SYNC_TIMEOUT_MS
+    );
   });
 
   it('keeps a job collectible for longer than the client will wait for it', () => {

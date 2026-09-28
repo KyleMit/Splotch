@@ -149,11 +149,14 @@ A **`422`** means the model refused the drawing on **safety** grounds — the ch
 something *different* (the app shows "let's try drawing something else!"). Every such response
 carries a credential-bound `X-Report-Token` with the signed provider reason, so a parent can
 explicitly report a possible false positive without making the refused drawing durable first. A
-**`502`** is a genuine upstream/empty failure (retryable). The route talks to the model through the
-provider-agnostic `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the
-vendor SDK never appears in route code. The safety vs. empty/error split is decided by
-`classifyOpenAiResponse` / `isSafetyError` in `web/src/lib/server/ai/openaiSafety.ts`, and probed by
-the manual red-team suite (`npm run redteam`, `tools/redteam/`).
+**`502`** is a genuine upstream/empty failure (retryable). A managed or free request on a deploy
+with no project OpenAI key is `503`, as `/api/free-generation-grant` answers the same gap; the body
+names no configuration, and the `[generate-image]` log line tells the operator which key is unset.
+BYOK requests never need that key. The route talks to the model through the provider-agnostic
+`AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
+appears in route code. The safety vs. empty/error split is decided by `classifyOpenAiResponse` /
+`isSafetyError` in `web/src/lib/server/ai/openaiSafety.ts`, and probed by the manual red-team suite
+(`npm run redteam`, `tools/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
 upstream, and throttling responses, uses the canonical JSON body:
@@ -294,7 +297,7 @@ clients build it through `postFeedbackReport` (`web/src/lib/reportClient.ts`), a
 { "ok": false, "error": "Please type a short description." }
 // 503 — GITHUB_ISSUE_TOKEN not configured on this instance
 { "ok": false, "error": "Reporting is not available right now. Please try again later." }
-// 502 — GitHub rejected the create
+// 502 — GitHub rejected the create, or gave no answer within GITHUB_REQUEST_TIMEOUT_MS
 { "ok": false, "error": "Could not send your report. Please try again later." }
 ```
 
@@ -371,7 +374,13 @@ one opaque report-id prefix. Every bundle contains the input drawing, resolved `
 provider refusal reason when applicable); a picture report additionally contains the output image.
 The support issue and metadata categorize refusals as `false-positive-refusal` and expose that
 server-authenticated reason to the reviewer. If private notification fails, the bundle is deleted
-and the request fails rather than leaving unreachable evidence.
+and the request fails rather than leaving unreachable evidence. That includes a GitHub call that
+stalls: it is abandoned at `GITHUB_REQUEST_TIMEOUT_MS` (`web/src/lib/ai/limits.ts`), which ADR-0063
+sizes so that the key check plus the issue call leave part of the platform ceiling for the evidence
+write and its delete. Neither storage call has a deadline of its own, so a storage stall can still
+reach the platform kill, and a delete that fails leaves the bundle to the scheduled purge. An
+abandoned call's outcome is unknown: GitHub may have opened the issue anyway, which then names a
+deleted bundle. The parent is told the report failed, and a retry files a complete one.
 
 A scheduled `netlify/functions/purge-image-reports.ts` function scans every paginated store page
 daily and deletes report objects older than 30 days. Humans commit to reviewing reports within 24
@@ -392,7 +401,11 @@ hours. See ADR-0104.
 { "ok": false, "error": "That AI report is too large to send." }
 // 403 — invalid or expired generation credential
 { "ok": false, "error": "Invalid access token" }
-// 503 — private reporting or evidence storage unavailable
+// 403 — OpenAI refused the BYO key
+{ "ok": false, "error": "Invalid API key" }
+// 502 — the private issue could not be opened (rejected or timed out); the bundle is deleted
+{ "ok": false, "error": "Could not send your AI report. Please try again later." }
+// 503 — private reporting or evidence storage unavailable, or the BYO key check got no answer
 { "ok": false, "error": "AI reporting is not available right now. Please try again later." }
 ```
 
