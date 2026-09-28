@@ -72,12 +72,16 @@ export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
 // native wrote under one would not survive a WebView eviction.
 // storageKeys.webOnly.test.ts holds every writer to the guard that keeps it off
 // native.
+//
+// Listed by value, which the StorageKey annotation checks, rather than as
+// STORAGE_KEYS reads: the bundler keeps a module-level property read even when
+// nothing uses the list, and the web build never does.
 export const WEB_ONLY_STORAGE_KEYS: readonly StorageKey[] = [
-  STORAGE_KEYS.installDismissed,
-  STORAGE_KEYS.installCompleted,
-  STORAGE_KEYS.installRepromptSessionCount,
-  STORAGE_KEYS.installRepromptsUsed,
-  STORAGE_KEYS.freeGenerationInstallation,
-  STORAGE_KEYS.saveFolderChosen,
-  STORAGE_KEYS.secureVaultEmpty,
+  'splotch-install-dismissed',
+  'splotch-install-completed',
+  'splotch-install-reprompt-session-count',
+  'splotch-install-reprompts-used',
+  'splotch-free-generation-installation-v1',
+  'splotch-save-folder-chosen',
+  'splotch-secure-vault-empty',
 ];
