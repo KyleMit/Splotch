@@ -24,6 +24,8 @@ describe('Button props', () => {
     }>().toExtend<ButtonProps>();
   });
 
+  // toExtend is structural, the relation a spread of props gets: these hold
+  // without the excess-property check that only written-out attributes get.
   it('rejects a link that asks to be disabled or busy, which the anchor cannot render', () => {
     expectTypeOf<{ href: string; disabled: true; children: Snippet }>().not.toExtend<ButtonProps>();
     expectTypeOf<{ href: string; busy: true; children: Snippet }>().not.toExtend<ButtonProps>();

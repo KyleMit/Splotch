@@ -23,9 +23,12 @@
   }
 
   /**
-   * The same chrome on an `<a>`. The anchor renders only these props, so any
-   * other prop is a type error at the call site rather than silently dropped:
-   * a link cannot be disabled or busy.
+   * The same chrome on an `<a>`, which renders only these props. `disabled`
+   * and `busy` are `never`, so a link can be neither, even through a spread.
+   * Other button attributes are rejected by the excess-property check
+   * on attributes written at the call site, which a spread bypasses; making
+   * every one `never` pushes the props type past what TypeScript can
+   * represent in `svelte/server`'s `render`.
    */
   interface LinkProps extends ChromeProps {
     href: string;
