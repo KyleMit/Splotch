@@ -24,9 +24,6 @@ const COMPLIANCE_DOC_PATH = 'docs/MOBILE/compliance.md';
 const API_DOC_PATH = 'docs/API.md';
 const IMAGE_REPORT_ADR_PATH = 'docs/adrs/0104-retain-reported-ai-images-for-thirty-days.md';
 const GENERATION_JOB_ADR_PATH = 'docs/adrs/0115-background-generation-jobs.md';
-// Netlify reads a scheduled function's `config` statically, so the schedule stays
-// a literal in the function file and is read back from there.
-const NETLIFY_SCHEDULE = /\bschedule:\s*'@(\w+)'/;
 
 function filesUnder(directory) {
   return readdirSync(new URL(`../../../${directory}/`, import.meta.url), { withFileTypes: true })
@@ -67,6 +64,30 @@ function absoluteUrlHosts(path) {
   };
   visit(source);
   return hosts;
+}
+
+// Netlify reads a scheduled function's exported `config` statically, so the
+// schedule stays a literal there. It is parsed rather than matched as text,
+// which would also match a stale schedule quoted in a comment.
+function scheduledCadence(path) {
+  const source = ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest);
+  const config = source.statements
+    .filter((statement) => ts.isVariableStatement(statement))
+    .filter(({ modifiers }) => modifiers?.some(({ kind }) => kind === ts.SyntaxKind.ExportKeyword))
+    .flatMap(({ declarationList }) => declarationList.declarations)
+    .find(({ name }) => ts.isIdentifier(name) && name.text === 'config')?.initializer;
+  const schedule =
+    config && ts.isObjectLiteralExpression(config)
+      ? config.properties.find(
+          (property) =>
+            ts.isPropertyAssignment(property) &&
+            ts.isIdentifier(property.name) &&
+            property.name.text === 'schedule'
+        )?.initializer
+      : undefined;
+  return schedule && ts.isStringLiteralLike(schedule)
+    ? /^@(\w+)$/.exec(schedule.text)?.[1]
+    : undefined;
 }
 
 describe('privacy disclosure consistency', () => {
@@ -175,10 +196,13 @@ describe('privacy disclosure consistency', () => {
   }
 
   for (const retention of privacyInventory.retentionBoundaries.filter(
-    ({ cleanupImplementation }) => cleanupImplementation
+    ({ boundary }) => boundary.cleanupCadence !== undefined
   )) {
     it(`runs the ${retention.id} cleanup on the cadence the policy states`, () => {
-      const cadence = NETLIFY_SCHEDULE.exec(read(retention.cleanupImplementation))?.[1];
+      expect(retention.cleanupImplementation, retention.id).toMatch(
+        /^netlify\/functions\/[\w-]+\.ts$/
+      );
+      const cadence = scheduledCadence(retention.cleanupImplementation);
 
       expect(cadence, retention.cleanupImplementation).toBe(retention.boundary.cleanupCadence);
       expect(
