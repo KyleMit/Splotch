@@ -9,8 +9,7 @@
     initDrawingCanvas,
     setColor,
     setStrokeWidth,
-    setEraserMode,
-    setMagicMode,
+    setBrush,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -18,7 +17,6 @@
     prepareCanvasExport,
     exportCanvasBlob,
     getUndoDebug,
-    setCrayonMode,
     setCrayonParams,
     setScreenAngleOverride,
     getViewState,
@@ -88,6 +86,18 @@
     setStrokeWidth(8);
   }
 
+  // The specs and tools/perf drivers select a brush through three on/off
+  // toggles that can overlap. Overlaps resolve in renderOp's flag order —
+  // magic, then eraser, then crayon — which is the brush those callers'
+  // toggle sequences were written to commit.
+  const brushToggles = { eraser: false, magic: false, crayon: false };
+  function setBrushToggle(toggle: keyof typeof brushToggles, active: boolean) {
+    brushToggles[toggle] = active;
+    if (brushToggles.magic) setBrush('magic');
+    else if (brushToggles.eraser) setBrush('eraser');
+    else setBrush(brushToggles.crayon ? 'crayon' : 'pen');
+  }
+
   function renderedCanvas() {
     return compositeVisibleLiveTiles(wrapperEl);
   }
@@ -131,11 +141,11 @@
     return {
       setColor,
       setStrokeWidth,
-      setEraserMode,
+      setEraserMode: (active) => setBrushToggle('eraser', active),
       // Magic brush (ADR-0043): with no color sheet set, the engine locks a
       // random rainbow on the first stroke — enough for perf replay of
       // magic-heavy recordings (replay-input-recording.mjs).
-      setMagicMode,
+      setMagicMode: (active) => setBrushToggle('magic', active),
       setSafeAreaInsets,
       undo,
       clearCanvas,
@@ -145,7 +155,7 @@
       getUndoDebug,
       // Crayon brush (ADR-0065): toggle the textured-wax mode and A/B its tooth
       // knobs. The spec draws crayon strokes via strokeSync after setCrayonMode.
-      setCrayonMode,
+      setCrayonMode: (active) => setBrushToggle('crayon', active),
       setCrayonParams,
       setCrayonDeposition: setCrayonDepositionForTuning,
       // Rotation seam: pins the screen angle the engine reads, so a spec can

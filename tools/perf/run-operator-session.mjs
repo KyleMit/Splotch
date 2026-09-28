@@ -28,8 +28,11 @@ import { existsSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import {
+  POSITIVE_NUMBER,
   ROOT,
+  TCP_PORT,
   argFlag,
+  argNumber,
   fail,
   hasCommand,
   isMain,
@@ -350,10 +353,10 @@ export async function runOperatorSession() {
   if (planOnly) return plan;
   if (!report.ready) fail(`the preflight is blocking:\n  ${report.blockers.join('\n  ')}`);
 
-  const seconds = Number(argFlag('seconds', DEFAULT_DRAW_SECONDS));
+  const seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, POSITIVE_NUMBER);
   const lan = lanAddresses()[0];
   if (!lan) fail('no LAN address — the devices cannot reach a probe host on this machine');
-  const probePort = Number(argFlag('probe-port', report.ports.probe ?? DEFAULT_PROBE_PORT));
+  const probePort = argNumber('probe-port', report.ports.probe ?? DEFAULT_PROBE_PORT, TCP_PORT);
   const probeAction = await requestedProbeAction({ requestedPort: probePort, report });
   const host = `http://${lan}:${probePort}`;
   const outputDir = join(OUTPUT_ROOT, new Date().toISOString().replaceAll(':', '-'));

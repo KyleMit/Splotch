@@ -4,7 +4,7 @@ import { reportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { throttledMessage } from '$lib/server/http';
 import { parseDeviceField, submitReport } from '$lib/server/report';
-import { REPORT_HONEYPOT_FIELD, REPORT_KINDS, type ReportKind } from '$lib/report';
+import { parseReportKind, REPORT_HONEYPOT_FIELD } from '$lib/report';
 import type { Actions, PageServerLoad } from './$types';
 
 // The standalone feedback page. It has a form action, so it can't join the
@@ -17,10 +17,6 @@ export const ssr = true;
 
 // Presence marks a completed submission.
 const SENT_PARAM = 'sent';
-
-function kindFrom(raw: FormDataEntryValue | null): ReportKind {
-  return REPORT_KINDS.find((option) => option.value === raw)?.value ?? 'bug';
-}
 
 /**
  * The success view is reached by redirect, not by rendering the POST response
@@ -38,11 +34,14 @@ export const actions: Actions = {
     );
 
     const data = await request.formData();
+    const rawKind = data.get('kind');
     // Echoed back on every failure so a browser with no JavaScript — which
     // re-renders this page from scratch — doesn't hand back an empty textarea
-    // and lose what the reporter wrote.
+    // and lose what the reporter wrote. Only the echo falls back to a bug:
+    // submitReport reads the raw kind, so a value the radio group can't send is
+    // refused rather than filed under a guessed label.
     const values = {
-      kind: kindFrom(data.get('kind')),
+      kind: parseReportKind(rawKind) ?? 'bug',
       message: String(data.get('message') ?? ''),
       includeDevice: data.get('includeDevice') !== null,
     };
@@ -53,7 +52,7 @@ export const actions: Actions = {
     }
 
     const result = await submitReport({
-      kind: values.kind,
+      kind: rawKind,
       message: values.message,
       device: parseDeviceField(data.get('device')),
       wantsDevice: values.includeDevice,

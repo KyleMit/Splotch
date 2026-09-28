@@ -31,7 +31,16 @@ import {
 import { randomUUID } from 'node:crypto';
 import { dirname, isAbsolute, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { ROOT, fail, isMain, runMain, sleep } from '../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  ROOT,
+  argFlag,
+  argNumber,
+  fail,
+  isMain,
+  runMain,
+  sleep,
+} from '../lib/proc.mjs';
 import {
   ALL_ITEMS,
   CAMPAIGN_MODES,
@@ -411,10 +420,7 @@ function androidAppiumHostProblem(cells, host) {
 
 export async function runCampaign(argv = process.argv.slice(2)) {
   const captureSession = randomUUID();
-  const flag = (name, fallback) => {
-    const prefix = `--${name}=`;
-    return argv.find((entry) => entry.startsWith(prefix))?.slice(prefix.length) ?? fallback;
-  };
+  const flag = (name, fallback) => argFlag(name, fallback, argv);
   const has = (name) => argv.includes(`--${name}`);
 
   const targetId = flag('target');
@@ -425,10 +431,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // artifactPath scopes by target, so the root stays target-agnostic and several
   // targets can share one campaign directory without colliding.
   const outputRoot = flag('output-root', 'perf-profiles/campaign');
-  const maxAttempts = Number(flag('max-attempts', String(MAX_ATTEMPTS)));
-  if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1) {
-    fail('--max-attempts must be a positive integer');
-  }
+  const maxAttempts = argNumber('max-attempts', MAX_ATTEMPTS, POSITIVE_INTEGER, argv);
 
   const host = {
     appiumUrl: flag('appium-url'),

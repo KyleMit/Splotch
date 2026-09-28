@@ -9,7 +9,7 @@ import {
   MUTATION_FAILURE_STATUS,
 } from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
-import { getUsage } from '$lib/server/usage';
+import { readUsageAndPurgeExpired } from '$lib/server/usage';
 import { getFreeGenerationGrantAdminStats } from '$lib/server/freeGenerationGrants';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -84,7 +84,7 @@ export const load: PageServerLoad = async ({ cookies, url, setHeaders }) => {
   // the tally is reachable at all rides separately on usageAvailable, because a
   // code nobody redeemed and a tally backend that is down look identical here.
   const [usage, freeGrantStats] = await Promise.all([
-    getUsage(tokens),
+    readUsageAndPurgeExpired(tokens),
     getFreeGenerationGrantAdminStats(),
   ]);
   const invites = buildInvites(tokens, url.origin).map((invite) => ({

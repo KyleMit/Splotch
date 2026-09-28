@@ -28,7 +28,16 @@
 // is unexplained is what caused it. That is also why this verification reads the
 // page rather than the setting — whatever the mechanism, the page is the thing a
 // capture depends on.
-import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  capture,
+  fail,
+  isMain,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import {
   androidPageLaunchSteps,
   androidRotationRestoreCommands,
@@ -74,7 +83,7 @@ async function observeOrientation(serial, state, pageUrl, orientation) {
 
 export async function verifyAndroidRotation({
   serial = argFlag('device-serial'),
-  port = Number(argFlag('port', DEFAULT_PORT)),
+  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
 } = {}) {
   if (!serial) fail('--device-serial= is required');
 

@@ -12,7 +12,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import { POSITIVE_INTEGER, TCP_PORT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
 import { reverseToLocalhost } from '../lib/android-localhost-route.mjs';
@@ -24,7 +24,6 @@ import {
   blockServiceWorkerRegistration,
   clearBrowserCaches,
   closeTarget,
-  positiveInteger,
   profilerUrl,
   renderFrameRateFrom,
   resolveAndroidDevice,
@@ -271,7 +270,7 @@ function summarizeByToolbar(samples) {
 }
 
 export async function runClearDrag(argv = process.argv.slice(2)) {
-  const { flag, has, port } = parsePerfArgs(
+  const { flag, numberFlag, has, port } = parsePerfArgs(
     {
       entry: isMain(import.meta.url),
       extra: [
@@ -305,9 +304,9 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
   if (allowForeignBuild && !flag('url')) {
     fail('--allow-foreign-build needs --url= naming the externally served build it allows');
   }
-  const repeats = positiveInteger(flag('repeats', '3'), 'repeats');
-  const cycles = positiveInteger(flag('cycles', '6'), 'cycles');
-  const cdpPort = positiveInteger(flag('cdp-port', String(DEFAULT_CDP_PORT)), 'cdp-port');
+  const repeats = numberFlag('repeats', 3, POSITIVE_INTEGER);
+  const cycles = numberFlag('cycles', 6, POSITIVE_INTEGER);
+  const cdpPort = numberFlag('cdp-port', DEFAULT_CDP_PORT, TCP_PORT);
   const deviceId = resolveAndroidDevice(flag('device-id'));
   const base = flag('url') ?? `http://localhost:${port}/`;
   const endpoint = `http://127.0.0.1:${cdpPort}`;

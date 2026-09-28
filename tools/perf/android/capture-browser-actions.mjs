@@ -3,7 +3,16 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { ADB } from '../../mobile/android/lib/android-toolchain.mjs';
-import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  ROOT,
+  TCP_PORT,
+  fail,
+  isMain,
+  pollUntil,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import {
   MIN_GATED_SAMPLES,
   WARMUP_REPEATS,
@@ -48,12 +57,6 @@ const STABLE_FRAME_GAP_MAX_MS = 32;
 const STABLE_FRAME_TIMEOUT_MS = 10_000;
 const ORIENTATION_SETTLE_MS = 1_000;
 const PROFILER_PARAM = 'perf-android-web';
-
-export function positiveInteger(value, name) {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isSafeInteger(parsed) || parsed < 1) fail(`--${name} must be a positive integer`);
-  return parsed;
-}
 
 // One decision, two consumers: the settings writes and the artifact's
 // requestedHz both derive from this (ADR-0143).
@@ -239,7 +242,7 @@ export function rotationFor(orientation) {
 }
 
 export async function runAndroidWebActions(argv = process.argv.slice(2)) {
-  const { flag, has, port } = parsePerfArgs(
+  const { flag, numberFlag, has, port } = parsePerfArgs(
     {
       entry: true,
       extra: [
@@ -268,9 +271,8 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   if (allowForeignBuild && !flag('url')) {
     fail('--allow-foreign-build needs --url= naming the externally served build it allows');
   }
-  const deviceId = resolveAndroidDevice(flag('device-id'));
-  const cdpPort = positiveInteger(flag('cdp-port', String(DEFAULT_CDP_PORT)), 'cdp-port');
-  const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
+  const cdpPort = numberFlag('cdp-port', DEFAULT_CDP_PORT, TCP_PORT);
+  const repeats = numberFlag('repeats', 4, POSITIVE_INTEGER);
   if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
@@ -280,6 +282,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
     fail('--orientation must be PORTRAIT or LANDSCAPE');
   }
+  const deviceId = resolveAndroidDevice(flag('device-id'));
   const token = `${Date.now()}`;
   const endpoint = `http://127.0.0.1:${cdpPort}`;
   const originalAutoRotation = adb(deviceId, [

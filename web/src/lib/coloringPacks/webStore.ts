@@ -99,7 +99,7 @@ async function withdrawMarker(cache: Cache, bookId: string) {
   await cache.delete(coloringPackMarkerPath(bookId));
 }
 
-async function hasVerifiedCachedFile(
+async function verifyCachedFileOrEvict(
   cache: Cache,
   bookId: string,
   file: ColoringPackFile
@@ -119,7 +119,7 @@ async function markIfComplete(
 ): Promise<boolean> {
   let complete = true;
   for (const file of book.files) {
-    if (!verifiedPaths.has(file.path) && !(await hasVerifiedCachedFile(cache, book.id, file))) {
+    if (!verifiedPaths.has(file.path) && !(await verifyCachedFileOrEvict(cache, book.id, file))) {
       complete = false;
     }
   }

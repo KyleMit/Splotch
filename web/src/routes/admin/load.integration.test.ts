@@ -10,14 +10,14 @@ vi.mock('$lib/server/tokens', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/server/tokens')>()),
   getTokensStatus: vi.fn(),
 }));
-vi.mock('$lib/server/usage', () => ({ getUsage: vi.fn() }));
+vi.mock('$lib/server/usage', () => ({ readUsageAndPurgeExpired: vi.fn() }));
 vi.mock('$lib/server/freeGenerationGrants', () => ({
   getFreeGenerationGrantAdminStats: vi.fn().mockResolvedValue(null),
 }));
 
 import { sessionToken } from '$lib/server/admin';
 import { getTokensStatus } from '$lib/server/tokens';
-import { getUsage } from '$lib/server/usage';
+import { readUsageAndPurgeExpired } from '$lib/server/usage';
 import { load } from './+page.server';
 
 const SECRET = 'the-raw-secret';
@@ -29,7 +29,7 @@ beforeEach(() => {
 
 describe('the /admin loader usage state', () => {
   it('flags an unavailable usage snapshot instead of saying the code was never used', async () => {
-    vi.mocked(getUsage).mockResolvedValue(null);
+    vi.mocked(readUsageAndPurgeExpired).mockResolvedValue(null);
 
     const data = await load({
       cookies: { get: () => sessionToken(), set: vi.fn() },
@@ -47,7 +47,7 @@ describe('the /admin loader usage state', () => {
   });
 
   it('still represents an available snapshot without a tally as never used', async () => {
-    vi.mocked(getUsage).mockResolvedValue({});
+    vi.mocked(readUsageAndPurgeExpired).mockResolvedValue({});
 
     const data = await load({
       cookies: { get: () => sessionToken(), set: vi.fn() },
@@ -70,7 +70,7 @@ describe('the /admin loader cache policy', () => {
     { name: 'an authenticated load', cookie: () => sessionToken(), authed: true },
     { name: 'the login form', cookie: () => undefined, authed: false },
   ])('sends no-store on $name', async ({ cookie, authed }) => {
-    vi.mocked(getUsage).mockResolvedValue({});
+    vi.mocked(readUsageAndPurgeExpired).mockResolvedValue({});
     const setHeaders = vi.fn();
 
     const data = await load({

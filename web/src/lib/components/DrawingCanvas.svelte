@@ -3,7 +3,6 @@
   import {
     adoptDrawingCanvas,
     setColor,
-    setEraserMode,
     applyColoringFill,
     setSafeAreaInsets,
     INITIAL_ENGINE_VIEW_STATE,
@@ -166,14 +165,10 @@
 
   // Push the toolState-derived engine settings the pre-hydration boot also
   // pushes (the helper's reads of toolState.brush and activeStrokeSize() are
-  // this effect's dependencies), so switching pen↔eraser restores that tool's
-  // width and the crayon/magic modifiers follow the brush.
+  // this effect's dependencies), so the engine follows the brush and switching
+  // pen↔eraser restores that tool's width.
   $effect(() => {
     pushToolStateToEngine();
-  });
-
-  $effect(() => {
-    setEraserMode(toolState.brush === 'eraser');
   });
 
   // The magic brush reveals the active page's colored fill (ADR-0043), theme-

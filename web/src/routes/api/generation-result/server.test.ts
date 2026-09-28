@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   rateLimit: vi.fn(),
   readJob: vi.fn(),
   discardJob: vi.fn(),
-  takeJobImage: vi.fn(),
+  readJobImage: vi.fn(),
   completeFreeGeneration: vi.fn(),
   failFreeGeneration: vi.fn(),
   issueReportToken: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock('$lib/server/rateLimit', () => ({ rateLimit: mocks.rateLimit }));
 vi.mock('$lib/server/generationJobs', () => ({
   readJob: mocks.readJob,
   discardJob: mocks.discardJob,
-  takeJobImage: mocks.takeJobImage,
+  readJobImage: mocks.readJobImage,
 }));
 vi.mock('$lib/server/freeGenerationGrants', () => ({
   completeFreeGeneration: mocks.completeFreeGeneration,
@@ -83,7 +83,7 @@ beforeEach(() => {
     context: paidContext,
   });
   mocks.discardJob.mockResolvedValue(undefined);
-  mocks.takeJobImage.mockResolvedValue(pictureBytes);
+  mocks.readJobImage.mockResolvedValue(pictureBytes);
   mocks.completeFreeGeneration.mockResolvedValue({ remaining: 7 });
   mocks.failFreeGeneration.mockResolvedValue(undefined);
   mocks.issueReportToken.mockReturnValue('signed-report-token');
@@ -100,7 +100,7 @@ describe('GET /api/generation-result', () => {
       mimeType: 'image/png',
       context: { ...freeContext, style: 'Sticker' },
     });
-    mocks.takeJobImage.mockResolvedValue(await stickerPng(true));
+    mocks.readJobImage.mockResolvedValue(await stickerPng(true));
 
     const response = await get();
     const { data, info } = await sharp(Buffer.from(await response.arrayBuffer()))
@@ -122,7 +122,7 @@ describe('GET /api/generation-result', () => {
       mimeType: 'image/png',
       context: { ...freeContext, style: 'Sticker' },
     });
-    mocks.takeJobImage.mockResolvedValue(await stickerPng(false));
+    mocks.readJobImage.mockResolvedValue(await stickerPng(false));
 
     const response = await get();
 
@@ -240,7 +240,7 @@ describe('GET /api/generation-result', () => {
       expect(mocks.failFreeGeneration).not.toHaveBeenCalled();
     });
 
-    it('takes the picture before it settles, and settles before it discards', async () => {
+    it('reads the picture before it settles, and settles before it discards', async () => {
       mocks.readJob.mockResolvedValue({
         status: 'image',
         mimeType: 'image/png',
@@ -249,10 +249,10 @@ describe('GET /api/generation-result', () => {
 
       await get();
 
-      const [take] = mocks.takeJobImage.mock.invocationCallOrder;
+      const [read] = mocks.readJobImage.mock.invocationCallOrder;
       const [settle] = mocks.completeFreeGeneration.mock.invocationCallOrder;
       const [discard] = mocks.discardJob.mock.invocationCallOrder;
-      expect(take).toBeLessThan(settle);
+      expect(read).toBeLessThan(settle);
       expect(settle).toBeLessThan(discard);
     });
 
@@ -366,7 +366,7 @@ describe('GET /api/generation-result', () => {
         mimeType: 'image/png',
         context: freeContext,
       });
-      mocks.takeJobImage.mockRejectedValue(new Error('blob store timeout'));
+      mocks.readJobImage.mockRejectedValue(new Error('blob store timeout'));
 
       const response = await get();
 
@@ -382,7 +382,7 @@ describe('GET /api/generation-result', () => {
         mimeType: 'image/png',
         context: freeContext,
       });
-      mocks.takeJobImage.mockResolvedValue(null);
+      mocks.readJobImage.mockResolvedValue(null);
 
       const response = await get();
 

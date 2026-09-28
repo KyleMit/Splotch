@@ -26,7 +26,17 @@
 // the persisted brush selection carries between them and neither arm has to run
 // the other's setup.
 import { createServer } from 'node:http';
-import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  capture,
+  fail,
+  isMain,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import {
   SERVICE_WORKER_REGISTRATION_GUARD_SOURCE,
@@ -347,10 +357,10 @@ export function readScreenSize(serial) {
 
 export async function measureProbeOverhead({
   serial = argFlag('device-serial'),
-  port = Number(argFlag('port', DEFAULT_PORT)),
+  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
   upstream = argFlag('upstream', DEFAULT_UPSTREAM),
   probeHost = argFlag('probe-host', DEFAULT_PROBE_HOST),
-  samples = Number(argFlag('samples', SAMPLES_PER_ARM)),
+  samples = argNumber('samples', SAMPLES_PER_ARM, POSITIVE_INTEGER),
   brush = argFlag('brush', 'pen'),
 } = {}) {
   if (!serial) fail('--device-serial= is required');

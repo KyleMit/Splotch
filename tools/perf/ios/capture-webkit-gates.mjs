@@ -22,7 +22,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, isMain, runMain } from '../../lib/proc.mjs';
+import { POSITIVE_INTEGER, ROOT, isMain, runMain } from '../../lib/proc.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
@@ -60,10 +60,12 @@ export function runOverridesScript({ scenarios, strokes, ops }) {
 }
 
 export async function runIpadProfile(argv = process.argv.slice(2)) {
-  const { flag, has, port } = parsePerfArgs(
+  const { flag, numberFlag, has, port } = parsePerfArgs(
     { entry: true, extra: ['url', 'scenarios', 'strokes', 'ops', 'device-id', 'no-serve'] },
     argv
   );
+  const strokes = numberFlag('strokes', undefined, POSITIVE_INTEGER);
+  const ops = numberFlag('ops', undefined, POSITIVE_INTEGER);
   requireInspectorProxy();
   warnIfNoPerfMarks('npm run perf:ios:webkit:gates');
 
@@ -88,8 +90,8 @@ export async function runIpadProfile(argv = process.argv.slice(2)) {
     await session.evaluate(
       runOverridesScript({
         scenarios: flag('scenarios'),
-        strokes: flag('strokes') && Number(flag('strokes')),
-        ops: flag('ops') && Number(flag('ops')),
+        strokes,
+        ops,
       })
     );
     // The driver is an async IIFE and WebKit's Runtime.evaluate has no

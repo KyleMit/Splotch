@@ -271,7 +271,12 @@ Markdown, and the error wording all live in `$lib/server/report.ts`; the `/feedb
 action calls it too, and throttles into the same `reportBucket` so the pair shares one budget rather
 than doubling it. Change the behaviour there, not here — this route only adds the JSON wire shape.
 The page's action additionally echoes the submitted values back on failure and answers success with
-a 303 redirect, neither of which a JSON endpoint needs.
+a 303 redirect, neither of which a JSON endpoint needs. Both doors read `kind` through
+`parseReportKind` (`web/src/lib/report.ts`), so an unknown kind gets the same `400` at either one.
+
+The body below is declared once as `ReportRequestBody` in `web/src/lib/report.ts`: the in-app
+clients build it through `postFeedbackReport` (`web/src/lib/reportClient.ts`), and the core's
+`ReportInput` is keyed by it, so a renamed key fails to compile on both sides.
 
 ```json
 // request
@@ -343,7 +348,10 @@ output=<png|jpeg|webp Blob>  # required for picture; absent for false-positive-r
 style=<StyleName or empty>
 ```
 
-For compatibility with already-installed clients, an absent `kind` is treated as `picture`.
+For compatibility with already-installed clients, an absent `kind` is treated as `picture`. The four
+field names are declared once as `IMAGE_REPORT_FORM_FIELDS` in `web/src/lib/imageReport.ts`, set by
+`postImageReport` (`web/src/lib/reportClient.ts`) and read by the route;
+`web/src/lib/reportClient.test.ts` sends the client's form through the real route handler.
 
 The raw multipart body is capped before it is parsed, at the 4 MiB bundle limit plus a fixed budget
 for part headers and boundaries; over that the request is rejected with 413 and never buffered

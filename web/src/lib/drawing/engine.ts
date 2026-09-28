@@ -154,9 +154,7 @@ const DEFAULT_STROKE_WIDTH_PX = getStrokeWidthPx(DEFAULT_SIZE);
 const TILED_INPUT_BITMAP_SIDE_PX = 1;
 let viewport = { width: 0, height: 0 };
 let currentStrokeWidthPx = DEFAULT_STROKE_WIDTH_PX;
-let eraserActive = false;
-let magicActive = false;
-let crayonActive = false;
+let brush: BrushType = 'pen';
 let lastColorChangeTime = 0;
 
 // Pass boundaries — the checkpoint, the scribble split, the seed each new pass
@@ -382,7 +380,7 @@ function resizeCanvas(
   applyPaperView(presentation);
   if (preservedView) paperView = preservedView;
 
-  resizeMagicSheet(magicActive);
+  resizeMagicSheet(brush === 'magic');
   if (
     (tiledRendererResized || repaintRecoveredPixels) &&
     !canvasEmpty &&
@@ -563,7 +561,7 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
   if (!dev && !__DEV_HARNESS__) throw new Error();
   const { color, points, size } = replay;
   if (points.length === 0) return;
-  if (eraserActive) throw new Error('Store drawing replay does not support the eraser');
+  if (brush === 'eraser') throw new Error('Store drawing replay does not support the eraser');
   if (!engineLive) throw new Error('Drawing engine is not live');
   if (activePointers.size > 0 || penStreamAdopter.hasCanvasExit()) {
     throw new Error('Cannot replay a stroke while pointer input is active');
@@ -588,15 +586,8 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
     startY: screenPoints[0].y,
     color,
     lineWidth,
-    erase: eraserActive,
-    magic: magicActive,
-    crayon: crayonActive,
-    ...crayonPasses.openStroke({
-      seeded: crayonActive,
-      tracked: crayonActive && !eraserActive && !magicActive,
-      at: first,
-      lineWidth,
-    }),
+    ...STROKE_FLAGS_BY_BRUSH[brush],
+    ...crayonPasses.openStroke({ crayon: brush === 'crayon', at: first, lineWidth }),
     lastTime: 0,
     speedSamples: [],
     edgeSwipeGuard: null,
@@ -679,6 +670,16 @@ interface PointerState {
   pendingRaster: RasterBatch[];
 }
 
+// StrokeOp carries one flag per brush; this is the one place the engine's brush
+// becomes those flags. At most one is set, so renderOp's precedence among them
+// never decides an engine-drawn op.
+const STROKE_FLAGS_BY_BRUSH = {
+  pen: { erase: false, magic: false, crayon: false },
+  crayon: { erase: false, magic: false, crayon: true },
+  magic: { erase: false, magic: true, crayon: false },
+  eraser: { erase: true, magic: false, crayon: false },
+} as const satisfies Record<BrushType, Pick<PointerState, 'erase' | 'magic' | 'crayon'>>;
+
 const activePointers = new Map<number, PointerState>();
 
 // Crayon's deposition pipeline is a per-runtime decision from the same
@@ -760,7 +761,7 @@ function startDrawing(e: PointerEvent) {
   // The eraser runs a bit larger than the pen at the same stroke level. Stroke
   // widths are authored in CSS pixels, so they scale to backing-store pixels.
   const lineWidth =
-    (eraserActive ? currentStrokeWidthPx * ERASER_SIZE_MULTIPLIER : currentStrokeWidthPx) *
+    (brush === 'eraser' ? currentStrokeWidthPx * ERASER_SIZE_MULTIPLIER : currentStrokeWidthPx) *
     renderScale;
 
   const edgeSwipeGuard =
@@ -784,15 +785,8 @@ function startDrawing(e: PointerEvent) {
     startY: screen.y,
     color: currentColor,
     lineWidth,
-    erase: eraserActive,
-    magic: magicActive,
-    crayon: crayonActive,
-    ...crayonPasses.openStroke({
-      seeded: crayonActive,
-      tracked: crayonActive && !eraserActive && !magicActive,
-      at: { x, y },
-      lineWidth,
-    }),
+    ...STROKE_FLAGS_BY_BRUSH[brush],
+    ...crayonPasses.openStroke({ crayon: brush === 'crayon', at: { x, y }, lineWidth }),
     // Speed-window fields are seeded by resetSpeedWindow() immediately below.
     lastTime: 0,
     speedSamples: [],
@@ -807,7 +801,7 @@ function startDrawing(e: PointerEvent) {
   if (!edgeSwipeGuard) {
     renderStrokeStart(pointerState);
     const { pointerId, clientX, clientY } = e;
-    callbacks.onStrokeStart?.({ pointerId, clientX, clientY, magic: magicActive });
+    callbacks.onStrokeStart?.({ pointerId, clientX, clientY, magic: brush === 'magic' });
   }
 
   // Capture every pointer — pen included — so a stroke keeps flowing to the
@@ -1118,7 +1112,7 @@ export function clearCanvas({ animateInto }: { animateInto?: ClientPoint } = {})
   if (!canvasEmpty || isStrokeActive()) clearRecordedInk(animateInto);
   crayonPasses.reset();
   clearMagicGradient();
-  if (magicActive) ensureMagicSheet();
+  if (brush === 'magic') ensureMagicSheet();
 }
 
 function clearRecordedInk(animateInto: ClientPoint | undefined) {
@@ -1247,7 +1241,7 @@ function wireMagicBrushHost(): void {
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
     hasRetainedOps: hasRetainedTiledMagicOps,
-    magicActive: () => magicActive,
+    magicActive: () => brush === 'magic',
     repaint: recodeMagicOpsToCurrentSheet,
   });
 }
@@ -1319,53 +1313,40 @@ export function setColor(color: string) {
   lastColorChangeTime = Date.now();
   // Warm the new colour's wax tiles while the finger is still on the swatch,
   // so the first crayon draw never pays the tile build inside a frame.
-  if (crayonActive) warmCrayonTiles(color);
+  if (brush === 'crayon') warmCrayonTiles(color);
 }
 
 export function setStrokeWidth(widthPx: number) {
   currentStrokeWidthPx = widthPx;
 }
 
-export function setEraserMode(active: boolean) {
-  eraserActive = active;
+// The brush every new stroke paints with (ADR-0067), pushed from toolState by
+// earlyBoot's pushToolStateToEngine. Crayon (ADR-0065) warms the active
+// colour's wax tiles before the first stroke needs them; any other brush drops
+// that warm-up. Magic (ADR-0043) over a blank canvas locks in a random rainbow
+// to reveal (a no-op when a coloring page is applied, or when a rainbow is
+// already held from before). Re-pushing the current brush deliberately repeats
+// both: teardownEngine cancels the warm-up, and the remount's push restarts it.
+export function setBrush(next: BrushType) {
+  brush = next;
+  if (next === 'crayon') warmCrayonTiles(currentColor);
+  else cancelCrayonWarmup();
+  if (next === 'magic') ensureMagicSheet();
 }
 
-// Magic brush on/off (ADR-0043). Mutually exclusive with the eraser at the UI
-// level; the engine just tracks the flag and stamps it onto each op. Selecting the
-// brush over a blank canvas locks in a random rainbow to reveal (a no-op when a
-// coloring page is applied, or when a rainbow is already held from before).
-export function setMagicMode(active: boolean) {
-  magicActive = active;
-  if (active) ensureMagicSheet();
-}
-
-// The brush mode the engine has COMMITTED — the mode a stroke started right now
-// would paint in, resolved with renderOp's own precedence (magic outranks the
-// eraser, which outranks crayon's texture; see strokeOps.renderOp), so it can
-// never claim a mode the renderer would not honour.
+// The brush the engine has COMMITTED — the one a stroke started right now
+// would paint with.
 //
-// Test-only seam (ADR-0080). The mode toggles above are pushed from a Svelte
-// $effect, so the button reports the new brush before the engine holds it, and a
-// stroke dispatched in that window commits under the PREVIOUS brush. Nothing
+// Test-only seam (ADR-0080). setBrush is pushed from a Svelte $effect, so the
+// button reports the new brush before the engine holds it, and a stroke
+// dispatched in that window commits under the PREVIOUS brush. Nothing
 // observable from the DOM distinguishes the two — a pen stroke fills the canvas
 // exactly like a reveal — so the E2E harness waits on this instead of on
 // `aria-pressed`. Reached only through lib/boot/devHarnessSeam.ts, which
 // publishes it on `window` for test-harness and PERF_MARKS builds; release
 // builds have no caller.
 export function committedBrushMode(): BrushType {
-  if (magicActive) return 'magic';
-  if (crayonActive && !eraserActive) return 'crayon';
-  return eraserActive ? 'eraser' : 'pen';
-}
-
-// Crayon brush on/off (ADR-0065). Like the eraser/magic it's a modifier the
-// engine just tracks and stamps onto each op; renderOp turns a crayon op's solid
-// colour into textured wax. Mutually exclusive with the eraser and magic brush
-// at the UI level.
-export function setCrayonMode(active: boolean) {
-  crayonActive = active;
-  if (active) warmCrayonTiles(currentColor);
-  else cancelCrayonWarmup();
+  return brush;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

@@ -15,7 +15,18 @@ import { createServer as createHttpServer, request } from 'node:http';
 import { createServer as createHttpsServer, get as httpsGet } from 'node:https';
 import { homedir } from 'node:os';
 import { join, normalize, resolve } from 'node:path';
-import { ROOT, argFlag, capture, fail, isMain, runMain, tryCapture } from '../../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  ROOT,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  capture,
+  fail,
+  isMain,
+  runMain,
+  tryCapture,
+} from '../../lib/proc.mjs';
 import { grantLogDevice } from '../lib/grant-log.mjs';
 
 export const DEFAULT_CA_DIR = join(homedir(), '.splotch-rig', 'secure-origin-ca');
@@ -139,7 +150,7 @@ function makeAuthority() {
   const dir = resolve(argFlag('dir', DEFAULT_CA_DIR));
   const host = argFlag('host') ?? fail('Pass --host=<this Mac>.local (scutil --get LocalHostName).');
   const ip = argFlag('ip');
-  const days = Number(argFlag('days', String(DEFAULT_AUTHORITY_DAYS)));
+  const days = argNumber('days', DEFAULT_AUTHORITY_DAYS, POSITIVE_INTEGER);
   const label = argFlag('label', new Date().toISOString().slice(0, 7));
   if (existsSync(join(dir, 'ca.key'))) {
     fail(`${dir} already holds a root. Remove it from the iPad and delete the directory first.`);
@@ -198,7 +209,8 @@ export function createFrontHandler({ upstream, isBuildFile, log = () => {} }) {
 function serveFront() {
   const dir = resolve(argFlag('dir', DEFAULT_CA_DIR));
   const listen = argFlag('listen') ?? fail('Pass --listen=<address>:<port>.');
-  const upstream = Number(argFlag('upstream') ?? fail('Pass --upstream=<perf:serve port>.'));
+  const upstream =
+    argNumber('upstream', undefined, TCP_PORT) ?? fail('Pass --upstream=<perf:serve port>.');
   const leaf = argFlag('leaf', 'leaf');
   const logFile = argFlag('log');
   const buildDir = join(ROOT, 'web', 'build');

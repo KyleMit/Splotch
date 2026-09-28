@@ -22,7 +22,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, fail, isMain, runMain } from '../../lib/proc.mjs';
+import { POSITIVE_NUMBER, ROOT, fail, isMain, runMain } from '../../lib/proc.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
@@ -138,7 +138,7 @@ function printHandInstructions(phases, contactSeconds) {
 }
 
 export async function runIpadFrames(argv = process.argv.slice(2)) {
-  const { flag, has, port } = parsePerfArgs(
+  const { flag, numberFlag, has, port } = parsePerfArgs(
     {
       entry: true,
       extra: [
@@ -163,18 +163,22 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   warnIfNoPerfMarks('npm run perf:ios:webkit:frames');
 
   const appUrl = resolveDeviceUrl(flag('url'), port, APP_PATH);
-  const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
-  const freeDrawValue = flag('free-draw');
+  const contactSeconds = numberFlag('contact-seconds', DEFAULT_CONTACT_SECONDS, POSITIVE_NUMBER);
+  // `--free-draw` and `--drive` are read bare as well as with a value, so their
+  // bare forms come from argv: `has` rejects a switch written with `=`. A bare
+  // `--free-draw` gets validateFreeDrawOptions' own duration message.
+  const bareFreeDraw = argv.includes('--free-draw');
+  const freeDrawValue = bareFreeDraw ? undefined : flag('free-draw');
   // `--drive` with no value is the useful default: one long stroke then a burst
   // of short ones, the two shapes the lag report names.
-  const drive = has('drive') ? 'mixed' : flag('drive');
-  const driveHz = flag('drive-hz') && Number(flag('drive-hz'));
+  const drive = argv.includes('--drive') ? 'mixed' : flag('drive');
+  const driveHz = numberFlag('drive-hz', undefined, POSITIVE_NUMBER);
   const pointerType = flag('pointer-type');
   const brush = flag('brush');
   const hud = has('hud') || (!has('no-hud') && !drive);
   // Wall-clock window behind a START tap, rather than banked finger-down time.
   const freeDrawSeconds = validateFreeDrawOptions(freeDrawValue, {
-    bare: has('free-draw'),
+    bare: bareFreeDraw,
     hud,
   });
   const probeConfig = probeConfigScript({

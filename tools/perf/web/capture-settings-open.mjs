@@ -24,8 +24,8 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { chromiumExecutablePath } from '../../lib/playwright.mjs';
-import { isMain, runMain } from '../../lib/proc.mjs';
-import { parsePerfArgs, requireNumberFlag } from '../lib/cli-args.mjs';
+import { POSITIVE_INTEGER, isMain, runMain } from '../../lib/proc.mjs';
+import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { DEVICES } from '../lib/profile-devices.mjs';
 import { buildAndPreview } from '../lib/profile-preview.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
@@ -56,12 +56,12 @@ const SHELLS = {
 // stays quick.
 const TAIL_SETTLE_MS = 1500;
 
-const { throttle, port, build, flag } = parsePerfArgs({
+const { throttle, port, build, numberFlag } = parsePerfArgs({
   throttleDefault: 4,
   extra: ['repeats'],
   entry: isMain(import.meta.url),
 });
-const repeats = requireNumberFlag('repeats', flag('repeats', '3'), isMain(import.meta.url));
+const repeats = numberFlag('repeats', 3, POSITIVE_INTEGER);
 
 // A beat between closing the dialog and the reopen tap, so the close frame and
 // any tail long task it reports land outside the reopen's measured window.

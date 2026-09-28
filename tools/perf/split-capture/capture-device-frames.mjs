@@ -20,7 +20,19 @@ import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { dirname, isAbsolute, join } from 'node:path';
-import { argFlag, fail, isMain, ROOT, runMain, sleep, tryCapture } from '../../lib/proc.mjs';
+import {
+  NON_NEGATIVE_INTEGER,
+  POSITIVE_INTEGER,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  fail,
+  isMain,
+  ROOT,
+  runMain,
+  sleep,
+  tryCapture,
+} from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import {
   STROKES_PER_GESTURE_REPEAT,
@@ -161,17 +173,6 @@ async function wda(wdaUrl, method, path, body) {
   return parsed.value;
 }
 
-// A native run reaches the same instrumented page through the app's own WebView
-// rather than the browser, which needs the app built with `server.url` pointed at
-// the probe host. What that changes is asset DELIVERY, not the engine: the touch
-// path, the compositor and the frame loop are the WebView's either way. The
-// artifact says so rather than leaving a reader to assume a bundled build.
-function parsePositivePort(value, name) {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isSafeInteger(parsed) || parsed < 1) fail(`--${name} must be a positive integer`);
-  return parsed;
-}
-
 // The pulse is the page's own running event count, posted until the first
 // event arrives. Zero after a full dispatch means every injected touch landed
 // on another tab or app — the wrong-tab failure that used to surface only as a
@@ -237,6 +238,12 @@ export async function assertServedPageIdentity(
   };
 }
 
+// A native run reaches the same instrumented page through the app's own WebView
+// rather than the browser, which needs the app built with `server.url` pointed at
+// the probe host. What that changes is asset DELIVERY, not the engine: the touch
+// path, the compositor and the frame loop are the WebView's either way. The
+// artifact says so rather than leaving a reader to assume a bundled build.
+//
 // `exec` and `activate` are injected so the wiring is testable at THIS call
 // site — the openWithAdb precedent in capture-hand-input.mjs records how a
 // tested chooser with an untested call site shipped the exact bug the test
@@ -833,12 +840,12 @@ export async function captureDeviceFrames({
   brush = argFlag('brush', 'pen'),
   orientation = argFlag('orientation', 'PORTRAIT'),
   theme = argFlag('theme', 'light'),
-  repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
-  undoCount = Number(argFlag('undo-count', '0')),
-  undoPauseMs = Number(argFlag('undo-pause-ms', String(UNDO_ACTION_PAUSE_MS))),
+  repeats = argNumber('gesture-repeats', GESTURE_REPEATS, POSITIVE_INTEGER),
+  undoCount = argNumber('undo-count', 0, NON_NEGATIVE_INTEGER),
+  undoPauseMs = argNumber('undo-pause-ms', UNDO_ACTION_PAUSE_MS, NON_NEGATIVE_INTEGER),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
-  cdpPort = parsePositivePort(argFlag('cdp-port', PORT_ROLES.androidCdp.port), 'cdp-port'),
+  cdpPort = argNumber('cdp-port', PORT_ROLES.androidCdp.port, TCP_PORT),
   wdaUrl = argFlag('wda-url', 'http://127.0.0.1:8100'),
   label = argFlag('label'),
   // Without --output the composed artifact (fidelity, summaries, provenance) is

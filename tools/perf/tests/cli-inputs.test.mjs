@@ -151,11 +151,39 @@ describe('performance CLI input failures', () => {
   });
 
   it('reports a malformed --strokes instead of building empty scenarios', () => {
-    expectCliFailure(undoScenariosPath, ['--strokes=abc'], '--strokes must be a number, got "abc"');
+    expectCliFailure(
+      undoScenariosPath,
+      ['--strokes=abc'],
+      '--strokes must be an integer >= 1, got "abc"'
+    );
+  });
+
+  // `--strokes=2.5` built two strokes under a label that said 2.5.
+  it('reports a fractional --strokes instead of truncating it', () => {
+    expectCliFailure(
+      undoScenariosPath,
+      ['--strokes=2.5'],
+      '--strokes must be an integer >= 1, got "2.5"'
+    );
   });
 
   it('reports a malformed --hz instead of an unthrottled/NaN-derived run', () => {
-    expectCliFailure(undoScenariosPath, ['--hz=abc'], '--hz must be a number, got "abc"');
+    expectCliFailure(undoScenariosPath, ['--hz=abc'], '--hz must be a number > 0, got "abc"');
+  });
+
+  // `--hz=0` made the frame budget Infinity, so every commit passed.
+  it('reports a zero --hz instead of an infinite frame budget', () => {
+    expectCliFailure(undoScenariosPath, ['--hz=0'], '--hz must be a number > 0, got "0"');
+  });
+
+  it('refuses an unknown flag instead of running without it', () => {
+    const result = spawnSync(process.execPath, [undoScenariosPath, '--stroke=4'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/^Unknown flag --stroke=4 — known flags: .*\bstrokes\b/);
   });
 
   it('replays every recorded size level at the app stroke width', async () => {

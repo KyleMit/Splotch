@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   createParentalGate,
+  gateAcceptsInput,
   GATE_ANNOUNCE_DELAY_MS,
   GATE_ERROR_MESSAGE,
   GATE_SHAKE_MS,
@@ -108,6 +109,51 @@ describe('parental gate lockout', () => {
     expect(gate.lockoutMessage).toBeNull();
     typeAnswer(correctAnswer());
     expect(gate.unlocked).toBe(true);
+  });
+
+  it('ends a pause that ran out unseen on the next digit, which it also takes', () => {
+    lockOut();
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
+    expect(gate.lockoutUntil).not.toBeNull();
+
+    gate.pressGateDigit(7);
+    expect(gate.lockoutUntil).toBeNull();
+    expect(gate.lockoutMessage).toBeNull();
+    expect(gate.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
+    expect(gate.input).toBe('7');
+  });
+
+  it('leaves a pause that ran out mid-shake to the first press after the shake', () => {
+    lockOut();
+    vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
+    const announcement = gate.announcement;
+
+    gate.pressGateDigit(7);
+    expect(gate.lockoutUntil).not.toBeNull();
+    expect(gate.announcement).toBe(announcement);
+    expect(gate.input).toBe('');
+
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    gate.pressGateDigit(7);
+    expect(gate.lockoutUntil).toBeNull();
+    expect(gate.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
+    expect(gate.input).toBe('7');
+  });
+
+  it('asks whether the keypad takes input without settling a pause that ran out', () => {
+    lockOut();
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
+    const fields = JSON.stringify(gate);
+    const timers = vi.getTimerCount();
+
+    expect(gateAcceptsInput(gate)).toBe(false);
+    expect(JSON.stringify(gate)).toBe(fields);
+    expect(vi.getTimerCount()).toBe(timers);
+
+    gate.pressGateBackspace();
+    expect(gateAcceptsInput(gate)).toBe(true);
   });
 
   it('announces a pause when it starts, on reopen, and when it ends, never per tick', () => {
