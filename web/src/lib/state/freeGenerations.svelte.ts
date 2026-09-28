@@ -1,7 +1,8 @@
 import { apiUrl } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { sha256Hex } from '$lib/digestHex';
-import { FREE_GENERATION_LIMIT, isInstallationId } from '$lib/freeGenerations';
+import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
+import { isInstallationId } from '$lib/installationId';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
 import { readString, STORAGE_KEYS, writeString } from '$lib/storage';
 import {
