@@ -74,8 +74,9 @@ function isStoredPicture(value: unknown): value is StoredPicture {
 
 // The schema types what this build writes, not what a read finds: the record can predate a change
 // to its shape, or come from a newer build in another tab. An unchecked entry missing its bytes
-// becomes a Blob of the text "undefined" that Try again would save as a picture. An entry in an
-// unknown shape is skipped, not deleted, so a build that knows the shape can still restore it.
+// becomes a Blob of the text "undefined" that Try again would save as a picture. Reading never
+// writes, so an unrecognized entry is only skipped; the next write replaces the whole record with
+// the pictures this build holds, as every write does.
 function recognizedPictures(stored: unknown): StoredPicture[] {
   const entries: unknown[] = Array.isArray(stored) ? stored : [stored];
   const recognized = entries.filter(isStoredPicture);
