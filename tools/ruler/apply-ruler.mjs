@@ -18,12 +18,15 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ROOT, isMain } from '../lib/proc.mjs';
 import { assertDprintPlugins } from '../check-dprint-plugins.mjs';
-import { sharedNoteSource } from './mirror-skill-notes.mjs';
+import { planSkillNotes, sharedNoteSource } from './mirror-skill-notes.mjs';
+import { planRulerSkillForks } from './apply-skill-forks.mjs';
+import { DIRECT_PROVIDER_PATHS, DIRECT_PROVIDER_SKILLS } from './lib/direct-provider-skills.mjs';
 import {
-  ALL_PROVIDERS,
-  DIRECT_PROVIDER_PATHS,
-  DIRECT_PROVIDER_SKILLS,
-} from './lib/direct-provider-skills.mjs';
+  FORK_SOURCE,
+  PROVIDERS,
+  SHARED_NOTES_SOURCE,
+  SHARED_SKILLS_SOURCE,
+} from './lib/layout.mjs';
 
 export const RULER_STEP_PATHS = Object.freeze({
   mirrorSkillNotes: fileURLToPath(new URL('mirror-skill-notes.mjs', import.meta.url)),
@@ -33,12 +36,12 @@ export const RULER_STEP_PATHS = Object.freeze({
 export { DIRECT_PROVIDER_PATHS };
 
 export const FORBIDDEN_DIRECT_PROVIDER_SOURCES = DIRECT_PROVIDER_SKILLS.flatMap(({ name }) => [
-  `.ruler/skills/${name}`,
-  `.ruler/skill-notes/${name}.md`,
-  `.ruler/skill-notes/${sharedNoteSource(name)}`,
-  ...ALL_PROVIDERS.flatMap((provider) => [
-    `.ruler/skill-forks/${provider}/skills/${name}`,
-    `.ruler/skill-forks/${provider}/skill-notes/${name}.md.template`,
+  join(SHARED_SKILLS_SOURCE, name),
+  join(SHARED_NOTES_SOURCE, `${name}.md`),
+  join(SHARED_NOTES_SOURCE, sharedNoteSource(name)),
+  ...PROVIDERS.flatMap((provider) => [
+    join(FORK_SOURCE, provider, 'skills', name),
+    join(FORK_SOURCE, provider, 'skill-notes', `${name}.md.template`),
   ]),
 ]);
 
@@ -194,12 +197,22 @@ function runStep(command, args) {
   }
 }
 
+// The note and fork steps validate their own sources, but only after `ruler
+// apply` has already rewritten every instruction file and both skill trees. A
+// stray `.md` note is by then concatenated into the root CLAUDE.md/AGENTS.md, so
+// both source checks run first, while the checkout is still untouched.
+export function generateFromValidatedSources(root, generate) {
+  planSkillNotes(root);
+  planRulerSkillForks(root);
+  withPreservedDirectProviderPaths(root, generate);
+}
+
 function main() {
   // Before anything is regenerated: the run ends in `dprint fmt`, and a stale
   // plugin install would fail it after the whole agent tree has been rewritten.
   assertDprintPlugins(ROOT);
 
-  withPreservedDirectProviderPaths(ROOT, () => {
+  generateFromValidatedSources(ROOT, () => {
     runStep('ruler', ['apply']);
     runStep(process.execPath, [RULER_STEP_PATHS.mirrorSkillNotes]);
     runStep(process.execPath, [RULER_STEP_PATHS.applySkillForks]);

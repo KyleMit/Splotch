@@ -8,12 +8,8 @@ that runner owns, because one file here generates both providers' copies. `npm r
 (also `tools/tests/skill-reference-syntax.test.mjs`) fails on the wrong one. Agents without skill
 support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/` (or
 `.claude/skills/<name>/`). Most are generated from `.ruler/`; managed runner forks may be produced
-from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
-`burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
-`analyze-session-transcripts` with format-specific implementations and `run-rival-agent`, whose two
-packages each launch the *other* vendor's CLI. `reconcile-agent-memories` has only a Claude package
-for Claude Code's indexed project memory. See `tools/ruler/lib/direct-provider-skills.mjs` for the
-authoritative registry.
+from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are maintained in their
+provider trees instead; `tools/ruler/lib/direct-provider-skills.mjs` is the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                                                                                                    |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,7 +90,8 @@ that must not be missed — invariants, footguns, the thing that makes a wrong r
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
 `testing.md`, `ipad-profiling-docs.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`,
-`web/tests/`, `android/`, `tools/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`web/tests/`, `android/`, `tools/`, `tools/asset-gen/`, `tools/store-drawings/`, and `docs/handoff/`
+cover those areas.
 
 The **live backlog is GitHub Issues** — when asked what to work on next, list the open issues and
 filter by label (`area:*`, `type:*`, `priority:*`); don't look for a backlog file. Capture a durable
