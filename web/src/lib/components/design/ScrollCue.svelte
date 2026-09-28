@@ -83,19 +83,14 @@
     margin-top: calc(-1 * var(--cue-height));
     pointer-events: none;
     transition: opacity var(--duration-base) var(--ease-glide);
-    /* rgb fallback precedes the color-mix (docs/COMPATIBILITY.md); painting
-       from --surface rather than white gives dark mode a dark fade. The clear
-       end is a zero-alpha surface, not the `transparent` keyword, which some
-       engines interpolate through gray. */
+    /* Painted from --surface's channels rather than white, so dark mode gets a
+       dark fade, and without color-mix(), so no engine needs a fallback. The
+       clear end is a zero-alpha surface, not the `transparent` keyword, which
+       some engines interpolate through gray. */
     background: linear-gradient(
       to bottom,
-      rgb(255 255 255 / 0%),
-      rgb(255 255 255 / 100%) var(--cue-opaque-from)
-    );
-    background: linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--surface) 0%, transparent),
-      var(--surface) var(--cue-opaque-from)
+      rgb(var(--surface-rgb) / 0%),
+      rgb(var(--surface-rgb) / 100%) var(--cue-opaque-from)
     );
   }
 
