@@ -24,29 +24,13 @@
   // toggle chips. Selection *semantics* stay with the caller: onSelect always fires
   // with the clicked value, so a radio caller sets it, while a toggle caller
   // may flip it in a set (the chips).
-  interface Props {
+  interface SharedProps {
     /** Accessible name for the option group. */
     label: string;
     /** Visible explanatory copy associated with this picker. */
     describedBy?: string;
     options: SegmentedPickerOption<T>[];
-    /**
-     * The active value (or null when none is), or — for independent toggles
-     * like the controls chips — the pressed subset.
-     */
-    selected: T | null | readonly T[];
     onSelect: (value: T) => void;
-    /** radio = choose-one (radiogroup/aria-checked); toggle = pressable options (group/aria-pressed). */
-    mode?: 'radio' | 'toggle';
-    /**
-     * Renders each option as a real `<input type="radio">` under this name
-     * instead of a button, for a form that must submit with JavaScript
-     * unavailable. radio mode only: the native radios carry the checked state
-     * and arrow-key roving themselves, and the group's radiogroup role is what
-     * gives them the accessible name grouping by `name` alone leaves them
-     * without.
-     */
-    inputName?: string;
     /**
      * segment = brand-filled thumb track; chip = borderless toggle grid; underline =
      * tab row on a hairline, for a standalone page that switches between two
@@ -68,6 +52,37 @@
     /** Forwarded to the track so a call site can restyle via `:global()`. */
     class?: string;
   }
+
+  /** Choose-one: a radiogroup of aria-checked options with roving tabindex. */
+  interface RadioProps extends SharedProps {
+    mode?: 'radio';
+    /** The active value, or null when none is. */
+    selected: T | null;
+    /**
+     * Renders each option as a real `<input type="radio">` under this name
+     * instead of a button, for a form that must submit with JavaScript
+     * unavailable. The native radios carry the checked state and arrow-key
+     * roving themselves, and the group's radiogroup role is what gives them
+     * the accessible name grouping by `name` alone leaves them without.
+     */
+    inputName?: string;
+  }
+
+  /**
+   * Independent pressable options: a group of aria-pressed buttons. The
+   * native-radio skin carries no pressed state and needs the radiogroup role,
+   * so `inputName` is `never` here. Every combination this union refuses is
+   * refused by a field's type rather than the excess-property check, so it
+   * holds through a props spread too.
+   */
+  interface ToggleProps extends SharedProps {
+    mode: 'toggle';
+    /** The pressed subset. */
+    selected: readonly T[];
+    inputName?: never;
+  }
+
+  type Props = RadioProps | ToggleProps;
 
   let {
     label,
