@@ -60,6 +60,15 @@ function deferredIconPathMarker(name: string): string {
   return pathData.slice(0, DEFERRED_ICON_MARKER_LENGTH);
 }
 
+// A new startup chunk can be too small for the byte budget
+// (tools/check-bundle-budgets.mjs) and hold no module the markers above name,
+// yet it still costs one more request before hydration. A startup module
+// importing a runtime export from a module that lazy code also imports is
+// enough: Rolldown splits the shared module into a chunk of its own. Counted on
+// the build this spec runs against, the Playwright web server's instrumented
+// `vite build`.
+const STARTUP_MODULEPRELOAD_COUNT = 40;
+
 test.skip(!!process.env.DEV_SERVER, 'guards the production build output');
 
 function modulepreloadHrefs(): string[] {
@@ -99,6 +108,17 @@ test('the save pipeline stays out of the prerendered modulepreload list', () => 
       ).toBe(false);
     }
   }
+});
+
+test('the prerendered page modulepreloads the reviewed number of startup chunks', () => {
+  const count = modulepreloadHrefs().length;
+  const change =
+    count > STARTUP_MODULEPRELOAD_COUNT
+      ? `up from ${STARTUP_MODULEPRELOAD_COUNT}: a new chunk now loads before hydration. Find which startup module imports a runtime export that lazy code also imports, and give that export a module only the startup path imports. If the new startup chunk is intended, raise STARTUP_MODULEPRELOAD_COUNT and say why in the PR`
+      : `down from ${STARTUP_MODULEPRELOAD_COUNT}: lower STARTUP_MODULEPRELOAD_COUNT to lock the gain in`;
+  expect(count, `the prerendered / page has ${count} modulepreloads, ${change}`).toBe(
+    STARTUP_MODULEPRELOAD_COUNT
+  );
 });
 
 // The boot-hidden overlays (components/overlayChunk.ts) mount at idle, so their
