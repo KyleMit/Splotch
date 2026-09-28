@@ -94,6 +94,8 @@ function createPngEncoder(): PngEncoder {
       }
       return;
     }
+    // A coded error means the worker's canvas context is unrecoverable, so it retires the worker and
+    // every request pending on it. Any other error reply settles only its own request.
     if ('error' in event.data && event.data.code !== undefined) {
       const error = new Error(event.data.error);
       encoder.terminate(error);
@@ -104,6 +106,8 @@ function createPngEncoder(): PngEncoder {
     pending.delete(event.data.id);
     if ('error' in event.data) {
       request.reject(new Error(event.data.error));
+    } else if (event.data.blob.type !== 'image/png') {
+      request.reject(new Error(`PNG encoder returned ${event.data.blob.type}`));
     } else {
       request.resolve(event.data.blob);
     }
@@ -143,17 +147,13 @@ export async function encodeTiledCanvasPng(
 ): Promise<Blob | null> {
   try {
     cachedEncoder ??= createPngEncoder();
-    const blob = await cachedEncoder.encodeTiles(input, onPreview);
-    if (blob.type !== 'image/png') throw new Error(`PNG encoder returned ${blob.type}`);
-    return blob;
-  } catch (error) {
+    return await cachedEncoder.encodeTiles(input, onPreview);
+  } catch {
+    // The encoder alone decides when its worker is broken; retiring it here for this request's
+    // failure would reject every concurrent export along with it.
     for (const tile of input.tiles) tile.bitmap.close();
     input.texture?.close();
     input.overlay?.close();
-    if (cachedEncoder) {
-      cachedEncoder.terminate(error instanceof Error ? error : new Error(String(error)));
-      cachedEncoder = null;
-    }
     return null;
   }
 }
@@ -169,14 +169,9 @@ export async function encodeCanvasPng(
     cachedEncoder ??= createPngEncoder();
     const blob = await cachedEncoder.encode(bitmap);
     bitmap = null;
-    if (blob.type !== 'image/png') throw new Error(`PNG encoder returned ${blob.type}`);
     return blob;
-  } catch (error) {
+  } catch {
     bitmap?.close();
-    if (cachedEncoder) {
-      cachedEncoder.terminate(error instanceof Error ? error : new Error(String(error)));
-      cachedEncoder = null;
-    }
     return encodeOnMainThread(canvas);
   }
 }

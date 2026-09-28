@@ -2,7 +2,7 @@ import {
   createOffscreenCanvas2dSurface,
   type RecoverableCanvas2dSurface,
 } from './canvasContextRecovery';
-import { drawExportOverlay, paintExportPaper } from './exportCompositor';
+import { paintTiledExportLayers } from './exportCompositor';
 import type { TiledPngInput } from './pngEncoderProtocol';
 
 export function createTiledPngSurface(data: TiledPngInput): RecoverableCanvas2dSurface {
@@ -19,29 +19,18 @@ export function paintTiledPngSurface(
   { canvas, context }: RecoverableCanvas2dSurface,
   data: TiledPngInput
 ) {
-  const { width, height } = canvas;
-  const logicalWidth = width / data.exportScale;
-  const logicalHeight = height / data.exportScale;
-
-  paintExportPaper(context, {
-    width: logicalWidth,
-    height: logicalHeight,
+  paintTiledExportLayers(context, {
+    tiles: data.tiles,
+    sourceScale: data.sourceScale,
+    width: canvas.width / data.exportScale,
+    height: canvas.height / data.exportScale,
     scale: data.exportScale,
     paperColor: data.paperColor,
     texture: data.texture,
+    overlay: data.overlay
+      ? { source: data.overlay, width: data.overlay.width, height: data.overlay.height }
+      : null,
   });
-
-  const tileScale = data.exportScale / data.sourceScale;
-  context.setTransform(tileScale, 0, 0, tileScale, 0, 0);
-  for (const tile of data.tiles) context.drawImage(tile.bitmap, tile.x, tile.y);
-  context.resetTransform();
-  if (data.overlay) {
-    drawExportOverlay(
-      context,
-      { source: data.overlay, width: data.overlay.width, height: data.overlay.height },
-      { width: logicalWidth, height: logicalHeight, scale: data.exportScale }
-    );
-  }
 }
 
 export function createTiledPngPreview(canvas: OffscreenCanvas, previewWidth: number): ImageBitmap {
