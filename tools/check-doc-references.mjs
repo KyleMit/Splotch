@@ -64,7 +64,7 @@ const NAVIGATION_SEGMENT = /^\.\.?$/;
 const HAS_EXTENSION = /[^/.]\.\w+$/;
 const LINE_SUFFIX = /(:\d+(-\d+)?|#L\d+(-L?\d+)?)$/;
 
-const NPM_RUN = /\bnpm run (?:--?[\w-]+ )*([\w:.-]+)/g;
+const NPM_RUN = /\bnpm (?:--?[\w-]+ )*run (?:--?[\w-]+ )*([\w:.-]+)/g;
 const INLINE_CODE = /(?<!`)`([^`\n]+)`(?!`)/g;
 const MARKDOWN_LINK = /\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 const FENCE = /^\s*(```|~~~)/;
