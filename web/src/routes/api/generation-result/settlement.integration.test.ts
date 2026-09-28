@@ -367,7 +367,7 @@ describe('the background worker', () => {
     }
   );
 
-  it('refuses a signed dispatch that is not generation work, without touching the job', async () => {
+  it('records a signed dispatch that is not generation work as an error the poll refunds', async () => {
     const { jobId, dispatch } = await startHandedOffGeneration();
     const body = JSON.stringify({ jobId });
     const signed = new Request(dispatch.url, {
@@ -378,9 +378,12 @@ describe('the background worker', () => {
       body,
     });
 
-    expect((await worker(signed)).status).toBe(400);
+    expect((await worker(signed)).status).toBe(200);
+
     expect(provider.generateImage).not.toHaveBeenCalled();
-    expect(jobBlobKeys(jobId)).toContain(`${jobId}/input`);
+    expect((await collect(jobId)).status).toBe(502);
+    expect(grantOf()).toMatchObject({ successful: 0, failures: 1, reservations: {} });
+    expect(jobBlobKeys(jobId)).toEqual([]);
   });
 
   it('takes the drawing out of the store before calling the model', async () => {
