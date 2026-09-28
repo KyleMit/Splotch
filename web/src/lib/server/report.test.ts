@@ -167,6 +167,18 @@ describe('the issue title', () => {
     expect(issueTitle()).toBe('[Feature] Add a glitter brush');
   });
 
+  // The message is trimmed before the title is built, so its first line always
+  // has a character to show: a summary is never empty and needs no fallback.
+  it('summarizes a message that opens with blank lines by its first written line', async () => {
+    await submitReport({
+      ...base,
+      kind: 'feature',
+      message: '\n \n  Add a glitter brush\nwith sparkles',
+    });
+
+    expect(issueTitle()).toBe('[Feature] Add a glitter brush');
+  });
+
   it('summarizes a multi-line message by its first line alone', async () => {
     await submitReport({
       ...base,
@@ -198,5 +210,51 @@ describe('the issue title', () => {
     });
 
     expect(issueTitle()).toBe(`[Bug] ${expectedSummary}`);
+  });
+});
+
+// Byte-for-byte pins of everything a kind decides about the issue it files, so
+// the per-kind wording can be reorganized without changing what lands on GitHub.
+describe('the issue each kind files', () => {
+  beforeEach(() => createIssue.mockClear());
+
+  it('files a bug report with its device rows', async () => {
+    await submitReport({
+      kind: 'bug',
+      message: 'The crayon draws green',
+      device: { platform: 'Web', app: '1.2.3' },
+      hp: '',
+    });
+
+    expect(createIssue).toHaveBeenCalledWith({
+      title: '[Bug] The crayon draws green',
+      body: [
+        'The crayon draws green',
+        '',
+        '---',
+        "_Submitted from the Splotch app's bug report form._",
+        '',
+        '**Device info** (shared with the reporter’s permission):',
+        '',
+        '- **App version:** 1.2.3',
+        '- **Platform:** Web',
+      ].join('\n'),
+      labels: ['user-report', 'type:bug'],
+    });
+  });
+
+  it('files a feature request', async () => {
+    await submitReport({ kind: 'feature', message: 'Add a glitter brush', device: null, hp: '' });
+
+    expect(createIssue).toHaveBeenCalledWith({
+      title: '[Feature] Add a glitter brush',
+      body: [
+        'Add a glitter brush',
+        '',
+        '---',
+        "_Submitted from the Splotch app's feature request form._",
+      ].join('\n'),
+      labels: ['user-report', 'type:feature'],
+    });
   });
 });

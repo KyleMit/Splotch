@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '../breakpoints';
+import {
+  LARGE_TABLET_MIN_SIDE_PX,
+  PHONE_LANDSCAPE_QUERY,
+  TABLET_MIN_SIDE_PX,
+} from '../breakpoints';
 
 // The bespoke dialogs that scale for roomy viewports — and the pieces extracted
 // out of one — must step at the same widths: a gate that grows where the style
@@ -74,11 +78,16 @@ describe('the roomy-viewport dialogs step at the shared device-class floors', ()
     }
   );
 
-  // The gate's compact landscape block is the tablet step's complement: it ends
-  // one pixel below where the tablet step begins. Left unpinned, moving
-  // TABLET_MIN_SIDE_PX opens a band of viewport heights that neither block
-  // covers, and a landscape phone in it falls back to the portrait card.
-  it('ends the gate’s compact landscape block where the tablet step begins', () => {
-    expect(DIALOGS.ParentalGate.source).toContain(`max-height: ${TABLET_MIN_SIDE_PX - 1}px`);
-  });
+  // The gate's compact landscape blocks are the tablet step's complement, and
+  // the card, keypad and problem must switch together. Each restates
+  // PHONE_LANDSCAPE_QUERY, which ends BREAKPOINT_EPSILON_PX below where the
+  // tablet step begins. A whole-pixel bound leaves a band of fractional
+  // viewport heights that neither block covers, and a landscape phone in it
+  // falls back to the portrait card.
+  it.each(['ParentalGate', 'ParentalGateKeypad', 'ParentalGateProblem'] as const)(
+    'ends the %s compact landscape block where the tablet step begins',
+    (label) => {
+      expect(DIALOGS[label].source).toContain(`@media ${PHONE_LANDSCAPE_QUERY} {`);
+    }
+  );
 });

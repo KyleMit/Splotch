@@ -75,7 +75,7 @@
   }
 
   function onPointerDown(event: PointerEvent) {
-    if (!event.isPrimary) return;
+    if (!event.isPrimary || event.button !== 0) return;
     dragPointerId = event.pointerId;
     dragStartX = event.clientX;
     dragStartValue = value;

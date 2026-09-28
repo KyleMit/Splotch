@@ -28,11 +28,12 @@ describe('hex snap gesture', () => {
     return hex;
   }
 
-  function pointer(type: string, x: number, y: number, target: Element = picker) {
+  function pointer(type: string, x: number, y: number, target: Element = picker, button = 0) {
     const event = new PointerEvent(type, {
       pointerId: 1,
       clientX: x,
       clientY: y,
+      button,
       bubbles: true,
       cancelable: true,
     });
@@ -81,6 +82,18 @@ describe('hex snap gesture', () => {
     pointer('pointerup', 400, 400);
     expect(hover).not.toHaveBeenCalled();
     expect(pick).not.toHaveBeenCalled();
+    expect(down.defaultPrevented).toBe(false);
+  });
+
+  it.each([
+    ['middle', 1],
+    ['right', 2],
+  ])('ignores a %s-button press on a hexagon', (_, button) => {
+    const down = pointer('pointerdown', 100, 100, picker, button);
+    pointer('pointerup', 100, 100);
+    expect(hover).not.toHaveBeenCalled();
+    expect(pick).not.toHaveBeenCalled();
+    expect(picker.setPointerCapture).not.toHaveBeenCalled();
     expect(down.defaultPrevented).toBe(false);
   });
 
