@@ -6,15 +6,16 @@ import { STORAGE_KEYS, WEB_ONLY_STORAGE_KEYS } from './storageKeys';
 // native wrote under one of them would be gone after a WebView eviction. That
 // is safe only while no writer of those keys runs on native, and this scan
 // holds that claim to the source in three ways:
-//   - every name a write can travel through is pinned to the files allowed to
-//     use it, so a writer in a new file fails;
-//   - every write call site, and every call into the functions that write, is
-//     counted per file, so a new one in an approved file fails;
+//   - every name a write can travel through (the key, and each function or
+//     alias that writes it) is counted per file, so a new write, caller, or
+//     file fails;
+//   - each call into a module-private writing function is counted too;
 //   - each guard that keeps those writers off native must still be in its file.
-// It reads text, not control flow: a changed count means the new call site has
-// to be checked against the family's guards before the number moves, and the
-// key re-verified before it stays web-only. Removals are not writers:
-// forgetting a value can never need a restore.
+// It reads text, not control flow, and a comment naming a writer counts. A
+// changed count means the new site has to be checked against the family's
+// guards before the number moves, and the key re-verified before it stays
+// web-only. Removals are not writers: forgetting a value can never need a
+// restore.
 
 const sources = import.meta.glob<string>(
   ['../**/*.svelte', '../**/*.ts', '../**/*.html', '!../**/*.d.ts', '!../**/*.test.ts'],
@@ -35,10 +36,10 @@ type StorageKeyName = keyof typeof STORAGE_KEYS;
 
 interface WebOnlyFamily {
   keys: readonly StorageKeyName[];
-  // Each identifier or literal a write reaches the keys through, and every file allowed to name it.
-  reachedThrough: Readonly<Record<string, readonly string[]>>;
-  // How many times each write, or call into a writing function, appears in its file.
-  writeSites: readonly (readonly [file: string, site: RegExp, count: number])[];
+  // Each name a write reaches the keys through: how often each file may use it.
+  reachedThrough: Readonly<Record<string, Readonly<Record<string, number>>>>;
+  // Calls into module-private writing functions, whose names are too common to count by name.
+  privateCalls: readonly (readonly [file: string, call: RegExp, count: number])[];
   // Source that keeps those writers off native, and must stay in its file.
   guards: readonly (readonly [file: string, guard: string | RegExp])[];
 }
@@ -55,24 +56,21 @@ const FAMILIES: Readonly<Record<string, WebOnlyFamily>> = {
       'installRepromptSessionCount',
     ],
     reachedThrough: {
-      'STORAGE_KEYS.installDismissed': [INSTALL],
-      'STORAGE_KEYS.installCompleted': [INSTALL],
-      'STORAGE_KEYS.installRepromptsUsed': [INSTALL],
-      'STORAGE_KEYS.installRepromptSessionCount': [SESSION_COUNTERS],
-      "'installReprompt'": [SESSION_COUNTERS, INSTALL],
-      dismissInstall: [INSTALL, INSTALL_BANNER],
-      autoDismissInstallIfDue: [INSTALL, INSTALL_BANNER],
-      promptInstall: [INSTALL, INSTALL_BANNER, SETUP_INSTRUCTIONS],
-      markInstalled: [INSTALL],
-      captureInstallPrompt: [INSTALL],
-      recordInstallRepromptSession: [INSTALL, WEB_ONLY_SERVICES],
-      initInstallPrompt: [INSTALL, WEB_ONLY_SERVICES],
+      'STORAGE_KEYS.installDismissed': { [INSTALL]: 3 },
+      'STORAGE_KEYS.installCompleted': { [INSTALL]: 4 },
+      'STORAGE_KEYS.installRepromptsUsed': { [INSTALL]: 4 },
+      'STORAGE_KEYS.installRepromptSessionCount': { [SESSION_COUNTERS]: 1 },
+      "'installReprompt'": { [SESSION_COUNTERS]: 2, [INSTALL]: 4 },
+      dismissInstall: { [INSTALL]: 3, [INSTALL_BANNER]: 2 },
+      autoDismissInstallIfDue: { [INSTALL]: 3, [INSTALL_BANNER]: 2 },
+      promptInstall: { [INSTALL]: 4, [INSTALL_BANNER]: 3, [SETUP_INSTRUCTIONS]: 2 },
+      markInstalled: { [INSTALL]: 8 },
+      captureInstallPrompt: { [INSTALL]: 6 },
+      recordInstallRepromptSession: { [INSTALL]: 5, [WEB_ONLY_SERVICES]: 2 },
+      initInstallPrompt: { [INSTALL]: 4, [WEB_ONLY_SERVICES]: 2 },
     },
-    writeSites: [
-      [INSTALL, /\bwrite(?:Bool|String|Int)\(\s*STORAGE_KEYS\.install/g, 4],
-      [INSTALL, /\.recordSession\(\s*'installReprompt'/g, 1],
+    privateCalls: [
       [INSTALL, /\bdismiss\(\);/g, 2],
-      [INSTALL, /\bmarkInstalled\(\);/g, 2],
       [SESSION_COUNTERS, /\bwrite(?:Bool|String|Int)\(/g, 1],
     ],
     guards: [
@@ -87,13 +85,10 @@ const FAMILIES: Readonly<Record<string, WebOnlyFamily>> = {
   'free-generation installation': {
     keys: ['freeGenerationInstallation'],
     reachedThrough: {
-      'STORAGE_KEYS.freeGenerationInstallation': [WEB_INSTALLATION_ID],
-      webInstallationId: [WEB_INSTALLATION_ID, FREE_GENERATIONS],
+      'STORAGE_KEYS.freeGenerationInstallation': { [WEB_INSTALLATION_ID]: 2 },
+      webInstallationId: { [WEB_INSTALLATION_ID]: 1, [FREE_GENERATIONS]: 3 },
     },
-    writeSites: [
-      [WEB_INSTALLATION_ID, /\bwrite(?:Bool|String|Int)\(/g, 1],
-      [FREE_GENERATIONS, /\bwebInstallationId\(\)/g, 1],
-    ],
+    privateCalls: [],
     guards: [
       [
         FREE_GENERATIONS,
@@ -105,9 +100,8 @@ const FAMILIES: Readonly<Record<string, WebOnlyFamily>> = {
   // hands out after native has already returned its own backend.
   'secure vault': {
     keys: ['secureVaultEmpty'],
-    reachedThrough: { 'STORAGE_KEYS.secureVaultEmpty': [SECURE_STORAGE] },
-    writeSites: [
-      [SECURE_STORAGE, /\bwrite(?:Bool|String|Int)\(\s*STORAGE_KEYS\.secureVaultEmpty/g, 1],
+    reachedThrough: { 'STORAGE_KEYS.secureVaultEmpty': { [SECURE_STORAGE]: 4 } },
+    privateCalls: [
       [SECURE_STORAGE, /\bnoteSecretAbsent\(name\)/g, 1],
       [SECURE_STORAGE, /\bnoteSecretAbsentUnlessSaved\(name\)/g, 1],
       [SECURE_STORAGE, /\bload: webLoad\b/g, 1],
@@ -144,13 +138,16 @@ function sourceOf(file: string): string {
   return source ?? '';
 }
 
-function filesNaming(token: string): string[] {
+// How often each file outside the registry names `token` as a whole word.
+function occurrencesByFile(token: string): Record<string, number> {
   const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`(?<![\\w$])${escaped}(?![\\w$])`);
-  return [...sourcesBySrcPath]
-    .filter(([path, source]) => path !== REGISTRY && pattern.test(source))
-    .map(([path]) => path)
-    .sort();
+  const pattern = new RegExp(`(?<![\\w$])${escaped}(?![\\w$])`, 'g');
+  return Object.fromEntries(
+    [...sourcesBySrcPath]
+      .filter(([path]) => path !== REGISTRY)
+      .map(([path, source]) => [path, source.match(pattern)?.length ?? 0] as const)
+      .filter(([, count]) => count > 0)
+  );
 }
 
 const familyEntries = Object.entries(FAMILIES);
@@ -164,7 +161,7 @@ it('covers exactly the web-only keys', () => {
 
 describe.each(familyEntries)(
   'web-only %s writers',
-  (_family, { keys, reachedThrough, writeSites, guards }) => {
+  (_family, { keys, reachedThrough, privateCalls, guards }) => {
     it('scans every key by its registry name', () => {
       expect(Object.keys(reachedThrough)).toEqual(
         expect.arrayContaining(keys.map((name) => `STORAGE_KEYS.${name}`))
@@ -172,15 +169,15 @@ describe.each(familyEntries)(
     });
 
     it.each(keys)('names %s only through the registry', (name) => {
-      expect(filesNaming(STORAGE_KEYS[name])).toEqual([]);
+      expect(occurrencesByFile(STORAGE_KEYS[name])).toEqual({});
     });
 
-    it.each(Object.entries(reachedThrough))('confines %s to its known files', (token, files) => {
-      expect(filesNaming(token)).toEqual([...files].sort());
+    it.each(Object.entries(reachedThrough))('confines %s to its known uses', (token, uses) => {
+      expect(occurrencesByFile(token)).toEqual(uses);
     });
 
-    it.each(writeSites)('counts the writes in %s matching %s', (file, site, count) => {
-      expect(sourceOf(file).match(site) ?? []).toHaveLength(count);
+    it.each(privateCalls)('counts the calls in %s matching %s', (file, call, count) => {
+      expect(sourceOf(file).match(call) ?? []).toHaveLength(count);
     });
 
     it.each(guards)('keeps a native guard in %s (%#)', (file, guard) => {
