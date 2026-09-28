@@ -127,4 +127,71 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
       ]);
     });
   });
+
+  // The relation verdict decides whether a merge gets the full semantic pass.
+  // Its value is a quiet "unrelated" when nothing links the two sides, so each
+  // way of being linked must raise it, and an unlinked pair must not.
+  describe('relate', () => {
+    const { relate, importSpecifiers, resolveSpecifier, moduleKey } = module;
+    const verdict = (upstream, local, localSources) => {
+      const up = parseNameStatus(upstream);
+      const { bothSides } = classifyChanges(up, parseNameStatus(local));
+      return relate({ upstream: up, bothSides, localSources });
+    };
+
+    it('reads static, side-effect, re-export, and dynamic import specifiers', () => {
+      const source = [
+        "import { a } from '$lib/a';",
+        "import './side.css';",
+        "export { b } from '../b.ts';",
+        "const c = await import('./c');",
+      ].join('\n');
+
+      expect(importSpecifiers(source)).toEqual(['$lib/a', './side.css', '../b.ts', './c']);
+    });
+
+    it('resolves $lib and relative specifiers to repo paths and ignores packages', () => {
+      expect(resolveSpecifier('$lib/state/x.svelte', 'web/src/routes/+page.svelte')).toBe(
+        'web/src/lib/state/x.svelte'
+      );
+      expect(resolveSpecifier('../lib/y', 'web/src/routes/page.ts')).toBe('web/src/lib/y');
+      expect(resolveSpecifier('svelte', 'web/src/routes/page.ts')).toBeNull();
+    });
+
+    it('names one module whatever extension or index form a path uses', () => {
+      expect(moduleKey('web/src/lib/a.svelte.ts')).toBe('web/src/lib/a');
+      expect(moduleKey('web/src/lib/b/index.ts')).toBe('web/src/lib/b');
+      expect(moduleKey('web/src/lib/C.svelte')).toBe('web/src/lib/C');
+    });
+
+    it('calls disjoint changes with no shared import or convention unrelated', () => {
+      const result = verdict('M\tweb/src/lib/a.ts', 'M\tweb/src/lib/b.ts', [
+        { path: 'web/src/lib/b.ts', source: "import { c } from './c';" },
+      ]);
+
+      expect(result).toEqual({ relation: 'unrelated', reasons: [] });
+    });
+
+    it('calls a branch that imports an upstream-changed module adjacent', () => {
+      const result = verdict('M\tweb/src/lib/a.ts', 'M\tweb/src/lib/b.ts', [
+        { path: 'web/src/lib/b.ts', source: "import { a } from '$lib/a';" },
+      ]);
+
+      expect(result.relation).toBe('adjacent');
+      expect(result.reasons[0].why).toContain('imports web/src/lib/a.ts');
+    });
+
+    it('calls a branch that imports a module upstream moved or deleted coupled', () => {
+      const result = verdict('R100\tweb/src/lib/a.ts\tweb/src/lib/z.ts', 'M\tweb/src/lib/b.ts', [
+        { path: 'web/src/lib/b.ts', source: "import { a } from './a';" },
+      ]);
+
+      expect(result.relation).toBe('coupled');
+    });
+
+    it('calls a shared file or a changed convention source coupled', () => {
+      expect(verdict('M\tweb/src/lib/a.ts', 'M\tweb/src/lib/a.ts', []).relation).toBe('coupled');
+      expect(verdict('M\teslint.config.js', 'M\tweb/src/lib/b.ts', []).relation).toBe('coupled');
+    });
+  });
 });

@@ -13,10 +13,11 @@ user. Nothing is left as an open to-do.
 **preflight (user present) → audit wave → cluster into units → ship units in parallel lanes →
 further waves as the queue drains → standards update → reserve and morning report**
 
-This builds on `ship-campaign`. Read that skill first: its authority block, per-unit verification,
-quarantine rules, red-`main` roll-forward, control messages, and morning report all apply here
-unchanged. This skill adds four things: where the queue comes from (audits), how several units run
-at once, the guardrails specific to quality work, and the standards update at the end.
+This builds on `ship-campaign`, run in its parallel mode (`parallel=<n>`, usually 3–6). Read that
+skill and its parallel reference first: the authority block, admission and the ownership map, the
+per-unit merge gate, verification, quarantine, red-`main` roll-forward, and the morning report all
+apply here unchanged. This skill adds three things: where the queue comes from (audits), the
+guardrails specific to quality work, and the standards update at the end.
 
 It differs from the neighbours:
 
@@ -102,22 +103,20 @@ question for the user.
 
 ## 4. Ship units in parallel lanes
 
-Each unit is a fresh implementer subagent in its own worktree. It runs `ship-issue mode=autonomous`
-as a free-form unit, with [references/unit-brief.md](references/unit-brief.md) as its standing brief
-plus the unit spec. The brief carries `ship-campaign`'s authorization block verbatim.
+Ship the queue through `ship-campaign parallel=<n>`. That reference owns lane admission, the
+ownership map, the merge queue, the per-unit merge gate with its `reconcile-with-main` relation
+verdict, and the post-merge broadcasts. Each unit is a fresh implementer subagent in its own
+worktree. It runs `ship-issue mode=autonomous` as a free-form unit, with
+[references/unit-brief.md](references/unit-brief.md) as its standing brief plus the unit spec. The
+brief carries `ship-campaign`'s authorization block verbatim.
 
-* **Lanes.** Run up to about six units at once, provided they edit disjoint files. This deliberately
-  departs from `ship-campaign`'s strictly serial loop. Units spend most of their time waiting on
-  rival review and CI, and disjoint units don't compound each other's mistakes. Record the departure
-  in the ledger.
-* **The merge rule for moving `main`.** After review, merge `origin/main` once and wait for CI. If
-  `main` moves again, do a local trial merge: `check`, `lint`, and the targeted tests. If it's green
-  and no files overlap, abort the trial and merge the PR as it stood. Otherwise commit the merge and
-  re-run CI. The brief spells this out.
-* **Verify every merge from live state.** Follow `ship-campaign` step 4: the PR reads merged, its
-  merge commit is on `origin/main`, and the post-merge run on that SHA is green. Then update the
-  ledger. A harness flag such as "merge without review" is checked against the PR's actual reviews
-  and checks before anything else.
+Quality work adds three habits:
+
+* **Audit clusters make admission easy.** Step 3 already groups findings by the files they touch, so
+  each cluster's declared file set comes straight from its findings. A cluster that needs a hot
+  shared file (`docs/ARCHITECTURE.md` is the usual one) waits for that file's holder to merge.
+* **Treat a harness flag as a claim to check.** A flag such as "merge without review" is checked
+  against the PR's actual reviews and checks before anything else.
 * **Feed the brief forward.** When a unit reports a lesson a later unit needs (a guard that reads
   source text, a port variable, a test-environment trap), append it to the working copy of the brief
   that later units read. Durable lessons go into the repo at the end (step 7).

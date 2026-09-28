@@ -37,18 +37,12 @@ finding's full text only when it scheduled it. Its context survived 64 merges pl
 
 Each wave had diminishing but still real returns.
 
-**Parallel lanes, not `ship-campaign`'s serial loop.**
-
-* Most unit time is waiting on rival review and CI, about 20–60 minutes per unit. Five to seven
-  disjoint lanes turned about 13 hours of wall time into 64 merges.
-* The serial loop exists to stop a wrong premise compounding through stacked units. File-disjoint
-  units branched from fresh `main` don't stack, and post-merge CI on `main` never stayed red.
-
-**The trial-merge rule.** Re-merging `main` after every other unit's merge cost about 8 minutes of
-CI each time, and T1 reported three such cycles. The fix: merge `main` once after review, then do a
-local trial merge (check, lint, targeted tests, file-overlap diff) and merge as-is when it's clean.
-It held for the rest of the run with no semantic break on `main`. The overlap check mattered:
-`docs/ARCHITECTURE.md` was the usual collision point.
+**Parallel lanes.** Most unit time is waiting on rival review and CI, about 20–60 minutes per unit,
+so five to seven disjoint lanes turned about 13 hours of wall time into 64 merges. The campaign
+improvised the lanes and its trial-merge rule, and both now live in `ship-campaign`'s `parallel=<n>`
+mode. Its design history, including the user's conditions for adopting it, is in the ship-campaign
+skill note. This skill invokes the mode rather than restating it. Audit clusters make admission
+easy, because findings arrive already grouped by the files they touch.
 
 **The rival earned its place.** Blocking findings it caught that the implementer had missed:
 

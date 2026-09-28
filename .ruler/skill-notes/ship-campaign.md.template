@@ -98,6 +98,43 @@ unwind if it cannot ship. An issue that depends on quarantined or skipped work i
 while independent items continue. Partial work stays a draft with its exact remainder; no review
 or merge gate is relaxed.
 
+## Parallel mode (2026-09-28)
+
+The 2026-09-27/28 clean-code campaign (tracking issue #2376) ran up to seven file-disjoint units at
+once and merged 64 PRs in about 13 hours. The serial loop would have fit perhaps a third of that,
+because each unit spent most of its 20–60 minutes waiting on rival review and CI. `main`'s
+post-merge CI never stayed red. The single-session orchestrator saw every lane. It used that view to
+keep units off each other's files, relay lessons between them, and fix one cross-unit regression
+forward: #2391 added a startup chunk, and #2404 removed it and pinned the count.
+
+The user agreed to fold this into the skill (2026-09-28), with two conditions:
+
+* units must be separate enough that merge conflicts are unlikely;
+* an orchestrator must be aware of everything happening at once, so it can manage git and semantic
+  conflicts.
+
+They also noted that `reconcile-with-main` "can also sometimes be a bit noisy if the changes are
+genuinely unrelated". That shaped `references/parallel.md`:
+
+* **Admission** requires disjoint file sets and no import dependency either way.
+* **Hot shared files** have one holder at a time. `docs/ARCHITECTURE.md`, whose table re-pads on a
+  long row, was the campaign's usual collision point.
+* **The merge gate** grades each moving-`main` merge with the survey's new relation verdict. Full
+  semantic passes happen only for `coupled` merges. The campaign's hand-rolled trial merge
+  (file-overlap diff, `check`, `lint`, targeted tests) is the `unrelated` path. Before that rule,
+  one unit spent three 8-minute CI cycles re-merging an unrelated `main`.
+* **Broadcasts** carry renamed identifiers and new guards to units still in flight. In the
+  campaign, relaying such lessons by hand saved later units CI rounds.
+
+Two failures to keep in mind:
+
+* **An account usage limit ends every lane at once.** It happened twice in that campaign; the
+  second hit landed inside the deadline reserve and cost three units that hadn't opened PRs. Hence
+  the "prefer finishing over opening lanes late" rule.
+* **The harness flagged one merge as "merge without review."** The final head was a merge of
+  `main` after two posted rival rounds, and the flag was a false positive. Checking live state
+  settled it in a minute.
+
 ## Open questions
 
 * The trunk-repair authority in step 4 is new and unexercised. The first draft reverted a campaign

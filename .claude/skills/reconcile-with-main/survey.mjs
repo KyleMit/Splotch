@@ -9,7 +9,8 @@
 // Usage:
 //   node .claude/skills/reconcile-with-main/survey.mjs [--no-fetch] [--json]
 //
-// Prints four sections: the incoming commits; the upstream renames and
+// Prints the relation verdict (unrelated / adjacent / coupled, with reasons),
+// then four sections: the incoming commits; the upstream renames and
 // deletions most likely to strand a call site; the files both sides changed
 // (where a clean textual merge is least likely to mean a coherent result); and
 // the upstream-only files. It never merges, never writes, and never moves a
@@ -20,6 +21,7 @@
 // and merge another.
 
 import { execFileSync } from 'node:child_process';
+import { posix } from 'node:path';
 import { isMain } from '../../../tools/lib/proc.mjs';
 
 const FILE_LIST_LIMIT = 40;
@@ -78,6 +80,90 @@ export function classifyChanges(upstream, local) {
   };
 }
 
+// How far the full semantic pass is warranted. "unrelated": nothing the
+// branch changed shares a file with upstream, imports an upstream-changed
+// module, or is governed by a changed repo-wide convention; a trial merge plus
+// the type check and the branch's tests is enough. "adjacent": the branch
+// imports a module upstream changed; the type check catches a renamed or
+// reshaped export, and the listed upstream diffs are read for the contract
+// changes types cannot see (a default, a return meaning). "coupled": shared
+// files, a stranded rename, or a convention change; run the whole skill.
+export const RELATIONS = ['unrelated', 'adjacent', 'coupled'];
+
+// Repo-wide sources whose change can make untouched branch code wrong or
+// non-compliant without a single shared file.
+const CONVENTION_SOURCES = [
+  /^eslint\.config\.js$/,
+  /^(web\/)?tsconfig[^/]*\.json$/,
+  /^package\.json$/,
+  /^pnpm-lock\.yaml$/,
+  /^web\/(svelte|vite)\.config\.[jt]s$/,
+  /^\.ruler\/conventions\.md$/,
+  /^docs\/CODING-STANDARDS\.md$/,
+  /^(\.stylelintrc[^/]*|\.prettierrc[^/]*|dprint\.json)$/,
+];
+
+const IMPORT_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g;
+const MODULE_SUFFIX = /(\.svelte)?\.(m?[jt]s|svelte)$/;
+
+export const importSpecifiers = (source) =>
+  [...source.matchAll(IMPORT_SPECIFIER)].map((match) => match[2]);
+
+// Resolves the specifiers that can name a repo file; bare package names and
+// other aliases return null and are covered by the package.json convention
+// source instead.
+export function resolveSpecifier(specifier, importerPath) {
+  if (specifier.startsWith('$lib/')) return `web/src/lib/${specifier.slice('$lib/'.length)}`;
+  if (specifier.startsWith('.')) {
+    return posix.normalize(posix.join(posix.dirname(importerPath), specifier));
+  }
+  return null;
+}
+
+// Extension and `/index` are dropped so `./foo`, `./foo.ts`, and `./foo/index.ts`
+// all name one module.
+export const moduleKey = (path) => path.replace(MODULE_SUFFIX, '').replace(/\/index$/, '');
+
+export function relate({ upstream, bothSides, localSources }) {
+  const reasons = [];
+  if (bothSides.length > 0) {
+    reasons.push({ relation: 'coupled', why: `${bothSides.length} file(s) changed on both sides` });
+  }
+  for (const entry of upstream) {
+    const convention = changedPaths(entry).find((path) =>
+      CONVENTION_SOURCES.some((pattern) => pattern.test(path))
+    );
+    if (convention) reasons.push({ relation: 'coupled', why: `convention source ${convention}` });
+  }
+
+  const upstreamModules = new Map(
+    upstream.flatMap((entry) => changedPaths(entry).map((path) => [moduleKey(path), entry]))
+  );
+  for (const { path, source } of localSources) {
+    for (const specifier of importSpecifiers(source)) {
+      const resolved = resolveSpecifier(specifier, path);
+      const entry = resolved && upstreamModules.get(moduleKey(resolved));
+      if (!entry) continue;
+      const stranded = MOVED_OR_DELETED_STATUS.test(entry.status);
+      reasons.push({
+        relation: stranded ? 'coupled' : 'adjacent',
+        why: `${path} imports ${entry.from}, which upstream ${stranded ? 'moved or deleted' : 'changed'}`,
+      });
+    }
+  }
+
+  const rank = Math.max(0, ...reasons.map((reason) => RELATIONS.indexOf(reason.relation)));
+  return { relation: RELATIONS[rank], reasons };
+}
+
+function readAtHead(path) {
+  try {
+    return git('show', `HEAD:${path}`);
+  } catch {
+    return null;
+  }
+}
+
 function survey({ doFetch }) {
   if (doFetch) {
     process.stderr.write(`Fetching ${BASE_REF}…\n`);
@@ -97,6 +183,13 @@ function survey({ doFetch }) {
 
   const changes = (from, to) =>
     parseNameStatus(git('diff', '--name-status', '--find-renames', from, to));
+  const upstream = changes(mergeBase, BASE_REF);
+  const local = changes(mergeBase, 'HEAD');
+  const classified = classifyChanges(upstream, local);
+  const localSources = local
+    .filter((entry) => !entry.status.startsWith('D'))
+    .map((entry) => ({ path: entry.to, source: readAtHead(entry.to) }))
+    .filter((file) => file.source !== null);
 
   return {
     branch,
@@ -105,7 +198,8 @@ function survey({ doFetch }) {
     dirtyWorkingTree,
     localCommits: Number(git('rev-list', '--count', `${mergeBase}..HEAD`)),
     incoming,
-    ...classifyChanges(changes(mergeBase, BASE_REF), changes(mergeBase, 'HEAD')),
+    ...classified,
+    ...relate({ upstream, bothSides: classified.bothSides, localSources }),
   };
 }
 
@@ -140,6 +234,14 @@ function report(result) {
   if (result.incoming.length === 0) {
     console.log(`\nAlready up to date with ${result.base}. Nothing to reconcile.`);
     return;
+  }
+
+  section(`Relation: ${result.relation}`);
+  if (result.reasons.length === 0) {
+    console.log('  no shared file, no imported upstream change, no convention change');
+  }
+  for (const reason of result.reasons.slice(0, FILE_LIST_LIMIT)) {
+    console.log(`  [${reason.relation}] ${reason.why}`);
   }
 
   section('Incoming commits (oldest last)');

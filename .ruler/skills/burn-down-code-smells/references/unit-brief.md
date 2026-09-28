@@ -61,15 +61,14 @@ quarantine.
   output, and verify it with `git rev-parse --verify`.
 * Review follows `drive-pr-to-mergeable`: at most two rival rounds. A clean round one skips round
   two.
-* **Merging while other units merge.** After review, merge `origin/main` into your branch once (with
-  the attribution line in the merge message) and wait for CI. If `main` moves again:
-  1. Run `git merge --no-commit --no-ff origin/main`, then `check`, `lint`, and your targeted tests.
-  2. Diff the files `main` changed since your merge base against your own diff.
-  3. If the trial is green and nothing overlaps, run `git merge --abort` and merge the PR as it
-     stood.
-  4. Otherwise, commit the merge, push, and wait for CI again.
+* **Merging while other units merge.** Follow the per-unit merge gate in `ship-campaign`'s parallel
+  reference:
+  * After review, merge `origin/main` into your branch once (with the attribution line in the merge
+    message) and wait for CI.
+  * If `main` moves again, run the `reconcile-with-main` survey before merging. Take the trial-merge
+    path when the relation is `unrelated` or `adjacent`, and run the full skill when it's `coupled`.
 
-  Record which path you took.
+  Apply any broadcast the orchestrator sends before you merge, and record which path you took.
 * Merge with `gh pr merge <n> --merge --delete-branch`. Treat a nonzero exit as an unknown outcome
   and read the PR state first. Afterwards, detach at `origin/main` and delete the local branch with
   `git branch -d`.
