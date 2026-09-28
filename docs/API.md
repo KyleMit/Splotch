@@ -27,9 +27,10 @@ shape, built by `throttled(retryAfter)` in `web/src/lib/server/http.ts` — a `4
 
 The `error` field is user-facing (clients surface it directly). That `{ ok: false, error }` body is
 the **one client-facing JSON error shape** across `/api/*`, built by the same module's
-`fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)`, which converts
-every thrown failure into the same shape at the boundary — a SvelteKit `error(...)` keeps its status
-and message, and an unexpected exception becomes a 500 with the generic error text — so neither
+`fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)` (a lint rule,
+`API_HANDLER_WRAPPED` in `eslint.config.js`, rejects an unwrapped export), which converts every
+thrown failure into the same shape at the boundary — a SvelteKit `error(...)` keeps its status and
+message, and an unexpected exception becomes a 500 with the generic error text — so neither
 throw-based control flow nor a crashed dependency can leak SvelteKit's `{ message }` body. The one
 exemption is `csp-report`, whose responses are deliberately bodyless (browsers ignore them). The
 module's `readJsonBody(request, maxBytes)` is the shared bounded JSON-body parser — every caller
