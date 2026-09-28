@@ -52,6 +52,11 @@ export default async (request: Request): Promise<Response> => {
     claimId = await claimJob(jobId);
     if (!claimId) return new Response(null, { status: 200 });
 
+    // Read and delete in one step: from here the drawing lives in this worker's
+    // memory, and a copy left at rest for the whole generation serves nothing —
+    // nor for a job that fails before reaching the model.
+    const input = await takeJobInput(jobId);
+
     // A signed payload of the wrong shape was written by a start on a different
     // deploy, not by an attacker. It is recorded as this job's failure so the
     // poll refunds the slot and stops waiting, rather than left pending until
@@ -67,9 +72,6 @@ export default async (request: Request): Promise<Response> => {
       return new Response(null, { status: 200 });
     }
 
-    // Read and delete in one step: from here the drawing lives in this worker's
-    // memory, and a copy left at rest for the whole generation serves nothing.
-    const input = await takeJobInput(jobId);
     if (!input) {
       await completeJob(
         jobId,

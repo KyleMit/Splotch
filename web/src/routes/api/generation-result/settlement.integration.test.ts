@@ -381,6 +381,7 @@ describe('the background worker', () => {
     expect((await worker(signed)).status).toBe(200);
 
     expect(provider.generateImage).not.toHaveBeenCalled();
+    expect(jobBlobKeys(jobId)).not.toContain(`${jobId}/input`);
     expect((await collect(jobId)).status).toBe(502);
     expect(grantOf()).toMatchObject({ successful: 0, failures: 1, reservations: {} });
     expect(jobBlobKeys(jobId)).toEqual([]);
