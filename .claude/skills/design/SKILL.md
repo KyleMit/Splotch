@@ -224,6 +224,7 @@ primitives offer no shape: the ledger table and its link-shaped actions.
 |                          | render `end()` last inside it so the fade can paint beside it, clear of scrollbar gutters.                                                                                                                                                                                                                                                                 |
 |                          | A caller staging mounting or presentation passes `contentPending` to show the fade                                                                                                                                                                                                                                                                         |
 |                          | immediately until its content is whole, then returns to the observed fit/end behavior.                                                                                                                                                                                                                                                                     |
+| `VisuallyHidden.svelte`  | Text a screen reader announces and the eye never sees: the word an icon stands in for, what a badge means. `as` = `span` (default) / `p`; a live announcement passes `role="status"`. A component rather than an `app.css` class, so the rule stays out of the render-blocking startup stylesheet                                                          |
 
 Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
 
@@ -362,8 +363,11 @@ same rail, its collapsed state naming the section being read. Each part's sectio
 `lib/components/styleguide/` (`ColorSections` + `TypeSections` + `ScaleSections` + `AssetSections` +
 `RecipeSections`, `PrimitiveSections` + `ChromeSections` (which renders `NamedChromeSection`),
 `VoiceSections`); because everything is imported from `tokens.ts`, `palette.ts`, and the icon glob,
-the page cannot drift from the implementation. `prerender = false` keeps the page out of the native
-static export — no native surface links to it — and serves it via SSR on the web. Use it to:
+the page cannot drift from the implementation. The chrome those partials share (section rhythm,
+section titles, intro paragraphs, inline `code`, the `.value` caption) lives once in
+`styleguide/sectionChrome.css` at zero specificity; a partial's own style block holds only what
+differs. `prerender = false` keeps the page out of the native static export — no native surface
+links to it — and serves it via SSR on the web. Use it to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
   `pr-screenshots` skill);
