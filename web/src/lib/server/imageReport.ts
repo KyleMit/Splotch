@@ -1,5 +1,5 @@
 import { isStyleName, type StyleName } from '$lib/ai/styles';
-import { AI_REPORT_KINDS, type AiReportKind } from '$lib/imageReport';
+import { AI_REPORT_KINDS, IMAGE_REPORT_REVIEW_HOURS, type AiReportKind } from '$lib/imageReport';
 import type { ReportTokenContext } from './reportToken';
 import { createIssue } from './github';
 import { isAllowedImageType, resolveGenerationPrompt } from './generateImagePolicy';
@@ -132,8 +132,8 @@ export async function submitImageReport({
         `- **Automatic deletion:** ${report.deleteAfter}`,
         '',
         refusal
-          ? `The bundle contains the rejected drawing, resolved prompt, and metadata. Review within 24 hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`
-          : `The bundle contains the input drawing, resolved prompt, output image, and metadata. Review within 24 hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`,
+          ? `The bundle contains the rejected drawing, resolved prompt, and metadata. Review within ${IMAGE_REPORT_REVIEW_HOURS} hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`
+          : `The bundle contains the input drawing, resolved prompt, output image, and metadata. Review within ${IMAGE_REPORT_REVIEW_HOURS} hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`,
       ].join('\n'),
     });
   } catch (error) {

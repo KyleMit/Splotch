@@ -14,7 +14,12 @@ vi.mock('./imageReportStore', async (original) => ({
   saveImageReport,
 }));
 
+import { IMAGE_REPORT_RETENTION_DAYS, IMAGE_REPORT_REVIEW_HOURS } from '$lib/imageReport';
 import { submitImageReport } from './imageReport';
+
+function issueBodyLastLine() {
+  return createIssue.mock.calls[0][0].body.split('\n').at(-1);
+}
 
 const saved = {
   reportId: 'report-id',
@@ -57,6 +62,9 @@ describe('submitImageReport', () => {
         title: '[AI image] Reported Felt picture',
         body: expect.stringContaining('`report-id/`'),
       })
+    );
+    expect(issueBodyLastLine()).toBe(
+      `The bundle contains the input drawing, resolved prompt, output image, and metadata. Review within ${IMAGE_REPORT_REVIEW_HOURS} hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`
     );
   });
 
@@ -107,6 +115,9 @@ describe('submitImageReport', () => {
       })
     );
     expect(createIssue.mock.calls[0][0].body).toContain('**Refusal reason:** IMAGE_SAFETY');
+    expect(issueBodyLastLine()).toBe(
+      `The bundle contains the rejected drawing, resolved prompt, and metadata. Review within ${IMAGE_REPORT_REVIEW_HOURS} hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`
+    );
   });
 
   it('rejects a refusal without a server-authenticated reason', async () => {

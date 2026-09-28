@@ -61,6 +61,7 @@ import {
   reportRejectionReason,
 } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
+import { BRUSH_BUTTON_BY_MODE } from '../lib/brush-buttons.mjs';
 import {
   classifyInputCadence,
   describeContactSamples,
@@ -575,39 +576,40 @@ describe('reportFileName', () => {
   });
 });
 
+// Static properties of the source that running it cannot show. What the
+// bootstrap DOES is executed in bootstrap-theme.test.mjs.
 describe('pageBootstrapSource', () => {
-  it('takes its brush selectors from the capture module rather than duplicating them', () => {
-    const source = pageBootstrapSource();
+  // With the capture module's map swapped for a stand-in, a private copy of the
+  // map is the only way a real selector could still appear in the source.
+  it('takes its brush selectors from the capture module rather than duplicating them', async () => {
+    vi.resetModules();
+    vi.doMock('../lib/brush-buttons.mjs', () => ({ BRUSH_BUTTON_BY_MODE: { pen: '#standIn' } }));
+    const standIn = await import('../split-capture/lib/page-bootstrap.mjs');
+    vi.doUnmock('../lib/brush-buttons.mjs');
+    const source = standIn.pageBootstrapSource();
 
-    expect(source).toContain('#crayonBrushButton');
-    expect(source).toContain('#eraserButton');
+    expect(source).toContain('#standIn');
+    for (const selector of Object.values(BRUSH_BUTTON_BY_MODE)) {
+      expect(source).not.toContain(selector);
+    }
   });
 
-  it('reports the orientation it actually rendered at', () => {
-    // The device rotates and the page does not always agree; without this the
-    // runner cannot tell a landscape capture filed as portrait.
-    expect(pageBootstrapSource()).toContain("innerWidth > innerHeight ? 'LANDSCAPE' : 'PORTRAIT'");
-  });
-
-  it('loads the probe as a same-origin script rather than eval', () => {
-    // The route's CSP allows script-src 'self' and forbids unsafe-eval.
-    const source = pageBootstrapSource();
-
-    expect(source).toContain("element.src = '/__probe/probe.js'");
-    expect(source).not.toMatch(/\beval\(/);
+  it('never evals, which the route’s CSP forbids', () => {
+    // The CSP allows script-src 'self' and forbids unsafe-eval, so the probe
+    // arrives as a same-origin <script src> instead.
+    expect(pageBootstrapSource()).not.toMatch(/\beval\(/);
   });
 
   // Android Chrome loads the probe host at localhost, a secure context, where the
   // app registers its worker three strokes into a first visit and precaches the
   // build inside the measured window. The guard has to be in place before the
   // bootstrap's first await, long before any stroke lands.
-  it('blocks service-worker registration before anything else runs, and reports it', () => {
+  it('blocks service-worker registration before anything else runs', () => {
     const source = pageBootstrapSource();
     const guard = source.indexOf(SERVICE_WORKER_REGISTRATION_GUARD_SOURCE);
 
     expect(guard).toBeGreaterThan(-1);
     expect(guard).toBeLessThan(source.indexOf('await '));
-    expect(source).toContain('serviceWorkerRegistration,');
   });
 });
 
@@ -1122,13 +1124,6 @@ describe('a report from a run that is no longer current', () => {
   it('accepts an error report from the current run', () => {
     expect(reportRejectionReason(null, { nonce: 'new-run', error: 'boom' }, 'new-run')).toBeNull();
   });
-
-  it('carries the nonce on both the success and error paths of the bootstrap', () => {
-    const source = pageBootstrapSource();
-
-    expect(source).toContain('nonce,\n      report,');
-    expect(source).toContain("post('/__probe/report', { nonce, error:");
-  });
 });
 
 // The wiring, not the rule. The rejection rule can be perfect while the host
@@ -1433,30 +1428,6 @@ describe('the hand capture opening what its flag asked for', () => {
   it('sends every command to the serial it was given', async () => {
     expect(await commands(true)).toContain('SERIAL');
   }, 20_000);
-});
-
-// The hole the nonce check could not close. Chrome restores tabs across the
-// force-stop a launch performs; a restored tab re-runs the bootstrap, reads the
-// CURRENT plan and adopts its nonce, so it is indistinguishable from the page
-// the run opened — while carrying the previous cell's URL and receiving almost
-// none of the injected touch. One banked a cell with 517 events where its
-// neighbours had 7104.
-describe('a page that only adopted the plan', () => {
-  const source = pageBootstrapSource();
-
-  it('makes the page prove which run OPENED it', () => {
-    expect(source).toContain("new URLSearchParams(location.search).get('probe')");
-    expect(source).toContain('openedFor !== nonce');
-  });
-
-  // Standing down silently matters: a leftover tab is not a failure, and
-  // reporting it as one would bury the real error for the page that IS current.
-  it('stands the leftover down rather than failing the run', () => {
-    expect(source).toContain("kind: 'stale-page'");
-    expect(source.indexOf('openedFor !== nonce')).toBeLessThan(
-      source.indexOf("post('/__probe/ready'")
-    );
-  });
 });
 
 describe('fronting the run page', () => {
