@@ -56,7 +56,7 @@
   }: Props = $props();
 </script>
 
-{#if href}
+{#if href !== undefined}
   <a class={['btn', variant, size, className]} {href} {target} {rel}>{@render children()}</a>
 {:else}
   <button
