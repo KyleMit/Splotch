@@ -22,6 +22,14 @@ export const GENERATE_DEADLINE_MS = 24_000;
 // long. Without this bound a hung probe occupies one until the platform kills it.
 export const VERIFY_KEY_DEADLINE_MS = 10_000;
 
+// Opening the GitHub issue is the last outbound call a report makes, and on a
+// BYOK AI report it runs after a key check that may have spent its whole
+// deadline. A stall must fail as the report's own 502 — whose handling deletes
+// the stored AI-report evidence — rather than as a platform kill mid-call that
+// leaves the evidence behind with no issue pointing at it. What remains under
+// the ceiling covers that evidence write and delete.
+export const GITHUB_REQUEST_TIMEOUT_MS = 8_000;
+
 // The client aborts just past the platform ceiling: long enough that the
 // server's controlled error always arrives first, short enough that a truly
 // wedged request doesn't spin far past when the platform has already given up.

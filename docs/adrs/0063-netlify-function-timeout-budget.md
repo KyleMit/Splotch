@@ -138,3 +138,14 @@ an occasional re-run of the sweep above, is the right tool; neither is wired tod
   is caught only by re-measuring or by watching platform-502 rates.
 * **-** On the Free plan the 26s ceiling can't be raised, so a genuinely slow generation (>26s)
   still fails; the async-job-flow escape hatch is documented above but unbuilt.
+
+## Amendment (2026-09-28): the GitHub issue call joins the ladder
+
+A report opens its private GitHub issue from inside the same kind of synchronous function, and a
+BYOK AI report does it after a key check that may already have spent `VERIFY_KEY_DEADLINE_MS`. With
+no bound, a stalled GitHub let the platform kill the invocation mid-call: the parent got a bare
+`502`, and the stored AI-report evidence skipped the cleanup that a failed issue call runs, so it
+sat for the full retention period with no issue pointing a reviewer at it. `createIssue` aborts at
+`GITHUB_REQUEST_TIMEOUT_MS` in `web/src/lib/ai/limits.ts`, which turns a stall into the report's own
+`502` and its cleanup. `limits.test.ts` holds `VERIFY_KEY_DEADLINE_MS + GITHUB_REQUEST_TIMEOUT_MS`
+under `NETLIFY_SYNC_TIMEOUT_MS`; the remainder covers the evidence write and its delete.

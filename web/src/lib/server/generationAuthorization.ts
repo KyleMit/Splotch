@@ -19,6 +19,17 @@ export type GenerationAuthorization =
 export type GenerationAuthorizationResult =
   GenerationAuthorization | { authorized: false; response: Response };
 
+// A deploy without the project key is a server fault, answered like every other
+// unconfigured condition: a 503 for the caller and a log line for the operator.
+// The body stays generic because it reaches parent-facing error reports.
+function projectKeyMissing(): { authorized: false; response: Response } {
+  console.error('[generate-image] OPENAI_API_KEY is unset; managed and free generation is closed');
+  return {
+    authorized: false,
+    response: fail(503, 'AI creations are not available right now. Please try again later.'),
+  };
+}
+
 export async function authorizeGenerationRequest(input: {
   apiKey: string | null;
   token: string | null;
@@ -47,9 +58,7 @@ export async function authorizeGenerationRequest(input: {
       return { authorized: false, response: throttled(generation.retryAfter) };
     }
     const effectiveKey = config.openAiApiKey();
-    if (!effectiveKey) {
-      return { authorized: false, response: fail(500, 'Server is missing OPENAI_API_KEY') };
-    }
+    if (!effectiveKey) return projectKeyMissing();
     return {
       authorized: true,
       kind: 'managed',
@@ -70,9 +79,7 @@ export async function authorizeGenerationRequest(input: {
       return { authorized: false, response: fail(400, 'Installation grant unavailable') };
     }
     const effectiveKey = config.openAiApiKey();
-    if (!effectiveKey) {
-      return { authorized: false, response: fail(500, 'Server is missing OPENAI_API_KEY') };
-    }
+    if (!effectiveKey) return projectKeyMissing();
     return { authorized: true, kind: 'free', effectiveKey, installationId: input.installationId };
   }
 
