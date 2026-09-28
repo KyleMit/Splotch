@@ -2,7 +2,7 @@
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
   import ToggleRow from './ToggleRow.svelte';
-  import { BOOKS, STARTER_COLORING_BOOK_ID } from '$lib/state/books';
+  import { BOOKS } from '$lib/state/books';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { coloringPacksState } from '$lib/state/coloringPacks.svelte';
   import {
@@ -15,9 +15,6 @@
 
   let removing = $state(false);
   let removeError = $state(false);
-  const downloadedBookCount = $derived(
-    coloringPacksState.installedBookIds.filter((id) => id !== STARTER_COLORING_BOOK_ID).length
-  );
   const downloadingBookName = $derived(
     BOOKS.find((book) => book.id === coloringPacksState.downloadingBookId)?.name ?? null
   );
@@ -82,13 +79,12 @@
         <span class="pack-title">Downloaded pictures</span>
         {#if coloringPacksState.initialized}
           <p>
-            {downloadedBookCount} of {coloringPacksState.totalBookCount - 1} extra books · {megabytes(
-              coloringPacksState.downloadedBytes
-            )}
+            {coloringPacksState.downloadedBookCount} of {coloringPacksState.downloadableBookCount} extra
+            books · {megabytes(coloringPacksState.downloadedBytes)}
           </p>
           {#if downloadingBookName}
             <p>Downloading {downloadingBookName} in the background</p>
-          {:else if downloadedBookCount === coloringPacksState.totalBookCount - 1}
+          {:else if coloringPacksState.downloadedBookCount === coloringPacksState.downloadableBookCount}
             <p>Every coloring book is ready offline</p>
           {/if}
         {:else if !settingsState.coloringBookEnabled}
@@ -99,7 +95,8 @@
     <Button
       variant="danger"
       size="sm"
-      disabled={removing || (coloringPacksState.initialized && downloadedBookCount === 0)}
+      disabled={removing ||
+        (coloringPacksState.initialized && coloringPacksState.downloadedBookCount === 0)}
       onclick={removeDownloadedPictures}
     >
       {removing ? 'Removing…' : 'Remove downloaded pictures'}
