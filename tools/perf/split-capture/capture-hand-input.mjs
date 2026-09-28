@@ -16,7 +16,7 @@
 // revision of the fidelity table re-reads this file rather than asking for
 // another finger. Issue 1218 is the Android half of that measurement.
 import {
-  POSITIVE_NUMBER,
+  POSITIVE_INTEGER,
   argFlag,
   argNumber,
   argSwitch,
@@ -66,8 +66,10 @@ export const DEFAULT_DRAW_SECONDS = 25;
 // add to it. The window stays this far clear of the bank so the recording is
 // still running when the drawer is told to stop.
 const STOP_CUE_HEADROOM_MS = 10_000;
+// Whole seconds: countDown sleeps one second per step, so a fraction would draw
+// to the next whole second while the artifact recorded the fraction.
 export const DRAW_SECONDS = {
-  ...POSITIVE_NUMBER,
+  ...POSITIVE_INTEGER,
   max: (CONTACT_BANK_MS - STOP_CUE_HEADROOM_MS) / 1_000,
 };
 const APP_STOP_SETTLE_MS = 1_500;
