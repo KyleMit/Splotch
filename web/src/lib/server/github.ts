@@ -1,3 +1,4 @@
+import { GITHUB_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { config } from './config';
 
 // Server-only seam for the one thing we do with GitHub: open an issue from an
@@ -71,6 +72,7 @@ export async function createIssue(input: CreateIssueInput): Promise<void> {
       'User-Agent': GITHUB_USER_AGENT,
     },
     body: JSON.stringify(input),
+    signal: AbortSignal.timeout(GITHUB_REQUEST_TIMEOUT_MS),
   });
 
   if (res.status !== 201) {
