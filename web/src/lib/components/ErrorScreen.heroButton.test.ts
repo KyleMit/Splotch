@@ -16,7 +16,8 @@ const errorScreenSource = readFileSync(new URL('./ErrorScreen.svelte', import.me
 const SHARED_PROPERTIES = ['min-height', 'border-radius', 'font-size', 'font-weight'] as const;
 
 const VAR_WITH_FALLBACK = /var\((--[a-z0-9-]+),\s*([^()]+)\)/g;
-const VAR_WITHOUT_FALLBACK = /var\(\s*--[a-z0-9-]+\s*\)/g;
+// A bare `var(--x)` or an empty `var(--x,)`: neither resolves without tokens.css.
+const VAR_WITHOUT_FALLBACK = /var\(\s*--[a-z0-9-]+\s*(?:,\s*)?\)/g;
 
 function styleCss(source: string): string {
   const style = source.match(/<style>([\s\S]*)<\/style>/)?.[1] ?? '';
