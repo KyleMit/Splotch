@@ -2,9 +2,14 @@ import { fail, redirect } from '@sveltejs/kit';
 import { rateLimit } from '$lib/server/rateLimit';
 import { reportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { throttledMessage } from '$lib/server/http';
-import { parseDeviceField, submitReport } from '$lib/server/report';
-import { parseReportKind, REPORT_FORM_FIELDS } from '$lib/report';
+import {
+  formStringField,
+  readFormBody,
+  throttledMessage,
+  unreadableFormBody,
+} from '$lib/server/http';
+import { MAX_REPORT_BODY_BYTES, parseDeviceField, submitReport } from '$lib/server/report';
+import { parseReportKind, REPORT_FORM_FIELDS, type ReportKind } from '$lib/report';
 import type { Actions, PageServerLoad } from './$types';
 
 // The standalone feedback page. It has a form action, so it can't join the
@@ -24,6 +29,25 @@ const SENT_PARAM = 'sent';
  */
 export const load: PageServerLoad = ({ url }) => ({ sent: url.searchParams.has(SENT_PARAM) });
 
+type EchoedValues = { kind: ReportKind; message: string; includeDevice: boolean };
+
+// Echoed back on every failure so a browser with no JavaScript — which
+// re-renders this page from scratch — doesn't hand back an empty textarea and
+// lose what the reporter wrote. Only the echo falls back: submitReport reads the
+// raw kind and message, so a value the form can't send (a kind the radio group
+// lacks, a file for the message) is refused rather than filed under a guessed
+// label or as "[object File]".
+function echoOf(form: FormData): EchoedValues {
+  return {
+    kind: parseReportKind(form.get(REPORT_FORM_FIELDS.kind)) ?? 'bug',
+    message: formStringField(form, REPORT_FORM_FIELDS.message),
+    includeDevice: form.get(REPORT_FORM_FIELDS.includeDevice) !== null,
+  };
+}
+
+// A body too large or malformed to read has nothing to echo.
+const UNREAD_VALUES: EchoedValues = { kind: 'bug', message: '', includeDevice: false };
+
 export const actions: Actions = {
   default: async ({ request, getClientAddress, setHeaders }) => {
     // Same bucket and policy as /api/report, so the two front doors share one
@@ -33,31 +57,27 @@ export const actions: Actions = {
       rateLimitPolicy.report
     );
 
-    const data = await request.formData();
-    const field = REPORT_FORM_FIELDS;
-    const rawKind = data.get(field.kind);
-    // Echoed back on every failure so a browser with no JavaScript — which
-    // re-renders this page from scratch — doesn't hand back an empty textarea
-    // and lose what the reporter wrote. Only the echo falls back to a bug:
-    // submitReport reads the raw kind, so a value the radio group can't send is
-    // refused rather than filed under a guessed label.
-    const values = {
-      kind: parseReportKind(rawKind) ?? 'bug',
-      message: String(data.get(field.message) ?? ''),
-      includeDevice: data.get(field.includeDevice) !== null,
-    };
+    // Read before the throttle answers so a throttled reporter still gets their
+    // text back, and bounded so that read costs no more than /api/report's.
+    const body = await readFormBody(request, MAX_REPORT_BODY_BYTES);
+    const values = body.ok ? echoOf(body.form) : UNREAD_VALUES;
 
     if (limited) {
       setHeaders({ 'Retry-After': String(retryAfter) });
       return fail(429, { error: throttledMessage(retryAfter), values });
     }
+    if (!body.ok) {
+      const { status, message } = unreadableFormBody(body.reason);
+      return fail(status, { error: message, values });
+    }
 
+    const { form } = body;
     const result = await submitReport({
-      kind: rawKind,
-      message: values.message,
-      device: parseDeviceField(data.get(field.device)),
+      kind: form.get(REPORT_FORM_FIELDS.kind),
+      message: form.get(REPORT_FORM_FIELDS.message),
+      device: parseDeviceField(form.get(REPORT_FORM_FIELDS.device)),
       wantsDevice: values.includeDevice,
-      hp: data.get(field.honeypot),
+      hp: form.get(REPORT_FORM_FIELDS.honeypot),
     });
 
     if (!result.ok) return fail(result.status, { error: result.error, values });

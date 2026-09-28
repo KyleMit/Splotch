@@ -31,6 +31,17 @@ describe('escapeIssueMarkdown', () => {
     expect(escapeIssueMarkdown('<img src=x onerror=1>')).toBe('\\<img src=x onerror=1>');
   });
 
+  // Were the text's own backslash left alone, it would pair with the added one
+  // into an escaped backslash and re-arm the character after it.
+  it.each([
+    ['an image embed', '\\![x](http://evil/p.png)', '\\\\\\![x](http://evil/p.png)'],
+    ['a mention', '\\@octocat', '\\\\\\@octocat'],
+    ['a back-reference', '\\#1', '\\\\\\#1'],
+    ['a raw tag', '\\<img src=x>', '\\\\\\<img src=x>'],
+  ])('keeps %s inert behind a backslash the text already carries', (_, text, escaped) => {
+    expect(escapeIssueMarkdown(text)).toBe(escaped);
+  });
+
   it('leaves an ordinary email address and prose untouched apart from the escapes', () => {
     // No word char immediately after '@' in a bare '@ ', and '#' not before a
     // digit, stay as-is; the '@' in an email is followed by a letter so it is

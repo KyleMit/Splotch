@@ -44,9 +44,9 @@ const BINARY_EXTENSIONS = new Set([
 ]);
 const BINARY_SNIFF_BYTES = 8192;
 
-function trackedTextFiles() {
+function trackedTextFiles(root) {
   const listing = execFileSync('git', ['ls-files', '-z'], {
-    cwd: ROOT,
+    cwd: root,
     maxBuffer: 64 * 1024 * 1024,
   });
   return listing
@@ -56,10 +56,12 @@ function trackedTextFiles() {
     .filter((file) => !BINARY_EXTENSIONS.has(file.split('.').pop().toLowerCase()));
 }
 
-export function checkTrackedTree() {
+// `root` is a test seam: the guard test points it at a fixture repository to
+// prove the walk still flags what it guards.
+export function checkTrackedTree(root = ROOT) {
   const failures = [];
-  for (const file of trackedTextFiles()) {
-    const buffer = readFileSync(join(ROOT, file));
+  for (const file of trackedTextFiles(root)) {
+    const buffer = readFileSync(join(root, file));
     if (buffer.subarray(0, BINARY_SNIFF_BYTES).includes(0)) continue;
     const text = buffer.toString('utf8');
     for (const finding of scanForDeviceIdentifiers(text)) {

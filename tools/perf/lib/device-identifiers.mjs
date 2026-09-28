@@ -49,13 +49,24 @@ export function maskIdentifier(value) {
 }
 
 const PATTERNS = [
-  { kind: 'apple-hardware-udid', pattern: APPLE_HARDWARE_UDID, exempt: FAKE_IOS_UDID },
+  {
+    kind: 'apple-hardware-udid',
+    pattern: APPLE_HARDWARE_UDID,
+    // Every match contains this literal-led tail. The full pattern opens with a
+    // hex class that irregexp retries at every offset, which on digit-dense
+    // evidence JSON costs over an order of magnitude more than this test. A
+    // text without the tail cannot match, so its full scan is skipped — most of
+    // the tracked-tree guard's bytes are evidence reports.
+    requiredPart: /-[0-9A-Fa-f]{16}/,
+    exempt: FAKE_IOS_UDID,
+  },
   { kind: 'samsung-serial', pattern: SAMSUNG_SERIAL, exempt: FAKE_ANDROID_SERIAL },
 ];
 
 export function scanForDeviceIdentifiers(text) {
   const findings = [];
-  for (const { kind, pattern, exempt } of PATTERNS) {
+  for (const { kind, pattern, requiredPart, exempt } of PATTERNS) {
+    if (requiredPart && !requiredPart.test(text)) continue;
     pattern.lastIndex = 0;
     for (const match of text.matchAll(pattern)) {
       const value = match[0];

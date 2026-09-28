@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // In-memory stand-in for secure storage (Keychain/Keystore on native, the
-// encrypted IndexedDB payload on the web) so hydrateApiKey's migration can be
-// exercised without a real platform vault.
+// encrypted IndexedDB payload on the web) so the key's writes and its
+// retired-key screening can be exercised without a real platform vault. The
+// legacy-plaintext migration both credentials share is covered in
+// secureCredentialCoordinator.hydrate.test.ts.
 const secureStore = vi.hoisted(() => ({ apiKey: null as string | null }));
 
 vi.mock('../secureStorage', () => ({
@@ -23,7 +25,6 @@ import { settingsState } from './settings.svelte';
 import { hydrateApiKey, setAiUserApiKey } from './aiKey';
 import { loadApiKey, saveApiKey } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
-import { STORAGE_KEYS } from '../storage';
 
 beforeEach(() => {
   localStorage.clear();
@@ -147,12 +148,6 @@ describe('hydrateApiKey', () => {
     expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 
-  it('hydrates the live store from secure storage', async () => {
-    secureStore.apiKey = 'sk-stored-key';
-    await hydrateApiKey();
-    expect(settingsState.aiUserApiKey).toBe('sk-stored-key');
-  });
-
   it('never deletes a key that arrived while hydration was still reading', async () => {
     // hydrateApiKey awaits loadApiKey, and a parent can finish saving inside
     // that window. The delete does not go through the write coordinator — which
@@ -201,42 +196,5 @@ describe('hydrateApiKey', () => {
     await hydrateApiKey();
     expect(settingsState.aiUserApiKey).toBe('');
     expect(secureStore.apiKey).toBeNull();
-  });
-
-  it('leaves the store empty when nothing is saved anywhere', async () => {
-    await hydrateApiKey();
-    expect(settingsState.aiUserApiKey).toBe('');
-    expect(secureStore.apiKey).toBeNull();
-  });
-
-  it('migrates a legacy plaintext key into secure storage and scrubs the plaintext copy', async () => {
-    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'sk-legacy-key');
-
-    await hydrateApiKey();
-
-    expect(settingsState.aiUserApiKey).toBe('sk-legacy-key');
-    expect(secureStore.apiKey).toBe('sk-legacy-key');
-    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
-  });
-
-  it('prefers the secure copy over a stale legacy plaintext key', async () => {
-    secureStore.apiKey = 'sk-secure-key';
-    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'sk-stale-legacy-key');
-
-    await hydrateApiKey();
-
-    expect(settingsState.aiUserApiKey).toBe('sk-secure-key');
-    expect(secureStore.apiKey).toBe('sk-secure-key');
-    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
-  });
-
-  it('two boots racing the legacy migration both end with the key intact', async () => {
-    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'sk-legacy-key');
-
-    await Promise.all([hydrateApiKey(), hydrateApiKey()]);
-
-    expect(settingsState.aiUserApiKey).toBe('sk-legacy-key');
-    expect(secureStore.apiKey).toBe('sk-legacy-key');
-    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 });

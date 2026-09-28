@@ -42,9 +42,9 @@
     onOpenChange(!open);
   }
 
-  function pick(hex: string, paint: string) {
+  function pick(hex: string) {
     selectInkBrush();
-    selectPaletteColor(hex, paint);
+    selectPaletteColor(hex);
     releaseAllPointers();
     onOpenChange(false);
   }

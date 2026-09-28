@@ -2,14 +2,8 @@
   import Icon from './Icon.svelte';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
   import { LANDSCAPE_COLORS, landscapeTrimRank } from '$lib/landscapeToolbar';
-  import {
-    CUSTOM_SWATCH,
-    colorsState,
-    isDarkInk,
-    themedSwatchColor,
-  } from '$lib/state/colors.svelte';
+  import { CUSTOM_SWATCH, colorsState, isDarkInk } from '$lib/state/colors.svelte';
   import { getRingColor, selectionRingShadow, SELECTION_RING_GAP_PX } from '$lib/colorRing';
-  import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
@@ -17,10 +11,9 @@
     onpick,
     oncustom,
   }: {
-    onpick: (hex: string, paint: string) => void;
+    onpick: (hex: string) => void;
     oncustom: () => void;
   } = $props();
-  const dark = $derived(resolvedTheme() === 'dark');
   const erasing = $derived(toolState.brush === 'eraser');
   const customRinged = $derived(
     !erasing && colorsState.activeSwatch === CUSTOM_SWATCH && colorsState.customColorSelected
@@ -40,7 +33,7 @@
     use:stampMotionAtStart
   >
     {#each LANDSCAPE_COLORS as { hex, label } (hex)}
-      {@const paint = themedSwatchColor(hex, dark)}
+      {@const paint = colorsState.themedSwatchColor(hex)}
       {@const ringed = !erasing && colorsState.activeSwatch === hex}
       <button
         class="color-option"
@@ -52,7 +45,7 @@
         data-trim-rank={landscapeTrimRank(hex)}
         aria-label={paint === hex ? label : 'White'}
         aria-pressed={ringed}
-        use:scribbleTap={() => onpick(hex, paint)}
+        use:scribbleTap={() => onpick(hex)}
       ></button>
     {/each}
     <button

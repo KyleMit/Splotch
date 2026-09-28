@@ -31,10 +31,11 @@ import { profilePath } from '../lib/profile-paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from '../lib/profile-artifacts.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 
-// The app's SIZE_TO_PX (web/src/lib/state/strokeWidth.svelte.ts), a Svelte rune
-// module this Node script cannot import; tools/perf/tests/cli-inputs.test.mjs
-// fails when the two disagree.
+// The app's SIZE_TO_PX and DEFAULT_SIZE (web/src/lib/state/strokeWidth.svelte.ts),
+// a Svelte rune module this Node script cannot import;
+// tools/perf/tests/cli-inputs.test.mjs fails when they disagree.
 export const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
+export const DEFAULT_SIZE_LEVEL = 3;
 const MAX_IDLE_GAP_MS = 250;
 
 export async function runReplayScenario(argv = process.argv.slice(2)) {
@@ -121,6 +122,7 @@ export async function runReplayScenario(argv = process.argv.slice(2)) {
       events: recording.events,
       recCanvas: cssCanvas,
       sizePx: SIZE_PX,
+      defaultSizeLevel: DEFAULT_SIZE_LEVEL,
       turbo,
       maxIdleGapMs: MAX_IDLE_GAP_MS,
     });
@@ -176,7 +178,7 @@ export async function runReplayScenario(argv = process.argv.slice(2)) {
 // used to fall back to the default width and replay every later stroke wrong.
 function unknownSizeLevels(events) {
   const sizes = events
-    .filter((event) => event.kind === 'action' && event.name === 'size')
+    .filter((event) => event.kind === 'action' && ['size', 'eraser-size'].includes(event.name))
     .map((event) => event.value);
   return [...new Set(sizes)].filter((size) => !Object.hasOwn(SIZE_PX, size));
 }
@@ -185,7 +187,7 @@ function unknownSizeLevels(events) {
 // (synthetic events don't coalesce → one move = one engine op, matching the live
 // device) and maps UI actions onto the engine API. Real-time pacing uses the
 // recorded timestamps (capped) so frame cadence matches actual drawing.
-export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs }) {
+export function replayInPage({ events, recCanvas, sizePx, defaultSizeLevel, turbo, maxIdleGapMs }) {
   const canvas = document.querySelector('#drawingCanvas');
   const r = canvas.getBoundingClientRect();
   const sx = r.width / (recCanvas.w || r.width);
@@ -198,6 +200,22 @@ export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs })
   // Last ink brush (ADR-0067): what a color pick resumes. false = pen (the
   // app's default), true = crayon.
   let inkCrayon = false;
+  // The app remembers one size level for the drawing brushes and one for the
+  // eraser, and hands the engine the active tool's level width whenever either
+  // changes (pushToolStateToEngine in web/src/lib/drawing/earlyBoot.ts). The
+  // engine applies ERASER_SIZE_MULTIPLIER to eraser strokes itself, so the width
+  // pushed here is never multiplied. A recording does not capture the levels the
+  // device started with; both start at the app default.
+  const levels = { pen: defaultSizeLevel, eraser: defaultSizeLevel };
+  const pushStrokeWidth = () => E.setStrokeWidth(sizePx[eraser ? levels.eraser : levels.pen]);
+  const resumeInkBrush = () => {
+    eraser = false;
+    magic = false;
+    E.setEraserMode(false);
+    E.setMagicMode(false);
+    E.setCrayonMode(inkCrayon);
+    pushStrokeWidth();
+  };
   let prevT = 0;
   let strokes = 0;
   let undos = 0;
@@ -244,6 +262,7 @@ export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs })
   };
 
   return (async () => {
+    pushStrokeWidth();
     for (const e of events) {
       if (!turbo) {
         const dt = Math.min(Math.max(0, e.t - prevT), maxIdleGapMs); // cap long idle gaps
@@ -265,16 +284,12 @@ export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs })
           // replay with the renderer the device actually ran. This also repairs
           // legacy toggle-`eraser` recordings, whose color-exits-eraser was
           // never replayed.
-          if (eraser || magic) {
-            eraser = false;
-            magic = false;
-            E.setEraserMode(false);
-            E.setMagicMode(false);
-            E.setCrayonMode(inkCrayon);
-          }
+          if (eraser || magic) resumeInkBrush();
           E.setColor(e.value);
-        } else if (e.name === 'size') E.setStrokeWidth(sizePx[e.value]);
-        else if (e.name === 'brush') {
+        } else if (e.name === 'size' || e.name === 'eraser-size') {
+          levels[e.name === 'size' ? 'pen' : 'eraser'] = e.value;
+          pushStrokeWidth();
+        } else if (e.name === 'brush') {
           // Brush Menu selection (ADR-0067): idempotent, one action per pick.
           eraser = e.value === 'eraser';
           magic = e.value === 'magic';
@@ -282,13 +297,20 @@ export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs })
           E.setEraserMode(eraser);
           E.setMagicMode(magic);
           E.setCrayonMode(e.value === 'crayon');
-        } else if (e.name === 'eraser')
+          pushStrokeWidth();
+        } else if (e.name === 'eraser') {
           E.setEraserMode((eraser = !eraser)); // legacy pre-Brush-Menu recordings
-        else if (e.name === 'undo') {
+          pushStrokeWidth();
+        } else if (e.name === 'undo') {
           snapPeak();
           undos++;
           await E.undo();
-        } else if (e.name === 'clear') E.clearCanvas();
+        } else if (e.name === 'clear') {
+          E.clearCanvas();
+          // The app's resetToolAfterClear: a clear lifts the child out of the
+          // eraser onto the last ink brush, while the magic brush survives it.
+          if (eraser) resumeInkBrush();
+        }
         await raf();
       }
     }
