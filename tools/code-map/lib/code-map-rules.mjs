@@ -316,7 +316,7 @@ export const WEB_SRC_DOMAIN_RULES = [
     D.ai,
     /^lib\/state\/(aiGeneration|aiProgress|aiKey|aiAccessToken|freeGenerations|secureCredentialCoordinator)$/,
   ],
-  [D.ai, /^lib\/(aiCredential|freeGenerations|imageReport|usageRecord)$/],
+  [D.ai, /^lib\/(freeGenerations|imageReport|usageRecord)$/],
 
   [D.admin, /^lib\/components\/admin\//],
   [D.admin, /^routes\/(api\/)?admin\//],
