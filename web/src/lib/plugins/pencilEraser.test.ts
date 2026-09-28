@@ -22,6 +22,7 @@ import {
   setEraser,
   setPencilEraserEnabled,
   setApplePencilSeen,
+  setToolDrawerEnabled,
 } from '$lib/state/settings.svelte';
 
 describe('PencilEraser web fallback', () => {
@@ -64,6 +65,7 @@ describe('handleDoubleTap', () => {
   beforeEach(() => {
     selectBrush('pen');
     setEraser(true);
+    setToolDrawerEnabled(true);
     setPencilEraserEnabled(true);
     setApplePencilSeen(false);
   });
@@ -85,6 +87,14 @@ describe('handleDoubleTap', () => {
 
   it('does not select an unavailable eraser', () => {
     setEraser(false);
+    handleDoubleTap();
+    expect(settingsState.applePencilSeen).toBe(true);
+    expect(toolState.brush).toBe('pen');
+  });
+
+  it('does not select an eraser the disabled Tool Drawer hides', () => {
+    setToolDrawerEnabled(false);
+    expect(settingsState.eraserEnabled).toBe(true);
     handleDoubleTap();
     expect(settingsState.applePencilSeen).toBe(true);
     expect(toolState.brush).toBe('pen');

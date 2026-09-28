@@ -2,7 +2,7 @@ import { registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 import { isNative, getPlatform } from '$lib/platform';
 import { impactThreshold } from '$lib/platform/haptics';
 import { toggleEraser } from '$lib/state/tool.svelte';
-import { settingsState, setApplePencilSeen } from '$lib/state/settings.svelte';
+import { settingsState, setApplePencilSeen, actionControlShown } from '$lib/state/settings.svelte';
 
 export interface PencilEraserPlugin {
   // Fires each time an Apple Pencil (gen 2 / Pro) double-tap is detected natively.
@@ -20,11 +20,12 @@ export const PencilEraser = registerPlugin<PencilEraserPlugin>('PencilEraser', {
 
 // Runs on every Apple Pencil double-tap. It always records that a pencil exists on this
 // device — which is what reveals the parent's on/off toggle — then toggles the eraser only
-// while both the gesture and Eraser itself are available. Detection is recorded even while
-// disabled so the toggle stays available for re-enabling when Eraser is available again.
+// while both the gesture is on and the Actions Panel shows Eraser, so the gesture never
+// selects a tool the child cannot see. Detection is recorded even while disabled so the
+// toggle stays available for re-enabling when Eraser is available again.
 export function handleDoubleTap(): void {
   if (!settingsState.applePencilSeen) setApplePencilSeen(true);
-  if (!settingsState.pencilEraserEnabled || !settingsState.eraserEnabled) return;
+  if (!settingsState.pencilEraserEnabled || !actionControlShown('eraserEnabled')) return;
   toggleEraser();
   impactThreshold();
 }
