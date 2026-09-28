@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 
 interface StoredBlob {
   value: unknown;
@@ -85,6 +85,7 @@ vi.mock('$lib/server/rateLimit', () => ({
 }));
 
 import { ASYNC_GENERATION_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
+import { readAiImageResponse } from '$lib/drawing/aiImageResponse';
 import { GENERATION_JOB_STORE_NAME } from '$lib/server/generationJobStoreName';
 import worker from '../../../../../netlify/functions/generate-image-background';
 import { POST as startGeneration } from '../generate-image/+server';
@@ -139,13 +140,17 @@ export async function startFreeGeneration(installationId = INSTALLATION): Promis
   return startGeneration(event(request) as unknown as Parameters<typeof startGeneration>[0]);
 }
 
+// The ticket is read by the client's own parser, so every handoff these tests
+// drive also proves the client understands what the server sent.
 export async function startHandedOffGeneration(): Promise<{ jobId: string; dispatch: Request }> {
   const response = await startFreeGeneration();
-  expect(response.status).toBe(202);
-  const { jobId } = (await response.json()) as { jobId: string };
+  const started = await readAiImageResponse(response);
+  if (started.kind !== 'started') {
+    throw new Error(`the start answered ${response.status}: ${JSON.stringify(started)}`);
+  }
   const dispatch = dispatched.at(-1);
   if (!dispatch) throw new Error('the start did not dispatch the worker');
-  return { jobId, dispatch };
+  return { jobId: started.jobId, dispatch };
 }
 
 export function runWorker(dispatch: Request): Promise<Response> {
