@@ -13,10 +13,9 @@ vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('./tokens', () => ({ isAllowedToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
 vi.mock('./ai/provider', () => ({ aiProvider: { verifyKey } }));
-// Only the Netlify Blobs environment probe is stubbed, so the free branch runs
-// against the real `isInstallationId` and the real token signing/verification
-// rather than mirrored copies of either.
-vi.mock('$app/environment', () => ({ dev: false }));
+// Nothing on the free branch is stubbed, so it runs against the real
+// `isInstallationId` and the real token signing/verification rather than
+// mirrored copies of either.
 
 import { authorizeImageReport } from './imageReportAuthorization';
 import {
