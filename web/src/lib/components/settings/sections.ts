@@ -112,7 +112,7 @@ export function sectionSubtitle(id: SectionId): string {
       return settingsState.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
     case 'coloring':
       return settingsState.coloringBookEnabled
-        ? `${Math.max(0, coloringPacksState.installedBookIds.length - 1)} extra books ready`
+        ? `${coloringPacksState.downloadedBookCount} extra books ready`
         : 'Coloring books off';
     case 'controls': {
       // The section's own switch hides every tool the row would count, so with

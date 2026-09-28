@@ -103,7 +103,7 @@ the duplication is the accepted cost; keep the blocks in sync.
   the resolved theme for coloring pages too: a dark-mode save is the night version — dark paper, the
   transparent white presentation overlay, and the night-fill reveals already baked into the replayed
   strokes.
-* **Catalog.** `books.ts` carries a `nightImages: Partial<Record<orientation, url>>` per page (only
+* **Catalog.** `books.ts` carries a `nightFill: Partial<Record<orientation, url>>` per page (only
   the orientations that have a generated fill) with a theme-aware `pageFillImage()` accessor that
   owns the light-fill fallback; `coloringBook.svelte.ts` stores only the selected page and
   orientation, deriving the transparent presentation, outline, chalk, light-fill, and night-fill
