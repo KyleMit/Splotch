@@ -1505,20 +1505,35 @@ async function measureAiWaitingBadge(execute) {
   // settle would stop the sample a second in and score none of it, so the window
   // closes when the cue's own animations do. The spinner is excluded by name: it
   // loops forever while the picture is still being made.
-  await execute(`
+  await execute(aiReadyCueWaitScript());
+  await waitForReady(
+    execute,
+    `window.__perfAiCueSettled === true`,
+    'the AI ready cue to finish',
+    AI_READY_CUE_TIMEOUT_MS
+  );
+  await sleep(ACTION_SETTLE_MS);
+  const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
+  await execute(`delete window.__perfAiCueSettled; delete window.__perfAiCueSeen; return true;`);
+  return { ...sample, activation: 'driver' };
+}
+
+// The page runs isAiReadyCueAnimation itself, serialised, so the matcher under
+// test is the one that decides when the sample ends. The cues are re-queried
+// rather than snapshotted: the badge's animation does not exist yet in the turn
+// the badge appears, and a one-shot read settles instantly on an empty list —
+// which scored 124 frames of a cue that runs for five seconds. A cue that never
+// appears still releases, at the grace deadline.
+export function aiReadyCueWaitScript() {
+  return `
     const cueNames = ${JSON.stringify(AI_READY_CUE_ANIMATIONS)};
     const deadline = performance.now() + ${AI_READY_CUE_TIMEOUT_MS};
-    const isCue = (name) =>
-      typeof name === 'string' && cueNames.some((cue) => name === cue || name.endsWith('-' + cue));
+    const isCue = ${isAiReadyCueAnimation};
     const cuesNow = () =>
       (document.querySelector('.ai-waiting-polaroid')?.getAnimations?.({ subtree: true }) ?? [])
-        .filter((animation) => isCue(animation.animationName));
+        .filter((animation) => isCue(animation.animationName, cueNames));
     window.__perfAiCueSettled = false;
     window.__perfAiCueSeen = 0;
-    // Re-queried rather than snapshotted: the badge's animation does not exist
-    // yet in the turn the badge appears, and a one-shot read settles instantly
-    // on an empty list — which scored 124 frames of a cue that runs for five
-    // seconds. A cue that never appears still releases, at the grace deadline.
     void (async () => {
       const grace = performance.now() + ${AI_READY_CUE_GRACE_MS};
       for (;;) {
@@ -1536,17 +1551,7 @@ async function measureAiWaitingBadge(execute) {
       window.__perfAiCueSettled = true;
     })();
     return true;
-  `);
-  await waitForReady(
-    execute,
-    `window.__perfAiCueSettled === true`,
-    'the AI ready cue to finish',
-    AI_READY_CUE_TIMEOUT_MS
-  );
-  await sleep(ACTION_SETTLE_MS);
-  const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
-  await execute(`delete window.__perfAiCueSettled; delete window.__perfAiCueSeen; return true;`);
-  return { ...sample, activation: 'driver' };
+  `;
 }
 
 // Undo at the end of history answers with the shake-and-flash instead of undoing
