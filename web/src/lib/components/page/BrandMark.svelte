@@ -50,9 +50,9 @@
       --crayon-gap: 3px;
     }
 
+    /* The size stays on the ramp's floor; the tracking tightens instead. */
     .wordmark {
-      font-size: 10px;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
     }
   }
 </style>
