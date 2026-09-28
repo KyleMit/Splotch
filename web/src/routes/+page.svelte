@@ -143,9 +143,10 @@
     // theme-color meta and OS-switch tracking fall out of the single reactive
     // source in lib/state/appearance.svelte.ts.
     applyTheme(settingsState.theme);
-    // Waits for any invite-link code to be saved, so the credential hydration
-    // hydrateSettings starts reads after that write (secureCredentialCoordinator
-    // enforces the same order on its own).
+    // Both credential hydrations hydrateSettings starts wait for any invite-link
+    // code to be saved. secureCredentialCoordinator already queues the
+    // access-code one behind that write; the API-key one, which shares the
+    // secure vault and its secureVaultEmpty flag, is ordered by this chain alone.
     const settingsReady = capturedAccessToken.then(hydrateSettings);
 
     const overlayController = mountBootHiddenOverlays(mountHiddenOverlay);
