@@ -28,7 +28,6 @@ import { existsSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import {
-  POSITIVE_NUMBER,
   ROOT,
   TCP_PORT,
   argFlag,
@@ -46,6 +45,7 @@ import { classifyLaunchProbe, explicitProbePortDecision } from './lib/capture-re
 import { GRANT_LOG, recordGrantAttempt } from './lib/grant-log.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 import { DEFAULT_PROBE_PORT } from './split-capture/serve-probe-host.mjs';
+import { DEFAULT_DRAW_SECONDS, DRAW_SECONDS } from './split-capture/capture-hand-input.mjs';
 import { prepareCapture, probeIosLaunch, probeProbeHost } from './prepare-capture.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 
@@ -53,7 +53,6 @@ const STEP_NAMES = ['grant', 'android-hand', 'ios-hand'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const DEFAULT_BRUSHES = ['pen', 'crayon'];
-const DEFAULT_DRAW_SECONDS = 25;
 const SERVER_READY_TIMEOUT_MS = 90_000;
 // One retry, because the expected failure is the operator missing the prompt's
 // one-minute window — anything structural repeats identically on attempt two.
@@ -353,7 +352,7 @@ export async function runOperatorSession() {
   if (planOnly) return plan;
   if (!report.ready) fail(`the preflight is blocking:\n  ${report.blockers.join('\n  ')}`);
 
-  const seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, POSITIVE_NUMBER);
+  const seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, DRAW_SECONDS);
   const lan = lanAddresses()[0];
   if (!lan) fail('no LAN address — the devices cannot reach a probe host on this machine');
   const probePort = argNumber('probe-port', report.ports.probe ?? DEFAULT_PROBE_PORT, TCP_PORT);

@@ -35,13 +35,19 @@ const { values, positionals } = parseArgs({
 // `git:<ref>` renders each page's committed assets at <ref> (before) beside the
 // current working-tree assets (after), so a regen can be judged old-vs-new in one
 // sheet. The before-cell assets are read straight from git history with
-// `git show <ref>:<path>`; a ref not present in a shallow clone degrades to
-// before-cells full of placeholders rather than crashing.
+// `git show <ref>:<path>`. The ref must resolve to a commit in this clone: a typo
+// or a commit a shallow clone never fetched would otherwise read as "every asset
+// predates the ref" and yield a sheet with nothing on the before side.
 const rawSource = values.source ?? 'shipped';
 const gitRef = rawSource.startsWith('git:') ? rawSource.slice(4) : null;
 if (gitRef === '') fail('--source git:<ref> needs a ref, e.g. --source git:HEAD~1 or git:6a95c46');
 if (!gitRef && !['shipped', 'samples'].includes(rawSource))
   fail('--source must be shipped, samples, or git:<ref>');
+if (gitRef && !resolvesToCommit(gitRef))
+  fail(
+    `--source git:${gitRef} does not name a commit in this clone. Check the ref, or fetch it ` +
+      '(git fetch --unshallow in a shallow clone, or git fetch origin <sha>).'
+  );
 // Path resolution + the client's punch decision both key off shipped-form assets
 // in git mode: the before assets are the era's shipped fills-only webp (or their
 // lined raw as a fallback), never fresh sample takes.
@@ -87,8 +93,18 @@ const lightPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.lig
 const nightRawPath = (id, orient) => join(FILL_SRC_DIR, catId, `${id}-${orient}.night.raw.webp`);
 const lightRawPath = (id, orient) => join(FILL_SRC_DIR, catId, `${id}-${orient}.light.raw.webp`);
 
-// Read an asset's bytes at a git ref as a data URI (git mode). Missing at that ref
-// (or a ref absent from a shallow clone) -> null, same as an absent file on disk.
+function resolvesToCommit(ref) {
+  const args = ['rev-parse', '--verify', '--quiet', '--end-of-options', `${ref}^{commit}`];
+  try {
+    execFileSync('git', args, { cwd: REPO_ROOT, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Read an asset's bytes at a git ref as a data URI (git mode). An asset missing at
+// that (already resolved) ref -> null, same as an absent file on disk.
 function gitDataUri(ref, absPath) {
   try {
     const buf = execFileSync('git', ['show', `${ref}:${relative(REPO_ROOT, absPath)}`], {
