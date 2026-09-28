@@ -45,9 +45,10 @@ import { keepIncomingReport, reportFileName, reportRejectionReason } from './lib
 
 const DEFAULT_PORT = 4176;
 const DEFAULT_REPORT_DIR = join(ROOT, 'perf-profiles', 'split-capture', 'reports');
-// Matches the app's own live-canvas cap so the control is not handed a cheaper
-// surface than the thing it is a control for.
-const MAX_DEVICE_PIXEL_RATIO = 2;
+// The app's live-canvas cap (MAX_RENDER_SCALE in engine.ts), so the control is
+// not handed a cheaper surface than the thing it is a control for.
+// render-scale-cap.test.mjs fails when the two disagree.
+const MAX_RENDER_SCALE = 2;
 const STROKE_WIDTH_CSS_PX = 12;
 // The page paints one fixed light paper; there is no dark variant to request.
 export const FLOOR_CONTROL_THEME = 'light';
@@ -75,7 +76,7 @@ const PAGE = `<!doctype html>
 
 const CONTROL = `
 const canvas = document.getElementById('drawingCanvas');
-const scale = Math.min(window.devicePixelRatio || 1, ${MAX_DEVICE_PIXEL_RATIO});
+const scale = Math.min(window.devicePixelRatio || 1, ${MAX_RENDER_SCALE});
 canvas.width = Math.round(canvas.clientWidth * scale);
 canvas.height = Math.round(canvas.clientHeight * scale);
 const context = canvas.getContext('2d');

@@ -36,7 +36,6 @@ const AUDITED_SWALLOWS = {
     'bare-catch@26d026501a48',
     'bare-catch@79eaceadfc75',
   ],
-  'analyze-frame-capture.mjs': ['bare-catch@e3b82b6230ea'],
   'analyze-web-inspector.mjs': ['bare-catch@7811a0b0c7fb', 'bare-catch@c4c2eb6c7ad8'],
   'android/capture-browser-actions.mjs': [
     'bare-catch@c6a34e31adb5',
