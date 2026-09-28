@@ -42,6 +42,20 @@ describe('strokeDeliveryProblem', () => {
     expect(strokeDeliveryProblem(DELIVERED, { required: true })).toBeNull();
   });
 
+  // Every row carries pressure 1, the value an adb swipe reports, so a reader
+  // that took the trusted flag from the pressure column would count all three.
+  it('counts only trusted pointerdowns, by the probe row columns', () => {
+    const row = ({ type, trusted }) => [0, 0, type, 1, 1, 0, 1, 0, trusted, 1];
+    const report = {
+      events: [
+        row({ type: POINTERDOWN, trusted: 1 }),
+        row({ type: POINTERDOWN, trusted: 0 }),
+        row({ type: 2, trusted: 1 }),
+      ],
+    };
+    expect(trustedPointerdowns(report)).toBe(1);
+  });
+
   it('fails a capture that lost strokes, naming both counts', () => {
     const problem = strokeDeliveryProblem(withLostStrokes(DELIVERED, LOST_STROKES));
 
