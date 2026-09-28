@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { DEFAULT_SIZE_LEVEL, SIZE_PX, replayInPage } from '../web/replay-input-recording.mjs';
+import { CONTACT_BANK_MS } from '../split-capture/lib/probe-host-protocol.mjs';
 
 const state = vi.hoisted(() => ({ directEntryUrl: null, runMain: vi.fn() }));
 const chromium = vi.hoisted(() => ({ connectOverCDP: vi.fn() }));
@@ -26,6 +27,7 @@ const webInspectorPath = join(repoRoot, 'tools', 'perf', 'analyze-web-inspector.
 const replayPath = join(repoRoot, 'tools', 'perf', 'web', 'replay-input-recording.mjs');
 const scenarioPath = join(repoRoot, 'tools', 'perf', 'web', 'capture-web-session.mjs');
 const undoScenariosPath = join(repoRoot, 'tools', 'perf', 'web', 'run-undo-scenarios.mjs');
+const handCapturePath = join(repoRoot, 'tools', 'perf', 'split-capture', 'capture-hand-input.mjs');
 
 let fixtureDir;
 
@@ -223,6 +225,26 @@ describe('performance CLI input failures', () => {
   // `--hz=0` made the frame budget Infinity, so every commit passed.
   it('reports a zero --hz instead of an infinite frame budget', () => {
     expectCliFailure(undoScenariosPath, ['--hz=0'], '--hz must be a number > 0, got "0"');
+  });
+
+  // The probe stops recording once the finger banks CONTACT_BANK_MS, so a longer
+  // hand window counted down over a phase that had already ended.
+  it('reports a hand --seconds longer than the probe banks contact', () => {
+    const bankSeconds = CONTACT_BANK_MS / 1_000;
+
+    expectCliFailure(
+      handCapturePath,
+      [`--seconds=${bankSeconds + 0.5}`],
+      `--seconds must be a number > 0 and <= ${bankSeconds}, got "${bankSeconds + 0.5}"`
+    );
+  });
+
+  it('lets a hand --seconds that fills the contact bank exactly through to the --host check', () => {
+    expectCliFailure(
+      handCapturePath,
+      [`--seconds=${CONTACT_BANK_MS / 1_000}`],
+      '--host= is required — the probe host URL the device can reach over the LAN'
+    );
   });
 
   it('refuses an unknown flag instead of running without it', () => {

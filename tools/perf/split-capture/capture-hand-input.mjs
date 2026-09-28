@@ -59,7 +59,10 @@ const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const OPENERS = ['adb', 'devicectl', 'safari', 'manual'];
 const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
-const DEFAULT_DRAW_SECONDS = 25;
+export const DEFAULT_DRAW_SECONDS = 25;
+// The probe ends the phase once the finger has banked CONTACT_BANK_MS, so a
+// longer window would keep counting down after the recording had stopped.
+export const DRAW_SECONDS = { ...POSITIVE_NUMBER, max: CONTACT_BANK_MS / 1_000 };
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
 const PAGE_SETTLE_MS = 6_000;
@@ -326,7 +329,7 @@ export async function captureHandInput({
   brush = argFlag('brush', 'pen'),
   orientation = argFlag('orientation', 'PORTRAIT'),
   theme = argFlag('theme', 'light'),
-  seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, POSITIVE_NUMBER),
+  seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, DRAW_SECONDS),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
   udid = argFlag('device-udid'),
