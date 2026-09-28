@@ -59,6 +59,7 @@ import {
   inventoryCaptureKey,
 } from '../lib/page-inventory-report.mjs';
 import { ROOT } from '../../lib/proc.mjs';
+import { SECTION_JUMP_INSET_PX } from '../../../web/src/lib/components/settings/paneScroll.ts';
 
 const fixtures = [];
 
@@ -614,14 +615,13 @@ describe('page inventory output', () => {
   // waits forever, so the band has to clear whichever inset the shell uses.
   it('waits within a band that covers where the wide shell parks a section', () => {
     const shell = readFileSync(join(COMPONENTS, 'settings/WideShell.svelte'), 'utf8');
-    const jumpInsetPx = Number(/SECTION_JUMP_INSET_PX = (\d+)/.exec(shell)?.[1]);
     const panePaddingTopPx = Number(
       /\.settings-pane\s*\{[^}]*?\bpadding:\s*(\d+)px/s.exec(shell)?.[1]
     );
 
-    expect(jumpInsetPx).toBeGreaterThan(0);
+    expect(SECTION_JUMP_INSET_PX).toBeGreaterThan(0);
     expect(panePaddingTopPx).toBeGreaterThan(0);
-    expect(jumpInsetPx).toBeLessThan(SECTION_LANDED_BAND_PX);
+    expect(SECTION_JUMP_INSET_PX).toBeLessThan(SECTION_LANDED_BAND_PX);
     expect(panePaddingTopPx).toBeLessThan(SECTION_LANDED_BAND_PX);
   });
 
