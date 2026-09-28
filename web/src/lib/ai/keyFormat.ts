@@ -5,6 +5,10 @@
 // an endpoint, and boot decides whether a key already on the device is still one
 // this app can use. Kept dependency-free so the boot path doesn't pull the
 // network helpers in behind it.
+//
+// It also declares the request bodies of the two endpoints that classification
+// picks between, since lib/ai/verifyCredential.ts builds them and the routes
+// read them: a field renamed here fails to compile at both ends of the wire.
 
 /**
  * OpenAI issues project keys (`sk-proj-…`), service-account keys
@@ -36,6 +40,16 @@ export function looksLikeRetiredGeminiKey(value: string): boolean {
  * because only one of the two is a statement about the parent's key.
  */
 export const KEY_CHECK_UNAVAILABLE_CODE = 'KEY_CHECK_UNAVAILABLE';
+
+/** The `/api/verify-key` JSON body. */
+export interface VerifyKeyRequestBody {
+  apiKey: string;
+}
+
+/** The `/api/verify-access-code` JSON body. */
+export interface VerifyAccessCodeRequestBody {
+  code: string;
+}
 
 export interface KeyCheckUnavailable {
   ok: false;
