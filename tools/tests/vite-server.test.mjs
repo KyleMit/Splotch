@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { ROOT } from '../lib/proc.mjs';
 import { freePort, portListenerOwners, spawnViteServer } from '../lib/vite-server.mjs';
 
 vi.mock('node:child_process', async (importOriginal) => {
@@ -39,6 +40,30 @@ describe('freePort', () => {
     freePort(4173);
 
     expect(console.warn).not.toHaveBeenCalled();
+    expect(process.kill).not.toHaveBeenCalled();
+  });
+
+  it('stops a listener this checkout owns', () => {
+    spawnSync
+      .mockReturnValueOnce({ status: 0, stdout: '4242\n' })
+      .mockReturnValueOnce({ status: 0, stdout: `p4242\nfcwd\nn${join(ROOT, 'web')}\n` });
+
+    freePort(4173);
+
+    expect(process.kill).toHaveBeenCalledExactlyOnceWith(4242, 'SIGTERM');
+  });
+
+  // One foreign listener is enough to refuse the whole port: stopping only the
+  // owned one would leave strictPort failing against the other anyway.
+  it('signals nothing when any listener belongs to another checkout', () => {
+    spawnSync
+      .mockReturnValueOnce({ status: 0, stdout: '4242\n4343\n' })
+      .mockReturnValueOnce({ status: 0, stdout: `p4242\nfcwd\nn${ROOT}\n` })
+      .mockReturnValueOnce({ status: 0, stdout: 'p4343\nfcwd\nn/elsewhere\n' });
+
+    expect(() => freePort(4173)).toThrow(
+      'port 4173 is held by a listener outside this checkout (pid 4343)'
+    );
     expect(process.kill).not.toHaveBeenCalled();
   });
 });

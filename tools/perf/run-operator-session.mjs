@@ -38,12 +38,7 @@ import {
   runMain,
 } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';
-import {
-  foreignPortListeners,
-  freePort,
-  portListenerOwners,
-  waitForPortRelease,
-} from '../lib/vite-server.mjs';
+import { freePort, portListenerOwners, waitForPortRelease } from '../lib/vite-server.mjs';
 import { classifyLaunchProbe, explicitProbePortDecision } from './lib/capture-readiness.mjs';
 import { GRANT_LOG, recordGrantAttempt } from './lib/grant-log.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
@@ -170,14 +165,13 @@ function spawnDetached(command, args, logName, env = {}) {
 
 async function ensurePreview(port, action) {
   if (action === 'restart') {
-    const foreign = foreignPortListeners(port, ROOT);
-    if (foreign.length) {
+    try {
+      freePort(port);
+    } catch (err) {
       fail(
-        `preview port ${port} changed owners after preflight (foreign pid ${foreign.join(', ')}) — ` +
-          'run perf:preflight again'
+        `${err.message} The preview port changed owners after preflight — run perf:preflight again.`
       );
     }
-    freePort(port);
     await waitForPortRelease(port);
   } else if (await urlAnswers(`http://127.0.0.1:${port}/`)) {
     fail(`preview port ${port} became occupied after preflight — run perf:preflight again`);
