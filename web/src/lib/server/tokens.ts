@@ -136,8 +136,8 @@ async function readStore(): Promise<StoreRead> {
 }
 
 // Compare-and-set write, same pattern as usage.ts's recordTokenUsage: two
-// concurrent mutations (web /admin form action + native /api/admin/tokens, or
-// two admins) must serialize instead of one silently clobbering the other.
+// concurrent mutations (the /admin form action + /api/admin/tokens, or two
+// admins) must serialize instead of one silently clobbering the other.
 // Returns whether the write landed; a `modified: false` result means the blob
 // changed since our read and the caller must re-run its read-modify cycle.
 async function persist(store: TokenStore | null, list: string[], etag: string | undefined) {

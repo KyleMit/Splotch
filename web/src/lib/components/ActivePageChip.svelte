@@ -5,6 +5,7 @@
     type ColoringPage,
     type ResponsiveColoringImage,
   } from '$lib/state/books';
+  import { coloringImageAttributes } from '$lib/state/coloringPicker.svelte';
   import { runSingleFlightActivation } from '$lib/actions/pressFeedback';
 
   interface Props {
@@ -15,6 +16,9 @@
   }
 
   let { page, preview, hoverArmed, onclear }: Props = $props();
+  const previewAttributes = $derived(
+    coloringImageAttributes(preview, COLORING_IMAGE_SIZES.activePageChip)
+  );
 
   function clearAfterPressFeedback(event: MouseEvent & { currentTarget: HTMLButtonElement }) {
     void runSingleFlightActivation(event.currentTarget, onclear);
@@ -30,9 +34,9 @@
 >
   <img
     class="active-page-thumbnail"
-    src={preview.src}
-    srcset={__IS_CAPACITOR__ ? undefined : preview.srcset}
-    sizes={__IS_CAPACITOR__ ? undefined : COLORING_IMAGE_SIZES.activePageChip}
+    src={previewAttributes.src}
+    srcset={previewAttributes.srcset}
+    sizes={previewAttributes.sizes}
     alt=""
   />
   <span class="active-page-name">{page.name}</span>

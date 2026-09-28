@@ -15,6 +15,7 @@ import { spawnViteServer } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { check, fatal, summarize, json } from '../lib/smoke.mjs';
 import { adminClient } from './lib/admin-client.mjs';
+import { recordApiCaching } from './lib/api-caching.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
 // so the assertions below name the same headers the hook stamps: /api/* takes
@@ -71,7 +72,7 @@ function postChunkedJson(base, path, chunks, headers = {}) {
           } catch {
             // The assertion below reports the raw response through `error`.
           }
-          resolve({ status: response.statusCode, body, error: raw });
+          resolve({ status: response.statusCode, body, headers: response.headers, error: raw });
         });
       }
     );
@@ -242,12 +243,15 @@ async function checkTokensCrud(admin, auth) {
     ['{"token":"', 'x'.repeat(OVERSIZED_JSON_CHUNK_BYTES), '"}'],
     auth
   );
+  // node:http bypasses the fetch recorder (lib/api-caching.mjs), so this
+  // response asserts its own no-store.
   check(
-    'tokens POST chunked oversized body → clean 413 without a socket reset',
+    'tokens POST chunked oversized body → clean no-store 413 without a socket reset',
     chunkedOversize.status === 413 &&
       chunkedOversize.body?.ok === false &&
-      chunkedOversize.body?.error === 'Request body is too large',
-    `got ${chunkedOversize.status} ${chunkedOversize.error}`
+      chunkedOversize.body?.error === 'Request body is too large' &&
+      chunkedOversize.headers?.['cache-control'] === 'no-store',
+    `got ${chunkedOversize.status} Cache-Control=${chunkedOversize.headers?.['cache-control']} ${chunkedOversize.error}`
   );
 }
 
@@ -583,11 +587,7 @@ async function checkVerifyKey(base) {
   // 503 KEY_CHECK_UNAVAILABLE and fail the run for external state rather than a
   // contract regression. Both provider branches are covered where they can be
   // driven deterministically, in the route's own unit test.
-  const empty = await fetch(`${base}/api/verify-key`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
-  });
+  const empty = await postJson(base, '/api/verify-key', {});
   const emptyBody = await json(empty);
   check(
     'verify-key with no key → 400 {ok:false, error}',
@@ -662,6 +662,7 @@ async function checkThrottling(base) {
 // spends its own bucket, and checkThrottling must run last so the closing
 // generate-image guess lands on an already-exhausted shared per-IP budget.
 async function run() {
+  const checkApiCaching = recordApiCaching();
   const admin = adminClient(BASE);
   const { auth, noAuth } = await checkAdminAuth(admin);
   await checkCorsContract(BASE, noAuth);
@@ -675,6 +676,7 @@ async function run() {
   await checkVerifyKey(BASE);
   await checkFreeGenerationGrant(BASE);
   await checkThrottling(BASE);
+  checkApiCaching();
 }
 
 let stop;
@@ -690,7 +692,7 @@ try {
       ALLOWED_TOKENS_LIST: SEED_TOKENS,
       // A key the provider refuses, so the generate-image cases stop at the request
       // guards they are checking without spending anyone's quota. It has to be
-      // non-empty: with no key the managed-token path answers 500 from the
+      // non-empty: with no key the managed-token path answers 503 from the
       // authorization step and never reaches those guards.
       OPENAI_API_KEY: 'not-a-usable-openai-key',
       // Blank on purpose: the shipped generation deadline is what the contract

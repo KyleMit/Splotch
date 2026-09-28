@@ -6,7 +6,9 @@ export interface InstalledColoringPack {
   // so discovering what is installed and totalling what it costs are one
   // answer: they were two, and every boot paid for the same work twice.
   bytes: number;
-  rootPath?: string;
+  // The WebView URL a native-installed book's files load from. Unset on the
+  // web, where the service worker serves cached files at their own paths.
+  rootUrl?: string;
 }
 
 export interface ColoringPackStore {

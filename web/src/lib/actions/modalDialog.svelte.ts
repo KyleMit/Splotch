@@ -100,11 +100,21 @@ function forgetOpenModal(node: HTMLDialogElement) {
   if (index !== -1) openModals.splice(index, 1);
 }
 
+// Observers are told from inside a dialog's effect. Neither the observer set
+// nor what an observer reads (the web Back handler reads page.state) may become
+// that effect's dependency, or every later change to either would re-run the
+// dialog's open/close logic.
+function notifyModalStackObservers(change: keyof ModalStackObserver, node: HTMLDialogElement) {
+  untrack(() => {
+    for (const observer of modalStackObservers) observer[change](node);
+  });
+}
+
 function noticeModalClosing(node: HTMLDialogElement) {
   const entry = openModals.find((candidate) => candidate.node === node);
   if (!entry || entry.closing) return;
   entry.closing = true;
-  for (const observer of modalStackObservers) observer.closing(node);
+  notifyModalStackObservers('closing', node);
 }
 
 // The class that plays a dialog's exit (app.css `.closing` rules). The dialog
@@ -336,7 +346,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
         node.showModal();
         forgetOpenModal(node);
         openModals.push({ node, requestDismiss, closing: false });
-        for (const observer of modalStackObservers) observer.opened(node);
+        notifyModalStackObservers('opened', node);
       } else {
         const entry = openModals.find((candidate) => candidate.node === node);
         if (entry) entry.closing = false;
@@ -349,6 +359,9 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
 
   return {
     destroy() {
+      // Unmounting an open dialog takes it out of the top layer without a
+      // `close` event, so onClose never tells the observers it left.
+      noticeModalClosing(node);
       forgetOpenModal(node);
       node.removeEventListener('pointerdown', onPointerDown, true);
       node.removeEventListener('click', onClick, true);
