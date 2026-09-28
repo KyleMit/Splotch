@@ -10,7 +10,6 @@ import {
   releaseFailures,
   repoScriptRoot,
   rigPorts,
-  selectAndroidSerial,
 } from '../release-capture.mjs';
 
 const MAIN = '/Users/dev/Code/Splotch';
@@ -129,20 +128,6 @@ describe('repoScriptRoot', () => {
     expect(repoScriptRoot('node /x/y/tools/run-web-tool.mjs vite preview --host')).toBe('/x/y');
     expect(repoScriptRoot('node /x/y/tools/run-web-tool.mjs vite dev')).toBeNull();
     expect(repoScriptRoot('node /x/y/node_modules/vite/bin/vite.js preview')).toBeNull();
-  });
-});
-
-describe('selectAndroidSerial', () => {
-  it('takes the explicit serial, the only attached one, or none', () => {
-    expect(selectAndroidSerial(['a', 'b'], 'b')).toEqual({ serial: 'b' });
-    expect(selectAndroidSerial(['a'], null)).toEqual({ serial: 'a' });
-    expect(selectAndroidSerial([], null)).toEqual({ serial: null });
-  });
-
-  it('refuses to guess between several attached phones', () => {
-    const pick = selectAndroidSerial(['phone-a', 'phone-b'], null);
-    expect(pick.serial).toBeNull();
-    expect(pick.problem).toContain('--android-serial=');
   });
 });
 

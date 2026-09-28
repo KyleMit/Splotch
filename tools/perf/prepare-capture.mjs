@@ -52,6 +52,7 @@ import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
 import { overlayCheck, readOverlayVerdict } from './lib/android-overlay-verdict.mjs';
 import { verifyAndroidRotation } from './split-capture/verify-android-rotation.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
+import { selectAndroidSerial } from './lib/android-serial.mjs';
 import {
   DEVICE_WDA_PORT,
   describeRecovery,
@@ -74,7 +75,7 @@ const sh = (cmd, args) => {
   return {
     ok: result.status === 0,
     out: (result.stdout ?? '').trim(),
-    err: (result.stderr ?? '').trim(),
+    err: result.error ? result.error.message : (result.stderr ?? '').trim(),
   };
 };
 
@@ -83,29 +84,18 @@ function portHolder(port) {
   return listeners.find((listener) => !listener.owned) ?? listeners[0] ?? null;
 }
 
-function androidChecks({ fix }) {
-  const checks = [];
-  const devices = sh('adb', ['devices'])
-    .out.split('\n')
-    .slice(1)
-    .map((line) => line.trim().split(/\s+/))
-    .filter(([, state]) => state === 'device')
-    .map(([serial]) => serial);
+// `run` is a seam for tests; production runs the real adb through `sh`. The
+// touch-overlay check reads adb on its own, so a test stops at the device pick.
+export function androidChecks({ fix, explicit, run = sh }) {
+  const selection = selectAndroidSerial(run('adb', ['devices']), explicit);
+  const { serial, attached: devices } = selection;
+  const detail = selection.problem ?? serial ?? 'no device in `adb devices`';
+  const checks = [{ name: 'android device', status: serial ? 'ok' : 'blocked', detail }];
+  if (!serial) return { checks, serial, devices };
 
-  if (devices.length === 0) {
-    checks.push({
-      name: 'android device',
-      status: 'blocked',
-      detail: 'no device in `adb devices`',
-    });
-    return { checks, serial: null, devices };
-  }
-  const serial = argFlag('android-serial', devices[0]);
-  checks.push({ name: 'android device', status: 'ok', detail: serial });
-
-  const trust = sh('adb', ['-s', serial, 'shell', 'dumpsys', 'trust']).out;
+  const trust = run('adb', ['-s', serial, 'shell', 'dumpsys', 'trust']).out;
   const locked = /deviceLocked=1/.test(trust);
-  const power = sh('adb', ['-s', serial, 'shell', 'dumpsys', 'power']).out;
+  const power = run('adb', ['-s', serial, 'shell', 'dumpsys', 'power']).out;
   const screenOn = /Display Power: state=ON/i.test(power) || /mWakefulness=Awake/i.test(power);
   const stayOn = /mStayOn=true/i.test(power) || /stayOn=true/i.test(power);
 
@@ -124,10 +114,10 @@ function androidChecks({ fix }) {
     });
   } else {
     if (actions.includes('wake'))
-      sh('adb', ['-s', serial, 'shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
+      run('adb', ['-s', serial, 'shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
     if (actions.includes('stayon')) {
-      sh('adb', ['-s', serial, 'shell', 'svc', 'power', 'stayon', 'true']);
-      sh('adb', [
+      run('adb', ['-s', serial, 'shell', 'svc', 'power', 'stayon', 'true']);
+      run('adb', [
         '-s',
         serial,
         'shell',
@@ -145,7 +135,7 @@ function androidChecks({ fix }) {
     });
   }
 
-  const chrome = sh('adb', [
+  const chrome = run('adb', [
     '-s',
     serial,
     'shell',
@@ -1000,7 +990,9 @@ export async function prepareCapture(
   { android: withAndroid = true } = {}
 ) {
   const fix = argv.includes('--wake-android');
-  const android = withAndroid ? androidChecks({ fix }) : { checks: [], serial: null, devices: [] };
+  const android = withAndroid
+    ? androidChecks({ fix, explicit: argFlag('android-serial', null) })
+    : { checks: [], serial: null, devices: [] };
   const ios = iosChecks();
   const ports = await portChecks({ android: withAndroid });
   const usbProblem =
