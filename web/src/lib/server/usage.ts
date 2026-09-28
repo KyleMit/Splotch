@@ -118,14 +118,17 @@ export async function deleteUsage(token: string) {
 }
 
 /**
- * Read the usage tally for each token, as a map keyed by token. Tokens with no
- * recorded usage are omitted (so the caller can distinguish "never used" from a
- * Blobs outage). Eventual consistency (the default) is sufficient — slightly-stale
+ * Read the usage tally for each token, as a map keyed by token, deleting each
+ * expired record it meets instead of leaving it for the daily purge
+ * (purgeExpiredUsageRecords). Tokens with no recorded usage are omitted (so the
+ * caller can distinguish "never used" from a Blobs outage). Eventual consistency (the default) is sufficient — slightly-stale
  * counts are fine here, and it sidesteps the strong-read context requirements
  * entirely (ADR-0025). A null result means the whole snapshot is unavailable;
  * one token's read or expiry-delete failure is isolated from the other tokens.
  */
-export async function getUsage(tokens: string[]): Promise<Record<string, TokenUsage> | null> {
+export async function readUsageAndPurgeExpired(
+  tokens: string[]
+): Promise<Record<string, TokenUsage> | null> {
   const keyedTokens = tokens.flatMap((token) => {
     const key = usageGrantKey(token);
     return key === null ? [] : [{ token, key }];

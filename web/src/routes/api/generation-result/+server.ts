@@ -21,7 +21,7 @@ import { prepareGeneratedImage } from '$lib/server/generatedImage';
 import {
   discardJob,
   readJob,
-  takeJobImage,
+  readJobImage,
   type GenerationJobContext,
 } from '$lib/server/generationJobs';
 import { completeFreeGeneration, failFreeGeneration } from '$lib/server/freeGenerationGrants';
@@ -135,7 +135,7 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
 
   let image: Uint8Array | null;
   try {
-    image = await takeJobImage(jobId);
+    image = await readJobImage(jobId);
   } catch {
     // Same class as an unreadable status: the store, not the job. Nothing has
     // been settled or discarded yet, so the next poll can still collect it.

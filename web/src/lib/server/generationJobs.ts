@@ -336,7 +336,11 @@ export async function readJob(jobId: string, now = Date.now()): Promise<Generati
   return { ...(record.outcome ?? { status: 'pending' as const }), context: record.context };
 }
 
-export async function takeJobImage(jobId: string): Promise<Uint8Array | null> {
+/**
+ * Reads without removing, unlike takeJobInput: a picture stays collectable
+ * until its charge settles, and discardJob removes it after that.
+ */
+export async function readJobImage(jobId: string): Promise<Uint8Array | null> {
   const bytes: ArrayBuffer | null = await store().get(imageKey(jobId), { type: 'arrayBuffer' });
   return bytes ? new Uint8Array(bytes) : null;
 }

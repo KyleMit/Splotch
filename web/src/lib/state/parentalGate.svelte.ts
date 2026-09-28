@@ -189,6 +189,19 @@ interface ParentalGateMutators {
 
 export type ParentalGateState = DeepReadonly<ParentalGateFields> & ParentalGateMutators;
 
+/**
+ * Whether the open card takes a keypad press. It sees the gate only through a
+ * readonly view, so it can never end a lockout: each input command settles an
+ * expired one first, and the press that finds the pause over ends it, announces
+ * it, and is taken. Exported for the lockout tests.
+ *
+ * Input taken while the card shakes would land on a problem the eye hasn't
+ * caught up with, and nothing a grown-up does needs it.
+ */
+export function gateAcceptsInput(gate: DeepReadonly<ParentalGateFields>): boolean {
+  return gate.open && !gate.unlocked && !gate.shaking && gate.lockoutUntil === null;
+}
+
 export function createParentalGate(): ParentalGateState {
   const s: ParentalGateFields = $state({
     policies: readPolicies(),
@@ -323,16 +336,17 @@ export function createParentalGate(): ParentalGateState {
   // Checked against the clock rather than trusted to a timer, which stops while
   // a device sleeps and does not run at all while the card is closed. A clock
   // set backwards would otherwise stretch the pause past the longest one.
-  function lockoutHolds() {
+  function settleLockoutExpiry() {
     if (s.lockoutUntil !== null) {
       s.lockoutUntil = Math.min(s.lockoutUntil, Date.now() + GATE_LOCKOUT_MAX_MS);
     }
     if (s.lockoutUntil !== null && Date.now() >= s.lockoutUntil) endLockout();
-    return s.lockoutUntil !== null;
   }
 
+  /** Ends a lockout whose time is up, or shows the time left on one still in force. */
   function tickLockout() {
-    if (!lockoutHolds() || s.lockoutUntil === null) return;
+    settleLockoutExpiry();
+    if (s.lockoutUntil === null) return;
     const remainingMs = s.lockoutUntil - Date.now();
     s.lockoutMessage = gateLockoutMessage(remainingMs);
     clearTimeout(lockoutTickTimer);
@@ -381,31 +395,28 @@ export function createParentalGate(): ParentalGateState {
     }, GATE_ERROR_VISIBLE_MS);
   }
 
-  // Input taken while the card shakes would land on a problem the eye hasn't
-  // caught up with, and nothing a grown-up does needs it.
-  function acceptsInput() {
-    return s.open && !s.unlocked && !s.shaking && !lockoutHolds();
-  }
-
   /**
    * Append a digit. A digit past the answer's length counts as a wrong answer:
    * a grown-up stops when the dabs are full, and tapping on past them is how
    * random tapping looks.
    */
   function pressGateDigit(digit: number) {
-    if (!acceptsInput()) return;
+    settleLockoutExpiry();
+    if (!gateAcceptsInput(s)) return;
     if (s.input.length >= String(s.x * s.y).length) fail();
     else s.input += String(digit);
   }
 
   function pressGateBackspace() {
-    if (!acceptsInput()) return;
+    settleLockoutExpiry();
+    if (!gateAcceptsInput(s)) return;
     s.input = s.input.slice(0, -1);
   }
 
   /** Check the typed answer. Checking before every dab is filled is a wrong answer too. */
   function submitGateAnswer() {
-    if (!acceptsInput()) return;
+    settleLockoutExpiry();
+    if (!gateAcceptsInput(s)) return;
     const answer = String(s.x * s.y);
     if (s.input === answer) succeed();
     else fail();
@@ -424,7 +435,8 @@ export function createParentalGate(): ParentalGateState {
         return;
       }
       clearTimers();
-      const lockedOut = lockoutHolds();
+      settleLockoutExpiry();
+      const lockedOut = s.lockoutUntil !== null;
       pendingDestination = destination;
       newChallenge();
       s.error = null;
@@ -470,7 +482,7 @@ export function createParentalGate(): ParentalGateState {
       s.input = '';
       s.shaking = false;
       s.error = null;
-      if (lockoutHolds()) tickLockout();
+      tickLockout();
     },
     pressGateDigit,
     pressGateBackspace,
