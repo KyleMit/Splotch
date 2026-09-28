@@ -1,7 +1,7 @@
 import { apiUrl } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { sha256Hex } from '$lib/digestHex';
-import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
+import { FREE_GENERATION_LIMIT, isInstallationId } from '$lib/freeGenerations';
 import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
 import { readString, STORAGE_KEYS, writeString } from '$lib/storage';
 import {
@@ -13,7 +13,6 @@ import { networkState, type NetworkState } from '$lib/state/network.svelte';
 import { settingsState, type SettingsState } from '$lib/state/settings.svelte';
 
 const INSTALLATION_NAMESPACE = 'splotch-free-generation-v1';
-const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
 const BADGE_UNAVAILABLE = 'unavailable';
 
 function cachedBadgeRemaining(): number | null {
@@ -53,7 +52,7 @@ export function installationId(): Promise<string> {
 }
 
 async function fetchGrantRemaining(id: string, signal: AbortSignal): Promise<number> {
-  if (!INSTALLATION_ID_PATTERN.test(id)) throw new Error('Invalid installation identifier');
+  if (!isInstallationId(id)) throw new Error('Invalid installation identifier');
   const response = await fetch(apiUrl('/api/free-generation-grant'), {
     headers: { [INSTALLATION_ID_HEADER]: id },
     signal,
@@ -82,11 +81,22 @@ interface FreeGenerationsDeps {
   persistedStateStatus: PersistedStateStatus;
 }
 
+// Only a grant the server answered carries a count. `loading` waits on
+// hydration, connectivity, or the request in flight; `inactive` is AI switched
+// off with no credential, when no grant is requested (ADR-0127); `unavailable`
+// is a saved credential or a grant that could not be read.
+type FreeGenerationGrant =
+  | { status: 'loading' }
+  | { status: 'inactive' }
+  | { status: 'unavailable' }
+  | { status: 'available'; remaining: number };
+
 export interface FreeGenerationsState {
-  readonly remaining: number;
+  readonly grant: FreeGenerationGrant;
+  // The count the latest grant answer this session reported, kept after the
+  // grant stops being followed; null until one answers.
+  readonly lastGrantRemaining: number | null;
   readonly badgeRemaining: number | null;
-  readonly loading: boolean;
-  readonly available: boolean;
   setFreeGenerationsRemaining(remaining: number): void;
   setFreeGenerationsUnavailable(): void;
   // Public only for tests; production reads it through install()'s effect and
@@ -106,34 +116,34 @@ export function createFreeGenerations({
   network,
   persistedStateStatus,
 }: FreeGenerationsDeps): FreeGenerationsState {
-  const s = $state({
-    remaining: FREE_GENERATION_LIMIT,
-    badgeRemaining: cachedBadgeRemaining(),
-    loading: true,
-    available: false,
-  });
+  let grant = $state.raw<FreeGenerationGrant>({ status: 'loading' });
+  let lastGrantRemaining = $state<number | null>(null);
+  let badgeRemaining = $state(cachedBadgeRemaining());
+  // followEligibility reads this, never `grant`. The effect writes `grant`
+  // itself, each write a fresh object, so reading it there re-runs the effect
+  // until Svelte aborts with effect_update_depth_exceeded. This boolean changes
+  // only when a grant becomes known or stops being known.
+  const grantKnown = $derived(grant.status === 'available');
 
   const freeGenerationGrantRequest = createLatestRequest();
   let stopEffects: (() => void) | null = null;
 
-  function setFreeGenerationsRemaining(remaining: number): void {
-    s.remaining = Math.max(0, Math.min(FREE_GENERATION_LIMIT, Math.floor(remaining)));
-    s.badgeRemaining = s.remaining;
-    writeString(STORAGE_KEYS.freeGenerationBadgeHint, String(s.remaining));
-    s.available = true;
-    s.loading = false;
+  function setFreeGenerationsRemaining(count: number): void {
+    const remaining = Math.max(0, Math.min(FREE_GENERATION_LIMIT, Math.floor(count)));
+    grant = { status: 'available', remaining };
+    lastGrantRemaining = remaining;
+    badgeRemaining = remaining;
+    writeString(STORAGE_KEYS.freeGenerationBadgeHint, String(remaining));
   }
 
   function setFreeGenerationsUnavailable(): void {
-    s.badgeRemaining = null;
+    grant = { status: 'unavailable' };
+    badgeRemaining = null;
     writeString(STORAGE_KEYS.freeGenerationBadgeHint, BADGE_UNAVAILABLE);
-    s.available = false;
-    s.loading = false;
   }
 
   function setFreeGenerationsInactive(): void {
-    s.available = false;
-    s.loading = false;
+    grant = { status: 'inactive' };
   }
 
   function grantRefreshReady(): boolean {
@@ -159,14 +169,14 @@ export function createFreeGenerations({
   }
 
   function requestGrant() {
-    s.loading = true;
+    grant = { status: 'loading' };
     void refreshFreeGenerationGrant(freeGenerationGrantRequest);
   }
 
-  // Re-runs when readiness, connectivity, or the known grant changes. A failed
-  // request leaves `available` false without changing it, so a failure alone
-  // never re-runs this: the next attempt waits for a reconnect, a settings
-  // change, or a visible return.
+  // Re-runs when readiness, connectivity, or whether a grant is known changes.
+  // A failed request moves from loading to unavailable, neither of them known,
+  // so a failure alone never re-runs this: the next attempt waits for a
+  // reconnect, a settings change, or a visible return.
   function followEligibility() {
     const ready = grantRefreshReady();
     const online = network.online;
@@ -178,22 +188,19 @@ export function createFreeGenerations({
       }
       return;
     }
-    if (s.available) return;
+    if (grantKnown) return;
     requestGrant();
   }
 
   return {
-    get remaining() {
-      return s.remaining;
+    get grant() {
+      return grant;
+    },
+    get lastGrantRemaining() {
+      return lastGrantRemaining;
     },
     get badgeRemaining() {
-      return s.badgeRemaining;
-    },
-    get loading() {
-      return s.loading;
-    },
-    get available() {
-      return s.available;
+      return badgeRemaining;
     },
     setFreeGenerationsRemaining,
     setFreeGenerationsUnavailable,
@@ -213,7 +220,8 @@ export function createFreeGenerations({
     // retry into, and a hidden page is not a return.
     retryOnVisibleReturn() {
       if (document.visibilityState !== 'visible') return;
-      if (!grantRefreshReady() || !network.online || s.loading || s.available) return;
+      if (!grantRefreshReady() || !network.online) return;
+      if (grant.status === 'loading' || grant.status === 'available') return;
       requestGrant();
     },
   };

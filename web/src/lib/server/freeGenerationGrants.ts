@@ -3,13 +3,13 @@ import { dev } from '$app/environment';
 import { FREE_RESERVATION_LEASE_MS } from '$lib/ai/limits';
 import {
   FREE_GENERATION_LIMIT,
+  isInstallationId,
   type FreeGenerationFailureKind,
   type FreeGenerationGrantAdminStats,
 } from '$lib/freeGenerations';
 import { sleep } from './sleep';
 
 const STORE_NAME = 'free-generation-grants';
-const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
 const DAILY_PROVIDER_START_KEY_PREFIX = 'daily-provider-starts/';
 // A reservation is held until the generation settles, and settling no longer
 // happens inside the request that reserved (ADR-0115) — it happens when the poll
@@ -71,10 +71,6 @@ function grantStore(allowMemoryFallback = false): ReturnType<typeof getStore> | 
     if (!dev && !allowMemoryFallback) throw error;
     return null;
   }
-}
-
-export function isInstallationId(value: string | null): value is string {
-  return typeof value === 'string' && INSTALLATION_ID_PATTERN.test(value);
 }
 
 function nonNegativeInteger(value: unknown): number {

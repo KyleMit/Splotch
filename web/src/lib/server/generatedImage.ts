@@ -6,7 +6,7 @@ export async function prepareGeneratedImage(
   mimeType: string
 ): Promise<{ bytes: Uint8Array; mimeType: string }> {
   if (!isStyleName(style) || !hasPunchedBackground(style)) return { bytes, mimeType };
-  const { keyStickerBackground } = await import('../ai/flatBackgroundPunch');
+  const { keyStickerBackground } = await import('./ai/flatBackgroundPunch');
   const { buffer } = await keyStickerBackground(bytes);
   return { bytes: buffer, mimeType: 'image/png' };
 }

@@ -9,7 +9,7 @@ import {
 } from './rateLimitKeys';
 import { rateLimitPolicy } from './rateLimitPolicy';
 import { isAllowedToken } from './tokens';
-import { isInstallationId } from './freeGenerationGrants';
+import { isInstallationId } from '$lib/freeGenerations';
 import { verifyReportToken, type ReportTokenBinding, type ReportTokenContext } from './reportToken';
 
 export type ImageReportAuthorizationResult =

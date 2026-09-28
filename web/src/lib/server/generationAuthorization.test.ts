@@ -14,9 +14,6 @@ const { envState, isAllowedToken, peekRateLimit, rateLimit } = vi.hoisted(() => 
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('./tokens', () => ({ isAllowedToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
-vi.mock('./freeGenerationGrants', () => ({
-  isInstallationId: (value: string | null) => /^[a-f0-9]{64}$/.test(value ?? ''),
-}));
 
 import { authorizeGenerationRequest } from './generationAuthorization';
 import {
