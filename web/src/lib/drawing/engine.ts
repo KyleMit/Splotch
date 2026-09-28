@@ -1479,8 +1479,11 @@ export function prepareCanvasExport(capturePreview = true): CanvasExportPreparat
 }
 
 // The compositor is save-time-only, so it loads on demand and stays out of the
-// startup bundle (issue #461). A dead connection can reject the import —
-// callers own surfacing that (their tap handlers catch).
+// startup bundle (issue #461). A failed export arrives on either of two
+// channels, and every caller must handle both: null (no canvas or paper, no
+// 2D export context, or an encoder that produced no PNG) or a rejection (a
+// dead connection rejecting the compositor import, an overlay or tile bitmap
+// that will not load).
 export async function exportCanvasBlob(options: ExportOptions = {}): Promise<Blob | null> {
   return prepareCanvasExport(!!options.preview)?.complete(options) ?? null;
 }
