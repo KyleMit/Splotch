@@ -22,7 +22,8 @@
 
   const previewLoader = createAiPreviewLoader(
     () => exportCanvasBlob({ includePaperTexture: false }),
-    (blob) => (drawingBlob = blob)
+    (blob) => (drawingBlob = blob),
+    aiPromptModal.hide
   );
 
   async function loadPreview() {
