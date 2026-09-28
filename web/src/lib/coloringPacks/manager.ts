@@ -184,10 +184,12 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     cancelActiveWork();
   };
   // A native store fixes an install's network class when the install starts, so
-  // one issued under the other cellular setting is cancelled for the rerun to reissue.
+  // one issued under the other cellular setting is cancelled for the rerun to
+  // reissue. The web store ignores the flag, so there a flip alone restarts nothing.
   const installOutlivedPolicy = () =>
     installAllowsMetered !== null &&
-    (!downloadAllowed() || installAllowsMetered !== settingsState.coloringPacksAllowMetered);
+    (!downloadAllowed() ||
+      (__IS_CAPACITOR__ && installAllowsMetered !== settingsState.coloringPacksAllowMetered));
   // Disallowing downloads cancels only a transfer: the books a finished scan
   // published stay visible, and a scan still running keeps going to publish them.
   const applyDownloadPolicy = () => {

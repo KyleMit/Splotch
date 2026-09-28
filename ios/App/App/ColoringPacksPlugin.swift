@@ -59,16 +59,17 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
                 if let active = self.currentJob,
                    active.resolution == job.resolution,
                    active.book.id == job.book.id {
-                    if active.allowMetered == job.allowMetered, active.book.marker == job.book.marker {
-                        self.settleCompletion(.failure(ColoringPackError.cancelled))
+                    self.settleCompletion(.failure(ColoringPackError.cancelled))
+                    if active.allowMetered == job.allowMetered {
                         self.completion = completion
                         return
                     }
                     // A job keeps the session it started on, so a request under the other cellular
-                    // setting replaces it rather than joining it, as Android's REPLACE does.
-                    self.cancelAllTasks()
+                    // setting replaces it rather than joining it, as Android's REPLACE does. Only
+                    // the replaced session is cancelled: its task list is read asynchronously and
+                    // would otherwise include the replacement's first task.
+                    self.cancelTasks(allowMetered: active.allowMetered)
                     self.currentJob = nil
-                    self.settleCompletion(.failure(ColoringPackError.cancelled))
                 }
                 if self.currentJob != nil {
                     completion(.failure(ColoringPackError.downloadInProgress))
@@ -246,8 +247,12 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
     }
 
     private func cancelAllTasks() {
-        wifiSession.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
-        meteredSession.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
+        cancelTasks(allowMetered: false)
+        cancelTasks(allowMetered: true)
+    }
+
+    private func cancelTasks(allowMetered: Bool) {
+        (allowMetered ? meteredSession : wifiSession).getAllTasks { tasks in tasks.forEach { $0.cancel() } }
     }
 
     private func sessionIdentifier(allowMetered: Bool) -> String {
