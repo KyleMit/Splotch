@@ -286,9 +286,12 @@ fails on a repo path or npm script that doesn't resolve.
 
 ## 11. Exceptions ratchet down
 
-**Rule.** An exception to a rule is declared in one list, next to the rule, and ratchets down: the
-change that makes an entry obsolete removes it, and the change that shrinks a capped file lowers its
-cap. Adding an entry or raising a cap stays possible, but only in the diff, with its reason, where a
+**Rule.** An exception to a rule is declared in one list, next to the rule, and ratchets down. The
+change that makes an entry obsolete removes it. A cap frozen at its file's exact size
+(`TOOLS_GRANDFATHERED_MAX_LINES`) is lowered in the change that shrinks the file; a reviewed
+per-file override keeps about 75 lines of headroom by design and is lowered once the
+`burn-down-oversized-code` measurement reports it stale, with more than twice that headroom spare.
+Adding an entry or raising a cap stays possible, but only in the diff, with its reason, where a
 reviewer sees it (the `burn-down-oversized-code` skill raises a cap when a split would make the code
 worse).
 
