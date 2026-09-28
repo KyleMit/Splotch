@@ -87,7 +87,7 @@ per-cell rule would take. The mode each preserved capture came from is recorded,
 knows which one it is looking at rather than assuming.
 
 Promotion is explicit —
-`npm run perf:evidence:keep --corpus=<dir> --campaign=<name> --product-commit=<sha>` — never a
+`npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name> --product-commit=<sha>` — never a
 default write path. The exact capture product SHA is required and stamped into the corpus index, so
 the representative remains attributable after its gitignored source corpus and the manifest's live
 paths are gone. The tree holds curated evidence only, and a capture enters it because someone

@@ -12,7 +12,10 @@ const DEFAULT_OUTPUT = join(ROOT, 'tools/store-drawings/generated/store-drawings
 const FLATTEN_TOLERANCE = 0.25;
 const MAX_FLATTEN_DEPTH = 12;
 const POINT_PRECISION = 0.25;
-const STROKE_WIDTHS = [2, 4, 8, 14, 22];
+// The app's pen width in px for each stroke size level, index 0 being size 1. The app's own table
+// (SIZE_TO_PX) lives in a Svelte rune module Node cannot import, so it is read from source text by
+// the drift guard in tests/pointer-instructions.test.mjs.
+export const STROKE_WIDTHS = [2, 4, 8, 14, 22];
 const PORTRAIT_CANVASES = [
   { width: 432, height: 693 },
   { width: 430, height: 857 },

@@ -6,6 +6,7 @@ import {
   flattenSvgPath,
   generateModule,
   generateStoreDrawings,
+  STROKE_WIDTHS,
 } from '../gen-pointer-instructions.mjs';
 import { softColorMetrics } from '../evaluate-drawing-fidelity.mjs';
 import {
@@ -160,6 +161,23 @@ describe('store drawing conversion', () => {
     expect(expected).not.toContain('.svg');
     expect(expected).not.toMatch(/\bd:\s*["']/);
     expect(expected).toContain('page, box, options');
+  });
+
+  // The pens the generator quantizes to and the evaluator renders its reference with are the app's
+  // SIZE_TO_PX, which lives in a Svelte rune module Node cannot import, so it is read as text.
+  it('quantizes to the pen widths the app draws with', () => {
+    const strokeWidthSource = readFileSync(
+      join(repoRoot, 'web/src/lib/state/strokeWidth.svelte.ts'),
+      'utf8'
+    );
+    const appTable = /const SIZE_TO_PX\b[^=]*=\s*\{([^}]*)\}/.exec(strokeWidthSource)?.[1];
+    const appWidths = [...(appTable ?? '').matchAll(/(\d+):\s*(\d+)/g)].map(([, level, px]) => [
+      Number(level),
+      Number(px),
+    ]);
+
+    expect(appWidths).not.toHaveLength(0);
+    expect(STROKE_WIDTHS.map((px, index) => [index + 1, px])).toEqual(appWidths);
   });
 
   it('exports a named function and scene for every generated drawing', () => {
