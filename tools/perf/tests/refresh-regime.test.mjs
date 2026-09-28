@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import { CAMPAIGN_TARGETS } from '../lib/campaign-plan.mjs';
-import { summarizeRun } from '../lib/real-screen-stats.mjs';
+import { REAL_SCREEN_SCHEMA_VERSION, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { OFF_REFRESH_REGIME, UNSCOREABLE, attemptsFor } from '../lib/campaign-ledger.mjs';
 import {
   MIXED_REGIME_SUSTAINED_SHARE_MAX,
@@ -300,13 +300,22 @@ describe('the mixed-regime verdict', () => {
 // the machine-driven side enumerates the whole tracked population rather than
 // sampling it: every capture with raw frames, hand captures identified by
 // their recorded transport.
-// Every test in here walks the WHOLE tracked population, and the corpus
-// deliberately grew on 2026-08-26 (the ADR-0138 study exception banked a
-// 19-capture spread set, plus the android-native and bundled-channel
-// corpora) — the default 5 s per-test budget times out on CI runners while
-// the claims themselves hold.
+//
+// The population is walked once and shared, and each report is summarized
+// without its phases: regimeMixture reads only the frame table, and the
+// per-phase summaries were about 90% of a walk's cost. Walking the whole
+// corpus once per test with full summaries put this block near its timeout on
+// CI. The witness test below holds the phase-free mixture equal to the full
+// summary's on the captures that decide the threshold, so a mixture that
+// starts depending on phases fails here rather than passing on a shortcut.
+// The single walk still reads every tracked capture, which can outrun the
+// default 5 s budget on a loaded runner, hence the block timeout.
 describe('the mixture threshold holds against the tracked corpora', { timeout: 60_000 }, () => {
-  const population = () => {
+  const MIXED_PRESENTATION_HAND_CAPTURES = [
+    '2026-08-23-hand/ios-safari-b.json',
+    '2026-08-23-hand/android-chrome-d-clean.json',
+  ];
+  const walkPopulation = () => {
     const rows = [];
     for (const campaign of readdirSync(EVIDENCE)) {
       const dir = join(EVIDENCE, campaign);
@@ -320,17 +329,38 @@ describe('the mixture threshold holds against the tracked corpora', { timeout: 6
           continue;
         }
         if (!Array.isArray(capture.report?.frames) || !capture.report.frames.length) continue;
-        const mixture = summarizeRun(capture.report).regimeMixture;
+        const mixture = summarizeRun({ ...capture.report, phases: [] }).regimeMixture;
         if (!mixture) continue;
         rows.push({
           id: `${campaign}/${file}`,
+          path: join(dir, file),
           byHand: capture.transport === 'human-finger',
+          mixture,
           share: mixture.sustainedMinorityShare,
         });
       }
     }
     return rows;
   };
+  let walked;
+  const population = () => (walked ??= walkPopulation());
+
+  it('reads the same mixture without phases as the full summary on the deciding captures', () => {
+    const rows = population();
+    const closestMachine = rows
+      .filter((row) => !row.byHand)
+      .reduce((closest, row) => (row.share > closest.share ? row : closest));
+    const deciding = [
+      closestMachine,
+      ...rows.filter((row) => MIXED_PRESENTATION_HAND_CAPTURES.includes(row.id)),
+    ];
+
+    expect(deciding).toHaveLength(1 + MIXED_PRESENTATION_HAND_CAPTURES.length);
+    for (const row of deciding) {
+      const { report } = JSON.parse(readFileSync(row.path, 'utf8'));
+      expect(summarizeRun(report).regimeMixture, row.id).toEqual(row.mixture);
+    }
+  });
 
   it('sits above every machine-driven capture in the whole tracked population', () => {
     const rows = population();
@@ -349,10 +379,7 @@ describe('the mixture threshold holds against the tracked corpora', { timeout: 6
     const rows = population();
     const byId = Object.fromEntries(rows.map((row) => [row.id, row.share]));
 
-    for (const id of [
-      '2026-08-23-hand/ios-safari-b.json',
-      '2026-08-23-hand/android-chrome-d-clean.json',
-    ]) {
+    for (const id of MIXED_PRESENTATION_HAND_CAPTURES) {
       expect(byId[id], id).toBeGreaterThan(MIXED_REGIME_SUSTAINED_SHARE_MAX);
     }
   });
@@ -383,7 +410,11 @@ describe('the mixture segmentation bridge', () => {
       for (let lift = 0; lift < 6; lift += 1) push(8.3, 0);
     }
 
-    const mixture = summarizeRun({ phases: [], frames }).regimeMixture;
+    const mixture = summarizeRun({
+      meta: { schema: REAL_SCREEN_SCHEMA_VERSION },
+      phases: [],
+      frames,
+    }).regimeMixture;
 
     expect(mixture.observedRegime).toBe('120hz');
     expect(mixture.minorityRegime).toBe('60hz');

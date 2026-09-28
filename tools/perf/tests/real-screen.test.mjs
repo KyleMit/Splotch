@@ -992,7 +992,7 @@ describe('summarizePhase via summarizeRun', () => {
     const frames = beat(120, { from: 1000, interval: 16.7 });
     const events = [down(1000), ...[...Array(50)].map((_, i) => move(1010 + i * 8.3)), up(1600)];
     return {
-      meta: { measureNames: ['engine.draw'] },
+      meta: { schema: REAL_SCREEN_SCHEMA_VERSION, measureNames: ['engine.draw'] },
       phases: [{ key: 'page', suppress: [], startedAt: 1000, endedAt: 3000, contactMs: 2000 }],
       frames,
       events,
@@ -1018,6 +1018,7 @@ describe('summarizePhase via summarizeRun', () => {
       [154.4, 60, 0],
     ];
     const [phase] = summarizeRun({
+      meta: { schema: REAL_SCREEN_SCHEMA_VERSION },
       phases: [{ key: 'page', suppress: [], startedAt: 1, endedAt: 154.4, contactMs: 76.7 }],
       frames,
       events: [],
@@ -1079,6 +1080,30 @@ describe('summarizePhase via summarizeRun', () => {
     expect(summarizeRun(capture()).intervalMs).toBeCloseTo(16.7, 1);
   });
 
+  // Rows are read by position, so a report from a probe version this analyzer
+  // does not know is refused rather than mis-read into plausible numbers.
+  it.each([REAL_SCREEN_SCHEMA_VERSION + 1, 0, undefined])(
+    'refuses a report whose probe schema is %s',
+    (schema) => {
+      const report = capture();
+      report.meta.schema = schema;
+
+      expect(() => summarizeRun(report)).toThrow(/^probe report schema \S+ is outside the 1-/);
+    }
+  );
+
+  it('reads a schema-1 report, counting its absent trust column as unknown', () => {
+    const report = capture();
+    report.meta.schema = 1;
+    report.events = report.events.map((event) => event.slice(0, 8));
+
+    expect(summarizeRun(report).phases[0].input.trust).toMatchObject({
+      trusted: 0,
+      untrusted: 0,
+      unknown: 50,
+    });
+  });
+
   // The beat used to ride on the returned array as a property, and
   // JSON.stringify drops non-index properties of an array — so the one number
   // every lateThresholdMs hangs off vanished from every saved summaries file,
@@ -1110,7 +1135,7 @@ describe('paint latency with overlapping contacts', () => {
   const frames = beat(260, { from: 100, interval });
   const run = (events) =>
     summarizeRun({
-      meta: { measureNames: [] },
+      meta: { schema: REAL_SCREEN_SCHEMA_VERSION, measureNames: [] },
       phases: [{ key: 'p', suppress: [], startedAt: 100, endedAt: 4300, contactMs: 3900 }],
       frames,
       events: [...events].sort((a, b) => a[0] - b[0]),
@@ -1654,7 +1679,7 @@ describe('lift frames and the between-stroke window', () => {
   ];
   const events = [down(100), move(116.7), move(133.4), up(200)];
   const report = {
-    meta: { measureNames: [] },
+    meta: { schema: REAL_SCREEN_SCHEMA_VERSION, measureNames: [] },
     phases: [{ key: 'p', suppress: [], startedAt: 100, endedAt: 900, contactMs: 90 }],
     frames,
     events,

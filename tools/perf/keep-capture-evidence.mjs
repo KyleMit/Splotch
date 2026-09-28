@@ -301,11 +301,17 @@ export async function keepCaptureEvidence({
     // an earlier run against a different product. --filter keeps a promotion scoped
     // to the targets this campaign actually took.
     if (filter && !file.includes(filter)) continue;
+    // A capture that does not parse fails the promotion rather than dropping
+    // out of it: an unreadable file is a truncated or corrupted capture, and
+    // skipping it shrank a cell's pool with nothing in the output saying so.
     let parsed;
     try {
       parsed = JSON.parse(readFileSync(file, 'utf8'));
-    } catch {
-      continue;
+    } catch (error) {
+      fail(
+        `${relative(root, file)} is not valid JSON (${error.message}). Delete it or move it out ` +
+          'of the corpus, or narrow with --filter.'
+      );
     }
     // Refused rather than skipped: evidence is filed as a target's
     // representative capture, and a floor capture in the corpus is a mixed-in
