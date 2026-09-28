@@ -19,6 +19,7 @@
 // from zero, and so does a rotation — which matters here because paper
 // orientation is locked independently of the viewport (ADR-0050), so the tile
 // aspect, and with it the row height, can change under an already-open picker.
+// cutTrailingRow also listens for viewport resizes; its comment says why.
 
 /** How much of the trailing row stays visible below the fold. Half a tile is
  *  enough artwork to recognise as a tile and far too little to mistake for the
@@ -114,10 +115,16 @@ export function cutTrailingRow(node: HTMLElement) {
 
   const observer = new ResizeObserver(measure);
   observer.observe(node);
+  // A viewport that changes height alone (split screen, a vertical window
+  // resize) resizes neither box: the grid's width follows the viewport's
+  // width, and the dialog's is pinned by the cut's own inline pixel cap, which
+  // then overrides the stylesheet's vh ceiling and runs the dialog off screen.
+  window.addEventListener('resize', measure);
 
   return {
     destroy() {
       observer.disconnect();
+      window.removeEventListener('resize', measure);
       scrollport.style.removeProperty('max-height');
     },
   };
