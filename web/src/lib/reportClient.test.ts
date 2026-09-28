@@ -147,6 +147,13 @@ describe('readReportReply', () => {
     });
   });
 
+  it('keeps the reason from an error-only body with no ok field', async () => {
+    expect(await reply('{"error":"Reporting is unavailable"}', 503)).toEqual({
+      ok: false,
+      error: 'Reporting is unavailable',
+    });
+  });
+
   // Each of these once reached the parent as a blank error line or as a
   // network failure the network never had.
   it.each([

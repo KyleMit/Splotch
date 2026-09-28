@@ -44,26 +44,26 @@ export function postImageReport(
   return fetch(apiUrl('/api/report-image'), { method: 'POST', headers, body: form, signal });
 }
 
+// A body carrying a string `error` is a failure that says why even without
+// `ok: false`: a platform or proxy can answer that way, and its reason is
+// still the most useful line to show the parent.
 function narrowReportReply(body: unknown): ReportResponse | ImageReportResponse | null {
-  if (typeof body !== 'object' || body === null || !('ok' in body)) return null;
-  if (body.ok === true) {
+  if (typeof body !== 'object' || body === null) return null;
+  if ('ok' in body && body.ok === true) {
     return 'reportId' in body && typeof body.reportId === 'string'
       ? { ok: true, reportId: body.reportId }
       : { ok: true };
   }
-  if (body.ok === false && 'error' in body && typeof body.error === 'string') {
-    return { ok: false, error: body.error };
-  }
+  if ('error' in body && typeof body.error === 'string') return { ok: false, error: body.error };
   return null;
 }
 
 /**
  * Either report endpoint's reply, read from `unknown` into its declared shape.
- * `null` means the body was not that shape — not JSON, `null`, or a failure
- * with no string `error`, as a proxy or platform error page sends — so the
- * caller shows its own copy instead of a blank or misattributed line. A read
- * the caller's own `signal` cut short rethrows: only the caller can tell its
- * deadline from an unmount.
+ * `null` means the body gave no usable answer — not JSON, `null`, or neither
+ * `ok: true` nor a string `error` — so the caller shows its own copy instead
+ * of a blank or misattributed line. A read the caller's own `signal` cut
+ * short rethrows: only the caller can tell its deadline from an unmount.
  */
 export async function readReportReply(
   response: Response,
