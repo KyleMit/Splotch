@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   settings: { saveOnDeleteEnabled: true },
@@ -34,6 +34,10 @@ beforeEach(() => {
   mocks.isCanvasEmpty.mockReturnValue(false);
   mocks.screenshotModuleLoads = 0;
   mocks.saveImageBlob.mockResolvedValue({ status: 'photos' });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('saveDrawingIfEnabled', () => {
@@ -95,6 +99,19 @@ describe('saveDrawingIfEnabled', () => {
 
     expect(mocks.reportSaveFailure).toHaveBeenCalledExactlyOnceWith('failed', null);
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
+  });
+
+  it('reports a drawing whose export rejected without a picture to retry', async () => {
+    const exportError = new Error('Failed to load canonical coloring overlay');
+    mocks.exportCanvasBlob.mockRejectedValue(exportError);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { saveDrawingIfEnabled } = await import('./saveOnDelete');
+
+    await saveDrawingIfEnabled();
+
+    expect(mocks.reportSaveFailure).toHaveBeenCalledExactlyOnceWith('failed', null);
+    expect(mocks.saveImageBlob).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('Save on delete export failed:', exportError);
   });
 
   it('does not load the screenshot module when saving on delete is disabled', async () => {
