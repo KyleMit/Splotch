@@ -46,10 +46,11 @@ Where things live (full file-by-file map: `architecture` skill):
 * `lib/boot/` — the drawing route's boot steps as named helpers, started from
   `routes/+page.svelte`'s `onMount`; the `boot/` row of `docs/ARCHITECTURE.md` lists them in the
   order they start and says which one runs outside `onMount`. The route collects a teardown from
-  each step (a returned function, or a returned controller's `stop`) and runs them on unmount. This
-  is page-lifecycle-scoped imperative wiring — the counterpart to the self-initializing stores
-  above, not an exception to them: it needs mount/unmount teardown, which is exactly what the
-  route's `onMount` provides.
+  each `onMount` step after `hydrateSettings()` (a returned function, or a returned controller's
+  `stop`) and runs them on unmount; the `$effect`s `installSettledInEffects()` creates belong to the
+  component instead. This is page-lifecycle-scoped imperative wiring — the counterpart to the
+  self-initializing stores above, not an exception to them: it needs mount/unmount teardown, which
+  is exactly what the route's `onMount` provides.
 * `lib/components/` — UI components with scoped styles.
 * `lib/actions/` — Svelte actions for gestures and dialog wiring.
 * `lib/server/` — server-only modules (tokens, admin, rate limiting). Never imported client-side;
