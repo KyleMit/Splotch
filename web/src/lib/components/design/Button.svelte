@@ -9,16 +9,38 @@
   // Sizes step the label, not just the box: sm/md both carry the 14px chrome
   // label and differ only in padding, while lg takes --font-size-md so a pair
   // of buttons can read as a screen's primary decision rather than as chrome.
-  interface Props extends HTMLButtonAttributes {
+  interface ChromeProps {
     variant?: 'brand' | 'wash' | 'outline' | 'danger';
     size?: 'sm' | 'md' | 'lg';
+  }
+
+  interface ButtonProps extends ChromeProps, HTMLButtonAttributes {
     busy?: boolean;
-    /** Renders the same chrome as a link — the beta page's step actions. */
-    href?: string;
-    target?: HTMLAnchorAttributes['target'];
-    rel?: string;
+    href?: never;
+    target?: never;
+    rel?: never;
     children: Snippet;
   }
+
+  /**
+   * The same chrome on an `<a>`, which renders only these props. `disabled`
+   * and `busy` are `never`, so a link can be neither, even through a spread.
+   * Other button attributes are rejected by the excess-property check
+   * on attributes written at the call site, which a spread bypasses; making
+   * every one `never` pushes the props type past what TypeScript can
+   * represent in `svelte/server`'s `render`.
+   */
+  interface LinkProps extends ChromeProps {
+    href: string;
+    target?: HTMLAnchorAttributes['target'];
+    rel?: string;
+    class?: HTMLAnchorAttributes['class'];
+    busy?: never;
+    disabled?: never;
+    children: Snippet;
+  }
+
+  type Props = ButtonProps | LinkProps;
 
   let {
     variant = 'wash',
@@ -34,7 +56,7 @@
   }: Props = $props();
 </script>
 
-{#if href}
+{#if href !== undefined}
   <a class={['btn', variant, size, className]} {href} {target} {rel}>{@render children()}</a>
 {:else}
   <button
