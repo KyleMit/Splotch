@@ -221,6 +221,11 @@ describe('npm scripts', () => {
   it('skips npm flags and namespace globs', () => {
     expect(unresolved('docs/TESTING.md', 'npm run --silent check; npm run perf:*')).toEqual([]);
   });
+
+  it('reads the script after npm flags placed before run', () => {
+    const text = '`npm --silent run check` and `npm -s run show:gone`';
+    expect(unresolved('docs/TESTING.md', text)).toEqual(['script show:gone']);
+  });
 });
 
 describe('identifiers', () => {
