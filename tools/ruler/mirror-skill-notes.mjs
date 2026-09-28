@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { join } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { directNoteNames } from './lib/direct-provider-skills.mjs';
+import { PROVIDERS, SHARED_NOTES_SOURCE, notesDir } from './lib/layout.mjs';
 
 // Shared note sources carry the same .md.template suffix the skill forks
 // require, for the same reason: ruler's recursive rule loader concatenates every
@@ -29,32 +30,36 @@ export const SHARED_NOTE_SUFFIX = '.md.template';
 
 export const sharedNoteSource = (skillName) => `${skillName}${SHARED_NOTE_SUFFIX}`;
 
-const SOURCE = join('.ruler', 'skill-notes');
-const TARGETS = [
-  { provider: 'claude', path: join('.claude', 'skill-notes') },
-  { provider: 'codex', path: join('.agents', 'skill-notes') },
-];
-
 const noteOutputName = (file) => file.slice(0, -'.template'.length);
 
-export function mirrorSkillNotes(root = ROOT) {
-  const sourceDir = join(root, SOURCE);
+// Read-only: validates the note sources without writing anything, so
+// apply-ruler.mjs can reject a stray note before Ruler rewrites a single file.
+export function planSkillNotes(root = ROOT) {
+  const sourceDir = join(root, SHARED_NOTES_SOURCE);
   const entries = existsSync(sourceDir) ? readdirSync(sourceDir) : [];
 
-  const stray = entries.filter((file) => file.endsWith('.md'));
+  // Recursive because Ruler's loader is: a plain .md in a subdirectory, which
+  // this mirror never copies, would still be concatenated.
+  const stray = existsSync(sourceDir)
+    ? readdirSync(sourceDir, { recursive: true }).filter((file) => file.endsWith('.md'))
+    : [];
   if (stray.length) {
     throw new Error(
       `Skill notes must end in ${SHARED_NOTE_SUFFIX}, or ruler concatenates them into CLAUDE.md ` +
-        `and AGENTS.md: ${stray.map((file) => join(SOURCE, file)).join(', ')}`
+        `and AGENTS.md: ${stray.map((file) => join(SHARED_NOTES_SOURCE, file)).join(', ')}`
     );
   }
 
-  const sourceFiles = entries.filter((file) => file.endsWith(SHARED_NOTE_SUFFIX));
+  return { root, sourceFiles: entries.filter((file) => file.endsWith(SHARED_NOTE_SUFFIX)) };
+}
+
+function applySkillNotes({ root, sourceFiles }) {
+  const sourceDir = join(root, SHARED_NOTES_SOURCE);
   const generated = new Set(sourceFiles.map(noteOutputName));
 
-  for (const target of TARGETS) {
-    const targetDir = join(root, target.path);
-    const directNotes = directNoteNames(target.provider);
+  for (const provider of PROVIDERS) {
+    const targetDir = join(root, notesDir(provider));
+    const directNotes = directNoteNames(provider);
     mkdirSync(targetDir, { recursive: true });
 
     for (const stale of readdirSync(targetDir).filter(
@@ -69,15 +74,17 @@ export function mirrorSkillNotes(root = ROOT) {
       // in the wild names the file to edit instead of inviting an in-place fix.
       writeFileSync(
         join(targetDir, noteOutputName(file)),
-        `<!-- Source: ${join(SOURCE, file)} -->\n\n${body}`
+        `<!-- Source: ${join(SHARED_NOTES_SOURCE, file)} -->\n\n${body}`
       );
     }
   }
 
   console.log(
-    `[skill-notes] mirrored ${sourceFiles.length} file(s) to ${TARGETS.map(({ path }) => path).join(' and ')}`
+    `[skill-notes] mirrored ${sourceFiles.length} file(s) to ${PROVIDERS.map(notesDir).join(' and ')}`
   );
   return { notes: sourceFiles.length };
 }
+
+export const mirrorSkillNotes = (root = ROOT) => applySkillNotes(planSkillNotes(root));
 
 if (isMain(import.meta.url)) runMain(async () => mirrorSkillNotes());

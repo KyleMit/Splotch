@@ -17,6 +17,7 @@ import {
   DIRECT_PROVIDER_PATHS,
   FORBIDDEN_DIRECT_PROVIDER_SOURCES,
   RULER_STEP_PATHS,
+  generateFromValidatedSources,
   withPreservedDirectProviderPaths,
 } from '../apply-ruler.mjs';
 import { sharedNoteSource } from '../mirror-skill-notes.mjs';
@@ -315,5 +316,50 @@ describe('withPreservedDirectProviderPaths', () => {
     expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
       'direct provider skill must not have a Ruler source'
     );
+  });
+});
+
+// The note and fork steps run after `ruler apply` has rewritten the checkout, so
+// a source defect they reject must be caught before generation starts, not
+// after the stray note is already concatenated into every CLAUDE.md.
+describe('generateFromValidatedSources', () => {
+  function generationRuns(root) {
+    let runs = 0;
+    let thrown;
+    try {
+      generateFromValidatedSources(root, () => runs++);
+    } catch (error) {
+      thrown = error;
+    }
+    return { runs, thrown };
+  }
+
+  it('generates when the note and fork sources are valid', () => {
+    const root = makeRoot();
+    mkdirSync(join(root, '.ruler', 'skill-notes'), { recursive: true });
+    writeFileSync(join(root, '.ruler', 'skill-notes', sharedNoteSource('shared')), 'note\n');
+
+    expect(generationRuns(root)).toEqual({ runs: 1, thrown: undefined });
+  });
+
+  it('rejects a stray .md note before generation runs', () => {
+    const root = makeRoot();
+    mkdirSync(join(root, '.ruler', 'skill-notes'), { recursive: true });
+    writeFileSync(join(root, '.ruler', 'skill-notes', 'shared.md'), 'note\n');
+
+    const { runs, thrown } = generationRuns(root);
+    expect(thrown?.message).toContain('Skill notes must end in');
+    expect(runs).toBe(0);
+  });
+
+  it('rejects a malformed skill fork before generation runs', () => {
+    const root = makeRoot();
+    mkdirSync(join(root, '.ruler', 'skill-forks', 'unknown-runner', 'skills'), {
+      recursive: true,
+    });
+
+    const { runs, thrown } = generationRuns(root);
+    expect(thrown?.message).toContain('unsupported ruler skill fork target: unknown-runner');
+    expect(runs).toBe(0);
   });
 });
