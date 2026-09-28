@@ -2,11 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  buildInventory,
-  compareWithLatest,
-  listPinFiles,
-} from '../check-github-action-versions.mjs';
+import { buildInventory, latestStatus, listPinFiles } from '../check-github-action-versions.mjs';
 
 const CACHE_SHA = '55cc8345863c7cc4c66a329aec7e433d2d1c52a9';
 const DIGIT_LED_SHA = '11bd71901bbe5b1630ceea73d27597364c9af683';
@@ -60,25 +56,33 @@ describe('the pin inventory', () => {
   });
 });
 
-describe('comparing pins with the latest release', () => {
+describe('the latest-release verdict', () => {
   it('reads a SHA pin by its version comment', () => {
-    expect(compareWithLatest(refsOf([[CACHE_SHA, 'v6.1.0']]), 'v7.0.0')).toEqual({
-      behind: [CACHE_SHA],
-      unversioned: [],
-    });
+    expect(latestStatus(refsOf([[CACHE_SHA, 'v6.1.0']]), 'v7.0.0')).toBe(
+      `⚠ behind latest v7.0.0 (${CACHE_SHA})`
+    );
   });
 
   it('reports a SHA pin with no version comment instead of reading its digits as a major', () => {
-    expect(compareWithLatest(refsOf([[DIGIT_LED_SHA, undefined]]), 'v12.0.0')).toEqual({
-      behind: [],
-      unversioned: [DIGIT_LED_SHA],
-    });
+    expect(latestStatus(refsOf([[DIGIT_LED_SHA, undefined]]), 'v12.0.0')).toBe(
+      `⚠ no version to compare (${DIGIT_LED_SHA})`
+    );
   });
 
-  it('passes a tag pin at the latest major', () => {
-    expect(compareWithLatest(refsOf([['v7', undefined]]), 'v7.2.0')).toEqual({
-      behind: [],
-      unversioned: [],
-    });
+  it('reads a tag pin by its ref, whatever its comment says', () => {
+    expect(latestStatus(refsOf([['v7', 'Keep this pin']]), 'v7.2.0')).toBe('latest v7.2.0 ✓');
+    expect(latestStatus(refsOf([['v6', 'Keep this pin']]), 'v7.2.0')).toBe(
+      '⚠ behind latest v7.2.0 (v6)'
+    );
+  });
+
+  it('passes nothing against a latest tag that carries no version', () => {
+    expect(latestStatus(refsOf([['v6', undefined]]), 'release-v7')).toBe(
+      '⚠ latest release-v7 has no version to compare'
+    );
+  });
+
+  it('says so when the latest release could not be fetched', () => {
+    expect(latestStatus(refsOf([['v7', undefined]]), null)).toBe('latest: unknown');
   });
 });
