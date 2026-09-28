@@ -9,6 +9,7 @@ import {
   MAX_STARTUP_JS_CSS_BYTES,
   measureNativeExport,
   measureWebBundle,
+  NATIVE_STARTUP_MODULEPRELOAD_COUNT,
   nativeExportBudgetProblems,
   STARTUP_MODULEPRELOAD_COUNT,
   startupResourcesFromHtml,
@@ -126,11 +127,27 @@ it.each([
   }
 );
 
+function writeNativeExport(modulepreloadCount, assetBytes = 1) {
+  const nativeDir = temporaryDirectory();
+  const links = Array.from(
+    { length: modulepreloadCount },
+    (_, index) => `<link href="./_app/immutable/chunks/startup-${index}.js" rel="modulepreload">`
+  );
+  writeFileSync(join(nativeDir, 'index.html'), links.join(''));
+  writeSizedFile(join(nativeDir, 'coloring/farm.svg'), assetBytes);
+  return nativeDir;
+}
+
 it('measures every file in the native export and rejects an oversized package', () => {
   const nativeDir = temporaryDirectory();
-  writeSizedFile(join(nativeDir, 'index.html'), 3);
+  const index = '<link href="./_app/app.js" rel="modulepreload">';
+  writeFileSync(join(nativeDir, 'index.html'), index);
   writeSizedFile(join(nativeDir, '_app/app.js'), 5);
-  expect(measureNativeExport(nativeDir)).toEqual({ bytes: 8, fileCount: 2 });
+  expect(measureNativeExport(nativeDir)).toEqual({
+    bytes: Buffer.byteLength(index) + 5,
+    fileCount: 2,
+    modulepreloadCount: 1,
+  });
   expect(nativeExportBudgetProblems({ bytes: MAX_NATIVE_EXPORT_BYTES + 1 })).toEqual([
     `Native static export is ${MAX_NATIVE_EXPORT_BYTES + 1} bytes, above the ${MAX_NATIVE_EXPORT_BYTES}-byte budget`,
   ]);
@@ -285,25 +302,106 @@ it.each([{}, { PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
 it.each([{}, { PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
   'rejects an oversized native export: %j',
   async (env) => {
-    const nativeDir = temporaryDirectory();
-    writeSizedFile(join(nativeDir, 'index.html'), MAX_NATIVE_EXPORT_BYTES + 1);
+    const nativeDir = writeNativeExport(
+      NATIVE_STARTUP_MODULEPRELOAD_COUNT,
+      MAX_NATIVE_EXPORT_BYTES
+    );
 
     await expect(
       checkBundleBudgets({ native: true, nativeDir, env, log: vi.fn() })
-    ).rejects.toThrow(
-      `Native static export is ${MAX_NATIVE_EXPORT_BYTES + 1} bytes, above the ${MAX_NATIVE_EXPORT_BYTES}-byte budget`
+    ).rejects.toThrow(/^Native static export is \d+ bytes, above the \d+-byte budget$/);
+  }
+);
+
+it('rejects a native export without the index.html its WebView boots', async () => {
+  const nativeDir = temporaryDirectory();
+  writeSizedFile(join(nativeDir, '200.html'), 1);
+
+  await expect(
+    checkBundleBudgets({ native: true, nativeDir, env: {}, log: vi.fn() })
+  ).rejects.toThrow('Native static export has no index.html');
+});
+
+it('passes a native release build whose index.html modulepreloads the pinned number of chunks', async () => {
+  const log = vi.fn();
+
+  await checkBundleBudgets({
+    native: true,
+    nativeDir: writeNativeExport(NATIVE_STARTUP_MODULEPRELOAD_COUNT),
+    env: {},
+    log,
+  });
+
+  expect(log).toHaveBeenCalledWith(
+    expect.stringContaining(
+      `(${NATIVE_STARTUP_MODULEPRELOAD_COUNT}/${NATIVE_STARTUP_MODULEPRELOAD_COUNT} index.html modulepreloads)`
+    )
+  );
+});
+
+it.each([
+  {
+    modulepreloadCount: NATIVE_STARTUP_MODULEPRELOAD_COUNT + 1,
+    direction: `up from ${NATIVE_STARTUP_MODULEPRELOAD_COUNT}: a new chunk now loads before hydration`,
+    remedy: 'raise NATIVE_STARTUP_MODULEPRELOAD_COUNT in tools/check-bundle-budgets.mjs',
+  },
+  {
+    modulepreloadCount: NATIVE_STARTUP_MODULEPRELOAD_COUNT - 1,
+    direction: `down from ${NATIVE_STARTUP_MODULEPRELOAD_COUNT}`,
+    remedy: 'lower NATIVE_STARTUP_MODULEPRELOAD_COUNT in tools/check-bundle-budgets.mjs',
+  },
+])(
+  'rejects a native release build whose modulepreload count moved from its pin: $modulepreloadCount',
+  async ({ modulepreloadCount, direction, remedy }) => {
+    const check = checkBundleBudgets({
+      native: true,
+      nativeDir: writeNativeExport(modulepreloadCount),
+      env: {},
+      log: vi.fn(),
+    });
+
+    await expect(check).rejects.toThrow(
+      `The native export's index.html modulepreloads ${modulepreloadCount} chunks, ${direction}`
+    );
+    await expect(check).rejects.toThrow(remedy);
+  }
+);
+
+it.each([{ PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
+  'only reports an instrumented native build whose modulepreload count moved: %j',
+  async (env) => {
+    const log = vi.fn();
+    const modulepreloadCount = NATIVE_STARTUP_MODULEPRELOAD_COUNT + 1;
+
+    await checkBundleBudgets({
+      native: true,
+      nativeDir: writeNativeExport(modulepreloadCount),
+      env,
+      log,
+    });
+
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `[bundle-budgets] report-only: The native export's index.html modulepreloads ${modulepreloadCount} chunks`
+      )
+    );
+    expect(log).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^\[bundle-budgets\] instrumented build: the modulepreload count is report-only; native export /
+      )
     );
   }
 );
 
-it('keeps CI release build validation explicitly uninstrumented', () => {
+it.each([
+  'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build',
+  'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build:cap',
+])('keeps CI release build validation explicitly uninstrumented: %s', (step) => {
   const workflow = readFileSync(
     new URL('../../.github/workflows/test.yml', import.meta.url),
     'utf8'
   );
-  expect(workflow.split('\n').map((line) => line.trim())).toContain(
-    'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build'
-  );
+  expect(workflow.split('\n').map((line) => line.trim())).toContain(step);
 });
 
 it('is wired into both release build lifecycle hooks', () => {

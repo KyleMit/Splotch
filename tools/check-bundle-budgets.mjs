@@ -21,6 +21,8 @@ const RUNTIME_ENV_MODULE_URL = '_app/env.js';
 export const MAX_STARTUP_JS_CSS_BYTES = 525_000;
 // The reviewed 2026-09-28 release startup set is 40 modulepreloads. A new chunk can sit far below the byte budget and still cost a request before hydration, so the count is pinned exactly: growth must be deliberate, and a drop is locked in rather than left as slack for the next regression (ADR-0032's modulepreload-count amendment).
 export const STARTUP_MODULEPRELOAD_COUNT = 40;
+// The reviewed 2026-09-28 native export boots its WebView from an index.html that modulepreloads 28 chunks. It has its own pin because a runtime import used only inside an `__IS_CAPACITOR__` branch can add a native startup chunk while the web count stays put (ADR-0032's native modulepreload-count amendment).
+export const NATIVE_STARTUP_MODULEPRELOAD_COUNT = 28;
 // The reviewed 2026-08-19 largest bundle-wide lazy chunk is the public /design route at 65,418 bytes; 9,582 bytes of headroom permits modest growth while catching a larger deployed lazy route.
 export const MAX_LAZY_CHUNK_BYTES = 75_000;
 // The reviewed 2026-08-19 stripped native-export baseline is 6,629,727 bytes; 370,273 bytes of headroom accommodates normal asset churn while rejecting another bundled coloring book.
@@ -130,17 +132,34 @@ export function measureNativeExport(dir) {
   if (!existsSync(dir)) throw new Error(`Native static export does not exist: ${dir}`);
   const files = filesRecursively(dir);
   if (!files.length) throw new Error(`Native static export contains no files: ${dir}`);
+  const index = join(dir, 'index.html');
+  if (!existsSync(index)) throw new Error(`Native static export has no index.html: ${index}`);
   return {
     bytes: files.reduce((total, path) => total + statSync(path).size, 0),
     fileCount: files.length,
+    modulepreloadCount: startupResourcesFromHtml(readFileSync(index, 'utf8')).modulepreloadCount,
   };
 }
 
-function modulepreloadCountProblem(count) {
-  const found = `The prerendered / page modulepreloads ${count} chunks`;
-  return count > STARTUP_MODULEPRELOAD_COUNT
-    ? `${found}, up from ${STARTUP_MODULEPRELOAD_COUNT}: a new chunk now loads before hydration. The usual cause is a startup module importing a runtime export that lazy code also imports, which splits the shared module into a chunk of its own; give that export a module only the startup path imports. If the new startup chunk is intended, raise STARTUP_MODULEPRELOAD_COUNT in tools/check-bundle-budgets.mjs and say why in the PR`
-    : `${found}, down from ${STARTUP_MODULEPRELOAD_COUNT}: lower STARTUP_MODULEPRELOAD_COUNT in tools/check-bundle-budgets.mjs to lock the gain in`;
+const WEB_MODULEPRELOAD_PIN = {
+  page: 'The prerendered / page',
+  count: STARTUP_MODULEPRELOAD_COUNT,
+  name: 'STARTUP_MODULEPRELOAD_COUNT',
+};
+const NATIVE_MODULEPRELOAD_PIN = {
+  page: "The native export's index.html",
+  count: NATIVE_STARTUP_MODULEPRELOAD_COUNT,
+  name: 'NATIVE_STARTUP_MODULEPRELOAD_COUNT',
+};
+
+function modulepreloadCountProblems(count, pin) {
+  if (count === pin.count) return [];
+  const found = `${pin.page} modulepreloads ${count} chunks`;
+  return [
+    count > pin.count
+      ? `${found}, up from ${pin.count}: a new chunk now loads before hydration. The usual cause is a startup module importing a runtime export that lazy code also imports, which splits the shared module into a chunk of its own; give that export a module only the startup path imports. If the new startup chunk is intended, raise ${pin.name} in tools/check-bundle-budgets.mjs and say why in the PR`
+      : `${found}, down from ${pin.count}: lower ${pin.name} in tools/check-bundle-budgets.mjs to lock the gain in`,
+  ];
 }
 
 export function webBundleBudgetProblems({ startupBytes, modulepreloadCount, largestLazyChunk }) {
@@ -150,9 +169,7 @@ export function webBundleBudgetProblems({ startupBytes, modulepreloadCount, larg
           `Startup JS/CSS is ${startupBytes} bytes, above the ${MAX_STARTUP_JS_CSS_BYTES}-byte budget`,
         ]
       : []),
-    ...(modulepreloadCount === STARTUP_MODULEPRELOAD_COUNT
-      ? []
-      : [modulepreloadCountProblem(modulepreloadCount)]),
+    ...modulepreloadCountProblems(modulepreloadCount, WEB_MODULEPRELOAD_PIN),
     ...(largestLazyChunk.bytes > MAX_LAZY_CHUNK_BYTES
       ? [
           `Largest lazy JS chunk is ${largestLazyChunk.bytes} bytes, above the ${MAX_LAZY_CHUNK_BYTES}-byte budget (${largestLazyChunk.path})`,
@@ -175,12 +192,24 @@ export async function checkBundleBudgets({
   env = process.env,
   log = console.log,
 } = {}) {
+  // Diagnostic code does not ship, and it can add or merge startup chunks too;
+  // release limits describe the artifact enforced by CI's uninstrumented
+  // release build (ADR-0032).
+  const instrumented = isInstrumentedBuild(env);
   if (native) {
     const measurement = measureNativeExport(nativeDir);
-    const problems = nativeExportBudgetProblems(measurement);
+    const countProblems = modulepreloadCountProblems(
+      measurement.modulepreloadCount,
+      NATIVE_MODULEPRELOAD_PIN
+    );
+    const problems = [
+      ...nativeExportBudgetProblems(measurement),
+      ...(instrumented ? [] : countProblems),
+    ];
     if (problems.length) throw new Error(problems.join('\n'));
+    for (const problem of countProblems) log(`[bundle-budgets] report-only: ${problem}`);
     log(
-      `[bundle-budgets] native export ${measurement.bytes}/${MAX_NATIVE_EXPORT_BYTES} bytes across ${measurement.fileCount} files`
+      `[bundle-budgets] ${instrumented ? 'instrumented build: the modulepreload count is report-only; ' : ''}native export ${measurement.bytes}/${MAX_NATIVE_EXPORT_BYTES} bytes across ${measurement.fileCount} files (${measurement.modulepreloadCount}/${NATIVE_STARTUP_MODULEPRELOAD_COUNT} index.html modulepreloads)`
     );
     return;
   }
@@ -189,10 +218,6 @@ export async function checkBundleBudgets({
     prerenderedIndex,
     clientDir,
   });
-  // Diagnostic code does not ship, and it can add or merge startup chunks too;
-  // release limits describe the artifact enforced by CI's uninstrumented
-  // release build (ADR-0032).
-  const instrumented = isInstrumentedBuild(env);
   const problems = webBundleBudgetProblems(measurement);
   if (!instrumented && problems.length) throw new Error(problems.join('\n'));
   for (const problem of problems) log(`[bundle-budgets] report-only: ${problem}`);
