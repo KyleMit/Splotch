@@ -130,8 +130,9 @@ export function sectionSubtitle(id: SectionId): string {
       if (!settingsState.aiImageEnabled) return 'Turned off';
       const kind = aiCredentialKind();
       if (kind === 'none') {
-        return freeGenerationsState.available
-          ? `${freeGenerationsState.remaining} free ${freeGenerationsState.remaining === 1 ? 'creation' : 'creations'} left`
+        const { grant } = freeGenerationsState;
+        return grant.status === 'available'
+          ? `${grant.remaining} free ${grant.remaining === 1 ? 'creation' : 'creations'} left`
           : 'Free allowance unavailable';
       }
       return kind === 'apiKey' ? 'Your OpenAI key' : 'Access code';

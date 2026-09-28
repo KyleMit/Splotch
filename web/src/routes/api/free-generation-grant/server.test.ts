@@ -12,7 +12,6 @@ vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('$lib/server/freeGenerationGrants', () => ({
   getDailyFreeGenerationStatus: getDailyStatus,
   getFreeGenerationGrantStatus: getGrantStatus,
-  isInstallationId: (value: string | null) => /^[a-f0-9]{64}$/.test(value ?? ''),
 }));
 vi.mock('$lib/server/rateLimit', () => ({ rateLimit }));
 

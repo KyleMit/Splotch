@@ -92,6 +92,7 @@
   let credentialKind = $derived(aiCredentialKind());
   let hasApiKey = $derived(credentialKind === 'apiKey');
   let aiLocked = $derived(credentialKind === 'none');
+  const freeGrant = $derived(freeGenerationsState.grant);
   const latest = createLatestRequest();
 
   // Show the saved key with everything but the last four characters masked, so
@@ -229,16 +230,16 @@
         {#if aiLocked}
           <div class="setting byok">
             <p class="byok-intro">
-              {#if freeGenerationsState.loading}
+              {#if freeGrant.status === 'loading'}
                 <strong>Checking your free AI creations…</strong>
-              {:else if freeGenerationsState.available && freeGenerationsState.remaining > 0}
+              {:else if freeGrant.status === 'available' && freeGrant.remaining > 0}
                 <strong
-                  >{freeGenerationsState.remaining} free AI {freeGenerationsState.remaining === 1
+                  >{freeGrant.remaining} free AI {freeGrant.remaining === 1
                     ? 'creation'
                     : 'creations'} left.</strong
                 >
                 No setup is needed. After those are used, add your own OpenAI API key to keep creating.
-              {:else if freeGenerationsState.available}
+              {:else if freeGrant.status === 'available'}
                 <strong>Your {FREE_GENERATION_LIMIT} free AI creations are used up.</strong> Add your
                 own OpenAI API key to keep creating.
               {:else}
