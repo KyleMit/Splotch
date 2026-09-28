@@ -60,9 +60,16 @@ const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const OPENERS = ['adb', 'devicectl', 'safari', 'manual'];
 const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
 export const DEFAULT_DRAW_SECONDS = 25;
-// The probe ends the phase once the finger has banked CONTACT_BANK_MS, so a
-// longer window would keep counting down after the recording had stopped.
-export const DRAW_SECONDS = { ...POSITIVE_NUMBER, max: CONTACT_BANK_MS / 1_000 };
+// The probe ends the phase once the finger has banked CONTACT_BANK_MS, and the
+// drawer's window outlasts `--seconds`: the start cue, the blocking `say` calls,
+// one-second timers that each fire late, and the reaction to the stop buzz all
+// add to it. The window stays this far clear of the bank so the recording is
+// still running when the drawer is told to stop.
+const STOP_CUE_HEADROOM_MS = 10_000;
+export const DRAW_SECONDS = {
+  ...POSITIVE_NUMBER,
+  max: (CONTACT_BANK_MS - STOP_CUE_HEADROOM_MS) / 1_000,
+};
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
 const PAGE_SETTLE_MS = 6_000;

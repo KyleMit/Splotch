@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { DEFAULT_SIZE_LEVEL, SIZE_PX, replayInPage } from '../web/replay-input-recording.mjs';
 import { CONTACT_BANK_MS } from '../split-capture/lib/probe-host-protocol.mjs';
+import { DRAW_SECONDS } from '../split-capture/capture-hand-input.mjs';
 
 const state = vi.hoisted(() => ({ directEntryUrl: null, runMain: vi.fn() }));
 const chromium = vi.hoisted(() => ({ connectOverCDP: vi.fn() }));
@@ -227,22 +228,23 @@ describe('performance CLI input failures', () => {
     expectCliFailure(undoScenariosPath, ['--hz=0'], '--hz must be a number > 0, got "0"');
   });
 
-  // The probe stops recording once the finger banks CONTACT_BANK_MS, so a longer
-  // hand window counted down over a phase that had already ended.
-  it('reports a hand --seconds longer than the probe banks contact', () => {
+  // The probe stops recording once the finger banks CONTACT_BANK_MS, and the cues
+  // and late timers stretch the drawer's window past --seconds, so a window as
+  // long as the bank counted down over a phase that had already ended.
+  it('reports a hand --seconds whose window would reach the probe contact bank', () => {
     const bankSeconds = CONTACT_BANK_MS / 1_000;
 
     expectCliFailure(
       handCapturePath,
-      [`--seconds=${bankSeconds + 0.5}`],
-      `--seconds must be a number > 0 and <= ${bankSeconds}, got "${bankSeconds + 0.5}"`
+      [`--seconds=${bankSeconds}`],
+      `--seconds must be a number > 0 and <= ${DRAW_SECONDS.max}, got "${bankSeconds}"`
     );
   });
 
-  it('lets a hand --seconds that fills the contact bank exactly through to the --host check', () => {
+  it('lets the longest hand --seconds through to the --host check', () => {
     expectCliFailure(
       handCapturePath,
-      [`--seconds=${CONTACT_BANK_MS / 1_000}`],
+      [`--seconds=${DRAW_SECONDS.max}`],
       '--host= is required — the probe host URL the device can reach over the LAN'
     );
   });
