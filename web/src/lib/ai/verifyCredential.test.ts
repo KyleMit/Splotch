@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { looksLikeApiKey, verifyCredential } from './aiCredential';
+import { KEY_CHECK_UNAVAILABLE_CODE, looksLikeApiKey } from './keyFormat';
+import { verifyCredential } from './verifyCredential';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -109,14 +110,38 @@ describe('verifyCredential', () => {
 
       const result = await verifyCredential('wrong-code');
 
-      expect(result).toEqual({
-        kind: 'accessCode',
-        ok: false,
-        accessCode: undefined,
-        error: undefined,
-      });
+      expect(result).toEqual({ kind: 'accessCode', ok: false, error: undefined });
     }
   );
+
+  it('reports an unreachable key check as its own kind, keeping the server message', async () => {
+    stubFetch(503, { ok: false, code: KEY_CHECK_UNAVAILABLE_CODE, error: 'Try again.' });
+
+    const result = await verifyCredential('sk-proj-Key');
+
+    expect(result).toEqual({ kind: 'checkUnavailable', ok: false, error: 'Try again.' });
+  });
+
+  // A success the endpoint's contract forbids fails verification rather than
+  // storing the value the parent typed in place of the server's access code.
+  it.each([{ ok: true }, { ok: true, accessCode: '' }, { ok: true, accessCode: 42 }])(
+    'treats an access-code success without a string access code (%o) as a failure',
+    async (body) => {
+      stubFetch(200, body);
+
+      const result = await verifyCredential('sunny-meadow');
+
+      expect(result).toEqual({ kind: 'accessCode', ok: false, error: undefined });
+    }
+  );
+
+  it('drops a non-string error field instead of showing it', async () => {
+    stubFetch(400, { ok: false, error: { message: 'Nope.' } });
+
+    const result = await verifyCredential('sk-proj-Bad');
+
+    expect(result).toEqual({ kind: 'apiKey', ok: false, error: undefined });
+  });
 
   it('passes the abort signal through to fetch', async () => {
     const fetchMock = stubFetch(200, { ok: true });

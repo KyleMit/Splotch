@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
     aiUserApiKey: '',
     aiAccessToken: 'test-token',
     autoSaveAiEnabled: true,
+    aiCredentialKind(): 'apiKey' | 'accessCode' | 'none' {
+      if (this.aiUserApiKey) return 'apiKey';
+      return this.aiAccessToken ? 'accessCode' : 'none';
+    },
   },
 }));
 
