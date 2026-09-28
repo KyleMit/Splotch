@@ -32,12 +32,12 @@ import { profilePath } from '../lib/profile-paths.mjs';
 import { LONG_TASK_MS } from '../lib/performance-thresholds.mjs';
 
 // The two shells the section list renders into, at the viewport that selects
-// each (SettingsModal's 700px WIDE_QUERY). The hub is not a variant under test —
-// it is the baseline, unchanged by this work. Each ready selector is the
-// shell's first *presented* content inside an [open] dialog: the wide pane's
-// first unstaged section (aria-busy went false at prewarm, long before any
-// tap, and staged sections are laid out but invisible — neither is "shown"),
-// and the hub's rows, which are never staged.
+// each (SETTINGS_WIDE_MIN_WIDTH_PX in web/src/lib/breakpoints.ts). The hub is
+// not a variant under test — it is the baseline, unchanged by this work. Each
+// ready selector is the shell's first *presented* content inside an [open]
+// dialog: the wide pane's first unstaged section (aria-busy went false at
+// prewarm, long before any tap, and staged sections are laid out but invisible
+// — neither is "shown"), and the hub's rows, which are never staged.
 const SHELLS = {
   wide: {
     device: DEVICES.desktop,

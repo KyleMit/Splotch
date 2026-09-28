@@ -1,8 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { chromium, webkit } from '@playwright/test';
-import { isMain, runMain } from '../../lib/proc.mjs';
+import { join } from 'node:path';
+import { ROOT, isMain, runMain } from '../../lib/proc.mjs';
 
-const root = new URL('../../../', import.meta.url).pathname;
 const samples = [
   {
     name: 'circle-pen',
@@ -42,7 +42,7 @@ const samples = [
 ];
 
 async function dataUrl(relative, mime) {
-  return `data:${mime};base64,${(await readFile(`${root}${relative}`)).toString('base64')}`;
+  return `data:${mime};base64,${(await readFile(join(ROOT, relative))).toString('base64')}`;
 }
 
 export async function checkVectorPilotBrowsers(onlyNames = []) {
@@ -124,8 +124,8 @@ export async function checkVectorPilotBrowsers(onlyNames = []) {
   }
 
   const reportPath = onlyNames.length
-    ? `${root}vectorized/pilot/campaign-gate-browser-report.json`
-    : `${root}tools/vectorize/pilot/browser-report.json`;
+    ? join(ROOT, 'vectorized/pilot/campaign-gate-browser-report.json')
+    : join(ROOT, 'tools/vectorize/pilot/browser-report.json');
   await writeFile(reportPath, `${JSON.stringify(results, null, 2)}\n`);
   console.log(JSON.stringify(results, null, 2));
 }

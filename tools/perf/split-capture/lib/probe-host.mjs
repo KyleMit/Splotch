@@ -9,7 +9,7 @@ import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { ROOT } from '../../../lib/proc.mjs';
 import { pageBootstrapSource } from './page-bootstrap.mjs';
-import { PROBE_HOST_PROTOCOL, PROBE_REPORT_PATH } from './probe-host-protocol.mjs';
+import { CONTACT_BANK_MS, PROBE_HOST_PROTOCOL, PROBE_REPORT_PATH } from './probe-host-protocol.mjs';
 import { keepIncomingReport, reportFileName, reportRejectionReason } from './report-store.mjs';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './chrome-tabs.mjs';
 
@@ -20,9 +20,6 @@ export const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-p
 // route never hydrates, and the capture then measures a page whose buttons are
 // server-rendered markup wired to nothing.
 const UPSTREAM_ATTEMPTS = 3;
-// The probe banks contact time; the runner, not the probe, decides when a phase
-// ends, so this is deliberately far longer than any gesture.
-const DEFAULT_CONTACT_MS = 600_000;
 
 export const sendJson = (res, body, status = 200) => {
   res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
@@ -53,7 +50,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
   if (reportDir) mkdirSync(reportDir, { recursive: true });
 
   const state = {
-    plan: { brush: 'pen', contactMs: DEFAULT_CONTACT_MS, finish: false, label: 'run' },
+    plan: { brush: 'pen', contactMs: CONTACT_BANK_MS, finish: false, label: 'run' },
     report: null,
     progress: null,
     pulse: null,

@@ -457,8 +457,8 @@ iOS usage strings and privacy manifest, the ASC nutrition label, the Play Data s
 implementation constants and call sites, the scheduled purge functions' cadences, and
 `web/src/routes/privacy/+page.svelte`. The store forms remain human-submitted from their checklists.
 Live retention statements in ADR-0104 and ADR-0115, and the Markdown copies of the human-review
-window, are included in the drift guard; the remaining ADR detail is design provenance rather than
-another declaration to keep aligned by hand.
+window and of each purge cadence, are included in the drift guard; the remaining ADR detail is
+design provenance rather than another declaration to keep aligned by hand.
 
 ## Open items
 

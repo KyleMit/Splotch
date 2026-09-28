@@ -1,11 +1,12 @@
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 import sharp from 'sharp';
-import { isMain, runMain } from '../../lib/proc.mjs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { ROOT, isMain, runMain } from '../../lib/proc.mjs';
 
-const ROOT = new URL('../../../', import.meta.url).pathname;
-const PILOT = new URL('./', import.meta.url).pathname;
-const GENERATED = `${ROOT}vectorized/pilot/`;
+const PILOT = dirname(fileURLToPath(import.meta.url));
+const GENERATED = join(ROOT, 'vectorized', 'pilot');
 
 const specs = [
   {
@@ -69,7 +70,7 @@ const specs = [
 ];
 
 function path(relative) {
-  return `${ROOT}${relative}`;
+  return join(ROOT, relative);
 }
 
 async function sourceAlpha(source, width, height) {
@@ -244,7 +245,7 @@ async function comparisonSheet(spec, currentComposite, vectorComposite, width, h
   })
     .composite(panels.map((input, index) => ({ input, top: 0, left: index * targetWidth })))
     .png()
-    .toFile(`${GENERATED}${spec.name}.comparison.png`);
+    .toFile(join(GENERATED, `${spec.name}.comparison.png`));
 }
 
 async function zoomComparisonSheet(spec, width, height) {
@@ -292,7 +293,7 @@ async function zoomComparisonSheet(spec, width, height) {
       { input: differenceCrop, left: crop.width * 2, top: 0 },
     ])
     .png()
-    .toFile(`${GENERATED}${spec.name}.zoom-2x.png`);
+    .toFile(join(GENERATED, `${spec.name}.zoom-2x.png`));
 }
 
 export async function analyzeVectorPilot(onlyNames = []) {
@@ -342,7 +343,9 @@ export async function analyzeVectorPilot(onlyNames = []) {
   }
 
   const reportPath =
-    onlyNames.length === 0 ? `${PILOT}report.json` : `${GENERATED}campaign-gate-report.json`;
+    onlyNames.length === 0
+      ? join(PILOT, 'report.json')
+      : join(GENERATED, 'campaign-gate-report.json');
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   console.log(JSON.stringify(report, null, 2));
 }

@@ -15,7 +15,7 @@
     waitForDialogRetirement,
   } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
-  import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
+  import { PHONE_LANDSCAPE_QUERY, SETTINGS_WIDE_MIN_WIDTH_PX } from '$lib/breakpoints';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { markSectionSeen } from '$lib/state/sectionsSeen.svelte';
@@ -24,7 +24,7 @@
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar
   // + content pane. The choice is viewport width, so a rotate re-picks it live.
-  const WIDE_QUERY = '(min-width: 700px)';
+  const WIDE_QUERY = `(min-width: ${SETTINGS_WIDE_MIN_WIDTH_PX}px)`;
 
   // A landscape *phone* has plenty of width (so it would match WIDE_QUERY) but
   // almost no height — the full section list is unusably cramped there. Detect
