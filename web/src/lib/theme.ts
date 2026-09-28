@@ -62,7 +62,7 @@ export const THEME_COLORS: Record<ResolvedTheme, string> = {
 export const PAPER_COLORS = { light: '#fcfbf8', dark: '#211f29' } as const;
 
 export function isThemePreference(value: unknown): value is ThemePreference {
-  return value === 'light' || value === 'dark' || value === 'system';
+  return value === 'system' || RESOLVED_THEMES.some((theme) => theme === value);
 }
 
 export function resolveTheme(preference: ThemePreference, systemDark: boolean): ResolvedTheme {

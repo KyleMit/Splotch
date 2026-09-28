@@ -1,22 +1,21 @@
 // The RESOLVED theme ('light' | 'dark'), reactively: the parent's setting for
 // explicit choices, the live OS preference in system mode. CSS never needs
 // this (the tokens in app.css resolve themselves); it exists for the few JS
-// consumers of the resolved value — the active Black swatch's ink, the Notch
-// Band's eraser/paper color, and the canvas export's paper fill.
+// consumers of the resolved value — the colors store's Black-swatch ink, the
+// Notch Band's eraser/paper color, and the canvas export's paper fill.
 //
 // This module is the SINGLE owner of the prefers-color-scheme subscription and
 // the resolution rule: one media query feeds `systemDark`, and resolveTheme()
 // (from theme.ts) turns preference + systemDark into the concrete theme. The
-// theme-dependent JS state follows the same source — the effect install() roots
-// reads resolvedTheme(), repaints the theme-color meta, and syncs the selected
-// Black swatch's ink, so both an OS switch (systemDark) and an explicit setting
-// change (settingsState.theme) update them from one reactive path.
+// colors store follows resolvedTheme() through the getter handed to it at
+// construction, and the effect install() roots repaints the theme-color meta,
+// so both an OS switch (systemDark) and an explicit setting change
+// (settingsState.theme) reach them from one reactive source.
 //
 // Reduced motion rides the same shape: one prefers-reduced-motion subscription
 // feeds `systemReduceMotion`, resolveReducedMotion() turns preference + OS into
 // the effective answer, and the effect stamps it on <html> for CSS and for
 // prefersReducedMotion() to read.
-import { untrack } from 'svelte';
 import { settingsState, type SettingsState } from './settings.svelte';
 import { colorsState, type ColorsState } from './colors.svelte';
 import {
@@ -37,8 +36,8 @@ export interface AppearanceState {
   reducedMotion(): boolean;
   setReducedMotion(wanted: boolean): void;
   // Subscribes to the OS preferences and roots the effects that keep the
-  // theme-color meta and the Black swatch's ink on the resolved theme, and the
-  // reduce-motion attribute on the effective answer.
+  // theme-color meta on the resolved theme and the reduce-motion attribute on
+  // the effective answer.
   install(): void;
   dispose(): void;
 }
@@ -65,6 +64,8 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
   function reducedMotion(): boolean {
     return resolveReducedMotion(settings.reduceMotion, appearance.systemReduceMotion);
   }
+
+  colors.followTheme(() => resolvedTheme() === 'dark');
 
   return {
     resolvedTheme,
@@ -102,13 +103,7 @@ export function createAppearance(settings: SettingsState, colors: ColorsState): 
       motionQuery.addEventListener('change', onSystemMotionChange);
       stopEffects = $effect.root(() => {
         $effect(() => applyReducedMotion(reducedMotion()));
-        $effect(() => {
-          const theme = resolvedTheme();
-          updateThemeColorMeta(theme);
-          // The theme dependency is captured above; the active swatch read inside
-          // this command must not make palette selection rerun the effect.
-          untrack(() => colors.syncInkToTheme(theme === 'dark'));
-        });
+        $effect(() => updateThemeColorMeta(resolvedTheme()));
       });
     },
     dispose() {

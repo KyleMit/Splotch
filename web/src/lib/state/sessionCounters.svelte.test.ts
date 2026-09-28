@@ -64,4 +64,16 @@ describe('session counters', () => {
 
     expect(counters.sessionCount('settingsActivity')).toBe(2);
   });
+
+  it('reads a corrupt stored count as the nearest count it could have recorded', () => {
+    localStorage.setItem(STORAGE_KEYS.settingsActivitySessionCount, '-3');
+    localStorage.setItem(STORAGE_KEYS.installRepromptSessionCount, '99');
+    const counters = createSessionCounters();
+
+    expect(counters.sessionCount('settingsActivity')).toBe(0);
+    expect(counters.sessionCount('installReprompt')).toBe(10);
+
+    counters.recordSession('settingsActivity');
+    expect(localStorage.getItem(STORAGE_KEYS.settingsActivitySessionCount)).toBe('1');
+  });
 });

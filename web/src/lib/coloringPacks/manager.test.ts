@@ -71,6 +71,12 @@ function pending<T>() {
   return { promise, resolve, reject };
 }
 
+const installedPack = (id: string, bytes: number): InstalledColoringPack => ({
+  id,
+  bytes,
+  rootUrl: `capacitor://localhost/_capacitor_file_/packs/${id}`,
+});
+
 const pendingInstall = () => pending<InstalledColoringPack>();
 const pendingScan = () => pending<InstalledColoringPack[]>();
 
@@ -109,13 +115,16 @@ describe('coloring-pack downloader policy boundaries', () => {
   });
 
   it('publishes installed books without downloading when downloads are not allowed', async () => {
-    mocks.installed.mockResolvedValue([{ id: 'space', bytes: 2, rootPath: 'file:///space' }]);
+    mocks.installed.mockResolvedValue([installedPack('space', 2)]);
     const downloader = createColoringPackDownloader(() => false);
     downloader.start();
 
     await vi.waitFor(() => expect(coloringPacksState.installedBookIds).toContain('space'));
     expect(coloringPacksState.downloadedBytes).toBe(2);
-    expect(setLocalColoringBookRoot).toHaveBeenCalledWith('space', 'file:///space');
+    expect(setLocalColoringBookRoot).toHaveBeenCalledWith(
+      'space',
+      installedPack('space', 2).rootUrl
+    );
     await flushMicrotasks();
     expect(mocks.install).not.toHaveBeenCalled();
     downloader.stop();
@@ -123,8 +132,8 @@ describe('coloring-pack downloader policy boundaries', () => {
 
   it('rescans the store on later triggers without refetching the manifest', async () => {
     mocks.installed
-      .mockResolvedValueOnce([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }])
-      .mockResolvedValue([{ id: 'space', bytes: 1, rootPath: 'file:///space' }]);
+      .mockResolvedValueOnce([installedPack('dinosaur', 1)])
+      .mockResolvedValue([installedPack('space', 1)]);
     const downloader = createColoringPackDownloader(() => false);
     downloader.start();
     await vi.waitFor(() => expect(coloringPacksState.installedBookIds).toContain('dinosaur'));
@@ -142,14 +151,14 @@ describe('coloring-pack downloader policy boundaries', () => {
     let allowed = true;
     mocks.installed
       .mockReturnValueOnce(scan.promise)
-      .mockResolvedValue([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
+      .mockResolvedValue([installedPack('dinosaur', 1)]);
     const downloader = createColoringPackDownloader(() => allowed);
     downloader.start();
 
     await vi.waitFor(() => expect(mocks.installed).toHaveBeenCalledOnce());
     allowed = false;
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
-    scan.resolve([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
+    scan.resolve([installedPack('dinosaur', 1)]);
 
     await vi.waitFor(() => expect(coloringPacksState.installedBookIds).toContain('dinosaur'));
     expect(mocks.cancel).not.toHaveBeenCalled();
@@ -192,18 +201,16 @@ describe('coloring-pack downloader policy boundaries', () => {
 
   it('lets an explicit policy change resume a session paused by removal', async () => {
     const first = pendingInstall();
-    mocks.installed
-      .mockResolvedValueOnce([])
-      .mockResolvedValue([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
+    mocks.installed.mockResolvedValueOnce([]).mockResolvedValue([installedPack('dinosaur', 1)]);
     mocks.install
       .mockReturnValueOnce(first.promise)
-      .mockResolvedValueOnce({ id: 'space', bytes: 1, rootPath: 'file:///space' });
+      .mockResolvedValueOnce(installedPack('space', 1));
     const downloader = createColoringPackDownloader();
     downloader.start();
 
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
     window.dispatchEvent(new Event(COLORING_PACK_REMOVE_EVENT));
-    first.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    first.resolve(installedPack('dinosaur', 1));
     await vi.waitFor(() => expect(coloringPacksState.downloadingBookId).toBeNull());
 
     window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
@@ -215,10 +222,10 @@ describe('coloring-pack downloader policy boundaries', () => {
   it('cancels an active download and resumes without removing completed packs', async () => {
     const first = pendingInstall();
     let allowed = true;
-    mocks.installed.mockResolvedValue([{ id: 'space', bytes: 1, rootPath: 'file:///space' }]);
+    mocks.installed.mockResolvedValue([installedPack('space', 1)]);
     mocks.install.mockReturnValueOnce(first.promise).mockImplementationOnce(async () => {
       allowed = false;
-      return { id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' };
+      return installedPack('dinosaur', 1);
     });
     mocks.cancel.mockImplementationOnce(async () => {
       first.reject(new Error('cancelled'));
@@ -253,7 +260,7 @@ describe('removal during an in-flight run', () => {
     await removeDownloadedColoringPacks();
     expect(mocks.remove).toHaveBeenCalledOnce();
 
-    scan.resolve([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
+    scan.resolve([installedPack('dinosaur', 1)]);
     await flushMicrotasks();
 
     expect(coloringPacksState.installedBookIds).toEqual(['farm']);
@@ -273,7 +280,7 @@ describe('removal during an in-flight run', () => {
     await removeDownloadedColoringPacks();
     vi.mocked(setLocalColoringBookRoot).mockClear();
 
-    first.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    first.resolve(installedPack('dinosaur', 1));
     await vi.waitFor(() => expect(coloringPacksState.downloadingBookId).toBeNull());
     await flushMicrotasks();
 
@@ -302,7 +309,7 @@ describe('a remounted downloader on native', () => {
       allowed = false;
       if (action === 'removal') await removeDownloadedColoringPacks();
       else window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
-      stale.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+      stale.resolve(installedPack('dinosaur', 1));
       await flushMicrotasks();
       second.stop();
       window.dispatchEvent(new Event(COLORING_PACK_REMOVE_EVENT));
@@ -317,9 +324,7 @@ describe('a remounted downloader on native', () => {
     const stale = pendingInstall();
     const current = pendingInstall();
     mocks.install.mockReturnValueOnce(stale.promise).mockReturnValueOnce(current.promise);
-    mocks.installed
-      .mockResolvedValueOnce([])
-      .mockResolvedValue([{ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' }]);
+    mocks.installed.mockResolvedValueOnce([]).mockResolvedValue([installedPack('dinosaur', 1)]);
     const first = createColoringPackDownloader();
     first.start();
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
@@ -331,14 +336,14 @@ describe('a remounted downloader on native', () => {
     expect(mocks.install).toHaveBeenCalledOnce();
     expect(coloringPacksState.downloadingBookId).toBe('dinosaur');
 
-    stale.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    stale.resolve(installedPack('dinosaur', 1));
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
     expect(mocks.install.mock.calls[1][1].id).toBe('space');
     await flushMicrotasks();
 
     expect(coloringPacksState.downloadingBookId).toBe('space');
     second.stop();
-    current.resolve({ id: 'space', bytes: 1, rootPath: 'file:///space' });
+    current.resolve(installedPack('space', 1));
     await flushMicrotasks();
     expect(coloringPacksState.downloadingBookId).toBeNull();
   });
@@ -354,7 +359,7 @@ describe('a remounted downloader on native', () => {
     second.start();
     second.stop();
 
-    stale.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    stale.resolve(installedPack('dinosaur', 1));
     await flushMicrotasks();
 
     expect(mocks.install).toHaveBeenCalledOnce();
@@ -379,7 +384,7 @@ describe('a remounted downloader on native', () => {
     expect(mocks.install.mock.calls[1][1].id).toBe('dinosaur');
     expect(coloringPacksState.downloadingBookId).toBe('dinosaur');
     second.stop();
-    current.resolve({ id: 'dinosaur', bytes: 1, rootPath: 'file:///dinosaur' });
+    current.resolve(installedPack('dinosaur', 1));
     await flushMicrotasks();
     warn.mockRestore();
   });
@@ -391,16 +396,84 @@ describe('scanning what is installed', () => {
   // round trip on native, and on the web a second completeness pass that can
   // re-digest every cached file.
   it('reads the store once and totals the bytes it already answered with', async () => {
-    mocks.installed.mockResolvedValue([
-      { id: 'dinosaur', bytes: 3, rootPath: 'file:///dinosaur' },
-      { id: 'space', bytes: 4, rootPath: 'file:///space' },
-    ]);
+    mocks.installed.mockResolvedValue([installedPack('dinosaur', 3), installedPack('space', 4)]);
     const downloader = createColoringPackDownloader();
     downloader.start();
 
     await vi.waitFor(() => expect(coloringPacksState.downloadedBytes).toBe(7));
     expect(mocks.installed).toHaveBeenCalledOnce();
     expect(coloringPacksState.installedBookIds).toContain('dinosaur');
+    downloader.stop();
+  });
+});
+
+describe('a run that fails', () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  afterEach(() => warn.mockRestore());
+
+  const pausedRun = () =>
+    vi.waitFor(() =>
+      expect(warn).toHaveBeenCalledWith('Coloring-pack download paused', expect.any(Error))
+    );
+
+  // Downloads stay off because that is when the loader reuses the manifest it
+  // holds: a failed load must leave nothing behind to reuse.
+  it.each([
+    ['cannot be reached', () => Promise.reject(new TypeError('Failed to fetch'))],
+    ['answers with a server error', async () => new Response(null, { status: 500 })],
+    ['is not JSON', async () => new Response('<html>Sign in to Wi-Fi</html>')],
+    [
+      'names another app version',
+      async () => new Response(JSON.stringify({ ...manifest, appVersion: '0.9.0-test' })),
+    ],
+  ])(
+    'scans nothing when the manifest %s, and the next online trigger refetches it',
+    async (_case, failedManifest) => {
+      vi.mocked(fetch).mockImplementationOnce(failedManifest);
+      mocks.installed.mockResolvedValue([installedPack('space', 1)]);
+      const downloader = createColoringPackDownloader(() => false);
+      downloader.start();
+
+      await pausedRun();
+      expect(mocks.installed).not.toHaveBeenCalled();
+      expect(coloringPacksState.installedBookIds).toEqual(['farm']);
+      expect(coloringPacksState.downloadingBookId).toBeNull();
+
+      window.dispatchEvent(new Event('online'));
+
+      await vi.waitFor(() =>
+        expect(coloringPacksState.installedBookIds).toEqual(['farm', 'space'])
+      );
+      expect(fetch).toHaveBeenCalledTimes(2);
+      downloader.stop();
+    }
+  );
+
+  it('retries a book whose download failed on the next online trigger', async () => {
+    mocks.install
+      .mockRejectedValueOnce(new Error('Coloring asset digest mismatch'))
+      .mockImplementation(async (_manifest, book) => installedPack(book.id, 1));
+    const downloader = createColoringPackDownloader(() => true);
+    downloader.start();
+
+    await pausedRun();
+    expect(mocks.install).toHaveBeenCalledOnce();
+    expect(coloringPacksState.installedBookIds).toEqual(['farm']);
+    expect(coloringPacksState.downloadingBookId).toBeNull();
+
+    window.dispatchEvent(new Event('online'));
+
+    await vi.waitFor(() =>
+      expect(coloringPacksState.installedBookIds).toEqual(['farm', 'dinosaur', 'space'])
+    );
+    expect(mocks.install.mock.calls.map(([, book]) => book.id)).toEqual([
+      'dinosaur',
+      'dinosaur',
+      'space',
+    ]);
     downloader.stop();
   });
 });

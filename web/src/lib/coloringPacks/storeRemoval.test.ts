@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('$lib/plugins/coloringPacks', () => ({
   ColoringPacks: { cancel: mocks.nativeCancel, remove: mocks.nativeRemove },
-  nativeColoringPackRootUrl: (path: string) => path,
+  webViewRootUrl: (rootFileUrl: string) => rootFileUrl,
 }));
 
 import { createNativeColoringPackStore } from './nativeStore';

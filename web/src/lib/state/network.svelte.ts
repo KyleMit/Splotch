@@ -9,7 +9,6 @@ import { STORAGE_KEYS } from '$lib/storageKeys';
 // @capacitor/network, which reports real device connectivity reliably.
 export interface NetworkState {
   readonly online: boolean;
-  setOnline(online: boolean): void;
   // Seeds `online` from the platform and subscribes to its changes.
   install(): void;
   dispose(): void;
@@ -40,12 +39,8 @@ export function createNetwork(
   const onOnline = () => updateOnline(true);
   const onOffline = () => updateOnline(false);
 
-  function setOnline(online: boolean) {
-    s.online = online;
-  }
-
   function updateOnline(online: boolean) {
-    setOnline(online);
+    s.online = online;
     writeBool(STORAGE_KEYS.lastNetworkOnline, online);
   }
 
@@ -84,7 +79,6 @@ export function createNetwork(
     get online() {
       return s.online;
     },
-    setOnline,
     install() {
       if (installed) return;
       installed = true;

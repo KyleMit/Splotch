@@ -96,13 +96,13 @@ the duplication is the accepted cost; keep the blocks in sync.
   palette colors retain the same low-contrast tradeoff as free-hand dark drawing.
 * **JS consumers of the resolved theme.** `PAPER_COLORS` in `theme.ts` mirrors `--paper` (keep in
   sync); `lib/state/appearance.svelte.ts` exposes a reactive `resolvedTheme()` (setting + live OS
-  preference) and uses its detached effect to call `syncInkToTheme()` in `colors.svelte.ts`. That
-  setter updates only `activeColor` when the stable `activeSwatch` identity is Black, making it
-  white on dark paper and black on light paper. The **Notch Band** eraser clears the band to the
-  resolved theme's paper (`NotchBand.svelte`), and the **export path** (`exportDrawing.ts`) follows
-  the resolved theme for coloring pages too: a dark-mode save is the night version — dark paper, the
-  transparent white presentation overlay, and the night-fill reveals already baked into the replayed
-  strokes.
+  preference) and hands it to `colors.svelte.ts` through `followTheme()`. The colors store derives
+  each swatch's ink (`themedSwatchColor()`) and `activeColor` from the stable swatch identity and
+  that theme, so the Black swatch shows and paints white on dark paper and black on light paper. The
+  **Notch Band** eraser clears the band to the resolved theme's paper (`NotchBand.svelte`), and the
+  **export path** (`exportDrawing.ts`) follows the resolved theme for coloring pages too: a
+  dark-mode save is the night version — dark paper, the transparent white presentation overlay, and
+  the night-fill reveals already baked into the replayed strokes.
 * **Catalog.** `books.ts` carries a `nightFill: Partial<Record<orientation, url>>` per page (only
   the orientations that have a generated fill) with a theme-aware `pageFillImage()` accessor that
   owns the light-fill fallback; `coloringBook.svelte.ts` stores only the selected page and

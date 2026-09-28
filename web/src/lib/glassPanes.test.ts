@@ -7,7 +7,6 @@ import {
 } from './actionButtonLayout';
 import { PALETTE_LANDSCAPE_WIDTH_PX } from './design/trimGeometry';
 import { settingsState } from './state/settings.svelte';
-import { networkState } from './state/network.svelte';
 import { freeGenerationsState } from './state/freeGenerations.svelte';
 import { FREE_GENERATION_LIMIT } from './freeGenerations';
 
@@ -73,7 +72,7 @@ describe('toolbar glass geometry', () => {
     expect(toolbarGlassPanes(null, true)[0].x).toBeGreaterThan(layout.viewportWidth / 2);
   });
   it('widens the landscape strip by the disabled AI slot', () => {
-    networkState.setOnline(true);
+    window.dispatchEvent(new Event('online'));
     const withoutAi = toolbarGlassPanes(null, true)[0].width;
     settingsState.setAiImage(true);
     freeGenerationsState.setFreeGenerationsUnavailable();
@@ -94,7 +93,7 @@ describe('toolbar glass geometry', () => {
   ])('covers the disabled AI slot the $layoutName drawer renders', ({ viewport }) => {
     Object.assign(layout, viewport);
     settingsState.setAiImage(true);
-    networkState.setOnline(true);
+    window.dispatchEvent(new Event('online'));
     freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
     const usable = toolbarGlassPanes(null, true);
     freeGenerationsState.setFreeGenerationsUnavailable();
@@ -105,7 +104,7 @@ describe('toolbar glass geometry', () => {
     settingsState.setColoringBook(false);
     settingsState.setScreenshot(false);
     settingsState.setAiImage(true);
-    networkState.setOnline(true);
+    window.dispatchEvent(new Event('online'));
     freeGenerationsState.setFreeGenerationsUnavailable();
     expect(toolbarGlassPanes(null, true)).toHaveLength(2);
     expect(toolbarGlassPanes(null, true)[0].x).toBe(PALETTE_LANDSCAPE_WIDTH_PX);

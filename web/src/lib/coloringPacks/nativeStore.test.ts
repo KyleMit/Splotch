@@ -3,10 +3,11 @@ import { coloringPackMarkerValue } from './cacheKeys';
 import type { ResolvedColoringPackManifest } from './manifest';
 
 const mocks = vi.hoisted(() => ({ status: vi.fn(), install: vi.fn() }));
+const WEB_VIEW_FILE_ORIGIN = vi.hoisted(() => 'capacitor://localhost/_capacitor_file_');
 
 vi.mock('$lib/plugins/coloringPacks', () => ({
   ColoringPacks: { status: mocks.status, install: mocks.install },
-  nativeColoringPackRootUrl: (path: string) => path,
+  webViewRootUrl: (rootFileUrl: string) => rootFileUrl.replace('file://', WEB_VIEW_FILE_ORIGIN),
 }));
 
 import { createNativeColoringPackStore } from './nativeStore';
@@ -32,11 +33,13 @@ const manifest: ResolvedColoringPackManifest = {
 beforeEach(() => {
   mocks.status.mockReset().mockResolvedValue({
     installed: [
-      { id: 'dinosaur', rootPath: '/packs/dinosaur' },
-      { id: 'space', rootPath: '/packs/space' },
+      { id: 'dinosaur', rootPath: 'file:///packs/dinosaur' },
+      { id: 'space', rootPath: 'file:///packs/space' },
     ],
   });
-  mocks.install.mockReset().mockResolvedValue({ id: 'dinosaur', rootPath: '/packs/dinosaur' });
+  mocks.install
+    .mockReset()
+    .mockResolvedValue({ id: 'dinosaur', rootPath: 'file:///packs/dinosaur' });
 });
 
 describe('native coloring-pack inventory', () => {
@@ -48,8 +51,8 @@ describe('native coloring-pack inventory', () => {
 
     expect(mocks.status).toHaveBeenCalledOnce();
     expect(packs).toEqual([
-      { id: 'dinosaur', bytes: 3, rootPath: '/packs/dinosaur' },
-      { id: 'space', bytes: 4, rootPath: '/packs/space' },
+      { id: 'dinosaur', bytes: 3, rootUrl: `${WEB_VIEW_FILE_ORIGIN}/packs/dinosaur` },
+      { id: 'space', bytes: 4, rootUrl: `${WEB_VIEW_FILE_ORIGIN}/packs/space` },
     ]);
   });
 
@@ -81,5 +84,22 @@ describe('native coloring-pack inventory', () => {
     expect(request).not.toHaveProperty('version');
     expect(request.resolution).toBe('compact');
     expect(request.book.marker).toBe(coloringPackMarkerValue(manifest.books[1]));
+  });
+
+  // The plugins answer with a file:// URL the WebView cannot load, under a
+  // wire name that says "path"; every pack leaves the store as a WebView URL.
+  it('hands back the WebView URL of an installed book, never the native file URL', async () => {
+    const pack = await createNativeColoringPackStore().install(
+      manifest,
+      manifest.books[1],
+      false,
+      new AbortController().signal
+    );
+
+    expect(pack).toEqual({
+      id: 'dinosaur',
+      bytes: 3,
+      rootUrl: `${WEB_VIEW_FILE_ORIGIN}/packs/dinosaur`,
+    });
   });
 });

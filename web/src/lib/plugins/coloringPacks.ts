@@ -4,6 +4,9 @@ import type { ColoringPackResolution } from '$lib/coloringPacks/resolution';
 
 export interface NativeColoringPack {
   id: string;
+  // A file:// URL for the book's directory, not a path. The name is the wire
+  // contract ColoringPacksPlugin.java and ColoringPacksPlugin.swift resolve
+  // with; JS converts it through webViewRootUrl() before anything loads it.
   rootPath: string;
 }
 
@@ -33,6 +36,6 @@ interface ColoringPacksPlugin {
 
 export const ColoringPacks = registerPlugin<ColoringPacksPlugin>('ColoringPacks');
 
-export function nativeColoringPackRootUrl(rootPath: string): string {
-  return Capacitor.convertFileSrc(rootPath);
+export function webViewRootUrl(rootFileUrl: string): string {
+  return Capacitor.convertFileSrc(rootFileUrl);
 }

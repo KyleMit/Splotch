@@ -162,10 +162,16 @@ function readReduceMotion(fallback: ReduceMotionPreference): ReduceMotionPrefere
   return isReduceMotionPreference(raw) ? raw : fallback;
 }
 
+// A literal union rather than one derived from a list:
+// tools/perf/tests/clear-drag.test.mjs reads this declaration's text to keep
+// the perf harness's copy of the values in step.
 export type ToolbarStyle = 'buttons' | 'bare';
 
-function readToolbarStyle(): ToolbarStyle {
-  return readString(STORAGE_KEYS.toolbarStyle, 'buttons') === 'bare' ? 'bare' : 'buttons';
+const TOOLBAR_STYLE_DEFAULT: ToolbarStyle = 'buttons';
+
+function readToolbarStyle(fallback: ToolbarStyle): ToolbarStyle {
+  const raw = readString(STORAGE_KEYS.toolbarStyle, fallback);
+  return raw === 'buttons' || raw === 'bare' ? raw : fallback;
 }
 
 interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {
@@ -209,7 +215,7 @@ function readPersistedSettings(current?: PersistedSettings): PersistedSettings {
     ...ints,
     theme: readTheme(current?.theme ?? THEME_DEFAULT),
     reduceMotion: readReduceMotion(current?.reduceMotion ?? REDUCE_MOTION_DEFAULT),
-    toolbarStyle: readToolbarStyle(),
+    toolbarStyle: readToolbarStyle(current?.toolbarStyle ?? TOOLBAR_STYLE_DEFAULT),
   };
 }
 

@@ -12,7 +12,12 @@
 
 import { PAPER_COLORS } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
-import { drawExportOverlay, paintExportPaper, type ExportContext } from './exportCompositor';
+import {
+  drawExportOverlay,
+  paintExportPaper,
+  paintTiledExportLayers,
+  type ExportContext,
+} from './exportCompositor';
 import type { ExportOverlaySource } from './overlay';
 import { encodeCanvasPng, encodeTiledCanvasPng, type TiledPngInput } from './pngEncoder';
 import type { TiledCanvasSnapshot } from './tiledSurfaces';
@@ -121,30 +126,22 @@ async function deliverTiledPreview(
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = 'high';
-    const tileScale = outputScale / preview.snapshot.sourceScale;
-    context.setTransform(tileScale, 0, 0, tileScale, 0, 0);
-    for (const tile of tiles) context.drawImage(tile.bitmap, tile.x, tile.y);
-    context.resetTransform();
-    paintExportPaper(context, {
+    paintTiledExportLayers(context, {
+      tiles,
+      sourceScale: preview.snapshot.sourceScale,
       width: logicalWidth,
       height: logicalHeight,
       scale: outputScale,
       paperColor,
       texture,
+      overlay: overlayImage
+        ? {
+            source: overlayImage,
+            width: overlayImage.naturalWidth,
+            height: overlayImage.naturalHeight,
+          }
+        : null,
     });
-    if (overlayImage) {
-      drawExportOverlay(
-        context,
-        {
-          source: overlayImage,
-          width: overlayImage.naturalWidth,
-          height: overlayImage.naturalHeight,
-        },
-        { width: logicalWidth, height: logicalHeight, scale: outputScale }
-      );
-    }
     let bitmap: ImageBitmap | null = canvas.transferToImageBitmap();
     try {
       preview.onReady(bitmap);
