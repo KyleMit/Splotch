@@ -208,6 +208,10 @@ export const MUTATION_FAILURE_STATUS = {
   unavailable: 503,
 } as const satisfies Record<MutationFailure['reason'], number>;
 
+// A mutation carries one short token; the remainder is framing headroom. Both
+// front doors read their body under it.
+export const MAX_TOKEN_MUTATION_BODY_BYTES = 8 * 1024;
+
 // `persistent` rides along because mutateList already knows it: it refuses to
 // write unless the read came from Blobs or the Vite-dev memory stand-in, so the
 // durability of the list it returns is settled by the same read. A caller that

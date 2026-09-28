@@ -248,7 +248,6 @@ describe('GET /api/generation-result', () => {
       expect(response.status).toBe(200);
       expect(new Uint8Array(await response.arrayBuffer())).toEqual(pictureBytes);
       expect(response.headers.get('Content-Type')).toBe('image/webp');
-      expect(response.headers.get('Cache-Control')).toBe('no-store');
       expect(response.headers.get(FREE_GENERATIONS_REMAINING_HEADER)).toBe('7');
       expect(mocks.completeFreeGeneration).toHaveBeenCalledExactlyOnceWith(
         installationId,

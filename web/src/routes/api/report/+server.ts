@@ -3,14 +3,11 @@ import { rateLimit } from '$lib/server/rateLimit';
 import { reportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { apiHandler, asRecord, readJsonBody, throttled } from '$lib/server/http';
-import { submitReport } from '$lib/server/report';
+import { MAX_REPORT_BODY_BYTES, submitReport } from '$lib/server/report';
 import { REPORT_HONEYPOT_FIELD } from '$lib/report';
 import type { RequestHandler } from './$types';
 
 export type ReportResponse = { ok: true } | { ok: false; error: string };
-
-// Covers the capped message plus an optional device snapshot and JSON framing.
-const MAX_REPORT_BODY_BYTES = 64 * 1024;
 
 /**
  * Receive an in-app "report a bug / suggest a feature" submission and open a

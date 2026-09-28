@@ -20,7 +20,7 @@ vi.mock('$lib/server/tokens', () => ({
 }));
 vi.mock('$lib/server/usage', () => ({ readUsageAndPurgeExpired: vi.fn() }));
 
-import { sessionToken } from '$lib/server/admin';
+import { MAX_ADMIN_LOGIN_BODY_BYTES, sessionToken } from '$lib/server/admin';
 import { POST } from '../api/admin/login/+server';
 import { actions } from './+page.server';
 
@@ -114,6 +114,23 @@ describe('the admin login doors (real rateLimit)', () => {
 
     // Read first, this body would make request.formData() throw outright.
     expect(await unparseable(address)).toMatchObject({ status: 429 });
+  });
+
+  it('stops reading at the same body cap at both doors', async () => {
+    const key = 'x'.repeat(MAX_ADMIN_LOGIN_BODY_BYTES);
+    const form = new Request('http://localhost/admin?/login', {
+      method: 'POST',
+      body: new URLSearchParams({ 'access-key': key }),
+    });
+
+    expect((await jsonDoor('203.0.113.16', JSON.stringify({ key }))).status).toBe(413);
+    expect(
+      await actions.login({
+        request: form,
+        cookies: { set: vi.fn() },
+        getClientAddress: () => '203.0.113.17',
+      } as unknown as Parameters<typeof actions.login>[0])
+    ).toMatchObject({ status: 413, data: { loginError: 'Request body is too large' } });
   });
 
   it('leaves another IP its own full budget', async () => {

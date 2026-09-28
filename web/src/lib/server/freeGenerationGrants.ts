@@ -7,6 +7,7 @@ import {
   type FreeGenerationGrantAdminStats,
 } from '$lib/freeGenerations';
 import { isInstallationId } from '$lib/installationId';
+import { loggableError } from './logRedaction';
 import { sleep } from './sleep';
 
 const STORE_NAME = 'free-generation-grants';
@@ -401,7 +402,7 @@ export async function getFreeGenerationGrantAdminStats(): Promise<FreeGeneration
         } catch (err) {
           console.warn(
             `[free-generation] failed to read grant ${key.slice(0, 8)}…:`,
-            err instanceof Error ? err.message : err
+            loggableError(err)
           );
           return null;
         }
