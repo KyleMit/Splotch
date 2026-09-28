@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { APP_VERSION } from '$lib/appVersion';
 import {
+  resetDownloadedColoringBooks,
+  setInstalledColoringBooks,
+} from '$lib/state/coloringPacks.svelte';
+import {
+  setColoringBook,
   setCrayon,
   setDeleteSound,
   setDrawingSound,
@@ -100,5 +105,26 @@ describe('Tool Drawer section subtitle', () => {
     setUndoButton(false);
     setToolDrawerEnabled(false);
     expect(sectionSubtitle('controls')).toBe('Tool drawer off');
+  });
+});
+
+describe('Coloring section subtitle', () => {
+  beforeEach(() => {
+    setColoringBook(true);
+    resetDownloadedColoringBooks();
+  });
+
+  it.each([
+    [[], '0 extra books ready'],
+    [['farm', 'dinosaur', 'space'], '2 extra books ready'],
+  ])('counts the extra books installed beside the starter (%j)', (bookIds, expected) => {
+    setInstalledColoringBooks(bookIds);
+    expect(sectionSubtitle('coloring')).toBe(expected);
+  });
+
+  it('names the switch when coloring books are off', () => {
+    setInstalledColoringBooks(['dinosaur']);
+    setColoringBook(false);
+    expect(sectionSubtitle('coloring')).toBe('Coloring books off');
   });
 });

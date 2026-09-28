@@ -18,7 +18,7 @@ const APP_LIKE_DISPLAY_MODE_QUERIES = [
 // A hand-held device rather than a monitor: the primary input is a finger, so
 // the screen itself can turn. `pointer` reports the primary pointer only, which
 // is why a touchscreen laptop driven by its mouse does not match.
-const COARSE_POINTER_QUERY = '(pointer: coarse)';
+export const COARSE_POINTER_QUERY = '(pointer: coarse)';
 
 // Capacitor injects a global `Capacitor` object both in the native runtime and
 // once @capacitor/core is loaded on the web. We read it off the global rather

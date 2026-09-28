@@ -34,15 +34,15 @@ interface ColoringBookGridLayout {
 export interface ColoringPage {
   readonly id: string;
   readonly name: string;
-  readonly images: Readonly<Record<BookOrientation, string>>;
+  readonly lightLineArt: Readonly<Record<BookOrientation, string>>;
   /** Flat-colored fill per orientation, revealed by the magic brush (ADR-0043). */
-  readonly colorImages: Readonly<Record<BookOrientation, string>>;
+  readonly lightFill: Readonly<Record<BookOrientation, string>>;
   /** Pre-colored "night" fill per orientation — the dark-mode magic-brush reveal
       (ADR-0052 direction B). Only present for orientations whose night asset has
       been generated; dark mode falls back to the light fill where it's absent. */
-  readonly nightImages: Readonly<Partial<Record<BookOrientation, string>>>;
+  readonly nightFill: Readonly<Partial<Record<BookOrientation, string>>>;
   /** Transparent white-ink SVG used in dark mode (ADR-0129). */
-  readonly darkImages: Readonly<Record<BookOrientation, string>>;
+  readonly darkLineArt: Readonly<Record<BookOrientation, string>>;
 }
 
 export interface Book {
@@ -225,16 +225,16 @@ function book(
     return {
       id,
       name,
-      images: {
+      lightLineArt: {
         portrait: pageAssetPath(bookId, id, 'portrait', 'overlay'),
         landscape: pageAssetPath(bookId, id, 'landscape', 'overlay'),
       },
-      colorImages: {
+      lightFill: {
         portrait: pageAssetPath(bookId, id, 'portrait', 'light'),
         landscape: pageAssetPath(bookId, id, 'landscape', 'light'),
       },
-      nightImages: optionalNightAssetPaths(bookId, id, nightExcept),
-      darkImages: {
+      nightFill: optionalNightAssetPaths(bookId, id, nightExcept),
+      darkLineArt: {
         portrait: pageAssetPath(bookId, id, 'portrait', 'darkOverlay'),
         landscape: pageAssetPath(bookId, id, 'landscape', 'darkOverlay'),
       },
@@ -261,7 +261,7 @@ export function booksForPlatform(platform: BookPlatform): Book[] {
 }
 
 export function pageImage(page: ColoringPage, orientation: BookOrientation): string {
-  return page.images[orientation];
+  return page.lightLineArt[orientation];
 }
 
 export function pageCompositionKey(url: string): string {
@@ -274,8 +274,8 @@ export function pageFillImage(
   orientation: BookOrientation,
   theme: ResolvedTheme
 ): string {
-  const nightPath = theme === 'dark' ? page.nightImages[orientation] : undefined;
-  return resolveColoringAssetUrl(nightPath ?? page.colorImages[orientation]);
+  const nightPath = theme === 'dark' ? page.nightFill[orientation] : undefined;
+  return resolveColoringAssetUrl(nightPath ?? page.lightFill[orientation]);
 }
 
 function pageOverlayAssetPath(
@@ -283,7 +283,7 @@ function pageOverlayAssetPath(
   orientation: BookOrientation,
   theme: ResolvedTheme
 ): string {
-  return theme === 'dark' ? page.darkImages[orientation] : pageImage(page, orientation);
+  return theme === 'dark' ? page.darkLineArt[orientation] : page.lightLineArt[orientation];
 }
 
 export function pageOverlayImage(
@@ -364,7 +364,7 @@ export function responsiveColoringAssets(book: Book): ColoringDerivativeAsset[] 
   const fillAssets = book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.flatMap((orientation) => {
       const widths = overlayTier.widths[orientation];
-      return [page.colorImages[orientation], page.nightImages[orientation]]
+      return [page.lightFill[orientation], page.nightFill[orientation]]
         .filter((source): source is string => !!source)
         .map((source) => ({
           source,
@@ -420,21 +420,24 @@ export function coloringDerivativeAssets(book: Book): ColoringDerivativeAsset[] 
 }
 
 export function bookAssetPaths(book: Book): string[] {
-  const lightLineArt = book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]);
+  const lightLineArt = book.pages.flatMap((page) => [
+    page.lightLineArt.portrait,
+    page.lightLineArt.landscape,
+  ]);
   // Colored fills are revealed by the magic brush, never shown in the grid, so
   // they have no thumbnail.
   const lightFills = book.pages.flatMap((page) => [
-    page.colorImages.portrait,
-    page.colorImages.landscape,
+    page.lightFill.portrait,
+    page.lightFill.landscape,
   ]);
   // Night fills exist only for processed orientations (ADR-0052) — no thumbnail,
   // same as the light fills.
   const nightFills = book.pages.flatMap((page) =>
-    ALL_ORIENTATIONS.map((o) => page.nightImages[o]).filter((p): p is string => !!p)
+    ALL_ORIENTATIONS.map((o) => page.nightFill[o]).filter((p): p is string => !!p)
   );
   const darkLineArt = book.pages.flatMap((page) => [
-    page.darkImages.portrait,
-    page.darkImages.landscape,
+    page.darkLineArt.portrait,
+    page.darkLineArt.landscape,
   ]);
   return [
     book.cover,
@@ -452,8 +455,8 @@ export function bookAssetPaths(book: Book): string[] {
 export function bookPackAssetPaths(book: Book): string[] {
   const coverThumbs = [coverThumb(book, 'light'), coverThumb(book, 'dark')];
   const fills = book.pages.flatMap((page) => [
-    ...ALL_ORIENTATIONS.map((orientation) => page.colorImages[orientation]),
-    ...ALL_ORIENTATIONS.map((orientation) => page.nightImages[orientation]).filter(
+    ...ALL_ORIENTATIONS.map((orientation) => page.lightFill[orientation]),
+    ...ALL_ORIENTATIONS.map((orientation) => page.nightFill[orientation]).filter(
       (path): path is string => !!path
     ),
   ]);
