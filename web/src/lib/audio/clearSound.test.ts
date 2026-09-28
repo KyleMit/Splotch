@@ -78,6 +78,11 @@ async function mountClearSound(signal: AbortSignal, options: RigOptions = {}) {
   const oscillators: ReturnType<typeof oscillatorNode>[] = [];
   const sources: ReturnType<typeof bufferSource>[] = [];
   const gains: ReturnType<typeof audioParam>[] = [];
+  const createOscillator = vi.fn(() => {
+    const oscillator = oscillatorNode();
+    oscillators.push(oscillator);
+    return oscillator;
+  });
   resolvedAudioFetch();
   stubAudioContext({
     state: 'running',
@@ -86,22 +91,36 @@ async function mountClearSound(signal: AbortSignal, options: RigOptions = {}) {
       const gain = audioParam();
       return { gain, connect: vi.fn(), disconnect: vi.fn() };
     }),
-    createOscillator: vi.fn(() => {
-      const oscillator = oscillatorNode();
-      oscillators.push(oscillator);
-      return oscillator;
-    }),
+    createOscillator,
     createBufferSource: vi.fn(() => {
       const source = bufferSource();
       sources.push(source);
       return source;
     }),
   });
+  const contexts = recordAudioContexts();
 
   const clearSound = await import('./clearSound');
   signal.throwIfAborted();
   cancelClearSound = clearSound.cancelClearSound;
-  return { clearSound, oscillators, sources, gains };
+  return { clearSound, contexts, createOscillator, oscillators, sources, gains };
+}
+
+// Installed before either sound module is imported, so a context built while a
+// module evaluates is counted too.
+function recordAudioContexts(): AudioContext[] {
+  const contexts: AudioContext[] = [];
+  const StubbedContext = globalThis.AudioContext;
+  vi.stubGlobal(
+    'AudioContext',
+    class extends StubbedContext {
+      constructor() {
+        super();
+        contexts.push(this);
+      }
+    }
+  );
+  return contexts;
 }
 
 describe('clear sound', () => {
@@ -407,29 +426,21 @@ describe('clear sound', () => {
   // borrows the pencil sound's context instead of building a second one.
   it('plays on the AudioContext the pencil sound already built', async ({ signal }) => {
     vi.useFakeTimers();
-    const { clearSound, oscillators } = await mountClearSound(signal);
-    const StubbedContext = globalThis.AudioContext;
-    let constructed = 0;
-    vi.stubGlobal(
-      'AudioContext',
-      class extends StubbedContext {
-        constructor() {
-          super();
-          constructed += 1;
-        }
-      }
-    );
-    const { preloadDrawSounds } = await import('./drawingSound');
+    const { clearSound, contexts, createOscillator } = await mountClearSound(signal);
+    const drawingSound = await import('./drawingSound');
     signal.throwIfAborted();
 
-    preloadDrawSounds();
+    drawingSound.preloadDrawSounds();
+    const pencilContext = drawingSound.currentAudioContext();
     clearSound.startClearSound();
     clearSound.updateClearSound(0.5);
     clearSound.commitClearSound();
     await vi.runOnlyPendingTimersAsync();
 
-    expect(oscillators.length).toBeGreaterThan(0);
-    expect(constructed).toBe(1);
+    expect(contexts).toHaveLength(1);
+    expect(pencilContext).toBe(contexts[0]);
+    expect(createOscillator.mock.contexts.length).toBeGreaterThan(0);
+    for (const context of createOscillator.mock.contexts) expect(context).toBe(pencilContext);
   });
 
   it('creates no audio graph at all when sound is off', async ({ signal }) => {
