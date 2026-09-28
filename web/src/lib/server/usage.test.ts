@@ -10,7 +10,7 @@ vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
 
 import type { TokenUsage } from '../usageRecord';
-import { deleteUsage, getUsage, recordByokUsage, recordTokenUsage } from './usage';
+import { deleteUsage, readUsageAndPurgeExpired, recordByokUsage, recordTokenUsage } from './usage';
 import { purgeExpiredUsageRecords } from './usageRecordStorage';
 
 const NOW = new Date('2026-08-19T12:00:00.000Z');
@@ -241,13 +241,13 @@ describe('recordTokenUsage', () => {
   });
 });
 
-describe('getUsage', () => {
+describe('readUsageAndPurgeExpired', () => {
   it('maps raw admin codes to records read only through derived grant keys', async () => {
     const store = makeStore();
     store.get.mockImplementation(async (key: string) => (key === grantKey() ? usageOf(2) : null));
     getStoreMock.mockReturnValue(store);
 
-    expect(await getUsage([TOKEN, 'unused'])).toEqual({ [TOKEN]: usageOf(2) });
+    expect(await readUsageAndPurgeExpired([TOKEN, 'unused'])).toEqual({ [TOKEN]: usageOf(2) });
     expect(store.get.mock.calls.flat()).not.toContain(TOKEN);
   });
 
@@ -256,7 +256,7 @@ describe('getUsage', () => {
     store.get.mockResolvedValue(usageOf(2, { deleteAfter: NOW.toISOString() }));
     getStoreMock.mockReturnValue(store);
 
-    expect(await getUsage([TOKEN])).toEqual({});
+    expect(await readUsageAndPurgeExpired([TOKEN])).toEqual({});
     expect(store.delete).toHaveBeenCalledWith(grantKey());
   });
 
@@ -265,7 +265,7 @@ describe('getUsage', () => {
     store.get.mockResolvedValue(null);
     getStoreMock.mockReturnValue(store);
 
-    await getUsage([TOKEN]);
+    await readUsageAndPurgeExpired([TOKEN]);
 
     expect(store.get).toHaveBeenCalledTimes(1);
     expect(store.get).toHaveBeenCalledWith(grantKey(), { type: 'json' });
@@ -281,7 +281,7 @@ describe('getUsage', () => {
     });
     getStoreMock.mockReturnValue(store);
 
-    await expect(getUsage([badToken, goodToken])).resolves.toEqual({
+    await expect(readUsageAndPurgeExpired([badToken, goodToken])).resolves.toEqual({
       [goodToken]: usageOf(2),
     });
     expect(console.warn).toHaveBeenCalledWith(
@@ -292,14 +292,14 @@ describe('getUsage', () => {
 
   it('returns unavailable when the HMAC secret or Blobs is unavailable', async () => {
     delete envState.USAGE_GRANT_ID_SECRET;
-    expect(await getUsage([TOKEN])).toBeNull();
+    expect(await readUsageAndPurgeExpired([TOKEN])).toBeNull();
     expect(getStoreMock).not.toHaveBeenCalled();
 
     envState.USAGE_GRANT_ID_SECRET = SECRET;
     getStoreMock.mockImplementation(() => {
       throw new Error('MissingBlobsEnvironment');
     });
-    expect(await getUsage([TOKEN])).toBeNull();
+    expect(await readUsageAndPurgeExpired([TOKEN])).toBeNull();
   });
 });
 

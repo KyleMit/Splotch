@@ -18,7 +18,7 @@ vi.mock('$lib/server/tokens', () => ({
   addToken: vi.fn(),
   removeToken: vi.fn(),
 }));
-vi.mock('$lib/server/usage', () => ({ getUsage: vi.fn() }));
+vi.mock('$lib/server/usage', () => ({ readUsageAndPurgeExpired: vi.fn() }));
 
 import { sessionToken } from '$lib/server/admin';
 import { POST } from '../api/admin/login/+server';
