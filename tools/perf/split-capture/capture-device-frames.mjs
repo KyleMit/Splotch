@@ -42,6 +42,7 @@ import {
 } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import {
+  CONTACT_BANK_MS,
   FLOOR_CONTROL_PAGE,
   fetchAcceptedProbeReport,
   probeHostJson,
@@ -102,7 +103,6 @@ const WDA_SESSION_ATTEMPTS = 3;
 const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
 export const APP_BUNDLE_ID = ANDROID_NATIVE_PACKAGE;
 const WDA_SESSION_SETTLE_MS = 2_500;
-const CONTACT_BANK_MS = 600_000;
 
 // Throws where capture() would exit: once openPage has rotated the phone, a
 // failed geometry read or swipe must still reach driveHandingBack's `finally`,

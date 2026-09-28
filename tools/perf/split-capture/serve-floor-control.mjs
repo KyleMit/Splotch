@@ -36,12 +36,15 @@ import { join } from 'node:path';
 import { TCP_PORT, argFlag, argNumber, isMain, ROOT, runMain } from '../../lib/proc.mjs';
 import { PROBE_INSTALL_SOURCE } from './lib/page-bootstrap.mjs';
 import { PROBE_SOURCE, readJsonBody, sendJson, sendText } from './lib/probe-host.mjs';
-import { FLOOR_CONTROL_PAGE, PROBE_REPORT_PATH } from './lib/probe-host-protocol.mjs';
+import {
+  CONTACT_BANK_MS,
+  FLOOR_CONTROL_PAGE,
+  PROBE_REPORT_PATH,
+} from './lib/probe-host-protocol.mjs';
 import { keepIncomingReport, reportFileName, reportRejectionReason } from './lib/report-store.mjs';
 
 const DEFAULT_PORT = 4176;
 const DEFAULT_REPORT_DIR = join(ROOT, 'perf-profiles', 'split-capture', 'reports');
-const CONTACT_BANK_MS = 600_000;
 // Matches the app's own live-canvas cap so the control is not handed a cheaper
 // surface than the thing it is a control for.
 const MAX_DEVICE_PIXEL_RATIO = 2;

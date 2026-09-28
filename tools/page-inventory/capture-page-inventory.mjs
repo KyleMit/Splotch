@@ -35,10 +35,11 @@ import {
   renderPageInventoryReport,
 } from './lib/page-inventory-report.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
-// The two imports below are TypeScript, so both entry points that reach this
+// The imports below are TypeScript, so both entry points that reach this
 // module run under --experimental-strip-types (capture:page-inventory,
 // attach:page-inventory-feedback).
 import { aiOutputFor } from '../../web/tests/artifacts/ai-output-fixtures.ts';
+import { SETTINGS_WIDE_MIN_WIDTH_PX } from '../../web/src/lib/breakpoints.ts';
 import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
 
 const PORT_DEFAULT = 4319;
@@ -51,7 +52,6 @@ const TAP_GUARD_MS = 750;
 const WEBP_QUALITY = 84;
 const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
 const SPOT_CHECK_RECORDS_NAME = 'spot-check-captures.json';
-const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
 const SCROLL_END_EPSILON_PX = 1;
 // The wide shell parks a jumped-to section just clear of the pane's top edge
 // rather than flush against it, and the pane's own padding holds the first

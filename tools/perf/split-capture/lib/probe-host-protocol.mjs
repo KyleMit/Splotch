@@ -2,6 +2,10 @@
 // Bump when a runner-required route appears or changes shape.
 export const PROBE_HOST_PROTOCOL = 'splotch-perf-probe-v3';
 export const PROBE_REPORT_PATH = '/__probe/report';
+// The contact time every plan banks with the probe. The runner ends each phase
+// (a driven gesture pass, a hand run's clock, a preflight), not the probe, so
+// the bank is deliberately far longer than any of them.
+export const CONTACT_BANK_MS = 600_000;
 // What the floor control's /__probe/state declares, and what a capture of it
 // records as its artifact's `page`. Every product-cell consumer refuses an
 // artifact carrying it: the floor is a diagnostic of the browser, never a cell.

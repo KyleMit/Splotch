@@ -20,10 +20,12 @@ const ANDROID_LISTING_PATH = 'store-assets/STORE-LISTING-ANDROID.md';
 const PRIVACY_PAGE_PATH = 'web/src/routes/privacy/+page.svelte';
 const NATIVE_DOC_PATH = 'docs/MOBILE/native.md';
 const ANDROID_DOC_PATH = 'docs/MOBILE/android.md';
+const IOS_DOC_PATH = 'docs/MOBILE/ios.md';
 const COMPLIANCE_DOC_PATH = 'docs/MOBILE/compliance.md';
 const API_DOC_PATH = 'docs/API.md';
 const IMAGE_REPORT_ADR_PATH = 'docs/adrs/0104-retain-reported-ai-images-for-thirty-days.md';
 const GENERATION_JOB_ADR_PATH = 'docs/adrs/0115-background-generation-jobs.md';
+const USAGE_RECORD_ADR_PATH = 'docs/adrs/0025-netlify-blobs-server-storage.md';
 
 function filesUnder(directory) {
   return readdirSync(new URL(`../../../${directory}/`, import.meta.url), { withFileTypes: true })
@@ -185,6 +187,40 @@ describe('privacy disclosure consistency', () => {
       [IMAGE_REPORT_ADR_PATH, `The ${hours}-hour response commitment`],
     ];
     for (const [path, promise] of promises) expect(compact(read(path)), path).toContain(promise);
+  });
+
+  it('repeats each purge cadence from its cleanupCadence in every Markdown copy', () => {
+    const cadenceOf = (id) =>
+      privacyInventory.retentionBoundaries.find((retention) => retention.id === id).boundary
+        .cleanupCadence;
+    const reportCadence = cadenceOf('confirmed-ai-report');
+    const jobCadence = cadenceOf('ordinary-generation-job');
+    const usageCadence = cadenceOf('access-code-usage');
+    const reportDays = IMAGE_REPORT_RETENTION_DAYS;
+    const usageDays = USAGE_RECORD_RETENTION_DAYS;
+    const statements = [
+      [IOS_LISTING_PATH, `deletion after ${reportDays} days by a ${reportCadence} purge`],
+      [ANDROID_LISTING_PATH, `deletion after ${reportDays} days by a ${reportCadence} purge`],
+      [COMPLIANCE_DOC_PATH, `at most ${reportDays} days (${reportCadence} purge job)`],
+      [API_DOC_PATH, `store page ${reportCadence} and deletes report objects older than`],
+      [ANDROID_DOC_PATH, `A ${reportCadence} purge deletes the bundle after its ${reportDays}-day`],
+      [NATIVE_DOC_PATH, `until a ${reportCadence} purge after its ${reportDays}-day retention`],
+      [IOS_DOC_PATH, `until the ${reportCadence} purge after their ${reportDays}-day retention`],
+      [IMAGE_REPORT_ADR_PATH, `purge-image-reports.ts\` runs ${reportCadence}, iterates all`],
+      [IMAGE_REPORT_ADR_PATH, `The purge runs ${reportCadence} and deletes bundles`],
+      [IMAGE_REPORT_ADR_PATH, `deletion after ${reportDays} days by a ${reportCadence} purge`],
+      [API_DOC_PATH, `an ${jobCadence} sweep deletes whatever was never collected`],
+      [ANDROID_DOC_PATH, `an ${jobCadence} cleanup removes it`],
+      [NATIVE_DOC_PATH, `an ${jobCadence} cleanup removes them`],
+      [GENERATION_JOB_ADR_PATH, `an ${jobCadence} \`purge-generation-jobs\` sweep`],
+      [API_DOC_PATH, `a ${usageCadence} scheduled function removes expired inactive records`],
+      [ANDROID_DOC_PATH, `a ${usageCadence} purge removes expired records`],
+      [IOS_DOC_PATH, `fixed ${usageDays}-day window plus ${usageCadence} and revocation cleanup`],
+      [USAGE_RECORD_ADR_PATH, `purge-usage-records.ts\` scans the store ${usageCadence}`],
+    ];
+    for (const [path, statement] of statements) {
+      expect(compact(read(path)), path).toContain(statement);
+    }
   });
 
   for (const retention of privacyInventory.retentionBoundaries) {
