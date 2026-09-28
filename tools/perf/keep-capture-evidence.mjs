@@ -40,7 +40,7 @@ import {
   isKnownTarget,
   rawReportOf,
   targetOf,
-} from './rescore-captures.mjs';
+} from './lib/capture-rescore.mjs';
 import { numberInvalidatingFailure } from './lib/input-fidelity.mjs';
 import { attributionOf } from './lib/capture-attribution.mjs';
 import { FLOOR_CONTROL_PAGE } from './split-capture/lib/probe-host-protocol.mjs';
@@ -263,15 +263,15 @@ export function evidenceFileName(entry, { keepAll = false } = {}) {
 }
 
 export async function keepCaptureEvidence({
-  corpus = argFlag('corpus'),
-  campaign = argFlag('campaign'),
-  productCommit = argFlag('product-commit'),
-  target = argFlag('target'),
-  filter = argFlag('filter'),
-  force = argSwitch('force'),
-  keepAll = argSwitch('keep-all'),
-  study = argFlag('study'),
-  allowFailed = argSwitch('allow-failed'),
+  corpus,
+  campaign,
+  productCommit,
+  target,
+  filter,
+  force = false,
+  keepAll = false,
+  study,
+  allowFailed = false,
   // Overridable so the end-to-end test promotes into a tmpdir instead of the
   // tracked corpus; production callers pass nothing.
   evidenceRoot = EVIDENCE_ROOT,
@@ -498,6 +498,16 @@ if (isMain(import.meta.url)) {
     'allow-failed',
   ]);
   runMain(async () => {
-    await keepCaptureEvidence();
+    await keepCaptureEvidence({
+      corpus: argFlag('corpus'),
+      campaign: argFlag('campaign'),
+      productCommit: argFlag('product-commit'),
+      target: argFlag('target'),
+      filter: argFlag('filter'),
+      force: argSwitch('force'),
+      keepAll: argSwitch('keep-all'),
+      study: argFlag('study'),
+      allowFailed: argSwitch('allow-failed'),
+    });
   });
 }

@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { analyze, writeAnalysisArtifacts } from '../analyze-chrome-trace.mjs';
+import { analyze, writeAnalysisArtifacts } from './chrome-trace-analysis.mjs';
 
 export function buildMetrics({ settings, obs, heapBefore, heapAfter }) {
   return {

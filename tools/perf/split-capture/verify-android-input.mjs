@@ -107,13 +107,13 @@ export async function guardVerifyForeground({
 }
 
 export async function verifyAndroidInput({
-  serial = argFlag('device-serial'),
-  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
+  serial,
+  port = DEFAULT_PORT,
   // The caller that knows better passes the RESOLVED port — prepare-capture
   // shifts this role off a held 9224, and a hardcoded default here would bind
   // the port the preflight just said it was avoiding.
-  cdpPort = argNumber('cdp-port', PORT_ROLES.androidCdp.port, TCP_PORT),
-  repeats = argNumber('gesture-repeats', PREFLIGHT_GESTURE_REPEATS, POSITIVE_INTEGER),
+  cdpPort = PORT_ROLES.androidCdp.port,
+  repeats = PREFLIGHT_GESTURE_REPEATS,
 } = {}) {
   if (!serial) fail('--device-serial= is required');
   if (!Number.isSafeInteger(repeats) || repeats < 1) {
@@ -211,7 +211,12 @@ export async function verifyAndroidInput({
 
 if (isMain(import.meta.url)) {
   runMain(async () => {
-    const result = await verifyAndroidInput();
+    const result = await verifyAndroidInput({
+      serial: argFlag('device-serial'),
+      port: argNumber('port', undefined, TCP_PORT),
+      cdpPort: argNumber('cdp-port', undefined, TCP_PORT),
+      repeats: argNumber('gesture-repeats', undefined, POSITIVE_INTEGER),
+    });
     console.log(`${result.ok ? '✓' : '✗'} android input   ${result.detail}`);
     if (result.contact) console.log(`  observed: ${result.contact}`);
     if (!result.ok) process.exitCode = 1;

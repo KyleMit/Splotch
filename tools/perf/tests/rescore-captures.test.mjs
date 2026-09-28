@@ -1,11 +1,11 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
+import { rescoreCaptures } from '../rescore-captures.mjs';
 import {
   brushOf,
   evidenceIndexUnattributable,
   rawReportOf,
   rescoreCapture,
-  rescoreCaptures,
-} from '../rescore-captures.mjs';
+} from '../lib/capture-rescore.mjs';
 import { relative } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
@@ -23,7 +23,7 @@ import {
   REDACTED_DEVICE_IDENTIFIER,
   selectEvidence,
 } from '../keep-capture-evidence.mjs';
-import { evidenceIndexTargets, targetOf } from '../rescore-captures.mjs';
+import { evidenceIndexTargets, targetOf } from '../lib/capture-rescore.mjs';
 import { unattributableCaptureProblem } from '../analyze-frame-capture.mjs';
 import { FLOOR_CONTROL_PAGE } from '../split-capture/lib/probe-host-protocol.mjs';
 import { buildDirHoldsNativeExport } from '../lib/build-variant.mjs';

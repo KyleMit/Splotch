@@ -20,9 +20,9 @@ const DEFAULT_UPSTREAM = `http://127.0.0.1:${PORT_ROLES.preview.port}`;
 const DEFAULT_REPORT_DIR = join(ROOT, 'perf-profiles', 'split-capture', 'reports');
 
 export function serveProbeHost({
-  port = argNumber('port', DEFAULT_PROBE_PORT, TCP_PORT),
-  upstream = argFlag('upstream', DEFAULT_UPSTREAM),
-  reportDir = argFlag('report-dir', DEFAULT_REPORT_DIR),
+  port = DEFAULT_PROBE_PORT,
+  upstream = DEFAULT_UPSTREAM,
+  reportDir = DEFAULT_REPORT_DIR,
 } = {}) {
   const { server } = createProbeHost({ upstream, reportDir });
   server.listen(port, '0.0.0.0', () => console.log(`probe host on ${port}, proxying ${upstream}`));
@@ -31,6 +31,10 @@ export function serveProbeHost({
 
 if (isMain(import.meta.url)) {
   runMain(async () => {
-    serveProbeHost();
+    serveProbeHost({
+      port: argNumber('port', undefined, TCP_PORT),
+      upstream: argFlag('upstream'),
+      reportDir: argFlag('report-dir'),
+    });
   });
 }

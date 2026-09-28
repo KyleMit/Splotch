@@ -81,10 +81,7 @@ async function observeOrientation(serial, state, pageUrl, orientation) {
   return { requested: orientation, observed: ready?.geometry?.orientation ?? null };
 }
 
-export async function verifyAndroidRotation({
-  serial = argFlag('device-serial'),
-  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
-} = {}) {
+export async function verifyAndroidRotation({ serial, port = DEFAULT_PORT } = {}) {
   if (!serial) fail('--device-serial= is required');
 
   const { server, state } = createFloorControlHost({ log: () => {} });
@@ -110,7 +107,10 @@ export async function verifyAndroidRotation({
 
 if (isMain(import.meta.url)) {
   runMain(async () => {
-    const result = await verifyAndroidRotation();
+    const result = await verifyAndroidRotation({
+      serial: argFlag('device-serial'),
+      port: argNumber('port', undefined, TCP_PORT),
+    });
     console.log(`${result.ok ? '✓' : '✗'} android rotation ${result.detail}`);
     if (!result.ok) process.exitCode = 1;
   });

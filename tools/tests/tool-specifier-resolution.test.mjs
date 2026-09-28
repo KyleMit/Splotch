@@ -119,11 +119,11 @@ describe('capability libraries import no entry script', () => {
   // A `lib/` module is a dependency; an entry script is the top of a dependency
   // graph. Importing one loads a whole CLI into every consumer of the library, and
   // the perf matrix and split-capture import cycles both ran through such edges.
-  // The remaining edges are listed so the list can only shrink.
+  // The remaining edges are listed so the list can only shrink. The bench edge
+  // stays: moving replyToRequest out of broker.mjs rewrites files the rival
+  // installer copies verbatim and pins by digest (CORE_FILES in the run-rival-agent
+  // package), so every installed rival would have to reinstall for a dev bench.
   const KNOWN_LIB_TO_ENTRY_IMPORTS = [
-    'tools/perf/lib/person-session.mjs -> tools/perf/rescore-captures.mjs',
-    'tools/perf/lib/profile-artifacts.mjs -> tools/perf/analyze-chrome-trace.mjs',
-    'tools/perf/lib/profile-device-session.mjs -> tools/perf/serve-profile-build.mjs',
     'tools/rival-agent/bench/lib/handler.mjs -> tools/rival-agent/broker.mjs',
   ];
   // Import forms only: a library may name an entry script's path to spawn it.

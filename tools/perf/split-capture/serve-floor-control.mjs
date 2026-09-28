@@ -302,10 +302,7 @@ export function closeFloorControlHost(server) {
   });
 }
 
-export function serveFloorControl({
-  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
-  reportDir = argFlag('report-dir', DEFAULT_REPORT_DIR),
-} = {}) {
+export function serveFloorControl({ port = DEFAULT_PORT, reportDir = DEFAULT_REPORT_DIR } = {}) {
   const { server } = createFloorControlHost({ reportDir });
   server.listen(port, '0.0.0.0', () => console.log(`floor control on ${port}`));
   return server;
@@ -313,6 +310,9 @@ export function serveFloorControl({
 
 if (isMain(import.meta.url)) {
   runMain(async () => {
-    serveFloorControl();
+    serveFloorControl({
+      port: argNumber('port', undefined, TCP_PORT),
+      reportDir: argFlag('report-dir'),
+    });
   });
 }

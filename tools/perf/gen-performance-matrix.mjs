@@ -3467,10 +3467,7 @@ function formatGeneratedMarkdown(path) {
 // the first argument that is not one.
 const positionalArguments = () => process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
 
-export async function generateDeploymentMatrixReport(
-  manifestArg = positionalArguments()[0],
-  { strict = argSwitch('strict') } = {}
-) {
+export async function generateDeploymentMatrixReport(manifestArg, { strict = false } = {}) {
   const manifestPath = manifestArg ? resolve(ROOT, manifestArg) : DEFAULT_MANIFEST;
   const outputDir = dirname(manifestPath);
   const matrix = normalizeMatrix(readJson(manifestPath), outputDir);
@@ -3489,7 +3486,9 @@ export async function generateDeploymentMatrixReport(
 // ignored, it would regenerate the DEFAULT manifest and exit 0.
 if (isMain(import.meta.url)) {
   rejectUnknownFlags(['strict']);
-  runMain(generateDeploymentMatrixReport);
+  runMain(() =>
+    generateDeploymentMatrixReport(positionalArguments()[0], { strict: argSwitch('strict') })
+  );
 }
 
 export { mergeActionResults, normalizeMatrix, renderMarkdown, renderReport };
