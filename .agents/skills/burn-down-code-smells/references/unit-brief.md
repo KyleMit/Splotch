@@ -123,6 +123,16 @@ quarantine.
   * The API smoke uses `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`.
 * **Main-merge checks:** a push to `main` runs fewer checks than a PR (no ADR-integrity job, no
   Dependabot review). Don't wait for a PR-sized count after a merge.
-* **Sandbox friction:** the auto-mode sandbox refuses compound shell commands that chain `git` or
-  `gh`, heredoc scripts, and some bare words. Write the script to a file under `/tmp` and run it as
-  a separate command. `ruler:apply` needs sandbox-disabled writes to `.claude/` and `.agents/`.
+* **Wait loops:** key a CI wait on every registered check finishing, never on a fixed count. The
+  count varies by PR: it drops when the Dependabot review check is absent, and a loop keyed on the
+  larger number never ends.
+* **Fresh worktree:** run `npm run check` (it runs `svelte-kit sync`) before `npm run test:tools`.
+* **Sandbox friction:**
+  * The auto-mode sandbox refuses compound shell commands that chain `git` or `gh`, any heredoc
+    whose text contains `git` (even inside `.github`), and some bare words. Write the script to a
+    file under `/tmp` and run it as `/bin/bash <file>`; a bare `bash <file>` can be refused.
+  * `git rev-parse --verify` takes one SHA per call.
+  * Run a brokered rival command in your own worktree, at the head under review.
+  * If the sandbox refuses a temporary product-source edit for a negative control, run the guard
+    against a scratch copy of the old code, or inject the fault from the test side.
+  * `ruler:apply` needs sandbox-disabled writes to `.claude/` and `.agents/`.
