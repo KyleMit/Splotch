@@ -73,8 +73,8 @@ const ACTION_RUNNER = readFileSync(
   'utf8'
 );
 const STORAGE_KEYS_SOURCE = readFileSync(join(ROOT, 'web', 'src', 'lib', 'storageKeys.ts'), 'utf8');
-const SCREENSHOT_MODULE = readFileSync(
-  join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshot.ts'),
+const IMAGE_SAVE_MODULE = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'drawing', 'imageSave.ts'),
   'utf8'
 );
 const component = (name) =>
@@ -1622,7 +1622,7 @@ describe('probe selectors still match the app', () => {
 
   it('shares the native screenshot persistence boundary with the action runner', () => {
     expect(ACTION_RUNNER).toContain('window.__screenshotSaveSink');
-    expect(SCREENSHOT_MODULE).toContain('window.__screenshotSaveSink');
+    expect(IMAGE_SAVE_MODULE).toContain('window.__screenshotSaveSink');
     expect(ACTION_RUNNER).not.toContain('Capacitor.nativePromise');
   });
 });

@@ -33,6 +33,8 @@ const APPIUM_SCREEN_CAPTURE = 'tools/perf/ios/capture-xcuitest-screen.mjs';
 const APPIUM_ACTIONS_CAPTURE = 'tools/perf/ios/capture-xcuitest-actions.mjs';
 const ERASER_FILL = 'tools/perf/lib/eraser-fill.mjs';
 const UNDO_DRIVER = 'tools/perf/lib/undo-driver.mjs';
+// Which button each drawing capture presses to select the brush it measures.
+const BRUSH_BUTTONS = 'tools/perf/lib/brush-buttons.mjs';
 // Which origin Android Chrome loads decides whether it is a secure context.
 const ANDROID_LOCALHOST_ROUTE = 'tools/perf/lib/android-localhost-route.mjs';
 const SERVICE_WORKER_GUARD = 'tools/perf/lib/service-worker-guard.mjs';
@@ -53,12 +55,14 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
     ANDROID_LOCALHOST_ROUTE,
     SERVICE_WORKER_GUARD,
     APPIUM_SCREEN_CAPTURE,
+    BRUSH_BUTTONS,
     SHARED_SCREEN_PROBE,
     ERASER_FILL,
     UNDO_DRIVER,
   ],
   'perf:ios:xcuitest:screen': [
     APPIUM_SCREEN_CAPTURE,
+    BRUSH_BUTTONS,
     SERVICE_WORKER_GUARD,
     SHARED_SCREEN_PROBE,
     ERASER_FILL,

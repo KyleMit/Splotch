@@ -13,6 +13,7 @@ import {
 } from '../.claude/skills/run-rival-agent/scripts/codex-subscription-auth.mjs';
 import { readConfiguredModel } from '../.claude/skills/run-rival-agent/scripts/launch-codex.mjs';
 import { accessTokenExpiryMs, assertSeed, encodeSeed } from './seed-codex-auth.mjs';
+import { isMain } from './lib/proc.mjs';
 
 // A login of its own, never the working ~/.codex one: refresh rotation retires the previous token
 // in the same chain, so a shared file would log the laptop out at the cloud's first refresh.
@@ -110,7 +111,7 @@ function main() {
   );
 }
 
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (isMain(import.meta.url)) {
   try {
     main();
   } catch (error) {

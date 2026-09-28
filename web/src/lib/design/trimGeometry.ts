@@ -1,4 +1,4 @@
-import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+import { BREAKPOINT_EPSILON_PX, TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 
 // Executable form of the responsive-trim ladders in ColorPalette.svelte,
 // ColorPicker.svelte and ColorMenu.svelte (ADR-0048). Those components trim
@@ -10,9 +10,7 @@ import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 // committed CSS still matches what these functions produce.
 
 // A `max-*` breakpoint has to sit just below the threshold at which the layout
-// still fits, so the ladders encode `threshold - 0.02` (e.g. 588 → 587.98).
-const BREAKPOINT_EPSILON_PX = 0.02;
-
+// still fits (e.g. 588 → 587.98).
 function justBelowPx(thresholdPx: number): number {
   return thresholdPx - BREAKPOINT_EPSILON_PX;
 }

@@ -17,7 +17,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
-import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
+import { CAPTURED_UNTRACKED, PRESERVED } from './lib/matrix-vocabulary.mjs';
 import { cellInspection } from './run-campaign.mjs';
 import { CAMPAIGN_MODES, campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
 import { MATRIX_SECTIONS, isCaptureDate, sectionCapturedOn, utcDate } from './lib/capture-date.mjs';

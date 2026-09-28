@@ -105,8 +105,8 @@ catalog.
 `lib/native-version.mjs` owns Android/iOS project version edits; `lib/artifact-version.mjs` owns
 embedded native-artifact inspection (the aapt2 protobuf scan, the `plutil` plist read, and the
 `.aab`/`.ipa` version semantics); and `lib/zip.mjs` owns ZIP container parsing beneath it, exposing
-read-only `listEntries` and `readEntry`. Keep version parsing and validation in these owned modules
-rather than duplicating it in entry points.
+read-only `readEntry`. Keep version parsing and validation in these owned modules rather than
+duplicating it in entry points.
 
 `lib/zip.mjs` is deliberately bounded to reading a trusted build artifact: no writing, no streaming,
 and no zip64 (an archive using the zip64 sentinel is rejected rather than misread). Widening that

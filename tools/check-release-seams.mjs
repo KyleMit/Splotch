@@ -9,7 +9,7 @@ const ENGINE_SOURCE_PATH = 'web/src/lib/drawing/engine.ts';
 const TILED_RENDERER_SOURCE_PATH = 'web/src/lib/drawing/tiledRenderer.ts';
 export const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/boot/devHarnessSeam.ts',
-  'web/src/lib/drawing/screenshot.ts',
+  'web/src/lib/drawing/imageSave.ts',
   ENGINE_SOURCE_PATH,
   // Carries `engine.draw`, which moved out of the engine when the per-frame
   // raster queue was extracted. A measure in a file missing from this list is

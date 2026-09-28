@@ -465,7 +465,7 @@ entry 87. Paths under `web/src/` unless noted.*
     re-entry, repaint skipped when a resize will repaint anyway. `tiledContextRecovery.ts`.
     *ADR-0132, ADR-0110*
 86. **WebP re-encode for AI uploads** — the PNG re-encoded to quality-tuned WebP (a fraction of the
-    bytes for flat-color art); capability probed once per session. `drawing/aiImage.ts:38-84`.
+    bytes for flat-color art); capability probed once per session. `drawing/aiUploadEncoding.ts`.
 87. **Coachmark animations scoped to visibility** *(new, PR #1369)* — the drag-to-clear tutorial's
     two infinite keyframe loops ran forever on their hidden base state (opacity/visibility don't
     pause CSS animations), taxing every frame of every session — 72% of all Animation style

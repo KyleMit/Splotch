@@ -62,6 +62,12 @@ describe('the per-command instrument file lists', () => {
       expect(INSTRUMENT_FILES_BY_COMMAND[command]).toContain('tools/perf/lib/undo-driver.mjs');
     }
   });
+
+  it('invalidates every device screen command when the brush button map changes', () => {
+    for (const command of ['perf:device:frames', 'perf:ios:xcuitest:screen']) {
+      expect(INSTRUMENT_FILES_BY_COMMAND[command]).toContain('tools/perf/lib/brush-buttons.mjs');
+    }
+  });
 });
 
 describe('the capture-instrument fingerprint', () => {

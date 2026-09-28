@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { listEntries, readEntry } from '../lib/zip.mjs';
+import { readEntry } from '../lib/zip.mjs';
 import { zip } from './fixtures/zip-writer.mjs';
 
 let dir;
@@ -27,7 +27,6 @@ describe('readEntry', () => {
 
     expect(readEntry(path, 'a/deflated.txt').toString()).toBe('x'.repeat(500));
     expect(readEntry(path, /^Payload\/[^/]+\.app\/Info\.plist$/).toString()).toBe('stored');
-    expect(listEntries(path)).toEqual(['a/deflated.txt', 'Payload/App.app/Info.plist']);
   });
 
   it('fails loudly on a missing entry instead of returning empty', () => {

@@ -1,8 +1,28 @@
+import { realpathSync } from 'node:fs';
 import { parseArgs } from 'node:util';
+import { pathToFileURL } from 'node:url';
 
 export function fail(message) {
   console.error(message);
   process.exit(1);
+}
+
+// Whether the calling module is the entry point — pass it `import.meta.url`. The
+// same gate as `isMain` in tools/lib/proc.mjs, kept here because the shipping
+// pipeline does not import repo-root tools/lib (docs/architecture.md). Node
+// realpaths a symlinked entry before building that URL, so the physical paths
+// are compared; the wrong argument shape throws rather than never matching.
+export function isMain(url) {
+  if (typeof url !== 'string') {
+    throw new TypeError(`isMain expects import.meta.url, got ${typeof url}`);
+  }
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return pathToFileURL(realpathSync(entry)).href === url;
+  } catch {
+    return false;
+  }
 }
 
 export function parsePngToWebpOptions(args = process.argv.slice(2), env = process.env) {

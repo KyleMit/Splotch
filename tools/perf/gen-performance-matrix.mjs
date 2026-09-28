@@ -58,6 +58,14 @@ import { artifactFrameStampEpoch, DUAL_FRAME_STAMP_EPOCH } from './lib/frame-sta
 import { FLOOR_CONTROL_PAGE } from './split-capture/lib/probe-host-protocol.mjs';
 import { MATRIX_SECTIONS, captureAgeDays, isCaptureDate } from './lib/capture-date.mjs';
 import { strokeDeliveryProblem } from './lib/stroke-delivery.mjs';
+import {
+  ADVISORY,
+  CAPTURED_UNTRACKED,
+  PRESERVED,
+  REGRESSION_TRIPWIRE,
+  RELEASE_GATE,
+  targetRole,
+} from './lib/matrix-vocabulary.mjs';
 
 const DEFAULT_MANIFEST = join(
   ROOT,
@@ -81,13 +89,6 @@ const MODE_KEYS = ORIENTATIONS.flatMap((orientation) =>
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
-
-// A cell whose raw capture is not committed still has published, normalized
-// evidence in the last data.json. Copying that forward is how a rerun of the
-// generator keeps a first valid result — including a red gate — instead of
-// silently dropping the cell or recapturing it into a different number.
-export const PRESERVED = 'preserved';
-export const CAPTURED_UNTRACKED = 'captured-untracked';
 
 function loadPreservedEvidence(manifest, manifestDirectory) {
   const spec = manifest.preservedEvidence;
@@ -2616,29 +2617,6 @@ when this report is generated; stored derived summaries are not trusted. ${relea
 // reached it — and what it found — follows from the normalized modes. Stating
 // either in a fixed sentence lets the report contradict its own tables.
 const GATE_FIDELITY = 'physical-safari-gated';
-
-export const RELEASE_GATE = 'release-gate';
-const REGRESSION_TRIPWIRE = 'regression-tripwire';
-const ADVISORY = 'advisory';
-
-// ADR-0156 assigns a row its release role by the hardware it ran on, not by its
-// fidelity class: three of the four physical rows are advisory in the fidelity
-// sense (uncalibrated input checks, ADR-0139) and gate a release anyway.
-const ROLE_BY_DEVICE_KIND = {
-  physical: RELEASE_GATE,
-  desktop: REGRESSION_TRIPWIRE,
-  simulator: ADVISORY,
-  emulator: ADVISORY,
-};
-
-export function targetRole(target) {
-  if (!Object.hasOwn(ROLE_BY_DEVICE_KIND, target.deviceKind)) {
-    throw new Error(
-      `Target ${target.id} declares deviceKind ${JSON.stringify(target.deviceKind)}, which ADR-0156 assigns no release role.`
-    );
-  }
-  return ROLE_BY_DEVICE_KIND[target.deviceKind];
-}
 
 // Page order is gate first, then the roles that never block a release. Each
 // `rule` is that role's ADR-0156 decision in one sentence; `clause` is the same

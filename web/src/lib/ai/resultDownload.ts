@@ -1,9 +1,5 @@
-import {
-  AI_IMAGE_BASENAME,
-  extensionForImageType,
-  timestamp,
-  triggerDownload,
-} from '$lib/saveNaming';
+import { AI_IMAGE_BASENAME } from '$lib/saveNaming';
+import { extensionForImageType, timestamp, triggerDownload } from '$lib/savedFile';
 
 // The file a downloaded AI picture lands as: the AI basename, the moment it
 // was saved, and the extension its MIME type maps to (falling back the way

@@ -32,10 +32,16 @@ import { pollFor } from './lib/poll.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import { fetchAcceptedProbeReport, probeHostJson } from './lib/probe-host-protocol.mjs';
-import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
+import {
+  captureRuntime,
+  describeFidelityFailures,
+  inputFidelity,
+  runtimeUaProblem,
+} from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
+import { speak } from './lib/spoken-cues.mjs';
 import {
   APP_BUNDLE_ID,
   assertServedPageIdentity,
@@ -43,7 +49,6 @@ import {
 } from './capture-device-frames.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
-import { rethrowIfBroken } from '../lib/error-classification.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -91,17 +96,6 @@ function buzz(serial, times) {
   }
 }
 
-// Best effort, like the buzz: a Mac with no speech voice does not lose the
-// capture a person is already holding the device for.
-export function speak(words, exec = capture) {
-  try {
-    exec('say', [words]);
-  } catch (error) {
-    rethrowIfBroken(error);
-    // The terminal countdown still runs.
-  }
-}
-
 const control = (host, body) =>
   fetch(`${host}/__probe/control`, {
     method: 'PUT',
@@ -110,34 +104,6 @@ const control = (host, body) =>
   }).then((response) => response.json());
 
 const probeState = (host) => probeHostJson(host, '/__probe/state');
-
-// The runtime is the one mode dimension the page can answer for itself, and the
-// one this tool used to copy from the request: a hand capture labelled
-// `ios-capacitor-webview` was recorded in Safari because Safari happened to be
-// foregrounded, and nothing noticed (PR 1314's review). Safari stamps a
-// `Version/… Safari/…` token a WKWebView never emits; the Android System
-// WebView stamps `; wv` / `Version/4.0` where Chrome has neither. Returns the
-// refusal message, or null when the UA is consistent with the labelled runtime.
-export function runtimeUaProblem(runtime, ua) {
-  const agent = String(ua ?? '');
-  if (!agent) return `the report carries no user agent, so the ${runtime} label is unverifiable`;
-  const safariToken = / Version\/[\d.]+.* Safari\//.test(agent);
-  const androidWebviewToken = agent.includes('; wv') || agent.includes('Version/4.0');
-  const problems = {
-    'ios-safari': safariToken ? null : 'no Safari Version token — this is not Safari',
-    'ios-capacitor-webview': safariToken
-      ? 'the Safari Version token is present — this page ran in Safari, not the WKWebView'
-      : null,
-    'android-chrome': androidWebviewToken
-      ? 'the Android WebView token is present — this page ran in a WebView, not Chrome'
-      : null,
-    'android-capacitor-webview': androidWebviewToken
-      ? null
-      : 'no Android WebView token — this page ran in a browser, not the WebView',
-  };
-  const problem = problems[runtime] ?? null;
-  return problem ? `the page's user agent contradicts ${runtime}: ${problem} (ua: ${agent})` : null;
-}
 
 // `--native-app` decides the RUNTIME the artifact is judged as, so opening Chrome
 // here while recording `android-capacitor-webview` produces a calibration read off

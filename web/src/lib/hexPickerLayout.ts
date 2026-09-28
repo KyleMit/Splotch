@@ -159,8 +159,6 @@ export function colorFamilyShade(name: string, shadeIndex: number): string {
   return shade;
 }
 
-export const FAMILY_COUNT = COLOR_FAMILIES.length;
-
 export interface PickerRow {
   key: string;
   colors: string[];

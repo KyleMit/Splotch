@@ -58,7 +58,7 @@ public class PhotoLibraryPlugin extends Plugin {
     private static final String ALBUM_NAME = "Splotch";
     private static final String ERROR_INVALID_ARGUMENT = "argumentError";
     private static final String ERROR_WRITE_FAILED = "writeFailed";
-    // Matches ACCESS_DENIED_ERROR_CODE in web/src/lib/drawing/screenshot.ts, drift-guarded there.
+    // Matches ACCESS_DENIED_ERROR_CODE in web/src/lib/drawing/imageSave.ts, drift-guarded there.
     private static final String ERROR_ACCESS_DENIED = "accessDenied";
 
     // A save's upload lands in well under a second, so an upload still receiving slices at this

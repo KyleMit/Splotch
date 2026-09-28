@@ -19,10 +19,9 @@
 import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { STYLES_DIR, STYLE_SOURCE_SVG } from '../lib/asset-paths.mjs';
-import { fail, parseTemperature } from '../lib/asset-cli.mjs';
+import { fail, isMain, parseTemperature } from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import {
   STYLE_NAMES,
@@ -145,7 +144,7 @@ export async function run(argv = process.argv.slice(2)) {
   return { shipped };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMain(import.meta.url)) {
   run().catch((err) => {
     // A CoverFailuresError is the expected "some renders were rejected" exit and
     // its message says everything; anything else is a bug, so print it whole to

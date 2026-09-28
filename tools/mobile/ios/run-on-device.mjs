@@ -7,7 +7,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { fail, isMain, run } from '../../lib/proc.mjs';
-import { isPhysicalAppleUdid } from '../../perf/ios/capture-xcuitest-actions.mjs';
+import { isPhysicalAppleUdid } from '../../perf/lib/device-identifiers.mjs';
 
 // Each device line ends with its identifier in parens. isPhysicalAppleUdid
 // owns which shapes are physical hardware (modern 8-16 hex and legacy 40-hex);

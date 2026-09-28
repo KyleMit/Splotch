@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   settings: { saveOnDeleteEnabled: true },
   exportCanvasBlob: vi.fn(),
   isCanvasEmpty: vi.fn(() => false),
-  screenshotModuleLoads: 0,
+  imageSaveModuleLoads: 0,
   saveImageBlob: vi.fn(),
   reportSaveFailure: vi.fn(),
 }));
@@ -23,16 +23,16 @@ beforeEach(() => {
   // Registered per test rather than hoisted once: vi.resetModules drops the
   // module graph but keeps the result a hoisted vi.mock factory already
   // produced, so a counter inside that factory counts the first test to import
-  // ./screenshot and nothing after it. vi.doMock registers a factory the next
+  // ./imageSave and nothing after it. vi.doMock registers a factory the next
   // import has to run, which is what makes the count this file asserts on a
   // per-test measurement.
-  vi.doMock('./screenshot', () => {
-    mocks.screenshotModuleLoads += 1;
+  vi.doMock('./imageSave', () => {
+    mocks.imageSaveModuleLoads += 1;
     return { saveImageBlob: mocks.saveImageBlob };
   });
   mocks.settings.saveOnDeleteEnabled = true;
   mocks.isCanvasEmpty.mockReturnValue(false);
-  mocks.screenshotModuleLoads = 0;
+  mocks.imageSaveModuleLoads = 0;
   mocks.saveImageBlob.mockResolvedValue({ status: 'photos' });
 });
 
@@ -41,7 +41,7 @@ afterEach(() => {
 });
 
 describe('saveDrawingIfEnabled', () => {
-  it('starts loading the screenshot module while export is pending', async () => {
+  it('starts loading the image-save module while export is pending', async () => {
     const exportResult = Promise.withResolvers<Blob | null>();
     const blob = new Blob(['drawing']);
     mocks.exportCanvasBlob.mockReturnValue(exportResult.promise);
@@ -50,7 +50,7 @@ describe('saveDrawingIfEnabled', () => {
     const saving = saveDrawingIfEnabled();
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
-    await vi.waitFor(() => expect(mocks.screenshotModuleLoads).toBe(1));
+    await vi.waitFor(() => expect(mocks.imageSaveModuleLoads).toBe(1));
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
 
     exportResult.resolve(blob);
@@ -114,21 +114,21 @@ describe('saveDrawingIfEnabled', () => {
     expect(console.error).toHaveBeenCalledWith('Save on delete export failed:', exportError);
   });
 
-  it('does not load the screenshot module when saving on delete is disabled', async () => {
+  it('does not load the image-save module when saving on delete is disabled', async () => {
     mocks.settings.saveOnDeleteEnabled = false;
     const { saveDrawingIfEnabled } = await import('./saveOnDelete');
 
     await saveDrawingIfEnabled();
 
-    expect(mocks.screenshotModuleLoads).toBe(0);
+    expect(mocks.imageSaveModuleLoads).toBe(0);
   });
 
-  it('does not load the screenshot module for an empty canvas', async () => {
+  it('does not load the image-save module for an empty canvas', async () => {
     mocks.isCanvasEmpty.mockReturnValue(true);
     const { saveDrawingIfEnabled } = await import('./saveOnDelete');
 
     await saveDrawingIfEnabled();
 
-    expect(mocks.screenshotModuleLoads).toBe(0);
+    expect(mocks.imageSaveModuleLoads).toBe(0);
   });
 });

@@ -7,7 +7,6 @@ import {
   startAiGeneration,
   setAiPreview,
   finishAiGeneration,
-  setAiAutoSave,
   failAiGeneration,
   closeAiResult,
   isAiGenerationActive,
@@ -15,7 +14,6 @@ import {
 } from '$lib/state/aiGeneration.svelte';
 import { settingsState } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
-import { sha256Hex } from '$lib/digestHex';
 import {
   ASYNC_GENERATION_HEADER,
   FREE_GENERATIONS_REMAINING_HEADER,
@@ -33,138 +31,14 @@ import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { awaitGeneration, generationResultUrl } from './aiGenerationPoll';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { THROTTLED_STATUS } from '$lib/ai/generationResult';
-import { AI_IMAGE_BASENAME, DRAWING_BASENAME, isUnsaved, type SaveResult } from '$lib/saveNaming';
-import { reportSaveFailure } from '$lib/state/saveFailure.svelte';
+import { autoSaveImages } from './aiAutoSave';
+import { encodeWebpUpload } from './aiUploadEncoding';
 import type { StyleName } from '$lib/ai/styles';
 
 const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
 const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
 
-const UPLOAD_WEBP_QUALITY = 0.85;
 const FIRST_SERVER_ERROR_STATUS = 500;
-
-// No API reports canvas encode capability directly; the spec-mandated PNG
-// fallback for an unsupported type IS the feature signal, so a 1×1 probe
-// answers in ~1 ms. Memoized per page load and deliberately never persisted:
-// a stored "no" would outlive a Safari upgrade that adds a WebP encoder and
-// silently disable the smaller upload forever.
-let webpEncodeSupported: boolean | null = null;
-
-function canEncodeWebp(): boolean {
-  if (webpEncodeSupported === null) {
-    const probe = document.createElement('canvas');
-    probe.width = 1;
-    probe.height = 1;
-    webpEncodeSupported = probe.toDataURL('image/webp').startsWith('data:image/webp');
-  }
-  return webpEncodeSupported;
-}
-
-// Transcode the composited drawing to WebP for the upload only. Decoding the PNG
-// and re-encoding is exact on the source pixels, so the model sees the same
-// image at a fraction of the bytes. Returns null (caller falls back to the PNG)
-// if the platform can't decode/encode or the encoder declines.
-async function encodeWebpUpload(png: Blob): Promise<Blob | null> {
-  try {
-    // Skipping outright on a non-encoding engine matters: Safari has no canvas
-    // WebP encoder (the WebP-encoder row in docs/COMPATIBILITY.md), so without
-    // this gate an iPad spends ~105 ms of blocked main thread per generation
-    // decoding and re-encoding a blob the type guard below then discards —
-    // measured on device, docs/scratchpad/webp-upload-encode-cost-2026-08.md.
-    if (!canEncodeWebp()) return null;
-    const bitmap = await createImageBitmap(png);
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      bitmap.close();
-      return null;
-    }
-    ctx.drawImage(bitmap, 0, 0);
-    bitmap.close();
-    const webp = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/webp', UPLOAD_WEBP_QUALITY)
-    );
-    // A platform without WebP encoding hands back a PNG (or null) here; only take
-    // the result when it's genuinely smaller WebP, so we never upload a fatter
-    // re-encode than the original.
-    return webp && webp.type === 'image/webp' && webp.size < png.size ? webp : null;
-  } catch {
-    return null;
-  }
-}
-
-// Tracks the signature of the drawing saved on the previous AI run so we can skip
-// re-saving the child's artwork when they re-roll a new style on an unchanged
-// drawing — the AI image is always fresh, but the drawing copy would just be a
-// duplicate. Constructible so tests can exercise the dedupe in isolation instead
-// of driving it end-to-end through a shared module instance.
-export function createDrawingDeduper() {
-  let lastSavedDrawingSig: string | null = null;
-  return {
-    isDuplicate(sig: string | null): boolean {
-      return sig !== null && sig === lastSavedDrawingSig;
-    },
-    record(sig: string | null): void {
-      lastSavedDrawingSig = sig;
-    },
-  };
-}
-
-const drawingSaver = createDrawingDeduper();
-
-async function blobSignature(blob: Blob): Promise<string | null> {
-  try {
-    return await sha256Hex(await blob.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
-
-// Drop the finished AI image into the gallery (a download on the web), and tuck
-// the child's own drawing in alongside it — but only when the drawing actually
-// changed since the last AI run, so duplicates don't pile up.
-async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
-  if (!isAiGenerationActive(runId)) return;
-  setAiAutoSave(runId, { status: 'saving' });
-  // The save pipeline loads on demand so this module — statically imported by
-  // ActionsPanel — doesn't drag it into the startup bundle (issue #461). A
-  // failed chunk load is contained here: the AI image already committed to the
-  // result modal, so it must degrade like any other failed save rather than
-  // bubbling into generateAiImage's error UI.
-  let saveImageBlob: (typeof import('./screenshot'))['saveImageBlob'];
-  try {
-    ({ saveImageBlob } = await import('./screenshot'));
-  } catch (err) {
-    console.error('Auto-save failed:', err);
-    setAiAutoSave(runId, { status: 'failed' });
-    void reportSaveFailure('failed', { blob: aiBlob, baseName: AI_IMAGE_BASENAME });
-    return;
-  }
-  // A throw must land as 'failed' here rather than reach generateAiImage's catch, which would
-  // replace the revealed picture with the error card and strand the status at 'saving'.
-  const save = async (blob: Blob, baseName: string): Promise<SaveResult> => {
-    const result = await saveImageBlob(blob, baseName).catch((err: unknown): SaveResult => {
-      console.error('Auto-save failed:', err);
-      return { status: 'failed' };
-    });
-    if (isUnsaved(result)) void reportSaveFailure(result.status, { blob, baseName });
-    return result;
-  };
-  setAiAutoSave(runId, await save(aiBlob, AI_IMAGE_BASENAME));
-  if (!isAiGenerationActive(runId)) return;
-  const sig = await blobSignature(drawingBlob);
-  if (!isAiGenerationActive(runId)) return;
-  if (!drawingSaver.isDuplicate(sig)) {
-    await save(drawingBlob, DRAWING_BASENAME);
-  }
-  // Record the signature of the drawing we just saved even if ownership was lost
-  // during that save: the drawing is already in the gallery, so a later owning run
-  // on the same unchanged drawing must dedupe against it. Returning here (the old
-  // post-save ownership check) left the signature stale and re-saved a duplicate.
-  drawingSaver.record(sig);
-}
 
 // Export the composited drawing and pick the upload encoding. Returns the
 // pristine PNG (for the preview + gallery auto-save) alongside the on-the-wire
