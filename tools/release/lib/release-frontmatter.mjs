@@ -22,8 +22,11 @@ export function writeFileDeep(path, contents) {
   writeFileSync(path, contents);
 }
 
-// What the release scripts accept as a version on the command line.
-export const SEMVER = /^\d+\.\d+\.\d+(-[\w.]+)?$/;
+// What the release scripts accept as a version on the command line. No prerelease
+// suffix: App Store Connect requires MARKETING_VERSION to be dot-separated integers,
+// and gen-release-notes only reads plain x.y.z release files, so a `1.4.0-beta.1`
+// cut would tag and ship the previous release's notes.
+export const SEMVER = /^\d+\.\d+\.\d+$/;
 
 export function compareSemverDesc(a, b) {
   const pa = a.split('.').map(Number);

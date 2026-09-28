@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  chooseVersionCode,
   findStrayReleasePaths,
   parseReleaseArgs,
   pnpmVersionArgs,
@@ -18,12 +19,16 @@ describe('parseReleaseArgs', () => {
       dryRun: false,
       noPublish: false,
     });
-    expect(parseReleaseArgs(['1.4.0-beta.1', '--dry-run'])).toEqual({
-      version: '1.4.0-beta.1',
-      dryRun: true,
-      noPublish: false,
-    });
+    expect(parseReleaseArgs(['1.4.0', '--dry-run']).dryRun).toBe(true);
     expect(parseReleaseArgs(['--no-publish', '1.4.0']).noPublish).toBe(true);
+  });
+
+  // gen-release-notes reads only x.y.z release files, so a prerelease cut used to
+  // tag and ship the previous release's notes; App Store Connect then rejected
+  // the non-integer MARKETING_VERSION after the tag was public.
+  it('rejects a prerelease version before anything is written', () => {
+    expect(() => parseReleaseArgs(['1.4.0-beta.1'])).toThrow(/no prerelease suffix/);
+    expect(() => parseReleaseArgs(['1.4.0-rc1', '--dry-run'])).toThrow(/must look like 1\.2\.0/);
   });
 
   // A typo'd --dry-run used to be dropped silently, which ran the full publish
@@ -39,6 +44,52 @@ describe('parseReleaseArgs', () => {
     expect(() => parseReleaseArgs(['--dry-run'])).toThrow(/must look like 1\.2\.0/);
     expect(() => parseReleaseArgs(['v1.4.0'])).toThrow(/must look like 1\.2\.0/);
     expect(() => parseReleaseArgs(['1.4.0', '1.5.0'])).toThrow(/must look like 1\.2\.0/);
+  });
+});
+
+describe('chooseVersionCode', () => {
+  const gradle = { gradleCode: 8, gradleVersionName: '1.6.0' };
+  const choose = (pin, version = '1.7.0') => chooseVersionCode({ pin, version, ...gradle });
+
+  it('assigns the next code when the release file has no pin', () => {
+    expect(choose(undefined)).toEqual({ versionCode: 9, pinned: false });
+  });
+
+  // Number('') is 0, so a placeholder `androidVersionCode:` line used to pin
+  // versionCode 0 into Gradle and iOS and ship it through tag and GitHub Release.
+  it('treats a blank pin as unpinned', () => {
+    expect(choose('')).toEqual({ versionCode: 9, pinned: false });
+  });
+
+  it('accepts a pin that moves forward', () => {
+    expect(choose('12')).toEqual({ versionCode: 12, pinned: true });
+  });
+
+  it('rejects a pin at or below the current code for a new version', () => {
+    expect(() => choose('8')).toThrow(
+      '1.7.0.md pins androidVersionCode 8, which does not move past versionCode 8 (versionName 1.6.0)'
+    );
+    expect(() => choose('3')).toThrow(/does not move past versionCode 8/);
+    expect(() => choose('0')).toThrow(/does not move past versionCode 8/);
+  });
+
+  // An earlier dry run or --no-publish cut of this same version already wrote
+  // the pinned code into Gradle; re-running it must not trip the forward check.
+  it('accepts a pin equal to the current code on a re-run of the same version', () => {
+    expect(choose('8', '1.6.0')).toEqual({ versionCode: 8, pinned: true });
+    expect(() => choose('7', '1.6.0')).toThrow(/does not move past/);
+  });
+
+  it('rejects a pin that is not a whole number', () => {
+    expect(() => choose('9.5')).toThrow('1.7.0.md: androidVersionCode must be a whole number');
+    expect(() => choose('nine')).toThrow(/whole number/);
+    expect(() => choose('-1')).toThrow(/whole number/);
+  });
+
+  it('rejects a Gradle file without a versionCode', () => {
+    expect(() =>
+      chooseVersionCode({ pin: '', version: '1.7.0', gradleCode: NaN, gradleVersionName: '1.6.0' })
+    ).toThrow(/no versionCode line/);
   });
 });
 
