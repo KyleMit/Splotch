@@ -71,6 +71,14 @@ easy, because findings arrive already grouped by the files they touch.
   the orchestrator authorised and reported. Settings' iPad Share step reused the banner's ADR-0039
   wording, and the privacy "Last updated" date was corrected per git. Both were facts already
   decided elsewhere, not new product calls. That is the line the skill draws.
+* **A user decision's premise can be wrong.** In the second run (#2443), the user kept iOS Keychain
+  backup migration "as a feature" because switching phones "just works". The rival found that an
+  iCloud Backup's keychain restores only to the same device. The unit stopped short of merging and
+  handed the decision back. Re-check a decision's factual premise before shipping copy built on it.
+* **Line-cap edits serialized merges.** In #2443, every `tools/` unit that moved a
+  `TOOLS_GRANDFATHERED_MAX_LINES` cap edited `eslint.config.js`. That made every other lane's
+  catch-up `coupled`, and with runs queued about 10 minutes it was the run's main throughput limit.
+  `ship-campaign`'s parallel reference now treats such a unit as an implicit holder.
 
 ## Rejected or deferred during the run
 
