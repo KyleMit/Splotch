@@ -1023,4 +1023,14 @@ describe('attribution is stamped at promotion and read by the analyzer', () => {
     // An entry without the marking stays analyzable.
     expect(unattributableCaptureProblem(join(dir, 'clean.json'))).toBeNull();
   });
+
+  it('analyze fails loudly on a sibling evidence index that does not parse', () => {
+    const dir = tempDir('splotch-analyze-corrupt-index-');
+    const capturePath = join(dir, 'pen.json');
+    writeFileSync(capturePath, JSON.stringify({ report }));
+    writeFileSync(join(dir, 'index.json'), '{');
+    expect(() => unattributableCaptureProblem(capturePath)).toThrow(
+      `${join(dir, 'index.json')}: evidence index is not valid JSON`
+    );
+  });
 });
