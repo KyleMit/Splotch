@@ -191,6 +191,26 @@ describe('magic sheet worker raster', () => {
     expect(workers[0].terminate).toHaveBeenCalledOnce();
   });
 
+  it('falls back for a plain error reply and keeps the worker for the next raster', async () => {
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      ({ clearRect() {}, drawImage() {} }) as unknown as CanvasRenderingContext2D;
+    const { magic } = await mountedWorkerBrush();
+    magic.setColorSheet('/coloring/missing.light.webp');
+    requestedImages[0].onload!();
+
+    workers[0].respond({
+      id: workers[0].posted[0].id,
+      error: 'Error: Magic sheet worker could not load /coloring/missing.light.webp',
+    });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()).not.toBeNull());
+
+    expect(workers[0].terminate).not.toHaveBeenCalled();
+    magic.setColorSheet('/coloring/page.light.webp');
+    requestedImages[1].onload!();
+    expect(workers).toHaveLength(1);
+    expect(workers[0].posted).toHaveLength(2);
+  });
+
   it('settles pending rasters and replaces the worker after repeated context loss', async () => {
     (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
       ({ clearRect() {}, drawImage() {} }) as unknown as CanvasRenderingContext2D;

@@ -68,6 +68,45 @@ describe('autoSaveImages', () => {
     expect(savedBaseNames().filter((tag) => tag === 'splotch')).toHaveLength(1);
   });
 
+  it.each(['failed', 'denied'] as const)(
+    'saves the drawing again on the next re-roll after its copy was %s, then dedupes once it lands',
+    async (unsaved) => {
+      mocks.saveImageBlob
+        .mockResolvedValueOnce({ status: 'photos' })
+        .mockResolvedValueOnce({ status: unsaved });
+
+      await autoSaveRevealedRun(new Blob(['same-drawing']));
+      await autoSaveRevealedRun(new Blob(['same-drawing']));
+      await autoSaveRevealedRun(new Blob(['same-drawing']));
+
+      expect(savedBaseNames()).toEqual([
+        'splotch-ai',
+        'splotch',
+        'splotch-ai',
+        'splotch',
+        'splotch-ai',
+      ]);
+    }
+  );
+
+  it('dedupes against a drawing copy that landed after its run lost ownership', async () => {
+    const drawingSave = Promise.withResolvers<SaveResult>();
+    mocks.saveImageBlob
+      .mockResolvedValueOnce({ status: 'photos' })
+      .mockReturnValueOnce(drawingSave.promise);
+    const { autoSaveImages } = await import('./aiAutoSave');
+    const { runId } = await revealedRun();
+
+    const superseded = autoSaveImages(aiPicture, new Blob(['same-drawing']), runId);
+    await vi.waitFor(() => expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2));
+    const { runId: rerollId } = await revealedRun();
+    drawingSave.resolve({ status: 'photos' });
+    await superseded;
+    await autoSaveImages(aiPicture, new Blob(['same-drawing']), rerollId);
+
+    expect(savedBaseNames()).toEqual(['splotch-ai', 'splotch', 'splotch-ai']);
+  });
+
   it('reports saving until the AI picture save settles, then the folder it landed in', async () => {
     const aiSave = Promise.withResolvers<SaveResult>();
     mocks.saveImageBlob.mockReturnValueOnce(aiSave.promise);
