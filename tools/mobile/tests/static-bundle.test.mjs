@@ -116,11 +116,11 @@ describe('native coloring presentation inventory', () => {
     id: 'fixture',
     pages: [
       {
-        images: {
+        lightLineArt: {
           portrait: '/coloring/fixture/page-tall.overlay.svg',
           landscape: '/coloring/fixture/page-wide.overlay.svg',
         },
-        darkImages: {
+        darkLineArt: {
           portrait: '/coloring/fixture/page-tall.dark.overlay.svg',
           landscape: '/coloring/fixture/page-wide.dark.overlay.svg',
         },
@@ -134,10 +134,10 @@ describe('native coloring presentation inventory', () => {
       const coloringDir = join(root, 'coloring', book.id);
       mkdirSync(coloringDir, { recursive: true });
       for (const path of [
-        book.pages[0].images.portrait,
-        book.pages[0].images.landscape,
-        book.pages[0].darkImages.portrait,
-        book.pages[0].darkImages.landscape,
+        book.pages[0].lightLineArt.portrait,
+        book.pages[0].lightLineArt.landscape,
+        book.pages[0].darkLineArt.portrait,
+        book.pages[0].darkLineArt.landscape,
       ]) {
         writeFileSync(join(root, path.replace(/^\//, '')), 'svg');
       }

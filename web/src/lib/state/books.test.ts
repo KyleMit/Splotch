@@ -66,8 +66,8 @@ describe('page defaults', () => {
   it('every page ships night fills and dark overlays for both orientations', () => {
     for (const book of BOOKS) {
       for (const page of book.pages) {
-        expect(Object.keys(page.nightImages).sort()).toEqual(['landscape', 'portrait']);
-        expect(Object.keys(page.darkImages).sort()).toEqual(['landscape', 'portrait']);
+        expect(Object.keys(page.nightFill).sort()).toEqual(['landscape', 'portrait']);
+        expect(Object.keys(page.darkLineArt).sort()).toEqual(['landscape', 'portrait']);
       }
     }
   });
@@ -115,13 +115,13 @@ describe('pageFillImage', () => {
   it('falls back to the color fill in dark when the orientation has no night fill', () => {
     const catWithoutPortraitNight = {
       ...cat,
-      nightImages: { landscape: cat.nightImages.landscape },
+      nightFill: { landscape: cat.nightFill.landscape },
     };
     expect(pageFillImage(catWithoutPortraitNight, 'portrait', 'dark')).toBe(
       '/coloring/farm/cat-tall.light.webp'
     );
     expect(pageFillImage(catWithoutPortraitNight, 'landscape', 'dark')).toBe(
-      cat.nightImages.landscape
+      cat.nightFill.landscape
     );
   });
 });
@@ -155,7 +155,7 @@ describe('vector overlays', () => {
     for (const book of BOOKS) {
       for (const page of book.pages) {
         for (const orientation of ['portrait', 'landscape'] as const) {
-          const stem = page.images[orientation].slice(0, -'.overlay.svg'.length);
+          const stem = page.lightLineArt[orientation].slice(0, -'.overlay.svg'.length);
           expect(pageOverlayImage(page, orientation, 'light')).toBe(`${stem}.overlay.svg`);
           expect(pageOverlayImage(page, orientation, 'dark')).toBe(`${stem}.dark.overlay.svg`);
         }
