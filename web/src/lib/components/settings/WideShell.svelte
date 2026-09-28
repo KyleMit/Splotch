@@ -5,8 +5,9 @@
   import SectionBody from './SectionBody.svelte';
   import ParentCenterLock from './ParentCenterLock.svelte';
   import { SECTIONS, sectionHeading, type SectionId } from './sections';
+  import { createStagedSections } from './stagedSections.svelte';
+  import { revealNavRow, scrollPaneToSection, spiedSectionAt } from './paneScroll';
   import { settingsModal } from '$lib/state/ui.svelte';
-  import { scheduleIdle } from '$lib/idle';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
   import { registerElement } from '$lib/actions/elementRegistry';
   import { requireParentalGate, requiresParentalGate } from '$lib/state/parentalGate.svelte';
@@ -38,17 +39,6 @@
     parentCenterUnlocked || !requiresParentalGate('parentCenter')
   );
 
-  // Constructing every section body in the one task that opens the dialog was a
-  // long task several times the phone hub's on the app's low-end tablet targets
-  // (issue #910; `npm run perf:web:settings` scores both shells). They arrive a
-  // section per frame instead, top of the pane downwards — the same shape, and
-  // the same reasoning, as the idle overlay pump in boot/bootHiddenOverlays.ts:
-  // batching the work merely relocates the long task. What must not be deferred
-  // is a section's height, since the scrollspy and the jump arithmetic are both
-  // specified in live offsets — so a section is either laid out in full or not
-  // in the pane at all, never a placeholder.
-  const SECTIONS_PER_FRAME = 1;
-
   // What the opening tap itself constructs. Not one frame's worth: the default
   // landing shows Appearance *and* Sound above the fold on the viewports that
   // select this shell, and content the parent is already looking at arriving
@@ -57,58 +47,10 @@
   // are a handful of toggle/slider rows, well inside the tap's budget.
   const OPENING_SECTION_COUNT = SECTIONS.findIndex((section) => section.id === 'sound') + 1;
 
-  // How many sections, from the first, currently exist in the pane. Mounted on
-  // an open tap it starts at the above-the-fold prefix — the opening tap is
-  // itself the first frame; mounted closed by the idle pump it starts empty, so
-  // every prewarm slice is one section's construction and nothing more (the
-  // physical-iPad idle gate scores each slice as a frame). A watermark, never
-  // lowered: the dialog is closed rather than unmounted, so a reopen keeps
-  // whatever the last open finished mounting and pays nothing again.
-  let mountedCount = $state(settingsModal.open ? OPENING_SECTION_COUNT : 0);
-  const mountedSections = $derived(SECTIONS.slice(0, mountedCount));
-
-  // How many sections, from the first, are *presented* — painted rather than
-  // merely laid out. Layout must be whole for the scrollspy and jump
-  // arithmetic (a section is laid out in full or not in the pane at all), but
-  // paint is stageable: revealing the entire prewarmed pane on the open edge
-  // put its whole first paint inside the fly-in's frames, which the physical
-  // iPad scored at 33 ms P95 against the 20 ms gate. Sections at or past this
-  // count keep their geometry and lose only their pixels (visibility), so
-  // presentation can stage per frame the way the mount fill always has —
-  // that staged path scored 17 ms P95 on the same device. Zero while closed,
-  // deliberately: presenting even the fold in the frame that shows the dialog
-  // stacked its paint on showModal's own work and kept that frame over the
-  // gate, so the open's flip carries no paint at all and the fold arrives one
-  // frame later — inside the fly-in's first moments, where the card is still
-  // near its launch-button scale.
-  let presentedCount = $state(0);
-
-  // Attaching the last section is not the same as the pane being whole. What's
-  // New reveals its release-note blocks over frames of its own — ADR-0061 chose
-  // that after measuring 43-47ms for mounting them together on desktop WebKit —
-  // so the pane goes on growing behind a wrapper that is already in. Waiting for
-  // it too is what keeps `fullyMounted` a true statement rather than a nearly
-  // true one, and the scroll-end election below depends on that being exact.
-  // One flag because one section stages; a second would make this a count.
-  let stagedContentSettled = $state(false);
-  const fullyMounted = $derived(mountedCount >= SECTIONS.length && stagedContentSettled);
-
-  // How far past the pane's top edge the reading line sits. The highlight flips
-  // as a heading approaches that line rather than after it has scrolled away.
-  const SCROLLSPY_LINE_INSET_PX = 130;
-  // Fractional device pixels and pinch-zoomed content leave scrollTop a hair
-  // short of the true end, so "scrolled to the bottom" needs a tolerance.
-  const SCROLL_END_EPSILON_PX = 2;
-  // Where a table-of-contents jump parks the heading: just clear of the pane's
-  // top edge rather than flush against it.
-  const SECTION_JUMP_INSET_PX = 12;
-  // How far the spied row is kept clear of the nav's own edges, so a row the
-  // pane elected does not surface half-buried under the `local` covers in the
-  // nav's background. The two extreme rows sit against the ends of the scroll
-  // extent and cannot take the full clearance; the covers scroll with the list
-  // and paint over the shade there, which is what that attachment is for. Same
-  // value and same purpose as `/design`'s `CHIP_SCROLL_INSET_PX`.
-  const NAV_ROW_CLEARANCE_PX = 24;
+  // Which sections exist in the pane and which are painted — the staged fill
+  // that keeps the open under its frame budget (issue #910).
+  const staging = createStagedSections(SECTIONS.length, OPENING_SECTION_COUNT);
+  const mountedSections = $derived(SECTIONS.slice(0, staging.mountedCount));
 
   // The table of contents is the shared guide-rail sidebar; only the icon and
   // the label differ per section, so the list is the whole configuration.
@@ -149,80 +91,6 @@
       else delete table[id];
     };
 
-  // Raise the watermark to cover `count` sections, reporting whether anything
-  // new is on its way in. The read is untracked so the frame pump and the click
-  // handler that call this can't re-enter the effect they were started from.
-  function mountAtLeast(count: number): boolean {
-    const next = Math.min(count, SECTIONS.length);
-    if (untrack(() => mountedCount) >= next) return false;
-    mountedCount = next;
-    return true;
-  }
-
-  // Presenting implies existing: raising the presentation watermark mounts the
-  // run first, so the two counters cannot disagree about a section's state.
-  function presentAtLeast(count: number): boolean {
-    const next = Math.min(count, SECTIONS.length);
-    mountAtLeast(next);
-    if (untrack(() => presentedCount) >= next) return false;
-    presentedCount = next;
-    return true;
-  }
-
-  // The card flies in over its own run of frames, and the fill would otherwise
-  // spend them: a section body too big to construct inside one frame drops one
-  // of the animation's. So the fill waits for the card to land — nothing may
-  // read the pane before then anyway, which is what `aria-busy` states. A
-  // cancelled animation rejects `finished`; that leaves nothing to wait for,
-  // which is the same answer as landing.
-  function fillAfterFlyIn(): () => void {
-    let stopPump: (() => void) | undefined;
-    let cancelled = false;
-    const flyIn = paneEl?.closest('dialog')?.getAnimations() ?? [];
-    Promise.all(flyIn.map((animation) => animation.finished.catch(() => undefined))).then(() => {
-      if (cancelled) return;
-      // One frame of air between the animation's end and the first reveal:
-      // animationend's own style/compositor cleanup shares the resolution
-      // frame, and stacking the heaviest section's first paint on top of it is
-      // what pushed that frame past the physical iPad's max-frame gate.
-      const breather = requestAnimationFrame(() => {
-        if (!cancelled) stopPump = pumpRemainingSections();
-      });
-      stopPump = () => cancelAnimationFrame(breather);
-    });
-    return () => {
-      cancelled = true;
-      stopPump?.();
-    };
-  }
-
-  // Each frame asks for one more than the watermark currently holds, rather than
-  // counting up privately: a jump can raise the watermark mid-fill, and a
-  // private counter would then find nothing left to do and stop the fill for
-  // good, stranding every section below the one that was jumped to. Driven by
-  // the presentation watermark, which mounts what it needs on the way: on a tap
-  // that beat the prewarm each step constructs and paints one section, and on a
-  // prewarmed pane each step is one section's reveal.
-  function pumpRemainingSections(): () => void {
-    let frame = 0;
-    const presentNext = () => {
-      const next = untrack(() => presentedCount) + SECTIONS_PER_FRAME;
-      frame = presentAtLeast(next) ? requestAnimationFrame(presentNext) : 0;
-    };
-    frame = requestAnimationFrame(presentNext);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }
-
-  // The card flies in scaled from its opening button, so a rect read while that
-  // animation runs is not in CSS pixels. A scroller's own visual-to-layout ratio
-  // converts a measurement into whatever space the current frame is in.
-  function visualScale(el: HTMLElement): number {
-    const height = el.clientHeight;
-    return height ? el.getBoundingClientRect().height / height : 1;
-  }
-
   // A long jump is animated, but the parent may have asked the OS for less
   // motion — and Chrome does not apply that preference to programmatic smooth
   // scrolls on its own. A jump made while the pane is still filling is instant
@@ -231,27 +99,8 @@
   // scrollTop sits between the two positions, which reads exactly like the
   // parent having scrolled the pane themselves.
   function jumpBehavior(): ScrollBehavior {
-    if (!fullyMounted) return 'auto';
+    if (!staging.fullyMounted) return 'auto';
     return prefersReducedMotion() ? 'auto' : 'smooth';
-  }
-
-  function spiedSectionAt(pane: HTMLElement): SectionId {
-    // The end of the scroll only means the last section once every section is in
-    // the pane; while they are still arriving it is just the end of what has
-    // arrived, and electing About there would strobe the highlight down the
-    // column on open.
-    const atScrollEnd =
-      pane.scrollTop + pane.clientHeight >= pane.scrollHeight - SCROLL_END_EPSILON_PX;
-    if (fullyMounted && atScrollEnd) {
-      return SECTIONS[SECTIONS.length - 1].id;
-    }
-    const line = pane.getBoundingClientRect().top + SCROLLSPY_LINE_INSET_PX * visualScale(pane);
-    let current: SectionId = SECTIONS[0].id;
-    for (const section of SECTIONS) {
-      const el = sectionEls[section.id];
-      if (el && el.getBoundingClientRect().top <= line) current = section.id;
-    }
-    return current;
   }
 
   // The section a jump asked for while the pane was still filling. A jump can
@@ -276,38 +125,12 @@
   // those transient elections from persisting as seen.
   let smoothJumpTarget: SectionId | null = null;
 
-  // Arithmetic on each scroller's own scrollTop, never `scrollIntoView`: that
-  // method scrolls *every* scrollable ancestor, and the card, the split and the
-  // dialog are all clipped boxes. Dividing the rect delta by the scroller's
-  // visual scale lands the arithmetic in layout pixels, so neither the fly-in's
-  // transform nor a pinch-zoomed pane skews where the scroll ends up.
   function scrollToSection(id: SectionId, behavior: ScrollBehavior) {
     const el = sectionEls[id];
     const pane = paneEl;
     if (!el || !pane) return;
     if (behavior === 'smooth') smoothJumpTarget = id;
-    const offset =
-      (el.getBoundingClientRect().top - pane.getBoundingClientRect().top) / visualScale(pane);
-    pane.scrollTo({ top: pane.scrollTop + offset - SECTION_JUMP_INSET_PX, behavior });
-  }
-
-  // The pane's scroll elects the highlight now, so — unlike a click, which can
-  // only land on a row already on screen — the spied row can be one the parent
-  // never scrolled the nav to. Wherever the list outgrows its column, that
-  // leaves the table of contents showing no highlight at all.
-  function revealNavRow(id: SectionId, behavior: ScrollBehavior) {
-    const nav = navEl;
-    const row = nav?.querySelector<HTMLElement>(`[data-section="${id}"]`);
-    if (!nav || !row) return;
-    const scale = visualScale(nav);
-    const navRect = nav.getBoundingClientRect();
-    const rowRect = row.getBoundingClientRect();
-    const clearance = NAV_ROW_CLEARANCE_PX * scale;
-    const above = navRect.top + clearance - rowRect.top;
-    const below = rowRect.bottom - (navRect.bottom - clearance);
-    if (above <= 0 && below <= 0) return;
-    const shift = above > 0 ? -above : below;
-    nav.scrollTo({ top: nav.scrollTop + shift / scale, behavior });
+    scrollPaneToSection(pane, el, behavior);
   }
 
   // A quick close-then-reopen can beat the after-close restaging — on the
@@ -323,7 +146,7 @@
   // dialog action's open count rather than on the landing section.
   $effect(() => {
     void openGeneration;
-    if (settingsModal.open) presentedCount = 0;
+    if (settingsModal.open) staging.resetPresentation();
   });
 
   // The dialog is closed, never unmounted, so both the nav and the pane keep the
@@ -351,7 +174,7 @@
     // A section's offset depends only on what stacks above it, so mounting the
     // run up to the landing section is what makes the landing scroll below land
     // on a true offset. Presentation waits for the frame callback below.
-    mountAtLeast(Math.max(OPENING_SECTION_COUNT, sectionIndex(landing) + 1));
+    staging.mountAtLeast(Math.max(OPENING_SECTION_COUNT, sectionIndex(landing) + 1));
     let stopFill: (() => void) | undefined;
     // The open flip promotes the card to the top layer and moves focus into
     // it, either of which can overwrite a scroll aimed at the same moment —
@@ -365,14 +188,14 @@
       // The landing view paints here, one frame after the flip that showed the
       // dialog: the card is still near its launch scale, so the fold arriving
       // a frame late is invisible, and the open's own frame stays paint-free.
-      presentAtLeast(Math.max(OPENING_SECTION_COUNT, sectionIndex(landing) + 1));
+      staging.presentAtLeast(Math.max(OPENING_SECTION_COUNT, sectionIndex(landing) + 1));
       navEl?.scrollTo({ top: 0 });
-      revealNavRow(landing, 'auto');
+      revealNavRow(navEl, landing, 'auto');
       // A deep-linked landing is a jump like any other, and pays the same way:
       // the sections above it are still arriving when this scroll is computed.
-      if (!fullyMounted) pendingJump = landing;
+      if (!staging.fullyMounted) pendingJump = landing;
       scrollToSection(landing, 'auto');
-      stopFill = fillAfterFlyIn();
+      stopFill = staging.fillAfterFlyIn(paneEl?.closest('dialog')?.getAnimations() ?? []);
     });
     return () => {
       cancelAnimationFrame(frame);
@@ -380,29 +203,10 @@
     };
   });
 
-  // The dialog mounts closed in the idle pump's last slice (ADR-0049), so the
-  // idle time before a first open pays for the rest of the pane: one section
-  // per idle slice, the open-time fill's own shape on the idle scheduler
-  // instead of frames. A first open after this finds every section mounted and
-  // pays what a reopen pays. The moment the dialog opens, the open path owns
-  // the fill — this effect re-runs and cancels its pending slice. Reading
-  // `mountedCount` (tracked) is what re-arms the next slice after each mount.
-  $effect(() => {
-    if (settingsModal.open || mountedCount >= SECTIONS.length) return;
-    return scheduleIdle(() => mountAtLeast(untrack(() => mountedCount) + 1));
-  });
-
-  // After a close, presentation returns to its closed steady state — every
-  // section staged — one section per idle slice. Re-hiding on the close frame
-  // itself is what the physical iPad's close gate scored (21 ms P95); at idle
-  // each re-hide is one small restyle, and the next open's flip then carries
-  // no paint at all.
-  $effect(() => {
-    if (settingsModal.open || presentedCount <= 0) return;
-    return scheduleIdle(() => {
-      presentedCount = Math.max(0, untrack(() => presentedCount) - 1);
-    });
-  });
+  // The closed dialog's idle prewarm and restage. This call's position sets
+  // their place in the component's effect order — after the landing effect,
+  // before the pending-jump effect — so moving it is a timing change.
+  staging.stageWhileClosed();
 
   // The last word on a pending jump, and the end of it. Until the pane is whole
   // there may not be enough content below the target to scroll it into place at
@@ -410,7 +214,7 @@
   // gets one final aim at the moment the extent exists. From here the scroll
   // position belongs to whoever moves it next.
   $effect(() => {
-    if (!fullyMounted || !pendingJump) return;
+    if (!staging.fullyMounted || !pendingJump) return;
     scrollToSection(pendingJump, 'auto');
     pendingJump = null;
   });
@@ -428,7 +232,7 @@
     let frame = 0;
     const spy = () => {
       frame = 0;
-      const next = spiedSectionAt(pane);
+      const next = spiedSectionAt(pane, SECTIONS, sectionEls, staging.fullyMounted);
       const smoothJump = smoothJumpTarget;
       if (next === smoothJump) smoothJumpTarget = null;
       // Not just a dedupe: the reveal below fires on an election change only, so
@@ -438,7 +242,7 @@
       if (next === spiedSection) return;
       if (!smoothJump) markDisplayedSectionSeen(next);
       spiedSection = next;
-      revealNavRow(next, jumpBehavior());
+      revealNavRow(navEl, next, jumpBehavior());
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(spy);
@@ -491,12 +295,12 @@
     // has to exist before there is an offset to scroll to, and be painted
     // before there is anything to read at the landing (an explicit jump
     // presents its whole run in one frame; the parent asked to go there).
-    if (presentAtLeast(sectionIndex(id) + 1)) await tick();
+    if (staging.presentAtLeast(sectionIndex(id) + 1)) await tick();
     const behavior = jumpBehavior();
     // Only a mid-fill jump is left pending: on a whole pane the offsets this
     // reads are already final, and re-aiming later would fight the parent's own
     // scrolling instead of the fill.
-    const hold = !fullyMounted;
+    const hold = !staging.fullyMounted;
     if (id !== 'parentCenter' || parentCenterRevealed) {
       markSectionSeen(id);
       if (hold) pendingJump = id;
@@ -504,7 +308,7 @@
       return;
     }
     unlockParentCenter(trigger, () => {
-      if (hold && !fullyMounted) pendingJump = id;
+      if (hold && !staging.fullyMounted) pendingJump = id;
       scrollToSection(id, behavior);
     });
   }
@@ -525,11 +329,11 @@
       onSelect={jumpToSection}
     />
   </div>
-  <ScrollCue contentPending={!fullyMounted || presentedCount < SECTIONS.length}>
+  <ScrollCue contentPending={!staging.fullyMounted || staging.presentedCount < SECTIONS.length}>
     {#snippet children(end)}
       <div
         class="settings-pane"
-        aria-busy={!fullyMounted}
+        aria-busy={!staging.fullyMounted}
         use:pinchTextZoom={textZoom}
         bind:this={paneEl}
       >
@@ -537,7 +341,7 @@
           {#each mountedSections as section, index (section.id)}
             <section
               class="settings-section"
-              class:staged={index >= presentedCount}
+              class:staged={index >= staging.presentedCount}
               data-section={section.id}
               aria-labelledby={sectionHeadingId(section.id)}
               use:registerElement={registerIn(sectionEls, section.id)}
@@ -551,7 +355,7 @@
                 <SectionBody
                   id={section.id}
                   open={settingsModal.open}
-                  onSettled={() => (stagedContentSettled = true)}
+                  onSettled={staging.markStagedContentSettled}
                 />
               {/if}
             </section>

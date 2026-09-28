@@ -184,36 +184,11 @@
 </section>
 
 <style>
-  section {
-    margin-top: 48px;
-  }
-
-  section > p {
-    max-width: 62ch;
-    margin: 0 0 18px;
-    font-size: var(--font-size-sm);
-    color: var(--text);
-  }
-
-  h3 {
-    margin: 0 0 6px;
-    color: var(--text-strong);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-  }
-
   code {
-    font-size: var(--font-size-xs);
-    color: var(--brand-text);
-
     white-space: nowrap;
   }
 
-  /* --text-soft is pinned to hold 4.5:1 at these 12px sizes on the page
-     ground (the axe scan in a11y.spec.ts enforces it). */
   .value {
-    font-size: var(--font-size-xs);
-    color: var(--text-soft);
     line-height: 1.45;
   }
 

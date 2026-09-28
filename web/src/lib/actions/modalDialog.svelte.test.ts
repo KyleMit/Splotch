@@ -189,36 +189,44 @@ describe('modalDialog', () => {
     }
   });
 
-  it('dismisses a pointer event targeting the backdrop outside the dialog border box', () => {
-    const dialog = document.body.appendChild(document.createElement('dialog'));
-    dialog.getBoundingClientRect = () =>
-      ({ left: 100, right: 200, top: 100, bottom: 200 }) as DOMRect;
-    let closeRequests = 0;
+  it.each([
+    { name: 'primary', button: 0, closeRequests: 1, outcome: 'dismisses the dialog' },
+    { name: 'middle', button: 1, closeRequests: 0, outcome: 'leaves the dialog open' },
+    { name: 'secondary', button: 2, closeRequests: 0, outcome: 'leaves the dialog open' },
+  ])(
+    'swallows a $name-button press on the backdrop outside the dialog border box and $outcome',
+    ({ button, closeRequests: expectedCloseRequests }) => {
+      const dialog = document.body.appendChild(document.createElement('dialog'));
+      dialog.getBoundingClientRect = () =>
+        ({ left: 100, right: 200, top: 100, bottom: 200 }) as DOMRect;
+      let closeRequests = 0;
 
-    const destroy = $effect.root(() => {
-      const action = modalDialog(dialog, () => ({
-        open: false,
-        onRequestClose: () => closeRequests++,
-      }));
-      return action.destroy;
-    });
-
-    try {
-      const pointerDown = new PointerEvent('pointerdown', {
-        bubbles: true,
-        cancelable: true,
-        clientX: 300,
-        clientY: 300,
+      const destroy = $effect.root(() => {
+        const action = modalDialog(dialog, () => ({
+          open: false,
+          onRequestClose: () => closeRequests++,
+        }));
+        return action.destroy;
       });
-      dialog.dispatchEvent(pointerDown);
 
-      expect(closeRequests).toBe(1);
-      expect(pointerDown.defaultPrevented).toBe(true);
-    } finally {
-      destroy();
-      dialog.remove();
+      try {
+        const pointerDown = new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button,
+          clientX: 300,
+          clientY: 300,
+        });
+        dialog.dispatchEvent(pointerDown);
+
+        expect(closeRequests).toBe(expectedCloseRequests);
+        expect(pointerDown.defaultPrevented).toBe(true);
+      } finally {
+        destroy();
+        dialog.remove();
+      }
     }
-  });
+  );
 
   it('keeps retired content hidden until the closed dialog reopens', async () => {
     const modal = createModal();

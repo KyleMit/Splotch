@@ -51,9 +51,6 @@
 <style>
   h3 {
     margin: var(--space-6) 0 var(--space-1);
-    color: var(--text-strong);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
   }
 
   p,
@@ -129,10 +126,5 @@
   dt {
     color: var(--text);
     margin-top: var(--space-3);
-  }
-
-  code {
-    font-size: var(--font-size-xs);
-    color: var(--brand-text);
   }
 </style>

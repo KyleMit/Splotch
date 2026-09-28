@@ -19,6 +19,7 @@
 
 <script lang="ts" generics="Id extends string">
   import SectionIcon from '../SectionIcon.svelte';
+  import VisuallyHidden from '../design/VisuallyHidden.svelte';
 
   // The guide-rail table of contents over one continuously scrolling document,
   // shared by the wide Settings sidebar, /design, /changelog and /privacy. A hairline
@@ -114,7 +115,7 @@
       <span class="toc-meta">{item.meta}</span>
     {/if}
   </span>
-  {#if item.unseen}<span class="visually-hidden">new</span>{/if}
+  {#if item.unseen}<VisuallyHidden>new</VisuallyHidden>{/if}
 {/snippet}
 
 <style>
@@ -251,17 +252,5 @@
     width: 34px;
     height: 34px;
     flex-shrink: 0;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 </style>

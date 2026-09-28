@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 
 import {
   bootstrapWorktree,
@@ -11,7 +11,10 @@ import {
   reportOutcome,
   reportWarning,
 } from '../bootstrap-worktree.mjs';
-import { createTempRepo } from '../git-housekeeping/tests/fixtures/temp-repo.mjs';
+import {
+  createTempRepo,
+  REAL_REPO_TEST_OPTIONS,
+} from '../git-housekeeping/tests/fixtures/temp-repo.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const scriptPath = join(repoRoot, 'tools', 'bootstrap-worktree.mjs');
@@ -468,17 +471,12 @@ describe('worktree bootstrap on a named branch', () => {
   });
 });
 
-describe('worktree bootstrap against a real repository', () => {
-  const fixtures = [];
-  afterEach(() => {
-    for (const fixture of fixtures.splice(0)) fixture.cleanup();
-  });
-
+describe('worktree bootstrap against a real repository', REAL_REPO_TEST_OPTIONS, () => {
   // The primary checkout's origin/main is left one merge behind the remote, the state a Claude
   // Code worktree was cut from on 2026-09-25.
   function createStaleWorktree({ track = false, reflog = true } = {}) {
     const fixture = createTempRepo();
-    fixtures.push(fixture);
+    onTestFinished(fixture.cleanup);
     const staleMain = fixture.sh(['rev-parse', 'HEAD']);
     const elsewhere = join(fixture.root, 'elsewhere');
     fixture.sh(['clone', '-q', fixture.origin, elsewhere], { cwd: fixture.root });

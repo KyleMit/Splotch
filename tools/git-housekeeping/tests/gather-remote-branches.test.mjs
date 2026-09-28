@@ -4,7 +4,7 @@ import {
   gatherRemoteBranches,
   parseGatherArgs,
 } from '../gather-remote-branches.mjs';
-import { createTempRepo } from './fixtures/temp-repo.mjs';
+import { createTempRepo, REAL_REPO_TEST_OPTIONS } from './fixtures/temp-repo.mjs';
 
 describe('parseGatherArgs', () => {
   it('defaults to fetching, a table, and origin/main', () => {
@@ -24,7 +24,7 @@ describe('parseGatherArgs', () => {
   });
 });
 
-describe('gatherRemoteBranches on a real repository', () => {
+describe('gatherRemoteBranches on a real repository', REAL_REPO_TEST_OPTIONS, () => {
   let fixture;
 
   beforeEach(() => {

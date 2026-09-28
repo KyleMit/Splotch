@@ -1,7 +1,7 @@
-import { chmod, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import {
   buildGenerationPlan,
   parseSoundEffectArgs,
@@ -18,6 +18,12 @@ import {
   MIN_PROMPT_INFLUENCE,
 } from '../lib/sound-effects-client.mjs';
 
+async function tempDir(prefix) {
+  const dir = await mkdtemp(join(tmpdir(), prefix));
+  onTestFinished(() => rm(dir, { recursive: true, force: true }));
+  return dir;
+}
+
 describe('ElevenLabs sound-effect generator', () => {
   it('requires an explicit fixed or automatic duration for a single paid call', async () => {
     const args = parseSoundEffectArgs(['--text', 'Pop']);
@@ -27,7 +33,7 @@ describe('ElevenLabs sound-effect generator', () => {
   });
 
   it('validates the complete batch and keeps outputs inside its directory', async () => {
-    const outputDir = await mkdtemp(join(tmpdir(), 'elevenlabs-plan-'));
+    const outputDir = await tempDir('elevenlabs-plan-');
     const input = join(outputDir, 'candidates.json');
     await writeFile(
       input,
@@ -57,7 +63,7 @@ describe('ElevenLabs sound-effect generator', () => {
   });
 
   it('rejects an invalid later candidate before any generation can begin', async () => {
-    const outputDir = await mkdtemp(join(tmpdir(), 'elevenlabs-invalid-'));
+    const outputDir = await tempDir('elevenlabs-invalid-');
     const input = join(outputDir, 'candidates.json');
     await writeFile(
       input,
@@ -76,7 +82,7 @@ describe('ElevenLabs sound-effect generator', () => {
   });
 
   it('lets a candidate explicitly choose automatic duration over a fixed batch default', async () => {
-    const outputDir = await mkdtemp(join(tmpdir(), 'elevenlabs-auto-'));
+    const outputDir = await tempDir('elevenlabs-auto-');
     const input = join(outputDir, 'candidates.json');
     await writeFile(
       input,
@@ -94,7 +100,7 @@ describe('ElevenLabs sound-effect generator', () => {
   });
 
   it('rejects a null defaults object instead of silently treating it as empty', async () => {
-    const outputDir = await mkdtemp(join(tmpdir(), 'elevenlabs-null-defaults-'));
+    const outputDir = await tempDir('elevenlabs-null-defaults-');
     const input = join(outputDir, 'candidates.json');
     await writeFile(
       input,
@@ -110,7 +116,7 @@ describe('ElevenLabs sound-effect generator', () => {
   });
 
   it('writes successes, continues after failures, and resumes by skipping existing files', async () => {
-    const outputDir = await mkdtemp(join(tmpdir(), 'elevenlabs-run-'));
+    const outputDir = await tempDir('elevenlabs-run-');
     const existing = join(outputDir, 'existing.mp3');
     const generated = join(outputDir, 'generated.mp3');
     const failed = join(outputDir, 'failed.mp3');
@@ -143,7 +149,7 @@ describe('ElevenLabs sound-effect generator', () => {
   });
 
   it('preserves an existing output mode when overwriting it', async () => {
-    const outputDir = await mkdtemp(join(tmpdir(), 'elevenlabs-overwrite-'));
+    const outputDir = await tempDir('elevenlabs-overwrite-');
     const out = join(outputDir, 'preserved.mp3');
     await writeFile(out, 'old');
     await chmod(out, 0o640);
@@ -165,7 +171,7 @@ describe('ElevenLabs sound-effect generator', () => {
   });
 
   it('reports a paid generation discarded after losing the output race', async () => {
-    const outputDir = await mkdtemp(join(tmpdir(), 'elevenlabs-race-'));
+    const outputDir = await tempDir('elevenlabs-race-');
     const out = join(outputDir, 'raced.mp3');
     const log = vi.fn();
     const client = {
@@ -186,7 +192,7 @@ describe('ElevenLabs sound-effect generator', () => {
   });
 
   it('exercises the full CLI seam, dotenv comments, retries, and reviewable plan output', async () => {
-    const workingDir = await mkdtemp(join(tmpdir(), 'elevenlabs-cli-'));
+    const workingDir = await tempDir('elevenlabs-cli-');
     const out = join(workingDir, 'pop.mp3');
     await writeFile(
       join(workingDir, '.env.local'),

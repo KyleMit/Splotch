@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { CommonIconName } from '../iconTypes';
   import SectionIcon from '../SectionIcon.svelte';
+  import VisuallyHidden from '../design/VisuallyHidden.svelte';
   import ToggleSwitch from './ToggleSwitch.svelte';
   import { SECTIONS, sectionSubtitle, type SectionId } from './sections';
   import { settingsState, setSound } from '$lib/state/settings.svelte';
@@ -71,7 +72,7 @@
             <span class="hub-title">{section.label}</span>
             <span class="hub-subtitle">{sectionSubtitle(section.id)}</span>
           </span>
-          {#if unseen}<span class="visually-hidden">new</span>{/if}
+          {#if unseen}<VisuallyHidden>new</VisuallyHidden>{/if}
         </button>
         {#if toggle}
           <span class="hub-action">
@@ -188,18 +189,6 @@
   .section-activity-dot.unseen {
     opacity: 1;
     transition-duration: 0s;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 
   :global(.hub-icon-svg) {

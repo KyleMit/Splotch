@@ -12,6 +12,8 @@
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
+  import VisuallyHidden from '$lib/components/design/VisuallyHidden.svelte';
+  import Icon from '$lib/components/Icon.svelte';
   import '$lib/components/deferredIcons';
 
   let { theme }: { theme: ResolvedTheme } = $props();
@@ -200,6 +202,21 @@
   </Disclosure>
 
   <ScrollCueSpecimens />
+
+  <h3 id={primitiveSections.visuallyHidden.id} data-sg-section>
+    Visually hidden <code class="file-path">design/VisuallyHidden.svelte</code>
+  </h3>
+  <p class="sub-intro">
+    Text a screen reader announces and the page never shows, such as the word an icon stands in for
+    or what a badge means. It renders a <code>span</code>; a <code>role="status"</code> announcement
+    takes <code>as="p"</code>.
+  </p>
+  <p class="hidden-demo">
+    Open the <Icon name="more-vert" class="hidden-demo-icon" aria-hidden="true" /><VisuallyHidden
+      >three-dot</VisuallyHidden
+    > menu
+  </p>
+  <p class="sub-intro">A screen reader reads the line above as “Open the three-dot menu.”</p>
 </section>
 
 <style>
@@ -217,20 +234,11 @@
     font-size: var(--font-size-lg);
   }
 
-  section {
-    margin-top: 48px;
-  }
-
   h3 {
     margin: 22px 0 var(--space-1);
-    color: var(--text-strong);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
   }
 
   code {
-    font-size: var(--font-size-xs);
-    color: var(--brand-text);
     white-space: nowrap;
   }
 
@@ -302,5 +310,23 @@
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--text);
+  }
+
+  .hidden-demo {
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-size-md);
+    color: var(--text);
+  }
+
+  /* The glyph stands in for a word, so it takes the sentence's own ink. */
+  .hidden-demo :global(.hidden-demo-icon) {
+    display: inline-flex;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+  }
+
+  .hidden-demo :global(.hidden-demo-icon svg) {
+    fill: currentColor;
   }
 </style>

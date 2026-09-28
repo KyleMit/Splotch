@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import {
   ACTION_REPEATS,
   ALL_ITEMS,
@@ -557,6 +557,7 @@ describe('campaign artifact acceptance', () => {
 
   it('makes campaign status reject a split pen artifact without undo proof', () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-campaign-undo-'));
+    onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
     const artifact = join(directory, 'pen.json');
     const [planned] = planCampaign('android-device-web', {
       outputRoot: directory,
@@ -1329,16 +1330,15 @@ describe('servedBuildFingerprintProblem', () => {
   // and a test that reads the real one passes only where a build happens to exist.
   const fakeBuild = () => {
     const dir = mkdtempSync(join(tmpdir(), 'splotch-build-'));
-    mkdirSync(join(dir, '_app', 'immutable', 'entry'), { recursive: true });
+    onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
+    const entry = join(dir, '_app', 'immutable', 'entry');
+    mkdirSync(entry, { recursive: true });
     writeFileSync(
       join(dir, 'index.html'),
       '<script>import("/_app/immutable/entry/start.Aaa.js")</script>'
     );
-    writeFileSync(
-      join(dir, '_app', 'immutable', 'entry', 'start.Aaa.js'),
-      'import "/_app/immutable/entry/app.Bbb.js";'
-    );
-    writeFileSync(join(dir, '_app', 'immutable', 'entry', 'app.Bbb.js'), 'export const app = 1;');
+    writeFileSync(join(entry, 'start.Aaa.js'), 'import "/_app/immutable/entry/app.Bbb.js";');
+    writeFileSync(join(entry, 'app.Bbb.js'), 'export const app = 1;');
     for (const file of WEB_ONLY_STATIC_FILES) writeFileSync(join(dir, file), '');
     return dir;
   };
