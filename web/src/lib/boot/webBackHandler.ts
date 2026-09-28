@@ -1,10 +1,9 @@
 import { pushState } from '$app/navigation';
 import { page } from '$app/state';
 import { observeModalStack } from '$lib/actions/modalDialog.svelte';
-import { isStandalone } from '$lib/platform';
+import { COARSE_POINTER_QUERY, isStandalone } from '$lib/platform';
 import { respondToDialogBack } from './dialogBack';
 
-const COARSE_POINTER_QUERY = '(pointer: coarse)';
 export const WEB_BACK_PAGE_STATE_KEY = 'splotchBackNavigation';
 
 interface BackStack {

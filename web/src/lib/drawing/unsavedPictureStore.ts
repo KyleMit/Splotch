@@ -1,6 +1,6 @@
 import type { DBSchema } from '$lib/idbDatabase';
 import { idbKvStore } from '$lib/idb';
-import type { UnsavedStatus } from '$lib/saveNaming';
+import { isUnsavedStatus, type UnsavedStatus } from '$lib/saveNaming';
 import { STORAGE_KEYS, readBool, removeKey, writeBool } from '$lib/storage';
 
 // The pictures the save-failure banner holds outlive the page. Granting the permission a save
@@ -57,14 +57,45 @@ function fromStored(stored: StoredPicture[]): HeldPicture[] {
   }));
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isStoredPicture(value: unknown): value is StoredPicture {
+  return (
+    isRecord(value) &&
+    value.bytes instanceof ArrayBuffer &&
+    typeof value.type === 'string' &&
+    typeof value.baseName === 'string' &&
+    isUnsavedStatus(value.outcome) &&
+    (value.signature === null || typeof value.signature === 'string')
+  );
+}
+
+// The schema types what this build writes, not what a read finds: the record can predate a change
+// to its shape, or come from a newer build in another tab. An unchecked entry missing its bytes
+// becomes a Blob of the text "undefined" that Try again would save as a picture. Reading never
+// writes, so an unrecognized entry is only skipped; the next write replaces the whole record with
+// the pictures this build holds, as every write does.
+function recognizedPictures(stored: unknown): StoredPicture[] {
+  const entries: unknown[] = Array.isArray(stored) ? stored : [stored];
+  const recognized = entries.filter(isStoredPicture);
+  if (recognized.length < entries.length) {
+    console.error(
+      `Skipped ${entries.length - recognized.length} held picture(s) in an unrecognized shape`
+    );
+  }
+  return recognized;
+}
+
 export function createUnsavedPictureStore(): UnsavedPictureStore {
   const store = idbKvStore<UnsavedPictureDb>(DB_NAME, STORE);
   return {
     async read() {
       if (!readBool(STORAGE_KEYS.unsavedPicturesHeld, false)) return null;
       try {
-        const stored = await store.get(HELD_KEY);
-        return stored ? fromStored(stored) : null;
+        const stored: unknown = await store.get(HELD_KEY);
+        return stored === undefined ? null : fromStored(recognizedPictures(stored));
       } catch (err) {
         console.error('Reading unsaved pictures failed:', err);
         return null;

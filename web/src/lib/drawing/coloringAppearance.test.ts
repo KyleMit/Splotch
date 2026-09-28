@@ -42,7 +42,7 @@ describe('coloring appearance', () => {
     applyColoringPageWithMagicUndo(page, 'landscape', 'dark');
 
     expect(prepareMagicSheetRecode).toHaveBeenCalledWith(
-      page.nightImages.landscape,
+      page.nightFill.landscape,
       expect.any(Function)
     );
   });
