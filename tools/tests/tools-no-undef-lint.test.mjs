@@ -23,8 +23,16 @@ describe('no-undef covers every tools/ script', () => {
     'tools/lib/probe.mjs',
     'tools/asset-gen/probe.mjs',
     'tools/perf/probes/probe.js',
+    'tools/asset-gen/lib/probe.ts',
   ])('rejects an unimported binding in %s', async (fixture) => {
     expect(await undefinedNames(fixture, 'await sleep(1);\n')).toEqual(["'sleep' is not defined."]);
+  });
+
+  // Node strips the types from a tools/ .ts module and runs it, so only its runtime bindings
+  // matter — a lib type name is not a missing import.
+  it('accepts lib type names in a type-stripped module', async () => {
+    const source = 'export type Parsed = Record<string, ReturnType<typeof setTimeout>>;\n';
+    expect(await undefinedNames('tools/asset-gen/lib/probe.ts', source)).toEqual([]);
   });
 
   // A Node script's page.evaluate() callback runs in the browser, so both global sets are real.
