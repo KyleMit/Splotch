@@ -390,10 +390,15 @@ export default tseslint.config(
     },
   },
   {
-    // Plain-Node ESM tooling (no TypeScript to resolve identifiers). Re-enable no-undef here so a
-    // used-but-unimported binding — e.g. dropping `import { existsSync } from 'node:fs'` while a
-    // call remains — fails lint instead of throwing ReferenceError only at CLI runtime.
-    files: ['tools/asset-gen/**/*.mjs'],
+    // Plain-JS tooling that no TypeScript program covers, so nothing else resolves its
+    // identifiers. Re-enable no-undef here so a used-but-unimported binding — e.g. dropping
+    // `import { existsSync } from 'node:fs'` while a call remains — fails lint instead of throwing
+    // ReferenceError only when someone runs the script (for a device capture, mid-campaign on a
+    // physical device). The shared browser + Node globals are the right set for tools/: Node
+    // scripts carry page.evaluate() callbacks that read window and document, and the page-side
+    // probes and generated-page clients are browser scripts. A glob that narrows fails
+    // tools/tests/tools-no-undef-lint.test.mjs.
+    files: ['tools/**/*.{mjs,js}'],
     rules: {
       'no-undef': 'error',
     },
