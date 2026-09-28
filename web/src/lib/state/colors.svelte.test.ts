@@ -6,7 +6,6 @@ import {
   BLACK_INK,
   WHITE_INK,
   createColors,
-  themedSwatchColor,
   isWhite,
   isDarkInk,
   type ColorsState,
@@ -61,9 +60,10 @@ describe('selectPaletteColor', () => {
     expect(colors.activeColor).toBe('#62A2E9');
   });
 
-  it('paints a distinct color while keeping the swatch identity (dark-mode Black)', () => {
-    colors.selectPaletteColor(BLACK_INK, WHITE_INK);
-    // The last swatch stays the active one (its ring/position are unchanged)...
+  it('keeps the Black identity while painting white under a dark theme', () => {
+    colors.followTheme(() => true);
+    colors.selectPaletteColor(BLACK_INK);
+    // The swatch stays the active one (its ring/position are unchanged)...
     expect(colors.activeSwatch).toBe(BLACK_INK);
     // ...but it draws white so it shows on dark paper.
     expect(colors.activeColor).toBe(WHITE_INK);
@@ -71,38 +71,41 @@ describe('selectPaletteColor', () => {
 });
 
 describe('themedSwatchColor', () => {
-  it('flips only the Black swatch to white in dark mode', () => {
-    expect(themedSwatchColor(BLACK_INK, true)).toBe(WHITE_INK);
-    expect(themedSwatchColor(BLACK_INK, false)).toBe(BLACK_INK);
+  it('gives every swatch its own color until a theme is followed', () => {
+    for (const { hex } of PALETTE_COLORS) expect(colors.themedSwatchColor(hex), hex).toBe(hex);
   });
 
-  it('leaves every other palette color untouched in both themes', () => {
+  it('flips only the Black swatch to white under a dark theme', () => {
+    colors.followTheme(() => true);
     for (const { hex } of PALETTE_COLORS) {
-      if (hex === BLACK_INK) continue;
-      expect(themedSwatchColor(hex, true)).toBe(hex);
-      expect(themedSwatchColor(hex, false)).toBe(hex);
+      expect(colors.themedSwatchColor(hex), hex).toBe(hex === BLACK_INK ? WHITE_INK : hex);
     }
   });
 });
 
-describe('syncInkToTheme', () => {
-  it('switches selected Black ink to white for dark and back to black for light', () => {
+describe('followTheme', () => {
+  it('moves selected Black ink with the theme as it changes, with no effect to run', () => {
+    let dark = false;
+    colors.followTheme(() => dark);
     colors.selectPaletteColor(BLACK_INK);
+    expect(colors.activeColor).toBe(BLACK_INK);
 
-    colors.syncInkToTheme(true);
+    dark = true;
     expect(colors.activeSwatch).toBe(BLACK_INK);
     expect(colors.activeColor).toBe(WHITE_INK);
 
-    colors.syncInkToTheme(false);
+    dark = false;
     expect(colors.activeSwatch).toBe(BLACK_INK);
     expect(colors.activeColor).toBe(BLACK_INK);
   });
 
-  it('leaves a non-Black selection unchanged', () => {
+  it('leaves a custom selection unchanged', () => {
+    let dark = false;
+    colors.followTheme(() => dark);
     colors.pickCustomColor('#123456');
     const before = selection(colors);
 
-    colors.syncInkToTheme(true);
+    dark = true;
 
     expect(selection(colors)).toEqual(before);
   });
@@ -133,6 +136,18 @@ describe('selectCustomSwatch', () => {
     expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
     // No custom color chosen, so the active drawing color stays put.
     expect(colors.activeColor).toBe('#8CC864');
+  });
+
+  it('holds the ink it inherited when the theme changes before any color is picked', () => {
+    let dark = true;
+    colors.followTheme(() => dark);
+    colors.selectPaletteColor(BLACK_INK);
+    colors.selectCustomSwatch();
+
+    dark = false;
+
+    expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
+    expect(colors.activeColor).toBe(WHITE_INK);
   });
 });
 

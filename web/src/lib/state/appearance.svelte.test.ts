@@ -5,7 +5,7 @@ import { THEME_COLORS } from '../theme';
 import { REDUCE_MOTION_ATTRIBUTE, REDUCED_MOTION_QUERY } from '../platform/reducedMotion';
 import * as themeModule from '../theme';
 import { createAppearance, type AppearanceState } from './appearance.svelte';
-import { createColors } from './colors.svelte';
+import { BLACK_INK, WHITE_INK, createColors } from './colors.svelte';
 import { createSettings, type SettingsState } from './settings.svelte';
 import { createTool } from './tool.svelte';
 
@@ -100,23 +100,33 @@ afterEach(() => {
 });
 
 describe('single prefers-color-scheme source', () => {
-  it('does not rerun theme synchronization when the active swatch changes', async () => {
+  it('hands its resolved theme to the colors store it was built with', () => {
     installMatchMedia();
     const settings = createSettings(createTool());
     const colors = createColors();
-    const syncInk = vi.spyOn(colors, 'syncInkToTheme');
-    const writeMeta = vi.spyOn(themeModule, 'updateThemeColorMeta');
     installed = createAppearance(settings, colors);
     installed.install();
+    colors.selectPaletteColor(BLACK_INK);
+
+    emitSystemChange(true);
+    expect(colors.activeColor).toBe(WHITE_INK);
+
+    settings.setTheme('light');
+    expect(colors.activeColor).toBe(BLACK_INK);
+  });
+
+  it('does not repaint the theme-color meta when the active swatch changes', async () => {
+    installMatchMedia();
+    const colors = createColors();
+    const writeMeta = vi.spyOn(themeModule, 'updateThemeColorMeta');
+    installed = createAppearance(createSettings(createTool()), colors);
+    installed.install();
     await tick();
-    expect(syncInk).toHaveBeenCalledTimes(1);
     expect(writeMeta).toHaveBeenCalledTimes(1);
 
     colors.selectPaletteColor('#ff0000');
     await tick();
-    expect(colors.activeSwatch).toBe('#ff0000');
-    expect.soft(writeMeta).toHaveBeenCalledTimes(1);
-    expect.soft(syncInk).toHaveBeenCalledTimes(1);
+    expect(writeMeta).toHaveBeenCalledTimes(1);
   });
 
   it('opens exactly one media-query subscription per install', async () => {

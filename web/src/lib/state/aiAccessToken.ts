@@ -1,7 +1,7 @@
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 import { clearAccessCode, loadAccessCode, saveAccessCode } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
-import { readString, removeKey, STORAGE_KEYS } from '../storage';
+import { STORAGE_KEYS } from '../storage';
 import { settingsState } from './settings.svelte';
 import { createSecureCredentialCoordinator } from './secureCredentialCoordinator';
 
@@ -26,19 +26,9 @@ export async function setUserSubmittedAiAccessToken(value: string, ownsRequest?:
 }
 
 export function hydrateAiAccessToken() {
-  return aiAccessTokenCoordinator.runHydration(async (ownsHydration) => {
-    let token = await loadAccessCode();
-    const legacy = readString(STORAGE_KEYS.legacyAiAccessToken, '');
-    if (!ownsHydration()) return;
-
-    if (!token && legacy && !settingsState.aiAccessToken) {
-      await saveAccessCode(legacy);
-      token = legacy;
-    }
-
-    if (legacy) removeKey(STORAGE_KEYS.legacyAiAccessToken);
-    if (settingsState.aiAccessToken) return;
-    if (ownsHydration() && token) settingsState.mirrorAiAccessToken(token);
+  return aiAccessTokenCoordinator.hydrate({
+    load: loadAccessCode,
+    legacyKey: STORAGE_KEYS.legacyAiAccessToken,
   });
 }
 
