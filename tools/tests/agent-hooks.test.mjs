@@ -51,6 +51,17 @@ function hookCommands(config) {
   );
 }
 
+function closingParen(command, from) {
+  let depth = 1;
+  for (let i = from; i < command.length; i++) {
+    if (command[i] === '(') depth++;
+    else if (command[i] === ')' && --depth === 0) return i;
+  }
+  return command.length;
+}
+
+// A command substitution opens a fresh quoting context, so its body is scanned on its own: the
+// quotes around "$(dirname $DIR)" do not protect the $DIR inside it.
 function unquotedExpansions(command) {
   const found = [];
   let quote = null;
@@ -60,12 +71,17 @@ function unquotedExpansions(command) {
       if (char === "'") quote = null;
     } else if (char === '\\') {
       i++;
+    } else if (command.startsWith('$(', i)) {
+      const end = closingParen(command, i + 2);
+      if (!quote) found.push(command.slice(i, end + 1));
+      found.push(...unquotedExpansions(command.slice(i + 2, end)));
+      i = end;
     } else if (char === '"') {
       quote = quote ? null : '"';
     } else if (char === "'" && !quote) {
       quote = "'";
     } else if (char === '$' && !quote) {
-      found.push(/^\$(\{[^}]*\}|\([^)]*\)|\w+)/.exec(command.slice(i))?.[0] ?? '$');
+      found.push(/^\$(\{[^}]*\}|\w+)/.exec(command.slice(i))?.[0] ?? '$');
     }
   }
   return found;
@@ -131,6 +147,10 @@ describe('agent hook commands', () => {
     expect(unquotedExpansions('node $(git rev-parse --show-toplevel)/x.mjs')).toEqual([
       '$(git rev-parse --show-toplevel)',
     ]);
+    expect(unquotedExpansions('node "$(dirname $CLAUDE_PROJECT_DIR)/tools/x.mjs"')).toEqual([
+      '$CLAUDE_PROJECT_DIR',
+    ]);
+    expect(unquotedExpansions('node "$(dirname "$CLAUDE_PROJECT_DIR")/tools/x.mjs"')).toEqual([]);
     expect(unquotedExpansions('"$CLAUDE_PROJECT_DIR"/.claude/hooks/x.sh')).toEqual([]);
     expect(unquotedExpansions('node "$CLAUDE_PROJECT_DIR/x.mjs" --runner=claude')).toEqual([]);
     expect(unquotedExpansions(`echo '$HOME' \\$HOME`)).toEqual([]);
