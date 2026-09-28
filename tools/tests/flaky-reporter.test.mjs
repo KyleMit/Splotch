@@ -1,7 +1,7 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 
 import FlakyPassReporter, {
   FLAKY_RECORD_FILENAME,
@@ -28,7 +28,11 @@ const testCase = (project, file, ...titles) => ({
 });
 const attempt = (retry, status = 'passed') => ({ retry, status });
 
-const tempDir = (prefix) => mkdtempSync(join(tmpdir(), prefix));
+function tempDir(prefix) {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
 
 describe('flaky annotations', () => {
   it('names the attempt a test passed on', () => {

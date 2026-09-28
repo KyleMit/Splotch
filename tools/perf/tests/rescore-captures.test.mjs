@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import {
   brushOf,
   evidenceIndexUnattributable,
@@ -55,6 +55,12 @@ const report = {
   history: [],
   liftLatencies: [],
 };
+
+function tempDir(prefix) {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
 
 describe('rawReportOf', () => {
   // Three envelopes reach this tool — the split transport's artifact, the Appium
@@ -135,7 +141,7 @@ describe('rescoreCapture', () => {
 
 describe('evidenceIndexTargets', () => {
   it('reads per-file target identity out of a flat evidence corpus', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'splotch-evidence-'));
+    const dir = tempDir('splotch-evidence-');
     writeFileSync(
       join(dir, 'index.json'),
       JSON.stringify({
@@ -153,7 +159,7 @@ describe('evidenceIndexTargets', () => {
   });
 
   it('reports nothing for a corpus with no index', () => {
-    expect(evidenceIndexTargets(mkdtempSync(join(tmpdir(), 'splotch-noindex-'))).size).toBe(0);
+    expect(evidenceIndexTargets(tempDir('splotch-noindex-')).size).toBe(0);
   });
 });
 
@@ -164,7 +170,7 @@ describe('evidenceIndexTargets', () => {
 // only on an explicit flag.
 describe('the rescorer labelling a floor-control capture', () => {
   it('marks the row as the floor rather than the target’s result', async () => {
-    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-floor-rescore-'));
+    const corpusDir = tempDir('splotch-floor-rescore-');
     writeFileSync(
       join(corpusDir, 'floor.json'),
       JSON.stringify({ page: FLOOR_CONTROL_PAGE, brush: 'pen', report })
@@ -181,12 +187,11 @@ describe('the rescorer labelling a floor-control capture', () => {
     } finally {
       quiet.mockRestore();
       table.mockRestore();
-      rmSync(corpusDir, { recursive: true, force: true });
     }
   });
 
   it('keeps the unattributable marking on a re-admitted floor capture', async () => {
-    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-floor-readmit-'));
+    const corpusDir = tempDir('splotch-floor-readmit-');
     writeFileSync(
       join(corpusDir, 'index.json'),
       JSON.stringify({
@@ -207,14 +212,13 @@ describe('the rescorer labelling a floor-control capture', () => {
     } finally {
       quiet.mockRestore();
       table.mockRestore();
-      rmSync(corpusDir, { recursive: true, force: true });
     }
   });
 });
 
 describe('the rescorer honours cellAttributable', () => {
   const corpusWith = (index) => {
-    const dir = mkdtempSync(join(tmpdir(), 'splotch-unattributable-'));
+    const dir = tempDir('splotch-unattributable-');
     writeFileSync(join(dir, 'index.json'), JSON.stringify(index));
     return dir;
   };
@@ -237,7 +241,7 @@ describe('the rescorer honours cellAttributable', () => {
 
     expect([...marked.keys()]).toEqual(['contaminated.json']);
     expect(marked.get('contaminated.json')).toEqual({ reportNonce: 'other-cell-1-2' });
-    expect(evidenceIndexUnattributable(mkdtempSync(join(tmpdir(), 'splotch-clean-'))).size).toBe(0);
+    expect(evidenceIndexUnattributable(tempDir('splotch-clean-')).size).toBe(0);
   });
 
   // The real evidence corpus nests one campaign directory per promotion, each
@@ -245,7 +249,7 @@ describe('the rescorer honours cellAttributable', () => {
   // mis-targeted every capture once (see evidenceIndexTargets). A flat fixture
   // cannot fail on the join, so this one nests.
   it('keys a nested corpus by path relative to the corpus root', () => {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-nested-unattributable-'));
+    const root = tempDir('splotch-nested-unattributable-');
     mkdirSync(join(root, '2026-08-24-campaign'), { recursive: true });
     writeFileSync(
       join(root, '2026-08-24-campaign', 'index.json'),
@@ -312,7 +316,7 @@ describe('the rescorer honours cellAttributable', () => {
   // A truncated index used to be skipped, which turned the refusal off: the
   // contaminated capture below scored as clean, and the table looked normal.
   it('throws on an index that does not parse instead of scoring without it', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'splotch-corrupt-index-'));
+    const dir = tempDir('splotch-corrupt-index-');
     const index = JSON.stringify({
       kept: [{ file: 'contaminated.json', cellAttributable: false, reportNonce: 'other-1-2' }],
     });
@@ -328,7 +332,6 @@ describe('the rescorer honours cellAttributable', () => {
     } finally {
       quiet.mockRestore();
       quietTable.mockRestore();
-      rmSync(dir, { recursive: true, force: true });
     }
   });
 
@@ -567,8 +570,8 @@ describe('keep-capture-evidence', () => {
   // suite green. Promotes a real two-capture corpus into a tmpdir evidence
   // root and reads the written index back.
   it('promotes a corpus end to end, recording the pool behind each representative', async () => {
-    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-keep-corpus-'));
-    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-keep-evidence-'));
+    const corpusDir = tempDir('splotch-keep-corpus-');
+    const evidenceDir = tempDir('splotch-keep-evidence-');
     mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
     const cell = (name, fidelity) => {
       const path = join(corpusDir, 'ipad-device-web', 'portrait-light', name);
@@ -626,14 +629,12 @@ describe('keep-capture-evidence', () => {
       expect(readFileSync(selectedSource, 'utf8')).toBe(selectedSourceBefore);
     } finally {
       quiet.mockRestore();
-      rmSync(corpusDir, { recursive: true, force: true });
-      rmSync(evidenceDir, { recursive: true, force: true });
     }
   });
 
   it('refuses to promote a floor-control capture as product evidence', async () => {
-    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-floor-corpus-'));
-    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-floor-evidence-'));
+    const corpusDir = tempDir('splotch-floor-corpus-');
+    const evidenceDir = tempDir('splotch-floor-evidence-');
     mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
     writeFileSync(
       join(corpusDir, 'ipad-device-web', 'portrait-light', 'pen-real-screen.json'),
@@ -663,14 +664,12 @@ describe('keep-capture-evidence', () => {
     } finally {
       exit.mockRestore();
       quiet.mockRestore();
-      rmSync(corpusDir, { recursive: true, force: true });
-      rmSync(evidenceDir, { recursive: true, force: true });
     }
   });
 
   it('refuses to promote a corpus holding a capture that does not parse', async () => {
-    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-truncated-corpus-'));
-    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-truncated-evidence-'));
+    const corpusDir = tempDir('splotch-truncated-corpus-');
+    const evidenceDir = tempDir('splotch-truncated-evidence-');
     mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
     const capture = JSON.stringify({ brush: 'pen', report });
     writeFileSync(
@@ -698,14 +697,12 @@ describe('keep-capture-evidence', () => {
     } finally {
       exit.mockRestore();
       quiet.mockRestore();
-      rmSync(corpusDir, { recursive: true, force: true });
-      rmSync(evidenceDir, { recursive: true, force: true });
     }
   });
 
   it('redacts a hand-capture identifier in both the artifact and index', async () => {
-    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-hand-corpus-'));
-    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-hand-evidence-'));
+    const corpusDir = tempDir('splotch-hand-corpus-');
+    const evidenceDir = tempDir('splotch-hand-evidence-');
     const source = join(corpusDir, 'hand-pen.json');
     writeFileSync(
       source,
@@ -739,14 +736,12 @@ describe('keep-capture-evidence', () => {
       expect(readFileSync(source, 'utf8')).toBe(sourceBefore);
     } finally {
       quiet.mockRestore();
-      rmSync(corpusDir, { recursive: true, force: true });
-      rmSync(evidenceDir, { recursive: true, force: true });
     }
   });
 
   it('keeps every action-suite mode with redacted device identifiers', async () => {
-    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-action-corpus-'));
-    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-action-evidence-'));
+    const corpusDir = tempDir('splotch-action-corpus-');
+    const evidenceDir = tempDir('splotch-action-evidence-');
     const sourceDir = join(corpusDir, 'ipad-device-web', 'portrait-light', 'actions');
     mkdirSync(sourceDir, { recursive: true });
     const source = join(sourceDir, 'actions.json');
@@ -803,8 +798,6 @@ describe('keep-capture-evidence', () => {
       expect(readFileSync(source, 'utf8')).toBe(sourceBefore);
     } finally {
       quiet.mockRestore();
-      rmSync(corpusDir, { recursive: true, force: true });
-      rmSync(evidenceDir, { recursive: true, force: true });
     }
   });
 
@@ -841,25 +834,27 @@ describe('keep-capture-evidence', () => {
 });
 
 describe('buildDirHoldsNativeExport', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'splotch-build-'));
+  const buildDir = (files) => {
+    const dir = tempDir('splotch-build-');
+    for (const file of files) writeFileSync(join(dir, file), '');
+    return dir;
+  };
 
   // `build:cap` writes the native export into the same web/build the web build
   // uses, so a native build silently replaces what the preview server serves —
   // and a capture against the export hangs rather than failing.
   it('recognises the native export by the web-only files it drops', () => {
-    writeFileSync(join(dir, 'index.html'), '');
-
-    expect(buildDirHoldsNativeExport(dir)).toBe(true);
+    expect(buildDirHoldsNativeExport(buildDir(['index.html']))).toBe(true);
   });
 
   it('accepts a build that kept them', () => {
-    for (const file of WEB_ONLY_STATIC_FILES) writeFileSync(join(dir, file), '');
+    const dir = buildDir(['index.html', ...WEB_ONLY_STATIC_FILES]);
 
     expect(buildDirHoldsNativeExport(dir)).toBe(false);
   });
 
   it('says nothing about a directory with no build in it', () => {
-    expect(buildDirHoldsNativeExport(join(dir, 'absent'))).toBe(false);
+    expect(buildDirHoldsNativeExport(join(buildDir([]), 'absent'))).toBe(false);
   });
 });
 
@@ -869,7 +864,7 @@ describe('promoting into an existing campaign name', () => {
   // and perf:rescore walks the directory rather than treating the index as an
   // allowlist — so they scored as current evidence.
   it('refuses a destination that already exists', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-evidence-root-'));
+    const root = tempDir('splotch-evidence-root-');
     mkdirSync(join(root, 'existing'), { recursive: true });
     writeFileSync(join(root, 'existing', 'stale.json'), '{}');
 
@@ -878,7 +873,7 @@ describe('promoting into an existing campaign name', () => {
   });
 
   it('replaces it whole when forced, so nothing unselected survives', () => {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-evidence-root-'));
+    const root = tempDir('splotch-evidence-root-');
     const destination = join(root, 'existing');
     mkdirSync(destination, { recursive: true });
     writeFileSync(join(destination, 'stale.json'), '{}');
@@ -896,7 +891,7 @@ describe('the served build is re-checked per capture', () => {
   // go through --url and never re-enter runPerfServe, so a start-time check alone
   // leaves every later cell reaching the export.
   it('reports a native export even when the entry is still in place', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'splotch-poststart-'));
+    const dir = tempDir('splotch-poststart-');
     writeFileSync(join(dir, 'index.html'), '');
     writeFileSync(join(dir, 'start.abc.js'), '');
     for (const file of WEB_ONLY_STATIC_FILES) writeFileSync(join(dir, file), '');
@@ -913,7 +908,7 @@ describe('the served build is re-checked per capture', () => {
 
 describe('a nested evidence corpus', () => {
   const nested = () => {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-nested-'));
+    const root = tempDir('splotch-nested-');
     for (const [campaign, file, target] of [
       ['2026-08-23-ipad-main', 'ipad-device-web-crayon.json', 'ipad-device-web'],
       ['2026-08-23-desktop-main', 'mac-chrome-crayon.json', 'mac-chrome'],
@@ -964,8 +959,8 @@ describe('a nested evidence corpus', () => {
 // reader (perf:analyze:frames) refuses what the index marks.
 describe('attribution is stamped at promotion and read by the analyzer', () => {
   it('stamps cellAttributable/reportNonce from the report URL, not by hand', async () => {
-    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-stamp-corpus-'));
-    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-stamp-evidence-'));
+    const corpusDir = tempDir('splotch-stamp-corpus-');
+    const evidenceDir = tempDir('splotch-stamp-evidence-');
     mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
     const cell = (name, body) =>
       writeFileSync(
@@ -1005,33 +1000,27 @@ describe('attribution is stamped at promotion and read by the analyzer', () => {
       });
     } finally {
       quiet.mockRestore();
-      rmSync(corpusDir, { recursive: true, force: true });
-      rmSync(evidenceDir, { recursive: true, force: true });
     }
   });
 
   it('analyze refuses an index-marked capture unless deliberately included', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'splotch-analyze-refusal-'));
-    try {
-      const capturePath = join(dir, 'pen.json');
-      writeFileSync(capturePath, JSON.stringify({ report }));
-      // No sibling index: a scratch capture analyzes as before.
-      expect(unattributableCaptureProblem(capturePath)).toBeNull();
-      writeFileSync(
-        join(dir, 'index.json'),
-        JSON.stringify({
-          kept: [
-            { file: 'pen.json', cellAttributable: false, reportNonce: 'other-cell-9-9' },
-            { file: 'clean.json' },
-          ],
-        })
-      );
-      expect(unattributableCaptureProblem(capturePath)).toContain('other-cell-9-9');
-      expect(unattributableCaptureProblem(capturePath, { includeUnattributable: true })).toBeNull();
-      // An entry without the marking stays analyzable.
-      expect(unattributableCaptureProblem(join(dir, 'clean.json'))).toBeNull();
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    const dir = tempDir('splotch-analyze-refusal-');
+    const capturePath = join(dir, 'pen.json');
+    writeFileSync(capturePath, JSON.stringify({ report }));
+    // No sibling index: a scratch capture analyzes as before.
+    expect(unattributableCaptureProblem(capturePath)).toBeNull();
+    writeFileSync(
+      join(dir, 'index.json'),
+      JSON.stringify({
+        kept: [
+          { file: 'pen.json', cellAttributable: false, reportNonce: 'other-cell-9-9' },
+          { file: 'clean.json' },
+        ],
+      })
+    );
+    expect(unattributableCaptureProblem(capturePath)).toContain('other-cell-9-9');
+    expect(unattributableCaptureProblem(capturePath, { includeUnattributable: true })).toBeNull();
+    // An entry without the marking stays analyzable.
+    expect(unattributableCaptureProblem(join(dir, 'clean.json'))).toBeNull();
   });
 });
