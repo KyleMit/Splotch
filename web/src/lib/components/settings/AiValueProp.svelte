@@ -26,6 +26,10 @@
 
   const theme = $derived(resolvedTheme());
   const credentialKind = $derived(aiCredentialKind());
+  // Shown only while AI is off, when no grant is requested, so the count is
+  // whatever a grant last answered this session. Before any has, the copy
+  // assumes an untouched allowance.
+  const freeRemaining = $derived(freeGenerationsState.lastGrantRemaining ?? FREE_GENERATION_LIMIT);
 </script>
 
 <section class="ai-value-prop" aria-labelledby="ai-value-prop-title">
@@ -62,10 +66,10 @@
           Your access code is saved — turn this on whenever you're ready.
         {:else if credentialKind === 'apiKey'}
           Your OpenAI key is saved and ready whenever you turn this on.
-        {:else if freeGenerationsState.remaining === 0}
+        {:else if freeRemaining === 0}
           Your {FREE_GENERATION_LIMIT} free pictures are used up.
-        {:else if freeGenerationsState.remaining < FREE_GENERATION_LIMIT}
-          You have {freeGenerationsState.remaining} free pictures left — nothing to set up, no card.
+        {:else if freeRemaining < FREE_GENERATION_LIMIT}
+          You have {freeRemaining} free pictures left — nothing to set up, no card.
         {:else}
           The first {FREE_GENERATION_LIMIT} pictures are free — nothing to set up, no card.
         {/if}

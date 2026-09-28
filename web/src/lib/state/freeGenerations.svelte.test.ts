@@ -39,7 +39,7 @@ function requestSignal(fetchMock: ReturnType<typeof vi.fn>, callIndex: number): 
 }
 
 // Every case gets its own store and dependencies: AI on with no credential, the
-// network online, hydration not yet landed, the grant loading and unavailable.
+// network online, hydration not yet landed, the grant loading with no count.
 let persistedStateStatus: PersistedStateStatus;
 let networkState: NetworkState;
 let settingsState: SettingsState;
@@ -83,22 +83,26 @@ describe('free-count display hint', () => {
     });
 
     expect(freeGenerationsState.badgeRemaining).toBe(expected);
-    expect(freeGenerationsState.available).toBe(false);
+    expect(freeGenerationsState).toMatchObject({
+      grant: { status: 'loading' },
+      lastGrantRemaining: null,
+    });
   });
 
   it('persists grant counts and an unavailable result without changing grant authority', () => {
-    expect(freeGenerationsState).toMatchObject({ badgeRemaining: 10, available: false });
+    expect(freeGenerationsState).toMatchObject({
+      badgeRemaining: 10,
+      grant: { status: 'loading' },
+    });
 
     freeGenerationsState.setFreeGenerationsRemaining(7);
-    expect(freeGenerationsState).toMatchObject({
-      badgeRemaining: 7,
-      remaining: 7,
-      available: true,
-    });
+    expect(freeGenerationsState).toMatchObject({ badgeRemaining: 7, lastGrantRemaining: 7 });
+    expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 7 });
     expect(localStorage.getItem(STORAGE_KEYS.freeGenerationBadgeHint)).toBe('7');
 
     freeGenerationsState.setFreeGenerationsUnavailable();
-    expect(freeGenerationsState).toMatchObject({ badgeRemaining: null, available: false });
+    expect(freeGenerationsState.badgeRemaining).toBeNull();
+    expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' });
     expect(localStorage.getItem(STORAGE_KEYS.freeGenerationBadgeHint)).toBe('unavailable');
   });
 
@@ -120,6 +124,54 @@ describe('free-count display hint', () => {
 
     expect(freeGenerationsState.badgeRemaining).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.freeGenerationBadgeHint)).toBe('unavailable');
+  });
+});
+
+describe('grant mode', () => {
+  it('starts loading with no count known', () => {
+    expect(freeGenerationsState.grant).toEqual({ status: 'loading' });
+    expect(freeGenerationsState.lastGrantRemaining).toBeNull();
+  });
+
+  it.each([
+    [7, 7],
+    [12, 10],
+    [-3, 0],
+    [4.9, 4],
+  ])('carries an answered count of %s as %s', (answered, remaining) => {
+    freeGenerationsState.setFreeGenerationsRemaining(answered);
+
+    expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining });
+    expect(freeGenerationsState.lastGrantRemaining).toBe(remaining);
+  });
+
+  it('goes inactive when AI is off with no credential, keeping the last answered count', () => {
+    freeGenerationsState.setFreeGenerationsRemaining(7);
+    persistedStateStatus.markHydrated();
+    settingsState.setAiImage(false);
+    flushSync();
+
+    expect(freeGenerationsState.grant).toEqual({ status: 'inactive' });
+    expect(freeGenerationsState.lastGrantRemaining).toBe(7);
+  });
+
+  it('goes unavailable when a credential is saved, keeping the last answered count', () => {
+    freeGenerationsState.setFreeGenerationsRemaining(7);
+    persistedStateStatus.markHydrated();
+    settingsState.mirrorAiUserApiKey('parent-key');
+    flushSync();
+
+    expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' });
+    expect(freeGenerationsState.lastGrantRemaining).toBe(7);
+  });
+
+  it('stays inactive with no count when AI starts off', () => {
+    settingsState.setAiImage(false);
+    persistedStateStatus.markHydrated();
+    flushSync();
+
+    expect(freeGenerationsState.grant).toEqual({ status: 'inactive' });
+    expect(freeGenerationsState.lastGrantRemaining).toBeNull();
   });
 });
 
@@ -156,8 +208,7 @@ describe('grantRefreshReady', () => {
     persistedStateStatus.markHydrated();
     flushSync();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: false });
+    await vi.waitFor(() => expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' }));
 
     flushSync();
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -167,8 +218,9 @@ describe('grantRefreshReady', () => {
     networkState.setOnline(true);
     flushSync();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    await vi.waitFor(() => expect(freeGenerationsState.available).toBe(true));
-    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 7 });
+    await vi.waitFor(() =>
+      expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 7 })
+    );
   });
 
   it('waits while an eligible grant is offline and marks an ineligible grant unavailable', () => {
@@ -178,12 +230,12 @@ describe('grantRefreshReady', () => {
     persistedStateStatus.markHydrated();
     networkState.setOnline(false);
     flushSync();
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: true });
+    expect(freeGenerationsState.grant).toEqual({ status: 'loading' });
     expect(fetchMock).not.toHaveBeenCalled();
 
     settingsState.mirrorAiUserApiKey('parent-key');
     flushSync();
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: false });
+    expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -200,12 +252,18 @@ describe('grantRefreshReady', () => {
     settingsState.mirrorAiUserApiKey('parent-key');
     flushSync();
     expect(signal.aborted).toBe(true);
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({
+      grant: { status: 'unavailable' },
+      lastGrantRemaining: null,
+    });
 
     const stale = grantResponse(3);
     pending.resolve(stale.response);
     await vi.waitFor(() => expect(stale.json).toHaveBeenCalledOnce());
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({
+      grant: { status: 'unavailable' },
+      lastGrantRemaining: null,
+    });
   });
 
   it('does not restart a pending request when refresh state is unchanged', async () => {
@@ -225,7 +283,9 @@ describe('grantRefreshReady', () => {
     expect(signal.aborted).toBe(false);
 
     pending.resolve(grantResponse(6).response);
-    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(6));
+    await vi.waitFor(() =>
+      expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 6 })
+    );
     freeGenerationsState.retryOnVisibleReturn();
     expect(fetchMock).toHaveBeenCalledOnce();
   });
@@ -246,7 +306,10 @@ describe('grantRefreshReady', () => {
     const stale = grantResponse(4);
     pending.resolve(stale.response);
     await vi.waitFor(() => expect(stale.json).toHaveBeenCalledOnce());
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: true, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({
+      grant: { status: 'loading' },
+      lastGrantRemaining: null,
+    });
 
     freeGenerationsState.install();
     flushSync();
@@ -274,11 +337,15 @@ describe('grantRefreshReady', () => {
     const olderResponse = grantResponse(2);
     older.resolve(olderResponse.response);
     await vi.waitFor(() => expect(olderResponse.json).toHaveBeenCalledOnce());
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: true, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({
+      grant: { status: 'loading' },
+      lastGrantRemaining: null,
+    });
 
     newer.resolve(grantResponse(7).response);
-    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(7));
-    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 7 });
+    await vi.waitFor(() =>
+      expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 7 })
+    );
   });
 
   it('keeps the reconnect result when the newer request settles first', async () => {
@@ -298,11 +365,13 @@ describe('grantRefreshReady', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     newer.resolve(grantResponse(7).response);
-    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(7));
+    await vi.waitFor(() =>
+      expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 7 })
+    );
     const olderResponse = grantResponse(2);
     older.resolve(olderResponse.response);
     await vi.waitFor(() => expect(olderResponse.json).toHaveBeenCalledOnce());
-    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 7 });
+    expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 7 });
   });
 
   it('ignores an invalidated failure after a newer request succeeds', async () => {
@@ -322,10 +391,13 @@ describe('grantRefreshReady', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     newer.resolve(grantResponse(8).response);
-    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(8));
+    await vi.waitFor(() =>
+      expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 8 })
+    );
     older.reject(new Error('stale failure'));
-    await vi.waitFor(() => expect(freeGenerationsState.available).toBe(true));
-    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 8 });
+    await vi.waitFor(() =>
+      expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 8 })
+    );
   });
 
   it('retries a transient status failure while online without waiting for a reconnect', async () => {
@@ -339,7 +411,7 @@ describe('grantRefreshReady', () => {
     persistedStateStatus.markHydrated();
     flushSync();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
-    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
+    await vi.waitFor(() => expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' }));
 
     visibility.mockReturnValue('hidden');
     freeGenerationsState.retryOnVisibleReturn();
@@ -348,8 +420,9 @@ describe('grantRefreshReady', () => {
     freeGenerationsState.retryOnVisibleReturn();
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    await vi.waitFor(() => expect(freeGenerationsState.available).toBe(true));
-    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 7 });
+    await vi.waitFor(() =>
+      expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 7 })
+    );
   });
 
   it.each([
@@ -383,13 +456,13 @@ describe('grantRefreshReady', () => {
     vi.stubGlobal('fetch', fetchMock);
     persistedStateStatus.markHydrated();
     flushSync();
-    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
+    await vi.waitFor(() => expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' }));
 
     makeIneligible();
     freeGenerationsState.retryOnVisibleReturn();
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: false });
+    expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' });
   });
 
   it('ignores an invalidated malformed response after a newer request succeeds', async () => {
@@ -409,12 +482,14 @@ describe('grantRefreshReady', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     newer.resolve(grantResponse(8).response);
-    await vi.waitFor(() => expect(freeGenerationsState.remaining).toBe(8));
+    await vi.waitFor(() =>
+      expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 8 })
+    );
     const stale = Response.json({ ok: true, remaining: 'seven' });
     const staleJson = vi.spyOn(stale, 'json');
     older.resolve(stale);
     await vi.waitFor(() => expect(staleJson).toHaveBeenCalledOnce());
-    expect(freeGenerationsState).toMatchObject({ available: true, loading: false, remaining: 8 });
+    expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 8 });
   });
 
   it.each([
@@ -433,8 +508,11 @@ describe('grantRefreshReady', () => {
     flushSync();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
 
-    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
+    await vi.waitFor(() => expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' }));
+    expect(freeGenerationsState).toMatchObject({
+      grant: { status: 'unavailable' },
+      lastGrantRemaining: null,
+    });
   });
 
   it('settles a non-finite remaining count as unavailable', async () => {
@@ -446,7 +524,10 @@ describe('grantRefreshReady', () => {
     persistedStateStatus.markHydrated();
     flushSync();
 
-    await vi.waitFor(() => expect(freeGenerationsState.loading).toBe(false));
-    expect(freeGenerationsState).toMatchObject({ available: false, loading: false, remaining: 10 });
+    await vi.waitFor(() => expect(freeGenerationsState.grant).toEqual({ status: 'unavailable' }));
+    expect(freeGenerationsState).toMatchObject({
+      grant: { status: 'unavailable' },
+      lastGrantRemaining: null,
+    });
   });
 });

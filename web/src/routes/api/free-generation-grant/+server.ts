@@ -1,10 +1,13 @@
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
-import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '$lib/freeGenerations';
+import {
+  FREE_GENERATION_LIMIT,
+  isInstallationId,
+  type FreeGenerationGrantStatus,
+} from '$lib/freeGenerations';
 import { config } from '$lib/server/config';
 import {
   getDailyFreeGenerationStatus,
   getFreeGenerationGrantStatus,
-  isInstallationId,
 } from '$lib/server/freeGenerationGrants';
 import { apiHandler, fail, throttled } from '$lib/server/http';
 import { rateLimit } from '$lib/server/rateLimit';

@@ -324,7 +324,10 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expect(freeGenerationsState).toMatchObject({ available: false, remaining: 10 });
+    expect(freeGenerationsState).toMatchObject({
+      grant: { status: 'unavailable' },
+      lastGrantRemaining: null,
+    });
     expect(uiState.requestedSettingsSection).toBe('ai');
     expect(settingsModal.open).toBe(true);
   });
