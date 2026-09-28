@@ -116,6 +116,10 @@ public class PhotoLibraryPlugin extends Plugin {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             write(call, ERROR_WRITE_FAILED, () -> insertIntoMediaStore(image));
         } else if (getPermissionState(LEGACY_STORAGE_ALIAS) == PermissionState.PROMPT) {
+            // Only a never-asked permission prompts. Capacitor records any denial as
+            // PROMPT_WITH_RATIONALE or DENIED, and those save to the fallback silently, so the
+            // dialog cannot return on every tap. A grant made later in system Settings reads as
+            // GRANTED again.
             requestPermissionForAlias(LEGACY_STORAGE_ALIAS, call, "legacyStoragePermissionResult");
         } else {
             writeLegacy(call, image);
@@ -208,10 +212,6 @@ public class PhotoLibraryPlugin extends Plugin {
             cause.addSuppressed(cleanupError);
         }
     }
-
-    // Only a never-asked permission prompts. Capacitor records any denial as PROMPT_WITH_RATIONALE
-    // or DENIED, and those save to the fallback silently, so the dialog cannot return on every tap.
-    // A grant made later in system Settings reads as GRANTED again.
 
     private File sharedPicturesDirectory() {
         return new File(
