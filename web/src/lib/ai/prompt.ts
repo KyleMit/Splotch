@@ -23,16 +23,12 @@ const DEFAULT_PROMPT =
 const DARK_SCENE_PROMPT =
   'This drawing was made on dark paper at night, so render the scene as a cozy night-time version of itself, softly lit by moonlight. The background and every large open area, the sky and ground included, must be a deep evening tone — midnight blue, deep indigo, dark twilight purple, or deep navy — never a bright daytime or pale color. Faces, skin, and animal bodies keep their natural living color, only darkened for night, never grey or ghostly, and every color the child chose must stay recognizably itself rather than sinking into mud. Convey the night with color and light alone: do not add a moon, stars, fireflies, lamps, hearts, or any other shape the child did not draw.';
 
-// `style` is deliberately unvalidated boundary input (the raw ?style= query
-// param): an unknown style means "no suffix", never an error. The hasOwn check
-// is that runtime validation, licensing the cast into the closed key union.
 export function buildPromptForStyle(
-  style: string | null,
+  style: StyleName | null,
   suffixes: Readonly<Record<StyleName, string>>,
   theme: ResolvedTheme
 ): string {
-  const suffix =
-    style !== null && Object.hasOwn(suffixes, style) ? suffixes[style as StyleName] : '';
+  const suffix = style === null ? '' : suffixes[style];
   return [DEFAULT_PROMPT, suffix, theme === 'dark' ? DARK_SCENE_PROMPT : '']
     .filter(Boolean)
     .join(' ');
