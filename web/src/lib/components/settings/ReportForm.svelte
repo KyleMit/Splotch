@@ -12,13 +12,7 @@
   } from '$lib/latestRequest';
   import { attachesDevice, REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
   import { postFeedbackReport, readReportReply } from '$lib/reportClient';
-
-  interface Props {
-    // Flips true when the Settings modal opens; we use it to clear the form
-    // and any stale feedback so a reopened panel starts fresh.
-    open?: boolean;
-  }
-  let { open = false }: Props = $props();
+  import { settingsModal } from '$lib/state/ui.svelte';
 
   let kind = $state<ReportKind>('bug');
   let message = $state('');
@@ -43,6 +37,7 @@
     feedback = '';
   }
 
+  // Each open clears the form and any stale feedback so the panel starts fresh.
   // Deliberately no abort on open/close, unlike AiKeyManager's idempotent
   // verify: this POST files an issue, so a report the parent already sent must
   // be left to land. `reset` detaches it instead: its result belongs to the
@@ -50,7 +45,7 @@
   // the draft the parent has since begun, and the next send neither waits on
   // it nor aborts it.
   $effect(() => {
-    if (open) reset();
+    if (settingsModal.open) reset();
   });
 
   async function sendReport() {

@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { isNative, getPlatform, type Platform } from '$lib/platform';
+  import { isNative, getPlatform } from '$lib/platform';
   import { iosShareButtonLocation } from '$lib/iosShareButtonLocation';
   import { layoutState } from '$lib/state/layout.svelte';
+  import { settingsModal } from '$lib/state/ui.svelte';
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
@@ -44,20 +45,13 @@
     }
   }
 
-  interface Props {
-    // `open` flips true when the Settings modal opens; we re-run device/OS
-    // detection then so the instructions match the current device and install state.
-    open?: boolean;
-  }
-  let { open = false }: Props = $props();
-
   // The one device family whose manual steps are shown on the web, from the
   // install module's shared detection (never re-sniffed here). The other
   // families' steps are not something this parent can act on.
-  let deviceOs = $state<InstallDeviceOs>('desktop');
+  const deviceOs = installDeviceOs();
   // Whether the iOS steps need their "open it in Safari" lead-in, from the same
-  // shared detection. Re-read on open beside deviceOs.
-  let outsideSafari = $state(false);
+  // shared detection.
+  const outsideSafari = isIosOutsideSafari();
   // True when Guided Access (iOS) / App Pinning (Android) is currently engaged. Native
   // only — the web can't observe either, so it stays false there. Re-checked on open.
   let deviceLocked = $state(false);
@@ -67,13 +61,11 @@
   // are already "installed", so we drop the PWA install step and only show the
   // device-lock setup for the platform we're actually running on.
   const native = __IS_CAPACITOR__ && isNative();
-  // ios-vs-android stays a runtime read: one CAPACITOR=true bundle ships in both
-  // the iPhone and Android binaries, so it's a per-device fact.
-  let platform = $state<Platform>('web');
 
   // The lock steps a native build shows: the platform it is running on, and only
-  // that one.
-  let nativeLockOs = $derived<LockOs>(platform === 'android' ? 'android' : 'ios');
+  // that one. ios-vs-android stays a runtime read: one CAPACITOR=true bundle ships
+  // in both the iPhone and Android binaries, so it's a per-device fact.
+  const nativeLockOs: LockOs = getPlatform() === 'android' ? 'android' : 'ios';
 
   const shareLocation = $derived(
     iosShareButtonLocation(layoutState.viewportWidth, layoutState.orientation)
@@ -85,10 +77,7 @@
   }
 
   $effect(() => {
-    if (!open) return;
-    deviceOs = installDeviceOs();
-    outsideSafari = isIosOutsideSafari();
-    platform = getPlatform();
+    if (!settingsModal.open) return;
 
     // Lock state is a native-only async query, so reset and re-detect each open. The
     // `cancelled` guard drops a stale result if the modal closes/reopens mid-flight.

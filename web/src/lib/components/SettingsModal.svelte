@@ -188,7 +188,7 @@
         {#snippet children(end)}
           <div class="settings-scroll" use:pinchTextZoom={textZoom}>
             <div class="settings-zoom" bind:this={zoomTarget}>
-              <SectionBody id={activeSection} open={settingsModal.open} />
+              <SectionBody id={activeSection} />
             </div>
             {@render end()}
           </div>
