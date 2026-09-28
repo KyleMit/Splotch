@@ -1,9 +1,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import {
   seedPhase,
-  getCrayonOptions,
   setCrayonOptions,
-  getCrayonPasses,
   getCrayonMix,
   crayonPassCount,
   crayonPassWidthScale,
@@ -77,7 +75,8 @@ describe('crayon options seam', () => {
   afterEach(() => setCrayonOptions(CRAYON_DEFAULTS));
 
   it('exposes the tuned default passes (widest-first, denser core last)', () => {
-    const passes = getCrayonPasses();
+    const passes = CRAYON_DEFAULTS.passes;
+    expect(crayonPassCount()).toBe(passes.length);
     expect(passes.length).toBeGreaterThanOrEqual(2);
     expect(passes[0].widthScale).toBe(1);
     expect(passes.at(-1)!.coverage).toBeGreaterThan(passes[0].coverage);
@@ -101,13 +100,13 @@ describe('crayon options seam', () => {
 
   it('setCrayonOptions overrides then restores (the dev A/B seam)', () => {
     setCrayonOptions({ passes: [{ widthScale: 1, coverage: 0.9 }] });
-    expect(getCrayonPasses()).toHaveLength(1);
+    expect(crayonPassCount()).toBe(1);
     setCrayonOptions(CRAYON_DEFAULTS);
-    expect(getCrayonPasses().length).toBe(CRAYON_DEFAULTS.passes.length);
+    expect(crayonPassCount()).toBe(CRAYON_DEFAULTS.passes.length);
   });
 
-  it('the non-cloning hot-path accessors agree with getCrayonPasses', () => {
-    const passes = getCrayonPasses();
+  it('the non-cloning hot-path accessors read the active passes', () => {
+    const passes = CRAYON_DEFAULTS.passes;
     expect(crayonPassCount()).toBe(passes.length);
     for (let i = 0; i < passes.length; i++) {
       expect(crayonPassWidthScale(i)).toBe(passes[i].widthScale);
@@ -118,7 +117,7 @@ describe('crayon options seam', () => {
   });
 
   it('crayonColorMix returns the raw, unclamped stored mix (not getCrayonMix)', () => {
-    expect(crayonColorMix()).toBe(getCrayonOptions().colorMix);
+    expect(crayonColorMix()).toBe(CRAYON_DEFAULTS.colorMix);
     // getCrayonMix clamps to [0, MAX_CRAYON_MIX]; the raw getter must NOT — it
     // drives the live overlay's top-plane opacity and needs the stored value
     // verbatim.

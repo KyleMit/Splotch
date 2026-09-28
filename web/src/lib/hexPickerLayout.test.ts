@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   COLOR_FAMILIES,
-  FAMILY_COUNT,
   LANDSCAPE_ROWS,
   PORTRAIT_ROWS,
   SHADE_COUNT,
@@ -11,13 +10,12 @@ import {
 
 describe('COLOR_FAMILIES', () => {
   it('is a full grid of unique colors', () => {
-    expect(COLOR_FAMILIES).toHaveLength(FAMILY_COUNT);
     for (const family of COLOR_FAMILIES) {
       expect(family.shades).toHaveLength(SHADE_COUNT);
       for (const shade of family.shades) expect(shade).toMatch(/^#[0-9A-F]{6}$/);
     }
     const all = COLOR_FAMILIES.flatMap((f) => f.shades.map((s) => s.toLowerCase()));
-    expect(new Set(all).size).toBe(FAMILY_COUNT * SHADE_COUNT);
+    expect(new Set(all).size).toBe(COLOR_FAMILIES.length * SHADE_COUNT);
   });
 });
 

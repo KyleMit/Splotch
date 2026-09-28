@@ -91,9 +91,9 @@ carve-out):
   a generic extra channel, not alpha, so the webp/png encoder *silently* flattens it (output decodes
   `channels: 3, hasAlpha: false`, no error). Interleave an explicit RGBA buffer and construct
   `sharp(rgba, { raw: { width, height, channels: 4 } })` instead, and verify outputs with
-  `sharp(out).metadata()` → `hasAlpha: true`. The runtime line-art overlays and the style-cover
-  backdrop key intentionally use this explicit-RGBA path (`lib/overlay-alpha.mjs`,
-  `lib/flat-background-punch.mjs`); the fill punch still inpaints instead of cutting holes
+  `sharp(out).metadata()` → `hasAlpha: true`. The style-cover backdrop key intentionally uses this
+  explicit-RGBA path (`lib/flat-background-punch.mjs`); runtime line-art overlays ship as SVG and
+  carry no raster alpha, and the fill punch still inpaints instead of cutting holes
   (`docs/inpainted-fill-punch.md`).
 * **Outputs are committed artifacts**, reviewed by a human before shipping. The generators write
   shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never

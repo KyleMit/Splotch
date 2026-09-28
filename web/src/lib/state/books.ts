@@ -305,14 +305,6 @@ function pageSelectorAssetPath(
   return `${overlay.slice(0, -sourceSuffix.length)}${targetSuffix}`;
 }
 
-export function pageSelectorImage(
-  page: ColoringPage,
-  orientation: BookOrientation,
-  theme: ResolvedTheme
-): string {
-  return resolveColoringAssetUrl(pageSelectorAssetPath(page, orientation, theme));
-}
-
 export function pageSelectorImageSource(
   page: ColoringPage,
   orientation: BookOrientation,

@@ -13,7 +13,6 @@ import {
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
-  pageSelectorImage,
   pageSelectorImageSource,
   responsiveColoringAssets,
   responsiveSelectorColoringAssets,
@@ -127,14 +126,14 @@ describe('pageFillImage', () => {
   });
 });
 
-describe('pageSelectorImage', () => {
+describe('page selector URLs', () => {
   const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
 
   it('uses theme-specific raster presentation derivatives', () => {
-    expect(pageSelectorImage(cat, 'portrait', 'light')).toBe(
+    expect(pageSelectorImageSource(cat, 'portrait', 'light').src).toBe(
       '/coloring/farm/cat-tall.selector.webp'
     );
-    expect(pageSelectorImage(cat, 'portrait', 'dark')).toBe(
+    expect(pageSelectorImageSource(cat, 'portrait', 'dark').src).toBe(
       '/coloring/farm/cat-tall.dark.selector.webp'
     );
   });
@@ -142,7 +141,7 @@ describe('pageSelectorImage', () => {
   it('resolves through an installed native book root', () => {
     setLocalColoringBookRoot('farm', 'https://localhost/_capacitor_file_/packs/farm/');
     try {
-      expect(pageSelectorImage(cat, 'landscape', 'dark')).toBe(
+      expect(pageSelectorImageSource(cat, 'landscape', 'dark').src).toBe(
         'https://localhost/_capacitor_file_/packs/farm/cat-wide.dark.selector.webp'
       );
     } finally {
@@ -376,8 +375,8 @@ describe('bookAssetPaths', () => {
       for (const orientation of ['portrait', 'landscape'] as const) {
         expect(paths).toContain(pageOverlayImage(page, orientation, 'light'));
         expect(paths).toContain(pageOverlayImage(page, orientation, 'dark'));
-        expect(paths).toContain(pageSelectorImage(page, orientation, 'light'));
-        expect(paths).toContain(pageSelectorImage(page, orientation, 'dark'));
+        expect(paths).toContain(pageSelectorImageSource(page, orientation, 'light').src);
+        expect(paths).toContain(pageSelectorImageSource(page, orientation, 'dark').src);
       }
     }
   });
@@ -450,7 +449,7 @@ describe('downloadable coloring packs', () => {
       expect(coverThumbImageSource(dinosaur, 'light').src).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/cover.thumb.webp'
       );
-      expect(pageSelectorImage(page, 'portrait', 'dark')).toBe(
+      expect(pageSelectorImageSource(page, 'portrait', 'dark').src).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.dark.selector.webp'
       );
     } finally {
