@@ -4,12 +4,13 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import {
   encodedClipProblems,
   EXPECTED_ENCODER,
@@ -94,6 +95,7 @@ describe('encodedClipProblems', () => {
 describe('publishStagedClips', () => {
   function fixture(names) {
     const root = mkdtempSync(join(tmpdir(), 'pencil-publish-'));
+    onTestFinished(() => rmSync(root, { recursive: true, force: true }));
     const dirs = ['staged', 'output', 'backup'].map((dir) => join(root, dir));
     for (const dir of dirs) mkdirSync(dir);
     const [stagedDir, outputDir, backupDir] = dirs;

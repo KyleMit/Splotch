@@ -214,24 +214,6 @@
 {/if}
 
 <style>
-  section {
-    margin-top: 48px;
-  }
-
-  section > p {
-    max-width: 62ch;
-    margin: 0 0 16px;
-    font-size: var(--font-size-sm);
-    color: var(--text);
-  }
-
-  h3 {
-    margin: 0 0 6px;
-    color: var(--text-strong);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-  }
-
   h4 {
     margin: 18px 0 10px;
     color: var(--text-strong);
@@ -240,14 +222,9 @@
   }
 
   code {
-    font-size: var(--font-size-xs);
-    color: var(--brand-text);
     white-space: nowrap;
   }
 
-  /* --text-soft is pinned to hold 4.5:1 at these 12px sizes on the page
-     ground (the axe scan in a11y.spec.ts enforces it). */
-  .value,
   .suffix {
     font-size: var(--font-size-xs);
     color: var(--text-soft);

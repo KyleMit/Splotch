@@ -2,7 +2,7 @@ import { mkdtempSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   generateDeploymentMatrixReport,
@@ -36,6 +36,7 @@ describe('matrix manifest routing', () => {
   // a different file than it produced.
   it('generates and checks the manifest it was given, not the default', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
 
     await generateDeploymentMatrixReport(manifestIn(dir));
 
@@ -119,15 +120,9 @@ describe('withPreservedScoreability', () => {
 // test passing without exercising anything. Verified by fault injection: removing
 // the `formatGeneratedMarkdown` call fails this test and nothing else.
 describe('a regenerated matrix leaves the format gate green', () => {
-  const scratches = [];
-
-  afterEach(() => {
-    for (const dir of scratches.splice(0)) rmSync(dir, { recursive: true, force: true });
-  });
-
   it('writes Markdown dprint accepts unchanged', async () => {
     const dir = mkdtempSync(join(ROOT, '.matrix-format-'));
-    scratches.push(dir);
+    onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
 
     await generateDeploymentMatrixReport(manifestIn(dir));
 

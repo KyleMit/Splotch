@@ -36,6 +36,20 @@ test.describe('an iOS device', () => {
   });
 });
 
+// An iPad in portrait is the case a phone-only "at the bottom" got wrong: Safari
+// keeps its Share button in the toolbar on a tablet in either orientation.
+test.describe('an iPad in portrait', () => {
+  test.use({ userAgent: IPAD_UA, viewport: { width: 820, height: 1180 } });
+
+  test('is sent to the Share button in the Safari toolbar', async ({ page }) => {
+    const setup = await openSetupSection(page);
+
+    await expect(setup.locator('.steps li').first()).toHaveText(
+      /^Tap the\s+Share button in the Safari toolbar$/
+    );
+  });
+});
+
 test.describe('an iOS device outside Safari', () => {
   test.use({ userAgent: IPHONE_CHROME_UA });
 

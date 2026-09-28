@@ -7,4 +7,5 @@ export const primitiveSections = {
   rule: { id: 'rule-label', label: 'Rule label' },
   disclosure: { id: 'disclosure', label: 'Disclosure' },
   scrollCue: { id: 'scroll-cue', label: 'Scroll cue' },
+  visuallyHidden: { id: 'visually-hidden', label: 'Visually hidden' },
 } as const;
