@@ -31,6 +31,10 @@ current:
      `package.json` and its lockfile, and the `.ruler/` sources and their generated output collide
      even across unrelated work. Each is held by at most one unit at a time. A unit that needs one
      waits, or leaves that edit as a drafted leftover.
+   * **Predict implicit holders.** A unit that grows or shrinks any `tools/` file listed in
+     `TOOLS_GRANDFATHERED_MAX_LINES` holds `eslint.config.js`, because it moves that file's cap. A
+     unit that adds an npm script holds `package.json`. Each such edit turns every other lane's
+     catch-up survey `coupled`, which costs that lane a real merge and a full CI round.
 
    A unit whose file set can't be predicted from its spec runs alone, as in the serial loop.
 3. **The merges.** The orchestrator performs every merge itself, one at a time, so no two merges can
@@ -83,6 +87,10 @@ The orchestrator handles ready PRs one at a time:
    the worker may run a local trial merge (`git merge --no-commit --no-ff origin/main`, then
    `npm run check`, `npm run lint`, and its targeted tests) instead of a CI round. It then aborts
    the trial and reports ready against the new commit. A second consecutive move takes the CI round.
+
+When a priority PR is nearly ready and another unit must edit the same file after it, hold the other
+green PRs for a few minutes. The priority PR then merges against the `main` its CI covered, with no
+extra CI round.
 
 Because the orchestrator is a single process, nothing merges between its fetch and its merge except
 work outside the campaign. The post-merge CI run on `main` is the backstop for that. After a merge,

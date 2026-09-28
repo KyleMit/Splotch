@@ -287,7 +287,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/perf/lib/campaign-plan.mjs': 742,
   'tools/perf/lib/person-session.mjs': 502,
   'tools/perf/lib/real-screen-stats.mjs': 787,
-  'tools/perf/prepare-capture.mjs': 884,
+  'tools/perf/prepare-capture.mjs': 875,
   'tools/perf/probes/real-screen-probe.js': 684,
   'tools/perf/run-campaign.mjs': 633,
   'tools/perf/split-capture/capture-device-frames.mjs': 818,
