@@ -30,7 +30,6 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "SystemBack")
 public class SystemBackPlugin extends Plugin {
     static final String BACK_EVENT = "back";
-    private final int deliberateCompileError = "UR2 negative control";
 
     // Long enough for a slow device's cold start to reach the drawing route's
     // mount and load its Back handler. Past it, a page that never subscribes
