@@ -23,6 +23,7 @@ import { toolState } from '$lib/state/tool.svelte';
 import { PALETTE_LANDSCAPE_WIDTH_PX } from '$lib/design/trimGeometry';
 import {
   actionButtonSizeClass,
+  BREAKPOINT_EPSILON_PX,
   LARGE_TABLET_MIN_SIDE_PX,
   TABLET_MIN_SIDE_PX,
   type ActionButtonSizeClass,
@@ -61,10 +62,6 @@ export const ACTION_BUTTON_BASE_PROPERTY = '--action-btn-base';
 // the two together, and actionButtonLayout.touchTargets.test.ts pins what a parent's smallest
 // Button Size leaves of it.
 export const FLYOUT_OPTION_MIN_BASE_PX = 60;
-
-// A `max-*` bound sits just below the threshold it excludes, so a fractional
-// viewport side between the two doesn't fall through both queries.
-const BREAKPOINT_EPSILON_PX = 0.02;
 
 // The media queries app.css switches ACTION_BUTTON_BASE_PROPERTY on; the
 // tablet step is the unqualified default neither one claims.
