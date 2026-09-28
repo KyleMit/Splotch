@@ -375,9 +375,12 @@ provider refusal reason when applicable); a picture report additionally contains
 The support issue and metadata categorize refusals as `false-positive-refusal` and expose that
 server-authenticated reason to the reviewer. If private notification fails, the bundle is deleted
 and the request fails rather than leaving unreachable evidence. That includes a GitHub call that
-stalls: it is abandoned at `GITHUB_REQUEST_TIMEOUT_MS` (`web/src/lib/ai/limits.ts`, sized with the
-key check under the platform ceiling per ADR-0063), so the cleanup runs before the platform would
-kill the function.
+stalls: it is abandoned at `GITHUB_REQUEST_TIMEOUT_MS` (`web/src/lib/ai/limits.ts`), which ADR-0063
+sizes so that the key check plus the issue call leave part of the platform ceiling for the evidence
+write and its delete. Neither storage call has a deadline of its own, so a storage stall can still
+reach the platform kill, and a delete that fails leaves the bundle to the scheduled purge. An
+abandoned call's outcome is unknown: GitHub may have opened the issue anyway, which then names a
+deleted bundle. The parent is told the report failed, and a retry files a complete one.
 
 A scheduled `netlify/functions/purge-image-reports.ts` function scans every paginated store page
 daily and deletes report objects older than 30 days. Humans commit to reviewing reports within 24

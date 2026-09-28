@@ -148,4 +148,11 @@ no bound, a stalled GitHub let the platform kill the invocation mid-call: the pa
 sat for the full retention period with no issue pointing a reviewer at it. `createIssue` aborts at
 `GITHUB_REQUEST_TIMEOUT_MS` in `web/src/lib/ai/limits.ts`, which turns a stall into the report's own
 `502` and its cleanup. `limits.test.ts` holds `VERIFY_KEY_DEADLINE_MS + GITHUB_REQUEST_TIMEOUT_MS`
-under `NETLIFY_SYNC_TIMEOUT_MS`; the remainder covers the evidence write and its delete.
+under `NETLIFY_SYNC_TIMEOUT_MS`. The evidence write and its delete get the remainder, but neither is
+bounded on its own, so a storage stall can still reach the platform kill.
+
+A timed-out call's outcome is unknown: GitHub may have opened the issue after all. The deadline
+routes it through ADR-0104's rule that a failed notification deletes the bundle, so such an issue
+names evidence that is gone, and the parent is told to retry. The same ambiguity already applied to
+a non-`201` answer. Keeping the bundle on an unknown outcome instead would change ADR-0104's
+retention posture, so it was left for the owner to decide rather than taken here.
