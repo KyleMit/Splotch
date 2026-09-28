@@ -90,18 +90,22 @@ appearance effect that wrote another store's `activeColor`, and PR #2422 had Set
 Code that runs after an `await` is also a writer, and by then a newer call may own the value. Before
 it writes, it checks that its own call is still the current one. For a submit, that answer comes
 from `createLatestRequest()` in `web/src/lib/latestRequest.ts`. Elsewhere the check compares
-identity, never a flag that later calls share. PR #2449 fixed two bugs of this kind:
+identity, never a flag that later calls share. PRs #2449 and #2458 fixed three bugs of this kind:
 
 * A save into a folder that had moved forgot a folder the parent chose while the save was still
   running. `saveBlobToFolder` now forgets the folder only when `(await loadHandle()) === handle`.
 * One boolean latch on the AI result card left the next result's Download dead until a closed card's
   save settled. The latch is now `savingUrl`, keyed to the result being saved.
+* A key check that returned after the parent switched "Create AI Images" off turned AI back on (PR
+  #2458). Switching off now cancels the check, and the completion writes only while
+  `latest.isCurrent(id)` holds.
 
 **Enforcement.** Review, plus a test on the owner method rather than on a caller's copy (for example
 `web/src/lib/plugins/pencilEraser.test.ts`, `web/src/lib/ai/credentials.test.ts`). A test double
 that re-implements the owner's rule tests its own copy (rule 9). For the stale-write case, the test
 holds the superseded call open, starts the newer one, settles the old one, and then asserts the
-newer call's state survived (`web/src/lib/drawing/folderSave.test.ts`).
+newer call's state survived (`web/src/lib/drawing/folderSave.test.ts`,
+`web/src/lib/components/settings/AiKeyManager.aiToggle.test.ts`).
 `web/src/lib/components/AiImageResult.download.test.ts` covers only the first half: the next
 result's save starts while the old one is still pending.
 
@@ -326,7 +330,9 @@ in parameter defaults, so a flag passed to one CLI would have silently changed a
 call (PR #2439). `--seconds=2.5` drew for 3 s while the capture recorded 2.5 (PR #2441), and
 asset-gen overwrote tracked shipped files before checking them (PR #2435). `tools/` had no size cap
 and grew by about 18,000 lines in 30 days (PR #2405). With `no-undef` off, dropped imports shipped
-as `ReferenceError`s, and `freePort` killed another worktree's server (PR #2381).
+as `ReferenceError`s, and `freePort` killed another worktree's server (PR #2381). The app driver
+reused whatever server answered on its port, so store-drawing scores could come from another
+checkout's build (PR #2456).
 
 Checks that ran after the writes they were meant to guard:
 
@@ -340,8 +346,10 @@ Checks that ran after the writes they were meant to guard:
 `tools/perf/lib/cli-args.mjs`, and `tools/tests/tool-entry-flags.test.mjs` (which also fails a flag
 read in an exported function's parameter default); `max-lines` with `TOOLS_GRANDFATHERED_MAX_LINES`
 in `eslint.config.js`; `no-undef` across `tools/`; `freePort` in `tools/lib/vite-server.mjs` throws
-on a listener outside the checkout. `generateFromValidatedSources` in `tools/ruler/apply-ruler.mjs`
-runs read-only plans before generating, and the bad-source cases in
+on a listener outside the checkout, and `ensureDevServer` in `tools/app-driver/lib/app-driver.mjs`
+starts its own server and rejects an answer from any other process
+(`tools/app-driver/tests/ensure-dev-server.test.mjs`). `generateFromValidatedSources` in
+`tools/ruler/apply-ruler.mjs` runs read-only plans before generating, and the bad-source cases in
 `tools/ruler/tests/apply-ruler.test.mjs` assert that generation never ran. In `cut-release.mjs`,
 `main()` parses the arguments and `chooseVersionCode` decides the version code before the first
 write, which is `resolveVersionCode` pinning that code into the release file. Review holds that
