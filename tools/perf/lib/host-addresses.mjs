@@ -24,12 +24,21 @@ export function redactHostAddresses(serialized) {
 
 const PATTERNS = [
   { kind: 'private-ipv4', pattern: PRIVATE_IPV4, exempt: null },
-  { kind: 'mdns-host', pattern: MDNS_HOST, exempt: REDACTED_MDNS_HOST },
+  {
+    kind: 'mdns-host',
+    pattern: MDNS_HOST,
+    // A literal every match contains, tested first for the same reason as
+    // device-identifiers.mjs's requiredPart: backtracking through the label runs
+    // costs over an order of magnitude more on a multi-megabyte evidence report.
+    requiredPart: /\.local\b/i,
+    exempt: REDACTED_MDNS_HOST,
+  },
 ];
 
 export function scanForHostAddresses(text) {
   const findings = [];
-  for (const { kind, pattern, exempt } of PATTERNS) {
+  for (const { kind, pattern, requiredPart, exempt } of PATTERNS) {
+    if (requiredPart && !requiredPart.test(text)) continue;
     pattern.lastIndex = 0;
     for (const match of text.matchAll(pattern)) {
       const value = match[0];

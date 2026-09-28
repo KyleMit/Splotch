@@ -26,6 +26,7 @@ import {
   type GenerationJobContext,
 } from '$lib/server/generationJobs';
 import { completeFreeGeneration, failFreeGeneration } from '$lib/server/freeGenerationGrants';
+import { loggableError } from '$lib/server/logRedaction';
 import { issueReportToken, type ReportTokenBinding } from '$lib/server/reportToken';
 import type { RequestHandler } from './$types';
 
@@ -79,7 +80,7 @@ async function settleFreeGeneration(
   } catch (cause) {
     console.warn(
       '[generation-result] failed to record the settled generation:',
-      cause instanceof Error ? cause.message : cause
+      loggableError(cause)
     );
     return null;
   }
@@ -160,10 +161,7 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   const freeRemaining = await settleFreeGeneration(job.context, true, 'upstream');
   await discardJob(jobId);
 
-  const headers: Record<string, string> = {
-    'Content-Type': prepared.mimeType,
-    'Cache-Control': 'no-store',
-  };
+  const headers: Record<string, string> = { 'Content-Type': prepared.mimeType };
   if (freeRemaining !== null) headers[FREE_GENERATIONS_REMAINING_HEADER] = String(freeRemaining);
   if (job.context.free && binding) {
     const reportToken = issueReportToken(binding);

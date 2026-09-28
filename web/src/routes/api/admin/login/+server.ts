@@ -1,12 +1,9 @@
 import { json } from '@sveltejs/kit';
-import { beginAdminLogin } from '$lib/server/admin';
+import { beginAdminLogin, MAX_ADMIN_LOGIN_BODY_BYTES } from '$lib/server/admin';
 import { apiHandler, readJsonBody, stringField, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 export type LoginResponse = { ok: true; session: string } | { ok: false; error: string };
-
-// Leaves ample JSON framing room around the one admin secret field.
-const MAX_LOGIN_BODY_BYTES = 8 * 1024;
 
 /**
  * Exchange the raw admin secret for a derived session token. This is the API
@@ -21,7 +18,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   const attempt = beginAdminLogin(getClientAddress());
   if (!attempt.ok) return throttled(attempt.retryAfter);
 
-  const parsed = await readJsonBody(request, MAX_LOGIN_BODY_BYTES);
+  const parsed = await readJsonBody(request, MAX_ADMIN_LOGIN_BODY_BYTES);
   if (!parsed.ok) return parsed.response;
   const key = stringField(parsed.body, 'key');
   const result = attempt.verify(key);

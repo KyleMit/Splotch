@@ -5,6 +5,7 @@ import {
   getTokensStatus,
   addToken,
   removeToken,
+  MAX_TOKEN_MUTATION_BODY_BYTES,
   MUTATION_FAILURE_STATUS,
 } from '$lib/server/tokens';
 import type { MutationFailure } from '$lib/server/tokens';
@@ -29,9 +30,6 @@ export type TokenSnapshot = {
 };
 
 export type TokenMutationError = { ok: false; error: string };
-
-// Token mutations carry one short token; the remainder is framing headroom.
-const MAX_TOKEN_MUTATION_BODY_BYTES = 8 * 1024;
 
 /**
  * Every method requires `Authorization: Bearer <session>`, where <session> is

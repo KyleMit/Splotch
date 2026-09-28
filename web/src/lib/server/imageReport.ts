@@ -1,7 +1,7 @@
 import { isStyleName, type StyleName } from '$lib/ai/styles';
 import { AI_REPORT_KINDS, IMAGE_REPORT_REVIEW_HOURS, type AiReportKind } from '$lib/imageReport';
 import type { ReportTokenContext } from './reportToken';
-import { createIssue } from './github';
+import { createIssue, escapeIssueMarkdown } from './github';
 import { isAllowedImageType, resolveGenerationPrompt } from './generateImagePolicy';
 import {
   deleteImageReport,
@@ -127,7 +127,10 @@ export async function submitImageReport({
         `- **Blob store:** \`${IMAGE_REPORT_STORE_NAME}\``,
         `- **Blob key prefix:** \`${report.keyPrefix}\``,
         `- **Style:** ${styleLabel}`,
-        ...(refusalReason ? [`- **Refusal reason:** ${refusalReason}`] : []),
+        // The one line not written by this server: the model's own words about a
+        // drawing that can hold handwriting, so a mention or an embed there must
+        // stay inert. metadata.json keeps the reason as the model gave it.
+        ...(refusalReason ? [`- **Refusal reason:** ${escapeIssueMarkdown(refusalReason)}`] : []),
         `- **Reported:** ${report.reportedAt}`,
         `- **Automatic deletion:** ${report.deleteAfter}`,
         '',

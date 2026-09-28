@@ -9,9 +9,7 @@
     colorsState,
     selectPaletteColor,
     selectCustomSwatch,
-    themedSwatchColor,
   } from '$lib/state/colors.svelte';
-  import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
   import { colorPickerModal } from '$lib/state/ui.svelte';
@@ -34,7 +32,6 @@
         )
       : PANEL_INSET
   );
-  const dark = $derived(resolvedTheme() === 'dark');
 
   // The selection ring hides while erasing (no ink is being laid down) and
   // stays visible for every other brush, matching the pre-brush-menu behavior.
@@ -46,9 +43,9 @@
   let ringAnimateHex = $state<string | null>(null);
   let ringStartedReduced = $state(false);
 
-  function selectSwatch(hex: string, paint: string) {
+  function selectSwatch(hex: string) {
     selectInkBrush();
-    selectPaletteColor(hex, paint);
+    selectPaletteColor(hex);
     ringStartedReduced = prefersReducedMotion();
     ringAnimateHex = hex;
     releaseAllPointers();
@@ -90,7 +87,7 @@
   onpointerup={handlePaletteUp}
 >
   {#each PALETTE_COLORS as { hex, label } (hex)}
-    {@const shown = themedSwatchColor(hex, dark)}
+    {@const shown = colorsState.themedSwatchColor(hex)}
     {@const active = !erasing && colorsState.activeSwatch === hex}
     <ColorSwatch
       variant="flat"
@@ -102,7 +99,7 @@
       ring={active ? getRingColor(shown) : undefined}
       animate={ringAnimateHex === hex}
       startReduced={ringStartedReduced}
-      onselect={() => selectSwatch(hex, shown)}
+      onselect={() => selectSwatch(hex)}
     />
   {/each}
 

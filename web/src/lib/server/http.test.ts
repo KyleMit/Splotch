@@ -6,10 +6,13 @@ import {
   asRecord,
   contentTypeOf,
   fail,
+  formStringField,
   readBodyWithinLimit,
+  readFormBody,
   readJsonBody,
   stringField,
   throttled,
+  unreadableFormBody,
   type JsonBodyResult,
 } from './http';
 
@@ -182,6 +185,93 @@ describe('readJsonBody', () => {
   });
 });
 
+describe('readFormBody', () => {
+  type FormBodyResult = Awaited<ReturnType<typeof readFormBody>>;
+
+  function expectForm(
+    result: FormBodyResult
+  ): asserts result is Extract<FormBodyResult, { ok: true }> {
+    expect(result.ok, 'the form did not parse').toBe(true);
+  }
+
+  function formRequest(body: BodyInit, headers: HeadersInit = {}) {
+    return new Request('http://localhost/feedback', { method: 'POST', headers, body });
+  }
+
+  it('parses a multipart body within the cap, file parts included', async () => {
+    const body = new FormData();
+    body.set('message', 'Add a glitter brush');
+    body.set('attachment', new Blob(['x'], { type: 'text/plain' }));
+
+    const result = await readFormBody(formRequest(body), 4096);
+
+    expectForm(result);
+    expect(result.form.get('message')).toBe('Add a glitter brush');
+    expect(result.form.get('attachment')).toBeInstanceOf(Blob);
+  });
+
+  it('parses the urlencoded body a browser posts without JavaScript', async () => {
+    const result = await readFormBody(
+      formRequest(new URLSearchParams({ 'access-key': 'a&b=c' })),
+      64
+    );
+
+    expectForm(result);
+    expect(result.form.get('access-key')).toBe('a&b=c');
+  });
+
+  it('refuses a body over the cap before parsing it', async () => {
+    const body = new URLSearchParams({ message: 'x'.repeat(64) });
+
+    expect(await readFormBody(formRequest(body), 32)).toEqual({ ok: false, reason: 'too-large' });
+  });
+
+  it('refuses a streamed body at the chunk that crosses the cap', async () => {
+    const stream = chunkedRequest(['message=12', '3456789', 'unread']);
+
+    expect(await readFormBody(stream.request, 12)).toEqual({ ok: false, reason: 'too-large' });
+    expect(stream.pulls()).toBe(2);
+  });
+
+  it('keeps a platform body-limit failure a too-large refusal', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(Object.assign(new Error('platform cap'), { status: 413 }));
+      },
+    });
+    const request = new Request('http://localhost/feedback', {
+      method: 'POST',
+      body,
+      duplex: 'half',
+    } as RequestInit);
+
+    expect(await readFormBody(request, 64)).toEqual({ ok: false, reason: 'too-large' });
+  });
+
+  it.each([
+    ['a multipart body missing its boundary', 'multipart/form-data', '--x\r\n'],
+    ['a body that is not a form at all', 'text/plain', 'message=hi'],
+  ])('refuses %s as malformed', async (_label, contentType, body) => {
+    expect(await readFormBody(formRequest(body, { 'Content-Type': contentType }), 64)).toEqual({
+      ok: false,
+      reason: 'malformed',
+    });
+  });
+});
+
+describe('unreadableFormBody', () => {
+  it('words each refusal as the JSON doors word it', () => {
+    expect(unreadableFormBody('too-large')).toEqual({
+      status: 413,
+      message: 'Request body is too large',
+    });
+    expect(unreadableFormBody('malformed')).toEqual({
+      status: 400,
+      message: 'Expected a form body',
+    });
+  });
+});
+
 describe('fail', () => {
   it('returns the canonical JSON failure response', async () => {
     const response = fail(403, 'Not allowed');
@@ -230,7 +320,29 @@ describe('apiHandler', () => {
 
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ ok: false, error: 'Something went wrong.' });
-    expect(logged).toHaveBeenCalledWith('[server error]', '/api/test', 500, boom);
+    expect(logged).toHaveBeenCalledWith(
+      '[server error]',
+      '/api/test',
+      500,
+      expect.stringContaining('Error: boom\n    at ')
+    );
+    logged.mockRestore();
+  });
+
+  // A grant-store fault escapes the free path uncaught, and a store error can
+  // quote the blob key it failed on: the installation id.
+  it('keeps an installation id quoted by the failure out of the server log', async () => {
+    const installationId = 'e'.repeat(64);
+    const handler = apiHandler(async () => {
+      throw new Error(`free-generation-grants get ${installationId} failed`);
+    });
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await handler(event);
+
+    const line = logged.mock.calls.flat().map(String).join(' ');
+    expect(line).toContain('free-generation-grants get <redacted id> failed');
+    expect(line).not.toContain(installationId);
     logged.mockRestore();
   });
 });
@@ -334,5 +446,25 @@ describe('stringField', () => {
 
     expect(present).toBe('');
     expect(present).toBe(stringField({ key: 0 }, 'key'));
+  });
+});
+
+describe('formStringField', () => {
+  it('returns a present text field verbatim', () => {
+    const form = new FormData();
+    form.set('token', '  sunny-meadow  ');
+
+    expect(formStringField(form, 'token')).toBe('  sunny-meadow  ');
+  });
+
+  // String(file) would read "[object File]" and hand that on as the value.
+  it.each<[string, (form: FormData) => void]>([
+    ['a file part', (form) => form.set('token', new Blob(['sunny-meadow']))],
+    ['a missing field', () => {}],
+  ])('reads %s as empty', (_, fill) => {
+    const form = new FormData();
+    fill(form);
+
+    expect(formStringField(form, 'token')).toBe('');
   });
 });

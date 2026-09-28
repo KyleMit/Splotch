@@ -46,6 +46,10 @@ export function verifyAdminSecret(key: string | undefined) {
   return constantTimeEqual(key, env.ADMIN_ACCESS_TOKEN);
 }
 
+// Leaves ample framing room around the one secret field. Both login doors read
+// their body under it, so neither buffers more than the other allows.
+export const MAX_ADMIN_LOGIN_BODY_BYTES = 8 * 1024;
+
 type AdminLoginVerdict = { ok: true; session: string } | { ok: false; status: 403 };
 
 export type AdminLoginAttempt =

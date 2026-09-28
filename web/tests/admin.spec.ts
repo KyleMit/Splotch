@@ -376,6 +376,24 @@ test('web /admin SSR response carries the site security headers', async ({ reque
   expect(policy).toContain('report-to csp');
 });
 
+// The JSON twin answers with the same live access codes the console embeds.
+// Nothing in the route asks for no-store: the hook makes it the /api default.
+// The console's cookie holds the same derived session a bearer client sends.
+test('the admin token list JSON is never stored either', async ({
+  request,
+  adminSessionCookies,
+}) => {
+  const session = adminSessionCookies.find((cookie) => cookie.name === 'admin_session')?.value;
+  expect(session, 'the shared admin session cookie').toBeTruthy();
+
+  const res = await request.get('/api/admin/tokens', {
+    headers: { Authorization: `Bearer ${session}` },
+  });
+
+  expect(res.status()).toBe(200);
+  expect(res.headers()['cache-control']).toBe('no-store');
+});
+
 test('web prerender emits a hash-based script policy that complements the platform header', async ({
   page,
 }) => {

@@ -620,10 +620,18 @@ const fakeAppium = (mode) => (port) =>
     stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, MODE: mode },
   });
+// The production waits are sized for a real Appium; the fixtures answer within
+// milliseconds, so each test shortens every idle wait except the one it measures.
+const FIXTURE_WAIT_MS = 50;
+const diagnose = (spawnDiagnostic, waitsMs) =>
+  diagnoseLaunchFailure(
+    {},
+    { spawnDiagnostic, waitsMs: { readyPoll: FIXTURE_WAIT_MS, ...waitsMs } }
+  );
 
 describe('the launch diagnostic end to end', () => {
   it('delivers the automation-mode cause the server logged', async () => {
-    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('denial') });
+    const probe = await diagnose(fakeAppium('denial'));
 
     // Asserted FIRST so a failure prints why the diagnostic gave up, rather than
     // only that `cause` was null — which is the same "clean negative hides a
@@ -635,14 +643,14 @@ describe('the launch diagnostic end to end', () => {
   // "Ran and found nothing" and "never ran" must not read the same. They did,
   // which is why a broken diagnostic looked like an unrecognised cause.
   it('says so when the server logged nothing it knows', async () => {
-    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('silent') });
+    const probe = await diagnose(fakeAppium('silent'), { logSettle: FIXTURE_WAIT_MS });
 
     expect(probe.cause).toBeNull();
     expect(probe.diagnostic).toContain('logged no cause');
   }, 60_000);
 
   it('reports a server that died instead of hanging on it, naming how it exited', async () => {
-    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('crash') });
+    const probe = await diagnose(fakeAppium('crash'));
 
     expect(probe.cause).toBeNull();
     // "with code N" / "with signal SIG…": a signal kill reports code null, and
@@ -654,10 +662,7 @@ describe('the launch diagnostic end to end', () => {
   // spawn reports a missing binary asynchronously, so this used to escape the
   // try/catch and could take the preflight down with it.
   it('survives a diagnostic binary that does not exist', async () => {
-    const probe = await diagnoseLaunchFailure(
-      {},
-      { spawnDiagnostic: () => spawn('definitely-not-a-real-binary-xyz', []) }
-    );
+    const probe = await diagnose(() => spawn('definitely-not-a-real-binary-xyz', []));
 
     expect(probe.cause).toBeNull();
     expect(probe.diagnostic).toContain('could not start');
@@ -695,12 +700,13 @@ describe('tearing down a diagnostic server that goes quietly', () => {
   // structural separation instead of a margin contest.
   it('returns promptly after the server exits by signal, without a second escalation wait', async () => {
     const startedAt = Date.now();
-    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('denial') });
+    const probe = await diagnose(fakeAppium('denial'));
     const elapsedMs = Date.now() - startedAt;
 
     expect(probe.cause).toContain('Enable UI Automation');
-    // Fixed shape ≈ fixture startup + classification (~0.5 s measured) plus a
-    // ~10 ms SIGTERM exit; the broken tracking adds a full 5 s SIGKILL settle.
+    // Fixed shape ≈ fixture startup + classification (well under a second) plus
+    // a ~10 ms SIGTERM exit; the broken tracking adds a full 5 s SIGKILL settle,
+    // which this test keeps at its production length.
     expect(elapsedMs).toBeLessThan(4_000);
   }, 60_000);
 
@@ -710,10 +716,7 @@ describe('tearing down a diagnostic server that goes quietly', () => {
   // started.
   it('returns promptly when the diagnostic binary never existed', async () => {
     const startedAt = Date.now();
-    const probe = await diagnoseLaunchFailure(
-      {},
-      { spawnDiagnostic: () => spawn('definitely-not-a-real-binary-xyz', []) }
-    );
+    const probe = await diagnose(() => spawn('definitely-not-a-real-binary-xyz', []));
     const elapsedMs = Date.now() - startedAt;
 
     expect(probe.diagnostic).toContain('could not start');
@@ -727,18 +730,18 @@ describe('tearing down a diagnostic server that goes quietly', () => {
 describe('tearing down a diagnostic server that will not go quietly', () => {
   it('escalates past SIGTERM and leaves nothing running', async () => {
     let child;
-    const probe = await diagnoseLaunchFailure(
-      {},
-      {
-        spawnDiagnostic: (port) => {
-          child = spawn(
-            process.execPath,
-            [join(ROOT, 'tools/perf/tests/fixtures/stubborn-appium.mjs'), String(port)],
-            { stdio: ['ignore', 'pipe', 'pipe'], detached: true }
-          );
-          return child;
-        },
-      }
+    const probe = await diagnose(
+      (port) => {
+        child = spawn(
+          process.execPath,
+          [join(ROOT, 'tools/perf/tests/fixtures/stubborn-appium.mjs'), String(port)],
+          { stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+        );
+        return child;
+      },
+      // What this test pins is that SIGKILL follows an ignored SIGTERM, not how
+      // long teardown waits before sending it.
+      { logSettle: FIXTURE_WAIT_MS, exitSettle: FIXTURE_WAIT_MS }
     );
 
     expect(probe.cause).toBeNull();
