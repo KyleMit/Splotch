@@ -23,7 +23,8 @@
   );
 
   // The wide shell keeps this section mounted across a close, so each open
-  // clears a failure left over from an earlier visit.
+  // clears a failure a finished removal left behind. A removal still running
+  // shows "Removing…" into the new visit, so that visit owns its outcome.
   $effect(() => {
     if (settingsModal.open) removeError = false;
   });

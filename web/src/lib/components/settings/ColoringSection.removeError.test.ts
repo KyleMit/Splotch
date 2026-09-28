@@ -29,6 +29,20 @@ function mountOpen() {
   return target;
 }
 
+function removeButton(section: HTMLElement) {
+  const button = section.querySelector<HTMLButtonElement>('.pack-storage button');
+  if (!button) throw new Error('The remove button is not showing');
+  return button;
+}
+
+function heldRemoval() {
+  let fail!: (error: Error) => void;
+  const removal = new Promise<void>((_, reject) => {
+    fail = reject;
+  });
+  return { removal, fail };
+}
+
 afterEach(async () => {
   setOpen(false);
   if (mounted) await unmount(mounted);
@@ -43,15 +57,27 @@ describe('ColoringSection remove failure', () => {
   it('clears the failure message when Settings is closed and opened again', async () => {
     mocks.removeDownloadedColoringPacks.mockRejectedValueOnce(new Error('store unavailable'));
     const section = mountOpen();
-    const removeButton = [...section.querySelectorAll('button')].find(
-      (button) => button.textContent?.trim() === 'Remove downloaded pictures'
-    );
 
-    removeButton?.click();
+    removeButton(section).click();
     await vi.waitFor(() => expect(section.querySelector('.remove-error')).not.toBeNull());
 
     setOpen(false);
     setOpen(true);
     expect(section.querySelector('.remove-error')).toBeNull();
+  });
+
+  it('reports a removal still running across a reopen in the visit that shows it running', async () => {
+    const { removal, fail } = heldRemoval();
+    mocks.removeDownloadedColoringPacks.mockReturnValueOnce(removal);
+    const section = mountOpen();
+
+    removeButton(section).click();
+    await vi.waitFor(() => expect(removeButton(section).textContent?.trim()).toBe('Removing…'));
+    setOpen(false);
+    setOpen(true);
+    expect(removeButton(section).textContent?.trim()).toBe('Removing…');
+
+    fail(new Error('store unavailable'));
+    await vi.waitFor(() => expect(section.querySelector('.remove-error')).not.toBeNull());
   });
 });
