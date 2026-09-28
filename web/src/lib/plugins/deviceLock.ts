@@ -5,9 +5,7 @@ export interface DeviceLockPlugin {
   isLocked(): Promise<{ locked: boolean }>;
 }
 
-// The web has no way to observe either OS lock state, so its fallback is always false.
-// Reach this module only through lazyPluginModule() so @capacitor/core stays out of the
-// SSR/prerender graph — see web/src/lib/nativePlugin.ts.
-export const DeviceLock = registerPlugin<DeviceLockPlugin>('DeviceLock', {
-  web: () => ({ isLocked: async () => ({ locked: false }) }),
-});
+// Native-only (DeviceLockPlugin.java, DeviceLockPlugin.swift): the web cannot observe either lock,
+// so SetupInstructions.svelte asks only inside a native shell and reads a failed call as unlocked.
+// Import this module only behind `__IS_CAPACITOR__` so @capacitor/core stays out of the web bundle.
+export const DeviceLock = registerPlugin<DeviceLockPlugin>('DeviceLock');
