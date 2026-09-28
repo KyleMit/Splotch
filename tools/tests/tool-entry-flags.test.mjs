@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -97,21 +98,44 @@ describe('non-device tool entries', () => {
   });
 });
 
-// The text between each exported function's opening paren and its matching
-// close: its whole parameter list, defaults included.
-function exportedParameterLists(source) {
-  return [...source.matchAll(/export (?:async )?function (\w+)\(/g)].map((match) => {
-    const start = match.index + match[0].length;
-    let depth = 1;
-    let end = start;
-    while (depth > 0 && end < source.length) {
-      if (source[end] === '(') depth += 1;
-      else if (source[end] === ')') depth -= 1;
-      end += 1;
+const hasExportModifier = (node) =>
+  ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false;
+const isFunctionValue = (node) =>
+  node !== undefined && (ts.isArrowFunction(node) || ts.isFunctionExpression(node));
+
+// Each exported function's parameter list as source text, defaults included:
+// `export function`, `export const f = (…) =>`, and a function a later
+// `export { … }` names. Parsed rather than matched, so a paren inside a
+// string default cannot end the list early.
+function exportedParameterLists(path, source) {
+  const file = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const exportedByName = new Set();
+  const functions = [];
+  for (const statement of file.statements) {
+    if (ts.isExportDeclaration(statement) && !statement.moduleSpecifier) {
+      for (const element of statement.exportClause?.elements ?? []) {
+        exportedByName.add((element.propertyName ?? element.name).text);
+      }
+    } else if (ts.isFunctionDeclaration(statement)) {
+      const exported = hasExportModifier(statement);
+      functions.push({ name: statement.name?.text ?? 'default', node: statement, exported });
+    } else if (ts.isVariableStatement(statement)) {
+      const exported = hasExportModifier(statement);
+      for (const { name, initializer } of statement.declarationList.declarations) {
+        if (!isFunctionValue(initializer)) continue;
+        functions.push({ name: name.getText(file), node: initializer, exported });
+      }
     }
-    return { name: match[1], parameters: source.slice(start, end - 1) };
-  });
+  }
+  return functions
+    .filter(({ name, exported }) => exported || exportedByName.has(name))
+    .map(({ name, node }) => ({
+      name,
+      parameters: node.parameters.map((parameter) => parameter.getText(file)).join(', '),
+    }));
 }
+
+const FLAG_READ = /\barg(?:Flag|Switch|Number)\(|process\.argv\.includes\(/;
 
 describe('exported tool functions', () => {
   const toolSources = execFileSync('git', ['ls-files', 'tools'], {
@@ -129,10 +153,27 @@ describe('exported tool functions', () => {
 
   const parameterReads = (pattern) =>
     toolSources.flatMap(({ path, source }) =>
-      exportedParameterLists(source)
+      exportedParameterLists(path, source)
         .filter(({ parameters }) => pattern.test(parameters))
         .map(({ name }) => `${path}: ${name}`)
     );
+
+  it('finds a flag read in every exported form the guards rely on', () => {
+    const source = [
+      "export function stringParen(label = ')', port = argNumber('port')) {}",
+      "export const arrow = ({ strict = argSwitch('strict') } = {}) => strict;",
+      "function exportedLater(base = argFlag('base')) {}",
+      'export { exportedLater };',
+      "function internal(flag = argFlag('flag')) {}",
+      'export function clean(argv) {}',
+    ].join('\n');
+
+    expect(
+      exportedParameterLists('fixture.mjs', source)
+        .filter(({ parameters }) => FLAG_READ.test(parameters))
+        .map(({ name }) => name)
+    ).toEqual(['stringParen', 'arrow', 'exportedLater']);
+  });
 
   // A flag read in a parameter default runs whenever a caller leaves that
   // option out, so an in-process caller answers to its own process's argv:
@@ -145,9 +186,7 @@ describe('exported tool functions', () => {
     'tools/perf/split-capture/capture-device-frames.mjs: captureDeviceFrames',
     'tools/perf/split-capture/capture-hand-input.mjs: captureHandInput',
   ];
-  const flagReadingDefaults = parameterReads(
-    /\barg(?:Flag|Switch|Number)\(|process\.argv\.includes\(/
-  );
+  const flagReadingDefaults = parameterReads(FLAG_READ);
 
   it('read no single flag in a parameter default', () => {
     expect(
