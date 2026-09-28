@@ -18,6 +18,12 @@ import {
 // (reportBucket) and then hand the raw fields here, so validation, the
 // honeypot, the issue Markdown, and the error wording can't drift between them.
 
+// The body cap at both front doors: the capped message plus an optional device
+// snapshot and framing. It holds for the form door's percent-encoding too, which
+// at most triples each UTF-8 byte; the /feedback action's test posts the longest
+// message the form allows in its costliest encoding.
+export const MAX_REPORT_BODY_BYTES = 64 * 1024;
+
 // Identifies every in-app submission at a glance; each kind's type label mirrors
 // the repo's taxonomy (docs/ISSUE-WORKFLOW.md). All are declared in
 // .github/labels.yml, but GitHub also auto-creates any missing label on write.

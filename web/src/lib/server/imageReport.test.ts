@@ -7,7 +7,10 @@ const { createIssue, deleteImageReport, saveImageReport } = vi.hoisted(() => ({
   saveImageReport: vi.fn(),
 }));
 
-vi.mock('./github', () => ({ createIssue }));
+vi.mock('./github', async (original) => ({
+  ...(await original<typeof import('./github')>()),
+  createIssue,
+}));
 vi.mock('./imageReportStore', async (original) => ({
   ...(await original<typeof import('./imageReportStore')>()),
   deleteImageReport,
@@ -118,6 +121,25 @@ describe('submitImageReport', () => {
     expect(issueBodyLastLine()).toBe(
       `The bundle contains the rejected drawing, resolved prompt, and metadata. Review within ${IMAGE_REPORT_REVIEW_HOURS} hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`
     );
+  });
+
+  // The reason is the model's own sentence about a drawing that can hold
+  // handwriting, so it can echo a mention, a cross-reference, or a remote image.
+  it('files a refusal reason inert in the issue and verbatim in the evidence', async () => {
+    const refusalReason = 'It says @someone ![x](http://e.example/p.png) and #1';
+
+    await submitImageReport({
+      kind: 'false-positive-refusal',
+      drawing: new Blob(['drawing'], { type: 'image/png' }),
+      output: null,
+      style: 'Felt',
+      reportContext: { kind: 'false-positive-refusal', refusalReason },
+    });
+
+    expect(createIssue.mock.calls[0][0].body).toContain(
+      '**Refusal reason:** It says \\@someone \\![x](http://e.example/p.png) and \\#1'
+    );
+    expect(saveImageReport).toHaveBeenCalledWith(expect.objectContaining({ refusalReason }));
   });
 
   it('rejects a refusal without a server-authenticated reason', async () => {

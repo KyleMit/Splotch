@@ -1,11 +1,23 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
-import { sessionToken, beginAdminLogin, verifySessionToken, buildInvites } from '$lib/server/admin';
+import {
+  beginAdminLogin,
+  buildInvites,
+  MAX_ADMIN_LOGIN_BODY_BYTES,
+  sessionToken,
+  verifySessionToken,
+} from '$lib/server/admin';
 import type { Invite } from '$lib/server/admin';
-import { throttledMessage } from '$lib/server/http';
+import {
+  formStringField,
+  readFormBody,
+  throttledMessage,
+  unreadableFormBody,
+} from '$lib/server/http';
 import {
   getTokensStatus,
   addToken,
   removeToken,
+  MAX_TOKEN_MUTATION_BODY_BYTES,
   MUTATION_FAILURE_STATUS,
 } from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
@@ -108,8 +120,12 @@ async function tokenMutation(
   verb: 'Added' | 'Removed'
 ) {
   requireAdmin(cookies);
-  const form = await request.formData();
-  const token = String(form.get('token') ?? '').trim();
+  const body = await readFormBody(request, MAX_TOKEN_MUTATION_BODY_BYTES);
+  if (!body.ok) {
+    const { status, message } = unreadableFormBody(body.reason);
+    return fail(status, { error: message });
+  }
+  const token = formStringField(body.form, 'token').trim();
   const result = await op(token);
   if (!result.ok) return fail(MUTATION_FAILURE_STATUS[result.reason], { error: result.error });
   return { success: true, message: `${verb} “${token}”` };
@@ -122,9 +138,12 @@ export const actions: Actions = {
       return fail(429, { loginError: throttledMessage(attempt.retryAfter) });
     }
 
-    const form = await request.formData();
-    const key = String(form.get('access-key') ?? '');
-    if (!attempt.verify(key).ok) {
+    const body = await readFormBody(request, MAX_ADMIN_LOGIN_BODY_BYTES);
+    if (!body.ok) {
+      const { status, message } = unreadableFormBody(body.reason);
+      return fail(status, { loginError: message });
+    }
+    if (!attempt.verify(formStringField(body.form, 'access-key')).ok) {
       return fail(403, { loginError: 'Incorrect access key.' });
     }
     setSession(cookies);

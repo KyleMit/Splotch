@@ -1,28 +1,41 @@
 import { isHttpError, json } from '@sveltejs/kit';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
+import { loggableFailure } from './logRedaction';
 
 export function contentTypeOf(request: Request): string {
   return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
 }
 
+type BodyRejection = { ok: false; reason: 'too-large' | 'malformed' };
+
+const BODY_TOO_LARGE_MESSAGE = 'Request body is too large';
+
+// A stream that errors is a malformed body, unless the platform's own body cap
+// raised it: that is the same too-large answer the caller's cap would give.
+async function readBoundedBody(
+  request: Request,
+  maxBytes: number
+): Promise<{ ok: true; bytes: Buffer } | BodyRejection> {
+  try {
+    const body = await readBodyWithinLimit(request, maxBytes);
+    return body.ok ? body : { ok: false, reason: 'too-large' };
+  } catch (cause) {
+    return { ok: false, reason: asRecord(cause)?.status === 413 ? 'too-large' : 'malformed' };
+  }
+}
+
 export type JsonBodyResult = { ok: true; body: unknown } | { ok: false; response: Response };
 
 export async function readJsonBody(request: Request, maxBytes: number): Promise<JsonBodyResult> {
-  let body: Awaited<ReturnType<typeof readBodyWithinLimit>>;
-  try {
-    body = await readBodyWithinLimit(request, maxBytes);
-  } catch (cause) {
-    const tooLarge = asRecord(cause)?.status === 413;
+  const body = await readBoundedBody(request, maxBytes);
+  if (!body.ok) {
     return {
       ok: false,
-      response: fail(
-        tooLarge ? 413 : 400,
-        tooLarge ? 'Request body is too large' : 'Expected a JSON body'
-      ),
+      response:
+        body.reason === 'too-large'
+          ? fail(413, BODY_TOO_LARGE_MESSAGE)
+          : fail(400, 'Expected a JSON body'),
     };
-  }
-  if (!body.ok) {
-    return { ok: false, response: fail(413, 'Request body is too large') };
   }
 
   try {
@@ -30,6 +43,40 @@ export async function readJsonBody(request: Request, maxBytes: number): Promise<
   } catch {
     return { ok: false, response: fail(400, 'Expected a JSON body') };
   }
+}
+
+/**
+ * The bounded `request.formData()`, which would otherwise buffer whatever the
+ * client sends: a form action has no body cap of its own on Netlify. Callers
+ * map each rejection themselves, since a form action answers with `fail()` and
+ * an endpoint with a Response; the actions share `unreadableFormBody`.
+ */
+export async function readFormBody(
+  request: Request,
+  maxBytes: number
+): Promise<{ ok: true; form: FormData } | BodyRejection> {
+  const body = await readBoundedBody(request, maxBytes);
+  if (!body.ok) return body;
+
+  try {
+    // Re-parses the bytes already bounded; `request.formData()` would read the
+    // stream a second time. Copied into a plain Uint8Array and wrapped as a
+    // Blob: the ambient BodyInit union takes no typed array, and Buffer's
+    // ArrayBufferLike is not a BlobPart. The copy is at most `maxBytes`.
+    const form = await new Response(new Blob([new Uint8Array(body.bytes)]), {
+      headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
+    }).formData();
+    return { ok: true, form };
+  } catch {
+    return { ok: false, reason: 'malformed' };
+  }
+}
+
+/** A form action's answer to a body `readFormBody` refused, worded as `readJsonBody`'s. */
+export function unreadableFormBody(reason: BodyRejection['reason']) {
+  return reason === 'too-large'
+    ? ({ status: 413, message: BODY_TOO_LARGE_MESSAGE } as const)
+    : ({ status: 400, message: 'Expected a form body' } as const);
 }
 
 export async function readBodyWithinLimit(
@@ -79,6 +126,12 @@ export function stringField(body: unknown, name: string): string {
   return typeof v === 'string' ? v : '';
 }
 
+/** `stringField` for a form: a file part or a missing field reads as empty. */
+export function formStringField(form: FormData, name: string): string {
+  const v = form.get(name);
+  return typeof v === 'string' ? v : '';
+}
+
 /**
  * The one throttling sentence a visitor ever sees. Exported so a rate-limited
  * form action — which returns `fail()` rather than a Response — words it
@@ -120,7 +173,7 @@ export function apiHandler<Event extends { url: { pathname: string } }>(
       return await handler(event);
     } catch (cause) {
       if (isHttpError(cause)) return fail(cause.status, cause.body.message);
-      console.error(ERROR_LOG_PREFIX.server, event.url.pathname, 500, cause);
+      console.error(ERROR_LOG_PREFIX.server, event.url.pathname, 500, loggableFailure(cause));
       return fail(500, GENERIC_ERROR_MESSAGE);
     }
   };

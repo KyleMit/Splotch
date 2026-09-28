@@ -20,12 +20,17 @@ vi.mock('$lib/server/tokens', async (importOriginal) => ({
 vi.mock('$lib/server/usage', () => ({ readUsageAndPurgeExpired: vi.fn() }));
 
 import { sessionToken } from '$lib/server/admin';
-import { addToken, removeToken, type MutationResult } from '$lib/server/tokens';
+import {
+  addToken,
+  MAX_TOKEN_MUTATION_BODY_BYTES,
+  removeToken,
+  type MutationResult,
+} from '$lib/server/tokens';
 import { actions } from './+page.server';
 
 const SECRET = 'the-raw-secret';
 
-function tokenDoor(action: 'add' | 'remove', token: string) {
+function tokenDoor(action: 'add' | 'remove', token: string | Blob) {
   const body = new FormData();
   body.set('token', token);
   const request = new Request(`http://localhost/admin?/${action}`, { method: 'POST', body });
@@ -98,5 +103,25 @@ describe('the /admin token form actions', () => {
       message: 'Removed “spaced”',
     });
     expect(removeToken).toHaveBeenCalledWith('spaced');
+  });
+
+  it('answers 413 over the JSON endpoint body cap without mutating anything', async () => {
+    expect(await tokenDoor('add', 'x'.repeat(MAX_TOKEN_MUTATION_BODY_BYTES))).toMatchObject({
+      status: 413,
+      data: { error: 'Request body is too large' },
+    });
+    expect(addToken).not.toHaveBeenCalled();
+  });
+
+  // String() would have handed the core a token spelled "[object Blob]".
+  it('reads a token sent as a file as no token at all', async () => {
+    vi.mocked(addToken).mockResolvedValue({
+      ok: false,
+      error: 'Token is required',
+      reason: 'invalid',
+    });
+    await tokenDoor('add', new Blob(['mine']));
+
+    expect(addToken).toHaveBeenCalledWith('');
   });
 });
