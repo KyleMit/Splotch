@@ -28,10 +28,12 @@ to when a collection has no reachable entry page.
 npm run scrapbook:publish -- <source> <type>/<name>
 ```
 
-The destination must resolve beneath `scrapbook/`; `..` escapes and absolute paths that land outside
-it are rejected. The source is copied recursively, replacing matching destination files, then both
-generated landing pages are rebuilt. Publishing does not remove unrelated files already present in a
-destination directory, so prune retired keeper artifacts deliberately when replacing a collection.
+The destination is a relative `<type>/<name>` path beneath `scrapbook/`: `.`, a bare `<type>`, `..`
+escapes, and absolute paths are rejected, as is a destination whose real path leaves `scrapbook/`
+through a symlink. A source copied onto an existing directory replaces it, so files the new run no
+longer produces do not stay deployed. Publishing refuses when the destination exists as the other
+kind (file vs directory) or overlaps the source, including through a symlink or a case alias. Both
+generated landing pages are rebuilt afterwards.
 
 ## Rebuild and verify
 

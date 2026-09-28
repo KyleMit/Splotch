@@ -9,7 +9,16 @@
 //
 // Cross-platform (ADR-0017): pure node:fs, no shell.
 
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ROOT, fail, isMain } from '../lib/proc.mjs';
@@ -56,16 +65,45 @@ const isWithin = (path, parent) => {
 export function resolvePublishDestination(dest, scrapbookDir = SCRAPBOOK_DIR) {
   const destPath = resolve(scrapbookDir, dest);
   const rel = relative(scrapbookDir, destPath);
-  if (!isWithin(destPath, scrapbookDir) || rel.split(sep).length < 2) {
+  if (isAbsolute(dest) || !isWithin(destPath, scrapbookDir) || rel.split(sep).length < 2) {
     throw new Error(`Destination must be <type>/<name> inside scrapbook/: got "${dest}"`);
   }
   return { destPath, rel };
 }
 
+const identity = (path) => {
+  const { dev, ino } = statSync(path);
+  return `${dev}:${ino}`;
+};
+
+// Every directory from `path` up to the filesystem root, compared by identity rather than spelling,
+// so neither a symlink nor a case-insensitive alias can hide that two paths overlap.
+function ancestorIdentities(path) {
+  const identities = new Set();
+  for (let dir = realpathSync(path); ; dir = dirname(dir)) {
+    identities.add(identity(dir));
+    if (dirname(dir) === dir) return identities;
+  }
+}
+
+function nearestExisting(path) {
+  let existing = path;
+  while (!existsSync(existing)) existing = dirname(existing);
+  return existing;
+}
+
 // Re-publishing a directory replaces it, so a file the new run dropped does not linger in the
-// deployed collection.
-export function replaceWithCopy(srcPath, destPath) {
-  if (isWithin(srcPath, destPath) || isWithin(destPath, srcPath)) {
+// deployed collection. Everything that decides what the removal may reach is checked on the
+// filesystem first.
+export function replaceWithCopy(srcPath, destPath, scrapbookDir = SCRAPBOOK_DIR) {
+  const destAncestors = ancestorIdentities(nearestExisting(destPath));
+  if (!destAncestors.has(identity(scrapbookDir))) {
+    throw new Error(`Destination resolves outside scrapbook/: ${destPath}`);
+  }
+  const destOverlapsSource =
+    destAncestors.has(identity(srcPath)) ||
+    (existsSync(destPath) && ancestorIdentities(srcPath).has(identity(destPath)));
+  if (destOverlapsSource) {
     throw new Error(`Source and destination overlap: ${srcPath} → ${destPath}`);
   }
   if (existsSync(destPath)) {
