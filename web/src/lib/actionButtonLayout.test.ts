@@ -2,7 +2,6 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PHONE_LANDSCAPE_QUERY } from './breakpoints';
 import type { SafeAreaInsets } from './platform/safeArea';
 import { layoutState } from './state/layout.svelte';
-import { networkState } from './state/network.svelte';
 import { FREE_GENERATION_LIMIT } from './freeGenerations';
 import { freeGenerationsState } from './state/freeGenerations.svelte';
 import {
@@ -61,6 +60,10 @@ function setViewport(width: number, height: number, phoneLandscape = false) {
   window.dispatchEvent(new Event('resize'));
 }
 
+function setConnectivity(online: boolean) {
+  window.dispatchEvent(new Event(online ? 'online' : 'offline'));
+}
+
 beforeAll(() => {
   window.matchMedia = ((query: string) => ({
     get matches() {
@@ -88,7 +91,7 @@ function resetState() {
   setAiImage(true);
   settingsState.mirrorAiAccessToken('');
   settingsState.mirrorAiUserApiKey('');
-  networkState.setOnline(true);
+  setConnectivity(true);
   freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
 
   device.insets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -115,10 +118,10 @@ describe('isAiImageButtonUsable', () => {
     settingsState.mirrorAiUserApiKey('key');
     expect(isAiImageButtonUsable()).toBe(true);
 
-    networkState.setOnline(false);
+    setConnectivity(false);
     expect(isAiImageButtonUsable()).toBe(false);
 
-    networkState.setOnline(true);
+    setConnectivity(true);
     setAiImage(false);
     expect(isAiImageButtonUsable()).toBe(false);
   });
@@ -143,11 +146,11 @@ describe('shownActionButtonCount', () => {
     expect(isAiImageButtonUsable()).toBe(true);
     expect(shownActionButtonCount()).toBe(6);
 
-    networkState.setOnline(false);
+    setConnectivity(false);
     expect(isAiImageButtonShown()).toBe(false);
     expect(shownActionButtonCount()).toBe(5);
 
-    networkState.setOnline(true);
+    setConnectivity(true);
     expect(isAiImageButtonShown()).toBe(true);
     expect(shownActionButtonCount()).toBe(6);
   });
@@ -398,12 +401,12 @@ describe('publishActionPanelState', () => {
     setColoringBook(false);
     setScreenshot(false);
     setUndoButton(false);
-    networkState.setOnline(false);
+    setConnectivity(false);
     const el = document.createElement('div');
     publishActionPanelState(el, false, 1);
     expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(true);
 
-    networkState.setOnline(true);
+    setConnectivity(true);
     publishActionPanelState(el, false, 1);
     expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(false);
     expect(el.style.getPropertyValue(ACTION_BUTTON_COUNT_PROPERTY)).toBe('1');

@@ -321,7 +321,9 @@ export function createInstall(
     // beforeinstallprompt is one-shot and can fire before the page component
     // mounts (on a repeat visit the service worker already controls the page, so
     // Chromium's installability check races hydration). Listen from module load,
-    // not from initInstallPrompt(), so an early event isn't silently lost.
+    // not from initInstallPrompt(), so an early event isn't silently lost. That
+    // is early only while this module is modulepreloaded;
+    // web/tests/startup-bundle.spec.ts fails if it leaves the startup set.
     // The compile-time constant leads the condition so the native build folds the
     // whole block away (tools/mobile/check-static-bundle.mjs scans for it).
     install() {

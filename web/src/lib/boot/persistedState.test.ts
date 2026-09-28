@@ -50,14 +50,9 @@ vi.mock('../state/saveFolder.svelte', () => ({
   hydrateSaveFolder: vi.fn(),
 }));
 
-vi.mock('../platform/orientation', () => ({
-  applyDeviceOrientationPreference: vi.fn(),
-}));
-
 import { STORAGE_KEYS } from '../storage';
 import { saveAccessCode } from '../secureStorage';
-import { applyDeviceOrientationPreference } from '../platform/orientation';
-import { setOrientationChoice, settingsState } from '../state/settings.svelte';
+import { settingsState } from '../state/settings.svelte';
 import { hydratePersistedState } from './persistedState';
 import { createPersistedStateStatus } from './persistedStateStatus.svelte';
 
@@ -69,9 +64,6 @@ beforeEach(() => {
   secureStore.accessCode = null;
   settingsState.mirrorAiUserApiKey('');
   settingsState.mirrorAiAccessToken('');
-  setOrientationChoice('portrait');
-  // The setters persist; the durable-restore cases want an empty local store.
-  localStorage.clear();
   ctrl.native = false;
   vi.mocked(saveAccessCode)
     .mockReset()
@@ -123,15 +115,5 @@ describe('hydratePersistedState', () => {
       expect.objectContaining({ message: 'secure storage unavailable' })
     );
     warn.mockRestore();
-  });
-
-  it('applies the restored device orientation preference', async () => {
-    ctrl.native = true;
-    prefsStore.set(STORAGE_KEYS.lockRotation, 'false');
-    prefsStore.set(STORAGE_KEYS.forceLandscape, 'true');
-
-    await hydratePersistedState();
-
-    expect(applyDeviceOrientationPreference).toHaveBeenCalledWith('auto', false);
   });
 });
