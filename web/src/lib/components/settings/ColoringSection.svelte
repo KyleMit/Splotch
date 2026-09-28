@@ -11,6 +11,7 @@
     setColoringPacksAllowMetered,
   } from '$lib/state/settings.svelte';
   import { notifyColoringPackPolicyChanged } from '$lib/coloringPacks/policy';
+  import { settingsModal } from '$lib/state/ui.svelte';
   import '$lib/components/deferredIcons';
 
   let removing = $state(false);
@@ -20,6 +21,13 @@
   const downloadingBookName = $derived(
     BOOKS.find((book) => book.id === coloringPacksState.downloadingBookId)?.name ?? null
   );
+
+  // The wide shell keeps this section mounted across a close, so each open
+  // clears a failure a finished removal left behind. A removal still running
+  // shows "Removing…" into the new visit, so that visit owns its outcome.
+  $effect(() => {
+    if (settingsModal.open) removeError = false;
+  });
 
   function megabytes(bytes: number): string {
     return `${(bytes / 1_000_000).toFixed(1)} MB`;

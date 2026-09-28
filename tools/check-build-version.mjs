@@ -57,9 +57,13 @@ function bundleVersionProblems(bundleDir, label, version) {
   return problems;
 }
 
-function serviceWorkerProblems(clientDir, version) {
+// The web build ships a service worker and the native build ships none; each
+// mode states its own expectation so a missing file never reads as the other.
+function serviceWorkerProblems(clientDir, version, native) {
   const swPath = join(clientDir, 'sw.js');
-  if (!existsSync(swPath)) return [];
+  const shipped = existsSync(swPath);
+  if (native) return shipped ? ['Native client ships sw.js'] : [];
+  if (!shipped) return ['Client sw.js is missing'];
   const precached = [...readFileSync(swPath, 'utf8').matchAll(PRECACHE_URL_PATTERN)]
     .map((match) => match[1])
     .filter((url) => COLORING_MANIFEST_PATTERN.test(url));
@@ -69,21 +73,21 @@ function serviceWorkerProblems(clientDir, version) {
   ];
 }
 
-export function buildVersionProblems({ clientDir, serverDir }) {
+export function buildVersionProblems({ clientDir, serverDir, native }) {
   const clientVersionJson = join(clientDir, VERSION_JSON_FILENAME);
   if (!existsSync(clientVersionJson)) return [`Client ${VERSION_JSON_FILENAME} does not exist`];
   const version = readVersion(clientVersionJson);
   return [
     ...bundleVersionProblems(clientDir, 'Client', version),
     ...bundleVersionProblems(serverDir, 'Server', version),
-    ...serviceWorkerProblems(clientDir, version),
+    ...serviceWorkerProblems(clientDir, version, native),
   ];
 }
 
 export async function checkBuildVersion({ native = false, log = console.log } = {}) {
   const clientDir = SHIPPED_CLIENT_DIR;
   const serverDir = SERVER_DIRS[native ? 'native' : 'web'];
-  const problems = buildVersionProblems({ clientDir, serverDir });
+  const problems = buildVersionProblems({ clientDir, serverDir, native });
   if (problems.length) throw new Error(problems.join('\n'));
   const version = readVersion(join(clientDir, VERSION_JSON_FILENAME));
   log(`[build-version] client, server, and coloring manifest all carry ${version}`);
