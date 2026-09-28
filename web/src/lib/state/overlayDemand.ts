@@ -5,7 +5,7 @@ import type { BootHiddenOverlayKey } from '$lib/boot/bootHiddenOverlays';
 // starting — not to an effect watching the open flag afterwards. The drawing
 // route installs its overlay controller here for the time it is mounted; on any
 // other route, or before the route mounts, a demand has no controller to reach
-// and is dropped, exactly as the old open-flag effects were absent there.
+// and is dropped, since only the mounted drawing route hosts these overlays.
 type OverlayDemand = (key: BootHiddenOverlayKey) => void;
 
 export interface OverlayDemandState {

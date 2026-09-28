@@ -112,8 +112,8 @@ test('Ctrl+Z still undoes while the button is hidden, and plays no cue', async (
 
   await page.keyboard.press('Control+Z');
   // The button is hidden, so the toBeEnabled/toBeDisabled sync point the
-  // sibling tests use is unavailable here — undo() resolves asynchronously
-  // through queuePaperStep, so poll the canvas instead of reading it once.
+  // sibling tests use is unavailable here — poll the canvas instead of reading
+  // it once.
   await expect.poll(() => firstOpaquePixel(page)).toBeNull();
 
   await panel.evaluate((element) => element.removeAttribute('data-off-undo'));

@@ -9,12 +9,11 @@
   // invite links arrive via `data`. The secret never reaches the client.
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
-  // This page binds the console's callbacks
-  // to the server form actions so auth stays in the HTTP-only cookie. Each
-  // callback POSTs FormData to the action and feeds the result through
-  // `applyAction` (SvelteKit's documented programmatic-submission pattern),
-  // which follows the login/logout redirects and updates the `form` prop —
-  // identical behavior to the `use:enhance` forms this replaces.
+  // This page binds the console's callbacks to the server form actions so auth
+  // stays in the HTTP-only cookie. Each callback POSTs FormData to the action
+  // and feeds the result through `applyAction` (SvelteKit's documented
+  // programmatic-submission pattern), which follows the login/logout redirects
+  // and updates the `form` prop.
   async function submit(action: string, fields: Record<string, string> = {}) {
     const body = new FormData();
     for (const [name, value] of Object.entries(fields)) body.append(name, value);

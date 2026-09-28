@@ -55,7 +55,7 @@ export function createSettingsMediaQueries(queries: { wide: string; compact: str
 
   // Coming to the foreground with an idle update still pending: apply it now
   // rather than leaving the pane a frame behind the viewport it is opening
-  // into. This was previously a side effect of resubscribing.
+  // into.
   $effect(() => {
     if (!foreground() || !cancelPending) return;
     cancelPending();

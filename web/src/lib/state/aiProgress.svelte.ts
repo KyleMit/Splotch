@@ -26,6 +26,8 @@ export interface AiProgressState {
  * from zero on every restore. One loop, owned above both surfaces, is also what
  * lets a picture that lands while minimized be *already revealed* when the tap
  * comes back — a finished picture must never be shown behind a progress dial.
+ *
+ * `estimateMs` is a test seam: the shared instance takes the default.
  */
 export function createAiProgress(
   state: AiResultState,

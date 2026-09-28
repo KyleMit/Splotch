@@ -340,9 +340,9 @@
      at first paint without making live changes document-wide.
 
      The collapse is a grid accordion: the outer grid animates one track between
-     1fr (open) and 0fr (closed) — width in landscape, height in portrait, matching
-     the old slide axis — while the inner clips its overflowing content. The margin
-     toward the toggle collapses too, so the toggle glides to the corner. */
+     1fr (open) and 0fr (closed) — width in landscape, height in portrait — while
+     the inner clips its overflowing content. The margin toward the toggle
+     collapses too, so the toggle glides to the corner. */
   .actions-drawer {
     --cascade: 30ms;
     display: grid;

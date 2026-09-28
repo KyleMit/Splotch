@@ -3,14 +3,13 @@
 // The magic brush reveals a hidden "color sheet" wherever the child strokes.
 // Two sources can feed that sheet, and this module owns both:
 //
-//   1. A coloring page's flat-colored fill (`{page}.light.webp`), when a page is
-//      applied — a revealed pixel lands under the line art it belongs to. The
-//      shipped fill is fills-only: its own outline pixels are already punched to
-//      transparency at build time (asset-gen's `tools/asset-gen/lib/punch-fill.mjs`,
-//      luma < 150 → transparent), so revealing it can't double the overlay <img>'s
-//      line work — the overlay stays the single source of line work. This module
-//      just loads and draws it; the punch used to happen here at runtime (see
-//      ADR-0043's build-time follow-up).
+//   1. A coloring page's flat-colored fill (`{page}.{light,night}.webp`), when a
+//      page is applied — a revealed pixel lands under the line art it belongs to.
+//      The shipped fill is fills-only: its own outline pixels are already
+//      inpainted with the surrounding fill colour at build time (asset-gen's
+//      `tools/asset-gen/lib/punch-fill.mjs`, ADR-0043), so revealing it can't
+//      double the overlay <img>'s line work — the overlay stays the single source
+//      of line work. This module only loads and draws it.
 //   2. A generated rainbow gradient, when no page is applied. The brush works
 //      everywhere, so with a blank canvas it reveals one of MAGIC_GRADIENT_COUNT
 //      pre-generated random rainbows. One is chosen the first time the brush is

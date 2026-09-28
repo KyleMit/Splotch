@@ -21,8 +21,8 @@ import { isStyleName, type StyleName } from '../ai/styles';
 //
 // So the input is written here and taken by the worker in one read-and-delete:
 // it is at rest for the handoff and no longer. The finished picture is at rest
-// until the poll that hands it over deletes it. That is a real change from the
-// single-request flow, which kept nothing at all, and /privacy says so.
+// until the poll that hands it over deletes it. A generation answered in-line
+// keeps nothing at all, so only this handoff stores either, and /privacy says so.
 
 export const GENERATION_JOB_STORE_NAME = 'ai-generation-jobs';
 
@@ -229,7 +229,10 @@ const digestOf = (payload: string) =>
 // and every generation quietly falls back to the synchronous path.
 export const WORK_TICKET_HEADER = 'X-Work-Ticket';
 
-/** A ticket authorizing exactly this job with exactly this payload, or null if unconfigured. */
+/**
+ * A ticket authorizing exactly this job with exactly this payload, or null if unconfigured.
+ * `now` is a test seam: production callers omit it and take the wall clock.
+ */
 export function issueWorkTicket(
   jobId: string,
   payload: string,
@@ -241,6 +244,7 @@ export function issueWorkTicket(
   return `${expiresAt}.${sign(jobId, digestOf(payload), expiresAt, secret)}`;
 }
 
+// `now` is a test seam: production callers omit it and take the wall clock.
 export function verifyWorkTicket(
   ticket: string | null,
   jobId: string,
@@ -261,7 +265,8 @@ export function verifyWorkTicket(
 /**
  * Mark the job started. Written before the worker is invoked so a poll can tell
  * "not finished yet" from "no such job" — without it a mistyped id would be
- * reported as pending forever.
+ * reported as pending forever. `now` is a test seam: production callers omit
+ * it and take the wall clock.
  */
 export async function markJobPending(
   jobId: string,
@@ -346,6 +351,7 @@ export async function completeJob(
   await jobStore.setJSON(statusKey(jobId), record, { onlyIfMatch: existing.etag });
 }
 
+// `now` is a test seam: production callers omit it and take the wall clock.
 export async function readJob(jobId: string, now = Date.now()): Promise<GenerationJobState> {
   let record: StoredJob | null;
   try {
@@ -394,6 +400,8 @@ export async function discardJob(jobId: string): Promise<void> {
  * A job with no status record is swept too. The status is written before the
  * input, so bytes without one are the remains of a job whose record has already
  * gone — never a job still being started.
+ *
+ * `now` is a test seam: production callers omit it and take the wall clock.
  */
 export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
   attemptedJobs: number;
