@@ -477,9 +477,9 @@ Write specs that can't race in the first place:
   later. Hover a stable control instead (`locator.hover()`), which moves the hit-test target itself.
 * **A control's UI state commits a tick before the imperative engine adopts it, so wait on the
   engine.** The tool buttons update `aria-pressed` reactively, but the engine enters that mode
-  through a Svelte `$effect` (`setMagicMode` in `DrawingCanvas`), so `aria-pressed=true` does not
-  prove the engine switched, and a stroke drawn in that window would commit under the previous brush
-  — already painted before anything can observe it. `pickBrush()` closes it by polling the engine's
+  through a Svelte `$effect` (`setBrush` in `DrawingCanvas`), so `aria-pressed=true` does not prove
+  the engine switched, and a stroke drawn in that window would commit under the previous brush —
+  already painted before anything can observe it. `pickBrush()` closes it by polling the engine's
   own `window.__committedBrushMode` (the dev-harness seam in `lib/boot/devHarnessSeam.ts`,
   ADR-0080); prefer that shape — a signal for the state you actually depend on — over retrying an
   action until its effect appears. Where you must assert instead, pick a metric a wrong-mode action

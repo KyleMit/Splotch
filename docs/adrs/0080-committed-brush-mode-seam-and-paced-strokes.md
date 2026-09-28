@@ -182,6 +182,15 @@ ADR-0109 narrows the original `devHarnessSeam.ts` module rule that inspection se
 dev-gated handle may invoke a production transition under ADR-0109's constraints, while direct
 mutation of otherwise-unreachable state remains forbidden.
 
+## Amendment (2026-09-27): the committed brush is one value
+
+ADR-0067's 2026-09-27 amendment gives the engine one `brush: BrushType` in place of three flags.
+`committedBrushMode()` returns that brush instead of resolving the flags with `renderOp`'s
+precedence, and the unit tests that pinned flag overlaps are gone because the engine can no longer
+hold one. The downside that the seam restates `renderOp`'s precedence no longer applies: every op
+the engine draws sets at most one brush flag, so that precedence never chooses between two. The
+`window.__committedBrushMode` contract and the `pickBrush()` poll are unchanged.
+
 ## Reproducing
 
 The measurements above come from three throwaway harnesses, all on the 4-core container profile

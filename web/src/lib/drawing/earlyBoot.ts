@@ -3,22 +3,13 @@ import { playDrawSound, preloadFirstDrawSound, stopDrawSound } from '$lib/audio/
 import { colorsState } from '$lib/state/colors.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import { activeStrokeSize, getStrokeWidthPx } from '$lib/state/strokeWidth.svelte';
-import {
-  engineOwnsCanvas,
-  initDrawingCanvas,
-  setCrayonMode,
-  setMagicMode,
-  setStrokeWidth,
-} from './engine';
+import { engineOwnsCanvas, initDrawingCanvas, setBrush, setStrokeWidth } from './engine';
 
 // The toolState→engine bridge, shared by the pre-hydration boot below and
-// DrawingCanvas.svelte's reactive push so the two can't drift. Eraser mode is
-// not part of it: `readBrush` in $lib/state/tool.svelte never restores an
-// eraser from storage, so only the component drives it.
+// DrawingCanvas.svelte's reactive push so the two can't drift.
 export function pushToolStateToEngine(): void {
   setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
-  setCrayonMode(toolState.brush === 'crayon');
-  setMagicMode(toolState.brush === 'magic');
+  setBrush(toolState.brush);
 }
 
 // Boot the drawing engine at module-evaluation time (ADR-0072): the home route

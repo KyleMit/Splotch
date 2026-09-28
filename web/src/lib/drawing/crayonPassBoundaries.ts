@@ -72,28 +72,21 @@ export function createCrayonPassBoundaries({ renderOp, recordOp }: CrayonPassBou
 
   return {
     /**
-     * The seed and tracker a stroke opens its first pass with.
-     *
-     * `seeded` and `tracked` are separate on purpose, and the asymmetry is
-     * load-bearing: every crayon-mode op carries a seed so a replay reproduces
-     * its pattern phase, but only a stroke that actually deposits wax gets a
-     * pass tracker — an eraser or magic stroke in crayon mode has no pass to
-     * split. Collapsing them to one flag silently stops seeding those ops.
+     * The seed and tracker a stroke opens its first pass with. Only a crayon
+     * stroke deposits wax, so every other brush gets neither.
      */
     openStroke({
-      seeded,
-      tracked,
+      crayon,
       at,
       lineWidth,
     }: {
-      seeded: boolean;
-      tracked: boolean;
+      crayon: boolean;
       at: { x: number; y: number };
       lineWidth: number;
     }) {
       return {
-        seed: seeded ? seedCounter++ : 0,
-        passTracker: tracked ? new CrayonPassTracker(at.x, at.y, lineWidth) : null,
+        seed: crayon ? seedCounter++ : 0,
+        passTracker: crayon ? new CrayonPassTracker(at.x, at.y, lineWidth) : null,
       };
     },
 
