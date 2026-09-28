@@ -10,6 +10,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { esc } from '../lib/html.mjs';
 import { ROOT, fail, isMain } from '../lib/proc.mjs';
 import { parseFrontmatter, compareSemverDesc, writeFileDeep } from './lib/release-frontmatter.mjs';
 import { renderReleaseMarkdown } from './lib/release-markdown.mjs';
@@ -117,14 +118,6 @@ function indentStaticHtml(html) {
     .join('\n');
 }
 
-function escapeHtml(value) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
-}
-
 function escapeSvelteBraces(html) {
   return html.replaceAll('{', '&#123;').replaceAll('}', '&#125;');
 }
@@ -165,9 +158,9 @@ export function renderReleaseComponent(body, filename) {
 export function renderReleaseHistory(releases) {
   const articles = releases
     .map((release) => {
-      const version = escapeHtml(release.meta.version);
-      const isoDate = escapeHtml(release.meta.date);
-      const dateLabel = escapeHtml(release.dateLabel);
+      const version = esc(release.meta.version);
+      const isoDate = esc(release.meta.date);
+      const dateLabel = esc(release.dateLabel);
       const bodyWithNestedHeadings = release.body.replace(
         /^(#{1,5})(?=\s)/gm,
         (heading) => `${heading}#`

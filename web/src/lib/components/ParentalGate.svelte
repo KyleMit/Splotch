@@ -255,12 +255,12 @@
     }
   }
 
-  /* ── Landscape / short screens (mirrors SettingsModal's compact breakpoint)
+  /* ── Landscape / short screens (restates breakpoints.ts PHONE_LANDSCAPE_QUERY)
      A stacked card is taller than a landscape phone, and the keypad's bottom
      row holds the check key: scrolling down to it would push the equation and
      its feedback out of view on every answer. So the keypad stands beside the
      problem, and everything a parent taps and reads shares one screen. */
-  @media (orientation: landscape) and (max-height: 599px) {
+  @media (orientation: landscape) and (max-height: 599.98px) {
     .parental-gate {
       max-width: 560px;
     }

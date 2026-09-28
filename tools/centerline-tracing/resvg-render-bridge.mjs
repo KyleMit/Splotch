@@ -11,17 +11,7 @@
 // scoring.
 import { writeFileSync } from 'node:fs';
 import { Resvg } from '@resvg/resvg-js';
-import { isMain } from '../lib/proc.mjs';
-
-function readStdin() {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (c) => (data += c));
-    process.stdin.on('end', () => resolve(data));
-    process.stdin.on('error', reject);
-  });
-}
+import { isMain, readStdin } from '../lib/proc.mjs';
 
 async function main() {
   const { jobs } = JSON.parse(await readStdin());

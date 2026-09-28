@@ -36,6 +36,7 @@ import {
   costOf,
   imageDims,
   imageFormat,
+  pool,
   takePerCategory,
 } from './lib/model-eval.mjs';
 import { callVariant } from './lib/image-providers.mjs';
@@ -66,20 +67,6 @@ const runId = makeRunId(process.env.OUT_TAG);
 const OUT = join(BASE, 'output', runId);
 
 const PROVIDER_KEY_ENV = { gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY' };
-
-// Run an array of async thunks with a small concurrency cap.
-async function pool(thunks, size) {
-  const results = new Array(thunks.length);
-  let next = 0;
-  async function worker() {
-    while (next < thunks.length) {
-      const i = next++;
-      results[i] = await thunks[i]();
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(size, thunks.length) }, worker));
-  return results;
-}
 
 // Rebuild report/index.html from an existing run's results.json, with no API calls.
 //   REPORT_FROM=tools/model-eval/output/<runId> [VERDICT_FILE=verdict.html] npm run model-eval

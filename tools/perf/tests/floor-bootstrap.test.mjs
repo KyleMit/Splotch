@@ -8,6 +8,7 @@
 // URL carries the run nonce as ?verify=) and stamps its report with the plan
 // nonce, so the host's stale-run gate has something to check.
 import { describe, expect, it, vi } from 'vitest';
+import { pageBootstrapSource, PROBE_INSTALL_SOURCE } from '../split-capture/lib/page-bootstrap.mjs';
 import { FLOOR_BOOTSTRAP_SOURCE } from '../split-capture/serve-floor-control.mjs';
 
 const BOOTSTRAP_TIMEOUT_MS = 10_000;
@@ -30,9 +31,11 @@ function runFloorBootstrap(plan, openedFor, param = 'verify') {
   });
   // The probe is a same-origin <script src> the fixture cannot fetch; simulate
   // its arrival where the bootstrap waits for it.
+  const scripts = [];
   const append = document.head.append.bind(document.head);
   document.head.append = (element) => {
     if (element.tagName === 'SCRIPT') {
+      scripts.push(element.getAttribute('src'));
       window.__probe = {
         finish: () => ({ meta: { counts: { frames: 1, events: 1, measures: 0 } } }),
         frames: (from) => (from === 0 ? [[0, 16, 0]] : []),
@@ -46,8 +49,38 @@ function runFloorBootstrap(plan, openedFor, param = 'verify') {
     return append(element);
   };
   new Function(FLOOR_BOOTSTRAP_SOURCE)();
-  return { posted, reportPosted };
+  return { posted, reportPosted, scripts };
 }
+
+// The floor exists to be measured by the same probe a capture uses, configured
+// the same way, so it installs the probe through the capture bootstrap's source.
+describe('the floor page installing the probe', () => {
+  it('uses the capture page bootstrap’s install source', () => {
+    expect(pageBootstrapSource()).toContain(PROBE_INSTALL_SOURCE);
+    expect(FLOOR_BOOTSTRAP_SOURCE).toContain(PROBE_INSTALL_SOURCE);
+  });
+
+  it(
+    'configures the probe’s globals from the plan before loading it',
+    async () => {
+      delete window.__probePhases;
+      delete window.__probeContactMs;
+      delete window.__probeHud;
+      const { reportPosted, scripts } = runFloorBootstrap(
+        { nonce: 'this-capture', finish: true, contactMs: 4_321 },
+        'this-capture',
+        'probe'
+      );
+
+      await reportPosted;
+      expect(window.__probePhases).toBe('blank');
+      expect(window.__probeContactMs).toBe(4_321);
+      expect(window.__probeHud).toBe(false);
+      expect(scripts).toEqual(['/__probe/probe.js']);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
 
 describe('the floor page proving which run opened it', () => {
   it(

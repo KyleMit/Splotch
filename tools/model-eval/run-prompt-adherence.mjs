@@ -40,6 +40,7 @@ import {
   costOf,
   imageDims,
   imageFormat,
+  pool,
 } from './lib/model-eval.mjs';
 import { buildPromptForStyle } from '../../web/src/lib/ai/prompt.ts';
 import { callVariant } from './lib/image-providers.mjs';
@@ -240,19 +241,6 @@ const LABS = [
 // Arms a bare `npm run model-eval:adherence` compares; the historical and
 // situational arms opt in via LABS.
 const DEFAULT_LAB_KEYS = ['baseline', 'legacy'];
-
-async function pool(thunks, size) {
-  const results = new Array(thunks.length);
-  let next = 0;
-  async function worker() {
-    while (next < thunks.length) {
-      const i = next++;
-      results[i] = await thunks[i]();
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(size, thunks.length) }, worker));
-  return results;
-}
 
 function selectLabs() {
   const wanted = LAB_FILTER.length ? LAB_FILTER : DEFAULT_LAB_KEYS;

@@ -1,14 +1,6 @@
 import { spawn } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parseArgs } from 'node:util';
 import {
@@ -16,6 +8,7 @@ import {
   readCaptureManifest,
   reviewDescriptionDigest,
   validateCritiqueEntries,
+  writeJsonAtomically,
 } from './lib/page-inventory-data.mjs';
 import { CHECKPOINT_SCHEMA_VERSION } from './finalize-page-critique.mjs';
 import { ROOT, hasCommand, isMain, runMain } from '../lib/proc.mjs';
@@ -188,18 +181,6 @@ async function runReviewer({
     // surface's capture, and a 672-capture run would otherwise leave the whole
     // inventory sitting in the temp directory.
     discardStagedImage(runner, staged);
-  }
-}
-
-function writeJsonAtomically(path, document) {
-  mkdirSync(dirname(path), { recursive: true });
-  const staging = mkdtempSync(join(dirname(path), `.${basename(path)}-staging-`));
-  const candidate = join(staging, basename(path));
-  try {
-    writeFileSync(candidate, `${JSON.stringify(document, null, 2)}\n`);
-    renameSync(candidate, path);
-  } finally {
-    rmSync(staging, { recursive: true, force: true });
   }
 }
 

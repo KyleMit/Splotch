@@ -34,10 +34,11 @@ import { createServer } from 'node:http';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
 import { join } from 'node:path';
 import { TCP_PORT, argFlag, argNumber, isMain, ROOT, runMain } from '../../lib/proc.mjs';
+import { PROBE_INSTALL_SOURCE } from './lib/page-bootstrap.mjs';
+import { PROBE_SOURCE, readJsonBody, sendJson, sendText } from './lib/probe-host.mjs';
 import { FLOOR_CONTROL_PAGE, PROBE_REPORT_PATH } from './lib/probe-host-protocol.mjs';
 import { keepIncomingReport, reportFileName, reportRejectionReason } from './lib/report-store.mjs';
 
-const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 const DEFAULT_PORT = 4176;
 const DEFAULT_REPORT_DIR = join(ROOT, 'perf-profiles', 'split-capture', 'reports');
 const CONTACT_BANK_MS = 600_000;
@@ -127,16 +128,7 @@ export const FLOOR_BOOTSTRAP_SOURCE = `
     location.replace('${STAND_DOWN_PATH}');
     return;
   }
-  window.__probePhases = 'blank';
-  window.__probeContactMs = plan.contactMs;
-  window.__probeHud = false;
-  await new Promise((resolve, reject) => {
-    const element = document.createElement('script');
-    element.src = '/__probe/probe.js';
-    element.onload = resolve;
-    element.onerror = () => reject(new Error('probe script failed to load'));
-    document.head.append(element);
-  });
+  ${PROBE_INSTALL_SOURCE}
   const rect = document.querySelector('#drawingCanvas').getBoundingClientRect();
   await post('/__probe/ready', {
     nonce,
@@ -219,30 +211,6 @@ async function defaultFetchText(url) {
   return response.text();
 }
 
-const json = (res, body, status = 200) => {
-  res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-  res.end(JSON.stringify(body));
-};
-
-const send = (res, type, body) => {
-  res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
-  res.end(body);
-};
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', (chunk) => (body += chunk));
-    req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
-}
-
 export function createFloorControlHost({ reportDir, log = console.log } = {}) {
   if (reportDir) mkdirSync(reportDir, { recursive: true });
   const state = {
@@ -253,16 +221,16 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
 
   const server = createServer(async (req, res) => {
     const { pathname } = new URL(req.url, 'http://localhost');
-    if (pathname === '/__probe/plan') return json(res, state.plan);
+    if (pathname === '/__probe/plan') return sendJson(res, state.plan);
     // Same inert husk page the probe host serves: the litter matcher treats
     // this path as a constant meaning "dead page", and the floor host's
     // catch-all would otherwise answer it with a LIVE page that adopts the
     // current plan.
     if (pathname === STAND_DOWN_PATH) {
-      return send(res, 'text/html', STAND_DOWN_PAGE_HTML);
+      return sendText(res, 'text/html', STAND_DOWN_PAGE_HTML);
     }
     if (pathname === '/__probe/state') {
-      return json(res, {
+      return sendJson(res, {
         page: FLOOR_CONTROL_PAGE,
         ready: state.progress,
         hasReport: !!state.report,
@@ -270,24 +238,24 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
     }
     if (req.method === 'GET' && pathname === PROBE_REPORT_PATH) {
       return state.report
-        ? json(res, state.report)
-        : json(res, { error: 'no accepted report for the current plan' }, 404);
+        ? sendJson(res, state.report)
+        : sendJson(res, { error: 'no accepted report for the current plan' }, 404);
     }
     if (pathname !== '/' && Object.hasOwn(FLOOR_SERVED_BODIES, pathname)) {
-      return send(res, 'text/javascript', FLOOR_SERVED_BODIES[pathname]());
+      return sendText(res, 'text/javascript', FLOOR_SERVED_BODIES[pathname]());
     }
     if (req.method === 'PUT' && pathname === '/__probe/control') {
-      const patch = await readBody(req);
+      const patch = await readJsonBody(req);
       state.plan = { ...state.plan, ...patch };
       if (state.plan.reset) {
         state.report = null;
         state.progress = null;
         delete state.plan.reset;
       }
-      return json(res, state.plan);
+      return sendJson(res, state.plan);
     }
     if (req.method === 'POST' && pathname.startsWith('/__probe/')) {
-      const payload = await readBody(req);
+      const payload = await readJsonBody(req);
       if (pathname === PROBE_REPORT_PATH) {
         // The plan nonce arms the stale-run gate in reportRejectionReason;
         // omitting it here left that gate disabled on the floor path, so a
@@ -296,7 +264,7 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
         const rejection = reportRejectionReason(state.report, payload, state.plan.nonce);
         if (rejection) {
           log(`ignored ${rejection} for ${state.plan.label}`);
-          return json(res, {});
+          return sendJson(res, {});
         }
         if (keepIncomingReport(state.report, payload)) {
           state.report = payload;
@@ -306,13 +274,13 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
           log(`report received for ${state.plan.label}`);
         }
       } else if (pathname === '/__probe/ready') {
-        if (payload.nonce !== state.plan.nonce) return json(res, {});
+        if (payload.nonce !== state.plan.nonce) return sendJson(res, {});
         state.progress = payload;
         log('floor control ready');
       }
-      return json(res, {});
+      return sendJson(res, {});
     }
-    return send(res, 'text/html; charset=utf-8', FLOOR_SERVED_BODIES['/']());
+    return sendText(res, 'text/html; charset=utf-8', FLOOR_SERVED_BODIES['/']());
   });
 
   return { server, state };

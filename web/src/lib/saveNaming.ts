@@ -2,8 +2,8 @@
 // drawing/saveOnDelete.ts) import this at runtime, and the bundler groups modules by the set of
 // entry chunks that reach them: a runtime import from the lazily loaded drawing/imageSave.ts moves
 // this module out of its startup chunk into one of its own, an extra request on the startup
-// modulepreload list. So imageSave.ts takes only types from here, and save-time helpers live in
-// savedFile.ts.
+// modulepreload list. So imageSave.ts takes only types from here, which saveNaming.test.ts
+// enforces, and save-time helpers live in savedFile.ts.
 
 // 'denied' is a native save the OS refused for want of a photo-library or storage permission, which
 // only the parent can grant in the device's Settings; 'failed' is every other save that did not land.

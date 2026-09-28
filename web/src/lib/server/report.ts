@@ -17,11 +17,17 @@ import {
 // (reportBucket) and then hand the raw fields here, so validation, the
 // honeypot, the issue Markdown, and the error wording can't drift between them.
 
-// Identifies every in-app submission at a glance; the type label mirrors the
-// repo's taxonomy (docs/ISSUE-WORKFLOW.md). Both are declared in
+// Identifies every in-app submission at a glance; each kind's type label mirrors
+// the repo's taxonomy (docs/ISSUE-WORKFLOW.md). All are declared in
 // .github/labels.yml, but GitHub also auto-creates any missing label on write.
 const REPORT_LABEL = 'user-report';
-const KIND_LABEL: Record<ReportKind, string> = { bug: 'type:bug', feature: 'type:feature' };
+
+// Everything a report's kind decides about the issue it files, so a new
+// ReportKind fails to compile here until its issue has a label and wording.
+const ISSUE_BY_KIND: Record<ReportKind, { label: string; titlePrefix: string; noun: string }> = {
+  bug: { label: 'type:bug', titlePrefix: 'Bug', noun: 'bug report' },
+  feature: { label: 'type:feature', titlePrefix: 'Feature', noun: 'feature request' },
+};
 
 // Keeps an issue title scannable in a GitHub list view. A truncated summary
 // spends its last character on the ellipsis (U+2026 is a single UTF-16 code
@@ -29,15 +35,14 @@ const KIND_LABEL: Record<ReportKind, string> = { bug: 'type:bug', feature: 'type
 const MAX_ISSUE_TITLE_SUMMARY_LENGTH = 72;
 const TITLE_ELLIPSIS = '…';
 
+/** `message` arrives trimmed and non-empty, so its first line is never blank. */
 function titleFor(kind: ReportKind, message: string): string {
-  const prefix = kind === 'bug' ? 'Bug' : 'Feature';
   const firstLine = message.split('\n', 1)[0].trim();
   const summary =
     firstLine.length > MAX_ISSUE_TITLE_SUMMARY_LENGTH
       ? `${firstLine.slice(0, MAX_ISSUE_TITLE_SUMMARY_LENGTH - TITLE_ELLIPSIS.length)}${TITLE_ELLIPSIS}`
       : firstLine;
-  const fallback = kind === 'bug' ? 'User-reported bug' : 'User feature request';
-  return `[${prefix}] ${summary || fallback}`;
+  return `[${ISSUE_BY_KIND[kind].titlePrefix}] ${summary}`;
 }
 
 function bodyFor(
@@ -46,14 +51,13 @@ function bodyFor(
   device: DeviceInfo | null,
   deviceUnavailable = false
 ): string {
-  const source = kind === 'bug' ? 'bug report' : 'feature request';
   // The message and every device value are attacker-controlled and rendered as
   // Markdown, so neutralize mentions/refs/embeds before they reach the issue.
   const lines = [
     escapeIssueMarkdown(message),
     '',
     '---',
-    `_Submitted from the Splotch app's ${source} form._`,
+    `_Submitted from the Splotch app's ${ISSUE_BY_KIND[kind].noun} form._`,
   ];
 
   if (deviceUnavailable) {
@@ -168,7 +172,7 @@ export async function submitReport({
     await createIssue({
       title: titleFor(reportKind, text),
       body: bodyFor(reportKind, text, hasDevice, Boolean(wantsDevice) && !hasDevice),
-      labels: [REPORT_LABEL, KIND_LABEL[reportKind]],
+      labels: [REPORT_LABEL, ISSUE_BY_KIND[reportKind].label],
     });
     return { ok: true };
   } catch (err) {
