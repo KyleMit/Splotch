@@ -373,6 +373,11 @@ Gates that passed without checking what they claimed:
   `DRIVER_PROCESS_PATTERN` in `tools/audit-burndown/lib/burndown-core.mjs` is now the one pattern,
   and `tools/audit-burndown/tests/driver-process-pattern.test.mjs` requires it at every `pgrep`
   lookup in the burndown hooks, both skill packages, and `show-status.mjs`.
+* PR #2450: the perf instrument fingerprint's tests checked only that each command's module list was
+  non-empty, and the lists left out the modules that dispatch every action tap.
+  `tools/perf/tests/instrument-import-graph.test.mjs` now walks each command's imports against its
+  list. The AI ready-cue matcher under test was also not the copy the page ran; the page script now
+  serialises the tested `isAiReadyCueAnimation` (`aiReadyCueWaitScript`).
 * PR #2445: an E2E spec slept 900 ms and then read the swatch rings before `<html>` carried the new
   Reduce Motion answer. With the regression injected, it passed 3 runs of 3. The specs now sync on a
   state change the app exposes: `getAnimations(...)` `finished`, the request's
