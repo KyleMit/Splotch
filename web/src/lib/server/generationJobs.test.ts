@@ -17,6 +17,7 @@ import {
   completeJob,
   isJobId,
   issueWorkTicket,
+  loggableJobError,
   markJobPending,
   newJobId,
   purgeExpiredGenerationJobs,
@@ -41,12 +42,22 @@ const storedJob = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-// The poll route turns away every id isJobId refuses, so refusing one newJobId
-// mints would strand every picture. The malformed shapes are covered by the
-// route's own tests.
 describe('job ids', () => {
+  // The poll route turns away every id isJobId refuses, so refusing one newJobId
+  // mints would strand every picture. The malformed shapes are covered by the
+  // route's own tests.
   it('accepts the ids newJobId mints', () => {
     expect(isJobId(newJobId())).toBe(true);
+  });
+
+  it('masks every job id in a logged failure and keeps the rest of the message', () => {
+    const cause = new Error(`put ${JOB}/image and ${newJobId()}/input failed`);
+
+    expect(loggableJobError(cause)).toBe('put <job id>/image and <job id>/input failed');
+  });
+
+  it('logs a failure that is not an Error by its string form', () => {
+    expect(loggableJobError(`gone: ${JOB}`)).toBe('gone: <job id>');
   });
 });
 

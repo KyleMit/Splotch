@@ -424,16 +424,18 @@ describe('the background worker', () => {
     expect(grantOf()).toMatchObject({ successful: 0, failures: 1, reservations: {} });
   });
 
-  it('logs a failed job without its id, which is the capability to collect the picture', async () => {
-    provider.generateImage.mockRejectedValue(new Error('socket hang up'));
+  // The id is the capability to collect the picture, and a store error can quote
+  // the blob key it failed on — here `<jobId>/image`, as the picture is written.
+  it('logs a failed job without its id, even when the store error names its key', async () => {
     const { jobId, dispatch } = await startHandedOffGeneration();
+    blobs.faults.add(`${GENERATION_JOB_STORE_NAME}:set`);
 
-    await runWorker(dispatch);
+    expect((await runWorker(dispatch)).status).toBe(200);
 
     const logged = [console.error, console.warn].flatMap((log) =>
       vi.mocked(log).mock.calls.flat().map(String)
     );
-    expect(logged).toContainEqual(expect.stringContaining('socket hang up'));
+    expect(logged).toContainEqual(expect.stringContaining(`${GENERATION_JOB_STORE_NAME} set`));
     expect(logged.join('\n')).not.toContain(jobId);
   });
 

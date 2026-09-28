@@ -30,7 +30,12 @@ export const GENERATION_JOB_STORE_NAME = 'ai-generation-jobs';
 // collection, and expired within minutes — so it is not worth binding to a
 // credential the poll would then have to re-authorize (and re-rate-limit).
 const JOB_ID_BYTES = 32;
-const JOB_ID_PATTERN = new RegExp(`^[a-f0-9]{${JOB_ID_BYTES * 2}}$`);
+const JOB_ID_HEX = `[a-f0-9]{${JOB_ID_BYTES * 2}}`;
+const JOB_ID_PATTERN = new RegExp(`^${JOB_ID_HEX}$`);
+// Job-path logs mask anything id-shaped rather than trust a message not to carry
+// an id: a store error can quote the blob key it failed on (the SDK appends the
+// response body to its message), and every job key begins with one.
+const JOB_ID_IN_TEXT = new RegExp(JOB_ID_HEX, 'g');
 
 // The worker is a publicly reachable Netlify function URL, so "it is only called
 // by us" has to be enforced rather than assumed: without this anyone could drive
@@ -192,6 +197,12 @@ export function isJobId(value: string): boolean {
   return JOB_ID_PATTERN.test(value);
 }
 
+/** A job-path failure as a log line may carry it: the message, with every job id masked. */
+export function loggableJobError(cause: unknown): string {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  return message.replace(JOB_ID_IN_TEXT, '<job id>');
+}
+
 function sign(jobId: string, payloadDigest: string, expiresAt: number, secret: string): string {
   return createHmac(HMAC_ALG, secret)
     .update(JSON.stringify([TICKET_LABEL, jobId, payloadDigest, expiresAt]))
@@ -333,10 +344,7 @@ export async function readJob(jobId: string, now = Date.now()): Promise<Generati
     // "expired" would tell a child their picture is lost when it may be sitting
     // there finished. Distinguishing the two is the difference between "try
     // again" and a dead end.
-    console.warn(
-      '[generation-jobs] could not read the job store:',
-      cause instanceof Error ? cause.message : cause
-    );
+    console.warn('[generation-jobs] could not read the job store:', loggableJobError(cause));
     return { status: 'unavailable' };
   }
   if (!record || record.expiresAt < now) return { status: 'expired' };
@@ -413,7 +421,7 @@ export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
         } catch (cause) {
           console.warn(
             '[purge-generation-jobs] failed to delete a job blob:',
-            cause instanceof Error ? cause.message : cause
+            loggableJobError(cause)
           );
           jobFailedBlobDeletes++;
         }
@@ -429,7 +437,7 @@ export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
       if (outcome.status === 'rejected') {
         console.warn(
           '[purge-generation-jobs] failed to process a job:',
-          outcome.reason instanceof Error ? outcome.reason.message : outcome.reason
+          loggableJobError(outcome.reason)
         );
         failedJobs++;
       } else if (outcome.value.status === 'retained') {

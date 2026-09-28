@@ -7,6 +7,7 @@ import {
   claimJob,
   discardJob,
   issueWorkTicket,
+  loggableJobError,
   markJobPending,
   newJobId,
   putJobInput,
@@ -88,10 +89,7 @@ async function abandon(jobId: string): Promise<void> {
     await discardJob(jobId);
   } catch (cause) {
     // The fallback matters more than the cleanup — the purge is the backstop.
-    console.warn(
-      '[generate-image] could not clean up the abandoned job:',
-      cause instanceof Error ? cause.message : cause
-    );
+    console.warn('[generate-image] could not clean up the abandoned job:', loggableJobError(cause));
   }
 }
 
@@ -139,10 +137,7 @@ export async function startBackgroundGeneration(
       return null;
     }
   } catch (cause) {
-    console.error(
-      '[generate-image] could not hand off to the worker:',
-      cause instanceof Error ? cause.message : cause
-    );
+    console.error('[generate-image] could not hand off to the worker:', loggableJobError(cause));
 
     try {
       // A lost reply is ambiguous: the worker may already own the job. Compete
@@ -153,7 +148,7 @@ export async function startBackgroundGeneration(
     } catch (claimCause) {
       console.error(
         '[generate-image] could not determine who owns the job:',
-        claimCause instanceof Error ? claimCause.message : claimCause
+        loggableJobError(claimCause)
       );
       // Ownership is still ambiguous, so falling back could authorize a second
       // paid model call. The existing job lifetime bounds how long polling lasts.

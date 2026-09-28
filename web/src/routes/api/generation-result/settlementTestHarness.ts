@@ -34,26 +34,28 @@ vi.mock('@netlify/blobs', () => {
     getStore: ({ name }: { name: string }) => {
       const entries = blobs.stores.get(name) ?? new Map<string, StoredBlob>();
       blobs.stores.set(name, entries);
-      const guard = async (operation: BlobOperation) => {
+      // A fault quotes the blob key, as a real store error can: the SDK appends
+      // the response body to its message.
+      const guard = async (operation: BlobOperation, key: string) => {
         await yieldToOtherRequests();
         if (blobs.latency.ms) vi.setSystemTime(Date.now() + blobs.latency.ms);
         if (blobs.faults.has(`${name}:${operation}`)) {
-          throw new Error(`${name} ${operation} failed`);
+          throw new Error(`${name} ${operation} ${key} failed`);
         }
       };
       return {
         async get(key: string) {
-          await guard('get');
+          await guard('get', key);
           const entry = entries.get(key);
           return entry ? copy(entry.value) : null;
         },
         async getWithMetadata(key: string) {
-          await guard('get');
+          await guard('get', key);
           const entry = entries.get(key);
           return entry ? { data: copy(entry.value), etag: entry.etag, metadata: {} } : null;
         },
         async set(key: string, value: unknown) {
-          await guard('set');
+          await guard('set', key);
           entries.set(key, { value: toStored(value), etag: blobs.nextEtag() });
           return { modified: true };
         },
@@ -62,7 +64,7 @@ vi.mock('@netlify/blobs', () => {
           value: unknown,
           condition: { onlyIfNew?: boolean; onlyIfMatch?: string } = {}
         ) {
-          await guard('setJSON');
+          await guard('setJSON', key);
           const existing = entries.get(key);
           if (condition.onlyIfNew && existing) return { modified: false };
           if (condition.onlyIfMatch && existing?.etag !== condition.onlyIfMatch) {
@@ -72,7 +74,7 @@ vi.mock('@netlify/blobs', () => {
           return { modified: true };
         },
         async delete(key: string) {
-          await guard('delete');
+          await guard('delete', key);
           entries.delete(key);
         },
       };
