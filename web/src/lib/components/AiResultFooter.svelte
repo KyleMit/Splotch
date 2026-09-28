@@ -1,27 +1,20 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
+  import AiImageReport from './AiImageReport.svelte';
   import type { AiResultPhase } from '$lib/state/aiGeneration.svelte';
-  import type { StyleName } from '$lib/ai/styles';
-  import type { Origin } from '$lib/state/modal.svelte';
+  import type { ImageReportFlow } from './imageReportFlow.svelte';
   import { autoSaveFooter } from '$lib/ai/autoSaveCopy';
   import '$lib/components/deferredIcons';
   import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
   let {
     result,
-    drawingUrl,
-    style,
-    reportOrigin,
+    report,
     ondownload,
-    status = $bindable(),
   }: {
     result: AiResultPhase;
-    drawingUrl: string | null;
-    style: StyleName | null;
-    reportOrigin: Origin | null;
+    report: ImageReportFlow;
     ondownload: () => void;
-    status: ImageReportStatus;
   } = $props();
 
   const footer = $derived(autoSaveFooter(result.autoSave));
@@ -36,14 +29,7 @@
       <span>Download</span>
     </button>
   {/if}
-  <AiImageReport
-    {drawingUrl}
-    outputUrl={result.url}
-    {style}
-    reportToken={result.reportToken}
-    origin={reportOrigin}
-    bind:status
-  />
+  <AiImageReport outputUrl={result.url} reportToken={result.reportToken} {report} />
 </div>
 
 <style>
