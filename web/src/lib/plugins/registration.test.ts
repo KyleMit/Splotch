@@ -33,6 +33,9 @@ const COMMENT_OR_STRING = /("(?:\\.|[^"\\\n])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
 interface ProxyDeclaration {
   jsName: string;
   methods: string[];
+  // The payload keys arrive in JS untyped, so a native rename fails only on a device, where the
+  // renamed field reads as undefined.
+  resolvedFields: string[];
 }
 
 interface NativeDeclaration extends ProxyDeclaration {
@@ -108,7 +111,86 @@ function proxyDeclaration(
     if (!member.name) throw new Error(`${file}: every plugin interface member needs a name`);
     return member.name.getText(source);
   });
-  return { jsName: nameArgument.text, methods };
+  return {
+    jsName: nameArgument.text,
+    methods,
+    resolvedFields: proxyResolvedFields(file, source, interfaces, pluginInterface),
+  };
+}
+
+// Reads each method's Promise<T> through object literal types, arrays, and interfaces declared in
+// the proxy's own module; a primitive or void result carries no fields.
+function proxyResolvedFields(
+  file: string,
+  source: ts.SourceFile,
+  interfaces: ReadonlyMap<string, ts.InterfaceDeclaration>,
+  pluginInterface: ts.InterfaceDeclaration
+): string[] {
+  const fields: string[] = [];
+  const visitMembers = (members: readonly ts.TypeElement[]): void => {
+    for (const member of members) {
+      if (!member.name) throw new Error(`${file}: every resolved field needs a name`);
+      fields.push(member.name.getText(source));
+      if (ts.isPropertySignature(member)) visitType(member.type);
+    }
+  };
+  const visitType = (type: ts.TypeNode | undefined): void => {
+    if (!type) return;
+    if (ts.isArrayTypeNode(type)) visitType(type.elementType);
+    else if (ts.isTypeLiteralNode(type)) visitMembers(type.members);
+    else if (ts.isTypeReferenceNode(type)) {
+      const local = interfaces.get(type.typeName.getText(source));
+      if (!local) {
+        throw new Error(`${file}: resolved type ${type.getText(source)} is not a local interface`);
+      }
+      visitMembers(local.members);
+    }
+  };
+  for (const member of pluginInterface.members) {
+    if (!ts.isMethodSignature(member) || BASE_PLUGIN_METHODS.has(member.name.getText(source))) {
+      continue;
+    }
+    const returned = member.type;
+    if (
+      !returned ||
+      !ts.isTypeReferenceNode(returned) ||
+      returned.typeName.getText(source) !== 'Promise'
+    ) {
+      throw new Error(`${file}: ${member.name.getText(source)} needs a declared Promise<…> result`);
+    }
+    visitType(returned.typeArguments?.[0]);
+  }
+  return fields;
+}
+
+// Android builds a payload as a local `JSObject x = new JSObject()`, sometimes in a helper several
+// methods resolve with, so its fields are read per object and compared as one set per plugin.
+function androidResolvedFields(text: string): string[] {
+  const payloads = new Set(
+    [...text.matchAll(/\bJSObject (\w+) = new JSObject\(\);/g)].map(([, name]) => name)
+  );
+  return [...text.matchAll(/\b(\w+)\.put\("(\w+)",/g)]
+    .filter(([, payload]) => payloads.has(payload))
+    .map(([, , field]) => field);
+}
+
+// Swift resolves a dictionary literal in place, possibly nesting another in a closure, so every
+// string key inside a `.resolve(…)` argument list counts.
+function iosResolvedFields(text: string): string[] {
+  return [...text.matchAll(/\.resolve\(/g)].flatMap((call) =>
+    [...argumentList(text, call.index + call[0].length).matchAll(/"(\w+)"\s*:/g)].map(
+      ([, field]) => field
+    )
+  );
+}
+
+function argumentList(text: string, start: number): string {
+  let depth = 1;
+  for (let end = start; end < text.length; end++) {
+    if (text[end] === '(') depth++;
+    else if (text[end] === ')' && --depth === 0) return text.slice(start, end);
+  }
+  throw new Error(`An argument list opened at offset ${start} never closes`);
 }
 
 function androidDeclarations(): NativeDeclaration[] {
@@ -128,7 +210,15 @@ function androidDeclarations(): NativeDeclaration[] {
         `${file}: expected one @CapacitorPlugin(name = "…") class whose every @PluginMethod is a public void method taking a PluginCall`
       );
     }
-    return [{ file, jsName: plugin[1], className: plugin[2], methods }];
+    return [
+      {
+        file,
+        jsName: plugin[1],
+        className: plugin[2],
+        methods,
+        resolvedFields: androidResolvedFields(text),
+      },
+    ];
   });
 }
 
@@ -147,7 +237,16 @@ function iosDeclarations(): IosDeclaration[] {
     const objcMethods = [
       ...text.matchAll(/@objc\s+(?:\w+\s+)*?func (\w+)\(_ \w+: CAPPluginCall\)/g),
     ].map(([, method]) => method);
-    return [{ file, jsName: jsName[1], className: classes[0][1], methods, objcMethods }];
+    return [
+      {
+        file,
+        jsName: jsName[1],
+        className: classes[0][1],
+        methods,
+        objcMethods,
+        resolvedFields: iosResolvedFields(text),
+      },
+    ];
   });
 }
 
@@ -175,8 +274,12 @@ function jsNames(plugins: readonly { jsName: string }[]): string[] {
   return plugins.map(({ jsName }) => jsName).sort();
 }
 
+function sortedDistinct(names: readonly string[]): string[] {
+  return [...new Set(names)].sort();
+}
+
 function ownMethods(methods: readonly string[]): string[] {
-  return [...new Set(methods)].filter((method) => !BASE_PLUGIN_METHODS.has(method)).sort();
+  return sortedDistinct(methods).filter((method) => !BASE_PLUGIN_METHODS.has(method));
 }
 
 const proxies = proxyDeclarations();
@@ -220,6 +323,12 @@ describe.each(ANDROID_PLUGINS)('the $jsName plugin on Android', ({ jsName }) => 
       ownMethods(declarationOf(proxies, jsName).methods)
     );
   });
+
+  it('resolves with exactly the fields its JS proxy declares', () => {
+    expect(sortedDistinct(declarationOf(androidPlugins, jsName).resolvedFields)).toEqual(
+      sortedDistinct(declarationOf(proxies, jsName).resolvedFields)
+    );
+  });
 });
 
 describe.each(IOS_PLUGINS)('the $jsName plugin on iOS', ({ jsName }) => {
@@ -240,6 +349,12 @@ describe.each(IOS_PLUGINS)('the $jsName plugin on iOS', ({ jsName }) => {
   it('implements exactly the methods its JS proxy declares', () => {
     expect(ownMethods(declarationOf(iosPlugins, jsName).methods)).toEqual(
       ownMethods(declarationOf(proxies, jsName).methods)
+    );
+  });
+
+  it('resolves with exactly the fields its JS proxy declares', () => {
+    expect(sortedDistinct(declarationOf(iosPlugins, jsName).resolvedFields)).toEqual(
+      sortedDistinct(declarationOf(proxies, jsName).resolvedFields)
     );
   });
 
