@@ -16,7 +16,7 @@ import {
 } from './updatesTestHarness';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
-vi.mock('$lib/state/canvas.svelte', () => ({ canvasState, SETTLED_IN_STROKES: 3 }));
+vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
 
 // initPWAUpdates schedules repeat-visit registration at idle. These tests never
 // release that slot, so the mock keeps register() from firing after a test ends;

@@ -15,7 +15,7 @@ import {
 } from './updatesTestHarness';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
-vi.mock('$lib/state/canvas.svelte', () => ({ canvasState, SETTLED_IN_STROKES: 3 }));
+vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
 
 // Controllable idle queue: registration must not fire until the test releases
 // the idle slot, so deferral itself is assertable.

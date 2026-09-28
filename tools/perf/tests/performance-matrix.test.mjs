@@ -1343,26 +1343,30 @@ describe('deployment matrix report', () => {
   describe('preserved evidence', () => {
     // A red gate the raw capture can no longer justify is exactly what preservation
     // has to carry forward intact — recapturing it would quietly turn it green.
-    const publishedDrawing = Object.fromEntries(
-      ['pen', 'crayon', 'magic', 'eraser'].map((brush) => [
-        brush,
-        {
-          aggregate: {
-            runCount: 1,
-            paint: { p95: 44, p99: 48, max: 52 },
-            lostFrameTimeShare: 0.09,
-            blankPassed: false,
-            allPhasesPassed: false,
+    // A factory, not a shared object: a test that edits a shared copy turns every
+    // later test's red into a pass, and the exemption tests then pass without
+    // their deciding input.
+    const publishedDrawing = () =>
+      Object.fromEntries(
+        ['pen', 'crayon', 'magic', 'eraser'].map((brush) => [
+          brush,
+          {
+            aggregate: {
+              runCount: 1,
+              paint: { p95: 44, p99: 48, max: 52 },
+              lostFrameTimeShare: 0.09,
+              blankPassed: false,
+              allPhasesPassed: false,
+            },
+            runs: [
+              { source: `perf-profiles/gone/${brush}/real-screen.json`, productCommit: 'final123' },
+            ],
           },
-          runs: [
-            { source: `perf-profiles/gone/${brush}/real-screen.json`, productCommit: 'final123' },
-          ],
-        },
-      ])
-    );
+        ])
+      );
 
     function publishReport(directory, mode = {}, otherModes = []) {
-      const drawing = mode.drawing ?? publishedDrawing;
+      const drawing = mode.drawing ?? publishedDrawing();
       writeFileSync(
         join(directory, 'data.json'),
         JSON.stringify({
@@ -1403,8 +1407,8 @@ describe('deployment matrix report', () => {
       // carry — without it a preserved fidelity-failed cell rendered a bold product
       // FAIL while a freshly captured one with the identical verdict rendered
       // unscoreable.
-      expect(mode.drawing.crayon.runs).toEqual(publishedDrawing.crayon.runs);
-      expect(mode.drawing.crayon.aggregate).toMatchObject(publishedDrawing.crayon.aggregate);
+      expect(mode.drawing.crayon.runs).toEqual(publishedDrawing().crayon.runs);
+      expect(mode.drawing.crayon.aggregate).toMatchObject(publishedDrawing().crayon.aggregate);
       // Copied forward, and not scored: a preserved verdict cannot be re-derived
       // under current expectations, so it is kept as provenance rather than allowed
       // to drive the plots and the failure ranking.
@@ -1536,7 +1540,7 @@ describe('deployment matrix report', () => {
         {
           id: 'portrait-dark',
           undo: null,
-          drawing: publishedDrawing,
+          drawing: publishedDrawing(),
           actions: normalizedActions([
             action('idle frame control', true, 'mid123'),
             action('newer failing action', false, 'mid123'),
@@ -1622,14 +1626,14 @@ describe('deployment matrix report', () => {
       };
       const withRunFidelity = (fidelity) =>
         Object.fromEntries(
-          Object.entries(publishedDrawing).map(([brush, entry]) => [
+          Object.entries(publishedDrawing()).map(([brush, entry]) => [
             brush,
             { ...entry, runs: entry.runs.map((run) => ({ ...run, fidelity })) },
           ])
         );
 
       it('keeps counting, dated by its capture', () => {
-        const { html, markdown, openReds } = openRedsOf(publishedDrawing);
+        const { html, markdown, openReds } = openRedsOf(publishedDrawing());
 
         expect(openReds).toContain('4 unexplained red cells on the release-gate rows');
         expect(openReds).toContain('preserved, published red (ADR-0175): paint P95 44');
@@ -1659,7 +1663,7 @@ describe('deployment matrix report', () => {
 
       it('does not count one a recorded disposition explains', () => {
         const disposed = Object.fromEntries(
-          Object.entries(publishedDrawing).map(([brush, entry]) => [
+          Object.entries(publishedDrawing()).map(([brush, entry]) => [
             brush,
             { ...entry, disposition: { adr: 'ADR-0174' } },
           ])
@@ -1672,7 +1676,7 @@ describe('deployment matrix report', () => {
 
       it('does not count a published pass', () => {
         const passed = Object.fromEntries(
-          Object.entries(publishedDrawing).map(([brush, entry]) => [
+          Object.entries(publishedDrawing()).map(([brush, entry]) => [
             brush,
             { ...entry, aggregate: { ...entry.aggregate, blankPassed: true } },
           ])
@@ -1808,7 +1812,7 @@ describe('deployment matrix report', () => {
           {
             id: 'portrait-dark',
             undo: null,
-            drawing: publishedDrawing,
+            drawing: publishedDrawing(),
             actions: olderActions('PORTRAIT', 'sectioned', ['expand action drawer', olderLabel]),
           },
         ]
@@ -1873,7 +1877,7 @@ describe('deployment matrix report', () => {
       const matrix = normalizeMatrix(source, manifestDirectory);
       const mode = matrix.targets[0].modes[0];
 
-      expect(mode.drawing).toEqual(publishedDrawing);
+      expect(mode.drawing).toEqual(publishedDrawing());
       expect(mode.preservedSections).toBeUndefined();
       expect(mode.untrackedSections).toEqual(['drawing']);
       for (const rendered of [renderMarkdown(matrix), renderReport(matrix)]) {
@@ -1895,17 +1899,10 @@ describe('deployment matrix report', () => {
     it('is a fixpoint when it preserves from its own output', () => {
       const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
       temporaryDirectories.push(manifestDirectory);
-      const withVerdicts = {
-        ...publishedDrawing,
-        crayon: {
-          ...publishedDrawing.crayon,
-          runs: [
-            {
-              ...publishedDrawing.crayon.runs[0],
-              fidelity: { passed: false, checks: { coalescing: false, cadence: true } },
-            },
-          ],
-        },
+      const withVerdicts = publishedDrawing();
+      withVerdicts.crayon.runs[0].fidelity = {
+        passed: false,
+        checks: { coalescing: false, cadence: true },
       };
       publishReport(manifestDirectory, { drawing: withVerdicts });
       const source = manifest([
