@@ -11,6 +11,7 @@
     { size: 'lg', dimensions: '16px label, 14px vertical padding', use: 'a screen’s one decision' },
     { size: 'md', dimensions: '14px label, 12px vertical padding', use: 'the default' },
     { size: 'sm', dimensions: '14px label, 8px vertical padding', use: 'inline retry, dense rows' },
+    { size: 'hero', dimensions: '18px bold label, 56px pill', use: 'kid-facing recovery' },
   ] as const;
 
   let busy = $state(false);
@@ -84,7 +85,7 @@
       {/each}
     </div>
 
-    <div class="card sizes" role="group" aria-label="Button sizes">
+    <div class="card sizes" role="group" aria-label="Button sizes" style:--size-rows={sizes.length}>
       <span class="card-label">Sizes</span>
       {#each sizes as specimen (specimen.size)}
         <code>{specimen.size}</code>
@@ -190,7 +191,7 @@
     gap: var(--space-3);
   }
   .sizes .card-label {
-    grid-row: span 3;
+    grid-row: span var(--size-rows);
   }
   .sizes :global(.btn) {
     justify-self: start;

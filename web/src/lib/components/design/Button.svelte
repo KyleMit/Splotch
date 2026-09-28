@@ -9,9 +9,11 @@
   // Sizes step the label, not just the box: sm/md both carry the 14px chrome
   // label and differ only in padding, while lg takes --font-size-md so a pair
   // of buttons can read as a screen's primary decision rather than as chrome.
+  // hero is the kid-facing recovery button: a lifted pill with an 18px bold
+  // label, the one way forward from a Dottie error screen.
   interface ChromeProps {
     variant?: 'brand' | 'wash' | 'outline' | 'danger';
-    size?: 'sm' | 'md' | 'lg';
+    size?: 'sm' | 'md' | 'lg' | 'hero';
   }
 
   interface ButtonProps extends ChromeProps, HTMLButtonAttributes {
@@ -104,6 +106,7 @@
     background: var(--control-track);
     color: var(--text);
     opacity: var(--disabled-opacity);
+    box-shadow: none;
     cursor: default;
     transform: none;
   }
@@ -155,6 +158,18 @@
     font-size: var(--font-size-sm);
   }
 
+  /* ErrorScreen cannot import this primitive (the crash path renders without
+     tokens), so its .error-restart repeats these values with fallbacks;
+     ErrorScreen.heroButton.test.ts holds the two equal. */
+  .hero {
+    min-height: 56px;
+    padding: 0 var(--space-6);
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    gap: 10px;
+  }
+
   /* --brand-solid, not --brand: this fill carries a text label, and --brand is
      only 3.4:1 against --on-brand (fails WCAG AA at body size). */
   .brand {
@@ -188,6 +203,14 @@
 
   .outline.sm {
     padding: calc(var(--space-2) - var(--border-width)) calc(var(--space-4) - var(--border-width));
+  }
+
+  .outline.hero {
+    padding: 0 calc(var(--space-6) - var(--border-width));
+  }
+
+  .brand.hero {
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
   }
 
   @media (hover: hover) {
