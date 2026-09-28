@@ -1,20 +1,11 @@
 import { getStore } from '@netlify/blobs';
 import { isStyleName, type StyleName } from '../ai/styles';
-import { USAGE_OUTCOMES, type UsageOutcome } from '../usageRecord';
+import { USAGE_OUTCOMES, type TokenUsage, type UsageOutcome } from '../usageRecord';
 import { settleWithRetentionConcurrency } from './retentionSweep';
 
 export const USAGE_STORE_NAME = 'ai-usage';
 export const USAGE_GRANT_KEY_PREFIX = 'grant-v1/';
 const GRANT_KEY_PATTERN = new RegExp(`^${USAGE_GRANT_KEY_PREFIX}[0-9a-f]{64}$`);
-
-export interface TokenUsage {
-  count: number;
-  firstUsed: string;
-  lastUsed: string;
-  deleteAfter: string;
-  lastStyle: StyleName | null;
-  lastOutcome: UsageOutcome;
-}
 
 function isUsageOutcome(value: unknown): value is UsageOutcome {
   return USAGE_OUTCOMES.some((outcome) => outcome === value);

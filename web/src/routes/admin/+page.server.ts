@@ -11,7 +11,6 @@ import {
 import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
 import { getFreeGenerationGrantAdminStats } from '$lib/server/freeGenerationGrants';
-import { ASSUME_PERSISTENT, mutationMessage } from '$lib/adminPersistence';
 import type { Actions, PageServerLoad } from './$types';
 
 // Must be server-rendered: it has form actions and validates the admin secret
@@ -66,11 +65,12 @@ export const load: PageServerLoad = async ({ cookies, url, setHeaders }) => {
   // Unauthenticated visitors get the login form instead of a 403, so the page
   // is usable without ever putting the secret in a link.
   if (!isAdmin(cookies)) {
-    // `invites` is always present (empty here) so the page's union type stays
-    // simple — the invites section only renders in the authed branch anyway.
+    // Every console field is always present so the page's union type stays
+    // simple. Here they are placeholders — no invites, no outage flags — because
+    // the invites section and the storage banners render only when authed.
     return {
       authed: false,
-      persistent: ASSUME_PERSISTENT,
+      persistent: true,
       invites: [] satisfies Invite[],
       usageAvailable: true,
       freeGrantStats: null,
@@ -112,7 +112,7 @@ async function tokenMutation(
   const token = String(form.get('token') ?? '').trim();
   const result = await op(token);
   if (!result.ok) return fail(MUTATION_FAILURE_STATUS[result.reason], { error: result.error });
-  return { success: true, message: mutationMessage(verb, token) };
+  return { success: true, message: `${verb} “${token}”` };
 }
 
 export const actions: Actions = {

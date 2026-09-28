@@ -9,7 +9,8 @@ const { envState, getStoreMock } = vi.hoisted(() => ({
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
 
-import { deleteUsage, getUsage, recordByokUsage, recordTokenUsage, type TokenUsage } from './usage';
+import type { TokenUsage } from '../usageRecord';
+import { deleteUsage, getUsage, recordByokUsage, recordTokenUsage } from './usage';
 import { purgeExpiredUsageRecords } from './usageRecordStorage';
 
 const NOW = new Date('2026-08-19T12:00:00.000Z');

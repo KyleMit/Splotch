@@ -1,8 +1,7 @@
 // @vitest-environment node
-import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { timeAgo, usageDetail } from './adminFormat';
-import type { Usage } from './components/admin/AdminConsole.svelte';
-import type { TokenUsage } from './server/usage';
+import type { TokenUsage } from './usageRecord';
 
 const NOW = new Date('2026-03-15T12:00:00Z').getTime();
 const ago = (seconds: number) => new Date(NOW - seconds * 1000).toISOString();
@@ -37,12 +36,6 @@ describe('timeAgo', () => {
   });
 });
 
-describe('Usage / TokenUsage drift guard', () => {
-  it('keeps the client Usage mirror equal to the server TokenUsage shape', () => {
-    expectTypeOf<Usage>().toEqualTypeOf<TokenUsage>();
-  });
-});
-
 describe('usageDetail', () => {
   const usage = {
     count: 4,
@@ -51,7 +44,7 @@ describe('usageDetail', () => {
     deleteAfter: '2026-03-31T09:30:00Z',
     lastStyle: 'Watercolor' as const,
     lastOutcome: 'succeeded' as const,
-  } satisfies Usage;
+  } satisfies TokenUsage;
 
   it('lists the minimized style, outcome, and expiry fields', () => {
     expect(usageDetail(usage)).toBe(

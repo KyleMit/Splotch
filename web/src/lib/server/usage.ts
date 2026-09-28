@@ -2,17 +2,14 @@ import { env } from '$env/dynamic/private';
 import { getStore } from '@netlify/blobs';
 import { createHmac } from 'node:crypto';
 import type { StyleName } from '../ai/styles';
-import { USAGE_RECORD_RETENTION_DAYS, type UsageOutcome } from '../usageRecord';
+import { USAGE_RECORD_RETENTION_DAYS, type TokenUsage, type UsageOutcome } from '../usageRecord';
 import { sleep } from './sleep';
 import {
   isExpiredUsage,
   USAGE_GRANT_KEY_PREFIX,
   USAGE_STORE_NAME,
   validUsage,
-  type TokenUsage,
 } from './usageRecordStorage';
-
-export type { TokenUsage };
 
 const GRANT_ID_LABEL = 'splotch-managed-usage-v1';
 const HMAC_ALGORITHM = 'sha256';
