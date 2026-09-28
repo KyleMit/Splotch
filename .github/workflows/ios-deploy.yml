@@ -27,7 +27,11 @@ jobs:
     timeout-minutes: 40
     permissions:
       contents: read
-      issues: write
+    # The reporter below names the failing phase from these. A job cut off by
+    # its timeout may leave them empty, which the report reads as never reached.
+    outputs:
+      smoke-outcome: ${{ steps.smoke.outcome }}
+      report-outcome: ${{ steps.report.outcome }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -62,18 +66,30 @@ jobs:
             ~/.maestro/tests/
             ~/Library/Logs/maestro/xctest_runner_logs/
 
-      # Same reasoning as android-deploy.yml's filing step, down to why
-      # `failure()` stays job-wide while the body distinguishes a failed smoke
-      # from a job that went red around it. The title is platform-specific
-      # because a red iOS gate and a green Android one are different facts about
-      # the release.
+  # Same reasoning as android-deploy.yml's report-failure job. Filing from a
+  # downstream job, not a step inside the smoke job, is what lets a smoke job
+  # cut off by its timeout still file (a timed-out job runs none of its own
+  # failure() steps), and keeps issues: write away from the install and build
+  # steps. The title is platform-specific because a red iOS gate and a green
+  # Android one are different facts about the release.
+  report-failure:
+    name: File iOS deploy failure
+    needs: smoke
+    if: ${{ !cancelled() && github.event_name == 'push' && needs.smoke.result != 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
       - name: File the failure
-        if: ${{ failure() && github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
-          REPORT_OUTCOME: ${{ steps.report.outcome }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          SMOKE_OUTCOME: ${{ needs.smoke.outputs.smoke-outcome }}
+          REPORT_OUTCOME: ${{ needs.smoke.outputs.report-outcome }}
           PLATFORM: iOS
           ARTIFACT: maestro-ios-report
         run: |
@@ -85,8 +101,8 @@ jobs:
           regression. The flow checks only launch and first paint (ADR-0120)."
           else
             cause="The smoke step did not fail (outcome: ${SMOKE_OUTCOME:-never reached}); the job went red
-          somewhere else — checkout, toolchain, the build, or the report upload. Read the run before
-          treating this as a product regression."
+          somewhere else — checkout, toolchain, the build (including a hang that ran into the job
+          timeout), or the report upload. Read the run before treating this as a product regression."
           fi
           if [[ "$REPORT_OUTCOME" == "success" ]]; then
             evidence="* Evidence: the report upload step succeeded for ${ARTIFACT}. When produced, the
@@ -100,6 +116,7 @@ jobs:
           The ${PLATFORM} native deploy gate failed for ${GITHUB_REF_NAME}.
 
           * Run: ${RUN_URL}
+          * Result: smoke job=${SMOKE_RESULT:-unknown}.
           ${evidence}
 
           ${cause}

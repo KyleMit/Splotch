@@ -6,8 +6,9 @@ Splotch's automated suites span three test layers. The app-unit, asset-pipeline,
 repo-script, and E2E suites run on every push/PR, alongside the Firefox and WebKit smoke jobs. The
 two-scenario WebKit commit-timing gate runs post-merge, on pushes to `main`, because its verdict is
 a millisecond P95 that needs WebKit and a quiet host; its full seven-scenario form and the
-real-device launch tests run only on tagged releases. ADR-0100's 2026-08-11 amendment records why
-its obsolete pre-merge blob-encoding guard retired.
+real-device launch tests run only on tagged releases. The native shells still compile on every PR
+that touches a native input, in a path-filtered workflow nothing waits on. ADR-0100's 2026-08-11
+amendment records why its obsolete pre-merge blob-encoding guard retired.
 
 | Layer                 | Tool                | Command                             | Runs in CI                                   |
 | --------------------- | ------------------- | ----------------------------------- | -------------------------------------------- |
@@ -21,6 +22,8 @@ its obsolete pre-merge blob-encoding guard retired.
 | Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`         | daily production + manual deploy URL         |
 | Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`        | every push / PR (parallel job)               |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
+| Compile (Android)     | Gradle javac        | `npm run android:compile`           | PRs touching native inputs (path-filtered)   |
+| Compile (iOS)         | xcodebuild          | `npm run ios:build:release`         | PRs touching native inputs (macOS runner)    |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only** (API 33 + API 24)   |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
 | WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
@@ -833,6 +836,7 @@ npm run test:android:device     # re-run as often as you like
 | `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push** | quality, browserless, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs; fast WebKit commit gate on pushes to `main`; full gate on release tags |
 | `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                                    |
 | `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                                   |
+| `.github/workflows/native-compile.yml` | PRs and `main` pushes touching native inputs      | Android Release Java compile (no web build) and iOS Release simulator compile, in parallel with `test.yml`; no emulator or simulator boots                                      |
 | `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip               |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
@@ -864,7 +868,20 @@ use that same secret. Production never creates a probe token. A process-level in
 preview check can strand an unguessable but live `blobs-smoke-*` credential; inspect and remove one
 manually from the admin console because an automatic prefix sweep could race a smoke against another
 URL. The iOS smoke mirrors Android but on a `macos-latest` runner — the debug build targets the
-simulator, so no signing secrets are involved.
+simulator, so no signing secrets are involved. Both deploy workflows file a tag failure from a
+downstream `report-failure` job keyed on the build and smoke jobs' results, so a job cut off by its
+timeout still files, and only that reporter holds `issues: write`.
+
+The Native compile workflow (`native-compile.yml`) is the pre-merge half of those tag gates. Its
+path filter is `android/**`, `ios/**`, `capacitor.config.json`, `package.json` (which holds both
+compile commands), `pnpm-lock.yaml`, the Gradle helper and its imports, and the workflow itself. A
+match costs runner minutes, not merge wall clock. Android compiles only the Release Java (the app
+and every Capacitor plugin module): `cap update` regenerates the gitignored Cordova plugin project
+that `settings.gradle` includes, and an empty Android web-assets directory stops it from copying a
+web build that javac never reads. iOS runs the tag gate's `ios:build:release`, web build included,
+because Xcode copies the synced `public/` and `capacitor.config.json` as bundle resources. Neither
+job is required by a branch rule. ADR-0008's 2026-09-28 amendment records both jobs' measured wall
+time against the slowest `test.yml` job.
 
 ADR-0100 originally split the commit gate into a structural Chromium half and a WebKit timing half.
 The structural half asserted that the deleted snapshot/blob history never ran `engine.encode` inside
