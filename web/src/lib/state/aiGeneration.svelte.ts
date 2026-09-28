@@ -11,10 +11,16 @@ export interface AiFailureDetails {
   message: string;
 }
 
-// 'safety'  — the model refused the drawing; guide the child to draw something else.
+// Why a run failed, carrying only what that kind of failure renders:
+// 'safety'  — the model refused the drawing; guide the child to draw something
+//             else. Carries the same report proof as a picture, without
+//             persisting evidence, so a grown-up can report the refusal.
 // 'retry'   — a transient failure (timeout, server); the same drawing may work.
 // 'generic' — anything else.
-type AiErrorKind = 'generic' | 'safety' | 'retry';
+// Retry and generic failures carry what went wrong, for the problem report.
+type AiFailure =
+  | { errorKind: 'safety'; reportToken: string | null }
+  | { errorKind: 'retry' | 'generic'; details: AiFailureDetails };
 
 export type AiAutoSave = { status: 'saving' } | SaveResult;
 
@@ -35,14 +41,7 @@ type AiPhase =
       // what happened. Null when no auto-save ran for this run.
       autoSave: AiAutoSave | null;
     }
-  | {
-      kind: 'error';
-      errorKind: AiErrorKind;
-      message: string | null;
-      // Safety refusals receive the same proof as a picture, without persisting evidence.
-      reportToken: string | null;
-      details: AiFailureDetails | null;
-    };
+  | ({ kind: 'error' } & AiFailure);
 
 // The phases the result card's error section and footer render; exported for their props.
 export type AiErrorPhase = Extract<AiPhase, { kind: 'error' }>;
@@ -80,13 +79,7 @@ interface AiGenerationMachine {
     reportToken?: string | null
   ): boolean;
   setAiAutoSave(id: number, autoSave: AiAutoSave): void;
-  failAiGeneration(
-    id: number,
-    message?: string,
-    kind?: AiErrorKind,
-    reportToken?: string | null,
-    details?: AiFailureDetails | null
-  ): void;
+  failAiGeneration(id: number, failure: AiFailure): void;
   closeAiResult(): void;
   minimizeAiResult(): void;
   restoreAiResult(): void;
@@ -209,16 +202,10 @@ export function createAiGeneration(): AiGenerationState {
       if (!isAiGenerationActive(id) || s.phase.kind !== 'result') return;
       s.phase = { ...s.phase, autoSave };
     },
-    failAiGeneration(id, message, kind = 'generic', reportToken = null, details = null) {
+    failAiGeneration(id, failure) {
       if (!isAiGenerationActive(id) || !open()) return;
-      s.consecutiveFailures = kind === 'safety' ? 0 : s.consecutiveFailures + 1;
-      leavePhase({
-        kind: 'error',
-        errorKind: kind,
-        message: message ?? null,
-        reportToken,
-        details,
-      });
+      s.consecutiveFailures = failure.errorKind === 'safety' ? 0 : s.consecutiveFailures + 1;
+      leavePhase({ kind: 'error', ...failure });
     },
     closeAiResult() {
       activeAiGeneration?.controller.abort();

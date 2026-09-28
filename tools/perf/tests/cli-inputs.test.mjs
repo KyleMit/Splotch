@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -142,6 +142,27 @@ describe('performance CLI input failures', () => {
     );
   });
 
+  // An unknown level used to replay at the default width, so every later
+  // stroke landed at a size the device never drew.
+  it('reports a replay recording that selects a size level the app does not have', () => {
+    const path = join(fixtureDir, 'replay.json');
+    writeFileSync(
+      path,
+      JSON.stringify({
+        events: [
+          { kind: 'action', name: 'size', value: 2 },
+          { kind: 'action', name: 'size', value: 9 },
+        ],
+      })
+    );
+
+    expectCliFailure(
+      replayPath,
+      [`--recording=${path}`],
+      `Replay recording selects size level 9, which the app does not have (known: 1, 2, 3, 4, 5): ${path}`
+    );
+  });
+
   it('reports an unknown --device instead of profiling the default viewport', () => {
     expectCliFailure(
       scenarioPath,
@@ -186,7 +207,18 @@ describe('performance CLI input failures', () => {
     expect(result.stderr).toMatch(/^Unknown flag --stroke=4 — known flags: .*\bstrokes\b/);
   });
 
+  // The drift guard for SIZE_PX: the app's SIZE_TO_PX lives in a Svelte rune
+  // module no Node code can import, so its table is read from the source text.
   it('replays every recorded size level at the app stroke width', async () => {
+    const appTable = /const SIZE_TO_PX\b[^=]*=\s*\{([^}]*)\}/.exec(
+      readFileSync(join(repoRoot, 'web/src/lib/state/strokeWidth.svelte.ts'), 'utf8')
+    )?.[1];
+    const appWidths = Object.fromEntries(
+      [...(appTable ?? '').matchAll(/(\d+):\s*(\d+)/g)].map(([, level, px]) => [level, Number(px)])
+    );
+    expect(Object.keys(appWidths)).not.toHaveLength(0);
+    expect(SIZE_PX).toEqual(appWidths);
+
     const canvas = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 1, height: 1 }) };
     const engine = { setStrokeWidth: vi.fn() };
     vi.stubGlobal('document', { querySelector: () => canvas });
@@ -194,18 +226,18 @@ describe('performance CLI input failures', () => {
     vi.stubGlobal('requestAnimationFrame', (callback) => callback());
 
     await replayInPage({
-      events: [1, 2, 3, 4, 5].map((value) => ({ kind: 'action', name: 'size', value })),
+      events: Object.keys(appWidths).map((level) => ({
+        kind: 'action',
+        name: 'size',
+        value: Number(level),
+      })),
       recCanvas: { w: 1, h: 1 },
       sizePx: SIZE_PX,
       turbo: true,
       maxIdleGapMs: 0,
     });
 
-    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(1, 2);
-    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(2, 4);
-    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(3, 8);
-    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(4, 14);
-    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(5, 22);
+    expect(engine.setStrokeWidth.mock.calls).toEqual(Object.values(appWidths).map((px) => [px]));
   });
 
   it('imports the Android profiler without starting its driver', async () => {

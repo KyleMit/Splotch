@@ -3,6 +3,7 @@
   import AiErrorCard from './AiErrorCard.svelte';
   import Button from './design/Button.svelte';
   import type { AiErrorPhase } from '$lib/state/aiGeneration.svelte';
+  import { AI_SAFETY_REFUSAL_MESSAGE } from '$lib/ai/loadingCopy';
   import type { StyleName } from '$lib/ai/styles';
   import type { Origin } from '$lib/state/modal.svelte';
 
@@ -33,8 +34,8 @@
 </script>
 
 <div class="ai-result-error" class:safety class:server={!safety}>
-  {#if safety}
-    <p>{error.message}</p>
+  {#if error.errorKind === 'safety'}
+    <p>{AI_SAFETY_REFUSAL_MESSAGE}</p>
     <p class="ai-result-error-sub">That picture didn't work — try drawing something different!</p>
     <div class="ai-refusal-report">
       <span class="ai-refusal-report-label" id="refusalReportAudience">For grown-ups</span>

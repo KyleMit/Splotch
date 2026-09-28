@@ -216,10 +216,9 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expectPhase(aiGenerationState, {
+    expect(aiGenerationState.phase).toEqual({
       kind: 'error',
       errorKind: 'safety',
-      message: "Let's try drawing something else!",
       reportToken: 'signed-refusal-token',
     });
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
@@ -244,7 +243,11 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expectPhase(aiGenerationState, { kind: 'error', errorKind: 'retry', message: null });
+    expectPhase(aiGenerationState, {
+      kind: 'error',
+      errorKind: 'retry',
+      details: { status: 429, endpoint: '/api/generate-image', message: 'Please wait' },
+    });
     expect(console.error).toHaveBeenCalledWith(
       'AI image request throttled (retry after 12s): Please wait'
     );
@@ -265,7 +268,11 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expectPhase(aiGenerationState, { kind: 'error', errorKind: 'retry', message: null });
+    expectPhase(aiGenerationState, {
+      kind: 'error',
+      errorKind: 'retry',
+      details: { status: 502, endpoint: '/api/generate-image', message: 'Upstream unavailable' },
+    });
     expect(console.error).toHaveBeenCalledWith(
       'AI image request failed (502): Upstream unavailable'
     );
@@ -286,7 +293,11 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expectPhase(aiGenerationState, { kind: 'error', errorKind: 'generic' });
+    expectPhase(aiGenerationState, {
+      kind: 'error',
+      errorKind: 'generic',
+      details: { status: 413, endpoint: '/api/generate-image', message: 'Image is too large' },
+    });
     expect(console.error).toHaveBeenCalledWith('AI image request failed (413): Image is too large');
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });

@@ -181,7 +181,10 @@ describe('createAiProgress', () => {
     const harness = createHarness();
     try {
       const runId = await startRunInFlight(harness);
-      harness.machine.failAiGeneration(runId, 'Try again', 'retry');
+      harness.machine.failAiGeneration(runId, {
+        errorKind: 'retry',
+        details: { status: 502, endpoint: '/api/generate-image', message: 'Upstream unavailable' },
+      });
       await tick();
 
       expect(pendingFrames()).toBe(0);
