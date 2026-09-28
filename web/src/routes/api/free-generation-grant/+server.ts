@@ -1,9 +1,6 @@
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
-import {
-  FREE_GENERATION_LIMIT,
-  isInstallationId,
-  type FreeGenerationGrantStatus,
-} from '$lib/freeGenerations';
+import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '$lib/freeGenerations';
+import { isInstallationId } from '$lib/installationId';
 import { config } from '$lib/server/config';
 import {
   getDailyFreeGenerationStatus,

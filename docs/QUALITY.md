@@ -94,9 +94,9 @@ byte budget.
 since, at every regeneration, and fails only a section missing its date or commit under `--strict`
 or a release-gate section past `RELEASE_GATE_MAX_AGE_DAYS` under `--release-gate-age`, the age
 clause of a performance campaign's completion gate (ADR-0175). The WebKit commit gates and the undo
-commit-P95 gate. `check-bundle-budgets.mjs` holds the startup, lazy-chunk, and native-export sizes;
-`check-pwa-precache.mjs` holds precache integrity. Skills: `profiling`,
-`capture-performance-matrix`, `start-capture-session` before physical-device work, and
+commit-P95 gate. `check-bundle-budgets.mjs` holds the startup, lazy-chunk, and native-export sizes
+and the startup modulepreload count; `check-pwa-precache.mjs` holds precache integrity. Skills:
+`profiling`, `capture-performance-matrix`, `start-capture-session` before physical-device work, and
 `audit-page-load` for page load.
 
 ## Resilience
