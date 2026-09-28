@@ -92,6 +92,25 @@ describe('submitReport and the device opt-in', () => {
     expect(issueBody()).not.toContain(NOTE);
   });
 
+  // Device info only ever rides with a bug report (attachesDevice). A /feedback
+  // post with no JavaScript can switch its native radio to an idea with the box
+  // still ticked, and a crafted JSON body can pair an idea with a snapshot.
+  it.each([
+    ['a snapshot and the opt-in', { platform: 'Web', app: '1.2.3' }],
+    ['the opt-in with no snapshot', null],
+  ])('files a feature request as if neither arrived, given %s', async (_label, device) => {
+    await submitReport({ ...base, kind: 'feature', device, wantsDevice: true });
+
+    expect(issueBody()).toBe(
+      [
+        'The crayon draws green',
+        '',
+        '---',
+        "_Submitted from the Splotch app's feature request form._",
+      ].join('\n')
+    );
+  });
+
   // A snapshot whose every key is unknown sanitizes to nothing, which is
   // indistinguishable from "couldn't collect it" — and the opt-in still stands.
   it('treats a snapshot that sanitizes away as no snapshot at all', async () => {
