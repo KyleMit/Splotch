@@ -217,6 +217,13 @@ export const LAUNCH_KNOBS = [
 
 export const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`;
 
+// The `pgrep -f` pattern that matches the running driver and nothing else. `pgrep -f` matches
+// whole command lines, so an unanchored path also matches any shell that mentions it — a
+// supervising wait loop, or the `pgrep` call itself. launch-overnight.mjs starts the driver through
+// `env … node …`, and `env` execs node, so the driver's own command line begins with `node`.
+// driver-process-pattern.test.mjs holds the hooks and both burn-down-audits skills to this string.
+export const DRIVER_PROCESS_PATTERN = '^node tools/audit-burndown/run-burndown.mjs';
+
 // The canary default, shared with run-burndown.mjs so the recorded relaunch command
 // can never disagree with the run it claims to reproduce: an unset MAX_ISSUES
 // means a five-accepted-fix ceiling, and a command reading `-- 600` would relaunch

@@ -696,7 +696,7 @@ itself. No `claude` call in the sample exceeded ~13 min.
   and your own `bash -c` wrapper contains the pattern — so the command reports a nonzero exit
   (`144`) and takes any background waiter whose command line also mentions it. Read that exit code
   as "I shot my own shell", not "the kill failed", and re-verify with a separate
-  `pgrep -af run-burndown.mjs | grep -v 'bash -c'`.
+  `pgrep -fl '^node tools/audit-burndown/run-burndown.mjs'`.
 
   **The same self-match makes `pgrep` wait loops hang forever.** The obvious way to wait for a clean
   stop — `until ! pgrep -f 'audit-burndown/run-burndown.mjs' >/dev/null; do sleep 15; done` — **can
@@ -735,12 +735,12 @@ monitor while paused.
 
 ### "resume" / "continue" — start the next finding
 
-Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/run-burndown.mjs`
-must be empty (if it isn't, the run is already going — say so, don't launch a second). Read the
-matches rather than counting them: `pgrep -f` matches whole command lines, so the launcher's
-`env … node …` wrapper — and any shell whose own command line happens to mention the path, including
-the `pgrep` call you just typed — matches too. Only a bare
-`node tools/audit-burndown/run-burndown.mjs` line is the driver. Then `rm .audit-work/STOP`,
+Only after verifying **nothing is already in flight**:
+`pgrep -fl '^node tools/audit-burndown/run-burndown.mjs'` must be empty (if it isn't, the run is
+already going — say so, don't launch a second). Keep the `^node` anchor: `pgrep -f` matches whole
+command lines, so an unanchored path also matches the launcher's `env … node …` wrapper and any
+shell whose own command line mentions the path, including the `pgrep` call you just typed. Only a
+bare `node tools/audit-burndown/run-burndown.mjs` line is the driver. Then `rm .audit-work/STOP`,
 relaunch with the exact command from the durable checkpoint, and re-arm the event-driven monitor.
 The launcher self-recovers even in a brand-new session that never saw this run — see **Resuming a
 crashed run** below.

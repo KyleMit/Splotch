@@ -3,27 +3,25 @@ import AxeBuilder from '@axe-core/playwright';
 import {
   ANDROID_UA,
   IPAD_UA,
+  INSTALL_BANNER_AUTO_CLEAR_STROKES,
+  INSTALL_BANNER_EARNING_STROKES,
   draw,
   drawCommittedStroke,
+  drawInstallBannerStrokes,
+  earnInstallBanner,
   gotoApp,
   openSettingsModal,
 } from './helpers';
+import { openDrawer } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { iosShareButtonLocation } from '../src/lib/iosShareButtonLocation';
 
-const BANNER_MOUNT_TIMEOUT_MS = 20_000;
 const SAFE_BOTTOM_PX = 34;
 const BANNER_LAYOUT_TIMEOUT_MS = 5000;
 
 async function earnBanner(page: Page) {
   await gotoApp(page);
-  for (let stroke = 0; stroke < 3; stroke += 1) {
-    await draw(page, [
-      { x: 230, y: 180 + stroke * 30 },
-      { x: 300, y: 195 + stroke * 30 },
-    ]);
-  }
-  await page.locator('.install-banner').waitFor({ timeout: BANNER_MOUNT_TIMEOUT_MS });
+  await earnInstallBanner(page);
 }
 
 test.use({ userAgent: IPAD_UA, hasTouch: true, isMobile: true });
@@ -136,21 +134,14 @@ test.describe('banner interactions', () => {
       });
       await gotoApp(page);
       if (!initiallyOpen) {
-        for (let stroke = 0; stroke < 3; stroke += 1) {
-          await draw(page, [
-            { x: 230, y: 180 },
-            { x: 300, y: 195 },
-          ]);
-        }
-        await page.locator('.install-banner').waitFor({ timeout: BANNER_MOUNT_TIMEOUT_MS });
-        await page.getByRole('button', { name: 'Expand controls', exact: true }).click();
+        await earnInstallBanner(page);
+        await openDrawer(page);
       }
-      for (let stroke = 0; stroke < 8; stroke += 1) {
-        await draw(page, [
-          { x: 230, y: 180 },
-          { x: 300, y: 195 },
-        ]);
-      }
+      // Enough to both earn and part the banner, were drawer strokes counted.
+      await drawInstallBannerStrokes(
+        page,
+        INSTALL_BANNER_EARNING_STROKES + INSTALL_BANNER_AUTO_CLEAR_STROKES
+      );
       await expect(page.locator('.install-banner')).toBeHidden();
       expect(
         await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installDismissed)
@@ -193,20 +184,18 @@ test.describe('banner interactions', () => {
     expect(
       await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installDismissed)
     ).toBe('true');
-    await earnBannerAfterDismissal(page);
+    await gotoApp(page);
+    await drawInstallBannerStrokes(page);
+    // The settled-in gate counts a session toward a re-prompt only while the
+    // dismissal is remembered, so this proves the strokes were judged against it.
+    await expect
+      .poll(() =>
+        page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installRepromptSessionCount)
+      )
+      .toBe('1');
     await expect(page.locator('.install-banner')).toHaveCount(0);
   });
 });
-
-async function earnBannerAfterDismissal(page: Page) {
-  await gotoApp(page);
-  for (let stroke = 0; stroke < 3; stroke += 1) {
-    await draw(page, [
-      { x: 230, y: 180 },
-      { x: 300, y: 195 },
-    ]);
-  }
-}
 
 test.describe('Chromium install', () => {
   test.use({ userAgent: ANDROID_UA, viewport: { width: 375, height: 812 } });
