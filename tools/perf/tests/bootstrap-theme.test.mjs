@@ -7,7 +7,7 @@
 // The fixture stands in for the product: clicking a theme control is what sets
 // `documentElement.dataset.theme`, exactly as the real Settings controls do, so
 // the bootstrap has to actually find and click one to make the assertion pass.
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 // The bootstrap polls on the same budgets it uses on a device, so executing it
 // costs seconds rather than milliseconds. That is the price of running the real
@@ -88,19 +88,16 @@ function openedFor(nonce, extraQuery = '') {
   );
 }
 
-function runBootstrap(plan, { openedWithoutProbe = false, extraQuery = '' } = {}) {
+function runBootstrap(plan, { openedWithoutProbe, openedAs = plan.nonce, extraQuery = '' } = {}) {
   if (openedWithoutProbe) window.happyDOM?.setURL?.('http://probe-host.test/');
-  else openedFor(plan.nonce, extraQuery);
+  else openedFor(openedAs, extraQuery);
   const posted = [];
   const currentPlan = plan;
-  let readyResolve;
-  const readyPosted = new Promise((resolve) => (readyResolve = resolve));
-  let errorResolve;
-  const errorPosted = new Promise((resolve) => (errorResolve = resolve));
-  let staleResolve;
-  const stalePosted = new Promise((resolve) => (staleResolve = resolve));
-  let reportResolve;
-  const reportPosted = new Promise((resolve) => (reportResolve = resolve));
+  const ready = Promise.withResolvers();
+  const error = Promise.withResolvers();
+  const stale = Promise.withResolvers();
+  const refill = Promise.withResolvers();
+  const report = Promise.withResolvers();
   const eventRows = [];
   const frameRows = plan.undoCount ? Array.from({ length: 5_001 }, (_, index) => [index]) : [];
   const measureRows = plan.undoCount ? Array.from({ length: 5_001 }, (_, index) => [index]) : [];
@@ -109,18 +106,21 @@ function runBootstrap(plan, { openedWithoutProbe = false, extraQuery = '' } = {}
     if (path === '/__probe/plan') return { json: async () => currentPlan };
     const body = init?.body ? JSON.parse(init.body) : null;
     posted.push({ path, body });
-    if (path === '/__probe/ready') readyResolve(body);
-    if (path === '/__probe/log' && body?.kind === 'bootstrap') errorResolve(body);
-    if (path === '/__probe/log' && body?.kind === 'stale-page') staleResolve(body);
-    if (path === '/__probe/report') reportResolve(body);
+    if (path === '/__probe/ready') ready.resolve(body);
+    if (path === '/__probe/log' && body?.kind === 'bootstrap') error.resolve(body);
+    if (path === '/__probe/log' && body?.kind === 'stale-page') stale.resolve(body);
+    if (path === '/__probe/refill') refill.resolve(body);
+    if (path === '/__probe/report') report.resolve(body);
     return { json: async () => ({}) };
   });
 
   // The probe is a same-origin <script src> the fixture cannot fetch, so its
   // arrival is simulated at the point the bootstrap waits for it.
+  const probeScriptSources = [];
   const append = document.head.append.bind(document.head);
   document.head.append = (element) => {
     if (element.tagName === 'SCRIPT') {
+      probeScriptSources.push(element.src);
       window.__probe = {
         counts: () => ({
           frames: frameRows.length,
@@ -153,11 +153,13 @@ function runBootstrap(plan, { openedWithoutProbe = false, extraQuery = '' } = {}
 
   new Function(pageBootstrapSource())();
   return {
-    readyPosted,
-    errorPosted,
-    stalePosted,
-    reportPosted,
+    readyPosted: ready.promise,
+    errorPosted: error.promise,
+    stalePosted: stale.promise,
+    refillPosted: refill.promise,
+    reportPosted: report.promise,
     posted,
+    probeScriptSources,
     finish() {
       currentPlan.finish = true;
     },
@@ -455,6 +457,65 @@ describe('the bootstrap actually setting the theme', () => {
   );
 });
 
+// What the page did before the runner starts, observed from the outside: each
+// was once a substring check on the source, green whatever the code did.
+describe('the page the runner is handed', () => {
+  // The device rotates and the page does not always agree; without this the
+  // runner cannot tell a landscape capture filed as portrait.
+  it.each([
+    { width: 1024, height: 768, orientation: 'LANDSCAPE' },
+    { width: 768, height: 1024, orientation: 'PORTRAIT' },
+  ])(
+    'reports $orientation for the $width x $height viewport it rendered at',
+    async ({ width, height, orientation }) => {
+      const viewport = { width: innerWidth, height: innerHeight };
+      onTestFinished(() => window.happyDOM.setViewport(viewport));
+      window.happyDOM.setViewport({ width, height });
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: `${orientation}-run` });
+
+      expect((await readyPosted).geometry.orientation).toBe(orientation);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The guard's own branches are tested on its source in split-capture.test.mjs;
+  // this proves the bootstrap installs it and tells the runner it did.
+  it(
+    'blocks service-worker registration and reports that in readiness',
+    async () => {
+      const register = vi.fn();
+      onTestFinished(() => vi.unstubAllGlobals());
+      vi.stubGlobal('navigator', {
+        serviceWorker: { register, getRegistrations: async () => [], controller: null },
+      });
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: 'guarded-run' });
+
+      expect((await readyPosted).serviceWorkerRegistration).toBe('blocked');
+      await navigator.serviceWorker.register('/sw.js');
+      expect(register).not.toHaveBeenCalled();
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The route's CSP allows script-src 'self' and forbids unsafe-eval.
+  it(
+    'loads the probe as a same-origin script',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted, probeScriptSources } = runBootstrap({ brush: 'pen', nonce: 'src-run' });
+      await readyPosted;
+
+      expect(probeScriptSources).toEqual([`${location.origin}/__probe/probe.js`]);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
 // Issue 1309's second gap, the page half: the native WebView and the manual
 // hand capture open pages that cannot carry the run nonce, so their plans set
 // `requirePageIdentity: false` — and nothing ever EXECUTED that exemption.
@@ -586,29 +647,24 @@ describe('refusing a readiness payload the theme cannot be trusted from', () => 
 
 // The guard itself, through the same executed bootstrap: a page that was opened
 // for another run must do nothing at all — not report ready, not upload — and
-// must say why, so a run that produces no capture is diagnosable.
+// must say why, so a run that produces no capture is diagnosable. It is the tab
+// Chrome restores across a launch's force-stop, which reads the CURRENT plan
+// and would otherwise pass for the page the run opened. Standing down is not a
+// failure: reporting a leftover as one would bury the current page's real error.
 describe('a page opened for a different run', () => {
   it(
     'stands down without reporting ready',
     async () => {
       paintShell({ compact: true, startingTheme: 'light' });
-      window.happyDOM?.setURL?.('http://probe-host.test/?probe=an-earlier-cell');
 
-      const posted = [];
-      global.fetch = vi.fn(async (path, init) => {
-        if (path === '/__probe/plan')
-          return { json: async () => ({ brush: 'pen', nonce: 'this-cell' }) };
-        posted.push({ path, body: init?.body ? JSON.parse(init.body) : null });
-        return { json: async () => ({}) };
-      });
-
-      new Function(pageBootstrapSource())();
+      const plan = { brush: 'pen', nonce: 'this-cell' };
+      const { posted } = runBootstrap(plan, { openedAs: 'earlier-cell' });
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
       expect(posted.some((call) => call.path === '/__probe/report')).toBe(false);
       const stood = posted.find((call) => call.body?.kind === 'stale-page');
-      expect(stood?.body).toMatchObject({ openedFor: 'an-earlier-cell', nonce: 'this-cell' });
+      expect(stood?.body).toMatchObject({ openedFor: 'earlier-cell', nonce: 'this-cell' });
     },
     BOOTSTRAP_TIMEOUT_MS
   );
@@ -700,8 +756,8 @@ describe('the bootstrap verifying the eraser fill', () => {
         finish: false,
         eraserRefillRequest: null,
       };
-      const { readyPosted, posted, recordTrustedCanvasPointerUp } = runBootstrap(plan);
-      const ready = await readyPosted;
+      const run = runBootstrap(plan);
+      const ready = await run.readyPosted;
 
       expect(ready.eraserFill).toEqual({
         tiles: 2,
@@ -714,17 +770,9 @@ describe('the bootstrap verifying the eraser fill', () => {
       expect(tiles[0].context.fillRects).toEqual([[0, 0, 100, 80]]);
       expect(tiles[1].context.fillStyle).toBe('#7c4dff');
 
-      for (let pointerUp = 0; pointerUp < 16; pointerUp++) recordTrustedCanvasPointerUp();
+      for (let pointerUp = 0; pointerUp < 16; pointerUp++) run.recordTrustedCanvasPointerUp();
       plan.eraserRefillRequest = { sequence: 1, afterStroke: 2 };
-      const refill = await vi.waitFor(
-        () => {
-          const found = posted.find((entry) => entry.path === '/__probe/refill');
-          if (!found) throw new Error('no refill acknowledgement yet');
-          return found;
-        },
-        { timeout: BOOTSTRAP_TIMEOUT_MS }
-      );
-      expect(refill.body).toMatchObject({
+      expect(await run.refillPosted).toMatchObject({
         nonce: 'eraser-fill-run',
         request: { sequence: 1, afterStroke: 2 },
         entry: {
@@ -735,18 +783,11 @@ describe('the bootstrap verifying the eraser fill', () => {
         },
       });
       await new Promise((resolve) => setTimeout(resolve, 500));
-      expect(posted.filter((entry) => entry.path === '/__probe/refill')).toHaveLength(1);
+      expect(run.posted.filter((entry) => entry.path === '/__probe/refill')).toHaveLength(1);
       plan.finish = true;
-      const report = await vi.waitFor(
-        () => {
-          const found = posted.find((entry) => entry.path === '/__probe/report');
-          if (!found) throw new Error('no report yet');
-          return found;
-        },
-        { timeout: BOOTSTRAP_TIMEOUT_MS }
-      );
+      const report = await run.reportPosted;
 
-      expect(report.body.eraserRefills).toEqual([
+      expect(report.eraserRefills).toEqual([
         {
           afterStroke: 2,
           pending: false,
@@ -791,20 +832,13 @@ describe('the bootstrap verifying the eraser fill', () => {
         finish: false,
         eraserRefillRequest: null,
       };
-      const { readyPosted, posted } = runBootstrap(plan);
+      const { readyPosted, refillPosted } = runBootstrap(plan);
       await readyPosted;
 
       plan.eraserRefillRequest = { sequence: 1, afterStroke: 10 };
-      const refill = await vi.waitFor(
-        () => {
-          const found = posted.find((entry) => entry.path === '/__probe/refill');
-          if (!found) throw new Error('no refill acknowledgement yet');
-          return found;
-        },
-        { timeout: BOOTSTRAP_TIMEOUT_MS }
-      );
+      const refill = await refillPosted;
 
-      expect(refill.body.entry.error).toContain('no new trusted canvas pointerup');
+      expect(refill.entry.error).toContain('no new trusted canvas pointerup');
       plan.finish = true;
     },
     BOOTSTRAP_TIMEOUT_MS
@@ -815,22 +849,15 @@ describe('the bootstrap verifying the eraser fill', () => {
     async () => {
       paintEraserShell([{ backing: '100x80', width: 100, height: 80, alpha: 0 }]);
 
-      const { posted } = runBootstrap({
+      const { posted, reportPosted } = runBootstrap({
         brush: 'eraser',
         theme: 'light',
         nonce: 'eraser-bad-fill',
       });
 
-      const report = await vi.waitFor(
-        () => {
-          const found = posted.find((entry) => entry.path === '/__probe/report');
-          if (!found) throw new Error('no report yet');
-          return found;
-        },
-        { timeout: BOOTSTRAP_TIMEOUT_MS }
-      );
-      expect(report.body.nonce).toBe('eraser-bad-fill');
-      expect(report.body.error).toContain('transparent');
+      const report = await reportPosted;
+      expect(report.nonce).toBe('eraser-bad-fill');
+      expect(report.error).toContain('transparent');
       expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
     },
     BOOTSTRAP_TIMEOUT_MS
@@ -873,18 +900,11 @@ describe('the painted-output record in the uploaded report', () => {
     document.createElement = (tag) => (tag === 'canvas' ? fakeScratchFor() : createElement(tag));
     try {
       const plan = { brush: 'pen', theme: 'light', nonce: 'painted-run', finish: false };
-      const { readyPosted, posted } = runBootstrap(plan);
+      const { readyPosted, reportPosted } = runBootstrap(plan);
       await readyPosted;
       if (mutateBetweenSamples) canvas.pixels = [99, 20, 30, 255];
       plan.finish = true;
-      return await vi.waitFor(
-        () => {
-          const found = posted.find((entry) => entry.path === '/__probe/report');
-          if (!found) throw new Error('no report yet');
-          return found;
-        },
-        { timeout: BOOTSTRAP_TIMEOUT_MS }
-      );
+      return await reportPosted;
     } finally {
       document.createElement = createElement;
     }
@@ -893,9 +913,9 @@ describe('the painted-output record in the uploaded report', () => {
   it(
     'records blank output when no pixel changed between the samples',
     async () => {
-      const report = await reportFor(false);
+      const payload = await reportFor(false);
 
-      expect(report.body.report.paintedOutput).toMatchObject({ changed: false });
+      expect(payload.report.paintedOutput).toMatchObject({ changed: false });
     },
     BOOTSTRAP_TIMEOUT_MS
   );
@@ -903,9 +923,9 @@ describe('the painted-output record in the uploaded report', () => {
   it(
     'records a changed canvas when any pixel differs after the pass',
     async () => {
-      const report = await reportFor(true);
+      const payload = await reportFor(true);
 
-      expect(report.body.report.paintedOutput).toMatchObject({ changed: true });
+      expect(payload.report.paintedOutput).toMatchObject({ changed: true });
     },
     BOOTSTRAP_TIMEOUT_MS
   );
@@ -961,6 +981,7 @@ describe('the pulse and the error report', () => {
         'heartbeat-run',
         'heartbeat-run',
       ]);
+      expect(report.body.nonce).toBe('heartbeat-run');
       expect(posted.indexOf(heartbeats[1])).toBeLessThan(posted.indexOf(report));
     },
     BOOTSTRAP_TIMEOUT_MS
@@ -975,7 +996,7 @@ describe('the pulse and the error report', () => {
       paintShell({ compact: true, startingTheme: 'light' });
 
       const plan = { brush: 'pen', theme: 'light', nonce: 'error-run', finish: false };
-      const { readyPosted, posted } = runBootstrap(plan);
+      const { readyPosted, reportPosted } = runBootstrap(plan);
       await readyPosted;
       const workingFetch = global.fetch;
       global.fetch = async (path, init) => {
@@ -983,13 +1004,9 @@ describe('the pulse and the error report', () => {
         return workingFetch(path, init);
       };
 
-      const report = await vi.waitFor(() => {
-        const found = posted.find((entry) => entry.path === '/__probe/report');
-        if (!found) throw new Error('no report yet');
-        return found;
-      });
-      expect(report.body.nonce).toBe('error-run');
-      expect(report.body.error).toContain('plan poll exploded');
+      const report = await reportPosted;
+      expect(report.nonce).toBe('error-run');
+      expect(report.error).toContain('plan poll exploded');
     },
     BOOTSTRAP_TIMEOUT_MS
   );

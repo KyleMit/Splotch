@@ -6,7 +6,7 @@ import {
   planWorktreePrune,
   removeWorktree,
 } from '../prune-agent-worktrees.mjs';
-import { createTempRepo } from './fixtures/temp-repo.mjs';
+import { createTempRepo, REAL_REPO_TEST_OPTIONS } from './fixtures/temp-repo.mjs';
 
 describe('parsePruneWorktreesArgs', () => {
   it('defaults to a fetching dry run over the built-in roots', () => {
@@ -27,7 +27,7 @@ describe('parsePruneWorktreesArgs', () => {
   });
 });
 
-describe('planWorktreePrune on a real repository', () => {
+describe('planWorktreePrune on a real repository', REAL_REPO_TEST_OPTIONS, () => {
   let fixture;
   let agents;
 

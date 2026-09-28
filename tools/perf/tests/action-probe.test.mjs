@@ -17,76 +17,6 @@ function visualEffectEvent(type, details) {
   return event;
 }
 
-function installFrameClock() {
-  let callbacks = [];
-  vi.stubGlobal('requestAnimationFrame', (callback) => callbacks.push(callback));
-  return () => {
-    const pending = callbacks;
-    callbacks = [];
-    for (const callback of pending) callback(performance.now() + 0.01);
-  };
-}
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-  document.body.replaceChildren();
-  delete window.__actionProbe;
-});
-
-describe('action probe visual-effect attribution', () => {
-  it('names a transitioning target and closes its effect when the target is removed', async () => {
-    const tickFrame = installFrameClock();
-    Function(ACTION_PROBE)();
-    tickFrame();
-    tickFrame();
-
-    const chip = document.createElement('button');
-    chip.id = 'active-page';
-    chip.className = 'active-page-chip pressed';
-    document.body.append(chip);
-
-    window.__actionProbe.begin('clear page', '#active-page', ['click']);
-    chip.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    chip.dispatchEvent(
-      visualEffectEvent('transitionrun', {
-        propertyName: 'transform',
-        pseudoElement: '',
-      })
-    );
-    tickFrame();
-    tickFrame();
-    chip.remove();
-    await Promise.resolve();
-    tickFrame();
-    tickFrame();
-
-    const sample = window.__actionProbe.finish();
-    expect(sample.activities).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'transitionrun',
-          target: 'button#active-page.active-page-chip.pressed',
-          property: 'transform',
-        }),
-        expect.objectContaining({
-          type: 'dom-mutation',
-          removed: ['button#active-page.active-page-chip.pressed'],
-        }),
-        expect.objectContaining({
-          type: 'visual-effect-detached',
-          target: 'button#active-page.active-page-chip.pressed',
-          effects: ['transition:transform:'],
-        }),
-      ])
-    );
-    expect(sample.postActionFrames.map((frame) => frame.visualEffectsActive)).toEqual([
-      true,
-      false,
-      false,
-    ]);
-  });
-});
-
 // A vsync grid the test owns on both clocks: each tick hands the pending rAF
 // callbacks the next scheduled stamp, and `performance.now()` inside them
 // answers that stamp plus however late the callback is said to have run.
@@ -114,9 +44,70 @@ function installVsyncClock({ intervalMs = 16.7 } = {}) {
   };
 }
 
-describe('action probe frame stamps (ADR-0163)', () => {
-  afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  document.body.replaceChildren();
+  delete window.__actionProbe;
+});
 
+describe('action probe visual-effect attribution', () => {
+  it('names a transitioning target and closes its effect when the target is removed', async () => {
+    const clock = installVsyncClock();
+    Function(ACTION_PROBE)();
+    clock.tick();
+    clock.tick();
+
+    const chip = document.createElement('button');
+    chip.id = 'active-page';
+    chip.className = 'active-page-chip pressed';
+    document.body.append(chip);
+
+    window.__actionProbe.begin('clear page', '#active-page', ['click']);
+    clock.at(40);
+    chip.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    chip.dispatchEvent(
+      visualEffectEvent('transitionrun', {
+        propertyName: 'transform',
+        pseudoElement: '',
+      })
+    );
+    clock.tick();
+    clock.tick();
+    chip.remove();
+    await Promise.resolve();
+    clock.tick();
+    clock.tick();
+
+    clock.at(110);
+    const sample = window.__actionProbe.finish();
+    expect(sample.activities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'transitionrun',
+          target: 'button#active-page.active-page-chip.pressed',
+          property: 'transform',
+        }),
+        expect.objectContaining({
+          type: 'dom-mutation',
+          removed: ['button#active-page.active-page-chip.pressed'],
+        }),
+        expect.objectContaining({
+          type: 'visual-effect-detached',
+          target: 'button#active-page.active-page-chip.pressed',
+          effects: ['transition:transform:'],
+        }),
+      ])
+    );
+    expect(sample.postActionFrames.map((frame) => frame.visualEffectsActive)).toEqual([
+      true,
+      false,
+      false,
+    ]);
+  });
+});
+
+describe('action probe frame stamps (ADR-0163)', () => {
   it('declares the dual-channel epoch the scorer’s constant names', () => {
     vi.stubGlobal('requestAnimationFrame', vi.fn());
     Function(ACTION_PROBE)();
@@ -202,8 +193,6 @@ function armToggle() {
 }
 
 describe('action probe onset rows (ADR-0163, issue 1713)', () => {
-  afterEach(() => vi.restoreAllMocks());
-
   const closeTo = (values) => values.map((ms) => expect.closeTo(ms, 5));
 
   it('retains the frame stamped before the action and run after it, with both clocks', () => {

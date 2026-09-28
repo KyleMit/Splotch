@@ -8,8 +8,6 @@ import { LOCAL_WARP_MAX_PX, localWarp } from '../lib/local-warp.mjs';
 import { mergeFlags, pageLevers } from '../lib/page-notes.mjs';
 import { scoreGoldenPage } from '../lib/golden-catalog.mjs';
 
-const REAL_IMAGE_CALIBRATION_TIMEOUT_MS = 10_000;
-
 function lineArt({
   shiftedFeatureX = 0,
   shiftedFeatureY = 0,
@@ -106,69 +104,61 @@ describe('catalog calibration', () => {
     );
   }
 
-  it(
-    'rejects the excavator aperture ridge while historical big-nudge controls stay clean',
-    async () => {
-      const [pig, excavatorLight, excavatorNight, stegosaurus] = await Promise.all([
-        scorePage('farm/pig-wide'),
-        scorePage('vehicles/excavator-wide'),
-        scorePage('vehicles/excavator-wide', 'night'),
-        scorePage('dinosaur/stegosaurus-wide'),
-      ]);
+  it('rejects the excavator aperture ridge while historical big-nudge controls stay clean', async () => {
+    const [pig, excavatorLight, excavatorNight, stegosaurus] = await Promise.all([
+      scorePage('farm/pig-wide'),
+      scorePage('vehicles/excavator-wide'),
+      scorePage('vehicles/excavator-wide', 'night'),
+      scorePage('dinosaur/stegosaurus-wide'),
+    ]);
 
-      expect(pig.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-      expect(stegosaurus.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-      expect(excavatorLight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-      expect(excavatorNight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-      expect(Math.hypot(excavatorLight.globalDx, excavatorLight.globalDy)).toBeLessThan(3);
-      expect(excavatorLight.tiles).toContainEqual(
-        expect.objectContaining({
-          centerX: 384,
-          centerY: 384,
-          dx: -5,
-          dy: 11,
-          boundaryPeak: true,
-          confident: false,
-        })
-      );
-      expect(excavatorNight.tiles).toContainEqual(
-        expect.objectContaining({
-          centerX: 384,
-          centerY: 384,
-          confident: false,
-        })
-      );
-    },
-    REAL_IMAGE_CALIBRATION_TIMEOUT_MS
-  );
+    expect(pig.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+    expect(stegosaurus.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+    expect(excavatorLight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+    expect(excavatorNight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+    expect(Math.hypot(excavatorLight.globalDx, excavatorLight.globalDy)).toBeLessThan(3);
+    expect(excavatorLight.tiles).toContainEqual(
+      expect.objectContaining({
+        centerX: 384,
+        centerY: 384,
+        dx: -5,
+        dy: 11,
+        boundaryPeak: true,
+        confident: false,
+      })
+    );
+    expect(excavatorNight.tiles).toContainEqual(
+      expect.objectContaining({
+        centerX: 384,
+        centerY: 384,
+        confident: false,
+      })
+    );
+  });
 
-  it(
-    'bounds every reviewed baseline exception while new pages keep the strict default',
-    async () => {
-      const exceptions = [
-        ['farm/horse-tall', 'night'],
-        ['farm/horse-wide', 'night'],
-        ['space/astronaut-wide', 'light'],
-        ['space/ship-wide', 'night'],
-      ];
+  it('bounds every reviewed baseline exception while new pages keep the strict default', async () => {
+    const exceptions = [
+      ['farm/horse-tall', 'night'],
+      ['farm/horse-wide', 'night'],
+      ['space/astronaut-wide', 'light'],
+      ['space/ship-wide', 'night'],
+    ];
 
-      for (const [page, theme] of exceptions) {
-        const [category, name] = page.split('/');
-        const penPath = join(COLORING_DIR, category, `${name}.overlay.svg`);
-        const pen = await rasterizeLineArt(penPath);
-        const source = theme === 'night' ? (await resolveNightLineArt(penPath, pen)).source : pen;
-        const fill = await readFile(join(FILL_SRC_DIR, category, `${name}.${theme}.raw.webp`));
-        const score = await localWarp(source, fill);
-        const max = pageLevers(page, theme).flags['warp-max'];
+    for (const [page, theme] of exceptions) {
+      const [category, name] = page.split('/');
+      const penPath = join(COLORING_DIR, category, `${name}.overlay.svg`);
+      const pen = await rasterizeLineArt(penPath);
+      const source = theme === 'night' ? (await resolveNightLineArt(penPath, pen)).source : pen;
+      const fill = await readFile(join(FILL_SRC_DIR, category, `${name}.${theme}.raw.webp`));
+      const score = await localWarp(source, fill);
+      const max = pageLevers(page, theme).flags['warp-max'];
 
-        expect(score.localWarpMax, `${page} ${theme}`).toBeLessThanOrEqual(max);
-      }
+      expect(score.localWarpMax, `${page} ${theme}`).toBeLessThanOrEqual(max);
+    }
 
-      expect(pageLevers('vehicles/new-page-wide', 'light')).toBeNull();
-      expect(LOCAL_WARP_MAX_PX).toBe(4);
-    },
-    REAL_IMAGE_CALIBRATION_TIMEOUT_MS
-  );
+    expect(pageLevers('vehicles/new-page-wide', 'light')).toBeNull();
+    expect(LOCAL_WARP_MAX_PX).toBe(4);
+  });
 
   it('keeps other registry flags when an explicit CLI ceiling is provided', () => {
     const levers = {

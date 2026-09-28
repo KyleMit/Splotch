@@ -22,6 +22,12 @@ import {
 } from '../lib/campaign-state.mjs';
 import { ROOT } from '../../lib/proc.mjs';
 
+// closeSettings lets a real device settle after every close; these stubs have nothing to settle.
+vi.mock('../../lib/proc.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
+  sleep: async () => {},
+}));
+
 function clickedSelector(script) {
   const serializedSelector = script.match(/querySelector\((".*?")\)/)?.[1];
   return serializedSelector ? JSON.parse(serializedSelector) : null;
