@@ -330,8 +330,10 @@ issue body. Whether a report carries it at all is `attachesDevice` in `web/src/l
 rule the forms apply too: the server drops a `device` sent with a `feature` report. Because the
 endpoint is an unauthenticated public write and the message + device values are attacker-controlled,
 both are run through `escapeIssueMarkdown()` (same seam) before they are embedded in the Markdown
-body — it backslash-escapes `@`-mentions, `#`-references, image embeds (`![…]`), and raw `<` HTML so
-a submitter can't make the issue notify people or load remote content. See ADR-0060.
+body — it backslash-escapes `@`-mentions, `#`-references, image embeds (`![…]`), and raw `<` HTML
+(after escaping any backslash the text already carries, which would otherwise re-arm them) so a
+submitter can't make the issue notify people or load remote content. See ADR-0060. The AI-report
+issue passes its model-written refusal reason through the same seam.
 
 ### `POST /api/report-image`
 
@@ -391,7 +393,9 @@ one opaque report-id prefix. Every bundle contains the input drawing, resolved `
 `metadata.json` (report category, report time, deletion time, style, MIME types, and the signed
 provider refusal reason when applicable); a picture report additionally contains the output image.
 The support issue and metadata categorize refusals as `false-positive-refusal` and expose that
-server-authenticated reason to the reviewer. If private notification fails, the bundle is deleted
+server-authenticated reason to the reviewer: verbatim in `metadata.json`, and through
+`escapeIssueMarkdown()` in the issue, since the signature proves the server minted the reason, not
+that the model's sentence is inert Markdown. If private notification fails, the bundle is deleted
 and the request fails rather than leaving unreachable evidence. That includes a GitHub call that
 stalls: it is abandoned at `GITHUB_REQUEST_TIMEOUT_MS` (`web/src/lib/ai/limits.ts`), which ADR-0063
 sizes so that the key check plus the issue call leave part of the platform ceiling for the evidence

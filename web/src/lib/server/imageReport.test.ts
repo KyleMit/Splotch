@@ -126,7 +126,7 @@ describe('submitImageReport', () => {
   // The reason is the model's own sentence about a drawing that can hold
   // handwriting, so it can echo a mention, a cross-reference, or a remote image.
   it('files a refusal reason inert in the issue and verbatim in the evidence', async () => {
-    const refusalReason = 'It says @someone ![x](http://e.example/p.png) and #1';
+    const refusalReason = 'It says @someone ![x](http://e.example/p.png) \\![y](http://q) and #1';
 
     await submitImageReport({
       kind: 'false-positive-refusal',
@@ -137,7 +137,7 @@ describe('submitImageReport', () => {
     });
 
     expect(createIssue.mock.calls[0][0].body).toContain(
-      '**Refusal reason:** It says \\@someone \\![x](http://e.example/p.png) and \\#1'
+      '**Refusal reason:** It says \\@someone \\![x](http://e.example/p.png) \\\\\\![y](http://q) and \\#1'
     );
     expect(saveImageReport).toHaveBeenCalledWith(expect.objectContaining({ refusalReason }));
   });
