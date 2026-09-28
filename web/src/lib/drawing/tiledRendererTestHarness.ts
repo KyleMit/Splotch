@@ -16,11 +16,18 @@ export async function loadFreshTiledRenderer(): Promise<TiledRendererModule> {
   return import('./tiledRenderer');
 }
 
+// Replaces fake-context members of the same name, for a file whose assertions
+// need a method to do more than record its calls.
+type FakeContextOverrides = (
+  canvas: HTMLCanvasElement
+) => Partial<Record<keyof CanvasRenderingContext2D, unknown>>;
+
 // The renderer to tear down defaults to the module every test in the file
 // shares; a file whose tests each load their own passes a getter for the one
 // the running test is using.
 export function installTiledRendererTestHarness(
-  currentRenderer: () => Pick<TiledRendererModule, 'detachTiledRenderer'> = () => sharedRenderer
+  currentRenderer: () => Pick<TiledRendererModule, 'detachTiledRenderer'> = () => sharedRenderer,
+  contextOverrides: FakeContextOverrides = () => ({})
 ) {
   let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
 
@@ -45,6 +52,9 @@ export function installTiledRendererTestHarness(
         save() {},
         restore() {},
         beginPath() {},
+        moveTo() {},
+        quadraticCurveTo() {},
+        stroke() {},
         rect() {},
         clip() {},
         clearRect: vi.fn(),
@@ -60,6 +70,7 @@ export function installTiledRendererTestHarness(
         getTransform() {
           return transform;
         },
+        ...contextOverrides(canvas),
       } as unknown as CanvasRenderingContext2D;
       canvas._ctx = context;
       return context;

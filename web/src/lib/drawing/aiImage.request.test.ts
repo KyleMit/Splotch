@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SaveResult } from '$lib/saveNaming';
+import type { SettingsState } from '$lib/state/settings.svelte';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
@@ -7,15 +8,6 @@ const mocks = vi.hoisted(() => ({
   saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveResult> => ({
     status: 'downloads',
   })),
-  settings: {
-    aiUserApiKey: '',
-    aiAccessToken: 'test-token',
-    autoSaveAiEnabled: false,
-    aiCredentialKind(): 'apiKey' | 'accessCode' | 'none' {
-      if (this.aiUserApiKey) return 'apiKey';
-      return this.aiAccessToken ? 'accessCode' : 'none';
-    },
-  },
 }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
@@ -23,18 +15,23 @@ vi.mock('./aiUploadEncoding', () => ({ encodeWebpUpload: mocks.encodeWebpUpload 
 vi.mock('./imageSave', () => ({
   saveImageBlob: mocks.saveImageBlob,
 }));
-vi.mock('$lib/state/settings.svelte', () => ({ settingsState: mocks.settings }));
+
+// The real store, re-imported after each vi.resetModules() so it is the
+// instance the test's freshly imported aiImage reads.
+let settings: SettingsState;
 
 function okResponse(blob: Blob): Response {
   return new Response(blob, { status: 200 });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
-  mocks.settings.autoSaveAiEnabled = false;
-  mocks.settings.aiUserApiKey = '';
-  mocks.settings.aiAccessToken = 'test-token';
+  ({ settingsState: settings } = await import('$lib/state/settings.svelte'));
+  // The fresh store rereads localStorage, where an earlier test's auto-save
+  // choice persists; the access code is an in-memory mirror and starts empty.
+  settings.setAutoSaveAi(false);
+  settings.mirrorAiAccessToken('test-token');
 
   let objectUrlId = 0;
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:test-${++objectUrlId}`);
@@ -63,7 +60,7 @@ describe('generateAiImage upload format', () => {
   }
 
   it('uploads a WebP copy while keeping the PNG for the preview and gallery', async () => {
-    mocks.settings.autoSaveAiEnabled = true;
+    settings.setAutoSaveAi(true);
     const png = new Blob(['png'], { type: 'image/png' });
     mocks.exportCanvasBlob.mockResolvedValueOnce(png);
     mocks.encodeWebpUpload.mockResolvedValueOnce(new Blob(['webp'], { type: 'image/webp' }));
@@ -93,7 +90,7 @@ describe('generateAiImage upload format', () => {
   });
 
   it('uses the installation pseudonym instead of a credential for a free generation', async () => {
-    mocks.settings.aiAccessToken = '';
+    settings.mirrorAiAccessToken('');
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
     vi.stubGlobal(
       'fetch',

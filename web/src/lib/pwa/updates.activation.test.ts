@@ -21,7 +21,7 @@ import {
 } from './updatesTestHarness';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
-vi.mock('$lib/state/canvas.svelte', () => ({ canvasState, SETTLED_IN_STROKES: 3 }));
+vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
 
 let pwaUpdates: ReturnType<typeof createPWAUpdates>;
 let originalFetch: typeof fetch;

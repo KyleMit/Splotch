@@ -4,21 +4,15 @@ import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
-  settings: {
-    aiUserApiKey: '',
-    aiAccessToken: 'test-token',
-    autoSaveAiEnabled: false,
-    aiCredentialKind: () => 'accessCode' as const,
-  },
 }));
 
 vi.mock('$lib/drawing/engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
 vi.mock('$lib/drawing/aiUploadEncoding', () => ({ encodeWebpUpload: async () => null }));
-vi.mock('$lib/state/settings.svelte', () => ({ settingsState: mocks.settings }));
 
 import AiResultError from './AiResultError.svelte';
 import { generateAiImage } from '$lib/drawing/aiImage';
 import { aiGenerationState, closeAiResult } from '$lib/state/aiGeneration.svelte';
+import { settingsState } from '$lib/state/settings.svelte';
 
 let mounted: ReturnType<typeof mount> | null = null;
 
@@ -82,6 +76,7 @@ function problemRows(error: string, message: string, attempts: number) {
 
 beforeEach(() => {
   closeAiResult();
+  settingsState.mirrorAiAccessToken('test-token');
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => 'blob:test');
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});

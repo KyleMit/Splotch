@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { compositeVisibleLiveTiles } from './liveTileComposite';
-import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
+import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import type { StrokeOp } from './strokeOps';
 import {
@@ -9,76 +9,14 @@ import {
   applyTiledView,
   beginTiledCommand,
   commitTiledCommand,
-  detachTiledRenderer,
   recordTiledOp,
   renderTiledOp,
   resizeTiledRenderer,
   undoTiledCommand,
 } from './tiledRenderer';
+import { installTiledRendererTestHarness, rendererElements } from './tiledRendererTestHarness';
 
-let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
-
-beforeEach(() => {
-  originalGetContext = HTMLCanvasElement.prototype.getContext;
-  (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
-    this: HTMLCanvasElement,
-    kind: string
-  ) {
-    if (kind !== '2d') return null;
-    const canvas = this as HTMLCanvasElement & { _ctx?: CanvasRenderingContext2D };
-    if (canvas._ctx) return canvas._ctx;
-    let transform = new DOMMatrix();
-    const context = {
-      canvas,
-      lineCap: '',
-      lineJoin: '',
-      globalAlpha: 1,
-      globalCompositeOperation: 'source-over',
-      fillStyle: '',
-      save() {},
-      restore() {},
-      beginPath() {},
-      rect() {},
-      clip() {},
-      clearRect() {},
-      drawImage() {},
-      getImageData(_x: number, _y: number, width: number, height: number) {
-        return { data: new Uint8ClampedArray(width * height * 4) };
-      },
-      arc() {},
-      fill() {},
-      setTransform(a: number, b: number, c: number, d: number, e: number, f: number) {
-        transform = new DOMMatrix([a, b, c, d, e, f]);
-      },
-      getTransform() {
-        return transform;
-      },
-    } as unknown as CanvasRenderingContext2D;
-    canvas._ctx = context;
-    return context;
-  };
-});
-
-afterEach(() => {
-  detachTiledRenderer();
-  HTMLCanvasElement.prototype.getContext = originalGetContext;
-  vi.unstubAllGlobals();
-});
-
-function rendererElements() {
-  const host = document.createElement('div');
-  const canvas = document.createElement('canvas');
-  host.append(canvas);
-  for (let index = 0; index < LIVE_TILE_COUNT; index++) {
-    for (const attribute of ['liveTile', 'liveCrayonBottom', 'liveCrayonTop'] as const) {
-      const tile = document.createElement('canvas');
-      tile.dataset[attribute] = '';
-      tile.hidden = true;
-      host.append(tile);
-    }
-  }
-  return { host, canvas };
-}
+installTiledRendererTestHarness();
 
 describe('tiled renderer contract', () => {
   it('rejects an input canvas without the template-owned live surfaces', () => {
