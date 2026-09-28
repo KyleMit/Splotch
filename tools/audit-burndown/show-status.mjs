@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import {
   chdirRoot,
   countEntries,
+  DRIVER_PROCESS_PATTERN,
   entryTitle,
   gitOut,
   INVALID_DROP_MARKER,
@@ -43,10 +44,7 @@ if (total > 0) {
   console.log(`progress   [${'#'.repeat(bars)}${'.'.repeat(33 - bars)}] ${pct}%`);
 }
 
-const pid = (runCmd('pgrep', ['-f', 'audit-burndown/run-burndown.mjs']).stdout ?? '').split(
-  '\n',
-  1
-)[0];
+const pid = (runCmd('pgrep', ['-f', DRIVER_PROCESS_PATTERN]).stdout ?? '').split('\n', 1)[0];
 if (pid) console.log(`state      RUNNING (pid ${pid})`);
 else if (existsSync(join(WORK, 'STOP'))) {
   console.log(`state      STOPPED (STOP file present — rm ${WORK}/STOP to resume)`);
