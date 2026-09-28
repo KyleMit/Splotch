@@ -352,11 +352,7 @@
               {#if section.id === 'parentCenter' && !parentCenterRevealed}
                 <ParentCenterLock onUnlock={unlockParentCenter} />
               {:else}
-                <SectionBody
-                  id={section.id}
-                  open={settingsModal.open}
-                  onSettled={staging.markStagedContentSettled}
-                />
+                <SectionBody id={section.id} onSettled={staging.markStagedContentSettled} />
               {/if}
             </section>
           {/each}

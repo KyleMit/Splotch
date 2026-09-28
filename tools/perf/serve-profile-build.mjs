@@ -7,13 +7,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { ROOT, TCP_PORT, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
-import { PORT_ROLES } from './lib/capture-readiness.mjs';
-
-const SERVE_ENTRY = join(ROOT, 'tools', 'perf', 'serve-profile-build.mjs');
-
-// vite's default preview port. The runbook, the console driver, and the
-// recorder snippet all point the iPad at it.
-const PREVIEW_PORT = PORT_ROLES.preview.port;
+import { PREVIEW_PORT } from './lib/perf-serve.mjs';
 
 export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
   if (buildDirHoldsNativeExport()) {
@@ -81,34 +75,6 @@ export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
       process.exit(signal ? 1 : (code ?? 0));
     });
   });
-}
-
-// The same server as a child process, for a script that needs it running for
-// the length of its own run (perf:ios:webkit:gates). It goes into its own process group so
-// stop() reaches the vite grandchild this module spawns rather than orphaning
-// it on the port.
-export function spawnPerfServe(port = PREVIEW_PORT) {
-  const child = spawn(process.execPath, [SERVE_ENTRY, `--port=${port}`, '--strict-port'], {
-    cwd: ROOT,
-    env: { ...process.env, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
-    stdio: ['ignore', 'ignore', 'inherit'],
-    detached: true,
-  });
-
-  const stop = () => {
-    try {
-      process.kill(-child.pid, 'SIGTERM');
-    } catch {
-      try {
-        child.kill();
-      } catch {
-        // already gone
-      }
-    }
-  };
-  process.on('exit', stop);
-
-  return { child, stop };
 }
 
 // A spawning caller passes --strict-port because it derived a URL from --port

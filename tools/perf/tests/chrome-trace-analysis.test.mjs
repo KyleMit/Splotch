@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyze, renderReport } from '../analyze-chrome-trace.mjs';
+import { analyze, renderReport } from '../lib/chrome-trace-analysis.mjs';
 
 function profileChunk({ nodes, samples, timeDeltas }) {
   return {

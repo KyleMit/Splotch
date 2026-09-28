@@ -58,11 +58,11 @@ export function campaignProgress(plan, { ledgerRows, inspect }) {
 }
 
 export async function campaignStatus({
-  targetId = argFlag('target'),
-  outputRoot = argFlag('output-root', 'perf-profiles/campaign'),
-  ledgerPath = argFlag('ledger'),
-  modes = list(argFlag('modes')),
-  items = list(argFlag('items')),
+  targetId,
+  outputRoot = 'perf-profiles/campaign',
+  ledgerPath,
+  modes,
+  items,
 } = {}) {
   if (!targetId) fail('--target= is required');
   const { runtime, refreshRegime, captureRuntime } = campaignTarget(targetId);
@@ -109,6 +109,12 @@ export async function campaignStatus({
 if (isMain(import.meta.url)) {
   rejectUnknownFlags(['target', 'output-root', 'ledger', 'modes', 'items']);
   runMain(async () => {
-    await campaignStatus();
+    await campaignStatus({
+      targetId: argFlag('target'),
+      outputRoot: argFlag('output-root'),
+      ledgerPath: argFlag('ledger'),
+      modes: list(argFlag('modes')),
+      items: list(argFlag('items')),
+    });
   });
 }

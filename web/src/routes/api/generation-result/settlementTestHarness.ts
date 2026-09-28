@@ -98,9 +98,9 @@ import { GET as collectGeneration } from './+server';
 
 export const settlementTestState = { blobs, provider };
 
-const GRANT_STORE_NAME = 'free-generation-grants';
+export const GRANT_STORE_NAME = 'free-generation-grants';
 const REPORT_TOKEN_SECRET = 'integration-report-secret';
-const INSTALLATION = 'c'.repeat(64);
+export const INSTALLATION = 'c'.repeat(64);
 export const OTHER_INSTALLATION = 'd'.repeat(64);
 export const DRAWING = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 export const PICTURE = Buffer.from('a finished picture');
@@ -191,6 +191,13 @@ export function jobBlobKeys(jobId: string): string[] {
 
 export function advance(ms: number) {
   vi.setSystemTime(Date.now() + ms);
+}
+
+/** Everything the routes and the worker wrote to the function log, one line per call. */
+export function loggedText(): string {
+  return [console.error, console.warn]
+    .flatMap((log) => vi.mocked(log).mock.calls.map((args) => args.map(String).join(' ')))
+    .join('\n');
 }
 
 export function setWorkerAnswer(answer: WorkerAnswer) {

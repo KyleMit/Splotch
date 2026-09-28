@@ -24,4 +24,13 @@ describe('toolbar appearance', () => {
     settings.reloadSettings();
     expect(settings.toolbarStyle).toBe('bare');
   });
+  it('keeps the live choice when a reload finds no stored style, like its neighbours', () => {
+    const settings = createSettings(createTool());
+    settings.setToolbarStyle('bare');
+    settings.setTheme('dark');
+    localStorage.clear();
+    settings.reloadSettings();
+    expect(settings.toolbarStyle).toBe('bare');
+    expect(settings.theme).toBe('dark');
+  });
 });

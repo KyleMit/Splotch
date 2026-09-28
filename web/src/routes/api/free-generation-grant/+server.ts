@@ -25,5 +25,5 @@ export const GET: RequestHandler = apiHandler(async ({ request, getClientAddress
   if (!daily.available) return fail(503, 'Free generations are unavailable today');
   const { remaining } = await getFreeGenerationGrantStatus(installationId);
   const body: FreeGenerationGrantStatus = { ok: true, remaining, limit: FREE_GENERATION_LIMIT };
-  return Response.json(body, { headers: { 'Cache-Control': 'no-store' } });
+  return Response.json(body);
 });

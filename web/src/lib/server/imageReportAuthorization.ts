@@ -12,6 +12,8 @@ import { isAllowedToken } from './tokens';
 import { isInstallationId } from '$lib/installationId';
 import { verifyReportToken, type ReportTokenBinding, type ReportTokenContext } from './reportToken';
 
+const REPORTING_UNAVAILABLE = 'AI reporting is not available right now. Please try again later.';
+
 export type ImageReportAuthorizationResult =
   | { authorized: true; reportContext: ReportTokenContext | null }
   | { authorized: false; response: Response };
@@ -34,10 +36,7 @@ function verifyReportContext(
       };
     case 'unconfigured':
       console.error('[report-image] REPORT_TOKEN_SECRET is unset; signed reporting is closed');
-      return {
-        authorized: false,
-        response: fail(503, 'AI reporting is not available right now. Please try again later.'),
-      };
+      return { authorized: false, response: fail(503, REPORTING_UNAVAILABLE) };
     default:
       return { authorized: false, response: fail(403, 'Invalid access token') };
   }
@@ -60,7 +59,15 @@ export async function authorizeImageReport(input: {
     );
     if (attempt.limited) return { authorized: false, response: throttled(attempt.retryAfter) };
     const check = await aiProvider.verifyKey(apiKey);
-    if (!check.ok) return { authorized: false, response: fail(403, 'Invalid API key') };
+    if (!check.ok) {
+      // Only the provider can say a key is bad; a check that got no answer says
+      // nothing about it, so it answers as /api/verify-key's 503 does.
+      if (check.kind === 'unreachable') {
+        console.warn(`[report-image] key check unreachable: ${check.reason}`);
+        return { authorized: false, response: fail(503, REPORTING_UNAVAILABLE) };
+      }
+      return { authorized: false, response: fail(403, 'Invalid API key') };
+    }
     return verifyReportContext(input.reportToken, { kind: 'byok', credential: apiKey });
   }
 

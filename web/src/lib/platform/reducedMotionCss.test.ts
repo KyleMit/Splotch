@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { REDUCE_MOTION_ATTRIBUTE, START_REDUCED_MOTION_ATTRIBUTE } from './reducedMotion';
 
@@ -11,7 +12,7 @@ import { REDUCE_MOTION_ATTRIBUTE, START_REDUCED_MOTION_ATTRIBUTE } from './reduc
 // in both directions: it stays animated when the switch asks for calm, and stays
 // calm when a parent on a reduce-motion OS chose full motion for this app.
 
-const srcDir = new URL('../../', import.meta.url).pathname;
+const srcDir = fileURLToPath(new URL('../../', import.meta.url));
 
 const MEDIA_FORM = /@media[^{]*prefers-reduced-motion/;
 const ATTRIBUTE_SELECTOR = /:root\[(data-[\w-]*motion[\w-]*)\]/g;

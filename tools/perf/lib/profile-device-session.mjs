@@ -12,7 +12,7 @@
 import { fail, hasCommand, pollUntil, sleep } from '../../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../../lib/net.mjs';
 import { assertServedBuildIsFresh } from './profile-preview.mjs';
-import { spawnPerfServe } from '../serve-profile-build.mjs';
+import { spawnPerfServe } from './perf-serve.mjs';
 import { rethrowIfBroken } from './error-classification.mjs';
 import {
   PROXY_COMMAND,

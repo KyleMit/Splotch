@@ -3,7 +3,9 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { SIZE_PX, replayInPage } from '../web/replay-input-recording.mjs';
+import { DEFAULT_SIZE_LEVEL, SIZE_PX, replayInPage } from '../web/replay-input-recording.mjs';
+import { CONTACT_BANK_MS } from '../split-capture/lib/probe-host-protocol.mjs';
+import { DRAW_SECONDS } from '../split-capture/capture-hand-input.mjs';
 
 const state = vi.hoisted(() => ({ directEntryUrl: null, runMain: vi.fn() }));
 const chromium = vi.hoisted(() => ({ connectOverCDP: vi.fn() }));
@@ -26,8 +28,36 @@ const webInspectorPath = join(repoRoot, 'tools', 'perf', 'analyze-web-inspector.
 const replayPath = join(repoRoot, 'tools', 'perf', 'web', 'replay-input-recording.mjs');
 const scenarioPath = join(repoRoot, 'tools', 'perf', 'web', 'capture-web-session.mjs');
 const undoScenariosPath = join(repoRoot, 'tools', 'perf', 'web', 'run-undo-scenarios.mjs');
+const handCapturePath = join(repoRoot, 'tools', 'perf', 'split-capture', 'capture-hand-input.mjs');
 
 let fixtureDir;
+
+// Replays recorded UI actions against a stub engine in turbo mode.
+async function replayActions(actions) {
+  const canvas = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 1, height: 1 }) };
+  const engine = Object.fromEntries(
+    [
+      'setStrokeWidth',
+      'setColor',
+      'setEraserMode',
+      'setMagicMode',
+      'setCrayonMode',
+      'clearCanvas',
+    ].map((method) => [method, vi.fn()])
+  );
+  vi.stubGlobal('document', { querySelector: () => canvas });
+  vi.stubGlobal('window', { __engine: engine });
+  vi.stubGlobal('requestAnimationFrame', (callback) => callback());
+  await replayInPage({
+    events: actions.map(([name, value]) => ({ kind: 'action', name, value })),
+    recCanvas: { w: 1, h: 1 },
+    sizePx: SIZE_PX,
+    defaultSizeLevel: DEFAULT_SIZE_LEVEL,
+    turbo: true,
+    maxIdleGapMs: 0,
+  });
+  return engine;
+}
 
 beforeEach(() => {
   state.directEntryUrl = null;
@@ -152,6 +182,7 @@ describe('performance CLI input failures', () => {
         events: [
           { kind: 'action', name: 'size', value: 2 },
           { kind: 'action', name: 'size', value: 9 },
+          { kind: 'action', name: 'eraser-size', value: 0 },
         ],
       })
     );
@@ -159,7 +190,7 @@ describe('performance CLI input failures', () => {
     expectCliFailure(
       replayPath,
       [`--recording=${path}`],
-      `Replay recording selects size level 9, which the app does not have (known: 1, 2, 3, 4, 5): ${path}`
+      `Replay recording selects size level 9, 0, which the app does not have (known: 1, 2, 3, 4, 5): ${path}`
     );
   });
 
@@ -197,6 +228,37 @@ describe('performance CLI input failures', () => {
     expectCliFailure(undoScenariosPath, ['--hz=0'], '--hz must be a number > 0, got "0"');
   });
 
+  // The probe stops recording once the finger banks CONTACT_BANK_MS, and the cues
+  // and late timers stretch the drawer's window past --seconds, so a window as
+  // long as the bank counted down over a phase that had already ended.
+  it('reports a hand --seconds whose window would reach the probe contact bank', () => {
+    const bankSeconds = CONTACT_BANK_MS / 1_000;
+
+    expectCliFailure(
+      handCapturePath,
+      [`--seconds=${bankSeconds}`],
+      `--seconds must be an integer >= 1 and <= ${DRAW_SECONDS.max}, got "${bankSeconds}"`
+    );
+  });
+
+  // The countdown steps whole seconds, so `--seconds=2.5` drew for 3 s while the
+  // artifact recorded 2.5.
+  it('reports a fractional hand --seconds instead of drawing past it', () => {
+    expectCliFailure(
+      handCapturePath,
+      ['--seconds=2.5'],
+      `--seconds must be an integer >= 1 and <= ${DRAW_SECONDS.max}, got "2.5"`
+    );
+  });
+
+  it('lets the longest hand --seconds through to the --host check', () => {
+    expectCliFailure(
+      handCapturePath,
+      [`--seconds=${DRAW_SECONDS.max}`],
+      '--host= is required — the probe host URL the device can reach over the LAN'
+    );
+  });
+
   it('refuses an unknown flag instead of running without it', () => {
     const result = spawnSync(process.execPath, [undoScenariosPath, '--stroke=4'], {
       cwd: repoRoot,
@@ -207,37 +269,73 @@ describe('performance CLI input failures', () => {
     expect(result.stderr).toMatch(/^Unknown flag --stroke=4 — known flags: .*\bstrokes\b/);
   });
 
-  // The drift guard for SIZE_PX: the app's SIZE_TO_PX lives in a Svelte rune
-  // module no Node code can import, so its table is read from the source text.
+  // The drift guard for SIZE_PX and DEFAULT_SIZE_LEVEL: the app's SIZE_TO_PX and
+  // DEFAULT_SIZE live in a Svelte rune module no Node code can import, so they
+  // are read from the source text.
   it('replays every recorded size level at the app stroke width', async () => {
-    const appTable = /const SIZE_TO_PX\b[^=]*=\s*\{([^}]*)\}/.exec(
-      readFileSync(join(repoRoot, 'web/src/lib/state/strokeWidth.svelte.ts'), 'utf8')
-    )?.[1];
+    const strokeWidthSource = readFileSync(
+      join(repoRoot, 'web/src/lib/state/strokeWidth.svelte.ts'),
+      'utf8'
+    );
+    const appTable = /const SIZE_TO_PX\b[^=]*=\s*\{([^}]*)\}/.exec(strokeWidthSource)?.[1];
     const appWidths = Object.fromEntries(
       [...(appTable ?? '').matchAll(/(\d+):\s*(\d+)/g)].map(([, level, px]) => [level, Number(px)])
     );
     expect(Object.keys(appWidths)).not.toHaveLength(0);
     expect(SIZE_PX).toEqual(appWidths);
+    const appDefault = /export const DEFAULT_SIZE\b[^=]*=\s*(\d+);/.exec(strokeWidthSource)?.[1];
+    expect(DEFAULT_SIZE_LEVEL).toBe(Number(appDefault));
 
-    const canvas = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 1, height: 1 }) };
-    const engine = { setStrokeWidth: vi.fn() };
-    vi.stubGlobal('document', { querySelector: () => canvas });
-    vi.stubGlobal('window', { __engine: engine });
-    vi.stubGlobal('requestAnimationFrame', (callback) => callback());
+    const levels = Object.keys(appWidths).map(Number);
+    const engine = await replayActions(levels.map((level) => ['size', level]));
 
-    await replayInPage({
-      events: Object.keys(appWidths).map((level) => ({
-        kind: 'action',
-        name: 'size',
-        value: Number(level),
-      })),
-      recCanvas: { w: 1, h: 1 },
-      sizePx: SIZE_PX,
-      turbo: true,
-      maxIdleGapMs: 0,
-    });
+    expect(engine.setStrokeWidth.mock.calls.flat()).toEqual([
+      SIZE_PX[DEFAULT_SIZE_LEVEL],
+      ...levels.map((level) => appWidths[level]),
+    ]);
+  });
 
-    expect(engine.setStrokeWidth.mock.calls).toEqual(Object.values(appWidths).map((px) => [px]));
+  // The app hands the engine the active tool's level width, unmultiplied; the
+  // engine scales eraser strokes by ERASER_SIZE_MULTIPLIER itself. A replay that
+  // multiplied here would erase at twice the app's width.
+  it('keeps the pen and eraser levels apart and pushes the active one, as the app does', async () => {
+    const earlyBoot = readFileSync(join(repoRoot, 'web/src/lib/drawing/earlyBoot.ts'), 'utf8');
+    expect(earlyBoot).toContain('setStrokeWidth(getStrokeWidthPx(activeStrokeSize()))');
+
+    const engine = await replayActions([
+      ['size', 5],
+      ['brush', 'eraser'],
+      ['eraser-size', 1],
+      ['brush', 'crayon'],
+      ['color', '#000000'],
+      ['brush', 'eraser'],
+      ['color', '#000000'],
+      ['eraser'],
+      ['clear'],
+    ]);
+
+    expect(engine.setStrokeWidth.mock.calls.flat()).toEqual([
+      SIZE_PX[DEFAULT_SIZE_LEVEL],
+      SIZE_PX[5],
+      SIZE_PX[DEFAULT_SIZE_LEVEL],
+      SIZE_PX[1],
+      SIZE_PX[5],
+      SIZE_PX[1],
+      SIZE_PX[5],
+      SIZE_PX[1],
+      SIZE_PX[5],
+    ]);
+    expect(engine.setEraserMode).toHaveBeenLastCalledWith(false);
+    expect(engine.setCrayonMode).toHaveBeenLastCalledWith(true);
+  });
+
+  // The app's resetToolAfterClear lifts the child out of the eraser only; the
+  // magic brush survives a clear.
+  it('keeps the magic brush through a clear', async () => {
+    const engine = await replayActions([['brush', 'magic'], ['clear']]);
+
+    expect(engine.setMagicMode).toHaveBeenLastCalledWith(true);
+    expect(engine.clearCanvas).toHaveBeenCalledOnce();
   });
 
   it('imports the Android profiler without starting its driver', async () => {

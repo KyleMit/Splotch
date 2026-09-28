@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { drawExportOverlay, paintExportPaper, type ExportContext } from './exportCompositor';
+import {
+  drawExportOverlay,
+  paintExportPaper,
+  paintTiledExportLayers,
+  type ExportContext,
+} from './exportCompositor';
 
 function createContext() {
   const fills: Array<{
@@ -67,5 +72,34 @@ describe('export compositor', () => {
     expect(context.drawImage).toHaveBeenCalledWith(overlay, 75, 0, 50, 100);
     expect(context.setTransform).toHaveBeenCalledWith(2, 0, 0, 2, 0, 0);
     expect(context.resetTransform).toHaveBeenCalledOnce();
+  });
+
+  it('stacks the paper under the tiles at output-over-source scale and the overlay on top', () => {
+    const { context, fills } = createContext();
+    const tile = {} as CanvasImageSource;
+    const overlay = {} as CanvasImageSource;
+
+    paintTiledExportLayers(context as unknown as ExportContext, {
+      tiles: [{ bitmap: tile, x: 10, y: 20 }],
+      sourceScale: 2,
+      width: 200,
+      height: 100,
+      scale: 1,
+      paperColor: '#fffaf0',
+      texture: null,
+      overlay: { source: overlay, width: 100, height: 200 },
+    });
+
+    expect(fills).toEqual([{ fillStyle: '#fffaf0', compositeOperation: 'destination-over' }]);
+    expect(context.setTransform.mock.calls).toEqual([
+      [1, 0, 0, 1, 0, 0],
+      [0.5, 0, 0, 0.5, 0, 0],
+      [1, 0, 0, 1, 0, 0],
+    ]);
+    expect(context.drawImage.mock.calls).toEqual([
+      [tile, 10, 20],
+      [overlay, 75, 0, 50, 100],
+    ]);
+    expect(context.globalCompositeOperation).toBe('source-over');
   });
 });

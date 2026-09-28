@@ -22,6 +22,7 @@
   import Button from '../design/Button.svelte';
   import RuleLabel from '../design/RuleLabel.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
+  import VisuallyHidden from '../design/VisuallyHidden.svelte';
   import InviteLedger from './InviteLedger.svelte';
 
   let {
@@ -56,6 +57,9 @@
 
   let loginKey = $state('');
   let newToken = $state('');
+  const fieldId = $props.id();
+  const accessKeyId = `${fieldId}-access-key`;
+  const newTokenId = `${fieldId}-new-token`;
   // Guard against double-submits while a request is in flight.
   let busy = $state(false);
 
@@ -129,8 +133,10 @@
   }
 
   // Per-button "copied" feedback. The key distinguishes which cell flashed
-  // (e.g. `token:code` vs `token:url`) so only the clicked button reacts.
-  let copied = $state('');
+  // (e.g. `token:code` vs `token:url`) so only the clicked button reacts. The
+  // announcement goes to a status region because a screen reader doesn't
+  // reliably speak a name change on the focused button.
+  let copyFeedback = $state.raw<{ key: string; announcement: string } | null>(null);
   // One timer for the one cell that can be showing "Copied!": a repeat copy
   // restarts the window instead of leaving the earlier timer to end it early.
   // Plain `let`s — a timer handle and a session counter are bookkeeping, not
@@ -140,7 +146,7 @@
   // session cannot re-arm the feedback after the next sign-in.
   let copySession = 0;
 
-  async function copy(key: string, text: string) {
+  async function copy(key: string, text: string, announcement: string) {
     const session = copySession;
     try {
       await navigator.clipboard.writeText(text);
@@ -150,16 +156,16 @@
     }
     if (session !== copySession) return;
     clearTimeout(copyFeedbackTimer);
-    copied = key;
+    copyFeedback = { key, announcement };
     copyFeedbackTimer = setTimeout(() => {
-      copied = '';
+      copyFeedback = null;
     }, COPY_FEEDBACK_MS);
   }
 
   function endCopyFeedback() {
     copySession += 1;
     clearTimeout(copyFeedbackTimer);
-    copied = '';
+    copyFeedback = null;
   }
 
   // A half-typed code is one admin session's draft, not the next one's: the
@@ -193,7 +199,9 @@
         <StatusMessage status="error">{shownLoginError}</StatusMessage>
       {/if}
       <form onsubmit={handleLogin} class="add-form sign-in-form">
+        <VisuallyHidden as="label" for={accessKeyId}>Admin access key</VisuallyHidden>
         <input
+          id={accessKeyId}
           type="password"
           name="access-key"
           placeholder="Admin access key"
@@ -236,7 +244,9 @@
         {/if}
 
         <form onsubmit={handleAdd} class="add-form">
+          <VisuallyHidden as="label" for={newTokenId}>New access code</VisuallyHidden>
           <input
+            id={newTokenId}
             type="text"
             name="token"
             placeholder="Add a code…"
@@ -262,10 +272,11 @@
           {invites}
           {usageAvailable}
           {busy}
-          {copied}
+          copied={copyFeedback?.key ?? ''}
           oncopy={copy}
           onremove={(token) => run(() => onremove(token))}
         />
+        <VisuallyHidden as="p" role="status">{copyFeedback?.announcement ?? ''}</VisuallyHidden>
       </section>
       {#if freeGrantStats}
         <section class="block">

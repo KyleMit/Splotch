@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { HTMLButtonAttributes } from 'svelte/elements';
   import type { BookOrientation, ResponsiveColoringImage } from '$lib/state/books';
+  import { coloringImageAttributes } from '$lib/state/coloringPicker.svelte';
 
   interface TileBase extends HTMLButtonAttributes {
     image: ResponsiveColoringImage;
@@ -13,6 +14,7 @@
     ({ shape: 'cover'; label: string } | { shape: BookOrientation; label?: never });
 
   let { image, sizes, shape, label, hoverArmed, retiring, ...rest }: Props = $props();
+  const imageAttributes = $derived(coloringImageAttributes(image, sizes));
 </script>
 
 <button
@@ -26,9 +28,9 @@
   type="button"
 >
   <img
-    src={image.src}
-    srcset={__IS_CAPACITOR__ ? undefined : image.srcset}
-    sizes={__IS_CAPACITOR__ ? undefined : sizes}
+    src={imageAttributes.src}
+    srcset={imageAttributes.srcset}
+    sizes={imageAttributes.sizes}
     alt=""
     loading="lazy"
   />

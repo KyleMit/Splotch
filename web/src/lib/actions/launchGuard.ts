@@ -20,11 +20,14 @@
 // picker before the child ever saw the pages.
 import type { Origin } from '$lib/state/modal.svelte';
 
-// Buttons are 48px; a 72px radius covers the target plus the slop of a
-// toddler's aim without reaching neighbouring controls.
+// Covers the whole launching button, corners included, with room left for a
+// toddler's off-target repeats. launchGuard.test.ts holds the radius past the
+// corners of the largest launcher: an action button at ACTION_BUTTON_SCALE_MAX,
+// the Settings Button, or a Color Palette swatch.
 export const LAUNCH_ZONE_RADIUS_PX = 72;
-// Long enough to outlast a toddler's tap burst, and past the modal fly-in
-// (dialogFlyFromOrigin in app.css) so the dialog is plainly present before the
+// Long enough to outlast a toddler's tap burst, and past the modal entrance
+// (dialogFlyFromOrigin in app.css, or the fade reduced motion plays instead;
+// launchGuard.test.ts reads both) so the dialog is plainly present before the
 // backdrop goes live.
 export const LAUNCH_ZONE_DURATION_MS = 600;
 
@@ -42,7 +45,7 @@ let zones: DeadZone[] = [];
 
 // Arm a dead zone at a tap point. Callers outside a modal launch pass the
 // pointer's own coordinates rather than the tapped element's center: a coloring
-// tile is far wider than the 48px buttons LAUNCH_ZONE_RADIUS_PX was sized for, so a
+// tile is far wider than the launch buttons LAUNCH_ZONE_RADIUS_PX was sized for, so a
 // zone centred on the tile would leave a corner tap's repeats outside it.
 export function guardTapZone(x: number, y: number) {
   pruneLapsedZones();

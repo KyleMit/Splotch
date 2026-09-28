@@ -142,18 +142,32 @@ describe('authorizeGenerationRequest', () => {
     });
   });
 
-  it('rejects a valid managed request when no server key is configured', async () => {
+  // A deploy without the project key is a server fault like every other
+  // unconfigured condition: a 503 the operator can find in the log, with the
+  // variable's name kept out of a body that reaches parent-facing error reports.
+  it.each([
+    ['managed', managedInput],
+    [
+      'free',
+      { apiKey: null, token: null, installationId: 'a'.repeat(64), clientAddress: '198.51.100.20' },
+    ],
+  ])('answers a %s request 503 when no server key is configured', async (_label, input) => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
     envState.OPENAI_API_KEY = undefined;
 
-    const result = await authorizeGenerationRequest(managedInput);
+    const result = await authorizeGenerationRequest(input);
 
     expect(result.authorized).toBe(false);
     if (result.authorized) throw new Error('Expected authorization failure');
-    expect(result.response.status).toBe(500);
-    expect(await result.response.json()).toEqual({
+    expect(result.response.status).toBe(503);
+    const body = await result.response.json();
+    expect(body).toEqual({
       ok: false,
-      error: 'Server is missing OPENAI_API_KEY',
+      error: 'AI creations are not available right now. Please try again later.',
     });
+    expect(JSON.stringify(body)).not.toContain('OPENAI_API_KEY');
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('OPENAI_API_KEY is unset'));
+    logged.mockRestore();
   });
 
   it('authorizes a credential-free installation and rate-limits all of its attempts by IP', async () => {

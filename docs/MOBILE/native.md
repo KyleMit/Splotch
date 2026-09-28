@@ -135,9 +135,13 @@ itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-o
   `web` fallback: Capacitor uses one only on the `web` platform, and the shipped app calls a local
   plugin only inside the native shells. The caller's own `catch` handles a native call that fails.
 * Guard — add the plugin to the table in `web/src/lib/plugins/registration.test.ts`. It fails until
-  the JS name, each platform's registration, the iOS Compile Sources entry, and the native method
-  names agree with the facade; without it, a mismatch surfaces only on a device, as
-  `"<name>" plugin is not implemented`.
+  the JS name, each platform's registration, the iOS Compile Sources entry, the native method names,
+  and the field names each method resolves with agree with the facade; without it, a mismatch
+  surfaces only on a device, as `"<name>" plugin is not implemented` or a result field that reads as
+  `undefined`. It reads a Java payload by following each `resolve(…)` through the class's own
+  methods to the `put` calls on the resolved variable (a helper it follows needs exactly one
+  `return`), and a Swift payload as the dictionary literal inside a `resolve(…)` in the method's own
+  body.
 
 A second local plugin, **`PencilEraser`** (ADR-0028, iOS-only), shows the **event-emitting** variant
 and how to **attach a UIKit interaction to the web view**: the Apple Pencil double-tap

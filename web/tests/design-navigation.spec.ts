@@ -60,6 +60,28 @@ for (const theme of ['Light', 'Dark'] as const) {
   });
 }
 
+// The route's contents list names each section id as a string while the
+// partial that renders the section owns the id, so a renamed id leaves a dead
+// link and a section the scrollspy silently skips. Walked in both directions,
+// and in order, because the scrollspy reads the list as page order.
+test('every contents link lands on exactly one section, and every section is linked', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/design');
+  const linked = await page
+    .locator('.toc a[href^="#"]')
+    .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+  const sections = await page
+    .locator('[data-sg-section]')
+    .evaluateAll((elements) => elements.map((element) => `#${element.id}`));
+  expect(sections.length).toBeGreaterThan(0);
+  expect(linked).toEqual(sections);
+  for (const href of linked) {
+    await expect(page.locator(`[id="${href?.slice(1)}"]`)).toHaveCount(1);
+  }
+});
+
 test('every primitive has a direct link under its own contents group', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/design');

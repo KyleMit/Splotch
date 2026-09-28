@@ -3,7 +3,7 @@
 // capture gets before that person walks away. Everything here is judged from
 // artifacts and device dumps handed in, so it is testable without a device;
 // run-person-session.mjs owns the processes.
-import { rescoreCapture } from '../rescore-captures.mjs';
+import { rescoreCapture } from './capture-rescore.mjs';
 import { numberInvalidatingFailure, onlyUncalibratedChecksFailed } from './input-fidelity.mjs';
 import { strokeDeliveryProblem, trustedPointerdowns } from './stroke-delivery.mjs';
 

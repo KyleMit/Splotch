@@ -62,6 +62,7 @@ vi.mock('$lib/server/reportToken', () => ({
 
 import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
 import { GENERATION_ACCEPTED_STATUS, SAFETY_REFUSAL_STATUS } from '$lib/ai/generationResult';
+import { FREE_GRANT_EXHAUSTED_CODE } from '$lib/freeGenerations';
 import { POST } from './+server';
 
 function handle(request: Request) {
@@ -280,6 +281,27 @@ describe('POST /api/generate-image', () => {
     expect(await response.json()).toEqual({ ok: false, error: 'Unsupported image type' });
     expect(mocks.reserveGrant).not.toHaveBeenCalled();
     expect(mocks.generateImage).not.toHaveBeenCalled();
+  });
+
+  // The code is what sends a parent to BYOK setup, and a used-up grant costs
+  // nothing: no provider call, no daily-ceiling spend, and no failure booked
+  // against a slot it never reserved.
+  it('answers a used-up free grant 403 before spending anything', async () => {
+    mocks.reserveGrant.mockResolvedValue({ reserved: false, remaining: 0 });
+
+    const response = await post();
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      code: FREE_GRANT_EXHAUSTED_CODE,
+      error: expect.any(String),
+      remaining: 0,
+    });
+    expect(mocks.reserveDaily).not.toHaveBeenCalled();
+    expect(mocks.failGrant).not.toHaveBeenCalled();
+    expect(mocks.generateImage).not.toHaveBeenCalled();
+    expect(mocks.startBackground).not.toHaveBeenCalled();
   });
 
   it('routes the daily ceiling to setup and records its own failure kind', async () => {

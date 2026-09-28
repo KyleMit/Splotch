@@ -6,12 +6,12 @@ import { rateLimitPolicy } from './rateLimitPolicy';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 // Shared admin-auth core used by both front doors into token management:
-// the server-rendered /admin console (cookie session, form actions) and the
-// JSON API under /api/admin (bearer session, used by the native apps, which
-// ship as a static bundle with no server). Both validate the same secret and
-// derive the same session token, so a session minted by either is honored by
-// both — the only difference is the transport (HTTP-only cookie vs.
-// Authorization header).
+// the server-rendered /admin console (cookie session, form actions) and its
+// JSON twin under /api/admin (bearer session). The console is the only
+// in-product consumer (ADR-0101); the JSON twin is what the local and deploy
+// API smoke tests drive. Both validate the same secret and derive the same
+// session token, so a session minted by either is honored by both — the only
+// difference is the transport (HTTP-only cookie vs. Authorization header).
 
 export const SESSION_LABEL = 'admin-session-v1';
 const HMAC_ALG = 'sha256';
@@ -45,6 +45,10 @@ export function constantTimeEqual(provided: string | undefined, expected: string
 export function verifyAdminSecret(key: string | undefined) {
   return constantTimeEqual(key, env.ADMIN_ACCESS_TOKEN);
 }
+
+// Leaves ample framing room around the one secret field. Both login doors read
+// their body under it, so neither buffers more than the other allows.
+export const MAX_ADMIN_LOGIN_BODY_BYTES = 8 * 1024;
 
 type AdminLoginVerdict = { ok: true; session: string } | { ok: false; status: 403 };
 

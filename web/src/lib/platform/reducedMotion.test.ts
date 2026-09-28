@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   applyReducedMotion,
+  EXPLICIT_REDUCE_MOTION_PREFERENCES,
   isReduceMotionPreference,
   prefersReducedMotion,
   REDUCE_MOTION_ATTRIBUTE,
@@ -30,6 +31,11 @@ describe('isReduceMotionPreference', () => {
     expect(['reduce', 'full', 'system'].every(isReduceMotionPreference)).toBe(true);
     expect(isReduceMotionPreference('true')).toBe(false);
     expect(isReduceMotionPreference(null)).toBe(false);
+  });
+
+  it('accepts every member of the owning list', () => {
+    expect(EXPLICIT_REDUCE_MOTION_PREFERENCES.every(isReduceMotionPreference)).toBe(true);
+    expect(isReduceMotionPreference('sepia')).toBe(false);
   });
 });
 

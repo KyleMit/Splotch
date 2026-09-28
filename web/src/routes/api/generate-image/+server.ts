@@ -1,13 +1,7 @@
 import { error, isHttpError } from '@sveltejs/kit';
-import {
-  ACCESS_TOKEN_HEADER,
-  API_KEY_HEADER,
-  FREE_GENERATIONS_REMAINING_HEADER,
-  INSTALLATION_ID_HEADER,
-  REPORT_TOKEN_HEADER,
-} from '$lib/apiHeaders';
+import { ACCESS_TOKEN_HEADER, API_KEY_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { GENERATION_STYLE_PARAM } from '$lib/apiParams';
-import { issueReportToken, type ReportTokenBinding } from '$lib/server/reportToken';
+import type { ReportTokenBinding } from '$lib/server/reportToken';
 import {
   FREE_DAILY_LIMIT_EXHAUSTED_CODE,
   FREE_GENERATION_LIMIT,
@@ -18,7 +12,11 @@ import {
 } from '$lib/freeGenerations';
 import { recordByokUsage, recordTokenUsage } from '$lib/server/usage';
 import { aiProvider } from '$lib/server/ai/provider';
-import { prepareGeneratedImage } from '$lib/server/generatedImage';
+import {
+  pictureResponse,
+  prepareDeliveredImage,
+  safetyRefusalResponse,
+} from '$lib/server/generationDelivery';
 import {
   authorizeGenerationRequest,
   type GenerationAuthorization,
@@ -30,7 +28,8 @@ import {
   resolveGenerationPrompt,
   resolveGenerationStyle,
 } from '$lib/server/generateImagePolicy';
-import { apiHandler, contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
+import { apiHandler, contentTypeOf, readBodyWithinLimit, readFormBody } from '$lib/server/http';
+import { loggableError } from '$lib/server/logRedaction';
 import {
   clientAcceptsBackgroundGeneration,
   freeSettlement,
@@ -59,16 +58,6 @@ function reportTokenBinding(authorization: GenerationAuthorization): ReportToken
     case 'free':
       return { kind: 'free', credential: authorization.installationId };
   }
-}
-
-function safetyRefusal(reason: string, authorization: GenerationAuthorization): Response {
-  const headers: Record<string, string> = {};
-  const reportToken = issueReportToken(reportTokenBinding(authorization), {
-    kind: 'false-positive-refusal',
-    refusalReason: reason,
-  });
-  if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
-  return fail(SAFETY_REFUSAL_STATUS, `Drawing was blocked for safety: ${reason}`, headers);
 }
 
 // A missing type is refused like any other: the server does not sniff, so
@@ -114,17 +103,13 @@ interface GenerationRequest {
 //                 sends the raw body.
 async function readGenerationRequest(request: Request, url: URL): Promise<GenerationRequest> {
   if (contentTypeOf(request) === 'multipart/form-data') {
-    const body = await readBodyWithinLimit(request, MAX_LEGACY_GENERATION_REQUEST_BYTES);
-    if (!body.ok) throw error(413, 'Image is too large');
-
-    let form: FormData;
-    try {
-      form = await new Response(new Blob([new Uint8Array(body.bytes)]), {
-        headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
-      }).formData();
-    } catch {
-      throw error(400, 'Expected multipart form data');
+    const body = await readFormBody(request, MAX_LEGACY_GENERATION_REQUEST_BYTES);
+    if (!body.ok) {
+      throw body.reason === 'too-large'
+        ? error(413, 'Image is too large')
+        : error(400, 'Expected multipart form data');
     }
+    const { form } = body;
     const imageFile = form.get('image');
     return {
       token: asString(form.get('token')),
@@ -197,7 +182,7 @@ async function recordFreeGenerationFailure(
   } catch (trackingError) {
     console.warn(
       '[free-generation] failed to record unsuccessful attempt:',
-      trackingError instanceof Error ? trackingError.message : trackingError
+      loggableError(trackingError)
     );
   }
 }
@@ -235,7 +220,7 @@ async function recordFreeGeneration(
   } catch (cause) {
     console.warn(
       '[free-generation] failed to record a completed generation:',
-      cause instanceof Error ? cause.message : cause
+      loggableError(cause)
     );
     return null;
   }
@@ -315,24 +300,16 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       if (authorization.kind === 'free') {
         await recordFreeGenerationFailure(authorization.installationId, 'safety', reservationId);
       }
-      return safetyRefusal(result.reason, authorization);
+      return safetyRefusalResponse(result.reason, reportTokenBinding(authorization));
     }
     if (result.kind === 'error') throw error(502, result.reason);
 
-    let prepared: Awaited<ReturnType<typeof prepareGeneratedImage>>;
-    try {
-      prepared = await prepareGeneratedImage(
-        style,
-        Buffer.from(result.data, 'base64'),
-        result.mimeType
-      );
-    } catch (cause) {
-      console.warn(
-        '[generate-image] Sticker image rejected:',
-        cause instanceof Error ? cause.message : cause
-      );
-      throw error(502, 'The sticker picture could not be used. Please try again.');
-    }
+    const prepared = await prepareDeliveredImage(
+      style,
+      Buffer.from(result.data, 'base64'),
+      result.mimeType,
+      'generate-image'
+    );
 
     recordGenerationUsage(authorization, style, 'succeeded', platform);
     usageRecorded = true;
@@ -344,21 +321,11 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       freeRemaining = await recordFreeGeneration(authorization.installationId, settled);
     }
 
-    const headers: Record<string, string> = {
-      'Content-Type': prepared.mimeType,
-      'Cache-Control': 'no-store',
-    };
-    if (freeRemaining !== null) {
-      headers[FREE_GENERATIONS_REMAINING_HEADER] = String(freeRemaining);
-    }
-    // The free tier's proof that this AI attempt ran here, so its result can be
-    // reported. Refusals receive the same proof in safetyRefusal above. Minted
-    // off the authorized installation id, never off request-body data.
-    if (authorization.kind === 'free') {
-      const reportToken = issueReportToken(reportTokenBinding(authorization));
-      if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
-    }
-    return new Response(Buffer.from(prepared.bytes), { headers });
+    // Minted off the authorized installation id, never off request-body data.
+    return pictureResponse(prepared, {
+      freeRemaining,
+      freeReportBinding: authorization.kind === 'free' ? reportTokenBinding(authorization) : null,
+    });
   } catch (cause) {
     if (usageAttempted && !usageRecorded) {
       recordGenerationUsage(authorization, usageStyle, 'failed', platform);

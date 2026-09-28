@@ -282,12 +282,12 @@ function appendGitHubSummary(rows, sourceStatus) {
 }
 
 export async function runLighthouseCi({
-  baselinePath = argFlag('baseline', DEFAULT_BASELINE),
-  out = argFlag('out', DEFAULT_OUT),
-  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
-  samples = argNumber('samples', DEFAULT_SAMPLES, { integer: true, min: 3 }),
-  build = !argSwitch('no-build'),
-  reportOnly = argSwitch('report-only'),
+  baselinePath = DEFAULT_BASELINE,
+  out = DEFAULT_OUT,
+  port = DEFAULT_PORT,
+  samples = DEFAULT_SAMPLES,
+  build = true,
+  reportOnly = false,
 } = {}) {
   if (!Number.isInteger(port) || port <= 0) fail('--port must be a positive integer');
   if (!Number.isInteger(samples) || samples < 3 || samples % 2 === 0) {
@@ -368,5 +368,14 @@ export async function runLighthouseCi({
 
 if (isMain(import.meta.url)) {
   rejectUnknownFlags(['baseline', 'out', 'port', 'samples', 'no-build', 'report-only']);
-  runMain(runLighthouseCi);
+  runMain(() =>
+    runLighthouseCi({
+      baselinePath: argFlag('baseline'),
+      out: argFlag('out'),
+      port: argNumber('port', undefined, TCP_PORT),
+      samples: argNumber('samples', undefined, { integer: true, min: 3 }),
+      build: !argSwitch('no-build'),
+      reportOnly: argSwitch('report-only'),
+    })
+  );
 }

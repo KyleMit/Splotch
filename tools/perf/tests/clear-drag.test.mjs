@@ -18,12 +18,12 @@ const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 describe('drag-to-clear scrub', () => {
   it('writes the toolbar style the app reads', () => {
     expect(read('web/src/lib/storageKeys.ts')).toContain(`toolbarStyle: '${TOOLBAR_STORAGE_KEY}'`);
-    const union = /export type ToolbarStyle = ([^;]+);/.exec(
-      read('web/src/lib/state/settings.svelte.ts')
-    )?.[1];
-    expect(union?.split('|').map((member) => member.trim().replaceAll("'", ''))).toEqual(
+    const settingsSource = read('web/src/lib/state/settings.svelte.ts');
+    const appStyles = /const TOOLBAR_STYLES = \[([^\]]*)\] as const;/.exec(settingsSource)?.[1];
+    expect([...(appStyles ?? '').matchAll(/'([^']+)'/g)].map(([, style]) => style)).toEqual(
       TOOLBAR_STYLES
     );
+    expect(settingsSource).toContain('export type ToolbarStyle = (typeof TOOLBAR_STYLES)[number];');
   });
 
   it('scrubs across the accept radius the app uses', () => {

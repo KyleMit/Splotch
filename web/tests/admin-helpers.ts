@@ -18,8 +18,10 @@ import {
 
 export const ADMIN_ACCESS_TOKEN = 'test-admin-secret';
 
-const ACCESS_KEY_PLACEHOLDER = 'Admin access key';
-const NEW_CODE_PLACEHOLDER = 'Add a code…';
+// Found by label rather than placeholder, so every admin spec also proves each
+// field has a real name: a placeholder alone is no label to a screen reader.
+const ACCESS_KEY_LABEL = 'Admin access key';
+const NEW_CODE_LABEL = 'New access code';
 
 // How long one sign-in round trip gets — form action (or /api/admin/login) →
 // redirect → tokens fetch → console render. Every observed pass landed well
@@ -28,12 +30,12 @@ export const SIGN_IN_SETTLE_MS = 20_000;
 
 /** The token console's presence sentinel — only rendered once signed in. */
 export function adminConsole(page: Page): Locator {
-  return page.getByPlaceholder(NEW_CODE_PLACEHOLDER);
+  return page.getByLabel(NEW_CODE_LABEL, { exact: true });
 }
 
 /** Submit the sign-in form, asserting nothing about the outcome. */
 export async function submitAdminKey(page: Page, key: string) {
-  await page.getByPlaceholder(ACCESS_KEY_PLACEHOLDER).fill(key);
+  await page.getByLabel(ACCESS_KEY_LABEL, { exact: true }).fill(key);
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
 

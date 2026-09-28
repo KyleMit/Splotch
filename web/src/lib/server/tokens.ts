@@ -136,8 +136,8 @@ async function readStore(): Promise<StoreRead> {
 }
 
 // Compare-and-set write, same pattern as usage.ts's recordTokenUsage: two
-// concurrent mutations (web /admin form action + native /api/admin/tokens, or
-// two admins) must serialize instead of one silently clobbering the other.
+// concurrent mutations (the /admin form action + /api/admin/tokens, or two
+// admins) must serialize instead of one silently clobbering the other.
 // Returns whether the write landed; a `modified: false` result means the blob
 // changed since our read and the caller must re-run its read-modify cycle.
 async function persist(store: TokenStore | null, list: string[], etag: string | undefined) {
@@ -207,6 +207,10 @@ export const MUTATION_FAILURE_STATUS = {
   conflict: 409,
   unavailable: 503,
 } as const satisfies Record<MutationFailure['reason'], number>;
+
+// A mutation carries one short token; the remainder is framing headroom. Both
+// front doors read their body under it.
+export const MAX_TOKEN_MUTATION_BODY_BYTES = 8 * 1024;
 
 // `persistent` rides along because mutateList already knows it: it refuses to
 // write unless the read came from Blobs or the Vite-dev memory stand-in, so the

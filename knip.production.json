@@ -3,7 +3,7 @@
   "include": ["dependencies", "unlisted", "unresolved", "binaries"],
   "entry": [
     "web/src/routes/**/+{page,layout,server,error}*.{ts,svelte}!",
-    "web/src/hooks*.ts!",
+    "web/src/hooks.{client,server}.ts!",
     "web/svelte.config.js!",
     "web/vite.config.ts!",
     "netlify/functions/*.ts!",

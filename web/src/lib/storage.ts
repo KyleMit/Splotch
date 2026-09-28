@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';
-import { STORAGE_KEYS, type StorageKey } from './storageKeys';
+import { STORAGE_KEYS, WEB_ONLY_STORAGE_KEYS, type StorageKey } from './storageKeys';
 
 export { STORAGE_KEYS, type StorageKey } from './storageKeys';
 
@@ -18,7 +18,13 @@ export { STORAGE_KEYS, type StorageKey } from './storageKeys';
 // On the web, isNative() is false and the Preferences layer is skipped entirely
 // — a pure localStorage store.
 
-const hydrationKeys: StorageKey[] = Object.values(STORAGE_KEYS);
+// The keys whose durable copy native restores and forgets. Native never writes a
+// web-only key, so fetching one would only read back an empty slot. The web
+// never touches Preferences, so its build keeps neither this list nor the
+// web-only set.
+const hydrationKeys: readonly StorageKey[] = __IS_CAPACITOR__
+  ? Object.values(STORAGE_KEYS).filter((key) => !WEB_ONLY_STORAGE_KEYS.includes(key))
+  : [];
 
 // Each persisted store registers its reloader here at module init, so
 // hydrateDurableStorage() can refresh every live store after a native recovery
@@ -221,10 +227,11 @@ export function writeString(key: StorageKey, value: string) {
 // been migrated into secure storage). The durable removal is recorded as pending
 // first: if it never lands (bridge error, app killed), the next durable restore
 // would otherwise copy the Preferences value straight back into localStorage.
+// A web-only key has no durable copy to forget, and no restore to resurrect one.
 export function removeKey(key: StorageKey) {
   if (!browser) return;
   safeStorageMutation(() => localStorage.removeItem(key));
-  if (!__IS_CAPACITOR__ || !isNative()) return;
+  if (!__IS_CAPACITOR__ || !isNative() || !hydrationKeys.includes(key)) return;
   setDurableRemovalPending(key, true);
   void runWithDurablePreferences(async (Preferences) => {
     if (await forgetInDurablePreferences(Preferences, key)) setDurableRemovalPending(key, false);

@@ -1,23 +1,21 @@
 import { error } from '@sveltejs/kit';
-import {
-  API_KEY_HEADER,
-  ACCESS_TOKEN_HEADER,
-  FREE_GENERATIONS_REMAINING_HEADER,
-  INSTALLATION_ID_HEADER,
-  REPORT_TOKEN_HEADER,
-} from '$lib/apiHeaders';
+import { API_KEY_HEADER, ACCESS_TOKEN_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { GENERATION_JOB_PARAM } from '$lib/apiParams';
-import { apiHandler, fail, throttled } from '$lib/server/http';
+import { apiHandler, throttled } from '$lib/server/http';
 import {
   GENERATION_ACCEPTED_STATUS,
   GENERATION_UNAVAILABLE_CODE,
-  SAFETY_REFUSAL_STATUS,
   type GenerationUnavailable,
 } from '$lib/ai/generationResult';
 import { rateLimit } from '$lib/server/rateLimit';
 import { generationResultBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { prepareGeneratedImage } from '$lib/server/generatedImage';
+import {
+  pictureResponse,
+  prepareDeliveredImage,
+  safetyRefusalResponse,
+  type DeliveredImage,
+} from '$lib/server/generationDelivery';
 import {
   discardJob,
   isJobId,
@@ -26,7 +24,8 @@ import {
   type GenerationJobContext,
 } from '$lib/server/generationJobs';
 import { completeFreeGeneration, failFreeGeneration } from '$lib/server/freeGenerationGrants';
-import { issueReportToken, type ReportTokenBinding } from '$lib/server/reportToken';
+import { loggableError } from '$lib/server/logRedaction';
+import type { ReportTokenBinding } from '$lib/server/reportToken';
 import type { RequestHandler } from './$types';
 
 // Collects a generation that /api/generate-image handed to the background worker
@@ -79,7 +78,7 @@ async function settleFreeGeneration(
   } catch (cause) {
     console.warn(
       '[generation-result] failed to record the settled generation:',
-      cause instanceof Error ? cause.message : cause
+      loggableError(cause)
     );
     return null;
   }
@@ -118,12 +117,7 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   if (job.status === 'refusal') {
     await settleFreeGeneration(job.context, false, 'safety');
     await discardJob(jobId);
-    const headers: Record<string, string> = {};
-    const reportToken = binding
-      ? issueReportToken(binding, { kind: 'false-positive-refusal', refusalReason: job.reason })
-      : null;
-    if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
-    return fail(SAFETY_REFUSAL_STATUS, `Drawing was blocked for safety: ${job.reason}`, headers);
+    return safetyRefusalResponse(job.reason, binding);
   }
 
   if (job.status === 'error') {
@@ -140,36 +134,33 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
     // been settled or discarded yet, so the next poll can still collect it.
     return unavailable();
   }
-  // The status said `image` but the bytes are gone — the only way that happens
-  // is the blob expiring between the two reads. Retryable, not a refusal.
+  // The status said `image` but the bytes are gone: the scheduled purge or a
+  // concurrent collector's discardJob removed the job between the two reads.
+  // Either way the next poll answers 404, so this is a plain 502, which tells
+  // the client to stop waiting — not GENERATION_UNAVAILABLE, and not a refusal.
   if (!image) throw error(502, 'That creation could not be collected');
 
-  let prepared: Awaited<ReturnType<typeof prepareGeneratedImage>>;
+  let prepared: DeliveredImage;
   try {
-    prepared = await prepareGeneratedImage(job.context.style, image, job.mimeType);
-  } catch (cause) {
-    console.warn(
-      '[generation-result] Sticker image rejected:',
-      cause instanceof Error ? cause.message : cause
+    prepared = await prepareDeliveredImage(
+      job.context.style,
+      image,
+      job.mimeType,
+      'generation-result'
     );
+  } catch (cause) {
     await settleFreeGeneration(job.context, false, 'upstream');
     await discardJob(jobId);
-    throw error(502, 'The sticker picture could not be used. Please try again.');
+    throw cause;
   }
 
   const freeRemaining = await settleFreeGeneration(job.context, true, 'upstream');
   await discardJob(jobId);
 
-  const headers: Record<string, string> = {
-    'Content-Type': prepared.mimeType,
-    'Cache-Control': 'no-store',
-  };
-  if (freeRemaining !== null) headers[FREE_GENERATIONS_REMAINING_HEADER] = String(freeRemaining);
-  if (job.context.free && binding) {
-    const reportToken = issueReportToken(binding);
-    if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
-  }
-  return new Response(Buffer.from(prepared.bytes), { headers });
+  return pictureResponse(prepared, {
+    freeRemaining,
+    freeReportBinding: job.context.free ? binding : null,
+  });
 };
 
 export const GET: RequestHandler = apiHandler(collect);

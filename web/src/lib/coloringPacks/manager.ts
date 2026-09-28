@@ -56,7 +56,7 @@ function automaticDownloadAllowed(): boolean {
 
 function applyLocalRoots(packs: InstalledColoringPack[]) {
   for (const pack of packs) {
-    if (pack.rootPath) setLocalColoringBookRoot(pack.id, pack.rootPath);
+    if (pack.rootUrl) setLocalColoringBookRoot(pack.id, pack.rootUrl);
   }
 }
 

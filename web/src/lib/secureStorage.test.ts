@@ -19,6 +19,20 @@ vi.mock('$lib/platform', () => ({
   getPlatform: () => 'web',
 }));
 
+// Every call the durable mirror makes, so a test can see what a secret
+// operation asked of it.
+const preferencesCalls = vi.hoisted((): string[] => []);
+vi.mock('@capacitor/preferences', () => ({
+  Preferences: {
+    get: async ({ key }: { key: string }) => {
+      preferencesCalls.push(`get ${key}`);
+      return { value: null };
+    },
+    set: async ({ key }: { key: string }) => void preferencesCalls.push(`set ${key}`),
+    remove: async ({ key }: { key: string }) => void preferencesCalls.push(`remove ${key}`),
+  },
+}));
+
 vi.mock('@aparajita/capacitor-secure-storage', () => ({
   SecureStorage: {
     set: async (name: string, value: string) => void nativeRows.set(name, value),
@@ -157,6 +171,7 @@ let secureStorage: SecureStorage;
 beforeEach(async () => {
   ctrl.reset();
   nativeRows.clear();
+  preferencesCalls.length = 0;
   localStorage.clear();
   platform.native = false;
   vi.restoreAllMocks();
@@ -252,6 +267,19 @@ describe('native save/load round trip', () => {
     expect(ctrl.rows.has(ACCESS_CODE_ROW)).toBe(false);
     await expect(secureStorage.loadApiKey()).resolves.toBe('native-key');
     await expect(secureStorage.loadAccessCode()).resolves.toBe('native-code');
+  });
+
+  // The known-absent list only describes the web vault, so native has no copy
+  // of it to forget.
+  it('saves and clears a secret without touching the durable store', async () => {
+    platform.native = true;
+
+    await secureStorage.saveApiKey('native-key');
+    await secureStorage.clearApiKey();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(preferencesCalls).toEqual([]);
+    expect(localStorage.getItem(STORAGE_KEYS.pendingDurableRemovals)).toBeNull();
   });
 });
 

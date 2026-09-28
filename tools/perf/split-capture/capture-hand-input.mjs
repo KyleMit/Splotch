@@ -16,7 +16,7 @@
 // revision of the fidelity table re-reads this file rather than asking for
 // another finger. Issue 1218 is the Android half of that measurement.
 import {
-  POSITIVE_NUMBER,
+  POSITIVE_INTEGER,
   argFlag,
   argNumber,
   argSwitch,
@@ -59,7 +59,19 @@ const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const OPENERS = ['adb', 'devicectl', 'safari', 'manual'];
 const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
-const DEFAULT_DRAW_SECONDS = 25;
+export const DEFAULT_DRAW_SECONDS = 25;
+// The probe ends the phase once the finger has banked CONTACT_BANK_MS, and the
+// drawer's window outlasts `--seconds`: the start cue, the blocking `say` calls,
+// one-second timers that each fire late, and the reaction to the stop buzz all
+// add to it. The window stays this far clear of the bank so the recording is
+// still running when the drawer is told to stop.
+const STOP_CUE_HEADROOM_MS = 10_000;
+// Whole seconds: countDown sleeps one second per step, so a fraction would draw
+// to the next whole second while the artifact recorded the fraction.
+export const DRAW_SECONDS = {
+  ...POSITIVE_INTEGER,
+  max: (CONTACT_BANK_MS - STOP_CUE_HEADROOM_MS) / 1_000,
+};
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
 const PAGE_SETTLE_MS = 6_000;
@@ -326,7 +338,7 @@ export async function captureHandInput({
   brush = argFlag('brush', 'pen'),
   orientation = argFlag('orientation', 'PORTRAIT'),
   theme = argFlag('theme', 'light'),
-  seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, POSITIVE_NUMBER),
+  seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, DRAW_SECONDS),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
   udid = argFlag('device-udid'),

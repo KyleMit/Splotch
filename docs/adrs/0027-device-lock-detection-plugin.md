@@ -53,11 +53,11 @@ Add a minimal local Capacitor plugin, **`DeviceLock`**, with a single method
   state). Loaded through an `__IS_CAPACITOR__`-gated lazy `import()` so `@capacitor/core` stays out
   of the SSR/prerender graph and the web bundle (the same convention `NotchBand.svelte` uses).
 
-`SetupInstructions.svelte` re-checks **on Settings open only** — reusing its existing
-`$effect(open)` re-detect pattern with a `cancelled` guard — rather than subscribing to a live
-listener. iOS offers a change notification but Android has no clean lock-task event; on-open
-detection is accurate whenever a parent looks at the panel and keeps the plugin surface to one
-method, symmetric across platforms.
+`SetupInstructions.svelte` re-checks **on Settings open only** — in an `$effect` keyed on
+`settingsModal.open`, with a `cancelled` guard — rather than subscribing to a live listener. iOS
+offers a change notification but Android has no clean lock-task event; on-open detection is accurate
+whenever a parent looks at the panel and keeps the plugin surface to one method, symmetric across
+platforms.
 
 ## Consequences
 

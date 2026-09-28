@@ -9,15 +9,17 @@ if (unknown.length > 0) fail(`Unknown coloring book(s): ${unknown.join(', ')}`);
 
 const books = filters.length > 0 ? BOOKS.filter((book) => filters.includes(book.id)) : BOOKS;
 const assets = books.flatMap(coloringDerivativeAssets);
-const { count, outputBytes, compressionSourceBytes, compressionOutputBytes, byEncoding } =
-  await generateResponsiveColoringAssets(WEB_STATIC, assets);
-const savedBytes = compressionSourceBytes - compressionOutputBytes;
+const { count, sourceBytes, outputBytes, byEncoding } = await generateResponsiveColoringAssets(
+  WEB_STATIC,
+  assets
+);
+const savedBytes = sourceBytes - outputBytes;
 const selectorBytes = byEncoding.selector?.outputBytes ?? 0;
 
 console.log(
   `[gen:coloring-responsive] wrote ${count} image(s) across ${books.length} book(s), ` +
     `${(outputBytes / 1048576).toFixed(2)} MB total; saved ` +
     `${(savedBytes / 1048576).toFixed(2)} MB ` +
-    `(${((savedBytes / compressionSourceBytes) * 100).toFixed(1)}%) across compression tiers; ` +
+    `(${((savedBytes / sourceBytes) * 100).toFixed(1)}%) across compression tiers; ` +
     `${(selectorBytes / 1048576).toFixed(2)} MB selectors.`
 );

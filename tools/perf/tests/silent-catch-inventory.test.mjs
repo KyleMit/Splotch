@@ -69,6 +69,7 @@ const AUDITED_SWALLOWS = {
   'lib/campaign-plan.mjs': ['bare-catch@3485282c5118', 'bare-catch@6f532e4905f5'],
   'lib/chrome-trace-capture.mjs': ['bare-catch@0aca3a70fed0'],
   'lib/instruments-trace.mjs': ['bare-catch@89e258b2d4bd'],
+  'lib/perf-serve.mjs': ['bare-catch@6617bf068df7', 'bare-catch@9a2c060a4fa1'],
   'lib/profile-device-session.mjs': ['benign-catch@42fff9a3b9a8'],
   'lib/timeline-records.mjs': ['benign-catch@77c9328c971e'],
   'lib/toddler-session.mjs': ['benign-catch@a52ea638ab63'],
@@ -91,7 +92,6 @@ const AUDITED_SWALLOWS = {
   ],
   'rescore-captures.mjs': ['bare-catch@fc92e0eec18b'],
   'run-campaign.mjs': ['bare-catch@90e6c3c41aa0'],
-  'serve-profile-build.mjs': ['bare-catch@6617bf068df7', 'bare-catch@9a2c060a4fa1'],
   'split-capture/capture-device-frames.mjs': [
     'benign-catch@25459d000b15',
     'benign-catch@6e6589e824da',
