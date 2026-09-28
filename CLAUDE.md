@@ -215,8 +215,9 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
     to add a startup chunk. No principle outranks measured startup or hot-path cost.
   * **Tests prove they can fail.** Note each guard's negative control in the PR. A test builds its
     own fixture, drives real stores, pins copy as rendered, and names its timeouts.
-  * **Exceptions are declared in one list and only shrink** (grandfathered caps, allowlists, ADR
-    carve-outs).
+  * **Exceptions are declared in one list and ratchet down** (grandfathered caps, allowlists, ADR
+    carve-outs): remove an obsolete entry and lower a stale cap; add or raise one only with its
+    reason in the diff.
 * Module-scope mutable `let` is either a pure memoization cache or lives behind a `createX()`
   factory so tests get fresh instances — never a shipped `*ForTests` reset export. A memoized
   promise resets itself on rejection (see `web/src/lib/idb.ts`) unless permanent failure is

@@ -48,7 +48,7 @@ argument (rule 7).
 | 8  | [Tools: entries, strict flags, size ratchet](#8-tools)                       | `tools/tests/tool-specifier-resolution.test.mjs`, `rejectUnknownFlags`, `TOOLS_GRANDFATHERED_MAX_LINES`, `no-undef`                |
 | 9  | [Tests prove they can fail](#9-tests-prove-they-can-fail)                    | Lint guards on test files; a negative control noted in the PR; `docs/TESTING.md`                                                   |
 | 10 | [Comments state stable facts about code that exists](#10-comments)           | Review; `npm run check:doc-refs` for docs                                                                                          |
-| 11 | [Exceptions are declared and can only shrink](#11-exceptions-only-shrink)    | Ratchet tests and caps listed in rule 11                                                                                           |
+| 11 | [Exceptions are declared and ratchet down](#11-exceptions-ratchet-down)      | Ratchet tests and caps listed in rule 11                                                                                           |
 
 ## 1. Ask the owner
 
@@ -284,13 +284,17 @@ channel.
 **Enforcement.** Review for code comments. For docs, skills, and rules, `npm run check:doc-refs`
 fails on a repo path or npm script that doesn't resolve.
 
-## 11. Exceptions only shrink
+## 11. Exceptions ratchet down
 
-**Rule.** An exception to a rule is declared in one list, next to the rule, and the list can only
-shrink. A new exception is added in the diff with its reason, where a reviewer sees it.
+**Rule.** An exception to a rule is declared in one list, next to the rule, and ratchets down: the
+change that makes an entry obsolete removes it, and the change that shrinks a capped file lowers its
+cap. Adding an entry or raising a cap stays possible, but only in the diff, with its reason, where a
+reviewer sees it (the `burn-down-oversized-code` skill raises a cap when a split would make the code
+worse).
 
-**Why here.** An undeclared exception is indistinguishable from a violation, and a list that can
-grow silently becomes the rule.
+**Why here.** An undeclared exception is indistinguishable from a violation, a list that grows
+without a reason in the diff becomes the rule, and slack left by a stale entry is room for the next
+regression.
 
 **Enforcement.**
 
