@@ -23,6 +23,7 @@
     type SubmitStatus,
   } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
+  import { settingsModal } from '$lib/state/ui.svelte';
   import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
   import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
   import '$lib/components/deferredIcons';
@@ -74,16 +75,6 @@
       'Your access code could not be removed securely. Close and reopen Splotch, then try again.',
   } satisfies Record<VerifiedCredentialKind, string>;
 
-  interface Props {
-    // `open` flips true when the Settings modal opens; we use it to clear
-    // the input and any stale feedback, and to re-read the current platform.
-    open?: boolean;
-  }
-  let { open = false }: Props = $props();
-
-  // Drives the copy that tells the parent exactly where their API key is kept on
-  // this platform.
-  let platform = $state<Platform>('web');
   // The single AI field accepts either an OpenAI API key (BYOK) or a secret
   // access code. AI unlocks when the parent has provided either one.
   let keyInput = $state('');
@@ -106,17 +97,17 @@
   }
 
   // How/where the key is stored, in plain language, per platform.
-  let keyStorageNote = $derived(KEY_STORAGE_NOTE[platform]);
+  const keyStorageNote = KEY_STORAGE_NOTE[getPlatform()];
 
   function resetKeyFeedback() {
     keyStatus = 'idle';
     keyMessage = '';
   }
 
+  // Each open starts from an empty field with no stale feedback.
   $effect(() => {
     latest.cancel(); // opening or closing obsoletes any in-flight verify
-    if (open) {
-      platform = getPlatform();
+    if (settingsModal.open) {
       keyInput = '';
       resetKeyFeedback();
     }
