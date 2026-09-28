@@ -49,8 +49,9 @@ const isUp = async (url) => {
 
 const serverBase = (port) => `http://localhost:${port}/`;
 
-// Asked of the OS rather than picked from a band, so no other session choosing
-// ports by hand can land on it between this probe and the spawn.
+// Asked of the OS rather than picked from a band: an ephemeral port sits outside
+// the range other sessions choose by hand, so none of them is likely to take it
+// between this probe and the spawn.
 function unusedPort() {
   return new Promise((resolve, reject) => {
     const probe = createServer();
