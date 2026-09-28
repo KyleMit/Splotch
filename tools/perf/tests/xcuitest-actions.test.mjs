@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -54,6 +54,7 @@ import {
   compactColorOptionSelector,
   compactColorPickedExpression,
   visibleInactiveColorOptionRankExpression,
+  aiReadyCueWaitScript,
   isAiReadyCueAnimation,
   actionCaptureVerdict,
   reportActionCaptureVerdict,
@@ -99,6 +100,9 @@ const SIDEBAR_TOC = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'nav', 'SidebarToc.svelte'),
   'utf8'
 );
+// The fake cues finish at once, so the page wait settles within a few 50 ms polls
+// and well inside its 1 s no-cue grace.
+const AI_CUE_SETTLE_TIMEOUT_MS = 500;
 const IPAD_ACTIONS = readFileSync(
   join(ROOT, 'tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
   'utf8'
@@ -1573,13 +1577,26 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     expect(isAiReadyCueAnimation(undefined)).toBe(false);
   });
 
-  it('runs the same match in the page as the exported matcher', () => {
-    const badge = IPAD_ACTIONS.slice(
-      IPAD_ACTIONS.indexOf('async function measureAiWaitingBadge'),
-      IPAD_ACTIONS.indexOf('// Undo at the end of history answers')
-    );
+  // The page script itself, run: a one-shot read of the cues, a matcher that
+  // misses the scoped names, or one that waits on the forever-looping spinner
+  // each leaves this unsettled or settled having seen no cue.
+  it('ends the page wait when the scoped cues finish, never waiting on the spinner', async () => {
+    const animation = (animationName) => ({ animationName, finished: Promise.resolve() });
+    const spinner = animation('svelte-10ut6t1-polaroidSpin');
+    const cues = ['polaroidWiggle', 'badgePop'].map((cue) => animation(`svelte-10ut6t1-${cue}`));
+    const running = [[spinner], [...cues, spinner]];
+    const print = { getAnimations: () => running.shift() ?? [spinner] };
+    const document = {
+      querySelector: (selector) => (selector === '.ai-waiting-polaroid' ? print : null),
+    };
+    const window = {};
 
-    expect(badge).toContain("name.endsWith('-' + cue)");
+    new Function('document', 'window', aiReadyCueWaitScript())(document, window);
+    await vi.waitFor(() => expect(window.__perfAiCueSettled).toBe(true), {
+      timeout: AI_CUE_SETTLE_TIMEOUT_MS,
+    });
+
+    expect(window.__perfAiCueSeen).toBe(cues.length);
   });
 
   it('fails the capture when required coverage is blocked, and says which', () => {
@@ -1642,10 +1659,6 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
     expect(badge).toContain('AI_READY_CUE_ANIMATIONS');
     expect(badge).toContain('__perfAiCueSettled');
     expect(badge).toContain('AI_READY_CUE_TIMEOUT_MS');
-    // Re-queried, not snapshotted: the badge animation does not exist in the
-    // turn the badge appears, and a one-shot read settles on an empty list.
-    expect(badge).toContain('cuesNow()');
-    expect(badge).toContain('__perfAiCueSeen');
     // The spinner loops forever while the picture is made; waiting on it hangs.
     expect(IPAD_ACTIONS).toContain(
       "const AI_READY_CUE_ANIMATIONS = ['polaroidWiggle', 'badgePop']"
