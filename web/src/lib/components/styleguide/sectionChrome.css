@@ -3,7 +3,10 @@
    caption. routes/design/+page.svelte imports it, and its .styleguide column
    scopes it. Each selector sits inside :where(), so it carries no specificity:
    a partial's own scoped rule for the same element (a specimen title's top
-   margin, how its code wraps) always wins, whichever stylesheet loads first. */
+   margin, how its code wraps) always wins, whichever stylesheet loads first.
+   Unlike a scoped rule, it also reaches markup a child component renders
+   inside the column: a specimen whose own section, code or .value must not
+   take this chrome sets those properties itself. */
 
 :where(.styleguide section) {
   margin-top: 48px;
