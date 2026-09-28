@@ -9,10 +9,10 @@
 //
 // Cross-platform (ADR-0017): pure node:fs, no shell.
 
-import { cpSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
-import { ROOT, fail } from '../lib/proc.mjs';
+import { ROOT, fail, isMain } from '../lib/proc.mjs';
 import {
   buildScrapbookIndex,
   coloringBookProofSheetHubProblems,
@@ -44,6 +44,38 @@ function writeProofSheetHub() {
 function writeGeneratedPages() {
   writeIndex();
   writeProofSheetHub();
+}
+
+const isWithin = (path, parent) => {
+  const rel = relative(parent, path);
+  return rel === '' || !(rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel));
+};
+
+// A destination is a `<type>/<name>` path inside scrapbook/: never the root itself, never a bare
+// type directory, never an escape.
+export function resolvePublishDestination(dest, scrapbookDir = SCRAPBOOK_DIR) {
+  const destPath = resolve(scrapbookDir, dest);
+  const rel = relative(scrapbookDir, destPath);
+  if (!isWithin(destPath, scrapbookDir) || rel.split(sep).length < 2) {
+    throw new Error(`Destination must be <type>/<name> inside scrapbook/: got "${dest}"`);
+  }
+  return { destPath, rel };
+}
+
+// Re-publishing a directory replaces it, so a file the new run dropped does not linger in the
+// deployed collection.
+export function replaceWithCopy(srcPath, destPath) {
+  if (isWithin(srcPath, destPath) || isWithin(destPath, srcPath)) {
+    throw new Error(`Source and destination overlap: ${srcPath} → ${destPath}`);
+  }
+  if (existsSync(destPath)) {
+    if (statSync(srcPath).isDirectory() !== statSync(destPath).isDirectory()) {
+      throw new Error(`Destination exists as a different kind (file vs directory): ${destPath}`);
+    }
+    rmSync(destPath, { recursive: true, force: true });
+  }
+  mkdirSync(dirname(destPath), { recursive: true });
+  cpSync(srcPath, destPath, { recursive: true });
 }
 
 const USAGE =
@@ -128,15 +160,13 @@ function main() {
     fail(`Source not found: ${srcPath}`);
   }
 
-  // Keep the destination inside scrapbook/ — reject absolute paths and ../ escapes.
-  const destPath = resolve(SCRAPBOOK_DIR, dest);
-  const rel = relative(SCRAPBOOK_DIR, destPath);
-  if (rel.startsWith('..') || resolve(SCRAPBOOK_DIR, rel) !== destPath) {
-    fail(`Destination must stay within scrapbook/: got "${dest}"`);
+  let destPath, rel;
+  try {
+    ({ destPath, rel } = resolvePublishDestination(dest));
+    replaceWithCopy(srcPath, destPath);
+  } catch (error) {
+    fail(error.message);
   }
-
-  mkdirSync(dirname(destPath), { recursive: true });
-  cpSync(srcPath, destPath, { recursive: true });
   writeGeneratedPages();
 
   const url = PAGES_BASE + rel + (statSync(destPath).isDirectory() ? '/' : '');
@@ -146,4 +176,4 @@ function main() {
   console.log('Commit & push to publish; the Pages deploy runs on merge to main.');
 }
 
-main();
+if (isMain(import.meta.url)) main();
