@@ -33,7 +33,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
 import { join } from 'node:path';
-import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
+import { TCP_PORT, argFlag, argNumber, isMain, ROOT, runMain } from '../../lib/proc.mjs';
 import { FLOOR_CONTROL_PAGE, PROBE_REPORT_PATH } from './lib/probe-host-protocol.mjs';
 import { keepIncomingReport, reportFileName, reportRejectionReason } from './lib/report-store.mjs';
 
@@ -332,7 +332,7 @@ export function closeFloorControlHost(server) {
 }
 
 export function serveFloorControl({
-  port = Number(argFlag('port', DEFAULT_PORT)),
+  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
   reportDir = argFlag('report-dir', DEFAULT_REPORT_DIR),
 } = {}) {
   const { server } = createFloorControlHost({ reportDir });

@@ -1,23 +1,20 @@
 import { DEVICES, resolveDevice } from './profile-devices.mjs';
-import { fail } from '../../lib/proc.mjs';
+import {
+  TCP_PORT,
+  fail,
+  parseNumberFlag,
+  parseOrFail,
+  readSwitch,
+  readValueFlag,
+} from '../../lib/proc.mjs';
 import { PORT_ROLES } from './capture-readiness.mjs';
 
-// `entry`-gated numeric parsing: an unparsable flag is fatal for a real CLI
-// invocation, but a library import (vitest's own argv) must not exit — mirrors
-// the `--device` fail() below.
-export function requireNumberFlag(name, raw, entry) {
-  const n = Number(raw);
-  if (entry && Number.isNaN(n)) {
-    fail(`--${name} must be a number, got "${raw}"`);
-  }
-  return n;
-}
+// CDP's CPU throttling rate is a slowdown factor, so anything up to 1 runs
+// unthrottled — replay's default of 0 included.
+const THROTTLE_RATE = { min: 0 };
 
-const resolveThrottle = (args, defaultRate) => {
-  const hit = args.find((arg) => arg.startsWith('--throttle='));
-  const rate = args.includes('--no-throttle') ? 1 : Number(hit ? hit.split('=')[1] : defaultRate);
+const describeThrottle = (rate) => {
   const active = rate > 1;
-
   return {
     rate,
     active,
@@ -28,32 +25,42 @@ const resolveThrottle = (args, defaultRate) => {
 
 const COMMON_FLAGS = ['device', 'port', 'no-build'];
 
-// Tolerant lookup and `entry`-gated input reports (warn-only for unknown flags,
-// fatal for an unknown device): the perf entry modules parse at module scope but
-// are also imported as libraries by the vitest script suites, where argv is
-// vitest's own.
+function rejectUnknownFlags(argv, known) {
+  const unknown = argv.filter((arg) => {
+    const name = /^--([^=]+)/.exec(arg)?.[1];
+    return name && !known.has(name);
+  });
+  if (unknown.length) {
+    fail(`Unknown flag ${unknown.join(' ')} — known flags: ${[...known].sort().join(', ')}`);
+  }
+}
+
+// `entry` is set by a real CLI invocation, where bad input is a one-line exit
+// and an unknown flag is fatal. A library import leaves it unset: the perf entry
+// modules parse at module scope but are also imported by the vitest script
+// suites, where argv is vitest's own — so unknown flags pass, and a malformed
+// value throws rather than exiting the importing test run.
 export function parsePerfArgs(
   { throttleDefault, extra = [], entry = false } = {},
   argv = process.argv.slice(2)
 ) {
-  const flag = (name, fallback) => {
-    const hit = argv.find((a) => a.startsWith(`--${name}=`));
-    return hit ? hit.split('=')[1] : fallback;
+  const report = entry ? parseOrFail : (parse) => parse();
+  const flag = (name, fallback) => report(() => readValueFlag(argv, name)) ?? fallback;
+  const numberFlag = (name, fallback, rule) => {
+    const raw = flag(name);
+    return raw === undefined ? fallback : report(() => parseNumberFlag(name, raw, rule));
   };
-  const has = (name) => argv.includes(`--${name}`);
+  const has = (name) => report(() => readSwitch(argv, name));
 
   if (entry) {
-    const known = new Set([
-      ...COMMON_FLAGS,
-      ...(throttleDefault === undefined ? [] : ['throttle', 'no-throttle']),
-      ...extra,
-    ]);
-    for (const arg of argv) {
-      const name = /^--([^=]+)/.exec(arg)?.[1];
-      if (name && !known.has(name)) {
-        console.warn(`Unknown flag ${arg} — known flags: ${[...known].sort().join(', ')}`);
-      }
-    }
+    rejectUnknownFlags(
+      argv,
+      new Set([
+        ...COMMON_FLAGS,
+        ...(throttleDefault === undefined ? [] : ['throttle', 'no-throttle']),
+        ...extra,
+      ])
+    );
   }
 
   const deviceName = flag('device', 'phone');
@@ -62,19 +69,23 @@ export function parsePerfArgs(
     fail(`Unknown --device=${deviceName} — known: ${Object.keys(DEVICES).join(', ')}`);
   }
 
-  const throttle =
-    throttleDefault === undefined ? undefined : resolveThrottle(argv, throttleDefault);
-  if (entry && throttle && Number.isNaN(throttle.rate)) {
-    fail(`--throttle must be a number, got "${flag('throttle', String(throttleDefault))}"`);
-  }
+  // Read even under --no-throttle, so a malformed rate is reported whichever wins.
+  const requestedThrottle =
+    throttleDefault === undefined
+      ? undefined
+      : numberFlag('throttle', throttleDefault, THROTTLE_RATE);
 
   return {
     flag,
+    numberFlag,
     has,
     deviceName,
     device,
-    throttle,
-    port: requireNumberFlag('port', flag('port', String(PORT_ROLES.preview.port)), entry),
+    throttle:
+      requestedThrottle === undefined
+        ? undefined
+        : describeThrottle(has('no-throttle') ? 1 : requestedThrottle),
+    port: numberFlag('port', PORT_ROLES.preview.port, TCP_PORT),
     build: !has('no-build'),
   };
 }

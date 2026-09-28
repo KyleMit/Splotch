@@ -11,7 +11,7 @@
 // host has to be reachable from off-box. Pair it with `perf:device:frames`,
 // which drives the touch input and reads the report back.
 import { join } from 'node:path';
-import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
+import { TCP_PORT, argFlag, argNumber, isMain, ROOT, runMain } from '../../lib/proc.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import { createProbeHost } from './lib/probe-host.mjs';
 
@@ -20,7 +20,7 @@ const DEFAULT_UPSTREAM = `http://127.0.0.1:${PORT_ROLES.preview.port}`;
 const DEFAULT_REPORT_DIR = join(ROOT, 'perf-profiles', 'split-capture', 'reports');
 
 export function serveProbeHost({
-  port = Number(argFlag('port', DEFAULT_PROBE_PORT)),
+  port = argNumber('port', DEFAULT_PROBE_PORT, TCP_PORT),
   upstream = argFlag('upstream', DEFAULT_UPSTREAM),
   reportDir = argFlag('report-dir', DEFAULT_REPORT_DIR),
 } = {}) {

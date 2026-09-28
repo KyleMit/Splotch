@@ -16,7 +16,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { CAPTURED_UNTRACKED, PRESERVED } from './gen-performance-matrix.mjs';
 import { cellInspection } from './run-campaign.mjs';
 import { CAMPAIGN_MODES, campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
@@ -467,10 +467,7 @@ export function advanceRecordedOn(manifest, foldedOn) {
 }
 
 export async function runCampaignSources(argv = process.argv.slice(2)) {
-  const flag = (name, fallback) => {
-    const prefix = `--${name}=`;
-    return argv.find((entry) => entry.startsWith(prefix))?.slice(prefix.length) ?? fallback;
-  };
+  const flag = (name, fallback) => argFlag(name, fallback, argv);
   const targetId = flag('target');
   const outputRoot = flag('output-root');
   const productCommit = flag('product-commit');

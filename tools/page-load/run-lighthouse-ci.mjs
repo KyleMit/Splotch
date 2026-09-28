@@ -6,7 +6,7 @@ import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
-import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, TCP_PORT, argFlag, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
 import { MEASURED_SURFACE, SPEC_FILE } from '../perf/check-matrix-staleness.mjs';
 import { buildAndPreview } from '../perf/lib/profile-preview.mjs';
 
@@ -274,8 +274,8 @@ function appendGitHubSummary(rows, sourceStatus) {
 export async function runLighthouseCi({
   baselinePath = argFlag('baseline', DEFAULT_BASELINE),
   out = argFlag('out', DEFAULT_OUT),
-  port = Number(argFlag('port', String(DEFAULT_PORT))),
-  samples = Number(argFlag('samples', String(DEFAULT_SAMPLES))),
+  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
+  samples = argNumber('samples', DEFAULT_SAMPLES, { integer: true, min: 3 }),
   build = !process.argv.includes('--no-build'),
   reportOnly = process.argv.includes('--report-only'),
 } = {}) {

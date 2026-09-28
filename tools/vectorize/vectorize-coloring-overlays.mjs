@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, globSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
+import { POSITIVE_INTEGER, ROOT, isMain, parseNumberFlag, run, runMain } from '../lib/proc.mjs';
 
 const MAX_PRODUCTION_BATCH_SIZE = 12;
 export const OVERLAY_THEMES = {
@@ -101,15 +101,6 @@ export function selectColoringOverlayJobs(
     .slice(0, batchSize);
 }
 
-function positiveBatchSize(value) {
-  if (value === undefined) return undefined;
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isSafeInteger(parsed) || parsed < 1) {
-    throw new Error('--batch-size must be a positive integer');
-  }
-  return parsed;
-}
-
 export function parseColoringOverlayArgs(argv) {
   const { values } = parseArgs({
     args: argv,
@@ -124,7 +115,10 @@ export function parseColoringOverlayArgs(argv) {
       'write-ledger': { type: 'boolean' },
     },
   });
-  const batchSize = positiveBatchSize(values['batch-size']);
+  const batchSize =
+    values['batch-size'] === undefined
+      ? undefined
+      : parseNumberFlag('batch-size', values['batch-size'], POSITIVE_INTEGER);
   const theme = overlayTheme(values.theme);
   const modes = [values.production, values.check, values['write-ledger']].filter(Boolean).length;
   if (modes > 1) throw new Error('Choose only one of --production, --check, or --write-ledger');

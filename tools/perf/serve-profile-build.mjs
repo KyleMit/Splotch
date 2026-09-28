@@ -4,7 +4,7 @@
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
-import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, TCP_PORT, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 import { PORT_ROLES } from './lib/capture-readiness.mjs';
@@ -117,7 +117,7 @@ export function spawnPerfServe(port = PREVIEW_PORT) {
 if (isMain(import.meta.url)) {
   runMain(() =>
     runPerfServe({
-      port: Number(argFlag('port', PREVIEW_PORT)),
+      port: argNumber('port', PREVIEW_PORT, TCP_PORT),
       strictPort: process.argv.includes('--strict-port'),
     })
   );

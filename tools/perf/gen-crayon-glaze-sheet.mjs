@@ -20,7 +20,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, webkit } from '@playwright/test';
-import { argFlag, fail, isMain, parseOrFail, runMain } from '../lib/proc.mjs';
+import { TCP_PORT, argFlag, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
 import { freePort, spawnViteServer, waitForPortRelease } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 
@@ -43,7 +43,6 @@ const CROSSING_SAMPLE_HALF_PX = 10;
 // The dev server compiles the route on first request, so this covers a cold start.
 const SERVER_READY_TIMEOUT_MS = 120_000;
 const DEFAULT_PORT = 4198;
-const MAX_TCP_PORT = 65_535;
 
 // The palette by label, read out of its single source. A tool cannot import the
 // TS module, and a copied hex is exactly what tools/tests/palette-source.test.mjs
@@ -72,17 +71,6 @@ function parseNumberList(value, fallback, { label, check, describe }) {
     if (!check(parsed)) fail(`${label}: ${token} ${describe}`);
     return parsed;
   });
-}
-
-// Whole-token for the same reason as the lists: parseInt reads `--port=abc` as
-// NaN and `--port=41x` as 41, and either one reaches lsof and vite as a port.
-// Throws rather than fails so its test can see the rejection; exported for that test.
-export function parsePort(value) {
-  const port = /^\d+$/.test(value) ? Number(value) : Number.NaN;
-  if (!(port >= 1 && port <= MAX_TCP_PORT)) {
-    throw new Error(`--port: "${value}" is not a TCP port from 1 to ${MAX_TCP_PORT}`);
-  }
-  return port;
 }
 
 // One cell: the under band, then `passes` strokes of the over colour across it,
@@ -173,7 +161,7 @@ export async function generateGlazeSheet() {
   const over = palette.get('Blue');
   if (!under || !over) fail('the palette no longer has a Yellow and a Blue swatch');
 
-  const port = parseOrFail(() => parsePort(argFlag('port', String(DEFAULT_PORT))));
+  const port = argNumber('port', DEFAULT_PORT, TCP_PORT);
   freePort(port);
   await waitForPortRelease(port);
   const server = spawnViteServer(port, { env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' } });

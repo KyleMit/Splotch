@@ -12,7 +12,18 @@
 // pointermove, served from this host — so the answer is about the input path
 // alone. A slow app cannot make this fail and a fast one cannot make it pass,
 // and it needs no product build.
-import { argFlag, capture, fail, isMain, runMain, sleep, tryCapture } from '../../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  capture,
+  fail,
+  isMain,
+  runMain,
+  sleep,
+  tryCapture,
+} from '../../lib/proc.mjs';
 import { trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
 import { inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
@@ -97,12 +108,12 @@ export async function guardVerifyForeground({
 
 export async function verifyAndroidInput({
   serial = argFlag('device-serial'),
-  port = Number(argFlag('port', DEFAULT_PORT)),
+  port = argNumber('port', DEFAULT_PORT, TCP_PORT),
   // The caller that knows better passes the RESOLVED port — prepare-capture
   // shifts this role off a held 9224, and a hardcoded default here would bind
   // the port the preflight just said it was avoiding.
-  cdpPort = Number(argFlag('cdp-port', PORT_ROLES.androidCdp.port)),
-  repeats = Number(argFlag('gesture-repeats', PREFLIGHT_GESTURE_REPEATS)),
+  cdpPort = argNumber('cdp-port', PORT_ROLES.androidCdp.port, TCP_PORT),
+  repeats = argNumber('gesture-repeats', PREFLIGHT_GESTURE_REPEATS, POSITIVE_INTEGER),
 } = {}) {
   if (!serial) fail('--device-serial= is required');
   if (!Number.isSafeInteger(repeats) || repeats < 1) {
