@@ -60,8 +60,10 @@
         // Fire-and-forget: the save must not delay the clear. Its export
         // snapshot is taken synchronously inside this call, before clearCanvas
         // wipes the paper (see saveOnDelete.ts), which reports its own failed
-        // saves to the save-failure banner; the catch only keeps an unexpected
-        // throw from reaching the clear, which must never be blocked by a save.
+        // exports and saves to the save-failure banner. Being async, the call
+        // turns any failure, even one inside that snapshot, into a rejection,
+        // so it cannot stop the clear; the catch only logs an unexpected
+        // rejection instead of leaving it unhandled.
         saveDrawingIfEnabled().catch((err) => console.error('Save on delete failed:', err));
         clearCanvas({ animateInto: home });
         resetToolAfterClear();

@@ -14,15 +14,19 @@ import { ROOT } from './proc.mjs';
 const PORT_RELEASE_TIMEOUT_MS = 5_000;
 const PORT_RELEASE_POLL_INTERVAL_MS = 50;
 
-// Best-effort: kill whatever is listening on `port` so strictPort doesn't fail
-// and we never reuse a stale server from a previous run.
-export function portListenerPids(port) {
+// null when lsof could not be launched, which is not the same answer as "no
+// listener": freePort() has to say it could not check rather than stay silent.
+function lsofListenerPids(port) {
   const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
-  if (out.error) return [];
+  if (out.error) return null;
   return (out.stdout || '')
     .split('\n')
     .map((line) => Number(line.trim()))
     .filter((pid) => Number.isInteger(pid) && pid > 0);
+}
+
+export function portListenerPids(port) {
+  return lsofListenerPids(port) ?? [];
 }
 
 // A listener's working directory is what identifies which checkout owns it. Two
@@ -37,8 +41,12 @@ function listenerWorkingDirectory(pid) {
 }
 
 export function portListenerOwners(port, root) {
+  return listenerOwners(portListenerPids(port), root);
+}
+
+function listenerOwners(pids, root) {
   const resolvedRoot = realPath(root);
-  return portListenerPids(port).map((pid) => {
+  return pids.map((pid) => {
     const cwd = listenerWorkingDirectory(pid);
     const resolvedCwd = cwd ? realPath(cwd) : null;
     return {
@@ -51,18 +59,14 @@ export function portListenerOwners(port, root) {
   });
 }
 
-// Listeners on this port that belong to some OTHER checkout. freePort() SIGTERMs
-// every listener it finds, which is right for this session's own leftovers and
-// wrong for anyone else's — it killed another worktree's preview server before the
-// build-identity assertion could even report which build it was serving, while the
-// error text told the reader to pick a free port instead of stopping it.
-//
-// A listener whose working directory cannot be read counts as foreign: refusing to
-// start is recoverable, and killing something unidentified is not.
+const foreignPids = (owners) =>
+  owners.filter((listener) => !listener.owned).map((listener) => listener.pid);
+
+// Listeners on this port that belong to some OTHER checkout. A listener whose
+// working directory cannot be read counts as foreign: refusing to start is
+// recoverable, and killing something unidentified is not.
 export function foreignPortListeners(port, root) {
-  return portListenerOwners(port, root)
-    .filter((listener) => !listener.owned)
-    .map((listener) => listener.pid);
+  return foreignPids(portListenerOwners(port, root));
 }
 
 function realPath(path) {
@@ -73,20 +77,33 @@ function realPath(path) {
   }
 }
 
+// Clears this checkout's own leftover server off `port` so strictPort doesn't
+// fail and a run never reuses a stale server. It throws rather than touch a
+// listener from another checkout, and owns that refusal itself because a
+// caller-side pre-check is one a new caller forgets: an unguarded call killed
+// another worktree's preview server before anything could report which build
+// it was serving.
+//
+// Ownership is decided on the same pid list the SIGTERMs go to, so a listener
+// that appears between the check and the kill is never signalled unvetted.
 export function freePort(port) {
-  const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
-  if (out.error) {
+  const pids = lsofListenerPids(port);
+  if (pids === null) {
     console.warn(
       `Unable to check or clear port ${port} automatically because lsof could not be launched. If the port is in use, stop its listener before retrying.`
     );
     return;
   }
-  for (const pid of (out.stdout || '')
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)) {
+  const foreign = foreignPids(listenerOwners(pids, ROOT));
+  if (foreign.length) {
+    throw new Error(
+      `port ${port} is held by a listener outside this checkout (pid ${foreign.join(', ')}). ` +
+        "Choose a free port — stopping it would take down another session's server."
+    );
+  }
+  for (const pid of pids) {
     try {
-      process.kill(Number(pid), 'SIGTERM');
+      process.kill(pid, 'SIGTERM');
     } catch {
       // already gone
     }

@@ -3,7 +3,7 @@
   import { scribbleTap } from '$lib/actions/scribbleGuard';
   import {
     AI_IMAGE_BUTTON_ID,
-    isAiImageButtonVisible,
+    isAiImageButtonUsable,
     isAiImageButtonShown,
   } from '$lib/actionButtonLayout';
   import { canvasState } from '$lib/state/canvas.svelte';
@@ -22,7 +22,7 @@
 
   let aiBtnEl: HTMLButtonElement | undefined = $state();
 
-  const aiImageButtonVisible = $derived(isAiImageButtonVisible());
+  const aiImageButtonUsable = $derived(isAiImageButtonUsable());
   const aiImageButtonShown = $derived(isAiImageButtonShown());
 
   // A minimized run is the one state where a generation is in flight and this
@@ -99,13 +99,13 @@
      settles, so the row stays stable through hydration. -->
 <button
   class="action-button"
-  class:disabled={aiImageButtonBlocked || !aiImageButtonVisible}
+  class:disabled={aiImageButtonBlocked || !aiImageButtonUsable}
   class:loading={aiGenerating && !aiGenerationState.minimized}
   id={AI_IMAGE_BUTTON_ID}
   style:--i="4"
   aria-label={minimizedRunLabel
     ? minimizedRunLabel
-    : !aiImageButtonVisible
+    : !aiImageButtonUsable
       ? freeGenerationsState.loading
         ? 'Checking AI image availability'
         : 'AI image unavailable'
@@ -117,7 +117,7 @@
             ? 'Set up AI image'
             : 'Create AI image'}
   aria-busy={aiGenerating && !aiGenerationState.minimized}
-  disabled={aiImageButtonBlocked || !aiImageButtonVisible}
+  disabled={aiImageButtonBlocked || !aiImageButtonUsable}
   hidden={!aiImageButtonShown}
   aria-hidden={!aiImageButtonShown || undefined}
   inert={!aiImageButtonShown}

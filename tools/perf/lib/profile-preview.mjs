@@ -5,15 +5,16 @@
 //
 // spawnViteServer (tools/lib/vite-server.mjs) runs vite in a detached process
 // group and kills the whole group on stop, so the preview server never orphans
-// a grandchild and leaks the port. freePort() clears out any stale leftover
-// server up front so every run serves the build it just produced.
+// a grandchild and leaks the port. freePort() clears out this checkout's stale
+// leftover server up front so every run serves the build it just produced, and
+// refuses to start over another checkout's.
 
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, fail, run, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
-import { foreignPortListeners, freePort, spawnViteServer } from '../../lib/vite-server.mjs';
+import { freePort, spawnViteServer } from '../../lib/vite-server.mjs';
 import { buildDirHoldsNativeExport } from './build-variant.mjs';
 import { stampedBuildCommit } from './build-provenance.mjs';
 
@@ -217,19 +218,6 @@ export async function buildAndPreview(port, { build = true, timeout = 90_000 } =
     run('npm', ['run', 'build']);
   }
 
-  // freePort SIGTERMs every listener on the port. That is correct for this
-  // session's own leftovers and wrong for another checkout's server — which it
-  // killed before the identity assertion below could report which build was there,
-  // while the assertion's own message told the reader to choose a free port rather
-  // than stop it.
-  const foreign = foreignPortListeners(port, ROOT);
-  if (foreign.length) {
-    fail(
-      `port ${port} is held by a listener outside this checkout (pid ${foreign.join(', ')}). ` +
-        "Choose a free port — stopping it would take down another session's server, and " +
-        'capturing against it would measure a different product.'
-    );
-  }
   freePort(port);
   await sleep(500);
 

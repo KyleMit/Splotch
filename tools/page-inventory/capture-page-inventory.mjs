@@ -66,9 +66,9 @@ const TABLET_UA =
 
 const STORAGE = {
   'splotch-ai-access-token': 'daycare-club',
-  // isAiImageButtonVisible() requires this toggle as well as a credential, so
-  // without it the AI button stays hidden and every surface reached through it
-  // — the parental gate and the whole ai/ group — is unreachable.
+  // The access token alone leaves the AI button hidden: isAiImageButtonShown()
+  // also requires this toggle, and without it every surface reached through the
+  // button — the parental gate and the whole ai/ group — is unreachable.
   'splotch-ai-image-enabled': 'true',
   'splotch-tool-drawer-enabled': 'true',
   'splotch-drawer-open': 'false',

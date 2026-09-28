@@ -19,7 +19,7 @@ import { selectBrush, toolState } from './state/tool.svelte';
 import {
   CONTROL_OFF_ATTRIBUTES,
   NO_ACTIONS_ATTRIBUTE,
-  visibleActionButtonCount,
+  shownActionButtonCount,
   publishActionPanelState,
 } from './actionButtonLayout';
 
@@ -50,7 +50,7 @@ function publishedPanel() {
 describe('the Tool Drawer switch', () => {
   it('hides only the drawer-owned controls, leaving the camera, coloring books, and AI', () => {
     setToolDrawerEnabled(false);
-    expect(visibleActionButtonCount()).toBe(3);
+    expect(shownActionButtonCount()).toBe(3);
 
     const el = publishedPanel();
     for (const control of TOOL_DRAWER_CONTROLS) {
@@ -68,7 +68,7 @@ describe('the Tool Drawer switch', () => {
     expect(settingsState.crayonEnabled).toBe(true);
 
     setToolDrawerEnabled(true);
-    expect(visibleActionButtonCount()).toBe(5);
+    expect(shownActionButtonCount()).toBe(5);
   });
 
   it('empties the panel only once the other sections have hidden their buttons too', () => {
@@ -76,7 +76,7 @@ describe('the Tool Drawer switch', () => {
     setColoringBook(false);
     setScreenshot(false);
     setAiImage(false);
-    expect(visibleActionButtonCount()).toBe(0);
+    expect(shownActionButtonCount()).toBe(0);
     expect(publishedPanel().hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(true);
   });
 

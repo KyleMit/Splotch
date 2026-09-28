@@ -3,6 +3,7 @@ import { mkdtempSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { ROOT } from '../lib/proc.mjs';
 import {
   foreignPortListeners,
   freePort,
@@ -11,80 +12,72 @@ import {
   waitForPortRelease,
 } from '../lib/vite-server.mjs';
 
-// A listener started from somewhere that is deliberately not this checkout.
-const foreignRoot = mkdtempSync(join(tmpdir(), 'splotch-foreign-'));
-const child = spawn(
-  process.execPath,
-  [
-    '-e',
-    'require("http").createServer((q,r)=>r.end("x")).listen(0,"127.0.0.1",function(){console.log(this.address().port)})',
-  ],
-  { cwd: foreignRoot, stdio: ['ignore', 'pipe', 'ignore'] }
-);
-const port = await new Promise((resolve) => {
-  child.stdout.on('data', (chunk) => resolve(Number(String(chunk).trim())));
-});
+const LISTEN_ON_ANY_PORT =
+  'require("http").createServer((q,r)=>r.end("x")).listen(0,"127.0.0.1",function(){console.log(this.address().port)})';
 
-const ownedChild = spawn(
-  process.execPath,
-  [
-    '-e',
-    'require("http").createServer((q,r)=>r.end("x")).listen(0,"127.0.0.1",function(){console.log(this.address().port)})',
-  ],
-  { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] }
-);
-const ownedPort = await new Promise((resolve) => {
-  ownedChild.stdout.on('data', (chunk) => resolve(Number(String(chunk).trim())));
-});
+async function listenFrom(cwd) {
+  const child = spawn(process.execPath, ['-e', LISTEN_ON_ANY_PORT], {
+    cwd,
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  const port = await new Promise((resolve) => {
+    child.stdout.on('data', (chunk) => resolve(Number(String(chunk).trim())));
+  });
+  return { child, port };
+}
+
+// The same listener command twice: once from somewhere that is deliberately not
+// this checkout, once from this checkout's root.
+const foreignRoot = mkdtempSync(join(tmpdir(), 'splotch-foreign-'));
+const foreign = await listenFrom(foreignRoot);
+const owned = await listenFrom(ROOT);
 
 afterAll(() => {
-  child.kill();
-  ownedChild.kill();
+  foreign.child.kill();
+  owned.child.kill();
 });
 
 describe('foreignPortListeners', () => {
-  // The regression this covers: buildAndPreview called freePort() before the
-  // build-identity assertion, and freePort SIGTERMs every listener on the port.
-  // Another worktree's preview server was killed before anything could report
-  // which build it was serving — while the assertion's own message told the
-  // reader to choose a free port rather than stop it.
   it('identifies a listener owned by another checkout', () => {
-    expect(foreignPortListeners(port, process.cwd())).toContain(child.pid);
+    expect(foreignPortListeners(foreign.port, ROOT)).toContain(foreign.child.pid);
   });
 
   it('does not claim a listener owned by this checkout', () => {
-    expect(foreignPortListeners(port, foreignRoot)).not.toContain(child.pid);
+    expect(foreignPortListeners(foreign.port, foreignRoot)).not.toContain(foreign.child.pid);
   });
 
   it('distinguishes identical listener commands by checkout cwd', () => {
-    expect(portListenerOwners(ownedPort, process.cwd())).toContainEqual({
-      pid: ownedChild.pid,
-      cwd: process.cwd(),
+    expect(portListenerOwners(owned.port, ROOT)).toContainEqual({
+      pid: owned.child.pid,
+      cwd: realpathSync(ROOT),
       owned: true,
     });
-    expect(portListenerOwners(port, process.cwd())).toContainEqual({
-      pid: child.pid,
+    expect(portListenerOwners(foreign.port, ROOT)).toContainEqual({
+      pid: foreign.child.pid,
       cwd: realpathSync(foreignRoot),
       owned: false,
     });
   });
-
-  // The point of the guard is that the other session's server stays up.
-  it('leaves the foreign listener alive — refusing is the whole behaviour', () => {
-    expect(foreignPortListeners(port, process.cwd())).toContain(child.pid);
-
-    expect(child.killed).toBe(false);
-    expect(portListenerPids(port)).toContain(child.pid);
-  });
 });
 
 describe('freePort', () => {
-  // Still the right tool for this session's own leftovers; the guard above is what
-  // decides whether it may be reached at all.
-  it('stops a listener when it is called', async () => {
-    freePort(port);
-    await waitForPortRelease(port);
+  // The regression this covers: a caller that reached freePort() without a
+  // separate ownership pre-check SIGTERMed another worktree's preview server
+  // before anything could report which build it was serving. The refusal lives
+  // in freePort so that no caller can forget it.
+  it('refuses a listener owned by another checkout and leaves it running', () => {
+    expect(() => freePort(foreign.port)).toThrow(
+      `port ${foreign.port} is held by a listener outside this checkout (pid ${foreign.child.pid})`
+    );
 
-    expect(portListenerPids(port)).not.toContain(child.pid);
+    expect(foreign.child.killed).toBe(false);
+    expect(portListenerPids(foreign.port)).toContain(foreign.child.pid);
+  });
+
+  it("stops this checkout's own listener", async () => {
+    freePort(owned.port);
+    await waitForPortRelease(owned.port);
+
+    expect(portListenerPids(owned.port)).not.toContain(owned.child.pid);
   });
 });
