@@ -99,7 +99,7 @@ export type ToolDrawerControl = (typeof TOOL_DRAWER_CONTROLS)[number];
 // Every Actions Panel control a parent can switch off: the drawer's own, then
 // the buttons other sections own (Coloring's books, Saving's camera). The AI
 // button is absent because its visibility also hangs on client-only state —
-// see isAiImageButtonVisible in actionButtonLayout.ts.
+// see isAiImageButtonShown in actionButtonLayout.ts.
 export type ActionPanelControl = ToolDrawerControl | 'coloringBookEnabled' | 'screenshotEnabled';
 
 function isToolDrawerControl(control: ActionPanelControl): control is ToolDrawerControl {

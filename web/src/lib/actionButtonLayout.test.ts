@@ -33,10 +33,9 @@ import {
   PALETTE_BAR_RESERVE,
   availablePerButton,
   ACTION_BUTTON_COUNT_PROPERTY,
-  isAiImageButtonVisible,
+  isAiImageButtonUsable,
   isAiImageButtonShown,
-  layoutActionButtonCount,
-  visibleActionButtonCount,
+  shownActionButtonCount,
   maxActionButtonScale,
   publishActionPanelState,
   MAX_ACTION_BUTTON_COUNT,
@@ -98,68 +97,97 @@ function resetState() {
 
 beforeEach(resetState);
 
-describe('visibleActionButtonCount', () => {
+describe('isAiImageButtonUsable', () => {
   it.each([
     { credentialState: 'neither credential', apiKey: '', accessCode: '' },
     { credentialState: 'a BYO key only', apiKey: 'key', accessCode: '' },
     { credentialState: 'an access code only', apiKey: '', accessCode: 'code' },
     { credentialState: 'both credentials', apiKey: 'key', accessCode: 'code' },
-  ])(
-    'keeps layout counting in sync with visibility for $credentialState',
-    ({ apiKey, accessCode }) => {
-      settingsState.mirrorAiUserApiKey(apiKey);
-      settingsState.mirrorAiAccessToken(accessCode);
+  ])('is usable with $credentialState and a free grant', ({ apiKey, accessCode }) => {
+    settingsState.mirrorAiUserApiKey(apiKey);
+    settingsState.mirrorAiAccessToken(accessCode);
 
-      expect(isAiImageButtonVisible()).toBe(true);
-      expect(visibleActionButtonCount()).toBe(6);
-    }
-  );
+    expect(isAiImageButtonUsable()).toBe(true);
+    expect(shownActionButtonCount()).toBe(6);
+  });
 
   it('requires the AI toggle and connectivity even with a credential', () => {
     settingsState.mirrorAiUserApiKey('key');
-    expect(visibleActionButtonCount()).toBe(6);
+    expect(isAiImageButtonUsable()).toBe(true);
 
     networkState.setOnline(false);
-    expect(isAiImageButtonVisible()).toBe(false);
-    expect(visibleActionButtonCount()).toBe(5);
+    expect(isAiImageButtonUsable()).toBe(false);
 
     networkState.setOnline(true);
     setAiImage(false);
-    expect(isAiImageButtonVisible()).toBe(false);
-    expect(visibleActionButtonCount()).toBe(5);
+    expect(isAiImageButtonUsable()).toBe(false);
   });
 
   it('requires a usable free-generation path when no credential is saved', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
-    expect(isAiImageButtonVisible()).toBe(false);
-    expect(visibleActionButtonCount()).toBe(5);
+    expect(isAiImageButtonUsable()).toBe(false);
 
     settingsState.mirrorAiAccessToken('code');
-    expect(isAiImageButtonVisible()).toBe(true);
-    expect(visibleActionButtonCount()).toBe(6);
+    expect(isAiImageButtonUsable()).toBe(true);
+  });
+});
+
+describe('shownActionButtonCount', () => {
+  it('counts a disabled AI button while online even after the grant fails', () => {
+    freeGenerationsState.setFreeGenerationsUnavailable();
+    expect(isAiImageButtonUsable()).toBe(false);
+    expect(isAiImageButtonShown()).toBe(true);
+    expect(shownActionButtonCount()).toBe(6);
+
+    freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
+    expect(isAiImageButtonUsable()).toBe(true);
+    expect(shownActionButtonCount()).toBe(6);
+
+    networkState.setOnline(false);
+    expect(isAiImageButtonShown()).toBe(false);
+    expect(shownActionButtonCount()).toBe(5);
+
+    networkState.setOnline(true);
+    expect(isAiImageButtonShown()).toBe(true);
+    expect(shownActionButtonCount()).toBe(6);
+  });
+
+  it('does not count AI when the parent switched it off', () => {
+    freeGenerationsState.setFreeGenerationsUnavailable();
+    setAiImage(false);
+    expect(isAiImageButtonShown()).toBe(false);
+    expect(shownActionButtonCount()).toBe(5);
   });
 
   it('drops buttons the parent switched off', () => {
     setStrokeWidthControl(false);
     setUndoButton(false);
-    expect(visibleActionButtonCount()).toBe(4);
+    expect(shownActionButtonCount()).toBe(4);
   });
 
   it('keeps the brush control while any optional brush remains enabled', () => {
     setCrayon(false);
     setMagicBrush(false);
-    expect(visibleActionButtonCount()).toBe(6);
+    expect(shownActionButtonCount()).toBe(6);
   });
 
   it('drops the brush control when every optional brush is disabled', () => {
     setCrayon(false);
     setMagicBrush(false);
     setEraser(false);
-    expect(visibleActionButtonCount()).toBe(5);
+    expect(shownActionButtonCount()).toBe(5);
   });
 
-  it('reaches zero when every first-paint action is disabled', () => {
+  it('keeps a disabled AI button as the only shown action', () => {
     freeGenerationsState.setFreeGenerationsUnavailable();
+    setToolDrawerEnabled(false);
+    setColoringBook(false);
+    setScreenshot(false);
+    expect(shownActionButtonCount()).toBe(1);
+  });
+
+  it('reaches zero when every action is switched off', () => {
+    setAiImage(false);
     setCrayon(false);
     setMagicBrush(false);
     setEraser(false);
@@ -167,40 +195,12 @@ describe('visibleActionButtonCount', () => {
     setColoringBook(false);
     setScreenshot(false);
     setUndoButton(false);
-    expect(visibleActionButtonCount()).toBe(0);
+    expect(shownActionButtonCount()).toBe(0);
   });
 
   it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
     settingsState.mirrorAiAccessToken('tok');
-    expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
-  });
-});
-
-describe('layoutActionButtonCount', () => {
-  it('shows a disabled AI button while online even after the grant fails', () => {
-    freeGenerationsState.setFreeGenerationsUnavailable();
-    expect(visibleActionButtonCount()).toBe(5);
-    expect(isAiImageButtonShown()).toBe(true);
-    expect(layoutActionButtonCount()).toBe(6);
-
-    freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
-    expect(visibleActionButtonCount()).toBe(6);
-    expect(layoutActionButtonCount()).toBe(6);
-
-    networkState.setOnline(false);
-    expect(isAiImageButtonShown()).toBe(false);
-    expect(layoutActionButtonCount()).toBe(5);
-
-    networkState.setOnline(true);
-    expect(isAiImageButtonShown()).toBe(true);
-    expect(layoutActionButtonCount()).toBe(6);
-  });
-
-  it('does not show AI when the parent switched it off', () => {
-    freeGenerationsState.setFreeGenerationsUnavailable();
-    setAiImage(false);
-    expect(isAiImageButtonShown()).toBe(false);
-    expect(layoutActionButtonCount()).toBe(5);
+    expect(shownActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
   });
 });
 

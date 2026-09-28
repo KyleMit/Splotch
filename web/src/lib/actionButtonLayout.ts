@@ -131,34 +131,28 @@ export const PORTRAIT_FIXED_RESERVE = PALETTE_CLEARANCE + PANEL_FIXED_CHROME;
 // holds the token to this.
 export const PALETTE_BAR_RESERVE = 75;
 
-export function isAiImageButtonVisible(): boolean {
-  const hasCredential = Boolean(settingsState.aiUserApiKey || settingsState.aiAccessToken);
-  return (
-    settingsState.aiImageEnabled &&
-    networkState.online &&
-    (hasCredential || freeGenerationsState.available)
-  );
-}
-
 export function isAiImageButtonShown(): boolean {
   return settingsState.aiImageEnabled && networkState.online;
 }
 
-export function visibleActionButtonCount(): number {
+// A shown button that is not usable still renders and takes its drawer slot,
+// disabled, while the free grant is pending or unavailable.
+export function isAiImageButtonUsable(): boolean {
+  const hasCredential = Boolean(settingsState.aiUserApiKey || settingsState.aiAccessToken);
+  return isAiImageButtonShown() && (hasCredential || freeGenerationsState.available);
+}
+
+// Every button the drawer renders, a disabled AI button included: the count
+// anything sized or laid out against the drawer measures by.
+export function shownActionButtonCount(): number {
   return (
     (enabledOptionalBrushes().length > 0 ? 1 : 0) +
     (actionControlShown('strokeWidthControlEnabled') ? 1 : 0) +
     (actionControlShown('coloringBookEnabled') ? 1 : 0) +
     (actionControlShown('screenshotEnabled') ? 1 : 0) +
-    (isAiImageButtonVisible() ? 1 : 0) +
+    (isAiImageButtonShown() ? 1 : 0) +
     (actionControlShown('undoButtonEnabled') ? 1 : 0)
   );
-}
-
-// Count the button the parent sees, including a disabled one shown from the
-// boot hint while the grant is pending.
-export function layoutActionButtonCount(): number {
-  return visibleActionButtonCount() + (isAiImageButtonShown() && !isAiImageButtonVisible() ? 1 : 0);
 }
 
 // The palette's extent along the row's axis: the landscape column's declared
@@ -219,7 +213,7 @@ export function renderedActionButtonSize(): number {
     );
   return Math.min(
     actionButtonBase(orientation) * scale,
-    availablePerButton(Math.max(1, layoutActionButtonCount()))
+    availablePerButton(Math.max(1, shownActionButtonCount()))
   );
 }
 
@@ -260,7 +254,7 @@ export function maxActionButtonScale(): number {
     : actionButtonBase(layoutState.orientation);
   const available = layoutState.phoneLandscape
     ? phoneToolbarAvailablePerButton()
-    : availablePerButton(layoutActionButtonCount());
+    : availablePerButton(shownActionButtonCount());
   const pct = Math.floor((available / base) * 100);
   return Math.min(ACTION_BUTTON_SCALE_MAX, Math.max(ACTION_BUTTON_SCALE_MIN, pct));
 }
@@ -326,10 +320,7 @@ export function publishActionPanelState(
   el.style.setProperty('--action-btn-scale', String(buttonScale));
   // The live count the app.css size formula divides by; floored at one so an
   // empty panel (hidden by NO_ACTIONS_ATTRIBUTE) never divides by zero.
-  el.style.setProperty(
-    ACTION_BUTTON_COUNT_PROPERTY,
-    String(Math.max(1, layoutActionButtonCount()))
-  );
+  el.style.setProperty(ACTION_BUTTON_COUNT_PROPERTY, String(Math.max(1, shownActionButtonCount())));
   el.toggleAttribute(DRAWER_OPEN_ATTRIBUTE, drawerExpanded);
   for (const [key, attribute] of controlOffEntries) {
     el.toggleAttribute(attribute, !actionControlShown(key));
@@ -340,7 +331,7 @@ export function publishActionPanelState(
   } else {
     el.removeAttribute(SINGLE_BRUSH_ATTRIBUTE);
   }
-  el.toggleAttribute(NO_ACTIONS_ATTRIBUTE, layoutActionButtonCount() === 0);
+  el.toggleAttribute(NO_ACTIONS_ATTRIBUTE, shownActionButtonCount() === 0);
   // The Brush Button's face is the active brush's icon. All four icons are in
   // the DOM and CSS shows the one matching this attribute ({@html} icons can't
   // swap during hydration — see .claude/rules/svelte.md), absent for the
