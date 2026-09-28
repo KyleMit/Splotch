@@ -70,23 +70,25 @@ const STARVATION_ATTRIBUTION_WINDOW_MS = 250;
 export const REAL_SCREEN_SCHEMA_VERSION = 2;
 const OLDEST_READABLE_SCHEMA_VERSION = 1;
 
-const POINTER_DOWN = 0;
+// Pointer type codes and event-row columns are exported for every other reader
+// of the probe's positional event rows, so a column move is made here once.
+export const POINTER_DOWN = 0;
 const POINTER_MOVE = 1;
-const POINTER_UP = 2;
-const POINTER_CANCEL = 3;
+export const POINTER_UP = 2;
+export const POINTER_CANCEL = 3;
 
 const FRAME_T = 0;
 const FRAME_DT = 1;
 const FRAME_CONTACT = 2;
 const EVENT_STAMP = 0;
 const EVENT_AT = 1;
-const EVENT_TYPE = 2;
+export const EVENT_TYPE = 2;
 const EVENT_ID = 3;
 const EVENT_BUTTONS = 4;
 const EVENT_COALESCED = 5;
-const EVENT_ON_CANVAS = 6;
+export const EVENT_ON_CANVAS = 6;
 const EVENT_KIND = 7;
-const EVENT_TRUSTED = 8;
+export const EVENT_TRUSTED = 8;
 const EVENT_PRESSURE = 9;
 const EVENT_WIDTH = 10;
 const EVENT_HEIGHT = 11;

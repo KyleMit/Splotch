@@ -18,6 +18,9 @@ import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import { REDUCE_MOTION_STORAGE_KEY } from '../lib/reduce-motion.mjs';
 
 const CANVAS_RECT = { x: 0, y: 0, width: 800, height: 600 };
+// A lazy Settings dialog opens this long after its trigger is clicked: longer
+// than the bootstrap's poll, shorter than its Settings retry spacing.
+const LAZY_SETTINGS_OPEN_MS = 200;
 
 function paintShell({ compact, startingTheme, lazySettings = false }) {
   document.documentElement.dataset.theme = startingTheme ?? '';
@@ -72,11 +75,13 @@ function paintShell({ compact, startingTheme, lazySettings = false }) {
   document.elementFromPoint = () => document.querySelector('.canvas-stack');
   window.__committedBrushMode = () => 'pen';
 
+  let settingsClicks = 0;
   document.querySelector('button[aria-label="Settings"]').addEventListener('click', () => {
-    const modal = mountSettings();
-    modal.open = true;
+    settingsClicks += 1;
+    setTimeout(() => (mountSettings().open = true), lazySettings ? LAZY_SETTINGS_OPEN_MS : 0);
   });
   if (!lazySettings) mountSettings();
+  return { settingsClicks: () => settingsClicks };
 }
 
 // The bootstrap now refuses to act for a page it was not opened for, so the
@@ -403,10 +408,11 @@ describe('the bootstrap actually setting the theme', () => {
     BOOTSTRAP_TIMEOUT_MS
   );
 
+  // A second click before the dialog has opened is what the retry spacing prevents.
   it(
-    'opens Settings when the dialog mounts only after the eager trigger is clicked',
+    'clicks the eager Settings trigger once and waits for the dialog to mount',
     async () => {
-      paintShell({ compact: true, startingTheme: 'light', lazySettings: true });
+      const shell = paintShell({ compact: true, startingTheme: 'light', lazySettings: true });
       expect(document.querySelector('#settingsModal')).toBeNull();
 
       const { readyPosted, errorPosted } = runBootstrap({
@@ -421,6 +427,7 @@ describe('the bootstrap actually setting the theme', () => {
       ]);
       expect(outcome).toMatchObject({ kind: 'ready', ready: { resolvedTheme: 'dark' } });
       expect(document.querySelector('#settingsModal')).not.toBeNull();
+      expect(shell.settingsClicks()).toBe(1);
     },
     BOOTSTRAP_TIMEOUT_MS
   );

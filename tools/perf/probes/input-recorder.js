@@ -51,6 +51,9 @@
     return;
   }
 
+  // The app's live-canvas cap (MAX_RENDER_SCALE in engine.ts); a console
+  // snippet cannot import it, so render-scale-cap.test.mjs pins the copy.
+  const MAX_RENDER_SCALE = 2;
   const t0 = performance.now();
   const events = [];
   const now = () => +(performance.now() - t0).toFixed(1);
@@ -277,7 +280,7 @@
       startedAt: new Date().toISOString(),
       viewport: { w: window.innerWidth, h: window.innerHeight },
       dpr: window.devicePixelRatio,
-      renderScale: Math.min(window.devicePixelRatio || 1, 2),
+      renderScale: Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE),
       canvas: { w: +r.width.toFixed(1), h: +r.height.toFixed(1) },
     },
     events,
