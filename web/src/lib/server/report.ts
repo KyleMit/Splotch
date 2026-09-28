@@ -5,6 +5,7 @@ import {
   type DeviceInfo,
 } from '$lib/platform/deviceReport';
 import {
+  attachesDevice,
   MAX_REPORT_MESSAGE_LENGTH,
   parseReportKind,
   type ReportKind,
@@ -86,7 +87,8 @@ export type ReportInput = Record<keyof ReportRequestBody, unknown> & {
    * Whether the reporter asked for device info. Normally redundant — a ticked
    * box is what produces `device` — but a form post with no JavaScript can
    * carry the opt-in and no snapshot, and an explicit request must not vanish
-   * silently. Present and empty gets said so in the issue.
+   * silently. Present and empty gets said so in the issue — for a kind that
+   * carries device info at all (`attachesDevice`).
    */
   wantsDevice?: unknown;
 };
@@ -136,7 +138,11 @@ export async function submitReport({
   const text = rawMessage.slice(0, MAX_REPORT_MESSAGE_LENGTH);
 
   const sanitized = device && typeof device === 'object' ? sanitizeDeviceInfo(device) : null;
-  const hasDevice = sanitized && Object.keys(sanitized).length > 0 ? sanitized : null;
+  const snapshot = sanitized && Object.keys(sanitized).length > 0 ? sanitized : null;
+  // Sending a snapshot is itself the opt-in on the JSON door; the form door
+  // also says whether the box was ticked. Either way the kind has the last word.
+  const attachedDevice = attachesDevice(reportKind, snapshot !== null) ? snapshot : null;
+  const deviceUnavailable = attachesDevice(reportKind, Boolean(wantsDevice)) && !attachedDevice;
 
   // Validate the payload before checking configuration so tests and callers get
   // a precise 400 regardless of whether reporting is wired up on this instance.
@@ -171,7 +177,7 @@ export async function submitReport({
   try {
     await createIssue({
       title: titleFor(reportKind, text),
-      body: bodyFor(reportKind, text, hasDevice, Boolean(wantsDevice) && !hasDevice),
+      body: bodyFor(reportKind, text, attachedDevice, deviceUnavailable),
       labels: [REPORT_LABEL, ISSUE_BY_KIND[reportKind].label],
     });
     return { ok: true };

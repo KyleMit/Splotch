@@ -3,6 +3,7 @@ import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
 import type { SaveResult } from '$lib/saveNaming';
 import type { AiResultState } from '$lib/state/aiGeneration.svelte';
+import type { SettingsState } from '$lib/state/settings.svelte';
 
 // The run's phase as one assertion: the discriminant plus the fields that matter.
 function expectPhase(
@@ -18,15 +19,6 @@ const mocks = vi.hoisted(() => ({
   saveImageBlob: vi.fn(async (_blob: Blob, _tag: string): Promise<SaveResult> => ({
     status: 'downloads',
   })),
-  settings: {
-    aiUserApiKey: '',
-    aiAccessToken: 'test-token',
-    autoSaveAiEnabled: false,
-    aiCredentialKind(): 'apiKey' | 'accessCode' | 'none' {
-      if (this.aiUserApiKey) return 'apiKey';
-      return this.aiAccessToken ? 'accessCode' : 'none';
-    },
-  },
 }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
@@ -34,7 +26,10 @@ vi.mock('./aiUploadEncoding', () => ({ encodeWebpUpload: mocks.encodeWebpUpload 
 vi.mock('./imageSave', () => ({
   saveImageBlob: mocks.saveImageBlob,
 }));
-vi.mock('$lib/state/settings.svelte', () => ({ settingsState: mocks.settings }));
+
+// The real store, re-imported after each vi.resetModules() so it is the
+// instance the test's freshly imported aiImage reads.
+let settings: SettingsState;
 
 const CONTENDED_HOST_TEST_TIMEOUT_MS = 20_000;
 
@@ -48,12 +43,14 @@ function okResponse(blob: Blob): Response {
   return new Response(blob, { status: 200 });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
-  mocks.settings.autoSaveAiEnabled = false;
-  mocks.settings.aiUserApiKey = '';
-  mocks.settings.aiAccessToken = 'test-token';
+  ({ settingsState: settings } = await import('$lib/state/settings.svelte'));
+  // The fresh store rereads localStorage, where an earlier test's auto-save
+  // choice persists; the access code is an in-memory mirror and starts empty.
+  settings.setAutoSaveAi(false);
+  settings.mirrorAiAccessToken('test-token');
 
   let objectUrlId = 0;
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:test-${++objectUrlId}`);
@@ -161,7 +158,7 @@ describe('generateAiImage request ownership', () => {
   });
 
   it('never auto-saves a stale run after close and restart', async ({ signal }) => {
-    mocks.settings.autoSaveAiEnabled = true;
+    settings.setAutoSaveAi(true);
     const requestA = Promise.withResolvers<Response>();
     const requestB = Promise.withResolvers<Response>();
     mocks.exportCanvasBlob
@@ -199,7 +196,7 @@ describe('generateAiImage request ownership', () => {
 
 describe('generateAiImage response handling', () => {
   it('shows child-facing safety guidance without auto-saving a refusal', async () => {
-    mocks.settings.autoSaveAiEnabled = true;
+    settings.setAutoSaveAi(true);
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
     vi.stubGlobal(
       'fetch',
@@ -225,7 +222,7 @@ describe('generateAiImage response handling', () => {
   });
 
   it('shows retry state and logs throttling detail without auto-saving', async () => {
-    mocks.settings.autoSaveAiEnabled = true;
+    settings.setAutoSaveAi(true);
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
     vi.stubGlobal(
       'fetch',
@@ -255,7 +252,7 @@ describe('generateAiImage response handling', () => {
   });
 
   it('shows the retry state on a 5xx (transient upstream/timeout) without auto-saving', async () => {
-    mocks.settings.autoSaveAiEnabled = true;
+    settings.setAutoSaveAi(true);
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
     vi.stubGlobal(
       'fetch',
@@ -280,7 +277,7 @@ describe('generateAiImage response handling', () => {
   });
 
   it('shows the generic state on a 4xx (client-side) response', async () => {
-    mocks.settings.autoSaveAiEnabled = true;
+    settings.setAutoSaveAi(true);
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
     vi.stubGlobal(
       'fetch',
@@ -303,7 +300,7 @@ describe('generateAiImage response handling', () => {
   });
 
   it('routes an exhausted daily free limit to BYOK setup without marking the grant spent', async () => {
-    mocks.settings.aiAccessToken = '';
+    settings.mirrorAiAccessToken('');
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
     vi.stubGlobal(
       'fetch',
@@ -334,7 +331,7 @@ describe('generateAiImage response handling', () => {
   });
 
   it('commits and auto-saves only an image response', async () => {
-    mocks.settings.autoSaveAiEnabled = true;
+    settings.setAutoSaveAi(true);
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
     vi.stubGlobal(
       'fetch',

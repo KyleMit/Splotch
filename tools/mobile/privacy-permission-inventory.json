@@ -107,6 +107,7 @@
     {
       "id": "ordinary-generation-job",
       "owner": "Splotch",
+      "cleanupImplementation": "netlify/functions/purge-generation-jobs.ts",
       "boundary": {
         "kind": "duration",
         "value": 20,
@@ -122,6 +123,7 @@
     {
       "id": "confirmed-ai-report",
       "owner": "Splotch",
+      "cleanupImplementation": "netlify/functions/purge-image-reports.ts",
       "boundary": {
         "kind": "duration",
         "value": 30,
@@ -154,6 +156,7 @@
     {
       "id": "access-code-usage",
       "owner": "Splotch",
+      "cleanupImplementation": "netlify/functions/purge-usage-records.ts",
       "boundary": {
         "kind": "duration",
         "value": 30,

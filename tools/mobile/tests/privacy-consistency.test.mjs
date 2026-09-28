@@ -4,7 +4,10 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { GENERATION_JOB_TTL_MS } from '../../../web/src/lib/ai/limits.ts';
 import { FREE_GENERATION_LIMIT } from '../../../web/src/lib/freeGenerations.ts';
-import { IMAGE_REPORT_RETENTION_DAYS } from '../../../web/src/lib/imageReport.ts';
+import {
+  IMAGE_REPORT_RETENTION_DAYS,
+  IMAGE_REPORT_REVIEW_HOURS,
+} from '../../../web/src/lib/imageReport.ts';
 import { USAGE_RECORD_RETENTION_DAYS } from '../../../web/src/lib/usageRecord.ts';
 import { NATIVE_API_ORIGIN } from '../../../web/securityPolicy.ts';
 
@@ -16,6 +19,8 @@ const IOS_LISTING_PATH = 'store-assets/STORE-LISTING-IOS.md';
 const ANDROID_LISTING_PATH = 'store-assets/STORE-LISTING-ANDROID.md';
 const PRIVACY_PAGE_PATH = 'web/src/routes/privacy/+page.svelte';
 const NATIVE_DOC_PATH = 'docs/MOBILE/native.md';
+const ANDROID_DOC_PATH = 'docs/MOBILE/android.md';
+const COMPLIANCE_DOC_PATH = 'docs/MOBILE/compliance.md';
 const API_DOC_PATH = 'docs/API.md';
 const IMAGE_REPORT_ADR_PATH = 'docs/adrs/0104-retain-reported-ai-images-for-thirty-days.md';
 const GENERATION_JOB_ADR_PATH = 'docs/adrs/0115-background-generation-jobs.md';
@@ -61,6 +66,30 @@ function absoluteUrlHosts(path) {
   return hosts;
 }
 
+// Netlify reads a scheduled function's exported `config` statically, so the
+// schedule stays a literal there. It is parsed rather than matched as text,
+// which would also match a stale schedule quoted in a comment.
+function scheduledCadence(path) {
+  const source = ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest);
+  const config = source.statements
+    .filter((statement) => ts.isVariableStatement(statement))
+    .filter(({ modifiers }) => modifiers?.some(({ kind }) => kind === ts.SyntaxKind.ExportKeyword))
+    .flatMap(({ declarationList }) => declarationList.declarations)
+    .find(({ name }) => ts.isIdentifier(name) && name.text === 'config')?.initializer;
+  const schedule =
+    config && ts.isObjectLiteralExpression(config)
+      ? config.properties.find(
+          (property) =>
+            ts.isPropertyAssignment(property) &&
+            ts.isIdentifier(property.name) &&
+            property.name.text === 'schedule'
+        )?.initializer
+      : undefined;
+  return schedule && ts.isStringLiteralLike(schedule)
+    ? /^@(\w+)$/.exec(schedule.text)?.[1]
+    : undefined;
+}
+
 describe('privacy disclosure consistency', () => {
   const iosListing = read(IOS_LISTING_PATH);
   const androidListing = read(ANDROID_LISTING_PATH);
@@ -87,6 +116,9 @@ describe('privacy disclosure consistency', () => {
         host.id
       ).toBe(true);
       expect(host.implementationEvidence.length, host.id).toBeGreaterThan(0);
+    }
+    for (const { id, boundary, cleanupImplementation } of privacyInventory.retentionBoundaries) {
+      expect(cleanupImplementation !== undefined, id).toBe(boundary.cleanupCadence !== undefined);
     }
     for (const categoryId of categoryIds) {
       expect(
@@ -116,6 +148,7 @@ describe('privacy disclosure consistency', () => {
 
     expect(privacyPage).toContain('FREE_GENERATION_LIMIT');
     expect(privacyPage).toContain('IMAGE_REPORT_RETENTION_DAYS');
+    expect(privacyPage).toContain('within {IMAGE_REPORT_REVIEW_HOURS} hours');
     expect(privacyPage).toContain('GENERATION_JOB_TTL_MS');
     expect(privacyPage).toContain('USAGE_RECORD_RETENTION_DAYS');
     expect(iosListing).toContain(`up to ${freeLimit} free creations`);
@@ -131,13 +164,27 @@ describe('privacy disclosure consistency', () => {
     expect(
       privacyInventory.retentionBoundaries.find(({ id }) => id === 'ordinary-generation-job')
         .boundary
-    ).toMatchObject({ value: Number(jobMinutes), unit: 'minutes', cleanupCadence: 'hourly' });
+    ).toMatchObject({ value: Number(jobMinutes), unit: 'minutes' });
     expect(
       privacyInventory.retentionBoundaries.find(({ id }) => id === 'confirmed-ai-report').boundary
-    ).toMatchObject({ value: Number(reportDays), unit: 'days', cleanupCadence: 'daily' });
+    ).toMatchObject({ value: Number(reportDays), unit: 'days' });
     expect(
       privacyInventory.retentionBoundaries.find(({ id }) => id === 'access-code-usage').boundary
-    ).toMatchObject({ value: Number(usageDays), unit: 'days', cleanupCadence: 'daily' });
+    ).toMatchObject({ value: Number(usageDays), unit: 'days' });
+  });
+
+  it('repeats the report review window from IMAGE_REPORT_REVIEW_HOURS in every Markdown copy', () => {
+    const hours = IMAGE_REPORT_REVIEW_HOURS;
+    const promises = [
+      [IOS_LISTING_PATH, `A human reviews reports within ${hours} hours`],
+      [ANDROID_LISTING_PATH, `Reports are reviewed within ${hours} hours`],
+      [ANDROID_DOC_PATH, `humans review within ${hours} hours`],
+      [COMPLIANCE_DOC_PATH, `human review within ${hours} hours`],
+      [API_DOC_PATH, `Humans commit to reviewing reports within ${hours} hours`],
+      [IMAGE_REPORT_ADR_PATH, `A human reviews reports within ${hours} hours`],
+      [IMAGE_REPORT_ADR_PATH, `The ${hours}-hour response commitment`],
+    ];
+    for (const [path, promise] of promises) expect(compact(read(path)), path).toContain(promise);
   });
 
   for (const retention of privacyInventory.retentionBoundaries) {
@@ -145,6 +192,25 @@ describe('privacy disclosure consistency', () => {
       for (const fact of retention.privacyPageFacts) {
         expect(compact(privacyPage)).toContain(fact);
       }
+    });
+  }
+
+  for (const retention of privacyInventory.retentionBoundaries.filter(
+    ({ boundary }) => boundary.cleanupCadence !== undefined
+  )) {
+    it(`runs the ${retention.id} cleanup on the cadence the policy states`, () => {
+      expect(retention.cleanupImplementation, retention.id).toMatch(
+        /^netlify\/functions\/[\w-]+\.ts$/
+      );
+      const cadence = scheduledCadence(retention.cleanupImplementation);
+
+      expect(cadence, retention.cleanupImplementation).toBe(retention.boundary.cleanupCadence);
+      expect(
+        retention.privacyPageFacts.some((fact) =>
+          fact.toLowerCase().includes(`${cadence} cleanup`)
+        ),
+        retention.id
+      ).toBe(true);
     });
   }
 

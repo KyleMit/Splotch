@@ -7,6 +7,7 @@
   import { createSingleFlight } from '$lib/singleFlight';
   import { describeDeviceInfo, type DeviceInfo } from '$lib/platform/deviceReport';
   import {
+    attachesDevice,
     MAX_REPORT_MESSAGE_LENGTH,
     REPORT_FORM_FIELDS,
     REPORT_KINDS,
@@ -23,6 +24,19 @@
   const DEVICE_REVEAL_SLIDE_MS = 180;
 
   const deviceReveal = calm(slide, { duration: DEVICE_REVEAL_SLIDE_MS });
+
+  // What the message box asks for each kind, so a new ReportKind fails to
+  // compile here until it has its own question.
+  const MESSAGE_PROMPT_BY_KIND: Record<ReportKind, { label: string; placeholder: string }> = {
+    bug: {
+      label: 'What went wrong?',
+      placeholder: 'Describe what happened, and what you expected instead…',
+    },
+    feature: {
+      label: "What's your idea?",
+      placeholder: "Describe the feature or change you'd love to see…",
+    },
+  };
 
   // The feedback form's field set, shared by its two hosts: Settings'
   // ReportForm (which posts JSON to /api/report) and the standalone /feedback
@@ -61,12 +75,14 @@
 
   let deviceRows = $derived(device ? describeDeviceInfo(device) : []);
 
-  // What the parent opted into, serialized for a plain form post. Mirrors the
-  // `attachDevice` condition ReportForm applies to its JSON body, so a report
-  // sent either way carries exactly the rows previewed below.
-  let devicePayload = $derived(
-    kind === 'bug' && includeDevice && device ? JSON.stringify(device) : ''
-  );
+  // Whether this kind offers the opt-in, and whether this report carries the
+  // snapshot: one rule for both, so a snapshot is never sent without its
+  // opt-in and preview rendered below.
+  let deviceOffered = $derived(attachesDevice(kind, true));
+  let deviceAttached = $derived(attachesDevice(kind, includeDevice));
+
+  // What the parent opted into, serialized for a plain form post.
+  let devicePayload = $derived(deviceAttached && device ? JSON.stringify(device) : '');
 
   // One collection shared by every caller, writing through into `device` as it
   // resolves. The single-flight memo is what makes the preview and submit agree:
@@ -97,7 +113,7 @@
   }
 
   $effect(() => {
-    if (includeDevice && kind === 'bug' && !device) {
+    if (deviceAttached && !device) {
       void ensureDevice();
     }
   });
@@ -114,9 +130,7 @@
       inputName={REPORT_FORM_FIELDS.kind}
     />
 
-    <label class="report-label" for="reportMessage">
-      {kind === 'bug' ? 'What went wrong?' : "What's your idea?"}
-    </label>
+    <label class="report-label" for="reportMessage">{MESSAGE_PROMPT_BY_KIND[kind].label}</label>
     <textarea
       id="reportMessage"
       name={REPORT_FORM_FIELDS.message}
@@ -124,13 +138,11 @@
       rows="4"
       required
       maxlength={MAX_REPORT_MESSAGE_LENGTH}
-      placeholder={kind === 'bug'
-        ? 'Describe what happened, and what you expected instead…'
-        : "Describe the feature or change you'd love to see…"}
+      placeholder={MESSAGE_PROMPT_BY_KIND[kind].placeholder}
       bind:value={message}></textarea>
   {/if}
 
-  {#if kind === 'bug'}
+  {#if deviceOffered}
     <div class="report-device" transition:deviceReveal>
       <label class="report-check">
         <input

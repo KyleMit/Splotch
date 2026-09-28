@@ -454,10 +454,11 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 permissions, data categories, ephemeral-by-default / 30-day-on-confirmed-report boundary, and
 production outbound-host classes. The tools-tier drift guards compare it with the Android manifest,
 iOS usage strings and privacy manifest, the ASC nutrition label, the Play Data safety form,
-implementation constants and call sites, and `web/src/routes/privacy/+page.svelte`. The store forms
-remain human-submitted from their checklists. Live retention statements in ADR-0104 and ADR-0115 are
-included in the drift guard; the remaining ADR detail is design provenance rather than another
-declaration to keep aligned by hand.
+implementation constants and call sites, the scheduled purge functions' cadences, and
+`web/src/routes/privacy/+page.svelte`. The store forms remain human-submitted from their checklists.
+Live retention statements in ADR-0104 and ADR-0115, and the Markdown copies of the human-review
+window, are included in the drift guard; the remaining ADR detail is design provenance rather than
+another declaration to keep aligned by hand.
 
 ## Open items
 
