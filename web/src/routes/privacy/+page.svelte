@@ -5,10 +5,11 @@
   // they care about. Several sentences are load-bearing disclosures pinned
   // (whitespace-compacted) by tools/mobile/privacy-permission-inventory.json —
   // reword those only in lockstep with that inventory
-  // (tools/mobile/tests/privacy-consistency.test.mjs). page.ssr.test.ts pins a
-  // hash of the rendered policy text to LAST_UPDATED, so any change to what the
-  // page says — its own copy or a constant it interpolates — fails until the
-  // date and that test's revision list move together.
+  // (tools/mobile/tests/privacy-consistency.test.mjs). A hash of each build's
+  // rendered policy text is pinned to LAST_UPDATED in
+  // policyRevisionsTestHarness.ts, so any change to what the page says — its
+  // own copy or a constant it interpolates — fails until the date and that
+  // revision list move together.
 
   import { onMount } from 'svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
