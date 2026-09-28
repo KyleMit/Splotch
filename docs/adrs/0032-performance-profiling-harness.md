@@ -214,3 +214,18 @@ Alternatives weighed:
   would break it.
 
 Instrumented builds report a count mismatch without failing, as they do for the byte budgets.
+
+## Amendment (2026-09): the native startup modulepreload count
+
+`NATIVE_STARTUP_MODULEPRELOAD_COUNT` in the same tool pins the count for the native export. It reads
+the `index.html` that `build:cap` prerenders into `web/build`, the page the app's WebView boots, and
+`postbuild:cap` enforces it with the web pin's exact semantics and messages. It was set on
+2026-09-28 at 28.
+
+The web pin cannot stand in for it. A runtime import used only inside an `__IS_CAPACITOR__` branch
+is dead code in the web build, so the web count holds while the native build gains a chunk. A
+reviewer on PR #2406 found one that took the native count from 28 to 29 with the web build at 40.
+The native export byte budget cannot catch it either, since it sums the whole export, mostly assets.
+
+An instrumented native build (`perf:build:cap`) reports a count mismatch without failing. The native
+export byte budget stays enforced there.
