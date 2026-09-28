@@ -92,7 +92,7 @@ export function argSwitch(name) {
   return parseOrFail(() => readSwitch(process.argv, name));
 }
 
-// argFlag and argSwitch read one flag each and ignore the rest, so an entry
+// argFlag, argNumber and argSwitch read one flag each and ignore the rest, so an entry
 // built on them declares its whole flag set here, once, in its isMain branch —
 // never inside an exported function another CLI calls in-process, which would
 // judge that CLI's argv. A mistyped or unsupported flag then stops the run
