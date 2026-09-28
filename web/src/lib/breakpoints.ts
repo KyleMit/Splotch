@@ -30,6 +30,12 @@ export function isPhoneLandscape(width: number, height: number): boolean {
   return width > height && height < TABLET_MIN_SIDE_PX;
 }
 
+// The Settings dialog's wide-shell floor (ADR-0061): at or above this viewport
+// width SettingsModal renders the sidebar + pane shell, below it the phone hub
+// that drills into one section. The page inventory imports it to choose which
+// landing a section capture waits for.
+export const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
+
 // Standalone pages lose their frame at phone width; mastheads and beta steps
 // tighten while underline pickers split the content width evenly.
 // CSS sites restate this value, enforced by phoneStep.test.ts.
