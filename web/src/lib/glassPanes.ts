@@ -3,7 +3,7 @@ import {
   DRAWER_TOGGLE_SIZE,
   PHONE_TOOLBAR_GAP_PX,
   PANEL_INSET,
-  visibleActionButtonCount,
+  shownActionButtonCount,
   renderedActionButtonSize,
   renderedFlyoutOptionSize,
 } from './actionButtonLayout';
@@ -162,7 +162,7 @@ export function toolbarGlassPanes(open: OpenFlyout, expanded: boolean): Pane[] {
   } = layoutState;
   if (!width || !height) return [];
   const portrait = orientation === 'portrait';
-  const count = visibleActionButtonCount();
+  const count = shownActionButtonCount();
   const hasActions = count > 0;
   const drawerOpen = expanded && hasActions;
   const size = renderedActionButtonSize();

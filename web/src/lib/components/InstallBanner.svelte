@@ -22,7 +22,7 @@
   import { layoutState } from '$lib/state/layout.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
   import { saveFailureState } from '$lib/state/saveFailure.svelte';
-  import { visibleActionButtonCount } from '$lib/actionButtonLayout';
+  import { shownActionButtonCount } from '$lib/actionButtonLayout';
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
   import '$lib/components/deferredIcons';
 
@@ -78,7 +78,7 @@
       ? 'at the bottom of the screen'
       : 'in the Safari toolbar'
   );
-  const controlsOpen = $derived(settingsState.drawerOpen && visibleActionButtonCount() > 0);
+  const controlsOpen = $derived(settingsState.drawerOpen && shownActionButtonCount() > 0);
   const promptStage = $derived(installPromptStage());
   const promptCopy = $derived(INSTALL_PROMPT_COPY[promptStage ?? 'initial']);
   const visible = $derived(
