@@ -873,15 +873,15 @@ downstream `report-failure` job keyed on the build and smoke jobs' results, so a
 timeout still files, and only that reporter holds `issues: write`.
 
 The Native compile workflow (`native-compile.yml`) is the pre-merge half of those tag gates. Its
-path filter is `android/**`, `ios/**`, `capacitor.config.json`, `pnpm-lock.yaml`, the Gradle helper,
-and the workflow itself. `package.json` is deliberately absent, since nearly every PR edits it;
-after changing `android:compile` or `ios:build:release`, run the workflow by manual dispatch.
-Android compiles only the Release Java (the app and every Capacitor plugin module): `cap update`
-regenerates the gitignored Cordova plugin project that `settings.gradle` includes, and an empty
-Android web-assets directory stops it from copying a web build that javac never reads. iOS runs the
-tag gate's `ios:build:release`, web build included, because Xcode copies the synced `public/` and
-`capacitor.config.json` as bundle resources. Neither job is required by a branch rule. ADR-0008's
-2026-09-28 amendment records both jobs' measured wall time against the slowest `test.yml` job.
+path filter is `android/**`, `ios/**`, `capacitor.config.json`, `package.json` (which holds both
+compile commands), `pnpm-lock.yaml`, the Gradle helper and its imports, and the workflow itself. A
+match costs runner minutes, not merge wall clock. Android compiles only the Release Java (the app
+and every Capacitor plugin module): `cap update` regenerates the gitignored Cordova plugin project
+that `settings.gradle` includes, and an empty Android web-assets directory stops it from copying a
+web build that javac never reads. iOS runs the tag gate's `ios:build:release`, web build included,
+because Xcode copies the synced `public/` and `capacitor.config.json` as bundle resources. Neither
+job is required by a branch rule. ADR-0008's 2026-09-28 amendment records both jobs' measured wall
+time against the slowest `test.yml` job.
 
 ADR-0100 originally split the commit gate into a structural Chromium half and a WebKit timing half.
 The structural half asserted that the deleted snapshot/blob history never ran `engine.encode` inside

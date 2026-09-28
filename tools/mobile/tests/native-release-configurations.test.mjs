@@ -8,6 +8,7 @@ const packageJson = JSON.parse(read('package.json'));
 const androidWorkflow = read('.github/workflows/android-deploy.yml');
 const iosWorkflow = read('.github/workflows/ios-deploy.yml');
 const iosSmokeRunner = read('tools/mobile/ios/run-simulator-smoke-test.mjs');
+const nativeCompileWorkflow = read('.github/workflows/native-compile.yml');
 
 const jobBlocks = (workflow) =>
   workflow
@@ -92,6 +93,16 @@ describe('native release configuration gates', () => {
     expect(reporter.text).not.toContain('actions/checkout');
     expect(reporter.text).not.toContain('setup-pnpm');
     expect(reporter.text).toContain('- name: File the failure');
+  });
+
+  it('filters native compile pull requests and main pushes on the same paths', () => {
+    const pathLists = nativeCompileWorkflow
+      .split(/^ {4}paths:\n/m)
+      .slice(1)
+      .map((block) => block.match(/^(?: {6}- .+\n)+/)[0]);
+    expect(pathLists).toHaveLength(2);
+    expect(pathLists[1]).toBe(pathLists[0]);
+    expect(pathLists[0]).toContain("- '.github/workflows/native-compile.yml'");
   });
 
   it('retains XCTest startup diagnostics alongside Maestro flow evidence', () => {

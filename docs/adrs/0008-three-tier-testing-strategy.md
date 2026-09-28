@@ -81,9 +81,10 @@ simulator boot tag-only for cost; no record had decided the compile must wait to
 text, but not a type error or a wrong Capacitor API.
 
 `.github/workflows/native-compile.yml` compiles both shells on pull requests and `main` pushes that
-touch a native input: `android/**`, `ios/**`, `capacitor.config.json`, `pnpm-lock.yaml`, the Gradle
-helper, or the workflow. The user set the constraint: minutes are acceptable on this public repo,
-merge wall clock is not.
+touch a compile input: `android/**`, `ios/**`, `capacitor.config.json`, `package.json` (it holds
+both compile commands), `pnpm-lock.yaml`, the Gradle helper and its imports, or the workflow. That
+filter matched 78 of the 339 first-parent commits on `main` from 2026-09-14 to 2026-09-28. The user
+set the constraint: minutes are acceptable on this public repo, merge wall clock is not.
 
 * It is its own workflow, with no `needs:` edge into or out of `test.yml`, and no branch rule
   requires it, so a PR its path filter skips waits on nothing.

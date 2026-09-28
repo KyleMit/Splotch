@@ -6,19 +6,24 @@
 #
 # A separate path-filtered workflow rather than a job in test.yml: nothing
 # waits on it, so it adds no wall clock to a merge, and it never starts on a PR
-# that touches no native input. No branch rule requires it, so a PR it skips is
+# that touches no compile input. No branch rule requires it, so a PR it skips is
 # not left waiting on a check that will never report.
 name: Native compile
 
 on:
   workflow_dispatch:
+  # package.json holds both compile commands, and run-gradle.mjs imports the
+  # two tools/ paths. The push list repeats this one, and
+  # tools/mobile/tests/native-release-configurations.test.mjs fails if they differ.
   pull_request:
     paths:
       - 'android/**'
       - 'ios/**'
       - 'capacitor.config.json'
+      - 'package.json'
       - 'pnpm-lock.yaml'
-      - 'tools/mobile/android/run-gradle.mjs'
+      - 'tools/lib/proc.mjs'
+      - 'tools/mobile/android/**'
       - '.github/workflows/native-compile.yml'
   # Main runs keep the Gradle cache that pull requests restore from: a cache
   # saved on a pull request is visible only to that pull request.
@@ -28,8 +33,10 @@ on:
       - 'android/**'
       - 'ios/**'
       - 'capacitor.config.json'
+      - 'package.json'
       - 'pnpm-lock.yaml'
-      - 'tools/mobile/android/run-gradle.mjs'
+      - 'tools/lib/proc.mjs'
+      - 'tools/mobile/android/**'
       - '.github/workflows/native-compile.yml'
 
 permissions:
