@@ -127,10 +127,10 @@ entry script.
 * A port that is taken means choosing another port. `freePort` (`tools/lib/vite-server.mjs`) throws
   on a listener outside this checkout rather than stop another session's server.
 * The incidents behind these rules, and what enforces each: rule 8 of `docs/CODING-STANDARDS.md`.
-* Multi-item CLI runs: validate inputs up front with a path-specific one-line error and a non-zero
-  exit; wrap per-item work in try/catch and report failures at the end without discarding completed
-  results; never overwrite a baseline/output artifact from a run that had errors; name polling
-  budgets.
+* Validate every input before the first write, tag, push, or delete, with a path-specific one-line
+  error and a non-zero exit (a read-only plan, then apply). In multi-item runs, wrap per-item work
+  in try/catch and report failures at the end without discarding completed results; never overwrite
+  a baseline/output artifact from a run that had errors; name polling budgets.
 * TypeScript-flavored scripts run via `node --experimental-strip-types` (see the
   `check:coloring-assets` npm script).
 * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
