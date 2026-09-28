@@ -4,7 +4,7 @@ import { reportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { throttledMessage } from '$lib/server/http';
 import { parseDeviceField, submitReport } from '$lib/server/report';
-import { parseReportKind, REPORT_HONEYPOT_FIELD } from '$lib/report';
+import { parseReportKind, REPORT_FORM_FIELDS } from '$lib/report';
 import type { Actions, PageServerLoad } from './$types';
 
 // The standalone feedback page. It has a form action, so it can't join the
@@ -34,7 +34,8 @@ export const actions: Actions = {
     );
 
     const data = await request.formData();
-    const rawKind = data.get('kind');
+    const field = REPORT_FORM_FIELDS;
+    const rawKind = data.get(field.kind);
     // Echoed back on every failure so a browser with no JavaScript — which
     // re-renders this page from scratch — doesn't hand back an empty textarea
     // and lose what the reporter wrote. Only the echo falls back to a bug:
@@ -42,8 +43,8 @@ export const actions: Actions = {
     // refused rather than filed under a guessed label.
     const values = {
       kind: parseReportKind(rawKind) ?? 'bug',
-      message: String(data.get('message') ?? ''),
-      includeDevice: data.get('includeDevice') !== null,
+      message: String(data.get(field.message) ?? ''),
+      includeDevice: data.get(field.includeDevice) !== null,
     };
 
     if (limited) {
@@ -54,9 +55,9 @@ export const actions: Actions = {
     const result = await submitReport({
       kind: rawKind,
       message: values.message,
-      device: parseDeviceField(data.get('device')),
+      device: parseDeviceField(data.get(field.device)),
       wantsDevice: values.includeDevice,
-      hp: data.get(REPORT_HONEYPOT_FIELD),
+      hp: data.get(field.honeypot),
     });
 
     if (!result.ok) return fail(result.status, { error: result.error, values });

@@ -8,7 +8,7 @@
   import { describeDeviceInfo, type DeviceInfo } from '$lib/platform/deviceReport';
   import {
     MAX_REPORT_MESSAGE_LENGTH,
-    REPORT_HONEYPOT_FIELD,
+    REPORT_FORM_FIELDS,
     REPORT_KINDS,
     type ReportKind,
   } from '$lib/report';
@@ -111,7 +111,7 @@
       options={REPORT_KINDS}
       selected={kind}
       onSelect={(value) => (kind = value)}
-      inputName="kind"
+      inputName={REPORT_FORM_FIELDS.kind}
     />
 
     <label class="report-label" for="reportMessage">
@@ -119,7 +119,7 @@
     </label>
     <textarea
       id="reportMessage"
-      name="message"
+      name={REPORT_FORM_FIELDS.message}
       class="report-textarea"
       rows="4"
       required
@@ -133,7 +133,11 @@
   {#if kind === 'bug'}
     <div class="report-device" transition:deviceReveal>
       <label class="report-check">
-        <input type="checkbox" name="includeDevice" bind:checked={includeDevice} />
+        <input
+          type="checkbox"
+          name={REPORT_FORM_FIELDS.includeDevice}
+          bind:checked={includeDevice}
+        />
         <span>Include device info <em>(helps us reproduce the bug)</em></span>
       </label>
 
@@ -160,7 +164,7 @@
       {/if}
     </div>
   {/if}
-  <input type="hidden" name="device" value={devicePayload} />
+  <input type="hidden" name={REPORT_FORM_FIELDS.device} value={devicePayload} />
 
   <!-- Last, so it sits directly above whichever submit button the host renders:
        it is the one line a reporter must not miss, and mid-form it read as
@@ -176,7 +180,7 @@
     <input
       class="report-hp"
       type="text"
-      name={REPORT_HONEYPOT_FIELD}
+      name={REPORT_FORM_FIELDS.honeypot}
       tabindex="-1"
       autocomplete="off"
       aria-hidden="true"
