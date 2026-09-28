@@ -96,8 +96,10 @@ history is then right by construction, with no rebase to be refused. Order:
 1. the plan commit;
 2. the kept splits, grouped by theme (a module area, then components, then pages, then unit-test
    splits, then E2E splits is the order that has read well);
-3. the config commits: one per raise, one per stale override retired or lowered. Each raise's
-   comment states the WHY in one line, in the shape of the existing override blocks.
+3. the config commits: one per raise, one per stale override retired or lowered, and one per decided
+   `TOOLS_GRANDFATHERED_MAX_LINES` entry whatever `measure.mjs` reports for it (see
+   [Mode: files](#mode-files)). Each raise's comment states the WHY in one line, in the shape of the
+   existing override blocks.
 
 Cherry-pick each kept commit; fold a `fix-needed` fix into its commit (`git cherry-pick -n`, apply,
 `git commit -C <sha>`). **Stop at the first conflict** and resolve it by hand — never a loop that
@@ -147,7 +149,12 @@ user and point at `prune-git-workspace`.
 
 ## Mode: files
 
-Scope covers app code **and** tests, so expect test and spec files among the candidates.
+Scope covers app code, tests, and `tools/` scripts, so expect test and spec files among the
+candidates. Every `tools/` outlier lists with zero room, because `TOOLS_GRANDFATHERED_MAX_LINES`
+froze each at its size without a review. Deciding one takes it out of that table, and step 5 does
+that explicitly, because `measure.mjs` can report a split tools file as neither a candidate nor a
+stale override: delete the entry, and if the file is still over the default cap give it a web-style
+override block at its length plus the headroom, with its WHY.
 
 **Seams that have held up:** a child component with its own props contract (as `ColorControl` and
 `BrushControl` are to `ActionsPanel`); a module that owns one responsibility; a test group moved to

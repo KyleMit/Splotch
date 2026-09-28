@@ -3,10 +3,10 @@ import { dev } from '$app/environment';
 import { FREE_RESERVATION_LEASE_MS } from '$lib/ai/limits';
 import {
   FREE_GENERATION_LIMIT,
-  isInstallationId,
   type FreeGenerationFailureKind,
   type FreeGenerationGrantAdminStats,
 } from '$lib/freeGenerations';
+import { isInstallationId } from '$lib/installationId';
 import { sleep } from './sleep';
 
 const STORE_NAME = 'free-generation-grants';

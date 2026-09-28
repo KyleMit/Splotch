@@ -9,7 +9,7 @@ import {
 } from './rateLimitKeys';
 import { rateLimitPolicy } from './rateLimitPolicy';
 import { isAllowedToken } from './tokens';
-import { isInstallationId } from '$lib/freeGenerations';
+import { isInstallationId } from '$lib/installationId';
 
 export type GenerationAuthorization =
   | { authorized: true; kind: 'byok'; effectiveKey: string }

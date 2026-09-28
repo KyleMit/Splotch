@@ -19,6 +19,8 @@ const RUNTIME_ENV_MODULE_URL = '_app/env.js';
 
 // The reviewed 2026-09-11 startup baseline is 473,352 bytes, after ADR-0164 moved the deferred icons off the path; 51,648 bytes of headroom permits ordinary app growth while catching another large eager dependency. Consuming it is the cue to find the next lever before raising the number (ADR-0032's headroom amendment).
 export const MAX_STARTUP_JS_CSS_BYTES = 525_000;
+// The reviewed 2026-09-28 release startup set is 40 modulepreloads. A new chunk can sit far below the byte budget and still cost a request before hydration, so the count is pinned exactly: growth must be deliberate, and a drop is locked in rather than left as slack for the next regression (ADR-0032's modulepreload-count amendment).
+export const STARTUP_MODULEPRELOAD_COUNT = 40;
 // The reviewed 2026-08-19 largest bundle-wide lazy chunk is the public /design route at 65,418 bytes; 9,582 bytes of headroom permits modest growth while catching a larger deployed lazy route.
 export const MAX_LAZY_CHUNK_BYTES = 75_000;
 // The reviewed 2026-08-19 stripped native-export baseline is 6,629,727 bytes; 370,273 bytes of headroom accommodates normal asset churn while rejecting another bundled coloring book.
@@ -38,6 +40,7 @@ function staticAttribute(element, name) {
 export function startupResourcesFromHtml(html) {
   const parsed = parse(html, { modern: true });
   const hrefs = [];
+  let modulepreloadCount = 0;
   let inlineStyleBytes = Buffer.byteLength(parsed.css?.content.styles ?? '');
   const visited = new Set();
   const visit = (node) => {
@@ -57,6 +60,7 @@ export function startupResourcesFromHtml(html) {
       if (href && (relations.has('modulepreload') || (relations.has('stylesheet') && !disabled))) {
         hrefs.push(href);
       }
+      if (href && relations.has('modulepreload')) modulepreloadCount += 1;
     }
     if (node.type === 'RegularElement' && node.name === 'style') {
       if (node.fragment.nodes.some((part) => part.type !== 'Text')) {
@@ -67,7 +71,7 @@ export function startupResourcesFromHtml(html) {
     Object.values(node).forEach(visit);
   };
   visit(parsed.fragment);
-  return { hrefs, inlineStyleBytes };
+  return { hrefs, modulepreloadCount, inlineStyleBytes };
 }
 
 function clientPathFromHref(clientDir, href) {
@@ -89,7 +93,7 @@ export function measureWebBundle({ prerenderedIndex, clientDir }) {
       `${prerenderedIndex} waits on the function-served ${RUNTIME_ENV_MODULE_URL} before app code runs — a client module imports $env/dynamic/public; move that read server-side`
     );
   }
-  const { hrefs, inlineStyleBytes } = startupResourcesFromHtml(html);
+  const { hrefs, modulepreloadCount, inlineStyleBytes } = startupResourcesFromHtml(html);
   if (!hrefs.length) {
     throw new Error(`No modulepreload or active stylesheet links found in ${prerenderedIndex}`);
   }
@@ -116,6 +120,7 @@ export function measureWebBundle({ prerenderedIndex, clientDir }) {
   return {
     startupBytes,
     startupFileCount: startupPaths.size,
+    modulepreloadCount,
     inlineStyleBytes,
     largestLazyChunk: lazyChunks[0],
   };
@@ -131,13 +136,23 @@ export function measureNativeExport(dir) {
   };
 }
 
-export function webBundleBudgetProblems({ startupBytes, largestLazyChunk }) {
+function modulepreloadCountProblem(count) {
+  const found = `The prerendered / page modulepreloads ${count} chunks`;
+  return count > STARTUP_MODULEPRELOAD_COUNT
+    ? `${found}, up from ${STARTUP_MODULEPRELOAD_COUNT}: a new chunk now loads before hydration. The usual cause is a startup module importing a runtime export that lazy code also imports, which splits the shared module into a chunk of its own; give that export a module only the startup path imports. If the new startup chunk is intended, raise STARTUP_MODULEPRELOAD_COUNT in tools/check-bundle-budgets.mjs and say why in the PR`
+    : `${found}, down from ${STARTUP_MODULEPRELOAD_COUNT}: lower STARTUP_MODULEPRELOAD_COUNT in tools/check-bundle-budgets.mjs to lock the gain in`;
+}
+
+export function webBundleBudgetProblems({ startupBytes, modulepreloadCount, largestLazyChunk }) {
   return [
     ...(startupBytes > MAX_STARTUP_JS_CSS_BYTES
       ? [
           `Startup JS/CSS is ${startupBytes} bytes, above the ${MAX_STARTUP_JS_CSS_BYTES}-byte budget`,
         ]
       : []),
+    ...(modulepreloadCount === STARTUP_MODULEPRELOAD_COUNT
+      ? []
+      : [modulepreloadCountProblem(modulepreloadCount)]),
     ...(largestLazyChunk.bytes > MAX_LAZY_CHUNK_BYTES
       ? [
           `Largest lazy JS chunk is ${largestLazyChunk.bytes} bytes, above the ${MAX_LAZY_CHUNK_BYTES}-byte budget (${largestLazyChunk.path})`,
@@ -174,14 +189,15 @@ export async function checkBundleBudgets({
     prerenderedIndex,
     clientDir,
   });
-  // Diagnostic code does not ship; release byte limits describe the artifact
-  // enforced by CI's uninstrumented release build (ADR-0032).
+  // Diagnostic code does not ship, and it can add or merge startup chunks too;
+  // release limits describe the artifact enforced by CI's uninstrumented
+  // release build (ADR-0032).
   const instrumented = isInstrumentedBuild(env);
   const problems = webBundleBudgetProblems(measurement);
   if (!instrumented && problems.length) throw new Error(problems.join('\n'));
   for (const problem of problems) log(`[bundle-budgets] report-only: ${problem}`);
   log(
-    `[bundle-budgets] ${instrumented ? 'instrumented build: release byte budgets are report-only; ' : ''}startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} linked files + ${measurement.inlineStyleBytes} inline CSS bytes; ` +
+    `[bundle-budgets] ${instrumented ? 'instrumented build: release budgets are report-only; ' : ''}startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} linked files (${measurement.modulepreloadCount}/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads) + ${measurement.inlineStyleBytes} inline CSS bytes; ` +
       `largest lazy JS ${measurement.largestLazyChunk.bytes}/${MAX_LAZY_CHUNK_BYTES} bytes (${measurement.largestLazyChunk.path})`
   );
 }

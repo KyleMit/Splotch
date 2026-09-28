@@ -232,7 +232,9 @@ entry 87. Paths under `web/src/` unless noted.*
 15. **Save pipeline pinned off the startup bundle** — export compositor/screenshot/folder-save load
     at press time; memoized self-resetting import promise. Enforced by
     `web/tests/startup-bundle.spec.ts` scanning modulepreload chunks for minification-proof markers,
-    with an anti-vacuity check. `ActionsPanel.svelte:64-330`. *issue #461*
+    with an anti-vacuity check. `tools/check-bundle-budgets.mjs` pins the release build's
+    modulepreload count, so a new startup chunk of any size fails the build.
+    `ActionsPanel.svelte:64-330`. *issue #461*
 16. **Deliberately duplicated code at that bundle boundary** — `saveFolder.svelte.ts` inlines the
     `showDirectoryPicker` predicate rather than importing it (one static edge would re-partition
     Rollup's chunks); drift-guarded by `saveFolder.svelte.test.ts`. Same reason

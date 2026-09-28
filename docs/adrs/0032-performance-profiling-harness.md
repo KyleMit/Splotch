@@ -187,3 +187,30 @@ bytes and restored 51,648 bytes (9.8%) of headroom under the unchanged 525,000 l
 slice is the ~85 kB of CSS SvelteKit inlines for dynamically imported components; when no lever is
 left, raise the constant and record the new baseline, its date, and the rationale on the constant
 and here, so the number never moves silently.
+
+## Amendment (2026-09): the startup modulepreload count
+
+`STARTUP_MODULEPRELOAD_COUNT` in `tools/check-bundle-budgets.mjs` pins how many chunks the
+prerendered `/` page modulepreloads, measured on the uninstrumented release build and enforced by
+the same postbuild step as the byte budgets. It was set on 2026-09-28 at 40.
+
+The byte budget cannot see a new startup chunk that is small. PR #2391 added a 158-byte chunk,
+taking the count from 40 to 41 while the startup set stayed about 73 kB under budget. It happened
+because a startup module imported a runtime export from a module that lazy code also imported, so
+Rolldown split the shared module into a chunk of its own. That is one more request before hydration,
+and none of `web/tests/startup-bundle.spec.ts`'s module markers could name it in advance.
+
+The pin is exact, not a ceiling. With a ceiling, a later drop would leave slack for the next
+regression to hide in, so a build whose count falls also fails and asks for the constant to come
+down. Raising it is allowed when the PR says which chunk now loads before hydration and why.
+
+Alternatives weighed:
+
+* **A count assertion in `startup-bundle.spec.ts`.** Rejected because that spec reads Playwright's
+  `PUBLIC_ENABLE_DEV_HARNESS=true` build. Instrumented and release builds can split startup code
+  differently, and a reviewer showed a release-only startup chunk (a startup import behind
+  `!__DEV_HARNESS__`) that left the instrumented count unchanged.
+* **A per-chunk name allowlist.** It would catch a same-count swap, but every bundler re-partition
+  would break it.
+
+Instrumented builds report a count mismatch without failing, as they do for the byte budgets.
