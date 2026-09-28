@@ -302,10 +302,12 @@ entry 87. Paths under `web/src/` unless noted.*
 37. **CSS-presented paper view + permanent `will-change: transform`** — rotation with ink never
     repaints tiles; one CSS matrix presents the locked paper; spec-enforced
     (`engine-rotation.spec.ts`). `LiveSurface.svelte`, `drawing/paperView.ts`. *ADR-0089*
-38. **Crayon live preview via CSS blend compositing, zero readback** — two extra canvases per tile
-    with `mix-blend-mode: darken` + opacity reproduce the subtractive stamp pixel-exactly; flush
-    bakes identical pixels. `crayonPassBuffer.ts:150-157`, `LiveSurface.svelte`. *ADR-0068,
-    ADR-0065*
+38. **Crayon live preview with nothing extra composited** — the web build restamps: each op restores
+    its padded rect from an offscreen "under" shadow and re-applies the glaze onto the ink tile, and
+    the shadow is read at most once per invalidation, after finger-lift. The native build applies
+    the glaze per op directly on the tile, with no pass buffer, preview plane, or blit.
+    `crayonPassBuffer.ts:139-149, 169-172`, `engine.ts:682-690`. *ADR-0147, ADR-0148* *(The earlier
+    `mix-blend-mode: darken` preview planes, ADR-0085, are retired from both builds.)*
 39. **Capped DPR (2×), fixed per session** — DPR-3 would cost 9× pixels for detail a finger can't
     use. `engine.ts:170-176`. *ADR-0015*
 
@@ -356,8 +358,10 @@ entry 87. Paths under `web/src/` unless noted.*
 53. **Pass buffer with device-px dirty bounds** — stamp and clear touch only the pass's unioned
     dirty rect: "a flush stays proportional to the pass, not the canvas." `crayonPassBuffer.ts`.
     *ADR-0068*
-54. **Mirror by blit, not repaint** — the preview plane copies the op rect from the buffer, halving
-    pattern fills per op. `crayonPassBuffer.ts:640-663`. *commit ae674d71*
+54. **Mirror by blit, not repaint** *(retired with the preview planes, ADR-0148)* — the preview
+    plane copied the op rect from the buffer, halving pattern fills per op. The code survives only
+    in the `'planes'` branch (`crayonPassBuffer.ts:640-663`), which no shipping build selects.
+    *commit ae674d71*
 55. **Checkpoint at 64 pointermoves** — bounds live buffer memory; counted in moves, not merged ops,
     so frame-merging can't stretch a pass to double wax. `crayonPassBoundaries.ts:15-22, 101-111`.
     *ADR-0085 trial 23*
@@ -430,7 +434,7 @@ entry 87. Paths under `web/src/` unless noted.*
 74. **Tiered warms** — cover thumbs at idle on open (re-run on theme change); a book's pages fetched
     on tile hover and decoded on press, so mouse exploration does not decode every selector; the
     *other orientation's* art at idle only after the picked page decodes.
-    `ColoringBook.svelte:70-97`, `DrawingCanvas.svelte:253-272`. *ADR-0045*
+    `ColoringBook.svelte:70-97, 230-231`, `DrawingCanvas.svelte:253-272`. *ADR-0045*
 75. **Decode-gated overlay swap** — new line art decodes off-DOM (`img.decode()`,
     `fetchPriority='high'`) and swaps by opacity only when ready; current art stays visible
     meanwhile. The displayed image keeps `decoding="async"` so WebKit can rasterize the decoded
