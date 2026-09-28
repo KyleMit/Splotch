@@ -9,16 +9,35 @@
   // Sizes step the label, not just the box: sm/md both carry the 14px chrome
   // label and differ only in padding, while lg takes --font-size-md so a pair
   // of buttons can read as a screen's primary decision rather than as chrome.
-  interface Props extends HTMLButtonAttributes {
+  interface ChromeProps {
     variant?: 'brand' | 'wash' | 'outline' | 'danger';
     size?: 'sm' | 'md' | 'lg';
+  }
+
+  interface ButtonProps extends ChromeProps, HTMLButtonAttributes {
     busy?: boolean;
-    /** Renders the same chrome as a link — the beta page's step actions. */
-    href?: string;
-    target?: HTMLAnchorAttributes['target'];
-    rel?: string;
+    href?: never;
+    target?: never;
+    rel?: never;
     children: Snippet;
   }
+
+  /**
+   * The same chrome on an `<a>`. The anchor renders only these props, so any
+   * other prop is a type error at the call site rather than silently dropped:
+   * a link cannot be disabled or busy.
+   */
+  interface LinkProps extends ChromeProps {
+    href: string;
+    target?: HTMLAnchorAttributes['target'];
+    rel?: string;
+    class?: HTMLAnchorAttributes['class'];
+    busy?: never;
+    disabled?: never;
+    children: Snippet;
+  }
+
+  type Props = ButtonProps | LinkProps;
 
   let {
     variant = 'wash',
