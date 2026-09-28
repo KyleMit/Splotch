@@ -14,6 +14,11 @@
   const DESCRIPTION =
     'Report a bug or suggest an idea for Splotch, the drawing app for toddlers. No account needed.';
 
+  const SUBMIT_LABEL_BY_KIND: Record<ReportKind, string> = {
+    bug: 'Send report',
+    feature: 'Send idea',
+  };
+
   // The shareable half of Settings' Send Feedback section: same fields
   // (ReportFields), same server core ($lib/server/report), reached by a URL that
   // can go in the Play Store listing instead of behind the in-app modal. It
@@ -129,7 +134,7 @@
         {/if}
 
         <Button variant="brand" size="lg" type="submit" busy={submitting} class="submit">
-          {submitting ? 'Sending…' : kind === 'bug' ? 'Send report' : 'Send idea'}
+          {submitting ? 'Sending…' : SUBMIT_LABEL_BY_KIND[kind]}
         </Button>
       </form>
 
