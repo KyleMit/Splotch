@@ -8,7 +8,12 @@ import {
 } from '$lib/apiHeaders';
 import { GENERATION_JOB_PARAM } from '$lib/apiParams';
 import { apiHandler, fail, throttled } from '$lib/server/http';
-import { GENERATION_UNAVAILABLE_CODE, type GenerationUnavailable } from '$lib/ai/generationResult';
+import {
+  GENERATION_ACCEPTED_STATUS,
+  GENERATION_UNAVAILABLE_CODE,
+  SAFETY_REFUSAL_STATUS,
+  type GenerationUnavailable,
+} from '$lib/ai/generationResult';
 import { rateLimit } from '$lib/server/rateLimit';
 import { generationResultBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
@@ -21,7 +26,6 @@ import {
 } from '$lib/server/generationJobs';
 import { completeFreeGeneration, failFreeGeneration } from '$lib/server/freeGenerationGrants';
 import { issueReportToken, type ReportTokenBinding } from '$lib/server/reportToken';
-import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
 import type { RequestHandler } from './$types';
 
 // Collects a generation that /api/generate-image handed to the background worker
@@ -108,7 +112,7 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
     await discardJob(jobId);
     throw error(404, 'That creation is no longer available');
   }
-  if (job.status === 'pending') return new Response(null, { status: 202 });
+  if (job.status === 'pending') return new Response(null, { status: GENERATION_ACCEPTED_STATUS });
 
   const binding = reportBinding(request, job.context);
 

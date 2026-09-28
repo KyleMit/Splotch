@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import { ASYNC_GENERATION_HEADER } from '$lib/apiHeaders';
 import { config } from './config';
 import { GENERATE_DEADLINE_MS } from '$lib/ai/limits';
+import type { StartedGeneration } from '$lib/ai/generationResult';
 import {
   claimJob,
   discardJob,
@@ -11,7 +12,7 @@ import {
   putJobInput,
   WORK_TICKET_HEADER,
 } from './generationJobs';
-import type { GenerationJobContext } from './generationJobs';
+import type { GenerationJobContext, GenerationWork } from './generationJobs';
 import type { GenerationAuthorization } from './generationAuthorization';
 
 // Handing a generation to the background worker (ADR-0115).
@@ -38,28 +39,10 @@ const WORKER_DEADLINE_MS = 5 * 60 * 1000;
 // generation, since the first poll also proves the round trip works.
 const FIRST_POLL_DELAY_MS = 4_000;
 
-export interface StartedGeneration {
-  jobId: string;
-  pollAfterMs: number;
-}
-
 const startedGeneration = (jobId: string): StartedGeneration => ({
   jobId,
   pollAfterMs: FIRST_POLL_DELAY_MS,
 });
-
-/**
- * What the worker is told. Small on purpose: a background function's invocation
- * body is capped in the low hundreds of KB, so the drawing goes to the job store
- * and only its job id travels here.
- */
-export interface GenerationWork {
-  jobId: string;
-  apiKey: string;
-  prompt: string;
-  mimeType: string;
-  deadlineMs: number;
-}
 
 /**
  * Whether the caller is willing to collect the picture in a later request. The
@@ -129,7 +112,7 @@ export async function startBackgroundGeneration(
     jobId,
     mimeType: image.mimeType,
     deadlineMs: WORKER_DEADLINE_MS,
-  });
+  } satisfies GenerationWork);
   const ticket = issueWorkTicket(jobId, payload, config.reportTokenSecret());
   if (!ticket) {
     // Not "no worker here" — the worker cannot be invoked safely without a

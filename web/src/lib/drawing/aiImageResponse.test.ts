@@ -1,11 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import {
-  readAiImageResponse,
-  SAFETY_REFUSAL_STATUS,
-  THROTTLED_STATUS,
-  type AiImageResponse,
-} from './aiImageResponse';
+import { SAFETY_REFUSAL_STATUS, THROTTLED_STATUS } from '$lib/ai/generationResult';
+import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 
 // Narrows the union so an assertion about the decoded image reads unconditionally. Branching on
 // `result.kind` instead would let that assertion be skipped rather than fail.
