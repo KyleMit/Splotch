@@ -10,7 +10,7 @@
 //
 // Only the two formats the client actually uploads are parsed — PNG, and the
 // WebP it prefers when the platform can encode one (see encodeWebpUpload in
-// lib/drawing/aiImage.ts). Anything else falls back to a square canvas.
+// lib/drawing/aiUploadEncoding.ts). Anything else falls back to a square canvas.
 
 export interface PixelSize {
   width: number;

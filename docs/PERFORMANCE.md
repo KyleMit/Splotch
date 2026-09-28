@@ -193,7 +193,7 @@ entry 87. Paths under `web/src/` unless noted.*
    `app.html:95-183`, drift-guarded by `app.html.test.ts`. *ADR-0040, ADR-0076*
 3. **Engine boots before hydration; components adopt it** — static side-effect import of
    `drawing/earlyBoot` makes the canvas accept strokes before hydration's ~375 ms long task;
-   `DrawingCanvas` adopts the running engine. `routes/+page.svelte:2-7`, `engine.ts:1222-1244`.
+   `DrawingCanvas` adopts the running engine. `routes/+page.svelte:2-7`, `engine.ts:1200-1219`.
    *ADR-0072, ADR-0004*
 4. **All CSS inlined into the prerendered head** — `inlineStyleThreshold: Infinity` kills iPadOS
    FOUC. `svelte.config.js`. *commit f6157766*
@@ -254,7 +254,7 @@ entry 87. Paths under `web/src/` unless noted.*
 ### IV. Input hot path
 
 21. **Coalesced pointer-event replay** — the engine replays `getCoalescedEvents()` samples so fast
-    scribbles curve instead of chording. `drawing/engine.ts:990-1007`. *ADR-0004 lineage*
+    scribbles curve instead of chording. `drawing/engine.ts:930-947`. *ADR-0004 lineage*
 22. **Per-frame stroke raster queue** — pointermoves queue per pointer and rasterize once per frame
     as one merged op (digitizer outruns display, 1.9–4.2 moves/painted frame); sync `flushAll()` on
     lift. `drawing/strokeRasterQueue.ts`. *commit 087cd708*
@@ -273,7 +273,7 @@ entry 87. Paths under `web/src/` unless noted.*
     paying the wipe. `resyncOnReentry()` in `drawing/engine.ts`. *ADR-0132*
 28. **No-allocation hot-path accessors** — non-cloning crayon parameter reads (runs 3×/op);
     repo-wide rule: per-pointermove code must not allocate (`.claude/rules/svelte.md`).
-    `crayonBrush.ts:286-303`.
+    `crayonBrush.ts:351-367`.
 29. **PointerHalos: ring moves coalesced to once per rAF** — pending positions in plain non-`$state`
     records, latest wins; GPU-composited `translate3d`. `PointerHalos.svelte:74-121`. *commit
     a1e5a2fc*
@@ -289,7 +289,7 @@ entry 87. Paths under `web/src/` unless noted.*
 
 32. **4×4 tiled live canvas; input canvas shrunk to a 1×1 px backing** — the visible paper is 16
     tile canvases (+32 crayon preview planes); the pointer-capturing canvas costs nothing to
-    composite. `drawing/liveTiles.ts`, `tiledRenderer.ts`, `engine.ts:151`. *ADR-0085, ADR-0089*
+    composite. `drawing/liveTiles.ts`, `tiledRenderer.ts`, `engine.ts:154`. *ADR-0085, ADR-0089*
 33. **Per-op tile intersection culling** — only tiles a stroke's padded bbox touches pay render,
     allocation, and undo capture. `tiledGeometry.ts`, `tiledRenderer.ts:280-311`. *ADR-0085*
 34. **Empty tiles absent from the compositor** — tiles start `hidden`, shown just before first
@@ -304,9 +304,10 @@ entry 87. Paths under `web/src/` unless noted.*
     (`engine-rotation.spec.ts`). `LiveSurface.svelte`, `drawing/paperView.ts`. *ADR-0089*
 38. **Crayon live preview via CSS blend compositing, zero readback** — two extra canvases per tile
     with `mix-blend-mode: darken` + opacity reproduce the subtractive stamp pixel-exactly; flush
-    bakes identical pixels. `engine.ts:159-174`, `LiveSurface.svelte`. *ADR-0068, ADR-0065*
+    bakes identical pixels. `crayonPassBuffer.ts:150-157`, `LiveSurface.svelte`. *ADR-0068,
+    ADR-0065*
 39. **Capped DPR (2×), fixed per session** — DPR-3 would cost 9× pixels for detail a finger can't
-    use. `engine.ts:197-205`. *ADR-0015*
+    use. `engine.ts:170-176`. *ADR-0015*
 
 ### VI. Undo / history
 
@@ -324,7 +325,7 @@ entry 87. Paths under `web/src/` unless noted.*
 44. **Undo fast paths** — `wasEmpty` restores without repaint; the post-undo empty flag comes from
     the record, not a pixel scan; `repaintDeferredToRestore` stops the paper-restore resize
     repainting through the command being popped (the #1198 fix — 103→17 ms).
-    `tiledRenderer.ts:425-474`, `engine.ts:377-389`.
+    `tiledRenderer.ts:425-474`, `engine.ts:322-336`.
 45. **Magic-recode baseline/tail retention** — cloned base raster + folded vector tail let
     theme/page recodes rebuild folded magic ink without retaining full history.
     `tiledMagicRecode.ts`. *ADR-0121*
@@ -342,45 +343,47 @@ entry 87. Paths under `web/src/` unless noted.*
 ### VIII. Crayon caches & warm-up
 
 49. **Deterministic Float32Array tooth fields, idle-prebuilt** — per-texel wax texture fields built
-    once from fixed seeds, front-loaded via `scheduleIdle`. `crayonBrush.ts:222-259`. *ADR-0065*
+    once from fixed seeds, front-loaded via `scheduleIdle`. `crayonBrush.ts:236-322`. *ADR-0065*
 50. **LRU wax-tile cache** — colorized tiles per (color, pass), cap derived from palette size;
     eviction also resets the pattern WeakMap (the issue-167 custom-color leak).
-    `crayonBrush.ts:346-451`.
+    `crayonBrush.ts:409-522`.
 51. **Deadline-bounded tile warm-up** — color/brush selection warms wax tiles 8 rows per rAF under a
     2 ms/frame budget; new color supersedes; a stroke that beats the warm builds synchronously.
-    `crayonBrush.ts:349-535`. *commits 62b076cd, ac7a0f39, b98e25d0*
+    `crayonBrush.ts:413-610`. *commits 62b076cd, ac7a0f39, b98e25d0*
 52. **Pattern caches + seedPhase memo** — CanvasPatterns per context then color+pass; a 1-entry memo
-    skips re-hashing for the ~6 identical calls per frame. `crayonBrush.ts:537-596`. *commit
+    skips re-hashing for the ~6 identical calls per frame. `crayonBrush.ts:612-671`. *commit
     cc00a8a7*
 53. **Pass buffer with device-px dirty bounds** — stamp and clear touch only the pass's unioned
     dirty rect: "a flush stays proportional to the pass, not the canvas." `crayonPassBuffer.ts`.
     *ADR-0068*
 54. **Mirror by blit, not repaint** — the preview plane copies the op rect from the buffer, halving
-    pattern fills per op. `crayonPassBuffer.ts:249-272`. *commit ae674d71*
+    pattern fills per op. `crayonPassBuffer.ts:640-663`. *commit ae674d71*
 55. **Checkpoint at 64 pointermoves** — bounds live buffer memory; counted in moves, not merged ops,
-    so frame-merging can't stretch a pass to double wax. `engine.ts:566-619`. *ADR-0085 trial 23*
+    so frame-merging can't stretch a pass to double wax. `crayonPassBoundaries.ts:15-22, 101-111`.
+    *ADR-0085 trial 23*
 
 ### IX. Magic brush
 
 56. **Offscreen sheet + per-context pattern cache** — one paper-sized reveal source; cached
     no-repeat patterns (chosen over per-op mask and flat sample, all three measured).
-    `magicBrush.ts:89-116, 477-518`. *ADR-0043*
+    `magicBrush.ts:87-114, 319-360`. *ADR-0043*
 57. **Per-tile pattern sub-regions** — each tile's pattern sources only its own sheet rectangle.
-    `magicBrush.ts:489-526`.
+    `magicBrush.ts:331-368`.
 58. **Worker-side sheet rasterization** — fills/gradients rasterize in a worker OffscreenCanvas
     (fetch+decode off-thread), 15 s timeout, main-thread fallback. `magicSheetRasterClient.ts`,
     `magicSheet.worker.ts`. *ADR-0091, ADR-0110*
 59. **Edge margins from source strips, never destination self-copy** — self-sampling the sheet
     triggered WebKit's full-surface flush (~100 ms of the 1.1 s theme freeze).
-    `magicBrush.ts:254-415`. *ADR-0087 trials 12–13*
+    `magicSheetEdges.ts:5-128`. *ADR-0087 trials 12–13*
 60. **Deferred sheet reallocation on resize**; **deferred color-sheet transfer** until line art
     decodes (network priority to what the child sees first, 15 s self-heal); **lazy gradient pool,
-    held gradient**. `magicBrush.ts:461-468, 596-631`. *ADR-0087/0091/0121, ADR-0043*
+    held gradient**. `magicBrush.ts:303-310, 446-482`. *ADR-0087/0091/0121, ADR-0043*
 
 ### X. Export / screenshot
 
 61. **On-demand export module + idle warm** — the compositor + ~226 ms paper-texture fetch pre-warm
-    at idle so the first save doesn't stall. `engine.ts:1444-1476`, `exportDrawing.ts`. *issue #461*
+    at idle so the first save doesn't stall. `engine.ts:1288-1295, 1394-1429`, `exportDrawing.ts`.
+    *issue #461*
 62. **Frame-bound export: ImageBitmap capture + worker compose/encode** — no main-thread readback;
     tiles transfer to a worker OffscreenCanvas; PNG via `convertToBlob`; the polaroid preview is a
     worker-side downscale. `strokeSnapshot.ts`, `pngEncoder.worker.ts`, `tiledPngCompositor.ts`.
@@ -394,8 +397,8 @@ entry 87. Paths under `web/src/` unless noted.*
 
 64. **Deferred, stroke-gated SW registration** — the first visit registers only after 3 committed
     strokes, then at idle; Save-Data skips entirely — precaching never saturates a slow connection
-    during first strokes. `vite.config.ts`, `pwa/updates.ts`, `routes/+page.svelte:51-63`.
-    *ADR-0022, issue #462*
+    during first strokes. `vite.config.ts`, `pwa/updates.ts`, `routes/+page.svelte:79-87`,
+    `lib/boot/settledIn.svelte.ts:14-31`. *ADR-0022, issue #462*
 65. **Precache scoped to shell + starter book; NetworkFirst navigations, 5 s timeout** — stalled
     loads fall back to cache instead of leaving a child waiting; `/` falls back to the precached
     shell from the worker's own build. `vite.config.ts` workbox block, `pwa/appShellRoute.ts`.
@@ -406,7 +409,7 @@ entry 87. Paths under `web/src/` unless noted.*
 67. **Responsive-coloring SW route with canonical fallback**; **installed-pack CacheStorage-first
     route**; **`version.json` per build**; **no SW at all in native builds**.
     `pwa/coloringFallback.ts`, `pwa/coloringPackRoute.ts`. *ADR-0042/0045/0103/0022*
-68. **CORS preflight cached 24 h** (`Access-Control-Max-Age`). `hooks.server.ts:28-39`. *ADR-0007*
+68. **CORS preflight cached 24 h** (`Access-Control-Max-Age`). `hooks.server.ts:29-40`. *ADR-0007*
 69. **Netlify edge cache headers** — immutable year-long `_app/immutable`, week-long stable-filename
     media (rename-on-change contract), `no-store` on `sw.js`/`version.json`, edge-level 308s and
     static 404s that never invoke SSR. root `netlify.toml`. *ADR-0042, ADR-0022, ADR-0112*
@@ -427,14 +430,14 @@ entry 87. Paths under `web/src/` unless noted.*
 74. **Tiered warms** — cover thumbs at idle on open (re-run on theme change); a book's pages fetched
     on tile hover and decoded on press, so mouse exploration does not decode every selector; the
     *other orientation's* art at idle only after the picked page decodes.
-    `ColoringBook.svelte:63-95`, `DrawingCanvas.svelte:231-251`. *ADR-0045*
+    `ColoringBook.svelte:70-97`, `DrawingCanvas.svelte:253-272`. *ADR-0045*
 75. **Decode-gated overlay swap** — new line art decodes off-DOM (`img.decode()`,
     `fetchPriority='high'`) and swaps by opacity only when ready; current art stays visible
     meanwhile. The displayed image keeps `decoding="async"` so WebKit can rasterize the decoded
     source at its paper-sized layout without blocking the selection frame. A 2026-09-04 physical
     iPad Safari A/B (one warm-up plus three scored repeats) reduced landscape-light P95/max from
     25/31 to 19/20 ms and landscape-dark from 29/30 to 19/21 ms; a preceding focused dark treatment
-    scored 22/31 ms. `DrawingCanvas.svelte:195-229, 278-287`,
+    scored 22/31 ms. `DrawingCanvas.svelte:184-233, 299-311`,
     `docs/scratchpad/perf/2026-09-04-issue-1569-async-overlay-decode.md`. *ADR-0087, commit
     2392ee40*
 76. **`loading="lazy"`/`decoding="async"`** on grid tiles and AI imagery.
@@ -461,7 +464,7 @@ entry 87. Paths under `web/src/` unless noted.*
     test-enforced.
 83. **rAF-throttled scrollspies + IntersectionObserver scroll cues** — no per-frame DOM measurement
     on privacy/design/changelog/Settings scrolling. `actions/scrollCue.ts`,
-    `WideShell.svelte:233-249`. *issue #907*
+    `WideShell.svelte:232-250`. *issue #907*
 84. **One shared AI-progress rAF loop** — a single detached loop serves dial + polaroid; cancels
     when settled. `state/aiProgress.svelte.ts`. *ADR-0116*
 85. **Tile/worker context recovery** — `contextlost` recovery scheduled on rAF, probed cheaply on
