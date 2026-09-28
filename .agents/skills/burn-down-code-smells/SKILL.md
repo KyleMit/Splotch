@@ -94,8 +94,8 @@ A unit is one reviewable PR with one theme:
 * **Right-sized.** Aim for under about two hours per unit. Split larger work, and never bundle
   unrelated risk. A unit whose optional part doesn't fit ships the rest and drafts that part.
 * **Specs point, not paste.** A unit spec names the finding sections to read, the done-when, the
-  files other in-flight units own, a Playwright port, and any startup-path warning. The implementer
-  re-verifies everything.
+  files other in-flight units own, a Playwright port and a `SMOKE_PORT`, and any startup-path
+  warning. The implementer re-verifies everything.
 
 Record each finding's fate in the queue file: which unit it's in, or rejected with the reason (for
 example "adds indirection without a cost it removes", or an ADR that decided it), or parked with the

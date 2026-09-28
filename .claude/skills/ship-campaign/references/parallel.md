@@ -25,15 +25,18 @@ current:
    * **Its file set is disjoint** from every in-flight unit's set.
    * **No dependency either way.** It doesn't import a module another in-flight unit changes the
      contract of, and no in-flight unit imports one it will change. Check the import lines of both
-     sides' files.
+     sides' files, and follow re-exporting barrels. For example, a unit that changes
+     `storageKeys.ts` is coupled to one that imports `$lib/storage`, which re-exports it.
    * **Hot shared files have one holder.** `docs/ARCHITECTURE.md`, `eslint.config.js`,
      `package.json` and its lockfile, and the `.ruler/` sources and their generated output collide
      even across unrelated work. Each is held by at most one unit at a time. A unit that needs one
      waits, or leaves that edit as a drafted leftover.
 
    A unit whose file set can't be predicted from its spec runs alone, as in the serial loop.
-3. **The merge queue.** Merges happen one at a time, and the orchestrator records each as it lands,
-   so it always knows what `main` contains.
+3. **The merge order.** A worker can't wait on the orchestrator mid-run, so the order is enforced by
+   each worker's compare-before-merge step (below): no PR merges against a `main` it hasn't gated.
+   The orchestrator records each merge as it lands, and re-reads `origin/main` before every
+   admission and broadcast, so it always knows what `main` contains.
 4. **Broadcasts.** After every merge, it sends each still-running unit anything that changes that
    unit's assumptions: a renamed identifier, a new lint rule or guard, a moved budget pin or cap, a
    new convention. The unit applies it before its own merge gate. A unit that finds it needs a file
@@ -42,20 +45,41 @@ current:
 
 ## The per-unit merge gate
 
-On top of `ship-issue` step 5. After review, the unit merges `origin/main` into its branch once and
-waits for CI. If `main` moves again before it merges, the unit runs the `reconcile-with-main` survey
-**before** merging, and follows its relation verdict:
+This comes on top of `ship-issue` step 5. **Every** catch-up with `main` goes through the
+`reconcile-with-main` survey first, including the first one after review: a coupled change another
+lane landed must never ride in on an ungated merge.
 
-| Relation    | The unit does                                                                                                                                                                            |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `unrelated` | A local trial merge (`git merge --no-commit --no-ff origin/main`), then `npm run check`, `npm run lint`, and its targeted tests. If green, abort the trial and merge the PR as it stood. |
-| `adjacent`  | The same trial, plus reading the upstream diff of each imported module the survey lists. If both are clean, abort and merge; otherwise treat it as `coupled`.                            |
-| `coupled`   | Run `reconcile-with-main` on the branch, commit the merge, push, and wait for CI again.                                                                                                  |
+1. **Catch up.** After review, `git fetch origin main` and run the survey. Then:
+   * If the relation is `coupled`, run `reconcile-with-main` on the branch.
+   * If it is `adjacent`, merge and read the upstream diff of each module the survey lists.
+   * If it is `unrelated`, merge.
 
-The survey's verdict is what keeps `reconcile-with-main`'s full semantic pass for merges that need
-it. Genuinely unrelated units skip a pass that would only confirm they're unrelated. The post-merge
-CI run on `main` is the backstop for the unrelated path. The unit records which path it took in the
-PR body.
+   Commit the merge, push, and wait for CI on that head.
+2. **Compare before merging.** Immediately before `gh pr merge`, fetch again.
+   * If `origin/main` is still the commit your last green CI run already contains, merge.
+   * If it moved, run the survey against the new `main`:
+
+     | Relation    | The unit does                                                                                                                                                                                                        |
+     | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+     | `unrelated` | A local trial merge (`git merge --no-commit --no-ff origin/main`), then `npm run check`, `npm run lint`, and its targeted tests. If green, abort the trial and repeat step 2.                                        |
+     | `adjacent`  | The same trial, plus reading the upstream diff of each module the survey lists (including those reached through a re-exporting barrel). If both are clean, abort and repeat step 2; otherwise treat it as `coupled`. |
+     | `coupled`   | Back to step 1: reconcile, commit, push, and wait for CI.                                                                                                                                                            |
+
+   If `main` moves under step 2 twice in a row, commit the merge and take a CI round instead of
+   trialling a third time.
+
+The survey's verdict is what reserves `reconcile-with-main`'s full semantic pass for merges that
+need it; genuinely unrelated units skip a pass that would only confirm they're unrelated. What the
+survey can't see, such as a shared string, an event name, or a storage key, still escalates the
+merge to `coupled` when it turns up in the trial or in the reading. The window between the final
+fetch and the merge is seconds, and the post-merge CI run on `main` is its backstop. The unit
+records which path it took in the PR body.
+
+**Tests before pushing.** Each unit runs the applicable full tier that isn't host-exclusive before
+it pushes: `npm run test:browserless` (the Vitest tiers plus the API smoke on the unit's own
+`SMOKE_PORT`), because guard tests read files far from the ones a unit edits. The full Playwright
+suite and the full `npm test` stay host-exclusive. CI runs them on every head, and when a unit
+genuinely needs one locally, the orchestrator schedules it while no other lane is running tests.
 
 ## Lanes
 

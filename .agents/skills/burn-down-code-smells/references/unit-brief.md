@@ -5,7 +5,7 @@ The orchestrator gives you:
 
 * a unit spec;
 * a branch slug;
-* a Playwright port;
+* a Playwright port and an API-smoke port (`SMOKE_PORT`);
 * the files other in-flight units own. Stay off them.
 
 Ship the unit as a **free-form unit** through `ship-issue` in `mode=autonomous`, with the spec in
@@ -14,7 +14,8 @@ place of an issue number. Nobody is watching, so never stop to ask a question.
 ## Authorization
 
 Paste `ship-campaign`'s authorization block here verbatim, along with any grant the user added in
-their own words. A denied tool call is not a withdrawn authorization: find another route, or
+their own words. This unit is a queued unit spec in `ship-campaign`'s sense, so the block's merge
+authority covers it. A denied tool call is not a withdrawn authorization: find another route, or
 quarantine.
 
 ## Setup
@@ -43,10 +44,15 @@ quarantine.
 * **Tests.**
   * Every bug fix and every guard ships with a test **and a negative control noted in the PR body**:
     break the behaviour, watch the test fail, then restore it.
-  * Run `npm run check`, `npm run lint`, the Vitest files covering what you touched, and
-    `npm run test:tools` when you touch `tools/` or a type that a tools drift guard reads.
-  * **Never run the full Playwright suite or the full `npm test`**; they are host-exclusive. Run
-    targeted specs with `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`.
+  * While iterating, run `npm run check`, `npm run lint`, and the Vitest files covering what you
+    touched.
+  * Before every push, run the applicable full tier that isn't host-exclusive:
+    `SMOKE_PORT=<your smoke port> npm run test:browserless`. It covers the Vitest tiers and the API
+    smoke, because guard tests read files far from the ones you edit.
+  * **Never run the full Playwright suite or the full `npm test`**; they are host-exclusive, and CI
+    runs them. Run targeted specs with
+    `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`. If you genuinely need a full
+    suite locally, report it; don't run it.
   * Never kill a listener you didn't start.
 * **User-visible changes.** Copy and behaviour a parent or child sees are the user's decision unless
   an ADR already made it. Park them in the PR body.
@@ -62,11 +68,10 @@ quarantine.
 * Review follows `drive-pr-to-mergeable`: at most two rival rounds. A clean round one skips round
   two.
 * **Merging while other units merge.** Follow the per-unit merge gate in `ship-campaign`'s parallel
-  reference:
-  * After review, merge `origin/main` into your branch once (with the attribution line in the merge
-    message) and wait for CI.
-  * If `main` moves again, run the `reconcile-with-main` survey before merging. Take the trial-merge
-    path when the relation is `unrelated` or `adjacent`, and run the full skill when it's `coupled`.
+  reference exactly:
+  * Every catch-up with `main` starts with the `reconcile-with-main` survey, including the first one
+    after review. Merge commits carry the attribution line.
+  * Immediately before `gh pr merge`, fetch and compare. Merge only against a `main` you have gated.
 
   Apply any broadcast the orchestrator sends before you merge, and record which path you took.
 * Merge with `gh pr merge <n> --merge --delete-branch`. Treat a nonzero exit as an unknown outcome

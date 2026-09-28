@@ -27,6 +27,10 @@ which hands out prompts rather than implementing, and is not this skill. Within 
 The input names the queue and, optionally, a deadline:
 
 * **A list** — issue numbers or URLs, shipped in the given order unless a dependency forces another.
+* **Unit specs** — written free-form unit specs, from the user or a calling skill such as
+  `burn-down-code-smells`. Each ships as a free-form `ship-issue` unit and is a queued unit for
+  every rule below, including the authorization. It closes no issue, so its PR body carries the
+  spec.
 * **`epic=<n>`** — the epic's open children, ordered by `enumerate-sub-issues`.
 * **`backlog`** (optionally `backlog=<count>`) — the newest open issues nobody has claimed, picked
   one at a time so that parallel sessions each pick a different issue (see step 1).
