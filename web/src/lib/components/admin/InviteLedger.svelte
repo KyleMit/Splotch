@@ -1,8 +1,7 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
-  import { type Invite } from './AdminConsole.svelte';
   import InviteRowActions from './InviteRowActions.svelte';
-  import { timeAgo, usageDetail } from '$lib/adminFormat';
+  import { timeAgo, usageDetail, type Invite } from '$lib/adminFormat';
 
   // The console's bordered "Access codes" block: an empty state, or the
   // columned table of invite rows with their Copy / Copy link / Remove

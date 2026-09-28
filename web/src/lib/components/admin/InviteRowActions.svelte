@@ -1,7 +1,12 @@
+<script module lang="ts">
+  type CopyTarget = 'code' | 'url';
+  const copyKey = (token: string, target: CopyTarget) => `${token}:${target}`;
+</script>
+
 <script lang="ts">
+  import type { Invite } from '$lib/adminFormat';
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
-  import { copyKey, type Invite } from './AdminConsole.svelte';
   import '$lib/components/deferredIcons';
 
   // One ledger row's action surface, rendered as two sibling cells inside
