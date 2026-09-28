@@ -62,7 +62,13 @@ export const STARVATION_FRAME_MULTIPLE = 4;
 // Compositor work in the device traces began up to 192 ms after commit closed.
 // Attribution is reported, never used to discard an otherwise valid episode.
 const STARVATION_ATTRIBUTION_WINDOW_MS = 250;
+// The probe's `meta.schema`. Rows are read by position, so a report from a
+// probe version this module does not know would be mis-read into plausible
+// numbers — summarizeRun refuses it instead. Schema 1 predates the columns
+// from EVENT_TRUSTED on, which read as absent, so it stays readable.
+// real-screen.test.mjs fails when the probe's schema moves without this.
 export const REAL_SCREEN_SCHEMA_VERSION = 2;
+const OLDEST_READABLE_SCHEMA_VERSION = 1;
 
 const POINTER_DOWN = 0;
 const POINTER_MOVE = 1;
@@ -877,8 +883,24 @@ function contactDeltaSegments(frames) {
   return segments;
 }
 
+function assertReadableSchema(schema) {
+  if (
+    Number.isInteger(schema) &&
+    schema >= OLDEST_READABLE_SCHEMA_VERSION &&
+    schema <= REAL_SCREEN_SCHEMA_VERSION
+  ) {
+    return;
+  }
+  throw new Error(
+    `probe report schema ${schema ?? 'missing'} is outside the ` +
+      `${OLDEST_READABLE_SCHEMA_VERSION}-${REAL_SCREEN_SCHEMA_VERSION} this analyzer reads by ` +
+      'column position; summarizing it here would mis-read its rows'
+  );
+}
+
 export function summarizeRun(report) {
   const { phases = [], meta = {} } = report;
+  assertReadableSchema(meta.schema);
   const frames = report.frames ?? [];
   const tables = {
     frames,

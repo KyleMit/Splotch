@@ -17,6 +17,7 @@ import {
 } from '../gen-performance-matrix.mjs';
 import { GESTURE_REPEATS, UNDO_COUNT } from '../lib/campaign-plan.mjs';
 import { summarizeUndoActions } from '../lib/undo-action-stats.mjs';
+import { REAL_SCREEN_SCHEMA_VERSION } from '../lib/real-screen-stats.mjs';
 import { FULL_ACTION_GROUPS, compactSettingsActionLabel } from '../lib/action-applicability.mjs';
 
 const temporaryDirectories = [];
@@ -2370,7 +2371,9 @@ describe('the painted-output record in a folded cell', () => {
       JSON.stringify({
         orientation: 'PORTRAIT',
         theme: 'light',
-        ...(paintedOutput === undefined ? {} : { report: { paintedOutput } }),
+        ...(paintedOutput === undefined
+          ? {}
+          : { report: { meta: { schema: REAL_SCREEN_SCHEMA_VERSION }, paintedOutput } }),
         summaries: {
           phases: [
             {

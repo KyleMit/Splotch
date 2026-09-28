@@ -35,9 +35,11 @@ import {
   renderPageInventoryReport,
 } from './lib/page-inventory-report.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
-// TypeScript, so both entry points that reach it run under
-// --experimental-strip-types (capture:page-inventory, attach:page-inventory-feedback).
+// The two imports below are TypeScript, so both entry points that reach this
+// module run under --experimental-strip-types (capture:page-inventory,
+// attach:page-inventory-feedback).
 import { aiOutputFor } from '../../web/tests/artifacts/ai-output-fixtures.ts';
+import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
 
 const PORT_DEFAULT = 4319;
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory');
@@ -65,21 +67,21 @@ const TABLET_UA =
   'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 
 const STORAGE = {
-  'splotch-ai-access-token': 'daycare-club',
+  [STORAGE_KEYS.legacyAiAccessToken]: 'daycare-club',
   // The access token alone leaves the AI button hidden: isAiImageButtonShown()
   // also requires this toggle, and without it every surface reached through the
   // button — the parental gate and the whole ai/ group — is unreachable.
-  'splotch-ai-image-enabled': 'true',
-  'splotch-tool-drawer-enabled': 'true',
-  'splotch-drawer-open': 'false',
-  'splotch-lock-rotation': 'false',
-  'splotch-install-dismissed': 'false',
-  'splotch-install-completed': 'false',
-  'splotch-parental-gate-ai-image-mode': 'never',
-  'splotch-parental-gate-image-report-mode': 'never',
-  'splotch-parental-gate-external-links-mode': 'never',
-  'splotch-parental-gate-feedback-mode': 'never',
-  'splotch-parental-gate-parent-center-mode': 'never',
+  [STORAGE_KEYS.aiImageEnabled]: 'true',
+  [STORAGE_KEYS.toolDrawer]: 'true',
+  [STORAGE_KEYS.drawerOpen]: 'false',
+  [STORAGE_KEYS.lockRotation]: 'false',
+  [STORAGE_KEYS.installDismissed]: 'false',
+  [STORAGE_KEYS.installCompleted]: 'false',
+  [STORAGE_KEYS.parentalGateAiImageMode]: 'never',
+  [STORAGE_KEYS.parentalGateImageReportMode]: 'never',
+  [STORAGE_KEYS.parentalGateExternalLinksMode]: 'never',
+  [STORAGE_KEYS.parentalGateFeedbackMode]: 'never',
+  [STORAGE_KEYS.parentalGateParentCenterMode]: 'never',
 };
 
 const SERVER_ENV = {
@@ -665,7 +667,7 @@ function controlSurfaces() {
       'The multiplication challenge protecting a sensitive operation.',
       'ParentalGate',
       async (page) => {
-        await freshHome(page, { 'splotch-parental-gate-ai-image-mode': 'always' });
+        await freshHome(page, { [STORAGE_KEYS.parentalGateAiImageMode]: 'always' });
         await draw(page);
         await openDrawer(page);
         await openDialog(
@@ -970,13 +972,13 @@ async function openThemedPage(browser, port, view, theme) {
     reducedMotion: 'reduce',
   });
   await context.addInitScript(
-    ({ defaults, themeId }) => {
+    ({ defaults, themeKey, themeId }) => {
       for (const [key, value] of Object.entries(defaults)) {
         if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
       }
-      localStorage.setItem('splotch-theme', themeId);
+      localStorage.setItem(themeKey, themeId);
     },
-    { defaults: STORAGE, themeId: theme.id }
+    { defaults: STORAGE, themeKey: STORAGE_KEYS.theme, themeId: theme.id }
   );
   const page = await context.newPage();
   // A page that has not navigated yet has no origin, so localStorage is

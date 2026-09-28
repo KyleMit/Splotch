@@ -7,28 +7,13 @@ function sourceFile(path: string): string {
   return readFileSync(new URL(path, import.meta.url), 'utf8');
 }
 
-const JS_NAME = 'SensorOrientation';
-
-// Capacitor 8 does not register app-local plugins on its own, and a plugin that is declared but
-// never registered only fails when a parent picks Auto on a device.
+// registration.test.ts guards the plugin's JS name and registration; this guards what it requests.
 describe('the SensorOrientation native plugin', () => {
-  it('is registered under its JS name on Android', () => {
+  it('follows the accelerometer past the Auto-rotate toggle, never into upside-down portrait', () => {
     const plugin = sourceFile(
       '../../../../android/app/src/main/java/art/splotch/app/SensorOrientationPlugin.java'
     );
-    const activity = sourceFile(
-      '../../../../android/app/src/main/java/art/splotch/app/MainActivity.java'
-    );
 
-    expect(plugin).toContain(`@CapacitorPlugin(name = "${JS_NAME}")`);
-    expect(plugin).toContain('public void followSensor(PluginCall call)');
     expect(plugin).toContain('ActivityInfo.SCREEN_ORIENTATION_SENSOR)');
-    expect(activity).toContain('registerPlugin(SensorOrientationPlugin.class);');
-  });
-
-  it('registers the JS proxy under the same name', () => {
-    expect(sourceFile('./sensorOrientation.ts')).toContain(
-      `registerPlugin<SensorOrientationPlugin>('${JS_NAME}')`
-    );
   });
 });

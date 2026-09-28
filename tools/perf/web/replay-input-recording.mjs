@@ -31,8 +31,9 @@ import { profilePath } from '../lib/profile-paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from '../lib/profile-artifacts.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 
-// Mirrors SIZE_TO_PX in web/src/lib/state/strokeWidth.svelte.ts; this Node script
-// cannot import the app's Svelte rune module.
+// The app's SIZE_TO_PX (web/src/lib/state/strokeWidth.svelte.ts), a Svelte rune
+// module this Node script cannot import; tools/perf/tests/cli-inputs.test.mjs
+// fails when the two disagree.
 export const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
 const MAX_IDLE_GAP_MS = 250;
 
@@ -65,6 +66,13 @@ export async function runReplayScenario() {
   }
   if (!Array.isArray(recording?.events)) {
     fail(`Replay recording has no events array: ${recordingPath}`);
+  }
+  const unknownSizes = unknownSizeLevels(recording.events);
+  if (unknownSizes.length) {
+    fail(
+      `Replay recording selects size level ${unknownSizes.join(', ')}, which the app does not ` +
+        `have (known: ${Object.keys(SIZE_PX).join(', ')}): ${recordingPath}`
+    );
   }
 
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
@@ -166,6 +174,15 @@ export async function runReplayScenario() {
   }
 }
 
+// Checked before the build rather than inside the page, where an unknown level
+// used to fall back to the default width and replay every later stroke wrong.
+function unknownSizeLevels(events) {
+  const sizes = events
+    .filter((event) => event.kind === 'action' && event.name === 'size')
+    .map((event) => event.value);
+  return [...new Set(sizes)].filter((size) => !Object.hasOwn(SIZE_PX, size));
+}
+
 // Runs inside the page. Dispatches the recorded pointer stream on #drawingCanvas
 // (synthetic events don't coalesce → one move = one engine op, matching the live
 // device) and maps UI actions onto the engine API. Real-time pacing uses the
@@ -258,7 +275,7 @@ export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs })
             E.setCrayonMode(inkCrayon);
           }
           E.setColor(e.value);
-        } else if (e.name === 'size') E.setStrokeWidth(sizePx[e.value] || 8);
+        } else if (e.name === 'size') E.setStrokeWidth(sizePx[e.value]);
         else if (e.name === 'brush') {
           // Brush Menu selection (ADR-0067): idempotent, one action per pick.
           eraser = e.value === 'eraser';
