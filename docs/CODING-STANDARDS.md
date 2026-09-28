@@ -95,13 +95,15 @@ identity, never a flag that later calls share. PR #2449 fixed two bugs of this k
 * A save into a folder that had moved forgot a folder the parent chose while the save was still
   running. `saveBlobToFolder` now forgets the folder only when `(await loadHandle()) === handle`.
 * One boolean latch on the AI result card left the next result's Download dead until a closed card's
-  save settled. The latch is now `savingUrl`, which only its own save clears.
+  save settled. The latch is now `savingUrl`, keyed to the result being saved.
 
 **Enforcement.** Review, plus a test on the owner method rather than on a caller's copy (for example
 `web/src/lib/plugins/pencilEraser.test.ts`, `web/src/lib/ai/credentials.test.ts`). A test double
 that re-implements the owner's rule tests its own copy (rule 9). For the stale-write case, the test
-holds the superseded call open, starts the newer one, and only then settles the old one
-(`web/src/lib/drawing/folderSave.test.ts`, `web/src/lib/components/AiImageResult.download.test.ts`).
+holds the superseded call open, starts the newer one, settles the old one, and then asserts the
+newer call's state survived (`web/src/lib/drawing/folderSave.test.ts`).
+`web/src/lib/components/AiImageResult.download.test.ts` covers only the first half: the next
+result's save starts while the old one is still pending.
 
 ## 2. One union per mode
 
@@ -307,9 +309,9 @@ constant to move with a reason. `MAX_STARTUP_JS_CSS_BYTES` holds the bytes, and
 ## 8. Tools
 
 **Rule.** In `tools/`: a library module never imports an entry script; flags parse strictly and an
-unknown flag is fatal; a tool validates every input before its first write, tag, push, or delete;
-files are size-ratcheted. The detail lives in `tools/CLAUDE.md` ("Libraries: one shared, many owned"
-and "Writing a tool").
+unknown flag is fatal; a tool validates the inputs a write, tag, push, or delete depends on before
+that step runs; files are size-ratcheted. The detail lives in `tools/CLAUDE.md` ("Libraries: one
+shared, many owned" and "Writing a tool").
 
 **Why here.** A capture tool that accepts a mistyped flag produces a capture that looks valid and
 skews a published number.
@@ -335,11 +337,11 @@ Checks that ran after the writes they were meant to guard:
 `tools/perf/lib/cli-args.mjs`, and `tools/tests/tool-entry-flags.test.mjs` (which also fails a flag
 read in an exported function's parameter default); `max-lines` with `TOOLS_GRANDFATHERED_MAX_LINES`
 in `eslint.config.js`; `no-undef` across `tools/`; `freePort` in `tools/lib/vite-server.mjs` throws
-on a listener outside the checkout. Validation before writes is pinned by tests that seed a bad
-input and assert the write step never ran: `generateFromValidatedSources` in
-`tools/ruler/apply-ruler.mjs` runs read-only plans before generating
-(`tools/ruler/tests/apply-ruler.test.mjs`), and `tools/release/tests/cut-release.test.mjs` "rejects
-a prerelease version before anything is written".
+on a listener outside the checkout. `generateFromValidatedSources` in `tools/ruler/apply-ruler.mjs`
+runs read-only plans before generating, and the bad-source cases in
+`tools/ruler/tests/apply-ruler.test.mjs` assert that generation never ran. In `cut-release.mjs`,
+`main()` parses the arguments and resolves the version code before its first write. Review holds
+that order; `tools/release/tests/cut-release.test.mjs` covers the rejections themselves.
 
 ## 9. Tests prove they can fail
 
