@@ -32,6 +32,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain, sleep } from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
+import { selectAndroidSerial } from './lib/android-serial.mjs';
 import { PORT_ROLES } from './lib/capture-readiness.mjs';
 import {
   FIXED_TO_USER_ROTATION_STOCK,
@@ -359,29 +360,6 @@ async function drainAppiumSessions(port) {
   return drained;
 }
 
-// The rig has one phone. With several attached and no --android-serial there is
-// no honest pick — the first one listed is whoever plugged in first — so the
-// device steps are refused rather than aimed at a guess.
-export function selectAndroidSerial(attached, explicit) {
-  if (explicit) return { serial: explicit };
-  if (attached.length > 1) {
-    return {
-      serial: null,
-      problem: `several devices attached (${attached.join(', ')}) — pass --android-serial=`,
-    };
-  }
-  return { serial: attached[0] ?? null };
-}
-
-function attachedAndroidSerials() {
-  return sh('adb', ['devices'])
-    .out.split('\n')
-    .slice(1)
-    .map((line) => line.trim().split(/\s+/))
-    .filter(([, state]) => state === 'device')
-    .map(([serial]) => serial);
-}
-
 // Only the selected phone's forwards: `adb forward --list` reports every
 // attached device, and another phone's devtools forward is another session's.
 export function forwardActions(forwards, serial) {
@@ -393,13 +371,13 @@ export function forwardActions(forwards, serial) {
   });
 }
 
-function releaseForwards(serial, { dryRun }) {
-  const listed = sh('adb', ['forward', '--list']);
+function releaseForwards(serial, { dryRun, run }) {
+  const listed = run('adb', ['forward', '--list']);
   if (!listed.ok) return { forwards: [], problem: `adb forward --list failed: ${listed.err}` };
   const forwards = forwardActions(parseAdbForwards(listed.out), serial).map((forward) => {
     if (forward.action === 'leave') return { ...forward, outcome: `left (${forward.why})` };
     if (dryRun) return { ...forward, outcome: 'would remove' };
-    const removed = sh('adb', ['-s', serial, 'forward', '--remove', forward.local]);
+    const removed = run('adb', ['-s', serial, 'forward', '--remove', forward.local]);
     return { ...forward, outcome: removed.ok ? 'removed' : `remove failed: ${removed.err}` };
   });
   return { forwards, problem: null };
@@ -425,13 +403,29 @@ function androidResetCommands() {
   ];
 }
 
-function resetAndroid(serial, { dryRun }) {
+function resetAndroid(serial, { dryRun, run }) {
   return androidResetCommands().map((command) => {
     const label = command.join(' ');
     if (dryRun) return { command: label, outcome: 'would run' };
-    const result = sh('adb', ['-s', serial, 'shell', ...command]);
+    const result = run('adb', ['-s', serial, 'shell', ...command]);
     return { command: label, outcome: result.ok ? 'ok' : `failed: ${result.err || result.out}` };
   });
+}
+
+// --host-only still selects a phone, because the devtools forwards it drops are
+// the selected phone's; so a failed `adb devices` fails a --host-only release
+// too. `run` is a seam for tests; production runs the real adb through `sh`.
+export function releaseAndroid({ dryRun, hostOnly, explicit, run = sh }) {
+  const { serial, problem } = selectAndroidSerial(run('adb', ['devices']), explicit);
+  if (!serial) {
+    return { forwards: [], android: problem ? { serial: null, steps: [], problem } : null };
+  }
+  const released = releaseForwards(serial, { dryRun, run });
+  return {
+    forwards: released.forwards,
+    forwardProblem: released.problem,
+    android: hostOnly ? null : { serial, steps: resetAndroid(serial, { dryRun, run }) },
+  };
 }
 
 const describe = (entry) =>
@@ -524,17 +518,8 @@ export async function releaseCapture({
   await stopAll(plan.servers);
   report.survivors = report.stopped.filter((entry) => entry.outcome === 'survived');
 
-  const { serial, problem } = selectAndroidSerial(
-    attachedAndroidSerials(),
-    argFlag('android-serial', null)
-  );
-  if (problem) report.android = { serial: null, steps: [], problem };
-  if (serial) {
-    const released = releaseForwards(serial, { dryRun });
-    report.forwards = released.forwards;
-    report.forwardProblem = released.problem;
-    if (!hostOnly) report.android = { serial, steps: resetAndroid(serial, { dryRun }) };
-  }
+  const explicit = argFlag('android-serial', null);
+  Object.assign(report, releaseAndroid({ dryRun, hostOnly, explicit }));
   report.failures = releaseFailures(report);
   return report;
 }
