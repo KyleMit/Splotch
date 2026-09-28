@@ -13,8 +13,12 @@ export type SaveResult =
 
 export type UnsavedStatus = Extract<SaveResult['status'], 'denied' | 'failed'>;
 
+export function isUnsavedStatus(status: unknown): status is UnsavedStatus {
+  return status === 'denied' || status === 'failed';
+}
+
 export function isUnsaved(result: SaveResult): result is { status: UnsavedStatus } {
-  return result.status === 'denied' || result.status === 'failed';
+  return isUnsavedStatus(result.status);
 }
 
 export const DRAWING_BASENAME = 'splotch';
