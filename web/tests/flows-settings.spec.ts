@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Request } from '@playwright/test';
 
 import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
 
@@ -11,6 +11,27 @@ import {
   SECTION_LANDED_MAX_PX,
 } from './helpers';
 import { openAiSettings, openSettingsSection, submitAiKey } from './flows-harness';
+
+// How long a delivered stale verification gets to persist its result. Proves a
+// negative, so a slower worker only lengthens the observation.
+const STALE_VERIFY_SETTLE_MS = 500;
+
+const STALE_KEY = 'sk-credential-AAAA';
+
+// Resolves once the page has received the verify-key response carrying `key`,
+// or has abandoned the request — delivery, not the route queuing it.
+function verifyRequestEnded(page: Page, key: string): Promise<'finished' | 'failed'> {
+  const carriesKey = (request: Request) =>
+    request.url().includes('/api/verify-key') && (request.postData() ?? '').includes(key);
+  return new Promise((resolve) => {
+    page.on('requestfinished', (request) => {
+      if (carriesKey(request)) resolve('finished');
+    });
+    page.on('requestfailed', (request) => {
+      if (carriesKey(request)) resolve('failed');
+    });
+  });
+}
 
 function scrollPaneToTop(page: Page) {
   return page.locator('.settings-pane').evaluate((el) => el.scrollTo({ top: 0 }));
@@ -351,10 +372,11 @@ test('only the current API key verification can persist across a close and reope
       })
       .catch(() => undefined);
   });
+  const staleVerifyEnded = verifyRequestEnded(page, STALE_KEY);
   await gotoApp(page);
   await openAiSettings(page);
 
-  await submitAiKey(page, 'sk-credential-AAAA');
+  await submitAiKey(page, STALE_KEY);
   await expect.poll(() => requestCount).toBe(1);
 
   await page.getByRole('button', { name: 'Close' }).click();
@@ -364,7 +386,9 @@ test('only the current API key verification can persist across a close and reope
 
   await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
   releaseFirst();
-  await page.waitForTimeout(300);
+  // Closing Settings abandons the stale request today; a stale response the
+  // page did receive gets a window to (wrongly) persist before the check.
+  if ((await staleVerifyEnded) === 'finished') await page.waitForTimeout(STALE_VERIFY_SETTLE_MS);
   await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
 
   await page.reload();

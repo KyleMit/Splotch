@@ -321,11 +321,9 @@ deletion script rather than deleting `origin` refs itself.
 
 Every skill must appear here in exactly one primary group (cross-reference a second group in prose
 when a skill genuinely spans two, as `audit-page-load` does). Most skills are generated from
-`.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
-`tools/ruler/lib/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
-implementations, as do `analyze-session-transcripts` and `run-rival-agent` (each package launching
-the other vendor). When editing one, change only the declared provider; never copy one
-implementation into an undeclared provider tree.
+`.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered, with the providers each
+ships for, in `tools/ruler/lib/direct-provider-skills.mjs`. When editing one, change only the
+declared provider; never copy one implementation into an undeclared provider tree.
 
 **When you add, rename, or delete a skill, update this guide in the same change**, then run
 `npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
