@@ -17,6 +17,8 @@
     href: `#${release.id}`,
   }));
 
+  const oldestRelease = releases[releases.length - 1];
+
   // The release the reading position sits in, seeded to the newest so the rail
   // is never blank at the top of the page.
   let activeRelease = $state(releases[0].id);
@@ -77,7 +79,7 @@
 
 <SocialCard path="/changelog" title="Splotch Changelog" description={DESCRIPTION} />
 
-<div class="changelog" style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh">
+<div class="changelog" id="top" style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh">
   <PageShell title="Changelog" wordmark="Splotch">
     {#snippet lede()}
       Every public Splotch release, newest first, with the notes that
@@ -106,18 +108,23 @@
 
       <div class="releases" bind:this={historyEl}>
         <ReleaseHistory />
+        <footer class="history-end">
+          <p>That's every release since {oldestRelease.dateLabel}.</p>
+          <a href="#top">Back to top ↑</a>
+        </footer>
       </div>
     </div>
 
     <!-- The cue retires at the end of the *scroll*, which here is past the end of
-         the reading: `.release:last-of-type` takes a `--spy-reserve` min-height so
-         the scroll spy can mark the oldest release active, and its notes rarely
-         fill that. So the last few hundred pixels are reserved emptiness the cue
-         still reports as more-below. Accepted rather than worked around: the ramp
-         paints --surface over blank --surface, so it is invisible across the band
-         itself, and the only artifact is the closing lines dimming as they pass
-         under it. Anchoring the sentinel to the notes instead would need ScrollCue
-         to take a target, which is a wider seam than this buys. -->
+         the reading: `.history-end` takes a `--spy-reserve` min-height so the
+         scroll spy can mark the oldest release active, and its end note fills
+         little of that. So the last few hundred pixels are reserved emptiness
+         under the note that the cue still reports as more-below. Accepted rather
+         than worked around: the ramp paints --surface over blank --surface, so it
+         is invisible across the band itself, and the only artifact is the note
+         dimming as it passes under it. Anchoring the sentinel to the note instead
+         would need ScrollCue to take a target, which is a wider seam than this
+         buys. -->
     <ScrollCue />
   </PageShell>
 </div>
@@ -165,12 +172,30 @@
     border-top: none;
   }
 
-  /* Nothing follows the oldest release, so without a reserve the scroll clamps
+  /* No release follows the oldest one, so without a reserve the scroll clamps
      while it is still below the spy band and it can never become the reading
-     position. A band's worth of room under its own top is exactly what it needs
-     to climb in; min-height adds nothing once its notes are that long. */
-  .changelog :global(.release:last-of-type) {
+     position. The reserve sits under an end note rather than inside the oldest
+     release, so the page closes on a stated ending instead of a screen of
+     blank sheet that reads as a failed load. */
+  .history-end {
     min-height: var(--spy-reserve);
+    padding-top: var(--space-6);
+    border-top: var(--border-width) solid var(--page-rule);
+    text-align: center;
+  }
+
+  .history-end p {
+    color: var(--page-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .history-end a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--page-link);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
   }
 
   .changelog :global(.release-header) {
