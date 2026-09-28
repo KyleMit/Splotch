@@ -42,7 +42,37 @@ const SERVICE_WORKER_GUARD = 'tools/perf/lib/service-worker-guard.mjs';
 const ANDROID_TOUCH_OCCLUSION = 'tools/perf/lib/android-touch-occlusion.mjs';
 // Whether Appium's rotation can turn a native Android capture that released its lock.
 const ANDROID_USER_ROTATION = 'tools/perf/lib/android-user-rotation.mjs';
+// The Playwright stand-in for the Appium endpoints every browser action tap,
+// drag and scroll is dispatched through.
+const PLAYWRIGHT_WEBDRIVER = 'tools/perf/lib/webdriver-client.mjs';
+// The Settings selectors and setup clicks that put the page into the cell's
+// theme and orientation, and that the Settings actions tap.
+const CAMPAIGN_STATE = 'tools/perf/lib/campaign-state.mjs';
+// How an action sweep installs and loads the books its coloring actions open.
+const COLORING_BOOKS_READY = 'tools/perf/lib/coloring-books-ready.mjs';
+// probeConfigScript: the phases, contact time and drive the screen probe runs with.
+const SCREEN_PROBE_CONFIG = 'tools/perf/ios/capture-webkit-frames.mjs';
+// Every action transport runs the one sweep, projects its taps through the
+// Appium screen module's canvas geometry, and resolves each tap point through
+// the occlusion check (the centre, off native Android).
+const ACTION_SWEEP_DISPATCH = [
+  APPIUM_ACTIONS_CAPTURE,
+  APPIUM_SCREEN_CAPTURE,
+  ANDROID_TOUCH_OCCLUSION,
+  CAMPAIGN_STATE,
+  COLORING_BOOKS_READY,
+  // FULL_ACTION_GROUPS and actionNotApplicableReason: which actions a default sweep runs.
+  'tools/perf/lib/action-applicability.mjs',
+  // A scorer, hashed for WARMUP_REPEATS alone: how many unscored repeats each
+  // transport captures before the scored ones.
+  'tools/perf/lib/action-stats.mjs',
+  SHARED_ACTION_PROBE,
+];
 
+// The first file of each list is the command's entry script.
+// instrument-import-graph.test.mjs walks the imports of each entry (and of the
+// probe host a split capture needs) and fails on a reached module this table
+// neither lists nor that test declares outside the instrument.
 export const INSTRUMENT_FILES_BY_COMMAND = {
   'perf:device:frames': [
     'tools/perf/split-capture/capture-device-frames.mjs',
@@ -56,6 +86,9 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
     SERVICE_WORKER_GUARD,
     APPIUM_SCREEN_CAPTURE,
     BRUSH_BUTTONS,
+    CAMPAIGN_STATE,
+    // The Reduce Motion storage key the page bootstrap seeds.
+    'tools/perf/lib/reduce-motion.mjs',
     SHARED_SCREEN_PROBE,
     ERASER_FILL,
     UNDO_DRIVER,
@@ -63,30 +96,36 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
   'perf:ios:xcuitest:screen': [
     APPIUM_SCREEN_CAPTURE,
     BRUSH_BUTTONS,
+    CAMPAIGN_STATE,
+    SCREEN_PROBE_CONFIG,
     SERVICE_WORKER_GUARD,
     SHARED_SCREEN_PROBE,
     ERASER_FILL,
     UNDO_DRIVER,
   ],
   'perf:ios:xcuitest:actions': [
-    APPIUM_ACTIONS_CAPTURE,
-    ANDROID_TOUCH_OCCLUSION,
+    ...ACTION_SWEEP_DISPATCH,
     ANDROID_USER_ROTATION,
     SERVICE_WORKER_GUARD,
-    SHARED_ACTION_PROBE,
   ],
   'perf:android:browser:actions': [
     'tools/perf/android/capture-browser-actions.mjs',
+    ...ACTION_SWEEP_DISPATCH,
     ANDROID_LOCALHOST_ROUTE,
+    PLAYWRIGHT_WEBDRIVER,
     SERVICE_WORKER_GUARD,
-    APPIUM_ACTIONS_CAPTURE,
-    SHARED_ACTION_PROBE,
   ],
-  'perf:web:frames': ['tools/perf/web/capture-local-frames.mjs', SHARED_SCREEN_PROBE, UNDO_DRIVER],
+  'perf:web:frames': [
+    'tools/perf/web/capture-local-frames.mjs',
+    CAMPAIGN_STATE,
+    SCREEN_PROBE_CONFIG,
+    SHARED_SCREEN_PROBE,
+    UNDO_DRIVER,
+  ],
   'perf:web:actions': [
     'tools/perf/web/capture-desktop-actions.mjs',
-    APPIUM_ACTIONS_CAPTURE,
-    SHARED_ACTION_PROBE,
+    ...ACTION_SWEEP_DISPATCH,
+    PLAYWRIGHT_WEBDRIVER,
   ],
 };
 
