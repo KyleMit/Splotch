@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAiGeneration } from './aiGeneration.svelte';
 
+const RETRY_FAILURE = {
+  errorKind: 'retry',
+  details: { status: 502, endpoint: '/api/generate-image', message: 'Upstream unavailable' },
+} as const;
+const SAFETY_REFUSAL = { errorKind: 'safety', reportToken: null } as const;
+
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
@@ -35,7 +41,7 @@ describe('createAiGeneration', () => {
     const firstController = new AbortController();
     const firstRun = machine.startAiGeneration('blob:first-preview', firstController, 'Crayon');
     machine.finishAiGeneration(firstRun, 'blob:first-result', 'image/png');
-    machine.failAiGeneration(firstRun, 'Try again', 'retry');
+    machine.failAiGeneration(firstRun, RETRY_FAILURE);
 
     const secondRun = machine.startAiGeneration('blob:second-preview', undefined, 'Watercolor');
     machine.endAiGeneration(firstRun);
@@ -102,18 +108,16 @@ describe('createAiGeneration', () => {
     expect(machine.style).toBe('Felt');
   });
 
-  it('commits an active failure with its message and kind', () => {
+  it('commits an active failure with exactly what its kind carries', () => {
     const machine = createAiGeneration();
     const run = machine.startAiGeneration(null);
 
-    machine.failAiGeneration(run, 'Try again', 'retry');
+    machine.failAiGeneration(run, RETRY_FAILURE);
 
     expect(machine.phase).toEqual({
       kind: 'error',
       errorKind: 'retry',
-      message: 'Try again',
-      reportToken: null,
-      details: null,
+      details: { status: 502, endpoint: '/api/generate-image', message: 'Upstream unavailable' },
     });
   });
 
@@ -122,7 +126,7 @@ describe('createAiGeneration', () => {
     const run = machine.startAiGeneration(null);
     machine.finishAiGeneration(run, 'blob:result', 'image/png');
 
-    machine.failAiGeneration(run, 'Try again', 'retry');
+    machine.failAiGeneration(run, RETRY_FAILURE);
 
     expect(machine.phase.kind).toBe('error');
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:result');
@@ -155,9 +159,9 @@ describe('createAiGeneration', () => {
     const machine = createAiGeneration();
     const run = machine.startAiGeneration(null);
 
-    machine.failAiGeneration(run, 'Draw something else', 'safety', 'signed-refusal-token');
+    machine.failAiGeneration(run, { errorKind: 'safety', reportToken: 'signed-refusal-token' });
 
-    expect(machine.phase).toMatchObject({
+    expect(machine.phase).toEqual({
       kind: 'error',
       errorKind: 'safety',
       reportToken: 'signed-refusal-token',
@@ -211,15 +215,15 @@ describe('consecutive generation failures', () => {
   it('retains failures across retries and resets them on success and close', () => {
     const machine = createAiGeneration();
     const first = machine.startAiGeneration(null);
-    machine.failAiGeneration(first, undefined, 'retry');
+    machine.failAiGeneration(first, RETRY_FAILURE);
     expect(machine.consecutiveFailures).toBe(1);
     const second = machine.startAiGeneration(null);
-    machine.failAiGeneration(second, undefined, 'retry');
+    machine.failAiGeneration(second, RETRY_FAILURE);
     expect(machine.consecutiveFailures).toBe(2);
     const third = machine.startAiGeneration(null);
     machine.finishAiGeneration(third, 'blob:result', 'image/png');
     expect(machine.consecutiveFailures).toBe(0);
-    machine.failAiGeneration(third, undefined, 'retry');
+    machine.failAiGeneration(third, RETRY_FAILURE);
     machine.closeAiResult();
     expect(machine.consecutiveFailures).toBe(0);
   });
@@ -227,11 +231,11 @@ describe('consecutive generation failures', () => {
   it('ignores stale failures and clears the streak on a safety refusal', () => {
     const machine = createAiGeneration();
     const first = machine.startAiGeneration(null);
-    machine.failAiGeneration(first, undefined, 'retry');
+    machine.failAiGeneration(first, RETRY_FAILURE);
     const second = machine.startAiGeneration(null);
-    machine.failAiGeneration(first, undefined, 'retry');
+    machine.failAiGeneration(first, RETRY_FAILURE);
     expect(machine.consecutiveFailures).toBe(1);
-    machine.failAiGeneration(second, undefined, 'safety');
+    machine.failAiGeneration(second, SAFETY_REFUSAL);
     expect(machine.consecutiveFailures).toBe(0);
   });
 
@@ -243,7 +247,7 @@ describe('consecutive generation failures', () => {
     machine.setAiDrawing(first, new Blob(['stale']));
     expect(machine.drawing).toBeNull();
     machine.setAiDrawing(second, drawing);
-    machine.failAiGeneration(second, undefined, 'retry');
+    machine.failAiGeneration(second, RETRY_FAILURE);
     expect(machine.drawing).toBe(drawing);
     machine.closeAiResult();
     expect(machine.drawing).toBeNull();

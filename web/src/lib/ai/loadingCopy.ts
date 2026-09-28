@@ -14,3 +14,6 @@ export const AI_LOADING_SUBTITLE = `This takes about ${AI_ESTIMATE_SECONDS} seco
 // while it turns, the status reads AI_LOADING_TITLE.
 export const AI_READY_ANNOUNCEMENT = 'Your picture is ready';
 export const AI_FAILED_ANNOUNCEMENT = "That didn't work";
+
+// The line a safety refusal leads with, where other failures show the error card.
+export const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
