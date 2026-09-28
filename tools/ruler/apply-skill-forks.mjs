@@ -11,20 +11,14 @@ import {
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { ROOT, isMain } from '../lib/proc.mjs';
 import { sharedNoteSource } from './mirror-skill-notes.mjs';
-
-const FORK_ROOT = join('.ruler', 'skill-forks');
-const SHARED_SKILLS_ROOT = join('.ruler', 'skills');
-const SHARED_NOTES_ROOT = join('.ruler', 'skill-notes');
-const TARGETS = {
-  claude: {
-    skills: join('.claude', 'skills'),
-    notes: join('.claude', 'skill-notes'),
-  },
-  codex: {
-    skills: join('.agents', 'skills'),
-    notes: join('.agents', 'skill-notes'),
-  },
-};
+import {
+  FORK_SOURCE,
+  PROVIDERS,
+  SHARED_NOTES_SOURCE,
+  SHARED_SKILLS_SOURCE,
+  notesDir,
+  skillsDir,
+} from './lib/layout.mjs';
 
 function directoriesUnder(path) {
   if (!existsSync(path)) return [];
@@ -95,14 +89,17 @@ function validateAgentRoot(agentRoot) {
   }
 }
 
-export function applyRulerSkillForks(root = ROOT) {
-  const sourceRoot = join(root, FORK_ROOT);
-  if (!existsSync(sourceRoot)) return { skills: 0, notes: 0 };
+// Read-only: validates every fork source without writing anything, so apply-ruler.mjs
+// can reject a malformed fork before Ruler rewrites a single file.
+export function planRulerSkillForks(root = ROOT) {
+  const sourceRoot = join(root, FORK_SOURCE);
+  if (!existsSync(sourceRoot)) return [];
 
   const plans = [];
   for (const agent of directoriesUnder(sourceRoot)) {
-    const target = TARGETS[agent];
-    if (!target) throw new Error(`unsupported ruler skill fork target: ${agent}`);
+    if (!PROVIDERS.includes(agent)) {
+      throw new Error(`unsupported ruler skill fork target: ${agent}`);
+    }
 
     const agentRoot = join(sourceRoot, agent);
     validateSourceTree(agentRoot);
@@ -116,7 +113,7 @@ export function applyRulerSkillForks(root = ROOT) {
         throw new Error(`invalid ruler skill fork name: ${skillName}`);
       }
 
-      const sharedSkill = join(root, SHARED_SKILLS_ROOT, skillName);
+      const sharedSkill = join(root, SHARED_SKILLS_SOURCE, skillName);
       if (existsSync(sharedSkill)) {
         throw new Error(
           `ruler skill fork must not also have a shared implementation: ${sharedSkill}`
@@ -128,8 +125,8 @@ export function applyRulerSkillForks(root = ROOT) {
         throw new Error(`ruler skill fork is missing SKILL.md.template: ${source}`);
       }
 
-      const output = join(root, target.skills, skillName);
-      assertWithin(join(root, target.skills), output);
+      const output = join(root, skillsDir(agent), skillName);
+      assertWithin(join(root, skillsDir(agent)), output);
       skills.push({ source, output });
     }
 
@@ -145,14 +142,14 @@ export function applyRulerSkillForks(root = ROOT) {
         throw new Error(`ruler skill fork note has no matching skill: ${noteFile}`);
       }
 
-      const sharedNote = join(root, SHARED_NOTES_ROOT, sharedNoteSource(skillName));
+      const sharedNote = join(root, SHARED_NOTES_SOURCE, sharedNoteSource(skillName));
       if (existsSync(sharedNote)) {
         throw new Error(`ruler skill fork must not also have a shared note: ${sharedNote}`);
       }
 
       const source = join(notesSource, noteFile);
-      const output = join(root, target.notes, `${skillName}.md`);
-      assertWithin(join(root, target.notes), output);
+      const output = join(root, notesDir(agent), `${skillName}.md`);
+      assertWithin(join(root, notesDir(agent)), output);
       const sourceLabel = relative(root, source);
       notes.push({ source, sourceLabel, output });
     }
@@ -162,7 +159,7 @@ export function applyRulerSkillForks(root = ROOT) {
 
   const forkedSkillNames = new Set(plans.flatMap((plan) => plan.skillNames));
   for (const skillName of forkedSkillNames) {
-    const missingAgents = Object.keys(TARGETS).filter(
+    const missingAgents = PROVIDERS.filter(
       (agent) => !plans.find((plan) => plan.agent === agent)?.skillNames.includes(skillName)
     );
     if (missingAgents.length) {
@@ -172,6 +169,10 @@ export function applyRulerSkillForks(root = ROOT) {
     }
   }
 
+  return plans;
+}
+
+function applyForkPlans(plans) {
   for (const plan of plans) {
     for (const skill of plan.skills) {
       rmSync(skill.output, { recursive: true, force: true });
@@ -189,6 +190,8 @@ export function applyRulerSkillForks(root = ROOT) {
     notes: plans.reduce((total, plan) => total + plan.notes.length, 0),
   };
 }
+
+export const applyRulerSkillForks = (root = ROOT) => applyForkPlans(planRulerSkillForks(root));
 
 if (isMain(import.meta.url)) {
   const applied = applyRulerSkillForks();

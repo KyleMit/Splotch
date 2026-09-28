@@ -3,6 +3,8 @@
 
 # claude  -> CLAUDE.md            (Claude Code, incl. cloud sessions)
 # codex   -> AGENTS.md            (OpenAI Codex; also the cross-agent standard)
+# Each runner also needs its output root in tools/ruler/lib/layout.mjs;
+# tools/ruler/tests/layout.test.mjs fails until the two lists match.
 default_agents = ["claude", "codex"]
 
 # Also process every nested <dir>/.ruler/ (web/src, web/tests, tools,
