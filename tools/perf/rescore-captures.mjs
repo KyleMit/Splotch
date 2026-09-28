@@ -107,15 +107,15 @@ export function targetOf(parsed, relativePath, fallback) {
   return isKnownTarget(fallback) ? fallback : null;
 }
 
-// Every evidence index under the corpus, keyed by the capture's path relative to
-// the corpus root. Reading only `<root>/index.json` found nothing for the nested
-// shape the corpus actually has — one campaign directory per promotion, each with
-// its own index — so the documented whole-corpus command fell through to the path
-// segment and mis-targeted every capture.
 // Every index entry under the corpus, keyed by the capture's path relative to
-// the corpus ROOT — the nested-corpus join both consumers below depend on (one
-// campaign directory per promotion, each with its own index; a naive per-index
-// key mis-targeted every capture once already).
+// the corpus ROOT. The corpus nests one campaign directory per promotion, each
+// with its own index, so reading only `<root>/index.json` (or keying per index)
+// fell through to the path segment and mis-targeted every capture.
+//
+// An index that does not parse throws rather than being skipped: keep-capture-
+// evidence writes these files, so an unreadable one is a broken corpus, and it
+// is the only record of which captures are unattributable — skipping it would
+// silently re-admit them and re-target the rest.
 export function evidenceIndexEntries(root) {
   const entries = [];
   for (const file of findCaptureFiles(root)) {
@@ -123,8 +123,10 @@ export function evidenceIndexEntries(root) {
     let index;
     try {
       index = JSON.parse(readFileSync(file, 'utf8'));
-    } catch {
-      continue;
+    } catch (error) {
+      throw new Error(`${relative(ROOT, file)}: evidence index is not valid JSON`, {
+        cause: error,
+      });
     }
     for (const entry of index.kept ?? []) {
       if (!entry?.file) continue;

@@ -309,6 +309,29 @@ describe('the rescorer honours cellAttributable', () => {
     }
   });
 
+  // A truncated index used to be skipped, which turned the refusal off: the
+  // contaminated capture below scored as clean, and the table looked normal.
+  it('throws on an index that does not parse instead of scoring without it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'splotch-corrupt-index-'));
+    const index = JSON.stringify({
+      kept: [{ file: 'contaminated.json', cellAttributable: false, reportNonce: 'other-1-2' }],
+    });
+    writeFileSync(join(dir, 'index.json'), index.slice(0, index.length / 2));
+    writeFileSync(join(dir, 'contaminated.json'), JSON.stringify({ brush: 'crayon', report }));
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const quietTable = vi.spyOn(console, 'table').mockImplementation(() => {});
+
+    try {
+      await expect(rescoreCaptures({ corpus: relative(ROOT, dir) })).rejects.toThrow(
+        `${relative(ROOT, join(dir, 'index.json'))}: evidence index is not valid JSON`
+      );
+    } finally {
+      quiet.mockRestore();
+      quietTable.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   // An all-refused corpus produced an empty table and exit 0 — the same shape
   // as a clean success, on the tool whose own comments say a silent omission
   // is how an answer goes wrong.
@@ -637,6 +660,41 @@ describe('keep-capture-evidence', () => {
       ).rejects.toThrow('exit');
       expect(quiet.mock.calls.flat().join('\n')).toMatch(/floor-control capture/);
       expect(existsSync(join(evidenceDir, 'floor-test'))).toBe(false);
+    } finally {
+      exit.mockRestore();
+      quiet.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+      rmSync(evidenceDir, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses to promote a corpus holding a capture that does not parse', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-truncated-corpus-'));
+    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-truncated-evidence-'));
+    mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
+    const capture = JSON.stringify({ brush: 'pen', report });
+    writeFileSync(
+      join(corpusDir, 'ipad-device-web', 'portrait-light', 'pen-real-screen.json'),
+      capture.slice(0, capture.length / 2)
+    );
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('exit');
+    });
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await expect(
+        keepCaptureEvidence({
+          corpus: relative(ROOT, corpusDir),
+          campaign: 'truncated-test',
+          productCommit: PRODUCT_COMMIT,
+          evidenceRoot: relative(ROOT, evidenceDir),
+        })
+      ).rejects.toThrow('exit');
+      expect(quiet.mock.calls.flat().join('\n')).toMatch(
+        /ipad-device-web\/portrait-light\/pen-real-screen\.json is not valid JSON/
+      );
+      expect(existsSync(join(evidenceDir, 'truncated-test'))).toBe(false);
     } finally {
       exit.mockRestore();
       quiet.mockRestore();
