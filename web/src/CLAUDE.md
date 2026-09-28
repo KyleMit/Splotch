@@ -51,9 +51,10 @@ Where things live (full file-by-file map: `architecture` skill):
 * `lib/components/` — UI components with scoped styles.
 * `lib/actions/` — Svelte actions for gestures and dialog wiring.
 * `lib/server/` — server-only modules (tokens, admin, rate limiting). Never imported client-side;
-  excluded from the native bundle. `lib/server/ai/` — the provider-agnostic AI seam (ADR-0047):
-  routes import `aiProvider` from `ai/provider.ts`; the `openai` SDK is only touched inside that
-  directory.
+  excluded from the native bundle. Server-only packages (`sharp`, `openai`, `@netlify/blobs`) are
+  imported only here, in `+server.ts`/`*.server.ts` files, and in tests (lint-enforced).
+  `lib/server/ai/` — the provider-agnostic AI seam (ADR-0047): routes import `aiProvider` from
+  `ai/provider.ts`; the `openai` SDK is only touched inside that directory.
 * `lib/storage.ts` — dual-layer persistence (localStorage + Capacitor Preferences mirror on native,
   ADR-0005). `lib/secureStorage.ts` — client-held secrets. `lib/platform/index.ts` — native
   detection without importing `@capacitor/core` (ADR-0013). `lib/nativePlugin.ts` —

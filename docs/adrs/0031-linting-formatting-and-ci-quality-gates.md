@@ -71,6 +71,16 @@ choices:
   `let el: T = $state()!`. Tests (183 hits in colocated `web/src` tests, 241 in `web/tests`) and
   `tools/` (4) stay out of scope, because there `!` is the idiomatic "the fixture guarantees it".
   The repo-wide rejection still stands for that code.
+* **Server-only packages are imported only behind the server boundary** (amended 2026-09, issue
+  2376). A second `web/src` `no-restricted-imports` block forbids `sharp`, `openai`, and
+  `@netlify/blobs` (and their subpaths) outside `lib/server/**`, `+server.ts`, `*.server.ts`, and
+  `*.test.ts`. SvelteKit's own guard already rejects a client import of `$lib/server`,
+  `*.server.ts`, and `$env/*/private` in any directory, so those stay out of the rule; it cannot
+  know an npm package is server-only. The one violation, `lib/ai/flatBackgroundPunch.ts` importing
+  `sharp` from a directory that also holds client modules, moved to `lib/server/ai/` in the adopting
+  change. The block recomposes the `web/src` restriction list, and
+  `tools/tests/server-only-imports-lint.test.mjs` fails if either set stops firing. The rule sees
+  static imports and re-exports only, not `import()`.
 * **Rejected rule candidates — measured, do not re-litigate without new evidence.** Same verdict as
   the `no-magic-numbers` rejection (~750 hits): each of these carries a violation count showing the
   codebase deliberately follows a different convention (counts as of the 2026-09 evaluation):
