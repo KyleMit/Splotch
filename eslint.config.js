@@ -27,6 +27,33 @@ const NODE_BUILTIN_IMPORT_RESTRICTIONS = builtinModules
     name,
     message: `Use the node: protocol (import from 'node:${name}').`,
   }));
+// The full no-restricted-imports set for web/src. Every block that configures the rule for a
+// slice of web/src spreads this, so the replace gotcha above can't silently drop an entry there.
+// tools/tests/server-only-imports-lint.test.mjs is the positive control.
+const WEB_SRC_IMPORT_RESTRICTIONS = [
+  {
+    name: 'svelte/store',
+    message: 'Use Svelte 5 runes ($state/$derived/$effect) instead of legacy stores (ADR-0002).',
+  },
+  {
+    name: 'svelte',
+    importNames: ['onDestroy'],
+    message: 'onDestroy runs during SSR — use an $effect cleanup (.claude/rules/svelte.md).',
+  },
+  PLAYWRIGHT_IMPORT_RESTRICTION,
+  // web/src does import node builtins (server modules, colocated unit tests), so the node:
+  // protocol restriction has to ride along here too — root coverage alone would be replaced away.
+  ...NODE_BUILTIN_IMPORT_RESTRICTIONS,
+];
+// npm packages web/src may only use on the server. SvelteKit's own guard rejects a client import
+// of $lib/server, *.server.ts, and $env/*/private and prints the import chain, but it cannot know
+// an npm package is server-only: a client import of one of these fails at bundle time with an
+// obscure resolution error instead. Confining a shared importing module to lib/server/, rather
+// than a mixed directory like lib/ai/, also puts that module under SvelteKit's guard.
+// no-restricted-imports sees static import and re-export statements only, not import().
+const SERVER_ONLY_PACKAGES = ['sharp', 'openai', '@netlify/blobs'];
+const SERVER_ONLY_PACKAGE_MESSAGE =
+  'Server-only package: import it from a module under web/src/lib/server/ (or a +server.ts / *.server.ts file), and reach that module from server code only.';
 const RATE_LIMIT_MESSAGE =
   'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).';
 const RATE_LIMIT_ARGUMENT_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpression'];
@@ -409,26 +436,32 @@ export default tseslint.config(
     // the shared repo-wide playwright restriction alongside its own paths.
     files: ['web/src/**/*.{ts,svelte}'],
     rules: {
+      'no-restricted-imports': ['error', { paths: WEB_SRC_IMPORT_RESTRICTIONS }],
+    },
+  },
+  {
+    // Server-only packages stay behind the server boundary. Replaces the block above for
+    // everything outside the server paths and tests, so it recomposes that block's full list.
+    files: ['web/src/**/*.{ts,svelte}'],
+    ignores: [
+      'web/src/lib/server/**',
+      'web/src/**/+server.ts',
+      'web/src/**/*.server.ts',
+      'web/src/**/*.test.ts',
+    ],
+    rules: {
       'no-restricted-imports': [
         'error',
         {
           paths: [
+            ...WEB_SRC_IMPORT_RESTRICTIONS,
+            ...SERVER_ONLY_PACKAGES.map((name) => ({ name, message: SERVER_ONLY_PACKAGE_MESSAGE })),
+          ],
+          patterns: [
             {
-              name: 'svelte/store',
-              message:
-                'Use Svelte 5 runes ($state/$derived/$effect) instead of legacy stores (ADR-0002).',
+              group: SERVER_ONLY_PACKAGES.map((name) => `${name}/*`),
+              message: SERVER_ONLY_PACKAGE_MESSAGE,
             },
-            {
-              name: 'svelte',
-              importNames: ['onDestroy'],
-              message:
-                'onDestroy runs during SSR — use an $effect cleanup (.claude/rules/svelte.md).',
-            },
-            PLAYWRIGHT_IMPORT_RESTRICTION,
-            // web/src does import node builtins (server modules, colocated unit tests), so the
-            // node: protocol restriction has to ride along here too — root coverage alone would
-            // be replaced away by this block.
-            ...NODE_BUILTIN_IMPORT_RESTRICTIONS,
           ],
         },
       ],
