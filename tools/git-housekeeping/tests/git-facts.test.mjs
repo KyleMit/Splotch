@@ -11,7 +11,7 @@ import {
   parseWorktreeList,
   squashMatches,
 } from '../lib/git-facts.mjs';
-import { createTempRepo } from './fixtures/temp-repo.mjs';
+import { createTempRepo, REAL_REPO_TEST_OPTIONS } from './fixtures/temp-repo.mjs';
 
 describe('parseWorktreeList', () => {
   it('reads every attribute git prints and keeps the main checkout first', () => {
@@ -118,7 +118,7 @@ describe('parseBranchRefs', () => {
   });
 });
 
-describe('merged-ness proofs on a real repository', () => {
+describe('merged-ness proofs on a real repository', REAL_REPO_TEST_OPTIONS, () => {
   let fixture;
 
   beforeEach(() => {
