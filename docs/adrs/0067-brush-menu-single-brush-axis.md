@@ -26,7 +26,7 @@ the solid-fill branch that never left.
 **One brush axis.** `toolState` is a single `brush: 'pen' | 'crayon' | 'magic' | 'eraser'` — the
 eraser and magic brush are peer brush types, not modifiers. The engine bridges stay independent
 booleans (`setEraserMode`, `setMagicMode`, `setCrayonMode`), each derived from the one axis in
-`DrawingCanvas.svelte`.
+`DrawingCanvas.svelte`. (The 2026-09-27 amendment below replaces these with one engine brush.)
 
 **One adaptive Brush control.** Pen remains the always-available baseline; Crayon, Magic Brush, and
 Eraser each have an independent persisted availability setting. The Actions Panel presents the
@@ -87,3 +87,27 @@ attributes hide disabled entries and, when all three are present, the Brush cont
 Issue #881 added the per-tool availability settings and adaptive zero/one/many presentation above.
 It does not change the four-way brush axis: availability and presentation wrap that axis rather than
 introducing crossed tool state.
+
+## Amendment (2026-09-27): the engine holds one brush
+
+This replaces the Decision's engine bridge of three independent booleans. `engine.ts` now holds one
+`brush: BrushType`, the union `toolState.brush` already uses, set through a single `setBrush()`.
+`pushToolStateToEngine` in `earlyBoot.ts` calls it once, both at pre-hydration boot and from
+`DrawingCanvas.svelte`'s reactive push. The component's separate eraser `$effect` is gone.
+
+The booleans could hold eight states for four brushes. The engine had to resolve contradictions by
+precedence in `committedBrushMode()` and repeat that rule where a stroke opened its crayon pass. The
+reasoning that rejected crossed axes for `toolState` applies to the engine too: four flat choices
+should be four flat values, and one value leaves no contradiction to resolve.
+
+Three things are unchanged:
+
+* `committedBrushMode()` and its `window.__committedBrushMode` seam (ADR-0080) return the held
+  brush.
+* Ops still carry `erase`/`magic`/`crayon` flags. `STROKE_FLAGS_BY_BRUSH` in `engine.ts` is the one
+  place a brush becomes them, and it sets at most one per op (the pen sets none).
+* The `/dev/engine` harness keeps its three on/off toggles for the Playwright specs and `tools/perf`
+  drivers, resolving them to one brush with the old precedence.
+
+For the Consequences list, a new brush type's "engine mode" is now a `BrushType` member plus its
+`STROKE_FLAGS_BY_BRUSH` row, which the type checker requires.

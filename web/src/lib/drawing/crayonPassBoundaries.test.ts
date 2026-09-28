@@ -56,7 +56,7 @@ describe('crayon pass boundaries', () => {
   it('gives every new pass a fresh seed and a tracker anchored where it opened', () => {
     const { passes } = harness();
     const ps = carrier();
-    const opened = passes.openStroke({ seeded: true, tracked: true, at: ps, lineWidth: 8 });
+    const opened = passes.openStroke({ crayon: true, at: ps, lineWidth: 8 });
     Object.assign(ps, opened);
 
     passes.rollToNextPass(ps, { x: 99, y: 99 });
@@ -68,21 +68,12 @@ describe('crayon pass boundaries', () => {
     expect(ps.passTracker).not.toBeNull();
   });
 
-  it('seeds an eraser or magic stroke without giving it a pass tracker', () => {
+  it('opens a stroke that deposits no wax with neither a seed nor a tracker', () => {
     const { passes } = harness();
 
-    // The asymmetry is deliberate: every crayon-mode op carries a seed so a
-    // replay reproduces its pattern phase, but a stroke that deposits no wax
-    // has no pass to split.
-    const opened = passes.openStroke({
-      seeded: true,
-      tracked: false,
-      at: { x: 1, y: 2 },
-      lineWidth: 8,
-    });
+    const opened = passes.openStroke({ crayon: false, at: { x: 1, y: 2 }, lineWidth: 8 });
 
-    expect(opened.seed).toBeGreaterThan(0);
-    expect(opened.passTracker).toBeNull();
+    expect(opened).toEqual({ seed: 0, passTracker: null });
   });
 
   it('flushes an open pass when a foreign op interleaves, and not otherwise', () => {
@@ -120,18 +111,8 @@ describe('crayon pass boundaries', () => {
   });
 
   it('gives each instance its own counter, so one drawing cannot seed another', () => {
-    const first = harness().passes.openStroke({
-      seeded: true,
-      tracked: false,
-      at: { x: 0, y: 0 },
-      lineWidth: 8,
-    });
-    const second = harness().passes.openStroke({
-      seeded: true,
-      tracked: false,
-      at: { x: 0, y: 0 },
-      lineWidth: 8,
-    });
+    const first = harness().passes.openStroke({ crayon: true, at: { x: 0, y: 0 }, lineWidth: 8 });
+    const second = harness().passes.openStroke({ crayon: true, at: { x: 0, y: 0 }, lineWidth: 8 });
 
     expect(second.seed).toBe(first.seed);
   });

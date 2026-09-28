@@ -1,64 +1,67 @@
-import { beforeEach, expect, it } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 
-import {
-  committedBrushMode,
-  replayHarnessStroke,
-  setCrayonMode,
-  setEraserMode,
-  setMagicMode,
-} from './engine';
+import { cancelCrayonWarmup, warmCrayonTiles } from './crayonBrush';
+import { committedBrushMode, replayHarnessStroke, setBrush, setColor } from './engine';
+import { ensureMagicSheet } from './magicBrush';
 
-// committedBrushMode is the E2E harness's answer to "what would a stroke started
-// now paint as" (ADR-0080), so its precedence has to be renderOp's — not the
-// UI's, where the brushes are one exclusive axis. These cases are the overlaps
-// the UI cannot produce but a mid-flush engine can, while the two $effects that
-// push the flags land.
+vi.mock('./crayonBrush', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./crayonBrush')>()),
+  warmCrayonTiles: vi.fn(),
+  cancelCrayonWarmup: vi.fn(),
+}));
+
+vi.mock('./magicBrush', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./magicBrush')>()),
+  ensureMagicSheet: vi.fn(),
+}));
+
+function replayOneDot() {
+  replayHarnessStroke({ color: '#E63946', points: [{ x: 10, y: 20 }], size: 3 });
+}
+
 beforeEach(() => {
-  setEraserMode(false);
-  setMagicMode(false);
-  setCrayonMode(false);
+  setBrush('pen');
+  vi.clearAllMocks();
 });
 
-it('reports the plain pen when no modifier is set', () => {
+it('commits whichever brush was set last', () => {
+  for (const brush of ['crayon', 'magic', 'eraser', 'pen'] as const) {
+    setBrush(brush);
+    expect(committedBrushMode()).toBe(brush);
+  }
+});
+
+it('switching from the eraser to the pen lifts the eraser-only replay guard', () => {
+  setBrush('eraser');
+  expect(replayOneDot).toThrow('Store drawing replay does not support the eraser');
+
+  setBrush('pen');
   expect(committedBrushMode()).toBe('pen');
+  expect(replayOneDot).toThrow('Drawing engine is not live');
 });
 
-it('reports each modifier the UI can select on its own', () => {
-  setMagicMode(true);
-  expect(committedBrushMode()).toBe('magic');
-  setMagicMode(false);
+it('switching from magic to crayon warms the active colour and commits crayon', () => {
+  setColor('#2c5faa');
+  setBrush('magic');
+  expect(ensureMagicSheet).toHaveBeenCalledOnce();
+  expect(warmCrayonTiles).not.toHaveBeenCalled();
 
-  setCrayonMode(true);
+  setBrush('crayon');
   expect(committedBrushMode()).toBe('crayon');
-  setCrayonMode(false);
-
-  setEraserMode(true);
-  expect(committedBrushMode()).toBe('eraser');
+  expect(warmCrayonTiles).toHaveBeenCalledWith('#2c5faa');
+  expect(ensureMagicSheet).toHaveBeenCalledOnce();
 });
 
-it('ranks a magic op above an eraser or crayon one, as renderOp does', () => {
-  setMagicMode(true);
-  setEraserMode(true);
-  setCrayonMode(true);
-  expect(committedBrushMode()).toBe('magic');
-});
+it('leaving crayon cancels its tile warm-up', () => {
+  setBrush('crayon');
+  vi.mocked(cancelCrayonWarmup).mockClear();
 
-it('ranks erasing above crayon texture, as renderOp does', () => {
-  setCrayonMode(true);
-  setEraserMode(true);
-  expect(committedBrushMode()).toBe('eraser');
-});
+  setBrush('eraser');
 
-it('rejects store drawing replay while the eraser is active', () => {
-  setEraserMode(true);
-  expect(() =>
-    replayHarnessStroke({ color: '#E63946', points: [{ x: 10, y: 20 }], size: 3 })
-  ).toThrow('Store drawing replay does not support the eraser');
+  expect(cancelCrayonWarmup).toHaveBeenCalledOnce();
 });
 
 it('distinguishes an empty replay from an unavailable engine', () => {
   expect(() => replayHarnessStroke({ color: '#E63946', points: [], size: 3 })).not.toThrow();
-  expect(() =>
-    replayHarnessStroke({ color: '#E63946', points: [{ x: 10, y: 20 }], size: 3 })
-  ).toThrow('Drawing engine is not live');
+  expect(replayOneDot).toThrow('Drawing engine is not live');
 });
