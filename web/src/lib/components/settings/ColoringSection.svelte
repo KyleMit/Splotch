@@ -15,6 +15,8 @@
 
   let removing = $state(false);
   let removeError = $state(false);
+  const downloadedBookCount = $derived(coloringPacksState.downloadedBookCount);
+  const downloadableBookCount = $derived(coloringPacksState.downloadableBookCount);
   const downloadingBookName = $derived(
     BOOKS.find((book) => book.id === coloringPacksState.downloadingBookId)?.name ?? null
   );
@@ -79,12 +81,13 @@
         <span class="pack-title">Downloaded pictures</span>
         {#if coloringPacksState.initialized}
           <p>
-            {coloringPacksState.downloadedBookCount} of {coloringPacksState.downloadableBookCount} extra
-            books · {megabytes(coloringPacksState.downloadedBytes)}
+            {downloadedBookCount} of {downloadableBookCount} extra books · {megabytes(
+              coloringPacksState.downloadedBytes
+            )}
           </p>
           {#if downloadingBookName}
             <p>Downloading {downloadingBookName} in the background</p>
-          {:else if coloringPacksState.downloadedBookCount === coloringPacksState.downloadableBookCount}
+          {:else if downloadedBookCount === downloadableBookCount}
             <p>Every coloring book is ready offline</p>
           {/if}
         {:else if !settingsState.coloringBookEnabled}
@@ -95,8 +98,7 @@
     <Button
       variant="danger"
       size="sm"
-      disabled={removing ||
-        (coloringPacksState.initialized && coloringPacksState.downloadedBookCount === 0)}
+      disabled={removing || (coloringPacksState.initialized && downloadedBookCount === 0)}
       onclick={removeDownloadedPictures}
     >
       {removing ? 'Removing…' : 'Remove downloaded pictures'}

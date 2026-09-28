@@ -11,12 +11,12 @@ import ColoringSection from './ColoringSection.svelte';
 
 const MANIFEST_BOOK_COUNT = 8;
 
+// Whitespace is compared as rendered, not normalized: a formatter wrapping the
+// copy across template lines leaves a newline run in the text node, which a
+// regex text locator anchored on the copy (coloring-pack-download-gate.spec.ts)
+// no longer matches.
 function textOf(markup: string): string {
-  return markup
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return markup.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]*>/g, '');
 }
 
 function storageSummary() {
