@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
   import '$lib/components/deferredIcons';
+  import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
 
   // The "Back to drawing" link every standalone page and /design open with.
   // A 44px target: only the inline text was the anchor (22.7px, under WCAG
@@ -12,7 +13,7 @@
 
 <!-- An icon, not a "←" glyph: the Quicksand subsets cover ↑ and ↓ but not
      U+2190, which fell to the OS font at its own weight. -->
-<a class={['back', className]} href="/">
+<a class={['back', className]} href={DRAWING_ROUTE}>
   <Icon name="chevron-left" class="back-icon" aria-hidden="true" />
   Back to drawing
 </a>
