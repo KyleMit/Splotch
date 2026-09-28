@@ -81,8 +81,9 @@ its own write; it is **not** a site-wide default. The `free-generation-grants` s
 reserves and then finalizes a slot within one invocation, so it reads strongly — see ADR-0105's
 2026-08-11 amendment, which also confirms on a live deploy that the V2 function's Blobs context
 supplies the `uncachedEdgeURL` a strong read needs. Because the SDK's default is eventual, no store
-inherits it by omission: every `getStore` call in `web/src` passes `{ name, consistency }`, and a
-`no-restricted-syntax` rule in `eslint.config.js` rejects one that does not (positive control:
+inherits it by omission: every `getStore` call in `web/src` passes `{ name, consistency }` with the
+mode as a `'strong'` or `'eventual'` literal, and a `no-restricted-syntax` rule in
+`eslint.config.js` rejects one that does not (positive control:
 `tools/tests/blobs-consistency-lint.test.mjs`).
 
 **Env-seeded, clobber-safe first run.** `ALLOWED_TOKENS_LIST` seeds the allowlist exactly once: on

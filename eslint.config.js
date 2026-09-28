@@ -92,13 +92,14 @@ const MEDIA_QUERY_LITERAL = ['Literal', 'TemplateLiteral'].flatMap((argumentType
 
 // The SDK's default consistency is eventual, the mode that once made about half of all free
 // generations fail to find the reservation their own request had just written (ADR-0105). So no
-// Blobs store gets it by omission: every getStore call is an options object naming its mode. The
+// Blobs store gets it by omission: every getStore call is an options object naming its mode as a
+// literal, since `consistency: undefined` or an unset variable falls back to the default too. The
 // positive control tools/tests/blobs-consistency-lint.test.mjs covers both shapes.
 const BLOBS_CONSISTENCY_MESSAGE =
-  "Call getStore({ name, consistency }): 'strong' when a request reads its own write (ADR-0105), 'eventual' when none does (ADR-0025).";
+  "Call getStore({ name, consistency: 'strong' | 'eventual' }): 'strong' when a request reads its own write (ADR-0105), 'eventual' when none does (ADR-0025).";
 const BLOBS_CONSISTENCY_EXPLICIT = [
   'CallExpression[callee.name="getStore"][arguments.0.type!="ObjectExpression"]',
-  'CallExpression[callee.name="getStore"] > ObjectExpression.arguments:not(:has(> Property[key.name="consistency"]))',
+  'CallExpression[callee.name="getStore"] > ObjectExpression.arguments:not(:has(> Property[key.name="consistency"][value.value=/^(strong|eventual)$/]))',
 ].map((selector) => ({ selector, message: BLOBS_CONSISTENCY_MESSAGE }));
 
 const HISTORY_STATE_MESSAGE =

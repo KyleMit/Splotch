@@ -35,6 +35,10 @@ describe('the Blobs consistency guard', () => {
     ['no arguments', 'getStore()'],
     ['an options object without consistency', 'getStore({ name: STORE_NAME })'],
     ['a spread of options', 'getStore({ ...options })'],
+    // The SDK treats an undefined mode as no mode, so a named-but-unset one is the same omission.
+    ['an undefined consistency', 'getStore({ name: STORE_NAME, consistency: undefined })'],
+    ['a consistency variable', 'getStore({ name: STORE_NAME, consistency: mode })'],
+    ['a shorthand consistency', 'getStore({ name: STORE_NAME, consistency })'],
   ])('rejects %s', async (_shape, call) => {
     expect(await violations('web/src/lib/server/probe.ts', call)).toHaveLength(1);
   });
@@ -42,7 +46,6 @@ describe('the Blobs consistency guard', () => {
   it.each([
     ['eventual', "getStore({ name: STORE_NAME, consistency: 'eventual' })"],
     ['strong', "getStore({ name: STORE_NAME, consistency: 'strong' })"],
-    ['shorthand', 'getStore({ name: STORE_NAME, consistency })'],
   ])('allows an explicit %s mode', async (_mode, call) => {
     expect(await violations('web/src/lib/server/probe.ts', call)).toHaveLength(0);
   });
