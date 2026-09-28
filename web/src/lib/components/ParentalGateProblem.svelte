@@ -12,6 +12,7 @@
   import { paletteHex } from '$lib/palette';
   import { colorFamilyShade } from '$lib/hexPickerLayout';
   import { parentalGateState } from '$lib/state/parentalGate.svelte';
+  import VisuallyHidden from './design/VisuallyHidden.svelte';
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
   // Both fills must hold ≥3:1 against the --on-brand digit (WCAG AA large
@@ -62,7 +63,7 @@
   <p class="gate-error" aria-hidden="true">
     {parentalGateState.lockoutMessage ?? parentalGateState.error ?? ''}
   </p>
-  <p class="visually-hidden" role="status">{parentalGateState.announcement}</p>
+  <VisuallyHidden as="p" role="status">{parentalGateState.announcement}</VisuallyHidden>
 </div>
 
 <style>
@@ -129,18 +130,6 @@
     font-weight: var(--font-weight-semibold);
     color: var(--danger-text);
     text-align: center;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 
   /* Narrow enough to share the landscape card with the keypad beside it. */

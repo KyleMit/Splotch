@@ -8,6 +8,7 @@
   import TypeSections from '$lib/components/styleguide/TypeSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
   import StyleguideHeader from '$lib/components/styleguide/StyleguideHeader.svelte';
+  import '$lib/components/styleguide/sectionChrome.css';
   import BackLink from '$lib/components/page/BackLink.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';

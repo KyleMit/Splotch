@@ -1,11 +1,7 @@
 <script lang="ts">
-  import { renderedActionButtonSize } from '$lib/actionButtonLayout';
+  import { PANEL_INSET, renderedActionButtonSize } from '$lib/actionButtonLayout';
+  import { PALETTE_COLUMN_GEOMETRY } from '$lib/design/trimGeometry';
   import { layoutState } from '$lib/state/layout.svelte';
-  const paletteBottom = $derived(
-    layoutState.viewportWidth > 0
-      ? Math.max(0, 8 + renderedActionButtonSize() / 2 - 30 + layoutState.safeArea.bottom)
-      : 8
-  );
   import {
     PALETTE_COLORS,
     TRIM_ORDER,
@@ -25,6 +21,19 @@
   import ColorSwatch from './ColorSwatch.svelte';
   import { prefersReducedMotion } from '$lib/platform/reducedMotion';
 
+  // Levels the custom swatch's center with the Brush Button's, which sits
+  // PANEL_INSET above the safe area.
+  const paletteBottom = $derived(
+    layoutState.viewportWidth > 0
+      ? Math.max(
+          0,
+          PANEL_INSET +
+            renderedActionButtonSize() / 2 -
+            PALETTE_COLUMN_GEOMETRY.swatchPx / 2 +
+            layoutState.safeArea.bottom
+        )
+      : PANEL_INSET
+  );
   const dark = $derived(resolvedTheme() === 'dark');
 
   // The selection ring hides while erasing (no ink is being laid down) and

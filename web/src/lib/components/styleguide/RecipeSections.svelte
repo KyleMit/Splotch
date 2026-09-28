@@ -186,29 +186,6 @@
     gap: var(--space-3);
   }
 
-  section {
-    margin-top: 48px;
-  }
-
-  section > p {
-    max-width: 62ch;
-    margin: 0 0 18px;
-    font-size: var(--font-size-sm);
-    color: var(--text);
-  }
-
-  h3 {
-    margin: 0 0 6px;
-    color: var(--text-strong);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-  }
-
-  code {
-    font-size: var(--font-size-xs);
-    color: var(--brand-text);
-  }
-
   .recipe-grid {
     display: grid;
     /* min(100%, …) lets the single column shrink under the 280px floor on
