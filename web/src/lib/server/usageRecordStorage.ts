@@ -76,7 +76,7 @@ export async function purgeExpiredUsageRecords(): Promise<{
   failedRecords: number;
   retainedRecords: number;
 }> {
-  const store = getStore(USAGE_STORE_NAME);
+  const store = getStore({ name: USAGE_STORE_NAME, consistency: 'eventual' });
   const nowMs = Date.now();
   let deletedExpiredRecords = 0;
   let deletedLegacyRecords = 0;

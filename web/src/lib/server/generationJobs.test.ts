@@ -15,8 +15,10 @@ vi.mock('@netlify/blobs', () => ({ getStore: () => store }));
 import {
   claimJob,
   completeJob,
+  isJobId,
   issueWorkTicket,
   markJobPending,
+  newJobId,
   purgeExpiredGenerationJobs,
   readJob,
   verifyWorkTicket,
@@ -37,6 +39,15 @@ const storedJob = (overrides: Record<string, unknown> = {}) => ({
   claimId: null,
   expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
   ...overrides,
+});
+
+// The poll route turns away every id isJobId refuses, so refusing one newJobId
+// mints would strand every picture. The malformed shapes are covered by the
+// route's own tests.
+describe('job ids', () => {
+  it('accepts the ids newJobId mints', () => {
+    expect(isJobId(newJobId())).toBe(true);
+  });
 });
 
 describe('work tickets', () => {

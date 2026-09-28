@@ -1,6 +1,5 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
-import { GENERATION_JOB_STORE_NAME } from './generationJobStoreName';
 import { settleWithRetentionConcurrency } from './retentionSweep';
 // Relative, not `$lib`: the background worker imports this module and is built
 // without SvelteKit's aliases.
@@ -24,11 +23,14 @@ import { GENERATION_JOB_TTL_MS } from '../ai/limits';
 // until the poll that hands it over deletes it. That is a real change from the
 // single-request flow, which kept nothing at all, and /privacy says so.
 
+export const GENERATION_JOB_STORE_NAME = 'ai-generation-jobs';
+
 // A job id is a capability: whoever holds it collects that picture. It is 256
 // bits of randomness, handed only to the caller that started the job, deleted on
 // collection, and expired within minutes — so it is not worth binding to a
 // credential the poll would then have to re-authorize (and re-rate-limit).
 const JOB_ID_BYTES = 32;
+const JOB_ID_PATTERN = new RegExp(`^[a-f0-9]{${JOB_ID_BYTES * 2}}$`);
 
 // The worker is a publicly reachable Netlify function URL, so "it is only called
 // by us" has to be enforced rather than assumed: without this anyone could drive
@@ -183,6 +185,11 @@ function store() {
 
 export function newJobId(): string {
   return randomBytes(JOB_ID_BYTES).toString('hex');
+}
+
+/** Whether `value` has the shape newJobId mints. */
+export function isJobId(value: string): boolean {
+  return JOB_ID_PATTERN.test(value);
 }
 
 function sign(jobId: string, payloadDigest: string, expiresAt: number, secret: string): string {

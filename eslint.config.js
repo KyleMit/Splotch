@@ -90,6 +90,17 @@ const MEDIA_QUERY_LITERAL = ['Literal', 'TemplateLiteral'].flatMap((argumentType
   }))
 );
 
+// The SDK's default consistency is eventual, the mode that once made about half of all free
+// generations fail to find the reservation their own request had just written (ADR-0105). So no
+// Blobs store gets it by omission: every getStore call is an options object naming its mode. The
+// positive control tools/tests/blobs-consistency-lint.test.mjs covers both shapes.
+const BLOBS_CONSISTENCY_MESSAGE =
+  "Call getStore({ name, consistency }): 'strong' when a request reads its own write (ADR-0105), 'eventual' when none does (ADR-0025).";
+const BLOBS_CONSISTENCY_EXPLICIT = [
+  'CallExpression[callee.name="getStore"][arguments.0.type!="ObjectExpression"]',
+  'CallExpression[callee.name="getStore"] > ObjectExpression.arguments:not(:has(> Property[key.name="consistency"]))',
+].map((selector) => ({ selector, message: BLOBS_CONSISTENCY_MESSAGE }));
+
 const HISTORY_STATE_MESSAGE =
   "Preserve SvelteKit's navigation state with history.replaceState(history.state, '', url); do not add history entries directly.";
 const HISTORY_CALL =
@@ -341,6 +352,7 @@ export default tseslint.config(
         ...STORAGE_SEAM_ONLY,
         ...MEDIA_QUERY_LITERAL,
         ...HISTORY_STATE_MUTATION_RESTRICTIONS,
+        ...BLOBS_CONSISTENCY_EXPLICIT,
       ],
     },
   },
@@ -375,8 +387,8 @@ export default tseslint.config(
   {
     // The block above replaces no-restricted-syntax for every Svelte-flavoured file, which would
     // silently exempt web/src ones from the named-exports ban — recompose the full effective set
-    // for that slice. (The rate-limit selectors stay absent on purpose: rateLimit() is
-    // server-only and can't appear in these files.)
+    // for that slice. (The rate-limit and Blobs selectors stay absent on purpose: rateLimit() and
+    // getStore() are server-only and can't appear in these files.)
     files: ['web/src/**/*.svelte', 'web/src/**/*.svelte.ts', 'web/src/**/*.svelte.js'],
     rules: {
       'no-restricted-syntax': [
@@ -664,6 +676,7 @@ export default tseslint.config(
         NAMED_EXPORTS_ONLY,
         ...MEDIA_QUERY_LITERAL,
         ...HISTORY_STATE_MUTATION_RESTRICTIONS,
+        ...BLOBS_CONSISTENCY_EXPLICIT,
       ],
     },
   },

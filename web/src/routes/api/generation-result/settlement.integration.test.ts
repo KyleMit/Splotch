@@ -24,8 +24,11 @@ import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
 import { SAFETY_REFUSAL_STATUS } from '$lib/ai/generationResult';
 import { readAiImageResponse, type AiImageResponse } from '$lib/drawing/aiImageResponse';
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
-import { GENERATION_JOB_STORE_NAME } from '$lib/server/generationJobStoreName';
-import { issueWorkTicket, WORK_TICKET_HEADER } from '$lib/server/generationJobs';
+import {
+  GENERATION_JOB_STORE_NAME,
+  issueWorkTicket,
+  WORK_TICKET_HEADER,
+} from '$lib/server/generationJobs';
 import worker from '../../../../../netlify/functions/generate-image-background';
 
 // The free-generation allowance is settled across three requests that never
@@ -101,11 +104,16 @@ describe('free generation settlement across the background handoff', () => {
   it.each([
     [
       'a safety refusal',
-      { kind: 'refusal', reason: 'IMAGE_SAFETY' },
+      { kind: 'refusal', reason: 'IMAGE_SAFETY' } as const,
       SAFETY_REFUSAL_STATUS,
       'safety',
     ],
-    ['an upstream error', { kind: 'error', reason: 'no image came back' }, 502, 'upstream'],
+    [
+      'an upstream error',
+      { kind: 'error', reason: 'no image came back' } as const,
+      502,
+      'upstream',
+    ],
   ])('refunds the slot exactly once after %s', async (_label, result, status, failureKind) => {
     provider.generateImage.mockResolvedValue(result);
     const { jobId, dispatch } = await startHandedOffGeneration();
@@ -416,6 +424,19 @@ describe('the background worker', () => {
     expect(grantOf()).toMatchObject({ successful: 0, failures: 1, reservations: {} });
   });
 
+  it('logs a failed job without its id, which is the capability to collect the picture', async () => {
+    provider.generateImage.mockRejectedValue(new Error('socket hang up'));
+    const { jobId, dispatch } = await startHandedOffGeneration();
+
+    await runWorker(dispatch);
+
+    const logged = [console.error, console.warn].flatMap((log) =>
+      vi.mocked(log).mock.calls.flat().map(String)
+    );
+    expect(logged).toContainEqual(expect.stringContaining('socket hang up'));
+    expect(logged.join('\n')).not.toContain(jobId);
+  });
+
   it('answers 200 even when it cannot record the failure, leaving the slot to lapse', async () => {
     provider.generateImage.mockRejectedValue(new Error('socket hang up'));
     const { jobId, dispatch } = await startHandedOffGeneration();
@@ -460,7 +481,11 @@ describe('the background worker', () => {
   });
 
   it('keeps an in-flight picture when a duplicate dispatch arrives before it finishes', async () => {
-    const generation = Promise.withResolvers();
+    const generation = Promise.withResolvers<{
+      kind: 'image';
+      data: string;
+      mimeType: string;
+    }>();
     provider.generateImage.mockReturnValue(generation.promise);
     const { jobId, dispatch } = await startHandedOffGeneration();
 

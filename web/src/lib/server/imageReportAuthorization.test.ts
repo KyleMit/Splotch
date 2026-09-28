@@ -1,12 +1,16 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AiImageProvider } from './ai/provider';
 
+// Typed against the functions they replace, so a changed server result shape
+// fails type-check here instead of these tests feeding the module a stale one.
+// Inline `import()` types where a stub shares the real function's name.
 const { envState, isAllowedToken, peekRateLimit, rateLimit, verifyKey } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
-  isAllowedToken: vi.fn(),
-  peekRateLimit: vi.fn(),
-  rateLimit: vi.fn(),
-  verifyKey: vi.fn(),
+  isAllowedToken: vi.fn<typeof import('./tokens').isAllowedToken>(),
+  peekRateLimit: vi.fn<typeof import('./rateLimit').peekRateLimit>(),
+  rateLimit: vi.fn<typeof import('./rateLimit').rateLimit>(),
+  verifyKey: vi.fn<AiImageProvider['verifyKey']>(),
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
@@ -139,7 +143,7 @@ describe('authorizeImageReport', () => {
   });
 
   it('rejects a BYO key that the provider cannot verify', async () => {
-    verifyKey.mockResolvedValue({ ok: false });
+    verifyKey.mockResolvedValue({ ok: false, kind: 'rejected', reason: 'invalid key' });
 
     const result = await authorizeImageReport({
       apiKey: 'bad-key',

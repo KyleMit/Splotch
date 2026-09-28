@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, vi } from 'vitest';
+import type { AiImageProvider } from '$lib/server/ai/provider';
 
 interface StoredBlob {
   value: unknown;
@@ -16,7 +17,9 @@ const blobs = vi.hoisted(() => {
 });
 
 const env = vi.hoisted(() => ({}) as Record<string, string | undefined>);
-const provider = vi.hoisted(() => ({ generateImage: vi.fn() }));
+// Typed against the provider it replaces, so a changed result shape fails
+// type-check here instead of the model stand-in feeding the worker a stale one.
+const provider = vi.hoisted(() => ({ generateImage: vi.fn<AiImageProvider['generateImage']>() }));
 
 vi.mock('@netlify/blobs', () => {
   const yieldToOtherRequests = () => new Promise<void>((resolve) => setImmediate(resolve));
@@ -86,7 +89,7 @@ vi.mock('$lib/server/rateLimit', () => ({
 
 import { ASYNC_GENERATION_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { readAiImageResponse } from '$lib/drawing/aiImageResponse';
-import { GENERATION_JOB_STORE_NAME } from '$lib/server/generationJobStoreName';
+import { GENERATION_JOB_STORE_NAME } from '$lib/server/generationJobs';
 import worker from '../../../../../netlify/functions/generate-image-background';
 import { POST as startGeneration } from '../generate-image/+server';
 import { GET as collectGeneration } from './+server';
