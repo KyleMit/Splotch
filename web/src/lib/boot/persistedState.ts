@@ -8,6 +8,12 @@ import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
 import { persistedStateStatus, type PersistedStateStatus } from './persistedStateStatus.svelte';
 
+// Runs again on every call, so a remount of `/` repeats the native durable pass.
+// A per-document memo would pin a failed pass: storage.ts resolves a
+// Preferences failure instead of rejecting it. The repeat is also the
+// in-document retry that backs up a value whose mirror never reached
+// Preferences, finishes a durable removal that failed, and reloads a folderSave
+// chunk that failed to load.
 async function hydrateSettingsStores(): Promise<void> {
   // Load the optional saved-photo folder name for display in Settings
   // (web/desktop only; no effect on whether saves happen). Fire-and-forget:

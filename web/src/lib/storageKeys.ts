@@ -64,3 +64,20 @@ export const STORAGE_KEYS = {
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+
+// Keys only the web build writes: the PWA install prompt, the web
+// free-generation identity (native derives its own from Device.getId()), the
+// File System Access folder flag, and the web vault's known-absent list. Native
+// durable hydration neither fetches nor forgets them (storage.ts), so a value
+// native wrote under one would not survive a WebView eviction.
+// storageKeys.webOnly.test.ts holds every writer to the guard that keeps it off
+// native.
+export const WEB_ONLY_STORAGE_KEYS: readonly StorageKey[] = [
+  STORAGE_KEYS.installDismissed,
+  STORAGE_KEYS.installCompleted,
+  STORAGE_KEYS.installRepromptSessionCount,
+  STORAGE_KEYS.installRepromptsUsed,
+  STORAGE_KEYS.freeGenerationInstallation,
+  STORAGE_KEYS.saveFolderChosen,
+  STORAGE_KEYS.secureVaultEmpty,
+];

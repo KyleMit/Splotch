@@ -56,6 +56,7 @@ import {
   writeCaptureReportToPreferences,
   removeCaptureReportFromPreferences,
 } from './storage';
+import { WEB_ONLY_STORAGE_KEYS } from './storageKeys';
 
 beforeEach(() => {
   localStorage.clear();
@@ -138,6 +139,23 @@ describe('removeKey', () => {
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
     await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiAccessToken)).toBe(false));
   });
+
+  it.each(WEB_ONLY_STORAGE_KEYS)(
+    'removes web-only %s from localStorage alone on native',
+    async (key) => {
+      ctrl.native = true;
+      localStorage.setItem(key, 'x');
+      prefsStore.set(key, 'left-by-an-older-build');
+
+      removeKey(key);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(localStorage.getItem(key)).toBeNull();
+      expect(localStorage.getItem(STORAGE_KEYS.pendingDurableRemovals)).toBeNull();
+      expect(prefsStore.has(STORAGE_KEYS.pendingDurableRemovals)).toBe(false);
+      expect(prefsStore.get(key)).toBe('left-by-an-older-build');
+    }
+  );
 
   it('keeps a removed key removed after a failed Preferences removal and the next durable restore', async () => {
     ctrl.native = true;
