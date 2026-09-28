@@ -29,21 +29,32 @@ import {
 } from '$lib/state/aiGeneration.svelte';
 
 const RESULT_URL = 'blob:ai-result';
+const NEXT_RESULT_URL = 'blob:ai-result-next';
 const picture = new Blob(['ai picture'], { type: 'image/webp' });
 
 let mounted: ReturnType<typeof mount> | null = null;
 
-function showResult() {
+function finishResult(url: string) {
   const run = startAiGeneration('blob:drawing');
-  finishAiGeneration(run, RESULT_URL, 'image/webp');
+  finishAiGeneration(run, url, 'image/webp');
+  flushSync();
+}
+
+function downloadButton(target: HTMLElement) {
+  const download = target.querySelector<HTMLButtonElement>('.ai-result-download');
+  if (!download) throw new Error('The AI result card did not offer Download');
+  return download;
+}
+
+function showResult() {
+  finishResult(RESULT_URL);
   const target = document.createElement('div');
   document.body.append(target);
   mounted = mount(AiImageResult, { target });
   flushSync();
   const dialog = target.querySelector('dialog');
-  const download = target.querySelector<HTMLButtonElement>('.ai-result-download');
-  if (!dialog || !download) throw new Error('The AI result card did not offer Download');
-  return { dialog, download };
+  if (!dialog) throw new Error('The AI result card did not render');
+  return { target, dialog, download: downloadButton(target) };
 }
 
 async function tapDownload(download: HTMLButtonElement) {
@@ -58,7 +69,7 @@ beforeEach(() => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
-      if (url !== RESULT_URL) throw new Error(`Unexpected fetch of ${url}`);
+      if (url !== RESULT_URL && url !== NEXT_RESULT_URL) throw new Error(`Unexpected ${url}`);
       return new Response(picture);
     })
   );
@@ -104,6 +115,20 @@ describe('AI result Download', () => {
     });
     expect(dialog.classList.contains('polaroid-mode')).toBe(false);
     expect(aiGenerationState.phase.kind).toBe('result');
+  });
+
+  it('offers the next result a save while a closed card is still saving', async () => {
+    const firstSave = Promise.withResolvers<SaveResult>();
+    saveImageBlob.mockReturnValueOnce(firstSave.promise).mockResolvedValue({ status: 'photos' });
+    const { target, download } = showResult();
+
+    await tapDownload(download);
+    closeAiResult();
+    finishResult(NEXT_RESULT_URL);
+    downloadButton(target).click();
+
+    await vi.waitFor(() => expect(saveImageBlob).toHaveBeenCalledTimes(2));
+    firstSave.resolve({ status: 'photos' });
   });
 
   it('reports a save whose pipeline threw as failed', async () => {

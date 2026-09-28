@@ -93,15 +93,17 @@
   // Handed to the card so its width can be the picture's own — see --result-aspect.
   const cardStyle = $derived(`--result-aspect: ${imgAspect.toFixed(4)};`);
 
-  // Intentionally untracked: a latch against a second tap while a save is in flight.
-  let saving = false;
+  // Intentionally untracked: a latch against a second tap on a result whose
+  // save is in flight. It names the result, so a card closed mid-save does not
+  // hold up the next result's Download.
+  let savingUrl: string | null = null;
 
   async function handleDownload() {
-    if (!result || exiting || saving) return;
+    if (!result || exiting || savingUrl === result.url) return;
     const { url } = result;
-    saving = true;
+    savingUrl = url;
     const saved = await saveAiResult(url);
-    saving = false;
+    if (savingUrl === url) savingUrl = null;
     // A save that did not land keeps the picture on the card rather than
     // flying it off as if it were kept, as the screenshot polaroid returns;
     // the save-failure banner tells the parent and offers the retry.
