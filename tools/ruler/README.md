@@ -24,9 +24,12 @@ unrelated work committed or stashed.
 
 `.ruler/` is the source of truth for generated `AGENTS.md`, `CLAUDE.md`, shared skills, and shared
 skill notes. `lib/direct-provider-skills.mjs` is the registry for packages and notes whose Claude
-and Codex implementations are maintained directly in their destination trees. `apply-ruler.mjs`
-snapshots every registered direct path, runs Ruler, restores those paths even when generation fails,
-applies managed forks and shared notes, then formats the committed output.
+and Codex implementations are maintained directly in their destination trees. `lib/layout.mjs`
+declares the source roots and each runner's output root; `tests/layout.test.mjs` holds its runner
+list to `default_agents` in `.ruler/ruler.toml` and its output roots to `.gitattributes`.
+`apply-ruler.mjs` validates the shared-note and fork sources, snapshots every registered direct
+path, runs Ruler, mirrors shared notes, applies managed forks, restores the direct paths even when
+generation fails, then formats the committed output.
 
 Managed runner forks are complete packages under `.ruler/skill-forks/<runner>/`; a fork cannot also
 have a shared implementation, and every configured runner must provide the package. Shared skill
@@ -46,10 +49,11 @@ are excluded from generated-file drift checks through the registry.
 The apply command requires the repository's installed Node dependencies plus `ruler` and `dprint` on
 the project command path. Missing registered provider paths, competing shared/direct sources,
 incomplete forks, unsafe Markdown suffixes, generation failures, or formatting failures produce a
-nonzero exit. Direct provider paths are restored in a `finally` path even when an intermediate
-generation step fails. Other files already regenerated before a failure remain modified and may be
-unformatted because dprint runs last; recover by rerunning `npm run ruler:apply` on a worktree with
-no unrelated edits.
+nonzero exit. Source defects the note mirror and fork layer reject (a plain `.md` note, an
+incomplete or unsupported fork) are checked before Ruler writes anything, so they leave the checkout
+untouched. Direct provider paths are restored even when an intermediate generation step fails. Other
+files already regenerated before a failure remain modified and may be unformatted because dprint
+runs last; recover by rerunning `npm run ruler:apply` on a worktree with no unrelated edits.
 
 Edit `.ruler/**` sources rather than generated files, except for packages explicitly listed in
 `lib/direct-provider-skills.mjs`. Adding a direct package to that registry also requires matching

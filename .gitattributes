@@ -4,6 +4,8 @@
 # still expandable, still reviewable — and drops it from the language stats.
 # Every path below is written by `npm run ruler:apply` from a `.ruler/` source;
 # reviewing the generated copy duplicates reviewing the source.
+# `tools/ruler/tests/layout.test.mjs` fails if a runner's output root in
+# `tools/ruler/lib/layout.mjs` is missing here.
 
 CLAUDE.md              linguist-generated=true
 AGENTS.md              linguist-generated=true
