@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { scale } from '../src/lib/design/tokens';
 
 test.describe('server-rendered buttons', () => {
   test.use({ javaScriptEnabled: false });
@@ -12,7 +13,7 @@ test.describe('server-rendered buttons', () => {
     await expect(states.locator('button:disabled')).toHaveCount(4);
     await expect(
       page.getByRole('group', { name: 'Button sizes', exact: true }).getByRole('button')
-    ).toHaveCount(3);
+    ).toHaveCount(4);
   });
 });
 
@@ -36,7 +37,7 @@ for (const theme of ['light', 'dark'] as const) {
         buttons.map((button) => {
           const style = getComputedStyle(button);
           const probe = document.createElement('span');
-          probe.style.color = 'var(--text-soft)';
+          probe.style.color = 'var(--text)';
           probe.style.backgroundColor = 'var(--control-track)';
           probe.style.border = '1px solid var(--border)';
           button.after(probe);
@@ -57,7 +58,7 @@ for (const theme of ['light', 'dark'] as const) {
         Array.from({ length: 4 }, () => ({
           neutralLabel: true,
           neutralFill: true,
-          opacity: '0.55',
+          opacity: scale.disabledOpacity,
         }))
       );
       const button = disabled.first();
