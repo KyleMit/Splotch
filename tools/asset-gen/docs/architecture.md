@@ -81,12 +81,14 @@ Structure:
 * The root npm scripts stay the discoverable entry points (ADR-0019), using behavior-led `check:*`,
   `gen:*`, and `update:*` namespaces; they just point at `tools/asset-gen/…`.
 
-**The shared-module contract.** The generators import exactly four modules from `web/src` —
-`ai/styles.ts`, `ai/prompt.ts`, `theme.ts`, `state/books.ts` — the app's single source of truth for
-styles/prompts/theme/catalog. Gemini response classification moved into `lib/gemini-response.ts`
-once the app stopped calling Gemini (amended 2026-09). That set is the entire sanctioned import
-surface (documented in `tools/asset-gen/CLAUDE.md`); the pipeline reaches into nothing else under
-`web/src`.
+**The shared-module contract.** The generators import a short allowlist of `web/src` modules — the
+app's single source of truth for styles/prompts/theme/catalog, plus the Sticker backdrop key the
+style covers share with live generations. Gemini response classification moved into
+`lib/gemini-response.ts` once the app stopped calling Gemini (amended 2026-09). The allowlist is the
+coupling table in `tools/asset-gen/README.md`; the pipeline reaches into nothing else under
+`web/src` and never imports the repo-root `tools/lib/`. `tests/import-boundary.test.mjs` enforces
+both halves (amended 2026-09, after the prose list had drifted to omit a module and a second catalog
+consumer).
 
 ## Consequences
 
