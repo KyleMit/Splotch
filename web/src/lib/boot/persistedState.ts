@@ -18,13 +18,16 @@ async function hydrateSettingsStores(): Promise<void> {
   // evicted from the durable Capacitor Preferences store. Each persisted store
   // registers its own reloader via onDurableRestore (issue #521), so hydrate
   // refreshes them all — no reload list to keep in sync here. No-op (and
-  // instant) on the web. Orientation is re-applied explicitly: it's an
-  // imperative side effect, not a persisted store, and reloadSettings changing
-  // an orientation setting also re-runs the orientation $effect in the shell,
-  // but this guarantees the apply even when the restored value equals the
-  // current one.
+  // instant) on the web.
   const restored = await hydrateDurableStorage();
   recordSession('settingsActivity');
+  // A restored orientation choice normally reaches the device through the
+  // drawing route's orientation $effect, which re-runs inside the restore, so
+  // the latch in platform/orientation.ts turns this call away. It still
+  // requests a lock where that $effect does not: a lock that failed earlier
+  // (failure releases the latch, and an unchanged choice does not re-run the
+  // $effect), and a route that mounts no such $effect (Parent Center on
+  // /privacy). persistedState.orientation.svelte.test.ts pins each case.
   if (restored) {
     void applyDeviceOrientationPreference(
       settingsState.orientationChoice(),

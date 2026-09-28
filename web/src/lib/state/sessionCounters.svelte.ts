@@ -23,10 +23,17 @@ const SESSION_COUNTER_STORAGE_KEYS: Record<SessionCounterKind, StorageKey> = {
   installReprompt: STORAGE_KEYS.installRepromptSessionCount,
 };
 
+// A stored count outside 0..limit is corrupt; clamping keeps every `>=`/`<`
+// milestone comparison answering as it would for a count recordSession wrote.
+function readSessionCount(kind: SessionCounterKind): number {
+  const stored = readInt(SESSION_COUNTER_STORAGE_KEYS[kind], 0);
+  return Math.min(SESSION_COUNTER_LIMITS[kind], Math.max(0, stored));
+}
+
 function readSessionCounts(): Record<SessionCounterKind, number> {
   return {
-    settingsActivity: readInt(STORAGE_KEYS.settingsActivitySessionCount, 0),
-    installReprompt: readInt(STORAGE_KEYS.installRepromptSessionCount, 0),
+    settingsActivity: readSessionCount('settingsActivity'),
+    installReprompt: readSessionCount('installReprompt'),
   };
 }
 

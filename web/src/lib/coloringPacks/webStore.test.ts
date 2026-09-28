@@ -151,6 +151,39 @@ describe('web coloring-pack inventory', () => {
     expect(await store.installed(released)).toEqual([]);
   });
 
+  // A 200 is not proof of the right bytes: a captive portal answers with its
+  // own page and a CDN can cut a body short. Verification is the only barrier
+  // between those bytes and the cache the service worker serves.
+  it.each([
+    ['whose length is wrong', '<html>Sign in to Wi-Fi</html>', 'byte count mismatch'],
+    ['whose digest is wrong', 'c', 'digest mismatch'],
+  ])(
+    'caches nothing from a download %s, and a retry fetches only that file',
+    async (_case, corruptBody, message) => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(new Response('a'))
+        .mockResolvedValueOnce(new Response(corruptBody));
+      const store = createWebColoringPackStore();
+      const [first, second] = dinosaur.files;
+
+      await expect(
+        store.install(released, dinosaur, false, new AbortController().signal)
+      ).rejects.toThrow(`Coloring asset ${message}: ${second.path}`);
+
+      expect(cachedPaths(currentCache)).toEqual([first.path]);
+      expect(await servedByWorker(second.path)).toBeUndefined();
+      expect(await store.installed(released)).toEqual([]);
+
+      vi.mocked(fetch).mockClear();
+      await store.install(released, dinosaur, false, new AbortController().signal);
+
+      expect(fetch).toHaveBeenCalledOnce();
+      expect(fetch).toHaveBeenCalledWith(second.downloadPath, expect.any(Object));
+      expect(await servedByWorker(second.path)).toBe('b');
+      expect(await store.installed(released)).toEqual([{ id: dinosaur.id, bytes: dinosaur.bytes }]);
+    }
+  );
+
   it('caches an SVG with its format content type when the server omits the header', async () => {
     const vectorPath = '/coloring/dinosaur/first.overlay.svg';
     const vectorBook = {
