@@ -326,8 +326,8 @@
      A gate that stays phone-sized on a tablet reads as incidental rather than
      as the boundary it is, so the card, the equation and the keypad take one
      step up once both axes clear the tablet-class floor. Classifying by
-     viewport rather than by pointer is what the app already does
-     (`isTabletViewport()`), so a roomy desktop window takes this step too.
+     viewport rather than by pointer matches actionButtonSizeClass
+     (breakpoints.ts), so a roomy desktop window takes this step too.
      Both axes on purpose: a landscape phone is wide but short, and keeps the
      compact treatment above. 600px is TABLET_MIN_SIDE_PX, which a CSS media
      query cannot import — the agreement with it, and with AiImagePrompt's

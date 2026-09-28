@@ -90,10 +90,10 @@ export function edgeSwipeDirectionDecided(travel: number, renderScale: number): 
 // threshold is a fraction of the PAPER's shorter backing-store side, so it scales
 // with paper size and renderScale. Paper, not canvas: the caller passes
 // `min(paper.pxW, paper.pxH)`, and a rotation lock leaves the paper at its
-// pre-rotation dimensions while the canvas takes the new viewport's
-// (adoptPaperUnlessLocked), so the two genuinely diverge there. tests/helpers.ts
-// imports the ratio to pace its own strokes under this threshold, and derives
-// paper-space geometry from it.
+// pre-rotation dimensions while the canvas takes the new viewport's (the
+// engine skips adoptPaper while paperLocked), so the two genuinely diverge
+// there. tests/helpers.ts imports the ratio to pace its own strokes under this
+// threshold, and derives paper-space geometry from it.
 export const POINTER_RESUME_GAP_MS = 100;
 export const POINTER_RESUME_JUMP_RATIO = 0.1;
 

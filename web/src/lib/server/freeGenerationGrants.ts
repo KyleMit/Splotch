@@ -11,9 +11,9 @@ import { sleep } from './sleep';
 
 const STORE_NAME = 'free-generation-grants';
 const DAILY_PROVIDER_START_KEY_PREFIX = 'daily-provider-starts/';
-// A reservation is held until the generation settles, and settling no longer
-// happens inside the request that reserved (ADR-0115) — it happens when the poll
-// collects a job that may legitimately have been running for minutes. So the
+// A reservation is held until the generation settles, and a background
+// generation settles outside the request that reserved it (ADR-0115) — when the
+// poll collects a job that may legitimately have been running for minutes. So the
 // lease has to outlive the job, not the request: anything shorter reclaims the
 // slot while the picture is still on its way, and the completion that follows
 // finds no reservation, books the success as an abandoned failure, and never

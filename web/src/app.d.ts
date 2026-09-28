@@ -24,7 +24,7 @@ declare global {
     }
   }
 
-  // Compile-time constants injected by `define` in vite.config.js. Code guards
+  // Compile-time constants injected by `define` in vite.config.ts. Code guards
   // them with `typeof __X__ !== 'undefined'`, so they're declared (not assumed
   // present) — `const` is enough for type-checking those guards.
   const __APP_VERSION__: string;

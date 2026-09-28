@@ -3,7 +3,7 @@
 // on cold start. That's acceptable here: Netlify function instances are
 // short-lived, and the goal is only to blunt rapid brute-force bursts against
 // the token/key oracles — not to enforce a durable, cross-instance quota. If we
-// ever need that, swap the Map for a Netlify Blobs counter (see tokens.js).
+// ever need that, swap the Map for a Netlify Blobs counter (see tokens.ts).
 import type { RateLimitBudget } from './rateLimitPolicy';
 
 // A bucket records the window it was written under so the eviction sweep can

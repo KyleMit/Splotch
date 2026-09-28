@@ -74,7 +74,7 @@ export const scale = {
   fontSizeXl: '22px',
   // The display tier above the body ramp: the H1 of a whole page — PageShell's
   // hero, the crash screen, the dev index. Fluid — 34px on a phone, 46px once
-  // the sheet has room — replacing the old fixed-size breakpoint swap.
+  // the sheet has room — rather than swapping fixed sizes at a breakpoint.
   fontSizeDisplay: 'clamp(34px, 3.2vw + 17px, 46px)',
 
   // Text-input font-size floor: iOS Safari / WKWebView zooms the visual

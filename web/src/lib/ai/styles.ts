@@ -39,7 +39,7 @@ export function isStyleName(value: unknown): value is StyleName {
 // dark ground otherwise flattens away. Clay has to say the scene is one
 // continuous mass, because the dark ground reads every silhouette as a dark
 // outline and the forms flatten into stacked cutouts. Every other style takes
-// its light suffix unchanged plus the night clause — Sticker included, now that
+// its light suffix unchanged plus the night clause — Sticker included, since
 // its backdrop is cut away rather than colored.
 export const DARK_STYLE_SUFFIXES = {
   Crayon:

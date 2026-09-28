@@ -199,7 +199,7 @@
     }
 
     /* Full-width tap target; the primitive's inline-flex already centres the
-       label, which the old block anchor left sitting high in its box. */
+       label, so width is the only override. */
     .action :global(.btn) {
       width: 100%;
     }

@@ -5,7 +5,7 @@ import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 
 // Collecting a generation the server handed to its background worker (ADR-0115).
 //
-// The wait is no longer bounded by a platform ceiling but by how long a child
+// The wait is bounded not by a platform ceiling but by how long a child
 // should be left looking at a spinner, so the loop's own timeout is the real
 // deadline and it reports a timeout as retryable — the same drawing on the same
 // endpoint may well work.

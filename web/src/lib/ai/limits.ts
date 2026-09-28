@@ -19,7 +19,7 @@ export const NETLIFY_SYNC_TIMEOUT_MS = 26_000;
 export const GENERATE_DEADLINE_MS = 24_000;
 
 // A key check is a one-token model ping; it should never hold an invocation for
-// long. Before this bound a hung probe occupied one until the platform killed it.
+// long. Without this bound a hung probe occupies one until the platform kills it.
 export const VERIFY_KEY_DEADLINE_MS = 10_000;
 
 // The client aborts just past the platform ceiling: long enough that the
@@ -32,7 +32,7 @@ export const VERIFY_KEY_DEADLINE_MS = 10_000;
 export const CLIENT_REQUEST_TIMEOUT_MS = 27_000;
 
 // A generation handed to the background worker is collected by polling
-// /api/generation-result (ADR-0115), so the client's bound is no longer the
+// /api/generation-result (ADR-0115), so the client's bound is not the
 // platform's — it is how long a child should be left waiting before the app
 // admits it isn't coming. Sized past the slowest effort tier measured in the
 // bake-off, with room for the handoff either side.

@@ -48,8 +48,8 @@
     // becoming visible starts them from frame 0 with no restart trick — BUT
     // only because the getBoundingClientRect() reads above force the browser
     // to observe the animation-less state after any prior dismiss. A reorder
-    // that flips this state before measuring would revive the mid-cycle
-    // appearance the old restart trick existed to fix.
+    // that flips this state before measuring would let the loops resume
+    // mid-cycle, so the coachmark would appear partway through its animation.
     tutorialVisible = true;
     tutorialDismissTimer = setTimeout(dismiss, COACHMARK_AUTO_DISMISS_MS);
   }

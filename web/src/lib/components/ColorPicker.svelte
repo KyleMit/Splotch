@@ -131,8 +131,8 @@
      and only above the large-tablet floor: every trim rung below is a
      max-width/max-height in the 675px-and-under range, so nothing here can
      reach one and the ladders stay derived from the scale-1 geometry.
-     Classifying by viewport rather than by pointer is what the app already does
-     (`isTabletViewport()`), so a roomy desktop window takes this step too.
+     Classifying by viewport rather than by pointer matches actionButtonSizeClass
+     (breakpoints.ts), so a roomy desktop window takes this step too.
      1000px is LARGE_TABLET_MIN_SIDE_PX, which a CSS media query cannot import —
      the agreement with it, and with the other roomy dialogs' matching steps, is
      held by dialogTabletScaling.test.ts. The factor is the fit at the corner of

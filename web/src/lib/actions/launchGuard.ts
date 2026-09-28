@@ -4,11 +4,9 @@
 // button was — and a backdrop tap dismisses the dialog, so the modal flickers
 // shut the instant it opened.
 //
-// ColorPicker already carved out a permanent block zone around its launching
-// swatch to survive this (see isPointInGradientBlockZone). This generalises
-// that idea for every modal, but deliberately *not* forever: a launch registers
-// a circular dead zone around the triggering button that swallows taps for just
-// long enough (the fly-in plus a beat to notice) before self-clearing.
+// The guard covers every modal, but deliberately *not* forever: a launch
+// registers a circular dead zone around the triggering button that swallows taps
+// for just long enough (the fly-in plus a beat to notice) before self-clearing.
 // After it lapses a deliberate tap in the same spot dismisses as usual.
 //
 // modalDialog registers the zone on open and consults it before dismissing on a

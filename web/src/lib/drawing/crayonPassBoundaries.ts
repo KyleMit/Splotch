@@ -6,7 +6,7 @@
 // foreign op, and the monotonic seed each new pass takes.
 //
 // A factory rather than module state so a test gets a fresh counter, and so the
-// engine's `renderTiledOp`/`recordCurrentOp` arrive as dependencies instead of
+// engine's `renderTiledOp`/`recordTiledOp` arrive as dependencies instead of
 // this module reaching back into the facade.
 
 import { CrayonPassTracker } from './crayonPassTracker';
