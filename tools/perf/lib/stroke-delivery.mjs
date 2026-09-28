@@ -11,19 +11,16 @@
 // performance-matrix fold, and the person session's REDO verdict, so none of
 // them can bank a capture another refuses.
 
+import { EVENT_TRUSTED, EVENT_TYPE, POINTER_DOWN } from './real-screen-stats.mjs';
+
 // A dispatched swipe's start is rounded to a whole device pixel, and Android
 // reports the touch back at sub-pixel precision; anything past one CSS pixel is
 // an origin that was derived wrongly, not rounding.
 const STROKE_LANDING_TOLERANCE_CSS_PX = 1;
 
-// Columns of a probe event row (tools/perf/probes/real-screen-probe.js).
-const EVENT_TYPE = 2;
-const EVENT_TRUSTED = 8;
-const POINTERDOWN = 0;
-
 export function trustedPointerdowns(report) {
   return (report?.events ?? []).filter(
-    (row) => row[EVENT_TYPE] === POINTERDOWN && row[EVENT_TRUSTED] === 1
+    (row) => row[EVENT_TYPE] === POINTER_DOWN && row[EVENT_TRUSTED] === 1
   ).length;
 }
 

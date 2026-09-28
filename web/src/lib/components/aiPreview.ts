@@ -1,6 +1,9 @@
+// A preview that never arrives would leave every style button disabled with nothing to say why, so a
+// failed export hands off to `fail`, the way generateAiImage closes its own modal on the same failure.
 export function createAiPreviewLoader(
   exportDrawing: () => Promise<Blob | null>,
-  commit: (blob: Blob) => void
+  commit: (blob: Blob) => void,
+  fail: () => void
 ) {
   let activeLoadId = 0;
 
@@ -11,9 +14,9 @@ export function createAiPreviewLoader(
         console.error('AI preview export failed:', err);
         return null;
       });
-      if (!blob) return;
       if (loadId !== activeLoadId) return;
-      commit(blob);
+      if (blob) commit(blob);
+      else fail();
     },
     invalidate() {
       activeLoadId++;

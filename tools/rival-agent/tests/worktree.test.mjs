@@ -11,6 +11,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { parseDiffAnchors } from '../post-review.mjs';
 import {
   createDisposableWorktree,
   DIFF_CONTEXT_LINES,
@@ -220,5 +221,23 @@ describe('disposable worktree and packet', () => {
       .find((line) => line.startsWith('@@'));
     const span = DIFF_CONTEXT_LINES * 2 + 1;
     expect(hunk).toMatch(new RegExp(`^@@ -13,${span} \\+13,${span} @@`));
+  });
+
+  it('keeps a trailing blank context line in the packet diff', () => {
+    writeFileSync(join(repo, 'a.txt'), 'one\ntwo\nthree\n\n');
+    sh(['commit', '-q', '-am', 'trailing blank line']);
+    writeFileSync(join(repo, 'a.txt'), 'ONE\ntwo\nthree\n\n');
+    sh(['commit', '-q', '-am', 'first line']);
+    const scope = resolveScope(repo, { kind: 'commit', commit: 'HEAD' });
+    const packet = join(root, 'packet-trailing');
+    mkdirSync(packet);
+    writeReviewPacket(repo, scope, packet);
+    const patch = readFileSync(join(packet, PACKET_FILES.diff), 'utf8');
+    expect(patch.endsWith(' three\n \n')).toBe(true);
+    expect(parseDiffAnchors(patch).get('a.txt').RIGHT).toEqual(new Set([1, 2, 3, 4]));
+    sh(['checkout', '-q', 'HEAD^']);
+    expect(
+      spawnSync('git', ['apply', '--check', join(packet, PACKET_FILES.diff)], { cwd: repo }).status
+    ).toBe(0);
   });
 });

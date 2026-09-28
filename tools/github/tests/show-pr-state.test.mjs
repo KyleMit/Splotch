@@ -55,7 +55,6 @@ function fakeGh({
                         isResolved: true,
                         path: 'b.mjs',
                         line: 2,
-                        comments: { totalCount: 1 },
                       },
                     ],
                   }
@@ -67,7 +66,6 @@ function fakeGh({
                         isResolved: false,
                         path: 'a.mjs',
                         line: 1,
-                        comments: { totalCount: 2 },
                       },
                     ],
                   },
@@ -87,7 +85,11 @@ describe('show-pr-state', () => {
     const state = collectPrState({ number: 42, repository: 'KyleMit/Splotch', run: gh.run });
     expect(state.threads.map((thread) => thread.id)).toEqual(['thread-1', 'thread-2']);
     expect(state.checks).toHaveLength(1);
-    expect(state.checksMayStillRegister).toBe(true);
+    expect(Object.keys(state)).toEqual(['repository', 'pr', 'checks', 'threads']);
+    const query = gh.calls
+      .find(({ args }) => args[1] === 'graphql')
+      .args.find((arg) => arg.startsWith('query='));
+    expect(query).toContain('nodes{id isResolved path line}}');
     expect(gh.calls.filter(({ args }) => args[0] === 'pr' && args[1] === 'view')).toHaveLength(2);
     expect(gh.calls.find(({ args }) => args[1] === 'checks').options).toEqual({
       allowedExitCodes: [0, 1, 8],

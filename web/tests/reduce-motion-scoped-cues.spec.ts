@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { REDUCE_MOTION_ATTRIBUTE } from '../src/lib/platform/reducedMotion';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
@@ -9,6 +9,24 @@ import { revealAiResult } from './ai-harness';
 // Neither is reachable from the probe table in reduce-motion.spec.ts: a
 // Svelte-scoped ::before carries a generated class, and the AI footer has two
 // branches that share one keyframe.
+
+// Waits for <html> to carry the flipped answer, then for two frames so style
+// recalculation has seen it before the caller samples computed animations.
+async function expectReduceMotionApplied(page: Page, reduced: boolean) {
+  await expect
+    .poll(() =>
+      page
+        .locator('html')
+        .evaluate((el, attribute) => el.hasAttribute(attribute), REDUCE_MOTION_ATTRIBUTE)
+    )
+    .toBe(reduced);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+  );
+}
 
 const RING_TRIGGERS = [
   { name: 'stops both selection rings expanding', reduced: true, rings: ['none', 'none'] },
@@ -42,7 +60,10 @@ for (const initiallyReduced of [true, false]) {
     await gotoApp(page);
     const swatch = page.locator('.color-swatch:not(.gradient-swatch):visible').nth(1);
     await swatch.click();
-    await page.waitForTimeout(900);
+    // subtree reaches the ::before/::after rings.
+    await swatch.evaluate((el) =>
+      Promise.all(el.getAnimations({ subtree: true }).map((animation) => animation.finished))
+    );
     const ringAnimations = () =>
       swatch.evaluate((el) =>
         (['::before', '::after'] as const).map(
@@ -51,7 +72,14 @@ for (const initiallyReduced of [true, false]) {
       );
     const before = await ringAnimations();
     await page.emulateMedia({ reducedMotion: initiallyReduced ? 'no-preference' : 'reduce' });
+    await expectReduceMotionApplied(page, !initiallyReduced);
     expect(await ringAnimations()).toEqual(before);
+    // A forwards-filled ring stays in getAnimations(); a restarted one runs again.
+    expect(
+      await swatch.evaluate((el) =>
+        el.getAnimations({ subtree: true }).map((animation) => animation.playState)
+      )
+    ).not.toContain('running');
     await expect(swatch).not.toHaveClass(/releasing/);
   });
 }
@@ -99,19 +127,7 @@ for (const branch of ['saved', 'downloadButton'] as const) {
       );
       const originalName = await footer.evaluate((el) => getComputedStyle(el).animationName);
       await page.emulateMedia({ reducedMotion: initiallyReduced ? 'no-preference' : 'reduce' });
-      await expect
-        .poll(() =>
-          page
-            .locator('html')
-            .evaluate((el, attribute) => el.hasAttribute(attribute), REDUCE_MOTION_ATTRIBUTE)
-        )
-        .toBe(!initiallyReduced);
-      await page.evaluate(
-        () =>
-          new Promise<void>((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-          )
-      );
+      await expectReduceMotionApplied(page, !initiallyReduced);
       expect(await footer.evaluate((el) => getComputedStyle(el).animationName)).toBe(originalName);
       expect(await footer.evaluate((el) => el.getAnimations().length)).toBe(0);
     });

@@ -42,7 +42,7 @@ public class ColoringPacksPlugin extends Plugin {
     public void status(PluginCall call) {
         try {
             String resolution = requiredResolution(call);
-            JSONArray books = new JSONArray(call.getArray("books", new JSArray()).toString());
+            JSONArray books = new JSONArray(requiredArray(call, "books").toString());
             storageExecutor.execute(() -> {
                 try {
                     JSArray installed = new JSArray();
@@ -168,6 +168,14 @@ public class ColoringPacksPlugin extends Plugin {
     private static String requiredString(PluginCall call, String key) {
         String value = call.getString(key);
         if (value == null || value.isEmpty()) throw new IllegalArgumentException(key + " is required");
+        return value;
+    }
+
+    // No default list: reconcile deletes every stored book the list leaves out, so a missing
+    // array must reject rather than read as an empty manifest.
+    private static JSArray requiredArray(PluginCall call, String key) {
+        JSArray value = call.getArray(key);
+        if (value == null) throw new IllegalArgumentException(key + " is required");
         return value;
     }
 

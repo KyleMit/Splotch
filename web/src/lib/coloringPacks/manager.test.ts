@@ -247,6 +247,40 @@ describe('coloring-pack downloader policy boundaries', () => {
     await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(2));
     downloader.stop();
   });
+
+  it.each([false, true])(
+    'reissues an install issued with allowMetered %s once the cellular setting flips',
+    async (issuedAllowMetered) => {
+      const first = pendingInstall();
+      mocks.install
+        .mockReturnValueOnce(first.promise)
+        .mockImplementation(async (_manifest, book: { id: string }) => installedPack(book.id, 1));
+      mocks.cancel.mockImplementationOnce(async () => {
+        first.reject(new Error('cancelled'));
+      });
+      settings.coloringPacksAllowMetered = issuedAllowMetered;
+      const downloader = createColoringPackDownloader(() => true);
+      try {
+        downloader.start();
+
+        await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledOnce());
+        expect(mocks.install.mock.calls[0][2]).toBe(issuedAllowMetered);
+        settings.coloringPacksAllowMetered = !issuedAllowMetered;
+        window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
+
+        await vi.waitFor(() => expect(mocks.install).toHaveBeenCalledTimes(3));
+        expect(mocks.cancel).toHaveBeenCalledOnce();
+        expect(mocks.install.mock.calls[1][1].id).toBe('dinosaur');
+        expect(mocks.install.mock.calls[1][2]).toBe(!issuedAllowMetered);
+      } finally {
+        // Settles the first install even when no cancel did, so the shared native
+        // run queue cannot hold later tests behind it.
+        first.reject(new Error('test teardown'));
+        downloader.stop();
+        settings.coloringPacksAllowMetered = false;
+      }
+    }
+  );
 });
 
 describe('removal during an in-flight run', () => {
