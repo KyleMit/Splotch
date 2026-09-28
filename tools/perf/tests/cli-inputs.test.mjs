@@ -33,9 +33,14 @@ let fixtureDir;
 async function replayActions(actions) {
   const canvas = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 1, height: 1 }) };
   const engine = Object.fromEntries(
-    ['setStrokeWidth', 'setColor', 'setEraserMode', 'setMagicMode', 'setCrayonMode'].map(
-      (method) => [method, vi.fn()]
-    )
+    [
+      'setStrokeWidth',
+      'setColor',
+      'setEraserMode',
+      'setMagicMode',
+      'setCrayonMode',
+      'clearCanvas',
+    ].map((method) => [method, vi.fn()])
   );
   vi.stubGlobal('document', { querySelector: () => canvas });
   vi.stubGlobal('window', { __engine: engine });
@@ -272,6 +277,7 @@ describe('performance CLI input failures', () => {
       ['brush', 'eraser'],
       ['color', '#000000'],
       ['eraser'],
+      ['clear'],
     ]);
 
     expect(engine.setStrokeWidth.mock.calls.flat()).toEqual([
@@ -283,7 +289,19 @@ describe('performance CLI input failures', () => {
       SIZE_PX[1],
       SIZE_PX[5],
       SIZE_PX[1],
+      SIZE_PX[5],
     ]);
+    expect(engine.setEraserMode).toHaveBeenLastCalledWith(false);
+    expect(engine.setCrayonMode).toHaveBeenLastCalledWith(true);
+  });
+
+  // The app's resetToolAfterClear lifts the child out of the eraser only; the
+  // magic brush survives a clear.
+  it('keeps the magic brush through a clear', async () => {
+    const engine = await replayActions([['brush', 'magic'], ['clear']]);
+
+    expect(engine.setMagicMode).toHaveBeenLastCalledWith(true);
+    expect(engine.clearCanvas).toHaveBeenCalledOnce();
   });
 
   it('imports the Android profiler without starting its driver', async () => {

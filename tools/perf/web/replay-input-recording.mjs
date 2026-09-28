@@ -208,6 +208,14 @@ export function replayInPage({ events, recCanvas, sizePx, defaultSizeLevel, turb
   // device started with; both start at the app default.
   const levels = { pen: defaultSizeLevel, eraser: defaultSizeLevel };
   const pushStrokeWidth = () => E.setStrokeWidth(sizePx[eraser ? levels.eraser : levels.pen]);
+  const resumeInkBrush = () => {
+    eraser = false;
+    magic = false;
+    E.setEraserMode(false);
+    E.setMagicMode(false);
+    E.setCrayonMode(inkCrayon);
+    pushStrokeWidth();
+  };
   let prevT = 0;
   let strokes = 0;
   let undos = 0;
@@ -276,14 +284,7 @@ export function replayInPage({ events, recCanvas, sizePx, defaultSizeLevel, turb
           // replay with the renderer the device actually ran. This also repairs
           // legacy toggle-`eraser` recordings, whose color-exits-eraser was
           // never replayed.
-          if (eraser || magic) {
-            eraser = false;
-            magic = false;
-            E.setEraserMode(false);
-            E.setMagicMode(false);
-            E.setCrayonMode(inkCrayon);
-            pushStrokeWidth();
-          }
+          if (eraser || magic) resumeInkBrush();
           E.setColor(e.value);
         } else if (e.name === 'size' || e.name === 'eraser-size') {
           levels[e.name === 'size' ? 'pen' : 'eraser'] = e.value;
@@ -304,7 +305,12 @@ export function replayInPage({ events, recCanvas, sizePx, defaultSizeLevel, turb
           snapPeak();
           undos++;
           await E.undo();
-        } else if (e.name === 'clear') E.clearCanvas();
+        } else if (e.name === 'clear') {
+          E.clearCanvas();
+          // The app's resetToolAfterClear: a clear lifts the child out of the
+          // eraser onto the last ink brush, while the magic brush survives it.
+          if (eraser) resumeInkBrush();
+        }
         await raf();
       }
     }
