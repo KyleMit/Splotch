@@ -21,7 +21,7 @@ const deferredIconsDir = fileURLToPath(new URL('../src/lib/icons/deferred', impo
 // One minification-proof string literal per lazily-loaded save module.
 const SAVE_MODULE_MARKERS: Record<string, string> = {
   'exportDrawing.ts': 'handmade-paper',
-  'imageSave.ts': 'allowPrompt',
+  'imageSave.ts': 'accessDenied',
   'screenshot.ts': 'discardPreview',
   'folderSave.ts': 'Persisting the save folder failed:',
   'screenshotFeedback.ts': 'screenshot-capture-feedback',
