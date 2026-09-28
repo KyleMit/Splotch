@@ -25,6 +25,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
+import { parseArgs } from 'node:util';
 import { ASSET_GEN_DIR, COLORING_DIR, FILL_SRC_DIR, toPosix } from '../lib/asset-paths.mjs';
 import { lineArtStem, rasterizeLineArt, resolveNightLineArt } from '../lib/line-art.mjs';
 import { fail } from '../lib/asset-cli.mjs';
@@ -127,16 +128,20 @@ async function scoreCatalog() {
 
 const get = (obj, path) => path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
 
-const mode = process.argv[2];
-if (mode !== '--freeze' && mode !== '--diff' && mode !== undefined)
-  fail('usage: check-golden-scores.mjs [--freeze | --diff]   (default: --diff)');
+// Strict parsing: the update script bakes in --freeze, so a stray `-- --diff` or a
+// page filter this CLI does not support must stop the run, not rewrite the baseline.
+const { values: modes } = parseArgs({
+  options: { freeze: { type: 'boolean' }, diff: { type: 'boolean' } },
+});
+if (modes.freeze && modes.diff)
+  fail('usage: check-golden-scores.mjs [--freeze | --diff]   (default: --diff) — pick one mode');
 
 const t0 = performance.now();
 const { catalog: current, errors, erroredPages } = await scoreCatalog();
 const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
 const pageCount = Object.keys(current.pages).length;
 
-if (mode === '--freeze') {
+if (modes.freeze) {
   if (errors) {
     console.log(
       `Skipped freeze after scoring ${pageCount} page(s) in ${elapsed}s; ${errors} page(s) errored and ${relative(process.cwd(), GOLDEN_PATH)} was not changed.`

@@ -479,3 +479,28 @@ it('golden freeze preserves the baseline when any page errors', async () => {
   await expect(readFile(goldenPath, 'utf8')).resolves.toBe('complete baseline\n');
   expect(process.exitCode).toBe(1);
 });
+
+it('golden freeze writes the baseline when every page scores', async () => {
+  await addPage('good-wide');
+
+  await runCli('check-golden-scores.mjs', '--freeze');
+
+  const golden = await readFile(join(state.roots.assetGen, 'golden/golden-scores.json'), 'utf8');
+  expect(Object.keys(JSON.parse(golden).pages)).toEqual(['test/good-wide']);
+  expect(process.exitCode).toBeUndefined();
+});
+
+// update:coloring-golden-scores bakes in --freeze, so these are what `-- <extra>` reaches.
+it.each([
+  [['--freeze', '--diff'], 'pick one mode'],
+  [['--freeze', 'nature'], "Unexpected argument 'nature'"],
+  [['--freeze', '--dry-run'], "Unknown option '--dry-run'"],
+])('golden scores rejects %j and keeps the baseline', async (args, message) => {
+  await addPage('good-wide');
+  const goldenPath = join(state.roots.assetGen, 'golden/golden-scores.json');
+  await writeFile(goldenPath, 'complete baseline\n');
+
+  await expect(runCli('check-golden-scores.mjs', ...args)).rejects.toThrow(message);
+
+  await expect(readFile(goldenPath, 'utf8')).resolves.toBe('complete baseline\n');
+});
