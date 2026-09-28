@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { ASSET_GEN_DIR, REPO_ROOT, toPosix } from '../lib/asset-paths.mjs';
 
@@ -16,16 +17,28 @@ const EXEMPT_DIRS = ['crayon-reference/', 'legacy/', 'ideas-exploration/'];
 const COUPLING_HEADING = '### The one coupling to the app';
 const README_PATH = join(ASSET_GEN_DIR, 'README.md');
 
-const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*)(['"])([^'"]+)\1/g;
 const PATH_SPECIFIER = /^\.{1,2}\/|^\//;
 
-// Whole-line comments are prose, not module references.
+// Module specifiers from the syntax tree, so strings and comments that merely
+// mention a path are ignored and a template-literal import() is not. A dynamic
+// import whose specifier is computed yields null: it cannot be checked.
 function specifiers(source) {
-  const code = source
-    .split('\n')
-    .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
-    .join('\n');
-  return [...code.matchAll(SPECIFIER)].map((match) => match[2]);
+  const found = [];
+  const visit = (node) => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      found.push(node.moduleSpecifier.text);
+    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      const [argument] = node.arguments;
+      found.push(argument && ts.isStringLiteralLike(argument) ? argument.text : null);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(ts.createSourceFile('module.ts', source, ts.ScriptTarget.Latest, false, ts.ScriptKind.TS));
+  return found;
 }
 
 function documentedCoupling(readme) {
@@ -51,7 +64,11 @@ function boundaryViolations(files, documented) {
   const violations = [];
   const imported = new Map();
   for (const { path, source } of files) {
-    for (const spec of specifiers(source).filter((s) => PATH_SPECIFIER.test(s))) {
+    const found = specifiers(source);
+    if (found.includes(null)) {
+      violations.push(`${path} has an import() with a computed specifier, which cannot be checked`);
+    }
+    for (const spec of found.filter((s) => s !== null && PATH_SPECIFIER.test(s))) {
       const target = toPosix(relative(REPO_ROOT, join(ASSET_GEN_DIR, dirname(path), spec)));
       if (target.startsWith('tools/asset-gen/')) continue;
       if (target.startsWith('web/src/')) {
@@ -106,10 +123,26 @@ describe('asset-gen import boundary', () => {
   it.each([
     ['a bare side-effect import', (spec) => `import '${spec}';`],
     ['a from import', importing],
+    ['a type-only import', (spec) => `import type { Value } from '${spec}';`],
     ['a re-export', (spec) => `export { value } from '${spec}';`],
     ['a dynamic import', (spec) => `const module = await import('${spec}');`],
+    ['a template-literal dynamic import', (spec) => `const module = await import(\`${spec}\`);`],
   ])('extracts %s', (_label, write) => {
     expect(specifiers(write('../lib/example.mjs'))).toEqual(['../lib/example.mjs']);
+  });
+
+  it('ignores a path that only appears in a string or a comment', () => {
+    const source = `const note = "${importing('../../lib/proc.mjs')}";\n// ${importing('../x.mjs')}`;
+
+    expect(specifiers(source)).toEqual([]);
+  });
+
+  it('rejects an import() whose specifier is computed', () => {
+    const files = [{ path: 'coloring/new-tool.mjs', source: 'await import(`../${name}.mjs`);' }];
+
+    expect(boundaryViolations(files, new Map())).toEqual([
+      'coloring/new-tool.mjs has an import() with a computed specifier, which cannot be checked',
+    ]);
   });
 
   it('rejects a reach into repo-root tools/lib', () => {
