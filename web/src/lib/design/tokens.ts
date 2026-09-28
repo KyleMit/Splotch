@@ -282,7 +282,11 @@ export interface ThemeTokens {
   iconMuted: string;
   /** brand-tinted active/selected fills */
   brandWash: string;
-  /** one step stronger, for hovering washed elements */
+  /**
+   * One step stronger, for hovering washed elements. Held to 4.5:1 under
+   * --brand-text in both themes (tokens.test.ts), which caps how deep the
+   * light step can go.
+   */
   brandWashHover: string;
   brandText: string;
   /**
@@ -394,7 +398,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     iconInk: '#1f1f1f',
     iconMuted: '#737373',
     brandWash: '#ede7f6',
-    brandWashHover: '#e3d7f5',
+    brandWashHover: '#ede1ff',
     brandText: '#7c50bb',
     brandSolid: '#7c50bb',
     brandSolidHover: '#6b3fbf',

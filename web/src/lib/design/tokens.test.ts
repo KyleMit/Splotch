@@ -1,7 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { colorContrast } from './colorContrast';
 import { iconTokenEntries } from './iconTokens';
-import { brand, isColorToken, scale, themes, toCssVarName, zIndex } from './tokens';
+import {
+  brand,
+  isColorToken,
+  scale,
+  themes,
+  toCssVarName,
+  toKebabCase,
+  zIndex,
+  type ThemeTokens,
+} from './tokens';
 
 // The gen:tokens drift gate only proves the committed CSS matches the
 // generator's output — it would happily bless a wrong var name on both sides.
@@ -67,16 +76,22 @@ describe('surfaceRgb', () => {
   });
 });
 
-// The danger Button hovers from --danger-wash to --danger-wash-hover and keeps
-// its --danger-text label, so the hovered fill holds the same AA floor.
-describe('dangerWashHover', () => {
+// A wash Button hovers to its wash-hover step and keeps its text-token label,
+// so every hovered wash holds the same AA floor as the resting one.
+describe('wash hovers', () => {
   const AA_MIN_CONTRAST = 4.5;
+  const WASH_HOVER_LABELS = [
+    ['brandWashHover', 'brandText'],
+    ['dangerWashHover', 'dangerText'],
+  ] as const satisfies readonly (readonly [keyof ThemeTokens, keyof ThemeTokens])[];
 
-  it.each(THEME_NAMES)('%s keeps --danger-text at AA', (theme) => {
-    const tokens = themes[theme];
-    expect(
-      colorContrast(tokens.dangerText, tokens.dangerWashHover, tokens.surface)
-    ).toBeGreaterThanOrEqual(AA_MIN_CONTRAST);
+  describe.each(WASH_HOVER_LABELS)('%s', (hover, label) => {
+    it.each(THEME_NAMES)(`%s keeps --${toKebabCase(label)} at AA`, (theme) => {
+      const tokens = themes[theme];
+      expect(colorContrast(tokens[label], tokens[hover], tokens.surface)).toBeGreaterThanOrEqual(
+        AA_MIN_CONTRAST
+      );
+    });
   });
 });
 
