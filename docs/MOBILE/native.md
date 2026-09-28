@@ -139,8 +139,9 @@ itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-o
   and the field names each method resolves with agree with the facade; without it, a mismatch
   surfaces only on a device, as `"<name>" plugin is not implemented` or a result field that reads as
   `undefined`. It reads a Java payload by following each `resolve(…)` through the class's own
-  methods to the `put` calls on the resolved variable, and a Swift payload as the dictionary literal
-  inside a `resolve(…)` in the method's own body.
+  methods to the `put` calls on the resolved variable (a helper it follows needs exactly one
+  `return`), and a Swift payload as the dictionary literal inside a `resolve(…)` in the method's own
+  body.
 
 A second local plugin, **`PencilEraser`** (ADR-0028, iOS-only), shows the **event-emitting** variant
 and how to **attach a UIKit interaction to the web view**: the Apple Pencil double-tap

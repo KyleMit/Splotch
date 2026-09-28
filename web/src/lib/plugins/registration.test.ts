@@ -214,11 +214,17 @@ function javaPayloadFields(
   scope: string,
   bodies: ReadonlyMap<string, string>
 ): string[] {
-  const helper = /^(\w+)\(/.exec(value);
-  const helperBody = helper ? bodies.get(helper[1]) : undefined;
+  const [, helper = ''] = /^(\w+)\(/.exec(value) ?? [];
+  const helperBody = bodies.get(helper);
   if (helperBody !== undefined) {
-    const returned = /\breturn (\w+);/.exec(helperBody);
-    return returned ? javaPayloadFields(returned[1], helperBody, bodies) : [];
+    // A second return could resolve a different payload the guard never reads.
+    const returns = [...helperBody.matchAll(/\breturn\b([^;]*);/g)].map(([, returned]) =>
+      returned.trim()
+    );
+    if (returns.length !== 1 || !/^\w+$/.test(returns[0])) {
+      throw new Error(`${helper} needs exactly one return, of a local payload variable`);
+    }
+    return javaPayloadFields(returns[0], helperBody, bodies);
   }
   if (!/^\w+$/.test(value)) return [];
   return [...scope.matchAll(new RegExp(`\\b${value}\\.put\\(`, 'g'))].flatMap((put) => {
