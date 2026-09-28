@@ -37,7 +37,11 @@ import {
   startBackgroundGeneration,
   synchronousDeadlineMs,
 } from '$lib/server/generationStart';
-import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
+import {
+  GENERATION_ACCEPTED_STATUS,
+  SAFETY_REFUSAL_STATUS,
+  type GenerationStartedBody,
+} from '$lib/ai/generationResult';
 import {
   completeFreeGeneration,
   failFreeGeneration,
@@ -292,7 +296,9 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
         // The reservation now belongs to the job; the catch below must not
         // release it on this request's way out.
         reservationId = undefined;
-        return Response.json({ ok: true, ...started }, { status: 202 });
+        return Response.json({ ok: true, ...started } satisfies GenerationStartedBody, {
+          status: GENERATION_ACCEPTED_STATUS,
+        });
       }
     }
 

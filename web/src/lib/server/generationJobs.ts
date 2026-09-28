@@ -122,6 +122,30 @@ function isStoredJob(value: unknown): value is StoredJob {
   );
 }
 
+/**
+ * What the worker is told. Small on purpose: a background function's invocation
+ * body is capped in the low hundreds of KB, so the drawing goes to the job store
+ * and only its job id travels here.
+ */
+export interface GenerationWork {
+  jobId: string;
+  apiKey: string;
+  prompt: string;
+  mimeType: string;
+  deadlineMs: number;
+}
+
+export function isGenerationWork(value: unknown): value is GenerationWork {
+  return (
+    isRecord(value) &&
+    typeof value.jobId === 'string' &&
+    typeof value.apiKey === 'string' &&
+    typeof value.prompt === 'string' &&
+    typeof value.mimeType === 'string' &&
+    typeof value.deadlineMs === 'number'
+  );
+}
+
 // The SDK types a JSON read as `any`, and a record left by a deploy with an
 // older shape, or a partial write, would otherwise flow straight into typed
 // code. Every caller treats a record that fails the guard exactly as a missing
@@ -170,13 +194,13 @@ function sign(jobId: string, payloadDigest: string, expiresAt: number, secret: s
 const digestOf = (payload: string) =>
   createHmac(HMAC_ALG, TICKET_LABEL).update(payload).digest('hex');
 
-/** A ticket authorizing exactly this job with exactly this payload, or null if unconfigured. */
 // The header that authorizes a background generation. Both sides of the handoff
 // already import this module, so the name is declared once: spelling it twice
 // fails closed and silently — the worker answers 403, the start logs a refusal,
 // and every generation quietly falls back to the synchronous path.
 export const WORK_TICKET_HEADER = 'X-Work-Ticket';
 
+/** A ticket authorizing exactly this job with exactly this payload, or null if unconfigured. */
 export function issueWorkTicket(
   jobId: string,
   payload: string,

@@ -31,8 +31,7 @@ import {
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
-import { GENERATION_UNAVAILABLE_CODE } from '$lib/ai/generationResult';
-import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
+import { GENERATION_UNAVAILABLE_CODE, SAFETY_REFUSAL_STATUS } from '$lib/ai/generationResult';
 import { GET } from './+server';
 
 const jobId = 'a'.repeat(64);

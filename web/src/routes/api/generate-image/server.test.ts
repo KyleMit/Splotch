@@ -1,19 +1,37 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import type { AiImageProvider } from '$lib/server/ai/provider';
+import type {
+  completeFreeGeneration,
+  failFreeGeneration,
+  reserveDailyFreeGeneration,
+  reserveFreeGeneration,
+} from '$lib/server/freeGenerationGrants';
+import type { authorizeGenerationRequest } from '$lib/server/generationAuthorization';
+import type {
+  clientAcceptsBackgroundGeneration,
+  freeSettlement,
+  startBackgroundGeneration,
+} from '$lib/server/generationStart';
+import type { issueReportToken } from '$lib/server/reportToken';
+import type { recordByokUsage, recordTokenUsage } from '$lib/server/usage';
 
+// Typed against the functions they replace, so a changed server result shape
+// fails type-check here instead of these tests feeding the route a stale one.
 const mocks = vi.hoisted(() => ({
-  authorize: vi.fn(),
-  reserveGrant: vi.fn(),
-  reserveDaily: vi.fn(),
-  failGrant: vi.fn(),
-  completeGrant: vi.fn(),
-  generateImage: vi.fn(),
-  issueReportToken: vi.fn(),
-  recordByokUsage: vi.fn(),
-  recordTokenUsage: vi.fn(),
-  acceptsBackground: vi.fn(),
-  startBackground: vi.fn(),
+  authorize: vi.fn<typeof authorizeGenerationRequest>(),
+  reserveGrant: vi.fn<typeof reserveFreeGeneration>(),
+  reserveDaily: vi.fn<typeof reserveDailyFreeGeneration>(),
+  failGrant: vi.fn<typeof failFreeGeneration>(),
+  completeGrant: vi.fn<typeof completeFreeGeneration>(),
+  generateImage: vi.fn<AiImageProvider['generateImage']>(),
+  issueReportToken: vi.fn<typeof issueReportToken>(),
+  recordByokUsage: vi.fn<typeof recordByokUsage>(),
+  recordTokenUsage: vi.fn<typeof recordTokenUsage>(),
+  acceptsBackground: vi.fn<typeof clientAcceptsBackgroundGeneration>(),
+  freeSettlement: vi.fn<typeof freeSettlement>(),
+  startBackground: vi.fn<typeof startBackgroundGeneration>(),
 }));
 
 vi.mock('$lib/server/generationAuthorization', () => ({
@@ -34,7 +52,7 @@ vi.mock('$lib/server/usage', () => ({
 }));
 vi.mock('$lib/server/generationStart', () => ({
   clientAcceptsBackgroundGeneration: mocks.acceptsBackground,
-  freeSettlement: vi.fn(),
+  freeSettlement: mocks.freeSettlement,
   startBackgroundGeneration: mocks.startBackground,
   synchronousDeadlineMs: () => 1_000,
 }));
@@ -43,7 +61,7 @@ vi.mock('$lib/server/reportToken', () => ({
 }));
 
 import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
-import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
+import { GENERATION_ACCEPTED_STATUS, SAFETY_REFUSAL_STATUS } from '$lib/ai/generationResult';
 import { POST } from './+server';
 
 function handle(request: Request) {
@@ -399,13 +417,18 @@ describe('POST /api/generate-image', () => {
       managedToken: 'daycare-club',
     });
     mocks.acceptsBackground.mockReturnValue(true);
-    mocks.startBackground.mockResolvedValue({ jobId: 'job-1' });
+    mocks.startBackground.mockResolvedValue({ jobId: 'job-1', pollAfterMs: 4_000 });
     const bufferToString = vi.spyOn(Buffer.prototype, 'toString');
 
     try {
       const response = await post('Paper');
 
-      expect(response.status).toBe(202);
+      expect(response.status).toBe(GENERATION_ACCEPTED_STATUS);
+      await expect(response.json()).resolves.toEqual({
+        ok: true,
+        jobId: 'job-1',
+        pollAfterMs: 4_000,
+      });
       expect(bufferToString.mock.calls.filter(([encoding]) => encoding === 'base64')).toHaveLength(
         0
       );

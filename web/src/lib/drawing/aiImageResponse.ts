@@ -1,10 +1,16 @@
 import { FREE_DAILY_LIMIT_EXHAUSTED_CODE, FREE_GRANT_EXHAUSTED_CODE } from '$lib/freeGenerations';
-import { GENERATION_UNAVAILABLE_CODE } from '$lib/ai/generationResult';
+import {
+  GENERATION_ACCEPTED_STATUS,
+  GENERATION_UNAVAILABLE_CODE,
+  SAFETY_REFUSAL_STATUS,
+  THROTTLED_STATUS,
+  type StartedGeneration,
+} from '$lib/ai/generationResult';
 
 export type AiImageResponse =
   | { kind: 'image'; blob: Blob }
   /** Accepted, finishing in the background — collect it from /api/generation-result. */
-  | { kind: 'started'; jobId: string; pollAfterMs: number }
+  | ({ kind: 'started' } & StartedGeneration)
   /** Not finished yet, or not readable just now. Only a poll sees this. */
   | { kind: 'pending' }
   | { kind: 'safety' }
@@ -13,20 +19,15 @@ export type AiImageResponse =
   | { kind: 'free-unavailable' }
   | { kind: 'error'; status: number; detail: string };
 
-// A safety refusal tells the child to try a different drawing, unlike a retryable upstream failure.
-// The distinct status is part of the red-team safety contract in ADR-0023.
-export const SAFETY_REFUSAL_STATUS = 422;
-export const THROTTLED_STATUS = 429;
-const ACCEPTED_STATUS = 202;
-
 async function readStarted(
   response: Response
 ): Promise<Extract<AiImageResponse, { kind: 'started' }> | null> {
   try {
     const body: unknown = await response.json();
     if (typeof body !== 'object' || body === null) return null;
-    const jobId = 'jobId' in body ? body.jobId : null;
-    const pollAfterMs = 'pollAfterMs' in body ? body.pollAfterMs : null;
+    // Keyed by the shared type, so renaming a ticket field fails type-check here
+    // instead of reading every ticket as "not finished yet".
+    const { jobId, pollAfterMs }: Partial<Record<keyof StartedGeneration, unknown>> = body;
     if (typeof jobId !== 'string' || !jobId) return null;
     return {
       kind: 'started',
@@ -64,7 +65,7 @@ export async function readAiImageResponse(response: Response): Promise<AiImageRe
   // ticket is read as an image and the child is shown an empty picture. The
   // start endpoint answers it with a job to collect; a poll answers it with
   // nothing, meaning "not yet".
-  if (response.status === ACCEPTED_STATUS) {
+  if (response.status === GENERATION_ACCEPTED_STATUS) {
     const started = await readStarted(response);
     return started ?? { kind: 'pending' };
   }

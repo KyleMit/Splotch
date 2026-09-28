@@ -2,6 +2,7 @@ import { aiProvider } from '../../web/src/lib/server/ai/provider';
 import {
   claimJob,
   completeJob,
+  isGenerationWork,
   takeJobInput,
   verifyWorkTicket,
   WORK_TICKET_HEADER,
@@ -16,31 +17,28 @@ import {
 // result — and that constraint is a feature: nothing secret has to be written
 // down for a later request to pick up.
 
-// Deliberately small: a background function's invocation body is capped in the
-// low hundreds of KB (measured against a deploy), so the drawing is fetched from
-// the job store rather than carried here.
-interface WorkPayload {
-  jobId: string;
-  apiKey: string;
-  prompt: string;
-  mimeType: string;
-  deadlineMs: number;
-}
+const badPayload = () => new Response('Bad payload', { status: 400 });
 
 export default async (request: Request): Promise<Response> => {
   const raw = await request.text();
 
-  let work: WorkPayload;
+  let payload: unknown;
   try {
-    work = JSON.parse(raw) as WorkPayload;
+    payload = JSON.parse(raw);
   } catch {
-    return new Response('Bad payload', { status: 400 });
+    return badPayload();
   }
+
+  // The function URL is public, so until the ticket checks out this is anyone's
+  // input: read only the job id the ticket is bound to, and nothing else.
+  const jobId =
+    typeof payload === 'object' && payload !== null && 'jobId' in payload ? payload.jobId : null;
+  if (typeof jobId !== 'string') return badPayload();
 
   if (
     !verifyWorkTicket(
       request.headers.get(WORK_TICKET_HEADER),
-      work.jobId,
+      jobId,
       raw,
       process.env.REPORT_TOKEN_SECRET
     )
@@ -51,15 +49,32 @@ export default async (request: Request): Promise<Response> => {
 
   let claimId: string | null = null;
   try {
-    claimId = await claimJob(work.jobId);
+    claimId = await claimJob(jobId);
     if (!claimId) return new Response(null, { status: 200 });
 
     // Read and delete in one step: from here the drawing lives in this worker's
-    // memory, and a copy left at rest for the whole generation serves nothing.
-    const input = await takeJobInput(work.jobId);
+    // memory, and a copy left at rest for the whole generation serves nothing —
+    // nor for a job that fails before reaching the model.
+    const input = await takeJobInput(jobId);
+
+    // A signed payload of the wrong shape was written by a start on a different
+    // deploy, not by an attacker. It is recorded as this job's failure so the
+    // poll refunds the slot and stops waiting, rather than left pending until
+    // the job expires.
+    if (!isGenerationWork(payload)) {
+      console.error('[generate-image-background] a signed job did not match GenerationWork');
+      await completeJob(
+        jobId,
+        claimId,
+        { status: 'error', reason: 'the job was not one this worker can run' },
+        null
+      );
+      return new Response(null, { status: 200 });
+    }
+
     if (!input) {
       await completeJob(
-        work.jobId,
+        jobId,
         claimId,
         { status: 'error', reason: 'the drawing was not there' },
         null
@@ -68,22 +83,22 @@ export default async (request: Request): Promise<Response> => {
     }
 
     const result = await aiProvider.generateImage({
-      apiKey: work.apiKey,
-      image: { bytes: input, mimeType: work.mimeType },
-      prompt: work.prompt,
-      deadlineMs: work.deadlineMs,
+      apiKey: payload.apiKey,
+      image: { bytes: input, mimeType: payload.mimeType },
+      prompt: payload.prompt,
+      deadlineMs: payload.deadlineMs,
     });
 
     if (result.kind === 'image') {
       const bytes = Buffer.from(result.data, 'base64');
       await completeJob(
-        work.jobId,
+        jobId,
         claimId,
         { status: 'image', mimeType: result.mimeType },
         bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
       );
     } else {
-      await completeJob(work.jobId, claimId, { status: result.kind, reason: result.reason }, null);
+      await completeJob(jobId, claimId, { status: result.kind, reason: result.reason }, null);
     }
   } catch (cause) {
     // Netlify retries a background function that fails — twice, a minute apart.
@@ -91,9 +106,9 @@ export default async (request: Request): Promise<Response> => {
     // a child watching an outcome that keeps being overwritten. So every failure
     // is recorded as this job's answer and reported as success to the platform.
     const reason = cause instanceof Error ? cause.message : String(cause);
-    console.error(`[generate-image-background] ${work.jobId} failed: ${reason}`);
+    console.error(`[generate-image-background] ${jobId} failed: ${reason}`);
     if (claimId)
-      await completeJob(work.jobId, claimId, { status: 'error', reason }, null).catch(() => {
+      await completeJob(jobId, claimId, { status: 'error', reason }, null).catch(() => {
         // Nothing left to do: the poll falls through to `expired` on its own.
       });
   }
