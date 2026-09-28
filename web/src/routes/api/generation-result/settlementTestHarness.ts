@@ -143,8 +143,11 @@ export async function startFreeGeneration(installationId = INSTALLATION): Promis
 // The ticket is read by the client's own parser, so every handoff these tests
 // drive also proves the client understands what the server sent.
 export async function startHandedOffGeneration(): Promise<{ jobId: string; dispatch: Request }> {
-  const started = await readAiImageResponse(await startFreeGeneration());
-  if (started.kind !== 'started') throw new Error(`the start answered ${started.kind}`);
+  const response = await startFreeGeneration();
+  const started = await readAiImageResponse(response);
+  if (started.kind !== 'started') {
+    throw new Error(`the start answered ${response.status}: ${JSON.stringify(started)}`);
+  }
   const dispatch = dispatched.at(-1);
   if (!dispatch) throw new Error('the start did not dispatch the worker');
   return { jobId: started.jobId, dispatch };
