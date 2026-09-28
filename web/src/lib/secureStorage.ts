@@ -31,6 +31,17 @@ import { STORAGE_KEYS } from './storageKeys';
 const API_KEY = 'gemini-api-key';
 const MANAGED_ACCESS_CODE = 'managed-access-code';
 
+// Every name parameter takes a SecretName, so a secret missing from this list
+// does not compile. Left off it, a secret would still save, but loadSecret
+// would skip the vault once every listed name was known absent, hiding it
+// after one boot.
+const SECRET_NAMES = [API_KEY, MANAGED_ACCESS_CODE] as const;
+type SecretName = (typeof SECRET_NAMES)[number];
+
+function isSecretName(value: unknown): value is SecretName {
+  return SECRET_NAMES.some((name) => name === value);
+}
+
 // IndexedDB layout for the web path.
 const DB_NAME = 'splotch-secure';
 const STORE = 'secrets';
@@ -43,7 +54,7 @@ type SecretPayload = {
 
 interface SecureDb extends DBSchema {
   secrets: {
-    key: string;
+    key: SecretName | typeof MASTER_KEY_ROW;
     value: CryptoKey | SecretPayload;
   };
 }
@@ -67,8 +78,8 @@ const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
 // read-only absence re-check, which needs a transaction handle). webLoad still validates persisted
 // data, and the narrow put type prevents payload-path writes of CryptoKey.
 const payloadStore = {
-  get: async (name: string) => (await getDb()).get(STORE, name),
-  delete: async (name: string) => (await getDb()).delete(STORE, name),
+  get: async (name: SecretName) => (await getDb()).get(STORE, name),
+  delete: async (name: SecretName) => (await getDb()).delete(STORE, name),
 };
 
 // A payload is written through the connection its key was read from, in one
@@ -81,7 +92,7 @@ const payloadStore = {
 // through. A failed save is the outcome a parent can act on.
 async function putBesideMasterKey(
   db: IdbDatabase<SecureDb>,
-  name: string,
+  name: SecretName,
   payload: SecretPayload
 ): Promise<void> {
   const tx = db.transaction(STORE, 'readwrite');
@@ -171,7 +182,7 @@ async function loadOrCreateMasterKey(db: IdbDatabase<SecureDb>): Promise<CryptoK
   return winningKey ?? fresh;
 }
 
-async function webSave(name: string, value: string) {
+async function webSave(name: SecretName, value: string) {
   const { key, db } = await getMasterKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = await crypto.subtle.encrypt(
@@ -183,7 +194,7 @@ async function webSave(name: string, value: string) {
   await putBesideMasterKey(db, name, payload);
 }
 
-async function webLoad(name: string) {
+async function webLoad(name: SecretName) {
   const record = await payloadStore.get(name);
   if (record === undefined) {
     await noteSecretAbsentUnlessSaved(name);
@@ -195,16 +206,16 @@ async function webLoad(name: string) {
   return new TextDecoder().decode(plain);
 }
 
-async function webClear(name: string) {
+async function webClear(name: SecretName) {
   await payloadStore.delete(name);
   // The master key is left in place: it's useless without a payload and lets a
   // re-entered secret reuse the same sandboxed key object.
 }
 
 interface SecureBackend {
-  save(name: string, value: string): Promise<void>;
-  load(name: string): Promise<string | null>;
-  clear(name: string): Promise<void>;
+  save(name: SecretName, value: string): Promise<void>;
+  load(name: SecretName): Promise<string | null>;
+  clear(name: SecretName): Promise<void>;
 }
 
 // The literal __IS_CAPACITOR__ guard makes the native path compile-time dead
@@ -239,20 +250,18 @@ async function selectBackend(): Promise<SecureBackend> {
 //
 // Unknown always means "open it": the flag can only ever save a read, never
 // stand in for one.
-const SECRET_NAMES = [API_KEY, MANAGED_ACCESS_CODE];
-
-function absentSecretNames(): string[] {
+function absentSecretNames(): SecretName[] {
   const raw = readString(STORAGE_KEYS.secureVaultEmpty, null);
   if (!raw) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((name) => typeof name === 'string') : [];
+    return Array.isArray(parsed) ? parsed.filter(isSecretName) : [];
   } catch {
     return [];
   }
 }
 
-function noteSecretAbsent(name: string) {
+function noteSecretAbsent(name: SecretName) {
   const absent = new Set(absentSecretNames());
   if (absent.has(name)) return;
   absent.add(name);
@@ -273,7 +282,7 @@ function noteSecretAbsent(name: string) {
 // plain `await` on the read would throw past `done` and leave its rejection
 // unhandled. The flag is still written from the read's continuation, before the
 // transaction completes, which is where the ordering above holds.
-async function noteSecretAbsentUnlessSaved(name: string) {
+async function noteSecretAbsentUnlessSaved(name: SecretName) {
   const db = await getDb();
   const tx = db.transaction(STORE, 'readonly');
   await Promise.all([
@@ -290,7 +299,7 @@ function secureVaultKnownEmpty() {
 }
 
 /** Persist a named secret to the platform's secure store. */
-async function saveSecret(name: string, value: string) {
+async function saveSecret(name: SecretName, value: string) {
   if (!browser) return;
   if (!value) return clearSecret(name);
   const backend = await selectBackend();
@@ -299,7 +308,7 @@ async function saveSecret(name: string, value: string) {
 }
 
 /** Read a named secret back, or null if none is stored. Never throws. */
-async function loadSecret(name: string) {
+async function loadSecret(name: SecretName) {
   if (!browser) return null;
   // Opening the web vault imports `idb` and creates the database. For a device
   // that has never stored a credential — the overwhelming majority, since AI is
@@ -317,7 +326,7 @@ async function loadSecret(name: string) {
 }
 
 /** Remove a named secret. Best-effort; never throws. */
-async function clearSecret(name: string) {
+async function clearSecret(name: SecretName) {
   if (!browser) return;
   // Back to unknown rather than to empty: the other secret may still be in
   // there, and only a read can say.

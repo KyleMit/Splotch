@@ -421,6 +421,25 @@ describe('malformed job records', () => {
       expect(warnMock).not.toHaveBeenCalled();
     });
 
+    it.each([
+      ['a style this deploy knows', 'Sticker', 'Sticker'],
+      ['a style this deploy does not know, as no style', 'a style an older deploy offered', null],
+    ])('delivers a record naming %s', async (_, storedStyle, deliveredStyle) => {
+      store.get.mockResolvedValue(
+        storedJob({
+          context: { free: null, style: storedStyle },
+          outcome: { status: 'image', mimeType: 'image/png' },
+        })
+      );
+
+      expect(await readJob(JOB, 5_000)).toEqual({
+        status: 'image',
+        mimeType: 'image/png',
+        context: { free: null, style: deliveredStyle },
+      });
+      expect(warnMock).not.toHaveBeenCalled();
+    });
+
     it.each(MALFORMED)(
       'reports %s as expired, since the picture is not coming',
       async (_, record) => {

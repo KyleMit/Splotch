@@ -29,7 +29,15 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
-import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import {
+  ROOT,
+  argFlag,
+  argSwitch,
+  fail,
+  isMain,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import {
   MATRIX_SECTIONS,
@@ -369,8 +377,8 @@ function publishedModeReader(manifest, manifestFullPath) {
 export async function checkMatrixStaleness({
   manifestPath = argFlag('manifest', DEFAULT_MANIFEST),
   base = argFlag('base'),
-  strict = process.argv.includes('--strict'),
-  releaseGateAge = process.argv.includes('--release-gate-age'),
+  strict = argSwitch('strict'),
+  releaseGateAge = argSwitch('release-gate-age'),
   today = utcDate(Date.now()),
 } = {}) {
   const explicitBase = base !== undefined;
@@ -402,6 +410,7 @@ export async function checkMatrixStaleness({
 }
 
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['manifest', 'base', 'strict', 'release-gate-age']);
   runMain(async () => {
     await checkMatrixStaleness();
   });

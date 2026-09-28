@@ -164,7 +164,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerDown(e: PointerEvent) {
-    if (activeDrag !== null) return;
+    if (e.button !== 0 || activeDrag !== null) return;
 
     const o = getOptions();
     if (taps.register(Date.now())) {

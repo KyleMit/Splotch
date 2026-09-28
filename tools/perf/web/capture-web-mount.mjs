@@ -33,12 +33,8 @@ const SLOW_4G = {
 // fire inside the trace so a fix that merely shifts cost later is visible.
 const POST_LOAD_SETTLE_MS = 10_000;
 
-const { deviceName, device, throttle, port, build } = parsePerfArgs({
-  throttleDefault: 4,
-  entry: isMain(import.meta.url),
-});
-
-export async function runMountProfile() {
+export async function runMountProfile(argv = process.argv.slice(2)) {
+  const { deviceName, device, throttle, port, build } = parsePerfArgs({ throttleDefault: 4 }, argv);
   const outDir = profilePath('mount', deviceName, throttle.tag);
   mkdirSync(outDir, { recursive: true });
 

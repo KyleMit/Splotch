@@ -4,6 +4,7 @@ import { settleWithRetentionConcurrency } from './retentionSweep';
 // Relative, not `$lib`: the background worker imports this module and is built
 // without SvelteKit's aliases.
 import { GENERATION_JOB_TTL_MS } from '../ai/limits';
+import { isStyleName, type StyleName } from '../ai/styles';
 
 // Where a generation lives between the request that starts it and the request
 // that collects it (ADR-0115). Alias-free and config-free on purpose: the
@@ -64,7 +65,7 @@ export type GenerationJobOutcome =
  */
 export interface GenerationJobContext {
   free: { installationId: string; reservationId: string } | null;
-  style: string | null;
+  style: StyleName | null;
 }
 
 export type GenerationJobState =
@@ -94,15 +95,20 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isStringOrNull = (value: unknown): value is string | null =>
   value === null || typeof value === 'string';
 
-function isGenerationJobContext(value: unknown): value is GenerationJobContext {
-  if (!isRecord(value) || !isStringOrNull(value.style)) return false;
-  const { free } = value;
-  return (
-    free === null ||
-    (isRecord(free) &&
-      typeof free.installationId === 'string' &&
-      typeof free.reservationId === 'string')
-  );
+const isFreeSettlement = (value: unknown): value is GenerationJobContext['free'] =>
+  value === null ||
+  (isRecord(value) &&
+    typeof value.installationId === 'string' &&
+    typeof value.reservationId === 'string');
+
+function parseGenerationJobContext(value: unknown): GenerationJobContext | null {
+  if (!isRecord(value) || !isStringOrNull(value.style) || !isFreeSettlement(value.free)) {
+    return null;
+  }
+  // A style this deploy does not know, renamed or dropped since an older deploy
+  // started the job, reads as no style rather than as a malformed record: the
+  // job still delivers its picture, only without that style's post-processing.
+  return { free: value.free, style: isStyleName(value.style) ? value.style : null };
 }
 
 function isGenerationJobOutcome(value: unknown): value is GenerationJobOutcome {
@@ -118,15 +124,20 @@ function isGenerationJobOutcome(value: unknown): value is GenerationJobOutcome {
   }
 }
 
-function isStoredJob(value: unknown): value is StoredJob {
-  return (
-    isRecord(value) &&
-    isGenerationJobContext(value.context) &&
-    (value.outcome === null || isGenerationJobOutcome(value.outcome)) &&
-    isStringOrNull(value.claimId) &&
-    typeof value.expiresAt === 'number' &&
-    Number.isFinite(value.expiresAt)
-  );
+function parseStoredJob(value: unknown): StoredJob | null {
+  if (!isRecord(value)) return null;
+  const context = parseGenerationJobContext(value.context);
+  const { outcome, claimId, expiresAt } = value;
+  if (
+    !context ||
+    (outcome !== null && !isGenerationJobOutcome(outcome)) ||
+    !isStringOrNull(claimId) ||
+    typeof expiresAt !== 'number' ||
+    !Number.isFinite(expiresAt)
+  ) {
+    return null;
+  }
+  return { context, outcome, claimId, expiresAt };
 }
 
 /**
@@ -155,15 +166,15 @@ export function isGenerationWork(value: unknown): value is GenerationWork {
 
 // The SDK types a JSON read as `any`, and a record left by a deploy with an
 // older shape, or a partial write, would otherwise flow straight into typed
-// code. Every caller treats a record that fails the guard exactly as a missing
+// code. Every caller treats a record parseStoredJob rejects exactly as a missing
 // one: readJob answers `expired`, claimJob and completeJob decline to write, and
 // the purge deletes it — a job whose record cannot be read is never finishing.
 // The job id stays out of the warning: it is the capability to collect the picture.
 function storedJobOrNull(value: unknown): StoredJob | null {
   if (value === null || value === undefined) return null;
-  if (isStoredJob(value)) return value;
-  console.warn('[generation-jobs] ignoring a malformed job record');
-  return null;
+  const job = parseStoredJob(value);
+  if (!job) console.warn('[generation-jobs] ignoring a malformed job record');
+  return job;
 }
 
 async function readStoredJob(jobStore: JobStore, jobId: string): Promise<StoredJob | null> {

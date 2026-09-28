@@ -102,6 +102,21 @@ export function argSwitch(name) {
   return parseOrFail(() => readSwitch(process.argv, name));
 }
 
+// argFlag, argNumber and argSwitch read one flag each and ignore the rest, so an entry
+// built on them declares its whole flag set here, once, in its isMain branch —
+// never inside an exported function another CLI calls in-process, which would
+// judge that CLI's argv. A mistyped or unsupported flag then stops the run
+// instead of silently running without it.
+export function rejectUnknownFlags(known, argv = process.argv.slice(2)) {
+  const unknown = argv.filter((arg) => {
+    const name = /^--([^=]+)/.exec(arg)?.[1];
+    return name && !known.includes(name);
+  });
+  if (unknown.length) {
+    fail(`Unknown flag ${unknown.join(' ')} — known flags: ${[...known].sort().join(', ')}`);
+  }
+}
+
 // Number() alone reads '' as 0 and accepts `0x10`, `1e3`, and `Infinity`;
 // parseInt reads `4junk` as 4. Each is a plausible wrong run rather than an
 // error, so a numeric flag value is plain digits, with one decimal point
