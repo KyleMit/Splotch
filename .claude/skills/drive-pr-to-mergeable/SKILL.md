@@ -136,6 +136,10 @@ Tests registers. Record exclusions and the condition that makes each inapplicabl
 workflow is not evidence that its tests passed. Post-merge-only jobs are excluded from the pre-merge
 set and handed to the caller for post-merge verification.
 
+`npm run show:pr-state -- <number>` provides a read-only fallback snapshot of the current head,
+registered checks, merge metadata, and every review thread when native GitHub tools cannot supply
+them. Its check list is observed state, not the expected CI set or a mergeability verdict.
+
 **Wait for registration, then completion, on that head.** Use the native GitHub workflow-run/job and
 check/status tools first. Subscribe to activity when available; otherwise re-query with a bounded
 wait and backoff. Verify that every expected applicable workflow and job has registered for the
