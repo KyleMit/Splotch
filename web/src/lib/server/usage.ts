@@ -70,7 +70,7 @@ export async function recordTokenUsage(
   }
 
   try {
-    const store = getStore(USAGE_STORE_NAME);
+    const store = getStore({ name: USAGE_STORE_NAME, consistency: 'eventual' });
     for (let attempt = 1; attempt <= CAS_ATTEMPTS; attempt++) {
       if (attempt > 1) await sleep(CAS_BACKOFF_MS * attempt);
       const existing = await store.getWithMetadata(key, { type: 'json' });
@@ -111,7 +111,7 @@ export async function deleteUsage(token: string) {
     return;
   }
   try {
-    await getStore(USAGE_STORE_NAME).delete(key);
+    await getStore({ name: USAGE_STORE_NAME, consistency: 'eventual' }).delete(key);
   } catch (err) {
     console.warn('[ai-usage] failed to delete usage:', err instanceof Error ? err.message : err);
   }
@@ -121,10 +121,10 @@ export async function deleteUsage(token: string) {
  * Read the usage tally for each token, as a map keyed by token, deleting each
  * expired record it meets instead of leaving it for the daily purge
  * (purgeExpiredUsageRecords). Tokens with no recorded usage are omitted (so the
- * caller can distinguish "never used" from a Blobs outage). Eventual consistency (the default) is sufficient — slightly-stale
- * counts are fine here, and it sidesteps the strong-read context requirements
- * entirely (ADR-0025). A null result means the whole snapshot is unavailable;
- * one token's read or expiry-delete failure is isolated from the other tokens.
+ * caller can distinguish "never used" from a Blobs outage). Eventual reads are
+ * sufficient: a slightly stale count is fine here, and no request reads its own
+ * write (ADR-0025). A null result means the whole snapshot is unavailable; one
+ * token's read or expiry-delete failure is isolated from the other tokens.
  */
 export async function readUsageAndPurgeExpired(
   tokens: string[]
@@ -140,7 +140,7 @@ export async function readUsageAndPurgeExpired(
 
   let store: ReturnType<typeof getStore>;
   try {
-    store = getStore(USAGE_STORE_NAME);
+    store = getStore({ name: USAGE_STORE_NAME, consistency: 'eventual' });
   } catch (err) {
     console.warn(
       '[ai-usage] Netlify Blobs unavailable, no usage stats:',

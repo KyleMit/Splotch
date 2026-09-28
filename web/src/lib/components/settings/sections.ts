@@ -1,7 +1,7 @@
 import type { IconName } from '../icon-names';
 import { SECTION_SLIDE_MS } from '$lib/motionDurations';
 import { APP_VERSION } from '$lib/appVersion';
-import { aiCredentialKind, settingsState } from '$lib/state/settings.svelte';
+import { aiCredentialKind, orientationChoice, settingsState } from '$lib/state/settings.svelte';
 import { coloringPacksState } from '$lib/state/coloringPacks.svelte';
 import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
 import { hiddenDrawingToolCount } from './drawingTools';
@@ -96,9 +96,8 @@ export function sectionSubtitle(id: SectionId): string {
       // words: the inline switch leaves this row the least subtitle width in
       // the hub, and a summary that wraps past two lines is clipped.
       const parts: string[] = ['Night Mode'];
-      if (settingsState.lockRotationEnabled) {
-        parts.push(settingsState.forceLandscapeOrientation ? 'landscape lock' : 'portrait lock');
-      }
+      const orientation = orientationChoice();
+      if (orientation !== 'auto') parts.push(`${orientation} lock`);
       return parts.join(' · ');
     }
     case 'sound': {
@@ -130,8 +129,9 @@ export function sectionSubtitle(id: SectionId): string {
       if (!settingsState.aiImageEnabled) return 'Turned off';
       const kind = aiCredentialKind();
       if (kind === 'none') {
-        return freeGenerationsState.available
-          ? `${freeGenerationsState.remaining} free ${freeGenerationsState.remaining === 1 ? 'creation' : 'creations'} left`
+        const { grant } = freeGenerationsState;
+        return grant.status === 'available'
+          ? `${grant.remaining} free ${grant.remaining === 1 ? 'creation' : 'creations'} left`
           : 'Free allowance unavailable';
       }
       return kind === 'apiKey' ? 'Your OpenAI key' : 'Access code';

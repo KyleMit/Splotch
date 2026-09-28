@@ -1,19 +1,19 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Typed against the functions they replace, so a changed server result shape
+// fails type-check here instead of these tests feeding the module a stale one.
+// Inline `import()` types because each stub shares the real function's name.
 const { envState, isAllowedToken, peekRateLimit, rateLimit } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
-  isAllowedToken: vi.fn(),
-  peekRateLimit: vi.fn(),
-  rateLimit: vi.fn(),
+  isAllowedToken: vi.fn<typeof import('./tokens').isAllowedToken>(),
+  peekRateLimit: vi.fn<typeof import('./rateLimit').peekRateLimit>(),
+  rateLimit: vi.fn<typeof import('./rateLimit').rateLimit>(),
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('./tokens', () => ({ isAllowedToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
-vi.mock('./freeGenerationGrants', () => ({
-  isInstallationId: (value: string | null) => /^[a-f0-9]{64}$/.test(value ?? ''),
-}));
 
 import { authorizeGenerationRequest } from './generationAuthorization';
 import {

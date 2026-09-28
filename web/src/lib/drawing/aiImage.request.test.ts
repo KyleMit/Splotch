@@ -155,7 +155,7 @@ describe('generateAiImage upload format', () => {
     const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
     expect(headers['X-Installation-Id']).toMatch(/^[a-f0-9]{64}$/);
     expect(headers['X-Access-Token']).toBeUndefined();
-    expect(freeGenerationsState.remaining).toBe(9);
+    expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 9 });
   });
 
   it('does not interpret an absent free-balance response header as zero', async () => {
@@ -167,7 +167,7 @@ describe('generateAiImage upload format', () => {
     const { freeGenerationsState } = await import('$lib/state/freeGenerations.svelte');
     await generateAiImage();
 
-    expect(freeGenerationsState.remaining).toBe(10);
-    expect(freeGenerationsState.available).toBe(false);
+    expect(freeGenerationsState.lastGrantRemaining).toBeNull();
+    expect(freeGenerationsState.grant.status).not.toBe('available');
   });
 });

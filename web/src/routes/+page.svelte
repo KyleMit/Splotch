@@ -58,11 +58,7 @@
   // Keyed on fullscreen too: Chrome on Android honors a web lock only in
   // fullscreen, so entering it is when a refused lock can finally apply.
   $effect(() => {
-    applyDeviceOrientationPreference(
-      settingsState.lockRotationEnabled,
-      settingsState.forceLandscapeOrientation,
-      fullscreenState.active
-    );
+    applyDeviceOrientationPreference(settingsState.orientationChoice(), fullscreenState.active);
   });
 
   $effect(() => syncBackNavigationCanvas(canvasState.canvasEmpty));

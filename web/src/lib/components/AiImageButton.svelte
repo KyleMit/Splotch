@@ -25,6 +25,7 @@
   const aiImageButtonUsable = $derived(isAiImageButtonUsable());
   const aiImageButtonShown = $derived(isAiImageButtonShown());
   const hasAiCredential = $derived(settingsState.aiCredentialKind() !== 'none');
+  const freeGrant = $derived(freeGenerationsState.grant);
 
   // A minimized run is the one state where a generation is in flight and this
   // button is still live: it is what reveals the run again, so it must not be
@@ -72,10 +73,7 @@
     requireParentalGate(
       'aiImage',
       () => {
-        if (
-          !hasAiCredential &&
-          (!freeGenerationsState.available || freeGenerationsState.remaining === 0)
-        ) {
+        if (!hasAiCredential && (freeGrant.status !== 'available' || freeGrant.remaining === 0)) {
           openAiSettings(origin);
           return;
         }
@@ -106,16 +104,14 @@
   aria-label={minimizedRunLabel
     ? minimizedRunLabel
     : !aiImageButtonUsable
-      ? freeGenerationsState.loading
+      ? freeGrant.status === 'loading'
         ? 'Checking AI image availability'
         : 'AI image unavailable'
-      : hasAiCredential
+      : hasAiCredential || freeGrant.status !== 'available'
         ? 'Create AI image'
-        : freeGenerationsState.available && freeGenerationsState.remaining > 0
-          ? `Create AI image, ${freeGenerationsState.remaining} free left`
-          : freeGenerationsState.available
-            ? 'Set up AI image'
-            : 'Create AI image'}
+        : freeGrant.remaining > 0
+          ? `Create AI image, ${freeGrant.remaining} free left`
+          : 'Set up AI image'}
   aria-busy={aiGenerating && !aiGenerationState.minimized}
   disabled={aiImageButtonBlocked || !aiImageButtonUsable}
   hidden={!aiImageButtonShown}

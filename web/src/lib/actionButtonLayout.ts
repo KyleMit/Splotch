@@ -139,7 +139,9 @@ export function isAiImageButtonShown(): boolean {
 // disabled, while the free grant is pending or unavailable.
 export function isAiImageButtonUsable(): boolean {
   const hasCredential = settingsState.aiCredentialKind() !== 'none';
-  return isAiImageButtonShown() && (hasCredential || freeGenerationsState.available);
+  return (
+    isAiImageButtonShown() && (hasCredential || freeGenerationsState.grant.status === 'available')
+  );
 }
 
 // Every button the drawer renders, a disabled AI button included: the count
