@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/format-edited-file.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/format-edited-file.sh\""
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-burndown-snapshot.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-burndown-snapshot.sh\"",
             "timeout": 30
           }
         ]
@@ -37,19 +37,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\""
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-branch-preview.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-branch-preview.sh\""
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-long-running-work.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-long-running-work.sh\""
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-android-emulator.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-android-emulator.sh\""
           },
           {
             "type": "command",
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-burndown-snapshot.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-burndown-snapshot.sh\""
           }
         ]
       }
