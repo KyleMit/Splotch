@@ -11,12 +11,13 @@ import { STORAGE_KEYS } from './storageKeys';
 //
 //  • Native (iOS/Android): secrets are handed to @aparajita/capacitor-secure-storage,
 //    which stores them in the iOS Keychain / Android Keystore, both hardware-backed.
-//    An iOS Keychain item survives app deletion and moves to a new iPhone or iPad only
-//    inside an encrypted backup (iCloud, or an encrypted computer backup); it is never
-//    synced through iCloud Keychain. That is a product decision: a parent who restores
-//    onto a new device keeps AI working without re-entering the key; selectBackend pins
-//    it. The Android Keystore copy is never backed up (android:allowBackup="false") and
-//    is removed with the app.
+//    An iOS Keychain item is never synced through iCloud Keychain. It can move to a new
+//    iPhone or iPad inside an encrypted computer backup; an iCloud Backup restores the
+//    local Keychain only onto the device it came from. Current iOS also keeps it after
+//    the app is deleted, which Apple does not guarantee. Keeping it movable is a product
+//    decision, so a parent who restores that backup onto a new device keeps AI working
+//    without re-entering the key; selectBackend pins it. The Android Keystore copy is
+//    never backed up (android:allowBackup="false") and is removed with the app.
 //
 //  • Web: there's no hardware vault, so the next best thing — the raw value is never
 //    written in plaintext. It's AES-GCM encrypted with a *non-extractable* CryptoKey

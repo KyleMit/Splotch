@@ -233,11 +233,14 @@ gate protects action boundaries and is not itself legal consent.
 **Stored AI credentials on iOS travel in encrypted backups, by choice.** A saved access code or
 OpenAI key is a Keychain item with `whenUnlocked` access and iCloud Keychain sync off, both passed
 on every write in `web/src/lib/secureStorage.ts` rather than inherited from the plugin. Such an item
-is never synced through iCloud Keychain, survives app deletion, and moves to a new iPhone or iPad
-only inside an encrypted backup (iCloud, or an encrypted computer backup). The user chose this on
-2026-09-28 over `whenUnlockedThisDeviceOnly`: a parent who restores onto a new iPhone should find AI
-still working, and the key stays encrypted in between. `/privacy` and the iOS Settings key note say
-so. Android differs on purpose (see the Families data-practices entry).
+is never synced through iCloud Keychain and can move to a new iPhone or iPad inside an encrypted
+computer backup. An iCloud Backup does not carry it to a new device: Apple's "Security of iCloud
+Backup" says the backed-up local keychain is encrypted with a device-unique key and restores only
+onto the device it came from. Current iOS also keeps Keychain items after the app is deleted, an
+observed behaviour Apple does not guarantee, so nothing here promises it. The user chose this on
+2026-09-28 over `whenUnlockedThisDeviceOnly`: a parent who moves to a new iPhone should find AI
+still working where iOS allows it, and the key stays encrypted in between. `/privacy` and the iOS
+Settings key note say so. Android differs on purpose (see the Families data-practices entry).
 
 ### 5.1.4 Kids
 
