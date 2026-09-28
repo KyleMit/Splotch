@@ -47,16 +47,8 @@ beforeEach(() => {
   window.history.replaceState({}, '', '/');
 });
 
-afterEach(async () => {
+afterEach(() => {
   window.history.replaceState({}, '', '/');
-  // aiAccessToken.ts wires one coordinator for the whole module, and a
-  // hydration that rejects latches it into refusing every later write until a
-  // hydration completes. Clearing the latch here keeps it inside the test that
-  // set it; the coordinator's own behaviour is covered against fresh instances
-  // in secureCredentialCoordinator.test.ts.
-  vi.mocked(loadAccessCode).mockReset().mockResolvedValue(null);
-  vi.mocked(saveAccessCode).mockReset().mockResolvedValue(undefined);
-  await hydrateAiAccessToken();
 });
 
 describe('setAiAccessToken', () => {
@@ -133,37 +125,6 @@ describe('hydrateAiAccessToken', () => {
 
     expect(aiCredentialKind()).toBe('accessCode');
     expect(settingsState.aiAccessToken).toBe('stored-code');
-  });
-
-  it('migrates a legacy plaintext code and scrubs the plaintext copy', async () => {
-    localStorage.setItem(STORAGE_KEYS.legacyAiAccessToken, 'legacy-code');
-
-    await hydrateAiAccessToken();
-
-    expect(settingsState.aiAccessToken).toBe('legacy-code');
-    expect(secureStore.accessCode).toBe('legacy-code');
-    expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
-  });
-
-  it('preserves the plaintext copy and leaves live state empty when migration fails', async () => {
-    localStorage.setItem(STORAGE_KEYS.legacyAiAccessToken, 'retryable-code');
-    vi.mocked(saveAccessCode).mockRejectedValueOnce(new Error('secure storage unavailable'));
-
-    await expect(hydrateAiAccessToken()).rejects.toThrow('secure storage unavailable');
-
-    expect(settingsState.aiAccessToken).toBe('');
-    expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-code');
-  });
-
-  it('prefers the secure copy and scrubs a stale plaintext code', async () => {
-    secureStore.accessCode = 'secure-code';
-    localStorage.setItem(STORAGE_KEYS.legacyAiAccessToken, 'stale-code');
-
-    await hydrateAiAccessToken();
-
-    expect(settingsState.aiAccessToken).toBe('secure-code');
-    expect(secureStore.accessCode).toBe('secure-code');
-    expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
   });
 
   it('keeps a URL-captured code when a later secure read reports no value', async () => {

@@ -30,7 +30,14 @@ import {
   resolveGenerationPrompt,
   resolveGenerationStyle,
 } from '$lib/server/generateImagePolicy';
-import { apiHandler, contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
+import {
+  apiHandler,
+  contentTypeOf,
+  fail,
+  readBodyWithinLimit,
+  readFormBody,
+} from '$lib/server/http';
+import { loggableError } from '$lib/server/logRedaction';
 import {
   clientAcceptsBackgroundGeneration,
   freeSettlement,
@@ -114,17 +121,13 @@ interface GenerationRequest {
 //                 sends the raw body.
 async function readGenerationRequest(request: Request, url: URL): Promise<GenerationRequest> {
   if (contentTypeOf(request) === 'multipart/form-data') {
-    const body = await readBodyWithinLimit(request, MAX_LEGACY_GENERATION_REQUEST_BYTES);
-    if (!body.ok) throw error(413, 'Image is too large');
-
-    let form: FormData;
-    try {
-      form = await new Response(new Blob([new Uint8Array(body.bytes)]), {
-        headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
-      }).formData();
-    } catch {
-      throw error(400, 'Expected multipart form data');
+    const body = await readFormBody(request, MAX_LEGACY_GENERATION_REQUEST_BYTES);
+    if (!body.ok) {
+      throw body.reason === 'too-large'
+        ? error(413, 'Image is too large')
+        : error(400, 'Expected multipart form data');
     }
+    const { form } = body;
     const imageFile = form.get('image');
     return {
       token: asString(form.get('token')),
@@ -197,7 +200,7 @@ async function recordFreeGenerationFailure(
   } catch (trackingError) {
     console.warn(
       '[free-generation] failed to record unsuccessful attempt:',
-      trackingError instanceof Error ? trackingError.message : trackingError
+      loggableError(trackingError)
     );
   }
 }
@@ -235,7 +238,7 @@ async function recordFreeGeneration(
   } catch (cause) {
     console.warn(
       '[free-generation] failed to record a completed generation:',
-      cause instanceof Error ? cause.message : cause
+      loggableError(cause)
     );
     return null;
   }
@@ -344,10 +347,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       freeRemaining = await recordFreeGeneration(authorization.installationId, settled);
     }
 
-    const headers: Record<string, string> = {
-      'Content-Type': prepared.mimeType,
-      'Cache-Control': 'no-store',
-    };
+    const headers: Record<string, string> = { 'Content-Type': prepared.mimeType };
     if (freeRemaining !== null) {
       headers[FREE_GENERATIONS_REMAINING_HEADER] = String(freeRemaining);
     }

@@ -39,10 +39,27 @@ streams only through the first chunk that crosses the cap and then releases its 
 `Content-Length` remains an early-rejection hint rather than the authority. It deliberately does not
 cancel because SvelteKit's Node adapter maps cancellation to socket destruction before the 413 can
 be written. Use these helpers in any new endpoint instead of hand-rolling the parse, the failure
-body, or the 429.
+body, or the 429. `readFormBody(request, maxBytes)` is the bounded twin of `request.formData()`: it
+reads through the same capped reader and answers `too-large` or `malformed` for the caller to word.
+The multipart endpoints (`generate-image`'s legacy shape, `report-image`) and the `/feedback` and
+`/admin` form actions all parse forms through it, because nothing else bounds a form body on
+Netlify; the form actions answer with the same `413 "Request body is too large"` wording.
 
 The small credential and admin-mutation JSON endpoints cap their bodies at 8 KiB. `/api/report`
-allows 64 KiB for its 4,000-character message plus the optional device snapshot.
+allows 64 KiB for its 4,000-character message plus the optional device snapshot. Each cap lives in
+the core module both front doors share (`MAX_ADMIN_LOGIN_BODY_BYTES` in
+`web/src/lib/server/admin.ts`, `MAX_TOKEN_MUTATION_BODY_BYTES` in `web/src/lib/server/tokens.ts`,
+`MAX_REPORT_BODY_BYTES` in `web/src/lib/server/report.ts`), so the form action and its JSON twin
+stop reading at the same size.
+
+**Caching:** every `/api/*` response carries `Cache-Control: no-store` unless its route sets its own
+Cache-Control — `handleApiCaching` in `hooks.server.ts` applies the default after the route answers.
+No route opts out today. Several responses carry a credential (the admin token list with its invite
+URLs, a report token) or one installation's state (its remaining free allowance), and none benefits
+from a cache, so the rule is a default a new route inherits rather than a header each route has to
+remember. The `OPTIONS` preflight returns before the hook and is cached through
+`Access-Control-Max-Age` instead. Every `/api/*` route is served by the SvelteKit function, which
+runs the hook; Netlify's `netlify.toml` header rules reach only static files.
 
 An endpoint that is only an oracle on its *failure* path (`verify-access-code` and generate-image's
 managed-token check, which share one per-IP bucket) throttles just that path: `peekRateLimit`
@@ -274,8 +291,9 @@ Markdown, and the error wording all live in `$lib/server/report.ts`; the `/feedb
 action calls it too, and throttles into the same `reportBucket` so the pair shares one budget rather
 than doubling it. Change the behaviour there, not here — this route only adds the JSON wire shape.
 The page's action additionally echoes the submitted values back on failure and answers success with
-a 303 redirect, neither of which a JSON endpoint needs. Both doors read `kind` through
-`parseReportKind` (`web/src/lib/report.ts`), so an unknown kind gets the same `400` at either one.
+a 303 redirect, neither of which a JSON endpoint needs. Both doors hand the core the raw `kind` and
+`message`, which reads `kind` through `parseReportKind` (`web/src/lib/report.ts`), so an unknown
+kind or a message that is not text gets the same `400` at either one.
 
 The body below is declared once as `ReportRequestBody` in `web/src/lib/report.ts`: the in-app
 clients build it through `postFeedbackReport` (`web/src/lib/reportClient.ts`), and the core's
@@ -312,8 +330,10 @@ issue body. Whether a report carries it at all is `attachesDevice` in `web/src/l
 rule the forms apply too: the server drops a `device` sent with a `feature` report. Because the
 endpoint is an unauthenticated public write and the message + device values are attacker-controlled,
 both are run through `escapeIssueMarkdown()` (same seam) before they are embedded in the Markdown
-body — it backslash-escapes `@`-mentions, `#`-references, image embeds (`![…]`), and raw `<` HTML so
-a submitter can't make the issue notify people or load remote content. See ADR-0060.
+body — it backslash-escapes `@`-mentions, `#`-references, image embeds (`![…]`), and raw `<` HTML
+(after escaping any backslash the text already carries, which would otherwise re-arm them) so a
+submitter can't make the issue notify people or load remote content. See ADR-0060. The AI-report
+issue passes its model-written refusal reason through the same seam.
 
 ### `POST /api/report-image`
 
@@ -373,7 +393,9 @@ one opaque report-id prefix. Every bundle contains the input drawing, resolved `
 `metadata.json` (report category, report time, deletion time, style, MIME types, and the signed
 provider refusal reason when applicable); a picture report additionally contains the output image.
 The support issue and metadata categorize refusals as `false-positive-refusal` and expose that
-server-authenticated reason to the reviewer. If private notification fails, the bundle is deleted
+server-authenticated reason to the reviewer: verbatim in `metadata.json`, and through
+`escapeIssueMarkdown()` in the issue, since the signature proves the server minted the reason, not
+that the model's sentence is inert Markdown. If private notification fails, the bundle is deleted
 and the request fails rather than leaving unreachable evidence. That includes a GitHub call that
 stalls: it is abandoned at `GITHUB_REQUEST_TIMEOUT_MS` (`web/src/lib/ai/limits.ts`), which ADR-0063
 sizes so that the key check plus the issue call leave part of the platform ceiling for the evidence

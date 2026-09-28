@@ -206,11 +206,22 @@
   // crayon- or magic-heavy session replays with the renderer that was actually
   // measured on device. (Recordings from before the Brush Menu carry a legacy
   // toggle-style `eraser` action instead; replay still honors it.)
+  // The app remembers a separate size level for the eraser, and its size
+  // buttons say which one they set: `Size N`, or `Eraser size N` while erasing
+  // (StrokeWidthMenu.svelte; tools/perf/tests/input-recorder.test.mjs fails
+  // when the labels drift). Schema 3 and older recordings never caught an
+  // eraser size pick.
+  const SIZE_ACTION_BY_LABEL_PREFIX = { 'Size ': 'size', 'Eraser size ': 'eraser-size' };
+  const sizeButtons = Object.keys(SIZE_ACTION_BY_LABEL_PREFIX)
+    .map((prefix) => `button[aria-label^="${prefix}"]`)
+    .join(', ');
   const onClick = (e) => {
     const el = e.target.closest?.(
-      '.color-swatch[data-color], #penBrushButton, #crayonBrushButton, #magicBrushButton, #eraserButton, #undoButton, #clearButton, button[aria-label^="Size "]'
+      `.color-swatch[data-color], #penBrushButton, #crayonBrushButton, #magicBrushButton, #eraserButton, #undoButton, #clearButton, ${sizeButtons}`
     );
     if (!el) return;
+    const label = el.getAttribute('aria-label') ?? '';
+    const sizePrefix = Object.keys(SIZE_ACTION_BY_LABEL_PREFIX).find((p) => label.startsWith(p));
     if (el.matches('.color-swatch[data-color]')) recAction('color', el.getAttribute('data-color'));
     else if (el.id === 'penBrushButton') recAction('brush', 'pen');
     else if (el.id === 'crayonBrushButton') recAction('brush', 'crayon');
@@ -218,8 +229,9 @@
     else if (el.id === 'eraserButton') recAction('brush', 'eraser');
     else if (el.id === 'undoButton') recAction('undo');
     else if (el.id === 'clearButton') recAction('clear');
-    else if (el.getAttribute('aria-label')?.startsWith('Size '))
-      recAction('size', Number(el.getAttribute('aria-label').slice(5)));
+    else if (sizePrefix) {
+      recAction(SIZE_ACTION_BY_LABEL_PREFIX[sizePrefix], Number(label.slice(sizePrefix.length)));
+    }
   };
 
   const opts = { capture: true, passive: true };
@@ -260,7 +272,7 @@
   const r = rect();
   window.__rec = {
     meta: {
-      schema: 3,
+      schema: 4,
       ua: navigator.userAgent,
       startedAt: new Date().toISOString(),
       viewport: { w: window.innerWidth, h: window.innerHeight },

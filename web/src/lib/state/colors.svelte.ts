@@ -7,12 +7,6 @@ export const WHITE_INK = '#ffffff';
 
 export const DEFAULT_STROKE_COLOR = PALETTE_COLORS[0].hex;
 
-// The color a palette swatch actually shows and paints for the current theme:
-// the Black swatch flips to white on dark paper; every other swatch is itself.
-export function themedSwatchColor(hex: string, dark: boolean): string {
-  return dark && hex === BLACK_INK ? WHITE_INK : hex;
-}
-
 export const CUSTOM_SWATCH = 'custom';
 
 export interface ColorsState {
@@ -24,26 +18,41 @@ export interface ColorsState {
   readonly activeColor: string;
   readonly customColor: string;
   readonly customColorSelected: boolean;
-  syncInkToTheme(dark: boolean): void;
-  selectPaletteColor(hex: string, paintColor?: string): void;
+  // The color a palette swatch shows and paints under the followed theme.
+  themedSwatchColor(hex: string): string;
+  // Until a theme is followed, every swatch paints its light-theme ink.
+  followTheme(isDark: () => boolean): void;
+  selectPaletteColor(hex: string): void;
   selectCustomSwatch(): void;
   pickCustomColor(hex: string): void;
 }
 
 export function createColors(): ColorsState {
   const s = $state({
-    activeSwatch: PALETTE_COLORS[0].hex,
-    activeColor: PALETTE_COLORS[0].hex,
-    customColor: PALETTE_COLORS[0].hex,
+    activeSwatch: DEFAULT_STROKE_COLOR,
+    customColor: DEFAULT_STROKE_COLOR,
     customColorSelected: false,
+    // The custom swatch chosen before any color is picked keeps drawing with the
+    // ink in use at that moment.
+    inheritedInk: DEFAULT_STROKE_COLOR,
   });
+  let isDark = () => false;
+
+  // The Black swatch flips to white on dark paper; every other swatch is itself.
+  // Only Black reads the theme, so no other swatch's ink depends on it.
+  const themedSwatchColor = (hex: string) => (hex === BLACK_INK && isDark() ? WHITE_INK : hex);
+
+  function activeColor() {
+    if (s.activeSwatch !== CUSTOM_SWATCH) return themedSwatchColor(s.activeSwatch);
+    return s.customColorSelected ? s.customColor : s.inheritedInk;
+  }
 
   return {
     get activeSwatch() {
       return s.activeSwatch;
     },
     get activeColor() {
-      return s.activeColor;
+      return activeColor();
     },
     get customColor() {
       return s.customColor;
@@ -51,24 +60,21 @@ export function createColors(): ColorsState {
     get customColorSelected() {
       return s.customColorSelected;
     },
-    syncInkToTheme(dark) {
-      if (s.activeSwatch !== BLACK_INK) return;
-      s.activeColor = themedSwatchColor(BLACK_INK, dark);
+    themedSwatchColor,
+    followTheme(dark) {
+      isDark = dark;
     },
-    // `paintColor` defaults to painting the identity.
-    selectPaletteColor(hex, paintColor = hex) {
+    selectPaletteColor(hex) {
       s.activeSwatch = hex;
-      s.activeColor = paintColor;
     },
     selectCustomSwatch() {
+      if (!s.customColorSelected) s.inheritedInk = activeColor();
       s.activeSwatch = CUSTOM_SWATCH;
-      if (s.customColorSelected) s.activeColor = s.customColor;
     },
     pickCustomColor(hex) {
       s.customColor = hex;
       s.customColorSelected = true;
       s.activeSwatch = CUSTOM_SWATCH;
-      s.activeColor = hex;
     },
   };
 }

@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   FAKE_ANDROID_SERIAL,
@@ -12,6 +16,7 @@ import {
   scanForHostAddresses,
 } from '../lib/host-addresses.mjs';
 import { checkTrackedTree } from '../check-device-identifiers.mjs';
+import { EVIDENCE_ROOT } from '../keep-capture-evidence.mjs';
 
 // Built by concatenation so this tracked file never contains a non-exempt
 // identifier-shaped literal for the repo-wide scan below to flag.
@@ -118,7 +123,39 @@ describe('scanForHostAddresses', () => {
 });
 
 describe('tracked tree', () => {
-  // Reads every tracked text file, which runs well past Vitest's default timeout.
+  // The negative control for the repository case below: the same walk over a
+  // fixture repository planted with one value of each kind the guard exists for.
+  it('flags what it guards, and host addresses only in the evidence corpus', () => {
+    const root = mkdtempSync(join(tmpdir(), 'device-identifier-guard-'));
+    const tracked = {
+      'docs/rig.md': `udid ${SYNTHETIC_UDID}, server http://192.168.40.77:4173/`,
+      'tools/capture.mjs': `const serial = '${SYNTHETIC_SERIAL}';`,
+      [`${EVIDENCE_ROOT}/run/report.json`]: `{"appUrl":"https://Some-Mac.local/","url":"http://10.0.0.7/"}`,
+      [`${EVIDENCE_ROOT}/run/screenshot.png`]: SYNTHETIC_UDID,
+      'fixtures/binary.dat': `\0${SYNTHETIC_UDID}`,
+    };
+    try {
+      for (const [file, text] of Object.entries(tracked)) {
+        mkdirSync(dirname(join(root, file)), { recursive: true });
+        writeFileSync(join(root, file), text);
+      }
+      writeFileSync(join(root, 'untracked.md'), SYNTHETIC_SERIAL);
+      execFileSync('git', ['init', '-q'], { cwd: root });
+      execFileSync('git', ['add', ...Object.keys(tracked)], { cwd: root });
+
+      expect(checkTrackedTree(root).map(({ file, kind }) => `${file} ${kind}`)).toEqual([
+        'docs/rig.md apple-hardware-udid',
+        `${EVIDENCE_ROOT}/run/report.json private-ipv4`,
+        `${EVIDENCE_ROOT}/run/report.json mdns-host`,
+        'tools/capture.mjs samsung-serial',
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // Hundreds of megabytes, mostly evidence reports, which can outlast Vitest's
+  // default timeout on a loaded runner.
   it('contains no physical-device identifier or evidence host address', { timeout: 60_000 }, () => {
     expect(checkTrackedTree()).toEqual([]);
   });

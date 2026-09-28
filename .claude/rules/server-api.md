@@ -25,7 +25,14 @@ paths:
 * Any unauthenticated oracle (login, code/key verification) must be rate-limited per IP via
   `src/lib/server/rateLimit.ts` (ADR-0014). Throttled responses use `throttled(retryAfter)` from
   `src/lib/server/http.ts` — the standard JSON `429` with `Retry-After` — and JSON bodies are parsed
-  with its `readJsonBody(request)` (uniform `400` on malformed input). Don't hand-roll either.
+  with its `readJsonBody(request)` (uniform `400` on malformed input). Form and multipart bodies,
+  form actions included, go through its `readFormBody(request, maxBytes)`; never call
+  `request.formData()`, which buffers whatever the client sends. Don't hand-roll either.
+* `/api/*` responses get `Cache-Control: no-store` from `hooks.server.ts` unless the route sets its
+  own; don't hand-set it, and document any route that opts out in `docs/API.md`.
+* A failure on the generation-job or free-grant path is logged through `loggableError` in
+  `src/lib/server/logRedaction.ts`, never as `err.message` or the raw error: a Blobs error can quote
+  the key it failed on, and job ids and installation ids are both blob keys and capabilities.
   Rate-limit bucket keys come only from `src/lib/server/rateLimitKeys.ts` (lint-enforced —
   ADR-0014's shared-bucket contract).
 * The dedicated `verify-access-code` and `verify-key` oracle endpoints deliberately return HTTP

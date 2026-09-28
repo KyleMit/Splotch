@@ -4,9 +4,12 @@ import {
   collect,
   dailyProviderStarts,
   DRAWING,
+  GRANT_STORE_NAME,
   grantOf,
+  INSTALLATION,
   jobBlobKeys,
   LATE_COLLECTION_MARGIN_MS,
+  loggedText,
   OTHER_INSTALLATION,
   PICTURE,
   PLATFORM_RETRY_DELAY_MS,
@@ -432,11 +435,8 @@ describe('the background worker', () => {
 
     expect((await runWorker(dispatch)).status).toBe(200);
 
-    const logged = [console.error, console.warn].flatMap((log) =>
-      vi.mocked(log).mock.calls.flat().map(String)
-    );
-    expect(logged).toContainEqual(expect.stringContaining(`${GENERATION_JOB_STORE_NAME} set`));
-    expect(logged.join('\n')).not.toContain(jobId);
+    expect(loggedText()).toContain(`${GENERATION_JOB_STORE_NAME} set <redacted id>/image failed`);
+    expect(loggedText()).not.toContain(jobId);
   });
 
   it('answers 200 even when it cannot record the failure, leaving the slot to lapse', async () => {
@@ -519,5 +519,58 @@ describe('the background worker', () => {
     const response = await collect(jobId);
     expect(response.status).toBe(200);
     expect(grantOf()).toMatchObject({ successful: 1, reservations: {} });
+  });
+});
+
+// Every grant is keyed by the raw installation id, the credential that spends
+// its allowance, so a grant-store error that quotes its key carries one.
+describe('the installation id in the function log', () => {
+  const grantFault = (operation: 'get' | 'setJSON') =>
+    blobs.faults.add(`${GRANT_STORE_NAME}:${operation}`);
+
+  function expectLoggedWithoutInstallationId(line: string) {
+    expect(loggedText()).toContain(`${line}: ${GRANT_STORE_NAME} get <redacted id> failed`);
+    expect(loggedText()).not.toContain(INSTALLATION);
+  }
+
+  it('stays out when the poll cannot settle the collected picture', async () => {
+    const { jobId, dispatch } = await startHandedOffGeneration();
+    await runWorker(dispatch);
+    grantFault('get');
+
+    expect((await collect(jobId)).status).toBe(200);
+    expectLoggedWithoutInstallationId('failed to record the settled generation');
+  });
+
+  it('stays out when an in-line picture cannot be charged', async () => {
+    setWorkerAnswer(() => new Response('nope', { status: 500 }));
+    provider.generateImage.mockImplementation(async () => {
+      grantFault('get');
+      return { kind: 'image', data: PICTURE.toString('base64'), mimeType: 'image/png' };
+    });
+
+    expect((await startFreeGeneration()).status).toBe(200);
+    expectLoggedWithoutInstallationId('failed to record a completed generation');
+  });
+
+  it('stays out when an in-line refusal cannot be refunded', async () => {
+    setWorkerAnswer(() => new Response('nope', { status: 500 }));
+    provider.generateImage.mockImplementation(async () => {
+      grantFault('get');
+      return { kind: 'refusal', reason: 'IMAGE_SAFETY' };
+    });
+
+    expect((await startFreeGeneration()).status).toBe(SAFETY_REFUSAL_STATUS);
+    expectLoggedWithoutInstallationId('failed to record unsuccessful attempt');
+  });
+
+  // Nothing on the free path catches a reservation failure, so it reaches
+  // apiHandler's unexpected-error line, stack and all.
+  it('stays out when the reservation itself fails', async () => {
+    grantFault('get');
+
+    expect((await startFreeGeneration()).status).toBe(500);
+    expect(loggedText()).toContain(`Error: ${GRANT_STORE_NAME} get <redacted id> failed`);
+    expect(loggedText()).not.toContain(INSTALLATION);
   });
 });
