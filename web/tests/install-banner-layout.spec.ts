@@ -9,7 +9,7 @@ import {
   openSettingsModal,
 } from './helpers';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
+import { iosShareButtonLocation } from '../src/lib/iosShareButtonLocation';
 
 const BANNER_MOUNT_TIMEOUT_MS = 20_000;
 const SAFE_BOTTOM_PX = 34;
@@ -76,10 +76,10 @@ for (const viewport of [
             .click({ trial: true });
           await page.getByRole('button', { name: 'Settings', exact: true }).click({ trial: true });
         }
-        const location =
-          viewport.width < TABLET_MIN_SIDE_PX && viewport.height > viewport.width
-            ? 'at the bottom of the screen'
-            : 'in the Safari toolbar';
+        const location = iosShareButtonLocation(
+          viewport.width,
+          viewport.height > viewport.width ? 'portrait' : 'landscape'
+        );
         await expect(banner.locator('li')).toHaveText(
           [
             `1 Tap Share ${location}.`,

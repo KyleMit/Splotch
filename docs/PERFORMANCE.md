@@ -220,7 +220,8 @@ entry 87. Paths under `web/src/` unless noted.*
     sections; the rest fills one per frame after the fly-in plus a breather frame; presentation
     staged separately from layout so the open flip paints zero sections (33→17 ms P95 on iPad);
     closed-state idle prewarm; close re-hides one per idle slice; watermark makes reopen free.
-    `settings/WideShell.svelte`. *ADR-0049, issue #910*
+    `settings/stagedSections.svelte.ts`, driven by `settings/WideShell.svelte`. *ADR-0049, issue
+    #910*
 11. **SettingsModal closed state is `visibility:hidden`, not `display:none`** — prewarm pays
     style/layout up front; `showModal()` pays nothing. `SettingsModal.svelte:264-347`. *ADR-0049*
 12. **What's New blocks revealed one per rAF** — all-at-once measured 43–47 ms.
@@ -232,8 +233,8 @@ entry 87. Paths under `web/src/` unless noted.*
 15. **Save pipeline pinned off the startup bundle** — export compositor/screenshot/folder-save load
     at press time; memoized self-resetting import promise. Enforced by
     `web/tests/startup-bundle.spec.ts` scanning modulepreload chunks for minification-proof markers,
-    with an anti-vacuity check. `tools/check-bundle-budgets.mjs` pins the release build's
-    modulepreload count, so a new startup chunk of any size fails the build.
+    with an anti-vacuity check. `tools/check-bundle-budgets.mjs` pins the web and native release
+    builds' modulepreload counts, so a new startup chunk of any size fails the build.
     `ActionsPanel.svelte:64-330`. *issue #461*
 16. **Deliberately duplicated code at that bundle boundary** — `saveFolder.svelte.ts` inlines the
     `showDirectoryPicker` predicate rather than importing it (one static edge would re-partition
@@ -460,7 +461,7 @@ entry 87. Paths under `web/src/` unless noted.*
     test-enforced.
 83. **rAF-throttled scrollspies + IntersectionObserver scroll cues** — no per-frame DOM measurement
     on privacy/design/changelog/Settings scrolling. `actions/scrollCue.ts`,
-    `WideShell.svelte:428-440`. *issue #907*
+    `WideShell.svelte:233-249`. *issue #907*
 84. **One shared AI-progress rAF loop** — a single detached loop serves dial + polaroid; cancels
     when settled. `state/aiProgress.svelte.ts`. *ADR-0116*
 85. **Tile/worker context recovery** — `contextlost` recovery scheduled on rAF, probed cheaply on

@@ -1,36 +1,28 @@
 <script lang="ts">
-  import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
+  import AiImageReport from './AiImageReport.svelte';
   import AiErrorCard from './AiErrorCard.svelte';
   import Button from './design/Button.svelte';
   import type { AiErrorPhase } from '$lib/state/aiGeneration.svelte';
   import { AI_SAFETY_REFUSAL_MESSAGE } from '$lib/ai/loadingCopy';
-  import type { StyleName } from '$lib/ai/styles';
-  import type { Origin } from '$lib/state/modal.svelte';
+  import type { ImageReportFlow } from './imageReportFlow.svelte';
 
   // The result card's error section: a safety refusal guides the child to draw
   // something else and offers grown-ups a report; anything else is the error
-  // card with its own report. Both reports write `status`, which the card reads
-  // to decide when the report launcher gives way to the outcome.
+  // card with its own report. Both send the card's `report`, whose outcome the
+  // refusal's launcher gives way to.
   let {
     error,
     previewUrl,
-    style,
-    attempts,
-    reportOrigin,
+    report,
     onRequestReport,
-    status = $bindable(),
   }: {
     error: AiErrorPhase;
     previewUrl: string | null;
-    style: StyleName | null;
-    attempts: number;
-    reportOrigin: Origin | null;
+    report: ImageReportFlow;
     onRequestReport: (event: MouseEvent & { currentTarget: HTMLElement }) => void;
-    status: ImageReportStatus;
   } = $props();
 
   const safety = $derived(error.errorKind === 'safety');
-  const reportSettled = $derived(status === 'success' || status === 'error');
 </script>
 
 <div class="ai-result-error" class:safety class:server={!safety}>
@@ -39,7 +31,7 @@
     <p class="ai-result-error-sub">That picture didn't work — try drawing something different!</p>
     <div class="ai-refusal-report">
       <span class="ai-refusal-report-label" id="refusalReportAudience">For grown-ups</span>
-      {#if !reportSettled}
+      {#if !report.settled}
         <Button
           size="md"
           aria-describedby="refusalReportAudience"
@@ -49,26 +41,19 @@
       {/if}
       <AiImageReport
         kind="false-positive-refusal"
-        drawingUrl={previewUrl}
         outputUrl={null}
-        {style}
         reportToken={error.reportToken}
-        origin={reportOrigin}
-        bind:status
+        {report}
       />
     </div>
   {:else}
     <AiErrorCard>
       <AiImageReport
         kind="generation-error"
-        drawingUrl={null}
         outputUrl={null}
-        {style}
         reportToken={null}
         failure={error.details}
-        {attempts}
-        origin={reportOrigin}
-        bind:status
+        {report}
       />
     </AiErrorCard>
   {/if}

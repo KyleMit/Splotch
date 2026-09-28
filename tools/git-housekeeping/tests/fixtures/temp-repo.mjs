@@ -8,6 +8,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+// A real-repository test pays for every git spawn that builds its scenario. The slowest,
+// prune-local-branches' every-shape scenario at about 40 spawns, measured 4.4 s on a loaded
+// local host against Vitest's 5 s default; whole files of these tests take at most 2.5 s on a
+// CI runner. Every describe block that builds repositories takes these options.
+const REAL_REPO_TEST_TIMEOUT_MS = 20_000;
+export const REAL_REPO_TEST_OPTIONS = { timeout: REAL_REPO_TEST_TIMEOUT_MS };
+
 export function createTempRepo() {
   const root = mkdtempSync(join(tmpdir(), 'git-housekeeping-'));
   const gitconfig = join(root, 'gitconfig');

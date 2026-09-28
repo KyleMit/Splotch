@@ -23,21 +23,19 @@
   import { settingsState } from '$lib/state/settings.svelte';
   import { saveFailureState } from '$lib/state/saveFailure.svelte';
   import { shownActionButtonCount } from '$lib/actionButtonLayout';
-  import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+  import { iosShareButtonLocation } from '$lib/iosShareButtonLocation';
+  import { BANNER_ENTER_MS, BANNER_EXIT_MS, BANNER_FLY_PX } from './bannerMotion';
+  import VisuallyHidden from './design/VisuallyHidden.svelte';
   import '$lib/components/deferredIcons';
 
   // Continued drawing hands the install guide off to Settings with a short parting message.
   const PARTING_MESSAGE_MS = 4000;
 
-  // Shared motion vocabulary for the banner's enter/exit transitions.
-  const BANNER_FLY_Y = 120;
-  const BANNER_ENTER_MS = 420;
-  const BANNER_EXIT_MS = 300;
   const BANNER_SHRINK_EXIT_MS = 550;
   const PARTING_FADE_MS = 200;
   const HINT_FADE_MS = 160;
 
-  const bannerEnter = calm(fly, { y: BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut });
+  const bannerEnter = calm(fly, { y: BANNER_FLY_PX, duration: BANNER_ENTER_MS, easing: backOut });
 
   const INSTALL_PROMPT_COPY = {
     initial: {
@@ -64,6 +62,12 @@
   // onMount teardown below.
   let partingTimer: ReturnType<typeof setTimeout> | undefined;
 
+  const shareLocation = $derived(
+    iosShareButtonLocation(layoutState.viewportWidth, layoutState.orientation)
+  );
+  const controlsOpen = $derived(settingsState.drawerOpen && shownActionButtonCount() > 0);
+  const promptStage = $derived(installPromptStage());
+  const promptCopy = $derived(INSTALL_PROMPT_COPY[promptStage ?? 'initial']);
   // Wait until the child has actually drawn a little, so the prompt feels earned
   // and never competes with the very first finger-on-screen moment. It also
   // stands down while a generation waits in the corner: both live in the same
@@ -71,16 +75,6 @@
   // paid for (ADR-0116). It also waits out a save-failure banner, which is about a
   // picture that has not been kept yet. An install prompt is re-offerable after
   // sustained use, and Settings carries the same action.
-  const shareLocation = $derived(
-    layoutState.viewportWidth > 0 &&
-      layoutState.viewportWidth < TABLET_MIN_SIDE_PX &&
-      layoutState.orientation === 'portrait'
-      ? 'at the bottom of the screen'
-      : 'in the Safari toolbar'
-  );
-  const controlsOpen = $derived(settingsState.drawerOpen && shownActionButtonCount() > 0);
-  const promptStage = $derived(installPromptStage());
-  const promptCopy = $derived(INSTALL_PROMPT_COPY[promptStage ?? 'initial']);
   const visible = $derived(
     !installState.installed &&
       promptStage !== null &&
@@ -120,13 +114,13 @@
     // banner simply goes, and the parting message has already said where the
     // steps live.
     if (prefersReducedMotion()) return fade(node, { duration: CALM_FADE_MS });
-    if (!exitIntoSettingsButton) return fly(node, { y: BANNER_FLY_Y, duration: BANNER_EXIT_MS });
+    if (!exitIntoSettingsButton) return fly(node, { y: BANNER_FLY_PX, duration: BANNER_EXIT_MS });
     const target = document.getElementById(SETTINGS_BUTTON_ID)?.getBoundingClientRect();
     const from = node.getBoundingClientRect();
     const dx = target ? target.left + target.width / 2 - (from.left + from.width / 2) : 0;
     const dy = target
       ? target.top + target.height / 2 - (from.top + from.height / 2)
-      : BANNER_FLY_Y;
+      : BANNER_FLY_PX;
     return {
       duration: BANNER_SHRINK_EXIT_MS,
       easing: cubicIn,
@@ -239,7 +233,7 @@
                   name="more-vert"
                   class="install-inline-icon install-menu-icon"
                   aria-hidden="true"
-                /><span class="visually-hidden">three-dot</span> menu</span
+                /><VisuallyHidden>three-dot</VisuallyHidden> menu</span
               >, then tap <strong>"Install app"</strong> or
               <strong>"Add to Home screen"</strong>.
             </p>
@@ -420,17 +414,6 @@
      :where() one. */
   .hint-term :global(.install-menu-icon svg) {
     fill: currentColor;
-  }
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
   :global(.install-chevron) {
     transition: transform var(--duration-base) var(--ease-glide);

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { isNative, getPlatform, type Platform } from '$lib/platform';
+  import { iosShareButtonLocation } from '$lib/iosShareButtonLocation';
+  import { layoutState } from '$lib/state/layout.svelte';
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
@@ -73,6 +75,10 @@
   // that one.
   let nativeLockOs = $derived<LockOs>(platform === 'android' ? 'android' : 'ios');
 
+  const shareLocation = $derived(
+    iosShareButtonLocation(layoutState.viewportWidth, layoutState.orientation)
+  );
+
   function lockTitle(os: LockOs) {
     if (deviceLocked) return os === 'ios' ? 'Guided Access is on' : 'App Pinning is on';
     return LOCK_STEP_TITLE[os];
@@ -122,8 +128,8 @@
         <li>Open this page in <strong>Safari</strong> — the steps below are Safari's</li>
       {/if}
       <li>
-        Tap the <Icon name="share-ios" class="step-icon" aria-label="Share" />
-        <strong>Share</strong> button at the bottom
+        Tap the <Icon name="share-ios" class="step-icon" aria-hidden="true" />
+        <strong>Share</strong> button {shareLocation}
       </li>
       <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
       <li>Tap <strong>"Add"</strong> in the top right</li>

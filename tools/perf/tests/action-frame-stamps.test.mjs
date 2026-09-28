@@ -94,10 +94,15 @@ const action = (postActionFrames, changes = {}) => ({
 
 const stripped = ({ frameStamps: _frameStamps, ...summary }) => summary;
 
+const frameStampLabels = (summaries) =>
+  summaries.filter((summary) => 'frameStamps' in summary).map(({ label }) => label);
+
 // One pass over the corpus (~180 MB of JSON), one artifact in memory at a time,
-// partitioned by the epoch each artifact declares.
+// partitioned by the epoch each artifact declares. Legacy frameStamps figures
+// are kept apart from the ledger because the ledger is snapshotted to GOLDEN.
 function scoreCommittedCorpus() {
   const legacyLedger = {};
+  const legacyFrameStampLabels = {};
   const dual = [];
   for (const path of committedActionCapturePaths()) {
     const artifact = JSON.parse(readFileSync(path, 'utf8'));
@@ -111,15 +116,17 @@ function scoreCommittedCorpus() {
           (summary) => `${summary.label}: ${summary.passed ? 'PASS' : 'FAIL'}`
         ),
       };
+      const stamped = frameStampLabels(summaries);
+      if (stamped.length > 0) legacyFrameStampLabels[key] = stamped;
     } else {
       dual.push({ key, artifact, summaries });
     }
   }
-  return { legacyLedger, dual };
+  return { legacyLedger, legacyFrameStampLabels, dual };
 }
 
 describe('the committed action corpus', () => {
-  const { legacyLedger, dual } = scoreCommittedCorpus();
+  const { legacyLedger, legacyFrameStampLabels, dual } = scoreCommittedCorpus();
 
   it('holds every legacy capture to a byte-identical re-derivation under its recorded calibration', async () => {
     expect(Object.keys(legacyLedger).length).toBeGreaterThan(0);
@@ -127,12 +134,19 @@ describe('the committed action corpus', () => {
   });
 
   it('gives no legacy capture a frameStamps figure', () => {
-    for (const key of Object.keys(legacyLedger)) {
-      const artifact = JSON.parse(readFileSync(join(ROOT, key), 'utf8'));
-      for (const summary of rescore(artifact)) {
-        expect(summary, key).not.toHaveProperty('frameStamps');
-      }
-    }
+    expect(Object.keys(legacyLedger).length).toBeGreaterThan(0);
+    expect(legacyFrameStampLabels).toEqual({});
+  });
+
+  // The walk above is the only corpus read; this re-derives one legacy capture
+  // from disk so a walk that stopped recording what the scorer produces fails.
+  it('records the same frameStamps figures a fresh re-score of a legacy capture produces', () => {
+    const [witness] = Object.keys(legacyLedger);
+    const summaries = rescore(JSON.parse(readFileSync(join(ROOT, witness), 'utf8')));
+    expect(frameStampLabels(summaries)).toEqual(legacyFrameStampLabels[witness] ?? []);
+    expect(createHash('sha256').update(JSON.stringify(summaries)).digest('hex')).toBe(
+      legacyLedger[witness].sha256
+    );
   });
 
   // A dual-channel capture — the first will be the first one promoted after

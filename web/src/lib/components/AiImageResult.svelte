@@ -1,9 +1,10 @@
 <script lang="ts">
   import DialogHeader from './design/DialogHeader.svelte';
-  import type { ImageReportStatus } from './AiImageReport.svelte';
+  import { createImageReportFlow } from './imageReportFlow.svelte';
   import AiResultDisclosure from './AiResultDisclosure.svelte';
   import AiResultStage from './AiResultStage.svelte';
   import Button from './design/Button.svelte';
+  import VisuallyHidden from './design/VisuallyHidden.svelte';
   import { aiGenerationState } from '$lib/state/aiGeneration.svelte';
   import { closeAiResult, minimizeAiResult } from '$lib/state/aiGeneration.svelte';
   import AiResultError from './AiResultError.svelte';
@@ -11,7 +12,7 @@
   import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
-  import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
+  import { buttonCenter } from '$lib/state/modal.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import {
     AI_FAILED_ANNOUNCEMENT,
@@ -61,23 +62,14 @@
     return () => cancelAnimationFrame(frame);
   });
   let exiting = $state(false);
-  let reportStatus = $state<ImageReportStatus>('idle');
-  let reportOrigin = $state<Origin | null>(null);
-
-  // The strip carries the button that launches the confirm dialog, so it stays
-  // mounted for as long as that dialog is up: a <dialog> hands focus back to
-  // whatever held it before showModal(), and a launcher that unmounted in the
-  // meantime leaves that a detached node — dismissing would drop a keyboard
-  // user on <body>, outside the result they were in. It gives way only once the
-  // footer has a status message to carry the outcome instead.
-  const reportSettled = $derived(reportStatus === 'success' || reportStatus === 'error');
+  const report = createImageReportFlow();
 
   // The gate proves an adult is present; the confirmation that follows is the
   // last step before an irreversible send. Reversing the two would let a parent
   // solve the sum only to discover the report had already gone.
   function requestReport(event: MouseEvent & { currentTarget: HTMLElement }) {
-    reportOrigin = buttonCenter(event.currentTarget);
-    requireParentalGate('imageReport', () => (reportStatus = 'confirm'), reportOrigin);
+    const origin = buttonCenter(event.currentTarget);
+    requireParentalGate('imageReport', () => report.request(origin), origin);
   }
 
   const DEFAULT_ASPECT = 4 / 3;
@@ -94,7 +86,7 @@
   $effect(() => {
     if (!open || generating) {
       exiting = false;
-      reportStatus = 'idle';
+      report.reset();
     }
   });
 
@@ -160,7 +152,7 @@
   })}
   onanimationend={handleAnimationEnd}
 >
-  <p class="visually-hidden" role="status">{announcedStatus}</p>
+  <VisuallyHidden as="p" role="status">{announcedStatus}</VisuallyHidden>
   <DialogHeader
     closeClass="ai-result-close"
     closeLabel={generating ? 'Keep drawing while this is made' : 'Close'}
@@ -171,11 +163,8 @@
       <AiResultError
         error={aiError}
         previewUrl={aiGenerationState.previewUrl}
-        style={aiGenerationState.style}
-        attempts={aiGenerationState.consecutiveFailures}
-        {reportOrigin}
+        {report}
         onRequestReport={requestReport}
-        bind:status={reportStatus}
       />
     {:else}
       <AiResultStage {exiting} onaspect={(aspect) => (imgAspect = aspect)} />
@@ -197,23 +186,22 @@
       {/if}
 
       {#if revealed && result}
-        <AiResultFooter
-          {result}
-          drawingUrl={aiGenerationState.previewUrl}
-          style={aiGenerationState.style}
-          {reportOrigin}
-          ondownload={handleDownload}
-          bind:status={reportStatus}
-        />
+        <AiResultFooter {result} {report} ondownload={handleDownload} />
       {/if}
     {/if}
   </div>
 
   <!-- Stays mounted through the polaroid send-off so it fades out with the rest
-       of the chrome (.polaroid-mode below) instead of vanishing on the first frame. -->
-  {#if serverError && !reportSettled}
+       of the chrome (.polaroid-mode below) instead of vanishing on the first frame.
+       The strip carries the button that launches the confirm dialog, so it also
+       stays mounted for as long as that dialog is up: a <dialog> hands focus back
+       to whatever held it before showModal(), and a launcher that unmounted in
+       the meantime leaves that a detached node — dismissing would drop a keyboard
+       user on <body>, outside the result they were in. It gives way only once the
+       report settles and the footer has a status message to carry the outcome. -->
+  {#if serverError && !report.settled}
     <AiResultDisclosure kind="problem" onclick={requestReport} />
-  {:else if revealed && result && !reportSettled}
+  {:else if revealed && result && !report.settled}
     <AiResultDisclosure onclick={requestReport} disabled={!aiGenerationState.previewUrl} />
   {/if}
 </dialog>
@@ -435,17 +423,5 @@
   .ai-result-modal.polaroid-mode:global([data-start-reduced-motion]) {
     transition: none;
     animation: ai-polaroid-fly 0.4s 0.5s ease forwards;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 </style>

@@ -8,7 +8,7 @@ import {
 } from '../lib/agent-worktrees.mjs';
 import { moveTree, parseSalvageArgs, planSalvage } from '../salvage-worktree-evidence.mjs';
 import { stillHeld } from '../lib/agent-worktrees.mjs';
-import { createTempRepo } from './fixtures/temp-repo.mjs';
+import { createTempRepo, REAL_REPO_TEST_OPTIONS } from './fixtures/temp-repo.mjs';
 
 describe('parseSalvageArgs', () => {
   it('defaults to a dry run into the shared evidence directory', () => {
@@ -49,7 +49,7 @@ describe('ignored-path partitioning', () => {
   });
 });
 
-describe('planSalvage and moveTree on a real repository', () => {
+describe('planSalvage and moveTree on a real repository', REAL_REPO_TEST_OPTIONS, () => {
   let fixture;
   let agents;
   let dest;
